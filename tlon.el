@@ -1,4 +1,4 @@
-;;; uqbar.el --- A collection of convenience functions to be used by the Tlön team. -*- lexical-binding: t -*-
+;;; tlon.el --- A collection of convenience functions to be used by the Tlön team. -*- lexical-binding: t -*-
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(defun ps/uqbar-meeting-with (person tareas-id meetings-id pending-id)
+(defun ps/tlon-meeting-with (person tareas-id meetings-id pending-id)
   "TODO: docstring"
   ;; "[person] > Meetings > Pending for next meeting" org heading in `work-dashboard.org'
   (ps/org-id-goto pending-id)
@@ -52,7 +52,7 @@
   (ps/org-narrow-to-entry-and-children)
   (ps/switch-to-last-window))
 
-(defun ps/uqbar-bae-format-file (&optional extension)
+(defun ps/tlon-bae-format-file (&optional extension)
   "Prompt the user for bibliographic information and return a file
 name based on it."
   (let* ((lastname (read-string "Last name(s) [separated by spaces if more than one author]: "))
@@ -62,7 +62,7 @@ name based on it."
          (extension (or extension "md")))
     (file-name-with-extension (concat slug-lastname "--" slug-title) extension)))
 
-(defun ps/uqbar-bae-rename-file (&optional extension)
+(defun ps/tlon-bae-rename-file (&optional extension)
   "Prompt the user for bibliographic information and rename file at
 point based on it."
   (interactive)
@@ -71,14 +71,14 @@ point based on it."
      source-file-path
      (file-name-concat
       (file-name-directory source-file-path)
-      (ps/uqbar-bae-format-file extension))))
+      (ps/tlon-bae-format-file extension))))
   (revert-buffer))
 
-(defun ps/uqbar-bae-create-file (&optional extension)
+(defun ps/tlon-bae-create-file (&optional extension)
   "Prompt the user for bibliographic information and create a new
  file based on it in the current directory."
   (interactive)
-  (find-file (ps/uqbar-bae-format-file extension)))
+  (find-file (ps/tlon-bae-format-file extension)))
 
-(provide 'uqbar)
-;;; uqbar.el ends here
+(provide 'tlon)
+;;; tlon.el ends here
