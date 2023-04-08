@@ -75,10 +75,143 @@ If EXTENSION is not provided, markdown is used."
   (revert-buffer))
 
 (defun ps/tlon-bae-create-file (&optional extension)
-  "Prompt the user for bibliographic information and create a new
- file based on it in the current directory."
+  "Create a new file based on user-supplied information.
+Prompt the user for bibliographic information and create a new
+ file based on it in the current directory. If EXTENSION is not
+ provided, markdown is used."
   (interactive)
   (find-file (ps/tlon-bae-format-file extension)))
 
-(provide 'tlon)
+(defvar ps/tlon-markdown-eawiki-footnote-source
+  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
+  "Regexp to match footnotes in the main body.")
+
+(defvar ps/tlon-markdown-eawiki-footnote-source2
+  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\)\\\\\\]\\](#.+?)\\^\\]{#\\\\\\\\\\\\\".+?\\\\\\\\\\\\\" .\\\\\\\\\\\\\\\"footnote-reference\\\\\\\\\\\\\" role=\"\\\\\\\\\\\\\"doc-noteref\\\\\\\\\\\\\"\"}"
+  "Regexp to match footnotes in the main body.")
+
+(defvar ps/tlon-markdown-eawiki-footnote-target
+  "\\([[:digit:]]\\{1,2\\}\\). *?\\[\\[^\\*\\*\\[\\\\^\\](#.+?)\\*\\*^\\]{\\.footnote-back-link}\\]{#.+?}
+
+    ::: footnote-content"
+
+  "Regexp to match footnotes in the footnote section.")
+
+(defvar ps/tlon-markdown-eawiki-footnote-target2
+  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[^\\*\\*\\[\\\\^\\](#.+?)\\*\\*^\\]{\..+?}\\]{#.+?}
+
+    ::: footnote-content "
+  "Regexp to match footnotes in the footnote section.")
+
+(defvar ps/tlon-markdown-eawiki-footnote-target3
+  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[\\^\\*\\*\\[\\\\\\^\\](\\\\%22#.+?\\\\%22)\\*\\*\\^\\]{\\.\\\\\\\\\\\\\"footnote-back-link\\\\\\\\\\\\\"}\\]{#\\\\\\\\\\\\\\\".+?\\\\\\\\\\\\\\\"}
+
+    ::: \\\\\"footnote-content\\\\\" "
+  "Regexp to match footnotes in the footnote section.")
+
+(defvar ps/tlon-markdown-eawiki-footnote-target4
+  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[^\\*\\*\\[\\\\^\\](.+?)\\*\\*^\\]\\]{#.+?}
+
+    footnote-content "
+  "Regexp to match footnotes in the footnote section.")
+
+(defvar ps/tlon-markdown-eawiki-footnote-target5  
+  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[^\\*\\*\\[\\\\^\\](#.+?)\\*\\*^\\]\\]{#.+?}
+
+    footnote-content "
+  "Regexp to match footnotes in the footnote section.")
+
+(defvar ps/tlon-markdown-eawiki-links
+  "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
+  "Regexp to match links.")
+
+(defvar ps/tlon-markdown-eawiki-escaped-quotes
+  "\\\\\\\\\\\\\""
+  "Regexp to match escaped quotes.")
+
+(defun ps/tlon-markdown-eawiki-cleanup (&optional buffer)
+  "Cleanup the buffer visiting an EA Wiki entry.
+Assumes that the entry was imported using the GraphQL query below
+and converted to Markdown with Pandoc using `pandoc -s
+[source.html] -t markdown -o [destination.md]'.
+
+`{
+  tag(input:{selector:{slug:\"[slug]\"}}) {
+    result {
+      name
+      description {
+	html
+      }
+      parentTag {
+	name
+      }
+    }
+  }
+}'"
+  (interactive)
+  (when (not (eq major-mode 'markdown-mode))
+    (user-error "Not in a Markdown buffer"))
+  (save-excursion
+    (unfill-region (point-min) (point-max))
+    (goto-char (point-min))
+    (while (re-search-forward "{.underline}" nil t)
+      (replace-match ""))
+    (goto-char (point-min))
+    (while (re-search-forward "{.footnote-back-link}" nil t)
+      (replace-match ""))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-footnote-source nil t)
+      (replace-match (format "[^%s] " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-footnote-source2 nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-footnote-target nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-footnote-target2 nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-footnote-target3 nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-footnote-target4 nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-footnote-target5 nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-links nil t)
+      (replace-match (format "[%s](%s)" (match-string 1) (match-string 2)) nil t))
+    (goto-char (point-min))
+    (while (re-search-forward ps/tlon-markdown-eawiki-escaped-quotes nil t)
+      (replace-match "\""))
+    (goto-char (point-min))
+    (while (re-search-forward " " nil t)
+      (replace-match " "))
+    (goto-char (point-min))
+    (while (re-search-forward " :::" nil t)
+      (replace-match ""))
+    (goto-char (point-min))
+    (while (re-search-forward "{.underline}" nil t)
+      (replace-match ""))
+    (goto-char (point-min))
+    (while (re-search-forward "{.footnote-back-link}" nil t)
+      (replace-match ""))
+    (fill-region (point-min) (point-max))
+    (save-buffer)
+    ))
+
+(defun ps/tlon-convert-to-markdown ()
+  "Convert a file from EA Wiki to Markdown."
+  (interactive)
+  (dolist (file (directory-files "." nil "\\.md$"))
+    ;; (shell-command (format "pandoc -s '%s' -t markdown -o '%s'"
+    ;; file
+    ;; (file-name-with-extension file "md")))
+    (with-current-buffer (find-file-noselect (file-name-with-extension file "md"))
+      (message "Cleaning up %s" (buffer-name))
+      (ps/tlon-markdown-eawiki-cleanup))))
+
+  (provide 'tlon)
 ;;; tlon.el ends here
