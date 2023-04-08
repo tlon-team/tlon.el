@@ -53,18 +53,18 @@
   (ps/switch-to-last-window))
 
 (defun ps/tlon-bae-format-file (&optional extension)
-  "Prompt the user for bibliographic information and return a file
-name based on it."
+  "Return a file name based on user supplied information.
+If EXTENSION is not provided, markdown is used."
   (let* ((lastname (read-string "Last name(s) [separated by spaces if more than one author]: "))
-         (title (read-string "Title: "))
-         (slug-lastname (ps/bibtex-asciify-string (org-hugo-slug lastname)))
-         (slug-title (ps/bibtex-asciify-string (org-hugo-slug title)))
-         (extension (or extension "md")))
+	 (title (read-string "Title: "))
+	 (slug-lastname (ps/bibtex-asciify-string (org-hugo-slug lastname)))
+	 (slug-title (ps/bibtex-asciify-string (org-hugo-slug title)))
+	 (extension (or extension "md")))
     (file-name-with-extension (concat slug-lastname "--" slug-title) extension)))
 
 (defun ps/tlon-bae-rename-file (&optional extension)
-  "Prompt the user for bibliographic information and rename file at
-point based on it."
+  "Rename file at point based on user-supplied information.
+If EXTENSION is not provided, markdown is used."
   (interactive)
   (let* ((source-file-path (dired-get-filename)))
     (rename-file
