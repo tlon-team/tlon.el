@@ -992,5 +992,11 @@ perform the following operations:
     (ps/magit-stage-commit-and-push commit-summary)
     (message "Commit `%s' pushed to remote BAE repo." commit-summary)))
 
+(defun ps/tlon-elpaca-update-and-rebuild ()
+  "Update and rebuild Tlon package with Elpaca."
+  (interactive)
+  (elpaca-update 'tlon t)
+  (elpaca-rebuild 'tlon t))
+
 (provide 'tlon)
 ;;; tlon.el ends here
