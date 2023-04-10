@@ -971,5 +971,28 @@ and converted to Markdown with Pandoc using `pandoc -s
   (interactive)
   (insert (completing-read "URL: " ps/tlon-eawiki-list-of-urls)))
 
+(defun ps/tlon-bae-finalize-translation ()
+  "Finalize BAE translation.
+With point in a buffer that contains a finished BAE translation,
+perform the following operations:
+
+1. `fill-region' on the entire buffer.
+2. `save-buffer'.
+3. stage changes in local repo.
+4. commit changes in local repo.
+5. push changes to remote repo."
+  (interactive)
+  (fill-region (point-min) (point-max))
+  (save-buffer)
+  (let* ((commit-summary-minus-filename "Translate ")
+	 (commit-summary (concat
+			  commit-summary-minus-filename
+			  (truncate-string-to-width
+			   (buffer-name)
+			   (- git-commit-summary-max-length
+			      (length commit-summary-minus-filename))))))
+    (ps/magit-stage-commit-and-push commit-summary)
+    (message "Commit `%s' pushed to remote BAE repo." commit-summary)))
+
 (provide 'tlon)
 ;;; tlon.el ends here
