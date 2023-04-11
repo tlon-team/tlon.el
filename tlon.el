@@ -969,28 +969,74 @@ and converted to Markdown with Pandoc using `pandoc -s
   (interactive)
   (insert (completing-read "URL: " ps/tlon-bae-eawiki-slugs)))
 
+(defun ps/tlon-bae-initialize-revision ()
+  "Create new branch named after current buffer."
+  (interactive)
+  (let ((new-branch (buffer-name (current-buffer))))
+    (unless (magit-branch-p new-branch)
+      (magit-branch-create new-branch "main"))
+    (magit-branch-checkout new-branch)
+    (message "Now at branch %s" new-branch)))
+
 (defun ps/tlon-bae-finalize-translation ()
   "Finalize BAE translation.
 With point in a buffer that contains a finished BAE translation,
-perform the following operations:
+ perform the following operations:
 
 1. `fill-region' on the entire buffer.
 2. `save-buffer'.
 3. stage changes in local repo.
-4. commit changes in local repo.
-5. push changes to remote repo."
-  (interactive)
+4. prepopulate commit with relevant message."
   (fill-region (point-min) (point-max))
   (save-buffer)
-  (let* ((commit-summary-minus-filename "Translate ")
+  (let* ((commit-summary-minus-filename commit-type)
 	 (commit-summary (concat
 			  commit-summary-minus-filename
 			  (truncate-string-to-width
 			   (buffer-name)
 			   (- git-commit-summary-max-length
 			      (length commit-summary-minus-filename))))))
-    (ps/magit-stage-commit-and-push commit-summary)
-    (message "Commit `%s' pushed to remote BAE repo." commit-summary)))
+    (setq ps/git-commit-setup-message commit-summary)
+    (magit-commit-create)))
+
+(defun ps/tlon-bae-finalize-revision ()
+  "Finalize BAE revision.
+With point in a buffer that contains a finished BAE translation,
+ perform the following operations:
+
+1. `fill-region' on the entire buffer.
+2. `save-buffer'.
+3. stage changes in local repo.
+4. commit with relevant message.
+5. push to remote.
+6. create pull request."
+  (interactive)
+  (fill-region (point-min) (point-max))
+  (save-buffer)
+  (let* ((commit-summary-minus-filename "Revise ")
+	 (commit-summary (concat
+			  commit-summary-minus-filename
+			  (truncate-string-to-width
+			   (buffer-name)
+			   (- git-commit-summary-max-length
+			      (length commit-summary-minus-filename))))))
+    (magit-commit-create (list "-m" commit-summary))
+    (call-interactively #'magit-push-current-to-pushremote)
+    (call-interactively '(lambda (forge-create-pullreq (magit-get-current-branch) "origin/main")))))
+
+(defvar ps/git-commit-setup-message
+  ""
+  "Message to pre-populate a commit.
+
+This message is inserted by `ps/git-commit-setup', which is in
+turn triggered by `git-commit-setup-hook'.")
+
+(defun ps/git-commit-setup ()
+  "Setup a commit message."
+  (insert ps/git-commit-setup-message)
+  (setq ps/git-commit-setup-message ""))
+
+(add-hook 'git-commit-setup-hook 'ps/git-commit-setup)
 
 (defun ps/tlon-elpaca-update-and-rebuild ()
   "Update and rebuild Tlon package with Elpaca."
