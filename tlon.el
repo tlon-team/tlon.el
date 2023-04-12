@@ -27,6 +27,7 @@
 ;;; Commentary:
 
 ;;; Code:
+(require 'cl-lib)
 
 (defun ps/tlon-meeting-with (person tareas-id meetings-id pending-id)
   "TODO: docstring"
@@ -1800,6 +1801,19 @@ turn triggered by `git-commit-setup-hook'.")
   (interactive)
   (elpaca-update 'tlon t)
   (elpaca-rebuild 'tlon t))
+
+(defun ps/tlon-bae-revise-new-translation ()
+  "Open relevant docs for starting the revision of new translation."
+  (interactive)
+  (winum-select-window-2)
+  (cl-multiple-value-bind (slug author title) (ps/tlon-bae-format-file)
+    (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/originals" slug))
+    (winum-select-window-1)
+    (advice-remove 'org-roam-node-find #'widen)
+    (org-roam-node-find nil "epistemology")
+    (advice-add 'org-roam-node-find :before #'widen)
+    (let ((eaf-slug (replace-regexp-in-string ".+?--\\(.*\\)\\.md" "\\1" slug)))
+      (browse-url (format "https://forum.effectivealtruism.org/topics/%s" eaf-slug)))))
 
 (provide 'tlon)
 ;;; tlon.el ends here
