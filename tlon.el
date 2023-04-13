@@ -53,6 +53,10 @@
   (ps/org-narrow-to-entry-and-children)
   (ps/switch-to-last-window))
 
+(defun ps/tlon-slugify (string)
+  "Convert STRING into slug."
+  (ps/bibtex-asciify-string (org-hugo-slug string)))
+
 (defun ps/tlon-bae-format-file (&optional extension)
   "Return a file name based on user supplied information.
 If EXTENSION is not provided, markdown is used."
