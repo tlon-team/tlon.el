@@ -1849,14 +1849,6 @@ turn triggered by `git-commit-setup-hook'.")
     (let ((eaf-slug (replace-regexp-in-string ".+?--\\(.*\\)\\.md" "\\1" slug)))
       (browse-url (format "https://forum.effectivealtruism.org/topics/%s" eaf-slug)))))
 
-(defun ps/tlon-test-2 ()
-  "Test."
-  (interactive)
-  (message "Test"))
-
-(defun ps/tlon-test-3 ())
-
-(defun ps/tlon-test-4 ())
 
 (provide 'tlon)
 ;;; tlon.el ends here
