@@ -1818,7 +1818,8 @@ With point in a buffer that contains a finished BAE translation,
 			     (buffer-name)
 			     (- git-commit-summary-max-length
 				(length commit-summary-minus-filename))))))
-      (magit-unstage-all)
+      (when (magit-anything-staged-p)
+	(magit-unstage-all))
       (magit-stage-file file)
       (setq ps/tlon-git-commit-setup-message commit-summary)
       (magit-commit-create))))
