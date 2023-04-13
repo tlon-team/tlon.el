@@ -1785,8 +1785,6 @@ With point in a buffer that contains a finished BAE translation,
     (search-forward "tag--economia-del-bienestar.md")
     (github-review-forge-pr-at-point)))
 
-(defun ps/tlon-bae-finalize-revision ()
-  "Finalize BAE revision.
 (defun ps/tlon-bae-submit-comment-revisions ()
   "Submit PR comments and check out `main' branch."
   (interactive)
@@ -1808,9 +1806,10 @@ With point in a buffer that contains a finished BAE translation,
 2. `save-buffer'.
 3. stage changes in local repo.
 4. prepopulate commit with relevant message."
+  (interactive)
   (fill-region (point-min) (point-max))
   (save-buffer)
-  (let* ((commit-summary-minus-filename commit-type)
+  (let* ((commit-summary-minus-filename "Translate ")
 	 (commit-summary (concat
 			  commit-summary-minus-filename
 			  (truncate-string-to-width
@@ -1820,19 +1819,19 @@ With point in a buffer that contains a finished BAE translation,
     (setq ps/tlon-git-commit-setup-message commit-summary)
     (magit-commit-create)))
 
-(defvar ps/git-commit-setup-message
+(defvar ps/tlon-git-commit-setup-message
   ""
   "Message to pre-populate a commit.
 
-This message is inserted by `ps/git-commit-setup', which is in
+This message is inserted by `ps/tlon-git-commit-setup', which is in
 turn triggered by `git-commit-setup-hook'.")
 
-(defun ps/git-commit-setup ()
+(defun ps/tlon-git-commit-setup ()
   "Setup a commit message."
-  (insert ps/git-commit-setup-message)
-  (setq ps/git-commit-setup-message ""))
+  (insert ps/tlon-git-commit-setup-message)
+  (setq ps/tlon-git-commit-setup-message ""))
 
-(add-hook 'git-commit-setup-hook 'ps/git-commit-setup)
+(add-hook 'git-commit-setup-hook 'ps/tlon-git-commit-setup)
 
 (defun ps/tlon-update-and-reload ()
   "Update and rebuild `tlon'."
@@ -1848,11 +1847,15 @@ turn triggered by `git-commit-setup-hook'.")
     (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/originals" slug))
     (winum-select-window-1)
     (advice-remove 'org-roam-node-find #'widen)
-    (org-roam-node-find nil "epistemology")
+    (advice-remove 'org-roam-node-find #'ps/org-narrow-to-entry-and-children)
+    (org-roam-node-find nil title)
     (advice-add 'org-roam-node-find :before #'widen)
+    (advice-add 'org-roam-node-find :after #'ps/org-narrow-to-entry-and-children)
     (let ((eaf-slug (replace-regexp-in-string ".+?--\\(.*\\)\\.md" "\\1" slug)))
       (browse-url (format "https://forum.effectivealtruism.org/topics/%s" eaf-slug)))))
 
+(define-key github-review-mode-map (kbd "s-c") 'ps/tlon-bae-submit-comment-revisions)
+(define-key markdown-mode-map (kbd "s-f") 'ps/tlon-bae-finalize-revision)
 
 (provide 'tlon)
 ;;; tlon.el ends here
