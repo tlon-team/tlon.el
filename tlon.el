@@ -1810,15 +1810,18 @@ With point in a buffer that contains a finished BAE translation,
   (interactive)
   (fill-region (point-min) (point-max))
   (save-buffer)
-  (let* ((commit-summary-minus-filename "Translate ")
-	 (commit-summary (concat
-			  commit-summary-minus-filename
-			  (truncate-string-to-width
-			   (buffer-name)
-			   (- git-commit-summary-max-length
-			      (length commit-summary-minus-filename))))))
-    (setq ps/tlon-git-commit-setup-message commit-summary)
-    (magit-commit-create)))
+  (let ((file (buffer-file-name)))
+    (let* ((commit-summary-minus-filename "Translate ")
+	   (commit-summary (concat
+			    commit-summary-minus-filename
+			    (truncate-string-to-width
+			     (buffer-name)
+			     (- git-commit-summary-max-length
+				(length commit-summary-minus-filename))))))
+      (magit-unstage-all)
+      (magit-stage-file file)
+      (setq ps/tlon-git-commit-setup-message commit-summary)
+      (magit-commit-create))))
 
 (defvar ps/tlon-git-commit-setup-message
   ""
