@@ -62,8 +62,8 @@
 If EXTENSION is not provided, markdown is used."
   (let* ((lastname (read-string "Last name(s) [separated by spaces if more than one author]: "))
 	 (title (read-string "Title: "))
-	 (slug-lastname (ps/bibtex-asciify-string (org-hugo-slug lastname)))
-	 (slug-title (ps/bibtex-asciify-string (org-hugo-slug title)))
+	 (slug-lastname (ps/tlon-slugify lastname))
+	 (slug-title (ps/tlon-slugify title))
 	 (extension (or extension "md")))
     (file-name-with-extension (concat slug-lastname "--" slug-title) extension)))
 
