@@ -1785,6 +1785,17 @@ With point in a buffer that contains a finished BAE translation,
 
 (defun ps/tlon-bae-finalize-revision ()
   "Finalize BAE revision.
+(defun ps/tlon-bae-submit-comment-revisions ()
+  "Submit PR comments and check out `main' branch."
+  (interactive)
+  (unless (eq major-mode 'github-review-mode)
+    (error "Not in `github-review-mode'"))
+  (github-review-comment)
+  (save-buffer)
+  (kill-buffer)
+  (let ((branch "main"))
+    (magit-branch-checkout branch)
+    (message "Submitted PR comments and checked out `%s' branch." branch)))
 With point in a buffer that contains a finished BAE translation,
  perform the following operations:
 
