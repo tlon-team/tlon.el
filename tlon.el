@@ -1830,11 +1830,11 @@ turn triggered by `git-commit-setup-hook'.")
 
 (add-hook 'git-commit-setup-hook 'ps/git-commit-setup)
 
-(defun ps/tlon-elpaca-update-and-rebuild ()
-  "Update and rebuild Tlon package with Elpaca."
+(defun ps/tlon-update-and-reload ()
+  "Update and rebuild `tlon'."
   (interactive)
   (elpaca-update 'tlon t)
-  (elpaca-rebuild 'tlon t))
+  (load-library "tlon"))
 
 (defun ps/tlon-bae-revise-new-translation ()
   "Open relevant docs for starting the revision of new translation."
