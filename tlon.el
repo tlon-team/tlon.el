@@ -65,18 +65,21 @@ If EXTENSION is not provided, markdown is used."
 	 (slug-lastname (ps/tlon-slugify lastname))
 	 (slug-title (ps/tlon-slugify title))
 	 (extension (or extension "md")))
-    (file-name-with-extension (concat slug-lastname "--" slug-title) extension)))
+    (cl-values (file-name-with-extension (concat slug-lastname "--" slug-title) extension)
+	       lastname
+	       title)))
 
 (defun ps/tlon-bae-rename-file (&optional extension)
   "Rename file at point based on user-supplied information.
 If EXTENSION is not provided, markdown is used."
   (interactive)
-  (let* ((source-file-path (dired-get-filename)))
+  (let* ((source-file-path (dired-get-filename))
+	 (file (cl-nth-value 0 (ps/tlon-bae-format-file extension))))
     (rename-file
      source-file-path
      (file-name-concat
       (file-name-directory source-file-path)
-      (ps/tlon-bae-format-file extension))))
+      file)))
   (revert-buffer))
 
 (defun ps/tlon-bae-create-file (&optional extension)
@@ -85,7 +88,8 @@ Prompt the user for bibliographic information and create a new
  file based on it in the current directory. If EXTENSION is not
  provided, markdown is used."
   (interactive)
-  (find-file (ps/tlon-bae-format-file extension)))
+  (let ((file (cl-nth-value 0 (ps/tlon-bae-format-file extension))))
+    (find-file file)))
 
 (defvar ps/tlon-markdown-eawiki-footnote-source
   "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
