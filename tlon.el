@@ -1731,9 +1731,12 @@ and converted to Markdown with Pandoc using `pandoc -s
   (interactive)
   (insert (completing-read "URL: " ps/tlon-bae-eawiki-urls)))
 
-(defun ps/tlon-bae-initialize-revision ()
+(defun ps/tlon-bae-initialize-revision (tag-title)
   "Create new branch named after current buffer."
-  (interactive)
+  (interactive "sTag title: ")
+  (let ((file-stem (file-name-with-extension
+		    (concat "tag--" (ps/tlon-slugify tag-title)) "md")))
+    (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/translations" file-stem)))
   (let ((new-branch (buffer-name (current-buffer))))
     (unless (magit-branch-p new-branch)
       (magit-branch-create new-branch "main"))
