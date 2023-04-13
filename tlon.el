@@ -28,6 +28,7 @@
 
 ;;; Code:
 (require 'cl-lib)
+(require 'github-review)
 
 (defun ps/tlon-meeting-with (person tareas-id meetings-id pending-id)
   "TODO: docstring"
