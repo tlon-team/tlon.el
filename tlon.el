@@ -1743,8 +1743,6 @@ and converted to Markdown with Pandoc using `pandoc -s
     (magit-branch-checkout new-branch)
     (message "Now at branch %s" new-branch)))
 
-(defun ps/tlon-bae-finalize-translation ()
-  "Finalize BAE translation.
 (defun ps/tlon-bae-finalize-revision ()
   "Finalize BAE revision.
 With point in a buffer that contains a finished BAE translation,
@@ -1796,28 +1794,27 @@ With point in a buffer that contains a finished BAE translation,
   (let ((branch "main"))
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
+
+(defun ps/tlon-bae-finalize-translation ()
+  "Finalize BAE translation.
 With point in a buffer that contains a finished BAE translation,
  perform the following operations:
 
 1. `fill-region' on the entire buffer.
 2. `save-buffer'.
 3. stage changes in local repo.
-4. commit with relevant message.
-5. push to remote.
-6. create pull request."
-  (interactive)
+4. prepopulate commit with relevant message."
   (fill-region (point-min) (point-max))
   (save-buffer)
-  (let* ((commit-summary-minus-filename "Revise ")
+  (let* ((commit-summary-minus-filename commit-type)
 	 (commit-summary (concat
 			  commit-summary-minus-filename
 			  (truncate-string-to-width
 			   (buffer-name)
 			   (- git-commit-summary-max-length
 			      (length commit-summary-minus-filename))))))
-    (magit-commit-create (list "-m" commit-summary))
-    (call-interactively #'magit-push-current-to-pushremote)
-    (call-interactively '(lambda (forge-create-pullreq (magit-get-current-branch) "origin/main")))))
+    (setq ps/tlon-git-commit-setup-message commit-summary)
+    (magit-commit-create)))
 
 (defvar ps/git-commit-setup-message
   ""
