@@ -1742,24 +1742,43 @@ and converted to Markdown with Pandoc using `pandoc -s
 
 (defun ps/tlon-bae-finalize-translation ()
   "Finalize BAE translation.
+(defun ps/tlon-bae-finalize-revision ()
+  "Finalize BAE revision.
 With point in a buffer that contains a finished BAE translation,
  perform the following operations:
 
 1. `fill-region' on the entire buffer.
 2. `save-buffer'.
 3. stage changes in local repo.
-4. prepopulate commit with relevant message."
+4. commit with relevant message.
+5. push to remote.
+6. create pull request.
+7. Launch `github-review'."
+  (interactive)
   (fill-region (point-min) (point-max))
   (save-buffer)
-  (let* ((commit-summary-minus-filename commit-type)
-	 (commit-summary (concat
-			  commit-summary-minus-filename
-			  (truncate-string-to-width
-			   (buffer-name)
-			   (- git-commit-summary-max-length
-			      (length commit-summary-minus-filename))))))
-    (setq ps/git-commit-setup-message commit-summary)
-    (magit-commit-create)))
+  (let* ((commit-summary-minus-filename "Revise "))
+    (commit-summary (concat
+		     commit-summary-minus-filename
+		     (truncate-string-to-width
+		      (buffer-name)
+		      (- git-commit-summary-max-length
+			 (length commit-summary-minus-filename))))))
+  (magit-commit-create (list "-m" commit-summary))
+  (call-interactively #'magit-push-current-to-pushremote)
+  (sleep-for 2)
+  (call-interactively #'forge-create-pullreq)
+  (let ((comments (read-string "Any general comments? ")))
+    (when (not (string= comments ""))
+      (forward-line 2)
+      (insert comments))
+    (forge-post-submit)
+    ;; (switch-to-buffer "magit: BAE")
+    (magit)
+    (magit-refresh)
+    (goto-char (point-min))
+    (search-forward "tag--economia-del-bienestar.md")
+    (github-review-forge-pr-at-point)))
 
 (defun ps/tlon-bae-finalize-revision ()
   "Finalize BAE revision.
