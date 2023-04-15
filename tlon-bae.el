@@ -1834,5 +1834,5 @@ turn triggered by `git-commit-setup-hook'.")
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
-(provide 'tlon)
-;;; tlon.el ends here
+(provide 'tlon-bae)
+;;; tlon-bae.el ends here
