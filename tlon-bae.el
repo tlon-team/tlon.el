@@ -3,7 +3,6 @@
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
 ;; Version: 0.1.0
-;; Package-Requires: ((org "9.1") (ox-hugo "1.2.0"))
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
@@ -27,6 +26,7 @@
 ;;; Commentary:
 
 ;;; Code:
+(require 'org)
 (require 'cl-lib)
 (require 'github-review)
 
