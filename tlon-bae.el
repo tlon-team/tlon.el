@@ -1831,6 +1831,20 @@ turn triggered by `git-commit-setup-hook'.")
     (let ((eaf-slug (replace-regexp-in-string ".+?--\\(.*\\)\\.md" "\\1" slug)))
       (browse-url (format "https://forum.effectivealtruism.org/topics/%s" eaf-slug)))))
 
+(defun tlon-bae-search-github (&optional search-string)
+  "Search for SEARCH-STRING in BAE GitHub issues and pull requests."
+  (interactive "sSearch string: ")
+  (let ((default-directory ps/dir-tlon-BAE-repo))
+    (forge-search search-string)))
+
+(defun tlon-bae-search-multi (search-string)
+  "Search for SEARCH-STRING in BAE locally and issues and pull requests."
+  (interactive "sSearch string: ")
+  (tlon-bae-search-repo search-string)
+  (ps/window-split-if-unsplit)
+  (other-window 1)
+  (consult-ripgrep default-directory search-string))
+
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
