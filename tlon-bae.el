@@ -1737,28 +1737,30 @@ With point in a buffer that contains a finished BAE translation,
   (interactive)
   (fill-region (point-min) (point-max))
   (save-buffer)
-  (let* ((commit-summary-minus-filename "Revise "))
-    (commit-summary (concat
-		     commit-summary-minus-filename
-		     (truncate-string-to-width
-		      (buffer-name)
-		      (- git-commit-summary-max-length
-			 (length commit-summary-minus-filename))))))
-  (magit-commit-create (list "-m" commit-summary))
-  (call-interactively #'magit-push-current-to-pushremote)
-  (sleep-for 2)
-  (call-interactively #'forge-create-pullreq)
-  (let ((comments (read-string "Any general comments? ")))
-    (when (not (string= comments ""))
-      (forward-line 2)
-      (insert comments))
-    (forge-post-submit)
-    ;; (switch-to-buffer "magit: BAE")
-    (magit)
-    (magit-refresh)
-    (goto-char (point-min))
-    (search-forward "tag--economia-del-bienestar.md")
-    (github-review-forge-pr-at-point)))
+  (let* ((commit-summary-minus-filename "Revise ")
+	 (commit-summary (concat
+			  commit-summary-minus-filename
+			  (truncate-string-to-width
+			   (buffer-name)
+			   (- git-commit-summary-max-length
+			      (length commit-summary-minus-filename))))))
+    (magit-commit-create (list "-m" commit-summary))
+    (call-interactively #'magit-push-current-to-pushremote)
+    (sleep-for 2)
+    (call-interactively #'forge-create-pullreq)
+    (let ((comments (read-string "Any general comments? ")))
+      (when (not (string= comments ""))
+	(forward-line 2)
+	(insert comments))
+      (forge-post-submit)
+      ;; (switch-to-buffer "magit: BAE")
+      (magit)
+      (magit-refresh)
+      (forge-pull)
+      (goto-char (point-min))
+      (magit-section-show-level-3-all)
+      (search-forward commit-summary)
+      (github-review-forge-pr-at-point))))
 
 (defun tlon-bae-submit-comment-revisions ()
   "Submit PR comments and check out `main' branch."
