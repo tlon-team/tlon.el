@@ -1709,11 +1709,13 @@ and converted to Markdown with Pandoc using `pandoc -s
   (insert (completing-read "URL: " tlon-bae-eawiki-urls)))
 
 (defun tlon-bae-initialize-revision (tag-title)
-  "Create new branch named after current buffer."
+  "Initialize revision based on TAG-TITLE."
   (interactive "sTag title: ")
   (let ((file-stem (file-name-with-extension
 		    (concat "tag--" (tlon-core-slugify tag-title)) "md")))
-    (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/translations" file-stem)))
+    (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/translations" file-stem))
+    (when (magit-anything-staged-p)
+      (user-error "There are staged changes. Please stash or commit them first.")))
   (let ((new-branch (buffer-name (current-buffer))))
     (unless (magit-branch-p new-branch)
       (magit-branch-create new-branch "main"))
