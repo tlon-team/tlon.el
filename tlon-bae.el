@@ -1770,6 +1770,7 @@ With point in a buffer that contains a finished BAE translation,
   (github-review-comment)
   (save-buffer)
   (kill-buffer)
+  (switch-to-buffer "magit: BAE")
   (let ((branch "main"))
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
