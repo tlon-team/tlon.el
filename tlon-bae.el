@@ -1710,17 +1710,30 @@ and converted to Markdown with Pandoc using `pandoc -s
 
 (defun tlon-bae-initialize-revision (tag-title)
   "Initialize revision based on TAG-TITLE."
+  ;; TODO: also open file with the original English version once
+  ;; correspondence table is created
   (interactive "sTag title: ")
-  (let ((file-stem (file-name-with-extension
-		    (concat "tag--" (tlon-core-slugify tag-title)) "md")))
-    (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/translations" file-stem))
-    (when (magit-anything-staged-p)
-      (user-error "There are staged changes. Please stash or commit them first.")))
-  (let ((new-branch (buffer-name (current-buffer))))
-    (unless (magit-branch-p new-branch)
-      (magit-branch-create new-branch "main"))
-    (magit-branch-checkout new-branch)
-    (message "Now at branch %s" new-branch)))
+  (let* ((file-stem (file-name-with-extension
+		     (concat "tag--" (tlon-core-slugify tag-title)) "md"))
+	 (file-dir (file-name-concat ps/dir-dropbox "repos/BAE/tags/translations"))
+	 (file (file-name-concat file-dir file-stem)))
+    (if (file-exists-p file)
+	(progn
+	  (ps/window-split-if-unsplit)
+	  (winum-select-window-2)
+	  (find-file file))
+      (user-error "File %s does not exist" file))
+    (let ((default-directory file-dir))
+      (when (magit-anything-staged-p)
+	(user-error "There are staged changes. Please stash or commit them first."))
+      (let ((new-branch (buffer-name (current-buffer))))
+	(unless (magit-branch-p new-branch)
+	  (magit-branch-create new-branch "main"))
+	(magit-branch-checkout new-branch)
+	(revert-buffer t t)
+	(ispell-change-dictionary "espanol")
+	(flyspell-buffer)
+	(message "Now at branch %s" new-branch)))))
 
 (defun tlon-bae-finalize-revision ()
   "Finalize BAE revision.
