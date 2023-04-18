@@ -1742,38 +1742,48 @@ With point in a buffer that contains a finished BAE translation,
 
 1. `fill-region' on the entire buffer.
 2. `save-buffer'.
-3. stage changes in local repo.
-4. commit with relevant message.
-5. push to remote.
-6. create pull request.
-7. Launch `github-review'."
+3. Stage changes in local repo.
+4. Commit with relevant message.
+5. Push to remote.
+6. Create pull request.
+7. Optionally launch `github-review'."
   (interactive)
+  (unless (string= (magit-get-current-branch) (buffer-name))
+    (user-error "Buffer name does not match current branch"))
   (fill-region (point-min) (point-max))
   (save-buffer)
-  (let* ((commit-summary-minus-filename "Revise ")
-	 (commit-summary (concat
-			  commit-summary-minus-filename
-			  (truncate-string-to-width
-			   (buffer-name)
-			   (- git-commit-summary-max-length
-			      (length commit-summary-minus-filename))))))
-    (magit-commit-create (list "-m" commit-summary))
-    (call-interactively #'magit-push-current-to-pushremote)
-    (sleep-for 2)
-    (call-interactively #'forge-create-pullreq)
-    (let ((comments (read-string "Any general comments? ")))
-      (when (not (string= comments ""))
-	(forward-line 2)
-	(insert comments))
+  (when (magit-anything-unstaged-p)
+    (let* ((commit-summary-minus-filename "Revise ")
+	   (commit-summary (concat
+			    commit-summary-minus-filename
+			    (truncate-string-to-width
+			     (buffer-name)
+			     (- git-commit-summary-max-length
+				(length commit-summary-minus-filename))))))
+      (magit-commit-create (list "-m" commit-summary))
+      (call-interactively #'magit-push-current-to-pushremote)
+      (sleep-for 2)
+      (call-interactively #'forge-create-pullreq)
+      (let ((comments (read-string "Any general comments? ")))
+	(when (not (string= comments ""))
+	  (forward-line 2)
+	  (insert comments)))
       (forge-post-submit)
-      ;; (switch-to-buffer "magit: BAE")
-      (magit)
-      (magit-refresh)
-      (forge-pull)
-      (goto-char (point-min))
-      (magit-section-show-level-3-all)
-      (search-forward commit-summary)
-      (github-review-forge-pr-at-point))))
+      (let ((magit-buffer "magit: BAE"))
+	(with-current-buffer magit-buffer
+	  (magit-refresh)
+	  (forge-pull)
+	  (goto-char (point-min))
+	  (magit-section-show-level-3-all)
+	  (search-forward commit-summary)))
+      ;; (when (y-or-n-p "Open PR in `github-review'? ")
+      ;; (github-review-forge-pr-at-point))
+      ))
+  (let ((new-branch "main"))
+    (magit-branch-checkout new-branch)
+    (message "Now at branch %s" new-branch))
+  (magit-branch-delete (list (buffer-name)))
+  (revert-buffer t t))
 
 (defun tlon-bae-submit-comment-revisions ()
   "Submit PR comments and check out `main' branch."
