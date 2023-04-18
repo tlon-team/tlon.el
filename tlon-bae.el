@@ -1845,7 +1845,7 @@ turn triggered by `git-commit-setup-hook'.")
 (defun tlon-bae-search-multi (search-string)
   "Search for SEARCH-STRING in BAE locally and issues and pull requests."
   (interactive "sSearch string: ")
-  (tlon-bae-search-repo search-string)
+  (tlon-bae-search-github search-string)
   (ps/window-split-if-unsplit)
   (other-window 1)
   (consult-ripgrep default-directory search-string))
