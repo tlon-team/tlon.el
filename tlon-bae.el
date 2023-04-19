@@ -30,10 +30,10 @@
 (require 'cl-lib)
 (require 'github-review)
 
-(defun tlon-bae-format-file (&optional extension)
+(defun tlon-bae-format-file (&optional extension tag)
   "Return a file name based on user supplied information.
 If EXTENSION is not provided, markdown is used."
-  (let* ((lastname (read-string "Last name(s) [separated by spaces if more than one author]: "))
+  (let* ((lastname (if tag "tag" (read-string "Last name(s) [separated by spaces if more than one author]: ")))
 	 (title (read-string "Title: "))
 	 (slug-lastname (tlon-core-slugify lastname))
 	 (slug-title (tlon-core-slugify title))
