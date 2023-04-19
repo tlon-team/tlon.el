@@ -1844,11 +1844,11 @@ turn triggered by `git-commit-setup-hook'.")
   (elpaca-update 'tlon t)
   (load-library "tlon"))
 
-(defun tlon-bae-revise-new-translation ()
+(defun tlon-bae-initialize-original-revision ()
   "Open relevant docs for starting the revision of new translation."
   (interactive)
   (winum-select-window-2)
-  (cl-multiple-value-bind (slug author title) (tlon-bae-format-file)
+  (cl-multiple-value-bind (slug author title) (tlon-bae-format-file nil t)
     (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/originals" slug))
     (winum-select-window-1)
     (advice-remove 'org-roam-node-find #'widen)
