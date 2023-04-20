@@ -1719,7 +1719,7 @@ and converted to Markdown with Pandoc using `pandoc -s
 	 (file (file-name-concat file-dir file-stem)))
     (if (file-exists-p file)
 	(progn
-	  (tlon-core-window-split-if-unsplit)
+	  (ps/window-split-if-unsplit)
 	  (winum-select-window-2)
 	  (find-file file))
       (user-error "File %s does not exist" file))
@@ -1890,7 +1890,7 @@ turn triggered by `git-commit-setup-hook'.")
   "Search for SEARCH-STRING in BAE locally and issues and pull requests."
   (interactive "sSearch string: ")
   (tlon-bae-search-github search-string)
-  (tlon-core-window-split-if-unsplit)
+  (ps/window-split-if-unsplit)
   (other-window 1)
   (consult-ripgrep default-directory search-string))
 
