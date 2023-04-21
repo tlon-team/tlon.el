@@ -1897,6 +1897,19 @@ turn triggered by `git-commit-setup-hook'.")
   (other-window 1)
   (consult-ripgrep default-directory search-string))
 
+(defun tlon-bae-commit-when-slug-at-point (&optional prefix)
+  "Commit change when point is on a slug.
+As the commit message, use 'PREFIX slug.md'. If the value of
+PREFIX is not specificied, use 'Revise ' as the default."
+  (interactive)
+  (beginning-of-line)
+  (re-search-forward "\\w+--.+?.md")
+  (when-let ((file (match-string 0)))
+    (let ((prefix (or prefix
+		      "Revise ")))
+      (magit-commit-create (list "-m" (concat prefix file)))
+      (call-interactively #'magit-push-current-to-pushremote))))
+
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
