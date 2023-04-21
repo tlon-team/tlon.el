@@ -1932,6 +1932,34 @@ Note that this only works for topics listed in the main buffer."
      repo topic
      (list assignee))))
 
+;; 1st stage of process
+(defun tlon-bae-label-awaiting-translation-and-assign-to-leo ()
+  "Label topic at point 'Awaiting translation' and it assign to Leo."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting translation")
+  (tlon-bae-make-assignee "worldsaround"))
+
+;; 2nd stage of process
+(defun tlon-bae-label-awaiting-revision-and-assign-to-pablo ()
+  "Label topic at point 'Awaiting revision' and assign it to Pablo."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting revision")
+  (tlon-bae-make-assignee "benthamite"))
+
+;; 3rd stage of process
+(defun tlon-bae-label-awaiting-reviewing-and-assign-to-leo ()
+  "Label topic at point 'Awaiting reviewing' and it assign to Leo."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting reviewing")
+  (tlon-bae-make-assignee "worldsaround"))
+
+;; 4th stage of process
+(defun tlon-bae-label-awaiting-publication-and-assign-to-fede ()
+  "Label topic at point 'Awaiting publication' and it assign to Fede."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting publication")
+  (tlon-bae-make-assignee "fstafforinid"))
+
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
