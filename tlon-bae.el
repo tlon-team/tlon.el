@@ -1715,7 +1715,7 @@ and converted to Markdown with Pandoc using `pandoc -s
   (interactive "sTag title: ")
   (let* ((file-stem (file-name-with-extension
 		     (concat "tag--" (tlon-core-slugify tag-title)) "md"))
-	 (file-dir (file-name-concat ps/dir-dropbox "repos/BAE/tags/translations"))
+	 (file-dir (file-name-concat ps/dir-dropbox "repos/BAE/translations/tags"))
 	 (file (file-name-concat file-dir file-stem)))
     (if (file-exists-p file)
 	(progn
@@ -1849,7 +1849,7 @@ turn triggered by `git-commit-setup-hook'.")
   (interactive)
   (winum-select-window-2)
   (cl-multiple-value-bind (slug author title) (tlon-bae-format-file nil t)
-    (find-file (file-name-concat ps/dir-dropbox "repos/BAE/tags/originals" slug))
+    (find-file (file-name-concat ps/dir-dropbox "repos/BAE/originals/tags" slug))
     (winum-select-window-1)
     (advice-remove 'org-roam-node-find #'widen)
     (advice-remove 'org-roam-node-find #'ps/org-narrow-to-entry-and-children)
