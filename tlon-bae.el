@@ -1920,6 +1920,18 @@ Note that this only works for topics listed in the main buffer."
     (forge--set-topic-labels
      repo topic (list label))))
 
+(defun tlon-bae-make-assignee (assignee)
+  "Edit ASSIGNEE the assignee of topic at point."
+  (interactive)
+  (let* ((topic (forge-get-topic (forge-topic-at-point)))
+         (repo  (forge-get-repository topic))
+         (value (closql--iref topic 'assignees))
+         (choices (mapcar #'cadr (oref repo assignees)))
+         (crm-separator ","))
+    (forge--set-topic-assignees
+     repo topic
+     (list assignee))))
+
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
