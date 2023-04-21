@@ -1878,7 +1878,10 @@ turn triggered by `git-commit-setup-hook'.")
     (goto-char (point-min))
     (magit-section-show-level-3-all)
     (search-forward issue-name)
-    (call-interactively #'forge-edit-topic-assignees)))
+    (call-interactively #'forge-edit-topic-assignees)
+    (goto-char (point-min))
+    (re-search-forward "Unstaged changes")
+    (forward-line 1)))
 
 (defun tlon-bae-search-github (&optional search-string)
   "Search for SEARCH-STRING in BAE GitHub issues and pull requests."
