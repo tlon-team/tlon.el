@@ -1910,6 +1910,16 @@ PREFIX is not specificied, use 'Revise ' as the default."
       (magit-commit-create (list "-m" (concat prefix file)))
       (call-interactively #'magit-push-current-to-pushremote))))
 
+(defun tlon-bae-apply-label (label)
+  "Apply LABEL to topic at point.
+Note that this only works for topics listed in the main buffer."
+  (interactive)
+  (let* ((topic (forge-get-topic (forge-topic-at-point)))
+         (repo  (forge-get-repository topic))
+         (crm-separator ","))
+    (forge--set-topic-labels
+     repo topic (list label))))
+
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
