@@ -1965,7 +1965,7 @@ Note that this only works for topics listed in the main buffer."
   "Label topic at point 'Awaiting publication' and it assign to Fede."
   (interactive)
   (tlon-bae-apply-label "Awaiting publication")
-  (tlon-bae-make-assignee "fstafforinid"))
+  (tlon-bae-make-assignee "fstafforini"))
 
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
