@@ -1992,6 +1992,18 @@ If the topic has more than one label, return the first."
 	  (mapcar #'cadr (oref repo labels))
 	  nil t
 	  (mapconcat #'car (closql--iref topic 'labels) ",")))))
+;; This function simply confirms the selection offered to the user by
+;; `tlon-bae-forge-return-topic-label'. I don't know how to do this
+;; properly with `magit-completing-read-multiple', so I just simulate a
+;; RET keypress.
+(defun tlon-bae-forge-return-label-at-point ()
+  "Return the label of the topic at point.
+If the topic has more than one label, return the first."
+  (let ((exit-minibuffer-func (lambda () (exit-minibuffer))))
+    (minibuffer-with-setup-hook
+	(lambda ()
+	  (add-hook 'post-command-hook exit-minibuffer-func t t))
+      (tlon-bae-forge-return-topic-label (forge-current-topic)))))
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
