@@ -1775,7 +1775,7 @@ With point in a buffer that contains a finished BAE translation,
       (magit-commit-create (list "-m" commit-summary))
       (call-interactively #'magit-push-current-to-pushremote)
       (sleep-for 2)
-      (call-interactively #'forge-create-pullreq)
+      (call-interactively #'forge-create-pullreq-from-issue)
       (let ((comments (read-string "Any general comments? ")))
 	(when (not (string= comments ""))
 	  (forward-line 2)
