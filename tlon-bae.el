@@ -1735,6 +1735,18 @@ and converted to Markdown with Pandoc using `pandoc -s
 	(flyspell-buffer)
 	(message "Now at branch %s" new-branch)))))
 
+(defun tlon-bae-org-get-file ()
+  "Return file name in heading at point.
+Assumes file name is enclosed in backticks."
+  (unless (eq major-mode 'org-mode)
+    (user-error "Not in org-mode"))
+  (save-restriction
+    (save-excursion
+      (org-narrow-to-subtree)
+      (goto-char (point-min))
+      (re-search-forward "`\\(.+?\\)`" nil t)
+      (substring-no-properties (match-string 1)))))
+
 (defun tlon-bae-finalize-revision ()
   "Finalize BAE revision.
 With point in a buffer that contains a finished BAE translation,
