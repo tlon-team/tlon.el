@@ -1713,20 +1713,24 @@ and converted to Markdown with Pandoc using `pandoc -s
   "Initialize revision based on TAG-TITLE."
   ;; TODO: also open file with the original English version once
   ;; correspondence table is created
-  (interactive "sTag title: ")
+  (interactive "sTag Spanish title: ")
   (let* ((file-stem (file-name-with-extension
 		     (concat "tag--" (tlon-core-slugify tag-title)) "md"))
-	 (file-dir (file-name-concat ps/dir-dropbox "repos/BAE/translations/tags"))
-	 (file (file-name-concat file-dir file-stem)))
+	 (file-dir (file-name-concat ps/dir-tlon-BAE-repo "translations/tags"))
+	 (file (file-name-concat file-dir file-stem))
+	 (original-file (tlon-bae-org-get-file))
+	 (original-dir (file-name-concat ps/dir-tlon-BAE-repo "originals/tags")))
     (if (file-exists-p file)
 	(progn
 	  (ps/window-split-if-unsplit)
+	  (winum-select-window-1)
+	  (find-file (file-name-concat original-dir original-file))
 	  (winum-select-window-2)
 	  (find-file file))
       (user-error "File %s does not exist" file))
     (let ((default-directory file-dir))
       (when (magit-anything-staged-p)
-	(user-error "There are staged changes. Please stash or commit them first."))
+	(user-error "There are staged changes. Please stash or commit them first"))
       (let ((new-branch (buffer-name (current-buffer))))
 	(unless (magit-branch-p new-branch)
 	  (magit-branch-create new-branch "main"))
