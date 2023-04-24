@@ -1972,11 +1972,13 @@ Note that this only works for topics listed in the main buffer."
   (interactive)
   (tlon-bae-apply-label "Awaiting rewrite")
   (tlon-bae-make-assignee "benthamite"))
+
 (defun tlon-bae-label-awaiting-import-and-assign-to-pablo ()
   "Label topic at point 'Awaiting import' and assign it to Pablo."
   (interactive)
   (tlon-bae-apply-label "Awaiting import")
   (tlon-bae-make-assignee "benthamite"))
+
 ;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
 ;; It differs from that function only in that it returns the selection
 ;; rather than submitting it.
@@ -1992,6 +1994,7 @@ If the topic has more than one label, return the first."
 	  (mapcar #'cadr (oref repo labels))
 	  nil t
 	  (mapconcat #'car (closql--iref topic 'labels) ",")))))
+
 ;; This function simply confirms the selection offered to the user by
 ;; `tlon-bae-forge-return-topic-label'. I don't know how to do this
 ;; properly with `magit-completing-read-multiple', so I just simulate a
@@ -2024,6 +2027,15 @@ If the topic has more than one label, return the first."
     ("Awaiting review" . "v")
     ("Awaiting publication" . "u"))
   "Alist of topic labels and corresponding key bindings.")
+
+(defun tlon-bae-topic-label-match ()
+  "Return a suitable action for the topic at point.
+The function relies on the Alist `tlon-bae-label-actions' to
+ determine an appropriate action from the topic's label."
+  (let* ((label (tlon-bae-forge-return-label-at-point))
+	 (action (alist-get label tlon-bae-label-actions nil nil 'string=)))
+    action))
+
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
