@@ -1972,6 +1972,11 @@ Note that this only works for topics listed in the main buffer."
   (interactive)
   (tlon-bae-apply-label "Awaiting rewrite")
   (tlon-bae-make-assignee "benthamite"))
+(defun tlon-bae-label-awaiting-import-and-assign-to-pablo ()
+  "Label topic at point 'Awaiting import' and assign it to Pablo."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting import")
+  (tlon-bae-make-assignee "benthamite"))
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
