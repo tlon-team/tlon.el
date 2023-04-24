@@ -1954,10 +1954,10 @@ Note that this only works for topics listed in the main buffer."
   (tlon-bae-make-assignee "benthamite"))
 
 ;; 3rd stage of process
-(defun tlon-bae-label-awaiting-reviewing-and-assign-to-leo ()
-  "Label topic at point 'Awaiting reviewing' and it assign to Leo."
+(defun tlon-bae-label-awaiting-review-and-assign-to-leo ()
+  "Label topic at point 'Awaiting review' and it assign to Leo."
   (interactive)
-  (tlon-bae-apply-label "Awaiting reviewing")
+  (tlon-bae-apply-label "Awaiting review")
   (tlon-bae-make-assignee "worldsaround"))
 
 ;; 4th stage of process
