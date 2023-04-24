@@ -1798,9 +1798,9 @@ With point in a buffer that contains a finished BAE translation,
       ))
   (let ((new-branch "main"))
     (magit-branch-checkout new-branch)
-    (message "Now at branch %s" new-branch))
-  (magit-branch-delete (list (buffer-name)))
-  (revert-buffer t t))
+    (message "Now at branch %s" new-branch)))
+;; (magit-branch-delete (list (buffer-name)))
+;; (revert-buffer t t))
 
 (defun tlon-bae-submit-comment-revisions ()
   "Submit PR comments and check out `main' branch."
