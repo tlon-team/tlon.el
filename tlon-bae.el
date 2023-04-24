@@ -1967,6 +1967,11 @@ Note that this only works for topics listed in the main buffer."
   (tlon-bae-apply-label "Awaiting publication")
   (tlon-bae-make-assignee "fstafforini"))
 
+(defun tlon-bae-label-awaiting-rewrite-and-assign-to-pablo ()
+  "Label topic at point 'Awaiting rewrite' and it assign to Pablo."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting rewrite")
+  (tlon-bae-make-assignee "benthamite"))
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
