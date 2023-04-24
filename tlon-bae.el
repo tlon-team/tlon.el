@@ -1932,6 +1932,13 @@ Note that this only works for topics listed in the main buffer."
      repo topic
      (list assignee))))
 
+;; 0th stage of process
+(defun tlon-bae-label-awaiting-processing-and-assign-to-pablo ()
+  "Label topic at point 'Awaiting processing' and assign it to Pablo."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting processing")
+  (tlon-bae-make-assignee "benthamite"))
+
 ;; 1st stage of process
 (defun tlon-bae-label-awaiting-translation-and-assign-to-leo ()
   "Label topic at point 'Awaiting translation' and it assign to Leo."
