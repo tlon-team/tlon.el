@@ -1971,10 +1971,10 @@ Note that this only works for topics listed in the main buffer."
   "Edit ASSIGNEE the assignee of topic at point."
   (interactive)
   (let* ((topic (forge-get-topic (forge-topic-at-point)))
-         (repo  (forge-get-repository topic))
-         (value (closql--iref topic 'assignees))
-         (choices (mapcar #'cadr (oref repo assignees)))
-         (crm-separator ","))
+	 (repo  (forge-get-repository topic))
+	 (value (closql--iref topic 'assignees))
+	 (choices (mapcar #'cadr (oref repo assignees)))
+	 (crm-separator ","))
     (forge--set-topic-assignees
      repo topic
      (list assignee))))
