@@ -1944,26 +1944,26 @@ As commit message, use 'PREFIX FILE'. Unless PREFIX is specified,
 	  (magit-commit-create (list "-m" (concat prefix file)))
 	  (call-interactively #'magit-push-current-to-pushremote))
       (user-error "No changes to commit"))))
+
 (defun tlon-bae-commit-when-slug-at-point (&optional prefix)
-  "Commit change when point is on a slug.
-As the commit message, use 'PREFIX slug.md'. If the value of
-PREFIX is not specificied, use 'Revise ' as the default."
+  "Commit and push change when point is on a slug.
+Unless PREFIX is specified, prompt user to select between
+ 'Revise' and 'Translate'."
   (interactive)
+  (unless (eq major-mode 'magit-status-mode)
+    (user-error "Please run this command in the Magit status buffer"))
   (beginning-of-line)
-  (re-search-forward "\\w+--.+?.md")
-  (when-let ((file (match-string 0)))
-    (let ((prefix (or prefix
-		      "Revise ")))
-      (magit-commit-create (list "-m" (concat prefix file)))
-      (call-interactively #'magit-push-current-to-pushremote))))
+  (when (looking-at ".+?\\(\\w+--.+?.md\\)")
+    (let ((file (match-string 1)))
+      (tlon-bae-commit-and-push prefix file))))
 
 (defun tlon-bae-apply-label (label)
   "Apply LABEL to topic at point.
 Note that this only works for topics listed in the main buffer."
   (interactive)
   (let* ((topic (forge-get-topic (forge-topic-at-point)))
-         (repo  (forge-get-repository topic))
-         (crm-separator ","))
+	 (repo  (forge-get-repository topic))
+	 (crm-separator ","))
     (forge--set-topic-labels
      repo topic (list label))))
 
