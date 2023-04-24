@@ -2004,6 +2004,26 @@ If the topic has more than one label, return the first."
 	(lambda ()
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
       (tlon-bae-forge-return-topic-label (forge-current-topic)))))
+
+(defvar tlon-bae-label-actions
+  '(("Awaiting processing" . "Process")
+    ("Awaiting importing" . "Import")
+    ("Awaiting publication" . "Publish")
+    ("Awaiting review" . "Review")
+    ("Awaiting revision" . "Revise")
+    ("Awaiting rewrite" . "Rewrite")
+    ("Awaiting translation" . "Translate"))
+  "Alist of topic labels and corresponding actions.")
+
+(defvar tlon-bae-label-bindings
+  '(("Awaiting processing" . "p")
+    ("Awaiting importing" . "i")
+    ("Awaiting rewrite" . "w")
+    ("Awaiting revision" . "r")
+    ("Awaiting translation" . "t")
+    ("Awaiting review" . "v")
+    ("Awaiting publication" . "u"))
+  "Alist of topic labels and corresponding key bindings.")
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
