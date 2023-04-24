@@ -1927,6 +1927,23 @@ TODO action to 'Import'.")
   (other-window 1)
   (consult-ripgrep default-directory search-string))
 
+(defun tlon-bae-commit-and-push (&optional prefix file)
+  "Commit and push changes in BAE repo.
+As commit message, use 'PREFIX FILE'. Unless PREFIX is specified,
+ prompt user to select between 'Revise' and 'Translate'. Unless
+ FILE is specified, use the name of the current buffer."
+  (interactive)
+  (let ((default-directory ps/dir-tlon-BAE-repo))
+    (if (or
+	 (magit-anything-staged-p)
+	 (magit-anything-unstaged-p))
+	(let ((prefix (or prefix
+			  (completing-read "" '("Revise "
+						"Translate "))))
+	      (file (or file (buffer-name))))
+	  (magit-commit-create (list "-m" (concat prefix file)))
+	  (call-interactively #'magit-push-current-to-pushremote))
+      (user-error "No changes to commit"))))
 (defun tlon-bae-commit-when-slug-at-point (&optional prefix)
   "Commit change when point is on a slug.
 As the commit message, use 'PREFIX slug.md'. If the value of
