@@ -1977,6 +1977,21 @@ Note that this only works for topics listed in the main buffer."
   (interactive)
   (tlon-bae-apply-label "Awaiting import")
   (tlon-bae-make-assignee "benthamite"))
+;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
+;; It differs from that function only in that it returns the selection
+;; rather than submitting it.
+(defun tlon-bae-forge-return-topic-label (topic)
+  "Return the label of the current topic.
+If the topic has more than one label, return the first."
+  (interactive (list (forge-read-topic "Edit labels of")))
+  (let* ((topic (forge-get-topic topic))
+	 (repo  (forge-get-repository topic))
+	 (crm-separator ","))
+    (car (magit-completing-read-multiple
+	  "Labels: "
+	  (mapcar #'cadr (oref repo labels))
+	  nil t
+	  (mapconcat #'car (closql--iref topic 'labels) ",")))))
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
