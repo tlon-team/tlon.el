@@ -428,7 +428,7 @@ and converted to Markdown with Pandoc using `pandoc -s
 				"tag--ea-librarian-project-inactive"
 				"tag--ea-organization-updates-monthly-series"
 				"tag--ea-talks-previously-earadio-project"
-				"tag--							  eagx"
+				"tag--eagx"
 				"tag--earning-to-give"
 				"tag--eastern-europe"
 				"tag--economic-growth"
