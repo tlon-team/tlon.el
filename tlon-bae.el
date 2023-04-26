@@ -2274,38 +2274,12 @@ Assumes action is first word of clocked task."
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
 
-(defun tlon-bae-finalize-translation ()
-  "Finalize BAE translation.
-With point in a buffer that contains a finished BAE translation,
- perform the following operations:
-
-1. `fill-region' on the entire buffer.
-2. `save-buffer'.
-3. stage changes in local repo.
-4. prepopulate commit with relevant message."
-  (interactive)
-  (fill-region (point-min) (point-max))
-  (save-buffer)
-  (let ((file (buffer-file-name)))
-    (let* ((commit-summary-minus-filename "Translate ")
-	   (commit-summary (concat
-			    commit-summary-minus-filename
-			    (truncate-string-to-width
-			     (buffer-name)
-			     (- git-commit-summary-max-length
-				(length commit-summary-minus-filename))))))
-      (when (magit-anything-staged-p)
-	(magit-unstage-all))
-      (magit-stage-file file)
-      (setq tlon-bae-git-commit-setup-message commit-summary)
-      (magit-commit-create))))
-
 (defvar tlon-bae-git-commit-setup-message
   ""
   "Message to pre-populate a commit.
 
-This message is inserted by `tlon-bae-git-commit-setup', which is in
-turn triggered by `git-commit-setup-hook'.")
+  This message is inserted by `tlon-bae-git-commit-setup', which is in
+  turn triggered by `git-commit-setup-hook'.")
 
 (defun tlon-bae-git-commit-setup ()
   "Setup a commit message."
@@ -2320,57 +2294,39 @@ turn triggered by `git-commit-setup-hook'.")
   (elpaca-update 'tlon t)
   (load-library "tlon"))
 
-(defun tlon-bae-initialize-processing ()
-  "Open relevant docs for starting the revision of new translation."
-  (interactive)
-  (let* ((default-directory ps/dir-tlon-BAE-repo)
-	 (file (tlon-bae-org-get-file))
-	 (filename (file-name-concat ps/dir-tlon-BAE-repo "originals/tags" file))
-	 (slug (replace-regexp-in-string ".+?--\\(.*\\)\\.md" "\\1" file))
-	 (node (s-join " " (split-string slug "-"))))
-    (catch 'exit-function
-      (unless (file-exists-p filename)
-	(save-window-excursion
-	  (with-current-buffer "magit: BAE"
-	    (magit-section-show-level-3-all)
-	    (goto-char (point-min))
-	    (search-forward (format "Job: `%s`" file) nil t)
-	    (tlon-bae-label-awaiting-import-and-assign-to-pablo)))
-	(org-back-to-heading)
-	(re-search-forward "Process")
-	(replace-match "Import")
-	(message "File not found. Changing issue status to 'Awaiting importing' and
-TODO action to 'Import'.")
-	(throw 'exit-function nil))
-      (when (or
-	     (magit-anything-staged-p)
-	     (magit-anything-unstaged-p))
-	(user-error "Please commit or discard changes before proceeding"))
-      (winum-select-window-2)
-      (find-file filename)
-      (winum-select-window-1)
-      (advice-remove 'org-roam-node-find #'widen)
-      (advice-remove 'org-roam-node-find #'ps/org-narrow-to-entry-and-children)
-      (org-roam-node-find nil node)
-      (advice-add 'org-roam-node-find :before #'widen)
-      (advice-add 'org-roam-node-find :after #'ps/org-narrow-to-entry-and-children)
-      (shell-command (format "open --background https://forum.effectivealtruism.org/topics/%s" slug)))))
+(defun tlon-bae-file-matches-clock ()
+  "Throw an error unless current file matches file in clock."
+  (unless (or (string= (file-name-nondirectory (buffer-file-name))
+		       (tlon-bae-get-file-in-clock))
+	      (string= (file-name-nondirectory (buffer-file-name))
+		       (tlon-bae-get-translation-file (tlon-bae-get-file-in-clock))))
+    (user-error "Current file does not match file in clock"))
+  t)
 
-(defun tlon-bae-finalize-processing ()
-  "Create issue with file at point and assign it to Leo."
-  (interactive)
-  (fill-region (point-min) (point-max))
-  (save-buffer)
-  (let* ((file (buffer-name))
-	 (job (format "Job: `%s`" file)))
-    (switch-to-buffer "magit: BAE")
-    (magit-section-show-level-3-all)
-    (goto-char (point-min))
-    (if (search-forward job nil t)
-	(progn
-	  (tlon-bae-label-awaiting-translation-and-assign-to-leo)
-	  (tlon-bae-commit-and-push "Revise " file))
-      (user-error "Could not find file %s in magit buffer" file))))
+(defun tlon-bae-act-on-topic (original-file label assignee pullreq)
+  "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
+If PULLREQ is non-nil, convert existing issue into a pull request."
+  (let ((topic (format "Job: `%s`" original-file)))
+    (with-current-buffer "magit: BAE"
+      (magit-section-show-level-3-all)
+      (goto-char (point-min))
+      (if (search-forward topic nil t)
+	  (progn
+	    (dolist (elt `((tlon-bae-apply-label ,label)
+			   (tlon-bae-make-assignee ,assignee)))
+	      (search-forward topic nil t)
+	      (funcall (car elt) (cadr elt))
+	      (goto-char (point-min)))
+	    (when pullreq
+	      (search-forward topic nil t)
+	      (call-interactively 'forge-create-pullreq-from-issue)))
+	;; This doesn't work because the repo is not found. Why? In the
+	;; meantime, we call the function interactively.
+	;; (forge-create-pullreq-from-issue (tlon-bae-get-issue-gid-by-partial-title
+	;; (forge-get-repository t) original-file)
+	;; translation-file
+	;; target-branch)
+	(user-error "Could not find topic `%s' in Magit buffer" topic)))))
 
 (defun tlon-bae-search-github (&optional search-string)
   "Search for SEARCH-STRING in BAE GitHub issues and pull requests."
@@ -2388,26 +2344,28 @@ TODO action to 'Import'.")
 
 (defun tlon-bae-commit-and-push (&optional prefix file)
   "Commit and push changes in BAE repo.
-As commit message, use 'PREFIX FILE'. Unless PREFIX is specified,
- prompt user to select between 'Revise' and 'Translate'. Unless
- FILE is specified, use the name of the current buffer."
+  As commit message, use 'PREFIX FILE'. Unless PREFIX is
+  specified, prompt user to select between 'Revise' and
+  'Translate'. Unless FILE is specified, use the name of the
+  current buffer."
   (interactive)
   (let ((default-directory ps/dir-tlon-BAE-repo))
-    (if (or
-	 (magit-anything-staged-p)
-	 (magit-anything-unstaged-p))
-	(let ((prefix (or prefix
-			  (completing-read "" '("Revise "
-						"Translate "))))
-	      (file (or file (buffer-name))))
-	  (magit-commit-create (list "-m" (concat prefix file)))
-	  (call-interactively #'magit-push-current-to-pushremote))
-      (user-error "No changes to commit"))))
+    (when (magit-anything-staged-p)
+      (user-error "Please unstage changes before proceeding"))
+    (when (string= (magit-get-current-branch) "main")
+      (magit-pull-from-upstream nil))
+    (let ((prefix (or prefix
+		      (completing-read "" '("Revise "
+					    "Translate "))))
+	  (file (or file (buffer-name))))
+      (magit-stage-file file)
+      (magit-commit-create (list "-m" (concat prefix (file-name-nondirectory file))))
+      (call-interactively #'magit-push-current-to-pushremote))))
 
 (defun tlon-bae-commit-when-slug-at-point (&optional prefix)
   "Commit and push change when point is on a slug.
-Unless PREFIX is specified, prompt user to select between
- 'Revise' and 'Translate'."
+  Unless PREFIX is specified, prompt user to select between
+  'Revise' and 'Translate'."
   (interactive)
   (unless (eq major-mode 'magit-status-mode)
     (user-error "Please run this command in the Magit status buffer"))
@@ -2418,7 +2376,7 @@ Unless PREFIX is specified, prompt user to select between
 
 (defun tlon-bae-apply-label (label)
   "Apply LABEL to topic at point.
-Note that this only works for topics listed in the main buffer."
+  Note that this only works for topics listed in the main buffer."
   (interactive)
   (let* ((topic (forge-get-topic (forge-topic-at-point)))
 	 (repo  (forge-get-repository topic))
@@ -2467,11 +2425,21 @@ Note that this only works for topics listed in the main buffer."
   (tlon-bae-make-assignee "worldsaround"))
 
 ;; 4th stage of process
+(defun tlon-bae-label-awaiting-publication ()
+  "Label topic at point 'Awaiting publication'."
+  (interactive)
+  (tlon-bae-apply-label "Awaiting publication"))
+
+;; obsolete
 (defun tlon-bae-label-awaiting-publication-and-assign-to-fede ()
-  "Label topic at point 'Awaiting publication' and it assign to Fede."
+  "Label topic at point 'Awaiting publication'."
   (interactive)
   (tlon-bae-apply-label "Awaiting publication")
   (tlon-bae-make-assignee "fstafforini"))
+
+(make-obsolete 'tlon-bae-label-awaiting-publication-and-assign-to-fede
+	       'tlon-bae-label-awaiting-publication
+	       "2023-04-26.")
 
 (defun tlon-bae-label-awaiting-rewrite-and-assign-to-pablo ()
   "Label topic at point 'Awaiting rewrite' and it assign to Pablo."
@@ -2490,7 +2458,7 @@ Note that this only works for topics listed in the main buffer."
 ;; rather than submitting it.
 (defun tlon-bae-forge-return-topic-label (topic)
   "Return the label of the current topic.
-If the topic has more than one label, return the first."
+  If the topic has more than one label, return the first."
   (interactive (list (forge-read-topic "Edit labels of")))
   (let* ((topic (forge-get-topic topic))
 	 (repo  (forge-get-repository topic))
@@ -2507,7 +2475,7 @@ If the topic has more than one label, return the first."
 ;; RET keypress.
 (defun tlon-bae-forge-return-label-at-point ()
   "Return the label of the topic at point.
-If the topic has more than one label, return the first."
+  If the topic has more than one label, return the first."
   (let ((exit-minibuffer-func (lambda () (exit-minibuffer))))
     (minibuffer-with-setup-hook
 	(lambda ()
@@ -2521,7 +2489,8 @@ If the topic has more than one label, return the first."
     ("Awaiting review" . "Review")
     ("Awaiting revision" . "Revise")
     ("Awaiting rewrite" . "Rewrite")
-    ("Awaiting translation" . "Translate"))
+    ("Awaiting translation" . "Translate")
+    ("Glossary" . "Respond"))
   "Alist of topic labels and corresponding actions.")
 
 (defvar tlon-bae-label-bindings
@@ -2531,13 +2500,14 @@ If the topic has more than one label, return the first."
     ("Awaiting revision" . "r")
     ("Awaiting translation" . "t")
     ("Awaiting review" . "v")
-    ("Awaiting publication" . "u"))
+    ("Awaiting publication" . "u")
+    ("Glossary" . "g"))
   "Alist of topic labels and corresponding key bindings.")
 
 (defun tlon-bae-topic-label-match ()
   "Return a suitable action for the topic at point.
-The function relies on the Alist `tlon-bae-label-actions' to
- determine an appropriate action from the topic's label."
+  The function relies on the Alist `tlon-bae-label-actions' to
+  determine an appropriate action from the topic's label."
   (let* ((label (tlon-bae-forge-return-label-at-point))
 	 (action (alist-get label tlon-bae-label-actions nil nil 'string=)))
     action))
