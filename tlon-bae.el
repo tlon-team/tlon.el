@@ -2317,12 +2317,13 @@ turn triggered by `git-commit-setup-hook'.")
 
 (defun tlon-bae-check-label-and-assignee ()
   "Check that clocked action matches topic label and assignee matches user."
-  (cl-multiple-value-bind
-      (original-path translation-path original-file)
-      (tlon-bae-set-paths)
-    (let ((topic (format "Job: `%s`" original-file))
-	  (clocked-label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
-      (with-current-buffer "magit: BAE"
+  (save-window-excursion
+    (cl-multiple-value-bind
+	(original-path translation-path original-file)
+	(tlon-bae-set-paths)
+      (let ((topic (format "Job: `%s`" original-file))
+	    (clocked-label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
+	(magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
 	(magit-section-show-level-3-all)
 	(goto-char (point-min))
 	(if (search-forward topic nil t)
