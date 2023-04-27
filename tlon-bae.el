@@ -2475,6 +2475,22 @@ If PULLREQ is non-nil, convert existing issue into a pull request."
 	  nil t
 	  (mapconcat #'car (closql--iref topic 'labels) ",")))))
 
+(defun tlon-bae-forge-get-topic-assignee (topic)
+  "Return the assignee of the current TOPIC.
+If the topic has more than one assignee, return the first."
+  (interactive (list (forge-read-topic "Edit assignees of")))
+  (let* ((topic (forge-get-topic topic))
+	 (repo  (forge-get-repository topic))
+	 (value (closql--iref topic 'assignees))
+	 (choices (mapcar #'cadr (oref repo assignees)))
+	 (crm-separator ","))
+    (car (magit-completing-read-multiple
+	  "Assignees: " choices nil
+	  (if (forge--childp repo 'forge-gitlab-repository)
+	      t ; Selecting something else would fail later on.
+	    'confirm)
+	  (mapconcat #'car value ",")))))
+
 ;; This function simply confirms the selection offered to the user by
 ;; `tlon-bae-forge-return-topic-label'. I don't know how to do this
 ;; properly with `magit-completing-read-multiple', so I just simulate a
