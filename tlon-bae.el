@@ -2527,6 +2527,11 @@ If the topic has more than one assignee, return the first."
   "Alist of topic labels and corresponding key bindings.")
 
 (defun tlon-bae-topic-label-match ()
+(defvar tlon-bae-users
+  '(("fstafforini" . "Federico Stafforini")
+    ("worldsaround" . "Leonardo Picón Serrano")
+    ("benthamite" . "Pablo Stafforini"))
+  "Alist of GitHub usernames and corresponding full names.")
   "Return a suitable action for the topic at point.
   The function relies on the Alist `tlon-bae-label-actions' to
   determine an appropriate action from the topic's label."
