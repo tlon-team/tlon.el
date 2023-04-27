@@ -2310,6 +2310,29 @@ Assumes action is first word of clocked task."
   t)
 
 (defun tlon-bae-act-on-topic (original-file label assignee pullreq)
+(defun tlon-bae-check-label-and-assignee ()
+  "Check that clocked action matches topic label and assignee matches user."
+  (cl-multiple-value-bind
+      (original-path translation-path original-file)
+      (tlon-bae-set-paths)
+    (let ((topic (format "Job: `%s`" original-file))
+	  (clocked-label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
+      (with-current-buffer "magit: BAE"
+	(magit-section-show-level-3-all)
+	(goto-char (point-min))
+	(if (search-forward topic nil t)
+	    (let ((topic-label (tlon-bae-forge-get-label-at-point))
+		  (topic-assignee (alist-get
+				   (tlon-bae-forge-get-assignee-at-point)
+				   tlon-bae-users nil nil 'string=)))
+	      (unless (string= clocked-label topic-label)
+		(user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
+			    clocked-label topic-label))
+	      (unless (string= user-full-name topic-assignee)
+		(user-error "The `org-mode' TODO says the assignee is `%s', but the actual topic assignee is `%s'"
+			    user-full-name topic-assignee))
+	      t)
+	  (user-error "No topic found for %s" original-file))))))
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
 If PULLREQ is non-nil, convert existing issue into a pull request."
   (let ((topic (format "Job: `%s`" original-file)))
