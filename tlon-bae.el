@@ -2541,6 +2541,7 @@ determine an appropriate action from the topic's label."
 	 (action (alist-get label tlon-bae-label-actions nil nil 'string=)))
     action))
 
+(global-set-key (kbd "H-D") 'tlon-bae-dwim)
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
