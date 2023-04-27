@@ -2096,10 +2096,10 @@ the `originals/tags' directory."
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files."
   (if-let* ((original-file (tlon-bae-get-clock-file))
-	    (original-dir (file-name-concat ps/dir-tlon-BAE-repo "originals/tags"))
+	    (original-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/tags"))
 	    (original-path (file-name-concat original-dir original-file))
 	    (translation-file (tlon-bae-get-translation-file original-file))
-	    (translation-dir (file-name-concat ps/dir-tlon-BAE-repo "translations/tags"))
+	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags"))
 	    (translation-path (file-name-concat translation-dir translation-file)))
       (cl-values original-path translation-path original-file translation-file)
     (user-error "I wasn't able to find `%s' in `tlon-bae-english-spanish-correspondence'" original-file)))
@@ -2114,7 +2114,7 @@ the `originals/tags' directory."
 
 (defun tlon-bae-branch-enforce (branch)
   "Throw an error unless current buffer is in BAE branch BRANCH."
-  (let ((default-directory ps/dir-tlon-BAE-repo))
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (unless (string= (magit-get-current-branch) branch)
       (user-error "Please switch to the branch `%s' before proceeding" branch))
     t))
@@ -2147,7 +2147,7 @@ the `originals/tags' directory."
   (cl-multiple-value-bind
       (original-path translation-path original-file)
       (tlon-bae-set-paths)
-    (let* ((default-directory ps/dir-tlon-BAE-repo)
+    (let* ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
 	   (slug (replace-regexp-in-string ".+?--\\(.*\\)\\.md" "\\1" original-file))
 	   (node (s-join " " (split-string slug "-"))))
       (winum-select-window-2)
@@ -2185,7 +2185,7 @@ the `originals/tags' directory."
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (let ((default-directory ps/dir-tlon-BAE-repo))
+    (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
       (when (magit-anything-staged-p)
 	(user-error "There are staged changes. Please stash or commit them first")))
     (tlon-bae-set-windows original-path translation-path)
@@ -2244,7 +2244,7 @@ the `originals/tags' directory."
       (tlon-bae-set-paths)
     (tlon-bae-branch-enforce translation-file)
     (let* ((target-branch "main")
-	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-BAE-repo))
+	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-biblioteca-altruismo-eficaz))
 	   message
 	   delete-branch-p)
       (fill-region (point-min) (point-max))
@@ -2281,7 +2281,7 @@ the `originals/tags' directory."
   (github-review-comment)
   (save-buffer)
   (kill-buffer)
-  (switch-to-buffer "magit: BAE")
+  (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
   (let ((branch "main"))
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
@@ -2343,7 +2343,7 @@ turn triggered by `git-commit-setup-hook'.")
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
 If PULLREQ is non-nil, convert existing issue into a pull request."
   (let ((topic (format "Job: `%s`" original-file)))
-    (switch-to-buffer "magit: BAE")
+    (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
     (magit-section-show-level-3-all)
     (goto-char (point-min))
     (if (search-forward topic nil t)
@@ -2367,7 +2367,7 @@ If PULLREQ is non-nil, convert existing issue into a pull request."
 (defun tlon-bae-search-github (&optional search-string)
   "Search for SEARCH-STRING in BAE GitHub issues and pull requests."
   (interactive "sSearch string: ")
-  (let ((default-directory ps/dir-tlon-BAE-repo))
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (forge-search search-string)))
 
 (defun tlon-bae-search-multi (search-string)
@@ -2385,7 +2385,7 @@ specified, prompt user to select between 'Revise' and
 'Translate'. Unless FILE is specified, use the name of the
 current buffer."
   (interactive)
-  (let ((default-directory ps/dir-tlon-BAE-repo))
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (when (magit-anything-staged-p)
       (user-error "Please unstage changes before proceeding"))
     (when (string= (magit-get-current-branch) "main")
