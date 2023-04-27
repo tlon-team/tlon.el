@@ -1856,7 +1856,7 @@ and converted to Markdown with Pandoc using `pandoc -s
     ("tag--climate-engineering.md" . "tag--ingenieria-climatica.md")
     ("tag--community-infrastructure.md" . "tag--infraestructura-de-la-comunidad.md")
     ("tag--charity-incubation.md" . "tag--incubacion-de-organizaciones-beneficas.md")
-    ("tag--decision-theoretic-uncertainty.md" . "tag--incertidumbre-sobre-las-teorias-de-la-decision.md")
+    ("tag--decision-theoretic-uncertainty.md" . "tag--incertidumbre-sobre-la-teoria-de-la-decision.md")
     ("tag--model-uncertainty.md" . "tag--incertidumbre-sobre-el-modelo.md")
     ("tag--cluelessness.md" . "tag--incertidumbre-radical.md")
     ("tag--normative-uncertainty.md" . "tag--incertidumbre-normativa.md")
