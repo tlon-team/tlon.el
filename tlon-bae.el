@@ -2551,7 +2551,8 @@ If the topic has more than one assignee, return the first."
     ("Awaiting revision" . "Revise")
     ("Awaiting rewrite" . "Rewrite")
     ("Awaiting translation" . "Translate")
-    ("Glossary" . "Respond"))
+    ("Glossary" . "Respond")
+    ("Misc" . "Misc"))
   "Alist of topic labels and corresponding actions.")
 
 (defvar tlon-bae-label-bindings
@@ -2562,7 +2563,8 @@ If the topic has more than one assignee, return the first."
     ("Awaiting translation" . "t")
     ("Awaiting review" . "v")
     ("Awaiting publication" . "u")
-    ("Glossary" . "g"))
+    ("Glossary" . "g")
+    ("Misc" . "m"))
   "Alist of topic labels and corresponding key bindings.")
 
 (defvar tlon-bae-users
