@@ -2243,29 +2243,33 @@ Assumes action is first word of clocked task."
     (tlon-bae-branch-enforce translation-file)
     (let* ((target-branch "main")
 	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-BAE-repo))
+	   message
 	   delete-branch-p)
       (fill-region (point-min) (point-max))
       (save-buffer)
       (if (or (member translation-relative-path (magit-unstaged-files))
 	      (member translation-relative-path (magit-staged-files)))
-	  (progn
+	  (let ((label "Awaiting review")
+		(assignee (if (string= user-full-name "Pablo Stafforini")
+			      "worldsaround"
+			    "benthamite")))
 	    (tlon-bae-commit-and-push "Revise " translation-path)
-	    (tlon-bae-act-on-topic original-file
-				   "Awaiting review"
-				   (if (string= user-full-name "Pablo Stafforini")
-				       "worldsaround"
-				     "benthamite")
-				   t))
+	    (tlon-bae-act-on-topic original-file label assignee t)
+	    (setq message "Converted issue into pull request. Set label to `%s' and assignee to `%s'. "
+		  label assignee))
 	(tlon-bae-act-on-topic original-file
 			       "Awaiting publication"
 			       "")
-	(setq delete-branch-p t))
+	(setq delete-branch-p t)
+	(setq message "Since no changes to the file were made, no pull request was created. "))
       (magit-branch-checkout target-branch)
-      (message "Now at branch %s" target-branch)
+      (setq message (concat message (format "Now at branch %s" target-branch)))
       (when delete-branch-p
 	(magit-branch-delete (list translation-file))
 	(revert-buffer t t))
-      (org-clock-out))))
+      (org-clock-goto)
+      (org-todo "DONE")
+      (message message))))
 
 (defun tlon-bae-submit-comment-revisions ()
   "Submit PR comments and check out `main' branch."
