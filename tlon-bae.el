@@ -2142,6 +2142,7 @@ Assumes action is first word of clocked task."
 (defun tlon-bae-initialize-processing ()
   "Initialize processing."
   (interactive)
+  (tlon-bae-check-label-and-assignee)
   (tlon-bae-branch-enforce "main")
   (cl-multiple-value-bind
       (original-path translation-path original-file)
@@ -2162,6 +2163,7 @@ Assumes action is first word of clocked task."
 (defun tlon-bae-initialize-translation ()
   "Initialize translation."
   (interactive)
+  (tlon-bae-check-label-and-assignee)
   (tlon-bae-branch-enforce "main")
   (cl-multiple-value-bind
       (original-path translation-path original-file)
@@ -2178,6 +2180,7 @@ Assumes action is first word of clocked task."
 (defun tlon-bae-initialize-revision ()
   "Initialize revision."
   (interactive)
+  (tlon-bae-check-label-and-assignee)
   (tlon-bae-branch-enforce "main")
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
@@ -2200,6 +2203,7 @@ Assumes action is first word of clocked task."
   (interactive)
   (tlon-bae-branch-enforce "main")
   (tlon-bae-file-matches-clock)
+  (tlon-bae-check-label-and-assignee)
   (let ((translator (completing-read "Who should translate this document? " '("benthamite" "worldsaround"))))
     (cl-multiple-value-bind
 	(original-path translation-path original-file)
@@ -2215,6 +2219,7 @@ Assumes action is first word of clocked task."
   (interactive)
   (tlon-bae-branch-enforce "main")
   (tlon-bae-file-matches-clock)
+  (tlon-bae-check-label-and-assignee)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
@@ -2231,6 +2236,7 @@ Assumes action is first word of clocked task."
 (defun tlon-bae-finalize-revision ()
   "Finalize revision."
   (interactive)
+  (tlon-bae-check-label-and-assignee)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
