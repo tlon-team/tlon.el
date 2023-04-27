@@ -2532,10 +2532,12 @@ If the topic has more than one assignee, return the first."
     ("worldsaround" . "Leonardo Picón Serrano")
     ("benthamite" . "Pablo Stafforini"))
   "Alist of GitHub usernames and corresponding full names.")
+(defun tlon-bae-topic-label-match (label)
   "Return a suitable action for the topic at point.
-  The function relies on the Alist `tlon-bae-label-actions' to
-  determine an appropriate action from the topic's label."
-  (let* ((label (tlon-bae-forge-return-label-at-point))
+The function relies on the alist `tlon-bae-label-actions' to
+determine an appropriate action from the topic's label."
+  (let* ((label (or label
+		    (tlon-bae-forge-get-label-at-point)))
 	 (action (alist-get label tlon-bae-label-actions nil nil 'string=)))
     action))
 
