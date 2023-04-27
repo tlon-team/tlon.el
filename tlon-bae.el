@@ -2503,6 +2503,14 @@ If the topic has more than one assignee, return the first."
 	(lambda ()
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
       (tlon-bae-forge-return-topic-label (forge-current-topic)))))
+(defun tlon-bae-forge-get-assignee-at-point ()
+  "Return the assignee of the topic at point.
+If the topic has more than one assignee, return the first."
+  (let ((exit-minibuffer-func (lambda () (exit-minibuffer))))
+    (minibuffer-with-setup-hook
+	(lambda ()
+	  (add-hook 'post-command-hook exit-minibuffer-func t t))
+      (tlon-bae-forge-get-topic-assignee (forge-current-topic)))))
 
 (defvar tlon-bae-label-actions
   '(("Awaiting processing" . "Process")
