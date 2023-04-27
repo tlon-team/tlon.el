@@ -2315,7 +2315,6 @@ turn triggered by `git-commit-setup-hook'.")
     (user-error "Current file does not match file in clock"))
   t)
 
-(defun tlon-bae-act-on-topic (original-file label assignee pullreq)
 (defun tlon-bae-check-label-and-assignee ()
   "Check that clocked action matches topic label and assignee matches user."
   (cl-multiple-value-bind
@@ -2493,9 +2492,9 @@ Note that this only works for topics listed in the main buffer."
 ;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
 ;; It differs from that function only in that it returns the selection
 ;; rather than submitting it.
-(defun tlon-bae-forge-return-topic-label (topic)
-  "Return the label of the current topic.
-  If the topic has more than one label, return the first."
+(defun tlon-bae-forge-get-topic-label (topic)
+  "Return the label of the current TOPIC.
+If the topic has more than one label, return the first."
   (interactive (list (forge-read-topic "Edit labels of")))
   (let* ((topic (forge-get-topic topic))
 	 (repo  (forge-get-repository topic))
@@ -2523,17 +2522,18 @@ If the topic has more than one assignee, return the first."
 	  (mapconcat #'car value ",")))))
 
 ;; This function simply confirms the selection offered to the user by
-;; `tlon-bae-forge-return-topic-label'. I don't know how to do this
+;; `tlon-bae-forge-get-topic-label'. I don't know how to do this
 ;; properly with `magit-completing-read-multiple', so I just simulate a
 ;; RET keypress.
-(defun tlon-bae-forge-return-label-at-point ()
+(defun tlon-bae-forge-get-label-at-point ()
   "Return the label of the topic at point.
-  If the topic has more than one label, return the first."
+If the topic has more than one label, return the first."
   (let ((exit-minibuffer-func (lambda () (exit-minibuffer))))
     (minibuffer-with-setup-hook
 	(lambda ()
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
-      (tlon-bae-forge-return-topic-label (forge-current-topic)))))
+      (tlon-bae-forge-get-topic-label (forge-current-topic)))))
+
 (defun tlon-bae-forge-get-assignee-at-point ()
   "Return the assignee of the topic at point.
 If the topic has more than one assignee, return the first."
@@ -2565,12 +2565,12 @@ If the topic has more than one assignee, return the first."
     ("Glossary" . "g"))
   "Alist of topic labels and corresponding key bindings.")
 
-(defun tlon-bae-topic-label-match ()
 (defvar tlon-bae-users
   '(("fstafforini" . "Federico Stafforini")
     ("worldsaround" . "Leonardo Picón Serrano")
     ("benthamite" . "Pablo Stafforini"))
   "Alist of GitHub usernames and corresponding full names.")
+
 (defun tlon-bae-topic-label-match (label)
   "Return a suitable action for the topic at point.
 The function relies on the alist `tlon-bae-label-actions' to
