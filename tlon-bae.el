@@ -2202,8 +2202,8 @@ the `originals/tags' directory."
   "Finalize processing."
   (interactive)
   (tlon-bae-branch-enforce "main")
-  (tlon-bae-file-matches-clock)
   (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-file)
   (let ((translator (completing-read "Who should translate this document? " '("benthamite" "worldsaround"))))
     (cl-multiple-value-bind
 	(original-path translation-path original-file)
@@ -2219,8 +2219,8 @@ the `originals/tags' directory."
   "Finalize translation."
   (interactive)
   (tlon-bae-branch-enforce "main")
-  (tlon-bae-file-matches-clock)
   (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-file)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
