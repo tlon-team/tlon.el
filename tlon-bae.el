@@ -2257,8 +2257,8 @@ the `originals/tags' directory."
 			    "benthamite")))
 	    (tlon-bae-commit-and-push "Revise " translation-path)
 	    (tlon-bae-act-on-topic original-file label assignee t)
-	    (setq message "Converted issue into pull request. Set label to `%s' and assignee to `%s'. "
-		  label assignee))
+	    (setq message (format "Converted issue into pull request. Set label to `%s' and assignee to `%s'. "
+				  label assignee)))
 	(tlon-bae-act-on-topic original-file
 			       "Awaiting publication"
 			       "")
