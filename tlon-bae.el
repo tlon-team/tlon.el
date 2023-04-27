@@ -2174,7 +2174,8 @@ the `originals/tags' directory."
     (with-current-buffer original-file
       (unfill-region (point-min) (point-max))
       (copy-region-as-kill (point-min) (point-max))
-      (fill-region (point-min) (point-max)))
+      (fill-region (point-min) (point-max))
+      (save-buffer))
     (message "Copied contents of `%s' to kill ring. Please open DeepL and paste the contents of the kill ring there." original-file)))
 
 (defun tlon-bae-initialize-revision ()
