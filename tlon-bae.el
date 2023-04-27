@@ -2571,7 +2571,7 @@ If the topic has more than one assignee, return the first."
 
 (defvar tlon-bae-users
   '(("fstafforini" . "Federico Stafforini")
-    ("worldsaround" . "Leonardo Picón Serrano")
+    ("worldsaround" . "Leonardo Picón")
     ("benthamite" . "Pablo Stafforini"))
   "Alist of GitHub usernames and corresponding full names.")
 
