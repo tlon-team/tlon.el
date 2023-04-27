@@ -2212,7 +2212,8 @@ Assumes action is first word of clocked task."
       (save-buffer)
       (tlon-bae-act-on-topic original-file "Awaiting translation" translator)
       (tlon-bae-commit-and-push "Revise " original-path)))
-  (org-clock-out))
+  (org-clock-goto)
+  (org-todo "DONE"))
 
 (defun tlon-bae-finalize-translation ()
   "Finalize translation."
@@ -2231,7 +2232,8 @@ Assumes action is first word of clocked task."
 			   (if (string= user-full-name "Pablo Stafforini")
 			       "worldsaround"
 			     "benthamite"))
-    (org-clock-out)))
+    (org-clock-goto)
+    (org-todo "DONE")))
 
 (defun tlon-bae-finalize-revision ()
   "Finalize revision."
