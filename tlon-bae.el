@@ -2046,7 +2046,7 @@ and converted to Markdown with Pandoc using `pandoc -s
   (interactive)
   (insert (completing-read "URL: " tlon-bae-eawiki-urls)))
 
-(defun tlon-bae-get-file-in-clock ()
+(defun tlon-bae-get-clock-file ()
   "Return file name in clocked heading.
 Assumes file name is enclosed in backticks."
   (unless org-clock-current-task
@@ -2056,11 +2056,11 @@ Assumes file name is enclosed in backticks."
 	(match-string 1 clock)
       (user-error "I wasn't able to find a file in clocked heading"))))
 
-(defun tlon-bae-get-action-in-clock ()
+(defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
 Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
-  (tlon-bae-get-file-in-clock)
+  (tlon-bae-get-clock-file)
   (let ((action (car (split-string (substring-no-properties org-clock-current-task))))
 	(actions (mapcar #'cdr tlon-bae-label-actions)))
     (if (member action actions)
@@ -2095,7 +2095,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files."
-  (if-let* ((original-file (tlon-bae-get-file-in-clock))
+  (if-let* ((original-file (tlon-bae-get-clock-file))
 	    (original-dir (file-name-concat ps/dir-tlon-BAE-repo "originals/tags"))
 	    (original-path (file-name-concat original-dir original-file))
 	    (translation-file (tlon-bae-get-translation-file original-file))
@@ -2124,7 +2124,7 @@ Assumes action is first word of clocked task."
   (interactive)
   (when (eq major-mode 'org-mode)
     (org-clock-in))
-  (let ((action (tlon-bae-get-action-in-clock)))
+  (let ((action (tlon-bae-get-clock-action)))
     (pcase major-mode
       ;; assumes user initializes in org-mode and finalizes in markdown-mode
       ('org-mode (pcase action
@@ -2294,12 +2294,12 @@ Assumes action is first word of clocked task."
   (elpaca-update 'tlon t)
   (load-library "tlon"))
 
-(defun tlon-bae-file-matches-clock ()
+(defun tlon-bae-check-file ()
   "Throw an error unless current file matches file in clock."
   (unless (or (string= (file-name-nondirectory (buffer-file-name))
-		       (tlon-bae-get-file-in-clock))
+		       (tlon-bae-get-clock-file))
 	      (string= (file-name-nondirectory (buffer-file-name))
-		       (tlon-bae-get-translation-file (tlon-bae-get-file-in-clock))))
+		       (tlon-bae-get-translation-file (tlon-bae-get-clock-file))))
     (user-error "Current file does not match file in clock"))
   t)
 
