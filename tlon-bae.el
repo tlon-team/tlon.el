@@ -2238,6 +2238,7 @@ the `originals/tags' directory."
 (defun tlon-bae-finalize-revision ()
   "Finalize revision."
   (interactive)
+  (save-buffer)
   (tlon-bae-check-label-and-assignee)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
