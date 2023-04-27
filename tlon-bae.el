@@ -2339,29 +2339,31 @@ Assumes action is first word of clocked task."
 			    user-full-name topic-assignee))
 	      t)
 	  (user-error "No topic found for %s" original-file))))))
+
+(defun tlon-bae-act-on-topic (original-file label assignee &optional pullreq)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
 If PULLREQ is non-nil, convert existing issue into a pull request."
   (let ((topic (format "Job: `%s`" original-file)))
-    (with-current-buffer "magit: BAE"
-      (magit-section-show-level-3-all)
-      (goto-char (point-min))
-      (if (search-forward topic nil t)
-	  (progn
-	    (dolist (elt `((tlon-bae-apply-label ,label)
-			   (tlon-bae-make-assignee ,assignee)))
-	      (search-forward topic nil t)
-	      (funcall (car elt) (cadr elt))
-	      (goto-char (point-min)))
-	    (when pullreq
-	      (search-forward topic nil t)
-	      (call-interactively 'forge-create-pullreq-from-issue)))
-	;; This doesn't work because the repo is not found. Why? In the
-	;; meantime, we call the function interactively.
-	;; (forge-create-pullreq-from-issue (tlon-bae-get-issue-gid-by-partial-title
-	;; (forge-get-repository t) original-file)
-	;; translation-file
-	;; target-branch)
-	(user-error "Could not find topic `%s' in Magit buffer" topic)))))
+    (switch-to-buffer "magit: BAE")
+    (magit-section-show-level-3-all)
+    (goto-char (point-min))
+    (if (search-forward topic nil t)
+	(progn
+	  (dolist (elt `((tlon-bae-apply-label ,label)
+			 (tlon-bae-make-assignee ,assignee)))
+	    (search-forward topic nil t)
+	    (funcall (car elt) (cadr elt))
+	    (goto-char (point-min)))
+	  (when pullreq
+	    (search-forward topic nil t)
+	    (call-interactively 'forge-create-pullreq-from-issue)))
+      ;; This doesn't work because the repo is not found. Why? In the
+      ;; meantime, we call the function interactively.
+      ;; (forge-create-pullreq-from-issue (tlon-bae-get-issue-gid-by-partial-title
+      ;; (forge-get-repository t) original-file)
+      ;; translation-file
+      ;; target-branch)
+      (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
 (defun tlon-bae-search-github (&optional search-string)
   "Search for SEARCH-STRING in BAE GitHub issues and pull requests."
