@@ -2079,8 +2079,8 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
-  Assumes the issue title contains FILE, which is a unique file in
-  the `originals/tags' directory."
+Assumes the issue title contains FILE, which is a unique file in
+the `originals/tags' directory."
   (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
 	   when (string= file (oref topic title))
 	   return (oref topic id)))
@@ -2290,8 +2290,8 @@ Assumes action is first word of clocked task."
   ""
   "Message to pre-populate a commit.
 
-  This message is inserted by `tlon-bae-git-commit-setup', which is in
-  turn triggered by `git-commit-setup-hook'.")
+This message is inserted by `tlon-bae-git-commit-setup', which is in
+turn triggered by `git-commit-setup-hook'.")
 
 (defun tlon-bae-git-commit-setup ()
   "Setup a commit message."
@@ -2381,10 +2381,10 @@ If PULLREQ is non-nil, convert existing issue into a pull request."
 
 (defun tlon-bae-commit-and-push (&optional prefix file)
   "Commit and push changes in BAE repo.
-  As commit message, use 'PREFIX FILE'. Unless PREFIX is
-  specified, prompt user to select between 'Revise' and
-  'Translate'. Unless FILE is specified, use the name of the
-  current buffer."
+As commit message, use 'PREFIX FILE'. Unless PREFIX is
+specified, prompt user to select between 'Revise' and
+'Translate'. Unless FILE is specified, use the name of the
+current buffer."
   (interactive)
   (let ((default-directory ps/dir-tlon-BAE-repo))
     (when (magit-anything-staged-p)
@@ -2401,8 +2401,8 @@ If PULLREQ is non-nil, convert existing issue into a pull request."
 
 (defun tlon-bae-commit-when-slug-at-point (&optional prefix)
   "Commit and push change when point is on a slug.
-  Unless PREFIX is specified, prompt user to select between
-  'Revise' and 'Translate'."
+Unless PREFIX is specified, prompt user to select between
+'Revise' and 'Translate'."
   (interactive)
   (unless (eq major-mode 'magit-status-mode)
     (user-error "Please run this command in the Magit status buffer"))
@@ -2413,7 +2413,7 @@ If PULLREQ is non-nil, convert existing issue into a pull request."
 
 (defun tlon-bae-apply-label (label)
   "Apply LABEL to topic at point.
-  Note that this only works for topics listed in the main buffer."
+Note that this only works for topics listed in the main buffer."
   (interactive)
   (let* ((topic (forge-get-topic (forge-topic-at-point)))
 	 (repo  (forge-get-repository topic))
