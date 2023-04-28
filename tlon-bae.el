@@ -2288,20 +2288,6 @@ the `originals/tags' directory."
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
 
-(defvar tlon-bae-git-commit-setup-message
-  ""
-  "Message to pre-populate a commit.
-
-This message is inserted by `tlon-bae-git-commit-setup', which is in
-turn triggered by `git-commit-setup-hook'.")
-
-(defun tlon-bae-git-commit-setup ()
-  "Setup a commit message."
-  (insert tlon-bae-git-commit-setup-message)
-  (setq tlon-bae-git-commit-setup-message ""))
-
-(add-hook 'git-commit-setup-hook 'tlon-bae-git-commit-setup)
-
 (defun tlon-bae-update-and-reload ()
   "Update and rebuild `tlon'."
   (interactive)
