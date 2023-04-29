@@ -185,14 +185,20 @@ and converted to Markdown with Pandoc using `pandoc -s
     (save-buffer)
     ))
 
-(defun tlon-convert-to-markdown ()
+(defun tlon-bae-convert-to-markdown ()
   "Convert a file from EA Wiki to Markdown."
   (interactive)
+  (dolist (file (directory-files "." nil "\\.html$"))
+    (let ((md-file (file-name-with-extension file "md")))
+      (shell-command (format "pandoc -s '%s' -t markdown -o '%s'"
+			     file
+			     md-file)))))
+
+(defun tlon-bae-cleanup-markdown ()
+  "Clean up html files imported from EA Wiki."
+  (interactive)
   (dolist (file (directory-files "." nil "\\.md$"))
-    ;; (shell-command (format "pandoc -s '%s' -t markdown -o '%s'"
-    ;; file
-    ;; (file-name-with-extension file "md")))
-    (with-current-buffer (find-file-noselect (file-name-with-extension file "md"))
+    (with-current-buffer (find-file-noselect file)
       (message "Cleaning up %s" (buffer-name))
       (tlon-bae-markdown-eawiki-cleanup))))
 
