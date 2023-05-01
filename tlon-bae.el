@@ -2162,6 +2162,16 @@ the `originals/tags' directory."
 			 always (string-match-p (regexp-quote substr) title))
 	   return (oref topic id)))
 
+(defun tlon-bae-copy-file-contents (file)
+  "Copy contents of FILE to kill ring."
+  (with-current-buffer (find-file-noselect file)
+    (unfill-region (point-min) (point-max))
+    (copy-region-as-kill (point-min) (point-max))
+    (fill-region (point-min) (point-max))
+    (save-buffer)
+    (message "The contents of `%s' have been copied to the to kill ring. You may now paste them into the DeepL editor."
+	     (file-name-nondirectory file))))
+
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files."
   (if-let* ((original-file (tlon-bae-get-clock-file))
