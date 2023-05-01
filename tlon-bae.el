@@ -2323,22 +2323,27 @@ the `originals/tags' directory."
 (defun tlon-bae-finalize-translation ()
   "Finalize translation."
   (interactive)
-  (tlon-bae-branch-enforce "main")
+  (save-buffer)
+  (tlon-bae-check-branch "main")
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-file)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
     (fill-region (point-min) (point-max))
-    (save-buffer)
+    (write-file translation-path)
     (tlon-bae-commit-and-push "Translate " translation-path)
-    (tlon-bae-act-on-topic original-file
-			   "Awaiting revision"
-			   (if (string= user-full-name "Pablo Stafforini")
-			       "worldsaround"
-			     "benthamite"))
-    (org-clock-goto)
-    (org-todo "DONE")))
+    (let ((label "Awaiting revision")
+	  (assignee (if (string= user-full-name "Pablo Stafforini")
+			"worldsaround"
+		      "benthamite")))
+      (tlon-bae-act-on-topic original-file
+			     label
+			     assignee)
+      (org-clock-goto)
+      (org-todo "DONE")
+      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
+      (sit-for 5))))
 
 (defun tlon-bae-finalize-revision ()
   "Finalize revision."
