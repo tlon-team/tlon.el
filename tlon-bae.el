@@ -2518,7 +2518,7 @@ request. If PULLREQ is `close', close pull request."
   (tlon-bae-search-github search-string)
   (ps/window-split-if-unsplit)
   (other-window 1)
-  (consult-ripgrep default-directory search-string))
+  (consult-ripgrep ps/dir-tlon-biblioteca-altruismo-eficaz search-string))
 
 (defun tlon-bae-commit-and-push (&optional prefix file)
   "Commit and push changes in BAE repo.
