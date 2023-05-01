@@ -2538,6 +2538,13 @@ If the topic has more than one assignee, return the first."
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
       (tlon-bae-forge-get-topic-assignee (forge-current-topic)))))
 
+(defun tlon-bae-open-original-or-translation ()
+  "Open the translation if visiting the original, and vice versa."
+  (interactive)
+  (let* ((current-file (file-name-nondirectory (buffer-file-name))))
+    (alist-get current-file tlon-bae-translation-alist
+	       (lambda (key default) default))))
+
 (defvar tlon-bae-label-actions
   '(("Awaiting processing" . "Process")
     ("Awaiting importing" . "Import")
