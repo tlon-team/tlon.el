@@ -2113,6 +2113,17 @@ Assumes action is first word of clocked task."
 	   when (equal val translation-file)
 	   return key))
 
+(defun tlon-bae-get-forge-file ()
+  "Get the file of the topic at point or in current forge buffer."
+  (unless (or (derived-mode-p 'magit-status-mode)
+	      (derived-mode-p 'forge-topic-mode))
+    (user-error "I'm not in a forge buffer"))
+  (let* ((inhibit-message t)
+	 (captured (cadr (call-interactively #'orgit-store-link))))
+    (setq org-stored-links (cdr org-stored-links))
+    (if (string-match "`\\(.+?\\)`" captured)
+	(match-string 1 captured)
+      (user-error "I wasn't able to find a file at point or in the forge buffer"))))
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
 Assumes the issue title contains FILE, which is a unique file in
