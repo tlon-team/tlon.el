@@ -2522,19 +2522,19 @@ request. If PULLREQ is `close', close pull request."
 
 (defun tlon-bae-commit-and-push (&optional prefix file)
   "Commit and push changes in BAE repo.
-As commit message, use 'PREFIX FILE'. Unless PREFIX is
-specified, prompt user to select between 'Revise' and
-'Translate'. Unless FILE is specified, use the name of the
-current buffer."
+As commit message, use 'PREFIX FILE'. Unless PREFIX is specified,
+prompt user to select between 'Translate', 'Revise' and 'Review'.
+Unless FILE is specified, use the name of the current buffer."
   (interactive)
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (when (magit-anything-staged-p)
-      (user-error "Please unstage changes before proceeding"))
+    (tlon-bae-check-unstaged)
     (when (string= (magit-get-current-branch) "main")
-      (magit-pull-from-upstream nil))
+      (magit-pull-from-upstream nil)
+      (sleep-for 2))
     (let ((prefix (or prefix
 		      (completing-read "" '("Revise "
-					    "Translate "))))
+					    "Translate "
+					    "Review "))))
 	  (file (or file (buffer-name))))
       (magit-stage-file file)
       (magit-commit-create (list "-m" (concat prefix (file-name-nondirectory file))))
