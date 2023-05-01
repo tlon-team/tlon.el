@@ -30,6 +30,8 @@
 (require 'cl-lib)
 (require 'github-review)
 
+
+;;; File processing
 (defun tlon-bae-format-file (&optional title extension tag)
   "Return a file name based on user supplied information.
 TITLE is the title of the work. If EXTENSION is not provided, use
@@ -2052,6 +2054,8 @@ and converted to Markdown with Pandoc using `pandoc -s
   (interactive)
   (insert (completing-read "URL: " tlon-bae-eawiki-urls)))
 
+;;; Clocked heading
+
 (defun tlon-bae-get-clock-file ()
   "Return file name in clocked heading.
 Assumes file name is enclosed in backticks."
@@ -2124,6 +2128,7 @@ the `originals/tags' directory."
     (unless (string= (magit-get-current-branch) branch)
       (user-error "Please switch to the branch `%s' before proceeding" branch))
     t))
+;;; Main functions
 
 (defun tlon-bae-dwim ()
   "Initialize or finalize process based on clocked task."
@@ -2300,6 +2305,7 @@ the `originals/tags' directory."
   (elpaca-update 'tlon t)
   (load-library "tlon"))
 
+;;; Checking
 (defun tlon-bae-check-file ()
   "Throw an error unless current file matches file in clock."
   (unless (or (string= (file-name-nondirectory (buffer-file-name))
@@ -2359,6 +2365,8 @@ If PULLREQ is non-nil, convert existing issue into a pull request."
       ;; target-branch)
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
+;;; Search
+
 (defun tlon-bae-search-github (&optional search-string)
   "Search for SEARCH-STRING in BAE GitHub issues and pull requests."
   (interactive "sSearch string: ")
@@ -2404,6 +2412,8 @@ Unless PREFIX is specified, prompt user to select between
   (when (looking-at ".+?\\(\\w+--.+?.md\\)")
     (let ((file (match-string 1)))
       (tlon-bae-commit-and-push prefix file))))
+
+;;; Change topic properties
 
 (defun tlon-bae-apply-label (label)
   "Apply LABEL to topic at point.
