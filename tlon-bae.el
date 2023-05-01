@@ -2477,6 +2477,11 @@ the `originals/tags' directory."
 	      t)
 	  (user-error "No topic found for %s" original-file))))))
 
+(defun tlon-bae-check-unstaged ()
+  "Check that the BAE repo has no unstaged changes."
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (when (magit-anything-staged-p)
+      (user-error "There are staged changes. Please stash or commit them first"))))
 (defun tlon-bae-act-on-topic (original-file label assignee &optional pullreq)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
 If PULLREQ is non-nil, convert existing issue into a pull request."
