@@ -2135,6 +2135,17 @@ Return the subdirectory containing the FILENAME, or nil if not found."
 		 (string-equal (file-name-nondirectory file) filename))
 	(throw 'found (file-name-directory file)))
       nil)))
+
+(defun tlon-bae-open-forge-file ()
+  "Open the file of the topic at point or in current forge buffer."
+  (interactive)
+  (if-let* ((filename (tlon-bae-get-forge-file))
+	    (dir (tlon-bae-find-subdirectory-containing-file filename))
+	    (file (file-name-concat dir filename)))
+      (find-file file)
+    (user-error "I couldn't find `%s' in `%s'"
+		filename ps/dir-tlon-biblioteca-altruismo-eficaz)))
+
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
 Assumes the issue title contains FILE, which is a unique file in
