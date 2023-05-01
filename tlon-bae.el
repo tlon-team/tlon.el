@@ -2124,6 +2124,17 @@ Assumes action is first word of clocked task."
     (if (string-match "`\\(.+?\\)`" captured)
 	(match-string 1 captured)
       (user-error "I wasn't able to find a file at point or in the forge buffer"))))
+
+(defun tlon-bae-find-subdirectory-containing-file (filename)
+  "Search for a FILENAME in BAE repo dir and all its subdirectories.
+Return the subdirectory containing the FILENAME, or nil if not found."
+  (catch 'found
+    (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
+      (when (and (file-exists-p file)
+		 (not (file-directory-p file))
+		 (string-equal (file-name-nondirectory file) filename))
+	(throw 'found (file-name-directory file)))
+      nil)))
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
 Assumes the issue title contains FILE, which is a unique file in
