@@ -2080,6 +2080,18 @@ Assumes file name is enclosed in backticks."
 	(match-string 1 clock)
       (user-error "I wasn't able to find a file in clocked heading"))))
 
+(defun tlon-bae-get-clock-topic ()
+  "Get topic GID from `orgit-forge' link in heading at point."
+  (unless org-clock-heading
+    (user-error "No clock running"))
+  (save-excursion
+    (org-clock-goto)
+    (org-narrow-to-subtree)
+    (when (re-search-forward org-link-bracket-re)
+      (let ((raw-link (org-link-unescape (match-string-no-properties 1))))
+	(string-match "orgit-topic:\\(.+\\)" raw-link)
+	(match-string 1 raw-link)))))
+
 (defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
 Assumes action is first word of clocked task."
