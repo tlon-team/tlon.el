@@ -2386,6 +2386,35 @@ the `originals/tags' directory."
       (org-todo "DONE")
       (message message))))
 
+(defun tlon-bae-finalize-review ()
+  "Finalize review."
+  (interactive)
+  (save-buffer)
+  (tlon-bae-check-label-and-assignee)
+  (cl-multiple-value-bind
+      (original-path translation-path original-file translation-file)
+      (tlon-bae-set-paths)
+    (tlon-bae-check-branch translation-file)
+    (let* ((target-branch "main")
+	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-biblioteca-altruismo-eficaz)))
+      (fill-region (point-min) (point-max))
+      (save-buffer)
+      (when (or (member translation-relative-path (magit-unstaged-files))
+		(member translation-relative-path (magit-staged-files)))
+	(tlon-bae-commit-and-push "Review " translation-path))
+      (let ((label "Awaiting publication")
+	    (assignee ""))
+	(tlon-bae-act-on-topic original-file label assignee 'close)
+	(magit-branch-checkout target-branch)
+	(call-interactively #'magit-merge-plain)
+	(call-interactively #'magit-push-current-to-pushremote)
+	(magit-branch-delete (list translation-file))
+	(revert-buffer t t)
+	(org-clock-goto)
+	(org-todo "DONE")
+	(message (format "Merged pull request and deleted branch `%s'. Set label to `%s' "
+			 translation-file label))))))
+
 (defun tlon-bae-submit-comment-revisions ()
   "Submit PR comments and check out `main' branch."
   (interactive)
