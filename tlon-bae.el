@@ -2191,12 +2191,6 @@ the `originals/tags' directory."
   (winum-select-window-2)
   (find-file translation-path))
 
-(defun tlon-bae-branch-enforce (branch)
-  "Throw an error unless current buffer is in BAE branch BRANCH."
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (unless (string= (magit-get-current-branch) branch)
-      (user-error "Please switch to the branch `%s' before proceeding" branch))
-    t))
 ;;; Main functions
 
 (defun tlon-bae-dwim ()
