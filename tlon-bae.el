@@ -2353,7 +2353,7 @@ the `originals/tags' directory."
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (tlon-bae-branch-enforce translation-file)
+    (tlon-bae-check-branch translation-file)
     (let* ((target-branch "main")
 	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-biblioteca-altruismo-eficaz))
 	   message
