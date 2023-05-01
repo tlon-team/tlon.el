@@ -2205,11 +2205,13 @@ the `originals/tags' directory."
 		   ("Process" (tlon-bae-initialize-processing))
 		   ("Revise" (tlon-bae-initialize-revision))
 		   ("Translate" (tlon-bae-initialize-translation))
+		   ("Review" (tlon-bae-initialize-review))
 		   (_ (user-error "I don't know what to do with `%s`" action))))
       ('markdown-mode (pcase action
 			("Process" (tlon-bae-finalize-processing))
 			("Revise" (tlon-bae-finalize-revision))
 			("Translate" (tlon-bae-finalize-translation))
+			("Review" (tlon-bae-finalize-review))
 			(_ (user-error "I don't know what to do with `%s`" action))))
       (_ (user-error "I don't know what to do in `%s`" major-mode)))))
 
