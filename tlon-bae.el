@@ -2435,6 +2435,14 @@ the `originals/tags' directory."
   (load-library "tlon"))
 
 ;;; Checking
+
+(defun tlon-bae-check-branch (branch)
+  "Throw an error unless current buffer is in BAE branch BRANCH."
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (unless (string= (magit-get-current-branch) branch)
+      (user-error "Please switch to the branch `%s' before proceeding" branch))
+    t))
+
 (defun tlon-bae-check-file ()
   "Throw an error unless current file matches file in clock."
   (unless (or (string= (file-name-nondirectory (buffer-file-name))
