@@ -2367,19 +2367,21 @@ the `originals/tags' directory."
 			      "worldsaround"
 			    "benthamite")))
 	    (tlon-bae-commit-and-push "Revise " translation-path)
-	    (tlon-bae-act-on-topic original-file label assignee t)
+	    (tlon-bae-act-on-topic original-file label assignee 'convert)
 	    (setq message (format "Converted issue into pull request. Set label to `%s' and assignee to `%s'. "
 				  label assignee)))
 	(tlon-bae-act-on-topic original-file
 			       "Awaiting publication"
 			       "")
 	(setq delete-branch-p t)
-	(setq message "Since no changes to the file were made, no pull request was created. "))
+	(setq message "Since no changes were made to the file, no pull request was created. ")
+	(sit-for 5))
       (magit-branch-checkout target-branch)
-      (setq message (concat message (format "Now at branch %s" target-branch)))
+      (setq message (concat message (format "Now at branch `%s'. " target-branch)))
       (when delete-branch-p
 	(magit-branch-delete (list translation-file))
-	(revert-buffer t t))
+	(revert-buffer t t)
+	(setq message (concat message (format "Branch `%s' deleted. " translation-file))))
       (org-clock-goto)
       (org-todo "DONE")
       (message message))))
