@@ -2482,9 +2482,11 @@ the `originals/tags' directory."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (when (magit-anything-staged-p)
       (user-error "There are staged changes. Please stash or commit them first"))))
+
 (defun tlon-bae-act-on-topic (original-file label assignee &optional pullreq)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
-If PULLREQ is non-nil, convert existing issue into a pull request."
+If PULLREQ is `convert', convert the existing issue into a pull
+request. If PULLREQ is `close', close pull request."
   (let ((topic (format "Job: `%s`" original-file)))
     (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
     (magit-section-show-level-3-all)
