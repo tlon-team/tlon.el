@@ -2498,15 +2498,10 @@ request. If PULLREQ is `close', close pull request."
 	    (search-forward topic nil t)
 	    (funcall (car elt) (cadr elt))
 	    (goto-char (point-min)))
-	  (when pullreq
-	    (search-forward topic nil t)
-	    (call-interactively 'forge-create-pullreq-from-issue)))
-      ;; This doesn't work because the repo is not found. Why? In the
-      ;; meantime, we call the function interactively.
-      ;; (forge-create-pullreq-from-issue (tlon-bae-get-issue-gid-by-partial-title
-      ;; (forge-get-repository t) original-file)
-      ;; translation-file
-      ;; target-branch)
+	  (search-forward topic nil t)
+	  (pcase pullreq
+	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
+	    (`close (call-interactively 'forge-edit-topic-state))))
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
 ;;; Search
