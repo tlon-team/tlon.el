@@ -106,6 +106,12 @@ Prompt the user for bibliographic information and create a new
     footnote-content "
   "Regexp to match footnotes in the footnote section.")
 
+(defvar tlon-bae-markdown-eawiki-footnote-target6
+  "\\([[:digit:]]\\)\\.  \\[\\[\\^\\*\\*\\[\\\\\\^\\](.+?)\\*\\*\\^\\]\\]{.+?}
+
+ +?footnote-content "
+  "Regexp to match footnotes in the footnote section.")
+
 (defvar tlon-markdown-eawiki-links
   "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
   "Regexp to match links.")
@@ -164,6 +170,9 @@ and converted to Markdown with Pandoc using `pandoc -s
       (replace-match (format "[^%s]: " (match-string 1))))
     (goto-char (point-min))
     (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target5 nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target6 nil t)
       (replace-match (format "[^%s]: " (match-string 1))))
     (goto-char (point-min))
     (while (re-search-forward tlon-markdown-eawiki-links nil t)
