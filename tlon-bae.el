@@ -2372,7 +2372,8 @@ the `originals/tags' directory."
 				  label assignee)))
 	(tlon-bae-act-on-topic original-file
 			       "Awaiting publication"
-			       "")
+			       ""
+			       'close)
 	(setq delete-branch-p t)
 	(setq message "Since no changes were made to the file, no pull request was created. ")
 	(sit-for 5))
