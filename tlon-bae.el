@@ -2754,6 +2754,22 @@ determine an appropriate action from the topic's label."
     (magit-stage-file glossary)
     (magit-commit-create (list "-m" (format  "Glossary: add \"%s\"" english)))
     (call-interactively #'magit-push-current-to-pushremote)))
+
+(defun tlon-bae-add-to-correspondece (original spanish)
+  "Add a new entry to the correspondece file for ORIGINAL and SPANISH terms."
+  (interactive "sOriginal: \nsSpanish: ")
+  (let ((glossary (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Correspondence.csv"))
+	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (with-current-buffer (find-file-noselect glossary)
+      (goto-char (point-max))
+      (insert (format "\"%s\",\"%s\"\n" original spanish))
+      (save-buffer))
+    (magit-stage-file glossary)
+    (magit-commit-create (list "-m" (format  "Correspondence: add \"%s\""
+					     (s-truncate (- vc-git-log-edit-summary-max-len 25) original))))
+    (call-interactively #'magit-push-current-to-pushremote)))
+
+
 (global-set-key (kbd "H-D") 'tlon-bae-dwim)
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
