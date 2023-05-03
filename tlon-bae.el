@@ -2199,6 +2199,8 @@ the `originals/tags' directory."
 (defun tlon-bae-dwim ()
   "Initialize or finalize process based on clocked task."
   (interactive)
+  (when (eq major-mode 'org-mode)
+    (org-clock-in))
   (let ((action (tlon-bae-get-clock-action)))
     (pcase major-mode
       ;; assumes user initializes in org-mode and finalizes in markdown-mode
@@ -2221,8 +2223,6 @@ the `originals/tags' directory."
   (interactive)
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-branch "main")
-  (when (eq major-mode 'org-mode)
-    (org-clock-in))
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
@@ -2247,8 +2247,6 @@ the `originals/tags' directory."
   (interactive)
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-branch "main")
-  (when (eq major-mode 'org-mode)
-    (org-clock-in))
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
@@ -2269,8 +2267,6 @@ the `originals/tags' directory."
   (interactive)
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-branch "main")
-  (when (eq major-mode 'org-mode)
-    (org-clock-in))
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
@@ -2296,8 +2292,6 @@ the `originals/tags' directory."
   "Initialize review."
   (interactive)
   (tlon-bae-check-label-and-assignee)
-  (when (eq major-mode 'org-mode)
-    (org-clock-in))
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
