@@ -2734,7 +2734,7 @@ If the topic has more than one assignee, return the first."
   "Alist of GitHub usernames and corresponding full names.")
 
 (defun tlon-bae-topic-label-match (label)
-  "Return a suitable action for the topic at point.
+  "Return a suitable action for the LABEL of topic at point.
 The function relies on the alist `tlon-bae-label-actions' to
 determine an appropriate action from the topic's label."
   (let* ((label (or label
