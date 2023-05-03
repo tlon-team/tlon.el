@@ -30,6 +30,9 @@
 (require 'cl-lib)
 (require 'github-review)
 
+;;; Version
+(defvar tlon-bae-version "0.1.1"
+  "Version of the Tlön BAE package.")
 
 ;;; File processing
 (defun tlon-bae-format-file (&optional title extension tag)
