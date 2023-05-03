@@ -2419,8 +2419,11 @@ the `originals/tags' directory."
 	(tlon-bae-act-on-topic original-file label assignee 'close)
 	(magit-branch-checkout target-branch)
 	(call-interactively #'magit-merge-plain)
+	(magit-branch-delete (list
+			      ;; delete both local and remote branches
+			      translation-file))
+	(magit-branch-delete (concat "origin/" translation-file))
 	(call-interactively #'magit-push-current-to-pushremote)
-	(magit-branch-delete (list translation-file))
 	(revert-buffer t t)
 	(org-clock-goto)
 	(org-todo "DONE")
