@@ -2742,6 +2742,18 @@ determine an appropriate action from the topic's label."
 	 (action (alist-get label tlon-bae-label-actions nil nil 'string=)))
     action))
 
+(defun tlon-bae-add-to-glossary (english spanish)
+  "Add a new entry to the glossary for ENGLISH and SPANISH terms."
+  (interactive "sEnglish: \nsSpanish: ")
+  (let ((glossary (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Glossary.csv"))
+	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (with-current-buffer (find-file-noselect glossary)
+      (goto-char (point-max))
+      (insert (format "\"%s\",\"%s\",\"EN\",\"ES\"\n" english spanish))
+      (save-buffer))
+    (magit-stage-file glossary)
+    (magit-commit-create (list "-m" (format  "Glossary: add \"%s\"" english)))
+    (call-interactively #'magit-push-current-to-pushremote)))
 (global-set-key (kbd "H-D") 'tlon-bae-dwim)
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
