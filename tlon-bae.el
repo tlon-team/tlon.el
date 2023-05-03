@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 0.1.1
+;; Version: 0.1.2
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
@@ -31,7 +31,7 @@
 (require 'github-review)
 
 ;;; Version
-(defvar tlon-bae-version "0.1.1"
+(defvar tlon-bae-version "0.1.2"
   "Version of the Tlön BAE package.")
 
 ;;; File processing
