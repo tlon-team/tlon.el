@@ -2416,7 +2416,7 @@ the `originals/tags' directory."
 	(magit-branch-delete (list
 			      ;; delete both local and remote branches
 			      translation-file))
-	(magit-branch-delete (concat "origin/" translation-file))
+	(magit-branch-delete (list (concat "origin/" translation-file)))
 	(call-interactively #'magit-push-current-to-pushremote)
 	(revert-buffer t t)
 	(org-clock-goto)
