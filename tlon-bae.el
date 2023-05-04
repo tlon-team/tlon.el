@@ -2514,7 +2514,8 @@ request. If PULLREQ is `close', close pull request."
 	  (search-forward topic nil t)
 	  (pcase pullreq
 	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
-	    (`close (call-interactively 'forge-edit-topic-state))))
+	    ;; (`close (call-interactively 'forge-edit-topic-state))
+	    ))
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
 ;;; Search
