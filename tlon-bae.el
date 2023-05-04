@@ -2411,20 +2411,20 @@ the `originals/tags' directory."
       (save-buffer)
       (when (or (member translation-relative-path (magit-unstaged-files))
 		(member translation-relative-path (magit-staged-files)))
-	(tlon-bae-commit-and-push "Review " translation-path))
+	(magit-stage-file translation-path)
+	(magit-commit-create (list "-m" (concat "Revise " translation-file))))
+      (call-interactively (lambda! (magit-merge-into "main")))
+      (sleep-for 3)
+      (call-interactively #'magit-push-current-to-pushremote)
+      (sleep-for 3)
       (let ((label "Awaiting publication")
 	    (assignee ""))
 	(tlon-bae-act-on-topic original-file label assignee 'close)
-	(magit-branch-checkout target-branch)
-	(call-interactively #'magit-merge-plain)
-	(magit-branch-delete (list
-			      ;; delete both local and remote branches
-			      translation-file))
-	(magit-branch-delete (list (concat "origin/" translation-file)))
-	(call-interactively #'magit-push-current-to-pushremote)
+	(call-interactively (lambda! (magit-branch-delete (list (concat "origin/" translation-file)))))
 	(revert-buffer t t)
 	(org-clock-goto)
 	(org-todo "DONE")
+	(save-buffer)
 	(message (format "Merged pull request and deleted branch `%s'. Set label to `%s' "
 			 translation-file label))))))
 
