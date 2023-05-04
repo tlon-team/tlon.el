@@ -2201,6 +2201,7 @@ the `originals/tags' directory."
   (interactive)
   (when (eq major-mode 'org-mode)
     (org-clock-in))
+  (save-buffer)
   (let ((action (tlon-bae-get-clock-action)))
     (pcase major-mode
       ;; assumes user initializes in org-mode and finalizes in markdown-mode
@@ -2321,7 +2322,8 @@ the `originals/tags' directory."
       (tlon-bae-act-on-topic original-file "Awaiting translation" translator)
       (tlon-bae-commit-and-push "Revise " original-path)))
   (org-clock-goto)
-  (org-todo "DONE"))
+  (org-todo "DONE")
+  (save-buffer))
 
 (defun tlon-bae-finalize-translation ()
   "Finalize translation."
@@ -2345,6 +2347,7 @@ the `originals/tags' directory."
 			     assignee)
       (org-clock-goto)
       (org-todo "DONE")
+      (save-buffer)
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
       (sit-for 5))))
 
@@ -2390,6 +2393,7 @@ the `originals/tags' directory."
 	(setq message (concat message (format "Branch `%s' deleted. " translation-file))))
       (org-clock-goto)
       (org-todo "DONE")
+      (save-buffer)
       (message message))))
 
 (defun tlon-bae-finalize-review ()
