@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 0.1.4
+;; Version: 0.1.5
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
@@ -32,7 +32,7 @@
 (require 'transient)
 
 ;;; Version
-(defvar tlon-bae-version "0.1.4"
+(defvar tlon-bae-version "0.1.5"
   "Version of the Tlön BAE package.")
 
 (defun tlon-bae-version ()
