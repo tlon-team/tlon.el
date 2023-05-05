@@ -1101,6 +1101,41 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 (tlon-bae-create-dir-opening-command "etc")
 
 
+(transient-define-prefix tlon-bae-dispatch ()
+  "Dispatch a `tlon-bae' command."
+  [["Main"
+    ("r" "dwim"                         tlon-bae-dwim)
+    ("n" "forge"                        tlon-bae-forge)
+    """Package"
+    ;; ("p p" "update"                      )
+    ("p l" "load variables"             tlon-bae-load-variables)
+    ("p v" "version"                    tlon-bae-version)
+    ]
+   ["Add"
+    ("a a" "to glossary"                tlon-bae-add-to-glossary)
+    ("a w" "to work correspondence"     tlon-bae-add-to-work-correspondece)
+    """Search"
+    ("s s" "repo"                       tlon-bae-search-github)
+    ("s m" "multi"                      tlon-bae-search-multi)
+    ]
+   ["Open file"
+    ("f f" "counterpart"                tlon-bae-open-counterpart)
+    ("f g" "Glossary.csv"               tlon-bae-open-glossary)
+    ("f w" "work-correspondence.csv"    tlon-bae-open-work-correspondence)
+    ("f t" "tag-correspondence.csv"     tlon-bae-open-tag-correspondence)
+    ("f s" "tag-slugs.txt"              tlon-bae-open-tag-slugs)
+    ("f r" "readme.md"                  tlon-bae-open-readme)
+    ]
+   ["Open directory"
+    ("d d" "repo"                       tlon-bae-open-repo)
+    ("d P" "originals > posts"          tlon-bae-open-originals-posts)
+    ("d T" "originals > tags"           tlon-bae-open-originals-tags)
+    ("d p" "translations > posts"       tlon-bae-open-translations-posts)
+    ("d t" "translations > tags"        tlon-bae-open-translations-tags)
+    ("d e" "etc"                        tlon-bae-open-etc)
+    ]
+   ]
+  )
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
