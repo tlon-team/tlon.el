@@ -1058,8 +1058,6 @@ determine an appropriate action from the topic's label."
 					     (s-truncate (- vc-git-log-edit-summary-max-len 25) original))))
     (call-interactively #'magit-push-current-to-pushremote)))
 
-
-(global-set-key (kbd "H-D") 'tlon-bae-dwim)
 (defmacro tlon-bae-create-file-opening-command (file-path)
   "Create a command to open file in FILE-PATH."
   (let* ((file-base (downcase (file-name-base file-path)))
