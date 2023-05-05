@@ -1086,6 +1086,21 @@ If DIR-PATH is nil, create a command to open the BAE repository."
        (find-file (file-name-concat
 		   ps/dir-tlon-biblioteca-altruismo-eficaz
 		   ,dir-path)))))
+
+(tlon-bae-create-file-opening-command "etc/Glossary.csv")
+(tlon-bae-create-file-opening-command "etc/tag-correspondence.csv")
+(tlon-bae-create-file-opening-command "etc/tag-slugs.txt")
+(tlon-bae-create-file-opening-command "etc/work-correspondence.csv")
+(tlon-bae-create-file-opening-command "readme.md")
+
+(tlon-bae-create-dir-opening-command)
+(tlon-bae-create-dir-opening-command "originals/posts")
+(tlon-bae-create-dir-opening-command "originals/tags")
+(tlon-bae-create-dir-opening-command "translations/posts")
+(tlon-bae-create-dir-opening-command "translations/tags")
+(tlon-bae-create-dir-opening-command "etc")
+
+
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
