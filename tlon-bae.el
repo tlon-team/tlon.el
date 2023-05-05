@@ -1042,7 +1042,7 @@ determine an appropriate action from the topic's label."
     (magit-commit-create (list "-m" (format  "Glossary: add \"%s\"" english)))
     (call-interactively #'magit-push-current-to-pushremote)))
 
-(defun tlon-bae-add-to-correspondece (original spanish)
+(defun tlon-bae-add-to-work-correspondece (original spanish)
   "Add a new entry to the correspondece file for ORIGINAL and SPANISH terms."
   (interactive "sOriginal: \nsSpanish: ")
   (let ((glossary (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Correspondence.csv"))
