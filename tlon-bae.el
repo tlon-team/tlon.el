@@ -814,7 +814,7 @@ request. If PULLREQ is `close', close pull request."
   (other-window 1)
   (consult-ripgrep ps/dir-tlon-biblioteca-altruismo-eficaz search-string))
 
-(defun tlon-bae-commit-and-push (&optional prefix file)
+(defun tlon-bae-commit-and-push (prefix file)
   "Commit and push changes in BAE repo.
 As commit message, use 'PREFIX FILE'. Unless PREFIX is specified,
 prompt user to select between 'Translate', 'Revise' and 'Review'.
