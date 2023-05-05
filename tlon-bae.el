@@ -385,7 +385,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-get-translation-file (original-file)
   "Return file that translates ORIGINAL-FILE."
-  (alist-get original-file tlon-bae-english-spanish-correspondence nil nil #'equal))
+  (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal))
 
 (defun tlon-bae-get-original-file (translation-file)
   "Return file that TRANSLATION-FILE translates."
