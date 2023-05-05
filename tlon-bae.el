@@ -663,10 +663,7 @@ the `originals/tags' directory."
 				  label assignee)))
 	(let ((label "Awaiting publication")
 	      (assignee ""))
-	  (tlon-bae-act-on-topic original-file
-				 label
-				 assignee
-				 'close)
+	  (tlon-bae-act-on-topic original-file label assignee 'close)
 	  (setq delete-branch-p t)
 	  (setq message "Since no changes were made to the file, no pull request was created. ")
 	  (sit-for 5)))
