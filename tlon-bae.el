@@ -474,6 +474,11 @@ the `originals/tags' directory."
 
 ;;; Main functions
 
+(defun tlon-bae-magit-status ()
+  "Show the status of the BAE repository in a buffer."
+  (interactive)
+  (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz))
+
 (defun tlon-bae-dwim ()
   "Initialize or finalize process based on clocked task."
   (interactive)
@@ -715,7 +720,7 @@ the `originals/tags' directory."
   (github-review-comment)
   (save-buffer)
   (kill-buffer)
-  (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
+  (tlon-bae-magit-status)
   (let ((branch "main"))
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
@@ -752,7 +757,7 @@ the `originals/tags' directory."
 	(tlon-bae-set-paths)
       (let ((topic (format "Job: `%s`" original-file))
 	    (clocked-label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
-	(magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
+	(tlon-bae-magit-status)
 	(magit-section-show-level-3-all)
 	(goto-char (point-min))
 	(if (search-forward topic nil t)
@@ -782,7 +787,7 @@ the `originals/tags' directory."
 If PULLREQ is `convert', convert the existing issue into a pull
 request. If PULLREQ is `close', close pull request."
   (let ((topic (format "Job: `%s`" original-file)))
-    (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
+    (tlon-bae-magit-status)
     (magit-section-show-level-3-all)
     (goto-char (point-min))
     (if (search-forward topic nil t)
@@ -1104,6 +1109,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
   "Dispatch a `tlon-bae' command."
   [["Main"
     ("r" "dwim"                         tlon-bae-dwim)
+    ("m" "magit"                         tlon-bae-magit-status)
     ("n" "forge"                        tlon-bae-forge)
     """Package"
     ;; ("p p" "update"                      )
