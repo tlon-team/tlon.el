@@ -1037,6 +1037,7 @@ determine an appropriate action from the topic's label."
       (goto-char (point-min))
       (flush-lines "^$")
       (save-buffer))
+    (magit-pull-from-upstream nil)
     (magit-stage-file glossary)
     (magit-commit-create (list "-m" (format  "Glossary: add \"%s\"" english)))
     (call-interactively #'magit-push-current-to-pushremote)))
