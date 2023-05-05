@@ -315,6 +315,8 @@ and converted to Markdown with Pandoc using `pandoc -s
 		 (format "https://forum.effectivealtruism.org/topics/%s" slug)))
   (message "Variables loaded."))
 
+(tlon-bae-load-variables)
+
 (defun tlon-bae-insert-tag-slug ()
   "Insert an EA Wiki slug at point."
   (interactive)
