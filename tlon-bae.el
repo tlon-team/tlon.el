@@ -1071,6 +1071,21 @@ determine an appropriate action from the topic's label."
        (find-file (file-name-concat
 		   ps/dir-tlon-biblioteca-altruismo-eficaz
 		   ,file-path)))))
+
+(defmacro tlon-bae-create-dir-opening-command (&optional dir-path)
+  "Create a command to open file in DIR-PATH.
+If DIR-PATH is nil, create a command to open the BAE repository."
+  (let* ((dir-path-hyphenated (when dir-path
+				(s-replace "/" "-" dir-path)))
+	 (command-name (if dir-path
+			   (intern (concat "tlon-bae-open-" dir-path-hyphenated))
+			 'tlon-bae-open-repo)))
+    `(defun ,command-name ()
+       ,(format "Open `%s'." dir-path)
+       (interactive)
+       (find-file (file-name-concat
+		   ps/dir-tlon-biblioteca-altruismo-eficaz
+		   ,dir-path)))))
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
