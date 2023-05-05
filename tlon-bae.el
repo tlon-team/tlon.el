@@ -39,6 +39,12 @@
   (interactive)
   (message "`tlon-bae' version %s" tlon-bae-version))
 
+(defun tlon-bae-forge ()
+  "Launch the Forge dispatcher in the BAE directory."
+  (interactive)
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (call-interactively 'forge-dispatch)))
+
 ;;; File processing
 (defun tlon-bae-format-file (&optional title extension tag)
   "Return a file name based on user supplied information.
