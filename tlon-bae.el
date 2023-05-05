@@ -551,7 +551,7 @@ the `originals/tags' directory."
     (cl-multiple-value-bind
 	(original-path translation-path original-file translation-file)
 	(tlon-bae-set-paths)
-      (tlon-bae-check-unstaged)
+      (tlon-bae-check-staged-or-unstaged translation-path)
       (let ((topic (tlon-bae-get-clock-topic)))
 	(tlon-bae-set-windows original-path translation-path)
 	(when (magit-branch-p translation-file)
@@ -682,6 +682,7 @@ the `originals/tags' directory."
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
     (tlon-bae-check-branch translation-file)
+    (tlon-bae-check-staged-or-unstaged translation-path)
     (let* ((target-branch "main")
 	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-biblioteca-altruismo-eficaz)))
       (fill-region (point-min) (point-max))
@@ -767,11 +768,13 @@ the `originals/tags' directory."
 	      t)
 	  (user-error "No topic found for %s" original-file))))))
 
-(defun tlon-bae-check-unstaged ()
-  "Check that the BAE repo has no unstaged changes."
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (when (magit-anything-staged-p)
-      (user-error "There are staged changes. Please stash or commit them first"))))
+(defun tlon-bae-check-staged-or-unstaged (filename)
+  "Check if there are staged or unstaged changes in repo not involving FILENAME."
+  (let* ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
+	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
+	 (filtered-changes (magit-git-str "diff" "HEAD" "--" filename)))
+    (unless (string= all-changes filtered-changes)
+      (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
 
 (defun tlon-bae-act-on-topic (original-file label assignee &optional pullreq)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
@@ -818,7 +821,7 @@ prompt user to select between 'Translate', 'Revise' and 'Review'.
 Unless FILE is specified, use the name of the current buffer."
   (interactive)
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (tlon-bae-check-unstaged)
+    (tlon-bae-check-staged-or-unstaged file)
     (when (string= (magit-get-current-branch) "main")
       (magit-pull-from-upstream nil)
       (sleep-for 2))
