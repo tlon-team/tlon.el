@@ -705,7 +705,7 @@ the `originals/tags' directory."
       (sleep-for 3)
       (let ((label "Awaiting publication")
 	    (assignee ""))
-	(tlon-bae-act-on-topic original-file label assignee 'close)
+	(tlon-bae-act-on-topic original-file label assignee)
 	(call-interactively (lambda! (magit-branch-delete (list (concat "origin/" translation-file)))))
 	(revert-buffer t t)
 	(org-clock-goto)
