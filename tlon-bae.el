@@ -32,8 +32,7 @@
 (require 'transient)
 
 ;;; Version
-(defvar tlon-bae-version "0.1.5"
-  "Version of the Tlön BAE package.")
+(setq tlon-bae-version "0.1.5")
 
 (defun tlon-bae-version ()
   "Return the version of the Tlön BAE package."
