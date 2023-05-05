@@ -29,6 +29,7 @@
 (require 'org)
 (require 'cl-lib)
 (require 'github-review)
+(require 'transient)
 
 ;;; Version
 (defvar tlon-bae-version "0.1.3"
