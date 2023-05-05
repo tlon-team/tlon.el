@@ -34,6 +34,11 @@
 (defvar tlon-bae-version "0.1.3"
   "Version of the Tlön BAE package.")
 
+(defun tlon-bae-version ()
+  "Return the version of the Tlön BAE package."
+  (interactive)
+  (message "`tlon-bae' version %s" tlon-bae-version))
+
 ;;; File processing
 (defun tlon-bae-format-file (&optional title extension tag)
   "Return a file name based on user supplied information.
