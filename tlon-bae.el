@@ -778,10 +778,10 @@ the `originals/tags' directory."
     (unless (string= all-changes filtered-changes)
       (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
 
-(defun tlon-bae-act-on-topic (original-file label assignee &optional pullreq)
+(defun tlon-bae-act-on-topic (original-file label assignee &optional action)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
-If PULLREQ is `convert', convert the existing issue into a pull
-request. If PULLREQ is `close', close pull request."
+If ACTION is `convert', convert the existing issue into a pull
+request. If ACTION is `close', close issue."
   (let ((topic (format "Job: `%s`" original-file)))
     (tlon-bae-magit-status)
     (magit-section-show-level-3-all)
@@ -794,9 +794,9 @@ request. If PULLREQ is `close', close pull request."
 	    (funcall (car elt) (cadr elt))
 	    (goto-char (point-min)))
 	  (search-forward topic nil t)
-	  (pcase pullreq
+	  (pcase action
 	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
-	    ;; (`close (call-interactively 'forge-edit-topic-state))
+	    (`close (call-interactively 'forge-edit-topic-state))
 	    ))
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
