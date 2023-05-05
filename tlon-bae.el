@@ -389,7 +389,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-get-original-file (translation-file)
   "Return file that TRANSLATION-FILE translates."
-  (cl-loop for (key . val) in tlon-bae-english-spanish-correspondence
+  (cl-loop for (key . val) in tlon-bae-tag-correspondence
 	   when (equal val translation-file)
 	   return key))
 
@@ -461,7 +461,7 @@ the `originals/tags' directory."
 	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags"))
 	    (translation-path (file-name-concat translation-dir translation-file)))
       (cl-values original-path translation-path original-file translation-file)
-    (user-error "I wasn't able to find `%s' in `tlon-bae-english-spanish-correspondence'" original-file)))
+    (user-error "I wasn't able to find `%s' in `tlon-bae-tag-correspondence'" original-file)))
 
 (defun tlon-bae-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
