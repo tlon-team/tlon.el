@@ -727,12 +727,6 @@ the `originals/tags' directory."
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
 
-(defun tlon-bae-update-and-reload ()
-  "Update and rebuild `tlon'."
-  (interactive)
-  (elpaca-update 'tlon t)
-  (load-library "tlon"))
-
 ;;; Checking
 
 (defun tlon-bae-check-branch (branch)
