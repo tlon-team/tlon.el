@@ -1060,6 +1060,17 @@ determine an appropriate action from the topic's label."
 
 
 (global-set-key (kbd "H-D") 'tlon-bae-dwim)
+(defmacro tlon-bae-create-file-opening-command (file-path)
+  "Create a command to open file in FILE-PATH."
+  (let* ((file-base (downcase (file-name-base file-path)))
+	 (file-name (file-name-nondirectory file-path))
+	 (command-name (intern (concat "tlon-bae-open-" file-base))))
+    `(defun ,command-name ()
+       ,(format "Open `%s'." file-name)
+       (interactive)
+       (find-file (file-name-concat
+		   ps/dir-tlon-biblioteca-altruismo-eficaz
+		   ,file-path)))))
 (define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
 (define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
 
