@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 0.1.5
+;; Version: 0.1.6
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
@@ -32,7 +32,7 @@
 (require 'transient)
 
 ;;; Version
-(setq tlon-bae-version "0.1.5")
+(setq tlon-bae-version "0.1.6")
 
 (defun tlon-bae-version ()
   "Return the version of the Tlön BAE package."
@@ -1028,6 +1028,7 @@ determine an appropriate action from the topic's label."
 (defun tlon-bae-add-to-glossary (english spanish)
   "Add a new entry to the glossary for ENGLISH and SPANISH terms."
   (interactive "sEnglish: \nsSpanish: ")
+  (tlon-bae-check-branch "main")
   (let ((glossary (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Glossary.csv"))
 	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (with-current-buffer (find-file-noselect glossary)
@@ -1044,7 +1045,8 @@ determine an appropriate action from the topic's label."
 (defun tlon-bae-add-to-work-correspondece (original spanish)
   "Add a new entry to the correspondece file for ORIGINAL and SPANISH terms."
   (interactive "sOriginal: \nsSpanish: ")
-  (let ((glossary (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Correspondence.csv"))
+  (tlon-bae-check-branch "main")
+  (let ((glossary (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/work-correspondence.csv"))
 	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (with-current-buffer (find-file-noselect glossary)
       (goto-char (point-max))
