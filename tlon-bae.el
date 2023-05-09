@@ -1139,11 +1139,5 @@ If DIR-PATH is nil, create a command to open the BAE repository."
    ]
   )
 
-;;; key bindings
-(global-set-key (kbd "H-r") 'tlon-bae-dispatch)
-(define-key github-review-mode-map (kbd "s-c") 'tlon-bae-submit-comment-revisions)
-(define-key markdown-mode-map (kbd "s-f") 'tlon-bae-finalize-revision)
-
-
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
