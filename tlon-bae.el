@@ -1090,6 +1090,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 (tlon-bae-create-file-opening-command "etc/tag-correspondence.csv")
 (tlon-bae-create-file-opening-command "etc/tag-slugs.txt")
 (tlon-bae-create-file-opening-command "etc/work-correspondence.csv")
+(tlon-bae-create-file-opening-command "etc/manual.md")
 (tlon-bae-create-file-opening-command "readme.md")
 
 (tlon-bae-create-dir-opening-command)
@@ -1124,6 +1125,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("f w" "work-correspondence.csv"    tlon-bae-open-work-correspondence)
     ("f t" "tag-correspondence.csv"     tlon-bae-open-tag-correspondence)
     ("f s" "tag-slugs.txt"              tlon-bae-open-tag-slugs)
+    ("f m" "manual.md"                  tlon-bae-open-manual)
     ("f r" "readme.md"                  tlon-bae-open-readme)
     ]
    ["Open directory"
