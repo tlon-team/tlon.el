@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 0.1.6
+;; Version: 0.1.7
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
@@ -32,7 +32,7 @@
 (require 'transient)
 
 ;;; Version
-(setq tlon-bae-version "0.1.6")
+(setq tlon-bae-version "0.1.7")
 
 (defun tlon-bae-version ()
   "Return the version of the Tlön BAE package."
@@ -1090,7 +1090,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 (tlon-bae-create-file-opening-command "etc/tag-correspondence.csv")
 (tlon-bae-create-file-opening-command "etc/tag-slugs.txt")
 (tlon-bae-create-file-opening-command "etc/work-correspondence.csv")
-(tlon-bae-create-file-opening-command "etc/manual.md")
+(tlon-bae-create-file-opening-command "etc/manual.org")
 (tlon-bae-create-file-opening-command "readme.md")
 
 (tlon-bae-create-dir-opening-command)
