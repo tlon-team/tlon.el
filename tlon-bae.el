@@ -480,6 +480,14 @@ the `originals/tags' directory."
   (interactive)
   (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz))
 
+(defun ps/tlon-bae-magit-get-filename ()
+  "Get filename of file to be committed."
+  (let ((regex "modified.*/\\(.*\\)\\.md"))
+    (when (eq (count-matches regex) 1)
+      (save-excursion
+	(re-search-forward regex nil t)
+	(match-string-no-properties 1)))))
+
 (defun tlon-bae-dwim ()
   "Initialize or finalize process based on clocked task."
   (interactive)
