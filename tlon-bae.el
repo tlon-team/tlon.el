@@ -731,6 +731,27 @@ the `originals/tags' directory."
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
 
+(defun tlon-bae-read-this ()
+  "Read this buffer."
+  (interactive)
+  (read-aloud-buf)
+  (other-window 1))
+
+(defun tlon-bae-read-other ()
+  "Read this buffer."
+  (interactive)
+  (save-window-excursion
+    (other-window 1)
+    (read-aloud-buf)))
+
+(defun tlon-bae-read-stop ()
+  "Stop reading."
+  (interactive)
+  (other-window 1)
+  (sleep-for 0.5)
+  (read-aloud-stop)
+  (other-window 1))
+
 ;;; Checking
 
 (defun tlon-bae-check-branch (branch)
