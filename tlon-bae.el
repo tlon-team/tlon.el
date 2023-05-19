@@ -1097,7 +1097,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("f w" "work-correspondence.csv"    tlon-bae-open-work-correspondence)
     ("f t" "tag-correspondence.csv"     tlon-bae-open-tag-correspondence)
     ("f s" "tag-slugs.txt"              tlon-bae-open-tag-slugs)
-    ("f m" "manual.md"                  tlon-bae-open-manual)
+    ("f m" "manual.md"                  tlon-bae-open-bae)
     ("f r" "readme.md"                  tlon-bae-open-readme)
     ]
    ["Open directory"
