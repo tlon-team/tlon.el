@@ -326,53 +326,58 @@ and converted to Markdown with Pandoc using `pandoc -s
   (interactive)
   (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
-(defun tlon-bae-open-counterpart ()
-  (interactive)
+(defun tlon-bae-get-counterpart ()
+  "Get the counterpart of the current file."
   (let* ((current-file (buffer-file-name))
-         (current-dir (file-name-directory current-file))
-         (current-file-name (file-name-nondirectory current-file))
-         (correspondence-alist (cond
-                                ((string-match "/originals/posts/" current-dir)
-                                 tlon-bae-post-correspondence)
-                                ((string-match "/originals/tags/" current-dir)
-                                 tlon-bae-tag-correspondence)
-                                ((string-match "/translations/posts/" current-dir)
-                                 (mapcar (lambda (pair) (cons (cdr pair) (car pair))) tlon-bae-post-correspondence))
-                                ((string-match "/translations/tags/" current-dir)
-                                 (mapcar (lambda (pair) (cons (cdr pair) (car pair))) tlon-bae-tag-correspondence))))
-         (new-file-name (cdr (assoc current-file-name correspondence-alist))))
-    (if new-file-name
-        (let* ((new-dir (if (string-match "/originals/" current-dir)
-                            (replace-regexp-in-string "/originals/" "/translations/" current-dir)
-                          (replace-regexp-in-string "/translations/" "/originals/" current-dir)))
-               (new-file (expand-file-name new-file-name new-dir)))
-          (find-file new-file)
-          (message "Switched to corresponding file: %s" new-file))
-      (message "No corresponding file found."))))
+	 (current-dir (file-name-directory current-file))
+	 (current-file-name (file-name-nondirectory current-file))
+	 (correspondence-alist (cond
+				((string-match "/originals/posts/" current-dir)
+				 tlon-bae-post-correspondence)
+				((string-match "/originals/tags/" current-dir)
+				 tlon-bae-tag-correspondence)
+				((string-match "/translations/posts/" current-dir)
+				 (mapcar (lambda (pair) (cons (cdr pair) (car pair))) tlon-bae-post-correspondence))
+				((string-match "/translations/tags/" current-dir)
+				 (mapcar (lambda (pair) (cons (cdr pair) (car pair))) tlon-bae-tag-correspondence)))))
+    (when-let ((new-file-name (cdr (assoc current-file-name correspondence-alist)))
+	       (new-dir (if (string-match "/originals/" current-dir)
+			    (replace-regexp-in-string "/originals/" "/translations/" current-dir)
+			  (replace-regexp-in-string "/translations/" "/originals/" current-dir))))
+      (expand-file-name new-file-name new-dir))))
+
+(defun tlon-bae-open-counterpart ()
+  "Open the counterpart of the current file."
+  (interactive)
+  (if-let ((new-file (tlon-bae-get-counterpart)))
+      (progn
+	(find-file new-file)
+	(message "Switched to corresponding file: %s" new-file))
+    (user-error "No corresponding file found")))
 
 ;;; Clocked heading
 
-    (defun tlon-bae-get-clock-file ()
-      "Return file name in clocked heading.
+(defun tlon-bae-get-clock-file ()
+  "Return file name in clocked heading.
 Assumes file name is enclosed in backticks."
-      (unless org-clock-current-task
-	(user-error "No clock running"))
-      (let ((clock (substring-no-properties org-clock-current-task)))
-	(if (string-match "`\\(.+?\\)`" clock)
-	    (match-string 1 clock)
-	  (user-error "I wasn't able to find a file in clocked heading"))))
+  (unless org-clock-current-task
+    (user-error "No clock running"))
+  (let ((clock (substring-no-properties org-clock-current-task)))
+    (if (string-match "`\\(.+?\\)`" clock)
+	(match-string 1 clock)
+      (user-error "I wasn't able to find a file in clocked heading"))))
 
-    (defun tlon-bae-get-clock-topic ()
-      "Get topic GID from `orgit-forge' link in heading at point."
-      (unless org-clock-heading
-	(user-error "No clock running"))
-      (save-excursion
-	(org-clock-goto)
-	(org-narrow-to-subtree)
-	(when (re-search-forward org-link-bracket-re)
-	  (let ((raw-link (org-link-unescape (match-string-no-properties 1))))
-	    (string-match "orgit-topic:\\(.+\\)" raw-link)
-	    (match-string 1 raw-link)))))
+(defun tlon-bae-get-clock-topic ()
+  "Get topic GID from `orgit-forge' link in heading at point."
+  (unless org-clock-heading
+    (user-error "No clock running"))
+  (save-excursion
+    (org-clock-goto)
+    (org-narrow-to-subtree)
+    (when (re-search-forward org-link-bracket-re)
+      (let ((raw-link (org-link-unescape (match-string-no-properties 1))))
+	(string-match "orgit-topic:\\(.+\\)" raw-link)
+	(match-string 1 raw-link)))))
 
 (defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
@@ -482,11 +487,22 @@ the `originals/tags' directory."
 
 (defun ps/tlon-bae-magit-get-filename ()
   "Get filename of file to be committed."
-  (let ((regex "modified.*/\\(.*\\)\\.md"))
-    (when (eq (count-matches regex) 1)
-      (save-excursion
-	(re-search-forward regex nil t)
-	(match-string-no-properties 1)))))
+  (save-window-excursion
+    (let (found)
+      (catch 'done
+	(mapc (lambda (x)
+		(when (with-current-buffer x (eq major-mode 'magit-diff-mode))
+		  (switch-to-buffer x)
+		  (setq found t)
+		  (throw 'done nil)))
+	      (buffer-list))
+	(unless found
+	  (user-error "Magit buffer not found"))))
+    (let ((regex "modified.*/\\(.*\\)\\.md"))
+      (when (eq (count-matches regex) 1)
+	(save-excursion
+	  (re-search-forward regex nil t)
+	  (match-string-no-properties 1))))))
 
 (defun tlon-bae-dwim ()
   "Initialize or finalize process based on clocked task."
