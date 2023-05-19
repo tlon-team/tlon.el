@@ -897,63 +897,6 @@ Note that this only works for topics listed in the main buffer."
      repo topic
      (list assignee))))
 
-;; 0th stage of process
-(defun tlon-bae-label-awaiting-processing-and-assign-to-pablo ()
-  "Label topic at point 'Awaiting processing' and assign it to Pablo."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting processing")
-  (tlon-bae-make-assignee "benthamite"))
-
-;; 1st stage of process
-(defun tlon-bae-label-awaiting-translation-and-assign-to-leo ()
-  "Label topic at point 'Awaiting translation' and it assign to Leo."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting translation")
-  (tlon-bae-make-assignee "worldsaround"))
-
-;; 2nd stage of process
-(defun tlon-bae-label-awaiting-revision-and-assign-to-pablo ()
-  "Label topic at point 'Awaiting revision' and assign it to Pablo."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting revision")
-  (tlon-bae-make-assignee "benthamite"))
-
-;; 3rd stage of process
-(defun tlon-bae-label-awaiting-review-and-assign-to-leo ()
-  "Label topic at point 'Awaiting review' and it assign to Leo."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting review")
-  (tlon-bae-make-assignee "worldsaround"))
-
-;; 4th stage of process
-(defun tlon-bae-label-awaiting-publication ()
-  "Label topic at point 'Awaiting publication'."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting publication"))
-
-;; obsolete
-(defun tlon-bae-label-awaiting-publication-and-assign-to-fede ()
-  "Label topic at point 'Awaiting publication'."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting publication")
-  (tlon-bae-make-assignee "fstafforini"))
-
-(make-obsolete 'tlon-bae-label-awaiting-publication-and-assign-to-fede
-	       'tlon-bae-label-awaiting-publication
-	       "2023-04-26.")
-
-(defun tlon-bae-label-awaiting-rewrite-and-assign-to-pablo ()
-  "Label topic at point 'Awaiting rewrite' and it assign to Pablo."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting rewrite")
-  (tlon-bae-make-assignee "benthamite"))
-
-(defun tlon-bae-label-awaiting-import-and-assign-to-pablo ()
-  "Label topic at point 'Awaiting import' and assign it to Pablo."
-  (interactive)
-  (tlon-bae-apply-label "Awaiting import")
-  (tlon-bae-make-assignee "benthamite"))
-
 ;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
 ;; It differs from that function only in that it returns the selection
 ;; rather than submitting it.
