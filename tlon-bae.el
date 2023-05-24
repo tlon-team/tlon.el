@@ -1128,9 +1128,18 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("e e" "Read other"                 tlon-bae-read-other)
     ("e t" "Read this"              tlon-bae-read-this)
     ("e r" "Read stop"           tlon-bae-read-stop)
+    """Browse"
+    ("b b" "Browse file"                tlon-bae-browse-file)
     ]
    ]
   )
+
+(defun tlon-bae-browse-file ()
+  "Browse the current file in the BAE repository."
+  (interactive)
+  (let* ((url-suffix (file-relative-name (buffer-file-name) ps/dir-tlon-biblioteca-altruismo-eficaz))
+	 (url-prefix "https://github.com/tlon-team/biblioteca-altruismo-eficaz/blob/main/"))
+    (browse-url (concat url-prefix url-suffix))))
 
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
