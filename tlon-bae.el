@@ -119,6 +119,11 @@ Prompt the user for bibliographic information and create a new
   (let ((file (tlon-bae-format-file extension)))
     (find-file file)))
 
+(defun tlon-bae-shorten-title (title)
+  "Return a shortened version of TITLE."
+  (string-match "\\([[:alnum:] '‘’“”\"]*\\)" title)
+  (match-string 1 title))
+
 (defvar tlon-bae-markdown-eawiki-footnote-source
   "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
   "Regexp to match footnotes in the main body.")
