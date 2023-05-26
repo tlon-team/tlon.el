@@ -1042,6 +1042,12 @@ If the topic has more than one assignee, return the first."
     ("benthamite" . "Pablo Stafforini"))
   "Alist of GitHub usernames and corresponding full names.")
 
+(defun tlon-bae-find-key-in-alist (value alist)
+  "Find the corresponding key for a VALUE in ALIST."
+  (let ((pair (cl-find-if (lambda (x) (equal (cdr x) value)) alist)))
+    (when pair
+      (car pair))))
+
 (defun tlon-bae-topic-label-match (label)
   "Return a suitable action for the LABEL of topic at point.
 The function relies on the alist `tlon-bae-label-actions' to
