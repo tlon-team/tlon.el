@@ -55,6 +55,26 @@
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (call-interactively 'forge-dispatch)))
 
+(defun tlon-bae-orgit-capture ()
+  "Capture a new Magit/Forge task."
+  (interactive)
+  (let ((topic-assignee (alist-get
+                         (tlon-bae-forge-get-assignee-at-point)
+                         tlon-bae-users nil nil 'string=)))
+    (unless (string= user-full-name topic-assignee)
+      (if (y-or-n-p (format "The assignee of this topic is %s. Would you like to become the assignee? " topic-assignee))
+	  (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users))
+	(user-error "Aborted")))
+    (orgit-store-link nil)
+    (if-let* ((org-link (ps/org-nth-stored-link 0))
+              (label (tlon-bae-forge-get-label-at-point))
+              (action (alist-get label tlon-bae-label-actions nil nil #'string=))
+              (binding (upcase (alist-get label tlon-bae-label-bindings nil nil #'string=))))
+	(progn
+	  (kill-new (format "%s %s" action org-link))
+	  (org-capture nil (concat "tb" binding)))
+      (user-error "The topic appears to have no label"))))
+
 ;;; File processing
 (defun tlon-bae-format-file (&optional title extension tag)
   "Return a file name based on user supplied information.
