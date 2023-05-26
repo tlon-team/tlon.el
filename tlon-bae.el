@@ -490,10 +490,11 @@ the `originals/tags' directory."
     (message "The contents of `%s' have been copied to the to kill ring. You may now paste them into the DeepL editor."
 	     (file-name-nondirectory file))))
 
-(defun tlon-bae-set-paths ()
+(defun tlon-bae-set-paths (&optional original-file)
   "Return paths for original and translation files."
-  (if-let* ((original-file (tlon-bae-get-clock-file))
-	    (original-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/tags"))
+  (if-let* ((original-file (or original-file (tlon-bae-get-clock-file)))
+	    (type (if (string-match "tag--" original-file) "tags/" "posts/"))
+	    (original-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/" type))
 	    (original-path (file-name-concat original-dir original-file))
 	    (translation-file (tlon-bae-get-translation-file original-file))
 	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags"))
