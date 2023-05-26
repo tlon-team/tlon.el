@@ -101,13 +101,14 @@ non-nil, use `translatons' in the file path."
 If EXTENSION is not provided, markdown is used."
   (interactive)
   (let* ((source-file-path (dired-get-filename))
-	 (file (cl-nth-value 0 (tlon-bae-format-file extension))))
+	 (target-file-name (file-name-nondirectory (tlon-bae-format-file extension)))
+	 (target-file-path (file-name-concat
+			    (file-name-directory source-file-path)
+			    target-file-name)))
     (rename-file
      source-file-path
-     (file-name-concat
-      (file-name-directory source-file-path)
-      file)))
-  (revert-buffer))
+     target-file-path)
+    (revert-buffer)))
 
 (defun tlon-bae-create-file (&optional extension)
   "Create a new file based on user-supplied information.
