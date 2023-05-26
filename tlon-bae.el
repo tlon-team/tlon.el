@@ -951,6 +951,18 @@ Note that this only works for topics listed in the main buffer."
      repo topic
      (list assignee))))
 
+(defun tlon-bae-create-job (&optional file-name assignee)
+  "Create a new issue for FILE-NAME and assign it to ASSIGNEE."
+  (interactive)
+  (let* ((file-name (file-name-nondirectory
+		     (or file-name
+			 (read-string "File name: " (file-name-nondirectory (buffer-file-name))))))
+	 (job-name (format "Job: `%s`" file-name))
+	 (default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (forge-create-issue)
+    (insert job-name)
+    (forge-post-submit)))
+
 ;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
 ;; It differs from that function only in that it returns the selection
 ;; rather than submitting it.
