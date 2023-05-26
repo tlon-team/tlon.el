@@ -39,6 +39,16 @@
   (interactive)
   (message "`tlon-bae' version %s" tlon-bae-version))
 
+(defun tlon-bae-update ()
+  "Update `tlon-bae' package."
+  (interactive)
+  (let* ((default-directory (file-name-concat user-emacs-directory "elpaca/repos/tlon-bae/"))
+	 (tlon-bae-file (file-name-concat default-directory "tlon-bae.el")))
+    (shell-command "git pull")
+    (with-current-buffer (find-file-noselect tlon-bae-file)
+      (eval-buffer)))
+  (message "Package updated. %s" tlon-bae-version))
+
 (defun tlon-bae-forge ()
   "Launch the Forge dispatcher in the BAE directory."
   (interactive)
