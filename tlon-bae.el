@@ -613,7 +613,7 @@ the `originals/tags' directory."
   (tlon-bae-check-branch "main")
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-file)
-  (let ((translator (completing-read "Who should translate this document? " '("benthamite" "worldsaround"))))
+  (let ((translator (tlon-bae-select-assignee)))
     (cl-multiple-value-bind
 	(original-path translation-path original-file)
 	(tlon-bae-set-paths)
@@ -821,8 +821,8 @@ request. If ACTION is `close', close issue."
     (goto-char (point-min))
     (if (search-forward topic nil t)
 	(progn
-	  (dolist (elt `((tlon-bae-apply-label ,label)
-			 (tlon-bae-make-assignee ,assignee)))
+	  (dolist (elt `((tlon-bae-set-label ,label)
+			 (tlon-bae-set-assignee ,assignee)))
 	    (search-forward topic nil t)
 	    (funcall (car elt) (cadr elt))
 	    (goto-char (point-min)))
@@ -883,19 +883,37 @@ Unless PREFIX is specified, prompt user to select between
 
 ;;; Change topic properties
 
-(defun tlon-bae-apply-label (label)
+(defun tlon-bae-select-label ()
+  "Prompt the user to select a LABEL."
+  (let ((label (completing-read "Who should be the assignee? "
+				tlon-bae-label-actions)))
+    label))
+
+(defun tlon-bae-set-label (label)
   "Apply LABEL to topic at point.
 Note that this only works for topics listed in the main buffer."
-  (interactive)
+  (interactive
+   (list (tlon-bae-select-label)))
   (let* ((topic (forge-get-topic (forge-topic-at-point)))
 	 (repo  (forge-get-repository topic))
 	 (crm-separator ","))
     (forge--set-topic-labels
      repo topic (list label))))
 
-(defun tlon-bae-make-assignee (assignee)
-  "Edit ASSIGNEE the assignee of topic at point."
-  (interactive)
+(defun tlon-bae-select-assignee ()
+  "Prompt the user to select an ASSIGNEE.
+The prompt defaults to the current user."
+  (let ((assignee (completing-read "Who should be the assignee? "
+				   tlon-bae-users nil nil
+				   (tlon-bae-find-key-in-alist
+				    user-full-name
+				    tlon-bae-users))))
+    assignee))
+
+(defun tlon-bae-set-assignee (assignee)
+  "Make ASSIGNEE the assignee of topic at point."
+  (interactive
+   (list (tlon-bae-select-assignee)))
   (let* ((topic (forge-get-topic (forge-topic-at-point)))
 	 (repo  (forge-get-repository topic))
 	 (value (closql--iref topic 'assignees))
