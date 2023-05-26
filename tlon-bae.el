@@ -133,40 +133,9 @@ Prompt the user for bibliographic information and create a new
   "Regexp to match footnotes in the main body.")
 
 (defvar tlon-bae-markdown-eawiki-footnote-target
-  "\\([[:digit:]]\\{1,2\\}\\). *?\\[\\[^\\*\\*\\[\\\\^\\](#.+?)\\*\\*^\\]{\\.footnote-back-link}\\]{#.+?}
+  "\\([[:digit:]]\\{1,3\\}\\). +?\\[\\[^\\*\\*\\[\\\\^\\](#[[:alnum:]]\\{12,18\\})\\*\\*^\\]\\]{#[[:alnum:]]\\{10,15\\}}
 
-    ::: footnote-content"
-
-  "Regexp to match footnotes in the footnote section.")
-
-(defvar tlon-bae-markdown-eawiki-footnote-target2
-  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[^\\*\\*\\[\\\\^\\](#.+?)\\*\\*^\\]{\..+?}\\]{#.+?}
-
-    ::: footnote-content "
-  "Regexp to match footnotes in the footnote section.")
-
-(defvar tlon-bae-markdown-eawiki-footnote-target3
-  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[\\^\\*\\*\\[\\\\\\^\\](\\\\%22#.+?\\\\%22)\\*\\*\\^\\]{\\.\\\\\\\\\\\\\"footnote-back-link\\\\\\\\\\\\\"}\\]{#\\\\\\\\\\\\\\\".+?\\\\\\\\\\\\\\\"}
-
-    ::: \\\\\"footnote-content\\\\\" "
-  "Regexp to match footnotes in the footnote section.")
-
-(defvar tlon-bae-markdown-eawiki-footnote-target4
-  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[^\\*\\*\\[\\\\^\\](.+?)\\*\\*^\\]\\]{#.+?}
-
-    footnote-content "
-  "Regexp to match footnotes in the footnote section.")
-
-(defvar tlon-bae-markdown-eawiki-footnote-target5
-  "\\([[:digit:]]\\{1,2\\}\\)\\. *?\\[\\[^\\*\\*\\[\\\\^\\](#.+?)\\*\\*^\\]\\]{#.+?}
-
-    footnote-content "
-  "Regexp to match footnotes in the footnote section.")
-
-(defvar tlon-bae-markdown-eawiki-footnote-target6
-  "\\([[:digit:]]\\)\\.  \\[\\[\\^\\*\\*\\[\\\\\\^\\](.+?)\\*\\*\\^\\]\\]{.+?}
-
- +?footnote-content "
+    footnote-content.*?"
   "Regexp to match footnotes in the footnote section.")
 
 (defvar tlon-markdown-eawiki-links
@@ -177,25 +146,8 @@ Prompt the user for bibliographic information and create a new
   "\\\\\\\\\\\\\""
   "Regexp to match escaped quotes.")
 
-(defun tlon-bae-markdown-eawiki-cleanup (&optional buffer)
-  "Cleanup the buffer visiting an EA Wiki entry.
-Assumes that the entry was imported using the GraphQL query below
-and converted to Markdown with Pandoc using `pandoc -s
-[source.html] -t markdown -o [destination.md]'.
-
-`{
-  tag(input:{selector:{slug:\"[slug]\"}}) {
-    result {
-      name
-      description {
-	html
-      }
-      parentTag {
-	name
-      }
-    }
-  }
-}'"
+(defun tlon-bae-markdown-eaf-cleanup (&optional buffer)
+  "Cleanup the buffer visiting an EA Wiki entry."
   (interactive)
   (when (not (eq major-mode 'markdown-mode))
     (user-error "Not in a Markdown buffer"))
@@ -205,38 +157,20 @@ and converted to Markdown with Pandoc using `pandoc -s
     (while (re-search-forward "{.underline}" nil t)
       (replace-match ""))
     (goto-char (point-min))
+    ;; remove extra pair of square brackets in links
+    (while (re-search-forward "\\[\\[\\(.*?\\)\\]\\](" nil t)
+      (replace-match (format "[%s](" (match-string 1))))
+    (goto-char (point-min))
+    ;; remove asterisks surrounding links
+    (while (re-search-forward " ??\\* ??\\[\\*\\[\\(.*?\\)\\]\\*\\](\\(.*?\\)) ??\\* ??" nil t)
+      (replace-match (format " [%s](%s)" (match-string 1) (match-string 2))))
+    (goto-char (point-min))
+    ;; move double asterisks outside of link
+    (while (re-search-forward "\\[\\*\\*\\[\\(.*?\\)\\]\\*\\*\\](\\(.*?\\))" nil t)
+      (replace-match (format "**[%s](%s)**" (match-string 1) (match-string 2))))
+    (goto-char (point-min))
     (while (re-search-forward "{.footnote-back-link}" nil t)
       (replace-match ""))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-source nil t)
-      (replace-match (format "[^%s] " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-source2 nil t)
-      (replace-match (format "[^%s]: " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target nil t)
-      (replace-match (format "[^%s]: " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target2 nil t)
-      (replace-match (format "[^%s]: " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target3 nil t)
-      (replace-match (format "[^%s]: " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target4 nil t)
-      (replace-match (format "[^%s]: " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target5 nil t)
-      (replace-match (format "[^%s]: " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target6 nil t)
-      (replace-match (format "[^%s]: " (match-string 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-markdown-eawiki-links nil t)
-      (replace-match (format "[%s](%s)" (match-string 1) (match-string 2)) nil t))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-markdown-eawiki-escaped-quotes nil t)
-      (replace-match "\""))
     (goto-char (point-min))
     (while (re-search-forward " " nil t)
       (replace-match " "))
@@ -247,11 +181,26 @@ and converted to Markdown with Pandoc using `pandoc -s
     (while (re-search-forward "{.underline}" nil t)
       (replace-match ""))
     (goto-char (point-min))
-    (while (re-search-forward "{.footnote-back-link}" nil t)
-      (replace-match ""))
+    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-source nil t)
+      (replace-match (format "[^%s] " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-source2 nil t)
+      (replace-match (format "[^%s]: " (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward tlon-bae-markdown-eawiki-footnote-target nil t)
+      (replace-match (format "[^%s]:" (match-string 1))))
+    (goto-char (point-min))
+    (while (re-search-forward tlon-markdown-eawiki-links nil t)
+      (replace-match (format "[%s](%s)" (match-string 1) (match-string 2)) nil t))
+    (goto-char (point-min))
+    (while (re-search-forward tlon-markdown-eawiki-escaped-quotes nil t)
+      (replace-match "\""))
+    (goto-char (point-min))
+    ;; remove double asterisks surrounding headings
+    (while (re-search-forward "# \\*\\*\\(.*\\)\\*\\* *?$" nil t)
+      (replace-match (format "# %s" (match-string 1))))
     (fill-region (point-min) (point-max))
-    (save-buffer)
-    ))
+    (save-buffer)))
 
 (defun tlon-bae-convert-to-markdown ()
   "Convert a file from EA Wiki to Markdown."
