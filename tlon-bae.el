@@ -347,6 +347,39 @@ Prompt the user for bibliographic information and create a new
 	(message "Switched to corresponding file: %s" new-file))
     (user-error "No corresponding file found")))
 
+;;; EAF validation
+
+(defvar tlon-bae-eaf-post-id-regexp
+  "\\([[:alnum:]]\\{17\\}\\)"
+  "Regular expression for validating post IDs.")
+
+(defvar tlon-bae-eaf-tag-slug-regexp
+  "\\([[:alnum:]-]*\\)$"
+  "Regular expression for validating tag slugs.")
+
+(defun tlon-bae-eaf-validate-identifier (entity identifier)
+  "Validate IDENTIFIER for ENTITY.
+Takes a string that can be a URL, a slug, or an ID, and returns a
+post's ID if ENTITY is 'post, or a tag's slug if ENTITY is 'tag."
+  (pcase entity
+    ('post (tlon-bae-eaf-validate-post-id identifier))
+    ('tag (tlon-bae-eaf-validate-tag-slug identifier))
+    (_ (user-error "Invalid entity: %S" entity))))
+
+(defun tlon-bae-eaf-validate-post-id (identifier)
+  "Validate IDENTIFIER as a post ID."
+  (if (or (string-match (format "^%s$" tlon-bae-eaf-post-id-regexp) identifier)
+	  (string-match (format "posts/%s" tlon-bae-eaf-post-id-regexp) identifier))
+      (match-string-no-properties 1 identifier)
+    (user-error "Invalid post ID: %S" identifier)))
+
+(defun tlon-bae-eaf-validate-tag-slug (identifier)
+  "Validate IDENTIFIER as a tag slug."
+  (if (or (string-match (format "^%s" tlon-bae-eaf-tag-slug-regexp) identifier)
+	  (string-match (format "topics/%s" tlon-bae-eaf-tag-slug-regexp) identifier))
+      (match-string-no-properties 1 identifier)
+    (user-error "Invalid tag slug: %S" identifier)))
+
 ;;; Clocked heading
 
 (defun tlon-bae-get-clock-file ()
