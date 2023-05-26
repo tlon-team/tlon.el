@@ -318,6 +318,12 @@ Prompt the user for bibliographic information and create a new
   (interactive)
   (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
+(defun tlon-bae-eaf-id-from-url (url)
+  "Get the EA Forum ID from its URL."
+  (interactive "sURL: ")
+  (string-match ".+?forum.effectivealtruism.org/posts/\\(.*?\\)/" url)
+  (match-string 1 url))
+
 (defun tlon-bae-get-counterpart ()
   "Get the counterpart of the current file."
   (let* ((current-file (buffer-file-name))
