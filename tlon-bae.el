@@ -116,7 +116,7 @@ Prompt the user for bibliographic information and create a new
  file based on it in the current directory. If EXTENSION is not
  provided, markdown is used."
   (interactive)
-  (let ((file (cl-nth-value 0 (tlon-bae-format-file extension))))
+  (let ((file (tlon-bae-format-file extension)))
     (find-file file)))
 
 (defvar tlon-bae-markdown-eawiki-footnote-source
