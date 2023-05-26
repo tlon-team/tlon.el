@@ -739,6 +739,26 @@ the `originals/tags' directory."
     (magit-branch-checkout branch)
     (message "Submitted PR comments and checked out `%s' branch." branch)))
 
+
+;;; TTS
+
+(defun ps/tlon-bae-review-accuracy ()
+  "Review accuracy of translation."
+  (interactive)
+  ;; (tlon-bae-check-label-and-assignee)
+  ;; (tlon-bae-check-branch "main")
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (magit-pull-from-upstream nil)
+    (cl-multiple-value-bind
+	(original-path translation-path original-file translation-file)
+	(tlon-bae-set-paths)
+      (tlon-bae-set-windows original-path translation-path)
+      (goto-char (point-min))
+      (winum-select-window-1)
+      (markdown-preview)
+      (goto-char (point-min))
+      (read-aloud-this))))
+
 (defun tlon-bae-read-this ()
   "Read this buffer."
   (interactive)
