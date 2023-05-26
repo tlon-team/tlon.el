@@ -76,18 +76,25 @@
       (user-error "The topic appears to have no label"))))
 
 ;;; File processing
-(defun tlon-bae-format-file (&optional title extension tag)
+(defun tlon-bae-format-file (&optional title extension tag translation)
   "Return a file name based on user supplied information.
 TITLE is the title of the work. If EXTENSION is not provided, use
-`md'. If TAG is non-nil, use `tag' as lastname."
-  (let* ((lastname (if tag "tag" (read-string "Last name(s) [separated by spaces if more than one author]: ")))
+`md'. If TAG is 'tag, use `tag' as lastname. If TRANSLATION is
+non-nil, use `translatons' in the file path."
+  (let* ((lastname (if (eq tag 'tag)
+		       "tag"
+		     (read-string "Last name(s) [separated by spaces if more than one author]: ")))
 	 (title (or title (read-string "Title: ")))
 	 (slug-lastname (tlon-core-slugify lastname))
 	 (slug-title (tlon-core-slugify title))
-	 (extension (or extension "md")))
-    (cl-values (file-name-with-extension (concat slug-lastname "--" slug-title) extension)
-	       lastname
-	       title)))
+	 (extension (or extension "md"))
+	 (file-name (file-name-with-extension (concat slug-lastname "--" slug-title) extension))
+	 (file-path (file-name-concat
+		     ps/dir-tlon-biblioteca-altruismo-eficaz
+		     (if translation "translations" "originals")
+		     (if (eq tag 'tag) "tags" "posts")
+		     file-name)))
+    file-path))
 
 (defun tlon-bae-rename-file (&optional extension)
   "Rename file at point based on user-supplied information.
