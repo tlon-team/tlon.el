@@ -211,13 +211,13 @@ Prompt the user for bibliographic information and create a new
 			     file
 			     md-file)))))
 
-(defun tlon-bae-cleanup-markdown ()
+(defun tlon-bae-cleanup-markdown-multiple ()
   "Clean up html files imported from EA Wiki."
   (interactive)
   (dolist (file (directory-files "." nil "\\.md$"))
     (with-current-buffer (find-file-noselect file)
       (message "Cleaning up %s" (buffer-name))
-      (tlon-bae-markdown-eawiki-cleanup))))
+      (tlon-bae-markdown-eaf-cleanup))))
 
 ;;; csv and txt parsing
 
