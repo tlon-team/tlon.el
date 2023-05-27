@@ -517,7 +517,7 @@ the `originals/tags' directory."
   (interactive)
   (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz))
 
-(defun ps/tlon-bae-magit-get-filename ()
+(defun tlon-bae-magit-get-filename ()
   "Get filename of file to be committed."
   (save-window-excursion
     (let (found)
@@ -530,6 +530,7 @@ the `originals/tags' directory."
 	      (buffer-list))
 	(unless found
 	  (user-error "Magit buffer not found"))))
+    (goto-char (point-min))
     (let ((regex "modified.*/\\(.*\\)\\.md"))
       (when (eq (count-matches regex) 1)
 	(save-excursion
