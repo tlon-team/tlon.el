@@ -551,6 +551,7 @@ the `originals/tags' directory."
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files from ORIGINAL-FILE."
   (if-let* ((original-path (tlon-bae-set-original-path))
+	    (original-file (file-name-nondirectory original-path))
 	    (translation-file (tlon-bae-get-translation-file (file-name-nondirectory original-path)))
 	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags"))
 	    (translation-path (file-name-concat translation-dir translation-file)))
