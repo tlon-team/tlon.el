@@ -27,8 +27,8 @@
 
 ;;; Code:
 (require 'org)
+(require 'org-clock)
 (require 'cl-lib)
-(require 'github-review)
 (require 'transient)
 
 ;;; Version
@@ -58,50 +58,94 @@
 (defun tlon-bae-orgit-capture ()
   "Capture a new Magit/Forge task."
   (interactive)
-  (let ((topic-assignee (alist-get
-                         (tlon-bae-forge-get-assignee-at-point)
-                         tlon-bae-users nil nil 'string=)))
-    (unless (string= user-full-name topic-assignee)
-      (if (y-or-n-p (format "The assignee of this topic is %s. Would you like to become the assignee? " topic-assignee))
-	  (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users))
+  (let ((assignee (alist-get
+		   (tlon-bae-forge-get-assignee-at-point)
+		   tlon-bae-users nil nil 'string=))
+	(label (tlon-bae-forge-get-label-at-point)))
+    ;; when the topic has neither a label nor an assignee, we offer to
+    ;; process it as a new job
+    (unless (or assignee label)
+      (if (y-or-n-p "Process as a new job? ")
+	  (progn
+	    (tlon-bae-set-initial-label-and-assignee)
+	    (sleep-for 4))
+	(user-error "Aborted")))
+    ;; else we prompt for an assignee...
+    (unless (string= user-full-name assignee)
+      (if (y-or-n-p (format "The assignee of this topic is %s. Would you like to become the assignee? " assignee))
+	  (progn
+	    (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users))
+	    (sleep-for 2))
+	(user-error "Aborted")))
+    ;; ...or for a label
+    (unless label
+      (if (y-or-n-p "The topic has no label. Would you like to add one? ")
+	  (tlon-bae-set-label (tlon-bae-select-label))
+	(tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users))
 	(user-error "Aborted")))
     (orgit-store-link nil)
     (if-let* ((org-link (ps/org-nth-stored-link 0))
-              (label (tlon-bae-forge-get-label-at-point))
-              (action (alist-get label tlon-bae-label-actions nil nil #'string=))
-              (binding (upcase (alist-get label tlon-bae-label-bindings nil nil #'string=))))
+	      (action (alist-get label tlon-bae-label-actions nil nil #'string=))
+	      (binding (upcase (alist-get label tlon-bae-label-bindings nil nil #'string=))))
 	(progn
 	  (kill-new (format "%s %s" action org-link))
 	  (org-capture nil (concat "tb" binding)))
       (user-error "The topic appears to have no label"))))
 
 ;;; File processing
-(defun tlon-bae-format-file (&optional title extension tag translation)
+(defun tlon-bae-generate-file-path (&optional lastname title tag translation)
   "Return a file name based on user supplied information.
-TITLE is the title of the work. If EXTENSION is not provided, use
-`md'. If TAG is 'tag, use `tag' as lastname. If TRANSLATION is
-non-nil, use `translatons' in the file path."
-  (let* ((lastname (if (eq tag 'tag)
-		       "tag"
-		     (read-string "Last name(s) [separated by spaces if more than one author]: ")))
-	 (title (or title (read-string "Title: ")))
+TITLE is the title of the work. If TAG is 'tag, use `tag' as
+lastname. If TRANSLATION is non-nil, use `translatons' in the
+file path."
+  (let* ((tag (or (eq tag 'tag)
+		  (string= lastname "tag")))
+	 (lastname (or lastname (if tag
+				    "tag"
+				  (read-string "Last name [only first author if multi-authored]: "))))
+	 (title (or title (tlon-bae-shorten-title (read-string "Title: "))))
 	 (slug-lastname (tlon-core-slugify lastname))
 	 (slug-title (tlon-core-slugify title))
-	 (extension (or extension "md"))
-	 (file-name (file-name-with-extension (concat slug-lastname "--" slug-title) extension))
+	 (file-name (file-name-with-extension (concat slug-lastname "--" slug-title) "md"))
 	 (file-path (file-name-concat
 		     ps/dir-tlon-biblioteca-altruismo-eficaz
 		     (if translation "translations" "originals")
-		     (if (eq tag 'tag) "tags" "posts")
+		     (if tag "tags" "posts")
 		     file-name)))
     file-path))
 
-(defun tlon-bae-rename-file (&optional extension)
+(defun tlon-bae-copy-file-name ()
+  "Copy the generated file name to the kill ring."
+  (interactive)
+  (let* ((file-path (tlon-bae-generate-file-path))
+	 (filename (file-name-nondirectory file-path)))
+    (kill-new filename)
+    (message "Copied `%s'" filename)))
+
+(defun tlon-bae-eaf-generate-file-path (response)
+  "Docstring."
+  (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-post-get-title response)))
+	 ;; sometimes the 'author' field is empty so we use the 'user' field instead
+	 (identifier (tlon-bae-eaf-get-identifier-from-response response))
+	 (author (or (tlon-bae-eaf-post-get-author response)
+		     (tlon-bae-eaf-post-get-user response)))
+	 ;; we past 'tag' as lastname if object is tag
+	 (lastname (if author
+		       (car (last (split-string author "[ _-]")))
+		     "tag"))
+	 (file-path (tlon-bae-generate-file-path lastname title))
+	 (filename (file-name-nondirectory file-path))
+	 (filename-reviewed (read-string "Job name: " filename)))
+    (unless (string= filename filename-reviewed)
+      (setq file-path (file-name-concat (file-name-directory file-path) filename-reviewed)))
+    file-path))
+
+(defun tlon-bae-rename-file ()
   "Rename file at point based on user-supplied information.
 If EXTENSION is not provided, markdown is used."
   (interactive)
   (let* ((source-file-path (dired-get-filename))
-	 (target-file-name (file-name-nondirectory (tlon-bae-format-file extension)))
+	 (target-file-name (file-name-nondirectory (tlon-bae-generate-file-path)))
 	 (target-file-path (file-name-concat
 			    (file-name-directory source-file-path)
 			    target-file-name)))
@@ -110,13 +154,12 @@ If EXTENSION is not provided, markdown is used."
      target-file-path)
     (revert-buffer)))
 
-(defun tlon-bae-create-file (&optional extension)
+(defun tlon-bae-create-file ()
   "Create a new file based on user-supplied information.
 Prompt the user for bibliographic information and create a new
- file based on it in the current directory. If EXTENSION is not
- provided, markdown is used."
+ file based on it in the current directory."
   (interactive)
-  (let ((file (tlon-bae-format-file extension)))
+  (let ((file (tlon-bae-generate-file-path)))
     (find-file file)))
 
 (defun tlon-bae-shorten-title (title)
@@ -147,7 +190,7 @@ Prompt the user for bibliographic information and create a new
   "Regexp to match escaped quotes.")
 
 (defun tlon-bae-markdown-eaf-cleanup (&optional buffer)
-  "Cleanup the buffer visiting an EA Wiki entry."
+  "Cleanup the BUFFER visiting an EA Wiki entry."
   (interactive)
   (when (not (eq major-mode 'markdown-mode))
     (user-error "Not in a Markdown buffer"))
@@ -318,12 +361,6 @@ Prompt the user for bibliographic information and create a new
   (interactive)
   (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
-(defun tlon-bae-eaf-id-from-url (url)
-  "Get the EA Forum ID from its URL."
-  (interactive "sURL: ")
-  (string-match ".+?forum.effectivealtruism.org/posts/\\(.*?\\)/" url)
-  (match-string 1 url))
-
 (defun tlon-bae-get-counterpart ()
   "Get the counterpart of the current file."
   (let* ((current-file (buffer-file-name))
@@ -360,31 +397,43 @@ Prompt the user for bibliographic information and create a new
   "Regular expression for validating post IDs.")
 
 (defvar tlon-bae-eaf-tag-slug-regexp
-  "\\([[:alnum:]-]*\\)$"
+  "\\([[:alnum:]-]*\\)"
   "Regular expression for validating tag slugs.")
 
-(defun tlon-bae-eaf-validate-identifier (entity identifier)
-  "Validate IDENTIFIER for ENTITY.
-Takes a string that can be a URL, a slug, or an ID, and returns a
-post's ID if ENTITY is 'post, or a tag's slug if ENTITY is 'tag."
-  (pcase entity
-    ('post (tlon-bae-eaf-validate-post-id identifier))
-    ('tag (tlon-bae-eaf-validate-tag-slug identifier))
-    (_ (user-error "Invalid entity: %S" entity))))
+(defun tlon-bae-eaf-post-id-p (identifier)
+  "Return t if IDENTIFIER is a post ID, nil otherwise."
+  (not (not (string-match (format "^%s$" tlon-bae-eaf-post-id-regexp) identifier))))
 
-(defun tlon-bae-eaf-validate-post-id (identifier)
-  "Validate IDENTIFIER as a post ID."
-  (if (or (string-match (format "^%s$" tlon-bae-eaf-post-id-regexp) identifier)
-	  (string-match (format "posts/%s" tlon-bae-eaf-post-id-regexp) identifier))
-      (match-string-no-properties 1 identifier)
-    (user-error "Invalid post ID: %S" identifier)))
+(defun tlon-bae-eaf-tag-slug-p (identifier)
+  "Return t if IDENTIFIER is a tag slug, nil otherwise."
+  (not (not (string-match (format "^%s$" tlon-bae-eaf-tag-slug-regexp) identifier))))
 
-(defun tlon-bae-eaf-validate-tag-slug (identifier)
-  "Validate IDENTIFIER as a tag slug."
-  (if (or (string-match (format "^%s" tlon-bae-eaf-tag-slug-regexp) identifier)
-	  (string-match (format "topics/%s" tlon-bae-eaf-tag-slug-regexp) identifier))
-      (match-string-no-properties 1 identifier)
-    (user-error "Invalid tag slug: %S" identifier)))
+(defun tlon-bae-eaf-get-identifier-from-url (url)
+  "Return the EAF identifier in URL, if found.
+The identifier is either a post ID or a tag slug."
+  (interactive "sURL: ")
+  (let ((identifier (cond ((string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
+						 tlon-bae-eaf-post-id-regexp) url)
+			   (match-string-no-properties 1 url))
+			  ((string-match (format "^.+?forum.effectivealtruism.org/topics/%s"
+						 tlon-bae-eaf-tag-slug-regexp) url)
+			   (match-string-no-properties 1 url)))))
+    identifier))
+
+(defun tlon-bae-eaf-get-identifier-from-response (response)
+  "Return the EAF identifier from Json RESPONSE.
+The identifier is either a post ID or a tag slug."
+  (or (tlon-bae-eaf-post-get-id response)
+      (tlon-bae-eaf-tag-get-slug response)))
+
+(defun tlon-bae-eaf-get-object (identifier)
+  "Return the EAF object in IDENTIFIER."
+  (let ((object (cond ((tlon-bae-eaf-post-id-p identifier)
+		       'post)
+		      ((tlon-bae-eaf-tag-slug-p identifier)
+		       'tag)
+		      (t (user-error "Invalid identifier: %S" identifier)))))
+    object))
 
 ;;; Clocked heading
 
@@ -423,7 +472,8 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-get-translation-file (original-file)
   "Return file that translates ORIGINAL-FILE."
-  (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal))
+  (or (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal)
+      (alist-get original-file tlon-bae-post-correspondence nil nil #'equal)))
 
 (defun tlon-bae-get-original-file (translation-file)
   "Return file that TRANSLATION-FILE translates."
@@ -490,13 +540,18 @@ the `originals/tags' directory."
     (message "The contents of `%s' have been copied to the to kill ring. You may now paste them into the DeepL editor."
 	     (file-name-nondirectory file))))
 
-(defun tlon-bae-set-paths (&optional original-file)
-  "Return paths for original and translation files."
-  (if-let* ((original-file (or original-file (tlon-bae-get-clock-file)))
-	    (type (if (string-match "tag--" original-file) "tags/" "posts/"))
-	    (original-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/" type))
-	    (original-path (file-name-concat original-dir original-file))
-	    (translation-file (tlon-bae-get-translation-file original-file))
+(defun tlon-bae-set-original-path ()
+  "Docstring."
+  (let* ((filename (tlon-bae-get-clock-file))
+	 (type (if (string-match "tag--" filename) "tags/" "posts/"))
+	 (dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/" type))
+	 (file-path (file-name-concat dir filename)))
+    file-path))
+
+(defun tlon-bae-set-paths ()
+  "Return paths for original and translation files from ORIGINAL-FILE."
+  (if-let* ((original-path (tlon-bae-set-original-path))
+	    (translation-file (tlon-bae-get-translation-file (file-name-nondirectory original-path)))
 	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags"))
 	    (translation-path (file-name-concat translation-dir translation-file)))
       (cl-values original-path translation-path original-file translation-file)
@@ -560,29 +615,56 @@ the `originals/tags' directory."
 			(_ (user-error "I don't know what to do with `%s`" action))))
       (_ (user-error "I don't know what to do in `%s`" major-mode)))))
 
+(defun tlon-bae-create-job (url)
+  (interactive "sURL: ")
+  (if (tlon-bae-eaf-get-identifier-from-url url)
+      (tlon-bae-create-job-eaf url)
+    (tlon-bae-create-job-non-eaf url))
+  (when (y-or-n-p "Add work to ebib?")
+    (zotra-add-entry-from-url url))
+  (message "Next step: capture the new job (`,`) and run the usual command (`H-r r`)."))
+
+(defun tlon-bae-create-job-eaf (url)
+  "Docstring."
+  (let* ((identifier (tlon-bae-eaf-get-identifier-from-url url))
+	 (response (tlon-bae-eaf-request identifier))
+	 (file-path (tlon-bae-eaf-generate-file-path response))
+	 (filename (file-name-nondirectory file-path)))
+    (tlon-bae-create-issue-for-job filename)
+    (tlon-bae-eaf-import-html identifier file-path)))
+
+(defun tlon-bae-create-job-non-eaf (url)
+  "Docstring."
+  (let* ((file-path (tlon-bae-generate-file-path))
+	 (filename (file-name-nondirectory file-path)))
+    (tlon-bae-create-issue-for-job filename)
+    (tlon-bae-html-to-markdown url file-path)))
+
+(defun tlon-bae-create-issue-for-job (filename)
+  "Docstring."
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (call-interactively #'forge-create-issue)
+    (insert (format "Job: `%s`" filename))
+    (call-interactively #'forge-post-submit)
+    (sleep-for 2)
+    (forge-pull)
+    (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)))
+
+;; revise imported file
 (defun tlon-bae-initialize-processing ()
   "Initialize processing."
   (interactive)
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-branch "main")
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
+	(original (tlon-bae-set-original-path))
+	(docs ps/file-tlon-docs-bae))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
-    (cl-multiple-value-bind
-	(original-path translation-path original-file)
-	(tlon-bae-set-paths)
-      (let* ((slug (replace-regexp-in-string ".+?--\\(.*\\)\\.md" "\\1" original-file))
-	     (node (s-join " " (split-string slug "-"))))
-	(winum-select-window-2)
-	(find-file original-path)
-	(when (string= user-full-name "Pablo Stafforini")
-	  (winum-select-window-1)
-	  (advice-remove 'org-roam-node-find #'widen)
-	  (advice-remove 'org-roam-node-find #'ps/org-narrow-to-entry-and-children)
-	  (org-roam-node-find nil node)
-	  (advice-add 'org-roam-node-find :before #'widen)
-	  (advice-add 'org-roam-node-find :after #'ps/org-narrow-to-entry-and-children)
-	  (shell-command (format "open --background https://forum.effectivealtruism.org/topics/%s" slug)))))))
+    (tlon-bae-set-windows original docs)
+    (org-id-goto "60251C8E-6A6F-430A-9DB3-15158CC82EAE")
+    (org-narrow-to-subtree)
+    (ps/org-show-subtree-hide-drawers)))
 
 (defun tlon-bae-initialize-translation ()
   "Initialize translation."
@@ -767,20 +849,6 @@ the `originals/tags' directory."
 	(message (format "Merged pull request and deleted branch `%s'. Set label to `%s' "
 			 translation-file label))))))
 
-(defun tlon-bae-submit-comment-revisions ()
-  "Submit PR comments and check out `main' branch."
-  (interactive)
-  (unless (eq major-mode 'github-review-mode)
-    (error "Not in `github-review-mode'"))
-  (github-review-comment)
-  (save-buffer)
-  (kill-buffer)
-  (tlon-bae-magit-status)
-  (let ((branch "main"))
-    (magit-branch-checkout branch)
-    (message "Submitted PR comments and checked out `%s' branch." branch)))
-
-
 ;;; TTS
 
 (defun ps/tlon-bae-review-accuracy ()
@@ -842,27 +910,25 @@ the `originals/tags' directory."
 (defun tlon-bae-check-label-and-assignee ()
   "Check that clocked action matches topic label and assignee matches user."
   (save-window-excursion
-    (cl-multiple-value-bind
-	(original-path translation-path original-file)
-	(tlon-bae-set-paths)
-      (let ((topic (format "Job: `%s`" original-file))
-	    (clocked-label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
-	(tlon-bae-magit-status)
-	(magit-section-show-level-3-all)
-	(goto-char (point-min))
-	(if (search-forward topic nil t)
-	    (let ((topic-label (tlon-bae-forge-get-label-at-point))
-		  (topic-assignee (alist-get
-				   (tlon-bae-forge-get-assignee-at-point)
-				   tlon-bae-users nil nil 'string=)))
-	      (unless (string= clocked-label topic-label)
-		(user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
-			    clocked-label topic-label))
-	      (unless (string= user-full-name topic-assignee)
-		(user-error "The `org-mode' TODO says the assignee is `%s', but the actual topic assignee is `%s'"
-			    user-full-name topic-assignee))
-	      t)
-	  (user-error "No topic found for %s" original-file))))))
+    (let* ((filename (tlon-bae-get-clock-file))
+	   (topic (format "Job: `%s`" filename))
+	   (clocked-label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
+      (tlon-bae-magit-status)
+      (magit-section-show-level-3-all)
+      (goto-char (point-min))
+      (if (search-forward topic nil t)
+	  (let ((label (tlon-bae-forge-get-label-at-point))
+		(assignee (alist-get
+			   (tlon-bae-forge-get-assignee-at-point)
+			   tlon-bae-users nil nil 'string=)))
+	    (unless (string= clocked-label label)
+	      (user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
+			  clocked-label label))
+	    (unless (string= user-full-name assignee)
+	      (user-error "The `org-mode' TODO says the assignee is `%s', but the actual topic assignee is `%s'"
+			  user-full-name assignee))
+	    t)
+	(user-error "No topic found for %s" filename)))))
 
 (defun tlon-bae-check-staged-or-unstaged (filename)
   "Check if there are staged or unstaged changes in repo not involving FILENAME."
@@ -946,7 +1012,7 @@ Unless PREFIX is specified, prompt user to select between
 
 (defun tlon-bae-select-label ()
   "Prompt the user to select a LABEL."
-  (let ((label (completing-read "Who should be the assignee? "
+  (let ((label (completing-read "What should be the label? "
 				tlon-bae-label-actions)))
     label))
 
@@ -984,22 +1050,15 @@ The prompt defaults to the current user."
      repo topic
      (list assignee))))
 
-(defun tlon-bae-create-job (&optional file-name assignee)
-  "Create a new issue for FILE-NAME and assign it to ASSIGNEE."
-  (interactive)
-  (let* ((file-name (file-name-nondirectory
-		     (or file-name
-			 (read-string "File name: " (file-name-nondirectory (buffer-file-name))))))
-	 (job-name (format "Job: `%s`" file-name))
-	 (default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (forge-create-issue)
-    (insert job-name)
-    (forge-post-submit)))
+(defun tlon-bae-set-initial-label-and-assignee ()
+  "Set label to 'Awaiting processing' and assignee to current user."
+  (tlon-bae-set-label "Awaiting processing")
+  (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users)))
 
 ;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
 ;; It differs from that function only in that it returns the selection
 ;; rather than submitting it.
-(defun tlon-bae-forge-get-topic-label (topic)
+(defun tlon-bae-forge-get-label (topic)
   "Return the label of the current TOPIC.
 If the topic has more than one label, return the first."
   (interactive (list (forge-read-topic "Edit labels of")))
@@ -1012,7 +1071,7 @@ If the topic has more than one label, return the first."
 	  nil t
 	  (mapconcat #'car (closql--iref topic 'labels) ",")))))
 
-(defun tlon-bae-forge-get-topic-assignee (topic)
+(defun tlon-bae-forge-get-assignee (topic)
   "Return the assignee of the current TOPIC.
 If the topic has more than one assignee, return the first."
   (interactive (list (forge-read-topic "Edit assignees of")))
@@ -1029,7 +1088,7 @@ If the topic has more than one assignee, return the first."
 	  (mapconcat #'car value ",")))))
 
 ;; This function simply confirms the selection offered to the user by
-;; `tlon-bae-forge-get-topic-label'. I don't know how to do this
+;; `tlon-bae-forge-get-label'. I don't know how to do this
 ;; properly with `magit-completing-read-multiple', so I just simulate a
 ;; RET keypress.
 (defun tlon-bae-forge-get-label-at-point ()
@@ -1039,7 +1098,7 @@ If the topic has more than one label, return the first."
     (minibuffer-with-setup-hook
 	(lambda ()
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
-      (tlon-bae-forge-get-topic-label (forge-current-topic)))))
+      (tlon-bae-forge-get-label (forge-current-topic)))))
 
 (defun tlon-bae-forge-get-assignee-at-point ()
   "Return the assignee of the topic at point.
@@ -1048,7 +1107,7 @@ If the topic has more than one assignee, return the first."
     (minibuffer-with-setup-hook
 	(lambda ()
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
-      (tlon-bae-forge-get-topic-assignee (forge-current-topic)))))
+      (tlon-bae-forge-get-assignee (forge-current-topic)))))
 
 (defun tlon-bae-open-original-or-translation ()
   "Open the translation if visiting the original, and vice versa."
@@ -1093,7 +1152,7 @@ If the topic has more than one assignee, return the first."
     (when pair
       (car pair))))
 
-(defun tlon-bae-topic-label-match (label)
+(defun tlon-bae-label-match (label)
   "Return a suitable action for the LABEL of topic at point.
 The function relies on the alist `tlon-bae-label-actions' to
 determine an appropriate action from the topic's label."
