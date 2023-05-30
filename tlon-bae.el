@@ -1230,5 +1230,159 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 	 (url-prefix "https://github.com/tlon-team/biblioteca-altruismo-eficaz/blob/main/"))
     (browse-url (concat url-prefix url-suffix))))
 
+;;;
+
+(defconst tlon-bae-eaf-api-url
+  "https://forum.effectivealtruism.org/graphql"
+  "URL for the EAF GraphQL API endpoint.")
+
+(defvar tlon-bae-eaf-objects
+  '(post tag)
+  "List of entities supported by the EAF GraphQL API.")
+
+;;; queries
+
+(defun tlon-bae-eaf-post-query (id)
+  "Return an EA Forum GraphQL query for post whose ID is ID."
+  (concat "{\"query\":\"{\\n  post(\\n    input: {\\n      selector: {\\n        _id: \\\""
+	  id
+	  "\\\"\\n      }\\n    }\\n  ) {\\n    result {\\n      _id\\n      postedAt\\n      url\\n      canonicalSource\\n      title\\n      contents {\\n        markdown\\n        ckEditorMarkup\\n      }\\n      slug\\n      commentCount\\n      htmlBody\\n      baseScore\\n      voteCount\\n      pageUrl\\n      legacyId\\n      question\\n      tableOfContents\\n      author\\n      user {\\n        username\\n        displayName\\n        slug\\n        bio\\n      }\\n      coauthors {\\n        _id\\n        username\\n        displayName\\n        slug\\n      }\\n    }\\n  }\\n}\\n\"}"))
+
+(defun tlon-bae-eaf-tag-query (slug)
+  "Return an EA Forum GraphQL query for tag whose slug is SLUG."
+  (concat "{\"query\":\"{\\n  tag(input: { selector: { slug: \\\""
+	  slug
+	  "\\\" } }) {\\n    result {\\n      name\\n      slug\\n      description {\\n        html\\n      }\\n      parentTag {\\n        name\\n      }\\n    }\\n  }\\n}\\n\"}"))
+
+;;; get json objects
+
+(defun tlon-bae--eaf-post-get-result (response)
+  "docstring"
+  (let* ((post (cdr (assoc 'post response)))
+	 (result (cdr (assoc 'result post))))
+    result))
+
+(defun tlon-bae-eaf-post-get-id (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-post-get-result response))
+	 (id (cdr (assoc '_id result))))
+    id))
+
+(defun tlon-bae-eaf-post-get-html (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-post-get-result response))
+	 (html (cdr (assoc 'htmlBody result))))
+    html))
+
+(defun tlon-bae-eaf-post-get-title (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-post-get-result response))
+	 (title (cdr (assoc 'title result))))
+    title))
+
+(defun tlon-bae-eaf-post-get-author (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-post-get-result response))
+	 (author (cdr (assoc 'author result))))
+    author))
+
+(defun tlon-bae-eaf-post-get-user (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-post-get-result response))
+	 (user (cdr (assoc 'user result))))
+    user))
+
+(defun tlon-bae--eaf-tag-get-result (response)
+  "docstring"
+  (let* ((tag (cdr (assoc 'tag response)))
+	 (result (cdr (assoc 'result tag))))
+    result))
+
+(defun tlon-bae-eaf-tag-get-slug (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-tag-get-result response))
+	 (slug (cdr (assoc 'slug result))))
+    slug))
+
+(defun tlon-bae-eaf-tag-get-html (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-tag-get-result response))
+	 (description (cdr (assoc 'description result)))
+	 (html (cdr (assoc 'html description))))
+    html))
+
+(defun tlon-bae-eaf-tag-get-title (response)
+  "docstring"
+  (let* ((result (tlon-bae--eaf-tag-get-result response))
+	 (title (cdr (assoc 'name result))))
+    (tlon-bae-shorten-title title)))
+
+;;; file handling
+
+(defun tlon-bae-save-html-to-file (html)
+  "Save the HTML string HTML to a temporary file."
+  (let ((filename (make-temp-file "tlon-bae-request-" nil ".html")))
+    (with-temp-file filename
+      (insert html))
+    filename))
+
+;;; request functions
+
+(defun tlon-bae-eaf-request (identifier &optional async)
+  "Run an EAF request for IDENTIFIER.
+IDENTIFIER should be a string returned by
+`tlon-bae-validate-identifier'; see its docstring for details.
+If ASYNC is t, run the request asynchronously."
+  (let* ((object (tlon-bae-eaf-get-object identifier))
+	 (fun (pcase object
+		('post 'tlon-bae-eaf-post-query)
+		('tag 'tlon-bae-eaf-tag-query)
+		(_ (error "Invalid object: %S" object))))
+	 (query (funcall fun identifier))
+	 response)
+    (request
+      tlon-bae-eaf-api-url
+      :type "POST"
+      :headers '(("Content-Type" . "application/json"))
+      :data query
+      :parser 'json-read
+      :sync (not async)
+      :success (cl-function
+		(lambda (&key data &allow-other-keys)
+		  (setq response (cdr (assoc 'data data)))))
+      :error (cl-function
+	      (lambda (&rest args &key error-thrown &allow-other-keys)
+		(message "Error: %S" error-thrown))))
+    response))
+
+(defun tlon-bae-eaf-import-html (identifier file-path)
+  "Import the html of EAF post/tag with IDENTIFIER to FILE-PATH."
+  (let* ((response (tlon-bae-eaf-request identifier))
+	 (object (tlon-bae-eaf-get-object identifier))
+	 (html (pcase object
+		 ('post (tlon-bae-eaf-post-get-html response))
+		 ('tag (tlon-bae-eaf-get-tag-html response))))
+	 (html-file (tlon-bae-save-html-to-file html)))
+    (tlon-bae-html-to-markdown html-file file-path)
+    (with-current-buffer (find-file-noselect file-path)
+      (tlon-bae-markdown-eaf-cleanup)))
+  (message "Exported to `%s'" file-path))
+
+(defun tlon-bae-html-to-markdown (source target)
+  "Docstring."
+  (let ((pandoc (if (ps/string-is-url-p source)
+		    tlon-bae-pandoc-convert-from-url
+		  tlon-bae-pandoc-convert-from-file)))
+    (shell-command
+     (format pandoc source target))))
+
+(defvar tlon-bae-pandoc-convert-from-file
+  "pandoc -s '%s' -t markdown -o '%s'"
+  "Command to convert from HTML file to markdown.")
+
+(defvar tlon-bae-pandoc-convert-from-url
+  "pandoc -s -r html '%s' -o '%s'"
+  "Command to convert from URL to markdown.")
+
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
