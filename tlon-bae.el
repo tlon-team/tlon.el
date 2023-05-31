@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 0.1.8
+;; Version: 0.1.9
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
@@ -60,7 +60,7 @@
   (interactive)
   (let ((assignee (alist-get
 		   (tlon-bae-forge-get-assignee-at-point)
-		   tlon-bae-users nil nil 'string=))
+		   tlon-bae-github-users nil nil 'string=))
 	(label (tlon-bae-forge-get-label-at-point)))
     ;; when the topic has neither a label nor an assignee, we offer to
     ;; process it as a new job
@@ -74,14 +74,14 @@
     (unless (string= user-full-name assignee)
       (if (y-or-n-p (format "The assignee of this topic is %s. Would you like to become the assignee? " assignee))
 	  (progn
-	    (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users))
+	    (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users))
 	    (sleep-for 2))
 	(user-error "Aborted")))
     ;; ...or for a label
     (unless label
       (if (y-or-n-p "The topic has no label. Would you like to add one? ")
 	  (tlon-bae-set-label (tlon-bae-select-label))
-	(tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users))
+	(tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users))
 	(user-error "Aborted")))
     (orgit-store-link nil)
     (if-let* ((org-link (ps/org-nth-stored-link 0))
@@ -162,9 +162,18 @@ Prompt the user for bibliographic information and create a new
   (let ((file (tlon-bae-generate-file-path)))
     (find-file file)))
 
+(defun tlon-bae-log-buffer-diff (file)
+  "Show changes in FILE since the latest commit by the current user."
+  (let* ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
+	 (user (tlon-bae-find-key-in-alist user-full-name tlon-bae-system-users))
+	 ;; get most recent commit in FILE by USER
+	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- '%s' | grep -m 1 '%s' | awk '{print $1}'" file user)))
+	 (commit (car (split-string output "\n"))))
+    (magit-diff-range commit nil (list file))))
+
 (defun tlon-bae-shorten-title (title)
   "Return a shortened version of TITLE."
-  (string-match "\\([[:alnum:] '‘’“”\"]*\\)" title)
+  (string-match "\\([[:alnum:] ,'‘’“”\"]*\\)" title)
   (match-string 1 title))
 
 (defvar tlon-bae-markdown-eawiki-footnote-source
@@ -451,7 +460,7 @@ Assumes file name is enclosed in backticks."
   "Get topic GID from `orgit-forge' link in heading at point."
   (unless org-clock-heading
     (user-error "No clock running"))
-  (save-excursion
+  (save-window-excursion
     (org-clock-goto)
     (org-narrow-to-subtree)
     (when (re-search-forward org-link-bracket-re)
@@ -472,8 +481,8 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-get-translation-file (original-file)
   "Return file that translates ORIGINAL-FILE."
-  (or (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal)
-      (alist-get original-file tlon-bae-post-correspondence nil nil #'equal)))
+  (or (alist-get original-file tlon-bae-post-correspondence nil nil #'equal)
+      (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal)))
 
 (defun tlon-bae-get-original-file (translation-file)
   "Return file that TRANSLATION-FILE translates."
@@ -537,7 +546,7 @@ the `originals/tags' directory."
     (copy-region-as-kill (point-min) (point-max))
     (fill-region (point-min) (point-max))
     (save-buffer)
-    (message "The contents of `%s' have been copied to the to kill ring. You may now paste them into the DeepL editor."
+    (message "The contents of `%s' have been copied to the to kill ring, in case you want to paste them into the DeepL editor."
 	     (file-name-nondirectory file))))
 
 (defun tlon-bae-set-original-path ()
@@ -548,15 +557,28 @@ the `originals/tags' directory."
 	 (file-path (file-name-concat dir filename)))
     file-path))
 
+(defun tlon-bae-open-clocked-file ()
+  "Open file of clocked task."
+  (interactive)
+  (let ((file-path (tlon-bae-set-original-path)))
+    (find-file file-path)))
+
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files from ORIGINAL-FILE."
   (if-let* ((original-path (tlon-bae-set-original-path))
 	    (original-file (file-name-nondirectory original-path))
 	    (translation-file (tlon-bae-get-translation-file (file-name-nondirectory original-path)))
-	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags"))
+	    (dir (tlon-bae-post-or-tag original-file))
+	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations" dir))
 	    (translation-path (file-name-concat translation-dir translation-file)))
       (cl-values original-path translation-path original-file translation-file)
-    (user-error "I wasn't able to find `%s' in `tlon-bae-tag-correspondence'" original-file)))
+    (user-error "I wasn't able to find `%s' in the correspondence file" original-file)))
+
+(defun tlon-bae-post-or-tag (file)
+  "Return `posts' or `tags' depending on FILE."
+  (if (string-match "tag--" file)
+      "tags"
+    "posts"))
 
 (defun tlon-bae-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
@@ -604,14 +626,16 @@ the `originals/tags' directory."
       ;; assumes user initializes in org-mode and finalizes in markdown-mode
       ('org-mode (pcase action
 		   ("Process" (tlon-bae-initialize-processing))
-		   ("Revise" (tlon-bae-initialize-revision))
 		   ("Translate" (tlon-bae-initialize-translation))
+		   ("Check" (tlon-bae-initialize-check))
+		   ("Revise" (tlon-bae-initialize-revision))
 		   ("Review" (tlon-bae-initialize-review))
 		   (_ (user-error "I don't know what to do with `%s`" action))))
       ('markdown-mode (pcase action
 			("Process" (tlon-bae-finalize-processing))
-			("Revise" (tlon-bae-finalize-revision))
 			("Translate" (tlon-bae-finalize-translation))
+			("Check" (tlon-bae-finalize-check))
+			("Revise" (tlon-bae-finalize-revision))
 			("Review" (tlon-bae-finalize-review))
 			(_ (user-error "I don't know what to do with `%s`" action))))
       (_ (user-error "I don't know what to do in `%s`" major-mode)))))
@@ -621,8 +645,8 @@ the `originals/tags' directory."
   (if (tlon-bae-eaf-get-identifier-from-url url)
       (tlon-bae-create-job-eaf url)
     (tlon-bae-create-job-non-eaf url))
-  (when (y-or-n-p "Add work to ebib?")
-    (zotra-add-entry-from-url url))
+  ;; (when (y-or-n-p "Add work to ebib?")
+  ;; (zotra-add-entry-from-url url))
   (message "Next step: capture the new job (`,`) and run the usual command (`H-r r`)."))
 
 (defun tlon-bae-create-job-eaf (url)
@@ -665,7 +689,10 @@ the `originals/tags' directory."
     (tlon-bae-set-windows original docs)
     (org-id-goto "60251C8E-6A6F-430A-9DB3-15158CC82EAE")
     (org-narrow-to-subtree)
-    (ps/org-show-subtree-hide-drawers)))
+    (ps/org-show-subtree-hide-drawers)
+    (winum-select-window-2)
+    (let ((topic (tlon-bae-get-clock-topic)))
+      (orgit-topic-open topic))))
 
 (defun tlon-bae-initialize-translation ()
   "Initialize translation."
@@ -688,7 +715,7 @@ the `originals/tags' directory."
 	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-initialize-revision ()
-  "Initialize revision."
+  "Initialize stylistic revision."
   (interactive)
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-branch "main")
@@ -698,38 +725,59 @@ the `originals/tags' directory."
     (cl-multiple-value-bind
 	(original-path translation-path original-file translation-file)
 	(tlon-bae-set-paths)
-      (tlon-bae-check-staged-or-unstaged translation-path)
+      (tlon-bae-check-staged-or-unstaged-other-than translation-path)
       (let ((topic (tlon-bae-get-clock-topic)))
 	(tlon-bae-set-windows original-path translation-path)
-	(when (magit-branch-p translation-file)
-	  (user-error "Branch `%s' already exists" translation-file))
-	(magit-branch-create translation-file "main")
-	(magit-branch-checkout translation-file)
-	(revert-buffer t t)
 	(ispell-change-dictionary "espanol")
 	(flyspell-buffer)
-	(winum-select-window-2)
+	(tlon-bae-log-buffer-diff original-path)
 	(orgit-topic-open topic)
-	(let ((message (tlon-bae-copy-file-contents original-path)))
-	  (message (format "Now at branch `%s'. %s" translation-file message)))))))
+	(winum-select-window-2)
+	(tlon-bae-copy-file-contents original-path)))))
 
-(defun tlon-bae-initialize-review ()
-  "Initialize review."
+(defun tlon-bae-initialize-check ()
+  "Initialize accuracy check."
   (interactive)
   (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-branch "main")
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
     (cl-multiple-value-bind
 	(original-path translation-path original-file translation-file)
 	(tlon-bae-set-paths)
+      (tlon-bae-check-staged-or-unstaged-other-than translation-path)
       (let ((topic (tlon-bae-get-clock-topic)))
-	(magit-branch-checkout translation-file)
 	(tlon-bae-set-windows original-path translation-path)
 	(ispell-change-dictionary "espanol")
 	(flyspell-buffer)
-	(winum-select-window-2)
-	(orgit-topic-open topic)))))
+	(winum-select-window-1)
+	(let* ((markdown-buffer (concat "preview of " original-file))
+	       (eww-buffer (concat markdown-buffer " — eww")))
+	  (markdown-preview markdown-buffer)
+	  (switch-to-buffer eww-buffer)
+	  (read-aloud-buf))))))
+
+(defun tlon-bae-initialize-review ()
+  "Initialize review."
+  (interactive)
+  (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-branch "main")
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (magit-pull-from-upstream nil)
+    (sleep-for 2)
+    (cl-multiple-value-bind
+	(original-path translation-path original-file translation-file)
+	(tlon-bae-set-paths)
+      (tlon-bae-check-staged-or-unstaged-other-than translation-path)
+      (let ((topic (tlon-bae-get-clock-topic)))
+	(tlon-bae-set-windows original-path translation-path)
+	(ispell-change-dictionary "espanol")
+	(flyspell-buffer)
+	(orgit-topic-open topic)
+	;; opens in other window, so no need to switch to it first
+	(tlon-bae-log-buffer-diff original-path)
+	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-finalize-processing ()
   "Finalize processing."
@@ -737,18 +785,19 @@ the `originals/tags' directory."
   (tlon-bae-check-branch "main")
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-file)
-  (let ((translator (tlon-bae-select-assignee)))
-    (cl-multiple-value-bind
-	(original-path translation-path original-file)
-	(tlon-bae-set-paths)
-      (fill-region (point-min) (point-max))
-      (save-buffer)
-      (tlon-bae-act-on-topic original-file "Awaiting translation" translator)
-      (tlon-bae-commit-and-push "Revise " original-path)))
+  (cl-multiple-value-bind
+      (original-path translation-path original-file)
+      (tlon-bae-set-paths)
+    (fill-region (point-min) (point-max))
+    (save-buffer)
+    (tlon-bae-act-on-topic original-file "Awaiting translation" "benthamite")
+    (tlon-bae-commit-and-push "Process " original-path))
   (org-clock-goto)
   (org-todo "DONE")
   (save-buffer))
 
+;; TODO: Find the stage when the translation file is created and make
+;; sure the relevant command stages and commits it.
 (defun tlon-bae-finalize-translation ()
   "Finalize translation."
   (interactive)
@@ -760,15 +809,12 @@ the `originals/tags' directory."
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
     (fill-region (point-min) (point-max))
+    (save-buffer)
     (write-file translation-path)
     (tlon-bae-commit-and-push "Translate " translation-path)
     (let ((label "Awaiting revision")
-	  (assignee (if (string= user-full-name "Pablo Stafforini")
-			"worldsaround"
-		      "benthamite")))
-      (tlon-bae-act-on-topic original-file
-			     label
-			     assignee)
+	  (assignee "worldsaround"))
+      (tlon-bae-act-on-topic original-file label assignee)
       (org-clock-goto)
       (org-todo "DONE")
       (save-buffer)
@@ -776,98 +822,72 @@ the `originals/tags' directory."
       (sit-for 5))))
 
 (defun tlon-bae-finalize-revision ()
-  "Finalize revision."
+  "Finalize stylistic revision."
   (interactive)
   (save-buffer)
+  (tlon-bae-check-branch "main")
   (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-file)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (tlon-bae-check-branch translation-file)
-    (let* ((target-branch "main")
-	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-biblioteca-altruismo-eficaz))
-	   message
-	   delete-branch-p)
-      (fill-region (point-min) (point-max))
-      (save-buffer)
-      (if (or (member translation-relative-path (magit-unstaged-files))
-	      (member translation-relative-path (magit-staged-files)))
-	  (let ((label "Awaiting review")
-		(assignee (if (string= user-full-name "Pablo Stafforini")
-			      "worldsaround"
-			    "benthamite")))
-	    (tlon-bae-commit-and-push "Revise " translation-path)
-	    (tlon-bae-act-on-topic original-file label assignee 'convert)
-	    (setq message (format "Converted issue into pull request. Set label to `%s' and assignee to `%s'. "
-				  label assignee)))
-	(let ((label "Awaiting publication")
-	      (assignee ""))
-	  (tlon-bae-act-on-topic original-file label assignee 'close)
-	  (setq delete-branch-p t)
-	  (setq message "Since no changes were made to the file, no pull request was created. ")
-	  (sit-for 5)))
-      (magit-branch-checkout target-branch)
-      (setq message (concat message (format "Now at branch `%s'. " target-branch)))
-      (when delete-branch-p
-	(magit-branch-delete (list translation-file))
-	(revert-buffer t t)
-	(setq message (concat message (format "Branch `%s' deleted. " translation-file))))
+    (fill-region (point-min) (point-max))
+    (write-file translation-path)
+    (tlon-bae-commit-and-push "Revise " translation-path)
+    (let ((label "Awaiting check")
+	  (assignee "worldsaround"))
+      (tlon-bae-act-on-topic original-file label assignee)
       (org-clock-goto)
       (org-todo "DONE")
       (save-buffer)
-      (message message))))
+      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
+      (sit-for 5))))
+
+(defun tlon-bae-finalize-check ()
+  "Finalize accuracy check."
+  (interactive)
+  (save-buffer)
+  (tlon-bae-check-branch "main")
+  (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-file)
+  (cl-multiple-value-bind
+      (original-path translation-path original-file translation-file)
+      (tlon-bae-set-paths)
+    (fill-region (point-min) (point-max))
+    (write-file translation-path)
+    (tlon-bae-commit-and-push "Check " translation-path)
+    (let ((label "Awaiting review")
+	  (assignee "benthamite"))
+      (tlon-bae-act-on-topic original-file label assignee)
+      (org-clock-goto)
+      (org-todo "DONE")
+      (save-buffer)
+      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
+      (sit-for 5))))
 
 (defun tlon-bae-finalize-review ()
   "Finalize review."
   (interactive)
   (save-buffer)
+  (tlon-bae-check-branch "main")
   (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-file)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (tlon-bae-check-branch translation-file)
-    (tlon-bae-check-staged-or-unstaged translation-path)
-    (let* ((target-branch "main")
-	   (translation-relative-path (file-relative-name translation-path ps/dir-tlon-biblioteca-altruismo-eficaz)))
-      (fill-region (point-min) (point-max))
+    (fill-region (point-min) (point-max))
+    (write-file translation-path)
+    (tlon-bae-commit-and-push "Review " translation-path)
+    (let ((label "Awaiting publication")
+	  (assignee ""))
+      (tlon-bae-act-on-topic original-file label assignee)
+      (org-clock-goto)
+      (org-todo "DONE")
       (save-buffer)
-      (when (or (member translation-relative-path (magit-unstaged-files))
-		(member translation-relative-path (magit-staged-files)))
-	(magit-stage-file translation-path)
-	(magit-commit-create (list "-m" (concat "Revise " translation-file))))
-      (call-interactively (lambda! (magit-merge-into "main")))
-      (sleep-for 3)
-      (call-interactively #'magit-push-current-to-pushremote)
-      (sleep-for 3)
-      (let ((label "Awaiting publication")
-	    (assignee ""))
-	(tlon-bae-act-on-topic original-file label assignee)
-	(call-interactively (lambda! (magit-branch-delete (list (concat "origin/" translation-file)))))
-	(revert-buffer t t)
-	(org-clock-goto)
-	(org-todo "DONE")
-	(save-buffer)
-	(message (format "Merged pull request and deleted branch `%s'. Set label to `%s' "
-			 translation-file label))))))
+      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
+      (sit-for 5))))
 
 ;;; TTS
-
-(defun ps/tlon-bae-review-accuracy ()
-  "Review accuracy of translation."
-  (interactive)
-  ;; (tlon-bae-check-label-and-assignee)
-  ;; (tlon-bae-check-branch "main")
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (magit-pull-from-upstream nil)
-    (cl-multiple-value-bind
-	(original-path translation-path original-file translation-file)
-	(tlon-bae-set-paths)
-      (tlon-bae-set-windows original-path translation-path)
-      (goto-char (point-min))
-      (winum-select-window-1)
-      (markdown-preview)
-      (goto-char (point-min))
-      (read-aloud-this))))
 
 (defun tlon-bae-read-this ()
   "Read this buffer."
@@ -921,7 +941,7 @@ the `originals/tags' directory."
 	  (let ((label (tlon-bae-forge-get-label-at-point))
 		(assignee (alist-get
 			   (tlon-bae-forge-get-assignee-at-point)
-			   tlon-bae-users nil nil 'string=)))
+			   tlon-bae-github-users nil nil 'string=)))
 	    (unless (string= clocked-label label)
 	      (user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
 			  clocked-label label))
@@ -931,34 +951,43 @@ the `originals/tags' directory."
 	    t)
 	(user-error "No topic found for %s" filename)))))
 
-(defun tlon-bae-check-staged-or-unstaged (filename)
+(defun tlon-bae-check-staged-or-unstaged (file-path)
+  "Check if there are staged or unstaged changes in repo involving FILENAME."
+  (catch 'found
+    (dolist (flag '("staged" ""))
+      (let ((git-command (format "git diff --%s --name-only %s" flag file-path)))
+	(when (not (string-empty-p (shell-command-to-string git-command)))
+	  (throw 'found t))))))
+
+(defun tlon-bae-check-staged-or-unstaged-other-than (file-path)
   "Check if there are staged or unstaged changes in repo not involving FILENAME."
   (let* ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
-	 (filtered-changes (magit-git-str "diff" "HEAD" "--" filename)))
+	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file-path)))
     (unless (string= all-changes filtered-changes)
       (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
 
-(defun tlon-bae-act-on-topic (original-file label assignee &optional action)
+(defun tlon-bae-act-on-topic (original-file label &optional assignee action)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
 If ACTION is `convert', convert the existing issue into a pull
 request. If ACTION is `close', close issue."
-  (let ((topic (format "Job: `%s`" original-file)))
+  (let ((topic (format "Job: `%s`" original-file))
+	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
+	(funlist `((tlon-bae-set-label ,label))))
+    (when assignee (push `(tlon-bae-set-assignee ,assignee) funlist))
     (tlon-bae-magit-status)
     (magit-section-show-level-3-all)
     (goto-char (point-min))
     (if (search-forward topic nil t)
 	(progn
-	  (dolist (elt `((tlon-bae-set-label ,label)
-			 (tlon-bae-set-assignee ,assignee)))
+	  (dolist (fun funlist)
 	    (search-forward topic nil t)
-	    (funcall (car elt) (cadr elt))
+	    (funcall (car fun) (cadr fun))
 	    (goto-char (point-min)))
 	  (search-forward topic nil t)
 	  (pcase action
 	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
-	    (`close (call-interactively 'forge-edit-topic-state))
-	    ))
+	    (`close (call-interactively 'forge-edit-topic-state))))
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
 ;;; Search
@@ -984,7 +1013,7 @@ prompt user to select between 'Translate', 'Revise' and 'Review'.
 Unless FILE is specified, use the name of the current buffer."
   (interactive)
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (tlon-bae-check-staged-or-unstaged file)
+    (tlon-bae-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
       (magit-pull-from-upstream nil)
       (sleep-for 2))
@@ -994,7 +1023,10 @@ Unless FILE is specified, use the name of the current buffer."
 					    "Review "))))
 	  (file (or file (buffer-name))))
       (magit-stage-file file)
-      (magit-commit-create (list "-m" (concat prefix (file-name-nondirectory file))))
+      ;; we check for staged or unstaged changes to FILE because
+      ;; `magit-commit-create' interrupts the process if there aren't
+      (when (tlon-bae-check-staged-or-unstaged file)
+	(magit-commit-create (list "-m" (concat prefix (file-name-nondirectory file)))))
       (call-interactively #'magit-push-current-to-pushremote))))
 
 (defun tlon-bae-commit-when-slug-at-point (&optional prefix)
@@ -1032,10 +1064,10 @@ Note that this only works for topics listed in the main buffer."
   "Prompt the user to select an ASSIGNEE.
 The prompt defaults to the current user."
   (let ((assignee (completing-read "Who should be the assignee? "
-				   tlon-bae-users nil nil
+				   tlon-bae-github-users nil nil
 				   (tlon-bae-find-key-in-alist
 				    user-full-name
-				    tlon-bae-users))))
+				    tlon-bae-github-users))))
     assignee))
 
 (defun tlon-bae-set-assignee (assignee)
@@ -1054,7 +1086,7 @@ The prompt defaults to the current user."
 (defun tlon-bae-set-initial-label-and-assignee ()
   "Set label to 'Awaiting processing' and assignee to current user."
   (tlon-bae-set-label "Awaiting processing")
-  (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-users)))
+  (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users)))
 
 ;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
 ;; It differs from that function only in that it returns the selection
@@ -1119,33 +1151,39 @@ If the topic has more than one assignee, return the first."
 
 (defvar tlon-bae-label-actions
   '(("Awaiting processing" . "Process")
-    ("Awaiting importing" . "Import")
-    ("Awaiting publication" . "Publish")
-    ("Awaiting review" . "Review")
-    ("Awaiting revision" . "Revise")
-    ("Awaiting rewrite" . "Rewrite")
     ("Awaiting translation" . "Translate")
+    ("Awaiting check" . "Check")
+    ("Awaiting revision" . "Revise")
+    ("Awaiting review" . "Review")
+    ("Awaiting publication" . "Publish")
+    ("Awaiting rewrite" . "Rewrite")
     ("Glossary" . "Respond")
     ("Misc" . "Misc"))
   "Alist of topic labels and corresponding actions.")
 
 (defvar tlon-bae-label-bindings
   '(("Awaiting processing" . "p")
-    ("Awaiting importing" . "i")
-    ("Awaiting rewrite" . "w")
-    ("Awaiting revision" . "r")
     ("Awaiting translation" . "t")
+    ("Awaiting check" . "c")
+    ("Awaiting revision" . "r")
     ("Awaiting review" . "v")
     ("Awaiting publication" . "u")
+    ("Awaiting rewrite" . "w")
     ("Glossary" . "g")
     ("Misc" . "m"))
   "Alist of topic labels and corresponding key bindings.")
 
-(defvar tlon-bae-users
+(defvar tlon-bae-github-users
   '(("fstafforini" . "Federico Stafforini")
     ("worldsaround" . "Leonardo Picón")
     ("benthamite" . "Pablo Stafforini"))
   "Alist of GitHub usernames and corresponding full names.")
+
+(defvar tlon-bae-system-users
+  '(("Federico Stafforini" . "Federico Stafforini")
+    ("cartago" . "Leonardo Picón")
+    ("Pablo Stafforini" . "Pablo Stafforini"))
+  "Alist of system usernames and corresponding full names.")
 
 (defun tlon-bae-find-key-in-alist (value alist)
   "Find the corresponding key for a VALUE in ALIST."
@@ -1225,6 +1263,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 
 (tlon-bae-create-file-opening-command "etc/Glossary.csv")
 (tlon-bae-create-file-opening-command "etc/tag-correspondence.csv")
+(tlon-bae-create-file-opening-command "etc/post-correspondence.csv")
 (tlon-bae-create-file-opening-command "etc/tag-slugs.txt")
 (tlon-bae-create-file-opening-command "etc/work-correspondence.csv")
 (tlon-bae-create-file-opening-command "../tlon-docs/bae.org")
@@ -1258,9 +1297,11 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ]
    ["Open file"
     ("f f" "counterpart"                tlon-bae-open-counterpart)
+    ("f c" "current clock"              tlon-bae-open-clocked-file)
     ("f g" "Glossary.csv"               tlon-bae-open-glossary)
     ("f w" "work-correspondence.csv"    tlon-bae-open-work-correspondence)
     ("f t" "tag-correspondence.csv"     tlon-bae-open-tag-correspondence)
+    ("f p" "post-correspondence.csv"     tlon-bae-open-post-correspondence)
     ("f s" "tag-slugs.txt"              tlon-bae-open-tag-slugs)
     ("f m" "manual.md"                  tlon-bae-open-bae)
     ("f r" "readme.md"                  tlon-bae-open-readme)
