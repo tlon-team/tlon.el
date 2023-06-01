@@ -66,7 +66,7 @@
     ;; process it as a new job
     (if (not (or assignee label))
 	(if (y-or-n-p "Process as a new job? ")
-	    (tlon-bae-process-create-job t)
+	    (tlon-bae-create-job t)
 	  (user-error "Aborted"))
       ;; else we prompt for an assignee...
       (unless (string= user-full-name assignee)
