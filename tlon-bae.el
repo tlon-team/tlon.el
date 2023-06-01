@@ -109,7 +109,7 @@ and assignee to the current user."
       (kill-new (format "%s" job-name)))
     (org-capture nil "tbJ"))
   ;;  we run `tlon-bae-orgit-capture' again to now properly capture the issue
-  (sleep-for 5)
+  (sleep-for 3)
   (tlon-bae-orgit-capture))
 
 ;;; File processing
