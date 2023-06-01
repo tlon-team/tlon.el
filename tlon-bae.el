@@ -64,33 +64,51 @@
 	(label (tlon-bae-forge-get-label-at-point)))
     ;; when the topic has neither a label nor an assignee, we offer to
     ;; process it as a new job
-    (unless (or assignee label)
-      (if (y-or-n-p "Process as a new job? ")
-	  (progn
-	    (tlon-bae-set-initial-label-and-assignee)
-	    (sleep-for 4))
-	(user-error "Aborted")))
-    ;; else we prompt for an assignee...
-    (unless (string= user-full-name assignee)
-      (if (y-or-n-p (format "The assignee of this topic is %s. Would you like to become the assignee? " assignee))
-	  (progn
-	    (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users))
-	    (sleep-for 2))
-	(user-error "Aborted")))
-    ;; ...or for a label
-    (unless label
-      (if (y-or-n-p "The topic has no label. Would you like to add one? ")
-	  (tlon-bae-set-label (tlon-bae-select-label))
-	(tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users))
-	(user-error "Aborted")))
+    (if (not (or assignee label))
+	(if (y-or-n-p "Process as a new job? ")
+	    (tlon-bae-process-new-job t)
+	  (user-error "Aborted"))
+      ;; else we prompt for an assignee...
+      (unless (string= user-full-name assignee)
+	(if (y-or-n-p
+	     (format "The assignee of this topic is %s. Would you like to become the assignee?" assignee))
+	    (progn
+	      (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users))
+	      (sleep-for 2))
+	  (user-error "Aborted")))
+      ;; ...or for a label
+      (unless label
+	(if (y-or-n-p "The topic has no label. Would you like to add one?")
+	    (tlon-bae-set-label (tlon-bae-select-label))
+	  (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users))
+	  (user-error "Aborted")))
+      (orgit-store-link nil)
+      (if-let* ((org-link (ps/org-nth-stored-link 0))
+		(refile-position (org-find-exact-headline-in-buffer
+				  (cadr (nth 0 org-stored-links))
+				  (get-file-buffer ps/file-tlon-bae))))
+	  (let ((action (alist-get label tlon-bae-label-actions nil nil #'string=))
+		(binding (upcase (alist-get label tlon-bae-label-bindings nil nil #'string=))))
+	    (kill-new (format "%s %s" action org-link))
+	    (org-capture nil (concat "tb" binding))
+	    ;; refile under job
+	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
+	    (ps/org-refile-latest))
+	(when (y-or-n-p "No job found for this issue. Create new job?")
+	  (tlon-bae-create-new-job)
+	  (tlon-bae-orgit-capture))))))
+
+(defun tlon-bae-create-new-job (&optional set-topic)
+  "Create new job.
+If SET-TOPIC is non-nil, set topic label to 'Awaiting processing'
+and assignee to the current user."
+  (save-window-excursion
+    (when set-topic
+      (tlon-bae-set-initial-label-and-assignee))
     (orgit-store-link nil)
-    (if-let* ((org-link (ps/org-nth-stored-link 0))
-	      (action (alist-get label tlon-bae-label-actions nil nil #'string=))
-	      (binding (upcase (alist-get label tlon-bae-label-bindings nil nil #'string=))))
-	(progn
-	  (kill-new (format "%s %s" action org-link))
-	  (org-capture nil (concat "tb" binding)))
-      (user-error "The topic appears to have no label"))))
+    (let ((job-name (cadr (nth 0 org-stored-links))))
+      (kill-new (format "%s" job-name)))
+    (org-capture nil "tbJ")))
 
 ;;; File processing
 (defun tlon-bae-generate-file-path (&optional lastname title tag translation)
