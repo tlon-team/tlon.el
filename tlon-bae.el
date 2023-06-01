@@ -93,7 +93,7 @@
 	    (org-capture nil (concat "tb" binding))
 	    ;; refile under job
 	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
-	    (ps/org-refile-latest))
+	    (ps/org-refile-goto-latest))
 	(when (y-or-n-p "No job found for this issue. Create new job?")
 	  (tlon-bae-create-new-job))))))
 
