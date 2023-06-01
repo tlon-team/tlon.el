@@ -66,7 +66,7 @@
     ;; process it as a new job
     (if (not (or assignee label))
 	(if (y-or-n-p "Process as a new job? ")
-	    (tlon-bae-create-job t)
+	    (tlon-bae-create-new-job t)
 	  (user-error "Aborted"))
       ;; else we prompt for an assignee...
       (unless (string= user-full-name assignee)
@@ -95,8 +95,7 @@
 	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
 	    (ps/org-refile-latest))
 	(when (y-or-n-p "No job found for this issue. Create new job?")
-	  (tlon-bae-create-new-job)
-	  (tlon-bae-orgit-capture))))))
+	  (tlon-bae-create-new-job))))))
 
 (defun tlon-bae-create-new-job (&optional set-topic)
   "Create new job.
@@ -108,7 +107,10 @@ and assignee to the current user."
     (orgit-store-link nil)
     (let ((job-name (cadr (nth 0 org-stored-links))))
       (kill-new (format "%s" job-name)))
-    (org-capture nil "tbJ")))
+    (org-capture nil "tbJ"))
+  ;;  we run `tlon-bae-orgit-capture' again to now properly capture the issue
+  (sleep-for 5)
+  (tlon-bae-orgit-capture))
 
 ;;; File processing
 (defun tlon-bae-generate-file-path (&optional lastname title tag translation)
@@ -440,7 +442,8 @@ Prompt the user for bibliographic information and create a new
 The identifier is either a post ID or a tag slug."
   (interactive "sURL: ")
   (let ((identifier (cond ((string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
-						 tlon-bae-eaf-post-id-regexp) url)
+						 tlon-bae-eaf-post-id-regexp)
+					 url)
 			   (match-string-no-properties 1 url))
 			  ((string-match (format "^.+?forum.effectivealtruism.org/topics/%s"
 						 tlon-bae-eaf-tag-slug-regexp) url)
