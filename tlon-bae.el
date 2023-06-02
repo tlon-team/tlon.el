@@ -1374,11 +1374,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("d t" "translations > tags"        tlon-bae-open-translations-tags)
     ("d e" "etc"                        tlon-bae-open-etc)
     ]
-   ["Read"
-    ("e e" "Read other"                 tlon-bae-read-other)
-    ("e t" "Read this"              tlon-bae-read-this)
-    ("e r" "Read stop"           tlon-bae-read-stop)
-    """Browse"
+   ["Browse"
     ("b b" "Browse file"                tlon-bae-browse-file)
     ]
    ]
