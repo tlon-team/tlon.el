@@ -724,6 +724,7 @@ the `originals/tags' directory."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
+    (tlon-bae-load-variables)
     (cl-multiple-value-bind
 	(original-path translation-path original-file)
 	(tlon-bae-set-paths)
