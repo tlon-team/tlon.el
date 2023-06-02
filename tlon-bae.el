@@ -1035,18 +1035,14 @@ the `originals/tags' directory."
 If ACTION is `convert', convert the existing issue into a pull
 request. If ACTION is `close', close issue."
   (let ((topic (format "Job: `%s`" original-file))
-	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
-	(funlist `((tlon-bae-set-label ,label))))
-    (when assignee (push `(tlon-bae-set-assignee ,assignee) funlist))
+	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (tlon-bae-magit-status)
     (magit-section-show-level-3-all)
     (goto-char (point-min))
     (if (search-forward topic nil t)
 	(progn
-	  (dolist (fun funlist)
-	    (search-forward topic nil t)
-	    (funcall (car fun) (cadr fun))
-	    (goto-char (point-min)))
+	  (tlon-bae-set-parameters topic label)
+	  (when assignee (tlon-bae-set-parameters topic assignee))
 	  (search-forward topic nil t)
 	  (pcase action
 	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
