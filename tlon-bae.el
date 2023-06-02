@@ -820,8 +820,6 @@ the `originals/tags' directory."
   (org-todo "DONE")
   (save-buffer))
 
-;; TODO: Find the stage when the translation file is created and make
-;; sure the relevant command stages and commits it.
 (defun tlon-bae-finalize-translation ()
   "Finalize translation."
   (interactive)
