@@ -910,26 +910,69 @@ the `originals/tags' directory."
 
 ;;; TTS
 
-(defun tlon-bae-read-this ()
-  "Read this buffer."
-  (interactive)
-  (read-aloud-buf)
-  (other-window 1))
+(defun tlon-bae-read-target-buffer ()
+  "Return the buffer that `read-aloud' should read."
+  (let ((buffer-list (cl-remove-if-not
+		      (lambda (buffer)
+			(string-match-p (regexp-quote "*markdown-output* — eww") (buffer-name buffer)))
+		      (buffer-list)))
+	buffer)
+    (cond ((= (length buffer-list) 1)
+	   (setq buffer (car buffer-list)))
+	  ((< (length buffer-list) 1)
+	   (user-error "No buffer found"))
+	  ((> (length buffer-list) 1)
+	   (user-error "More than one buffer found")))
+    buffer))
 
-(defun tlon-bae-read-other ()
-  "Read this buffer."
-  (interactive)
-  (save-window-excursion
-    (other-window 1)
-    (read-aloud-buf)))
+(defvar tlon-bae-read-aloud-next-action
+  'read-aloud-buf)
 
-(defun tlon-bae-read-stop ()
-  "Stop reading."
+(defun tlon-bae-read-start-or-stop ()
+  "Start or stop reading the buffer, based on the most recent action."
+  (funcall tlon-bae-read-aloud-next-action)
+  (setq tlon-bae-read-aloud-next-action
+	(if (eq tlon-bae-read-aloud-next-action 'read-aloud-buf)
+	    'read-aloud-stop
+	  'read-aloud-buf)))
+
+(defun tlon-bae-read-target-start-or-stop ()
+  "Start or stop reading the target buffer."
   (interactive)
-  (other-window 1)
-  (sleep-for 0.5)
-  (read-aloud-stop)
-  (other-window 1))
+  (let ((buffer (tlon-bae-read-target-buffer))
+	(current-buffer (current-buffer)))
+    (pop-to-buffer buffer)
+    (when read-aloud--c-bufpos
+      (goto-char read-aloud--c-bufpos))
+    (read-aloud-buf)
+    ;; we move point to the previous chunk, using the chunk divider
+    ;; defined in `read-aloud--grab-text'
+    (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
+    (pop-to-buffer current-buffer)))
+
+(defun tlon-bae--read-backward-or-forward (direction)
+  "Move in DIRECTION in the target buffer."
+  (interactive)
+  (let ((buffer (tlon-bae-read-target-buffer))
+	(current-buffer (current-buffer))
+	(fun (if (eq direction 'backward)
+		 're-search-backward
+	       're-search-forward)))
+    (when read-aloud--c-bufpos
+      (read-aloud-buf))
+    (pop-to-buffer buffer)
+    (funcall fun "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t 1)
+    (pop-to-buffer current-buffer)))
+
+(defun tlon-bae-read-backward ()
+  "Move backward in the target buffer."
+  (interactive)
+  (tlon-bae--read-backward-or-forward 'backward))
+
+(defun tlon-bae-read-forward ()
+  "Move forward in the target buffer."
+  (interactive)
+  (tlon-bae--read-backward-or-forward 'forward))
 
 ;;; Checking
 
