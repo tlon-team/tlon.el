@@ -83,6 +83,7 @@
 	  (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users))
 	  (user-error "Aborted")))
       (orgit-store-link nil)
+      (magit-pull-from-upstream nil)
       (if-let* ((org-link (ps/org-nth-stored-link 0))
 		(refile-position (org-find-exact-headline-in-buffer
 				  (cadr (nth 0 org-stored-links))
