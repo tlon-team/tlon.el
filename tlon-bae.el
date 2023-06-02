@@ -194,7 +194,7 @@ Prompt the user for bibliographic information and create a new
 
 (defun tlon-bae-shorten-title (title)
   "Return a shortened version of TITLE."
-  (string-match "\\([[:alnum:] ,'‘’“”\"]*\\)" title)
+  (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
   (match-string 1 title))
 
 (defvar tlon-bae-markdown-eawiki-footnote-source
