@@ -1349,7 +1349,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("m" "magit"                         tlon-bae-magit-status)
     ("n" "forge"                        tlon-bae-forge)
     """Package"
-    ;; ("p p" "update"                      )
+    ("p p" "update"                      tlon-bae-update)
     ("p l" "load variables"             tlon-bae-load-variables)
     ("p v" "version"                    tlon-bae-version)
     ]
@@ -1381,6 +1381,9 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ]
    ["Browse"
     ("b b" "Browse file"                tlon-bae-browse-file)
+    """Logs"
+    ("l l" "File at point"              magit-log-buffer-file)
+    ("l d" "Diffs since last change by user"  tlon-bae-log-buffer-diff)
     ]
    ]
   )
