@@ -185,9 +185,12 @@ Prompt the user for bibliographic information and create a new
   (let ((file (tlon-bae-generate-file-path)))
     (find-file file)))
 
-(defun tlon-bae-log-buffer-diff (file)
-  "Show changes in FILE since the latest commit by the current user."
+(defun tlon-bae-log-buffer-diff (&optional file)
+  "Show changes in FILE since the latest commit by the current user.
+If no FILE is provided, use the file visited by the current buffer."
+  (interactive)
   (let* ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
+	 (file (or file (buffer-file-name)))
 	 (user (tlon-bae-find-key-in-alist user-full-name tlon-bae-system-users))
 	 ;; get most recent commit in FILE by USER
 	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- '%s' | grep -m 1 '%s' | awk '{print $1}'" file user)))
