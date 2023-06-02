@@ -43,11 +43,13 @@
   "Update `tlon-bae' package."
   (interactive)
   (let* ((default-directory (file-name-concat user-emacs-directory "elpaca/repos/tlon-bae/"))
+	 (builds-directory (file-name-concat user-emacs-directory "elpaca/builds/tlon-bae/"))
 	 (tlon-bae-file (file-name-concat default-directory "tlon-bae.el")))
     (shell-command "git pull")
     (with-current-buffer (find-file-noselect tlon-bae-file)
-      (eval-buffer)))
-  (message "Package updated. %s" tlon-bae-version))
+      (eval-buffer))
+    (dired-delete-file builds-directory 'always t)
+    (message "Package updated. %s" tlon-bae-version)))
 
 (defun tlon-bae-forge ()
   "Launch the Forge dispatcher in the BAE directory."
