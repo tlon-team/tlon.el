@@ -1071,26 +1071,18 @@ request. If ACTION is `close', close issue."
 
 (defun tlon-bae-commit-and-push (prefix file)
   "Commit and push changes in BAE repo.
-As commit message, use 'PREFIX FILE'. Unless PREFIX is specified,
-prompt user to select between 'Translate', 'Revise' and 'Review'.
-Unless FILE is specified, use the name of the current buffer."
-  (interactive)
+As commit message, use 'PREFIX FILE'."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (tlon-bae-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
       (magit-pull-from-upstream nil)
       (sleep-for 2))
-    (let ((prefix (or prefix
-		      (completing-read "" '("Revise "
-					    "Translate "
-					    "Review "))))
-	  (file (or file (buffer-name))))
-      (magit-stage-file file)
-      ;; we check for staged or unstaged changes to FILE because
-      ;; `magit-commit-create' interrupts the process if there aren't
-      (when (tlon-bae-check-staged-or-unstaged file)
-	(magit-commit-create (list "-m" (concat prefix (file-name-nondirectory file)))))
-      (call-interactively #'magit-push-current-to-pushremote))))
+    (magit-stage-file file)
+    ;; we check for staged or unstaged changes to FILE because
+    ;; `magit-commit-create' interrupts the process if there aren't
+    (when (tlon-bae-check-staged-or-unstaged file)
+      (magit-commit-create (list "-m" (concat prefix (file-name-nondirectory file)))))
+    (call-interactively #'magit-push-current-to-pushremote)))
 
 (defun tlon-bae-commit-when-slug-at-point (&optional prefix)
   "Commit and push change when point is on a slug.
