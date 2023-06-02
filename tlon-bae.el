@@ -1049,6 +1049,15 @@ request. If ACTION is `close', close issue."
 	    (`close (call-interactively 'forge-edit-topic-state))))
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
+(defun tlon-bae-set-parameters (topic &optional label-or-assignee)
+  "Docstring."
+  (let ((assignee-p (member label-or-assignee (mapcar 'car tlon-bae-github-users))))
+    (search-forward topic nil t)
+    (if assignee-p
+	(tlon-bae-set-assignee label-or-assignee)
+      (tlon-bae-set-label label-or-assignee))
+    (goto-char (point-min))))
+
 ;;; Search
 
 (defun tlon-bae-search-github (&optional search-string)
