@@ -149,7 +149,7 @@ file path."
   "Docstring."
   (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-post-get-title response)))
 	 ;; sometimes the 'author' field is empty so we use the 'user' field instead
-	 (identifier (tlon-bae-eaf-get-identifier-from-response response))
+	 (id-or-slug (tlon-bae-eaf-get-id-or-slug-from-response response))
 	 (author (or (tlon-bae-eaf-post-get-author response)
 		     (tlon-bae-eaf-post-get-user response)))
 	 ;; we past 'tag' as lastname if object is tag
@@ -396,24 +396,28 @@ If no FILE is provided, use the file visited by the current buffer."
   (interactive)
   (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
-(defun tlon-bae-get-counterpart ()
-  "Get the counterpart of the current file."
-  (let* ((current-file (buffer-file-name))
-	 (current-dir (file-name-directory current-file))
-	 (current-file-name (file-name-nondirectory current-file))
+(defun tlon-bae-get-counterpart (&optional file-path)
+  "Get the counterpart of file in FILE-PATH.
+If FILE-PATH is nil, use the path of the file visited by the
+current buffer."
+  (let* ((file-path (or file-path (buffer-file-name)))
+	 (dir-path (file-name-directory file-path))
+	 (file-name (file-name-nondirectory file-path))
 	 (correspondence-alist (cond
-				((string-match "/originals/posts/" current-dir)
+				((string-match "/originals/posts/" dir-path)
 				 tlon-bae-post-correspondence)
-				((string-match "/originals/tags/" current-dir)
+				((string-match "/originals/tags/" dir-path)
 				 tlon-bae-tag-correspondence)
-				((string-match "/translations/posts/" current-dir)
-				 (mapcar (lambda (pair) (cons (cdr pair) (car pair))) tlon-bae-post-correspondence))
-				((string-match "/translations/tags/" current-dir)
-				 (mapcar (lambda (pair) (cons (cdr pair) (car pair))) tlon-bae-tag-correspondence)))))
-    (when-let ((new-file-name (cdr (assoc current-file-name correspondence-alist)))
-	       (new-dir (if (string-match "/originals/" current-dir)
-			    (replace-regexp-in-string "/originals/" "/translations/" current-dir)
-			  (replace-regexp-in-string "/translations/" "/originals/" current-dir))))
+				((string-match "/translations/posts/" dir-path)
+				 (mapcar (lambda (pair) (cons (cdr pair) (car pair)))
+					 tlon-bae-post-correspondence))
+				((string-match "/translations/tags/" dir-path)
+				 (mapcar (lambda (pair) (cons (cdr pair) (car pair)))
+					 tlon-bae-tag-correspondence)))))
+    (when-let ((new-file-name (cdr (assoc file-name correspondence-alist)))
+	       (new-dir (if (string-match "/originals/" dir-path)
+			    (replace-regexp-in-string "/originals/" "/translations/" dir-path)
+			  (replace-regexp-in-string "/translations/" "/originals/" dir-path))))
       (expand-file-name new-file-name new-dir))))
 
 (defun tlon-bae-open-counterpart ()
@@ -443,39 +447,44 @@ If no FILE is provided, use the file visited by the current buffer."
   "Return t if IDENTIFIER is a tag slug, nil otherwise."
   (not (not (string-match (format "^%s$" tlon-bae-eaf-tag-slug-regexp) identifier))))
 
-(defun tlon-bae-eaf-get-identifier-from-url (url)
-  "Return the EAF identifier in URL, if found.
-The identifier is either a post ID or a tag slug."
+(defun tlon-bae-eaf-get-id-or-slug-from-identifier (identifier)
+  "Return the EAF post ID or tag slug from IDENTIFIER, if found.
+  IDENTIFIER can be an URL, a podt ID or a tag slug."
   (interactive "sURL: ")
-  (let ((identifier (cond ((string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
-						 tlon-bae-eaf-post-id-regexp)
-					 url)
-			   (match-string-no-properties 1 url))
-			  ((string-match (format "^.+?forum.effectivealtruism.org/topics/%s"
-						 tlon-bae-eaf-tag-slug-regexp) url)
-			   (match-string-no-properties 1 url)))))
-    identifier))
+  (if (ps/string-is-url-p identifier)
+      (let ((id-or-slug (cond ((string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
+						     tlon-bae-eaf-post-id-regexp)
+					     identifier)
+			       (match-string-no-properties 1 identifier))
+			      ((string-match (format "^.+?forum.effectivealtruism.org/topics/%s"
+						     tlon-bae-eaf-tag-slug-regexp)
+					     identifier)
+			       (match-string-no-properties 1 identifier)))))
+	id-or-slug)
+    (pcase identifier
+      ((pred tlon-bae-eaf-post-id-p) identifier)
+      ((pred tlon-bae-eaf-tag-slug-p) identifier)
+      (_ (user-error "Not a valid URL, post ID or tag slug: %S" identifier)))))
 
-(defun tlon-bae-eaf-get-identifier-from-response (response)
-  "Return the EAF identifier from Json RESPONSE.
-The identifier is either a post ID or a tag slug."
+(defun tlon-bae-eaf-get-id-or-slug-from-response (response)
+  "Return the EAF post ID or tag slug from Json RESPONSE."
   (or (tlon-bae-eaf-post-get-id response)
       (tlon-bae-eaf-tag-get-slug response)))
 
-(defun tlon-bae-eaf-get-object (identifier)
-  "Return the EAF object in IDENTIFIER."
-  (let ((object (cond ((tlon-bae-eaf-post-id-p identifier)
+(defun tlon-bae-eaf-get-object (id-or-slug)
+  "Return the EAF object in ID-OR-SLUG."
+  (let ((object (cond ((tlon-bae-eaf-post-id-p id-or-slug)
 		       'post)
-		      ((tlon-bae-eaf-tag-slug-p identifier)
+		      ((tlon-bae-eaf-tag-slug-p id-or-slug)
 		       'tag)
-		      (t (user-error "Invalid identifier: %S" identifier)))))
+		      (t (user-error "Not an ID or slug: %S" id-or-slug)))))
     object))
 
 ;;; Clocked heading
 
 (defun tlon-bae-get-clock-file ()
   "Return file name in clocked heading.
-Assumes file name is enclosed in backticks."
+  Assumes file name is enclosed in backticks."
   (unless org-clock-current-task
     (user-error "No clock running"))
   (let ((clock (substring-no-properties org-clock-current-task)))
@@ -497,7 +506,7 @@ Assumes file name is enclosed in backticks."
 
 (defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
-Assumes action is first word of clocked task."
+  Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-bae-get-clock-file)
   (let ((action (car (split-string (substring-no-properties org-clock-current-task))))
@@ -531,7 +540,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
-Return the subdirectory containing the FILENAME, or nil if not found."
+  Return the subdirectory containing the FILENAME, or nil if not found."
   (catch 'found
     (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
       (when (and (file-exists-p file)
@@ -552,8 +561,8 @@ Return the subdirectory containing the FILENAME, or nil if not found."
 
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
-Assumes the issue title contains FILE, which is a unique file in
-the `originals/tags' directory."
+  Assumes the issue title contains FILE, which is a unique file in
+  the `originals/tags' directory."
   (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
 	   when (string= file (oref topic title))
 	   return (oref topic id)))
@@ -668,8 +677,9 @@ the `originals/tags' directory."
       (_ (user-error "I don't know what to do in `%s`" major-mode)))))
 
 (defun tlon-bae-create-job (url)
+  "Docstring."
   (interactive "sURL: ")
-  (if (tlon-bae-eaf-get-identifier-from-url url)
+  (if (tlon-bae-eaf-get-id-or-slug-from-identifier url)
       (tlon-bae-create-job-eaf url)
     (tlon-bae-create-job-non-eaf url))
   ;; (when (y-or-n-p "Add work to ebib?")
@@ -678,12 +688,12 @@ the `originals/tags' directory."
 
 (defun tlon-bae-create-job-eaf (url)
   "Docstring."
-  (let* ((identifier (tlon-bae-eaf-get-identifier-from-url url))
-	 (response (tlon-bae-eaf-request identifier))
+  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url))
+	 (response (tlon-bae-eaf-request id-or-slug))
 	 (file-path (tlon-bae-eaf-generate-file-path response))
 	 (filename (file-name-nondirectory file-path)))
     (tlon-bae-create-issue-for-job filename)
-    (tlon-bae-eaf-import-html identifier file-path)))
+    (tlon-bae-eaf-import-html id-or-slug file-path)))
 
 (defun tlon-bae-create-job-non-eaf (url)
   "Docstring."
@@ -1381,9 +1391,9 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ]
    ["Browse"
     ("b b" "Browse file"                tlon-bae-browse-file)
-    """Logs"
-    ("l l" "File at point"              magit-log-buffer-file)
-    ("l d" "Diffs since last change by user"  tlon-bae-log-buffer-diff)
+    """File changes"
+    ("c c" "Log"                        magit-log-buffer-file)
+    ("c d" "Diffs since last user change"  tlon-bae-log-buffer-diff)
     ]
    ]
   )
@@ -1405,7 +1415,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
   '(post tag)
   "List of entities supported by the EAF GraphQL API.")
 
-;;; queries
+;;; request
 
 (defun tlon-bae-eaf-post-query (id)
   "Return an EA Forum GraphQL query for post whose ID is ID."
@@ -1419,7 +1429,30 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 	  slug
 	  "\\\" } }) {\\n    result {\\n      name\\n      slug\\n      description {\\n        html\\n      }\\n      parentTag {\\n        name\\n      }\\n    }\\n  }\\n}\\n\"}"))
 
-;;; get json objects
+(defun tlon-bae-eaf-request (id-or-slug &optional async)
+  "Run an EAF request for ID-OR-SLUG.
+If ASYNC is t, run the request asynchronously."
+  (let* ((object (tlon-bae-eaf-get-object id-or-slug))
+	 (fun (pcase object
+		('post 'tlon-bae-eaf-post-query)
+		('tag 'tlon-bae-eaf-tag-query)
+		(_ (error "Invalid object: %S" object))))
+	 (query (funcall fun id-or-slug))
+	 response)
+    (request
+      tlon-bae-eaf-api-url
+      :type "POST"
+      :headers '(("Content-Type" . "application/json"))
+      :data query
+      :parser 'json-read
+      :sync (not async)
+      :success (cl-function
+		(lambda (&key data &allow-other-keys)
+		  (setq response (cdr (assoc 'data data)))))
+      :error (cl-function
+	      (lambda (&rest args &key error-thrown &allow-other-keys)
+		(message "Error: %S" error-thrown))))
+    response))
 
 (defun tlon-bae--eaf-post-get-result (response)
   "docstring"
@@ -1482,7 +1515,15 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 	 (title (cdr (assoc 'name result))))
     (tlon-bae-shorten-title title)))
 
-;;; file handling
+;;; html import
+
+(defvar tlon-bae-pandoc-convert-from-file
+  "pandoc -s '%s' -t markdown -o '%s'"
+  "Command to convert from HTML file to markdown.")
+
+(defvar tlon-bae-pandoc-convert-from-url
+  "pandoc -s -r html '%s' -o '%s'"
+  "Command to convert from URL to markdown.")
 
 (defun tlon-bae-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
@@ -1491,39 +1532,23 @@ If DIR-PATH is nil, create a command to open the BAE repository."
       (insert html))
     filename))
 
-;;; request functions
+(defun tlon-bae-import-html (url)
+  "Import the HTML in URL and convert it to Markdown."
+  (interactive "sURL: ")
+  (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
+      (tlon-bae-eaf-import-html id-or-slug)
+    (let* ((source url)
+	   (target (tlon-bae-generate-file-path)))
+      (tlon-bae-html-to-markdown source target))))
 
-(defun tlon-bae-eaf-request (identifier &optional async)
-  "Run an EAF request for IDENTIFIER.
-IDENTIFIER should be a string returned by
-`tlon-bae-validate-identifier'; see its docstring for details.
-If ASYNC is t, run the request asynchronously."
-  (let* ((object (tlon-bae-eaf-get-object identifier))
-	 (fun (pcase object
-		('post 'tlon-bae-eaf-post-query)
-		('tag 'tlon-bae-eaf-tag-query)
-		(_ (error "Invalid object: %S" object))))
-	 (query (funcall fun identifier))
-	 response)
-    (request
-      tlon-bae-eaf-api-url
-      :type "POST"
-      :headers '(("Content-Type" . "application/json"))
-      :data query
-      :parser 'json-read
-      :sync (not async)
-      :success (cl-function
-		(lambda (&key data &allow-other-keys)
-		  (setq response (cdr (assoc 'data data)))))
-      :error (cl-function
-	      (lambda (&rest args &key error-thrown &allow-other-keys)
-		(message "Error: %S" error-thrown))))
-    response))
-
-(defun tlon-bae-eaf-import-html (identifier file-path)
-  "Import the html of EAF post/tag with IDENTIFIER to FILE-PATH."
-  (let* ((response (tlon-bae-eaf-request identifier))
-	 (object (tlon-bae-eaf-get-object identifier))
+(defun tlon-bae-eaf-import-html (identifier &optional file-path)
+  "Import the HTML of EAF entity with IDENTIFIER and convert it to Markdown.
+IDENTIFIER can be a URL, a post ID, or a tag slug. If FILE-PATH
+is not provided, a file path will be generated based on author
+and title information."
+  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier))
+	 (response (tlon-bae-eaf-request id-or-slug))
+	 (object (tlon-bae-eaf-get-object id-or-slug))
 	 (html (pcase object
 		 ('post (tlon-bae-eaf-post-get-html response))
 		 ('tag (tlon-bae-eaf-get-tag-html response))))
@@ -1534,20 +1559,14 @@ If ASYNC is t, run the request asynchronously."
   (message "Exported to `%s'" file-path))
 
 (defun tlon-bae-html-to-markdown (source target)
-  "Docstring."
+  "Convert HTML text in SOURCE to Markdown text in TARGET.
+SOURCE can be a URL or, like TARGET, a file path."
+  (interactive)
   (let ((pandoc (if (ps/string-is-url-p source)
 		    tlon-bae-pandoc-convert-from-url
 		  tlon-bae-pandoc-convert-from-file)))
     (shell-command
      (format pandoc source target))))
-
-(defvar tlon-bae-pandoc-convert-from-file
-  "pandoc -s '%s' -t markdown -o '%s'"
-  "Command to convert from HTML file to markdown.")
-
-(defvar tlon-bae-pandoc-convert-from-url
-  "pandoc -s -r html '%s' -o '%s'"
-  "Command to convert from URL to markdown.")
 
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
