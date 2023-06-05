@@ -512,6 +512,13 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 	(string-match "orgit-topic:\\(.+\\)" raw-link)
 	(match-string 1 raw-link)))))
 
+(defun tlon-bae-open-clock-topic ()
+  "Open the topic from `orgit-forge' link in heading at point."
+  (interactive)
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
+	(topic (tlon-bae-get-clock-topic)))
+    (forge-visit-issue topic)))
+
 (defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
   Assumes action is first word of clocked task."
