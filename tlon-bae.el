@@ -751,6 +751,27 @@ SOURCE can be a URL or, like TARGET, a file path."
      (format pandoc source target))
     (find-file target)))
 
+(defun tlon-bae-import-pdf (path &optional issue)
+  "Import the PDF in PATH and convert it to Markdown.
+The command requires the user to supply values for the header and
+footer elements to be excluded from the conversion, which are
+different for each PDF. To determine these values, measure the
+distance between the top/bottom of the PDF (which will open in
+the other window) and note the number of pixels until the end of
+the header/footer. (You can measure the number of pixels between
+two points by taking a screenshot: note the numbers next to the
+pointer.) Then enter these values when prompted.
+If ISSUE is non-nile, a new issue will be created."
+  (let* ((path (or path (read-file-name "PDF: ")))
+	 (target (tlon-bae-generate-file-path)))
+    (find-file-other-window path)
+    (let ((header (read-string "Header: "))
+	  (footer (read-string "Footer: ")))
+      (shell-command (format "pdftotext -margint %s -marginb %s '%s' '%s'"
+			     header footer path target))
+      (find-file path))
+    (when issue
+      (tlon-bae-create-issue-for-job (file-name-nondirectory target)))))
 
 (defun tlon-bae-create-issue-for-job (filename)
   "Docstring."
