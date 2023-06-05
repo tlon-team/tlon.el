@@ -694,14 +694,14 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 			(_ (user-error "I don't know what to do with `%s`" action))))
       (_ (user-error "I don't know what to do in `%s`" major-mode)))))
 
-(defun tlon-bae-create-job (url)
-  "Docstring."
-  (interactive "sURL: ")
-  (if (tlon-bae-eaf-get-id-or-slug-from-identifier url)
-      (tlon-bae-create-job-eaf url)
-    (tlon-bae-create-job-non-eaf url))
-  ;; (when (y-or-n-p "Add work to ebib?")
-  ;; (zotra-add-entry-from-url url))
+(defun tlon-bae-create-job (identifier)
+  "Create a new job for IDENTIFIER.
+Creating a new job means (1) importing a document and (2)
+ creating an associated issue.
+
+IDENTIFIER can be a URL or a PDF file path."
+  (interactive "sURL or path to PDF: ")
+  (tlon-bae-import-document identifier t)
   (message "Next step: capture the new job (`,`) and run the usual command (`H-r r`)."))
 
 (defun tlon-bae-create-job-eaf (url)
