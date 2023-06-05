@@ -887,7 +887,7 @@ FILENAME`."
 	(flyspell-buffer)
 	(orgit-topic-open topic)
 	;; opens in other window, so no need to switch to it first
-	(tlon-bae-log-buffer-diff original-path)
+	(tlon-bae-log-buffer-diff translation-path)
 	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-finalize-processing ()
