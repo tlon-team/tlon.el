@@ -774,7 +774,9 @@ If ISSUE is non-nile, a new issue will be created."
       (tlon-bae-create-issue-for-job (file-name-nondirectory target)))))
 
 (defun tlon-bae-create-issue-for-job (filename)
-  "Docstring."
+  "Create an issue based on FILENAME.
+Creates a new issue in the BAE repository with the format `Job:
+FILENAME`."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (call-interactively #'forge-create-issue)
     (insert (format "Job: `%s`" filename))
