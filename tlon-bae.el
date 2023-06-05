@@ -560,6 +560,12 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 	(match-string 1 captured)
       (user-error "I wasn't able to find a file at point or in the forge buffer"))))
 
+(defun tlon-bae-open-forge-file ()
+  "Open the file of the topic at point or in the current forge buffer."
+  (interactive)
+  (let ((file (tlon-bae-get-forge-file)))
+    (find-file file)))
+
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
   Return the subdirectory containing the FILENAME, or nil if not found."
@@ -570,16 +576,6 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 		 (string-equal (file-name-nondirectory file) filename))
 	(throw 'found (file-name-directory file)))
       nil)))
-
-(defun tlon-bae-open-forge-file ()
-  "Open the file of the topic at point or in current forge buffer."
-  (interactive)
-  (if-let* ((filename (tlon-bae-get-forge-file))
-	    (dir (tlon-bae-find-subdirectory-containing-file filename))
-	    (file (file-name-concat dir filename)))
-      (find-file file)
-    (user-error "I couldn't find `%s' in `%s'"
-		filename ps/dir-tlon-biblioteca-altruismo-eficaz)))
 
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
