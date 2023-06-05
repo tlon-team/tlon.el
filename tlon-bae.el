@@ -1451,8 +1451,8 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ]
    ["Open file"
     ("f f" "counterpart"                tlon-bae-open-counterpart)
-    ("f c" "current clock"              tlon-bae-open-clocked-file)
     ("f g" "Glossary.csv"               tlon-bae-open-glossary)
+    ("f n" "Issue"                tlon-bae-open-forge-file)
     ("f w" "work-correspondence.csv"    tlon-bae-open-work-correspondence)
     ("f t" "tag-correspondence.csv"     tlon-bae-open-tag-correspondence)
     ("f p" "post-correspondence.csv"     tlon-bae-open-post-correspondence)
@@ -1469,10 +1469,15 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("d e" "etc"                        tlon-bae-open-etc)
     ]
    ["Browse"
-    ("b b" "Browse file"                tlon-bae-browse-file)
+    ("b b" "file"                tlon-bae-browse-file)
+    ("b r" "repo"                tlon-bae-browse-repo)
     """File changes"
-    ("c c" "Log"                        magit-log-buffer-file)
-    ("c d" "Diffs since last user change"  tlon-bae-log-buffer-diff)
+    ("h h" "Log"                        magit-log-buffer-file)
+    ("h d" "Diffs since last user change"  tlon-bae-log-buffer-diff)]
+   ["Clock"
+    ("c c" "Issue"                        tlon-bae-open-clock-topic)
+    ("c f" "File"                         tlon-bae-open-clock-file )
+    ("c o" "Heading"                     org-clock-goto)
     ]
    ]
   )
