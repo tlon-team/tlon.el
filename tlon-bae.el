@@ -1555,17 +1555,18 @@ If ASYNC is t, run the request asynchronously."
 IDENTIFIER can be a URL, a post ID, or a tag slug. If FILE-PATH
 is not provided, a file path will be generated based on author
 and title information."
-  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier))
+  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier identifier))
 	 (response (tlon-bae-eaf-request id-or-slug))
 	 (object (tlon-bae-eaf-get-object id-or-slug))
+	 (file-path (or file-path (tlon-bae-eaf-generate-file-path response)))
 	 (html (pcase object
 		 ('post (tlon-bae-eaf-post-get-html response))
 		 ('tag (tlon-bae-eaf-get-tag-html response))))
 	 (html-file (tlon-bae-save-html-to-file html)))
     (tlon-bae-html-to-markdown html-file file-path)
     (with-current-buffer (find-file-noselect file-path)
-      (tlon-bae-markdown-eaf-cleanup)))
-  (message "Exported to `%s'" file-path))
+      (tlon-bae-markdown-eaf-cleanup))
+    (find-file file-path)))
 
 (defun tlon-bae-html-to-markdown (source target)
   "Convert HTML text in SOURCE to Markdown text in TARGET.
@@ -1575,7 +1576,8 @@ SOURCE can be a URL or, like TARGET, a file path."
 		    tlon-bae-pandoc-convert-from-url
 		  tlon-bae-pandoc-convert-from-file)))
     (shell-command
-     (format pandoc source target))))
+     (format pandoc source target))
+    (find-file target)))
 
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
