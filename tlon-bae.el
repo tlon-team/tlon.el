@@ -145,16 +145,23 @@ file path."
     (kill-new filename)
     (message "Copied `%s'" filename)))
 
+(defun tlon-bae-extract-lastname-from-author (author)
+  "Try to extract a last name from AUTHOR."
+  (let* ((case-fold-search nil)
+	 (uncameled-author (replace-regexp-in-string "\\([A-Z]\\)" " \\1" author))
+	 (lastname (car (last (split-string uncameled-author "[ _-]")))))
+    lastname))
+
 (defun tlon-bae-eaf-generate-file-path (response)
   "Docstring."
   (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-post-get-title response)))
-	 ;; sometimes the 'author' field is empty so we use the 'user' field instead
 	 (id-or-slug (tlon-bae-eaf-get-id-or-slug-from-response response))
+	 ;; sometimes the 'author' field is empty so we use the 'user' field instead
 	 (author (or (tlon-bae-eaf-post-get-author response)
-		     (tlon-bae-eaf-post-get-user response)))
+		     (tlon-bae-eaf-post-get-username response)))
 	 ;; we past 'tag' as lastname if object is tag
 	 (lastname (if author
-		       (car (last (split-string author "[ _-]")))
+		       (tlon-bae-extract-lastname-from-author author)
 		     "tag"))
 	 (file-path (tlon-bae-generate-file-path lastname title))
 	 (filename (file-name-nondirectory file-path))
@@ -449,7 +456,7 @@ current buffer."
 
 (defun tlon-bae-eaf-get-id-or-slug-from-identifier (identifier)
   "Return the EAF post ID or tag slug from IDENTIFIER, if found.
-  IDENTIFIER can be an URL, a podt ID or a tag slug."
+IDENTIFIER can be an URL, a podt ID or a tag slug."
   (interactive "sURL: ")
   (if (ps/string-is-url-p identifier)
       (let ((id-or-slug (cond ((string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
@@ -1484,11 +1491,12 @@ If ASYNC is t, run the request asynchronously."
 	 (author (cdr (assoc 'author result))))
     author))
 
-(defun tlon-bae-eaf-post-get-user (response)
+(defun tlon-bae-eaf-post-get-username (response)
   "docstring"
   (let* ((result (tlon-bae--eaf-post-get-result response))
-	 (user (cdr (assoc 'user result))))
-    user))
+	 (user (cdr (assoc 'user result)))
+	 (username (cdr (assoc 'username user))))
+    username))
 
 (defun tlon-bae--eaf-tag-get-result (response)
   "docstring"
