@@ -611,7 +611,7 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 	 (file-path (file-name-concat dir filename)))
     file-path))
 
-(defun tlon-bae-open-clocked-file ()
+(defun tlon-bae-open-clock-file ()
   "Open file of clocked task."
   (interactive)
   (let ((file-path (tlon-bae-set-original-path)))
