@@ -439,6 +439,10 @@ current buffer."
 
 ;;; EAF validation
 
+(defvar tlon-bae-eaf-p
+  "forum\\.effectivealtruism\\.org/"
+  "Regular expression for validating EAF URLs.")
+
 (defvar tlon-bae-eaf-post-id-regexp
   "\\([[:alnum:]]\\{17\\}\\)"
   "Regular expression for validating post IDs.")
@@ -446,6 +450,10 @@ current buffer."
 (defvar tlon-bae-eaf-tag-slug-regexp
   "\\([[:alnum:]-]*\\)"
   "Regular expression for validating tag slugs.")
+
+(defun tlon-bae-eaf-p (url)
+  "Return t if URL is an EAF URL, nil otherwise."
+  (not (not (string-match tlon-bae-eaf-p url))))
 
 (defun tlon-bae-eaf-post-id-p (identifier)
   "Return t if IDENTIFIER is a post ID, nil otherwise."
