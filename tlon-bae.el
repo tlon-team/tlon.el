@@ -1461,6 +1461,11 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 	 (url-prefix "https://github.com/tlon-team/biblioteca-altruismo-eficaz/blob/main/"))
     (browse-url (concat url-prefix url-suffix))))
 
+(defun tlon-bae-browse-repo ()
+  "Browse the BAE repository."
+  (interactive)
+  (browse-url "https://github.com/tlon-team/biblioteca-altruismo-eficaz"))
+
 ;;;
 
 (defconst tlon-bae-eaf-api-url
