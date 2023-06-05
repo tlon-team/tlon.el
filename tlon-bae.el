@@ -479,8 +479,7 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 	id-or-slug)
     (pcase identifier
       ((pred tlon-bae-eaf-post-id-p) identifier)
-      ((pred tlon-bae-eaf-tag-slug-p) identifier)
-      (_ (user-error "Not a valid URL, post ID or tag slug: %S" identifier)))))
+      ((pred tlon-bae-eaf-tag-slug-p) identifier))))
 
 (defun tlon-bae-eaf-get-id-or-slug-from-response (response)
   "Return the EAF post ID or tag slug from Json RESPONSE."
