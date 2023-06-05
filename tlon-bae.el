@@ -704,21 +704,53 @@ IDENTIFIER can be a URL or a PDF file path."
   (tlon-bae-import-document identifier t)
   (message "Next step: capture the new job (`,`) and run the usual command (`H-r r`)."))
 
-(defun tlon-bae-create-job-eaf (url)
-  "Docstring."
-  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url))
-	 (response (tlon-bae-eaf-request id-or-slug))
-	 (file-path (tlon-bae-eaf-generate-file-path response))
-	 (filename (file-name-nondirectory file-path)))
-    (tlon-bae-create-issue-for-job filename)
-    (tlon-bae-eaf-import-html id-or-slug file-path)))
+(defun tlon-bae-import-document (identifier &optional issue)
+  "Import a document from IDENTIFIER.
+IDENTIFIER can be a URL or a PDF file path. If ISSUE is non-nil,
+a new issue will be created."
+  (interactive "sURL or path to PDF: ")
+  (if (ps/string-is-url-p identifier)
+      (tlon-bae-import-html identifier issue)
+    (tlon-bae-import-pdf identifier issue)))
 
-(defun tlon-bae-create-job-non-eaf (url)
-  "Docstring."
-  (let* ((file-path (tlon-bae-generate-file-path))
-	 (filename (file-name-nondirectory file-path)))
-    (tlon-bae-create-issue-for-job filename)
-    (tlon-bae-html-to-markdown url file-path)))
+(defun tlon-bae-import-html (url &optional issue)
+  "Import the HTML in URL and convert it to Markdown.
+If ISSUE is non-nil, create a new issue."
+  (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
+      (tlon-bae-import-html-eaf id-or-slug)
+    (let* ((target (tlon-bae-generate-file-path)))
+      (tlon-bae-html-to-markdown url target))
+    (when issue
+      (tlon-bae-create-issue-for-job (file-name-nondirectory target)))))
+
+(defun tlon-bae-import-html-eaf (identifier &optional file-path)
+  "Import the HTML of EAF entity with IDENTIFIER and convert it to Markdown.
+IDENTIFIER can be a URL, a post ID, or a tag slug. If FILE-PATH
+is not provided, a file path will be generated based on author
+and title information."
+  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier identifier))
+	 (response (tlon-bae-eaf-request id-or-slug))
+	 (object (tlon-bae-eaf-get-object id-or-slug))
+	 (file-path (or file-path (tlon-bae-eaf-generate-file-path response)))
+	 (html (pcase object
+		 ('post (tlon-bae-eaf-post-get-html response))
+		 ('tag (tlon-bae-eaf-get-tag-html response))))
+	 (html-file (tlon-bae-save-html-to-file html)))
+    (tlon-bae-html-to-markdown html-file file-path)
+    (with-current-buffer (find-file-noselect file-path)
+      (tlon-bae-markdown-eaf-cleanup))
+    (find-file file-path)))
+
+(defun tlon-bae-html-to-markdown (source target)
+  "Convert HTML text in SOURCE to Markdown text in TARGET.
+SOURCE can be a URL or, like TARGET, a file path."
+  (let ((pandoc (if (ps/string-is-url-p source)
+		    tlon-bae-pandoc-convert-from-url
+		  tlon-bae-pandoc-convert-from-file)))
+    (shell-command
+     (format pandoc source target))
+    (find-file target)))
+
 
 (defun tlon-bae-create-issue-for-job (filename)
   "Docstring."
@@ -1557,43 +1589,6 @@ If ASYNC is t, run the request asynchronously."
       (insert html))
     filename))
 
-(defun tlon-bae-import-html (url)
-  "Import the HTML in URL and convert it to Markdown."
-  (interactive "sURL: ")
-  (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
-      (tlon-bae-eaf-import-html id-or-slug)
-    (let* ((source url)
-	   (target (tlon-bae-generate-file-path)))
-      (tlon-bae-html-to-markdown source target))))
-
-(defun tlon-bae-eaf-import-html (identifier &optional file-path)
-  "Import the HTML of EAF entity with IDENTIFIER and convert it to Markdown.
-IDENTIFIER can be a URL, a post ID, or a tag slug. If FILE-PATH
-is not provided, a file path will be generated based on author
-and title information."
-  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier identifier))
-	 (response (tlon-bae-eaf-request id-or-slug))
-	 (object (tlon-bae-eaf-get-object id-or-slug))
-	 (file-path (or file-path (tlon-bae-eaf-generate-file-path response)))
-	 (html (pcase object
-		 ('post (tlon-bae-eaf-post-get-html response))
-		 ('tag (tlon-bae-eaf-get-tag-html response))))
-	 (html-file (tlon-bae-save-html-to-file html)))
-    (tlon-bae-html-to-markdown html-file file-path)
-    (with-current-buffer (find-file-noselect file-path)
-      (tlon-bae-markdown-eaf-cleanup))
-    (find-file file-path)))
-
-(defun tlon-bae-html-to-markdown (source target)
-  "Convert HTML text in SOURCE to Markdown text in TARGET.
-SOURCE can be a URL or, like TARGET, a file path."
-  (interactive)
-  (let ((pandoc (if (ps/string-is-url-p source)
-		    tlon-bae-pandoc-convert-from-url
-		  tlon-bae-pandoc-convert-from-file)))
-    (shell-command
-     (format pandoc source target))
-    (find-file target)))
 
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
