@@ -751,7 +751,34 @@ SOURCE can be a URL or, like TARGET, a file path."
      (format pandoc source target))
     (find-file target)))
 
-(defun tlon-bae-import-pdf (path &optional issue)
+(defvar tlon-bae-pdf2md
+  (file-name-concat ps/dir-source "pdf2md/lib/pdf2md-cli.js")
+  "Path to `pdf2md-cli.js' executable.")
+
+(defun tlon-bae-import-pdf (path)
+  "Import the PDF in PATH and convert it to Markdown."
+  (let* ((path (or path (read-file-name "PDF: ")))
+	 (final-target-file (tlon-bae-generate-file-path))
+	 (temp-source-dir (make-temp-file "pdf-source" t))
+	 (temp-source-file (file-name-concat temp-source-dir "source.pdf"))
+	 (temp-target-dir (make-temp-file "pdf-target" t))
+	 (temp-target-file (file-name-concat temp-target-dir "source.md")))
+    (unwind-protect
+	(progn
+	  (copy-file path temp-source-file)
+	  (shell-command (format "node %s --inputFolderPath='%s' --outputFolderPath='%s'"
+				 tlon-bae-pdf2md temp-source-dir temp-target-dir))
+	  (copy-file temp-target-file final-target-file)
+	  (delete-directory temp-source-dir t)
+	  (delete-directory temp-target-dir t)))))
+
+(defvar tlon-bae-pdftotext
+  (file-name-concat ps/dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
+  "Path to `pdftotext' executable.")
+
+;; This function is not currently used because we now use pdf2md, rather
+;; than pdftotext, to convert PDFs to Markdown.
+(defun tlon-bae-import-pdf-pdftotext (path &optional issue)
   "Import the PDF in PATH and convert it to Markdown.
 The command requires the user to supply values for the header and
 footer elements to be excluded from the conversion, which are
@@ -761,15 +788,15 @@ the other window) and note the number of pixels until the end of
 the header/footer. (You can measure the number of pixels between
 two points by taking a screenshot: note the numbers next to the
 pointer.) Then enter these values when prompted.
-If ISSUE is non-nile, a new issue will be created."
-  (let* ((path (or path (read-file-name "PDF: ")))
+If ISSUE is non-nil, a new issue will be created."
+  (let* ((path (read-file-name "PDF: "))
 	 (target (tlon-bae-generate-file-path)))
     (find-file-other-window path)
     (let ((header (read-string "Header: "))
 	  (footer (read-string "Footer: ")))
-      (shell-command (format "pdftotext -margint %s -marginb %s '%s' '%s'"
-			     header footer path target))
-      (find-file path))
+      (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
+			     tlon-bae-pdftotext header footer path target))
+      (find-file target))
     (when issue
       (tlon-bae-create-issue-for-job (file-name-nondirectory target)))))
 
