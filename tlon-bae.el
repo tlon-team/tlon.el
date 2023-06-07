@@ -1021,7 +1021,7 @@ FILENAME`."
     (tlon-bae-commit-and-push "Review " translation-path)
     (let ((label "Awaiting publication")
 	  (assignee ""))
-      (tlon-bae-act-on-topic original-file label assignee)
+      (tlon-bae-act-on-topic original-file label assignee 'close)
       (org-clock-goto)
       (org-todo "DONE")
       (save-buffer)
