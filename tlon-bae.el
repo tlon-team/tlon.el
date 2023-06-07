@@ -663,7 +663,7 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 	(unless found
 	  (user-error "Magit buffer not found"))))
     (goto-char (point-min))
-    (let ((regex "modified.*/\\(.*\\)\\.md"))
+    (let ((regex "modified.*/\\(.*\\.md\\)"))
       (when (eq (count-matches regex) 1)
 	(save-excursion
 	  (re-search-forward regex nil t)
