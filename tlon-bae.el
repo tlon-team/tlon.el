@@ -615,12 +615,12 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 (defun tlon-bae-open-clock-file ()
   "Open file of clocked task."
   (interactive)
-  (let ((file-path (tlon-bae-set-original-path)))
+  (let ((file-path (tlon-bae-set-original-path tlon-bae-get-clock-file)))
     (find-file file-path)))
 
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files from ORIGINAL-FILE."
-  (if-let* ((original-path (tlon-bae-set-original-path))
+  (if-let* ((original-path (tlon-bae-set-original-path tlon-bae-get-clock-file))
 	    (original-file (file-name-nondirectory original-path))
 	    (translation-file (tlon-bae-get-translation-file (file-name-nondirectory original-path)))
 	    (dir (tlon-bae-post-or-tag original-file))
@@ -820,7 +820,7 @@ FILENAME`."
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-branch "main")
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
-	(original (tlon-bae-set-original-path))
+	(original (tlon-bae-set-original-path tlon-bae-get-clock-file))
 	(docs ps/file-tlon-docs-bae))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
@@ -1649,7 +1649,6 @@ If ASYNC is t, run the request asynchronously."
     (with-temp-file filename
       (insert html))
     filename))
-
 
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
