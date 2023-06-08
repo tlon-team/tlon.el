@@ -672,7 +672,7 @@ is non-nil, open DeepL."
 	(unless found
 	  (user-error "Magit buffer not found"))))
     (goto-char (point-min))
-    (let ((regex "modified.*/\\(.*\\.md\\)"))
+    (let ((regex "modified.*/\\(.*\\.*\\)"))
       (when (eq (count-matches regex) 1)
 	(save-excursion
 	  (re-search-forward regex nil t)
