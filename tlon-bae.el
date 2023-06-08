@@ -428,13 +428,14 @@ current buffer."
 			  (replace-regexp-in-string "/translations/" "/originals/" dir-path))))
       (expand-file-name new-file-name new-dir))))
 
-(defun tlon-bae-open-counterpart ()
-  "Open the counterpart of the current file."
+(defun tlon-bae-open-counterpart (&optional file-path)
+  "Open the counterpart of the current file.
+If FILE-PATH is nil, use the path of the file visited by the
+current buffer."
   (interactive)
-  (if-let ((new-file (tlon-bae-get-counterpart)))
-      (progn
-	(find-file new-file)
-	(message "Switched to corresponding file: %s" new-file))
+  (if-let ((file (or file-path (buffer-file-name)))
+	   (counterparth (tlon-bae-get-counterpart file)))
+      (find-file counterparth)
     (user-error "No corresponding file found")))
 
 ;;; EAF validation
@@ -548,8 +549,8 @@ Assumes action is first word of clocked task."
 	   when (equal val translation-file)
 	   return key))
 
-(defun tlon-bae-get-forge-file ()
-  "Get the file of the topic at point or in current forge buffer."
+(defun tlon-bae-get-forge-file-path ()
+  "Get the file path of the topic at point or in current forge buffer."
   (unless (or (derived-mode-p 'magit-status-mode)
 	      (derived-mode-p 'forge-topic-mode))
     (user-error "I'm not in a forge buffer"))
@@ -557,15 +558,18 @@ Assumes action is first word of clocked task."
 	 (captured (cadr (call-interactively #'orgit-store-link))))
     (setq org-stored-links (cdr org-stored-links))
     (if (string-match "`\\(.+?\\)`" captured)
-	(match-string 1 captured)
+	(tlon-bae-set-original-path (match-string 1 captured))
       (user-error "I wasn't able to find a file at point or in the forge buffer"))))
 
 (defun tlon-bae-open-forge-file ()
   "Open the file of the topic at point or in the current forge buffer."
   (interactive)
-  (let* ((filename (tlon-bae-get-forge-file))
-	 (file-path (tlon-bae-set-original-path filename)))
-    (find-file file-path)))
+  (find-file (tlon-bae-get-forge-file-path)))
+
+(defun tlon-bae-open-forge-counterpart ()
+  "Open the file counterpart of the topic at point or in the current forge buffer."
+  (interactive)
+  (tlon-bae-open-counterpart (tlon-bae-get-forge-file-path)))
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
@@ -1558,7 +1562,6 @@ If DIR-PATH is nil, create a command to open the BAE repository."
    ["Open file"
     ("f f" "counterpart"                tlon-bae-open-counterpart)
     ("f g" "Glossary.csv"               tlon-bae-open-glossary)
-    ("f n" "Issue"                tlon-bae-open-forge-file)
     ("f w" "work-correspondence.csv"    tlon-bae-open-work-correspondence)
     ("f t" "tag-correspondence.csv"     tlon-bae-open-tag-correspondence)
     ("f p" "post-correspondence.csv"     tlon-bae-open-post-correspondence)
@@ -1584,6 +1587,9 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("c c" "Issue"                        tlon-bae-open-clock-topic)
     ("c f" "File"                         tlon-bae-open-clock-file )
     ("c o" "Heading"                     org-clock-goto)
+    """Issue"
+    ("i i" "Open counterpart"                tlon-bae-open-forge-counterpart)
+    ("i I" "Open file"                tlon-bae-open-forge-file)
     ]
    ]
   )
