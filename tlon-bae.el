@@ -859,7 +859,7 @@ FILENAME`."
 	(flyspell-buffer)
 	(winum-select-window-2)
 	(orgit-topic-open topic)
-	(tlon-bae-copy-file-contents original-path t)))))
+	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-initialize-revision ()
   "Initialize stylistic revision."
@@ -880,7 +880,7 @@ FILENAME`."
 	(tlon-bae-log-buffer-diff original-path)
 	(orgit-topic-open topic)
 	(winum-select-window-2)
-	(tlon-bae-copy-file-contents original-path t)))))
+	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-initialize-check ()
   "Initialize accuracy check."
@@ -924,7 +924,7 @@ FILENAME`."
 	(orgit-topic-open topic)
 	;; opens in other window, so no need to switch to it first
 	(tlon-bae-log-buffer-diff translation-path)
-	(tlon-bae-copy-file-contents original-path t)))))
+	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-finalize-processing ()
   "Finalize processing."
