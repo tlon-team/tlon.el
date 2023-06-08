@@ -1734,5 +1734,60 @@ If ASYNC is t, run the request asynchronously."
       (insert html))
     filename))
 
+;;; translation
+
+(defun tlon-bae-file-to-string (file-path)
+  "Read the contents of FILE-PATH and return it as a string."
+  (with-temp-buffer
+    (insert-file-contents file-path)
+    (unfill-region (point-min) (point-max))
+    (buffer-string)))
+
+(defun tlon-bae-gpt-rewrite ()
+  "Docstring."
+  (interactive)
+  (let* ((text (if (region-active-p)
+		   (buffer-substring-no-properties (region-beginning) (region-end))
+		 (read-string "Text to rewrite: "))))
+    (gptel-request
+     (format "Por favor, genera las mejores diez variantes del siguiente texto castellano: '%s'. Por favor, devuelve todas las variantes en una única linea, separadas por '|'. No insertes un espacio ni antes ni después de '|'. No agregues ningún comentario aclaratorio: solo necesito la lista de variantes. A modo de ejemplo, para la palabra 'lindo' el texto a devolver sería: 'bello|bonito|hermoso|atractivo' (etc). Gracias!" text)
+     :callback
+     (lambda (response info)
+       (if (not response)
+	   (message "gptel-quick failed with message: %s" (plist-get info :status))
+	 (let ((variants (split-string response "|")))
+	   (delete-region (region-beginning) (region-end))
+	   (insert (completing-read "Variant: " variants))))))))
+
+(defun tlon-bae-gpt-translate (text)
+  "Docstring."
+  (interactive "sText to translate: ")
+  (gptel-request
+   (format "Generate the best ten Spanish translations of the following English text: '%s'. Please return each translation on the same line, separated by '|'. Do not add a space either before or after the '|'. Do not precede your answer by 'Here are ten Spanish translations' or any comments of that sort: just return the translations. An example return string for the word 'beautiful' would be: 'bello|bonito|hermoso|atractivo' (etc). Thanks!" text)
+   :callback
+   (lambda (response info)
+     (if (not response)
+	 (message "gptel-quick failed with message: %s" (plist-get info :status))
+       (let ((translations (split-string response "|")))
+	 (delete-region (region-beginning) (region-end))
+	 (insert (completing-read "Translation: " translations)))))))
+
+(defun tlon-bae-gpt-translate-file (file)
+  "Docstring."
+  (let* ((counterpart (tlon-bae-get-counterpart file))
+	 (target-path (concat
+		       (file-name-sans-extension counterpart)
+		       "--gpt-translated.md")))
+    (gptel-request
+     (concat "Translate the following text into Spanish:\n\n"
+	     (tlon-bae-file-to-string file))
+     :callback
+     (lambda (response info)
+       (if (not response)
+           (message "gptel-quick failed with message: %s" (plist-get info :status))
+	 (with-temp-buffer
+	   (insert response)
+	   (write-region (point-min) (point-max) target-path)))))))
+
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
