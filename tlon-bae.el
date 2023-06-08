@@ -563,8 +563,9 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 (defun tlon-bae-open-forge-file ()
   "Open the file of the topic at point or in the current forge buffer."
   (interactive)
-  (let ((file (tlon-bae-get-forge-file)))
-    (find-file file)))
+  (let* ((filename (tlon-bae-get-forge-file))
+	 (file-path (tlon-bae-set-original-path filename)))
+    (find-file file-path)))
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
