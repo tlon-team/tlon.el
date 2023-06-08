@@ -594,20 +594,24 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 			 always (string-match-p (regexp-quote substr) title))
 	   return (oref topic id)))
 
-(defun tlon-bae-copy-file-contents (file)
-  "Copy contents of FILE to kill ring."
-  (with-current-buffer (find-file-noselect file)
-    (unfill-region (point-min) (point-max))
-    (copy-region-as-kill (point-min) (point-max))
-    (fill-region (point-min) (point-max))
-    (save-buffer)
-    (message "The contents of `%s' have been copied to the to kill ring, in case you want to paste them into the DeepL editor."
-	     (file-name-nondirectory file))))
+(defun tlon-bae-copy-file-contents (&optional file deepl)
+  "Copy the contents of FILE to the kill ring.
+Defaults to the current buffer if no FILE is specified. If DEEPL
+is non-nil, open DeepL."
+  (interactive)
+  (let ((file (or file (buffer-file-name))))
+    (with-current-buffer (find-file-noselect file)
+      (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
+	(with-temp-buffer
+	  (insert contents)
+	  (unfill-region (point-min) (point-max))
+	  (copy-region-as-kill (point-min) (point-max)))))
+    (when deepl
+      (shell-command "/Applications/DeepL.app/Contents/MacOS/DeepL deepl"))))
 
-(defun tlon-bae-set-original-path ()
-  "Docstring."
-  (let* ((filename (tlon-bae-get-clock-file))
-	 (type (if (string-match "tag--" filename) "tags/" "posts/"))
+(defun tlon-bae-set-original-path (filename)
+  "Return full path of FILENAME."
+  (let* ((type (if (string-match "tag--" filename) "tags/" "posts/"))
 	 (dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/" type))
 	 (file-path (file-name-concat dir filename)))
     file-path))
@@ -851,7 +855,7 @@ FILENAME`."
 	(flyspell-buffer)
 	(winum-select-window-2)
 	(orgit-topic-open topic)
-	(tlon-bae-copy-file-contents original-path)))))
+	(tlon-bae-copy-file-contents original-path t)))))
 
 (defun tlon-bae-initialize-revision ()
   "Initialize stylistic revision."
@@ -872,7 +876,7 @@ FILENAME`."
 	(tlon-bae-log-buffer-diff original-path)
 	(orgit-topic-open topic)
 	(winum-select-window-2)
-	(tlon-bae-copy-file-contents original-path)))))
+	(tlon-bae-copy-file-contents original-path t)))))
 
 (defun tlon-bae-initialize-check ()
   "Initialize accuracy check."
@@ -916,7 +920,7 @@ FILENAME`."
 	(orgit-topic-open topic)
 	;; opens in other window, so no need to switch to it first
 	(tlon-bae-log-buffer-diff translation-path)
-	(tlon-bae-copy-file-contents original-path)))))
+	(tlon-bae-copy-file-contents original-path t)))))
 
 (defun tlon-bae-finalize-processing ()
   "Finalize processing."
