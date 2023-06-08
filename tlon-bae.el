@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 0.1.9
+;; Version: 0.1.10
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
@@ -499,7 +499,7 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 
 (defun tlon-bae-get-clock-file ()
   "Return file name in clocked heading.
-  Assumes file name is enclosed in backticks."
+Assumes file name is enclosed in backticks."
   (unless org-clock-current-task
     (user-error "No clock running"))
   (let ((clock (substring-no-properties org-clock-current-task)))
@@ -528,7 +528,7 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 
 (defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
-  Assumes action is first word of clocked task."
+Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-bae-get-clock-file)
   (let ((action (car (split-string (substring-no-properties org-clock-current-task))))
@@ -569,7 +569,7 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
-  Return the subdirectory containing the FILENAME, or nil if not found."
+Return the subdirectory containing the FILENAME, or nil if not found."
   (catch 'found
     (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
       (when (and (file-exists-p file)
@@ -580,7 +580,7 @@ IDENTIFIER can be an URL, a podt ID or a tag slug."
 
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
-  Assumes the issue title contains FILE, which is a unique file in
+Assumes the issue title contains FILE, which is a unique file in
   the `originals/tags' directory."
   (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
 	   when (string= file (oref topic title))
