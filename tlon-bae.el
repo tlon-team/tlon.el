@@ -659,7 +659,7 @@ is non-nil, open DeepL."
   (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz))
 
 (defun tlon-bae-magit-get-filename ()
-  "Get filename of file to be committed."
+  "Get filename of file to commit."
   (save-window-excursion
     (let (found)
       (catch 'done
