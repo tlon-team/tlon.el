@@ -741,21 +741,19 @@ a new issue will be created."
   "Import the HTML in URL and convert it to Markdown.
 If ISSUE is non-nil, create a new issue."
   (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
-      (tlon-bae-import-html-eaf id-or-slug)
+      (tlon-bae-import-html-eaf id-or-slug t)
     (let* ((target (tlon-bae-generate-file-path)))
       (tlon-bae-html-to-markdown url target))
     (when issue
-      (tlon-bae-create-issue-for-job (file-name-nondirectory target)))))
+      (tlon-bae-create-issue-for-job (file-name-nondirectory target))
+      (forge-pull))))
 
-(defun tlon-bae-import-html-eaf (identifier &optional file-path)
-  "Import the HTML of EAF entity with IDENTIFIER and convert it to Markdown.
-IDENTIFIER can be a URL, a post ID, or a tag slug. If FILE-PATH
-is not provided, a file path will be generated based on author
-and title information."
-  (let* ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier identifier))
-	 (response (tlon-bae-eaf-request id-or-slug))
+(defun tlon-bae-import-html-eaf (id-or-slug &optional issue)
+  "Import the HTML of EAF entity with ID-OR-SLUG and convert it to Markdown.
+If ISSUE is non-nil, create an issue for the new job."
+  (let* ((response (tlon-bae-eaf-request id-or-slug))
 	 (object (tlon-bae-eaf-get-object id-or-slug))
-	 (file-path (or file-path (tlon-bae-eaf-generate-file-path response)))
+	 (file-path (tlon-bae-eaf-generate-file-path response))
 	 (html (pcase object
 		 ('post (tlon-bae-eaf-post-get-html response))
 		 ('tag (tlon-bae-eaf-get-tag-html response))))
@@ -763,7 +761,10 @@ and title information."
     (tlon-bae-html-to-markdown html-file file-path)
     (with-current-buffer (find-file-noselect file-path)
       (tlon-bae-markdown-eaf-cleanup))
-    (find-file file-path)))
+    (find-file file-path)
+    (when issue
+      (tlon-bae-create-issue-for-job (file-name-nondirectory file-path))
+      (forge-pull))))
 
 (defun tlon-bae-html-to-markdown (source target)
   "Convert HTML text in SOURCE to Markdown text in TARGET.
