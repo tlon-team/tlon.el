@@ -1790,7 +1790,7 @@ If ASYNC is t, run the request asynchronously."
 	 (message "gptel-quick failed with message: %s" (plist-get info :status))
        (let ((translations (split-string response "|")))
 	 (delete-region (region-beginning) (region-end))
-	 (insert (completing-read "Translation: " translations)))))))
+	 (kill-new (completing-read "Translation: " translations)))))))
 
 (defun tlon-bae-gpt-translate-file (file)
   "Docstring."
@@ -1804,7 +1804,7 @@ If ASYNC is t, run the request asynchronously."
      :callback
      (lambda (response info)
        (if (not response)
-           (message "gptel-quick failed with message: %s" (plist-get info :status))
+	   (message "gptel-quick failed with message: %s" (plist-get info :status))
 	 (with-temp-buffer
 	   (insert response)
 	   (write-region (point-min) (point-max) target-path)))))))
