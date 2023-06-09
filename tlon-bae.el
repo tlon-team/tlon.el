@@ -1367,7 +1367,7 @@ The prompt defaults to the current user."
      (list assignee))))
 
 (defun tlon-bae-set-initial-label-and-assignee ()
-  "Set label to 'Awaiting processing' and assignee to current user."
+  "Set label to `Awaiting processing' and assignee to current user."
   (tlon-bae-set-label "Awaiting processing")
   (tlon-bae-set-assignee (tlon-bae-find-key-in-alist user-full-name tlon-bae-github-users)))
 
