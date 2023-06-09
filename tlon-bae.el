@@ -164,14 +164,14 @@ file path."
 		     "tag"))
 	 (file-path (tlon-bae-generate-file-path lastname title))
 	 (filename (file-name-nondirectory file-path))
-	 (filename-reviewed (tlon-bae-approve-filename filename)))
+	 (filename-reviewed (tlon-bae-review-filename filename)))
     (unless (string= filename filename-reviewed)
       (setq file-path (file-name-concat (file-name-directory file-path)
 					filename-reviewed)))
     file-path))
 
-(defun tlon-bae-approve-filename (filename)
-  "Approve FILENAME."
+(defun tlon-bae-review-filename (filename)
+  "Review FILENAME."
   (let* ((choices '((?a . "ccept") (?e . "dit") (?r . "egenerate")))
 	 (keys (mapcar 'car choices))
 	 (key-description (mapconcat (lambda (choice)
