@@ -623,9 +623,10 @@ is non-nil, open DeepL."
 	(with-temp-buffer
 	  (insert contents)
 	  (unfill-region (point-min) (point-max))
-	  (copy-region-as-kill (point-min) (point-max)))))
+	  (copy-region-as-kill (point-min) (point-max)))
+	(message "Copied the contents of `%s' to kill ring" (file-name-nondirectory file))))
     (when deepl
-      (shell-command "/Applications/DeepL.app/Contents/MacOS/DeepL deepl"))))
+      (shell-command "open '/Applications/DeepL.app/Contents/MacOS/DeepL'"))))
 
 (defun tlon-bae-set-original-path (filename)
   "Return full path of FILENAME."
