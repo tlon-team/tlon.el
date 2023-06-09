@@ -480,21 +480,33 @@ current buffer."
 
 (defun tlon-bae-eaf-get-id-or-slug-from-identifier (identifier)
   "Return the EAF post ID or tag slug from IDENTIFIER, if found.
-IDENTIFIER can be an URL, a podt ID or a tag slug."
+IDENTIFIER can be an URL, a post ID or a tag slug."
   (interactive "sURL: ")
   (if (ps/string-is-url-p identifier)
-      (let ((id-or-slug (cond ((string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
-						     tlon-bae-eaf-post-id-regexp)
-					     identifier)
-			       (match-string-no-properties 1 identifier))
-			      ((string-match (format "^.+?forum.effectivealtruism.org/topics/%s"
-						     tlon-bae-eaf-tag-slug-regexp)
-					     identifier)
-			       (match-string-no-properties 1 identifier)))))
-	id-or-slug)
+      (or (tlon-bae-eaf-get-id-from-identifier identifier)
+	  (tlon-bae-eaf-get-slug-from-identifier identifier))
+    ;; return id or slug if identifier is an id or slug
     (pcase identifier
       ((pred tlon-bae-eaf-post-id-p) identifier)
       ((pred tlon-bae-eaf-tag-slug-p) identifier))))
+
+(defun tlon-bae-eaf-get-id-from-identifier (identifier)
+  "Return the EAF post ID from IDENTIFIER, if found."
+  (when-let ((id (catch 'id
+		   (dolist (regex '("^.+?forum.effectivealtruism.org/posts/%s"
+				    "^.+?forum.effectivealtruism.org/s/QMrYGgBvg64JhcQrS/p/%s"))
+		     (when
+			 (string-match (format regex tlon-bae-eaf-post-id-regexp)
+				       identifier)
+		       (throw 'id (match-string-no-properties 1 identifier)))))))
+    (message id)))
+
+(defun tlon-bae-eaf-get-slug-from-identifier (identifier)
+  "Return the EAF tag slug from IDENTIFIER, if found."
+  (when (string-match (format "^.+?forum.effectivealtruism.org/topics/%s"
+			      tlon-bae-eaf-tag-slug-regexp)
+		      identifier)
+    (match-string-no-properties 1 identifier)))
 
 (defun tlon-bae-eaf-get-id-or-slug-from-response (response)
   "Return the EAF post ID or tag slug from Json RESPONSE."
