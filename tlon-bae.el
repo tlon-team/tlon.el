@@ -153,7 +153,7 @@ file path."
     lastname))
 
 (defun tlon-bae-eaf-generate-file-path (response)
-  "Docstring."
+  "Generate EAF file-path baed on author and title from RESPONSE."
   (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-post-get-title response)))
 	 ;; sometimes the 'author' field is empty so we use the 'user' field instead
 	 (author (or (tlon-bae-eaf-post-get-author response)
