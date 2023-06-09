@@ -1769,14 +1769,15 @@ If ASYNC is t, run the request asynchronously."
 		   (buffer-substring-no-properties (region-beginning) (region-end))
 		 (read-string "Text to rewrite: "))))
     (gptel-request
-     (format "Por favor, genera las mejores diez variantes del siguiente texto castellano: '%s'. Por favor, devuelve todas las variantes en una única linea, separadas por '|'. No insertes un espacio ni antes ni después de '|'. No agregues ningún comentario aclaratorio: solo necesito la lista de variantes. A modo de ejemplo, para la palabra 'lindo' el texto a devolver sería: 'bello|bonito|hermoso|atractivo' (etc). Gracias!" text)
+     (format "Por favor, genera las mejores diez variantes del siguiente texto castellano: '%s'. Por favor, devuelve todas las variantes en una única linea, separadas por '|'. No insertes un espacio ni antes ni después de '|'. No agregues ningún comentario aclaratorio: solo necesito la lista de variantes. A modo de ejemplo, para la expresión 'búsqueda de poert' el texto a devolver sería: 'ansia de poder|ambición de poder|búsqueda de autoridad|sed de poder|afán de poder|aspiración de poder|anhelo de poder|deseo de control|búsqueda de dominio|búsqueda de control' (esta lista solo pretende ilustrar el formato en que debes presentar tu respuesta). Gracias!" text)
      :callback
      (lambda (response info)
        (if (not response)
 	   (message "gptel-quick failed with message: %s" (plist-get info :status))
-	 (let ((variants (split-string response "|")))
+	 (let* ((variants (split-string response "|"))
+		(variant (completing-read "Variant: " variants)))
 	   (delete-region (region-beginning) (region-end))
-	   (insert (completing-read "Variant: " variants))))))))
+	   (kill-new variant)))))))
 
 (defun tlon-bae-gpt-translate (text)
   "Docstring."
