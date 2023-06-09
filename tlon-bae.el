@@ -58,7 +58,7 @@
     (call-interactively 'forge-dispatch)))
 
 (defun tlon-bae-orgit-capture ()
-  "Capture a new Magit/Forge task."
+  "Capture a new org mode task for topic at point."
   (interactive)
   (let ((assignee (alist-get
 		   (tlon-bae-forge-get-assignee-at-point)
@@ -67,8 +67,8 @@
     ;; when the topic has neither a label nor an assignee, we offer to
     ;; process it as a new job
     (if (not (or assignee label))
-	(if (y-or-n-p "Process as a new job? ")
-	    (tlon-bae-create-new-job t)
+	(if (y-or-n-p "Process issue as a new job? This will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file.")
+	    (tlon-bae-start-job t)
 	  (user-error "Aborted"))
       ;; else we prompt for an assignee...
       (unless (string= user-full-name assignee)
@@ -97,10 +97,10 @@
 	    ;; refile under job
 	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
 	    (ps/org-refile-goto-latest))
-	(when (y-or-n-p "No job found for this issue. Create new job?")
-	  (tlon-bae-create-new-job))))))
+	(when (y-or-n-p "No master TODO found for this topic. Create?")
+	  (tlon-bae-start-job))))))
 
-(defun tlon-bae-create-new-job (&optional set-topic)
+(defun tlon-bae-start-job (&optional set-topic)
   "Create new job.
 If SET-TOPIC is non-nil, set topic label to 'Awaiting processing'
 and assignee to the current user."
