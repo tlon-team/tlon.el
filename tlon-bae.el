@@ -173,12 +173,12 @@ file path."
 (defun tlon-bae-approve-filename (filename)
   "Approve FILENAME."
   (let* ((choices '((?a . "ccept") (?e . "dit") (?r . "egenerate")))
-         (keys (mapcar 'car choices))
-         (key-description (mapconcat (lambda (choice)
-                                       (format "[%c]%s" (car choice) (cdr choice)))
-                                     choices " "))
-         (prompt (format "%s %s" filename key-description))
-         (choice (read-char-choice prompt keys)))
+	 (keys (mapcar 'car choices))
+	 (key-description (mapconcat (lambda (choice)
+				       (format "[%c]%s" (car choice) (cdr choice)))
+				     choices " "))
+	 (prompt (format "%s %s" filename key-description))
+	 (choice (read-char-choice prompt keys)))
     (pcase choice
       (?a filename)
       (?e (read-string "Job name: " filename))
