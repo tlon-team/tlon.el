@@ -1563,6 +1563,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 (transient-define-prefix tlon-bae-dispatch ()
   "Dispatch a `tlon-bae' command."
   [["Main"
+    ("j" "job"                          tlon-bae-create-job)
     ("r" "dwim"                         tlon-bae-dwim)
     ("m" "magit"                         tlon-bae-magit-status)
     ("n" "forge"                        tlon-bae-forge)
