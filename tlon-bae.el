@@ -110,16 +110,16 @@ and assignee to the current user."
     (orgit-store-link nil)
     (let ((job-name (cadr (nth 0 org-stored-links))))
       (kill-new (format "%s" job-name)))
-    (org-capture nil "tbJ"))
-  ;;  we run `tlon-bae-orgit-capture' again to now properly capture the issue
-  (sleep-for 3)
-  (tlon-bae-orgit-capture))
+    (org-capture nil "tbJ")))
+;;  we run `tlon-bae-orgit-capture' again to now properly capture the issue
+;; (sleep-for 3)
+;; (tlon-bae-orgit-capture))
 
 ;;; File processing
 (defun tlon-bae-generate-file-path (&optional lastname title tag translation)
   "Return a file name based on user supplied information.
 TITLE is the title of the work. If TAG is 'tag, use `tag' as
-lastname. If TRANSLATION is non-nil, use `translatons' in the
+LASTNAME. If TRANSLATION is non-nil, use `translatons' in the
 file path."
   (let* ((tag (or (eq tag 'tag)
 		  (string= lastname "tag")))
