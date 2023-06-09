@@ -164,10 +164,25 @@ file path."
 		     "tag"))
 	 (file-path (tlon-bae-generate-file-path lastname title))
 	 (filename (file-name-nondirectory file-path))
-	 (filename-reviewed (read-string "Job name: " filename)))
+	 (filename-reviewed (tlon-bae-approve-filename filename)))
     (unless (string= filename filename-reviewed)
-      (setq file-path (file-name-concat (file-name-directory file-path) filename-reviewed)))
+      (setq file-path (file-name-concat (file-name-directory file-path)
+					filename-reviewed)))
     file-path))
+
+(defun tlon-bae-approve-filename (filename)
+  "Approve FILENAME."
+  (let* ((choices '((?a . "ccept") (?e . "dit") (?r . "egenerate")))
+         (keys (mapcar 'car choices))
+         (key-description (mapconcat (lambda (choice)
+                                       (format "[%c]%s" (car choice) (cdr choice)))
+                                     choices " "))
+         (prompt (format "%s %s" filename key-description))
+         (choice (read-char-choice prompt keys)))
+    (pcase choice
+      (?a filename)
+      (?e (read-string "Job name: " filename))
+      (?r (file-name-nondirectory (tlon-bae-generate-file-path))))))
 
 (defun tlon-bae-rename-file ()
   "Rename file at point based on user-supplied information.
