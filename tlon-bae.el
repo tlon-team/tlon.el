@@ -1179,6 +1179,9 @@ This command should be run from the source window."
 	(backward-sentence)
 	(recenter target-window-line)))))
 
+(defvar tlon-bae-enable-automatic-highlighting nil
+  "Whether to automatically highlight corresponding sentences.")
+
 (defun tlon-bae-toggle-automatic-highlighting ()
   "Toggle automatic highlighting of corresponding sentences."
   (interactive)
