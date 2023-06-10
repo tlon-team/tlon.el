@@ -247,7 +247,7 @@ If no FILE is provided, use the file visited by the current buffer."
   "Regexp to match escaped quotes.")
 
 (defun tlon-bae-markdown-eaf-cleanup (&optional buffer)
-  "Cleanup the BUFFER visiting an EA Wiki entry."
+  "Cleanup the BUFFER visiting an EAF entry."
   (interactive)
   (when (not (eq major-mode 'markdown-mode))
     (user-error "Not in a Markdown buffer"))
@@ -1269,7 +1269,7 @@ This command should be run from the source window."
 	(user-error "No topic found for %s" filename)))))
 
 (defun tlon-bae-check-staged-or-unstaged (file-path)
-  "Check if there are staged or unstaged changes in repo involving FILENAME."
+  "Check if there are staged or unstaged changes in repo involving FILE-PATH."
   (catch 'found
     (dolist (flag '("staged" ""))
       (let ((git-command (format "git diff --%s --name-only %s" flag file-path)))
@@ -1277,7 +1277,7 @@ This command should be run from the source window."
 	  (throw 'found t))))))
 
 (defun tlon-bae-check-staged-or-unstaged-other-than (file-path)
-  "Check if there are staged or unstaged changes in repo not involving FILENAME."
+  "Check if there are staged or unstaged changes in repo not involving FILE-PATH."
   (let* ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file-path)))
@@ -1329,8 +1329,7 @@ request. If ACTION is `close', close issue."
   (consult-ripgrep ps/dir-tlon-biblioteca-altruismo-eficaz search-string))
 
 (defun tlon-bae-commit-and-push (prefix file)
-  "Commit and push changes in BAE repo.
-As commit message, use 'PREFIX FILE'."
+  "Commit and push changes in BAE repo, with message 'PREFIX FILE'."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (tlon-bae-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
