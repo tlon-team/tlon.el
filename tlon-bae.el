@@ -511,14 +511,15 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 
 (defun tlon-bae-eaf-get-id-from-identifier (identifier)
   "Return the EAF post ID from IDENTIFIER, if found."
-  (when-let ((id (catch 'id
-		   (dolist (regex '("^.+?forum.effectivealtruism.org/posts/%s"
-				    "^.+?forum.effectivealtruism.org/s/QMrYGgBvg64JhcQrS/p/%s"))
-		     (when
-			 (string-match (format regex tlon-bae-eaf-post-id-regexp)
-				       identifier)
-		       (throw 'id (match-string-no-properties 1 identifier)))))))
-    (message id)))
+  (when-let ((id (or (when (string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
+						 tlon-bae-eaf-post-id-regexp)
+					 identifier)
+		       (match-string-no-properties 1 identifier))
+		     (when (string-match (format "^.+?forum.effectivealtruism.org/s/%s/p/%s"
+						 tlon-bae-eaf-post-id-regexp tlon-bae-eaf-post-id-regexp)
+					 identifier)
+		       (match-string-no-properties 2 identifier)))))
+    id))
 
 (defun tlon-bae-eaf-get-slug-from-identifier (identifier)
   "Return the EAF tag slug from IDENTIFIER, if found."
