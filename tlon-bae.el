@@ -126,8 +126,8 @@ file path."
 		  (string= lastname "tag")))
 	 (lastname (or lastname (if tag
 				    "tag"
-				  (read-string "Last name [only first author if multi-authored]: "))))
-	 (title (or title (tlon-bae-shorten-title (read-string "Title: "))))
+				  (read-string "Last name (only first author if multi-authored): "))))
+	 (title (or title (tlon-bae-shorten-title (read-string "Title (in English): "))))
 	 (slug-lastname (tlon-core-slugify lastname))
 	 (slug-title (tlon-core-slugify title))
 	 (file-name (file-name-with-extension (concat slug-lastname "--" slug-title) "md"))
