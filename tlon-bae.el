@@ -303,6 +303,24 @@ If no FILE is provided, use the file visited by the current buffer."
     (fill-region (point-min) (point-max))
     (save-buffer)))
 
+(defun tlon-bae-non-eaf-cleanup ()
+  "Cleanup the buffer visiting a non-EAF entry."
+  (interactive)
+  ;; TODO: Move this to a common function called by both the EAF and non-EAF commands.
+  (goto-char (point-min))
+  ;; unescape double quotes
+  (while (re-search-forward "\\\\\"" nil t)
+    (replace-match "\""))
+  (goto-char (point-min))
+  ;; unescape single quotes
+  (while (re-search-forward "\\\\'" nil t)
+    (replace-match "'"))
+  (goto-char (point-min))
+  ;; remove extra line breaks
+  (while (re-search-forward "\n\n\n" nil t)
+    (replace-match "\n\n"))
+  )
+
 (defun tlon-bae-convert-to-markdown ()
   "Convert a file from EA Wiki to Markdown."
   (interactive)
