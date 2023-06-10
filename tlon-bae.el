@@ -68,7 +68,10 @@
     ;; process it as a new job
     (if (not (or assignee label))
 	(if (y-or-n-p "Process issue as a new job? This will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file.")
-	    (tlon-bae-start-job t)
+	    (progn
+	      (tlon-bae-start-job t)
+	      (sleep-for 4)
+	      (tlon-bae-orgit-capture))
 	  (user-error "Aborted"))
       ;; else we prompt for an assignee...
       (unless (string= user-full-name assignee)
@@ -98,7 +101,8 @@
 	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
 	    (ps/org-refile-goto-latest))
 	(when (y-or-n-p "No master TODO found for this topic. Create?")
-	  (tlon-bae-start-job))))))
+	  (tlon-bae-start-job)
+	  (tlon-bae-orgit-capture))))))
 
 (defun tlon-bae-start-job (&optional set-topic)
   "Create new job.
@@ -111,9 +115,6 @@ and assignee to the current user."
     (let ((job-name (cadr (nth 0 org-stored-links))))
       (kill-new (format "%s" job-name)))
     (org-capture nil "tbJ")))
-;;  we run `tlon-bae-orgit-capture' again to now properly capture the issue
-;; (sleep-for 3)
-;; (tlon-bae-orgit-capture))
 
 ;;; File processing
 (defun tlon-bae-generate-file-path (&optional lastname title tag translation)
