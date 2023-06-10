@@ -774,10 +774,10 @@ If ISSUE is non-nil, create a new issue."
   (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
       (tlon-bae-import-html-eaf id-or-slug t)
     (let* ((target (tlon-bae-generate-file-path)))
-      (tlon-bae-html-to-markdown url target))
-    (when issue
-      (tlon-bae-create-issue-for-job (file-name-nondirectory target))
-      (forge-pull))))
+      (tlon-bae-html-to-markdown url target)
+      (when issue
+	(tlon-bae-create-issue-for-job (file-name-nondirectory target))
+	(forge-pull)))))
 
 (defun tlon-bae-import-html-eaf (id-or-slug &optional issue)
   "Import the HTML of EAF entity with ID-OR-SLUG and convert it to Markdown.
@@ -836,6 +836,8 @@ SOURCE can be a URL or, like TARGET, a file path."
 ;; than pdftotext, to convert PDFs to Markdown.
 (defun tlon-bae-import-pdf-pdftotext (path &optional issue)
   "Import the PDF in PATH and convert it to Markdown.
+If ISSUE is non-nil, create an issue for the new job.
+
 The command requires the user to supply values for the header and
 footer elements to be excluded from the conversion, which are
 different for each PDF. To determine these values, measure the
@@ -843,8 +845,8 @@ distance between the top/bottom of the PDF (which will open in
 the other window) and note the number of pixels until the end of
 the header/footer. (You can measure the number of pixels between
 two points by taking a screenshot: note the numbers next to the
-pointer.) Then enter these values when prompted.
-If ISSUE is non-nil, a new issue will be created."
+pointer.) Then enter these values when prompted. If ISSUE is
+non-nil, a new issue will be created."
   (let* ((path (read-file-name "PDF: "))
 	 (target (tlon-bae-generate-file-path)))
     (find-file-other-window path)
@@ -884,6 +886,7 @@ FILENAME`."
     (org-narrow-to-subtree)
     (ps/org-show-subtree-hide-drawers)
     (winum-select-window-2)
+    ;; TODO: get URL via call to the Airtable API and open it with eww
     (let ((topic (tlon-bae-get-clock-topic)))
       (orgit-topic-open topic))))
 
@@ -988,11 +991,11 @@ FILENAME`."
 	  (assignee "benthamite"))
       (tlon-bae-act-on-topic original-file label assignee)
       (tlon-bae-commit-and-push "Process " original-path)
-      (tlon-bae-commit-and-push "Process " translation-path))
-    (org-clock-goto)
-    (org-todo "DONE")
-    (save-buffer)
-    (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
+      (tlon-bae-commit-and-push "Process " translation-path)
+      (org-clock-goto)
+      (org-todo "DONE")
+      (save-buffer)
+      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee))
     (sit-for 5)))
 
 (defun tlon-bae-finalize-translation ()
@@ -1526,9 +1529,11 @@ determine an appropriate action from the topic's label."
       (flush-lines "^$")
       (save-buffer))
     (magit-pull-from-upstream nil)
-    (magit-stage-file glossary)
-    (magit-commit-create (list "-m" (format  "Glossary: add \"%s\"" english)))
-    (call-interactively #'magit-push-current-to-pushremote)))
+    ;; if there are staged files, we do not commit or push the changes
+    (unless (magit-staged-files)
+      (magit-stage-file glossary)
+      (magit-commit-create (list "-m" (format  "Glossary: add \"%s\"" english)))
+      (call-interactively #'magit-push-current-to-pushremote))))
 
 (defun tlon-bae-add-to-work-correspondece (original spanish)
   "Add a new entry to the correspondece file for ORIGINAL and SPANISH terms."
