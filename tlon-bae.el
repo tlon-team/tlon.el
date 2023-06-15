@@ -474,11 +474,11 @@ If no FILE is provided, use the file visited by the current buffer."
     (let ((translations-alist '()))
       (bibtex-map-entries
        (lambda (key _beg _end)
-         (bibtex-narrow-to-entry)
-         (when-let ((translation (bibtex-autokey-get-field "translation")))
-           (unless (string-empty-p translation)
-             (setq translations-alist (cons (cons key translation) translations-alist))))
-         (widen)))
+	 (bibtex-narrow-to-entry)
+	 (when-let ((translation (bibtex-autokey-get-field "translation")))
+	   (unless (string-empty-p translation)
+	     (setq translations-alist (cons (cons key translation) translations-alist))))
+	 (widen)))
       translations-alist)))
 
 (defun tlon-bae-convert-keys-to-files (input-alist)
@@ -486,14 +486,14 @@ If no FILE is provided, use the file visited by the current buffer."
   (let ((output-alist '()))
     (dolist (cons-cell input-alist output-alist)
       (let* ((original-key (car cons-cell))
-             (translation-key (cdr cons-cell))
-             (original-file (file-name-concat
+	     (translation-key (cdr cons-cell))
+	     (original-file (file-name-concat
 			     tlon-bae-dir-original-posts
 			     (file-name-with-extension original-key "md")))
-             (translation-file (file-name-concat
+	     (translation-file (file-name-concat
 				tlon-bae-dir-translated-posts
 				(file-name-with-extension translation-key "md"))))
-        (setq output-alist (cons (cons original-file translation-file) output-alist))))))
+	(setq output-alist (cons (cons original-file translation-file) output-alist))))))
 
 (defvar tlon-bae-post-correspondence nil
   "Alist of original-translation file pairs.")
@@ -528,7 +528,7 @@ If no FILE is provided, use the file visited by the current buffer."
   (if (string-match tlon-bae-dir-original-posts file-path)
       (tlon-bae-get-translation-file file-path)
     (tlon-bae-get-original-file file-path)))
-  
+
 ;; This was the old function we used, which handles tags as well as posts.
 (defun tlon-bae-get-counterpart-old (&optional file-path)
   "Get the counterpart of file in FILE-PATH.
@@ -727,10 +727,9 @@ If no FILE is provided, use the file visited by the current buffer."
 	   return (oref topic id)))
 
 (defun tlon-bae-copy-file-contents (&optional file deepl)
-  "Copy the contents of FILE to the kill ring.
-Defaults to the current buffer if no FILE is specified. If DEEPL
-is non-nil, open DeepL."
-  (interactive)
+  "Copy the unfilled contents of FILE to the kill ring.
+  Defaults to the current buffer if no FILE is specified. If DEEPL
+  is non-nil, open DeepL."
   (let ((file (or file (buffer-file-name))))
     (with-current-buffer (find-file-noselect file)
       (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
@@ -883,9 +882,11 @@ is non-nil, open DeepL."
 If ISSUE is non-nil, create an issue for the new job."
   (let* ((response (tlon-bae-eaf-request id-or-slug))
 	 (object (tlon-bae-eaf-get-object id-or-slug))
-	 (file-path (tlon-bae-eaf-generate-file-path response))
+	 (file-path (pcase object
+		      ('post (tlon-bae-eaf-generate-post-file-path response))
+		      ('tag (tlon-bae-eaf-generate-tag-file-path response))))
 	 (html (pcase object
-		 ('post (tlon-bae-eaf-post-get-html response))
+		 ('post (tlon-bae-eaf-get-post-html response))
 		 ('tag (tlon-bae-eaf-get-tag-html response))))
 	 (html-file (tlon-bae-save-html-to-file html)))
     (tlon-bae-html-to-markdown html-file file-path)
@@ -898,7 +899,7 @@ If ISSUE is non-nil, create an issue for the new job."
 
 (defun tlon-bae-html-to-markdown (source target)
   "Convert HTML text in SOURCE to Markdown text in TARGET.
-SOURCE can be a URL or, like TARGET, a file path."
+  SOURCE can be a URL or, like TARGET, a file path."
   (let ((pandoc (if (ps/string-is-url-p source)
 		    tlon-bae-pandoc-convert-from-url
 		  tlon-bae-pandoc-convert-from-file)))
@@ -935,17 +936,17 @@ SOURCE can be a URL or, like TARGET, a file path."
 ;; than pdftotext, to convert PDFs to Markdown.
 (defun tlon-bae-import-pdf-pdftotext (path &optional issue)
   "Import the PDF in PATH and convert it to Markdown.
-If ISSUE is non-nil, create an issue for the new job.
+  If ISSUE is non-nil, create an issue for the new job.
 
-The command requires the user to supply values for the header and
-footer elements to be excluded from the conversion, which are
-different for each PDF. To determine these values, measure the
-distance between the top/bottom of the PDF (which will open in
-the other window) and note the number of pixels until the end of
-the header/footer. (You can measure the number of pixels between
-two points by taking a screenshot: note the numbers next to the
-pointer.) Then enter these values when prompted. If ISSUE is
-non-nil, a new issue will be created."
+  The command requires the user to supply values for the header and
+  footer elements to be excluded from the conversion, which are
+  different for each PDF. To determine these values, measure the
+  distance between the top/bottom of the PDF (which will open in
+						    the other window) and note the number of pixels until the end of
+  the header/footer. (You can measure the number of pixels between
+			  two points by taking a screenshot: note the numbers next to the
+			  pointer.) Then enter these values when prompted. If ISSUE is
+  non-nil, a new issue will be created."
   (let* ((path (read-file-name "PDF: "))
 	 (target (tlon-bae-generate-file-path)))
     (find-file-other-window path)
@@ -1736,6 +1737,8 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("b r" "repo"                tlon-bae-browse-repo)
     """File changes"
     ("h h" "Log"                        magit-log-buffer-file)
+    ("h d" "Diffs since last user change"  tlon-bae-log-buffer-latest-user-commit)
+    ("h e" "Ediff with last user change"  tlon-bae-log-buffer-latest-user-commit-ediff)]
    ["Clock"
     ("c c" "Issue"                        tlon-bae-open-clock-topic)
     ("c f" "File"                         tlon-bae-open-clock-file )
