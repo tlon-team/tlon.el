@@ -592,7 +592,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-eaf-get-id-or-slug-from-identifier (identifier)
   "Return the EAF post ID or tag slug from IDENTIFIER, if found.
-IDENTIFIER can be an URL, a post ID or a tag slug."
+  IDENTIFIER can be an URL, a post ID or a tag slug."
   (interactive "sURL: ")
   (if (ps/string-is-url-p identifier)
       (or (tlon-bae-eaf-get-id-from-identifier identifier)
@@ -639,7 +639,7 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 
 (defun tlon-bae-get-clock-file ()
   "Return file name in clocked heading.
-Assumes file name is enclosed in backticks."
+  Assumes file name is enclosed in backticks."
   (unless org-clock-current-task
     (user-error "No clock running"))
   (let ((clock (substring-no-properties org-clock-current-task)))
@@ -668,7 +668,7 @@ Assumes file name is enclosed in backticks."
 
 (defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
-Assumes action is first word of clocked task."
+  Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-bae-get-clock-file)
   (let ((action (car (split-string (substring-no-properties org-clock-current-task))))
@@ -701,7 +701,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
-Return the subdirectory containing the FILENAME, or nil if not found."
+  Return the subdirectory containing the FILENAME, or nil if not found."
   (catch 'found
     (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
       (when (and (file-exists-p file)
@@ -712,7 +712,7 @@ Return the subdirectory containing the FILENAME, or nil if not found."
 
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
-Assumes the issue title contains FILE, which is a unique file in
+  Assumes the issue title contains FILE, which is a unique file in
   the `originals/tags' directory."
   (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
 	   when (string= file (oref topic title))
@@ -834,18 +834,18 @@ is non-nil, open DeepL."
 
 (defun tlon-bae-create-job (identifier)
   "Create a new job for IDENTIFIER.
-Creating a new job means (1) importing a document and (2)
- creating an associated issue.
+  Creating a new job means (1) importing a document and (2)
+  creating an associated issue.
 
-IDENTIFIER can be a URL or a PDF file path."
+  IDENTIFIER can be a URL or a PDF file path."
   (interactive "sURL or path to PDF: ")
   (tlon-bae-import-document identifier t)
   (message "Next step: capture the new job (`,`) and run the usual command (`H-r r`)."))
 
 (defun tlon-bae-import-document (identifier &optional issue)
   "Import a document from IDENTIFIER.
-IDENTIFIER can be a URL or a PDF file path. If ISSUE is non-nil,
-a new issue will be created."
+  IDENTIFIER can be a URL or a PDF file path. If ISSUE is non-nil,
+  a new issue will be created."
   (interactive "sURL or path to PDF: ")
   (if (ps/string-is-url-p identifier)
       (tlon-bae-import-html identifier issue)
@@ -853,9 +853,9 @@ a new issue will be created."
 
 (defun tlon-bae-import-html (url &optional issue)
   "Import the HTML in URL and convert it to Markdown.
-If ISSUE is non-nil, create a new issue."
+  If ISSUE is non-nil, create a new issue."
   (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
-      (tlon-bae-import-html-eaf id-or-slug t)
+      (tlon-bae-import-html-eaf id-or-slug issue)
     (let* ((target (tlon-bae-generate-file-path)))
       (tlon-bae-html-to-markdown url target)
       (when issue
@@ -943,8 +943,8 @@ non-nil, a new issue will be created."
 
 (defun tlon-bae-create-issue-for-job (filename)
   "Create an issue based on FILENAME.
-Creates a new issue in the BAE repository with the format `Job:
-FILENAME`."
+  Creates a new issue in the BAE repository with the format `Job:
+  FILENAME`."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (call-interactively #'forge-create-issue)
     (insert (format "Job: `%s`" filename))
