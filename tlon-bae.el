@@ -165,16 +165,25 @@ file path."
 	 (lastname (car (last (split-string uncameled-author "[ _-]")))))
     lastname))
 
-(defun tlon-bae-eaf-generate-file-path (response)
-  "Generate EAF file-path baed on author and title from RESPONSE."
-  (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-post-get-title response)))
+(defun tlon-bae-eaf-generate-post-file-path (response)
+  "Generate EAF post file-path baed on author and title from RESPONSE."
+  (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-get-post-title response)))
 	 ;; sometimes the 'author' field is empty so we use the 'user' field instead
-	 (author (or (tlon-bae-eaf-post-get-author response)
-		     (tlon-bae-eaf-post-get-username response)))
-	 ;; we past 'tag' as lastname if object is tag
-	 (lastname (if author
-		       (tlon-bae-extract-lastname-from-author author)
-		     "tag"))
+	 (author (or (tlon-bae-eaf-get-post-author response)
+		     (tlon-bae-eaf-get-post-username response)))
+	 (lastname (tlon-bae-extract-lastname-from-author author))
+	 (file-path (tlon-bae-generate-file-path lastname title))
+	 (filename (file-name-nondirectory file-path))
+	 (filename-reviewed (tlon-bae-review-filename filename)))
+    (unless (string= filename filename-reviewed)
+      (setq file-path (file-name-concat (file-name-directory file-path)
+					filename-reviewed)))
+    file-path))
+
+(defun tlon-bae-eaf-generate-tag-file-path (response)
+  "Generate EAF tag file-path baed on author and title from RESPONSE."
+  (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-get-tag-title response)))
+	 (lastname "tag")
 	 (file-path (tlon-bae-generate-file-path lastname title))
 	 (filename (file-name-nondirectory file-path))
 	 (filename-reviewed (tlon-bae-review-filename filename)))
