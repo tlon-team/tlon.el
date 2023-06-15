@@ -437,11 +437,7 @@ If no FILE is provided, use the file visited by the current buffer."
 (defun tlon-bae-load-variables ()
   "Load the variables to reflect changes to the files in the `etc' directory."
   (interactive)
-  (setq tlon-bae-post-correspondence
-	(tlon-bae-csv-file-to-alist (file-name-concat
-				     ps/dir-tlon-biblioteca-altruismo-eficaz
-				     "etc/post-correspondence.csv"))
-	tlon-bae-tag-correspondence
+  (setq tlon-bae-tag-correspondence
 	(tlon-bae-csv-file-to-alist (file-name-concat
 				     ps/dir-tlon-biblioteca-altruismo-eficaz
 				     "etc/tag-correspondence.csv"))
@@ -558,14 +554,14 @@ If no FILE is provided, use the file visited by the current buffer."
 			  (replace-regexp-in-string "/translations/" "/originals/" dir-path))))
       (expand-file-name new-file-name new-dir))))
 
-(defun tlon-bae-open-counterpart (&optional file-path)
+(defun tlon-bae-open-counterpart ()
   "Open the counterpart of the current file.
-If FILE-PATH is nil, use the path of the file visited by the
-current buffer."
+  If FILE-PATH is nil, use the path of the file visited by the
+  current buffer."
   (interactive)
-  (if-let ((file (or file-path (buffer-file-name)))
-	   (counterparth (tlon-bae-get-counterpart file)))
-      (find-file counterparth)
+  (if-let ((file (buffer-file-name))
+	   (counterpart (tlon-bae-get-counterpart file)))
+      (find-file counterpart)
     (user-error "No corresponding file found")))
 
 ;;; EAF validation
@@ -680,17 +676,6 @@ Assumes action is first word of clocked task."
     (if (member action actions)
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
-
-(defun tlon-bae-get-translation-file (original-file)
-  "Return file that translates ORIGINAL-FILE."
-  (or (alist-get original-file tlon-bae-post-correspondence nil nil #'equal)
-      (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal)))
-
-(defun tlon-bae-get-original-file (translation-file)
-  "Return file that TRANSLATION-FILE translates."
-  (cl-loop for (key . val) in tlon-bae-tag-correspondence
-	   when (equal val translation-file)
-	   return key))
 
 (defun tlon-bae-get-forge-file-path ()
   "Get the file path of the topic at point or in current forge buffer."
