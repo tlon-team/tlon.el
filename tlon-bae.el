@@ -279,10 +279,6 @@ If no FILE is provided, use the file visited by the current buffer."
   "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
   "Regexp to match links.")
 
-(defvar tlon-markdown-eawiki-escaped-quotes
-  "\\\\\\\\\\\\\""
-  "Regexp to match escaped quotes.")
-
 (defun tlon-bae-markdown-eaf-cleanup (&optional buffer)
   "Cleanup the BUFFER visiting an EAF entry."
   (interactive)
@@ -331,12 +327,10 @@ If no FILE is provided, use the file visited by the current buffer."
     (while (re-search-forward tlon-markdown-eawiki-links nil t)
       (replace-match (format "[%s](%s)" (match-string-no-properties 1) (match-string-no-properties 2)) nil t))
     (goto-char (point-min))
-    (while (re-search-forward tlon-markdown-eawiki-escaped-quotes nil t)
-      (replace-match "\""))
-    (goto-char (point-min))
     ;; remove double asterisks surrounding headings
     (while (re-search-forward "# \\*\\*\\(.*\\)\\*\\* *?$" nil t)
       (replace-match (format "# %s" (match-string-no-properties 1))))
+    (tlon-bae-non-eaf-cleanup)
     (fill-region (point-min) (point-max))
     (save-buffer)))
 
@@ -353,10 +347,13 @@ If no FILE is provided, use the file visited by the current buffer."
   (while (re-search-forward "\\\\'" nil t)
     (replace-match "'"))
   (goto-char (point-min))
-  ;; remove extra line breaks
+  ;; unescape vertical bars
+  (while (re-search-forward "\\\\|" nil t)
+    (replace-match "|"))
+  (goto-char (point-min))  ;; remove extra line breaks
   (while (re-search-forward "\n\n\n" nil t)
     (replace-match "\n\n"))
-  )
+  (goto-char (point-min)))
 
 (defun tlon-bae-convert-to-markdown ()
   "Convert a file from EA Wiki to Markdown."
