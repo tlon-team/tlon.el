@@ -1026,7 +1026,7 @@ non-nil, a new issue will be created."
 	(tlon-bae-set-windows original-path translation-path)
 	(ispell-change-dictionary "espanol")
 	(flyspell-buffer)
-	(tlon-bae-log-buffer-diff original-path)
+	(tlon-bae-log-buffer-latest-user-commit-ediff original-path)
 	(orgit-topic-open topic)
 	(winum-select-window-2)
 	(tlon-bae-copy-file-contents original-path)))))
@@ -1072,7 +1072,7 @@ non-nil, a new issue will be created."
 	(flyspell-buffer)
 	(orgit-topic-open topic)
 	;; opens in other window, so no need to switch to it first
-	(tlon-bae-log-buffer-diff translation-path)
+	(tlon-bae-log-buffer-latest-user-commit-ediff translation-path)
 	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-finalize-processing ()
@@ -1736,7 +1736,6 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("b r" "repo"                tlon-bae-browse-repo)
     """File changes"
     ("h h" "Log"                        magit-log-buffer-file)
-    ("h d" "Diffs since last user change"  tlon-bae-log-buffer-diff)]
    ["Clock"
     ("c c" "Issue"                        tlon-bae-open-clock-topic)
     ("c f" "File"                         tlon-bae-open-clock-file )
