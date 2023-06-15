@@ -248,6 +248,14 @@ If no FILE is provided, use the file visited by the current buffer."
 	 (commit (tlon-bae-latest-user-commit-in-file file)))
     (magit-diff-range commit nil (list file))))
 
+(defun tlon-bae-log-buffer-latest-user-commit-ediff (&optional file)
+  "Docstring."
+  (interactive)
+  (let* ((file (or file (buffer-file-name)))
+	 (commit (tlon-bae-latest-user-commit-in-file file))
+	 (commit-file (tlon-bae-create-file-from-commit file commit)))
+    (ediff-files commit-file file)))
+
 (defun tlon-bae-shorten-title (title)
   "Return a shortened version of TITLE."
   (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
