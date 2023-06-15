@@ -51,6 +51,18 @@
     (dired-delete-file builds-directory 'always t)
     (message "Package updated. %s" tlon-bae-version)))
 
+;;; File vars
+
+(defvar tlon-bae-dir-original-posts
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/posts/")
+  "Directory containing original posts.")
+
+(defvar tlon-bae-dir-translated-posts
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/posts/")
+  "Directory containing translated posts.")
+
+;;;
+
 (defun tlon-bae-forge ()
   "Launch the Forge dispatcher in the BAE directory."
   (interactive)
