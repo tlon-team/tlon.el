@@ -551,8 +551,8 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 
 (defun tlon-bae-eaf-get-id-or-slug-from-response (response)
   "Return the EAF post ID or tag slug from Json RESPONSE."
-  (or (tlon-bae-eaf-post-get-id response)
-      (tlon-bae-eaf-tag-get-slug response)))
+  (or (tlon-bae-eaf-get-post-id response)
+      (tlon-bae-eaf-get-tag-slug response)))
 
 (defun tlon-bae-eaf-get-object (id-or-slug)
   "Return the EAF object in ID-OR-SLUG."
@@ -1732,65 +1732,65 @@ If ASYNC is t, run the request asynchronously."
 		(message "Error: %S" error-thrown))))
     response))
 
-(defun tlon-bae--eaf-post-get-result (response)
+(defun tlon-bae--eaf-get-post-result (response)
   "docstring"
   (let* ((post (cdr (assoc 'post response)))
 	 (result (cdr (assoc 'result post))))
     result))
 
-(defun tlon-bae-eaf-post-get-id (response)
+(defun tlon-bae-eaf-get-post-id (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-post-get-result response))
+  (let* ((result (tlon-bae--eaf-get-post-result response))
 	 (id (cdr (assoc '_id result))))
     id))
 
-(defun tlon-bae-eaf-post-get-html (response)
+(defun tlon-bae-eaf-get-post-html (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-post-get-result response))
+  (let* ((result (tlon-bae--eaf-get-post-result response))
 	 (html (cdr (assoc 'htmlBody result))))
     html))
 
-(defun tlon-bae-eaf-post-get-title (response)
+(defun tlon-bae-eaf-get-post-title (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-post-get-result response))
+  (let* ((result (tlon-bae--eaf-get-post-result response))
 	 (title (cdr (assoc 'title result))))
     title))
 
-(defun tlon-bae-eaf-post-get-author (response)
+(defun tlon-bae-eaf-get-post-author (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-post-get-result response))
+  (let* ((result (tlon-bae--eaf-get-post-result response))
 	 (author (cdr (assoc 'author result))))
     author))
 
-(defun tlon-bae-eaf-post-get-username (response)
+(defun tlon-bae-eaf-get-post-username (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-post-get-result response))
+  (let* ((result (tlon-bae--eaf-get-post-result response))
 	 (user (cdr (assoc 'user result)))
 	 (username (cdr (assoc 'username user))))
     username))
 
-(defun tlon-bae--eaf-tag-get-result (response)
+(defun tlon-bae--eaf-get-tag-result (response)
   "docstring"
   (let* ((tag (cdr (assoc 'tag response)))
 	 (result (cdr (assoc 'result tag))))
     result))
 
-(defun tlon-bae-eaf-tag-get-slug (response)
+(defun tlon-bae-eaf-get-tag-slug (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-tag-get-result response))
+  (let* ((result (tlon-bae--eaf-get-tag-result response))
 	 (slug (cdr (assoc 'slug result))))
     slug))
 
-(defun tlon-bae-eaf-tag-get-html (response)
+(defun tlon-bae-eaf-get-tag-html (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-tag-get-result response))
+  (let* ((result (tlon-bae--eaf-get-tag-result response))
 	 (description (cdr (assoc 'description result)))
 	 (html (cdr (assoc 'html description))))
     html))
 
-(defun tlon-bae-eaf-tag-get-title (response)
+(defun tlon-bae-eaf-get-tag-title (response)
   "docstring"
-  (let* ((result (tlon-bae--eaf-tag-get-result response))
+  (let* ((result (tlon-bae--eaf-get-tag-result response))
 	 (title (cdr (assoc 'name result))))
     (tlon-bae-shorten-title title)))
 
