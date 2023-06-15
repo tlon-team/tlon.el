@@ -1867,5 +1867,24 @@ If ASYNC is t, run the request asynchronously."
 	   (insert response)
 	   (write-region (point-min) (point-max) target-path)))))))
 
+(defun tlon-bae-create-file-from-commit (file-path commit-hash)
+  "Create a temporary file with the state of the FILE-PATH at the COMMIT-HASH and return this path."
+  (let* ((file-name (file-name-nondirectory file-path))
+	 (file-directory (file-name-directory file-path))
+	 (repo-root (locate-dominating-file file-path ".git"))
+	 (relative-file-path (file-relative-name file-path repo-root))
+	 (new-file-name (format "%s_%s" commit-hash file-name))
+	 (new-file-path (make-temp-file new-file-name nil ".md"))
+	 (git-command
+	  (format "git show %s:\"%s\""
+		  commit-hash
+		  (shell-quote-argument relative-file-path))))
+    (let ((default-directory repo-root))
+      (with-temp-buffer
+	(insert (shell-command-to-string git-command))
+	(write-file new-file-path)))
+    (message "File created: %s" new-file-path)
+    new-file-path))
+
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
