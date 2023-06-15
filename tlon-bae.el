@@ -471,10 +471,73 @@ If no FILE is provided, use the file visited by the current buffer."
   (interactive)
   (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
-(defun tlon-bae-get-counterpart (&optional file-path)
+(defun tlon-bae-get-original-translated (bib-file)
+  "Parses BIB-FILE and returns an alist of original-translation key pairs."
+  (with-temp-buffer
+    (insert-file-contents bib-file)
+    (let ((translations-alist '()))
+      (bibtex-map-entries
+       (lambda (key _beg _end)
+         (bibtex-narrow-to-entry)
+         (when-let ((translation (bibtex-autokey-get-field "translation")))
+           (unless (string-empty-p translation)
+             (setq translations-alist (cons (cons key translation) translations-alist))))
+         (widen)))
+      translations-alist)))
+
+(defun tlon-bae-convert-keys-to-files (input-alist)
+  "Take INPUT-ALIST of keys and return an a list of corresponding files."
+  (let ((output-alist '()))
+    (dolist (cons-cell input-alist output-alist)
+      (let* ((original-key (car cons-cell))
+             (translation-key (cdr cons-cell))
+             (original-file (file-name-concat
+			     tlon-bae-dir-original-posts
+			     (file-name-with-extension original-key "md")))
+             (translation-file (file-name-concat
+				tlon-bae-dir-translated-posts
+				(file-name-with-extension translation-key "md"))))
+        (setq output-alist (cons (cons original-file translation-file) output-alist))))))
+
+(defvar tlon-bae-post-correspondence nil
+  "Alist of original-translation file pairs.")
+
+(defun tlon-bae-refresh-post-correspondence ()
+  "Refresh alist of original-translation file pairs."
+  (interactive)
+  (let* ((new (tlon-bae-get-original-translated (file-name-concat
+						 ps/dir-tlon-biblioteca-altruismo-eficaz
+						 "etc/new.bib")))
+	 (old (tlon-bae-get-original-translated (file-name-concat
+						 ps/dir-tlon-biblioteca-altruismo-eficaz
+						 "etc/old.bib")))
+	 (key-alist (append new old))
+	 (input-alist (tlon-bae-convert-keys-to-files key-alist)))
+    (setq tlon-bae-post-correspondence input-alist)))
+
+(defun tlon-bae-get-translation-file (original-file)
+  "Return file that translates ORIGINAL-FILE."
+  (or (alist-get original-file tlon-bae-post-correspondence nil nil #'equal)
+      (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal)))
+
+(defun tlon-bae-get-original-file (translation-file)
+  "Return file that TRANSLATION-FILE translates."
+  (cl-loop for (key . val) in tlon-bae-tag-correspondence
+	   when (equal val translation-file)
+	   return key))
+
+(defun tlon-bae-get-counterpart (file-path)
+  "Docstring."
+  (interactive)
+  (if (string-match tlon-bae-dir-original-posts file-path)
+      (tlon-bae-get-translation-file file-path)
+    (tlon-bae-get-original-file file-path)))
+  
+;; This was the old function we used, which handles tags as well as posts.
+(defun tlon-bae-get-counterpart-old (&optional file-path)
   "Get the counterpart of file in FILE-PATH.
-If FILE-PATH is nil, use the path of the file visited by the
-current buffer."
+  If FILE-PATH is nil, use the path of the file visited by the
+  current buffer."
   (let* ((file-path (or file-path (buffer-file-name)))
 	 (dir-path (file-name-directory file-path))
 	 (file-name (file-name-nondirectory file-path))
