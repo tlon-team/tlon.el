@@ -742,6 +742,22 @@ is non-nil, open DeepL."
     (when deepl
       (shell-command "open '/Applications/DeepL.app/Contents/MacOS/DeepL'"))))
 
+(defun tlon-bae-copy-region (beg end)
+  "Copy the unfilled contents between BEG and END to the kill ring."
+  (let ((contents (buffer-substring-no-properties beg end)))
+    (with-temp-buffer
+      (insert contents)
+      (unfill-region (point-min) (point-max))
+      (copy-region-as-kill (point-min) (point-max)))
+    (message "Copied the contents of the region to kill ring")))
+
+(defun tlon-bae-copy-dwim ()
+  "Copy the unfilled contents of the region or buffer to the kill ring."
+  (interactive)
+  (if (region-active-p)
+      (tlon-bae-copy-region (region-beginning) (region-end))
+    (tlon-bae-copy-file-contents)))
+
 (defun tlon-bae-set-original-path (filename)
   "Return full path of FILENAME."
   (let* ((type (if (string-match "tag--" filename) "tags/" "posts/"))
