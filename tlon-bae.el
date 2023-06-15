@@ -28,6 +28,7 @@
 ;;; Code:
 (require 'org)
 (require 'org-clock)
+(require 'bibtex)
 (require 'cl-lib)
 (require 'transient)
 
