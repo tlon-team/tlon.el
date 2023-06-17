@@ -874,8 +874,7 @@ If ISSUE is non-nil, create a new issue."
     (let* ((target (tlon-bae-generate-file-path)))
       (tlon-bae-html-to-markdown url target)
       (when issue
-	(tlon-bae-create-issue-for-job (file-name-nondirectory target))
-	(forge-pull)))))
+	(tlon-bae-create-issue-for-job (file-name-nondirectory target))))))
 
 (defun tlon-bae-import-html-eaf (id-or-slug &optional issue)
   "Import the HTML of EAF entity with ID-OR-SLUG and convert it to Markdown.
@@ -958,17 +957,21 @@ non-nil, a new issue will be created."
     (when issue
       (tlon-bae-create-issue-for-job (file-name-nondirectory target)))))
 
-(defun tlon-bae-create-issue-for-job (filename)
+(defun tlon-bae-create-issue-for-job (&optional filename)
   "Create an issue based on FILENAME.
-  Creates a new issue in the BAE repository with the format `Job:
-  FILENAME`."
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+Creates a new issue in the BAE repository with the format `Job:
+FILENAME`."
+  (interactive)
+  (let ((filename (or filename (read-string "Filename: ")))
+	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (call-interactively #'forge-create-issue)
     (insert (format "Job: `%s`" filename))
     (call-interactively #'forge-post-submit)
     (sleep-for 2)
     (forge-pull)
-    (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)))
+    (magit-status ps/dir-tlon-biblioteca-altruismo-eficaz)
+    ;; needs to be done twice for some reason; FIXME
+    (forge-pull)))
 
 ;; revise imported file
 (defun tlon-bae-initialize-processing ()
