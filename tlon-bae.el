@@ -1684,9 +1684,12 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 
 (tlon-bae-create-file-opening-command "etc/Glossary.csv")
 (tlon-bae-create-file-opening-command "etc/tag-correspondence.csv")
-(tlon-bae-create-file-opening-command "etc/post-correspondence.csv")
-(tlon-bae-create-file-opening-command "etc/tag-slugs.txt")
 (tlon-bae-create-file-opening-command "etc/work-correspondence.csv")
+(tlon-bae-create-file-opening-command "etc/new.bib")
+(tlon-bae-create-file-opening-command "etc/old.bib")
+(tlon-bae-create-file-opening-command "etc/finished.bib")
+(tlon-bae-create-file-opening-command "etc/pending.bib")
+(tlon-bae-create-file-opening-command "etc/tag-slugs.txt")
 (tlon-bae-create-file-opening-command "../tlon-docs/bae.org")
 (tlon-bae-create-file-opening-command "readme.md")
 
@@ -1720,10 +1723,10 @@ If DIR-PATH is nil, create a command to open the BAE repository."
    ["Open file"
     ("f f" "counterpart"                tlon-bae-open-counterpart)
     ("f g" "Glossary.csv"               tlon-bae-open-glossary)
-    ("f w" "work-correspondence.csv"    tlon-bae-open-work-correspondence)
-    ("f t" "tag-correspondence.csv"     tlon-bae-open-tag-correspondence)
-    ("f p" "post-correspondence.csv"     tlon-bae-open-post-correspondence)
-    ("f s" "tag-slugs.txt"              tlon-bae-open-tag-slugs)
+    ("f n" "new.bib"                    tlon-bae-open-new)
+    ("f o" "old.bib"                    tlon-bae-open-old)
+    ("f i" "finished.bib"               tlon-bae-open-finished)
+    ("f p" "pending.bib"                tlon-bae-open-pending)
     ("f m" "manual.md"                  tlon-bae-open-bae)
     ("f r" "readme.md"                  tlon-bae-open-readme)
     ]
