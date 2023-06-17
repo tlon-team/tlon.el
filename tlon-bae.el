@@ -759,7 +759,7 @@ is non-nil, open DeepL."
 
 (defun tlon-bae-set-original-path (filename)
   "Return full path of FILENAME."
-  (let* ((type (if (string-match "tag--" filename) "tags/" "posts/"))
+  (let* ((type (if (string-match "[[:digit:]]" filename) "posts/" "tags/"))
 	 (dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/" type))
 	 (file-path (file-name-concat dir filename)))
     file-path))
@@ -783,9 +783,9 @@ is non-nil, open DeepL."
 
 (defun tlon-bae-post-or-tag (file)
   "Return `posts' or `tags' depending on FILE."
-  (if (string-match "tag--" file)
-      "tags"
-    "posts"))
+  (if (string-match "[[:digit:]]" file)
+      "posts"
+    "tags"))
 
 (defun tlon-bae-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
