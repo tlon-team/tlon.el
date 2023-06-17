@@ -468,7 +468,7 @@ If no FILE is provided, use the file visited by the current buffer."
   (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
 (defun tlon-bae-get-original-translated (bib-file)
-  "Parses BIB-FILE and returns an alist of original-translation key pairs."
+  "Parse BIB-FILE and returns an alist of original-translation key pairs."
   (with-temp-buffer
     (insert-file-contents bib-file)
     (let ((translations-alist '()))
@@ -523,7 +523,7 @@ If no FILE is provided, use the file visited by the current buffer."
 	   return key))
 
 (defun tlon-bae-get-counterpart (file-path)
-  "Docstring."
+  "Get the counterpart of file in FILE-PATH."
   (interactive)
   (if (string-match tlon-bae-dir-original-posts file-path)
       (tlon-bae-get-translation-file file-path)
@@ -532,8 +532,8 @@ If no FILE is provided, use the file visited by the current buffer."
 ;; This was the old function we used, which handles tags as well as posts.
 (defun tlon-bae-get-counterpart-old (&optional file-path)
   "Get the counterpart of file in FILE-PATH.
-  If FILE-PATH is nil, use the path of the file visited by the
-  current buffer."
+If FILE-PATH is nil, use the path of the file visited by the
+current buffer."
   (let* ((file-path (or file-path (buffer-file-name)))
 	 (dir-path (file-name-directory file-path))
 	 (file-name (file-name-nondirectory file-path))
@@ -592,7 +592,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-eaf-get-id-or-slug-from-identifier (identifier)
   "Return the EAF post ID or tag slug from IDENTIFIER, if found.
-  IDENTIFIER can be an URL, a post ID or a tag slug."
+IDENTIFIER can be an URL, a post ID or a tag slug."
   (interactive "sURL: ")
   (if (ps/string-is-url-p identifier)
       (or (tlon-bae-eaf-get-id-from-identifier identifier)
@@ -639,7 +639,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-get-clock-file ()
   "Return file name in clocked heading.
-  Assumes file name is enclosed in backticks."
+Assumes file name is enclosed in backticks."
   (unless org-clock-current-task
     (user-error "No clock running"))
   (let ((clock (substring-no-properties org-clock-current-task)))
@@ -668,7 +668,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-get-clock-action ()
   "Return action in heading at point.
-  Assumes action is first word of clocked task."
+Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-bae-get-clock-file)
   (let ((action (car (split-string (substring-no-properties org-clock-current-task))))
@@ -701,7 +701,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
-  Return the subdirectory containing the FILENAME, or nil if not found."
+Return the subdirectory containing the FILENAME, or nil if not found."
   (catch 'found
     (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
       (when (and (file-exists-p file)
@@ -712,8 +712,8 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
-  Assumes the issue title contains FILE, which is a unique file in
-  the `originals/tags' directory."
+Assumes the issue title contains FILE, which is a unique file in
+the `originals/tags' directory."
   (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
 	   when (string= file (oref topic title))
 	   return (oref topic id)))
@@ -728,8 +728,8 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-copy-file-contents (&optional file deepl)
   "Copy the unfilled contents of FILE to the kill ring.
-  Defaults to the current buffer if no FILE is specified. If DEEPL
-  is non-nil, open DeepL."
+Defaults to the current buffer if no FILE is specified. If DEEPL
+is non-nil, open DeepL."
   (let ((file (or file (buffer-file-name))))
     (with-current-buffer (find-file-noselect file)
       (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
@@ -849,18 +849,18 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-create-job (identifier)
   "Create a new job for IDENTIFIER.
-  Creating a new job means (1) importing a document and (2)
-  creating an associated issue.
+Creating a new job means (1) importing a document and (2)
+creating an associated issue.
 
-  IDENTIFIER can be a URL or a PDF file path."
+IDENTIFIER can be a URL or a PDF file path."
   (interactive "sURL or path to PDF: ")
   (tlon-bae-import-document identifier t)
   (message "Next step: capture the new job (`,`) and run the usual command (`H-r r`)."))
 
 (defun tlon-bae-import-document (identifier &optional issue)
   "Import a document from IDENTIFIER.
-  IDENTIFIER can be a URL or a PDF file path. If ISSUE is non-nil,
-  a new issue will be created."
+IDENTIFIER can be a URL or a PDF file path. If ISSUE is non-nil,
+a new issue will be created."
   (interactive "sURL or path to PDF: ")
   (if (ps/string-is-url-p identifier)
       (tlon-bae-import-html identifier issue)
@@ -868,7 +868,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-import-html (url &optional issue)
   "Import the HTML in URL and convert it to Markdown.
-  If ISSUE is non-nil, create a new issue."
+If ISSUE is non-nil, create a new issue."
   (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
       (tlon-bae-import-html-eaf id-or-slug issue)
     (let* ((target (tlon-bae-generate-file-path)))
@@ -899,7 +899,7 @@ If ISSUE is non-nil, create an issue for the new job."
 
 (defun tlon-bae-html-to-markdown (source target)
   "Convert HTML text in SOURCE to Markdown text in TARGET.
-  SOURCE can be a URL or, like TARGET, a file path."
+SOURCE can be a URL or, like TARGET, a file path."
   (let ((pandoc (if (ps/string-is-url-p source)
 		    tlon-bae-pandoc-convert-from-url
 		  tlon-bae-pandoc-convert-from-file)))
@@ -936,17 +936,17 @@ If ISSUE is non-nil, create an issue for the new job."
 ;; than pdftotext, to convert PDFs to Markdown.
 (defun tlon-bae-import-pdf-pdftotext (path &optional issue)
   "Import the PDF in PATH and convert it to Markdown.
-  If ISSUE is non-nil, create an issue for the new job.
+If ISSUE is non-nil, create an issue for the new job.
 
-  The command requires the user to supply values for the header and
-  footer elements to be excluded from the conversion, which are
-  different for each PDF. To determine these values, measure the
-  distance between the top/bottom of the PDF (which will open in
-						    the other window) and note the number of pixels until the end of
-  the header/footer. (You can measure the number of pixels between
-			  two points by taking a screenshot: note the numbers next to the
-			  pointer.) Then enter these values when prompted. If ISSUE is
-  non-nil, a new issue will be created."
+The command requires the user to supply values for the header and
+footer elements to be excluded from the conversion, which are
+different for each PDF. To determine these values, measure the
+distance between the top/bottom of the PDF (which will open in
+the other window) and note the number of pixels until the end of
+the header/footer. (You can measure the number of pixels between
+two points by taking a screenshot: note the numbers next to the
+pointer.) Then enter these values when prompted. If ISSUE is
+non-nil, a new issue will be created."
   (let* ((path (read-file-name "PDF: "))
 	 (target (tlon-bae-generate-file-path)))
     (find-file-other-window path)
