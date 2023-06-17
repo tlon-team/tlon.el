@@ -530,6 +530,16 @@ If no FILE is provided, use the file visited by the current buffer."
     (tlon-bae-get-original-file file-path)))
 
 ;; This was the old function we used, which handles tags as well as posts.
+(defun tlon-bae-open-counterpart ()
+  "Open the counterpart of the current file.
+If FILE-PATH is nil, use the path of the file visited by the
+current buffer."
+  (interactive)
+  (if-let ((file (buffer-file-name))
+	   (counterpart (tlon-bae-get-counterpart file)))
+      (find-file counterpart)
+    (user-error "No corresponding file found. Consider running `tlon-bae-refresh-post-correspondence'")))
+
 (defun tlon-bae-get-counterpart-old (&optional file-path)
   "Get the counterpart of file in FILE-PATH.
 If FILE-PATH is nil, use the path of the file visited by the
@@ -553,16 +563,6 @@ current buffer."
 			    (replace-regexp-in-string "/originals/" "/translations/" dir-path)
 			  (replace-regexp-in-string "/translations/" "/originals/" dir-path))))
       (expand-file-name new-file-name new-dir))))
-
-(defun tlon-bae-open-counterpart ()
-  "Open the counterpart of the current file.
-  If FILE-PATH is nil, use the path of the file visited by the
-  current buffer."
-  (interactive)
-  (if-let ((file (buffer-file-name))
-	   (counterpart (tlon-bae-get-counterpart file)))
-      (find-file counterpart)
-    (user-error "No corresponding file found")))
 
 ;;; EAF validation
 
