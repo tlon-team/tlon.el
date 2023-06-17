@@ -1094,7 +1094,6 @@ FILENAME`."
 	  (assignee "benthamite"))
       (tlon-bae-act-on-topic original-file label assignee)
       (tlon-bae-commit-and-push "Process " original-path)
-      (tlon-bae-commit-and-push "Process " translation-path)
       (org-clock-goto)
       (org-todo "DONE")
       (save-buffer)
