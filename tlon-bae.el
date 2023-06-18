@@ -113,7 +113,7 @@
       (if-let* ((org-link (ps/org-nth-stored-link 0))
 		(refile-position (org-find-exact-headline-in-buffer
 				  (cadr (nth 0 org-stored-links))
-				  (get-file-buffer ps/file-tlon-bae))))
+				  (find-file-noselect ps/file-tlon-bae))))
 	  (let ((action (alist-get label tlon-bae-label-actions nil nil #'string=))
 		(binding (upcase (alist-get label tlon-bae-label-bindings nil nil #'string=))))
 	    (kill-new (format "%s %s" action org-link))
