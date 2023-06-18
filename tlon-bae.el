@@ -499,10 +499,9 @@ If no FILE is provided, use the file visited by the current buffer."
 	     (translation-file (file-name-with-extension translation-key "md")))
 	(setq output-alist (cons (cons original-file translation-file) output-alist))))))
 
-(defvar tlon-bae-post-correspondence nil
-  "Alist of original-translation file pairs.")
 
-(defun tlon-bae-refresh-post-correspondence ()
+;;; correspondences
+(defun tlon-bae-load-post-correspondence ()
   "Refresh alist of original-translation file pairs."
   (interactive)
   (let* ((new (tlon-bae-get-original-translated (file-name-concat
@@ -515,58 +514,47 @@ If no FILE is provided, use the file visited by the current buffer."
 	 (input-alist (tlon-bae-convert-keys-to-files key-alist)))
     (setq tlon-bae-post-correspondence input-alist)))
 
-(defun tlon-bae-get-translation-file (original-file)
-  "Return file that translates ORIGINAL-FILE."
-  (or (alist-get original-file tlon-bae-post-correspondence nil nil #'equal)
-      (alist-get original-file tlon-bae-tag-correspondence nil nil #'equal)))
+(defun tlon-bae-get-translation-file (original-filename)
+  "Return file that translates ORIGINAL-FILENAME."
+  (or (alist-get original-filename tlon-bae-post-correspondence nil nil #'equal)
+      (alist-get original-filename tlon-bae-tag-correspondence nil nil #'equal)))
 
-(defun tlon-bae-get-original-file (translation-file)
-  "Return file that TRANSLATION-FILE translates."
-  (cl-loop for (key . val) in tlon-bae-tag-correspondence
-	   when (equal val translation-file)
+(defun tlon-bae-get-original-file (translation-filename)
+  "Return file that TRANSLATION-FILENAME translates."
+  (cl-loop for (key . val) in (append
+			       tlon-bae-post-correspondence
+			       tlon-bae-tag-correspondence)
+	   when (equal val translation-filename)
 	   return key))
 
-(defun tlon-bae-get-counterpart (file-path)
+(defun tlon-bae-get-counterpart-filename (file-path)
   "Get the counterpart of file in FILE-PATH."
   (interactive)
-  (if (string-match tlon-bae-dir-original-posts file-path)
-      (tlon-bae-get-translation-file file-path)
-    (tlon-bae-get-original-file file-path)))
+  (let ((filename (file-name-nondirectory file-path)))
+    (if (or (string-match tlon-bae-dir-original-posts file-path)
+	    (string-match tlon-bae-dir-original-tags file-path))
+	(tlon-bae-get-translation-file filename)
+      (tlon-bae-get-original-file filename))))
 
-;; This was the old function we used, which handles tags as well as posts.
+(defun tlon-bae-get-counterpart-dirname (file-path)
+  "Get the counterpart of file in FILE-PATH."
+  (let* ((dirname (file-name-directory file-path))
+	 (counterpart-dirname (if (string-match "/originals/" dirname)
+				  (replace-regexp-in-string
+				   "/originals/" "/translations/" dirname)
+				(replace-regexp-in-string
+				 "/translations/" "/originals/" dirname))))
+    counterpart-dirname))
+
 (defun tlon-bae-open-counterpart ()
-  "Open the counterpart of the current file.
-If FILE-PATH is nil, use the path of the file visited by the
-current buffer."
+  "Open the counterpart of the file visited by the current buffer."
   (interactive)
-  (if-let ((file (buffer-file-name))
-	   (counterpart (tlon-bae-get-counterpart file)))
+  (if-let* ((file (buffer-file-name))
+	    (counterpart-filename (tlon-bae-get-counterpart-filename file))
+	    (counterpart-dirname (tlon-bae-get-counterpart-dirname file))
+	    (counterpart (concat counterpart-dirname counterpart-filename)))
       (find-file counterpart)
-    (user-error "No corresponding file found. Consider running `tlon-bae-refresh-post-correspondence'")))
-
-(defun tlon-bae-get-counterpart-old (&optional file-path)
-  "Get the counterpart of file in FILE-PATH.
-If FILE-PATH is nil, use the path of the file visited by the
-current buffer."
-  (let* ((file-path (or file-path (buffer-file-name)))
-	 (dir-path (file-name-directory file-path))
-	 (file-name (file-name-nondirectory file-path))
-	 (correspondence-alist (cond
-				((string-match "/originals/posts/" dir-path)
-				 tlon-bae-post-correspondence)
-				((string-match "/originals/tags/" dir-path)
-				 tlon-bae-tag-correspondence)
-				((string-match "/translations/posts/" dir-path)
-				 (mapcar (lambda (pair) (cons (cdr pair) (car pair)))
-					 tlon-bae-post-correspondence))
-				((string-match "/translations/tags/" dir-path)
-				 (mapcar (lambda (pair) (cons (cdr pair) (car pair)))
-					 tlon-bae-tag-correspondence)))))
-    (when-let ((new-file-name (cdr (assoc file-name correspondence-alist)))
-	       (new-dir (if (string-match "/originals/" dir-path)
-			    (replace-regexp-in-string "/originals/" "/translations/" dir-path)
-			  (replace-regexp-in-string "/translations/" "/originals/" dir-path))))
-      (expand-file-name new-file-name new-dir))))
+    (user-error "No corresponding file found. Consider running `tlon-bae-load-post-correspondence'")))
 
 ;;; EAF validation
 
@@ -1940,7 +1928,7 @@ If ASYNC is t, run the request asynchronously."
 
 (defun tlon-bae-gpt-translate-file (file)
   "Docstring."
-  (let* ((counterpart (tlon-bae-get-counterpart file))
+  (let* ((counterpart (tlon-bae-get-counterpart-filename file))
 	 (target-path (concat
 		       (file-name-sans-extension counterpart)
 		       "--gpt-translated.md")))
