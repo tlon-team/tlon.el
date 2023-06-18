@@ -62,6 +62,14 @@
   (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/posts/")
   "Directory containing translated posts.")
 
+(defvar tlon-bae-dir-original-tags
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/tags/")
+  "Directory containing original tags.")
+
+(defvar tlon-bae-dir-translated-tags
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags/")
+  "Directory containing translated tags.")
+
 ;;;
 
 (defun tlon-bae-forge ()
