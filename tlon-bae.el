@@ -495,12 +495,8 @@ If no FILE is provided, use the file visited by the current buffer."
     (dolist (cons-cell input-alist output-alist)
       (let* ((original-key (car cons-cell))
 	     (translation-key (cdr cons-cell))
-	     (original-file (file-name-concat
-			     tlon-bae-dir-original-posts
-			     (file-name-with-extension original-key "md")))
-	     (translation-file (file-name-concat
-				tlon-bae-dir-translated-posts
-				(file-name-with-extension translation-key "md"))))
+	     (original-file (file-name-with-extension original-key "md"))
+	     (translation-file (file-name-with-extension translation-key "md")))
 	(setq output-alist (cons (cons original-file translation-file) output-alist))))))
 
 (defvar tlon-bae-post-correspondence nil
