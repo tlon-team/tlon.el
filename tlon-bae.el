@@ -1028,7 +1028,6 @@ FILENAME`."
 	(tlon-bae-set-windows original-path translation-path)
 	(ispell-change-dictionary "espanol")
 	(flyspell-buffer)
-	(tlon-bae-log-buffer-latest-user-commit-ediff original-path)
 	(orgit-topic-open topic)
 	(winum-select-window-2)
 	(tlon-bae-copy-file-contents original-path)))))
@@ -1927,7 +1926,6 @@ If ASYNC is t, run the request asynchronously."
      (if (not response)
 	 (message "gptel-quick failed with message: %s" (plist-get info :status))
        (let ((translations (split-string response "|")))
-	 (delete-region (region-beginning) (region-end))
 	 (kill-new (completing-read "Translation: " translations)))))))
 
 (defun tlon-bae-gpt-translate-file (file)
