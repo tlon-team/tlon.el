@@ -31,6 +31,7 @@
 (require 'bibtex)
 (require 'cl-lib)
 (require 'transient)
+(require 'subr-x)
 
 ;;; Version
 (setq tlon-bae-version "0.1.11")
@@ -383,7 +384,7 @@ If no FILE is provided, use the file visited by the current buffer."
 ;;; csv and txt parsing
 
 (defun tlon-bae-parse-csv-line (line &optional separator)
-  "Split CSV LINE into fields, considering quotes, using SEPARATOR (defaults to comma)."
+  "Split CSV LINE into fields, considering quotes, using SEPARATOR."
   (let ((index 0)
 	(separator (or separator ?,))
 	(quote-char ?\")
@@ -483,7 +484,7 @@ If no FILE is provided, use the file visited by the current buffer."
       (bibtex-map-entries
        (lambda (key _beg _end)
 	 (bibtex-narrow-to-entry)
-	 (when-let ((translation (bibtex-autokey-get-field "translation")))
+	 (when-let* ((translation (bibtex-autokey-get-field "translation")))
 	   (unless (string-empty-p translation)
 	     (setq translations-alist (cons (cons key translation) translations-alist))))
 	 (widen)))
