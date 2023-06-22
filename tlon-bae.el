@@ -663,6 +663,18 @@ Assumes action is first word of clocked task."
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
 
+(defun tlon-bae-mark-clock-heading-as-done (&optional parent)
+  "Mark heading associated with current clock heading as DONE.
+If PARENT is non-nil, mark parent heading as DONE as well."
+  (save-window-excursion
+    (org-clock-goto)
+    (org-todo "DONE")
+    (when parent
+      (widen)
+      (org-up-heading-safe)
+      (org-todo "DONE"))
+    (save-buffer)))
+
 (defun tlon-bae-get-forge-file-path ()
   "Get the file path of the topic at point or in current forge buffer."
   (unless (or (derived-mode-p 'magit-status-mode)
@@ -1169,9 +1181,7 @@ FILENAME`."
     (let ((label "Awaiting publication")
 	  (assignee ""))
       (tlon-bae-act-on-topic original-file label assignee 'close)
-      (org-clock-goto)
-      (org-todo "DONE")
-      (save-buffer)
+      (tlon-bae-mark-clock-heading-as-done t)
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
       (sit-for 5))))
 
