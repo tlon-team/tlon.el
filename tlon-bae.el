@@ -504,13 +504,7 @@ If no FILE is provided, use the file visited by the current buffer."
 (defun tlon-bae-load-post-correspondence ()
   "Refresh alist of original-translation file pairs."
   (interactive)
-  (let* ((new (tlon-bae-get-original-translated (file-name-concat
-						 ps/dir-tlon-biblioteca-altruismo-eficaz
-						 "etc/new.bib")))
-	 (old (tlon-bae-get-original-translated (file-name-concat
-						 ps/dir-tlon-biblioteca-altruismo-eficaz
-						 "etc/old.bib")))
-	 (key-alist (append new old))
+  (let* ((key-alist (tlon-bae-get-original-translated ps/file-tlon-bibliography-originals))
 	 (input-alist (tlon-bae-convert-keys-to-files key-alist)))
     (setq tlon-bae-post-correspondence input-alist)))
 
@@ -546,12 +540,12 @@ If no FILE is provided, use the file visited by the current buffer."
 				 "/translations/" "/originals/" dirname))))
     counterpart-dirname))
 
-(defun tlon-bae-open-counterpart ()
+(defun tlon-bae-open-counterpart (&optional file-path)
   "Open the counterpart of the file visited by the current buffer."
   (interactive)
-  (if-let* ((file (buffer-file-name))
-	    (counterpart-filename (tlon-bae-get-counterpart-filename file))
-	    (counterpart-dirname (tlon-bae-get-counterpart-dirname file))
+  (if-let* ((file-path (or file-path (buffer-file-name)))
+	    (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
+	    (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
 	    (counterpart (concat counterpart-dirname counterpart-filename)))
       (find-file counterpart)
     (user-error "No corresponding file found. Consider running `tlon-bae-load-post-correspondence'")))
