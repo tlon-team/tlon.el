@@ -1191,7 +1191,7 @@ FILENAME`."
   "Return the buffer that `read-aloud' should read."
   (let ((buffer-list (cl-remove-if-not
 		      (lambda (buffer)
-			(string-match-p (regexp-quote "*markdown-output* — eww") (buffer-name buffer)))
+			(string-match-p (regexp-quote "**markdown-output* # eww*") (buffer-name buffer)))
 		      (buffer-list)))
 	buffer)
     (cond ((= (length buffer-list) 1)
