@@ -476,7 +476,7 @@ If no FILE is provided, use the file visited by the current buffer."
   (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
 (defun tlon-bae-get-original-translated (bib-file)
-  "Parse BIB-FILE and returns an alist of original-translation key pairs."
+  "Parse BIB-FILE and return an alist of original-translation key pairs."
   (with-temp-buffer
     (insert-file-contents bib-file)
     (let ((translations-alist '()))
