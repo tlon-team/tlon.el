@@ -1073,9 +1073,9 @@ FILENAME`."
 	(tlon-bae-set-windows original-path translation-path)
 	(ispell-change-dictionary "espanol")
 	(flyspell-buffer)
-	(orgit-topic-open topic)
-	;; opens in other window, so no need to switch to it first
 	(tlon-bae-log-buffer-latest-user-commit-ediff translation-path)
+	;; opens in other window, so no need to switch to it first
+	(orgit-topic-open topic)
 	(tlon-bae-copy-file-contents original-path)))))
 
 (defun tlon-bae-finalize-processing ()
