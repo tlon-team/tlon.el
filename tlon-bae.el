@@ -462,6 +462,7 @@ If no FILE is provided, use the file visited by the current buffer."
   (dolist (slug tlon-bae-tag-slugs)
     (add-to-list 'tlon-bae-wiki-urls
 		 (format "https://forum.effectivealtruism.org/topics/%s" slug)))
+  (tlon-bae-load-post-correspondence)
   (message "Variables loaded."))
 
 (tlon-bae-load-variables)
