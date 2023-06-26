@@ -443,30 +443,6 @@ If no FILE is provided, use the file visited by the current buffer."
 (defvar tlon-bae-wiki-urls nil
   "List of EA Wiki URLs.")
 
-(defun tlon-bae-load-variables ()
-  "Load the variables to reflect changes to the files in the `etc' directory."
-  (interactive)
-  (setq tlon-bae-tag-correspondence
-	(tlon-bae-csv-file-to-alist (file-name-concat
-				     ps/dir-tlon-biblioteca-altruismo-eficaz
-				     "etc/tag-correspondence.csv"))
-	tlon-bae-work-correspondence
-	(tlon-bae-csv-file-to-alist (file-name-concat
-				     ps/dir-tlon-biblioteca-altruismo-eficaz
-				     "etc/work-correspondence.csv"))
-	tlon-bae-tag-slugs
-	(tlon-bae-read-urls-from-file (file-name-concat
-				       ps/dir-tlon-biblioteca-altruismo-eficaz
-				       "etc/tag-slugs.txt"))
-	tlon-bae-wiki-urls (list ""))
-  (dolist (slug tlon-bae-tag-slugs)
-    (add-to-list 'tlon-bae-wiki-urls
-		 (format "https://forum.effectivealtruism.org/topics/%s" slug)))
-  (tlon-bae-load-post-correspondence)
-  (message "Variables loaded."))
-
-(tlon-bae-load-variables)
-
 (defun tlon-bae-insert-tag-slug ()
   "Insert an EA Wiki slug at point."
   (interactive)
@@ -1965,6 +1941,30 @@ If ASYNC is t, run the request asynchronously."
 	(write-file new-file-path)))
     (message "File created: %s" new-file-path)
     new-file-path))
+
+(defun tlon-bae-load-variables ()
+  "Load the variables to reflect changes to the files in the `etc' directory."
+  (interactive)
+  (setq tlon-bae-tag-correspondence
+	(tlon-bae-csv-file-to-alist (file-name-concat
+				     ps/dir-tlon-biblioteca-altruismo-eficaz
+				     "etc/tag-correspondence.csv"))
+	tlon-bae-work-correspondence
+	(tlon-bae-csv-file-to-alist (file-name-concat
+				     ps/dir-tlon-biblioteca-altruismo-eficaz
+				     "etc/work-correspondence.csv"))
+	tlon-bae-tag-slugs
+	(tlon-bae-read-urls-from-file (file-name-concat
+				       ps/dir-tlon-biblioteca-altruismo-eficaz
+				       "etc/tag-slugs.txt"))
+	tlon-bae-wiki-urls (list ""))
+  (dolist (slug tlon-bae-tag-slugs)
+    (add-to-list 'tlon-bae-wiki-urls
+		 (format "https://forum.effectivealtruism.org/topics/%s" slug)))
+  (tlon-bae-load-post-correspondence)
+  (message "Variables loaded."))
+
+(tlon-bae-load-variables)
 
 (provide 'tlon-bae)
 ;;; tlon-bae.el ends here
