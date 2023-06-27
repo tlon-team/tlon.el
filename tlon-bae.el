@@ -1949,6 +1949,14 @@ If ASYNC is t, run the request asynchronously."
     (message "File created: %s" new-file-path)
     new-file-path))
 
+(defun tlon-bae-split-footnotes-into-separate-paragraphs ()
+  "Split footnotes into separate paragraphs."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "\\(\\[\\^[[:digit:]]\\{1,3\\}\\]:\\)" nil t)
+      (replace-match "\n\n\\1"))))
+
 (defun tlon-bae-load-variables ()
   "Load the variables to reflect changes to the files in the `etc' directory."
   (interactive)
