@@ -469,7 +469,7 @@ If no FILE is provided, use the file visited by the current buffer."
          (bibtex-narrow-to-entry)
          (when-let* ((translation (bibtex-autokey-get-field "translation")))
            (unless (string-empty-p translation)
-             (setq translations-alist (cons (cons key translation) translations-alist))))
+             (setq translations-alist (cons (cons translation key) translations-alist))))
          (widen))))
     translations-alist))
 
