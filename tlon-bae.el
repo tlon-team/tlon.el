@@ -947,6 +947,65 @@ format `Job: FILENAME`) and a new heading in the file `jobs.org'."
     ;; needs to be done twice for some reason; FIXME
     (forge-pull)))
 
+(defun tlon-bae-create-heading-for-job (key &optional commit)
+  "Create a heading based on KEY in `jobs.org'.
+If COMMIT is non-nil, commit the change."
+  (let ((jobs (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/jobs.org"))
+	(heading (format "[cite:@%s]" key)))
+    (with-current-buffer (or (find-buffer-visiting jobs)
+			     (find-file-noselect jobs))
+      (widen)
+      (goto-char (point-min))
+      (unless (re-search-forward heading nil t)
+	(goto-char (point-min))
+	(while (and (not (org-at-heading-p)) (not (eobp)))
+	  (forward-line))
+	(org-insert-heading)
+	(insert heading)
+	(save-buffer)))
+    (when commit
+      (tlon-bae-commit-and-push "Update " jobs))))
+
+(defun tlon-bae-mark-task-as-done ()
+  "Mark heading associated with current clock heading as DONE."
+  (save-window-excursion
+    (org-clock-goto)
+    (org-todo "DONE")
+    (save-buffer)))
+
+(defun tlon-bae-mark-heading-as-done (&optional commit)
+  "Mark the headings of the current job as DONE.
+  This will set the parent task of the task associated with the
+  current clock to DONE and mark the corresponding heading in
+  `jobs.org' as DONE.
+
+  If COMMIT is non-nil, commit and push the changes."
+  (org-clock-goto)
+  (widen)
+  (org-up-heading-safe)
+  (let* ((heading (substring-no-properties (org-get-heading t t t t)))
+	 (file (if (string-match "`\\(.+?\\)`" heading)
+		   (match-string 1 heading)
+		 (user-error "I wasn't able to find a key in clocked heading")))
+	 (key (file-name-sans-extension file))
+	 (jobs (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/jobs.org")))
+    (org-todo "DONE")
+    (with-current-buffer (find-file-noselect jobs)
+      ;; jump to heading that matches KEY
+      (tlon-bae-goto-heading key)
+      (org-todo "DONE")
+      (save-buffer))
+    (when commit
+      (tlon-bae-commit-and-push "Update " jobs))))
+
+(defun tlon-bae-goto-heading (key)
+  "Move point to the heading in `jobs.org' with KEY."
+  (with-current-buffer (find-file-noselect (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/jobs.org"))
+    (org-element-map (org-element-parse-buffer) 'headline
+      (lambda (headline)
+	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
+	  (goto-char (org-element-property :begin headline)))))))
+
 ;; revise imported file
 (defun tlon-bae-initialize-processing ()
   "Initialize processing."
