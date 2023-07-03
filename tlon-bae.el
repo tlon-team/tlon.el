@@ -1999,6 +1999,8 @@ If ASYNC is t, run the request asynchronously."
     (message "File created: %s" new-file-path)
     new-file-path))
 
+;;; markdown cleanup
+
 (defun tlon-bae-split-footnotes-into-separate-paragraphs ()
   "Split footnotes into separate paragraphs."
   (interactive)
@@ -2006,6 +2008,25 @@ If ASYNC is t, run the request asynchronously."
     (goto-char (point-min))
     (while (re-search-forward "\\(\\[\\^[[:digit:]]\\{1,3\\}\\]:\\)" nil t)
       (replace-match "\n\n\\1"))))
+
+(defun tlon-bae-fix-list ()
+  "Format the current paragraph into a proper list."
+  (interactive)
+  (save-excursion
+    (let ((beg (progn (backward-paragraph) (point)))
+	  (end (progn (forward-paragraph) (point))))
+      (goto-char beg)
+      (replace-regexp-in-region " - " "\n- " beg end)
+      (fill-region beg end))))
+
+(defun tlon-bae-fix-footnote-punctuation ()
+  "Place footnotes after punctuation mark."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    ;; we add a character at the beginning to avoid matching the footnote targets
+    (while (re-search-forward ".\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
+      (replace-match "\\2\\1"))))
 
 (defun tlon-bae-load-variables ()
   "Load the variables to reflect changes to the files in the `etc' directory."
