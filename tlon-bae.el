@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 0.1.11
+;; Version: 0.1.12
 ;; Homepage: https://tlon.team
 ;; Keywords: convenience tools
 
