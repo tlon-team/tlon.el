@@ -409,7 +409,7 @@ If no FILE is provided, use the file visited by the current buffer."
     (nreverse fields)))
 
 (defun tlon-bae-csv-file-to-alist (file-path)
-  "Convert CSV file to an alist."
+  "Convert CSV in FILE-PATH to an alist."
   (let ((file-content (with-temp-buffer
 			(insert-file-contents file-path)
 			(buffer-string))))
@@ -667,7 +667,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
-  Return the subdirectory containing the FILENAME, or nil if not found."
+Return the subdirectory containing the FILENAME, or nil if not found."
   (catch 'found
     (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
       (when (and (file-exists-p file)
