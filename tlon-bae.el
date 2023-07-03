@@ -455,13 +455,10 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-bae-get-original-translated (bib-file)
   "Parse BIB-FILE and return an alist of original-translation key pairs."
-  (let* ((bib-buffer (or (find-buffer-visiting bib-file)
-			 (find-file-noselect bib-file)))
-	 (buffer-exists (buffer-live-p bib-buffer))
-	 (translations-alist '()))
-    ;; Check if a buffer is visiting the file.
-    ;; If not, open the file in a new buffer.
-    (with-current-buffer bib-buffer
+  ;; Check if a buffer is visiting the file.
+  ;; If not, open the file in a new buffer.
+  (let ((translations-alist '()))
+    (with-current-buffer (find-file-noselect bib-file)
       (bibtex-map-entries
        (lambda (key _beg _end)
 	 (if (not key) (message "Found empty key at %s" (point)))
