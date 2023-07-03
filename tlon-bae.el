@@ -482,7 +482,6 @@ If no FILE is provided, use the file visited by the current buffer."
 	     (translation-file (file-name-with-extension translation-key "md")))
 	(setq output-alist (cons (cons original-file translation-file) output-alist))))))
 
-
 ;;; correspondences
 (defun tlon-bae-load-post-correspondence ()
   "Refresh alist of original-translation file pairs."
@@ -646,18 +645,6 @@ Assumes action is first word of clocked task."
     (if (member action actions)
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
-
-(defun tlon-bae-mark-clock-heading-as-done (&optional parent)
-  "Mark heading associated with current clock heading as DONE.
-If PARENT is non-nil, mark parent heading as DONE as well."
-  (save-window-excursion
-    (org-clock-goto)
-    (org-todo "DONE")
-    (when parent
-      (widen)
-      (org-up-heading-safe)
-      (org-todo "DONE"))
-    (save-buffer)))
 
 (defun tlon-bae-get-forge-file-path ()
   "Get the file path of the topic at point or in current forge buffer."
