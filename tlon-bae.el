@@ -670,7 +670,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-bae-find-subdirectory-containing-file (filename)
   "Search for a FILENAME in BAE repo dir and all its subdirectories.
-Return the subdirectory containing the FILENAME, or nil if not found."
+  Return the subdirectory containing the FILENAME, or nil if not found."
   (catch 'found
     (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
       (when (and (file-exists-p file)
@@ -682,7 +682,7 @@ Return the subdirectory containing the FILENAME, or nil if not found."
 (defun tlon-bae-get-issue-gid-by-file (repo file)
   "Return issue GID for FILE in REPO.
 Assumes the issue title contains FILE, which is a unique file in
-the `originals/tags' directory."
+  the `originals/tags' directory."
   (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
 	   when (string= file (oref topic title))
 	   return (oref topic id)))
