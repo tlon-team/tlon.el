@@ -457,7 +457,12 @@ If no FILE is provided, use the file visited by the current buffer."
   "Parse BIB-FILE and return an alist of original-translation key pairs."
   ;; Check if a buffer is visiting the file.
   ;; If not, open the file in a new buffer.
-  (let ((translations-alist '()))
+  (let ((translations-alist '())
+	(bib-buffer (find-buffer-visiting bib-file)))
+    ;; for some reason, `bibtex-map-entries' returns nil if a buffer is
+    ;; already visiting BIB-FILE, so we kill it if it exists
+    (when bib-buffer
+      (kill-buffer bib-buffer))
     (with-current-buffer (find-file-noselect bib-file)
       (bibtex-map-entries
        (lambda (key _beg _end)
