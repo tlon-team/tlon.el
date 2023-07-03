@@ -1212,12 +1212,26 @@ If COMMIT is non-nil, commit the change."
     (fill-region (point-min) (point-max))
     (write-file translation-path)
     (tlon-bae-commit-and-push "Review " translation-path)
+    (tlon-bae-process-and-commit-bibtex-files (file-name-sans-extension translation-file))
     (let ((label "Awaiting publication")
 	  (assignee ""))
       (tlon-bae-act-on-topic original-file label assignee 'close)
-      (tlon-bae-mark-clock-heading-as-done t)
+      (tlon-bae-mark-task-as-done)
+      (tlon-bae-mark-heading-as-done 'commit)
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
       (sit-for 5))))
+
+(defun tlon-bae-process-and-commit-bibtex-files (key)
+  "Move key of translated file to `translations-finished.bib' and commit changes."
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (ps/bibtex-move-entry-to-finished key)
+    (magit-stage-file ps/file-tlon-bibliography-pending)
+    (magit-stage-file ps/file-tlon-bibliography-finished)
+    ;; we check for staged or unstaged changes to FILE because
+    ;; `magit-commit-create' interrupts the process if there aren't
+    (when (tlon-bae-check-staged-or-unstaged ps/file-tlon-bibliography-finished)
+      (magit-commit-create (list "-m" (format "Move %s to translations-finished.bib" key))))
+    (call-interactively #'magit-push-current-to-pushremote)))
 
 ;;; TTS
 
