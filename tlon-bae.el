@@ -695,36 +695,35 @@ the `originals/tags' directory."
 			 always (string-match-p (regexp-quote substr) title))
 	   return (oref topic id)))
 
-(defun tlon-bae-copy-file-contents (&optional file deepl)
+(defun tlon-bae-copy-buffer (&optional file deepl)
   "Copy the unfilled contents of FILE to the kill ring.
 Defaults to the current buffer if no FILE is specified. If DEEPL
 is non-nil, open DeepL."
   (let ((file (or file (buffer-file-name))))
     (with-current-buffer (find-file-noselect file)
-      (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
-	(with-temp-buffer
-	  (insert contents)
-	  (unfill-region (point-min) (point-max))
-	  (copy-region-as-kill (point-min) (point-max)))
-	(message "Copied the contents of `%s' to kill ring" (file-name-nondirectory file))))
-    (when deepl
-      (shell-command "open '/Applications/DeepL.app/Contents/MacOS/DeepL'"))))
+      (unfill-region (point-min) (point-max))
+      (copy-region-as-kill (point-min) (point-max))
+      (fill-region (point-min) (point-max)))
+    (message "Copied the contents of `%s' to kill ring" (file-name-nondirectory file)))
+  (when deepl
+    (shell-command "open '/Applications/DeepL.app/Contents/MacOS/DeepL'")))
 
 (defun tlon-bae-copy-region (beg end)
   "Copy the unfilled contents between BEG and END to the kill ring."
-  (let ((contents (buffer-substring-no-properties beg end)))
-    (with-temp-buffer
-      (insert contents)
+  (save-excursion
+    (save-restriction
+      (narrow-to-region beg end)
       (unfill-region (point-min) (point-max))
-      (copy-region-as-kill (point-min) (point-max)))
-    (message "Copied the contents of the region to kill ring")))
+      (copy-region-as-kill (point-min) (point-max))
+      (fill-region (point-min) (point-max))))
+  (message "Copied the contents of the region to kill ring"))
 
 (defun tlon-bae-copy-dwim ()
   "Copy the unfilled contents of the region or buffer to the kill ring."
   (interactive)
   (if (region-active-p)
       (tlon-bae-copy-region (region-beginning) (region-end))
-    (tlon-bae-copy-file-contents)))
+    (tlon-bae-copy-buffer)))
 
 (defun tlon-bae-set-original-path (filename)
   "Return full path of FILENAME."
