@@ -815,54 +815,58 @@ is non-nil, open DeepL."
 			(_ (user-error "I don't know what to do with `%s`" action))))
       (_ (user-error "I don't know what to do in `%s`" major-mode)))))
 
-(defun tlon-bae-create-job (identifier)
-  "Create a new job for IDENTIFIER.
+(defun tlon-bae-create-job ()
+  "Create a new job for IDENTIFIER based on Ebib entry at point.
 Creating a new job means (1) importing a document and (2)
-creating an associated issue.
+creating a record for it. A record is (a) an issue in GitHub
+and (b) a heading in `jobs.org'.
 
+IDENTIFIER can be a URL or a PDF file path.
+
+Note: this command cannot be used to create new tag jobs, because
+ we don't add tags to Ebib. To create a new tag job, use
+ `tlon-bae-create-tag-job'."
+  (interactive)
+  (unless (eq major-mode 'ebib-entry-mode)
+    (user-error "You must be in an Ebib buffer"))
+  (tlon-bae-import-document)
+  (let* ((key (ebib--get-key-at-point))
+	 (filename (file-name-with-extension key "md")))
+    (tlon-bae-create-record-for-job filename)))
+
+(defun tlon-bae-import-document (&optional identifier target)
+  "Import a document from IDENTIFIER to TARGET.
 IDENTIFIER can be a URL or a PDF file path."
-  (interactive "sURL or path to PDF: ")
-  (tlon-bae-import-document identifier t)
-  (message "Next step: capture the new job (`,`) and run the usual command (`H-r r`)."))
+  (interactive)
+  (if-let* ((key (ebib--get-key-at-point))
+	    (value (or (ps/ebib-get-field-value "url")
+		       (ps/ebib-get-field-value "file")))
+	    (identifier (or identifier (replace-regexp-in-string "\n\\s-*" "" value)))
+	    (target (or target (file-name-concat tlon-bae-dir-original-posts
+						 (file-name-with-extension key "md")))))
+      (if (ps/string-is-url-p identifier)
+	  (tlon-bae-import-html identifier target)
+	(tlon-bae-import-pdf (expand-file-name identifier) target))
+    (user-error "No URL or file found in Ebib entry")))
 
-(defun tlon-bae-import-document (identifier &optional issue)
-  "Import a document from IDENTIFIER.
-IDENTIFIER can be a URL or a PDF file path. If ISSUE is non-nil,
-a new issue will be created."
-  (interactive "sURL or path to PDF: ")
-  (if (ps/string-is-url-p identifier)
-      (tlon-bae-import-html identifier issue)
-    (tlon-bae-import-pdf identifier issue)))
-
-(defun tlon-bae-import-html (url &optional issue)
-  "Import the HTML in URL and convert it to Markdown.
-If ISSUE is non-nil, create a new issue."
+(defun tlon-bae-import-html (url target)
+  "Import the HTML in URL to TARGET and convert it to Markdown."
   (if-let ((id-or-slug (tlon-bae-eaf-get-id-or-slug-from-identifier url)))
-      (tlon-bae-import-html-eaf id-or-slug issue)
-    (let* ((target (tlon-bae-generate-file-path)))
-      (tlon-bae-html-to-markdown url target)
-      (when issue
-	(tlon-bae-create-issue-for-job (file-name-nondirectory target))))))
+      (tlon-bae-import-html-eaf id-or-slug target)
+    (tlon-bae-html-to-markdown url target)))
 
-(defun tlon-bae-import-html-eaf (id-or-slug &optional issue)
-  "Import the HTML of EAF entity with ID-OR-SLUG and convert it to Markdown.
-If ISSUE is non-nil, create an issue for the new job."
+(defun tlon-bae-import-html-eaf (id-or-slug target)
+  "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD."
   (let* ((response (tlon-bae-eaf-request id-or-slug))
 	 (object (tlon-bae-eaf-get-object id-or-slug))
-	 (file-path (pcase object
-		      ('post (tlon-bae-eaf-generate-post-file-path response))
-		      ('tag (tlon-bae-eaf-generate-tag-file-path response))))
 	 (html (pcase object
 		 ('post (tlon-bae-eaf-get-post-html response))
 		 ('tag (tlon-bae-eaf-get-tag-html response))))
 	 (html-file (tlon-bae-save-html-to-file html)))
-    (tlon-bae-html-to-markdown html-file file-path)
-    (with-current-buffer (find-file-noselect file-path)
+    (tlon-bae-html-to-markdown html-file target)
+    (with-current-buffer (find-file-noselect target)
       (tlon-bae-markdown-eaf-cleanup))
-    (find-file file-path)
-    (when issue
-      (tlon-bae-create-issue-for-job (file-name-nondirectory file-path))
-      (forge-pull))))
+    (find-file target)))
 
 (defun tlon-bae-html-to-markdown (source target)
   "Convert HTML text in SOURCE to Markdown text in TARGET.
