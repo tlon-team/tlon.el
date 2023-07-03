@@ -882,60 +882,62 @@ SOURCE can be a URL or, like TARGET, a file path."
   (file-name-concat ps/dir-source "pdf2md/lib/pdf2md-cli.js")
   "Path to `pdf2md-cli.js' executable.")
 
-(defun tlon-bae-import-pdf (path)
-  "Import the PDF in PATH and convert it to Markdown."
+(defvar tlon-bae-pdftotext
+  (file-name-concat ps/dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
+  "Path to `pdftotext' executable.")
+
+(defun tlon-bae-import-pdf (path target)
+  "Import the PDF in PATH to TARGET and convert it to Markdown.
+
+This command requires the user to supply values for the header
+and footer elements to be excluded from the conversion, which are
+different for each PDF. To determine these values, measure the
+distance between the top/bottom of the PDF (which will open in
+the other window) and note the number of pixels until the end of
+the header/footer. (You can measure the number of pixels between
+two points by taking a screenshot: note the numbers next to the
+pointer.) Then enter these values when prompted."
+  (find-file-other-window path)
+  (let ((header (read-string "Header: "))
+	(footer (read-string "Footer: ")))
+    (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
+			   tlon-bae-pdftotext header footer path target))
+    (find-file target)))
+
+;; This function is not currently used because we now use pdftotext, rather
+;; than pdf2md, to convert PDFs to Markdown.
+(defun tlon-bae-import-pdf-to-markdown (path target)
+  "Import the PDF in PATH to TARGET and convert it to Markdown."
   (let* ((path (or path (read-file-name "PDF: ")))
-	 (final-target-file (tlon-bae-generate-file-path))
+	 (expanded-path (expand-file-name path))
 	 (temp-source-dir (make-temp-file "pdf-source" t))
 	 (temp-source-file (file-name-concat temp-source-dir "source.pdf"))
 	 (temp-target-dir (make-temp-file "pdf-target" t))
 	 (temp-target-file (file-name-concat temp-target-dir "source.md")))
     (unwind-protect
 	(progn
-	  (copy-file path temp-source-file)
+	  (copy-file expanded-path temp-source-file)
 	  (shell-command (format "node %s --inputFolderPath='%s' --outputFolderPath='%s'"
 				 tlon-bae-pdf2md temp-source-dir temp-target-dir))
-	  (copy-file temp-target-file final-target-file)
+	  (copy-file temp-target-file target)
 	  (delete-directory temp-source-dir t)
 	  (delete-directory temp-target-dir t)))))
 
-(defvar tlon-bae-pdftotext
-  (file-name-concat ps/dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
-  "Path to `pdftotext' executable.")
-
-;; This function is not currently used because we now use pdf2md, rather
-;; than pdftotext, to convert PDFs to Markdown.
-(defun tlon-bae-import-pdf-pdftotext (path &optional issue)
-  "Import the PDF in PATH and convert it to Markdown.
-If ISSUE is non-nil, create an issue for the new job.
-
-The command requires the user to supply values for the header and
-footer elements to be excluded from the conversion, which are
-different for each PDF. To determine these values, measure the
-distance between the top/bottom of the PDF (which will open in
-the other window) and note the number of pixels until the end of
-the header/footer. (You can measure the number of pixels between
-two points by taking a screenshot: note the numbers next to the
-pointer.) Then enter these values when prompted. If ISSUE is
-non-nil, a new issue will be created."
-  (let* ((path (read-file-name "PDF: "))
-	 (target (tlon-bae-generate-file-path)))
-    (find-file-other-window path)
-    (let ((header (read-string "Header: "))
-	  (footer (read-string "Footer: ")))
-      (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
-			     tlon-bae-pdftotext header footer path target))
-      (find-file target))
-    (when issue
-      (tlon-bae-create-issue-for-job (file-name-nondirectory target)))))
-
-(defun tlon-bae-create-issue-for-job (&optional filename)
-  "Create an issue based on FILENAME.
-Creates a new issue in the BAE repository with the format `Job:
-FILENAME`."
+(defun tlon-bae-create-record-for-job (&optional filename)
+  "Create an record based on FILENAME.
+Creates a new record in the BAE Github repository (with the
+format `Job: FILENAME`) and a new heading in the file `jobs.org'."
   (interactive)
-  (let ((filename (or filename (read-string "Filename: ")))
-	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+  (let* ((key (if filename (file-name-base filename)
+		(read-string "Key: ")))
+	 (filename (or filename
+		       (file-name-with-extension key "md"))))
+    (tlon-bae-create-issue-for-job filename)
+    (tlon-bae-create-heading-for-job key 'commit)))
+
+(defun tlon-bae-create-issue-for-job (filename)
+  "Create an issue based on FILENAME in the BAE GitHub repository."
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (call-interactively #'forge-create-issue)
     (insert (format "Job: `%s`" filename))
     (call-interactively #'forge-post-submit)
