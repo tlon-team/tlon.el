@@ -640,17 +640,27 @@ Assumes action is first word of clocked task."
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
 
-(defun tlon-bae-get-forge-file-path ()
-  "Get the file path of the topic at point or in current forge buffer."
-  (unless (or (derived-mode-p 'magit-status-mode)
-	      (derived-mode-p 'forge-topic-mode))
-    (user-error "I'm not in a forge buffer"))
-  (let* ((inhibit-message t)
-	 (captured (cadr (call-interactively #'orgit-store-link))))
-    (setq org-stored-links (cdr org-stored-links))
-    (if (string-match "`\\(.+?\\)`" captured)
-	(tlon-bae-set-original-path (match-string 1 captured))
-      (user-error "I wasn't able to find a file at point or in the forge buffer"))))
+(defun tlon-bae-get-clock-label ()
+  "Return label associated with action in heading at point."
+  (let ((label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
+    label))
+
+(defun tlon-bae-get-action-in-label (label)
+  "Return action associated with LABEL."
+  (let ((action (cadr (split-string label))))
+    action))
+
+  (defun tlon-bae-get-forge-file-path ()
+    "Get the file path of the topic at point or in current forge buffer."
+    (unless (or (derived-mode-p 'magit-status-mode)
+		(derived-mode-p 'forge-topic-mode))
+      (user-error "I'm not in a forge buffer"))
+    (let* ((inhibit-message t)
+	   (captured (cadr (call-interactively #'orgit-store-link))))
+      (setq org-stored-links (cdr org-stored-links))
+      (if (string-match "`\\(.+?\\)`" captured)
+	  (tlon-bae-set-original-path (match-string 1 captured))
+	(user-error "I wasn't able to find a file at point or in the forge buffer"))))
 
 (defun tlon-bae-open-forge-file ()
   "Open the file of the topic at point or in the current forge buffer."
@@ -1393,7 +1403,7 @@ This command should be run from the source window."
   (save-window-excursion
     (let* ((filename (tlon-bae-get-clock-file))
 	   (topic (format "Job: `%s`" filename))
-	   (clocked-label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
+	   (clocked-label (tlon-bae-get-clock-label)))
       (tlon-bae-magit-status)
       (magit-section-show-level-3-all)
       (goto-char (point-min))
