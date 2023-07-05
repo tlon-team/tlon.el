@@ -794,31 +794,6 @@ is non-nil, open DeepL."
 	  (re-search-forward regex nil t)
 	  (match-string-no-properties 1))))))
 
-(defun tlon-bae-dwim ()
-  "Initialize or finalize process based on clocked task."
-  (interactive)
-  (when (eq major-mode 'org-mode)
-    (org-clock-in))
-  (save-buffer)
-  (let ((action (tlon-bae-get-clock-action)))
-    (pcase major-mode
-      ;; assumes user initializes in org-mode and finalizes in markdown-mode
-      ('org-mode (pcase action
-		   ("Process" (tlon-bae-initialize-processing))
-		   ("Translate" (tlon-bae-initialize-translation))
-		   ("Check" (tlon-bae-initialize-check))
-		   ("Revise" (tlon-bae-initialize-revision))
-		   ("Review" (tlon-bae-initialize-review))
-		   (_ (user-error "I don't know what to do with `%s`" action))))
-      ('markdown-mode (pcase action
-			("Process" (tlon-bae-finalize-processing))
-			("Translate" (tlon-bae-finalize-translation))
-			("Check" (tlon-bae-finalize-check))
-			("Revise" (tlon-bae-finalize-revision))
-			("Review" (tlon-bae-finalize-review))
-			(_ (user-error "I don't know what to do with `%s`" action))))
-      (_ (user-error "I don't know what to do in `%s`" major-mode)))))
-
 (defun tlon-bae-create-job ()
   "Create a new job for IDENTIFIER based on Ebib entry at point.
 Creating a new job means (1) importing a document and (2)
@@ -970,20 +945,24 @@ If COMMIT is non-nil, commit the change."
     (when commit
       (tlon-bae-commit-and-push "Update " jobs))))
 
-(defun tlon-bae-mark-task-as-done ()
-  "Mark heading associated with current clock heading as DONE."
+(defun tlon-bae-mark-task-as-done (label assignee)
+  "Mark heading associated with current clock heading as DONE.
+The LABEL and ASSIGNEE are only used for the message displayed in
+the echo area."
   (save-window-excursion
     (org-clock-goto)
     (org-todo "DONE")
-    (save-buffer)))
+    (save-buffer)
+    (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
+	     label assignee)))
 
 (defun tlon-bae-mark-heading-as-done (&optional commit)
   "Mark the headings of the current job as DONE.
-  This will set the parent task of the task associated with the
-  current clock to DONE and mark the corresponding heading in
-  `jobs.org' as DONE.
+This will set the parent task of the task associated with the
+current clock to DONE and mark the corresponding heading in
+`jobs.org' as DONE.
 
-  If COMMIT is non-nil, commit and push the changes."
+If COMMIT is non-nil, commit and push the changes."
   (org-clock-goto)
   (widen)
   (org-up-heading-safe)
@@ -1010,37 +989,36 @@ If COMMIT is non-nil, commit the change."
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
 	  (goto-char (org-element-property :begin headline)))))))
 
-;; revise imported file
-(defun tlon-bae-initialize-processing ()
-  "Initialize processing."
-  (interactive)
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-branch "main")
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
-	(original (tlon-bae-set-original-path (tlon-bae-get-clock-file)))
-	(docs ps/file-tlon-docs-bae))
-    (magit-pull-from-upstream nil)
-    (sleep-for 2)
-    (tlon-bae-set-windows original docs)
-    (org-id-goto "60251C8E-6A6F-430A-9DB3-15158CC82EAE")
-    (org-narrow-to-subtree)
-    (ps/org-show-subtree-hide-drawers)
-    (winum-select-window-2)
-    ;; TODO: get URL via call to the Airtable API and open it with eww
-    (let ((topic (tlon-bae-get-clock-topic)))
-      (orgit-topic-open topic))))
+;; initialize & finalize functions
 
-(defun tlon-bae-initialize-translation ()
-  "Initialize translation."
+(defun tlon-bae-dwim ()
+  "Initialize or finalize process based on clocked task."
   (interactive)
+  (when (eq major-mode 'org-mode)
+    (org-clock-in))
+  (save-buffer)
+  (let* ((action (tlon-bae-get-action-in-label (tlon-bae-get-clock-label)))
+	 (stage (pcase major-mode
+		  ('org-mode 'initialize)
+		  ('markdown-mode 'finalize)
+		  (_ (user-error "I don't know what to do in `%s`" major-mode))))
+	 (fun (intern (format "tlon-bae-%s" stage)))
+	 (arg (intern (format "tlon-bae-%s-%s" stage action))))
+    (if (eq stage 'initialize)
+	(funcall fun arg)
+      (funcall fun))))
+
+(defun tlon-bae-initialize (fun)
+  "Initialize process associated with FUN.
+Runs all the general initialization functions, followed by the
+specific function for the process that is being initialized."
   (tlon-bae-check-label-and-assignee)
   (tlon-bae-check-branch "main")
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
-    (tlon-bae-load-variables)
     (cl-multiple-value-bind
-	(original-path translation-path original-file)
+	(original-path translation-path original-file translation-file)
 	(tlon-bae-set-paths)
       (let ((topic (tlon-bae-get-clock-topic)))
 	(tlon-bae-set-windows original-path translation-path)
@@ -1049,184 +1027,69 @@ If COMMIT is non-nil, commit the change."
 	(flyspell-buffer)
 	(winum-select-window-2)
 	(orgit-topic-open topic)
-	(tlon-bae-copy-file-contents original-path)))))
+	(tlon-bae-copy-buffer original-path)
+	(funcall fun)))))
+
+(defun tlon-bae-finalize ()
+  "Finalize translation."
+  (save-buffer)
+  (tlon-bae-check-branch "main")
+  (tlon-bae-check-label-and-assignee)
+  (tlon-bae-check-file)
+  (cl-multiple-value-bind
+      (original-path translation-path original-file translation-file)
+      (tlon-bae-set-paths)
+    (fill-region (point-min) (point-max))
+    (save-buffer)
+    (write-file translation-path)
+    (let* ((action (tlon-bae-get-clock-action))
+	   (label (tlon-bae-get-next-key
+		   (tlon-bae-get-clock-label)
+		   tlon-bae-label-actions))
+	   (assignee (alist-get label tlon-bae-label-assignees nil nil 'string=)))
+      (tlon-bae-commit-and-push action translation-path)
+      (tlon-bae-act-on-topic original-file label assignee
+			     (when (string= action "Review")
+			       'close))
+      (tlon-bae-mark-task-as-done label assignee)
+      (when (string= action "Review")
+	(tlon-bae-mark-heading-as-done 'commit)))))
+
+(defun tlon-bae-initialize-processing ()
+  "Initialize processing."
+  (let ((docs ps/file-tlon-docs-bae))
+    (tlon-bae-set-windows original-path docs)
+    (org-id-goto "60251C8E-6A6F-430A-9DB3-15158CC82EAE")
+    (org-narrow-to-subtree)
+    (ps/org-show-subtree-hide-drawers)
+    (winum-select-window-2)
+    (let ((topic (tlon-bae-get-clock-topic)))
+      (orgit-topic-open topic))))
+
+(defun tlon-bae-initialize-translation ()
+  "Initialize translation.")
 
 (defun tlon-bae-initialize-revision ()
-  "Initialize stylistic revision."
-  (interactive)
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-branch "main")
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (magit-pull-from-upstream nil)
-    (sleep-for 2)
-    (cl-multiple-value-bind
-	(original-path translation-path original-file translation-file)
-	(tlon-bae-set-paths)
-      (tlon-bae-check-staged-or-unstaged-other-than translation-path)
-      (let ((topic (tlon-bae-get-clock-topic)))
-	(tlon-bae-set-windows original-path translation-path)
-	(ispell-change-dictionary "espanol")
-	(flyspell-buffer)
-	(orgit-topic-open topic)
-	(winum-select-window-2)
-	(tlon-bae-copy-file-contents original-path)))))
+  "Initialize stylistic revision.")
 
 (defun tlon-bae-initialize-check ()
   "Initialize accuracy check."
-  (interactive)
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-branch "main")
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (magit-pull-from-upstream nil)
-    (sleep-for 2)
-    (cl-multiple-value-bind
-	(original-path translation-path original-file translation-file)
-	(tlon-bae-set-paths)
-      (tlon-bae-check-staged-or-unstaged-other-than translation-path)
-      (let ((topic (tlon-bae-get-clock-topic)))
-	(tlon-bae-set-windows original-path translation-path)
-	(ispell-change-dictionary "espanol")
-	(flyspell-buffer)
-	(winum-select-window-1)
-	(let* ((markdown-buffer (concat "preview of " original-file))
-	       (eww-buffer (concat markdown-buffer " — eww")))
-	  (markdown-preview markdown-buffer)
-	  (switch-to-buffer eww-buffer)
-	  (read-aloud-buf))))))
+  ;; we move the buffer displaying the issue to the right, to uncover
+  ;; the original file
+  (ps/window-buffer-move-dwim)
+  (ps/switch-to-last-window)
+  (markdown-preview)
+  (read-aloud-buf))
 
 (defun tlon-bae-initialize-review ()
   "Initialize review."
-  (interactive)
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-branch "main")
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (magit-pull-from-upstream nil)
-    (sleep-for 2)
-    (cl-multiple-value-bind
-	(original-path translation-path original-file translation-file)
-	(tlon-bae-set-paths)
-      (tlon-bae-check-staged-or-unstaged-other-than translation-path)
-      (let ((topic (tlon-bae-get-clock-topic)))
-	(tlon-bae-set-windows original-path translation-path)
-	(ispell-change-dictionary "espanol")
-	(flyspell-buffer)
-	(tlon-bae-log-buffer-latest-user-commit-ediff translation-path)
-	;; opens in other window, so no need to switch to it first
-	(orgit-topic-open topic)
-	(tlon-bae-copy-file-contents original-path)))))
-
-(defun tlon-bae-finalize-processing ()
-  "Finalize processing."
-  (interactive)
-  (tlon-bae-check-branch "main")
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-file)
-  (cl-multiple-value-bind
-      (original-path translation-path original-file)
-      (tlon-bae-set-paths)
-    (fill-region (point-min) (point-max))
-    (save-buffer)
-    (let ((label "Awaiting translation")
-	  (assignee "benthamite"))
-      (tlon-bae-act-on-topic original-file label assignee)
-      (tlon-bae-commit-and-push "Process " original-path)
-      (org-clock-goto)
-      (org-todo "DONE")
-      (save-buffer)
-      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee))
-    (sit-for 5)))
-
-(defun tlon-bae-finalize-translation ()
-  "Finalize translation."
-  (interactive)
-  (save-buffer)
-  (tlon-bae-check-branch "main")
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-file)
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (fill-region (point-min) (point-max))
-    (save-buffer)
-    (write-file translation-path)
-    (tlon-bae-commit-and-push "Translate " translation-path)
-    (let ((label "Awaiting revision")
-	  (assignee "worldsaround"))
-      (tlon-bae-act-on-topic original-file label assignee)
-      (org-clock-goto)
-      (org-todo "DONE")
-      (save-buffer)
-      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
-      (sit-for 5))))
-
-(defun tlon-bae-finalize-revision ()
-  "Finalize stylistic revision."
-  (interactive)
-  (save-buffer)
-  (tlon-bae-check-branch "main")
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-file)
-  (cl-multiple-value-bind
-      (original-path translation-path original-file translation-file)
-      (tlon-bae-set-paths)
-    (fill-region (point-min) (point-max))
-    (write-file translation-path)
-    (tlon-bae-commit-and-push "Revise " translation-path)
-    (let ((label "Awaiting check")
-	  (assignee "worldsaround"))
-      (tlon-bae-act-on-topic original-file label assignee)
-      (org-clock-goto)
-      (org-todo "DONE")
-      (save-buffer)
-      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
-      (sit-for 5))))
-
-(defun tlon-bae-finalize-check ()
-  "Finalize accuracy check."
-  (interactive)
-  (save-buffer)
-  (tlon-bae-check-branch "main")
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-file)
-  (cl-multiple-value-bind
-      (original-path translation-path original-file translation-file)
-      (tlon-bae-set-paths)
-    (fill-region (point-min) (point-max))
-    (write-file translation-path)
-    (tlon-bae-commit-and-push "Check " translation-path)
-    (let ((label "Awaiting review")
-	  (assignee "benthamite"))
-      (tlon-bae-act-on-topic original-file label assignee)
-      (org-clock-goto)
-      (org-todo "DONE")
-      (save-buffer)
-      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
-      (sit-for 5))))
-
-(defun tlon-bae-finalize-review ()
-  "Finalize review."
-  (interactive)
-  (save-buffer)
-  (tlon-bae-check-branch "main")
-  (tlon-bae-check-label-and-assignee)
-  (tlon-bae-check-file)
-  (cl-multiple-value-bind
-      (original-path translation-path original-file translation-file)
-      (tlon-bae-set-paths)
-    (fill-region (point-min) (point-max))
-    (write-file translation-path)
-    (tlon-bae-commit-and-push "Review " translation-path)
-    (tlon-bae-process-and-commit-bibtex-files (file-name-sans-extension translation-file))
-    (let ((label "Awaiting publication")
-	  (assignee ""))
-      (tlon-bae-act-on-topic original-file label assignee 'close)
-      (tlon-bae-mark-task-as-done)
-      (tlon-bae-mark-heading-as-done 'commit)
-      (message "Marked as DONE. Set label to `%s' and assignee to `%s'" label assignee)
-      (sit-for 5))))
+    (tlon-bae-log-buffer-latest-user-commit-ediff translation-path)))
 
 (defun tlon-bae-process-and-commit-bibtex-files (key)
-  "Move key of translated file to `translations-finished.bib' and commit changes."
+  "Move KEY of translated file to `translations-finished.bib' and commit changes."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (ps/bibtex-move-entry-to-finished key)
     (magit-stage-file ps/file-tlon-bibliography-pending)
@@ -1492,7 +1355,7 @@ request. If ACTION is `close', close issue."
     ;; we check for staged or unstaged changes to FILE because
     ;; `magit-commit-create' interrupts the process if there aren't
     (when (tlon-bae-check-staged-or-unstaged file)
-      (magit-commit-create (list "-m" (concat prefix (file-name-nondirectory file)))))
+      (magit-commit-create (list "-m" (format "%s %s" prefix (file-name-nondirectory file)))))
     (call-interactively #'magit-push-current-to-pushremote)))
 
 (defun tlon-bae-commit-when-slug-at-point (&optional prefix)
