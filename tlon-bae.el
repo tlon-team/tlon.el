@@ -1481,8 +1481,8 @@ If the topic has more than one assignee, return the first."
 (defvar tlon-bae-label-actions
   '(("Awaiting processing" . "Process")
     ("Awaiting translation" . "Translate")
-    ("Awaiting check" . "Check")
     ("Awaiting revision" . "Revise")
+    ("Awaiting check" . "Check")
     ("Awaiting review" . "Review")
     ("Awaiting publication" . "Publish")
     ("Awaiting rewrite" . "Rewrite")
