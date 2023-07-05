@@ -1529,6 +1529,17 @@ If the topic has more than one assignee, return the first."
     (when pair
       (car pair))))
 
+(defun tlon-bae-get-next-key (value alist)
+  "Find the key of the next pair from a given key in an alist."
+  (catch 'result
+    (let ((found nil))
+      (dolist (pair alist)
+        (when (and found (not (string= value (car pair))))
+          (throw 'result (car pair)))
+        (when (string= value (car pair))
+          (setq found t)))
+      nil))) ;; if the value was the last in the alist, there's no "next"
+
 (defun tlon-bae-label-match (label)
   "Return a suitable action for the LABEL of topic at point.
 The function relies on the alist `tlon-bae-label-actions' to
