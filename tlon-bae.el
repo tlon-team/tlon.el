@@ -742,9 +742,9 @@ is non-nil, open DeepL."
 
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files from ORIGINAL-FILE."
-  (if-let* ((original-path (tlon-bae-set-original-path (tlon-bae-get-clock-file)))
-	    (original-file (file-name-nondirectory original-path))
-	    (translation-file (tlon-bae-get-translation-file (file-name-nondirectory original-path)))
+  (if-let* ((original-file (tlon-bae-get-clock-file))
+	    (original-path (tlon-bae-set-original-path original-file))
+	    (translation-file (tlon-bae-get-translation-file original-file))
 	    (dir (tlon-bae-post-or-tag original-file))
 	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations" dir))
 	    (translation-path (file-name-concat translation-dir translation-file)))
