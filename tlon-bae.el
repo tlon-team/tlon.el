@@ -1502,6 +1502,15 @@ If the topic has more than one assignee, return the first."
     ("Misc" . "m"))
   "Alist of topic labels and corresponding key bindings.")
 
+(defvar tlon-bae-label-assignees
+  '(("Awaiting processing" . "worldsaround")
+    ("Awaiting translation" . "benthamite")
+    ("Awaiting revision" . "worldsaround")
+    ("Awaiting check" . "worldsaround")
+    ("Awaiting review" . "benthamite")
+    ("Awaiting publication" . ""))
+  "Alist of topic labels and corresponding assignees.")
+
 (defvar tlon-bae-github-users
   '(("fstafforini" . "Federico Stafforini")
     ("worldsaround" . "Leonardo Picón")
