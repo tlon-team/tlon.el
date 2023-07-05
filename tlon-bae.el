@@ -160,14 +160,6 @@ file path."
 		     file-name)))
     file-path))
 
-(defun tlon-bae-copy-file-name ()
-  "Copy the generated file name to the kill ring."
-  (interactive)
-  (let* ((file-path (tlon-bae-generate-file-path))
-	 (filename (file-name-nondirectory file-path)))
-    (kill-new filename)
-    (message "Copied `%s'" filename)))
-
 (defun tlon-bae-extract-lastname-from-author (author)
   "Try to extract a last name from AUTHOR."
   (let* ((case-fold-search nil)
