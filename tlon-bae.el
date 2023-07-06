@@ -653,17 +653,17 @@ Assumes action is first word of clocked task."
   (let ((action (cadr (split-string label))))
     action))
 
-  (defun tlon-bae-get-forge-file-path ()
-    "Get the file path of the topic at point or in current forge buffer."
-    (unless (or (derived-mode-p 'magit-status-mode)
-		(derived-mode-p 'forge-topic-mode))
-      (user-error "I'm not in a forge buffer"))
-    (let* ((inhibit-message t)
-	   (captured (cadr (call-interactively #'orgit-store-link))))
-      (setq org-stored-links (cdr org-stored-links))
-      (if (string-match "`\\(.+?\\)`" captured)
-	  (tlon-bae-set-original-path (match-string 1 captured))
-	(user-error "I wasn't able to find a file at point or in the forge buffer"))))
+(defun tlon-bae-get-forge-file-path ()
+  "Get the file path of the topic at point or in current forge buffer."
+  (unless (or (derived-mode-p 'magit-status-mode)
+	      (derived-mode-p 'forge-topic-mode))
+    (user-error "I'm not in a forge buffer"))
+  (let* ((inhibit-message t)
+	 (captured (cadr (call-interactively #'orgit-store-link))))
+    (setq org-stored-links (cdr org-stored-links))
+    (if (string-match "`\\(.+?\\)`" captured)
+	(tlon-bae-set-original-path (match-string 1 captured))
+      (user-error "I wasn't able to find a file at point or in the forge buffer"))))
 
 (defun tlon-bae-open-forge-file ()
   "Open the file of the topic at point or in the current forge buffer."
@@ -1538,10 +1538,10 @@ If the topic has more than one assignee, return the first."
   (catch 'result
     (let ((found nil))
       (dolist (pair alist)
-        (when (and found (not (string= value (car pair))))
-          (throw 'result (car pair)))
-        (when (string= value (car pair))
-          (setq found t)))
+	(when (and found (not (string= value (car pair))))
+	  (throw 'result (car pair)))
+	(when (string= value (car pair))
+	  (setq found t)))
       nil))) ;; if the value was the last in the alist, there's no "next"
 
 (defun tlon-bae-label-match (label)
