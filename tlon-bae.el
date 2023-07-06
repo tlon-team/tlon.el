@@ -520,7 +520,8 @@ If no FILE is provided, use the file visited by the current buffer."
     counterpart-dirname))
 
 (defun tlon-bae-open-counterpart (&optional file-path)
-  "Open the counterpart of the file visited by the current buffer."
+  "Open the counterpart of the file visited by the current buffer.
+If FILE-PATH is non-nil, open the counterpart of that file instead."
   (interactive)
   (if-let* ((file-path (or file-path (buffer-file-name)))
 	    (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
