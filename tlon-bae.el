@@ -139,6 +139,7 @@ and assignee to the current user."
     (org-capture nil "tbJ")))
 
 ;;; File processing
+
 (defun tlon-bae-generate-file-path (&optional lastname title tag translation)
   "Return a file name based on user supplied information.
 TITLE is the title of the work. If TAG is 'tag, use `tag' as
@@ -477,6 +478,7 @@ If no FILE is provided, use the file visited by the current buffer."
 	(setq output-alist (cons (cons original-file translation-file) output-alist))))))
 
 ;;; correspondences
+
 (defun tlon-bae-load-post-correspondence ()
   "Refresh alist of original-translation file pairs."
   (interactive)
@@ -1167,6 +1169,7 @@ specific function for the process that is being initialized."
   (tlon-bae--read-backward-or-forward 'forward))
 
 ;;; Sentence highlighting
+
 ;; TODO: (1) highlight sentence in target window; (2) diagnose why first
 ;; two characters in a sentence are matched to the previous sentence;
 ;; (3) diagnose performance issues, or else disable `post-command-hook'
@@ -1928,6 +1931,9 @@ If ASYNC is t, run the request asynchronously."
     ;; we add a character at the beginning to avoid matching the footnote targets
     (while (re-search-forward ".\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
       (replace-match "\\2\\1"))))
+
+
+;;; load vars
 
 (defun tlon-bae-load-variables ()
   "Load the variables to reflect changes to the files in the `etc' directory."
