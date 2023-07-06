@@ -929,11 +929,13 @@ format `Job: FILENAME`) and a new heading in the file `jobs.org'."
     ;; needs to be done twice for some reason; FIXME
     (forge-pull)))
 
-(defun tlon-bae-create-heading-for-job (key &optional commit)
+(defun tlon-bae-create-heading-for-job (&optional key commit)
   "Create a heading based on KEY in `jobs.org'.
 If COMMIT is non-nil, commit the change."
-  (let ((jobs (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/jobs.org"))
-	(heading (format "[cite:@%s]" key)))
+  (interactive)
+  (let* ((key (or key (ebib--get-key-at-point)))
+	 (jobs (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/jobs.org"))
+	 (heading (format "[cite:@%s]" key)))
     (with-current-buffer (or (find-buffer-visiting jobs)
 			     (find-file-noselect jobs))
       (widen)
