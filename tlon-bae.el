@@ -809,17 +809,15 @@ Note: this command cannot be used to create new tag jobs, because
  we don't add tags to Ebib. To create a new tag job, use
  `tlon-bae-create-tag-job'."
   (interactive)
-  (unless (eq major-mode 'ebib-entry-mode)
-    (user-error "You must be in an Ebib buffer"))
   (tlon-bae-import-document)
-  (let* ((key (ebib--get-key-at-point))
-	 (filename (file-name-with-extension key "md")))
-    (tlon-bae-create-record-for-job filename)))
+  (tlon-bae-create-record-for-job filename))
 
 (defun tlon-bae-import-document (&optional identifier target)
   "Import a document from IDENTIFIER to TARGET.
 IDENTIFIER can be a URL or a PDF file path."
   (interactive)
+  (unless (eq major-mode 'ebib-entry-mode)
+    (user-error "You must be in an Ebib buffer"))
   (if-let* ((key (ebib--get-key-at-point))
 	    (value (or (ps/ebib-get-field-value "url")
 		       (ps/ebib-get-field-value "file")))
@@ -910,8 +908,10 @@ pointer.) Then enter these values when prompted."
 Creates a new record in the BAE Github repository (with the
 format `Job: FILENAME`) and a new heading in the file `jobs.org'."
   (interactive)
+  (unless (eq major-mode 'ebib-entry-mode)
+    (user-error "You must be in an Ebib buffer"))
   (let* ((key (if filename (file-name-base filename)
-		(read-string "Key: ")))
+		(ebib--get-key-at-point)))
 	 (filename (or filename
 		       (file-name-with-extension key "md"))))
     (tlon-bae-create-issue-for-job filename)
