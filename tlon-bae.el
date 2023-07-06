@@ -168,33 +168,6 @@ file path."
 	 (lastname (car (last (split-string uncameled-author "[ _-]")))))
     lastname))
 
-(defun tlon-bae-eaf-generate-post-file-path (response)
-  "Generate EAF post file-path baed on author and title from RESPONSE."
-  (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-get-post-title response)))
-	 ;; sometimes the 'author' field is empty so we use the 'user' field instead
-	 (author (or (tlon-bae-eaf-get-post-author response)
-		     (tlon-bae-eaf-get-post-username response)))
-	 (lastname (tlon-bae-extract-lastname-from-author author))
-	 (file-path (tlon-bae-generate-file-path lastname title))
-	 (filename (file-name-nondirectory file-path))
-	 (filename-reviewed (tlon-bae-review-filename filename)))
-    (unless (string= filename filename-reviewed)
-      (setq file-path (file-name-concat (file-name-directory file-path)
-					filename-reviewed)))
-    file-path))
-
-(defun tlon-bae-eaf-generate-tag-file-path (response)
-  "Generate EAF tag file-path baed on author and title from RESPONSE."
-  (let* ((title (tlon-bae-shorten-title (tlon-bae-eaf-get-tag-title response)))
-	 (lastname "tag")
-	 (file-path (tlon-bae-generate-file-path lastname title))
-	 (filename (file-name-nondirectory file-path))
-	 (filename-reviewed (tlon-bae-review-filename filename)))
-    (unless (string= filename filename-reviewed)
-      (setq file-path (file-name-concat (file-name-directory file-path)
-					filename-reviewed)))
-    file-path))
-
 (defun tlon-bae-review-filename (filename)
   "Review FILENAME."
   (let* ((choices '((?a . "ccept") (?e . "dit") (?r . "egenerate")))
@@ -208,28 +181,6 @@ file path."
       (?a filename)
       (?e (read-string "Job name: " filename))
       (?r (file-name-nondirectory (tlon-bae-generate-file-path))))))
-
-(defun tlon-bae-rename-file ()
-  "Rename file at point based on user-supplied information.
-If EXTENSION is not provided, markdown is used."
-  (interactive)
-  (let* ((source-file-path (dired-get-filename))
-	 (target-file-name (file-name-nondirectory (tlon-bae-generate-file-path)))
-	 (target-file-path (file-name-concat
-			    (file-name-directory source-file-path)
-			    target-file-name)))
-    (rename-file
-     source-file-path
-     target-file-path)
-    (revert-buffer)))
-
-(defun tlon-bae-create-file ()
-  "Create a new file based on user-supplied information.
-Prompt the user for bibliographic information and create a new
- file based on it in the current directory."
-  (interactive)
-  (let ((file (tlon-bae-generate-file-path)))
-    (find-file file)))
 
 (defun tlon-bae-latest-user-commit-in-file (&optional file)
   "Return latest commit by the current user in FILE.
@@ -437,14 +388,9 @@ If no FILE is provided, use the file visited by the current buffer."
   "List of EA Wiki URLs.")
 
 (defun tlon-bae-insert-tag-slug ()
-  "Insert an EA Wiki slug at point."
+  "Insert a tag slug at point."
   (interactive)
   (insert (completing-read "URL: " tlon-bae-tag-slugs)))
-
-(defun tlon-bae-insert-tag-url ()
-  "Insert an EA Wiki slug at point."
-  (interactive)
-  (insert (completing-read "URL: " tlon-bae-wiki-urls)))
 
 (defun tlon-bae-get-original-translated (bib-file)
   "Parse BIB-FILE and return an alist of original-translation key pairs."
@@ -587,11 +533,6 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 		      identifier)
     (match-string-no-properties 1 identifier)))
 
-(defun tlon-bae-eaf-get-id-or-slug-from-response (response)
-  "Return the EAF post ID or tag slug from Json RESPONSE."
-  (or (tlon-bae-eaf-get-post-id response)
-      (tlon-bae-eaf-get-tag-slug response)))
-
 (defun tlon-bae-eaf-get-object (id-or-slug)
   "Return the EAF object in ID-OR-SLUG."
   (let ((object (cond ((tlon-bae-eaf-post-id-p id-or-slug)
@@ -674,33 +615,6 @@ Assumes action is first word of clocked task."
   "Open the file counterpart of the topic at point or in the current forge buffer."
   (interactive)
   (tlon-bae-open-counterpart (tlon-bae-get-forge-file-path)))
-
-(defun tlon-bae-find-subdirectory-containing-file (filename)
-  "Search for a FILENAME in BAE repo dir and all its subdirectories.
-Return the subdirectory containing the FILENAME, or nil if not found."
-  (catch 'found
-    (dolist (file (directory-files-recursively ps/dir-tlon-biblioteca-altruismo-eficaz filename t))
-      (when (and (file-exists-p file)
-		 (not (file-directory-p file))
-		 (string-equal (file-name-nondirectory file) filename))
-	(throw 'found (file-name-directory file)))
-      nil)))
-
-(defun tlon-bae-get-issue-gid-by-file (repo file)
-  "Return issue GID for FILE in REPO.
-Assumes the issue title contains FILE, which is a unique file in
-  the `originals/tags' directory."
-  (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
-	   when (string= file (oref topic title))
-	   return (oref topic id)))
-
-(defun tlon-bae-get-issue-gid-by-partial-title (repo search-str)
-  "Return issue GID matching SEARCH-STR in REPO."
-  (cl-loop for topic in (forge-ls-topics repo 'forge-issue)
-	   for title = (oref topic title)
-	   when (cl-loop for substr in (split-string search-str)
-			 always (string-match-p (regexp-quote substr) title))
-	   return (oref topic id)))
 
 (defun tlon-bae-copy-buffer (&optional file deepl)
   "Copy the unfilled contents of FILE to the kill ring.
@@ -1093,18 +1007,6 @@ specific function for the process that is being initialized."
       (tlon-bae-set-paths)
     (tlon-bae-log-buffer-latest-user-commit-ediff translation-path)))
 
-(defun tlon-bae-process-and-commit-bibtex-files (key)
-  "Move KEY of translated file to `translations-finished.bib' and commit changes."
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (ps/bibtex-move-entry-to-finished key)
-    (magit-stage-file ps/file-tlon-bibliography-pending)
-    (magit-stage-file ps/file-tlon-bibliography-finished)
-    ;; we check for staged or unstaged changes to FILE because
-    ;; `magit-commit-create' interrupts the process if there aren't
-    (when (tlon-bae-check-staged-or-unstaged ps/file-tlon-bibliography-finished)
-      (magit-commit-create (list "-m" (format "Move %s to translations-finished.bib" key))))
-    (call-interactively #'magit-push-current-to-pushremote)))
-
 ;;; TTS
 
 (defun tlon-bae-read-target-buffer ()
@@ -1124,14 +1026,6 @@ specific function for the process that is being initialized."
 
 (defvar tlon-bae-read-aloud-next-action
   'read-aloud-buf)
-
-(defun tlon-bae-read-start-or-stop ()
-  "Start or stop reading the buffer, based on the most recent action."
-  (funcall tlon-bae-read-aloud-next-action)
-  (setq tlon-bae-read-aloud-next-action
-	(if (eq tlon-bae-read-aloud-next-action 'read-aloud-buf)
-	    'read-aloud-stop
-	  'read-aloud-buf)))
 
 (defun tlon-bae-read-target-start-or-stop ()
   "Start or stop reading the target buffer."
@@ -1364,18 +1258,6 @@ request. If ACTION is `close', close issue."
       (magit-commit-create (list "-m" (format "%s %s" prefix (file-name-nondirectory file)))))
     (call-interactively #'magit-push-current-to-pushremote)))
 
-(defun tlon-bae-commit-when-slug-at-point (&optional prefix)
-  "Commit and push change when point is on a slug.
-Unless PREFIX is specified, prompt user to select between
-'Revise' and 'Translate'."
-  (interactive)
-  (unless (eq major-mode 'magit-status-mode)
-    (user-error "Please run this command in the Magit status buffer"))
-  (beginning-of-line)
-  (when (looking-at ".+?\\(\\w+--.+?.md\\)")
-    (let ((file (match-string 1)))
-      (tlon-bae-commit-and-push prefix file))))
-
 ;;; Change topic properties
 
 (defun tlon-bae-select-label ()
@@ -1545,15 +1427,6 @@ If the topic has more than one assignee, return the first."
 	(when (string= value (car pair))
 	  (setq found t)))
       nil))) ;; if the value was the last in the alist, there's no "next"
-
-(defun tlon-bae-label-match (label)
-  "Return a suitable action for the LABEL of topic at point.
-The function relies on the alist `tlon-bae-label-actions' to
-determine an appropriate action from the topic's label."
-  (let* ((label (or label
-		    (tlon-bae-forge-get-label-at-point)))
-	 (action (alist-get label tlon-bae-label-actions nil nil 'string=)))
-    action))
 
 (defun tlon-bae-add-to-glossary (english spanish)
   "Add a new entry to the glossary for ENGLISH and SPANISH terms."
