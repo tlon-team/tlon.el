@@ -937,7 +937,7 @@ If COMMIT is non-nil, commit the change."
 			     (find-file-noselect jobs))
       (widen)
       (goto-char (point-min))
-      (unless (re-search-forward heading nil t)
+      (unless (search-forward heading nil t)
 	(goto-char (point-min))
 	(while (and (not (org-at-heading-p)) (not (eobp)))
 	  (forward-line))
