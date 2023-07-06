@@ -948,7 +948,7 @@ If COMMIT is non-nil, commit the change."
 	(insert heading)
 	(save-buffer)))
     (when commit
-      (tlon-bae-commit-and-push "Update " jobs))))
+      (tlon-bae-commit-and-push "Update" jobs))))
 
 (defun tlon-bae-mark-task-as-done (label assignee)
   "Mark heading associated with current clock heading as DONE.
