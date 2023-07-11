@@ -1805,8 +1805,8 @@ If ASYNC is t, run the request asynchronously."
   (save-excursion
     (goto-char (point-min))
     ;; we add a character at the beginning to avoid matching the footnote targets
-    (while (re-search-forward ".\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
-      (replace-match "\\2\\1"))))
+    (while (re-search-forward "\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
+      (replace-match "\\1\\3\\2"))))
 
 
 ;;; load vars
