@@ -387,10 +387,15 @@ If no FILE is provided, use the file visited by the current buffer."
 (defvar tlon-bae-wiki-urls nil
   "List of EA Wiki URLs.")
 
-(defun tlon-bae-insert-tag-slug ()
+(defun tlon-bae-insert-tag (tag)
   "Insert a tag slug at point."
-  (interactive)
-  (insert (completing-read "URL: " tlon-bae-tag-slugs)))
+  (interactive (list (completing-read "URL: " tlon-bae-tags)))
+  (let* ((slug (tlon-core-slugify tag))
+	 (ref (concat "../tags/" slug))
+	 (link (format "[%s](%s)" tag ref)))
+    (if (markdown-link-url)
+	(insert ref)
+      (insert link))))
 
 (defun tlon-bae-get-original-translated (bib-file)
   "Parse BIB-FILE and return an alist of original-translation key pairs."
@@ -1498,7 +1503,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 (tlon-bae-create-file-opening-command "etc/old.bib")
 (tlon-bae-create-file-opening-command "etc/finished.bib")
 (tlon-bae-create-file-opening-command "etc/pending.bib")
-(tlon-bae-create-file-opening-command "etc/tag-slugs.txt")
+(tlon-bae-create-file-opening-command "etc/tags.txt")
 (tlon-bae-create-file-opening-command "../tlon-docs/bae.org")
 (tlon-bae-create-file-opening-command "readme.md")
 
@@ -1822,10 +1827,10 @@ If ASYNC is t, run the request asynchronously."
 	(tlon-bae-csv-file-to-alist (file-name-concat
 				     ps/dir-tlon-biblioteca-altruismo-eficaz
 				     "etc/work-correspondence.csv"))
-	tlon-bae-tag-slugs
+	tlon-bae-tags
 	(tlon-bae-read-urls-from-file (file-name-concat
 				       ps/dir-tlon-biblioteca-altruismo-eficaz
-				       "etc/tag-slugs.txt"))
+				       "etc/tags.txt"))
 	tlon-bae-wiki-urls (list ""))
   (dolist (slug tlon-bae-tag-slugs)
     (add-to-list 'tlon-bae-wiki-urls
