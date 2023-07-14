@@ -922,7 +922,7 @@ If COMMIT is non-nil, commit and push the changes."
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
 	  (goto-char (org-element-property :begin headline)))))))
 
-;; initialize & finalize functions
+;;; initialize & finalize functions
 
 (defun tlon-bae-dwim ()
   "Initialize or finalize process based on clocked task."
@@ -1591,7 +1591,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
   (interactive)
   (browse-url "https://github.com/tlon-team/biblioteca-altruismo-eficaz"))
 
-;;;
+;;; request
 
 (defconst tlon-bae-eaf-api-url
   "https://forum.effectivealtruism.org/graphql"
@@ -1600,8 +1600,6 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 (defvar tlon-bae-eaf-objects
   '(post tag)
   "List of entities supported by the EAF GraphQL API.")
-
-;;; request
 
 (defun tlon-bae-eaf-post-query (id)
   "Return an EA Forum GraphQL query for post whose ID is ID."
@@ -1821,7 +1819,6 @@ If ASYNC is t, run the request asynchronously."
     ;; we add a character at the beginning to avoid matching the footnote targets
     (while (re-search-forward "\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
       (replace-match "\\1\\3\\2"))))
-
 
 ;;; load vars
 
