@@ -733,7 +733,8 @@ Note: this command cannot be used to create new tag jobs, because
 
 (defun tlon-bae-import-document (&optional identifier target)
   "Import a document from IDENTIFIER to TARGET.
-IDENTIFIER can be a URL or a PDF file path."
+IDENTIFIER can be a URL or a PDF file path.
+To import a tag, use `tlon-bae-import-tag'."
   (interactive)
   (unless (eq major-mode 'ebib-entry-mode)
     (user-error "You must be in an Ebib buffer"))
@@ -747,6 +748,14 @@ IDENTIFIER can be a URL or a PDF file path."
 	  (tlon-bae-import-html identifier target)
 	(tlon-bae-import-pdf (expand-file-name identifier) target))
     (user-error "No URL or file found in Ebib entry")))
+
+(defun tlon-bae-import-tag (url)
+  "Import an EA Forum tag with SLUG"
+  (interactive "sTag url (if you are not importing a tag, please re-run `tlon-bae-import-document' from an Ebib buffer): ")
+  (let* ((slug (tlon-bae-eaf-get-id-or-slug-from-identifier url))
+	 (target (file-name-concat tlon-bae-dir-original-tags
+				   (file-name-with-extension slug ".md"))))
+    (tlon-bae-import-html-eaf slug target)))
 
 (defun tlon-bae-import-html (url target)
   "Import the HTML in URL to TARGET and convert it to Markdown."
