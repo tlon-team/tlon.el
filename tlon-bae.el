@@ -1460,24 +1460,70 @@ If the topic has more than one assignee, return the first."
 	  (setq found t)))
       nil))) ;; if the value was the last in the alist, there's no "next"
 
-(defun tlon-bae-add-to-glossary (english spanish)
+(defun tlon-bae-glossary-alist ()
+  "Read `Glossary.csv` and return it as an alist."
+  (with-temp-buffer
+    (insert-file-contents tlon-bae-file-glossary)
+    (let ((lines (split-string (buffer-string) "\n" t))
+	  (result '()))
+      (dolist (line lines result)
+	(let* ((elements (split-string line "\",\""))
+	       (key (substring (nth 0 elements) 1)) ; removing leading quote
+	       (value (if (string-suffix-p "\"" (nth 1 elements))
+			  (substring (nth 1 elements) 0 -1)   ; if trailing quote exists, remove it
+			(nth 1 elements)))) ; otherwise, use as-is
+	  (push (cons key value) result))))))
+
+(defun tlon-bae-glossary-dwim ()
+  "Add a new entry to the glossary or modify an existing entry."
+  (interactive)
+  (let* ((english-terms (mapcar 'car (tlon-bae-glossary-alist)))
+	 (term (completing-read "Term: " english-terms)))
+    (if (member term english-terms)
+	(tlon-bae-glossary-modify term)
+      (tlon-bae-glossary-add term))))
+
+(defun tlon-bae-glossary-add (&optional english spanish)
   "Add a new entry to the glossary for ENGLISH and SPANISH terms."
-  (interactive "sEnglish: \nsSpanish: ")
-  (tlon-bae-check-branch "main")
-  (let ((glossary (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Glossary.csv"))
-	(default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
-    (with-current-buffer (find-file-noselect glossary)
+  (interactive)
+  (let ((english (or english (read-string "English term: ")))
+	(spanish (or spanish (read-string "Spanish term: "))))
+    (with-current-buffer (find-file-noselect tlon-bae-file-glossary)
       (goto-char (point-max))
       (insert (format "\n\"%s\",\"%s\",\"EN\",\"ES\"" english spanish))
       (goto-char (point-min))
       (flush-lines "^$")
-      (save-buffer))
+      (save-buffer)
+      (tlon-bae-glossary-commit "add" english))))
+
+(defun tlon-bae-glossary-modify (english)
+  "Modify an entry in the glossary corresponding to the ENGLISH term."
+  (let* ((spanish (cdr (assoc english (tlon-bae-glossary-alist))))
+	 (spanish-new (read-string "Spanish term: " spanish)))
+    (with-current-buffer (find-file-noselect tlon-bae-file-glossary)
+      (goto-char (point-min))
+      (while (re-search-forward (format "^\"%s\",\"%s\",\"EN\",\"ES\"" english spanish) nil t)
+	(replace-match (format "\"%s\",\"%s\",\"EN\",\"ES\"" english spanish-new)))
+      (goto-char (point-min))
+      (flush-lines "^$")
+      (save-buffer)
+      (tlon-bae-glossary-commit "modify" english))))
+
+(defun tlon-bae-glossary-commit (action term)
+  "Commit glossary changes.
+ACTION describes the action (\"add\" or \"modify\") performed on
+the glossary. TERM refers to the English glossary term to which
+this action was performed. These two variables are used to
+construct a commit message of the form \'Glossary: ACTION \"TERM\"\',
+such as \'Glossary: add \"repugnant conclusion\"\'."
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (magit-pull-from-upstream nil)
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
-      (magit-stage-file glossary)
-      (magit-commit-create (list "-m" (format  "Glossary: add \"%s\"" english)))
-      (call-interactively #'magit-push-current-to-pushremote))))
+      (tlon-bae-check-branch "main")
+      (magit-run-git "add" tlon-bae-file-glossary)
+      (magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"" action term))))))
+;; (call-interactively #'magit-push-current-to-pushremote))))
 
 (defun tlon-bae-add-to-work-correspondece (original spanish)
   "Add a new entry to the correspondece file for ORIGINAL and SPANISH terms."
@@ -1555,7 +1601,7 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("p v" "version"                    tlon-bae-version)
     ]
    ["Add"
-    ("a a" "to glossary"                tlon-bae-add-to-glossary)
+    ("a a" "to glossary"                tlon-bae-glossary-dwim)
     ("a w" "to work correspondence"     tlon-bae-add-to-work-correspondece)
     """Search"
     ("s s" "repo"                       tlon-bae-search-github)
