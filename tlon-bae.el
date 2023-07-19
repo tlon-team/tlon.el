@@ -71,6 +71,10 @@
   (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags/")
   "Directory containing translated tags.")
 
+(defvar tlon-bae-file-glossary
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Glossary.csv")
+  "File containing the glossary.")
+
 ;;;
 
 (defun tlon-bae-forge ()
@@ -324,6 +328,7 @@ If no FILE is provided, use the file visited by the current buffer."
     (with-current-buffer (find-file-noselect file)
       (message "Cleaning up %s" (buffer-name))
       (tlon-bae-markdown-eaf-cleanup))))
+
 
 ;;; csv and txt parsing
 
