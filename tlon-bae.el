@@ -392,11 +392,16 @@ If no FILE is provided, use the file visited by the current buffer."
 (defvar tlon-bae-wiki-urls nil
   "List of EA Wiki URLs.")
 
-(defun tlon-bae-insert-tag (tag)
-  "Insert a tag slug at point."
-  (interactive (list (completing-read "URL: " tlon-bae-tags)))
-  (let* ((slug (tlon-core-slugify tag))
-	 (ref (concat "../tags/" slug))
+(defun tlon-bae-insert-tag ()
+  "Insert a TAG slug at point."
+  (interactive)
+  (unless (eq major-mode 'markdown-mode)
+    (user-error "Not in a Markdown buffer"))
+  (let* ((tag (if (markdown-inside-link-p)
+		  (ps/markdown--delete-link)
+		(completing-read "URL: " tlon-bae-tags)))
+	 (slug (tlon-core-slugify tag))
+	 (ref (concat "../tags/" slug ".md"))
 	 (link (format "[%s](%s)" tag ref)))
     (if (markdown-link-url)
 	(insert ref)
