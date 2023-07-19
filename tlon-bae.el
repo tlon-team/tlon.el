@@ -288,7 +288,6 @@ If no FILE is provided, use the file visited by the current buffer."
     (while (re-search-forward "# \\*\\*\\(.*\\)\\*\\* *?$" nil t)
       (replace-match (format "# %s" (match-string-no-properties 1))))
     (tlon-bae-non-eaf-cleanup)
-    (fill-region (point-min) (point-max))
     (save-buffer)))
 
 (defun tlon-bae-non-eaf-cleanup ()
@@ -640,30 +639,26 @@ Assumes action is first word of clocked task."
   (tlon-bae-open-counterpart (tlon-bae-get-forge-file-path)))
 
 (defun tlon-bae-copy-buffer (&optional file deepl)
-  "Copy the unfilled contents of FILE to the kill ring.
+  "Copy the contents of FILE to the kill ring.
 Defaults to the current buffer if no FILE is specified. If DEEPL
 is non-nil, open DeepL."
   (let ((file (or file (buffer-file-name))))
     (with-current-buffer (find-file-noselect file)
-      (unfill-region (point-min) (point-max))
-      (copy-region-as-kill (point-min) (point-max))
-      (fill-region (point-min) (point-max)))
+      (copy-region-as-kill (point-min) (point-max)))
     (message "Copied the contents of `%s' to kill ring" (file-name-nondirectory file)))
   (when deepl
     (shell-command "open '/Applications/DeepL.app/Contents/MacOS/DeepL'")))
 
 (defun tlon-bae-copy-region (beg end)
-  "Copy the unfilled contents between BEG and END to the kill ring."
+  "Copy the contents between BEG and END to the kill ring."
   (save-excursion
     (save-restriction
       (narrow-to-region beg end)
-      (unfill-region (point-min) (point-max))
-      (copy-region-as-kill (point-min) (point-max))
-      (fill-region (point-min) (point-max))))
+      (copy-region-as-kill (point-min) (point-max))))
   (message "Copied the contents of the region to kill ring"))
 
 (defun tlon-bae-copy-dwim ()
-  "Copy the unfilled contents of the region or buffer to the kill ring."
+  "Copy the contents of the region or buffer to the kill ring."
   (interactive)
   (if (region-active-p)
       (tlon-bae-copy-region (region-beginning) (region-end))
@@ -990,7 +985,6 @@ specific function for the process that is being initialized."
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (fill-region (point-min) (point-max))
     (save-buffer)
     (write-file translation-path)
     (let* ((action (tlon-bae-get-clock-action))
@@ -1872,8 +1866,7 @@ If ASYNC is t, run the request asynchronously."
     (let ((beg (progn (backward-paragraph) (point)))
 	  (end (progn (forward-paragraph) (point))))
       (goto-char beg)
-      (replace-regexp-in-region " - " "\n- " beg end)
-      (fill-region beg end))))
+      (replace-regexp-in-region " - " "\n- " beg end))))
 
 (defun tlon-bae-fix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
