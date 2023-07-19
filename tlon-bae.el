@@ -407,6 +407,14 @@ If no FILE is provided, use the file visited by the current buffer."
 	(insert ref)
       (insert link))))
 
+(defun tlon-bae-insert-cite-tag ()
+  "Insert a CITE tag at point."
+  (interactive)
+  (unless (eq major-mode 'markdown-mode)
+    (user-error "Not in a Markdown buffer"))
+  (insert "<cite></cite>")
+  (backward-char 7))
+
 (defun tlon-bae-get-original-translated (bib-file)
   "Parse BIB-FILE and return an alist of original-translation key pairs."
   ;; Check if a buffer is visiting the file.
