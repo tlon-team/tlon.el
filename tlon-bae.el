@@ -1256,19 +1256,34 @@ request. If ACTION is `close', close issue."
 
 ;;; Search
 
-(defun tlon-bae-search-github (&optional search-string)
+(defun tlon-bae-search-topics (search-string)
   "Search for SEARCH-STRING in BAE GitHub issues and pull requests."
   (interactive "sSearch string: ")
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
     (forge-search search-string)))
 
-(defun tlon-bae-search-multi (search-string)
-  "Search for SEARCH-STRING in BAE locally and issues and pull requests."
+(defun tlon-bae-search-commits (search-string)
+  "Search for SEARCH-STRING in BAE commit history."
   (interactive "sSearch string: ")
-  (tlon-bae-search-github search-string)
-  (ps/window-split-if-unsplit)
-  (other-window 1)
-  (consult-ripgrep ps/dir-tlon-biblioteca-altruismo-eficaz search-string))
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (magit-log-all (list "--grep" search-string))))
+
+(defun tlon-bae-search-files (search-string)
+  "Search for SEARCH-STRING in BAE files."
+  (interactive "sSearch string: ")
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+    (consult-ripgrep ps/dir-tlon-biblioteca-altruismo-eficaz search-string)))
+
+(defun tlon-bae-search-multi (search-string)
+  "Search for SEARCH-STRING in BAE files, commit history, and GitHub issues."
+  (interactive "sSearch string: ")
+  (let ((win1 (selected-window)))
+    (ps/window-split-if-unsplit)
+    (tlon-bae-search-topics search-string)
+    (split-window-below)
+    (tlon-bae-search-commits search-string)
+    (select-window win1)
+    (tlon-bae-search-files search-string)))
 
 (defun tlon-bae-commit-and-push (prefix file)
   "Commit and push changes in BAE repo, with message 'PREFIX FILE'."
@@ -1611,8 +1626,10 @@ If DIR-PATH is nil, create a command to open the BAE repository."
     ("a a" "to glossary"                tlon-bae-glossary-dwim)
     ("a w" "to work correspondence"     tlon-bae-add-to-work-correspondece)
     """Search"
-    ("s s" "repo"                       tlon-bae-search-github)
-    ("s m" "multi"                      tlon-bae-search-multi)
+    ("s s" "multi"                       tlon-bae-search-multi)
+    ("s c" "commits"                      tlon-bae-search-commits)
+    ("s f" "files"                      tlon-bae-search-files)
+    ("s t" "topics"                      tlon-bae-search-topics)
     ]
    ["Open file"
     ("f f" "counterpart"                tlon-bae-open-counterpart)
