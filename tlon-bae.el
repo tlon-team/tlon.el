@@ -1482,19 +1482,21 @@ If the topic has more than one assignee, return the first."
   "Add a new entry to the glossary for ENGLISH and SPANISH terms."
   (interactive)
   (let ((english (or english (read-string "English term: ")))
-	(spanish (or spanish (read-string "Spanish term: "))))
+	(spanish (or spanish (read-string "Spanish term: ")))
+	(explanation (read-string "Explanation (optional; in Spanish): ")))
     (with-current-buffer (find-file-noselect tlon-bae-file-glossary)
       (goto-char (point-max))
       (insert (format "\n\"%s\",\"%s\",\"EN\",\"ES\"" english spanish))
       (goto-char (point-min))
       (flush-lines "^$")
       (save-buffer)
-      (tlon-bae-glossary-commit "add" english))))
+      (tlon-bae-glossary-commit "add" english explanation))))
 
 (defun tlon-bae-glossary-modify (english)
   "Modify an entry in the glossary corresponding to the ENGLISH term."
   (let* ((spanish (cdr (assoc english (tlon-bae-glossary-alist))))
-	 (spanish-new (read-string "Spanish term: " spanish)))
+	 (spanish-new (read-string "Spanish term: " spanish))
+	 (explanation (read-string "Explanation (optional; in Spanish): ")))
     (with-current-buffer (find-file-noselect tlon-bae-file-glossary)
       (goto-char (point-min))
       (while (re-search-forward (format "^\"%s\",\"%s\",\"EN\",\"ES\"" english spanish) nil t)
@@ -1502,23 +1504,32 @@ If the topic has more than one assignee, return the first."
       (goto-char (point-min))
       (flush-lines "^$")
       (save-buffer)
-      (tlon-bae-glossary-commit "modify" english))))
+      (tlon-bae-glossary-commit "modify" english explanation))))
 
-(defun tlon-bae-glossary-commit (action term)
+(defun tlon-bae-glossary-commit (action term &optional description)
   "Commit glossary changes.
 ACTION describes the action (\"add\" or \"modify\") performed on
 the glossary. TERM refers to the English glossary term to which
 this action was performed. These two variables are used to
-construct a commit message of the form \'Glossary: ACTION \"TERM\"\',
-such as \'Glossary: add \"repugnant conclusion\"\'."
-  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz))
+construct a commit message of the form \'Glossary: ACTION
+\"TERM\"\', such as \'Glossary: add \"repugnant conclusion\"\'.
+Optionally, DESCRIPTION provides an explanation of the change."
+  (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
+	(description (if description (concat "\n\n" description) "")))
+    ;; save all unsaved files in repo
+    (save-some-buffers t (lambda () (magit-toplevel)))
     (magit-pull-from-upstream nil)
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
       (tlon-bae-check-branch "main")
       (magit-run-git "add" tlon-bae-file-glossary)
-      (magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"" action term))))))
+      ;; test to see if this stops other files from being committed
+      (sleep-for 1)
+      (magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
+					       action term description))))))
 ;; (call-interactively #'magit-push-current-to-pushremote))))
+
+;;;
 
 (defun tlon-bae-add-to-work-correspondece (original spanish)
   "Add a new entry to the correspondece file for ORIGINAL and SPANISH terms."
