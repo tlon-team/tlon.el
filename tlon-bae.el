@@ -988,7 +988,7 @@ specific function for the process that is being initialized."
     (save-buffer)
     (write-file translation-path)
     (let* ((action (tlon-bae-get-clock-action))
-	   (label (tlon-bae-get-next-key
+	   (label (tlon-bae-get-next-car
 		   (tlon-bae-get-clock-label)
 		   tlon-bae-label-actions))
 	   (assignee (alist-get label tlon-bae-label-assignees nil nil 'string=)))
@@ -1443,16 +1443,17 @@ If the topic has more than one assignee, return the first."
     (when pair
       (car pair))))
 
-(defun tlon-bae-get-next-key (value alist)
-  "Find the key of the next pair from a given key in an alist."
+(defun tlon-bae-get-next-car (car alist)
+  "Find the car in cons following CAR in ALIST."
   (catch 'result
     (let ((found nil))
       (dolist (pair alist)
-	(when (and found (not (string= value (car pair))))
+	(when (and found (not (string= car (car pair))))
 	  (throw 'result (car pair)))
-	(when (string= value (car pair))
+	(when (string= car (car pair))
 	  (setq found t)))
-      nil))) ;; if the value was the last in the alist, there's no "next"
+      nil))) ;; if CAR was the last in ALIST, there's no "next"
+
 
 (defun tlon-bae-glossary-alist ()
   "Read `Glossary.csv` and return it as an alist."
