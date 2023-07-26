@@ -1454,6 +1454,7 @@ If the topic has more than one assignee, return the first."
 	  (setq found t)))
       nil))) ;; if CAR was the last in ALIST, there's no "next"
 
+;;;; glossary
 
 (defun tlon-bae-glossary-alist ()
   "Read `Glossary.csv` and return it as an alist."
