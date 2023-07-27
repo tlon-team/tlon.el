@@ -1592,7 +1592,6 @@ If DIR-PATH is nil, create a command to open the BAE repository."
 		   ,dir-path)))))
 
 (tlon-bae-create-file-opening-command "etc/Glossary.csv")
-(tlon-bae-create-file-opening-command "etc/tag-correspondence.csv")
 (tlon-bae-create-file-opening-command "etc/work-correspondence.csv")
 (tlon-bae-create-file-opening-command "etc/new.bib")
 (tlon-bae-create-file-opening-command "etc/old.bib")
@@ -1914,11 +1913,7 @@ If ASYNC is t, run the request asynchronously."
 (defun tlon-bae-load-variables ()
   "Load the variables to reflect changes to the files in the `etc' directory."
   (interactive)
-  (setq tlon-bae-tag-correspondence
-	(tlon-bae-csv-file-to-alist (file-name-concat
-				     ps/dir-tlon-biblioteca-altruismo-eficaz
-				     "etc/tag-correspondence.csv"))
-	tlon-bae-work-correspondence
+  (setq tlon-bae-work-correspondence
 	(tlon-bae-csv-file-to-alist (file-name-concat
 				     ps/dir-tlon-biblioteca-altruismo-eficaz
 				     "etc/work-correspondence.csv"))
