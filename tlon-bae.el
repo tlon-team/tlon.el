@@ -450,9 +450,9 @@ If no FILE is provided, use the file visited by the current buffer."
 (defun tlon-bae-load-post-correspondence ()
   "Refresh alist of original-translation file pairs."
   (interactive)
-  (let* ((key-alist-pending (tlon-bae-get-original-translated ps/file-tlon-bibliography-pending))
-	 (key-alist-finished (tlon-bae-get-original-translated ps/file-tlon-bibliography-finished))
-	 (input-alist (tlon-bae-convert-keys-to-files (append key-alist-pending key-alist-finished))))
+  (let* ((key-alist-stable (tlon-bae-get-original-translated ps/file-tlon-bibliography-stable))
+	 (key-alist-fluid (tlon-bae-get-original-translated ps/file-tlon-bibliography-fluid))
+	 (input-alist (tlon-bae-convert-keys-to-files (append key-alist-stable key-alist-fluid))))
     (setq tlon-bae-post-correspondence input-alist)))
 
 (defun tlon-bae-get-translation-file (original-filename)
