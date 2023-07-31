@@ -1533,7 +1533,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
   (let ((default-directory ps/dir-tlon-biblioteca-altruismo-eficaz)
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
-    (save-some-buffers t (lambda () (magit-toplevel)))
+    (magit-save-repository-buffers)
     (magit-pull-from-upstream nil)
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
