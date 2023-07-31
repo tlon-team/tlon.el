@@ -469,7 +469,7 @@ If no FILE is provided, use the file visited by the current buffer."
 	   return key))
 
 (defun tlon-bae-get-counterpart-filename (file-path)
-  "Get the counterpart of file in FILE-PATH."
+  "Return the counterpart of file in FILE-PATH."
   (interactive)
   (let ((filename (file-name-nondirectory file-path)))
     (if (or (string-match tlon-bae-dir-original-posts file-path)
