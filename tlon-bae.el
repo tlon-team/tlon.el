@@ -1539,10 +1539,9 @@ Optionally, DESCRIPTION provides an explanation of the change."
     (unless (magit-staged-files)
       (tlon-bae-check-branch "main")
       (magit-run-git "add" tlon-bae-file-glossary)
-      ;; test to see if this stops other files from being committed
-      (sleep-for 1)
-      (magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
-					       action term description))))))
+      (let ((magit-commit-ask-to-stage nil))
+	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
+						 action term description)))))))
 ;; (call-interactively #'magit-push-current-to-pushremote))))
 
 ;;;
