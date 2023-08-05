@@ -507,16 +507,41 @@ still not returned, unless NOERROR is non-nil."
 				 "/translations/" "/originals/" dirname))))
     counterpart-dirname))
 
+(defun tlon-bae-count-paragraphs (start end)
+  "Return number of paragraphs between START and END."
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (goto-char (point-min))
+      (- (buffer-size) (forward-paragraph (buffer-size))))))
+
+(defun tlon-bae-count-paragraphs-and-sentences ()
+  "Return the position of point in paragraphs and sentences.
+The first element of the returned list is the number of
+paragraphs before point. The second element is the number of
+sentences before point in the current paragraph."
+  (let* ((pos (point))
+	 (paragraphs (- (tlon-bae-count-paragraphs (point-min) pos) 1)))
+    (save-excursion
+      (save-restriction)
+      (goto-char (point-min))
+      (forward-paragraph paragraphs)
+      (list paragraphs (count-sentences (point) pos)))))
+
 (defun tlon-bae-open-counterpart (&optional file-path)
   "Open the counterpart of the file visited by the current buffer.
 If FILE-PATH is non-nil, open the counterpart of that file instead."
   (interactive)
-  (if-let* ((file-path (or file-path (buffer-file-name)))
-	    (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
-	    (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
-	    (counterpart (concat counterpart-dirname counterpart-filename)))
-      (find-file counterpart)
-    (user-error "No corresponding file found. Consider running `tlon-bae-load-post-correspondence'")))
+  (let* ((file-path (or file-path (buffer-file-name)))
+         (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
+         (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
+         (counterpart (concat counterpart-dirname counterpart-filename))
+	 (paragraphs (car (tlon-bae-count-paragraphs-and-sentences)))
+	 (sentences (cadr (tlon-bae-count-paragraphs-and-sentences))))
+    (find-file counterpart)
+    (goto-char (point-min))
+    (forward-paragraph paragraphs)
+    (forward-sentence sentences)))
 
 ;;; EAF validation
 
