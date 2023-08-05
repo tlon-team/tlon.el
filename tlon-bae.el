@@ -34,7 +34,8 @@
 (require 'subr-x)
 
 ;;; Version
-(setq tlon-bae-version "0.1.13")
+
+(defvar tlon-bae-version "0.1.13")
 
 (defun tlon-bae-version ()
   "Return the version of the Tlön BAE package."
@@ -55,21 +56,29 @@
 
 ;;; File vars
 
-(defvar tlon-bae-dir-original-posts
-  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/posts/")
-  "Directory containing original posts.")
+(defvar tlon-bae-originals-dir
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/")
+  "Directory where originals are stored.")
 
-(defvar tlon-bae-dir-translated-posts
-  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/posts/")
-  "Directory containing translated posts.")
+(defvar tlon-bae-translations-dir
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/")
+  "Directory where translations are stored.")
 
-(defvar tlon-bae-dir-original-tags
-  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/tags/")
-  "Directory containing original tags.")
+(defvar tlon-bae-dir-original-posts-dir
+  (file-name-concat tlon-bae-originals-dir "posts/")
+  "Directory where original posts are stored.")
 
-(defvar tlon-bae-dir-translated-tags
-  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/tags/")
-  "Directory containing translated tags.")
+(defvar tlon-bae-dir-translated-posts-dir
+  (file-name-concat tlon-bae-translations-dir "posts/")
+  "Directory where translated posts are stored.")
+
+(defvar tlon-bae-dir-original-tags-dir
+  (file-name-concat tlon-bae-originals-dir "tags/")
+  "Directory where original tags are stored.")
+
+(defvar tlon-bae-dir-translated-tags-dir
+  (file-name-concat tlon-bae-translations-dir "tags/")
+  "Directory where translated tags are stored.")
 
 (defvar tlon-bae-file-glossary
   (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Glossary.csv")
@@ -328,7 +337,6 @@ If no FILE is provided, use the file visited by the current buffer."
       (message "Cleaning up %s" (buffer-name))
       (tlon-bae-markdown-eaf-cleanup))))
 
-
 ;;; csv and txt parsing
 
 (defun tlon-bae-parse-csv-line (line &optional separator)
@@ -460,6 +468,18 @@ If no FILE is provided, use the file visited by the current buffer."
   (or (alist-get original-filename tlon-bae-post-correspondence nil nil #'equal)
       (alist-get original-filename tlon-bae-tag-correspondence nil nil #'equal)))
 
+(defun tlon-bae-get-translation-file-robustly (original-filename &optional noerror)
+  "Return file that translates ORIGINAL-FILENAME and handle failures.
+Reload variables if necessary and signal an error if the file is
+still not returned, unless NOERROR is non-nil."
+  (if-let ((translation-file (tlon-bae-get-translation-file original-filename)))
+      translation-file
+    (tlon-bae-load-post-correspondence)
+    (if-let ((translation-file (tlon-bae-get-translation-file original-filename)))
+	translation-file
+      (unless noerror
+	(error "No translation file found for %s" original-filename)))))
+
 (defun tlon-bae-get-original-file (translation-filename)
   "Return file that TRANSLATION-FILENAME translates."
   (cl-loop for (key . val) in (append
@@ -472,9 +492,9 @@ If no FILE is provided, use the file visited by the current buffer."
   "Return the counterpart of file in FILE-PATH."
   (interactive)
   (let ((filename (file-name-nondirectory file-path)))
-    (if (or (string-match tlon-bae-dir-original-posts file-path)
-	    (string-match tlon-bae-dir-original-tags file-path))
-	(tlon-bae-get-translation-file filename)
+    (if (or (string-match tlon-bae-dir-original-posts-dir file-path)
+	    (string-match tlon-bae-dir-original-tags-dir file-path))
+	(tlon-bae-get-translation-file-robustly filename)
       (tlon-bae-get-original-file filename))))
 
 (defun tlon-bae-get-counterpart-dirname (file-path)
@@ -667,7 +687,7 @@ is non-nil, open DeepL."
 (defun tlon-bae-set-original-path (filename)
   "Return full path of FILENAME."
   (let* ((type (if (string-match "[[:digit:]]" filename) "posts/" "tags/"))
-	 (dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/" type))
+	 (dir (file-name-concat tlon-bae-originals-dir type))
 	 (file-path (file-name-concat dir filename)))
     file-path))
 
@@ -679,14 +699,12 @@ is non-nil, open DeepL."
 
 (defun tlon-bae-set-paths ()
   "Return paths for original and translation files from ORIGINAL-FILE."
-  (if-let* ((original-file (tlon-bae-get-clock-file))
-	    (original-path (tlon-bae-set-original-path original-file))
-	    (translation-file (tlon-bae-get-translation-file original-file))
-	    (dir (tlon-bae-post-or-tag original-file))
-	    (translation-dir (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations" dir))
-	    (translation-path (file-name-concat translation-dir translation-file)))
-      (cl-values original-path translation-path original-file translation-file)
-    (user-error "I wasn't able to find `%s' in the correspondence file" original-file)))
+  (let* ((original-file (tlon-bae-get-clock-file))
+	 (original-path (tlon-bae-set-original-path original-file))
+	 (translation-file (tlon-bae-get-translation-file-robustly original-file))
+	 (dir (tlon-bae-post-or-tag original-file))
+	 (translation-path (file-name-concat tlon-bae-translations-dir dir translation-file)))
+    (cl-values original-path translation-path original-file translation-file)))
 
 (defun tlon-bae-post-or-tag (file)
   "Return `posts' or `tags' depending on FILE."
@@ -741,11 +759,47 @@ Note: this command cannot be used to create new tag jobs, because
  we don't add tags to Ebib. To create a new tag job, use
  `tlon-bae-create-tag-job'."
   (interactive)
+  (tlon-bae-create-translation-entry)
   (tlon-bae-import-document)
   (tlon-bae-create-record-for-job filename))
 
+(defun tlon-bae-create-translation-entry (&optional title)
+  "Create a BibTeX entry for the translation of the current entry.
+Prompt the user for a title, unless TITLE is non-nil."
+  (interactive)
+  (unless (eq major-mode 'ebib-entry-mode)
+    (user-error "This command must be run in Ebib"))
+  (ps/ebib-valid-key-p)
+  (let* ((key (ebib--get-key-at-point))
+	 (file (file-name-with-extension key "md")))
+    (when (tlon-bae-get-translation-file-robustly file 'noerror)
+      (user-error "There is already a translation for this entry"))
+    (let ((db ebib--cur-db)
+	  (new-db-num (ps/ebib-get-db-number ps/file-tlon-bibliography-fluid))
+	  (fields `(("author" . ,(ps/ebib-get-field-value "author"))
+		    ("title" . ,(or title (read-string "Translated title: ")))
+		    ("date" . "2023")
+		    ("journaltitle" . "Biblioteca Altruismo Eficaz")
+		    ("translator" . "Tlön")
+		    ("translation" . ,key)
+		    ("langid" . "spanish")
+		    ;; TODO: prompt user to select from a list of keywords and add them to the entry
+		    )))
+      (ebib-switch-to-database-nth new-db-num)
+      (ebib-add-entry)
+      (let ((new-key (ebib--get-key-at-point))
+	    (new-db ebib--cur-db))
+	(dolist (field fields)
+	  (ebib-set-field-value (car field) (cdr field) new-key new-db)))
+      (ebib--update-entry-buffer)
+      (ebib-generate-autokey)
+      (set-buffer-modified-p nil)
+      (ebib--set-modified t db t (seq-filter (lambda (dependent)
+					       (ebib-db-has-key key dependent))
+					     (ebib--list-dependents db))))))
+
 (defun tlon-bae-import-document (&optional identifier target)
-  "Import a document from IDENTIFIER to TARGET.
+  "Import a document with IDENTIFIER to TARGET.
 IDENTIFIER can be a URL or a PDF file path.
 To import a tag, use `tlon-bae-import-tag'."
   (interactive)
@@ -755,18 +809,18 @@ To import a tag, use `tlon-bae-import-tag'."
 	    (value (or (ps/ebib-get-field-value "url")
 		       (ps/ebib-get-field-value "file")))
 	    (identifier (or identifier (replace-regexp-in-string "\n\\s-*" "" value)))
-	    (target (or target (file-name-concat tlon-bae-dir-original-posts
+	    (target (or target (file-name-concat tlon-bae-dir-original-posts-dir
 						 (file-name-with-extension key "md")))))
       (if (ps/string-is-url-p identifier)
 	  (tlon-bae-import-html identifier target)
 	(tlon-bae-import-pdf (expand-file-name identifier) target))
-    (user-error "No URL or file found in Ebib entry")))
+    (user-error "Document was not imported because no URL or file found in Ebib entry")))
 
 (defun tlon-bae-import-tag (url)
-  "Import an EA Forum tag with SLUG"
+  "Import an EA Forum tag with URL."
   (interactive "sTag url (if you are not importing a tag, please re-run `tlon-bae-import-document' from an Ebib buffer): ")
   (let* ((slug (tlon-bae-eaf-get-id-or-slug-from-identifier url))
-	 (target (file-name-concat tlon-bae-dir-original-tags
+	 (target (file-name-concat tlon-bae-dir-original-tags-dir
 				   (file-name-with-extension slug ".md"))))
     (tlon-bae-import-html-eaf slug target)))
 
@@ -851,7 +905,10 @@ format `Job: FILENAME`) and a new heading in the file `jobs.org'."
   (interactive)
   (unless (eq major-mode 'ebib-entry-mode)
     (user-error "You must be in an Ebib buffer"))
-  (let* ((key (if filename (file-name-base filename)
+  (tlon-bae-check-ebib-entry-is-original)
+  (let* ((key (if filename
+		  (file-name-base filename)
+		(ps/ebib-valid-key-p)
 		(ebib--get-key-at-point)))
 	 (filename (or filename
 		       (file-name-with-extension key "md"))))
@@ -969,15 +1026,13 @@ specific function for the process that is being initialized."
       (let ((topic (tlon-bae-get-clock-topic)))
 	(tlon-bae-set-windows original-path translation-path)
 	(write-file translation-path)
-	(ispell-change-dictionary "espanol")
-	(flyspell-buffer)
 	(winum-select-window-2)
 	(orgit-topic-open topic)
 	(tlon-bae-copy-buffer original-path)
 	(funcall fun)))))
 
 (defun tlon-bae-finalize ()
-  "Finalize translation."
+  "Finalize current stage of translation process."
   (save-buffer)
   (tlon-bae-check-branch "main")
   (tlon-bae-check-label-and-assignee)
@@ -985,13 +1040,17 @@ specific function for the process that is being initialized."
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (save-buffer)
-    (write-file translation-path)
     (let* ((action (tlon-bae-get-clock-action))
 	   (label (tlon-bae-get-next-car
 		   (tlon-bae-get-clock-label)
 		   tlon-bae-label-actions))
 	   (assignee (alist-get label tlon-bae-label-assignees nil nil 'string=)))
+      (save-buffer)
+      (if (string= action "Process")
+	  (write-file original-path)
+	(write-file translation-path))
+      (when (string= action "Process")
+	(tlon-bae-commit-and-push action original-path))
       (tlon-bae-commit-and-push action translation-path)
       (tlon-bae-act-on-topic original-file label assignee
 			     (when (string= action "Review")
@@ -1000,11 +1059,18 @@ specific function for the process that is being initialized."
       (when (string= action "Review")
 	(tlon-bae-mark-heading-as-done 'commit)))))
 
+(defvar tlon-bae-docs-processing-id
+  "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
+  "ID of the `processing' heading in the `BAE.org' file.
+`BAE.org' in the `tlon-docs' repository.")
+
 (defun tlon-bae-initialize-processing ()
   "Initialize processing."
-  (let ((docs ps/file-tlon-docs-bae))
-    (tlon-bae-set-windows original-path docs)
-    (org-id-goto "60251C8E-6A6F-430A-9DB3-15158CC82EAE")
+  (cl-multiple-value-bind
+      (original-path)
+      (tlon-bae-set-paths)
+    (tlon-bae-set-windows original-path ps/file-tlon-docs-bae)
+    (org-id-goto tlon-bae-docs-processing-id)
     (org-narrow-to-subtree)
     (ps/org-show-subtree-hide-drawers)
     (winum-select-window-2)
@@ -1065,7 +1131,7 @@ specific function for the process that is being initialized."
     ;; we move point to the previous chunk, using the chunk divider
     ;; defined in `read-aloud--grab-text'
     (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
-    (pop-to-buffer current-buffer)))
+			  (pop-to-buffer current-buffer)))
 
 (defun tlon-bae--read-backward-or-forward (direction)
   "Move in DIRECTION in the target buffer."
@@ -1225,6 +1291,15 @@ This command should be run from the source window."
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file-path)))
     (unless (string= all-changes filtered-changes)
       (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
+
+(defun tlon-bae-check-ebib-entry-is-original ()
+  "Check that the current Ebib entry is an original."
+  (unless (eq major-mode 'ebib-entry-mode)
+    (user-error "You must be in an Ebib buffer"))
+  (let ((key (ebib--get-key-at-point))
+	(langid (ps/ebib-get-field-value "langid")))
+    (unless (member langid '("english" "american" "british" "UKenglish" "USenglish"))
+      (user-error "This entry does not appear to be an original (make sure its `langid' field is present)"))))
 
 (defun tlon-bae-act-on-topic (original-file label &optional assignee action)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
