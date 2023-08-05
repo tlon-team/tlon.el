@@ -522,30 +522,48 @@ paragraphs before point. The second element is the number of
 sentences before point in the current paragraph. The third
 element is the number of words before point in the current
 sentence."
-  (let* ((pos (point))
+  (widen)
+  (let* ((pos (+ (point) 2))
 	 (paragraphs (- (tlon-bae-count-paragraphs (point-min) pos) 1)))
     (save-excursion
-      (save-restriction)
-      (goto-char (point-min))
-      (forward-paragraph paragraphs)
-      (let ((sentences (- (count-sentences (point) pos) 1)))
-	(forward-sentence sentences)
-	(list paragraphs sentences (count-words (point) pos))))))
+      (save-restriction
+	(goto-char (point-min))
+	(forward-paragraph paragraphs)
+	(let ((sentences (- (count-sentences (point) pos) 1)))
+	  (forward-sentence sentences)
+	  (list paragraphs sentences (- (count-words (point) pos) 1)))))))
 
 (defun tlon-bae-open-counterpart (&optional file-path)
   "Open the counterpart of the file visited by the current buffer.
 If FILE-PATH is non-nil, open the counterpart of that file instead."
   (interactive)
   (let* ((file-path (or file-path (buffer-file-name)))
-         (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
-         (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
-         (counterpart (concat counterpart-dirname counterpart-filename))
+	 (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
+	 (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
+	 (counterpart (concat counterpart-dirname counterpart-filename))
 	 (position (tlon-bae-count-paragraphs-sentences-words))
 	 (paragraphs (nth 0 position))
 	 (sentences (nth 1 position))
 	 (words (nth 2 position)))
     (find-file counterpart)
     (goto-char (point-min))
+    (save-excursion
+      (save-restriction
+	(forward-paragraph paragraphs)
+	(narrow-to-region (point) (point-max))
+	(forward-sentence sentences)
+	(let ((paragraph-diff (- (tlon-bae-count-paragraphs (point-min) (point)) 1)))
+	  (if (= paragraph-diff 0)
+	      (progn
+		(narrow-to-region (point) (point-max))
+		(forward-word words)
+		(let ((sentence-diff (- (count-sentences (point-min) (point)) 1)))
+		  (unless (= sentence-diff 0)
+		    (setq sentences (+ sentences 1))
+		    (setq words 0))))
+	    (setq paragraphs (+ paragraphs 1))
+	    (setq sentences 0)
+	    (setq words 0)))))
     (forward-paragraph paragraphs)
     (forward-sentence sentences)
     (forward-word words)))
@@ -1163,7 +1181,7 @@ specific function for the process that is being initialized."
     ;; we move point to the previous chunk, using the chunk divider
     ;; defined in `read-aloud--grab-text'
     (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
-			  (pop-to-buffer current-buffer)))
+    (pop-to-buffer current-buffer)))
 
 (defun tlon-bae--read-backward-or-forward (direction)
   "Move in DIRECTION in the target buffer."
