@@ -515,18 +515,22 @@ still not returned, unless NOERROR is non-nil."
       (goto-char (point-min))
       (- (buffer-size) (forward-paragraph (buffer-size))))))
 
-(defun tlon-bae-count-paragraphs-and-sentences ()
-  "Return the position of point in paragraphs and sentences.
+(defun tlon-bae-count-paragraphs-sentences-words ()
+  "Return the position of point in paragraphs, sentences and words.
 The first element of the returned list is the number of
 paragraphs before point. The second element is the number of
-sentences before point in the current paragraph."
+sentences before point in the current paragraph. The third
+element is the number of words before point in the current
+sentence."
   (let* ((pos (point))
 	 (paragraphs (- (tlon-bae-count-paragraphs (point-min) pos) 1)))
     (save-excursion
       (save-restriction)
       (goto-char (point-min))
       (forward-paragraph paragraphs)
-      (list paragraphs (count-sentences (point) pos)))))
+      (let ((sentences (- (count-sentences (point) pos) 1)))
+	(forward-sentence sentences)
+	(list paragraphs sentences (count-words (point) pos))))))
 
 (defun tlon-bae-open-counterpart (&optional file-path)
   "Open the counterpart of the file visited by the current buffer.
@@ -536,12 +540,15 @@ If FILE-PATH is non-nil, open the counterpart of that file instead."
          (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
          (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
          (counterpart (concat counterpart-dirname counterpart-filename))
-	 (paragraphs (car (tlon-bae-count-paragraphs-and-sentences)))
-	 (sentences (cadr (tlon-bae-count-paragraphs-and-sentences))))
+	 (position (tlon-bae-count-paragraphs-sentences-words))
+	 (paragraphs (nth 0 position))
+	 (sentences (nth 1 position))
+	 (words (nth 2 position)))
     (find-file counterpart)
     (goto-char (point-min))
     (forward-paragraph paragraphs)
-    (forward-sentence sentences)))
+    (forward-sentence sentences)
+    (forward-word words)))
 
 ;;; EAF validation
 
