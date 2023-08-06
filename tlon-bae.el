@@ -1078,6 +1078,10 @@ specific function for the process that is being initialized."
   "ID of the `processing' heading in the `BAE.org' file.
 `BAE.org' in the `tlon-docs' repository.")
 
+(defvar tlon-bae-jobs-id
+  "820BEDE2-F982-466F-A391-100235D4C596"
+  "ID of the `jobs' heading in the `jobs.org' file.")
+
 (defun tlon-bae-initialize-processing ()
   "Initialize processing."
   (cl-multiple-value-bind
