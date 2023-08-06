@@ -667,6 +667,15 @@ Assumes action is first word of clocked task."
   (let ((label (car (rassoc (tlon-bae-get-clock-action) tlon-bae-label-actions))))
     label))
 
+(defun tlon-bae-get-clock-next-label ()
+  "Return label associated with the action after the one in heading at point."
+  (tlon-bae-get-next-car (tlon-bae-get-clock-label)
+			 tlon-bae-label-actions))
+
+(defun tlon-bae-get-clock-next-assignee (label)
+  "Return assignee associated with LABEL."
+  (alist-get label tlon-bae-label-assignees nil nil 'string=))
+
 (defun tlon-bae-get-action-in-label (label)
   "Return action associated with LABEL."
   (let ((action (cadr (split-string label))))
@@ -1080,33 +1089,25 @@ specific function for the process that is being initialized."
   (cl-multiple-value-bind
       (original-path translation-path original-file translation-file)
       (tlon-bae-set-paths)
-    (let* ((action (tlon-bae-get-clock-action))
-	   (label (tlon-bae-get-next-car
-		   (tlon-bae-get-clock-label)
-		   tlon-bae-label-actions))
-	   (assignee (alist-get label tlon-bae-label-assignees nil nil 'string=)))
+    (let* ((current-action (tlon-bae-get-clock-action))
+	   (next-label (tlon-bae-get-clock-next-label))
+	   (next-assignee (tlon-bae-get-clock-next-assignee next-label)))
       (save-buffer)
-      (if (string= action "Process")
+      (if (string= current-action "Process")
 	  (write-file original-path)
 	(write-file translation-path))
-      (when (string= action "Process")
-	(tlon-bae-commit-and-push action original-path))
-      (tlon-bae-commit-and-push action translation-path)
-      (tlon-bae-act-on-topic original-file label assignee
-			     (when (string= action "Review")
+      (when (string= current-action "Process")
+	(tlon-bae-commit-and-push current-action original-path))
+      (tlon-bae-commit-and-push current-action translation-path)
+      (tlon-bae-act-on-topic original-file next-label next-assignee
+			     (when (string= current-action "Review")
 			       'close))
-      (tlon-bae-mark-task-as-done label assignee)
-      (when (string= action "Review")
-	(tlon-bae-mark-heading-as-done 'commit)))))
-
-(defvar tlon-bae-docs-processing-id
-  "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
-  "ID of the `processing' heading in the `BAE.org' file.
-`BAE.org' in the `tlon-docs' repository.")
-
-(defvar tlon-bae-jobs-id
-  "820BEDE2-F982-466F-A391-100235D4C596"
-  "ID of the `jobs' heading in the `jobs.org' file.")
+      (tlon-bae-mark-clocked-task-done)
+      (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
+	       next-label next-assignee)
+      (when (string= current-action "Review")
+	(tlon-bae-mark-clocked-task-parent-done)
+	(tlon-bae-mark-clocked-heading-done 'commit)))))
 
 (defun tlon-bae-initialize-processing ()
   "Initialize processing."
