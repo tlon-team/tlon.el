@@ -999,16 +999,12 @@ If COMMIT is non-nil, commit the change."
     (when commit
       (tlon-bae-commit-and-push "Update" tlon-bae-file-jobs))))
 
-(defun tlon-bae-mark-task-as-done (label assignee)
-  "Mark heading associated with current clock heading as DONE.
-The LABEL and ASSIGNEE are only used for the message displayed in
-the echo area."
+(defun tlon-bae-mark-clocked-task-done ()
+  "Mark the currently clocked task as DONE."
   (save-window-excursion
     (org-clock-goto)
     (org-todo "DONE")
-    (save-buffer)
-    (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
-	     label assignee)))
+    (save-buffer)))
 
 (defun tlon-bae-mark-heading-as-done (&optional commit)
   "Mark the headings of the current job as DONE.
