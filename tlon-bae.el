@@ -977,11 +977,12 @@ format `Job: FILENAME`) and a new heading in the file `jobs.org'."
 If COMMIT is non-nil, commit the change."
   (interactive)
   (let* ((key (or key (ebib--get-key-at-point)))
-	 (jobs (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/jobs.org"))
 	 (heading (format "[cite:@%s]" key))
-	 (project (completing-read-multiple "Project (multiple comma-separated selections allowed): " '("bae" "utilitarianism" "lontermism"))))
-    (with-current-buffer (or (find-buffer-visiting jobs)
-			     (find-file-noselect jobs))
+	 (project (completing-read-multiple
+		   "Project (multiple comma-separated selections allowed): "
+		   tlon-bae-projects)))
+    (with-current-buffer (or (find-buffer-visiting tlon-bae-file-jobs)
+			     (find-file-noselect tlon-bae-file-jobs))
       (widen)
       (goto-char (point-min))
       (unless (search-forward heading nil t)
@@ -993,9 +994,10 @@ If COMMIT is non-nil, commit the change."
 	(insert heading)
 	(org-todo 'todo)
 	(org-set-tags project)
+	(org-sort-entries nil ?o) ; sort entries by t(o)do order
 	(save-buffer)))
     (when commit
-      (tlon-bae-commit-and-push "Update" jobs))))
+      (tlon-bae-commit-and-push "Update" tlon-bae-file-jobs))))
 
 (defun tlon-bae-mark-task-as-done (label assignee)
   "Mark heading associated with current clock heading as DONE.
