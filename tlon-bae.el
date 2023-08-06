@@ -54,36 +54,62 @@
     (dired-delete-file builds-directory 'always t)
     (message "Package updated. %s" tlon-bae-version)))
 
-;;; File vars
+;;; Vars
 
-(defvar tlon-bae-originals-dir
+;;;; files
+
+(defvar tlon-bae-dir-originals
   (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "originals/")
   "Directory where originals are stored.")
 
-(defvar tlon-bae-translations-dir
+(defvar tlon-bae-dir-translations
   (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "translations/")
   "Directory where translations are stored.")
 
+(defvar tlon-bae-dir-etc
+  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/")
+  "Directory where miscellaneous files are stored.")
+
 (defvar tlon-bae-dir-original-posts-dir
-  (file-name-concat tlon-bae-originals-dir "posts/")
+  (file-name-concat tlon-bae-dir-originals "posts/")
   "Directory where original posts are stored.")
 
 (defvar tlon-bae-dir-translated-posts-dir
-  (file-name-concat tlon-bae-translations-dir "posts/")
+  (file-name-concat tlon-bae-dir-translations "posts/")
   "Directory where translated posts are stored.")
 
 (defvar tlon-bae-dir-original-tags-dir
-  (file-name-concat tlon-bae-originals-dir "tags/")
+  (file-name-concat tlon-bae-dir-originals "tags/")
   "Directory where original tags are stored.")
 
 (defvar tlon-bae-dir-translated-tags-dir
-  (file-name-concat tlon-bae-translations-dir "tags/")
+  (file-name-concat tlon-bae-dir-translations "tags/")
   "Directory where translated tags are stored.")
 
 (defvar tlon-bae-file-glossary
-  (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/Glossary.csv")
+  (file-name-concat tlon-bae-dir-etc "Glossary.csv")
   "File containing the glossary.")
 
+(defvar tlon-bae-file-jobs
+  (file-name-concat tlon-bae-dir-etc "jobs.org")
+  "File containing the glossary.")
+
+;;;; org ids
+
+(defvar tlon-bae-docs-processing-id
+  "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
+  "ID of the `processing' heading in the `BAE.org' file.
+`BAE.org' in the `tlon-docs' repository.")
+
+(defvar tlon-bae-jobs-id
+  "820BEDE2-F982-466F-A391-100235D4C596"
+  "ID of the `jobs' heading in the `jobs.org' file.")
+
+;;;; misc
+
+(defvar tlon-bae-projects
+  '("bae" "largoplacismo" "utilitarismo")
+  "List of Babel projects.")
 ;;;
 
 (defun tlon-bae-forge ()
@@ -697,7 +723,7 @@ is non-nil, open DeepL."
 (defun tlon-bae-set-original-path (filename)
   "Return full path of FILENAME."
   (let* ((type (if (string-match "[[:digit:]]" filename) "posts/" "tags/"))
-	 (dir (file-name-concat tlon-bae-originals-dir type))
+	 (dir (file-name-concat tlon-bae-dir-originals type))
 	 (file-path (file-name-concat dir filename)))
     file-path))
 
@@ -713,7 +739,7 @@ is non-nil, open DeepL."
 	 (original-path (tlon-bae-set-original-path original-file))
 	 (translation-file (tlon-bae-get-translation-file-robustly original-file))
 	 (dir (tlon-bae-post-or-tag original-file))
-	 (translation-path (file-name-concat tlon-bae-translations-dir dir translation-file)))
+	 (translation-path (file-name-concat tlon-bae-dir-translations dir translation-file)))
     (cl-values original-path translation-path original-file translation-file)))
 
 (defun tlon-bae-post-or-tag (file)
