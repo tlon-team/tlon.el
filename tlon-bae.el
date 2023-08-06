@@ -495,7 +495,7 @@ If no FILE is provided, use the file visited by the current buffer."
       (alist-get original-filename tlon-bae-tag-correspondence nil nil #'equal)))
 
 (defun tlon-bae-get-translation-file-robustly (original-filename &optional noerror)
-  "Return file that translates ORIGINAL-FILENAME and handle failures.
+  "Return file that translates ORIGINAL-FILENAME, handling potential failures.
 Reload variables if necessary and signal an error if the file is
 still not returned, unless NOERROR is non-nil."
   (if-let ((translation-file (tlon-bae-get-translation-file original-filename)))
