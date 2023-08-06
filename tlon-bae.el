@@ -1006,30 +1006,37 @@ If COMMIT is non-nil, commit the change."
     (org-todo "DONE")
     (save-buffer)))
 
-(defun tlon-bae-mark-heading-as-done (&optional commit)
-  "Mark the headings of the current job as DONE.
-This will set the parent task of the task associated with the
-current clock to DONE and mark the corresponding heading in
-`jobs.org' as DONE.
-
-If COMMIT is non-nil, commit and push the changes."
-  (org-clock-goto)
-  (widen)
-  (org-up-heading-safe)
-  (let* ((heading (substring-no-properties (org-get-heading t t t t)))
-	 (file (if (string-match "`\\(.+?\\)`" heading)
-		   (match-string 1 heading)
-		 (user-error "I wasn't able to find a key in clocked heading")))
-	 (key (file-name-sans-extension file))
-	 (jobs (file-name-concat ps/dir-tlon-biblioteca-altruismo-eficaz "etc/jobs.org")))
+(defun tlon-bae-mark-clocked-task-parent-done ()
+  "Mark the parent task of currently clocked task as DONE."
+  (save-window-excursion
+    (org-clock-goto)
+    (widen)
+    (org-up-heading-safe)
     (org-todo "DONE")
-    (with-current-buffer (find-file-noselect jobs)
-      ;; jump to heading that matches KEY
+    (save-buffer)))
+
+(defun tlon-bae-get-key-in-heading ()
+  "Get the key of the currently clocked task."
+  (unless (org-at-heading-p)
+    (user-error "Not in an org-mode heading"))
+  (let ((heading (substring-no-properties (org-get-heading t t t t))))
+    (if (string-match "\\[cite:@\\(.+?\\)\\]\\|Job: `\\(.+?\\)\\.md`" heading)
+	(or (match-string 1 heading)
+	    (match-string 2 heading))
+      (user-error "I wasn't able to find a key in clocked heading"))))
+
+(defun tlon-bae-mark-clocked-heading-done (&optional commit)
+  "Mark the heading of the currently clocked task as DONE.
+If COMMIT is non-nil, commit and push the changes."
+  (let ((key (file-name-sans-extension (tlon-bae-get-clock-file))))
+    (with-current-buffer (or (find-buffer-visiting tlon-bae-file-jobs)
+			     (find-file-noselect tlon-bae-file-jobs))
       (tlon-bae-goto-heading key)
       (org-todo "DONE")
+      (org-sort-entries nil ?o) ; sort entries by t(o)do order
       (save-buffer))
     (when commit
-      (tlon-bae-commit-and-push "Update " jobs))))
+      (tlon-bae-commit-and-push "Update " tlon-bae-file-jobs))))
 
 (defun tlon-bae-goto-heading (key)
   "Move point to the heading in `jobs.org' with KEY."
