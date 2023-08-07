@@ -515,8 +515,7 @@ still not returned, unless NOERROR is non-nil."
 	   return key))
 
 (defun tlon-bae-get-counterpart-filename (file-path)
-  "Return the counterpart of file in FILE-PATH."
-  (interactive)
+  "Return the counterpart filename of file in FILE-PATH."
   (let ((filename (file-name-nondirectory file-path)))
     (if (or (string-match tlon-bae-dir-original-posts-dir file-path)
 	    (string-match tlon-bae-dir-original-tags-dir file-path))
@@ -524,7 +523,7 @@ still not returned, unless NOERROR is non-nil."
       (tlon-bae-get-original-file filename))))
 
 (defun tlon-bae-get-counterpart-dirname (file-path)
-  "Get the counterpart of file in FILE-PATH."
+  "Get the counterpart directory name of file in FILE-PATH."
   (let* ((dirname (file-name-directory file-path))
 	 (counterpart-dirname (if (string-match "/originals/" dirname)
 				  (replace-regexp-in-string
@@ -540,16 +539,21 @@ still not returned, unless NOERROR is non-nil."
       (narrow-to-region start end)
       (goto-char (point-min))
       (- (buffer-size) (forward-paragraph (buffer-size))))))
+(defun tlon-bae-get-counterpart (file-path)
+  "Get the counterpart file path of file in FILE-PATH."
+  (let* ((counterpart-filename (tlon-bae-get-counterpart-filename file-path))
+	 (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
+	 (counterpart (concat counterpart-dirname counterpart-filename)))
+    counterpart))
 
 (defun tlon-bae-open-counterpart (&optional file-path)
-  "Open the counterpart of the file visited by the current buffer.
-If FILE-PATH is non-nil, open the counterpart of that file instead."
+  "Open the counterpart of file in FILE-PATH and move point to matching position.
+If FILE-PATH is nil, open the counterpart of the file visited by
+the current buffer."
   (interactive)
-  (let* ((file-path (or file-path (buffer-file-name)))
-	 (counterpart-filename (tlon-bae-get-counterpart-filename file-path))
-	 (counterpart-dirname (tlon-bae-get-counterpart-dirname file-path))
-	 (counterpart (concat counterpart-dirname counterpart-filename))
-	 (paragraphs (- (tlon-bae-count-paragraphs (point-min) (+ (point) 2)) 1)))
+  (let* ((counterpart (tlon-bae-get-counterpart
+		       (or file-path (buffer-file-name))))
+	 (paragraphs (- (tlon-bae-count-paragraphs file-path (point-min) (+ (point) 2)) 1)))
     (find-file counterpart)
     (goto-char (point-min))
     (forward-paragraph paragraphs)))
