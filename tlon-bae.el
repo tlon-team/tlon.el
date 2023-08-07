@@ -566,6 +566,29 @@ current buffer."
 	(goto-char (point-min))
 	(- (buffer-size) (forward-paragraph (buffer-size)))))))
 
+(defun tlon-bae-check-paragraph-number-match (&optional file-path)
+  "Check that FILE-PATH and its counterpart have the same number of paragraphs.
+If FILE-PATH is not provided, use the current buffer."
+  (interactive)
+  (let* ((part (or file-path (buffer-file-name)))
+	 (counterpart (tlon-bae-get-counterpart part))
+	 (paras-in-part (tlon-bae-count-paragraphs part))
+	 (paras-in-counterpart (tlon-bae-count-paragraphs counterpart)))
+    (if (= paras-in-part paras-in-counterpart)
+	t
+      (message "Paragraph number mismatch: \n%s has %s paragraphs\n%s has %s paragraphs"
+	       (file-name-nondirectory part) paras-in-part
+	       (file-name-nondirectory counterpart) paras-in-counterpart))))
+
+(defun tlon-bae-check-paragraph-number-match-in-dir (dir &optional extension)
+  "Check that files in DIR and counterparts have the same number of paragraphs.
+If EXTENSION is provided, only check files with that extension.
+Otherwise, default to \".md\"."
+  (setq extension (or extension ".md"))
+  (let ((files (directory-files dir t (concat ".*\\" extension "$"))))
+    (cl-loop for file in files
+	     do (tlon-bae-check-paragraph-number-match file))))
+
 ;;; EAF validation
 
 (defvar tlon-bae-eaf-p
