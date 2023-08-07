@@ -167,7 +167,7 @@
 
 (defun tlon-bae-start-job (&optional set-topic)
   "Create new job.
-If SET-TOPIC is non-nil, set topic label to 'Awaiting processing'
+If SET-TOPIC is non-nil, set topic label to `Awaiting processing'
 and assignee to the current user."
   (save-window-excursion
     (when set-topic
