@@ -532,13 +532,6 @@ still not returned, unless NOERROR is non-nil."
 				 "/translations/" "/originals/" dirname))))
     counterpart-dirname))
 
-(defun tlon-bae-count-paragraphs (start end)
-  "Return number of paragraphs between START and END."
-  (save-excursion
-    (save-restriction
-      (narrow-to-region start end)
-      (goto-char (point-min))
-      (- (buffer-size) (forward-paragraph (buffer-size))))))
 (defun tlon-bae-get-counterpart (file-path)
   "Get the counterpart file path of file in FILE-PATH."
   (let* ((counterpart-filename (tlon-bae-get-counterpart-filename file-path))
@@ -557,6 +550,21 @@ the current buffer."
     (find-file counterpart)
     (goto-char (point-min))
     (forward-paragraph paragraphs)))
+
+(defun tlon-bae-count-paragraphs (&optional file-path start end)
+  "Return number of paragraphs between START and END in FILE-PATH.
+If either START or END is nil, default to the beginning and end
+of the buffer. If FILE-PATH is nil, count paragraphs in the
+current buffer."
+  (interactive)
+  (let ((file-path (or file-path (buffer-file-name))))
+    (with-temp-buffer
+      (insert-file-contents file-path)
+      (let ((start (or start (point-min)))
+	    (end (or end (point-max))))
+	(narrow-to-region start end)
+	(goto-char (point-min))
+	(- (buffer-size) (forward-paragraph (buffer-size)))))))
 
 ;;; EAF validation
 
