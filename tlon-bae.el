@@ -841,7 +841,7 @@ Note: this command cannot be used to create new tag jobs, because
   (interactive)
   (tlon-bae-create-translation-entry)
   (tlon-bae-import-document)
-  (tlon-bae-create-record-for-job filename))
+  (tlon-bae-create-record-for-job))
 
 (defun tlon-bae-create-translation-entry (&optional title)
   "Create a BibTeX entry for the translation of the current entry.
