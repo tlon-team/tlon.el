@@ -943,7 +943,6 @@ SOURCE can be a URL or, like TARGET, a file path."
 
 (defun tlon-bae-import-pdf (path target)
   "Import the PDF in PATH to TARGET and convert it to Markdown.
-
 This command requires the user to supply values for the header
 and footer elements to be excluded from the conversion, which are
 different for each PDF. To determine these values, measure the
@@ -1249,8 +1248,7 @@ specific function for the process that is being initialized."
 ;; (3) diagnose performance issues, or else disable `post-command-hook'
 ;; and rely on other triggers; (4) use `lin-blue' as face for highlighting))))
 (defvar tlon-bae-sentence-highlight-offset 0
-  "Number of sentences to offset the sentence count in the source
-window.")
+  "Number of sentences to offset the sentence count in the source window.")
 
 (defun tlon-bae-sentence-highlight-offset-set ()
   "Set the sentence offset.
@@ -1950,11 +1948,11 @@ If ASYNC is t, run the request asynchronously."
 
 (defvar tlon-bae-pandoc-convert-from-file
   "pandoc -s '%s' -t markdown -o '%s'"
-  "Command to convert from HTML file to markdown.")
+  "Command to convert from HTML file to Markdown.")
 
 (defvar tlon-bae-pandoc-convert-from-url
   "pandoc -s -r html '%s' -o '%s'"
-  "Command to convert from URL to markdown.")
+  "Command to convert from URL to Markdown.")
 
 (defun tlon-bae-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
@@ -2039,7 +2037,7 @@ If ASYNC is t, run the request asynchronously."
     (message "File created: %s" new-file-path)
     new-file-path))
 
-;;; markdown cleanup
+;;; Markdown cleanup
 
 (defun tlon-bae-split-footnotes-into-separate-paragraphs ()
   "Split footnotes into separate paragraphs."
