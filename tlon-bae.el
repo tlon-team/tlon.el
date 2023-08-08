@@ -110,6 +110,67 @@
 (defvar tlon-bae-projects
   '("bae" "largoplacismo" "utilitarismo")
   "List of Babel projects.")
+
+(defvar tlon-bae-label-actions
+  '(("Awaiting processing" . "Process")
+    ("Awaiting translation" . "Translate")
+    ("Awaiting revision" . "Revise")
+    ("Awaiting check" . "Check")
+    ("Awaiting review" . "Review")
+    ("Awaiting publication" . "Publish")
+    ("Awaiting rewrite" . "Rewrite")
+    ("Glossary" . "Respond")
+    ("Misc" . "Misc"))
+  "Alist of topic labels and corresponding actions.")
+
+(defvar tlon-bae-label-bindings
+  '(("Awaiting processing" . "p")
+    ("Awaiting translation" . "t")
+    ("Awaiting check" . "c")
+    ("Awaiting revision" . "r")
+    ("Awaiting review" . "v")
+    ("Awaiting publication" . "u")
+    ("Awaiting rewrite" . "w")
+    ("Glossary" . "g")
+    ("Misc" . "m"))
+  "Alist of topic labels and corresponding key bindings.")
+
+(defvar tlon-bae-label-assignees
+  '(("Awaiting processing" . "worldsaround")
+    ("Awaiting translation" . "benthamite")
+    ("Awaiting revision" . "worldsaround")
+    ("Awaiting check" . "worldsaround")
+    ("Awaiting review" . "benthamite")
+    ("Awaiting publication" . ""))
+  "Alist of topic labels and corresponding assignees.")
+
+(defvar tlon-bae-github-users
+  '(("fstafforini" . "Federico Stafforini")
+    ("worldsaround" . "Leonardo Picón")
+    ("benthamite" . "Pablo Stafforini"))
+  "Alist of GitHub usernames and corresponding full names.")
+
+(defvar tlon-bae-system-users
+  '(("Federico Stafforini" . "Federico Stafforini")
+    ("cartago" . "Leonardo Picón")
+    ("Pablo Stafforini" . "Pablo Stafforini"))
+  "Alist of system usernames and corresponding full names.")
+
+(defvar tlon-bae-post-correspondence nil
+  "Alist of English and Spanish posts.")
+
+(defvar tlon-bae-tag-correspondence nil
+  "Alist of English and Spanish tags.")
+
+(defvar tlon-bae-work-correspondence nil
+  "Alist of original and Spanish works.")
+
+(defvar tlon-bae-tag-slugs nil
+  "List of EA Wiki slugs.")
+
+(defvar tlon-bae-wiki-urls nil
+  "List of EA Wiki URLs.")
+
 ;;;
 
 (defun tlon-bae-forge ()
@@ -409,21 +470,6 @@ If no FILE is provided, use the file visited by the current buffer."
   (with-temp-buffer
     (insert-file-contents file-path)
     (split-string (buffer-string) "\n" t)))
-
-(defvar tlon-bae-post-correspondence nil
-  "Alist of English and Spanish posts.")
-
-(defvar tlon-bae-tag-correspondence nil
-  "Alist of English and Spanish tags.")
-
-(defvar tlon-bae-work-correspondence nil
-  "Alist of original and Spanish works.")
-
-(defvar tlon-bae-tag-slugs nil
-  "List of EA Wiki slugs.")
-
-(defvar tlon-bae-wiki-urls nil
-  "List of EA Wiki URLs.")
 
 (defun tlon-bae-insert-tag ()
   "Insert a TAG slug at point."
@@ -1564,51 +1610,6 @@ If the topic has more than one assignee, return the first."
   (let* ((current-file (file-name-nondirectory (buffer-file-name))))
     (alist-get current-file tlon-bae-translation-alist
 	       (lambda (key default) default))))
-
-(defvar tlon-bae-label-actions
-  '(("Awaiting processing" . "Process")
-    ("Awaiting translation" . "Translate")
-    ("Awaiting revision" . "Revise")
-    ("Awaiting check" . "Check")
-    ("Awaiting review" . "Review")
-    ("Awaiting publication" . "Publish")
-    ("Awaiting rewrite" . "Rewrite")
-    ("Glossary" . "Respond")
-    ("Misc" . "Misc"))
-  "Alist of topic labels and corresponding actions.")
-
-(defvar tlon-bae-label-bindings
-  '(("Awaiting processing" . "p")
-    ("Awaiting translation" . "t")
-    ("Awaiting check" . "c")
-    ("Awaiting revision" . "r")
-    ("Awaiting review" . "v")
-    ("Awaiting publication" . "u")
-    ("Awaiting rewrite" . "w")
-    ("Glossary" . "g")
-    ("Misc" . "m"))
-  "Alist of topic labels and corresponding key bindings.")
-
-(defvar tlon-bae-label-assignees
-  '(("Awaiting processing" . "worldsaround")
-    ("Awaiting translation" . "benthamite")
-    ("Awaiting revision" . "worldsaround")
-    ("Awaiting check" . "worldsaround")
-    ("Awaiting review" . "benthamite")
-    ("Awaiting publication" . ""))
-  "Alist of topic labels and corresponding assignees.")
-
-(defvar tlon-bae-github-users
-  '(("fstafforini" . "Federico Stafforini")
-    ("worldsaround" . "Leonardo Picón")
-    ("benthamite" . "Pablo Stafforini"))
-  "Alist of GitHub usernames and corresponding full names.")
-
-(defvar tlon-bae-system-users
-  '(("Federico Stafforini" . "Federico Stafforini")
-    ("cartago" . "Leonardo Picón")
-    ("Pablo Stafforini" . "Pablo Stafforini"))
-  "Alist of system usernames and corresponding full names.")
 
 (defun tlon-bae-find-key-in-alist (value alist)
   "Find the corresponding key for a VALUE in ALIST."
