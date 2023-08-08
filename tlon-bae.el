@@ -632,8 +632,8 @@ If FILE-PATH is not provided, use the current buffer."
   "Check that files in DIR and counterparts have the same number of paragraphs.
 If EXTENSION is provided, only check files with that extension.
 Otherwise, default to \".md\"."
-  (setq extension (or extension ".md"))
-  (let ((files (directory-files dir t (concat ".*\\" extension "$"))))
+  (let* ((extension (or extension ".md"))
+	 (files (directory-files dir t (concat ".*\\" extension "$"))))
     (cl-loop for file in files
 	     do (tlon-bae-check-paragraph-number-match file))))
 
