@@ -2088,6 +2088,13 @@ If ASYNC is t, run the request asynchronously."
     (while (re-search-forward "\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
       (replace-match "\\1\\3\\2"))))
 
+(defun tlon-bae-post-translation-cleanup ()
+  "Cleanup processes to be run after a translation is completed."
+  (interactive)
+  (tlon-bae-fix-footnote-punctuation)
+  ;; potentially add more cleanup processes here
+  )
+
 ;;; load vars
 
 (defun tlon-bae-load-variables ()
