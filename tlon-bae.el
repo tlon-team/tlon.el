@@ -32,6 +32,7 @@
 (require 'cl-lib)
 (require 'transient)
 (require 'subr-x)
+(require 'ebib)
 
 ;;; Version
 
