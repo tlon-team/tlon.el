@@ -934,6 +934,17 @@ Prompt the user for a title, unless TITLE is non-nil."
       (user-error "There is already a translation for this entry"))
     (tlon-bae--create-entry-from-current fields)))
 
+(defun tlon-bae-create-section-entry (&optional title)
+  "Create a BibTeX entry for the section of the current entry.
+Prompt the user for a title, unless TITLE is non-nil."
+  (interactive)
+  (let* ((fields `(("title" . ,(or title (read-string "Section title: ")))
+		   ("eventtitle" . ,(ps/ebib-get-field-value "title"))
+		   ("url" . ,(read-string "URL: " (ps/ebib-get-field-value "url")))
+		   ("crossref" . ,(ebib--get-key-at-point))
+		   ("author" . ,(ps/ebib-get-field-value "author"))
+		   ("date" . ,(ps/ebib-get-field-value "")))))
+    (tlon-bae--create-entry-from-current fields)))
 
 (defun tlon-bae-import-document (&optional identifier target)
   "Import a document with IDENTIFIER to TARGET.
