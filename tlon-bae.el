@@ -189,7 +189,7 @@
     ;; when the topic has neither a label nor an assignee, we offer to
     ;; process it as a new job
     (if (not (or assignee label))
-	(if (y-or-n-p "Process issue as a new job? This will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file.")
+	(if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
 	    (progn
 	      (tlon-bae-start-job t)
 	      (sleep-for 4)
@@ -294,7 +294,7 @@ If no FILE is provided, use the file visited by the current buffer."
     commit))
 
 (defun tlon-bae-log-buffer-latest-user-commit (&optional file)
-  "Show FILE changes since the latest commit by the current user.
+  "Show changes to FILE since the latest commit by the current user.
 If no FILE is provided, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
@@ -302,7 +302,9 @@ If no FILE is provided, use the file visited by the current buffer."
     (magit-diff-range commit nil (list file))))
 
 (defun tlon-bae-log-buffer-latest-user-commit-ediff (&optional file)
-  "Docstring."
+  "Run an `ediff' session for FILE and its state when last committed by current user.
+If FILE is not provided, use the file visited by the current
+buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
 	 (commit (tlon-bae-latest-user-commit-in-file file))
