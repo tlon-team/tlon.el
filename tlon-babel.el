@@ -59,17 +59,17 @@
 
 ;;;; files
 
+(defvar tlon-babel-dir-babel
+  (expand-file-name  "~/Library/CloudStorage/Dropbox/repos/babel/")
+  "Directory where the babel project is stored.")
+
 (defvar tlon-babel-dir-originals
-  (file-name-concat ps/dir-tlon-babel "originals/")
+  (file-name-concat tlon-babel-dir-babel "originals/")
   "Directory where originals are stored.")
 
 (defvar tlon-babel-dir-translations
-  (file-name-concat ps/dir-tlon-babel "translations/")
+  (file-name-concat tlon-babel-dir-babel "translations/")
   "Directory where translations are stored.")
-
-(defvar tlon-babel-dir-etc
-  (file-name-concat ps/dir-tlon-babel "etc/")
-  "Directory where miscellaneous files are stored.")
 
 (defvar tlon-babel-dir-original-posts-dir
   (file-name-concat tlon-babel-dir-originals "posts/")
@@ -87,6 +87,14 @@
   (file-name-concat tlon-babel-dir-translations "tags/")
   "Directory where translated tags are stored.")
 
+(defvar tlon-babel-dir-etc
+  (file-name-concat tlon-babel-dir-babel "etc/")
+  "Directory where miscellaneous files are stored.")
+
+(defvar tlon-babel-dir-bib
+  (file-name-concat  tlon-babel-dir-babel "bib/")
+  "Directory where BibTeX files are stored.")
+
 (defvar tlon-babel-file-glossary
   (file-name-concat tlon-babel-dir-etc "Glossary.csv")
   "File containing the glossary.")
@@ -94,6 +102,23 @@
 (defvar tlon-babel-file-jobs
   (file-name-concat tlon-babel-dir-etc "jobs.org")
   "File containing the glossary.")
+
+(defvar tlon-babel-file-fluid
+  (file-name-concat  "fluid.bib")
+  "File containing the fluid bibliography.")
+
+(defvar tlon-babel-file-stable
+  (file-name-concat  "stable.bib")
+  "File containing the stable bibliography.")
+
+(defvar tlon-babel-file-contacts
+  (file-name-concat tlon-babel-dir-etc "contacts.json")
+  "File containing the contacts.")
+
+(defvar tlon-babel-file-tags
+  (file-name-concat tlon-babel-dir-etc "tags.txt")
+  "File containing the tags.")
+
 
 ;;;; org ids
 
@@ -176,7 +201,7 @@
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher in the Tlon-Babel directory."
   (interactive)
-  (let ((default-directory ps/dir-tlon-babel))
+  (let ((default-directory tlon-babel-dir-babel))
     (call-interactively 'forge-dispatch)))
 
 (defun tlon-babel-orgit-capture ()
@@ -214,7 +239,7 @@
       (if-let* ((org-link (ps/org-nth-stored-link 0))
 		(refile-position (org-find-exact-headline-in-buffer
 				  (cadr (nth 0 org-stored-links))
-				  (find-file-noselect ps/file-tlon-babel))))
+				  (find-file-noselect ps/file-tlon-bae))))
 	  (let ((action (alist-get label tlon-babel-label-actions nil nil #'string=))
 		(binding (upcase (alist-get label tlon-babel-label-bindings nil nil #'string=))))
 	    (kill-new (format "%s %s" action org-link))
@@ -255,7 +280,7 @@ file path."
 	 (slug-title (tlon-core-slugify title))
 	 (file-name (file-name-with-extension (concat slug-lastname "--" slug-title) "md"))
 	 (file-path (file-name-concat
-		     ps/dir-tlon-babel
+		     tlon-babel-dir-babel
 		     (if translation "translations" "originals")
 		     (if tag "tags" "posts")
 		     file-name)))
@@ -285,7 +310,7 @@ file path."
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
   "Return latest commit by the current user in FILE.
 If no FILE is provided, use the file visited by the current buffer."
-  (let* ((default-directory ps/dir-tlon-babel)
+  (let* ((default-directory tlon-babel-dir-babel)
 	 (file (or file (buffer-file-name)))
 	 (user (tlon-babel-find-key-in-alist user-full-name tlon-babel-system-users))
 	 ;; get most recent commit in FILE by USER
@@ -532,8 +557,8 @@ buffer."
 (defun tlon-babel-load-post-correspondence ()
   "Refresh alist of original-translation file pairs."
   (interactive)
-  (let* ((key-alist-stable (tlon-babel-get-original-translated ps/file-tlon-bibliography-stable))
-	 (key-alist-fluid (tlon-babel-get-original-translated ps/file-tlon-bibliography-fluid))
+  (let* ((key-alist-stable (tlon-babel-get-original-translated tlon-babel-file-stable))
+	 (key-alist-fluid (tlon-babel-get-original-translated tlon-babel-file-fluid))
 	 (input-alist (tlon-babel-convert-keys-to-files (append key-alist-stable key-alist-fluid))))
     (setq tlon-babel-post-correspondence input-alist)))
 
@@ -737,7 +762,7 @@ Assumes file name is enclosed in backticks."
 (defun tlon-babel-open-clock-topic ()
   "Open the topic from `orgit-forge' link in heading at point."
   (interactive)
-  (let ((default-directory ps/dir-tlon-babel)
+  (let ((default-directory tlon-babel-dir-babel)
 	(topic (tlon-babel-get-clock-topic)))
     (forge-visit-issue topic)))
 
@@ -860,7 +885,7 @@ is non-nil, open DeepL."
 (defun tlon-babel-magit-status ()
   "Show the status of the Tlon-Babel repository in a buffer."
   (interactive)
-  (magit-status ps/dir-tlon-babel))
+  (magit-status tlon-babel-dir-babel))
 
 (defun tlon-babel-magit-get-filename ()
   "Get filename of file to commit."
@@ -907,7 +932,7 @@ Note: this command cannot be used to create new tag jobs, because
   (let* ((key (ebib--get-key-at-point))
 	 (file (file-name-with-extension key "md"))
 	 (db ebib--cur-db)
-	 (new-db-num (ps/ebib-get-db-number ps/file-tlon-bibliography-fluid)))
+	 (new-db-num (ps/ebib-get-db-number tlon-babel-file-fluid)))
     (ebib-switch-to-database-nth new-db-num)
     (ebib-add-entry)
     (let ((new-key (ebib--get-key-at-point))
@@ -1070,13 +1095,13 @@ format `Job: FILENAME`) and a new heading in the file `jobs.org'."
 
 (defun tlon-babel-create-issue-for-job (filename)
   "Create an issue based on FILENAME in the Tlon-Babel GitHub repository."
-  (let ((default-directory ps/dir-tlon-babel))
+  (let ((default-directory tlon-babel-dir-babel))
     (call-interactively #'forge-create-issue)
     (insert (format "Job: `%s`" filename))
     (call-interactively #'forge-post-submit)
     (sleep-for 2)
     (forge-pull)
-    (magit-status ps/dir-tlon-babel)
+    (magit-status tlon-babel-dir-babel)
     ;; needs to be done twice for some reason; FIXME
     (forge-pull)))
 
@@ -1148,7 +1173,7 @@ If COMMIT is non-nil, commit and push the changes."
 
 (defun tlon-babel-goto-heading (key)
   "Move point to the heading in `jobs.org' with KEY."
-  (with-current-buffer (find-file-noselect (file-name-concat ps/dir-tlon-babel "etc/jobs.org"))
+  (with-current-buffer (find-file-noselect (file-name-concat tlon-babel-dir-babel "etc/jobs.org"))
     (org-element-map (org-element-parse-buffer) 'headline
       (lambda (headline)
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
@@ -1179,7 +1204,7 @@ Runs all the general initialization functions, followed by the
 specific function for the process that is being initialized."
   (tlon-babel-check-label-and-assignee)
   (tlon-babel-check-branch "main")
-  (let ((default-directory ps/dir-tlon-babel))
+  (let ((default-directory tlon-babel-dir-babel))
     (magit-pull-from-upstream nil)
     (sleep-for 2)
     (cl-multiple-value-bind
@@ -1227,7 +1252,7 @@ specific function for the process that is being initialized."
   (cl-multiple-value-bind
       (original-path)
       (tlon-babel-set-paths)
-    (tlon-babel-set-windows original-path ps/file-tlon-docs-tlon-babel)
+    (tlon-babel-set-windows original-path tlon-babel-file-manual)
     (org-id-goto tlon-babel-manual-processing-id)
     (org-narrow-to-subtree)
     (ps/org-show-subtree-hide-drawers)
@@ -1396,7 +1421,7 @@ This command should be run from the source window."
 
 (defun tlon-babel-check-branch (branch)
   "Throw an error unless current buffer is in Tlon-Babel branch BRANCH."
-  (let ((default-directory ps/dir-tlon-babel))
+  (let ((default-directory tlon-babel-dir-babel))
     (unless (string= (magit-get-current-branch) branch)
       (user-error "Please switch to the branch `%s' before proceeding" branch))
     t))
@@ -1443,7 +1468,7 @@ This command should be run from the source window."
 
 (defun tlon-babel-check-staged-or-unstaged-other-than (file-path)
   "Check if there are staged or unstaged changes in repo not involving FILE-PATH."
-  (let* ((default-directory ps/dir-tlon-babel)
+  (let* ((default-directory tlon-babel-dir-babel)
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file-path)))
     (unless (string= all-changes filtered-changes)
@@ -1463,7 +1488,7 @@ This command should be run from the source window."
 If ACTION is `convert', convert the existing issue into a pull
 request. If ACTION is `close', close issue."
   (let ((topic (format "Job: `%s`" original-file))
-	(default-directory ps/dir-tlon-babel))
+	(default-directory tlon-babel-dir-babel))
     (tlon-babel-magit-status)
     (magit-section-show-level-3-all)
     (goto-char (point-min))
@@ -1491,20 +1516,20 @@ request. If ACTION is `close', close issue."
 (defun tlon-babel-search-topics (search-string)
   "Search for SEARCH-STRING in Tlon-Babel GitHub issues and pull requests."
   (interactive "sSearch string: ")
-  (let ((default-directory ps/dir-tlon-babel))
+  (let ((default-directory tlon-babel-dir-babel))
     (forge-search search-string)))
 
 (defun tlon-babel-search-commits (search-string)
   "Search for SEARCH-STRING in Tlon-Babel commit history."
   (interactive "sSearch string: ")
-  (let ((default-directory ps/dir-tlon-babel))
+  (let ((default-directory tlon-babel-dir-babel))
     (magit-log-all (list "--grep" search-string))))
 
 (defun tlon-babel-search-files (search-string)
   "Search for SEARCH-STRING in Tlon-Babel files."
   (interactive "sSearch string: ")
-  (let ((default-directory ps/dir-tlon-babel))
-    (consult-ripgrep ps/dir-tlon-babel search-string)))
+  (let ((default-directory tlon-babel-dir-babel))
+    (consult-ripgrep tlon-babel-dir-babel search-string)))
 
 (defun tlon-babel-search-multi (search-string)
   "Search for SEARCH-STRING in Tlon-Babel files, commit history, and GitHub issues."
@@ -1519,7 +1544,7 @@ request. If ACTION is `close', close issue."
 
 (defun tlon-babel-commit-and-push (prefix file)
   "Commit and push changes in Tlon-Babel repo, with message 'PREFIX FILE'."
-  (let ((default-directory ps/dir-tlon-babel))
+  (let ((default-directory tlon-babel-dir-babel))
     (tlon-babel-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
       (magit-pull-from-upstream nil)
@@ -1717,7 +1742,7 @@ this action was performed. These two variables are used to
 construct a commit message of the form \'Glossary: ACTION
 \"TERM\"\', such as \'Glossary: add \"repugnant conclusion\"\'.
 Optionally, DESCRIPTION provides an explanation of the change."
-  (let ((default-directory ps/dir-tlon-babel)
+  (let ((default-directory tlon-babel-dir-babel)
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
@@ -1733,23 +1758,6 @@ Optionally, DESCRIPTION provides an explanation of the change."
 
 ;;;
 
-(defun tlon-babel-add-to-work-correspondece (original spanish)
-  "Add a new entry to the correspondece file for ORIGINAL and SPANISH terms."
-  (interactive "sOriginal: \nsSpanish: ")
-  (tlon-babel-check-branch "main")
-  (let ((glossary (file-name-concat ps/dir-tlon-babel "etc/work-correspondence.csv"))
-	(default-directory ps/dir-tlon-babel))
-    (with-current-buffer (find-file-noselect glossary)
-      (goto-char (point-max))
-      (insert (format "\n\"%s\",\"%s\"" original spanish))
-      (goto-char (point-min))
-      (flush-lines "^$")
-      (save-buffer))
-    (magit-stage-file glossary)
-    (magit-commit-create (list "-m" (format  "Correspondence: add \"%s\""
-					     (s-truncate (- vc-git-log-edit-summary-max-len 25) original))))
-    (call-interactively #'magit-push-current-to-pushremote)))
-
 (defmacro tlon-babel-create-file-opening-command (file-path)
   "Create a command to open file in FILE-PATH."
   (let* ((file-base (downcase (file-name-base file-path)))
@@ -1759,7 +1767,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
        ,(format "Open `%s'." file-name)
        (interactive)
        (find-file (file-name-concat
-		   ps/dir-tlon-babel
+		   tlon-babel-dir-babel
 		   ,file-path)))))
 
 (defmacro tlon-babel-create-dir-opening-command (&optional dir-path)
@@ -1774,11 +1782,10 @@ If DIR-PATH is nil, create a command to open the Tlon-Babel repository."
        ,(format "Open `%s'." dir-path)
        (interactive)
        (find-file (file-name-concat
-		   ps/dir-tlon-babel
+		   tlon-babel-dir-babel
 		   ,dir-path)))))
 
 (tlon-babel-create-file-opening-command "etc/Glossary.csv")
-(tlon-babel-create-file-opening-command "etc/work-correspondence.csv")
 (tlon-babel-create-file-opening-command "etc/new.bib")
 (tlon-babel-create-file-opening-command "etc/old.bib")
 (tlon-babel-create-file-opening-command "etc/finished.bib")
@@ -1798,56 +1805,54 @@ If DIR-PATH is nil, create a command to open the Tlon-Babel repository."
 (transient-define-prefix tlon-babel-dispatch ()
   "Dispatch a `tlon-babel' command."
   [["Main"
-    ("j" "job"                          tlon-babel-create-job)
-    ("r" "dwim"                         tlon-babel-dwim)
-    ("m" "magit"                         tlon-babel-magit-status)
-    ("n" "forge"                        tlon-babel-forge)
+    ("j" "job"                            tlon-babel-create-job)
+    ("r" "dwim"                           tlon-babel-dwim)
+    ("m" "magit"                          tlon-babel-magit-status)
+    ("n" "forge"                          tlon-babel-forge)
     """Package"
-    ("p p" "update"                      tlon-babel-update)
-    ("p l" "load variables"             tlon-babel-load-variables)
-    ("p v" "version"                    tlon-babel-version)
+    ("p p" "update"                       tlon-babel-update)
+    ("p l" "load variables"               tlon-babel-load-variables)
+    ("p v" "version"                      tlon-babel-version)
     ]
    ["Add"
-    ("a a" "to glossary"                tlon-babel-glossary-dwim)
-    ("a w" "to work correspondence"     tlon-babel-add-to-work-correspondece)
+    ("a a" "to glossary"                  tlon-babel-glossary-dwim)
+    ("a w" "to work correspondence"       tlon-babel-add-to-work-correspondece)
     """Search"
-    ("s s" "multi"                       tlon-babel-search-multi)
+    ("s s" "multi"                        tlon-babel-search-multi)
     ("s c" "commits"                      tlon-babel-search-commits)
-    ("s f" "files"                      tlon-babel-search-files)
-    ("s t" "topics"                      tlon-babel-search-topics)
+    ("s f" "files"                        tlon-babel-search-files)
+    ("s t" "topics"                       tlon-babel-search-topics)
     ]
    ["Open file"
-    ("f f" "counterpart"                tlon-babel-open-counterpart)
-    ("f g" "Glossary.csv"               tlon-babel-open-glossary)
-    ("f n" "new.bib"                    tlon-babel-open-new)
-    ("f o" "old.bib"                    tlon-babel-open-old)
-    ("f i" "finished.bib"               tlon-babel-open-finished)
-    ("f p" "pending.bib"                tlon-babel-open-pending)
-    ("f m" "manual.md"                  tlon-babel-open-manual)
-    ("f r" "readme.md"                  tlon-babel-open-readme)
+    ("f f" "counterpart"                  tlon-babel-open-counterpart)
+    ("f g" "Glossary.csv"                 tlon-babel-open-glossary)
+    ("f n" "new.bib"                      tlon-babel-open-new)
+    ("f o" "old.bib"                      tlon-babel-open-old)
+    ("f m" "manual.md"                    tlon-babel-open-manual)
+    ("f r" "readme.md"                    tlon-babel-open-readme)
     ]
    ["Open directory"
-    ("d d" "repo"                       tlon-babel-open-repo)
-    ("d P" "originals > posts"          tlon-babel-open-originals-posts)
-    ("d T" "originals > tags"           tlon-babel-open-originals-tags)
-    ("d p" "translations > posts"       tlon-babel-open-translations-posts)
-    ("d t" "translations > tags"        tlon-babel-open-translations-tags)
-    ("d e" "etc"                        tlon-babel-open-etc)
+    ("d d" "repo"                         tlon-babel-open-repo)
+    ("d P" "originals > posts"            tlon-babel-open-originals-posts)
+    ("d T" "originals > tags"             tlon-babel-open-originals-tags)
+    ("d p" "translations > posts"         tlon-babel-open-translations-posts)
+    ("d t" "translations > tags"          tlon-babel-open-translations-tags)
+    ("d e" "etc"                          tlon-babel-open-etc)
     ]
    ["Browse"
-    ("b b" "file"                tlon-babel-browse-file)
-    ("b r" "repo"                tlon-babel-browse-repo)
+    ("b b" "file"                         tlon-babel-browse-file)
+    ("b r" "repo"                         tlon-babel-browse-repo)
     """File changes"
-    ("h h" "Log"                        magit-log-buffer-file)
-    ("h d" "Diffs since last user change"  tlon-babel-log-buffer-latest-user-commit)
+    ("h h" "Log"                          magit-log-buffer-file)
+    ("h d" "Diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
     ("h e" "Ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)]
    ["Clock"
     ("c c" "Issue"                        tlon-babel-open-clock-topic)
     ("c f" "File"                         tlon-babel-open-clock-file )
-    ("c o" "Heading"                     org-clock-goto)
+    ("c o" "Heading"                      org-clock-goto)
     """Issue"
-    ("i i" "Open counterpart"                tlon-babel-open-forge-counterpart)
-    ("i I" "Open file"                tlon-babel-open-forge-file)
+    ("i i" "Open counterpart"             tlon-babel-open-forge-counterpart)
+    ("i I" "Open file"                    tlon-babel-open-forge-file)
     ]
    ]
   )
@@ -1855,7 +1860,7 @@ If DIR-PATH is nil, create a command to open the Tlon-Babel repository."
 (defun tlon-babel-browse-file ()
   "Browse the current file in the Tlon-Babel repository."
   (interactive)
-  (let* ((url-suffix (file-relative-name (buffer-file-name) ps/dir-tlon-babel))
+  (let* ((url-suffix (file-relative-name (buffer-file-name) tlon-babel-dir-babel))
 	 (url-prefix "https://github.com/tlon-team/biblioteca-altruismo-eficaz/blob/main/"))
     (browse-url (concat url-prefix url-suffix))))
 
@@ -2106,14 +2111,7 @@ If ASYNC is t, run the request asynchronously."
 (defun tlon-babel-load-variables ()
   "Load the variables to reflect changes to the files in the `etc' directory."
   (interactive)
-  (setq tlon-babel-work-correspondence
-	(tlon-babel-csv-file-to-alist (file-name-concat
-				       ps/dir-tlon-babel
-				       "etc/work-correspondence.csv"))
-	tlon-babel-tags
-	(tlon-babel-read-urls-from-file (file-name-concat
-					 ps/dir-tlon-babel
-					 "etc/tags.txt"))
+  (setq tlon-babel-tags (tlon-babel-read-urls-from-file tlon-babel-file-tags)
 	tlon-babel-wiki-urls (list ""))
   (dolist (slug tlon-babel-tag-slugs)
     (add-to-list 'tlon-babel-wiki-urls
