@@ -92,7 +92,7 @@
   "Directory where miscellaneous files are stored.")
 
 (defvar tlon-babel-dir-bib
-  (file-name-concat  tlon-babel-dir-babel "bib/")
+  (file-name-concat tlon-babel-dir-babel "bib/")
   "Directory where BibTeX files are stored.")
 
 (defvar tlon-babel-file-glossary
@@ -104,11 +104,11 @@
   "File containing the glossary.")
 
 (defvar tlon-babel-file-fluid
-  (file-name-concat  "fluid.bib")
+  (file-name-concat tlon-babel-dir-bib "fluid.bib")
   "File containing the fluid bibliography.")
 
 (defvar tlon-babel-file-stable
-  (file-name-concat  "stable.bib")
+  (file-name-concat tlon-babel-dir-bib "stable.bib")
   "File containing the stable bibliography.")
 
 (defvar tlon-babel-file-contacts
@@ -118,7 +118,6 @@
 (defvar tlon-babel-file-tags
   (file-name-concat tlon-babel-dir-etc "tags.txt")
   "File containing the tags.")
-
 
 ;;;; org ids
 
