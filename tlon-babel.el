@@ -1815,7 +1815,6 @@ If DIR-PATH is nil, create a command to open the Tlon-Babel repository."
     ]
    ["Add"
     ("a a" "to glossary"                  tlon-babel-glossary-dwim)
-    ("a w" "to work correspondence"       tlon-babel-add-to-work-correspondece)
     """Search"
     ("s s" "multi"                        tlon-babel-search-multi)
     ("s c" "commits"                      tlon-babel-search-commits)
