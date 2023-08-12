@@ -91,9 +91,17 @@
   (file-name-concat tlon-babel-dir-babel "etc/")
   "Directory where miscellaneous files are stored.")
 
-(defvar tlon-babel-dir-bib
-  (file-name-concat tlon-babel-dir-babel "bib/")
+(defvar tlon-babel-dir-refs
+  (file-name-concat tlon-babel-dir-babel "refs/")
   "Directory where BibTeX files are stored.")
+
+(defvar tlon-babel-dir-locales
+  (file-name-concat tlon-babel-dir-refs "locales/")
+  "Directory where CSL locale files are stored.")
+
+(defvar tlon-babel-dir-styles
+  (file-name-concat tlon-babel-dir-refs "styles/")
+  "Directory where CSL style files are stored.")
 
 (defvar tlon-babel-file-glossary
   (file-name-concat tlon-babel-dir-etc "Glossary.csv")
@@ -104,11 +112,11 @@
   "File containing the glossary.")
 
 (defvar tlon-babel-file-fluid
-  (file-name-concat tlon-babel-dir-bib "fluid.bib")
+  (file-name-concat tlon-babel-dir-refs "fluid.bib")
   "File containing the fluid bibliography.")
 
 (defvar tlon-babel-file-stable
-  (file-name-concat tlon-babel-dir-bib "stable.bib")
+  (file-name-concat tlon-babel-dir-refs "stable.bib")
   "File containing the stable bibliography.")
 
 (defvar tlon-babel-file-contacts
