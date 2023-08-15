@@ -2003,6 +2003,18 @@ If ASYNC is t, run the request asynchronously."
 
 ;;; translation
 
+(defun tlon-babel-search-translation (string)
+  "Search for a Spanish translation of English STRING."
+  (interactive "sString to translate: ")
+  (let ((urls '("https://spanish.stackexchange.com/search?q=%s"
+		"https://es.bab.la/diccionario/ingles-espanol/%s"
+		"https://en.wikipedia.org/w/index.php?fulltext=Search&profile=default&search=%s"
+		"https://context.reverso.net/traduccion/ingles-espanol/%s"
+		"https://www.linguee.com/english-spanish/search?query=%s")))
+    (dolist (url urls)
+      (browse-url (format url (url-hexify-string string)) 'new-buffer)))
+  (ps/goldendict-search-input string))
+
 (defun tlon-babel-file-to-string (file-path)
   "Read the contents of FILE-PATH and return it as a string."
   (with-temp-buffer
