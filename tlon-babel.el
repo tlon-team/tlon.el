@@ -103,12 +103,24 @@
   (file-name-concat tlon-babel-dir-refs "styles/")
   "Directory where CSL style files are stored.")
 
-(defvar tlon-babel-file-glossary
-  (file-name-concat tlon-babel-dir-etc "Glossary.csv")
-  "File containing the glossary.")
+(defvar tlon-babel-file-manual
+  (file-name-concat tlon-babel-dir-babel "manual.org")
+  "File containing the manual.")
+
+(defvar tlon-babel-file-readme
+  (file-name-concat tlon-babel-dir-babel "readme.md")
+  "File containing the readme.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat tlon-babel-dir-etc "jobs.org")
+  (file-name-concat tlon-babel-dir-babel "jobs.org")
+  "File containing the glossary.")
+
+(defvar tlon-babel-file-contacts
+  (file-name-concat tlon-babel-dir-babel "contacts.json")
+  "File containing the contacts.")
+
+(defvar tlon-babel-file-glossary
+  (file-name-concat tlon-babel-dir-dict "Glossary.csv")
   "File containing the glossary.")
 
 (defvar tlon-babel-file-fluid
