@@ -2224,6 +2224,8 @@ If ASYNC is t, run the request asynchronously."
     (insert-file-contents file-path)
     (split-string (buffer-string) "\n" t)))
 
+(tlon-babel-reload-metadata)
+
 ;; (tlon-babel-load-variables)
 
 (provide 'tlon-babel)
