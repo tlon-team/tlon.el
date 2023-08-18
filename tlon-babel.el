@@ -267,10 +267,12 @@ matching will be made against `tlon-babel-repo-names'."
 
 (defun tlon-babel-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
-  (replace-regexp-in-string
-   "/git-dirs/"
-   "/Library/CloudStorage/Dropbox/repos/"
-   (buffer-file-name)))
+  ;; check that current buffer is visiting a file
+  (when-let ((file (buffer-file-name)))
+    (replace-regexp-in-string
+     "/git-dirs/"
+     "/Library/CloudStorage/Dropbox/repos/"
+     (buffer-file-name))))
 
 (defun tlon-babel-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
