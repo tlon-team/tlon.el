@@ -1883,12 +1883,11 @@ Optionally, DESCRIPTION provides an explanation of the change."
     ("f r" "readme.md"                    tlon-babel-open-readme)
     ]
    ["Open directory"
-    ;; ("d d" "repo"                         tlon-babel-open-repo)
-    ;; ("d P" "originals > posts"            tlon-babel-open-originals-posts)
-    ;; ("d T" "originals > tags"             tlon-babel-open-originals-tags)
-    ;; ("d p" "translations > posts"         tlon-babel-open-translations-posts)
-    ;; ("d t" "translations > tags"          tlon-babel-open-translations-tags)
-    ;; ("d e" "etc"                          tlon-babel-open-etc)
+    ("d d" "repo"                         tlon-babel-open-repo)
+    ("d g" "genus"                        tlon-babel-open-genus-repo)
+    ("d b" "bae"                          tlon-babel-open-bae-repo)
+    ("d u" "utilitarismo"                 tlon-babel-open-utilitarismo-repo)
+    ("d l" "largoplacismo"                tlon-babel-open-largoplacismo-repo)
     ]
    ["Browse"
     ("b b" "file"                         tlon-babel-browse-file)
@@ -1925,6 +1924,31 @@ Optionally, DESCRIPTION provides an explanation of the change."
   (let* ((repo (tlon-babel-set-repo))
 	 (repo-name (tlon-babel-get-name-from-repo repo)))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
+
+(defun tlon-babel-open-repo ()
+  "Open the Babel repository."
+  (interactive)
+  (dired (tlon-babel-set-repo)))
+
+(defun tlon-babel-open-bae-repo ()
+  "Open the Biblioteca Altruismo Eficaz repository."
+  (interactive)
+  (dired tlon-babel-dir-bae))
+
+(defun tlon-babel-open-utilitarismo-repo ()
+  "Open the Utilitarismo repository."
+  (interactive)
+  (dired tlon-babel-dir-utilitarismo))
+
+(defun tlon-babel-open-largoplacismo-repo ()
+  "Open the Largoplacismo repository."
+  (interactive)
+  (dired tlon-babel-dir-largoplacismo))
+
+(defun tlon-babel-open-genus-repo ()
+  "Open the Genus repository."
+  (interactive)
+  (dired tlon-babel-dir-genus))
 
 ;;; request
 
