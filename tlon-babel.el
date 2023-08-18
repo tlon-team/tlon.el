@@ -1911,9 +1911,13 @@ Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-browse-file ()
   "Browse the current file in the Tlon-Babel repository."
   (interactive)
-  (let* ((url-suffix (file-relative-name (buffer-file-name) tlon-babel-dir-babel))
-	 (url-prefix "https://github.com/tlon-team/biblioteca-altruismo-eficaz/blob/main/"))
-    (browse-url (concat url-prefix url-suffix))))
+  (if-let (file (buffer-file-name))
+      (let* ((repo (tlon-babel-get-repo-from-file file))
+	     (repo-name (tlon-babel-get-name-from-repo repo))
+	     (repo-url (concat "https://github.com/tlon-team/" repo-name))
+	     (file-url (concat "/blob/main/" (file-relative-name (buffer-file-name) repo))))
+	(browse-url (concat repo-url file-url)))
+    (user-error "Buffer is not visiting a file")))
 
 (defun tlon-babel-browse-repo ()
   "Browse the Tlon-Babel repository."
