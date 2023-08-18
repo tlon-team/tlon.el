@@ -59,41 +59,81 @@
 
 ;;;; files
 
-(defvar tlon-babel-dir-babel
-  (expand-file-name  "~/Library/CloudStorage/Dropbox/repos/babel/")
-  "Directory where the babel project is stored.")
+(defvar tlon-babel-dir-repos
+  (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")
+  "Directory where the Tlön repos are stored.")
 
-(defvar tlon-babel-dir-originals
-  (file-name-concat tlon-babel-dir-babel "originals/")
-  "Directory where originals are stored.")
+(defvar tlon-babel-project-names-and-abbrevs
+  '(("biblioteca-altruismo-eficaz" . "bae")
+    ("ensayos-sobre-largoplacismo" . "largoplacismo")
+    ("utilitarismo.net" . "utilitarismo"))
+  "List of Babel project names and associated abbreviations.")
 
-(defvar tlon-babel-dir-translations
-  (file-name-concat tlon-babel-dir-babel "translations/")
-  "Directory where translations are stored.")
+(defvar tlon-babel-project-names
+  (mapcar #'car tlon-babel-project-names-and-abbrevs)
+  "List of Babel project names.")
 
-(defvar tlon-babel-dir-original-posts-dir
-  (file-name-concat tlon-babel-dir-originals "posts/")
-  "Directory where original posts are stored.")
+(defvar tlon-babel-project-abbrevs
+  (mapcar #'cdr tlon-babel-project-names-and-abbrevs)
+  "List of Babel project names.")
 
-(defvar tlon-babel-dir-translated-posts-dir
-  (file-name-concat tlon-babel-dir-translations "posts/")
-  "Directory where translated posts are stored.")
+(defvar tlon-babel-project-names-and-dirs
+  (mapcar (lambda (project)
+	    (cons project (file-name-as-directory (file-name-concat tlon-babel-dir-repos project))))
+	  tlon-babel-project-names)
+  "Association list of Babel projects and their file paths.")
 
-(defvar tlon-babel-dir-original-tags-dir
-  (file-name-concat tlon-babel-dir-originals "tags/")
-  "Directory where original tags are stored.")
+(defvar tlon-babel-repo-names-and-abbrevs
+  (append  tlon-babel-project-names-and-abbrevs `(("genus" . "genus")))
+  "Association list of all repos and their file paths.")
 
-(defvar tlon-babel-dir-translated-tags-dir
-  (file-name-concat tlon-babel-dir-translations "tags/")
-  "Directory where translated tags are stored.")
+(defvar tlon-babel-repo-names
+  (mapcar #'car tlon-babel-repo-names-and-abbrevs)
+  "List of Babel repo names.")
 
-(defvar tlon-babel-dir-etc
-  (file-name-concat tlon-babel-dir-babel "etc/")
-  "Directory where miscellaneous files are stored.")
+(defvar tlon-babel-repo-abbrevs
+  (mapcar #'cdr tlon-babel-repo-names-and-abbrevs)
+  "List of Babel repo abbrevs.")
+
+(defvar tlon-babel-repo-names-and-dirs
+  (mapcar (lambda (repo)
+	    (cons repo (file-name-as-directory (file-name-concat tlon-babel-dir-repos repo))))
+	  tlon-babel-repo-names)
+  "Association list of Babel repos and their file paths.")
+
+(defun tlon-babel-generate-project-dir-vars ()
+  "Generate variables for storing relevant paths in each project repo.
+The stored paths, for each repo, are the path to the repo itself,
+the path to the `originals' subdirectory, and the path to the
+`translations' subdirectory. The names of the variables are
+formed by the prefix `tlon-babel-dir-', the repo's canonical
+abbreviation (as defined in `tlon-babel-project-names-and-abbrevs') and
+either no suffix, the suffix `', `-originals', or the suffix
+`-dir-translations', respectively. For example, the name of the
+variable that stores the path of the `originals' subdirectory of
+the `bae' repo is named `tlon-babel-dir-bae-originals'."
+  (dolist (project tlon-babel-project-names)
+    (let* ((abbrev (alist-get project tlon-babel-project-names-and-abbrevs nil nil 'string=))
+	   (dir (alist-get project tlon-babel-project-names-and-dirs nil nil 'string=)))
+      (dolist (suffix '("" "originals" "translations"))
+	(let* ((separator (if (string= suffix "") "" "-"))
+	       (var-name (concat "tlon-babel-dir-" abbrev separator suffix))
+	       (var-value (file-name-as-directory (file-name-concat dir suffix))))
+	  (set (intern var-name) var-value))))))
+
+(tlon-babel-generate-project-dir-vars)
+
+(defvar tlon-babel-dir-genus
+  (file-name-concat tlon-babel-dir-repos "genus/")
+  "Directory where the genus repo is stored.")
 
 (defvar tlon-babel-dir-refs
-  (file-name-concat tlon-babel-dir-babel "refs/")
+  (file-name-concat tlon-babel-dir-genus "refs/")
   "Directory where BibTeX files are stored.")
+
+(defvar tlon-babel-dir-dict
+  (file-name-concat tlon-babel-dir-genus "dict/")
+  "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-dir-locales
   (file-name-concat tlon-babel-dir-refs "locales/")
