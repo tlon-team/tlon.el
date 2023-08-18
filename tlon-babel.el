@@ -59,41 +59,81 @@
 
 ;;;; files
 
-(defvar tlon-babel-dir-babel
-  (expand-file-name  "~/Library/CloudStorage/Dropbox/repos/babel/")
-  "Directory where the babel project is stored.")
+(defvar tlon-babel-dir-repos
+  (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")
+  "Directory where the Tlön repos are stored.")
 
-(defvar tlon-babel-dir-originals
-  (file-name-concat tlon-babel-dir-babel "originals/")
-  "Directory where originals are stored.")
+(defvar tlon-babel-project-names-and-abbrevs
+  '(("biblioteca-altruismo-eficaz" . "bae")
+    ("ensayos-sobre-largoplacismo" . "largoplacismo")
+    ("utilitarismo.net" . "utilitarismo"))
+  "List of Babel project names and associated abbreviations.")
 
-(defvar tlon-babel-dir-translations
-  (file-name-concat tlon-babel-dir-babel "translations/")
-  "Directory where translations are stored.")
+(defvar tlon-babel-project-names
+  (mapcar #'car tlon-babel-project-names-and-abbrevs)
+  "List of Babel project names.")
 
-(defvar tlon-babel-dir-original-posts-dir
-  (file-name-concat tlon-babel-dir-originals "posts/")
-  "Directory where original posts are stored.")
+(defvar tlon-babel-project-abbrevs
+  (mapcar #'cdr tlon-babel-project-names-and-abbrevs)
+  "List of Babel project names.")
 
-(defvar tlon-babel-dir-translated-posts-dir
-  (file-name-concat tlon-babel-dir-translations "posts/")
-  "Directory where translated posts are stored.")
+(defvar tlon-babel-project-names-and-dirs
+  (mapcar (lambda (project)
+	    (cons project (file-name-as-directory (file-name-concat tlon-babel-dir-repos project))))
+	  tlon-babel-project-names)
+  "Association list of Babel projects and their file paths.")
 
-(defvar tlon-babel-dir-original-tags-dir
-  (file-name-concat tlon-babel-dir-originals "tags/")
-  "Directory where original tags are stored.")
+(defvar tlon-babel-repo-names-and-abbrevs
+  (append  tlon-babel-project-names-and-abbrevs `(("genus" . "genus")))
+  "Association list of all repos and their file paths.")
 
-(defvar tlon-babel-dir-translated-tags-dir
-  (file-name-concat tlon-babel-dir-translations "tags/")
-  "Directory where translated tags are stored.")
+(defvar tlon-babel-repo-names
+  (mapcar #'car tlon-babel-repo-names-and-abbrevs)
+  "List of Babel repo names.")
 
-(defvar tlon-babel-dir-etc
-  (file-name-concat tlon-babel-dir-babel "etc/")
-  "Directory where miscellaneous files are stored.")
+(defvar tlon-babel-repo-abbrevs
+  (mapcar #'cdr tlon-babel-repo-names-and-abbrevs)
+  "List of Babel repo abbrevs.")
+
+(defvar tlon-babel-repo-names-and-dirs
+  (mapcar (lambda (repo)
+	    (cons repo (file-name-as-directory (file-name-concat tlon-babel-dir-repos repo))))
+	  tlon-babel-repo-names)
+  "Association list of Babel repos and their file paths.")
+
+(defun tlon-babel-generate-project-dir-vars ()
+  "Generate variables for storing relevant paths in each project repo.
+The stored paths, for each repo, are the path to the repo itself,
+the path to the `originals' subdirectory, and the path to the
+`translations' subdirectory. The names of the variables are
+formed by the prefix `tlon-babel-dir-', the repo's canonical
+abbreviation (as defined in `tlon-babel-project-names-and-abbrevs') and
+either no suffix, the suffix `', `-originals', or the suffix
+`-dir-translations', respectively. For example, the name of the
+variable that stores the path of the `originals' subdirectory of
+the `bae' repo is named `tlon-babel-dir-bae-originals'."
+  (dolist (project tlon-babel-project-names)
+    (let* ((abbrev (alist-get project tlon-babel-project-names-and-abbrevs nil nil 'string=))
+	   (dir (alist-get project tlon-babel-project-names-and-dirs nil nil 'string=)))
+      (dolist (suffix '("" "originals" "translations"))
+	(let* ((separator (if (string= suffix "") "" "-"))
+	       (var-name (concat "tlon-babel-dir-" abbrev separator suffix))
+	       (var-value (file-name-as-directory (file-name-concat dir suffix))))
+	  (set (intern var-name) var-value))))))
+
+(tlon-babel-generate-project-dir-vars)
+
+(defvar tlon-babel-dir-genus
+  (file-name-concat tlon-babel-dir-repos "genus/")
+  "Directory where the genus repo is stored.")
 
 (defvar tlon-babel-dir-refs
-  (file-name-concat tlon-babel-dir-babel "refs/")
+  (file-name-concat tlon-babel-dir-genus "refs/")
   "Directory where BibTeX files are stored.")
+
+(defvar tlon-babel-dir-dict
+  (file-name-concat tlon-babel-dir-genus "dict/")
+  "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-dir-locales
   (file-name-concat tlon-babel-dir-refs "locales/")
@@ -104,19 +144,19 @@
   "Directory where CSL style files are stored.")
 
 (defvar tlon-babel-file-manual
-  (file-name-concat tlon-babel-dir-babel "manual.org")
+  (file-name-concat tlon-babel-dir-genus "manual.org")
   "File containing the manual.")
 
 (defvar tlon-babel-file-readme
-  (file-name-concat tlon-babel-dir-babel "readme.md")
+  (file-name-concat tlon-babel-dir-genus "readme.md")
   "File containing the readme.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat tlon-babel-dir-babel "jobs.org")
+  (file-name-concat tlon-babel-dir-genus "jobs.org")
   "File containing the glossary.")
 
 (defvar tlon-babel-file-contacts
-  (file-name-concat tlon-babel-dir-babel "contacts.json")
+  (file-name-concat tlon-babel-dir-genus "contacts.json")
   "File containing the contacts.")
 
 (defvar tlon-babel-file-glossary
@@ -131,14 +171,6 @@
   (file-name-concat tlon-babel-dir-refs "stable.bib")
   "File containing the stable bibliography.")
 
-(defvar tlon-babel-file-contacts
-  (file-name-concat tlon-babel-dir-etc "contacts.json")
-  "File containing the contacts.")
-
-(defvar tlon-babel-file-tags
-  (file-name-concat tlon-babel-dir-etc "tags.txt")
-  "File containing the tags.")
-
 ;;;; org ids
 
 (defvar tlon-babel-manual-processing-id
@@ -147,13 +179,9 @@
 
 (defvar tlon-babel-jobs-id
   "820BEDE2-F982-466F-A391-100235D4C596"
-  "ID of the `jobs' heading in the `jobs.org' file.")
+  "ID of the `jobs' heading in `jobs.org'.")
 
-;;;; misc
-
-(defvar tlon-babel-projects
-  '("bae" "largoplacismo" "utilitarismo")
-  "List of Tlon-Babel projects.")
+;;;; forge
 
 (defvar tlon-babel-label-actions
   '(("Awaiting processing" . "Process")
@@ -200,28 +228,72 @@
     ("Pablo Stafforini" . "Pablo Stafforini"))
   "Alist of system usernames and corresponding full names.")
 
-(defvar tlon-babel-post-correspondence nil
-  "Alist of English and Spanish posts.")
-
-(defvar tlon-babel-tag-correspondence nil
-  "Alist of English and Spanish tags.")
-
-(defvar tlon-babel-work-correspondence nil
-  "Alist of original and Spanish works.")
-
-(defvar tlon-babel-tag-slugs nil
-  "List of EA Wiki slugs.")
-
-(defvar tlon-babel-wiki-urls nil
-  "List of EA Wiki URLs.")
-
 ;;;
 
+(defun tlon-babel-alist-key (value alist)
+  "Find the first key from ALIST that corresponds to VALUE."
+  (cl-loop for (key . val) in alist
+	   when (equal val value)
+	   return key))
+
 (defun tlon-babel-forge ()
-  "Launch the Forge dispatcher in the Tlon-Babel directory."
+  "Launch the Forge dispatcher.
+If the current directory matches none of the directories in
+ `tlon-babel-project-names', prompt the user to select a repo from that
+ list."
   (interactive)
-  (let ((default-directory tlon-babel-dir-babel))
+  (let ((default-directory (tlon-babel-set-repo nil 'genus)))
     (call-interactively 'forge-dispatch)))
+
+(defun tlon-babel-set-repo (&optional no-prompt genus)
+  "Set Babel repository path.
+If the current directory matches any of the directories in `tlon-
+babel-project-names', return it. Else, prompt the user to select a
+repo from that list, unless signal an error unless NO-PROMPT is
+non-nil. In that case, signal an error if its value is `error',
+else return nil.
+If GENUS is non-nil, include the `genus' repo. In that case, the
+matching will be made against `tlon-babel-repo-names'."
+  (if-let ((current-repo (tlon-babel-get-repo-from-file)))
+      current-repo
+    (if no-prompt
+	(when (eq no-prompt 'error)
+	  (user-error "Not in a recognized Babel repo"))
+      (alist-get (completing-read "Select repo: "
+				  (if genus
+				      tlon-babel-repo-names
+				    tlon-babel-project-names))
+		 tlon-babel-repo-names-and-dirs nil nil 'string=))))
+
+(defun tlon-babel-buffer-file-name ()
+  "Return name of file BUFFER is visiting, handling `git-dirs' path."
+  (replace-regexp-in-string
+   "/git-dirs/"
+   "/Library/CloudStorage/Dropbox/repos/"
+   (buffer-file-name)))
+
+(defun tlon-babel-get-repo-from-file (&optional file)
+  "Return the repo to which FILE belongs.
+If FILE is nil, use the current buffer's file name."
+  (let* ((file (or file (tlon-babel-buffer-file-name) default-directory))
+	 (directory-path (file-name-directory file)))
+    (cl-some (lambda (cons-cell)
+	       (let ((tlon-babel-project-names-and-dirs (cdr cons-cell)))
+		 (when (string-prefix-p (file-name-as-directory tlon-babel-project-names-and-dirs)
+					directory-path)
+		   tlon-babel-project-names-and-dirs)))
+	     tlon-babel-project-names-and-dirs)))
+
+(defun tlon-babel-get-repo-from-key (key)
+  "Return the repo corresponding to KEY."
+  (catch 'found
+    (dolist (metadata tlon-babel-all-metadata)
+      (when-let (file (tlon-babel-metadata-lookup "key_original" key "file" metadata))
+	(throw 'found (tlon-babel-get-repo-from-file file))))))
+
+(defun tlon-babel-get-name-from-repo (repo)
+  "Return the name of the repo REPO."
+  (tlon-babel-alist-key repo tlon-babel-repo-names-and-dirs))
 
 (defun tlon-babel-orgit-capture ()
   "Capture a new org mode task for topic at point."
@@ -258,10 +330,11 @@
       (if-let* ((org-link (ps/org-nth-stored-link 0))
 		(refile-position (org-find-exact-headline-in-buffer
 				  (cadr (nth 0 org-stored-links))
-				  (find-file-noselect ps/file-tlon-bae))))
+				  (find-file-noselect ps/file-tlon-babel))))
 	  (let ((action (alist-get label tlon-babel-label-actions nil nil #'string=))
 		(binding (upcase (alist-get label tlon-babel-label-bindings nil nil #'string=))))
 	    (kill-new (format "%s %s" action org-link))
+	    ;; TODO: use different capture templates for the different project
 	    (org-capture nil (concat "tb" binding))
 	    ;; refile under job
 	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
@@ -280,57 +353,16 @@ and assignee to the current user."
     (orgit-store-link nil)
     (let ((job-name (cadr (nth 0 org-stored-links))))
       (kill-new (format "%s" job-name)))
+    ;; TODO: use different capture templates for the different projects
     (org-capture nil "tbJ")))
 
-;;; File processing
-
-(defun tlon-babel-generate-file-path (&optional lastname title tag translation)
-  "Return a file name based on user supplied information.
-TITLE is the title of the work. If TAG is 'tag, use `tag' as
-LASTNAME. If TRANSLATION is non-nil, use `translatons' in the
-file path."
-  (let* ((tag (or (eq tag 'tag)
-		  (string= lastname "tag")))
-	 (lastname (or lastname (if tag
-				    "tag"
-				  (read-string "Last name (only first author if multi-authored): "))))
-	 (title (or title (tlon-babel-shorten-title (read-string "Title (in English): "))))
-	 (slug-lastname (tlon-core-slugify lastname))
-	 (slug-title (tlon-core-slugify title))
-	 (file-name (file-name-with-extension (concat slug-lastname "--" slug-title) "md"))
-	 (file-path (file-name-concat
-		     tlon-babel-dir-babel
-		     (if translation "translations" "originals")
-		     (if tag "tags" "posts")
-		     file-name)))
-    file-path))
-
-(defun tlon-babel-extract-lastname-from-author (author)
-  "Try to extract a last name from AUTHOR."
-  (let* ((case-fold-search nil)
-	 (uncameled-author (replace-regexp-in-string "\\([A-Z]\\)" " \\1" author))
-	 (lastname (car (last (split-string uncameled-author "[ _-]")))))
-    lastname))
-
-(defun tlon-babel-review-filename (filename)
-  "Review FILENAME."
-  (let* ((choices '((?a . "ccept") (?e . "dit") (?r . "egenerate")))
-	 (keys (mapcar 'car choices))
-	 (key-description (mapconcat (lambda (choice)
-				       (format "[%c]%s" (car choice) (cdr choice)))
-				     choices " "))
-	 (prompt (format "%s %s" filename key-description))
-	 (choice (read-char-choice prompt keys)))
-    (pcase choice
-      (?a filename)
-      (?e (read-string "Job name: " filename))
-      (?r (file-name-nondirectory (tlon-babel-generate-file-path))))))
+;;; user commits
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
   "Return latest commit by the current user in FILE.
 If no FILE is provided, use the file visited by the current buffer."
-  (let* ((default-directory tlon-babel-dir-babel)
-	 (file (or file (buffer-file-name)))
+  (let* ((file (or file (buffer-file-name)))
+	 (default-directory (file-name-directory file))
 	 (user (tlon-babel-find-key-in-alist user-full-name tlon-babel-system-users))
 	 ;; get most recent commit in FILE by USER
 	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- '%s' | grep -m 1 '%s' | awk '{print $1}'" file user)))
@@ -346,7 +378,7 @@ If no FILE is provided, use the file visited by the current buffer."
     (magit-diff-range commit nil (list file))))
 
 (defun tlon-babel-log-buffer-latest-user-commit-ediff (&optional file)
-  "Run an `ediff' session for FILE and its state when last committed by current user.
+  "Run `ediff' session for FILE and its state when last committed by current user.
 If FILE is not provided, use the file visited by the current
 buffer."
   (interactive)
@@ -355,10 +387,8 @@ buffer."
 	 (commit-file (tlon-babel-create-file-from-commit file commit)))
     (ediff-files commit-file file)))
 
-(defun tlon-babel-shorten-title (title)
-  "Return a shortened version of TITLE."
-  (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
-  (match-string 1 title))
+;;; Markdown
+;;;; cleanup
 
 (defvar tlon-babel-markdown-eawiki-footnote-source
   "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
@@ -470,52 +500,7 @@ buffer."
       (message "Cleaning up %s" (buffer-name))
       (tlon-babel-markdown-eaf-cleanup))))
 
-;;; csv and txt parsing
-
-(defun tlon-babel-parse-csv-line (line &optional separator)
-  "Split CSV LINE into fields, considering quotes, using SEPARATOR."
-  (let ((index 0)
-	(separator (or separator ?,))
-	(quote-char ?\")
-	(len (length line))
-	(in-quote nil)
-	start
-	fields)
-    (while (< index len)
-      (setq start index)
-      (while (and (< index len)
-		  (not (and (not in-quote) (char-equal (elt line index) separator))))
-	(when (char-equal (elt line index) quote-char)
-	  (setq in-quote (not in-quote)))
-	(setq index (1+ index)))
-      (let ((field (substring-no-properties line start index)))
-	(when (and (> (length field) 1)
-		   (char-equal (elt field 0) ?\")
-		   (char-equal (elt field (1- (length field))) ?\"))
-	  (setq field (substring-no-properties field 1 -1)))
-	(push field fields))
-      (setq index (1+ index)))
-    (nreverse fields)))
-
-(defun tlon-babel-csv-file-to-alist (file-path)
-  "Convert CSV in FILE-PATH to an alist."
-  (let ((file-content (with-temp-buffer
-			(insert-file-contents file-path)
-			(buffer-string))))
-    (let* ((lines (split-string file-content "[\r\n]+" t))
-	   (content lines)
-	   alist)
-      (dolist (row content)
-	(let* ((fields (tlon-babel-parse-csv-line row))
-	       (entry (cons (car fields) (cadr fields))))
-	  (setq alist (push entry alist))))
-      (nreverse alist))))
-
-(defun tlon-babel-read-urls-from-file (file-path)
-  "Read URLs from a plain text FILE-PATH into an Emacs Lisp list."
-  (with-temp-buffer
-    (insert-file-contents file-path)
-    (split-string (buffer-string) "\n" t)))
+;;;; insertion
 
 (defun tlon-babel-insert-tag ()
   "Insert a TAG slug at point."
@@ -526,7 +511,7 @@ buffer."
 		  (ps/markdown--delete-link)
 		(completing-read "URL: " tlon-babel-tags)))
 	 (slug (tlon-core-slugify tag))
-	 (ref (concat "../tags/" slug ".md"))
+	 (ref (concat "temas/" slug ".md"))
 	 (link (format "[%s](%s)" tag ref)))
     (if (markdown-link-url)
 	(insert ref)
@@ -540,105 +525,172 @@ buffer."
   (insert "<cite></cite>")
   (backward-char 7))
 
-(defun tlon-babel-get-original-translated (bib-file)
-  "Parse BIB-FILE and return an alist of original-translation key pairs."
-  ;; Check if a buffer is visiting the file.
-  ;; If not, open the file in a new buffer.
-  (let ((translations-alist '())
-	(bib-buffer (find-buffer-visiting bib-file)))
-    ;; for some reason, `bibtex-map-entries' returns nil if a buffer is
-    ;; already visiting BIB-FILE, so we kill it if it exists
-    (when bib-buffer
-      (kill-buffer bib-buffer))
-    (with-current-buffer (find-file-noselect bib-file)
-      (bibtex-map-entries
-       (lambda (key _beg _end)
-	 (if (not key) (message "Found empty key at %s" (point)))
-	 (bibtex-narrow-to-entry)
-	 (when-let* ((translation (bibtex-autokey-get-field "translation")))
-	   (unless (string-empty-p translation)
-	     (setq translations-alist (cons (cons translation key) translations-alist))))
-	 (widen))))
-    translations-alist))
+;;;; metadata
 
-(defun tlon-babel-convert-keys-to-files (input-alist)
-  "Take INPUT-ALIST of keys and return an a list of corresponding files."
-  (let ((output-alist '()))
-    (dolist (cons-cell input-alist output-alist)
-      (let* ((original-key (car cons-cell))
-	     (translation-key (cdr cons-cell))
-	     (original-file (file-name-with-extension original-key "md"))
-	     (translation-file (file-name-with-extension translation-key "md")))
-	(setq output-alist (cons (cons original-file translation-file) output-alist))))))
-
-;;; correspondences
-
-(defun tlon-babel-load-post-correspondence ()
-  "Refresh alist of original-translation file pairs."
+(defun tlon-babel-reload-metadata ()
+  "Reload all metadata variables."
   (interactive)
-  (let* ((key-alist-stable (tlon-babel-get-original-translated tlon-babel-file-stable))
-	 (key-alist-fluid (tlon-babel-get-original-translated tlon-babel-file-fluid))
-	 (input-alist (tlon-babel-convert-keys-to-files (append key-alist-stable key-alist-fluid))))
-    (setq tlon-babel-post-correspondence input-alist)))
+  (tlon-babel-set-metadata-variables)
+  (message "Metadata reloaded."))
 
-(defun tlon-babel-get-translation-file (original-filename)
-  "Return file that translates ORIGINAL-FILENAME."
-  (or (alist-get original-filename tlon-babel-post-correspondence nil nil #'equal)
-      (alist-get original-filename tlon-babel-tag-correspondence nil nil #'equal)))
+(defun tlon-babel-get-metadata-of-repo (&optional repo)
+  "Return metadata of repository named REPO.
+If REPO is nil, return metadata of current repository."
+  (let ((repo (or repo (tlon-babel-alist-key (tlon-babel-set-repo 'error) tlon-babel-project-names-and-dirs))))
+    (when-let ((abbreviated-repo (alist-get repo tlon-babel-project-names-and-abbrevs nil nil #'string=)))
+      (symbol-value (intern (format "tlon-babel-%s-metadata" abbreviated-repo))))))
 
-(defun tlon-babel-get-translation-file-robustly (original-filename &optional noerror)
-  "Return file that translates ORIGINAL-FILENAME, handling potential failures.
-Reload variables if necessary and signal an error if the file is
-still not returned, unless NOERROR is non-nil."
-  (if-let ((translation-file (tlon-babel-get-translation-file original-filename)))
-      translation-file
-    (tlon-babel-load-post-correspondence)
-    (if-let ((translation-file (tlon-babel-get-translation-file original-filename)))
-	translation-file
-      (unless noerror
-	(error "No translation file found for %s" original-filename)))))
+(defun tlon-babel-set-metadata-variables ()
+  "Set metadata variables for each project and add them to `tlon-babel-all-metadata'."
+  (setq tlon-babel-all-metadata nil)
+  (dolist (repo tlon-babel-project-abbrevs)
+    (let ((var (intern (format "tlon-babel-%s-metadata" repo))))
+      (set var (tlon-babel-get-dir-metadata (symbol-value (intern (format "tlon-babel-dir-%s-translations" repo)))))
+      (push (symbol-value var) tlon-babel-all-metadata))))
 
-(defun tlon-babel-get-original-file (translation-filename)
-  "Return file that TRANSLATION-FILENAME translates."
-  (cl-loop for (key . val) in (append
-			       tlon-babel-post-correspondence
-			       tlon-babel-tag-correspondence)
-	   when (equal val translation-filename)
-	   return key))
+(defun tlon-babel-metadata-lookup (key value assoc-value metadata)
+  "Search METADATA for VALUE in KEY and return the key of ASSOC-VALUE."
+  (let ((found nil)
+	(i 0))
+    (while (and (not found) (< i (length metadata)))
+      (when (equal (cdr (assoc key (nth i metadata))) value)
+	(setq found (cdr (assoc assoc-value (nth i metadata)))))
+      (setq i (1+ i)))
+    found))
 
-(defun tlon-babel-get-counterpart-filename (file-path)
-  "Return the counterpart filename of file in FILE-PATH."
-  (let ((filename (file-name-nondirectory file-path)))
-    (if (or (string-match tlon-babel-dir-original-posts-dir file-path)
-	    (string-match tlon-babel-dir-original-tags-dir file-path))
-	(tlon-babel-get-translation-file-robustly filename)
-      (tlon-babel-get-original-file filename))))
+(defun tlon-babel-get-dir-metadata (dir)
+  "Return the metadata in DIR and all its subdirectories as an association list."
+  (let ((metadata '()))
+    (dolist (file (directory-files-recursively dir "\\.md$"))
+      (push (tlon-babel-get-file-metadata file) metadata))
+    metadata))
 
-(defun tlon-babel-get-counterpart-dirname (file-path)
-  "Get the counterpart directory name of file in FILE-PATH."
-  (let* ((dirname (file-name-directory file-path))
-	 (counterpart-dirname (if (string-match "/originals/" dirname)
-				  (replace-regexp-in-string
-				   "/originals/" "/translations/" dirname)
-				(replace-regexp-in-string
-				 "/translations/" "/originals/" dirname))))
-    counterpart-dirname))
+(defun tlon-babel-get-file-metadata (file-path)
+  "Return the metadata in FILE-PATH as an association list."
+  (let* ((metadata (tlon-babel-get-yaml-front-matter file-path))
+	 (extras `(("file" . ,file-path)
+		   ("type" . "online")
+		   ("database" . "Tlön")
+		   ("landid" . "es"))))
+    (append metadata extras)))
 
-(defun tlon-babel-get-counterpart (file-path)
-  "Get the counterpart file path of file in FILE-PATH."
-  (let* ((counterpart-filename (tlon-babel-get-counterpart-filename file-path))
-	 (counterpart-dirname (tlon-babel-get-counterpart-dirname file-path))
-	 (counterpart (concat counterpart-dirname counterpart-filename)))
-    counterpart))
+(defun tlon-babel-get-metadata-value-in-file (key &optional file)
+  "Return the value of KEY in the YAML front matter of FILE.
+If FILE is nil, use the current buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (metadata (tlon-babel-get-file-metadata file)))
+    (alist-get key metadata nil nil #'string=)))
+
+(defun tlon-babel-get-key-in-buffer ()
+  "Get the key in the current Markdown buffer."
+  (unless (derived-mode-p 'markdown-mode)
+    (user-error "Not in a Markdown buffer"))
+  (let ((key (tlon-babel-get-metadata-value-in-file "key_original")))
+    (unless key
+      (user-error "No key found"))
+    key))
+
+(defun tlon-babel-get-yaml-front-matter (file-path)
+  "Return the YAML front matter from FILE-PATH as an association list."
+  (with-temp-buffer
+    (insert-file-contents file-path)
+    (let ((metadata '())
+	  (delimiter "---"))
+      (when (looking-at-p delimiter)
+	(forward-line)
+	(dolist (line (tlon-babel-read-until-match delimiter))
+	  (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
+	    (let* ((key (match-string 1 line))
+		   (value (match-string 2 line))
+		   (trimmed-value (string-trim value)))
+	      (push (cons (string-trim key)
+			  (cond
+			   ((and (string-prefix-p "[" trimmed-value)
+				 (string-suffix-p "]" trimmed-value))
+			    (mapcar #'string-trim
+				    (mapcar (lambda (s) (if (and (string-prefix-p "\"" s)
+							    (string-suffix-p "\"" s))
+						       (substring s 1 -1)
+						     s))
+					    (split-string (substring trimmed-value 1 -1) "\\s *,\\s *")
+					    )))
+			   ((and (string-prefix-p "\"" trimmed-value)
+				 (string-suffix-p "\"" trimmed-value))
+			    (substring trimmed-value 1 -1))
+			   (t trimmed-value)))
+		    metadata)))))
+      (nreverse metadata))))
+
+(defun tlon-babel-read-until-match (delimiter)
+  "Return a list of lines until DELIMITER is matched.
+The delimiter is not included in the result. If DELIMITER is not
+found, signal an error."
+  (let ((result '()))
+    (while (not (or (looking-at-p delimiter) (eobp)))
+      (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) result)
+      (forward-line))
+    (if (eobp)
+	(error "Delimiter not found")
+      (nreverse result))))
+
+;;;; counterparts
+
+(defun tlon-babel-get-work-type (&optional reversed file-path)
+  "Return the work type of file in FILE-PATH.
+A work is either `original' or `translation'. If REVERSED is
+non-nil, return 'originals' when the work type is 'translations'
+and vice versa. If FILE-PATH is nil, return the work type of the
+file visited by the current buffer."
+  (let* ((file-path (or file-path (buffer-file-name)))
+	 (repo (tlon-babel-get-repo-from-file file-path))
+	 (repo-path (file-relative-name file-path repo))
+	 (root-dir-in-repo-path (car (split-string repo-path "/"))))
+    (pcase root-dir-in-repo-path
+      ("originals" (if reversed "translations" "originals"))
+      ("translations" (if reversed "originals" "translations")))))
+
+(defun tlon-babel-get-counterpart (&optional file-path)
+  "Get the counterpart file path of file in FILE-PATH.
+If FILE-PATH is nil, return the counterpart file path of the
+file visited by the current buffer."
+  (let* ((file-path (or file-path (tlon-bae-buffer-file-name)))
+	 (repo (tlon-babel-set-repo 'error)))
+    ;; we use a different method for getting the counterpart depending
+    ;; on whether FILE-PATH is in `originals' or `translations', since
+    ;; only translation files have YAML metadata.
+    (if-let ((locator (tlon-babel-get-metadata-value-in-file "path_original" file-path)))
+	(file-name-concat
+	 (tlon-babel-set-repo)
+	 (tlon-babel-get-work-type 'reversed)
+	 locator)
+      (tlon-babel-metadata-lookup "path_original"
+				  (tlon-babel-get-locator-from-file file-path)
+				  "file"
+				  (tlon-babel-get-metadata-of-repo)))))
+
+(defun tlon-babel-get-locator-from-file (&optional file-path)
+  "Get the locator of file in FILE-PATH.
+If FILE-PATH is nil, return the locator of the file visited by
+the current buffer."
+  (let* ((file-path (or file-path (buffer-file-name)))
+	 (repo (tlon-babel-set-repo 'error))
+	 (type (tlon-babel-get-work-type nil file-path)))
+    (file-relative-name file-path (file-name-concat repo type))))
+
+(defun tlon-babel-get-file-from-locator (locator)
+  "Get the file path of LOCATOR in the current repo."
+  (let* ((repo (tlon-babel-set-repo 'error))
+	 (type (tlon-babel-get-work-type nil locator)))
+    (file-name-concat repo type locator)))
 
 (defun tlon-babel-open-counterpart (&optional print-message file-path)
   "Open the counterpart of file in FILE-PATH and move point to matching position.
 If FILE-PATH is nil, open the counterpart of the file visited by
 the current buffer.
 
-When called interactively, PRINT-MESSAGE is
-non-nil, and the function signals an error if the current buffer
-is not in `markdown-mode' and FILE-PATH is nil."
+When called interactively, PRINT-MESSAGE is non-nil, and the
+function signals an error if the current buffer is not in
+`markdown-mode' and FILE-PATH is nil."
   (interactive "p")
   (when (and print-message
 	     (not (eq major-mode 'markdown-mode)))
@@ -682,7 +734,7 @@ If FILE-PATH is not provided, use the current buffer."
 (defun tlon-babel-check-paragraph-number-match-in-dir (dir &optional extension)
   "Check that files in DIR and counterparts have the same number of paragraphs.
 If EXTENSION is provided, only check files with that extension.
-Otherwise, default to \".md\"."
+  Otherwise, default to \".md\"."
   (let* ((extension (or extension ".md"))
 	 (files (directory-files dir t (concat ".*\\" extension "$"))))
     (cl-loop for file in files
@@ -756,15 +808,45 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 
 ;;; Clocked heading
 
-(defun tlon-babel-get-clock-file ()
-  "Return file name in clocked heading.
-Assumes file name is enclosed in backticks."
+(defvar tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
+  "Regular expression for matching bibtex keys in clocked headings.
+The second capture group handles the .md extension, which we used
+previously.")
+
+(defun tlon-babel-get-clock-key ()
+  "Return bibtex key in clocked heading.
+Assumes key is enclosed in backticks."
   (unless org-clock-current-task
     (user-error "No clock running"))
   (let ((clock (substring-no-properties org-clock-current-task)))
-    (if (string-match "`\\(.+?\\)`" clock)
+    ;; second capture group handles optional .md extension
+    (if (string-match tlon-babel-key-regexp clock)
 	(match-string 1 clock)
       (user-error "I wasn't able to find a file in clocked heading"))))
+
+(defun tlon-babel-get-file-from-key (key)
+  "Return the file path of KEY."
+  (let ((locator (tlon-babel-metadata-lookup "key_original" key "path_original" (tlon-babel-get-metadata-of-repo))))
+    (tlon-babel-get-file-from-locator locator)))
+
+(defun tlon-babel-get-key-from-file (file)
+  "Return the bibtex key of FILE."
+  (or
+   ;; when in `translations'
+   (tlon-babel-metadata-lookup "file" file "key_traduccion" (tlon-babel-get-metadata-of-repo))
+   ;; when file in `originals'
+   (let ((translation (tlon-babel-get-counterpart file)))
+     (tlon-babel-get-metadata-value-in-file "key_original" translation))))
+
+  (defun tlon-babel-get-clock-file ()
+    "Return the file path of the clocked task."
+    (let ((key (tlon-babel-get-clock-key)))
+      (tlon-babel-get-file-from-key key)))
+
+(defun tlon-babel-open-clock-file ()
+  "Open file of clocked task."
+  (interactive)
+  (find-file (tlon-babel-get-clock-file)))
 
 (defun tlon-babel-get-clock-topic ()
   "Get topic GID from `orgit-forge' link in heading at point."
@@ -781,7 +863,7 @@ Assumes file name is enclosed in backticks."
 (defun tlon-babel-open-clock-topic ()
   "Open the topic from `orgit-forge' link in heading at point."
   (interactive)
-  (let ((default-directory tlon-babel-dir-babel)
+  (let ((default-directory (tlon-babel-set-repo))
 	(topic (tlon-babel-get-clock-topic)))
     (forge-visit-issue topic)))
 
@@ -789,7 +871,7 @@ Assumes file name is enclosed in backticks."
   "Return action in heading at point.
 Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
-  (tlon-babel-get-clock-file)
+  (tlon-babel-get-clock-key)
   (let ((action (car (split-string (substring-no-properties org-clock-current-task))))
 	(actions (mapcar #'cdr tlon-babel-label-actions)))
     (if (member action actions)
@@ -804,7 +886,7 @@ Assumes action is first word of clocked task."
 (defun tlon-babel-get-clock-next-label ()
   "Return label associated with the action after the one in heading at point."
   (tlon-babel-get-next-car (tlon-babel-get-clock-label)
-			 tlon-babel-label-actions))
+			   tlon-babel-label-actions))
 
 (defun tlon-babel-get-clock-next-assignee (label)
   "Return assignee associated with LABEL."
@@ -819,12 +901,12 @@ Assumes action is first word of clocked task."
   "Get the file path of the topic at point or in current forge buffer."
   (unless (or (derived-mode-p 'magit-status-mode)
 	      (derived-mode-p 'forge-topic-mode))
-    (user-error "I'm not in a forge buffer"))
+    (user-error "Not in a forge buffer"))
   (let* ((inhibit-message t)
 	 (captured (cadr (call-interactively #'orgit-store-link))))
     (setq org-stored-links (cdr org-stored-links))
-    (if (string-match "`\\(.+?\\)`" captured)
-	(tlon-babel-set-original-path (match-string 1 captured))
+    (if (string-match tlon-babel-key-regexp captured)
+	(tlon-babel-get-file-from-key (match-string 1 captured))
       (user-error "I wasn't able to find a file at point or in the forge buffer"))))
 
 (defun tlon-babel-open-forge-file ()
@@ -840,7 +922,7 @@ Assumes action is first word of clocked task."
 (defun tlon-babel-copy-buffer (&optional file deepl)
   "Copy the contents of FILE to the kill ring.
 Defaults to the current buffer if no FILE is specified. If DEEPL
-is non-nil, open DeepL."
+  is non-nil, open DeepL."
   (let ((file (or file (buffer-file-name))))
     (with-current-buffer (find-file-noselect file)
       (copy-region-as-kill (point-min) (point-max)))
@@ -863,33 +945,16 @@ is non-nil, open DeepL."
       (tlon-babel-copy-region (region-beginning) (region-end))
     (tlon-babel-copy-buffer)))
 
-(defun tlon-babel-set-original-path (filename)
-  "Return full path of FILENAME."
-  (let* ((type (if (string-match "[[:digit:]]" filename) "posts/" "tags/"))
-	 (dir (file-name-concat tlon-babel-dir-originals type))
-	 (file-path (file-name-concat dir filename)))
-    file-path))
-
-(defun tlon-babel-open-clock-file ()
-  "Open file of clocked task."
-  (interactive)
-  (let ((file-path (tlon-babel-set-original-path (tlon-babel-get-clock-file))))
-    (find-file file-path)))
-
-(defun tlon-babel-set-paths ()
-  "Return paths for original and translation files from ORIGINAL-FILE."
-  (let* ((original-file (tlon-babel-get-clock-file))
-	 (original-path (tlon-babel-set-original-path original-file))
-	 (translation-file (tlon-babel-get-translation-file-robustly original-file))
-	 (dir (tlon-babel-post-or-tag original-file))
-	 (translation-path (file-name-concat tlon-babel-dir-translations dir translation-file)))
-    (cl-values original-path translation-path original-file translation-file)))
-
-(defun tlon-babel-post-or-tag (file)
-  "Return `posts' or `tags' depending on FILE."
-  (if (string-match "[[:digit:]]" file)
-      "posts"
-    "tags"))
+(defun tlon-babel-set-paths-from-clock ()
+  "Return paths for original and translation files based on clocked task."
+  (let* ((key (tlon-babel-get-clock-key))
+	 (repo (tlon-babel-get-repo-from-key key))
+	 (repo-name (tlon-babel-get-name-from-repo repo))
+	 (metadata (tlon-babel-get-metadata-of-repo repo-name))
+	 (identifier (tlon-babel-metadata-lookup "key_original" key "path_original" metadata))
+	 (original-path (file-name-concat repo "originals" identifier))
+	 (translation-path (tlon-babel-metadata-lookup "key_original" key "file" metadata)))
+    (cl-values original-path translation-path key)))
 
 (defun tlon-babel-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
@@ -902,41 +967,36 @@ is non-nil, open DeepL."
 ;;; Main functions
 
 (defun tlon-babel-magit-status ()
-  "Show the status of the Tlon-Babel repository in a buffer."
+  "Show the status of the current repository in a buffer."
   (interactive)
-  (magit-status tlon-babel-dir-babel))
+  (let ((default-directory (tlon-babel-set-repo nil 'genus)))
+    (magit-status)))
 
-(defun tlon-babel-magit-get-filename ()
-  "Get filename of file to commit."
-  (save-window-excursion
-    (let (found)
-      (catch 'done
-	(mapc (lambda (x)
-		(when (with-current-buffer x (eq major-mode 'magit-diff-mode))
-		  (switch-to-buffer x)
-		  (setq found t)
-		  (throw 'done nil)))
-	      (buffer-list))
-	(unless found
-	  (user-error "Magit buffer not found"))))
-    (goto-char (point-min))
-    (let ((regex "modified.*/\\(.*\\.*\\)"))
-      (when (eq (count-matches regex) 1)
-	(save-excursion
-	  (re-search-forward regex nil t)
-	  (match-string-no-properties 1))))))
+(defun tlon-babel-magit-get-commit-file ()
+  "Get file to commit.
+If more than one file is being committed, get the first one."
+  (save-excursion
+    (re-search-forward "Changes to be committed:
+#.*?:.  \\(.*/?.*\\)$" nil t)
+    (match-string-no-properties 1)))
+
+(defun tlon-babel-get-commit-key ()
+  "Get key of commit file."
+  (let ((path (file-name-concat (file-name-directory (tlon-babel-buffer-file-name))
+				(tlon-babel-magit-get-commit-file))))
+    (tlon-babel-get-key-from-file path)))
 
 (defun tlon-babel-create-job ()
   "Create a new job for IDENTIFIER based on Ebib entry at point.
-Creating a new job means (1) importing a document and (2)
-creating a record for it. A record is (a) an issue in GitHub
-and (b) a heading in `jobs.org'.
+  Creating a new job means (1) importing a document and (2)
+  creating a record for it. A record is (a) an issue in GitHub
+  and (b) a heading in `jobs.org'.
 
-IDENTIFIER can be a URL or a PDF file path.
+  IDENTIFIER can be a URL or a PDF file path.
 
-Note: this command cannot be used to create new tag jobs, because
- we don't add tags to Ebib. To create a new tag job, use
- `tlon-babel-create-tag-job'."
+  Note: this command cannot be used to create new tag jobs, because
+  we don't add tags to Ebib. To create a new tag job, use
+  `tlon-babel-create-tag-job'."
   (interactive)
   (tlon-babel-create-translation-entry)
   (tlon-babel-import-document)
@@ -965,25 +1025,7 @@ Note: this command cannot be used to create new tag jobs, because
 					     (ebib-db-has-key key dependent))
 					   (ebib--list-dependents db)))))
 
-(defun tlon-babel-create-translation-entry (&optional title)
-  "Create a BibTeX entry for the translation of the current entry.
-Prompt the user for a title, unless TITLE is non-nil."
-  (interactive)
-  (let* ((key (ebib--get-key-at-point))
-	 (file (file-name-with-extension key "md"))
-	 (fields `(("author" . ,(ps/ebib-get-field-value "author"))
-		   ("title" . ,(or title (read-string "Translated title: ")))
-		   ("date" . "2023")
-		   ("journaltitle" . "Biblioteca Altruismo Eficaz")
-		   ("translator" . "Tlön")
-		   ("translation" . ,key)
-		   ("langid" . "spanish")
-		   ;; TODO: prompt user to select from a list of keywords and add them to the entry
-		   )))
-    (when (tlon-babel-get-translation-file-robustly file 'noerror)
-      (user-error "There is already a translation for this entry"))
-    (tlon-babel--create-entry-from-current fields)))
-
+;; this should be moved to ebib
 (defun tlon-babel-create-section-entry (&optional title)
   "Create a BibTeX entry for the section of the current entry.
 Prompt the user for a title, unless TITLE is non-nil."
@@ -998,8 +1040,8 @@ Prompt the user for a title, unless TITLE is non-nil."
 
 (defun tlon-babel-import-document (&optional identifier target)
   "Import a document with IDENTIFIER to TARGET.
-IDENTIFIER can be a URL or a PDF file path.
-To import a tag, use `tlon-babel-import-tag'."
+  IDENTIFIER can be a URL or a PDF file path.
+  To import a tag, use `tlon-babel-import-tag'."
   (interactive)
   (unless (eq major-mode 'ebib-entry-mode)
     (user-error "You must be in an Ebib buffer"))
@@ -1007,8 +1049,11 @@ To import a tag, use `tlon-babel-import-tag'."
 	    (value (or (ps/ebib-get-field-value "url")
 		       (ps/ebib-get-field-value "file")))
 	    (identifier (or identifier (replace-regexp-in-string "\n\\s-*" "" value)))
-	    (target (or target (file-name-concat tlon-babel-dir-original-posts-dir
-						 (file-name-with-extension key "md")))))
+	    (target (or target
+			;; TODO: Revise
+			;; (file-name-concat tlon-babel-dir-original-posts-dir
+			;; (file-name-with-extension key "md"))
+			)))
       (if (ps/string-is-url-p identifier)
 	  (tlon-babel-import-html identifier target)
 	(tlon-babel-import-pdf (expand-file-name identifier) target))
@@ -1018,8 +1063,11 @@ To import a tag, use `tlon-babel-import-tag'."
   "Import an EA Forum tag with URL-OR-SLUG."
   (interactive "sTag url or slug (if you are not importing a tag, please re-run `tlon-babel-import-document' from an Ebib buffer): ")
   (let* ((slug (tlon-babel-eaf-get-id-or-slug-from-identifier url-or-slug))
-	 (target (file-name-concat tlon-babel-dir-original-tags-dir
-				   (file-name-with-extension slug ".md"))))
+	 (target
+	  ;; TODO: Revise
+	  ;; (file-name-concat tlon-babel-dir-original-tags-dir
+	  ;; (file-name-with-extension slug ".md"))
+	  ))
     (tlon-babel-import-html-eaf slug target)))
 
 (defun tlon-babel-import-html (url target)
@@ -1043,7 +1091,7 @@ To import a tag, use `tlon-babel-import-tag'."
 
 (defun tlon-babel-html-to-markdown (source target)
   "Convert HTML text in SOURCE to Markdown text in TARGET.
-SOURCE can be a URL or, like TARGET, a file path."
+  SOURCE can be a URL or, like TARGET, a file path."
   (let ((pandoc (if (ps/string-is-url-p source)
 		    tlon-babel-pandoc-convert-from-url
 		  tlon-babel-pandoc-convert-from-file)))
@@ -1095,44 +1143,42 @@ pointer.) Then enter these values when prompted."
 	  (delete-directory temp-source-dir t)
 	  (delete-directory temp-target-dir t)))))
 
-(defun tlon-babel-create-record-for-job (&optional filename)
-  "Create an record based on FILENAME.
-Creates a new record in the Tlon-Babel Github repository (with the
-format `Job: FILENAME`) and a new heading in the file `jobs.org'."
+(defun tlon-babel-create-record-for-job (&optional key)
+  "Create an record based on KEY.
+Creates a new record in the repository (with the format `Job:
+KEY') and a new heading in the file `jobs.org'. If KEY is not
+provided, the key in the Markdown buffer at point is used."
   (interactive)
-  (unless (eq major-mode 'ebib-entry-mode)
-    (user-error "You must be in an Ebib buffer"))
-  (tlon-babel-check-ebib-entry-is-original)
-  (let* ((key (if filename
-		  (file-name-base filename)
-		(ps/ebib-valid-key-p)
-		(ebib--get-key-at-point)))
-	 (filename (or filename
-		       (file-name-with-extension key "md"))))
-    (tlon-babel-create-issue-for-job filename)
+  (let* ((key (or key (tlon-babel-get-key-in-buffer))))
+    (tlon-babel-create-issue-for-job key)
     (tlon-babel-create-heading-for-job key 'commit)))
 
-(defun tlon-babel-create-issue-for-job (filename)
-  "Create an issue based on FILENAME in the Tlon-Babel GitHub repository."
-  (let ((default-directory tlon-babel-dir-babel))
+(defun tlon-babel-create-issue-for-job (&optional key)
+  "Create an issue based on KEY.
+If KEY is not provided, the key in the Markdown buffer at point
+is used."
+  (let ((default-directory (tlon-babel-set-repo 'error))
+	(key (or key (tlon-babel-get-key-in-buffer))))
     (call-interactively #'forge-create-issue)
-    (insert (format "Job: `%s`" filename))
+    (insert (format "Job: `%s`" key))
     (call-interactively #'forge-post-submit)
     (sleep-for 2)
     (forge-pull)
-    (magit-status tlon-babel-dir-babel)
+    (magit-status)
     ;; needs to be done twice for some reason; FIXME
     (forge-pull)))
 
 (defun tlon-babel-create-heading-for-job (&optional key commit)
   "Create a heading based on KEY in `jobs.org'.
-If COMMIT is non-nil, commit the change."
+If KEY is not provided, the key in the Markdown buffer at point
+is used. If COMMIT is non-nil, commit the change."
   (interactive)
-  (let* ((key (or key (ebib--get-key-at-point)))
+  (let* ((key (or key (tlon-babel-get-key-in-buffer)))
 	 (heading (format "[cite:@%s]" key))
-	 (project (completing-read-multiple
-		   "Project (multiple comma-separated selections allowed): "
-		   tlon-babel-projects)))
+	 (file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-metadata-of-repo)))
+	 (repo (tlon-babel-get-repo-from-file file))
+	 (repo-name (tlon-babel-alist-key repo tlon-babel-project-names-and-dirs))
+	 (repo-abbrev (alist-get repo-name tlon-babel-project-names-and-abbrevs nil nil 'string=)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
 			     (find-file-noselect tlon-babel-file-jobs))
       (widen)
@@ -1145,7 +1191,8 @@ If COMMIT is non-nil, commit the change."
 	(org-insert-heading)
 	(insert heading)
 	(org-todo 'todo)
-	(org-set-tags project)
+	(org-set-tags repo-abbrev)
+	(org-sort-entries nil ?a) ; sort entries (a)lphabetically
 	(org-sort-entries nil ?o) ; sort entries by t(o)do order
 	(save-buffer)))
     (when commit
@@ -1180,19 +1227,20 @@ If COMMIT is non-nil, commit the change."
 (defun tlon-babel-mark-clocked-heading-done (&optional commit)
   "Mark the heading of the currently clocked task as DONE.
 If COMMIT is non-nil, commit and push the changes."
-  (let ((key (file-name-sans-extension (tlon-babel-get-clock-file))))
+  (let ((key (tlon-babel-get-clock-key)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
 			     (find-file-noselect tlon-babel-file-jobs))
       (tlon-babel-goto-heading key)
       (org-todo "DONE")
-      (org-sort-entries nil ?o) ; sort entries by t(o)do order
+      ;; (org-sort-entries nil ?o) ; sort entries by t(o)do order
       (save-buffer))
     (when commit
-      (tlon-babel-commit-and-push "Update " tlon-babel-file-jobs))))
+      (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
 
 (defun tlon-babel-goto-heading (key)
   "Move point to the heading in `jobs.org' with KEY."
-  (with-current-buffer (find-file-noselect (file-name-concat tlon-babel-dir-babel "etc/jobs.org"))
+  (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
+			   (find-file-noselect tlon-babel-file-jobs))
     (org-element-map (org-element-parse-buffer) 'headline
       (lambda (headline)
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
@@ -1221,14 +1269,16 @@ If COMMIT is non-nil, commit and push the changes."
   "Initialize process associated with FUN.
 Runs all the general initialization functions, followed by the
 specific function for the process that is being initialized."
-  (tlon-babel-check-label-and-assignee)
-  (tlon-babel-check-branch "main")
-  (let ((default-directory tlon-babel-dir-babel))
+  (let* ((key (tlon-babel-get-clock-key))
+	 (repo (tlon-babel-get-repo-from-key key))
+	 (default-directory repo))
+    (tlon-babel-check-label-and-assignee)
+    (tlon-babel-check-branch "main")
     (magit-pull-from-upstream nil)
     (sleep-for 2)
     (cl-multiple-value-bind
-	(original-path translation-path original-file translation-file)
-	(tlon-babel-set-paths)
+	(original-path translation-path original-key)
+	(tlon-babel-set-paths-from-clock)
       (let ((topic (tlon-babel-get-clock-topic)))
 	(tlon-babel-set-windows original-path translation-path)
 	(write-file translation-path)
@@ -1244,8 +1294,8 @@ specific function for the process that is being initialized."
   (tlon-babel-check-label-and-assignee)
   (tlon-babel-check-file)
   (cl-multiple-value-bind
-      (original-path translation-path original-file translation-file)
-      (tlon-babel-set-paths)
+      (original-path translation-path original-key)
+      (tlon-babel-set-paths-from-clock)
     (let* ((current-action (tlon-babel-get-clock-action))
 	   (next-label (tlon-babel-get-clock-next-label))
 	   (next-assignee (tlon-babel-get-clock-next-assignee next-label)))
@@ -1256,9 +1306,9 @@ specific function for the process that is being initialized."
       (when (string= current-action "Process")
 	(tlon-babel-commit-and-push current-action original-path))
       (tlon-babel-commit-and-push current-action translation-path)
-      (tlon-babel-act-on-topic original-file next-label next-assignee
-			     (when (string= current-action "Review")
-			       'close))
+      (tlon-babel-act-on-topic original-key next-label next-assignee
+			       (when (string= current-action "Review")
+				 'close))
       (tlon-babel-mark-clocked-task-done)
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 	       next-label next-assignee)
@@ -1270,7 +1320,7 @@ specific function for the process that is being initialized."
   "Initialize processing."
   (cl-multiple-value-bind
       (original-path)
-      (tlon-babel-set-paths)
+      (tlon-babel-set-paths-from-clock)
     (tlon-babel-set-windows original-path tlon-babel-file-manual)
     (org-id-goto tlon-babel-manual-processing-id)
     (org-narrow-to-subtree)
@@ -1297,8 +1347,8 @@ specific function for the process that is being initialized."
 (defun tlon-babel-initialize-review ()
   "Initialize review."
   (cl-multiple-value-bind
-      (original-path translation-path original-file translation-file)
-      (tlon-babel-set-paths)
+      (original-path translation-path original-key)
+      (tlon-babel-set-paths-from-clock)
     (tlon-babel-log-buffer-latest-user-commit-ediff translation-path)))
 
 ;;; TTS
@@ -1440,54 +1490,53 @@ This command should be run from the source window."
 
 (defun tlon-babel-check-branch (branch)
   "Throw an error unless current buffer is in Tlon-Babel branch BRANCH."
-  (let ((default-directory tlon-babel-dir-babel))
-    (unless (string= (magit-get-current-branch) branch)
-      (user-error "Please switch to the branch `%s' before proceeding" branch))
+  (unless (string= (magit-get-current-branch) branch)
+    (user-error "Please switch to the branch `%s' before proceeding" branch)
     t))
 
 (defun tlon-babel-check-file ()
   "Throw an error unless current file matches file in clock."
-  (unless (or (string= (file-name-nondirectory (buffer-file-name))
-		       (tlon-babel-get-clock-file))
-	      (string= (file-name-nondirectory (buffer-file-name))
-		       (tlon-babel-get-translation-file (tlon-babel-get-clock-file))))
-    (user-error "Current file does not match file in clock"))
-  t)
+  (let* ((key (tlon-babel-get-clock-key))
+	 (expected-file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-metadata-of-repo)))
+	 (actual-file (buffer-file-name)))
+    (if (string= expected-file actual-file)
+	t
+      (user-error "Current file does not match file in clock"))))
 
 (defun tlon-babel-check-label-and-assignee ()
-  "Check that clocked action matches topic label and assignee matches user."
-  (save-window-excursion
-    (let* ((filename (tlon-babel-get-clock-file))
-	   (topic (format "Job: `%s`" filename))
-	   (clocked-label (tlon-babel-get-clock-label)))
-      (tlon-babel-magit-status)
-      (magit-section-show-level-3-all)
-      (goto-char (point-min))
-      (if (search-forward topic nil t)
-	  (let ((label (tlon-babel-forge-get-label-at-point))
-		(assignee (alist-get
-			   (tlon-babel-forge-get-assignee-at-point)
-			   tlon-babel-github-users nil nil 'string=)))
-	    (unless (string= clocked-label label)
-	      (user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
-			  clocked-label label))
-	    (unless (string= user-full-name assignee)
-	      (user-error "The `org-mode' TODO says the assignee is `%s', but the actual topic assignee is `%s'"
-			  user-full-name assignee))
-	    t)
-	(user-error "No topic found for %s" filename)))))
+"Check that clocked action matches topic label and assignee matches user."
+(save-window-excursion
+  (let* ((key (tlon-babel-get-clock-key))
+	 (topic (format "Job: `%s" key))
+	 (clocked-label (tlon-babel-get-clock-label)))
+    (magit-status)
+    (magit-section-show-level-3-all)
+    (goto-char (point-min))
+    (if (search-forward topic nil t)
+	(let ((label (tlon-babel-forge-get-label-at-point))
+	      (assignee (alist-get
+			 (tlon-babel-forge-get-assignee-at-point)
+			 tlon-babel-github-users nil nil 'string=)))
+	  (unless (string= clocked-label label)
+	    (user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
+			clocked-label label))
+	  (unless (string= user-full-name assignee)
+	    (user-error "The `org-mode' TODO says the assignee is `%s', but the actual topic assignee is `%s'"
+			user-full-name assignee))
+	  t)
+      (user-error "No topic found for %s" key)))))
 
 (defun tlon-babel-check-staged-or-unstaged (file-path)
-  "Check if there are staged or unstaged changes in repo involving FILE-PATH."
-  (catch 'found
-    (dolist (flag '("staged" ""))
-      (let ((git-command (format "git diff --%s --name-only %s" flag file-path)))
-	(when (not (string-empty-p (shell-command-to-string git-command)))
-	  (throw 'found t))))))
+"Check if there are staged or unstaged changes in repo involving FILE-PATH."
+(catch 'found
+  (dolist (flag '("staged" ""))
+    (let ((git-command (format "git diff --%s --name-only %s" flag file-path)))
+      (when (not (string-empty-p (shell-command-to-string git-command)))
+	(throw 'found t))))))
 
 (defun tlon-babel-check-staged-or-unstaged-other-than (file-path)
   "Check if there are staged or unstaged changes in repo not involving FILE-PATH."
-  (let* ((default-directory tlon-babel-dir-babel)
+  (let* ((default-directory (tlon-babel-get-repo-from-file file-path))
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file-path)))
     (unless (string= all-changes filtered-changes)
@@ -1502,12 +1551,12 @@ This command should be run from the source window."
     (unless (member langid '("english" "american" "british" "UKenglish" "USenglish"))
       (user-error "This entry does not appear to be an original (make sure its `langid' field is present)"))))
 
-(defun tlon-babel-act-on-topic (original-file label &optional assignee action)
-  "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-FILE.
+(defun tlon-babel-act-on-topic (original-key label &optional assignee action)
+  "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-KEY.
 If ACTION is `convert', convert the existing issue into a pull
 request. If ACTION is `close', close issue."
-  (let ((topic (format "Job: `%s`" original-file))
-	(default-directory tlon-babel-dir-babel))
+  (let ((topic (format "Job: `%s" original-key))
+	(default-directory (tlon-babel-set-repo 'error 'genus)))
     (tlon-babel-magit-status)
     (magit-section-show-level-3-all)
     (goto-char (point-min))
@@ -1532,38 +1581,47 @@ request. If ACTION is `close', close issue."
 
 ;;; Search
 
-(defun tlon-babel-search-topics (search-string)
-  "Search for SEARCH-STRING in Tlon-Babel GitHub issues and pull requests."
+(defun tlon-babel-search-topics (search-string &optional repo)
+  "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
+If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((default-directory tlon-babel-dir-babel))
+  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+	(default-directory repo))
     (forge-search search-string)))
 
-(defun tlon-babel-search-commits (search-string)
-  "Search for SEARCH-STRING in Tlon-Babel commit history."
+(defun tlon-babel-search-commits (search-string &optional repo)
+  "Search for SEARCH-STRING in REPO's commit history.
+If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((default-directory tlon-babel-dir-babel))
+  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+	(default-directory repo))
     (magit-log-all (list "--grep" search-string))))
 
-(defun tlon-babel-search-files (search-string)
-  "Search for SEARCH-STRING in Tlon-Babel files."
+(defun tlon-babel-search-files (search-string &optional repo)
+  "Search for SEARCH-STRING in REPO files.
+If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((default-directory tlon-babel-dir-babel))
+  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+	(default-directory repo))
     (consult-ripgrep tlon-babel-dir-babel search-string)))
 
-(defun tlon-babel-search-multi (search-string)
-  "Search for SEARCH-STRING in Tlon-Babel files, commit history, and GitHub issues."
+(defun tlon-babel-search-multi (search-string &optional repo)
+  "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
+If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((win1 (selected-window)))
+  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+	(win1 (selected-window)))
     (ps/window-split-if-unsplit)
-    (tlon-babel-search-topics search-string)
+    (tlon-babel-search-topics search-string repo)
     (split-window-below)
-    (tlon-babel-search-commits search-string)
+    (tlon-babel-search-commits search-string repo)
     (select-window win1)
-    (tlon-babel-search-files search-string)))
+    (tlon-babel-search-files search-string repo)))
 
-(defun tlon-babel-commit-and-push (prefix file)
-  "Commit and push changes in Tlon-Babel repo, with message 'PREFIX FILE'."
-  (let ((default-directory tlon-babel-dir-babel))
+(defun tlon-babel-commit-and-push (action file)
+  "Commit and push changes to FILE.
+The commit message is ACTION followed by the name of FILE."
+  (let* ((default-directory (tlon-babel-get-repo-from-file file)))
     (tlon-babel-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
       (magit-pull-from-upstream nil)
@@ -1572,7 +1630,7 @@ request. If ACTION is `close', close issue."
     ;; we check for staged or unstaged changes to FILE because
     ;; `magit-commit-create' interrupts the process if there aren't
     (when (tlon-babel-check-staged-or-unstaged file)
-      (magit-commit-create (list "-m" (format "%s %s" prefix (file-name-nondirectory file)))))
+      (magit-commit-create (list "-m" (format "%s %s" action (file-name-nondirectory file)))))
     (call-interactively #'magit-push-current-to-pushremote)))
 
 ;;; Change topic properties
@@ -1761,7 +1819,7 @@ this action was performed. These two variables are used to
 construct a commit message of the form \'Glossary: ACTION
 \"TERM\"\', such as \'Glossary: add \"repugnant conclusion\"\'.
 Optionally, DESCRIPTION provides an explanation of the change."
-  (let ((default-directory tlon-babel-dir-babel)
+  (let ((default-directory tlon-babel-dir-genus)
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
@@ -1789,37 +1847,11 @@ Optionally, DESCRIPTION provides an explanation of the change."
 		   tlon-babel-dir-babel
 		   ,file-path)))))
 
-(defmacro tlon-babel-create-dir-opening-command (&optional dir-path)
-  "Create a command to open file in DIR-PATH.
-If DIR-PATH is nil, create a command to open the Tlon-Babel repository."
-  (let* ((dir-path-hyphenated (when dir-path
-				(s-replace "/" "-" dir-path)))
-	 (command-name (if dir-path
-			   (intern (concat "tlon-babel-open-" dir-path-hyphenated))
-			 'tlon-babel-open-repo)))
-    `(defun ,command-name ()
-       ,(format "Open `%s'." dir-path)
-       (interactive)
-       (find-file (file-name-concat
-		   tlon-babel-dir-babel
-		   ,dir-path)))))
-
-(tlon-babel-create-file-opening-command "etc/Glossary.csv")
-(tlon-babel-create-file-opening-command "etc/new.bib")
-(tlon-babel-create-file-opening-command "etc/old.bib")
-(tlon-babel-create-file-opening-command "etc/finished.bib")
-(tlon-babel-create-file-opening-command "etc/pending.bib")
-(tlon-babel-create-file-opening-command "etc/tags.txt")
+(tlon-babel-create-file-opening-command "refs/Glossary.csv")
+(tlon-babel-create-file-opening-command "refs/fluid.bib")
+(tlon-babel-create-file-opening-command "refs/stable.bib")
 (tlon-babel-create-file-opening-command "manual.org")
 (tlon-babel-create-file-opening-command "readme.md")
-
-(tlon-babel-create-dir-opening-command)
-(tlon-babel-create-dir-opening-command "originals/posts")
-(tlon-babel-create-dir-opening-command "originals/tags")
-(tlon-babel-create-dir-opening-command "translations/posts")
-(tlon-babel-create-dir-opening-command "translations/tags")
-(tlon-babel-create-dir-opening-command "etc")
-
 
 (transient-define-prefix tlon-babel-dispatch ()
   "Dispatch a `tlon-babel' command."
@@ -1839,23 +1871,22 @@ If DIR-PATH is nil, create a command to open the Tlon-Babel repository."
     ("s s" "multi"                        tlon-babel-search-multi)
     ("s c" "commits"                      tlon-babel-search-commits)
     ("s f" "files"                        tlon-babel-search-files)
-    ("s t" "topics"                       tlon-babel-search-topics)
+    ("s i" "topics"                       tlon-babel-search-topics)
+    ("s t" "translation"                  tlon-babel-search-translation)
     ]
    ["Open file"
     ("f f" "counterpart"                  tlon-babel-open-counterpart)
     ("f g" "Glossary.csv"                 tlon-babel-open-glossary)
-    ("f n" "new.bib"                      tlon-babel-open-new)
-    ("f o" "old.bib"                      tlon-babel-open-old)
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
     ]
    ["Open directory"
-    ("d d" "repo"                         tlon-babel-open-repo)
-    ("d P" "originals > posts"            tlon-babel-open-originals-posts)
-    ("d T" "originals > tags"             tlon-babel-open-originals-tags)
-    ("d p" "translations > posts"         tlon-babel-open-translations-posts)
-    ("d t" "translations > tags"          tlon-babel-open-translations-tags)
-    ("d e" "etc"                          tlon-babel-open-etc)
+    ;; ("d d" "repo"                         tlon-babel-open-repo)
+    ;; ("d P" "originals > posts"            tlon-babel-open-originals-posts)
+    ;; ("d T" "originals > tags"             tlon-babel-open-originals-tags)
+    ;; ("d p" "translations > posts"         tlon-babel-open-translations-posts)
+    ;; ("d t" "translations > tags"          tlon-babel-open-translations-tags)
+    ;; ("d e" "etc"                          tlon-babel-open-etc)
     ]
    ["Browse"
     ("b b" "file"                         tlon-babel-browse-file)
@@ -1995,6 +2026,11 @@ If ASYNC is t, run the request asynchronously."
   (let* ((result (tlon-babel--eaf-get-tag-result response))
 	 (title (cdr (assoc 'name result))))
     (tlon-babel-shorten-title title)))
+
+(defun tlon-babel-shorten-title (title)
+  "Return a shortened version of TITLE."
+  (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
+  (match-string 1 title))
 
 ;;; html import
 
@@ -2141,15 +2177,22 @@ If ASYNC is t, run the request asynchronously."
 (defun tlon-babel-load-variables ()
   "Load the variables to reflect changes to the files in the `etc' directory."
   (interactive)
-  (setq tlon-babel-tags (tlon-babel-read-urls-from-file tlon-babel-file-tags)
-	tlon-babel-wiki-urls (list ""))
+  ;; TODO: recreate functionality without using tags.txt
+  ;; (setq tlon-babel-tags (tlon-babel-read-urls-from-file tlon-babel-file-tags))
+  (setq tlon-babel-wiki-urls (list ""))
   (dolist (slug tlon-babel-tag-slugs)
     (add-to-list 'tlon-babel-wiki-urls
 		 (format "https://forum.effectivealtruism.org/topics/%s" slug)))
-  (tlon-babel-load-post-correspondence)
+  ;; (tlon-babel-load-post-correspondence)
   (message "Variables loaded."))
 
-(tlon-babel-load-variables)
+(defun tlon-babel-read-urls-from-file (file-path)
+  "Read URLs from a plain text FILE-PATH into an Emacs Lisp list."
+  (with-temp-buffer
+    (insert-file-contents file-path)
+    (split-string (buffer-string) "\n" t)))
+
+;; (tlon-babel-load-variables)
 
 (provide 'tlon-babel)
 ;;; tlon-babel.el ends here
