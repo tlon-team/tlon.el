@@ -840,10 +840,10 @@ Assumes key is enclosed in backticks."
    (let ((translation (tlon-babel-get-counterpart file)))
      (tlon-babel-get-metadata-value-in-file "key_original" translation))))
 
-  (defun tlon-babel-get-clock-file ()
-    "Return the file path of the clocked task."
-    (let ((key (tlon-babel-get-clock-key)))
-      (tlon-babel-get-file-from-key key)))
+(defun tlon-babel-get-clock-file ()
+  "Return the file path of the clocked task."
+  (let ((key (tlon-babel-get-clock-key)))
+    (tlon-babel-get-file-from-key key)))
 
 (defun tlon-babel-open-clock-file ()
   "Open file of clocked task."
@@ -1506,35 +1506,35 @@ This command should be run from the source window."
       (user-error "Current file does not match file in clock"))))
 
 (defun tlon-babel-check-label-and-assignee ()
-"Check that clocked action matches topic label and assignee matches user."
-(save-window-excursion
-  (let* ((key (tlon-babel-get-clock-key))
-	 (topic (format "Job: `%s" key))
-	 (clocked-label (tlon-babel-get-clock-label)))
-    (magit-status)
-    (magit-section-show-level-3-all)
-    (goto-char (point-min))
-    (if (search-forward topic nil t)
-	(let ((label (tlon-babel-forge-get-label-at-point))
-	      (assignee (alist-get
-			 (tlon-babel-forge-get-assignee-at-point)
-			 tlon-babel-github-users nil nil 'string=)))
-	  (unless (string= clocked-label label)
-	    (user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
-			clocked-label label))
-	  (unless (string= user-full-name assignee)
-	    (user-error "The `org-mode' TODO says the assignee is `%s', but the actual topic assignee is `%s'"
-			user-full-name assignee))
-	  t)
-      (user-error "No topic found for %s" key)))))
+  "Check that clocked action matches topic label and assignee matches user."
+  (save-window-excursion
+    (let* ((key (tlon-babel-get-clock-key))
+	   (topic (format "Job: `%s" key))
+	   (clocked-label (tlon-babel-get-clock-label)))
+      (magit-status)
+      (magit-section-show-level-3-all)
+      (goto-char (point-min))
+      (if (search-forward topic nil t)
+	  (let ((label (tlon-babel-forge-get-label-at-point))
+		(assignee (alist-get
+			   (tlon-babel-forge-get-assignee-at-point)
+			   tlon-babel-github-users nil nil 'string=)))
+	    (unless (string= clocked-label label)
+	      (user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
+			  clocked-label label))
+	    (unless (string= user-full-name assignee)
+	      (user-error "The `org-mode' TODO says the assignee is `%s', but the actual topic assignee is `%s'"
+			  user-full-name assignee))
+	    t)
+	(user-error "No topic found for %s" key)))))
 
 (defun tlon-babel-check-staged-or-unstaged (file-path)
-"Check if there are staged or unstaged changes in repo involving FILE-PATH."
-(catch 'found
-  (dolist (flag '("staged" ""))
-    (let ((git-command (format "git diff --%s --name-only %s" flag file-path)))
-      (when (not (string-empty-p (shell-command-to-string git-command)))
-	(throw 'found t))))))
+  "Check if there are staged or unstaged changes in repo involving FILE-PATH."
+  (catch 'found
+    (dolist (flag '("staged" ""))
+      (let ((git-command (format "git diff --%s --name-only %s" flag file-path)))
+	(when (not (string-empty-p (shell-command-to-string git-command)))
+	  (throw 'found t))))))
 
 (defun tlon-babel-check-staged-or-unstaged-other-than (file-path)
   "Check if there are staged or unstaged changes in repo not involving FILE-PATH."
