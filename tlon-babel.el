@@ -1918,7 +1918,9 @@ Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-browse-repo ()
   "Browse the Tlon-Babel repository."
   (interactive)
-  (browse-url "https://github.com/tlon-team/biblioteca-altruismo-eficaz"))
+  (let* ((repo (tlon-babel-set-repo))
+	 (repo-name (tlon-babel-get-name-from-repo repo)))
+    (browse-url (concat "https://github.com/tlon-team/" repo-name))))
 
 ;;; request
 
