@@ -1998,63 +1998,63 @@ If ASYNC is t, run the request asynchronously."
     response))
 
 (defun tlon-babel--eaf-get-post-result (response)
-  "docstring"
+  "Get post details from EA Forum API RESPONSE."
   (let* ((post (cdr (assoc 'post response)))
 	 (result (cdr (assoc 'result post))))
     result))
 
 (defun tlon-babel-eaf-get-post-id (response)
-  "docstring"
+  "Get post ID from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-post-result response))
 	 (id (cdr (assoc '_id result))))
     id))
 
 (defun tlon-babel-eaf-get-post-html (response)
-  "docstring"
+  "Get post HTML from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-post-result response))
 	 (html (cdr (assoc 'htmlBody result))))
     html))
 
 (defun tlon-babel-eaf-get-post-title (response)
-  "docstring"
+  "Get post title from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-post-result response))
 	 (title (cdr (assoc 'title result))))
     title))
 
 (defun tlon-babel-eaf-get-post-author (response)
-  "docstring"
+  "Get post author from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-post-result response))
 	 (author (cdr (assoc 'author result))))
     author))
 
 (defun tlon-babel-eaf-get-post-username (response)
-  "docstring"
+  "Get post author username from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-post-result response))
 	 (user (cdr (assoc 'user result)))
 	 (username (cdr (assoc 'username user))))
     username))
 
-(defun tlon-babel--eaf-get-tag-result (response)
-  "docstring"
+(defun tlon-babel--eaf-get-tag-result ()
+  "Get tag details from EA Forum API RESPONSE."
   (let* ((tag (cdr (assoc 'tag response)))
 	 (result (cdr (assoc 'result tag))))
     result))
 
 (defun tlon-babel-eaf-get-tag-slug (response)
-  "docstring"
+  "Get tag slug from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-tag-result response))
 	 (slug (cdr (assoc 'slug result))))
     slug))
 
 (defun tlon-babel-eaf-get-tag-html (response)
-  "docstring"
+  "Get tag HTML from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-tag-result response))
 	 (description (cdr (assoc 'description result)))
 	 (html (cdr (assoc 'html description))))
     html))
 
-(defun tlon-babel-eaf-get-tag-title (response)
-  "docstring"
+(defun tlon-babel-eaf-get-tag-title ()
+  "Get tag title from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-tag-result response))
 	 (title (cdr (assoc 'name result))))
     (tlon-babel-shorten-title title)))
