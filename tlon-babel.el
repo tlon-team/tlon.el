@@ -1928,7 +1928,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-open-repo ()
   "Open the Babel repository."
   (interactive)
-  (dired (tlon-babel-set-repo)))
+  (dired (tlon-babel-set-repo nil 'genus)))
 
 (defun tlon-babel-open-bae-repo ()
   "Open the Biblioteca Altruismo Eficaz repository."
