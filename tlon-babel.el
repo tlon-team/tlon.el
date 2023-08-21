@@ -1951,7 +1951,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
   (dired tlon-babel-dir-genus))
 
 ;;; request
-
+;;;; EAF API
 (defconst tlon-babel-eaf-api-url
   "https://forum.effectivealtruism.org/graphql"
   "URL for the EAF GraphQL API endpoint.")
@@ -2063,6 +2063,53 @@ If ASYNC is t, run the request asynchronously."
   "Return a shortened version of TITLE."
   (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
   (match-string 1 title))
+
+;;;; BAE API
+
+(defun tlon-babel-get-bae-logs ()
+  "Get error logs from BAE repo."
+  (interactive)
+  (require 'json)
+  (require 'url)
+  (let* ((url "https://altruismoeficaz.net/api/logs")
+         (url-request-method "GET")
+         (url-mime-charset-string "utf-8;q=1, iso-8859-1")
+	 (response-buffer (url-retrieve-synchronously url))
+	 (json-object-type 'hash-table)
+	 (json-array-type 'list))
+    (with-current-buffer response-buffer
+      (goto-char (point-min))
+      (search-forward "\n\n")
+      (let* ((output-buffer (get-buffer-create "*API Logs*"))
+             (logs (json-read)))
+        (with-current-buffer output-buffer
+          (erase-buffer)) ; ensure the buffer is empty before inserting
+        (dolist (log logs)
+          (tlon-babel-pretty-print-bae-hash-table log output-buffer))
+        (display-buffer output-buffer)
+	(switch-to-buffer output-buffer)
+	(read-only-mode)
+	(goto-char (point-min))))))
+
+(defun tlon-babel-pretty-print-bae-hash-table (hash-table buffer)
+  "Print HASH-TABLE in a human-friendly way in BUFFER."
+  (require 'cl)
+  (with-current-buffer buffer
+    (maphash (lambda (key value)
+               (if (string= key "message")
+                   (let* ((message-parts (split-string value "at filename="))
+                          (text (car message-parts))
+                          (raw-filename (cadr message-parts)))
+                     (insert (format "%s\n" text))
+                     (when raw-filename
+                       (let* ((filename (replace-regexp-in-string "/home/fede/biblioteca-altruismo-eficaz/translations/" "~/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/" raw-filename)))
+                         (lexical-let ((file filename))
+                           (insert-button filename
+                                          'action (lambda (x) (find-file file))
+                                          'follow-link t))))
+                     (insert "\n\n"))
+                 (insert (format "%s: %s\n" key value))))
+             hash-table)))
 
 ;;; html import
 
