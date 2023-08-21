@@ -1065,11 +1065,8 @@ Prompt the user for a title, unless TITLE is non-nil."
   "Import an EA Forum tag with URL-OR-SLUG."
   (interactive "sTag url or slug (if you are not importing a tag, please re-run `tlon-babel-import-document' from an Ebib buffer): ")
   (let* ((slug (tlon-babel-eaf-get-id-or-slug-from-identifier url-or-slug))
-	 (target
-	  ;; TODO: Revise
-	  ;; (file-name-concat tlon-babel-dir-original-tags-dir
-	  ;; (file-name-with-extension slug ".md"))
-	  ))
+	 (target (file-name-concat tlon-babel-dir-bae-originals "tags"
+				   (file-name-with-extension slug ".md"))))
     (tlon-babel-import-html-eaf slug target)))
 
 (defun tlon-babel-import-html (url target)
