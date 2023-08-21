@@ -2077,7 +2077,7 @@ If ASYNC is t, run the request asynchronously."
     (with-current-buffer response-buffer
       (goto-char (point-min))
       (search-forward "\n\n")
-      (let* ((output-buffer (get-buffer-create "*API Logs*"))
+      (let* ((output-buffer (get-buffer-create "*BAE API Logs*"))
              (logs (json-read)))
         (with-current-buffer output-buffer
           (erase-buffer)) ; ensure the buffer is empty before inserting
