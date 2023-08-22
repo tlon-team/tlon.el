@@ -242,11 +242,11 @@ If the current directory matches none of the directories in
  `tlon-babel-project-names', prompt the user to select a repo from that
  list."
   (interactive)
-  (let ((default-directory (tlon-babel-set-repo nil 'genus)))
+  (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (call-interactively 'forge-dispatch)))
 
-(defun tlon-babel-set-repo (&optional no-prompt genus)
-  "Set Babel repository path.
+(defun tlon-babel-get-repo (&optional no-prompt genus)
+  "Get Babel repository path.
 If the current directory matches any of the directories in `tlon-
 babel-project-names', return it. Else, prompt the user to select a
 repo from that list, unless signal an error unless NO-PROMPT is
@@ -656,13 +656,13 @@ file visited by the current buffer."
 If FILE-PATH is nil, return the counterpart file path of the
 file visited by the current buffer."
   (let* ((file-path (or file-path (tlon-bae-buffer-file-name)))
-	 (repo (tlon-babel-set-repo 'error)))
+	 (repo (tlon-babel-get-repo 'error)))
     ;; we use a different method for getting the counterpart depending
     ;; on whether FILE-PATH is in `originals' or `translations', since
     ;; only translation files have YAML metadata.
     (if-let ((locator (tlon-babel-get-metadata-value-in-file "path_original" file-path)))
 	(file-name-concat
-	 (tlon-babel-set-repo)
+	 (tlon-babel-get-repo)
 	 (tlon-babel-get-work-type 'reversed)
 	 locator)
       (tlon-babel-metadata-lookup "path_original"
@@ -675,13 +675,13 @@ file visited by the current buffer."
 If FILE-PATH is nil, return the locator of the file visited by
 the current buffer."
   (let* ((file-path (or file-path (buffer-file-name)))
-	 (repo (tlon-babel-set-repo 'error))
+	 (repo (tlon-babel-get-repo 'error))
 	 (type (tlon-babel-get-work-type nil file-path)))
     (file-relative-name file-path (file-name-concat repo type))))
 
 (defun tlon-babel-get-file-from-locator (locator)
   "Get the file path of LOCATOR in the current repo."
-  (let* ((repo (tlon-babel-set-repo 'error))
+  (let* ((repo (tlon-babel-get-repo 'error))
 	 (type (tlon-babel-get-work-type nil locator)))
     (file-name-concat repo type locator)))
 
@@ -865,7 +865,7 @@ Assumes key is enclosed in backticks."
 (defun tlon-babel-open-clock-topic ()
   "Open the topic from `orgit-forge' link in heading at point."
   (interactive)
-  (let ((default-directory (tlon-babel-set-repo))
+  (let ((default-directory (tlon-babel-get-repo))
 	(topic (tlon-babel-get-clock-topic)))
     (forge-visit-issue topic)))
 
@@ -971,15 +971,14 @@ Defaults to the current buffer if no FILE is specified. If DEEPL
 (defun tlon-babel-magit-status ()
   "Show the status of the current repository in a buffer."
   (interactive)
-  (let ((default-directory (tlon-babel-set-repo nil 'genus)))
+  (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (magit-status)))
 
 (defun tlon-babel-magit-get-commit-file ()
   "Get file to commit.
 If more than one file is being committed, get the first one."
   (save-excursion
-    (re-search-forward "Changes to be committed:
-#.*?:.  \\(.*/?.*\\)$" nil t)
+    (re-search-forward "Changes to be committed:\n#.*?:.  \\(.*/?.*\\)$" nil t)
     (match-string-no-properties 1)))
 
 (defun tlon-babel-get-commit-key ()
@@ -1155,8 +1154,8 @@ provided, the key in the Markdown buffer at point is used."
 (defun tlon-babel-create-issue-for-job (&optional key)
   "Create an issue based on KEY.
 If KEY is not provided, the key in the Markdown buffer at point
-is used."
-  (let ((default-directory (tlon-babel-set-repo 'error))
+  is used."
+  (let ((default-directory (tlon-babel-get-repo 'error))
 	(key (or key (tlon-babel-get-key-in-buffer))))
     (call-interactively #'forge-create-issue)
     (insert (format "Job: `%s`" key))
@@ -1555,7 +1554,7 @@ This command should be run from the source window."
 If ACTION is `convert', convert the existing issue into a pull
 request. If ACTION is `close', close issue."
   (let ((topic (format "Job: `%s" original-key))
-	(default-directory (tlon-babel-set-repo 'error 'genus)))
+	(default-directory (tlon-babel-get-repo 'error 'genus)))
     (tlon-babel-magit-status)
     (magit-section-show-level-3-all)
     (goto-char (point-min))
@@ -1584,7 +1583,7 @@ request. If ACTION is `close', close issue."
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	(default-directory repo))
     (forge-search search-string)))
 
@@ -1592,7 +1591,7 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO's commit history.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	(default-directory repo))
     (magit-log-all (list "--grep" search-string))))
 
@@ -1600,7 +1599,7 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	(default-directory repo))
     (consult-ripgrep tlon-babel-dir-babel search-string)))
 
@@ -1608,7 +1607,7 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-set-repo nil 'genus)))
+  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	(win1 (selected-window)))
     (ps/window-split-if-unsplit)
     (tlon-babel-search-topics search-string repo)
@@ -1918,14 +1917,14 @@ Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-browse-repo ()
   "Browse the Tlon-Babel repository."
   (interactive)
-  (let* ((repo (tlon-babel-set-repo))
+  (let* ((repo (tlon-babel-get-repo))
 	 (repo-name (tlon-babel-get-name-from-repo repo)))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
 
 (defun tlon-babel-open-repo ()
   "Open the Babel repository."
   (interactive)
-  (dired (tlon-babel-set-repo nil 'genus)))
+  (dired (tlon-babel-get-repo nil 'genus)))
 
 (defun tlon-babel-open-bae-repo ()
   "Open the Biblioteca Altruismo Eficaz repository."
