@@ -1112,7 +1112,6 @@ If more than one file is being committed, get the first one."
   (tlon-babel-import-document)
   (tlon-babel-create-record-for-job))
 
-
 (defun tlon-babel--create-entry-from-current (fields)
   "Create a BibTeX entry based on the current one with FIELDS."
   (unless (eq major-mode 'ebib-entry-mode)
@@ -1251,7 +1250,7 @@ pointer.) Then enter these values when prompted."
 	  (delete-directory temp-target-dir t)))))
 
 (defun tlon-babel-create-record-for-job (&optional key)
-  "Create an record based on KEY.
+  "Create a record based on KEY.
 Creates a new record in the repository (with the format `Job:
 KEY') and a new heading in the file `jobs.org'. If KEY is not
 provided, the key in the Markdown buffer at point is used."
