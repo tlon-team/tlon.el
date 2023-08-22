@@ -1112,15 +1112,15 @@ If more than one file is being committed, get the first one."
 
 (defun tlon-babel-create-job ()
   "Create a new job for IDENTIFIER based on Ebib entry at point.
-  Creating a new job means (1) importing a document and (2)
-  creating a record for it. A record is (a) an issue in GitHub
-  and (b) a heading in `jobs.org'.
+Creating a new job means (1) importing a document and (2)
+creating a record for it. A record is (a) an issue in GitHub
+and (b) a heading in `jobs.org'.
 
-  IDENTIFIER can be a URL or a PDF file path.
+IDENTIFIER can be a URL or a PDF file path.
 
-  Note: this command cannot be used to create new tag jobs, because
-  we don't add tags to Ebib. To create a new tag job, use
-  `tlon-babel-create-tag-job'."
+Note: this command cannot be used to create new tag jobs, because
+we don't add tags to Ebib. To create a new tag job, use
+`tlon-babel-create-tag-job'."
   (interactive)
   (tlon-babel-create-translation-entry)
   (tlon-babel-import-document)
@@ -1163,8 +1163,8 @@ Prompt the user for a title, unless TITLE is non-nil."
 
 (defun tlon-babel-import-document (&optional identifier target)
   "Import a document with IDENTIFIER to TARGET.
-  IDENTIFIER can be a URL or a PDF file path.
-  To import a tag, use `tlon-babel-import-tag'."
+IDENTIFIER can be a URL or a PDF file path.
+To import a tag, use `tlon-babel-import-tag'."
   (interactive)
   (unless (eq major-mode 'ebib-entry-mode)
     (user-error "You must be in an Ebib buffer"))
@@ -1211,7 +1211,7 @@ Prompt the user for a title, unless TITLE is non-nil."
 
 (defun tlon-babel-html-to-markdown (source target)
   "Convert HTML text in SOURCE to Markdown text in TARGET.
-  SOURCE can be a URL or, like TARGET, a file path."
+SOURCE can be a URL or, like TARGET, a file path."
   (let ((pandoc (if (ps/string-is-url-p source)
 		    tlon-babel-pandoc-convert-from-url
 		  tlon-babel-pandoc-convert-from-file)))
@@ -1759,7 +1759,7 @@ request. If ACTION is `close', close issue."
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
 
 (defun tlon-babel-set-parameters (topic &optional label-or-assignee)
-  "Docstring."
+  "Set label or assignee for TOPIC, depending on value of LABEL-OR-ASSIGNEE."
   (let ((assignee-p (member label-or-assignee (mapcar 'car tlon-babel-github-users))))
     (search-forward topic nil t)
     (if assignee-p
@@ -1781,17 +1781,17 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO's commit history.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
-	(default-directory repo))
+  (let* ((repo (or repo (tlon-babel-get-repo nil 'genus)))
+	 (default-directory repo))
     (magit-log-all (list "--grep" search-string))))
 
 (defun tlon-babel-search-files (search-string &optional repo)
-  "Search for SEARCH-STRING in REPO files.
+"Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
-  (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
-	(default-directory repo))
-    (consult-ripgrep tlon-babel-dir-babel search-string)))
+(interactive "sSearch string: ")
+(let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
+      (default-directory repo))
+  (consult-ripgrep tlon-babel-dir-babel search-string)))
 
 (defun tlon-babel-search-multi (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
