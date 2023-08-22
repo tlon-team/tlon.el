@@ -2277,25 +2277,73 @@ If ASYNC is t, run the request asynchronously."
 	(read-only-mode)
 	(goto-char (point-min))))))
 
+(defun tlon-babel-update-bae-log (&optional retries)
+  "Update error log from BAE repo.
+Retries 2 more times if response code is 504 before giving up. If
+RETRIES is a number, it will retry that many times instead of 2."
+  (interactive)
+  (let* ((url "https://altruismoeficaz.net/api/update")
+	 (token (tlon-babel-get-bae-token))
+	 (retries (if (numberp retries) retries 0)))
+    (request
+      url
+      :type "POST"
+      :headers `(("Authorization" . ,(concat "Bearer " token)))
+      :sync nil
+      :status-code '((504 . (lambda (&rest _)
+			      (if (< retries 2)
+				  (progn
+				    (message "Got 504, Gateway Timeout. Retrying...")
+				    (tlon-babel-update-bae-log (1+ retries)))
+				(message "Got 504, Gateway Timeout. My patience has a limit!")))))
+      :complete (cl-function
+		 (lambda (&key response &allow-other-keys)
+		   (unless (request-response-error-thrown response)
+		     (tlon-babel-get-bae-log)))))))
+
+(defun tlon-babel-get-bae-token ()
+  "Get BAE API token."
+  (let* ((username (tlon-babel-alist-key user-full-name tlon-babel-github-users))
+	 (url "https://altruismoeficaz.net/api/auth/login")
+	 (url-request-method "POST")
+	 (url-request-extra-headers '(("Content-Type" . "application/x-www-form-urlencoded")))
+	 (url-request-data
+	  (concat "username=" (url-hexify-string username)
+		  "&password=" (url-hexify-string
+				(auth-source-pass-get 'secret (concat "tlon/BAE/altruismoeficaz.net/" username))))))
+    (with-current-buffer (url-retrieve-synchronously url)
+      (goto-char (point-min))
+      (re-search-forward "^$")
+      (delete-region (point) (point-min))
+      (let* ((json-object-type 'alist)
+	     (json-array-type 'list)
+	     (json-key-type 'string)
+	     (json-response (json-read-from-string (buffer-string))))
+	(cdr (assoc "access_token" json-response))))))
+
 (defun tlon-babel-pretty-print-bae-hash-table (hash-table buffer)
   "Print HASH-TABLE in a human-friendly way in BUFFER."
   (require 'cl)
   (with-current-buffer buffer
-    (maphash (lambda (key value)
-               (if (string= key "message")
-                   (let* ((message-parts (split-string value "at filename="))
-                          (text (car message-parts))
-                          (raw-filename (cadr message-parts)))
-                     (insert (format "%s\n" text))
-                     (when raw-filename
-                       (let* ((filename (replace-regexp-in-string "/home/fede/biblioteca-altruismo-eficaz/translations/" "~/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/" raw-filename)))
-                         (lexical-let ((file filename))
-                           (insert-button filename
-                                          'action (lambda (x) (find-file file))
-                                          'follow-link t))))
-                     (insert "\n\n"))
-                 (insert (format "%s: %s\n" key value))))
-             hash-table)))
+    (maphash
+     (lambda (key value)
+       (if (string= key "message")
+	   (let* ((message-parts (split-string value "at filename="))
+		  (text (car message-parts))
+		  (raw-filename (cadr message-parts)))
+	     (insert (format "%s\n" text))
+	     (when raw-filename
+	       (let* ((filename (replace-regexp-in-string
+				 "/home/fede/biblioteca-altruismo-eficaz/translations/"
+				 "~/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/"
+				 raw-filename)))
+		 (lexical-let ((file filename))
+		   (insert-button filename
+				  'action (lambda (x) (find-file file))
+				  'follow-link t))))
+	     (insert "\n\n"))
+	 (insert (format "%s: %s\n" key value))))
+     hash-table)))
 
 ;;; html import
 
