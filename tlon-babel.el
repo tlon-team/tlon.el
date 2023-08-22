@@ -556,6 +556,14 @@ If REPO is nil, return metadata of current repository."
       (set var (tlon-babel-get-dir-metadata (symbol-value (intern (format "tlon-babel-dir-%s-translations" repo)))))
       (push (symbol-value var) tlon-babel-all-metadata))))
 
+(defun tlon-babel-get-field-metadata (field metadata)
+  "Return all FIELD values in METADATA."
+  (let ((result '()))
+    (dolist (entry metadata)
+      (when-let ((value (cdr (assoc field entry))))
+	(push value result)))
+    result))
+
 (defun tlon-babel-metadata-lookup (key value assoc-value metadata)
   "Search METADATA for VALUE in KEY and return the key of ASSOC-VALUE."
   (let ((found nil)
