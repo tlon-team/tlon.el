@@ -2171,27 +2171,27 @@ If ASYNC is t, run the request asynchronously."
 
 ;;;; BAE API
 
-(defun tlon-babel-get-bae-logs ()
-  "Get error logs from BAE repo."
+(defun tlon-babel-get-bae-log ()
+  "Get error log from BAE repo."
   (interactive)
   (require 'json)
   (require 'url)
   (let* ((url "https://altruismoeficaz.net/api/logs")
-         (url-request-method "GET")
-         (url-mime-charset-string "utf-8;q=1, iso-8859-1")
+	 (url-request-method "GET")
+	 (url-mime-charset-string "utf-8;q=1, iso-8859-1")
 	 (response-buffer (url-retrieve-synchronously url))
 	 (json-object-type 'hash-table)
 	 (json-array-type 'list))
     (with-current-buffer response-buffer
       (goto-char (point-min))
       (search-forward "\n\n")
-      (let* ((output-buffer (get-buffer-create "*BAE API Logs*"))
-             (logs (json-read)))
-        (with-current-buffer output-buffer
-          (erase-buffer)) ; ensure the buffer is empty before inserting
-        (dolist (log logs)
-          (tlon-babel-pretty-print-bae-hash-table log output-buffer))
-        (display-buffer output-buffer)
+      (let* ((output-buffer (get-buffer-create "*BAE error log*"))
+	     (logs (json-read)))
+	(with-current-buffer output-buffer
+	  (erase-buffer)) ; ensure the buffer is empty before inserting
+	(dolist (log logs)
+	  (tlon-babel-pretty-print-bae-hash-table log output-buffer))
+	(display-buffer output-buffer)
 	(switch-to-buffer output-buffer)
 	(read-only-mode)
 	(goto-char (point-min))))))
