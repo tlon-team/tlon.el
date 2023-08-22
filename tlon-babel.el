@@ -2279,11 +2279,15 @@ If ASYNC is t, run the request asynchronously."
 	 (url-mime-charset-string "utf-8;q=1, iso-8859-1")
 	 (response-buffer (url-retrieve-synchronously url))
 	 (json-object-type 'hash-table)
-	 (json-array-type 'list))
+	 (json-array-type 'list)
+	 (output-buffer-name "*BAE error log*"))
     (with-current-buffer response-buffer
       (goto-char (point-min))
       (search-forward "\n\n")
-      (let* ((output-buffer (get-buffer-create "*BAE error log*"))
+      ;; Kill any existing buffer with the same name before creating a new one
+      (when (get-buffer output-buffer-name)
+	(kill-buffer output-buffer-name)) 
+      (let* ((output-buffer (get-buffer-create output-buffer-name))
 	     (logs (json-read)))
 	(with-current-buffer output-buffer
 	  (erase-buffer)) ; ensure the buffer is empty before inserting
