@@ -297,6 +297,12 @@ If FILE is nil, use the current buffer's file name."
   "Return the name of the repo REPO."
   (tlon-babel-alist-key repo tlon-babel-repo-names-and-dirs))
 
+(defun tlon-babel-get-abbreviated-name-from-repo (&optional repo)
+  "Return the abbreviated name of the repo REPO."
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (repo-name (tlon-babel-get-name-from-repo repo)))
+    (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=)))
+
 (defun tlon-babel-orgit-capture ()
   "Capture a new org mode task for topic at point."
   (interactive)
