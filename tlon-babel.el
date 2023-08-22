@@ -2165,7 +2165,7 @@ If ASYNC is t, run the request asynchronously."
 	   (kill-new variant)))))))
 
 (defun tlon-babel-gpt-translate (text)
-  "Docstring."
+  "Return ten alternative translations of TEXT."
   (interactive "sText to translate: ")
   (require 'gptel)
   (gptel-request
@@ -2178,7 +2178,7 @@ If ASYNC is t, run the request asynchronously."
 	 (kill-new (completing-read "Translation: " translations)))))))
 
 (defun tlon-babel-gpt-translate-file (file)
-  "Docstring."
+  "Translate FILE."
   (let* ((counterpart (tlon-babel-get-counterpart-filename file))
 	 (target-path (concat
 		       (file-name-sans-extension counterpart)
