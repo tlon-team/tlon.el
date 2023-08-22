@@ -2345,6 +2345,42 @@ RETRIES is a number, it will retry that many times instead of 2."
 	 (insert (format "%s: %s\n" key value))))
      hash-table)))
 
+;;;; fix log errors helper functions
+
+(defun tlon-babel-collect-bibtex-keys-in-buffer ()
+  "Collect all the bibtex keys in the current buffer.
+Display the collected keys in a new buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let (keys)
+      (while (re-search-forward "@\\([[:alnum:]]+[[:digit:]]\\{4\\}[[:alnum:]]+\\)" nil t)
+	(push (match-string 1) keys))
+      (with-output-to-temp-buffer "*Bibtex keys*"
+	(princ (mapconcat #'identity (delete-dups keys) "\n"))))))
+
+(defun tlon-babel-move-bibtex-entries-to-genus ()
+  "Move the bibtex entries in the current buffer from `old.bib' to `fluid.bib'.
+If the key is not found, it is added to the list of missing keys."
+  (interactive)
+  (let ((missing-keys '()))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let ((bibtex-key (buffer-substring-no-properties
+			   (line-beginning-position)
+			   (line-end-position))))
+          (save-excursion
+            (with-current-buffer (find-file-noselect ps/file-personal-bibliography-old)
+	      (goto-char (point-min))
+	      (if (re-search-forward (format "{%s," bibtex-key) nil t)
+		  (call-interactively 'ps/bibtex-move-entry-to-tlon)
+		(add-to-list 'missing-keys bibtex-key))))
+	  (forward-line)))
+      (with-output-to-temp-buffer "*Missing BibTeX Keys*"
+	(dolist (key missing-keys)
+	  (princ (format "%s\n" key)))))))
+
 ;;; html import
 
 (defvar tlon-babel-pandoc-convert-from-file
