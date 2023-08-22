@@ -1662,14 +1662,82 @@ This command should be run from the source window."
     (unless (string= all-changes filtered-changes)
       (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
 
-(defun tlon-babel-check-ebib-entry-is-original ()
-  "Check that the current Ebib entry is an original."
-  (unless (eq major-mode 'ebib-entry-mode)
-    (user-error "You must be in an Ebib buffer"))
-  (let ((key (ebib--get-key-at-point))
-	(langid (ps/ebib-get-field-value "langid")))
-    (unless (member langid '("english" "american" "british" "UKenglish" "USenglish"))
-      (user-error "This entry does not appear to be an original (make sure its `langid' field is present)"))))
+;;; bibtex
+(defun tlon-babel-bibtex-generate-autokey (author year title)
+  "Generate a BibTeX key based on AUTHOR, YEAR, and TITLE."
+  ;; TODO: check that they key doesn't already exist in all metadata
+  (let* ((author (tlon-babel-bibtex-autokey-get-names author))
+	 (year (tlon-babel-bibtex-autokey-get-year year))
+	 (title (tlon-babel-bibtex-autokey-get-title title))
+	 (autokey (concat bibtex-autokey-prefix-string
+			  author
+			  (unless (or (equal author "")
+				      (equal year ""))
+			    bibtex-autokey-name-year-separator)
+			  year
+			  (unless (or (and (equal author "")
+					   (equal year ""))
+				      (equal title ""))
+			    bibtex-autokey-year-title-separator)
+			  title)))
+    (if bibtex-autokey-before-presentation-function
+	(funcall bibtex-autokey-before-presentation-function autokey)
+      autokey)))
+
+(defun tlon-babel-bibtex-autokey-get-names (name)
+  "Return formatted contents of NAME field."
+  (if (string= "" name)
+      name
+    (let* ((case-fold-search t)
+	   (name-list (mapcar #'bibtex-autokey-demangle-name
+			      (split-string name "[ \t\n]+and[ \t\n]+")))
+	   additional-name)
+      (unless (or (not (numberp bibtex-autokey-names))
+		  (<= (length name-list)
+		      (+ bibtex-autokey-names
+			 bibtex-autokey-names-stretch)))
+	(setq name-list (nreverse (nthcdr (- (length name-list)
+					     bibtex-autokey-names)
+					  (nreverse name-list)))
+	      additional-name bibtex-autokey-additional-names))
+      (concat (mapconcat #'identity name-list
+			 bibtex-autokey-name-separator)
+	      additional-name))))
+
+(defun tlon-babel-bibtex-autokey-get-year (year)
+  "Get formatted contents of YEAR field."
+  (let* ((str (bibtex-autokey-get-field '("date" "year"))))
+    (substring year (max 0 (- (length year) bibtex-autokey-year-length)))))
+
+(defun tlon-babel-bibtex-autokey-get-title (title)
+  "Get formatted contents of TITLE field."
+  (let ((case-fold-search t))
+    (if (string-match bibtex-autokey-title-terminators title)
+	(setq title (substring title 0 (match-beginning 0))))
+    (let ((counter 0)
+	  (ignore-re (concat "\\`\\(?:"
+			     (mapconcat #'identity
+					bibtex-autokey-titleword-ignore "\\|")
+			     "\\)\\'"))
+	  titlewords titlewords-extra word)
+      (while (and (or (not (numberp bibtex-autokey-titlewords))
+		      (< counter (+ bibtex-autokey-titlewords
+				    bibtex-autokey-titlewords-stretch)))
+		  (string-match "\\b\\w+" title))
+	(setq word (match-string 0 title)
+	      title (substring title (match-end 0)))
+	;; `bibtex-autokey-titleword-ignore'.
+	(unless (let (case-fold-search)
+		  (string-match ignore-re word))
+	  (setq counter (1+ counter))
+	  (if (or (not (numberp bibtex-autokey-titlewords))
+		  (<= counter bibtex-autokey-titlewords))
+	      (push word titlewords)
+	    (push word titlewords-extra))))
+      (unless (string-match "\\b\\w+" title)
+	(setq titlewords (append titlewords-extra titlewords)))
+      (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
+		 bibtex-autokey-titleword-separator))))
 
 (defun tlon-babel-act-on-topic (original-key label &optional assignee action)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-KEY.
