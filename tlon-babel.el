@@ -1662,6 +1662,15 @@ This command should be run from the source window."
     (unless (string= all-changes filtered-changes)
       (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
 
+(defun tlon-babel-check-file-title-match  ()
+  "Check that FILE matches its title."
+  (let* ((file (buffer-file-name))
+	 (base (file-name-base file))
+	 (title (tlon-babel-get-metadata-value-in-file "titulo" file))
+	 (slugified-title (tlon-core-slugify title)))
+    (unless (string= base slugified-title)
+      (error "The file `%s' does not match its title" title))))
+
 ;;; bibtex
 (defun tlon-babel-bibtex-generate-autokey (author year title)
   "Generate a BibTeX key based on AUTHOR, YEAR, and TITLE."
