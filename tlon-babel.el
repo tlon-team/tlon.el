@@ -649,14 +649,109 @@ found, signal an error."
 	(error "Delimiter not found")
       (nreverse result))))
 
+(defun tlon-babel--get-field-values (fields &optional file-path)
+  "Get the field values for the given FIELDS in FILE-PATH."
+  (let* ((file-path (or file-path (buffer-file-name)))
+	 (var-generators
+	  `(("fecha" . ,(lambda () (format-time-string "%FT%T%z")))
+	    ("titulo" . ,(lambda () (read-string "Título: ")))
+	    ("authors-list" . ,(lambda () (tlon-babel-set-multi-value-field "autores")))
+	    ("traductores" . ,#'tlon-babel-set-yaml-traductores)
+	    ("temas" . ,#'tlon-babel-set-yaml-temas)
+	    ("path_original" . ,#'tlon-babel-set-yaml-path_original)))
+	 (processed-fields (if (member "autores" fields)
+                               (cons "authors-list" fields)
+                             fields))
+	 (field-values (cl-loop for field in processed-fields
+				for generator = (cdr (assoc field var-generators))
+				if generator collect `(,field . ,(funcall generator)))))
+    ;; calculate first-author and adjust field-values
+    (let* ((first-author (cdr (or (assoc "autores" field-values) (assoc "authors-list" field-values))))
+	   (autores (when first-author
+		      (or
+		       (cdr (assoc "autores" field-values))
+		       (tlon-babel-elisp-list-to-yaml first-author))))
+	   (cmpl-generators
+	    `(("first-author" . ,first-author)
+	      ("autores" . ,autores)
+	      ("key_original" . ,(when first-author (tlon-babel-set-yaml-key_original (car first-author))))
+	      ("key_traduccion" . ,(when first-author
+				     (tlon-babel-bibtex-generate-autokey
+				      (car first-author)
+				      (substring (cdr (assoc "fecha" field-values)) 0 4)
+				      (cdr (assoc "titulo" field-values))))))))
+      ;; revise field-values
+      (setq field-values (assoc-delete-all "authors-list" field-values))
+      (dolist (field fields)
+	(when (cdr (assoc field cmpl-generators))
+	  (push `(,field . ,(cdr (assoc field cmpl-generators))) field-values))))
+    field-values))
+
+(defun tlon-babel-insert-yaml-fields-in-bae-post (&optional file-path)
+  "Insert YAML fields for BAE post in FILE-PATH.
+If FILE-PATH is nil, use the current buffer."
+  (interactive)
+  (let* ((file-path (or file-path (buffer-file-name)))
+         (field-values
+	  (tlon-babel--get-field-values
+	   '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion")
+	   file-path)))
+    (tlon-babel-insert-yaml-fields field-values)))
+
+(defun tlon-babel-insert-yaml-fields-in-bae-tag (&optional file-path)
+  "Insert YAML fields for BAE tag in FILE-PATH.
+If FILE-PATH is nil, use the current buffer."
+  (interactive)
+  (let* ((file-path (or file-path (buffer-file-name)))
+         (field-values
+	  (tlon-babel--get-field-values
+	   '("titulo")
+	   file-path)))
+    (tlon-babel-insert-yaml-fields field-values)))
+
+;;;; get YAML values
+
+(defun tlon-babel-set-multi-value-field (field)
+  "Set the value of multivalue FIELD in metadata of current repo."
+  (completing-read-multiple (format (capitalize "%s :") field)
+			    (tlon-babel-get-field-metadata field (tlon-babel-get-metadata-of-repo))))
+
+(defun tlon-babel-set-yaml-traductores ()
+  "Set the value of `traductores' YAML field."
+  (tlon-babel-elisp-list-to-yaml
+   (tlon-babel-set-multi-value-field "traductores")))
+
+(defun tlon-babel-set-yaml-temas ()
+  "Set the value of `temas' YAML field."
+  (tlon-babel-elisp-list-to-yaml
+   (tlon-babel-set-multi-value-field "temas")))
+
+(defun tlon-babel-set-yaml-path_original ()
+  "Set the value of `path_original' YAML field."
+  (completing-read "Locator original"
+		   (tlon-babel-get-locators-in-repo (tlon-babel-get-repo) "originals")))
+
+(defun tlon-babel-set-yaml-key_original (author)
+  "Set the value of `key_original' YAML field.
+AUTHOR is the first author of the original work."
+  (let ((first-author (car (last (split-string author)))))
+    (car (split-string
+	  (completing-read
+	   "English original: "
+	   (citar--completion-table (citar--format-candidates) nil)
+	   nil
+	   nil
+	   (format "%s " first-author)
+	   'citar-history citar-presets nil)))))
+
 ;;;; counterparts
 
 (defun tlon-babel-get-work-type (&optional reversed file-path)
   "Return the work type of file in FILE-PATH.
 A work is either `original' or `translation'. If REVERSED is
-non-nil, return 'originals' when the work type is 'translations'
-and vice versa. If FILE-PATH is nil, return the work type of the
-file visited by the current buffer."
+  non-nil, return 'originals' when the work type is 'translations'
+  and vice versa. If FILE-PATH is nil, return the work type of the
+  file visited by the current buffer."
   (let* ((file-path (or file-path (buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file-path))
 	 (repo-path (file-relative-name file-path repo))
