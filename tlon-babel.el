@@ -674,8 +674,8 @@ found, signal an error."
 	    ("temas" . ,#'tlon-babel-set-yaml-temas)
 	    ("path_original" . ,#'tlon-babel-set-yaml-path_original)))
 	 (processed-fields (if (member "autores" fields)
-                               (cons "authors-list" fields)
-                             fields))
+			       (cons "authors-list" fields)
+			     fields))
 	 (field-values (cl-loop for field in processed-fields
 				for generator = (cdr (assoc field var-generators))
 				if generator collect `(,field . ,(funcall generator)))))
@@ -706,7 +706,7 @@ found, signal an error."
 If FILE-PATH is nil, use the current buffer."
   (interactive)
   (let* ((file-path (or file-path (buffer-file-name)))
-         (field-values
+	 (field-values
 	  (tlon-babel--get-field-values
 	   '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion")
 	   file-path)))
@@ -717,7 +717,7 @@ If FILE-PATH is nil, use the current buffer."
 If FILE-PATH is nil, use the current buffer."
   (interactive)
   (let* ((file-path (or file-path (buffer-file-name)))
-         (field-values
+	 (field-values
 	  (tlon-babel--get-field-values
 	   '("titulo")
 	   file-path)))
