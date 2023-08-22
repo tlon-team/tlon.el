@@ -606,36 +606,50 @@ If FILE is nil, use the current buffer."
       (user-error "No key found"))
     key))
 
-(defun tlon-babel-get-yaml-front-matter (file-path)
-  "Return the YAML front matter from FILE-PATH as an association list."
-  (with-temp-buffer
-    (insert-file-contents file-path)
-    (let ((metadata '())
-	  (delimiter "---"))
-      (when (looking-at-p delimiter)
-	(forward-line)
-	(dolist (line (tlon-babel-read-until-match delimiter))
-	  (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
-	    (let* ((key (match-string 1 line))
-		   (value (match-string 2 line))
-		   (trimmed-value (string-trim value)))
-	      (push (cons (string-trim key)
-			  (cond
-			   ((and (string-prefix-p "[" trimmed-value)
-				 (string-suffix-p "]" trimmed-value))
-			    (mapcar #'string-trim
-				    (mapcar (lambda (s) (if (and (string-prefix-p "\"" s)
-							    (string-suffix-p "\"" s))
-						       (substring s 1 -1)
-						     s))
-					    (split-string (substring trimmed-value 1 -1) "\\s *,\\s *")
-					    )))
-			   ((and (string-prefix-p "\"" trimmed-value)
-				 (string-suffix-p "\"" trimmed-value))
-			    (substring trimmed-value 1 -1))
-			   (t trimmed-value)))
-		    metadata)))))
-      (nreverse metadata))))
+(defun tlon-babel-get-locators-in-repo (&optional repo subdir)
+  "Return a list of all locators in SUBDIR of REPO.
+If REPO is nil, return files in current repository. SUBDIR should
+be one of \"translations\" or \"originals\". If nil, return all
+files."
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (files (directory-files-recursively (file-name-concat repo subdir) "\\.md$")))
+    (mapcar #'tlon-babel-get-locator-from-file files)))
+
+;;; YAML front matter
+(defvar tlon-babel-yaml-delimiter "---"
+  "Delimiter for YAML front matter.")
+
+(defun tlon-babel-get-yaml-front-matter (&optional file-path)
+  "Return the YAML front matter from FILE-PATH as an association list.
+If FILE-PATH is nil, use the current buffer."
+  (let ((file-path (or file-path (buffer-file-name))))
+    (with-temp-buffer
+      (insert-file-contents file-path)
+      (let ((metadata '()))
+	(when (looking-at-p tlon-babel-yaml-delimiter)
+	  (forward-line)
+	  (dolist (line (tlon-babel-read-until-match tlon-babel-yaml-delimiter))
+	    (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
+	      (let* ((key (match-string 1 line))
+		     (value (match-string 2 line))
+		     (trimmed-value (string-trim value)))
+		(push (cons (string-trim key)
+			    (cond
+			     ((and (string-prefix-p "[" trimmed-value)
+				   (string-suffix-p "]" trimmed-value))
+			      (mapcar #'string-trim
+				      (mapcar (lambda (s) (if (and (string-prefix-p "\"" s)
+							      (string-suffix-p "\"" s))
+							 (substring s 1 -1)
+						       s))
+					      (split-string (substring trimmed-value 1 -1) "\\s *,\\s *")
+					      )))
+			     ((and (string-prefix-p "\"" trimmed-value)
+				   (string-suffix-p "\"" trimmed-value))
+			      (substring trimmed-value 1 -1))
+			     (t trimmed-value)))
+		      metadata)))))
+	(nreverse metadata)))))
 
 (defun tlon-babel-read-until-match (delimiter)
   "Return a list of lines until DELIMITER is matched.
