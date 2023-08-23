@@ -419,8 +419,7 @@ buffer."
 (defun tlon-babel-markdown-eaf-cleanup (&optional buffer)
   "Cleanup the BUFFER visiting an EAF entry."
   (interactive)
-  (when (not (eq major-mode 'markdown-mode))
-    (user-error "Not in a Markdown buffer"))
+  (tlon-babel-check-in-markdown-mode)
   (save-excursion
     (unfill-region (point-min) (point-max))
     (goto-char (point-min))
@@ -508,13 +507,17 @@ buffer."
       (message "Cleaning up %s" (buffer-name))
       (tlon-babel-markdown-eaf-cleanup))))
 
-;;;; insertion
+;;;; Markdown
+
+(defun tlon-babel-check-in-markdown-mode ()
+  "Check if the current buffer is in a Markdown-derived mode."
+  (unless (derived-mode-p 'markdown-mode)
+    (user-error "Not in a Markdown buffer")))
 
 (defun tlon-babel-insert-tag ()
   "Insert a TAG slug at point."
   (interactive)
-  (unless (eq major-mode 'markdown-mode)
-    (user-error "Not in a Markdown buffer"))
+  (tlon-babel-check-in-markdown-mode)
   (let* ((tag (if (markdown-inside-link-p)
 		  (ps/markdown--delete-link)
 		(completing-read "URL: " tlon-babel-tags)))
@@ -629,8 +632,7 @@ If FILE is nil, use the current buffer."
 
 (defun tlon-babel-get-key-in-buffer ()
   "Get the key in the current Markdown buffer."
-  (unless (derived-mode-p 'markdown-mode)
-    (user-error "Not in a Markdown buffer"))
+  (tlon-babel-check-in-markdown-mode)
   (let ((key (tlon-babel-get-metadata-value-in-file "key_original")))
     (unless key
       (user-error "No key found"))
