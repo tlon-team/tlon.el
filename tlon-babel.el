@@ -525,13 +525,43 @@ buffer."
 	(insert ref)
       (insert link))))
 
-(defun tlon-babel-insert-cite-tag ()
-  "Insert a CITE tag at point."
+(defun tlon-babel-insert-element-pair (open close)
+  "Insert an element pair at point or around the region if selected.
+OPEN is the opening element and CLOSE is the closing element."
   (interactive)
-  (unless (eq major-mode 'markdown-mode)
-    (user-error "Not in a Markdown buffer"))
-  (insert "<cite></cite>")
-  (backward-char 7))
+  (tlon-babel-check-in-markdown-mode)
+  (if (use-region-p)
+      (let ((begin (region-beginning)))
+	(goto-char (region-end))
+	(insert close)
+	(goto-char begin)
+	(insert open))
+    (insert (concat open close))
+    (backward-char (length close))))
+
+(defun tlon-babel-insert-cite-element ()
+  "Insert an HTML `cite' element pair at point or around the region if selected.
+When a Bibtex key is enclosed in a `cite' element pair, only its
+title will be displayed in the exported web page."
+  (interactive)
+  (tlon-babel-insert-element-pair "<cite>" "</cite>"))
+
+(defun tlon-babel-insert-abbr-element ()
+  "Insert an HTML `abbr' element pair at point or around the region if selected.
+Text enclosed by an `abbr' element pair will be displayed in small
+caps."
+  (interactive)
+  (tlon-babel-insert-element-pair "<abbr>" "</abbr>"))
+
+(defun tlon-babel-insert-inline-math-element ()
+  "Insert an inline math element pair at point or around the region if selected."
+  (interactive)
+  (tlon-babel-insert-element-pair "$`" "`$"))
+
+(defun tlon-babel-insert-display-math-element ()
+  "Insert a display math element pair at point or around the region if selected."
+  (interactive)
+  (tlon-babel-insert-element-pair "$$\n" "\n$$"))
 
 ;;;; metadata
 
