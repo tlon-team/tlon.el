@@ -1780,6 +1780,22 @@ This command should be run from the source window."
       (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
 		 bibtex-autokey-titleword-separator))))
 
+(defun tlon-babel-bibtex-add-lang-id ()
+  "Supply missing Spanish `landid' field to all bib files."
+  (interactive)
+  (dolist (file `(,tlon-babel-file-fluid ,tlon-babel-file-stable))
+    (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
+			     (find-file-noselect tlon-babel-file-jobs))
+      (goto-char (point-min))
+      (dolist (string '("translation = " "translator = "))
+	(while (re-search-forward string nil t)
+	  (bibtex-narrow-to-entry)
+	  (goto-char (point-min))
+	  (unless (re-search-forward "langid" nil t)
+	    (bibtex-set-field "langid" "spanish"))
+	  (widen)
+	  (bibtex-next-entry))))))
+
 (defun tlon-babel-act-on-topic (original-key label &optional assignee action)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-KEY.
 If ACTION is `convert', convert the existing issue into a pull
