@@ -87,6 +87,12 @@
   (append  tlon-babel-project-names-and-abbrevs `(("genus" . "genus")))
   "Association list of all repos and their file paths.")
 
+(defvar tlon-babel-project-names-and-metadata-vars
+  '(("biblioteca-altruismo-eficaz" . tlon-babel-bae-metadata)
+    ("ensayos-sobre-largoplacismo" . tlon-babel-largoplacismo-metadata)
+    ("utilitarismo.net" . tlon-babel-utilitarismo-metadata))
+  "List of Babel project names and associated metadata variables.")
+
 (defvar tlon-babel-repo-names
   (mapcar #'car tlon-babel-repo-names-and-abbrevs)
   "List of Babel repo names.")
