@@ -2699,29 +2699,5 @@ If the key is not found, it is added to the list of missing keys."
   ;; potentially add more cleanup processes here
   )
 
-;;; load vars
-
-(defun tlon-babel-load-variables ()
-  "Load the variables to reflect changes to the files in the `etc' directory."
-  (interactive)
-  ;; TODO: recreate functionality without using tags.txt
-  ;; (setq tlon-babel-tags (tlon-babel-read-urls-from-file tlon-babel-file-tags))
-  (setq tlon-babel-wiki-urls (list ""))
-  (dolist (slug tlon-babel-tag-slugs)
-    (add-to-list 'tlon-babel-wiki-urls
-		 (format "https://forum.effectivealtruism.org/topics/%s" slug)))
-  ;; (tlon-babel-load-post-correspondence)
-  (message "Variables loaded."))
-
-(defun tlon-babel-read-urls-from-file (file-path)
-  "Read URLs from a plain text FILE-PATH into an Emacs Lisp list."
-  (with-temp-buffer
-    (insert-file-contents file-path)
-    (split-string (buffer-string) "\n" t)))
-
-(tlon-babel-reload-metadata)
-
-;; (tlon-babel-load-variables)
-
 (provide 'tlon-babel)
 ;;; tlon-babel.el ends here
