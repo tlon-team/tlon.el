@@ -561,6 +561,38 @@ buffer."
 	 (file (concat tlon-babel-dir-bae-translations "temas/" slug))
 	 (title (tlon-babel-metadata-lookup "file" file "titulo" (tlon-babel-get-repo-metadata))))
     title))
+
+(defun tlon-babel-markdown-sort-elements-in-paragraph (separator)
+  "Sort the elements separated by SEPARATOR in the current paragraph alphabetically."
+  (save-excursion
+    ;; Get paragraph boundaries
+    (let* ((para-start (progn (backward-paragraph)
+                              (skip-chars-forward "\n\t ") (point)))
+           (para-end (progn (end-of-paragraph-text)
+                            (point)))
+           ;; Get paragraph text, separate the links
+           (para-text (buffer-substring-no-properties para-start para-end))
+           (link-list (split-string para-text separator))
+           ;; Trim and sort the links
+           (sorted-links (sort (mapcar 'string-trim link-list)
+                               'string<)))
+      ;; Clear the current paragraph
+      (delete-region para-start para-end)
+      ;; Replace it with sorted links
+      (goto-char para-start)
+      (insert (mapconcat 'identity sorted-links separator)))))
+
+(defun tlon-babel-markdown-sort-related-entries ()
+  "Sort the links in the `related entries' section in current buffer.
+If no section is found, signal an error."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (unless (re-search-forward "^## Entradas relacionadas" nil t)
+      (error "No `related entries' section found"))
+    (forward-paragraph)
+    (tlon-babel-markdown-sort-elements-in-paragraph " • ")))
+
 (defun tlon-babel-insert-element-pair (open close)
   "Insert an element pair at point or around the region if selected.
 OPEN is the opening element and CLOSE is the closing element."
