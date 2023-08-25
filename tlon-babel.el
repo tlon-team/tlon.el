@@ -302,6 +302,10 @@ If FILE is nil, use the current buffer's file name."
   "Return the name of the repo REPO."
   (tlon-babel-alist-key repo tlon-babel-repo-names-and-dirs))
 
+(defun tlon-babel-get-repo-from-name (repo-name)
+  "Return the path of the repo named REPO-NAME."
+  (alist-get repo-name tlon-babel-repo-names-and-dirs nil nil 'string=))
+
 (defun tlon-babel-get-abbreviated-name-from-repo (&optional repo)
   "Return the abbreviated name of the repo REPO."
   (let* ((repo (or repo (tlon-babel-get-repo)))
