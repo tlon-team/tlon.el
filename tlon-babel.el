@@ -516,27 +516,51 @@ buffer."
       (message "Cleaning up %s" (buffer-name))
       (tlon-babel-markdown-eaf-cleanup))))
 
-;;;; Markdown
+;;; Markdown
 
 (defun tlon-babel-check-in-markdown-mode ()
   "Check if the current buffer is in a Markdown-derived mode."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))
 
-(defun tlon-babel-insert-tag ()
-  "Insert a TAG slug at point."
+;;;; insertion commands
+(defun tlon-babel-markdown-insert-tag ()
+  "Insert a tag slug at point."
   (interactive)
   (tlon-babel-check-in-markdown-mode)
-  (let* ((tag (if (markdown-inside-link-p)
-		  (ps/markdown--delete-link)
-		(completing-read "URL: " tlon-babel-tags)))
-	 (slug (tlon-core-slugify tag))
-	 (ref (concat "temas/" slug ".md"))
-	 (link (format "[%s](%s)" tag ref)))
-    (if (markdown-link-url)
-	(insert ref)
+  (let* ((selection (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end))))
+         (current-link (markdown-link-at-pos (point)))
+	 (current-desc (nth 2 current-link))
+	 (current-target (nth 3 current-link))
+         current-tag-title)
+    (when current-target
+      (setq current-tag-title (tlon-babel-markdown-get-tag-title-in-link-target current-target)))
+    (let* ((new-tag-title (completing-read "Tag: " (tlon-babel-get-bae-tags) nil t
+					   (or current-tag-title
+					       selection)))
+           (new-target-file (file-name-nondirectory
+                             (tlon-babel-metadata-lookup "titulo" new-tag-title "file" (tlon-babel-get-repo-metadata))))
+           (tags-dir (file-name-concat tlon-babel-dir-bae-translations "temas"))
+           (new-target-dir (file-relative-name tags-dir default-directory))
+           (new-target (file-name-concat new-target-dir new-target-file))
+           (new-desc (if (and current-desc (string= new-target current-target))
+			 current-desc
+                       (or selection new-tag-title)))
+           (link (format "[%s](%s)" new-desc new-target)))
+      (when current-target
+	(ps/markdown--delete-link))
+      (when selection
+	(delete-region (region-beginning) (region-end)))
       (insert link))))
 
+(defun tlon-babel-markdown-get-tag-title-in-link-target (target)
+  "Return the title of the tag to which the TARGET of a Markdown link points."
+  (let* ((slug (progn
+		 (string-match "\\(.*/\\)?\\(.*?\\.md\\)" target)
+		 (match-string 2 target)))
+	 (file (concat tlon-babel-dir-bae-translations "temas/" slug))
+	 (title (tlon-babel-metadata-lookup "file" file "titulo" (tlon-babel-get-repo-metadata))))
+    title))
 (defun tlon-babel-insert-element-pair (open close)
   "Insert an element pair at point or around the region if selected.
 OPEN is the opening element and CLOSE is the closing element."
