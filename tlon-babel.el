@@ -254,11 +254,10 @@ If the current directory matches none of the directories in
 (defun tlon-babel-get-repo (&optional no-prompt genus)
   "Get Babel repository path.
 If the current directory matches any of the directories in `tlon-
-babel-project-names', return it. Else, prompt the user to select a
-repo from that list, unless signal an error unless NO-PROMPT is
-non-nil. In that case, signal an error if its value is `error',
-else return nil.
-If GENUS is non-nil, include the `genus' repo. In that case, the
+babel-project-names', return it. Else, prompt the user to select
+a repo from that list, unless NO-PROMPT is non-nil. In that case,
+signal an error if its value is `error', else return nil. If
+GENUS is non-nil, include the `genus' repo. In that case, the
 matching will be made against `tlon-babel-repo-names'."
   (if-let ((current-repo (tlon-babel-get-repo-from-file)))
       current-repo
