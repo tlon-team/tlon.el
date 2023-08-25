@@ -631,46 +631,11 @@ caps."
   (interactive)
   (tlon-babel-insert-element-pair "$$\n" "\n$$"))
 
-;;;; metadata
+;;; metadata
 
-(defun tlon-babel-reload-metadata ()
-  "Reload all metadata variables."
-  (interactive)
-  (tlon-babel-set-metadata-variables)
-  (message "Metadata reloaded."))
+;;;; get metadata
 
-(defun tlon-babel-get-repo-metadata (&optional repo)
-  "Return metadata of repository named REPO.
-If REPO is nil, return metadata of current repository."
-  (let ((repo (or repo (tlon-babel-get-repo))))
-    (when-let ((abbreviated-repo (tlon-babel-get-abbreviated-name-from-repo repo)))
-      (symbol-value (intern (format "tlon-babel-%s-metadata" abbreviated-repo))))))
 
-(defun tlon-babel-set-metadata-variables ()
-  "Set metadata variables for each project and add them to `tlon-babel-all-metadata'."
-  (setq tlon-babel-all-metadata nil)
-  (dolist (repo tlon-babel-project-abbrevs)
-    (let ((var (intern (format "tlon-babel-%s-metadata" repo))))
-      (set var (tlon-babel-get-dir-metadata (symbol-value (intern (format "tlon-babel-dir-%s-translations" repo)))))
-      (push (symbol-value var) tlon-babel-all-metadata))))
-
-(defun tlon-babel-get-field-metadata (field metadata)
-  "Return all FIELD values in METADATA."
-  (let ((result '()))
-    (dolist (entry metadata)
-      (when-let ((value (cdr (assoc field entry))))
-	(push value result)))
-    result))
-
-(defun tlon-babel-metadata-lookup (key value assoc-value metadata)
-  "Search METADATA for VALUE in KEY and return the key of ASSOC-VALUE."
-  (let ((found nil)
-	(i 0))
-    (while (and (not found) (< i (length metadata)))
-      (when (equal (cdr (assoc key (nth i metadata))) value)
-	(setq found (cdr (assoc assoc-value (nth i metadata)))))
-      (setq i (1+ i)))
-    found))
 
 (defun tlon-babel-get-dir-metadata (dir)
   "Return the metadata in DIR and all its subdirectories as an association list."
@@ -854,6 +819,85 @@ AUTHOR is the first author of the original work."
 	   nil
 	   (format "%s " first-author)
 	   'citar-history citar-presets nil)))))
+
+;;;; interactive editing
+
+(defun tlon-babel-yaml-insert (list)
+  "Insert YAML LIST at point.
+  If point is on a list, pre-populate the selection with the list
+  elements."
+  (let* ((bounds (bounds-of-thing-at-point 'line))
+	 ;; retrieve the line
+	 (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
+    (when (string-match "\\[\\(.*?\\)\\]" line)
+      ;; retrieve and parse the elements in the list, remove quotes
+      (let ((elems-at-point (mapcar (lambda (s)
+				      (replace-regexp-in-string "\\`\"\\|\"\\'" "" s))
+				    (split-string (match-string 1 line) ", "))))
+	;; prompt the user to select multiple elements from the list,
+	;; prefilling with previously selected items
+	(let ((choices (completing-read-multiple "Selection (comma-separated): "
+						 list
+						 nil nil
+						 (mapconcat 'identity elems-at-point ", "))))
+	  ;; delete the old line
+	  (delete-region (car bounds) (cdr bounds))
+	  ;; insert the new line into the current buffer
+	  (insert (replace-regexp-in-string "\\[.*?\\]"
+					    (concat "["
+						    (mapconcat (lambda (item)
+								 (format "\"%s\"" item))
+							       choices ", ")
+						    "]")
+					    line)))))))
+
+(defun tlon-babel-yaml-get-key-at-point ()
+  (interactive)
+  (let* ((bounds (bounds-of-thing-at-point 'line))
+	 ;; retrieve the line
+	 (line (buffer-substring-no-properties (car bounds) (cdr bounds)))
+	 ;; key and value are separated by a colon
+	 (key (car (split-string line ":"))))
+    ;; If there's a key in the line, return it. If not, return nil.
+    (when (and key (> (length (string-trim key)) 0))
+      (string-trim key))))
+
+(defun tlon-babel-yaml-edit-field ()
+  "Edit the YAML field at point."
+  (interactive)
+  (let ((key (tlon-babel-yaml-get-key-at-point)))
+    (pcase key
+      ("traductores" (tlon-babel-yaml-insert (tlon-babel-get-bae-translators)))
+      ("temas" (tlon-babel-yaml-insert (tlon-babel-get-bae-tags)))
+      ("autores" (tlon-babel-yaml-insert (tlon-babel-get-bae-authors)))
+      (_ (message "No field to edit")))))
+
+;;; get repo-specific elements
+
+(defun tlon-babel-get-bae-authors ()
+  "Get a list of BAE authors."
+  (tlon-babel-get-field-metadata
+   "titulo"
+   (tlon-babel-get-repo-metadata tlon-babel-dir-bae)
+   "file"
+   (file-name-concat tlon-babel-dir-bae-translations "autores")))
+
+(defun tlon-babel-get-bae-tags ()
+  "Get a list of BAE tags."
+  (tlon-babel-get-field-metadata
+   "titulo"
+   (tlon-babel-get-repo-metadata tlon-babel-dir-bae)
+   "file"
+   (file-name-concat tlon-babel-dir-bae-translations "temas")))
+
+;;;
+
+(defun tlon-babel-get-translators ()
+  "Get a list of translators.
+  Note that this searches in all repos, not just BAE."
+  (tlon-babel-get-field-metadata
+   "titulo"
+   (tlon-babel-get-metadata-in-all-repos)))
 
 ;;;; counterparts
 
