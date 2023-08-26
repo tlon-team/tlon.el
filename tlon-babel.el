@@ -2394,7 +2394,7 @@ If ASYNC is t, run the request asynchronously."
 	 (username (cdr (assoc 'username user))))
     username))
 
-(defun tlon-babel--eaf-get-tag-result ()
+(defun tlon-babel--eaf-get-tag-result (response)
   "Get tag details from EA Forum API RESPONSE."
   (let* ((tag (cdr (assoc 'tag response)))
 	 (result (cdr (assoc 'result tag))))
