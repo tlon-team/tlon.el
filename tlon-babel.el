@@ -26,6 +26,9 @@
 ;;; Commentary:
 
 ;;; Code:
+
+;;;; Requirements:
+
 (require 'org)
 (require 'org-clock)
 (require 'bibtex)
@@ -37,31 +40,18 @@
 (require 'orgit-forge)
 (require 'unfill)
 (require 'citar)
+(require 'org)
+(require 'tlon-core)
+(require 'winum)
+(require 'read-aloud)
+(require 'forge)
+(require 'consult)
 
-;;; Version
+;;;; Customization:
 
-(defvar tlon-babel-version "0.1.13")
+;;;; Variables
 
-(defun tlon-babel-version ()
-  "Return the version of the `tlon-babel' package."
-  (interactive)
-  (message "`tlon-babel' version %s" tlon-babel-version))
-
-(defun tlon-babel-update ()
-  "Update `tlon-babel' package."
-  (interactive)
-  (let* ((default-directory (file-name-concat user-emacs-directory "elpaca/repos/tlon-babel/"))
-	 (builds-directory (file-name-concat user-emacs-directory "elpaca/builds/tlon-babel/"))
-	 (tlon-babel-file (file-name-concat default-directory "tlon-babel.el")))
-    (shell-command "git pull")
-    (with-current-buffer (find-file-noselect tlon-babel-file)
-      (eval-buffer))
-    (dired-delete-file builds-directory 'always t)
-    (message "Package updated. %s" tlon-babel-version)))
-
-;;; Vars
-
-;;;; files
+;;;;; Files
 
 (defvar tlon-babel-dir-repos
   (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")
@@ -177,7 +167,7 @@ named `tlon-babel-dir-bae-originals'."
   (file-name-concat tlon-babel-dir-refs "stable.bib")
   "File containing the stable bibliography.")
 
-;;;; org-mode ids
+;;;;; Org-mode ids
 
 (defvar tlon-babel-manual-processing-id
   "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
@@ -187,7 +177,7 @@ named `tlon-babel-dir-bae-originals'."
   "820BEDE2-F982-466F-A391-100235D4C596"
   "ID of the `jobs' heading in `jobs.org'.")
 
-;;;; forge
+;;;;; Forge
 
 (defvar tlon-babel-label-actions
   '(("Awaiting processing" . "Process")
@@ -234,7 +224,63 @@ named `tlon-babel-dir-bae-originals'."
     ("Pablo Stafforini" . "Pablo Stafforini"))
   "Alist of system usernames and corresponding full names.")
 
-;;; 
+;;;;; html import
+
+(defvar tlon-babel-pandoc-convert-from-file
+  "pandoc -s '%s' -t markdown -o '%s'"
+  "Command to convert from HTML file to Markdown.")
+
+(defvar tlon-babel-pandoc-convert-from-url
+  "pandoc -s -r html '%s' -o '%s'"
+  "Command to convert from URL to Markdown.")
+
+;;;;; Version
+
+(defvar tlon-babel-version "0.1.13")
+
+;;;;; Import
+
+(defvar tlon-babel-pdf2md
+  (file-name-concat ps/dir-source "pdf2md/lib/pdf2md-cli.js")
+  "Path to `pdf2md-cli.js' executable.")
+
+(defvar tlon-babel-pdftotext
+  (file-name-concat ps/dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
+  "Path to `pdftotext' executable.")
+
+;;;;; API
+
+(defconst tlon-babel-eaf-api-url
+  "https://forum.effectivealtruism.org/graphql"
+  "URL for the EAF GraphQL API endpoint.")
+
+(defvar tlon-babel-eaf-objects
+  '(post tag)
+  "List of entities supported by the EAF GraphQL API.")
+
+;;;; Functions
+
+;;;;; Version
+
+(defun tlon-babel-version ()
+  "Return the version of the `tlon-babel' package."
+  (interactive)
+  (message "`tlon-babel' version %s" tlon-babel-version))
+
+(defun tlon-babel-update ()
+  "Update `tlon-babel' package."
+  (interactive)
+  (let* ((default-directory (file-name-concat user-emacs-directory "elpaca/repos/tlon-babel/"))
+	 (builds-directory (file-name-concat user-emacs-directory "elpaca/builds/tlon-babel/"))
+	 (tlon-babel-file (file-name-concat default-directory "tlon-babel.el")))
+    (shell-command "git pull")
+    (with-current-buffer (find-file-noselect tlon-babel-file)
+      (eval-buffer))
+    (dired-delete-file builds-directory 'always t)
+    (message "Package updated. %s" tlon-babel-version)))
+
+;;;;;
+
 (defun tlon-babel-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
 If FILE is nil, use the current buffer's file name."
@@ -308,7 +354,7 @@ If FILE is nil, use the current buffer's file name."
 	  (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
 	  (user-error "Aborted")))
       (orgit-store-link nil)
-      (magit-pull-from-upstream nil)
+      (call-interactively #'magit-pull-from-upstream nil)
       (if-let* ((org-link (ps/org-nth-stored-link 0))
 		(refile-position (org-find-exact-headline-in-buffer
 				  (cadr (nth 0 org-stored-links))
@@ -338,7 +384,7 @@ and assignee to the current user."
     ;; TODO: use different capture templates for the different projects
     (org-capture nil "tbJ")))
 
-;;; user commits
+;;;;; User commits
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
   "Return latest commit by the current user in FILE.
@@ -369,8 +415,9 @@ buffer."
 	 (commit-file (tlon-babel-create-file-from-commit file commit)))
     (ediff-files commit-file file)))
 
-;;; Markdown
-;;;; cleanup
+;;;;; Markdown
+
+;;;;;; Cleanup
 
 (defun tlon-babel-check-in-markdown-mode ()
   "Check if the current buffer is in a Markdown-derived mode."
@@ -486,7 +533,8 @@ buffer."
       (message "Cleaning up %s" (buffer-name))
       (tlon-babel-markdown-eaf-cleanup))))
 
-;;;; insertion commands
+;;;;;; Insertion commands
+
 (defun tlon-babel-markdown-insert-tag ()
   "Insert a tag slug at point."
   (interactive)
@@ -594,9 +642,9 @@ caps."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "$$\n" "\n$$"))
 
-;;; metadata
+;;;;; Metadata
 
-;;;; get metadata
+;;;;;; Get metadata
 
 (defun tlon-babel-get-metadata-in-all-repos ()
   "Return metadata of all repos."
@@ -628,7 +676,7 @@ If REPO is nil, return metadata of current repository."
 		   ("landid" . "es"))))
     (append metadata extras)))
 
-;;;; query metadata
+;;;;;; Query metadata
 
 (defun tlon-babel-alist-key (value alist)
   "Find the first key from ALIST that corresponds to VALUE."
@@ -674,15 +722,17 @@ If FILE is nil, use the current buffer."
       (user-error "No key found"))
     key))
 
-(defun tlon-babel-get-locators-in-repo (&optional repo)
+(defun tlon-babel-get-locators-in-repo (&optional repo dir)
   "Return a list of all locators in SUBDIR of REPO.
-If REPO is nil, return files in current repository."
+If REPO is nil, return files in current repository. DIR is one of
+`originals' or `translations'."
   (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (files (directory-files-recursively (file-name-concat repo "translations") "\\.md$")))
+	 (files (directory-files-recursively (file-name-concat repo dir) "\\.md$")))
     (mapcar #'tlon-babel-get-locator-from-file files)))
 
-;;; YAML front matter
-;;;; get YAML values
+;;;;; YAML front matter
+
+;;;;;; Get YAML values
 (defvar tlon-babel-yaml-delimiter "---"
   "Delimiter for YAML front matter.")
 
@@ -730,7 +780,7 @@ found, signal an error."
 	(error "Delimiter not found")
       (nreverse result))))
 
-;;;; set YAML values
+;;;;;; Set YAML values
 
 (defun tlon-babel--yaml-set-front-matter-fields (fields)
   "Get the field values for the given FIELDS in the current buffer."
@@ -772,8 +822,7 @@ found, signal an error."
 (defun tlon-babel-yaml-set-front-matter-for-post ()
   "Insert YAML fields for BAE post in the current buffer."
   (interactive)
-  (let* ((file-path (or file-path (buffer-file-name)))
-	 (field-values
+  (let* ((field-values
 	  (tlon-babel--yaml-set-front-matter-fields
 	   '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion"))))
     ;; reorder field-values
@@ -792,10 +841,10 @@ If FILE-PATH is nil, use the current buffer."
 
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
   "Set the value of multivalue FIELD in metadata of REPO.
-  If DIR is non-nil, only search in directory within the repo. Note
-  DIR does not include the `translations' directory. That is, it is
-  the directory component of the repo's locator. For example, to
-  search only in `translations/autores', use `autores' as DIR."
+If DIR is non-nil, only search in directory within the repo. Note
+DIR does not include the `translations' directory. That is, it is
+the directory component of the repo's locator. For example, to
+search only in `translations/autores', use `autores' as DIR."
   (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (metadata (tlon-babel-get-repo-metadata repo))
 	 (dir (when dir (file-name-concat repo "translations" dir))))
@@ -836,14 +885,14 @@ AUTHOR is the first author of the original work."
 	   (format "%s " first-author)
 	   'citar-history citar-presets nil)))))
 
-;;;; interactive editing
+;;;;;; Interactive editing
 
 (defun tlon-babel-yaml-edit-field ()
   "Edit the YAML field at point."
   (interactive)
   (let ((key (tlon-babel-yaml-get-key-at-point)))
     (pcase key
-      ("traductores" (tlon-babel-yaml-insert (tlon-babel-get-bae-translators)))
+      ("traductores" (tlon-babel-yaml-insert (tlon-babel-get-translators)))
       ("temas" (tlon-babel-yaml-insert (tlon-babel-get-bae-tags)))
       ("autores" (tlon-babel-yaml-insert (tlon-babel-get-bae-authors)))
       (_ (message "No field to edit")))))
@@ -889,7 +938,7 @@ elements."
 						    "]")
 					    line)))))))
 
-;;;; get repo-specific elements
+;;;;;; Get repo-specific elements
 
 (defun tlon-babel-get-bae-authors ()
   "Get a list of BAE authors."
@@ -907,23 +956,23 @@ elements."
    "file"
    (file-name-concat tlon-babel-dir-bae-translations "temas")))
 
-;;;; get repo-agnostic elements
+;;;;;; Get repo-agnostic elements
 
 (defun tlon-babel-get-translators ()
   "Get a list of translators.
-  Note that this searches in all repos, not just BAE."
+Note that this searches in all repos, not just BAE."
   (tlon-babel-metadata-get-all-fields
    "titulo"
    (tlon-babel-get-metadata-in-all-repos)))
 
-;;;; counterparts
+;;;;;; Counterparts
 
 (defun tlon-babel-get-work-type (&optional reversed file-path)
   "Return the work type of file in FILE-PATH.
 A work is either `original' or `translation'. If REVERSED is
-  non-nil, return 'originals' when the work type is 'translations'
-  and vice versa. If FILE-PATH is nil, return the work type of the
-  file visited by the current buffer."
+non-nil, return 'originals' when the work type is 'translations'
+and vice versa. If FILE-PATH is nil, return the work type of the
+file visited by the current buffer."
   (let* ((file-path (or file-path (buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file-path))
 	 (repo-path (file-relative-name file-path repo))
@@ -936,8 +985,7 @@ A work is either `original' or `translation'. If REVERSED is
   "Get the counterpart file path of file in FILE-PATH.
 If FILE-PATH is nil, return the counterpart file path of the
 file visited by the current buffer."
-  (let* ((file-path (or file-path (tlon-bae-buffer-file-name)))
-	 (repo (tlon-babel-get-repo 'error)))
+  (let* ((file-path (or file-path (tlon-babel-buffer-file-name))))
     ;; we use a different method for getting the counterpart depending
     ;; on whether FILE-PATH is in `originals' or `translations', since
     ;; only translation files have YAML metadata.
@@ -1023,7 +1071,7 @@ If EXTENSION is provided, only check files with that extension.
     (cl-loop for file in files
 	     do (tlon-babel-check-paragraph-number-match file))))
 
-;;; EAF validation
+;;;;; EAF validation
 
 (defvar tlon-babel-eaf-p
   "forum\\.effectivealtruism\\.org/"
@@ -1089,7 +1137,7 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 		      (t (user-error "Not an ID or slug: %S" id-or-slug)))))
     object))
 
-;;; Clocked heading
+;;;;; Clocked heading
 
 (defvar tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
   "Regular expression for matching bibtex keys in clocked headings.
@@ -1246,31 +1294,31 @@ Defaults to the current buffer if no FILE is specified. If DEEPL
   (winum-select-window-2)
   (find-file translation-path))
 
-;;; Main functions
+;;;;; Main functions
 
 (defun tlon-babel-magit-status ()
   "Show the status of the current repository in a buffer."
   (interactive)
   (let ((default-directory (tlon-babel-get-repo nil 'genus)))
-    (magit-status)))
+    (magit-status-setup-buffer)))
 
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher.
-  If the current directory matches none of the directories in
-  `tlon-babel-project-names', prompt the user to select a repo from that
-  list."
+If the current directory matches none of the directories in
+`tlon-babel-project-names', prompt the user to select a repo from that
+list."
   (interactive)
   (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (call-interactively 'forge-dispatch)))
 
 (defun tlon-babel-get-repo (&optional no-prompt genus)
   "Get Babel repository path.
-  If the current directory matches any of the directories in `tlon-
-  babel-project-names', return it. Else, prompt the user to select
-  a repo from that list, unless NO-PROMPT is non-nil. In that case,
-  signal an error if its value is `error', else return nil. If
-  GENUS is non-nil, include the `genus' repo. In that case, the
-  matching will be made against `tlon-babel-repo-names'."
+If the current directory matches any of the directories in `tlon-
+babel-project-names', return it. Else, prompt the user to select
+a repo from that list, unless NO-PROMPT is non-nil. In that case,
+signal an error if its value is `error', else return nil. If
+GENUS is non-nil, include the `genus' repo. In that case, the
+matching will be made against `tlon-babel-repo-names'."
   (if-let ((current-repo (tlon-babel-get-repo-from-file)))
       current-repo
     (if no-prompt
@@ -1301,90 +1349,48 @@ Creating a new job means (1) importing a document and (2)
 creating a record for it. A record is (a) an issue in GitHub
 and (b) a heading in `jobs.org'.
 
-IDENTIFIER can be a URL or a PDF file path.
-
-Note: this command cannot be used to create new tag jobs, because
-we don't add tags to Ebib. To create a new tag job, use
-`tlon-babel-create-tag-job'."
+IDENTIFIER can be a URL or a PDF file path."
   (interactive)
-  (tlon-babel-create-translation-entry)
   (tlon-babel-import-document)
   (tlon-babel-create-record-for-job))
 
-(defun tlon-babel--create-entry-from-current (fields)
-  "Create a BibTeX entry based on the current one with FIELDS."
-  (unless (eq major-mode 'ebib-entry-mode)
-    (user-error "This command must be run in Ebib"))
-  (ps/ebib-valid-key-p)
-  (let* ((key (ebib--get-key-at-point))
-	 (file (file-name-with-extension key "md"))
-	 (db ebib--cur-db)
-	 (new-db-num (ps/ebib-get-db-number tlon-babel-file-fluid)))
-    (ebib-switch-to-database-nth new-db-num)
-    (ebib-add-entry)
-    (let ((new-key (ebib--get-key-at-point))
-	  (new-db ebib--cur-db))
-      (dolist (field fields)
-	(ebib-set-field-value (car field) (cdr field) new-key new-db)))
-    (ebib--update-entry-buffer)
-    (ebib-generate-autokey)
-    (set-buffer-modified-p nil)
-    (ebib--set-modified t db t (seq-filter (lambda (dependent)
-					     (ebib-db-has-key key dependent))
-					   (ebib--list-dependents db)))))
+;;;;; Importing
 
-;; this should be moved to ebib
-(defun tlon-babel-create-section-entry (&optional title)
-  "Create a BibTeX entry for the section of the current entry.
-Prompt the user for a title, unless TITLE is non-nil."
-  (interactive)
-  (let* ((fields `(("title" . ,(or title (read-string "Section title: ")))
-		   ("eventtitle" . ,(ps/ebib-get-field-value "title"))
-		   ("url" . ,(read-string "URL: " (ps/ebib-get-field-value "url")))
-		   ("crossref" . ,(ebib--get-key-at-point))
-		   ("author" . ,(ps/ebib-get-field-value "author"))
-		   ("date" . ,(ps/ebib-get-field-value "")))))
-    (tlon-babel--create-entry-from-current fields)))
-
-(defun tlon-babel-import-document (&optional identifier target)
-  "Import a document with IDENTIFIER to TARGET.
+(defun tlon-babel-import-document (&optional identifier)
+  "Import a document with IDENTIFIER.
 IDENTIFIER can be a URL or a PDF file path.
-To import a tag, use `tlon-babel-import-tag'."
-  (interactive)
-  (unless (eq major-mode 'ebib-entry-mode)
-    (user-error "You must be in an Ebib buffer"))
-  (if-let* ((key (ebib--get-key-at-point))
-	    (value (or (ps/ebib-get-field-value "url")
-		       (ps/ebib-get-field-value "file")))
-	    (identifier (or identifier (replace-regexp-in-string "\n\\s-*" "" value)))
-	    (target (or target
-			;; TODO: Revise
-			;; (file-name-concat tlon-babel-dir-original-posts-dir
-			;; (file-name-with-extension key "md"))
-			)))
-      (if (ps/string-is-url-p identifier)
-	  (tlon-babel-import-html identifier target)
-	(tlon-babel-import-pdf (expand-file-name identifier) target))
-    (user-error "Document was not imported because no URL or file found in Ebib entry")))
 
-(defun tlon-babel-import-tag (url-or-slug)
-  "Import an EA Forum tag with URL-OR-SLUG."
-  (interactive "sTag url or slug (if you are not importing a tag, please re-run `tlon-babel-import-document' from an Ebib buffer): ")
-  (let* ((slug (tlon-babel-eaf-get-id-or-slug-from-identifier url-or-slug))
-	 (target (file-name-concat tlon-babel-dir-bae-originals "tags"
-				   (file-name-with-extension slug ".md"))))
-    (tlon-babel-import-html-eaf slug target)))
+This command also imports EA Forum posts and tags."
+  (let ((identifier (or identifier (read-string "Identifier: "))))
+    (if (ps/string-is-url-p identifier)
+	(tlon-babel-import-html identifier)
+      (tlon-babel-import-pdf (expand-file-name identifier)))))
 
-(defun tlon-babel-import-html (url target)
-  "Import the HTML in URL to TARGET and convert it to Markdown."
+(defun tlon-babel-import-html (url)
+  "Import the HTML in URL and convert it to Markdown."
   (if-let ((id-or-slug (tlon-babel-eaf-get-id-or-slug-from-identifier url)))
-      (tlon-babel-import-html-eaf id-or-slug target)
-    (tlon-babel-html-to-markdown url target)))
+      (tlon-babel-import-html-eaf id-or-slug)
+    (tlon-babel-html-to-markdown url)))
 
-(defun tlon-babel-import-html-eaf (id-or-slug target)
+(defun tlon-babel-set-file-from-title (&optional title dir)
+  "Set the file path based on its title.
+The file name is the slugified version of TITLE with the
+extension `.md'. The directory is the current repo followed by
+\"originals\" and, optionally, by DIR. If the current directory
+is not a Babel repo, prompt the user to select one."
+  (let* ((title (or title (read-string "Title: ")))
+	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
+	 (dirname (file-name-concat (tlon-babel-get-repo) "originals" dir)))
+    (file-name-concat dirname filename)))
+
+(defun tlon-babel-import-html-eaf (id-or-slug)
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD."
   (let* ((response (tlon-babel-eaf-request id-or-slug))
 	 (object (tlon-babel-eaf-get-object id-or-slug))
+	 (title (pcase object
+		  ('post (tlon-babel-eaf-get-post-title response))
+		  ('tag (tlon-babel-eaf-get-tag-title response))))
+	 (target (tlon-babel-set-file-from-title title (when (eq object 'tag) "tags")))
 	 (html (pcase object
 		 ('post (tlon-babel-eaf-get-post-html response))
 		 ('tag (tlon-babel-eaf-get-tag-html response))))
@@ -1392,27 +1398,27 @@ To import a tag, use `tlon-babel-import-tag'."
     (tlon-babel-html-to-markdown html-file target)
     (with-current-buffer (find-file-noselect target)
       (tlon-babel-markdown-eaf-cleanup))
+    ;; TODO: Replace below with call to function that adds front matter
+    ;; with title and perhaps other info. I don't know how useful this
+    ;; info is, though, so this isn't a priority.
     (find-file target)))
 
-(defun tlon-babel-html-to-markdown (source target)
-  "Convert HTML text in SOURCE to Markdown text in TARGET.
-SOURCE can be a URL or, like TARGET, a file path."
-  (let ((pandoc (if (ps/string-is-url-p source)
-		    tlon-babel-pandoc-convert-from-url
-		  tlon-babel-pandoc-convert-from-file)))
+(defun tlon-babel-html-to-markdown (source &optional title)
+  "Convert HTML text in SOURCE to Markdown.
+SOURCE can be a URL or a file path. If TITLE is not provided,
+prompt the user for one."
+  (let* ((target (tlon-babel-set-file-from-title title))
+	 (pandoc (if (ps/string-is-url-p source)
+		     tlon-babel-pandoc-convert-from-url
+		   tlon-babel-pandoc-convert-from-file)))
     (shell-command
      (format pandoc source target))
+    ;; TODO: Replace below with call to function that adds front matter
+    ;; with title and perhaps other info by prompting the user. I don't
+    ;; know how useful this info is, though, so this isn't a priority.
     (find-file target)))
 
-(defvar tlon-babel-pdf2md
-  (file-name-concat ps/dir-source "pdf2md/lib/pdf2md-cli.js")
-  "Path to `pdf2md-cli.js' executable.")
-
-(defvar tlon-babel-pdftotext
-  (file-name-concat ps/dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
-  "Path to `pdftotext' executable.")
-
-(defun tlon-babel-import-pdf (path target)
+(defun tlon-babel-import-pdf (path)
   "Import the PDF in PATH to TARGET and convert it to Markdown.
 This command requires the user to supply values for the header
 and footer elements to be excluded from the conversion, which are
@@ -1423,30 +1429,12 @@ the header/footer. (You can measure the number of pixels between
 two points by taking a screenshot: note the numbers next to the
 pointer.) Then enter these values when prompted."
   (find-file-other-window path)
-  (let ((header (read-string "Header: "))
+  (let ((target (tlon-babel-set-file-from-title))
+	(header (read-string "Header: "))
 	(footer (read-string "Footer: ")))
     (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
 			   tlon-babel-pdftotext header footer path target))
     (find-file target)))
-
-;; This function is not currently used because we now use pdftotext, rather
-;; than pdf2md, to convert PDFs to Markdown.
-(defun tlon-babel-import-pdf-to-markdown (path target)
-  "Import the PDF in PATH to TARGET and convert it to Markdown."
-  (let* ((path (or path (read-file-name "PDF: ")))
-	 (expanded-path (expand-file-name path))
-	 (temp-source-dir (make-temp-file "pdf-source" t))
-	 (temp-source-file (file-name-concat temp-source-dir "source.pdf"))
-	 (temp-target-dir (make-temp-file "pdf-target" t))
-	 (temp-target-file (file-name-concat temp-target-dir "source.md")))
-    (unwind-protect
-	(progn
-	  (copy-file expanded-path temp-source-file)
-	  (shell-command (format "node %s --inputFolderPath='%s' --outputFolderPath='%s'"
-				 tlon-babel-pdf2md temp-source-dir temp-target-dir))
-	  (copy-file temp-target-file target)
-	  (delete-directory temp-source-dir t)
-	  (delete-directory temp-target-dir t)))))
 
 (defun tlon-babel-create-record-for-job (&optional key)
   "Create a record based on KEY.
@@ -1461,7 +1449,7 @@ provided, the key in the Markdown buffer at point is used."
 (defun tlon-babel-create-issue-for-job (&optional key)
   "Create an issue based on KEY.
 If KEY is not provided, the key in the Markdown buffer at point
-  is used."
+is used."
   (let ((default-directory (tlon-babel-get-repo 'error))
 	(key (or key (tlon-babel-get-key-in-buffer))))
     (call-interactively #'forge-create-issue)
@@ -1469,7 +1457,7 @@ If KEY is not provided, the key in the Markdown buffer at point
     (call-interactively #'forge-post-submit)
     (sleep-for 2)
     (forge-pull)
-    (magit-status)
+    (magit-status-setup-buffer)
     ;; needs to be done twice for some reason; FIXME
     (forge-pull)))
 
@@ -1551,7 +1539,7 @@ If COMMIT is non-nil, commit and push the changes."
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
 	  (goto-char (org-element-property :begin headline)))))))
 
-;;; initialize & finalize functions
+;;;;; Initialize & finalize functions
 
 (defun tlon-babel-dwim ()
   "Initialize or finalize process based on clocked task."
@@ -1572,17 +1560,17 @@ If COMMIT is non-nil, commit and push the changes."
 
 (defun tlon-babel-initialize (fun)
   "Initialize process associated with FUN.
-Runs all the general initialization functions, followed by the
-specific function for the process that is being initialized."
+  Runs all the general initialization functions, followed by the
+  specific function for the process that is being initialized."
   (let* ((key (tlon-babel-get-clock-key))
 	 (repo (tlon-babel-get-repo-from-key key))
 	 (default-directory repo))
     (tlon-babel-check-label-and-assignee)
     (tlon-babel-check-branch "main")
-    (magit-pull-from-upstream nil)
+    (call-interactively #'magit-pull-from-upstream nil)
     (sleep-for 2)
     (cl-multiple-value-bind
-	(original-path translation-path original-key)
+	(original-path translation-path)
 	(tlon-babel-set-paths-from-clock)
       (let ((topic (tlon-babel-get-clock-topic)))
 	(tlon-babel-set-windows original-path translation-path)
@@ -1652,11 +1640,11 @@ specific function for the process that is being initialized."
 (defun tlon-babel-initialize-review ()
   "Initialize review."
   (cl-multiple-value-bind
-      (original-path translation-path original-key)
+      (translation-path)
       (tlon-babel-set-paths-from-clock)
     (tlon-babel-log-buffer-latest-user-commit-ediff translation-path)))
 
-;;; TTS
+;;;;; TTS
 
 (defun tlon-babel-read-target-buffer ()
   "Return the buffer that `read-aloud' should read."
@@ -1714,7 +1702,7 @@ specific function for the process that is being initialized."
   (interactive)
   (tlon-babel--read-backward-or-forward 'forward))
 
-;;; Sentence highlighting
+;;;;; Sentence highlighting
 
 ;; TODO: (1) highlight sentence in target window; (2) diagnose why first
 ;; two characters in a sentence are matched to the previous sentence;
@@ -1791,7 +1779,7 @@ This command should be run from the source window."
     (setq tlon-babel-enable-automatic-highlighting t)
     (message "Automatic sentence highlighting enabled.")))
 
-;;; Checking
+;;;;; Checking
 
 (defun tlon-babel-check-branch (branch)
   "Throw an error unless current buffer is in Tlon-Babel branch BRANCH."
@@ -1856,7 +1844,8 @@ This command should be run from the source window."
     (unless (string= base slugified-title)
       (error "The file `%s' does not match its title" title))))
 
-;;; bibtex
+;;;;; bibtex
+
 (defun tlon-babel-bibtex-generate-autokey (author year title)
   "Generate a BibTeX key based on AUTHOR, YEAR, and TITLE."
   ;; TODO: check that they key doesn't already exist in all metadata
@@ -1900,8 +1889,7 @@ This command should be run from the source window."
 
 (defun tlon-babel-bibtex-autokey-get-year (year)
   "Get formatted contents of YEAR field."
-  (let* ((str (bibtex-autokey-get-field '("date" "year"))))
-    (substring year (max 0 (- (length year) bibtex-autokey-year-length)))))
+  (substring year (max 0 (- (length year) bibtex-autokey-year-length))))
 
 (defun tlon-babel-bibtex-autokey-get-title (title)
   "Get formatted contents of TITLE field."
@@ -1985,14 +1973,14 @@ request. If ACTION is `close', close issue."
       (tlon-babel-set-label label-or-assignee))
     (goto-char (point-min))))
 
-;;; Search
+;;;;; Search
 
 (defun tlon-babel-search-topics (search-string &optional repo)
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
-	(default-directory repo))
+  (let* ((repo (or repo (tlon-babel-get-repo nil 'genus)))
+	 (default-directory repo))
     (forge-search search-string)))
 
 (defun tlon-babel-search-commits (search-string &optional repo)
@@ -2015,9 +2003,8 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
-	(default-directory repo))
-    (consult-ripgrep tlon-babel-dir-babel search-string)))
+  (let* ((repo (or repo (tlon-babel-get-repo nil 'genus))))
+    (consult-ripgrep repo search-string)))
 
 (defun tlon-babel-search-multi (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
@@ -2038,7 +2025,8 @@ The commit message is ACTION followed by the name of FILE."
   (let* ((default-directory (tlon-babel-get-repo-from-file file)))
     (tlon-babel-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
-      (magit-pull-from-upstream nil)
+      ;; TODO: Replace interactive call with programmatic way of doing this
+      (call-interactively #'magit-pull-from-upstream nil)
       (sleep-for 2))
     (magit-stage-file file)
     ;; we check for staged or unstaged changes to FILE because
@@ -2047,7 +2035,7 @@ The commit message is ACTION followed by the name of FILE."
       (magit-commit-create (list "-m" (format "%s %s" action (file-name-nondirectory file)))))
     (call-interactively #'magit-push-current-to-pushremote)))
 
-;;; Change topic properties
+;;;;; Change topic properties
 
 (defun tlon-babel-select-label ()
   "Prompt the user to select a LABEL."
@@ -2082,7 +2070,7 @@ The prompt defaults to the current user."
    (list (tlon-babel-select-assignee)))
   (let* ((topic (forge-get-topic (forge-topic-at-point)))
 	 (repo  (forge-get-repository topic))
-	 (value (closql--iref topic 'assignees))
+	 ;; (value (closql--iref topic 'assignees))
 	 (choices (mapcar #'cadr (oref repo assignees)))
 	 (crm-separator ","))
     (forge--set-topic-assignees
@@ -2172,7 +2160,7 @@ If the topic has more than one assignee, return the first."
 	  (setq found t)))
       nil))) ;; if CAR was the last in ALIST, there's no "next"
 
-;;;; glossary
+;;;;;; glossary
 
 (defun tlon-babel-glossary-alist ()
   "Read `Glossary.csv` and return it as an alist."
@@ -2239,7 +2227,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
-    (magit-pull-from-upstream nil)
+    (call-interactively #'magit-pull-from-upstream nil)
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
       (tlon-babel-check-branch "main")
@@ -2249,7 +2237,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
 						 action term description)))))))
 ;; (call-interactively #'magit-push-current-to-pushremote))))
 
-;;;
+;;;;;
 
 (defmacro tlon-babel-create-file-opening-command (file-path)
   "Create a command to open file in FILE-PATH."
@@ -2278,7 +2266,6 @@ Optionally, DESCRIPTION provides an explanation of the change."
     ("n" "forge"                          tlon-babel-forge)
     """Package"
     ("p p" "update"                       tlon-babel-update)
-    ("p l" "load variables"               tlon-babel-load-variables)
     ("p v" "version"                      tlon-babel-version)
     ]
    ["Add"
@@ -2365,15 +2352,9 @@ Optionally, DESCRIPTION provides an explanation of the change."
   (interactive)
   (dired tlon-babel-dir-genus))
 
-;;; request
-;;;; EAF API
-(defconst tlon-babel-eaf-api-url
-  "https://forum.effectivealtruism.org/graphql"
-  "URL for the EAF GraphQL API endpoint.")
+;;;;; request
 
-(defvar tlon-babel-eaf-objects
-  '(post tag)
-  "List of entities supported by the EAF GraphQL API.")
+;;;; EAF API
 
 (defun tlon-babel-eaf-post-query (id)
   "Return an EA Forum GraphQL query for post whose ID is ID."
@@ -2468,7 +2449,7 @@ If ASYNC is t, run the request asynchronously."
 	 (html (cdr (assoc 'html description))))
     html))
 
-(defun tlon-babel-eaf-get-tag-title ()
+(defun tlon-babel-eaf-get-tag-title (response)
   "Get tag title from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-tag-result response))
 	 (title (cdr (assoc 'name result))))
@@ -2479,7 +2460,7 @@ If ASYNC is t, run the request asynchronously."
   (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
   (match-string 1 title))
 
-;;;; BAE API
+;;;;;; BAE API
 
 (defun tlon-babel-get-bae-log ()
   "Get error log from BAE repo."
@@ -2571,14 +2552,14 @@ RETRIES is a number, it will retry that many times instead of 2."
 				 "~/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/"
 				 raw-filename)))
 		 (lexical-let ((file filename))
-		   (insert-button filename
-				  'action (lambda (x) (find-file file))
-				  'follow-link t))))
+			      (insert-button filename
+					     'action (lambda (x) (find-file file))
+					     'follow-link t))))
 	     (insert "\n\n"))
 	 (insert (format "%s: %s\n" key value))))
      hash-table)))
 
-;;;; fix log errors helper functions
+;;;;;; fix log errors helper functions
 
 (defun tlon-babel-collect-bibtex-keys-in-buffer ()
   "Collect all the bibtex keys in the current buffer.
@@ -2608,21 +2589,13 @@ If the key is not found, it is added to the list of missing keys."
 	      (goto-char (point-min))
 	      (if (re-search-forward (format "{%s," bibtex-key) nil t)
 		  (call-interactively 'ps/bibtex-move-entry-to-tlon)
-		(add-to-list 'missing-keys bibtex-key))))
+		(push 'missing-keys bibtex-key))))
 	  (forward-line)))
       (with-output-to-temp-buffer "*Missing BibTeX Keys*"
 	(dolist (key missing-keys)
 	  (princ (format "%s\n" key)))))))
 
-;;; html import
-
-(defvar tlon-babel-pandoc-convert-from-file
-  "pandoc -s '%s' -t markdown -o '%s'"
-  "Command to convert from HTML file to Markdown.")
-
-(defvar tlon-babel-pandoc-convert-from-url
-  "pandoc -s -r html '%s' -o '%s'"
-  "Command to convert from URL to Markdown.")
+;;;;; html import
 
 (defun tlon-babel-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
@@ -2631,7 +2604,7 @@ If the key is not found, it is added to the list of missing keys."
       (insert html))
     filename))
 
-;;; translation
+;;;;; translation
 
 (defun tlon-babel-search-translation (string)
   "Search for a Spanish translation of English STRING."
@@ -2719,7 +2692,7 @@ If the key is not found, it is added to the list of missing keys."
     (message "File created: %s" new-file-path)
     new-file-path))
 
-;;; Markdown cleanup
+;;;;; Markdown cleanup
 
 (defun tlon-babel-split-footnotes-into-separate-paragraphs ()
   "Split footnotes into separate paragraphs."
