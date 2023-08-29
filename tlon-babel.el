@@ -1480,7 +1480,8 @@ doesn't have metadata, prompt the user for a title."
 	 (title (pcase object
 		  ('post (tlon-babel-eaf-get-post-title response))
 		  ('tag (tlon-babel-eaf-get-tag-title response))))
-	 (target (tlon-babel-set-file-from-title title (when (eq object 'tag) "tags")))
+	 (dir (file-name-concat (tlon-babel-get-repo) "originals" (when (eq object 'tag) "tags")))
+	 (target (tlon-babel-set-file-from-title title dir))
 	 (html (pcase object
 		 ('post (tlon-babel-eaf-get-post-html response))
 		 ('tag (tlon-babel-eaf-get-tag-html response))))
