@@ -1525,9 +1525,11 @@ distance between the top/bottom of the PDF (which will open in
 the other window) and note the number of pixels until the end of
 the header/footer. (You can measure the number of pixels between
 two points by taking a screenshot: note the numbers next to the
-pointer.) Then enter these values when prompted."
+pointer.) Then enter these values when prompted.
+
+If TITLE is nil, prompt the user for one."
   (find-file-other-window path)
-  (let ((target (tlon-babel-set-file-from-title))
+  (let ((target (tlon-babel-set-file-from-title title))
 	(header (read-string "Header: "))
 	(footer (read-string "Footer: ")))
     (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
