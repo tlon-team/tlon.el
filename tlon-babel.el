@@ -734,7 +734,7 @@ caps."
   "Return metadata of all repos."
   (let ((metadata '()))
     (dolist (dir (mapcar 'cdr tlon-babel-project-names-and-dirs))
-      (append (tlon-babel-get-repo-metadata dir) metadata))
+      (setq metadata (append (tlon-babel-get-repo-metadata dir) metadata)))
     metadata))
 
 (defun tlon-babel-get-repo-metadata (&optional repo)
