@@ -59,6 +59,7 @@
   (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")
   "Directory where the Tlön repos are stored.")
 
+;; TODO: consolidate the vars below into a single var with multiple properties
 (defvar tlon-babel-project-names-and-abbrevs
   '(("biblioteca-altruismo-eficaz" . "bae")
     ("ensayos-sobre-largoplacismo" . "largoplacismo")
@@ -260,6 +261,69 @@ named `tlon-babel-dir-bae-originals'."
   '(post tag)
   "List of entities supported by the EAF GraphQL API.")
 
+;;;;; Cleanup
+
+(defvar tlon-babel-markdown-eawiki-footnote-source
+  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
+  "Regexp to match footnotes in the main body.")
+
+(defvar tlon-babel-markdown-eawiki-footnote-source2
+  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\)\\\\\\]\\](#.+?)\\^\\]{#\\\\\\\\\\\\\".+?\\\\\\\\\\\\\" .\\\\\\\\\\\\\\\"footnote-reference\\\\\\\\\\\\\" role=\"\\\\\\\\\\\\\"doc-noteref\\\\\\\\\\\\\"\"}"
+  "Regexp to match footnotes in the main body.")
+
+(defvar tlon-babel-markdown-eawiki-footnote-target
+  "\\([[:digit:]]\\{1,3\\}\\). +?\\[\\[^\\*\\*\\[\\\\^\\](#[[:alnum:]]\\{12,18\\})\\*\\*^\\]\\]{#[[:alnum:]]\\{10,15\\}}
+
+    footnote-content.*?"
+  "Regexp to match footnotes in the footnote section.")
+
+(defvar tlon-markdown-eawiki-links
+  "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
+  "Regexp to match links.")
+
+;;;;; YAML
+
+(defvar tlon-babel-yaml-delimiter "---"
+  "Delimiter for YAML front matter.")
+
+;;;;; Validation
+
+(defvar tlon-babel-eaf-p
+  "forum\\.effectivealtruism\\.org/"
+  "Regular expression for validating EAF URLs.")
+
+(defvar tlon-babel-eaf-post-id-regexp
+  "\\([[:alnum:]]\\{17\\}\\)"
+  "Regular expression for validating post IDs.")
+
+(defvar tlon-babel-eaf-tag-slug-regexp
+  "\\([[:alnum:]-]*\\)"
+  "Regular expression for validating tag slugs.")
+
+;;;;; Clocked heading
+
+(defvar tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
+  "Regular expression for matching bibtex keys in clocked headings.
+The second capture group handles the .md extension, which we used
+previously.")
+
+;;;;; Read aloud
+
+(defvar tlon-babel-read-aloud-next-action
+  'read-aloud-buf)
+
+;;;;; Sentence highlighting
+
+;; TODO: (1) highlight sentence in target window; (2) diagnose why first
+;; two characters in a sentence are matched to the previous sentence;
+;; (3) diagnose performance issues, or else disable `post-command-hook'
+;; and rely on other triggers; (4) use `lin-blue' as face for highlighting))))
+(defvar tlon-babel-sentence-highlight-offset 0
+  "Number of sentences to offset the sentence count in the source window.")
+
+(defvar tlon-babel-enable-automatic-highlighting nil
+  "Whether to automatically highlight corresponding sentences.")
+
 ;;;; Functions
 
 ;;;;; Version
@@ -425,24 +489,6 @@ buffer."
   "Check if the current buffer is in a Markdown-derived mode."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))
-
-(defvar tlon-babel-markdown-eawiki-footnote-source
-  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
-  "Regexp to match footnotes in the main body.")
-
-(defvar tlon-babel-markdown-eawiki-footnote-source2
-  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\)\\\\\\]\\](#.+?)\\^\\]{#\\\\\\\\\\\\\".+?\\\\\\\\\\\\\" .\\\\\\\\\\\\\\\"footnote-reference\\\\\\\\\\\\\" role=\"\\\\\\\\\\\\\"doc-noteref\\\\\\\\\\\\\"\"}"
-  "Regexp to match footnotes in the main body.")
-
-(defvar tlon-babel-markdown-eawiki-footnote-target
-  "\\([[:digit:]]\\{1,3\\}\\). +?\\[\\[^\\*\\*\\[\\\\^\\](#[[:alnum:]]\\{12,18\\})\\*\\*^\\]\\]{#[[:alnum:]]\\{10,15\\}}
-
-    footnote-content.*?"
-  "Regexp to match footnotes in the footnote section.")
-
-(defvar tlon-markdown-eawiki-links
-  "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
-  "Regexp to match links.")
 
 (defun tlon-babel-markdown-eaf-cleanup ()
   "Cleanup the buffer visiting an EAF entry."
@@ -768,8 +814,6 @@ If REPO is nil, return files in current repository. DIR is one of
 ;;;;; YAML front matter
 
 ;;;;;; Get YAML values
-(defvar tlon-babel-yaml-delimiter "---"
-  "Delimiter for YAML front matter.")
 
 (defun tlon-babel-yaml-get-front-matter (&optional file)
   "Return the YAML front matter from FILE as an association list.
@@ -1108,18 +1152,6 @@ If EXTENSION is provided, only check files with that extension.
 
 ;;;;; EAF validation
 
-(defvar tlon-babel-eaf-p
-  "forum\\.effectivealtruism\\.org/"
-  "Regular expression for validating EAF URLs.")
-
-(defvar tlon-babel-eaf-post-id-regexp
-  "\\([[:alnum:]]\\{17\\}\\)"
-  "Regular expression for validating post IDs.")
-
-(defvar tlon-babel-eaf-tag-slug-regexp
-  "\\([[:alnum:]-]*\\)"
-  "Regular expression for validating tag slugs.")
-
 (defun tlon-babel-eaf-p (url)
   "Return t if URL is an EAF URL, nil otherwise."
   (not (not (string-match tlon-babel-eaf-p url))))
@@ -1173,11 +1205,6 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
     object))
 
 ;;;;; Clocked heading
-
-(defvar tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
-  "Regular expression for matching bibtex keys in clocked headings.
-The second capture group handles the .md extension, which we used
-previously.")
 
 (defun tlon-babel-get-clock-key ()
   "Return bibtex key in clocked heading.
@@ -1703,9 +1730,6 @@ specific function for the process that is being initialized."
 	   (user-error "More than one buffer found")))
     buffer))
 
-(defvar tlon-babel-read-aloud-next-action
-  'read-aloud-buf)
-
 (defun tlon-babel-read-target-start-or-stop ()
   "Start or stop reading the target buffer."
   (interactive)
@@ -1745,13 +1769,6 @@ specific function for the process that is being initialized."
   (tlon-babel--read-backward-or-forward 'forward))
 
 ;;;;; Sentence highlighting
-
-;; TODO: (1) highlight sentence in target window; (2) diagnose why first
-;; two characters in a sentence are matched to the previous sentence;
-;; (3) diagnose performance issues, or else disable `post-command-hook'
-;; and rely on other triggers; (4) use `lin-blue' as face for highlighting))))
-(defvar tlon-babel-sentence-highlight-offset 0
-  "Number of sentences to offset the sentence count in the source window.")
 
 (defun tlon-babel-sentence-highlight-offset-set ()
   "Set the sentence offset.
@@ -1803,9 +1820,6 @@ This command should be run from the source window."
 	(overlay-put overlay 'face 'highlight)
 	(backward-sentence)
 	(recenter target-window-line)))))
-
-(defvar tlon-babel-enable-automatic-highlighting nil
-  "Whether to automatically highlight corresponding sentences.")
 
 (defun tlon-babel-toggle-automatic-highlighting ()
   "Toggle automatic highlighting of corresponding sentences."
