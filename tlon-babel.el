@@ -1868,8 +1868,8 @@ This command should be run from the source window."
 
 ;;;;; Checking
 
-(defun tlon-babel-check-branch (branch)
-  "Throw an error unless current buffer is in Tlon-Babel branch BRANCH."
+(defun tlon-babel-check-branch (branch repo)
+  "Throw an error unless current buffer is in REPO branch BRANCH."
   (unless (string= (magit-get-current-branch) branch)
     (user-error "Please switch to the branch `%s' before proceeding" branch)
     t))
@@ -2318,7 +2318,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
     (call-interactively #'magit-pull-from-upstream nil)
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
-      (tlon-babel-check-branch "main")
+      (tlon-babel-check-branch "main" default-directory)
       (magit-run-git "add" tlon-babel-file-glossary)
       (let ((magit-commit-ask-to-stage nil))
 	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
