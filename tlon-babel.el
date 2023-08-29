@@ -1445,13 +1445,33 @@ This command also imports EA Forum posts and tags."
 (defun tlon-babel-set-file-from-title (&optional title dir)
   "Set the file path based on its title.
 The file name is the slugified version of TITLE with the
-extension `.md'. The directory is the current repo followed by
-\"originals\" and, optionally, by DIR. If the current directory
-is not a Babel repo, prompt the user to select one."
-  (let* ((title (or title (read-string "Title: ")))
+extension `.md'. This is appended to DIR to generate the file
+path. If DIR is not provided, use the current repository followed
+by `originals/'."
+  (let* ((title (or title
+		    (read-string "Title: ")))
 	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
-	 (dirname (file-name-concat (tlon-babel-get-repo) "originals" dir)))
+	 (dirname (file-name-as-directory
+		   (or dir
+		       (file-name-concat (tlon-babel-get-repo) "originals")))))
     (file-name-concat dirname filename)))
+
+(defun tlon-babel-rename-file-from-title (&optional title)
+  "Rename the current file based on its title.
+Set the name to the slugified version of TITLE with the
+extension `.md'.
+If TITLE is nil, get it from the file metadata. If the file
+doesn't have metadata, prompt the user for a title."
+  (interactive)
+  (let* ((title (or title
+		    (tlon-babel-get-metadata-value-in-file "titulo")))
+	 (target (tlon-babel-set-file-from-title title default-directory)))
+    (when (yes-or-no-p (format "Rename `%s` to `%s`? "
+			       (file-name-nondirectory (buffer-file-name))
+			       (file-name-nondirectory target))))
+    (rename-file (buffer-file-name) target)
+    (set-visited-file-name target)
+    (save-buffer)))
 
 (defun tlon-babel-import-html-eaf (id-or-slug)
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD."
