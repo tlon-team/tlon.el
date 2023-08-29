@@ -2121,7 +2121,7 @@ The commit message is ACTION followed by the name of FILE."
     ;; we check for staged or unstaged changes to FILE because
     ;; `magit-commit-create' interrupts the process if there aren't
     (when (tlon-babel-check-staged-or-unstaged file)
-      (magit-commit-create (list "-m" (format "%s %s" action (file-name-nondirectory file)))))
+      (magit-commit-create (list "-m" (format "%s %s" action (tlon-babel-get-key-from-file file)))))
     (call-interactively #'magit-push-current-to-pushremote)))
 
 ;;;;; Change topic properties
