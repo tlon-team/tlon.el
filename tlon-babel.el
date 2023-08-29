@@ -1516,7 +1516,7 @@ prompt the user for one."
     ;; know how useful this info is, though, so this isn't a priority.
     (find-file target)))
 
-(defun tlon-babel-import-pdf (path)
+(defun tlon-babel-import-pdf (path &optional title)
   "Import the PDF in PATH to TARGET and convert it to Markdown.
 This command requires the user to supply values for the header
 and footer elements to be excluded from the conversion, which are
