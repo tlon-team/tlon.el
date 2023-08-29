@@ -610,12 +610,16 @@ buffer."
     (while (re-search-forward "\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
       (replace-match "\\1\\3\\2"))))
 
-(defun tlon-babel-post-translation-cleanup ()
-  "Cleanup processes to be run after a translation is completed."
+(defun tlon-babel-fix-em-dashes ()
+  "Prompt the user to replace hyphens with em dashes, when appropriate."
   (interactive)
-  (tlon-babel-fix-footnote-punctuation)
-  ;; potentially add more cleanup processes here
-  )
+  (widen)
+  (save-excursion
+    (dolist (regexp '("\\([)[:alnum:]]\\)-\\( \\)"
+		      "\\( \\)-\\([([:alnum:]]\\)"
+		      "\\( \\)-\\( \\)"))
+      (goto-char (point-min))
+      (query-replace-regexp regexp "\\1—\\2" nil (point-min) (point-max)))))
 
 ;;;;;; Insertion commands
 
