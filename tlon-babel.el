@@ -1430,6 +1430,7 @@ IDENTIFIER can be a URL or a PDF file path."
 IDENTIFIER can be a URL or a PDF file path.
 
 This command also imports EA Forum posts and tags."
+  (interactive)
   (let ((identifier (or identifier (read-string "Identifier: "))))
     (if (ps/string-is-url-p identifier)
 	(tlon-babel-import-html identifier)
