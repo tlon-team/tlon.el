@@ -1641,8 +1641,8 @@ specific function for the process that is being initialized."
   (let* ((key (tlon-babel-get-clock-key))
 	 (repo (tlon-babel-get-repo-from-key key))
 	 (default-directory repo))
-    (tlon-babel-check-label-and-assignee)
-    (tlon-babel-check-branch "main")
+    (tlon-babel-check-label-and-assignee repo)
+    (tlon-babel-check-branch "main" repo)
     (call-interactively #'magit-pull-from-upstream nil)
     (sleep-for 2)
     (cl-multiple-value-bind
@@ -1859,13 +1859,14 @@ This command should be run from the source window."
 	t
       (user-error "Current file does not match file in clock"))))
 
-(defun tlon-babel-check-label-and-assignee ()
+(defun tlon-babel-check-label-and-assignee (repo)
   "Check that clocked action matches topic label and assignee matches user."
   (save-window-excursion
-    (let* ((key (tlon-babel-get-clock-key))
+    (let* ((default-directory repo)
+	   (key (tlon-babel-get-clock-key))
 	   (topic (format "Job: `%s" key))
 	   (clocked-label (tlon-babel-get-clock-label)))
-      (magit-status-setup-buffer)
+      (magit-status-setup-buffer repo)
       (magit-section-show-level-3-all)
       (goto-char (point-min))
       (if (search-forward topic nil t)
