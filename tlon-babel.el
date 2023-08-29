@@ -1348,8 +1348,8 @@ Defaults to the current buffer if no FILE is specified. If DEEPL
 (defun tlon-babel-set-paths-from-clock ()
   "Return paths for original and translation files based on clocked task."
   (let* ((key (tlon-babel-get-clock-key))
+	 (metadata (tlon-babel-get-metadata-in-all-repos))
 	 (repo (tlon-babel-get-repo-from-key key))
-	 (metadata (tlon-babel-get-repo-metadata repo))
 	 (identifier (tlon-babel-metadata-lookup "key_original" key "path_original" metadata))
 	 (original-path (file-name-concat repo "originals" identifier))
 	 (translation-path (tlon-babel-metadata-lookup "key_original" key "file" metadata)))
