@@ -615,8 +615,8 @@ buffer."
   (interactive)
   (widen)
   (save-excursion
-    (dolist (regexp '("\\([)[:alnum:]]\\)-\\( \\)"
-		      "\\( \\)-\\([([:alnum:]]\\)"
+    (dolist (regexp '("\\([)[:alnum:]]\\)-\\([ ,]\\)"
+		      "\\([ ,]\\)-\\([([:alnum:]]\\)"
 		      "\\( \\)-\\( \\)"))
       (goto-char (point-min))
       (query-replace-regexp regexp "\\1—\\2" nil (point-min) (point-max)))))
