@@ -1,4 +1,4 @@
-;;; tlon-babel.el --- A collection of convenience functions for the Tlön babel project. -*- lexical-binding: t -*-
+;;; tlon-babel.el --- A companion package for the Babel project. -*- lexical-binding: t -*-
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
