@@ -2225,13 +2225,6 @@ If the topic has more than one assignee, return the first."
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
       (tlon-babel-forge-get-assignee (forge-current-topic)))))
 
-(defun tlon-babel-open-original-or-translation ()
-  "Open the translation if visiting the original, and vice versa."
-  (interactive)
-  (let* ((current-file (file-name-nondirectory (buffer-file-name))))
-    (alist-get current-file tlon-babel-translation-alist
-	       (lambda (key default) default))))
-
 (defun tlon-babel-find-key-in-alist (value alist)
   "Find the corresponding key for a VALUE in ALIST."
   (let ((pair (cl-find-if (lambda (x) (equal (cdr x) value)) alist)))
