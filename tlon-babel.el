@@ -1363,7 +1363,7 @@ Defaults to the current buffer if no FILE is specified. If DEEPL
   (winum-select-window-2)
   (find-file translation-path))
 
-;;;;; Main functions
+;;;;; [name section]
 
 (defun tlon-babel-magit-status ()
   "Show the status of the current repository in a buffer."
@@ -1933,7 +1933,7 @@ This command should be run from the source window."
     (unless (string= base slugified-title)
       (error "The file `%s' does not match its title" title))))
 
-;;;;; bibtex
+;;;;; Bibtex
 
 (defun tlon-babel-bibtex-generate-autokey (author year title)
   "Generate a BibTeX key based on AUTHOR, YEAR, and TITLE."
@@ -2242,7 +2242,7 @@ If the topic has more than one assignee, return the first."
 	  (setq found t)))
       nil))) ;; if CAR was the last in ALIST, there's no "next"
 
-;;;;;; glossary
+;;;;; Glossary
 
 (defun tlon-babel-glossary-alist ()
   "Read `Glossary.csv` and return it as an alist."
@@ -2434,7 +2434,7 @@ Optionally, DESCRIPTION provides an explanation of the change."
   (interactive)
   (dired tlon-babel-dir-genus))
 
-;;;;; request
+;;;;; Request
 
 ;;;;;; EAF API
 
@@ -2641,7 +2641,7 @@ RETRIES is a number, it will retry that many times instead of 2."
 	 (insert (format "%s: %s\n" key value))))
      hash-table)))
 
-;;;;;; fix log errors helper functions
+;;;;;;; Fix log errors helper functions
 
 (defun tlon-babel-collect-bibtex-keys-in-buffer ()
   "Collect all the bibtex keys in the current buffer.
@@ -2677,7 +2677,7 @@ If the key is not found, it is added to the list of missing keys."
 	(dolist (key missing-keys)
 	  (princ (format "%s\n" key)))))))
 
-;;;;; translation
+;;;;; Translation
 
 (defun tlon-babel-search-for-translation (string)
   "Search for a Spanish translation of English STRING."
