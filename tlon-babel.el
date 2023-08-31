@@ -954,6 +954,10 @@ search only in `translations/autores', use `autores' as DIR."
   (tlon-babel-elisp-list-to-yaml
    (tlon-babel-yaml-set-multi-value-field "titulo" "temas")))
 
+(defun tlon-babel-elisp-list-to-yaml (list)
+  "Convert an Elisp LIST to a YAML list."
+  (concat "[\"" (mapconcat 'identity list "\", \"") "\"]"))
+
 (defun tlon-babel-yaml-set-path_original ()
   "Set the value of `path_original' YAML field."
   (completing-read "Locator original"
