@@ -623,6 +623,14 @@ buffer."
       (goto-char (point-min))
       (query-replace-regexp regexp "\\1—\\2" nil (point-min) (point-max)))))
 
+(defun tlon-babel-fix-curly-quotes ()
+  "Replace straight quotes with curly qutoes when appropriate."
+  (interactive)
+  (widen)
+  (save-excursion
+    (while (re-search-forward "\"\\[" nil t)
+      (replace-match "“["))))
+
 ;;;;;; Insertion commands
 
 (defun tlon-babel-markdown-insert-tag ()
