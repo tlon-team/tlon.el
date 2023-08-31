@@ -923,8 +923,7 @@ If FILE is nil, use the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (field-values
 	  (tlon-babel--yaml-set-front-matter-fields
-	   '("titulo")
-	   file)))
+	   '("titulo"))))
     (tlon-babel-insert-yaml-fields field-values)))
 
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
