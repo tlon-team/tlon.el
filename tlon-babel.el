@@ -797,7 +797,7 @@ OTHER-FIELD value in entry matches the regex MATCH."
 	  (push value result))))
     result))
 
-(defun tlon-babel-get-metadata-value-in-file (field &optional file)
+(defun tlon-babel-metadata-get-field-value-in-file (field &optional file)
   "Return the value of FIELD in FILE metadata.
 If FILE is nil, use the current buffer."
   (let* ((file (or file (buffer-file-name)))
@@ -807,7 +807,7 @@ If FILE is nil, use the current buffer."
 (defun tlon-babel-get-key-in-buffer ()
   "Get the key in the current Markdown buffer."
   (tlon-babel-check-in-markdown-mode)
-  (let ((key (tlon-babel-get-metadata-value-in-file "key_original")))
+  (let ((key (tlon-babel-metadata-get-field-value-in-file "key_original")))
     (unless key
       (user-error "No key found"))
     key))
@@ -1077,7 +1077,7 @@ file visited by the current buffer."
     ;; we use a different method for getting the counterpart depending
     ;; on whether FILE is in `originals' or `translations', since
     ;; only translation files have YAML metadata.
-    (if-let ((locator (tlon-babel-get-metadata-value-in-file "path_original" file)))
+    (if-let ((locator (tlon-babel-metadata-get-field-value-in-file "path_original" file)))
 	(file-name-concat
 	 (tlon-babel-get-repo)
 	 (tlon-babel-get-work-type 'reversed)
@@ -1238,7 +1238,7 @@ Assumes key is enclosed in backticks."
    (tlon-babel-metadata-lookup "file" file "key_traduccion" (tlon-babel-get-repo-metadata))
    ;; when file in `originals'
    (let ((translation (tlon-babel-get-counterpart file)))
-     (tlon-babel-get-metadata-value-in-file "key_original" translation))))
+     (tlon-babel-metadata-get-field-value-in-file "key_original" translation))))
 
 (defun tlon-babel-get-clock-file ()
   "Return the file path of the clocked task."
@@ -1466,7 +1466,7 @@ If TITLE is nil, get it from the file metadata. If the file
 doesn't have metadata, prompt the user for a title."
   (interactive)
   (let* ((title (or title
-		    (tlon-babel-get-metadata-value-in-file "titulo")))
+		    (tlon-babel-metadata-get-field-value-in-file "titulo")))
 	 (target (tlon-babel-set-file-from-title title default-directory)))
     (when (yes-or-no-p (format "Rename `%s` to `%s`? "
 			       (file-name-nondirectory (buffer-file-name))
@@ -1930,7 +1930,7 @@ This command should be run from the source window."
   "Check that FILE matches its title."
   (let* ((file (buffer-file-name))
 	 (base (file-name-base file))
-	 (title (tlon-babel-get-metadata-value-in-file "titulo" file))
+	 (title (tlon-babel-metadata-get-field-value-in-file "titulo" file))
 	 (slugified-title (tlon-core-slugify title)))
     (unless (string= base slugified-title)
       (error "The file `%s' does not match its title" title))))
