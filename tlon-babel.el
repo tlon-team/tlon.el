@@ -784,15 +784,15 @@ If REPO is nil, return metadata of current repository."
       (setq i (1+ i)))
     found))
 
-(defun tlon-babel-metadata-get-all-fields (field metadata &optional field-cond match)
-  "Return the all the values for FIELD in METADATA.
-If FIELD-COND is non-nil, return only FIELD-COND values
-  matching the regex MATCH."
+(defun tlon-babel-metadata-get-all-field-values (field metadata &optional other-field match)
+  "Return all the values for FIELD in METADATA.
+If OTHER-FIELD is non-nil, return only FIELD values when
+OTHER-FIELD value in entry matches the regex MATCH."
   (let ((result '()))
     (dolist (entry metadata)
       (when-let ((value (cdr (assoc field entry))))
-	(if field-cond
-	    (when (string-match match (cdr (assoc field-cond entry)))
+	(if other-field
+	    (when (string-match match (cdr (assoc other-field entry)))
 	      (push value result))
 	  (push value result))))
     result))
