@@ -956,7 +956,9 @@ search only in `translations/autores', use `autores' as DIR."
 (defun tlon-babel-yaml-set-translators ()
   "Set the value of `traductores' YAML field."
   (tlon-babel-elisp-list-to-yaml
-   (tlon-babel-yaml-set-multi-value-field "titulo" "traductores")))
+   (completing-read-multiple
+    "Traductores: "
+    (tlon-babel-metadata-get-all-field-values "traductores" (tlon-babel-get-metadata-in-all-repos)))))
 
 (defun tlon-babel-yaml-set-tags ()
   "Set the value of `temas' YAML field."
