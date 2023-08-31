@@ -1729,7 +1729,8 @@ specific function for the process that is being initialized."
       (orgit-topic-open topic))))
 
 (defun tlon-babel-initialize-translation ()
-  "Initialize translation.")
+  "Initialize translation."
+  (tlon-core-macos-open-app "deepl"))
 
 (defun tlon-babel-initialize-revision ()
   "Initialize stylistic revision.")
