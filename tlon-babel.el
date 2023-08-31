@@ -1242,8 +1242,9 @@ Assumes key is enclosed in backticks."
 
 (defun tlon-babel-get-file-from-key (key)
   "Return the file path of KEY."
-  (let ((locator (tlon-babel-metadata-lookup "key_original" key "path_original" (tlon-babel-get-repo-metadata))))
-    (tlon-babel-get-file-from-locator locator)))
+  (if-let ((locator (tlon-babel-metadata-lookup "key_original" key "path_original" (tlon-babel-get-repo-metadata))))
+      (tlon-babel-get-file-from-locator locator)
+    (user-error "Metadata lookup for key `%s' returned nil" key)))
 
 (defun tlon-babel-get-key-from-file (file)
   "Return the bibtex key of FILE."
