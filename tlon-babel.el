@@ -1029,7 +1029,7 @@ elements."
 
 (defun tlon-babel-get-bae-authors ()
   "Get a list of BAE authors."
-  (tlon-babel-metadata-get-all-fields
+  (tlon-babel-metadata-get-all-field-values
    "titulo"
    (tlon-babel-get-repo-metadata tlon-babel-dir-bae)
    "file"
@@ -1037,7 +1037,7 @@ elements."
 
 (defun tlon-babel-get-bae-tags ()
   "Get a list of BAE tags."
-  (tlon-babel-metadata-get-all-fields
+  (tlon-babel-metadata-get-all-field-values
    "titulo"
    (tlon-babel-get-repo-metadata tlon-babel-dir-bae)
    "file"
@@ -1048,7 +1048,7 @@ elements."
 (defun tlon-babel-get-translators ()
   "Get a list of translators.
 Note that this searches in all repos, not just BAE."
-  (tlon-babel-metadata-get-all-fields
+  (tlon-babel-metadata-get-all-field-values
    "titulo"
    (tlon-babel-get-metadata-in-all-repos)))
 
