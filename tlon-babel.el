@@ -926,18 +926,27 @@ If FILE is nil, use the current buffer."
 	   '("titulo"))))
     (tlon-babel-insert-yaml-fields field-values)))
 
-(defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
-  "Set the value of multivalue FIELD in metadata of REPO.
+(defun tlon-babel-insert-yaml-fields (field-values)
+  "Insert YAML fields in FIELD-VALUES at point."
+  (when (looking-at-p "---")
+    (user-error "File appears to already contain a front matter section"))
+  (insert "---\n")
+  (dolist (cons field-values)
+    (insert (format "%-20s%s\n" (concat (car cons) ":") (cdr cons))))
+  (insert "---\n"))
+
+  (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
+    "Set the value of multivalue FIELD in metadata of REPO.
 If DIR is non-nil, only search in directory within the repo. Note
 DIR does not include the `translations' directory. That is, it is
 the directory component of the repo's locator. For example, to
 search only in `translations/autores', use `autores' as DIR."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (metadata (tlon-babel-get-repo-metadata repo))
-	 (dir (when dir (file-name-concat repo "translations" dir))))
-    (completing-read-multiple (format (capitalize "%s :") field)
-			      (tlon-babel-metadata-get-all-fields
-			       field metadata (when dir "file") (when dir dir)))))
+    (let* ((repo (or repo (tlon-babel-get-repo)))
+	   (metadata (tlon-babel-get-repo-metadata repo))
+	   (full-dir (when dir (file-name-concat repo "translations" dir))))
+      (completing-read-multiple (format "%s: " (capitalize dir))
+				(tlon-babel-metadata-get-all-field-values
+				 field metadata (when dir "file") (when dir full-dir)))))
 
 (defun tlon-babel-yaml-set-authors ()
   "Set the value of `autores' YAML field."
