@@ -916,13 +916,15 @@ If TITLE is non-nil, use it instead of prompting for one."
 	  (push `(,field . ,(cdr (assoc field cmpl-generators))) field-values))))
     field-values))
 
-(defun tlon-babel-yaml-set-front-matter-for-post ()
-  "Insert YAML fields for BAE post in the current buffer."
+(defun tlon-babel-yaml-set-front-matter-for-post (&optional title)
+  "Insert YAML fields for BAE post in the current buffer.
+If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
-  (let* ((field-values
+  (let* ((fields '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion"))
+	 (field-values
 	  (tlon-babel--yaml-set-front-matter-fields
-	   '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion"))))
-    ;; reorder field-values
+	   fields title)))
+    ;; TODO: reorder field-values
     (tlon-babel-insert-yaml-fields field-values)))
 
 (defun tlon-babel-yaml-set-front-matter-for-title (&optional file)
