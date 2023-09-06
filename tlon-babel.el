@@ -1465,6 +1465,16 @@ IDENTIFIER can be a URL or a PDF file path."
 fields, which are needed to create a new job: `url' or `file',
 `title' and `key'")))
 
+(defun tlon-babel-create-translation-file (&optional repo)
+  "Create a new translation file and set its front matter.
+If REPO is nil, prompt the user for one."
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (title (read-string "Translated title: "))
+	 (dir (file-name-concat repo "translations/"))
+	 (path (tlon-babel-set-file-from-title title dir)))
+    (find-file path)
+    (tlon-babel-yaml-set-front-matter-for-post title)
+    (save-buffer)))
 
 ;;;;; Importing
 
