@@ -807,9 +807,9 @@ OTHER-FIELD value in entry matches the regex MATCH."
 
 (defun tlon-babel-metadata-get-field-value-in-file (field &optional file)
   "Return the value of FIELD in FILE metadata.
-If FILE is nil, use the current buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (metadata (tlon-babel-get-file-metadata file)))
+If FILE is nil, use the file visited by the current buffer."
+  (when-let* ((file (or file (buffer-file-name)))
+	      (metadata (tlon-babel-get-file-metadata file)))
     (alist-get field metadata nil nil #'string=)))
 
 (defun tlon-babel-get-key-in-buffer ()
