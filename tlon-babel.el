@@ -1547,7 +1547,7 @@ TITLE optionally specifies the title of the entity to be imported."
 		 ('post (tlon-babel-eaf-get-post-html response))
 		 ('tag (tlon-babel-eaf-get-tag-html response))))
 	 (html-file (tlon-babel-save-html-to-file html)))
-    (tlon-babel-html-to-markdown html-file target)
+    (tlon-babel-html-to-markdown html-file title)
     (with-current-buffer (find-file-noselect target)
       (tlon-babel-markdown-eaf-cleanup))
     ;; TODO: Replace below with call to function that adds front matter
