@@ -1768,8 +1768,8 @@ specific function for the process that is being initialized."
 	(message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 		 next-label next-assignee)
 	(when (string= current-action "Review")
-	  (tlon-babel-mark-clocked-task-parent-done)
-	  (tlon-babel-mark-clocked-heading-done 'commit))))))
+	  (tlon-babel-mark-clocked-heading-done 'commit)
+	  (tlon-babel-mark-clocked-task-parent-done))))))
 
 (defun tlon-babel-initialize-processing ()
   "Initialize processing."
