@@ -1748,7 +1748,7 @@ specific function for the process that is being initialized."
   (let ((repo (tlon-babel-get-repo)))
     (tlon-babel-check-branch "main" repo)
     (tlon-babel-check-label-and-assignee repo)
-    (tlon-babel-check-file)
+    (tlon-babel-check-file (when (string= (tlon-babel-get-clock-action) "Process") 'original))
     (cl-multiple-value-bind
 	(original-path translation-path original-key)
 	(tlon-babel-set-paths-from-clock)
@@ -1946,11 +1946,16 @@ This command should be run from the source window."
     (user-error "Please switch to the branch `%s' before proceeding" branch)
     t))
 
-(defun tlon-babel-check-file ()
-  "Throw an error unless current file matches file in clock."
+(defun tlon-babel-check-file (&optional original)
+  "Throw an error unless current file matches file in clock.
+If ORIGINAL is non-nil, check that current file matches original;
+otherwise, check that current file matches translation."
   (let* ((key (tlon-babel-get-clock-key))
-	 (expected-file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-repo-metadata)))
-	 (actual-file (buffer-file-name)))
+	 (field (if original "path_original" "file"))
+	 (expected-file (file-name-nondirectory
+			 (tlon-babel-metadata-lookup "key_original" key field (tlon-babel-get-repo-metadata))))
+	 (actual-file (file-name-nondirectory
+		       (buffer-file-name))))
     (if (string= expected-file actual-file)
 	t
       (user-error "Current file does not match file in clock"))))
