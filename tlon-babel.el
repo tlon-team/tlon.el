@@ -1803,9 +1803,17 @@ specific function for the process that is being initialized."
 (defun tlon-babel-initialize-review ()
   "Initialize review."
   (cl-multiple-value-bind
-      (translation-path)
+      (original-path translation-path)
       (tlon-babel-set-paths-from-clock)
-    (tlon-babel-log-buffer-latest-user-commit-ediff translation-path)))
+    (tlon-babel-log-buffer-latest-user-commit-ediff translation-path)
+    (winum-select-window-1)
+    (setq-local jinx-languages "es")
+    (add-file-local-variable 'jinx-languages jinx-languages)
+    (setf (alist-get 'jinx-languages file-local-variables-alist) jinx-languages)
+    (jinx--load-dicts)
+    (jinx--cleanup)
+    (goto-char (point-min))
+    (save-buffer)))
 
 ;;;;; TTS
 
