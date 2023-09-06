@@ -1533,6 +1533,7 @@ confirmation before renaming it."
 	  (save-buffer))
       (write-file target))))
 
+;; TODO: make it also work with LessWrong
 (defun tlon-babel-import-html-eaf (id-or-slug &optional title)
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
 TITLE optionally specifies the title of the entity to be imported."
