@@ -1468,6 +1468,7 @@ fields, which are needed to create a new job: `url' or `file',
 (defun tlon-babel-create-translation-file (&optional repo)
   "Create a new translation file and set its front matter.
 If REPO is nil, prompt the user for one."
+  (interactive)
   (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (title (read-string "Translated title: "))
 	 (dir (file-name-concat repo "translations/"))
