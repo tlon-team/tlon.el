@@ -1511,30 +1511,36 @@ by `originals/'."
 		       (file-name-concat (tlon-babel-get-repo) "originals")))))
     (file-name-concat dirname filename)))
 
-(defun tlon-babel-rename-file-from-title (&optional title)
-  "Rename the current file based on its title.
-Set the name to the slugified version of TITLE with the
-extension `.md'.
-If TITLE is nil, get it from the file metadata. If the file
-doesn't have metadata, prompt the user for a title."
+(defun tlon-babel-name-file-from-title (&optional title)
+  "Save the current buffer to a file named after TITLE.
+Set the name to the slugified version of TITLE with the extension
+`.md'. If TITLE is nil, get it from the file metadata. If the
+file doesn't have metadata, prompt the user for a title.
+
+When buffer is already visiting a file, prompt the user for
+confirmation before renaming it."
   (interactive)
   (let* ((title (or title
-		    (tlon-babel-metadata-get-field-value-in-file "titulo")))
+		    (tlon-babel-metadata-get-field-value-in-file "titulo")
+		    (read-string "Title: ")))
 	 (target (tlon-babel-set-file-from-title title default-directory)))
-    (when (yes-or-no-p (format "Rename `%s` to `%s`? "
-			       (file-name-nondirectory (buffer-file-name))
-			       (file-name-nondirectory target))))
-    (rename-file (buffer-file-name) target)
-    (set-visited-file-name target)
-    (save-buffer)))
+    (if-let ((buf (buffer-file-name)))
+	(when (yes-or-no-p (format "Rename `%s` to `%s`? "
+				   (file-name-nondirectory buf)
+				   (file-name-nondirectory target)))
+	  (rename-file buf target)
+	  (set-visited-file-name target)
+	  (save-buffer))
+      (write-file target))))
 
-(defun tlon-babel-import-html-eaf (id-or-slug)
-  "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD."
+(defun tlon-babel-import-html-eaf (id-or-slug &optional title)
+  "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
+TITLE optionally specifies the title of the entity to be imported."
   (let* ((response (tlon-babel-eaf-request id-or-slug))
 	 (object (tlon-babel-eaf-get-object id-or-slug))
-	 (title (pcase object
-		  ('post (tlon-babel-eaf-get-post-title response))
-		  ('tag (tlon-babel-eaf-get-tag-title response))))
+	 (title (or title (pcase object
+			    ('post (tlon-babel-eaf-get-post-title response))
+			    ('tag (tlon-babel-eaf-get-tag-title response)))))
 	 (dir (file-name-concat (tlon-babel-get-repo) "originals" (when (eq object 'tag) "tags")))
 	 (target (tlon-babel-set-file-from-title title dir))
 	 (html (pcase object
