@@ -878,11 +878,12 @@ found, signal an error."
 
 ;;;;;; Set YAML values
 
-(defun tlon-babel--yaml-set-front-matter-fields (fields)
-  "Get the field values for the given FIELDS in the current buffer."
+(defun tlon-babel--yaml-set-front-matter-fields (fields &optional title)
+  "Get the field values for the given FIELDS in the current buffer.
+If TITLE is non-nil, use it instead of prompting for one."
   (let* ((var-generators
 	  `(("fecha" . ,(lambda () (format-time-string "%FT%T%z")))
-	    ("titulo" . ,(lambda () (read-string "Título: ")))
+	    ("titulo" . ,(lambda () (or title (read-string "Título: "))))
 	    ("authors-list" . ,(lambda () (tlon-babel-yaml-set-multi-value-field "titulo" "autores")))
 	    ("traductores" . ,#'tlon-babel-yaml-set-translators)
 	    ("temas" . ,#'tlon-babel-yaml-set-tags)
