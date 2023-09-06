@@ -1448,27 +1448,44 @@ and (b) a heading in `jobs.org'.
 
 IDENTIFIER can be a URL or a PDF file path."
   (interactive)
-  (tlon-babel-import-document)
-  (tlon-babel-create-record-for-job))
+  (unless (or (derived-mode-p 'ebib-entry-mode)
+	      (derived-mode-p 'ebib-index-mode))
+    (user-error "This command must be run from an Ebib buffer"))
+  (require 'tlon-ebib)
+  (if-let ((id (or (tlon-ebib-get-field-value "url")
+		   (tlon-ebib-get-file "md")))
+	   (title (tlon-ebib-get-field-value "title"))
+	   (key (tlon-ebib-get-field-value "=key="))
+	   (repo (tlon-babel-get-repo)))
+      (progn
+	(tlon-babel-import-document id title)
+	(tlon-babel-create-translation-file repo)
+	(tlon-babel-create-record-for-job key))
+    (user-error "The current Ebib entry seems to be missing one of the following
+fields, which are needed to create a new job: `url' or `file',
+`title' and `key'")))
+
 
 ;;;;; Importing
 
-(defun tlon-babel-import-document (&optional identifier)
+(defun tlon-babel-import-document (&optional identifier title)
   "Import a document with IDENTIFIER.
 IDENTIFIER can be a URL or a PDF file path.
 
-This command also imports EA Forum posts and tags."
+This command also imports EA Forum posts and tags. TITLE
+optionally specifies the title of the document to be imported."
   (interactive)
-  (let ((identifier (or identifier (read-string "Identifier: "))))
+  (let ((identifier (or identifier (read-string "Identifier (URL or PDF path): "))))
     (if (ps/string-is-url-p identifier)
-	(tlon-babel-import-html identifier)
+	(tlon-babel-import-html identifier title)
       (tlon-babel-import-pdf (expand-file-name identifier)))))
 
-(defun tlon-babel-import-html (url)
-  "Import the HTML in URL and convert it to Markdown."
+(defun tlon-babel-import-html (url &optional title)
+  "Import the HTML in URL and convert it to Markdown.
+TITLE optionally specifies the title of the file to be imported."
   (if-let ((id-or-slug (tlon-babel-eaf-get-id-or-slug-from-identifier url)))
-      (tlon-babel-import-html-eaf id-or-slug)
-    (tlon-babel-html-to-markdown url)))
+      (tlon-babel-import-html-eaf id-or-slug title)
+    (tlon-babel-html-to-markdown url title)))
 
 (defun tlon-babel-set-file-from-title (&optional title dir)
   "Set the file path based on its title.
