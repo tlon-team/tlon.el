@@ -595,6 +595,78 @@ buffer."
     (while (re-search-forward "\\(\\[\\^[[:digit:]]\\{1,3\\}\\]:\\)" nil t)
       (replace-match "\n\n\\1"))))
 
+(defun tlon-babel-consolidate-all-footnotes (DIR)
+  "Consolidate all footnotes in DIR."
+  (interactive "D")
+  (dolist (file (directory-files DIR nil "\\.md$"))
+    (with-current-buffer (find-file-noselect file)
+      (message "Consolidating footnotes in %s" (buffer-name))
+      (tlon-babel-consolidate-footnotes)
+      (save-buffer))))
+
+(defun tlon-babel-consolidate-footnotes ()
+  "Consolidate consecutive footnotes."
+  (interactive)
+  (goto-char (point-min))
+  (let ((regex "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\ ?\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]"))
+    (while (re-search-forward regex nil t)
+      (let* ((n1 (string-to-number (match-string-no-properties 1)))
+	     (n2 (string-to-number (match-string-no-properties 2))))
+	(replace-match "" nil nil)
+	(let* ((fn1 (tlon-babel-markdown-get-footnote n1 'delete))
+	       (fn2 (tlon-babel-markdown-get-footnote n2 'delete))
+	       (consolidated (tlon-babel-consolidate-bibtex-keys (format "%s; %s" fn1 fn2))))
+	  (markdown-insert-footnote)
+	  (insert (format "%s." consolidated))
+	  (goto-char (point-min)))))))
+
+(defun tlon-babel-markdown-get-footnote (n &optional delete)
+  "Get the content of footnote number N.
+If DELETE is non-nil, delete the footnote."
+  (save-excursion                         ; Preserve initial position
+    (goto-char (point-min))               ; Go to beginning of buffer
+    (let ((footnote-start)
+	  (footnote-end)
+	  (footnote-content))
+      ;; Locate the footnote
+      (unless (re-search-forward (format "\\[\\^%d\\]:\\ " n) nil t)
+	(error (format "Footnote %d not found" n)))
+      (setq footnote-start (point))
+      ;; Locate end of footnote content
+      (if (re-search-forward "\\[\\^[[:digit:]]\\{1,3\\}\\]:\\ " nil t)
+	  (goto-char (match-beginning 0))
+	(goto-char (point-max)))
+      (setq footnote-end (if (bolp) (- (point) 1) (point)))
+      ;; Extract footnote content
+      (setq footnote-content (buffer-substring-no-properties footnote-start footnote-end))
+      (when delete
+	(tlon-babel-markdown-delete-footnote n))
+      footnote-content)))
+
+(defun tlon-babel-markdown-delete-footnote (n)
+  "Delete footnote number N."
+  (save-excursion                         ; Preserve initial position
+    (goto-char (point-min))               ; Go to beginning of buffer
+    (let (footnote-start)
+      ;; Locate the footnote
+      (unless (re-search-forward (format "\\[\\^%d\\]:\\ " n) nil t)
+	(error (format "Footnote ^%d not found" n)))
+      (setq footnote-start (match-beginning 0))
+      ;; Locate end of footnote content
+      (if (re-search-forward "\\[\\^[[:digit:]]\\{1,3\\}\\]:\\ " nil t)
+	  (goto-char (match-beginning 0))
+	(goto-char (point-max)))
+      (delete-region footnote-start (point)))))
+
+(defun tlon-babel-consolidate-bibtex-keys (string)
+  "Consolidate Bibtex keys in STRING."
+  (let ((start 0)
+	matches)
+    (while (string-match "\\[\\(@.*?\\)\\]" string start)
+      (push (match-string 1 string) matches)
+      (setq start (match-end 0)))
+    (format "[%s]" (mapconcat 'identity (nreverse matches) "; "))))
+
 (defun tlon-babel-fix-list ()
   "Format the current paragraph into a proper list."
   (interactive)
