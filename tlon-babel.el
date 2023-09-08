@@ -427,7 +427,7 @@ If FILE is nil, use the current buffer's file name."
 	  (user-error "Aborted")))
       (orgit-store-link nil)
       (call-interactively #'magit-pull-from-upstream nil)
-      (if-let* ((org-link (ps/org-nth-stored-link 0))
+      (if-let* ((org-link (tlon-org-nth-stored-link 0))
 		(refile-position (org-find-exact-headline-in-buffer
 				  (cadr (nth 0 org-stored-links))
 				  (find-file-noselect ps/file-tlon-babel))))
@@ -438,7 +438,7 @@ If FILE is nil, use the current buffer's file name."
 	    (org-capture nil (concat "tb" binding))
 	    ;; refile under job
 	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
-	    (ps/org-refile-goto-latest))
+	    (tlon-org-refile-goto-latest))
 	(when (y-or-n-p "No master TODO found for this topic. Create?")
 	  (tlon-babel-start-job)
 	  (tlon-babel-orgit-capture))))))
@@ -1782,7 +1782,7 @@ specific function for the process that is being initialized."
     (tlon-babel-set-windows original-path tlon-babel-file-manual)
     (org-id-goto tlon-babel-manual-processing-id)
     (org-narrow-to-subtree)
-    (ps/org-show-subtree-hide-drawers)
+    (tlon-org-show-subtree-hide-drawers)
     (winum-select-window-2)
     (let ((topic (tlon-babel-get-clock-topic)))
       (orgit-topic-open topic))))
