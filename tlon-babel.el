@@ -1888,6 +1888,7 @@ specific function for the process that is being initialized."
 
 (defun tlon-babel-initialize-review ()
   "Initialize review."
+  (require 'jinx)
   (cl-multiple-value-bind
       (original-path translation-path)
       (tlon-babel-set-paths-from-clock)
