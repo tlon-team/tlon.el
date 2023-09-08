@@ -2028,9 +2028,10 @@ This command should be run from the source window."
 
 (defun tlon-babel-check-branch (branch repo)
   "Throw an error unless current buffer is in REPO branch BRANCH."
-  (unless (string= (magit-get-current-branch) branch)
-    (user-error "Please switch to the branch `%s' before proceeding" branch)
-    t))
+  (let ((default-directory repo))
+    (unless (string= (magit-get-current-branch) branch)
+      (user-error "Please switch to the branch `%s' before proceeding" branch)
+      t)))
 
 (defun tlon-babel-check-file (&optional original)
   "Throw an error unless current file matches file in clock.
