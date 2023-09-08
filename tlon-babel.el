@@ -2048,7 +2048,7 @@ otherwise, check that current file matches translation."
       (user-error "Current file does not match file in clock"))))
 
 (defun tlon-babel-check-label-and-assignee (repo)
-  "Check that clocked action matches topic label and assignee matches user."
+  "Check that clocked action matches label and assignee matches user of topic in REPO."
   (save-window-excursion
     (let* ((default-directory repo)
 	   (key (tlon-babel-get-clock-key))
