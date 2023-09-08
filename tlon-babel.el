@@ -1627,19 +1627,18 @@ TITLE optionally specifies the title of the entity to be imported."
 	 (title (or title (pcase object
 			    ('post (tlon-babel-eaf-get-post-title response))
 			    ('tag (tlon-babel-eaf-get-tag-title response)))))
-	 (dir (file-name-concat (tlon-babel-get-repo) "originals" (when (eq object 'tag) "tags")))
-	 (target (tlon-babel-set-file-from-title title dir))
+	 (dir (file-name-concat (tlon-babel-get-repo) "originals"))
+	 (target (read-string "Save file in: " (tlon-babel-set-file-from-title title dir)))
 	 (html (pcase object
 		 ('post (tlon-babel-eaf-get-post-html response))
 		 ('tag (tlon-babel-eaf-get-tag-html response))))
 	 (html-file (tlon-babel-save-html-to-file html)))
-    (tlon-babel-html-to-markdown html-file title)
+    (shell-command
+     (format tlon-babel-pandoc-convert-from-file html-file target))
     (with-current-buffer (find-file-noselect target)
       (tlon-babel-markdown-eaf-cleanup))
-    ;; TODO: Replace below with call to function that adds front matter
-    ;; with title and perhaps other info. I don't know how useful this
-    ;; info is, though, so this isn't a priority.
     (find-file target)))
+
 
 (defun tlon-babel-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
@@ -1652,15 +1651,14 @@ TITLE optionally specifies the title of the entity to be imported."
   "Convert HTML text in SOURCE to Markdown.
 SOURCE can be a URL or a file path. If TITLE is not provided,
 prompt the user for one."
-  (let* ((target (tlon-babel-set-file-from-title title))
+  (let* ((target (read-string "Save file in: " (tlon-babel-set-file-from-title title)))
 	 (pandoc (if (ps/string-is-url-p source)
 		     tlon-babel-pandoc-convert-from-url
 		   tlon-babel-pandoc-convert-from-file)))
     (shell-command
      (format pandoc source target))
-    ;; TODO: Replace below with call to function that adds front matter
-    ;; with title and perhaps other info by prompting the user. I don't
-    ;; know how useful this info is, though, so this isn't a priority.
+    (with-current-buffer (find-file-noselect target)
+      (tlon-babel-markdown-non-eaf-cleanup))
     (find-file target)))
 
 (defun tlon-babel-import-pdf (path &optional title)
@@ -1676,7 +1674,7 @@ pointer.) Then enter these values when prompted.
 
 If TITLE is nil, prompt the user for one."
   (find-file-other-window path)
-  (let ((target (tlon-babel-set-file-from-title title))
+  (let ((target (read-string "Save file in: " (tlon-babel-set-file-from-title title)))
 	(header (read-string "Header: "))
 	(footer (read-string "Footer: ")))
     (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
