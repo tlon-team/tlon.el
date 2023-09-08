@@ -1828,15 +1828,17 @@ specific function for the process that is being initialized."
 (defun tlon-babel-finalize ()
   "Finalize current stage of translation process."
   (save-buffer)
-  (let ((repo (tlon-babel-get-repo)))
+  (let ((repo (tlon-babel-get-repo))
+	(current-action (tlon-babel-get-clock-action)))
     (tlon-babel-check-branch "main" repo)
     (tlon-babel-check-label-and-assignee repo)
-    (tlon-babel-check-file (when (string= (tlon-babel-get-clock-action) "Process") 'original))
+    (tlon-babel-check-file
+     (when (string= current-action "Process")
+       'original))
     (cl-multiple-value-bind
 	(original-path translation-path original-key)
 	(tlon-babel-set-paths-from-clock)
-      (let* ((current-action (tlon-babel-get-clock-action))
-	     (next-label (tlon-babel-get-clock-next-label))
+      (let* ((next-label (tlon-babel-get-clock-next-label))
 	     (next-assignee (tlon-babel-get-clock-next-assignee next-label)))
 	(save-buffer)
 	(if (string= current-action "Process")
