@@ -2230,6 +2230,7 @@ request. If ACTION is `close', close issue."
 (defun tlon-babel-search-topics (search-string &optional repo)
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
+  (require 'forge-search)
   (interactive "sSearch string: ")
   (let* ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	 (default-directory repo))
