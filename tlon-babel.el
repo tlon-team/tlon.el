@@ -835,13 +835,13 @@ If REPO is nil, return metadata of current repository."
   "Return the metadata in DIR and all its subdirectories as an association list."
   (let ((metadata '()))
     (dolist (file (directory-files-recursively dir "\\.md$"))
-      (push (tlon-babel-get-file-metadata file) metadata))
+      (push (tlon-babel-get-metadata-in-file-or-buffer file) metadata))
     metadata))
 
-(defun tlon-babel-get-file-metadata (file)
-  "Return the metadata in FILE as an association list."
-  (let* ((metadata (tlon-babel-yaml-get-front-matter file))
-	 (extras `(("file" . ,file)
+(defun tlon-babel-get-metadata-in-file-or-buffer (file-or-buffer)
+  "Return the metadata in FILE-OR-BUFFER as an association list."
+  (let* ((metadata (tlon-babel-yaml-get-front-matter file-or-buffer))
+	 (extras `(("file-or-buffer" . ,file-or-buffer)
 		   ("type" . "online")
 		   ("database" . "Tlön")
 		   ("landid" . "es"))))
@@ -878,11 +878,13 @@ OTHER-FIELD value in entry matches the regex MATCH."
 	  (push value result))))
     result))
 
-(defun tlon-babel-metadata-get-field-value-in-file (field &optional file)
-  "Return the value of FIELD in FILE metadata.
+(defun tlon-babel-metadata-get-field-value-in-file (field &optional file-or-buffer)
+  "Return the value of FIELD in metadata of FILE-OR-BUFFER.
 If FILE is nil, use the file visited by the current buffer."
-  (when-let* ((file (or file (buffer-file-name)))
-	      (metadata (tlon-babel-get-file-metadata file)))
+  (when-let* ((file-or-buffer (or file-or-buffer
+				  (buffer-file-name)
+				  (current-buffer)))
+	      (metadata (tlon-babel-get-metadata-in-file-or-buffer file-or-buffer)))
     (alist-get field metadata nil nil #'string=)))
 
 (defun tlon-babel-get-key-in-buffer ()
@@ -905,12 +907,21 @@ If REPO is nil, return files in current repository. DIR is one of
 
 ;;;;;; Get YAML values
 
-(defun tlon-babel-yaml-get-front-matter (&optional file)
-  "Return the YAML front matter from FILE as an association list.
-If FILE is nil, use the current buffer."
-  (let ((file (or file (buffer-file-name))))
+(defun tlon-babel-yaml-get-front-matter (&optional file-or-buffer)
+  "Return the YAML front matter from FILE-OR-BUFFER as an association list.
+If FILE-OR-BUFFER is nil, use the current buffer."
+  (let ((file-or-buffer (or file-or-buffer
+			    (buffer-file-name)
+			    (current-buffer))))
     (with-temp-buffer
-      (insert-file-contents file)
+      (cond
+       ;; If the argument is a buffer object
+       ((bufferp file-or-buffer)
+	(insert (with-current-buffer file-or-buffer (buffer-string))))
+       ;; If the argument is a string
+       ((stringp file-or-buffer)
+	(insert-file-contents file-or-buffer)))
+      (goto-char (point-min))
       (let ((metadata '()))
 	(when (looking-at-p tlon-babel-yaml-delimiter)
 	  (forward-line)
