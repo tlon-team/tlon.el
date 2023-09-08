@@ -1555,7 +1555,7 @@ If REPO is nil, prompt the user for one."
   (interactive)
   (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (title (read-string "Translated title: "))
-	 (dir (file-name-concat repo "translations/"))
+	 (dir (file-name-concat repo "translations/articulos/"))
 	 (path (tlon-babel-set-file-from-title title dir)))
     (find-file path)
     (tlon-babel-yaml-set-front-matter-for-post title)
