@@ -334,18 +334,6 @@ previously.")
   (interactive)
   (message "`tlon-babel' version %s" tlon-babel-version))
 
-(defun tlon-babel-update ()
-  "Update `tlon-babel' package."
-  (interactive)
-  (let* ((default-directory (file-name-concat user-emacs-directory "elpaca/repos/tlon-babel/"))
-	 (builds-directory (file-name-concat user-emacs-directory "elpaca/builds/tlon-babel/"))
-	 (tlon-babel-file (file-name-concat default-directory "tlon-babel.el")))
-    (shell-command "git pull")
-    (with-current-buffer (find-file-noselect tlon-babel-file)
-      (eval-buffer))
-    (dired-delete-file builds-directory 'always t)
-    (message "Package updated. %s" tlon-babel-version)))
-
 ;;;;;
 
 (defun tlon-babel-get-repo-from-file (&optional file)
