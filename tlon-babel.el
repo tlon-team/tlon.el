@@ -1167,7 +1167,7 @@ Note that this searches in all repos, not just BAE."
 (defun tlon-babel-get-work-type (&optional reversed file)
   "Return the work type of file in FILE.
 A work is either `original' or `translation'. If REVERSED is
-non-nil, return 'originals' when the work type is 'translations'
+non-nil, return `originals' when the work type is `translations'
 and vice versa. If FILE is nil, return the work type of the
 file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
