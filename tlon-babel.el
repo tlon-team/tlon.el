@@ -546,10 +546,10 @@ buffer."
     ;; remove double asterisks surrounding headings
     (while (re-search-forward "# \\*\\*\\(.*\\)\\*\\* *?$" nil t)
       (replace-match (format "# %s" (match-string-no-properties 1))))
-    (tlon-babel-non-eaf-cleanup)
+    (tlon-babel-markdown-non-eaf-cleanup)
     (save-buffer)))
 
-(defun tlon-babel-non-eaf-cleanup ()
+(defun tlon-babel-markdown-non-eaf-cleanup ()
   "Cleanup the buffer visiting a non-EAF entry."
   (interactive)
   ;; TODO: Move this to a common function called by both the EAF and non-EAF commands.
