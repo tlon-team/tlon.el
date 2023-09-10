@@ -358,7 +358,7 @@ If FILE is nil, use the current buffer's file name."
      (buffer-file-name))))
 
 (defun tlon-babel-get-repo-from-key (key)
-  "Return the repo corresponding to KEY."
+  "Return the repo corresponding to original KEY."
   (if-let ((file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-metadata-in-all-repos))))
       (if-let ((repo (catch 'found
 		       (dolist (repo tlon-babel-repo-names-and-dirs)
