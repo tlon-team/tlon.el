@@ -829,7 +829,7 @@ If REPO is nil, return metadata of current repository."
 (defun tlon-babel-get-metadata-in-file-or-buffer (file-or-buffer)
   "Return the metadata in FILE-OR-BUFFER as an association list."
   (let* ((metadata (tlon-babel-yaml-get-front-matter file-or-buffer))
-	 (extras `(("file-or-buffer" . ,file-or-buffer)
+	 (extras `(("file" . ,file-or-buffer)
 		   ("type" . "online")
 		   ("database" . "Tlön")
 		   ("landid" . "es"))))
