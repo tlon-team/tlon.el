@@ -2500,9 +2500,6 @@ Optionally, DESCRIPTION provides an explanation of the change."
     ("r" "dwim"                           tlon-babel-dwim)
     ("m" "magit"                          tlon-babel-magit-status)
     ("n" "forge"                          tlon-babel-forge)
-    """Package"
-    ("p p" "update"                       tlon-babel-update)
-    ("p v" "version"                      tlon-babel-version)
     ]
    ["Add"
     ("a a" "to glossary"                  tlon-babel-glossary-dwim)
