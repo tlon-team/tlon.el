@@ -541,6 +541,8 @@ buffer."
   "Cleanup the buffer visiting a non-EAF entry."
   (interactive)
   ;; TODO: Move this to a common function called by both the EAF and non-EAF commands.
+  (unfill-region (point-min) (point-max))
+  (goto-char (point-min))
   (goto-char (point-min))
   ;; unescape double quotes
   (while (re-search-forward "\\\\\"" nil t)
