@@ -2476,6 +2476,40 @@ Optionally, DESCRIPTION provides an explanation of the change."
 						 action term description)))))))
 ;; (call-interactively #'magit-push-current-to-pushremote))))
 
+;;;;; Bibtex correspondences
+
+(defun tlon-babel-read-json (file)
+  "Read the json list in FILE."
+  (let ((json-array-type 'list))
+    (json-read-file file)))
+
+(defun tlon-babel-write-json (file json)
+  "Write the json list JSON to FILE."
+  (with-temp-file file
+    (insert (json-encode json))))
+
+(defun tlon-babel-get-category-candidates (json category)
+  "Get completion candidates from JSON for CATEGORY."
+  (let (candidates)
+    (dolist (entry json candidates)
+      (when (string= (nth 2 entry) category)
+	(push (cons (nth 0 entry) (nth 1 entry)) candidates)))))
+
+(defun tlon-babel-edit-json-entry (file)
+  "Edit a json entry in FILE."
+  (interactive "f")
+  (let* ((json (tlon-babel-read-json file))
+	 (category (completing-read "Select category: " (mapcar (lambda (x) (nth 2 x)) json)))
+	 (candidate (completing-read "Select or enter term: " (tlon-babel-get-category-candidates json category))))
+    (let* ((existing (assoc candidate (tlon-babel-get-category-candidates json category)))
+	   (translation (if existing
+			    (read-string "Enter new translation: " (cdr existing))
+			  (read-string "Enter new translation: "))))
+      (if existing
+	  (setcdr existing translation)
+	(push (list candidate translation category) json))
+      (tlon-babel-write-json file json))))
+
 ;;;;;
 
 (defmacro tlon-babel-create-file-opening-command (file)
