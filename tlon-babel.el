@@ -1233,7 +1233,7 @@ current buffer."
     (with-temp-buffer
       (insert-file-contents file)
       (let ((start (or start (point-min)))
-	    (end (or end (point-max))))
+	    (end (min (or end (point-max)))))
 	(narrow-to-region start end)
 	(goto-char (point-min))
 	(- (buffer-size) (forward-paragraph (buffer-size)))))))
