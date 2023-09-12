@@ -739,15 +739,18 @@ If DELETE is non-nil, delete the footnote."
   (save-excursion
     ;; Get paragraph boundaries
     (let* ((para-start (progn (backward-paragraph)
-			      (skip-chars-forward "\n\t ") (point)))
-	   (para-end (progn (end-of-paragraph-text)
-			    (point)))
-	   ;; Get paragraph text, separate the links
-	   (para-text (buffer-substring-no-properties para-start para-end))
-	   (link-list (split-string para-text separator))
-	   ;; Trim and sort the links
-	   (sorted-links (sort (mapcar 'string-trim link-list)
-			       'string<)))
+                              (skip-chars-forward "\n\t ")
+                              (point)))
+           (para-end (progn (end-of-paragraph-text)
+                            (point)))
+           ;; Get paragraph text, separate the links
+           (para-text (buffer-substring-no-properties para-start para-end))
+           (link-list (mapcar 'ucs-normalize-NFD-string (split-string para-text separator)))
+           ;; Trim and sort the links
+           (sorted-links (seq-sort-by 'downcase
+                                      (lambda (s1 s2)
+                                        (string-collate-lessp s1 s2 nil t))
+                                      (mapcar 'string-trim link-list))))
       ;; Clear the current paragraph
       (delete-region para-start para-end)
       ;; Replace it with sorted links
