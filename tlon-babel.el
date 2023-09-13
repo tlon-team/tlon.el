@@ -675,17 +675,6 @@ If DELETE is non-nil, delete the footnote."
     (while (re-search-forward "\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
       (replace-match "\\1\\3\\2"))))
 
-(defun tlon-babel-fix-em-dashes ()
-  "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (interactive)
-  (widen)
-  (save-excursion
-    (dolist (regexp '("\\([)[:alnum:]]\\)-\\([ ,]\\)"
-		      "\\([ ,]\\)-\\([([:alnum:]]\\)"
-		      "\\( \\)-\\( \\)"))
-      (goto-char (point-min))
-      (query-replace-regexp regexp "\\1—\\2" nil (point-min) (point-max)))))
-
 (defun tlon-babel-fix-curly-quotes ()
   "Replace straight quotes with curly qutoes when appropriate."
   (interactive)
@@ -693,6 +682,29 @@ If DELETE is non-nil, delete the footnote."
   (save-excursion
     (while (re-search-forward "\"\\[" nil t)
       (replace-match "“["))))
+
+(defun tlon-babel-conditionally-fix (regexp-list to-string)
+  "Prompt user to replace list of REGEXP-LIST with TO-STRING."
+  (widen)
+  (save-excursion
+    (dolist (regexp regexp-list)
+      (goto-char (point-min))
+      (query-replace-regexp regexp to-string nil (point-min) (point-max)))))
+
+(defun tlon-babel-conditionally-fix-em-dashes ()
+  "Prompt the user to replace hyphens with em dashes, when appropriate."
+  (interactive)
+  (tlon-babel-conditionally-fix '("\\([)[:alnum:]]\\)-\\([ ,]\\)"
+				  "\\([ ,]\\)-\\([([:alnum:]]\\)"
+				  "\\( \\)-\\( \\)")
+				"\\1—\\2"))
+
+(defun tlon-babel-conditionally-fix-percent-signs ()
+  "Prompt the user to add non-breaking space before percent sign."
+  (interactive)
+  (tlon-babel-conditionally-fix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
+				  "\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
+				"\\1 %\\2"))
 
 ;;;;;; Insertion commands
 
