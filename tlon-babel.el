@@ -1142,21 +1142,32 @@ elements."
 
 ;;;;;; Get repo-specific elements
 
-(defun tlon-babel-get-bae-authors ()
-  "Get a list of BAE authors."
+(defun tlon-babel-get-bae-element (type)
+  "Return a list of BAE elements of TYPE."
   (tlon-babel-metadata-get-all-field-values
    "titulo"
    (tlon-babel-get-repo-metadata tlon-babel-dir-bae)
    "file"
-   (file-name-concat tlon-babel-dir-bae-translations "autores")))
+   (file-name-concat tlon-babel-dir-bae-translations type)))
+
+(defun tlon-babel-get-bae-articles ()
+  "Get a list of BAE articles."
+  (tlon-babel-get-bae-element "articulos"))
+
+(defun tlon-babel-get-bae-authors ()
+  "Get a list of BAE authors."
+  (tlon-babel-get-bae-element "autores"))
 
 (defun tlon-babel-get-bae-tags ()
   "Get a list of BAE tags."
-  (tlon-babel-metadata-get-all-field-values
-   "titulo"
-   (tlon-babel-get-repo-metadata tlon-babel-dir-bae)
-   "file"
-   (file-name-concat tlon-babel-dir-bae-translations "temas")))
+  (tlon-babel-get-bae-element "temas"))
+
+(defun tlon-babel-get-bae-all-elements ()
+  "Get a list of all BAE elements."
+  (append
+   (tlon-babel-get-bae-element "articulos")
+   (tlon-babel-get-bae-element "autores")
+   (tlon-babel-get-bae-element "temas")))
 
 ;;;;;; Get repo-agnostic elements
 
