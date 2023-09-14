@@ -1701,11 +1701,16 @@ If TITLE is nil, prompt the user for one."
   "Create a record based on KEY.
 Creates a new record in the repository (with the format `Job:
 KEY') and a new heading in the file `jobs.org'. If KEY is not
-provided, the key in the Markdown buffer at point is used."
+provided, the key in the current Markdown buffer at point is used."
   (interactive)
-  (let* ((key (or key (tlon-babel-get-key-in-buffer))))
-    (tlon-babel-create-issue-for-job key)
-    (tlon-babel-create-heading-for-job key 'commit)))
+  (if-let ((key (or key
+		    (pcase major-mode
+		      ('markdown-mode (tlon-babel-get-key-in-buffer))
+		      ('ebib-entry-mode (ebib--get-key-at-point))))))
+      (progn
+	(tlon-babel-create-issue-for-job key)
+	(tlon-babel-create-heading-for-job key 'commit))
+    (user-error "I wasn't able to create a record because I didn't find a key")))
 
 (defun tlon-babel-create-issue-for-job (&optional key)
   "Create an issue based on KEY.
