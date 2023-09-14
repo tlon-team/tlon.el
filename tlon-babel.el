@@ -708,28 +708,31 @@ If DELETE is non-nil, delete the footnote."
 
 ;;;;;; Insertion commands
 
-(defun tlon-babel-markdown-insert-tag ()
-  "Insert a tag slug at point."
+(defun tlon-babel-markdown-insert-element ()
+  "Insert a link to an element at point.
+The element can be a tag or an author."
   (interactive)
   (tlon-babel-check-in-markdown-mode)
   (let* ((selection (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end))))
 	 (current-link (markdown-link-at-pos (point)))
 	 (current-desc (nth 2 current-link))
 	 (current-target (nth 3 current-link))
-	 current-tag-title)
+	 current-element-title)
     (when current-target
-      (setq current-tag-title (tlon-babel-markdown-get-tag-title-in-link-target current-target)))
-    (let* ((new-tag-title (completing-read "Tag: " (tlon-babel-get-bae-tags) nil t
-					   (or current-tag-title
-					       selection)))
-	   (new-target-file (file-name-nondirectory
-			     (tlon-babel-metadata-lookup "titulo" new-tag-title "file" (tlon-babel-get-repo-metadata))))
-	   (tags-dir (file-name-concat tlon-babel-dir-bae-translations "temas"))
-	   (new-target-dir (file-relative-name tags-dir default-directory))
-	   (new-target (file-name-concat new-target-dir new-target-file))
+      (setq current-element-title
+	    (tlon-babel-markdown-get-title-in-link-target
+	     current-target)))
+    (let* ((new-element-title (completing-read "Selection: " (tlon-babel-get-bae-all-elements)
+					       nil t
+					       (or current-element-title
+						   selection)))
+	   (new-target-file (tlon-babel-metadata-lookup "titulo" new-element-title "file" (tlon-babel-get-repo-metadata)))
+	   (new-target-dir (file-relative-name
+			    (file-name-directory new-target-file) (file-name-directory (buffer-file-name))))
+	   (new-target (file-name-concat new-target-dir (file-name-nondirectory new-target-file)))
 	   (new-desc (if (and current-desc (string= new-target current-target))
 			 current-desc
-		       (or selection new-tag-title)))
+		       (or selection new-element-title)))
 	   (link (format "[%s](%s)" new-desc new-target)))
       (when current-target
 	(ps/markdown--delete-link))
@@ -737,12 +740,9 @@ If DELETE is non-nil, delete the footnote."
 	(delete-region (region-beginning) (region-end)))
       (insert link))))
 
-(defun tlon-babel-markdown-get-tag-title-in-link-target (target)
+(defun tlon-babel-markdown-get-title-in-link-target (target)
   "Return the title of the tag to which the TARGET of a Markdown link points."
-  (let* ((slug (progn
-		 (string-match "\\(.*/\\)?\\(.*?\\.md\\)" target)
-		 (match-string 2 target)))
-	 (file (concat tlon-babel-dir-bae-translations "temas/" slug))
+  (let* ((file (expand-file-name target default-directory))
 	 (title (tlon-babel-metadata-lookup "file" file "titulo" (tlon-babel-get-repo-metadata))))
     title))
 
