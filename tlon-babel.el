@@ -347,11 +347,11 @@ If FILE is nil, use the current buffer's file name."
   (let* ((file (or file (tlon-babel-buffer-file-name) default-directory))
 	 (directory-path (file-name-directory file)))
     (cl-some (lambda (cons-cell)
-	       (let ((tlon-babel-project-names-and-dirs (cdr cons-cell)))
-		 (when (string-prefix-p (file-name-as-directory tlon-babel-project-names-and-dirs)
+	       (let ((tlon-babel-repo-names-and-dirs (cdr cons-cell)))
+		 (when (string-prefix-p (file-name-as-directory tlon-babel-repo-names-and-dirs)
 					directory-path)
-		   tlon-babel-project-names-and-dirs)))
-	     tlon-babel-project-names-and-dirs)))
+		   tlon-babel-repo-names-and-dirs)))
+	     tlon-babel-repo-names-and-dirs)))
 
 (defun tlon-babel-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
