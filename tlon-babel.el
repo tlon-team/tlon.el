@@ -388,53 +388,58 @@ If FILE is nil, use the current buffer's file name."
 	 (repo-name (tlon-babel-get-name-from-repo repo)))
     (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=)))
 
-(defun tlon-babel-orgit-capture ()
+(defun tlon-babel-create-todo-from-issue ()
   "Capture a new org mode task for topic at point."
   (interactive)
   (let ((assignee (alist-get
 		   (tlon-babel-forge-get-assignee-at-point)
 		   tlon-babel-github-users nil nil 'string=))
 	(label (tlon-babel-forge-get-label-at-point)))
-    ;; when the topic has neither a label nor an assignee, we offer to
-    ;; process it as a new job
-    (if (not (or assignee label))
-	(if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
-	    (progn
-	      (tlon-babel-start-job t)
-	      (sleep-for 4)
-	      (tlon-babel-orgit-capture))
-	  (user-error "Aborted"))
-      ;; else we prompt for an assignee...
-      (unless (string= user-full-name assignee)
-	(if (y-or-n-p
-	     (format "The assignee of this topic is %s. Would you like to become the assignee?" assignee))
-	    (progn
-	      (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
-	      (sleep-for 2))
-	  (user-error "Aborted")))
-      ;; ...or for a label
-      (unless label
-	(if (y-or-n-p "The topic has no label. Would you like to add one?")
-	    (tlon-babel-set-label (tlon-babel-select-label))
-	  (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
-	  (user-error "Aborted")))
-      (orgit-store-link nil)
-      (call-interactively #'magit-pull-from-upstream nil)
-      (if-let* ((org-link (tlon-org-nth-stored-link 0))
-		(refile-position (org-find-exact-headline-in-buffer
-				  (cadr (nth 0 org-stored-links))
-				  (find-file-noselect ps/file-tlon-babel))))
-	  (let ((action (alist-get label tlon-babel-label-actions nil nil #'string=))
-		(binding (upcase (alist-get label tlon-babel-label-bindings nil nil #'string=))))
-	    (kill-new (format "%s %s" action org-link))
-	    ;; TODO: use different capture templates for the different project
-	    (org-capture nil (concat "tb" binding))
-	    ;; refile under job
-	    (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
-	    (tlon-org-refile-goto-latest))
-	(when (y-or-n-p "No master TODO found for this topic. Create?")
-	  (tlon-babel-start-job)
-	  (tlon-babel-orgit-capture))))))
+    (pcase user-full-name
+      ("Pablo Stafforini"
+       (if (y-or-n-p "Store GitHub issue as org-mode TODO?")
+	   (tlon-babel-store-todo "tbG")))
+      (_
+       ;; when the topic has neither a label nor an assignee, we offer to
+       ;; process it as a new job
+       (if (not (or assignee label))
+	   (if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
+	       (progn
+		 (tlon-babel-start-job t)
+		 (sleep-for 4)
+		 (tlon-babel-create-todo-from-issue))
+	     (user-error "Aborted"))
+	 ;; else we prompt for an assignee...
+	 (unless (string= user-full-name assignee)
+	   (if (y-or-n-p
+		(format "The assignee of this topic is %s. Would you like to become the assignee?" assignee))
+	       (progn
+		 (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
+		 (sleep-for 2))
+	     (user-error "Aborted")))
+	 ;; ...or for a label
+	 (unless label
+	   (if (y-or-n-p "The topic has no label. Would you like to add one?")
+	       (tlon-babel-set-label (tlon-babel-select-label))
+	     (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
+	     (user-error "Aborted")))
+	 (orgit-store-link nil)
+	 (call-interactively #'magit-pull-from-upstream nil)
+	 (if-let* ((org-link (tlon-org-nth-stored-link 0))
+		   (refile-position (org-find-exact-headline-in-buffer
+				     (cadr (nth 0 org-stored-links))
+				     (find-file-noselect ps/file-tlon-babel))))
+	     (let ((action (alist-get label tlon-babel-label-actions nil nil #'string=))
+		   (binding (upcase (alist-get label tlon-babel-label-bindings nil nil #'string=))))
+	       (kill-new (format "%s %s" action org-link))
+	       ;; TODO: use different capture templates for the different project
+	       (org-capture nil (concat "tb" binding))
+	       ;; refile under job
+	       (org-refile nil nil (list nil (buffer-file-name) nil refile-position))
+	       (tlon-org-refile-goto-latest))
+	   (when (y-or-n-p "No master TODO found for this topic. Create?")
+	     (tlon-babel-start-job)
+	     (tlon-babel-create-todo-from-issue))))))))
 
 (defun tlon-babel-start-job (&optional set-topic)
   "Create new job.
