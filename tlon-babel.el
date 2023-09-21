@@ -2402,8 +2402,15 @@ request. If ACTION is `close', close issue."
 	  (search-forward topic nil t)
 	  (pcase action
 	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
-	    (`close (call-interactively 'forge-edit-topic-state))))
+	    (`close (tlon-babel-forge-close-topic))))
       (user-error "Could not find topic `%s' in Magit buffer" topic))))
+
+(defun tlon-babel-forge-close-topic (&optional topic)
+  "Close the topic TOPIC.
+If TOPIC is nil, use the topic at point."
+  (let ((topic (or topic (forge-current-topic))))
+    (when (eq 'open (oref topic state))
+      (forge--set-topic-state (forge-get-repository topic) topic))))
 
 (defun tlon-babel-set-parameters (topic &optional label-or-assignee)
   "Set label or assignee for TOPIC, depending on value of LABEL-OR-ASSIGNEE."
