@@ -448,17 +448,163 @@ and assignee to the current user."
   (save-window-excursion
     (when set-topic
       (tlon-babel-set-initial-label-and-assignee))
-    (orgit-store-link nil)
-    (let ((job-name (cadr (nth 0 org-stored-links))))
-      (kill-new (format "%s" job-name)))
-    ;; TODO: use different capture templates for the different projects
-    (org-capture nil "tbJ")))
+    (tlon-babel-store-todo "tbJ")))
+
+(defun tlon-babel-store-todo (template)
+  "Store a new TODO using TEMPLATE."
+  (orgit-store-link nil)
+  (let* ((repo (tlon-babel-get-repo 'error 'genus))
+	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
+	 (job-name (cadr (nth 0 org-stored-links))))
+    (kill-new (format "[%s] %s" repo-abbrev job-name)))
+  (org-capture nil template))
+
+;;;;; Org-github sync
+
+(defun tlon-babel-visit-issue (&optional number repo)
+  "Visit issue NUMBER in REPO."
+  (interactive)
+  (if-let* ((number (or number
+			(tlon-babel-get-issue-number-from-heading)))
+	    (repo (or repo
+		      (tlon-babel-get-repo-from-heading)))
+	    (default-directory repo)
+	    (forge-repo (forge-get-repository nil))
+	    (issue-id (caar (forge-sql [:select [id] :from issue
+						:where (and (= repository $s1)
+							    (= number $s2))]
+				       (oref forge-repo id)
+				       number)))
+	    (issue (forge-get-topic issue-id)))
+      (forge-visit issue)
+    (user-error "Could not find issue")))
+
+(defun tlon-babel-visit-todo (&optional id)
+  ""
+  (interactive)
+  )
+
+(defun tlon-babel-get-element-from-heading (regexp)
+  "Get element matching REGEXP from the heading at point."
+  (when (org-at-heading-p)
+    (let ((heading (substring-no-properties (org-get-heading t t t t))))
+      (when (string-match regexp heading)
+	(match-string 1 heading)))))
+
+(defun tlon-babel-get-issue-number-from-heading ()
+  "Get the issue number from the heading at point."
+  (string-to-number
+   (tlon-babel-get-element-from-heading "#\\([[:digit:]]\\{1,4\\}\\)")))
+
+(defun tlon-babel-get-repo-from-heading ()
+  "Get the repo from the heading at point."
+  (let* ((abbrev-repo (tlon-babel-get-element-from-heading "^\\[\\(.*?\\)\\]"))
+	 (repo-name (tlon-babel-alist-key abbrev-repo
+					  tlon-babel-repo-names-and-abbrevs)))
+    (tlon-babel-get-repo-from-name repo-name)))
+
+(defun tlon-babel-set-repo-in-heading ()
+  "Set the repo in the heading at point if not already present."
+  (when (and (org-at-heading-p)
+	     (not (tlon-babel-get-repo-from-heading)))
+    (let* ((repo-name (completing-read "Select repo: " tlon-babel-repo-names-and-abbrevs))
+	   (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=)))
+      ;; hack to put point immediately after TODO keyword and priority
+      (org-end-of-line)
+      (org-beginning-of-line)
+      (insert (format "[%s] " abbrev-repo)))))
+
+(defun tlon-babel-get-issue-number-from-open-issues ()
+  "Prompt user to select from a list of open issues and return number of selection."
+  (let* ((default-directory (tlon-babel-get-repo nil 'genus))
+	 (repo (forge-get-repository 'full))
+	 ;; Fetch all issues, but filter for open ones
+	 (issue-list (mapcar #'(lambda (issue)
+				 (cons (format "#%d %s"
+					       (oref issue number)
+					       (oref issue title))
+				       (oref issue number)))
+			     (cl-remove-if-not (lambda (issue)
+						 (string= (oref issue state) "open"))
+					       (oref repo issues))))
+	 ;; Let the user select one
+	 (selected-issue (cdr (assoc (completing-read "Select an issue: " issue-list) issue-list))))
+    ;; Return the selected issue number
+    selected-issue))
+
+(defun tlon-babel-get-todo-id-from-issue (issue &optional id)
+  "Get TODO ID from GitHub ISSUE.
+If ID is nil, user `tlon-babel-todos-id'."
+  (save-excursion
+    (let ((id (or id tlon-babel-todos-id)))
+      (org-id-goto id)
+      (catch 'found
+	(org-map-entries
+	 (lambda ()
+	   (let ((heading (substring-no-properties (org-get-heading t t t t))))
+	     (when (string-match issue heading)
+	       (throw 'found (org-id-get)))))
+	 nil 'tree)
+	nil))))
+
+(defun tlon-babel-create-issue-from-todo ()
+  "Create a new issue based on the current org heading."
+  (interactive)
+  (unless (equal major-mode 'org-mode)
+    (user-error "You need to be in `org-mode' to use this function"))
+  (unless (tlon-babel-get-repo-from-heading)
+    (tlon-babel-set-repo-in-heading))
+  (let* ((default-directory (tlon-babel-get-repo-from-heading))
+	 (heading (substring-no-properties (org-get-heading t t t t)))
+	 (repo-name (tlon-babel-get-name-from-repo default-directory))
+	 (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=))
+	 (issue-title (substring heading (+ (length abbrev-repo) 3))))
+    (forge-create-issue)
+    (sleep-for 1)
+    (insert issue-title)
+    (forge-post-submit)))
+
+;; needs revision
+(defun tlon-babel-close-issue-and-todo ()
+  "Close the issue or TODO at point."
+  (interactive)
+  (let ((issue-number)
+	(id)
+	(repo))
+    (pcase major-mode
+      ('org-mode
+       (unless (org-at-heading-p)
+	 (user-error "Point is not on an `org-mode' heading"))
+       (if-let ((issue-number (tlon-babel-get-issue-number-from-heading))
+		(repo (tlon-babel-get-repo-from-heading)))
+	   (setq issue-number issue-number repo repo)
+	 (user-error "I could not find a issue number in the current `org-mode' heading")))
+      ('forge-topic-mode
+       (orgit-store-link nil)
+       (if-let ((issue (org-link-display-format (tlon-org-nth-stored-link 0))))
+	   (if-let ((id (tlon-babel-get-todo-id-from-issue issue)))
+	       (progn
+		 (tlon-babel-forge-close-topic)
+		 (tlon-babel-set-todo-done id))
+	     (user-error "I could not find `org-mode' ID for the current issue"))
+	 (user-error "I could not find a issue at point")))
+      (_ (user-error "This command cannot be invoked in `%s`" major-mode)))))
+
+(defun tlon-babel-close-issue (issue-number repo)
+  "Close the topic with ISSUE-NUMBER in REPO."
+  (tlon-babel-visit-issue issue-number repo)
+  (tlon-babel-forge-close-topic))
+
+(defun tlon-babel-set-todo-done (id)
+  "Set the heading with ID to DONE."
+  (org-id-goto id)
+  (org-todo 'done))
 
 ;;;;; User commits
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
   "Return latest commit by the current user in FILE.
-If no FILE is provided, use the file visited by the current buffer."
+  If no FILE is provided, use the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (default-directory (file-name-directory file))
 	 (user (tlon-babel-find-key-in-alist user-full-name tlon-babel-system-users))
@@ -2613,6 +2759,13 @@ Optionally, DESCRIPTION provides an explanation of the change."
     """Issue"
     ("i i" "Open counterpart"             tlon-babel-open-forge-counterpart)
     ("i I" "Open file"                    tlon-babel-open-forge-file)
+    ]
+   ["Sync"
+    ("y t" "visit todo"                    tlon-babel-visit-todo)
+    ("y i" "visit issue"                   tlon-babel-visit-issue)
+    ("y T" "crete todo"                    tlon-babel-create-todo-from-issue)
+    ("y I" "create issue"                  tlon-babel-create-issue-from-todo)
+    ("y x" "close issue & todo"            tlon-babel-close-issue-and-todo)
     ]
    ]
   )
