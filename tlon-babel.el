@@ -3034,13 +3034,13 @@ If ASYNC is t, run the request asynchronously."
 	(read-only-mode)
 	(goto-char (point-min))))))
 
-(defun tlon-babel-update-bae-log (&optional retries)
-  "Update error log from BAE repo.
+(defun tlon-babel-make-bae-request (url &optional retries)
+  "Make URL request to BAE API and show updated logs.
+It will first authenticate and then make the request.
+
 Retries 2 more times if response code is 504 before giving up. If
 RETRIES is a number, it will retry that many times instead of 2."
-  (interactive)
-  (let* ((url "https://altruismoeficaz.net/api/update")
-	 (token (tlon-babel-get-bae-token))
+  (let* ((token (tlon-babel-get-bae-token))
 	 (retries (if (numberp retries) retries 0)))
     (request
       url
@@ -3077,6 +3077,16 @@ RETRIES is a number, it will retry that many times instead of 2."
 	     (json-key-type 'string)
 	     (json-response (json-read-from-string (buffer-string))))
 	(cdr (assoc "access_token" json-response))))))
+
+(defun tlon-babel-update-bae-genus ()
+  "Update the BAE website to reflect latest Genus changes."
+  (interactive)
+  (tlon-babel-make-bae-request "https://altruismoeficaz.net/api/update"))
+
+(defun tlon-babel-update-bae-images ()
+  "Update the BAE website to reflect latest image changes."
+  (interactive)
+  (tlon-babel-make-bae-request "https://altruismoeficaz.net/api/update/rebuild-frontend"))
 
 (defun tlon-babel-pretty-print-bae-hash-table (hash-table buffer)
   "Print HASH-TABLE in a human-friendly way in BUFFER."
