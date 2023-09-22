@@ -108,7 +108,7 @@ the path to the `originals' subdirectory, and the path to the
 The names of the variables are formed by the prefix
 `tlon-babel-dir-', the repo's canonical abbreviation (as defined
 in `tlon-babel-project-names-and-abbrevs') and either no suffix,
-the suffix `', `-originals', or the suffix `-dir-translations',
+the suffix `-originals', or the suffix `-translations',
 respectively. For example, the name of the variable that stores
 the path of the `originals' subdirectory of the `bae' repo is
 named `tlon-babel-dir-bae-originals'."
