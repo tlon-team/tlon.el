@@ -2680,6 +2680,68 @@ Optionally, DESCRIPTION provides an explanation of the change."
 						 action term description)))))))
 ;; (call-interactively #'magit-push-current-to-pushremote))))
 
+;;;;; URL correspondences
+
+(defun tlon-babel-parse-json ()
+  "Parse JSON from the given file."
+  (require 'json)
+  (let ((json-object-type 'hash-table)
+        (json-key-type 'string)
+        (json-array-type 'list)
+        (json-false :json-false))
+    (json-read-file tlon-babel-file-url-correspondences)))
+
+(defun tlon-babel-get-keys (data)
+  "Get keys from hash table DATA."
+  (let ((keys '()))
+    (maphash (lambda (k _v) (push k keys)) data)
+    keys))
+
+(defun tlon-babel-url-correspondence-dwim ()
+  "Add a new URL correspondence or modify an existing one."
+  (interactive)
+  (let* ((data (tlon-babel-parse-json))
+         (keys (tlon-babel-get-keys data))
+         (selected-key (completing-read "Select existing URL or enter a new one: " keys))
+         (default-value (gethash selected-key data))
+         (new-value (read-string (format "Enter value for key '%s': " selected-key) default-value)))
+    (puthash selected-key new-value data)
+    (with-temp-file tlon-babel-file-url-correspondences
+      (insert "{\n")
+      (maphash (lambda (k v)
+                 (insert (format "  \"%s\": \"%s\",\n" k v))) data)
+      ;; Remove last comma
+      (goto-char (- (point) 2))
+      (delete-char 1)
+      (insert "\n}")
+      (save-buffer))))
+
+(defun tlon-babel-highlight-url-correspondences ()
+  "Highlight source URLs in URL correspondences file."
+  (interactive)
+  ;; Load JSON file
+  (let* ((json-data (tlon-babel-parse-json))
+         (key-urls (tlon-babel-get-keys json-data))
+         ;; Remove URL prefixes from keys
+         (search-keywords (mapcar (lambda (url)
+                                    (replace-regexp-in-string "^https?://\\(www\\.\\)?" "" url))
+                                  key-urls))
+         ;; Build list of keys
+         (keywords-regex (regexp-opt search-keywords 'words))
+         ;; Specify a custom face for highlighting
+         (highlight-face '(:background "#D3FFD2")))
+
+    ;; Remove the previous highlighting
+    (with-silent-modifications
+      (remove-list-of-text-properties (point-min) (point-max) '(font-lock-face))
+      
+      ;; Highlight each occurrence of a key from the JSON file
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward keywords-regex nil t)
+          (add-text-properties (match-beginning 0) (match-end 0)
+                               `(font-lock-face ,highlight-face)))))))
+
 ;;;;; Bibtex correspondences
 
 (defun tlon-babel-read-json (file)
