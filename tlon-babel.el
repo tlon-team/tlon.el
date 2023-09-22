@@ -214,18 +214,6 @@ The value should be set by the user.")
     ("Misc" . "Misc"))
   "Alist of topic labels and corresponding actions.")
 
-(defvar tlon-babel-label-bindings
-  '(("Awaiting processing" . "p")
-    ("Awaiting translation" . "t")
-    ("Awaiting check" . "c")
-    ("Awaiting revision" . "r")
-    ("Awaiting review" . "v")
-    ("Awaiting publication" . "u")
-    ("Awaiting rewrite" . "w")
-    ("Glossary" . "g")
-    ("Misc" . "m"))
-  "Alist of topic labels and corresponding key bindings.")
-
 (defvar tlon-babel-label-assignees
   '(("Awaiting processing" . "worldsaround")
     ("Awaiting translation" . "benthamite")
@@ -444,7 +432,6 @@ If FILE is nil, use the current buffer's file name."
 				     (cadr (nth 0 org-stored-links))
 				     (find-file-noselect ps/file-tlon-babel))))
 	     (let ((action (alist-get label tlon-babel-label-actions nil nil #'string=))
-		   (binding (upcase (alist-get label tlon-babel-label-bindings nil nil #'string=))))
 	       (kill-new (format "%s %s" action org-link))
 	       ;; TODO: use different capture templates for the different project
 	       (org-capture nil (concat "tb" binding))
