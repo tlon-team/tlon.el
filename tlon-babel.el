@@ -171,6 +171,10 @@ named `tlon-babel-dir-bae-originals'."
   (file-name-concat tlon-babel-dir-refs "stable.bib")
   "File containing the stable bibliography.")
 
+(defvar tlon-babel-file-url-correspondences
+  (file-name-concat tlon-babel-dir-refs "url-correspondences.json")
+  "File containing the URL correspondences.")
+
 ;;;;; Org-mode ids
 
 (defvar tlon-babel-manual-processing-id
