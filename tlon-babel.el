@@ -185,8 +185,18 @@ named `tlon-babel-dir-bae-originals'."
   "820BEDE2-F982-466F-A391-100235D4C596"
   "Org ID of the `jobs' heading in `jobs.org'.")
 
-(defvar tlon-babel-todos-id
-  nil
+(defvar tlon-babel-todos-file
+  ""
+  "Org file of the user-specific heading where Babel TODOs are stored.
+The value should be set by the user.")
+
+(defvar tlon-babel-todos-jobs-id
+  ""
+  "Org ID of the user-specific heading where Babel TODOs are stored.
+The value should be set by the user.")
+
+(defvar tlon-babel-todos-generic-id
+  ""
   "Org ID of the user-specific heading where Babel TODOs are stored.
 The value should be set by the user.")
 
