@@ -3139,19 +3139,23 @@ RETRIES is a number, it will retry that many times instead of 2."
     (maphash
      (lambda (key value)
        (if (string= key "message")
-	   (let* ((message-parts (split-string value "at filename="))
+	   (let* ((message-parts (split-string value " filename="))
 		  (text (car message-parts))
 		  (raw-filename (cadr message-parts)))
 	     (insert (format "%s\n" text))
 	     (when raw-filename
-	       (let* ((filename (replace-regexp-in-string
-				 "/home/fede/biblioteca-altruismo-eficaz/translations/"
-				 "~/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/"
-				 raw-filename)))
-		 (let ((file filename))
-		   (insert-button filename
-				  'action (lambda (x) (find-file file))
-				  'follow-link t))))
+	       (let* ((filename-parts (split-string raw-filename ": "))
+		      (filename (car filename-parts))
+		      (more-text (cadr filename-parts)))
+		 (let* ((true-filename (replace-regexp-in-string
+					"/home/fede/biblioteca-altruismo-eficaz/translations/"
+					(expand-file-name "~/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/")
+					filename)))
+		   (let ((file true-filename))
+		     (insert-button true-filename
+				    'action (lambda (x) (find-file file))
+				    'follow-link t)
+		     (insert (format " %s" more-text))))))
 	     (insert "\n\n"))
 	 (insert (format "%s: %s\n" key value))))
      hash-table)))
