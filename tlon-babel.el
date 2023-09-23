@@ -992,7 +992,7 @@ title will be displayed in the exported web page."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<cite>" "</cite>"))
 
-(defun tlon-babel-markdown-insert-abbr-element ()
+(defun tlon-babel-markdown-insert-small-caps-element ()
   "Insert an HTML `abbr' element pair at point or around the region if selected.
 Text enclosed by an `abbr' element pair will be displayed in small
 caps."
