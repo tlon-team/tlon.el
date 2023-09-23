@@ -2842,9 +2842,14 @@ Optionally, DESCRIPTION provides an explanation of the change."
     ("r" "dwim"                           tlon-babel-dwim)
     ("m" "magit"                          tlon-babel-magit-status)
     ("n" "forge"                          tlon-babel-forge)
+    """Request"
+    ("q g" "update genus"                 tlon-babel-update-bae-genus)
+    ("q i" "update images"                tlon-babel-update-bae-images)
+    ("q l" "show log"                     tlon-babel-get-bae-log)
     ]
-   ["Add"
-    ("a a" "to glossary"                  tlon-babel-glossary-dwim)
+   ["Add or modify"
+    ("a a" "glossary"                    tlon-babel-glossary-dwim)
+    ("a u" "URL correspondences"         tlon-babel-url-correspondence-dwim)
     """Search"
     ("s s" "multi"                        tlon-babel-search-multi)
     ("s c" "commits"                      tlon-babel-search-commits)
@@ -2853,40 +2858,39 @@ Optionally, DESCRIPTION provides an explanation of the change."
     ("s i" "topics"                       tlon-babel-search-topics)
     ("s t" "translation"                  tlon-babel-search-for-translation)
     ]
-   ["Open file"
+   ["Visit file"
     ("f f" "counterpart"                  tlon-babel-open-counterpart)
     ("f g" "Glossary.csv"                 tlon-babel-open-glossary)
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
     ]
-   ["Open directory"
+   ["Visit dir"
     ("d d" "repo"                         tlon-babel-open-repo)
     ("d g" "genus"                        tlon-babel-open-genus-repo)
     ("d b" "bae"                          tlon-babel-open-bae-repo)
     ("d u" "utilitarismo"                 tlon-babel-open-utilitarismo-repo)
     ("d l" "largoplacismo"                tlon-babel-open-largoplacismo-repo)
     ]
+   ["File changes"
+    ("h h" "log"                          magit-log-buffer-file)
+    ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
+    ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)]
+   ["Clock"
+    ("c c" "issue"                        tlon-babel-open-clock-topic)
+    ("c f" "file"                         tlon-babel-open-clock-file )
+    ("c o" "heading"                      org-clock-goto)
+    """Issue"
+    ("i i" "open counterpart"             tlon-babel-open-forge-counterpart)
+    ("i I" "open file"                    tlon-babel-open-forge-file)
+    ]
    ["Browse"
     ("b b" "file"                         tlon-babel-browse-file)
     ("b r" "repo"                         tlon-babel-browse-repo)
-    """File changes"
-    ("h h" "Log"                          magit-log-buffer-file)
-    ("h d" "Diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
-    ("h e" "Ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)]
-   ["Clock"
-    ("c c" "Issue"                        tlon-babel-open-clock-topic)
-    ("c f" "File"                         tlon-babel-open-clock-file )
-    ("c o" "Heading"                      org-clock-goto)
-    """Issue"
-    ("i i" "Open counterpart"             tlon-babel-open-forge-counterpart)
-    ("i I" "Open file"                    tlon-babel-open-forge-file)
-    ]
-   ["Sync"
-    ("y t" "visit todo"                    tlon-babel-visit-todo)
-    ("y i" "visit issue"                   tlon-babel-visit-issue)
-    ("y T" "crete todo"                    tlon-babel-create-todo-from-issue)
-    ("y I" "create issue"                  tlon-babel-create-issue-from-todo)
+    """Sync"
+    ("y y" "visit issue or todo"           tlon-babel-visit-counterpart)
     ("y x" "close issue & todo"            tlon-babel-close-issue-and-todo)
+    ("y t" "crete todo from issue"         tlon-babel-create-todo-from-issue)
+    ("y i" "create issue from todo"        tlon-babel-create-issue-from-todo)
     ]
    ]
   )
