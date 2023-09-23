@@ -2740,20 +2740,21 @@ Optionally, DESCRIPTION provides an explanation of the change."
   "Add a new URL correspondence or modify an existing one."
   (interactive)
   (let* ((data (tlon-babel-parse-json))
-         (keys (tlon-babel-get-keys data))
-         (selected-key (completing-read "Select existing URL or enter a new one: " keys))
-         (default-value (gethash selected-key data))
-         (new-value (read-string (format "Enter value for key '%s': " selected-key) default-value)))
+	 (keys (tlon-babel-get-keys data))
+	 (selected-key (completing-read "Select existing URL or enter a new one: " keys))
+	 (default-value (gethash selected-key data))
+	 (new-value (read-string (format "Enter value for key '%s': " selected-key) default-value)))
     (puthash selected-key new-value data)
     (with-temp-file tlon-babel-file-url-correspondences
       (insert "{\n")
       (maphash (lambda (k v)
-                 (insert (format "  \"%s\": \"%s\",\n" k v))) data)
+		 (insert (format "  \"%s\": \"%s\",\n" k v)))
+	       data)
       ;; Remove last comma
       (goto-char (- (point) 2))
       (delete-char 1)
       (insert "\n}")
-      (save-buffer))))
+      (message "Added to `%s'" (file-name-nondirectory tlon-babel-file-url-correspondences)))))
 
 (defun tlon-babel-highlight-url-correspondences ()
   "Highlight source URLs in URL correspondences file."
