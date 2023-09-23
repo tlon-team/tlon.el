@@ -453,19 +453,32 @@ and assignee to the current user."
       (tlon-babel-set-initial-label-and-assignee))
     (tlon-babel-store-todo "tbJ")))
 
-(defun tlon-babel-store-todo (template)
-  "Store a new TODO using TEMPLATE."
-  (orgit-store-link nil)
-  (let* ((repo (tlon-babel-get-repo 'error 'genus))
-	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
-	 (job-name (cadr (nth 0 org-stored-links))))
-    (kill-new (format "[%s] %s" repo-abbrev job-name)))
+(defun tlon-babel-store-todo (template &optional action)
+  "Store a new TODO using TEMPLATE.
+Optionally specify an ACTION."
+  (kill-new (tlon-babel-get-todo-name action))
   (org-capture nil template))
+
+(defun tlon-babel-get-todo-name (&optional action)
+  "Set the name of TODO from orgit stored link.
+Optionally specify an ACTION."
+  (let* ((action (or action ""))
+	 (link (car org-stored-links))
+	 (partial-name (org-link-make-string (car link) (cadr link)))
+	 (repo (tlon-babel-get-repo 'error 'genus))
+	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
+	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
+					      " "
+					      (format "[%s] %s %s" repo-abbrev action partial-name))))
+    full-name))
 
 ;;;;; Org-github sync
 
 (defun tlon-babel-visit-issue (&optional number repo)
-  "Visit issue NUMBER in REPO."
+  "Visit Github issue.
+If NUMBER and REPO are nil, follow org link to issue if point is
+on an `orgit' link, else get their values from the heading title,
+if possible."
   (interactive)
   (if-let* ((number (or number
 			(tlon-babel-get-issue-number-from-heading)))
