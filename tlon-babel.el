@@ -1603,7 +1603,7 @@ Assumes key is enclosed in backticks."
 Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-babel-get-clock-key)
-  (let ((action (car (split-string (substring-no-properties org-clock-current-task))))
+  (let ((action (nth 1 (split-string (substring-no-properties org-clock-current-task))))
 	(actions (mapcar #'cdr tlon-babel-label-actions)))
     (if (member action actions)
 	action
