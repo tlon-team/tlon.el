@@ -496,9 +496,28 @@ if possible."
     (user-error "Could not find issue")))
 
 (defun tlon-babel-visit-todo (&optional id)
-  ""
+  "Visit `org-mode' TODO.
+If ID is nil, try to find it from the issue at point, if
+possible."
   (interactive)
-  )
+  (if-let ((id (or id (tlon-babel-get-id-from-issue (tlon-babel-get-issue-name)))))
+      (org-id-goto id)
+    (user-error "Could not find TODO")))
+
+(defun tlon-babel-visit-counterpart ()
+  "Visit the ID associated with TODO, or vice versa."
+  (interactive)
+  (pcase major-mode
+    ('org-mode (tlon-babel-visit-issue))
+    ((or 'forge-topic-mode 'magit-status-mode) (tlon-babel-visit-todo))
+    (_ (user-error "This command cannot be invoked in `%s`" major-mode))))
+
+(defun tlon-babel-get-id-from-issue (issue-name)
+  "Try to get the ID of TODO corresponding to ISSUE-NAME."
+  (with-current-buffer (find-file-noselect tlon-babel-todos-file)
+    (goto-char (point-min))
+    (when (re-search-forward issue-name nil t)
+      (org-id-get))))
 
 (defun tlon-babel-get-element-from-heading (regexp)
   "Get element matching REGEXP from the heading at point."
