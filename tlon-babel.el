@@ -1628,27 +1628,32 @@ Assumes action is first word of clocked task."
   (let ((action (cadr (split-string label))))
     action))
 
-(defun tlon-babel-get-forge-file ()
-  "Get the file path of the topic at point or in current forge buffer."
+(defun tlon-babel-get-issue-name ()
+  "Get the issue name at point or in current forge buffer."
   (unless (or (derived-mode-p 'magit-status-mode)
 	      (derived-mode-p 'forge-topic-mode))
     (user-error "Not in a forge buffer"))
   (let* ((inhibit-message t)
-	 (captured (cadr (call-interactively #'orgit-store-link))))
+	 (issue (cadr (call-interactively #'orgit-store-link))))
     (setq org-stored-links (cdr org-stored-links))
-    (if (string-match tlon-babel-key-regexp captured)
-	(tlon-babel-get-file-from-key (match-string 1 captured))
+    issue))
+
+(defun tlon-babel-get-file-from-issue ()
+  "Get the file path of the topic at point or in current forge buffer."
+  (let ((issue (tlon-babel-get-issue-name)))
+    (if (string-match tlon-babel-key-regexp issue)
+	(tlon-babel-get-file-from-key (match-string 1 issue))
       (user-error "I wasn't able to find a file at point or in the forge buffer"))))
 
 (defun tlon-babel-open-forge-file ()
   "Open the file of the topic at point or in the current forge buffer."
   (interactive)
-  (find-file (tlon-babel-get-forge-file)))
+  (find-file (tlon-babel-get-file-from-issue)))
 
 (defun tlon-babel-open-forge-counterpart ()
   "Open the file counterpart of the topic at point or in the current forge buffer."
   (interactive)
-  (tlon-babel-open-counterpart (tlon-babel-get-forge-file)))
+  (tlon-babel-open-counterpart (tlon-babel-get-file-from-issue)))
 
 (defun tlon-babel-copy-buffer (&optional file deepl)
   "Copy the contents of FILE to the kill ring.
