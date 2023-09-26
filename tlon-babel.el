@@ -533,8 +533,8 @@ If ID is nil, try to find it from the issue at point, if possible."
 
 (defun tlon-babel-get-issue-number-from-heading ()
   "Get the issue number from the heading at point."
-  (string-to-number
-   (tlon-babel-get-element-from-heading "#\\([[:digit:]]\\{1,4\\}\\)")))
+  (when-let ((issue-number (tlon-babel-get-element-from-heading "#\\([[:digit:]]\\{1,4\\}\\)")))
+    (string-to-number issue-number)))
 
 (defun tlon-babel-get-repo-from-heading ()
   "Get the repo from the heading at point."
