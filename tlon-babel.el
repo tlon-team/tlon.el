@@ -552,6 +552,14 @@ If ID is nil, try to find it from the issue at point, if possible."
       (tlon-org-goto-beginning-of-heading-text)
       (insert (format "[%s] " abbrev-repo)))))
 
+(defun tlon-babel-set-issue-number-in-heading (issue-number)
+"Set ISSUE-NUMBER in heading at point if not already present."
+(unless (tlon-babel-get-issue-number-from-heading)
+  (tlon-org-goto-beginning-of-heading-text)
+  ;; move past repo name
+  (re-search-forward "\\[.+?\\] ")
+  (insert (format "#%s " (number-to-string issue-number)))))
+
 (defun tlon-babel-get-issue-number-from-open-issues ()
   "Prompt user to select from a list of open issues and return number of selection."
   (let* ((default-directory (tlon-babel-get-repo nil 'genus))
