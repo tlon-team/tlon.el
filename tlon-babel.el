@@ -872,45 +872,56 @@ If DELETE is non-nil, delete the footnote."
       (goto-char beg)
       (replace-regexp-in-region " - " "\n- " beg end))))
 
-(defun tlon-babel-fix-footnote-punctuation ()
-  "Place footnotes after punctuation mark."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    ;; we add a character at the beginning to avoid matching the footnote targets
-    (while (re-search-forward "\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)" nil t)
-      (replace-match "\\1\\3\\2"))))
-
-(defun tlon-babel-fix-curly-quotes ()
-  "Replace straight quotes with curly qutoes when appropriate."
-  (interactive)
-  (widen)
-  (save-excursion
-    (while (re-search-forward "\"\\[" nil t)
-      (replace-match "“["))))
-
-(defun tlon-babel-conditionally-fix (regexp-list to-string)
-  "Prompt user to replace list of REGEXP-LIST with TO-STRING."
+(defun tlon-babel-fix (regexp-list newtext)
+  "Replace matches in REGEXP-LIST with NEWTEXT."
   (widen)
   (save-excursion
     (dolist (regexp regexp-list)
       (goto-char (point-min))
-      (query-replace-regexp regexp to-string nil (point-min) (point-max)))))
+      (while (re-search-forward regexp nil t)
+	(replace-match newtext)))))
 
-(defun tlon-babel-conditionally-fix-em-dashes ()
+(defun tlon-babel-fix-curly-quotes ()
+  "Replace straight quotes with curly qutoes when appropriate."
+  (interactive)
+  (tlon-babel-fix '("\"\\[")
+		  "“["))
+
+(defun tlon-babel-fix-footnote-punctuation ()
+  "Place footnotes after punctuation mark."
+  (interactive)
+  (tlon-babel-fix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
+		  "\\1\\3\\2"))
+
+(defun tlon-babel-fix-ee-uu ()
+  "Add thin space between `EE.' and `UU.' in abbreviation."
+  (interactive)
+  (tlon-babel-fix '("EE.UU." "EE. UU.")
+		  "EE. UU."))
+
+(defun tlon-babel-confirm-fix (regexp-list newtext)
+  "Prompt user to replace matches in REGEXP-LIST with NEWTEXT."
+  (widen)
+  (save-excursion
+    (point-min)
+    (dolist (regexp regexp-list)
+      (goto-char (point-min))
+      (query-replace-regexp regexp newtext nil (point-min) (point-max)))))
+
+(defun tlon-babel-confirm-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (interactive)
-  (tlon-babel-conditionally-fix '("\\([)\\.[:alnum:]]\\)-\\([ ,]\\)"
-				  "\\([ ,]\\)-\\([([:alnum:]]\\)"
-				  "\\( \\)-\\( \\)")
-				"\\1—\\2"))
+  (tlon-babel-confirm-fix '("\\([)\\.[:alnum:]]\\)-\\([ ,]\\)"
+			    "\\([ ,]\\)-\\([([:alnum:]]\\)"
+			    "\\( \\)-\\( \\)")
+			  "\\1—\\2"))
 
-(defun tlon-babel-conditionally-fix-percent-signs ()
+(defun tlon-babel-confirm-fix-percent-signs ()
   "Prompt the user to add non-breaking space before percent sign."
   (interactive)
-  (tlon-babel-conditionally-fix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
-				  "\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
-				"\\1 %\\2"))
+  (tlon-babel-confirm-fix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
+			    "\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
+			  "\\1 %\\2"))
 
 ;;;;;; Insertion commands
 
