@@ -470,9 +470,16 @@ and assignee to the current user."
 
 (defun tlon-babel-store-todo (template &optional action)
   "Store a new TODO using TEMPLATE.
-Optionally specify an ACTION."
-  (kill-new (tlon-babel-make-todo-heading action))
-  (org-capture nil template))
+Optionally specify an ACTION.
+
+If TODO already exists, move point to it and do not create a
+duplicate."
+  (let ((todo (tlon-babel-make-todo-heading action)))
+    (when (tlon-babel-get-todo-position todo)
+      (tlon-babel-visit-todo)
+      (user-error "TODO already exists!"))
+    (kill-new todo)
+    (org-capture nil template)))
 
 ;;;;; Org-github sync
 
