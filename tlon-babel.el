@@ -603,23 +603,6 @@ If ID is nil, user `tlon-babel-todos-id'."
 	 nil 'tree)
 	nil))))
 
-(defun tlon-babel-create-issue-from-todo ()
-  "Create a new issue based on the current org heading."
-  (interactive)
-  (unless (equal major-mode 'org-mode)
-    (user-error "You need to be in `org-mode' to use this function"))
-  (unless (tlon-babel-get-repo-from-heading)
-    (tlon-babel-set-repo-in-heading))
-  (let* ((default-directory (tlon-babel-get-repo-from-heading))
-	 (heading (substring-no-properties (org-get-heading t t t t)))
-	 (repo-name (tlon-babel-get-name-from-repo default-directory))
-	 (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=))
-	 (issue-title (substring heading (+ (length abbrev-repo) 3))))
-    (forge-create-issue)
-    (sleep-for 1)
-    (insert issue-title)
-    (forge-post-submit)))
-
 ;; needs revision
 (defun tlon-babel-close-issue-and-todo ()
   "Close the issue or TODO at point."
@@ -1966,23 +1949,51 @@ Markdown buffer at point is used."
 		      ('markdown-mode (tlon-babel-get-key-in-buffer))
 		      ('ebib-entry-mode (ebib--get-key-at-point))))))
       (progn
-	(tlon-babel-create-issue-for-job key)
+	(tlon-babel-create-issue-from-key key)
 	(tlon-babel-create-heading-for-job key 'commit))
     (user-error "I wasn't able to create a record because I didn't find a key")))
 
-(defun tlon-babel-create-issue-for-job (&optional key)
+
+(defun tlon-babel-create-issue (title repo)
+  "Create a new issue with TITLE in REPO."
+  (let ((default-directory repo))
+    (call-interactively #'forge-create-issue)
+    (insert title)
+    (call-interactively #'forge-post-submit)
+    (sleep-for 2)
+    (forge-pull)
+    ;; (magit-status-setup-buffer)
+    ;; needs to be done twice for some reason; FIXME
+    (forge-pull)))
+
+(defun tlon-babel-create-issue-from-todo ()
+  "Create a new issue based on the current org heading."
+  (interactive)
+  (unless (equal major-mode 'org-mode)
+    (user-error "You need to be in `org-mode' to use this function"))
+  (when (tlon-babel-get-issue-number-from-heading)
+    (user-error "This heading already has an issue"))
+  (unless (tlon-babel-get-repo-from-heading)
+    (tlon-babel-set-repo-in-heading))
+  (let (issue-number)
+    (save-excursion
+      (let* ((default-directory (tlon-babel-get-repo-from-heading))
+	     (heading (substring-no-properties (org-get-heading t t t t)))
+	     (repo-name (tlon-babel-get-name-from-repo default-directory))
+	     (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=))
+	     (issue-title (substring heading (+ (length abbrev-repo) 3))))
+	(tlon-babel-create-issue issue-title default-directory)
+	(sleep-for 5)
+	(setq issue-number (car (tlon-babel-get-latest-issue)))))
+    (tlon-babel-set-issue-number-in-heading issue-number)
+    (tlon-babel-visit-issue)))
+
+(defun tlon-babel-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
 If KEY is not provided, the key in the Markdown buffer at point is used."
   (let ((default-directory (tlon-babel-get-repo 'error))
 	(key (or key (tlon-babel-get-key-in-buffer))))
-    (call-interactively #'forge-create-issue)
-    (insert (format "Job: `%s`" key))
-    (call-interactively #'forge-post-submit)
-    (sleep-for 2)
-    (forge-pull)
-    (magit-status-setup-buffer)
-    ;; needs to be done twice for some reason; FIXME
-    (forge-pull)))
+    (tlon-babel-create-issue (format "Job: `%s`" key) default-directory)))
 
 (defun tlon-babel-create-heading-for-job (&optional key commit)
   "Create a heading based on KEY in `jobs.org'.
