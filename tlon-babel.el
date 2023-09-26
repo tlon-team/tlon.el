@@ -384,6 +384,21 @@ If FILE is nil, use the current buffer's file name."
   "Return the path of the repo named REPO-NAME."
   (alist-get repo-name tlon-babel-repo-names-and-dirs nil nil 'string=))
 
+(defun tlon-babel-get-file-from-key (key)
+  "Return the file path of KEY."
+  (if-let ((file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-repo-metadata))))
+      file
+    (user-error "Metadata lookup for key `%s' returned nil" key)))
+
+(defun tlon-babel-get-key-from-file (file)
+  "Return the bibtex key of FILE."
+  (or
+   ;; when in `translations'
+   (tlon-babel-metadata-lookup "file" file "key_traduccion" (tlon-babel-get-repo-metadata))
+   ;; when file in `originals'
+   (let ((translation (tlon-babel-get-counterpart file)))
+     (tlon-babel-metadata-get-field-value-in-file "key_original" translation))))
+
 (defun tlon-babel-get-abbreviated-name-from-repo (&optional repo)
   "Return the abbreviated name of the repo REPO."
   (let* ((repo (or repo (tlon-babel-get-repo)))
@@ -1554,21 +1569,6 @@ Assumes key is enclosed in backticks."
 	(match-string 1 clock)
       (user-error "I wasn't able to find a file in clocked heading"))))
 
-(defun tlon-babel-get-file-from-key (key)
-  "Return the file path of KEY."
-  (if-let ((file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-repo-metadata))))
-      file
-    (user-error "Metadata lookup for key `%s' returned nil" key)))
-
-(defun tlon-babel-get-key-from-file (file)
-  "Return the bibtex key of FILE."
-  (or
-   ;; when in `translations'
-   (tlon-babel-metadata-lookup "file" file "key_traduccion" (tlon-babel-get-repo-metadata))
-   ;; when file in `originals'
-   (let ((translation (tlon-babel-get-counterpart file)))
-     (tlon-babel-metadata-get-field-value-in-file "key_original" translation))))
-
 (defun tlon-babel-get-clock-file ()
   "Return the file path of the clocked task."
   (let ((key (tlon-babel-get-clock-key)))
@@ -1623,20 +1623,54 @@ Assumes action is first word of clocked task."
   "Return assignee associated with LABEL."
   (alist-get label tlon-babel-label-assignees nil nil 'string=))
 
+;;;;;
+
 (defun tlon-babel-get-action-in-label (label)
   "Return action associated with LABEL."
   (let ((action (cadr (split-string label))))
     action))
 
-(defun tlon-babel-get-issue-name ()
-  "Get the issue name at point or in current forge buffer."
-  (unless (or (derived-mode-p 'magit-status-mode)
-	      (derived-mode-p 'forge-topic-mode))
-    (user-error "Not in a forge buffer"))
+(defun tlon-babel-cheeck-point-on-issue ()
+  "Return t iff point is on an issue or a Forge buffer."
+  (unless (or (derived-mode-p 'forge-topic-mode)
+	      (and (derived-mode-p 'magit-status-mode)
+		   (save-excursion
+		     (re-search-backward "Issues (" nil t))))
+    (user-error "Point is not on an issue or a Forge buffer")))
+
+(defun tlon-babel-get-orgit-link-to-issue ()
+  "Get `orgit'-generated link to issue at point or in current forge buffer."
+  (tlon-babel-cheeck-point-on-issue)
   (let* ((inhibit-message t)
-	 (issue (cadr (call-interactively #'orgit-store-link))))
+	 (orgit (call-interactively #'orgit-store-link)))
     (setq org-stored-links (cdr org-stored-links))
-    issue))
+    orgit))
+
+(defun tlon-babel-get-issue-name ()
+  "Get the GitHub issue name at point or in current Forge buffer."
+  (cadr (tlon-babel-get-orgit-link-to-issue)))
+
+(defun tlon-babel-get-issue-link ()
+  "Get an `org-mode' link to the GitHub issue at point or in current Forge buffer."
+  (let* ((orgit (tlon-babel-get-orgit-link-to-issue)))
+    (org-link-make-string (car orgit) (cadr orgit))))
+
+(defun tlon-babel-make-todo-heading (&optional action)
+  "Construct the name of TODO from `orgit' link.
+The resulting name will have a name with the form \"[REPO] ACTION
+NAME\". ACTION is optional, and used only for job TODOs. For
+example, if the TODO is
+\"[bae] #591 Job: `Handbook2022ExerciseForRadical`\",
+and ACTION is \"Process\",
+the function returns
+\"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\"."
+  (let* ((action (or action ""))
+	 (repo (tlon-babel-get-repo 'error 'genus))
+	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
+	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
+					      " "
+					      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link)))))
+    full-name))
 
 (defun tlon-babel-get-file-from-issue ()
   "Get the file path of the topic at point or in current forge buffer."
@@ -2603,6 +2637,20 @@ If the topic has more than one assignee, return the first."
 	    'confirm)
 	  (mapconcat #'car value ",")))))
 
+(defun tlon-babel-forge-get-assignee-at-point (&optional full-name)
+  "Return the assignee of the topic at point.
+If the topic has more than one assignee, return the first. If
+FULL-NAME is non-nil, return the full name of the assignee,
+rather than their GitHub user name."
+  (let ((exit-minibuffer-func (lambda () (exit-minibuffer))))
+    (minibuffer-with-setup-hook
+	(lambda ()
+	  (add-hook 'post-command-hook exit-minibuffer-func t t))
+      (let ((assignee (tlon-babel-forge-get-assignee (forge-current-topic))))
+	(if full-name
+	    (alist-get assignee tlon-babel-github-users nil nil 'string=)
+	  assignee)))))
+
 ;; This function simply confirms the selection offered to the user by
 ;; `tlon-babel-forge-get-label'. I don't know how to do this
 ;; properly with `magit-completing-read-multiple', so I just simulate a
@@ -2615,15 +2663,6 @@ If the topic has more than one label, return the first."
 	(lambda ()
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
       (tlon-babel-forge-get-label (forge-current-topic)))))
-
-(defun tlon-babel-forge-get-assignee-at-point ()
-  "Return the assignee of the topic at point.
-If the topic has more than one assignee, return the first."
-  (let ((exit-minibuffer-func (lambda () (exit-minibuffer))))
-    (minibuffer-with-setup-hook
-	(lambda ()
-	  (add-hook 'post-command-hook exit-minibuffer-func t t))
-      (tlon-babel-forge-get-assignee (forge-current-topic)))))
 
 (defun tlon-babel-find-key-in-alist (value alist)
   "Find the corresponding key for a VALUE in ALIST."
