@@ -9,10 +9,10 @@
 
 ;; This file is not part of GNU Emacs
 
-;; This program is free software: you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
+;; This program is free software: you can redistribute it and/or modify it under
+;; the terms of the GNU General Public License as published by the Free Software
+;; Foundation, either version 3 of the License, or (at your option) any later
+;; version.
 
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -312,8 +312,7 @@ The value should be set by the user.")
 
 (defvar tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
   "Regular expression for matching bibtex keys in clocked headings.
-The second capture group handles the .md extension, which we used
-previously.")
+The second capture group handles the `.md' extension, which we used previously.")
 
 ;;;;; Read aloud
 
@@ -411,10 +410,10 @@ If FILE is nil, use the current buffer's file name."
 
 (defun tlon-babel-create-todo-from-issue ()
   "Capture a new `org-mode' task for issue at point.
-This command triggers one of two `org-capture' capture templates,
-depending on whether the issue is or is not a job. If it is a job,
-it will process it as a new job if it has neither a label nor an
-assignee, else it will refile it under the appropriate heading."
+This command triggers one of two `org-capture' capture templates, depending on
+whether the issue is or is not a job. If it is a job, it will process it as a
+new job if it has neither a label nor an assignee, else it will refile it under
+the appropriate heading."
   (interactive)
   (let ((assignee (tlon-babel-forge-get-assignee-at-point 'full-name))
 	(label (tlon-babel-forge-get-label-at-point)))
@@ -424,7 +423,7 @@ assignee, else it will refile it under the appropriate heading."
 	    ;; process it as a new job
 	    (if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
 		(progn
-		  (tlon-babel-store-job-todo t)
+		  (tlon-babel-store-job-todo 'set-topic)
 		  (sleep-for 4)
 		  (tlon-babel-create-todo-from-issue))
 	      (user-error "Aborted"))
@@ -463,8 +462,7 @@ assignee, else it will refile it under the appropriate heading."
   "Store a new TODO using TEMPLATE.
 Optionally specify an ACTION.
 
-If TODO already exists, move point to it and do not create a
-duplicate."
+If TODO already exists, move point to it and do not create a duplicate."
   (let ((todo (tlon-babel-make-todo-heading action)))
     (when (tlon-babel-get-todo-position todo)
       (tlon-babel-visit-todo)
@@ -474,8 +472,8 @@ duplicate."
 
 (defun tlon-babel-store-job-todo (&optional set-topic)
   "Create a new TODO for a job.
-If SET-TOPIC is non-nil, set topic label to `Awaiting processing'
-and assignee to the current user."
+If SET-TOPIC is non-nil, set topic label to `Awaiting processing' and assignee
+to the current user."
   (save-window-excursion
     (when set-topic
       (tlon-babel-set-initial-label-and-assignee))
@@ -485,9 +483,8 @@ and assignee to the current user."
 
 (defun tlon-babel-visit-issue (&optional number repo)
   "Visit Github issue.
-If NUMBER and REPO are nil, follow org link to issue if point is
-on an `orgit' link, else get their values from the heading title,
-if possible."
+If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
+link, else get their values from the heading title, if possible."
   (interactive)
   (if-let* ((number (or number
 			(tlon-babel-get-issue-number-from-heading)))
@@ -506,8 +503,7 @@ if possible."
 
 (defun tlon-babel-visit-todo (&optional id)
   "Visit `org-mode' TODO.
-If ID is nil, try to find it from the issue at point, if
-possible."
+If ID is nil, try to find it from the issue at point, if possible."
   (interactive)
   (if-let ((id (or id (tlon-babel-get-id-from-issue (tlon-babel-get-issue-name)))))
       (org-id-goto id)
@@ -667,8 +663,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-babel-log-buffer-latest-user-commit-ediff (&optional file)
   "Run `ediff' session for FILE and its state when last committed by current user.
-If FILE is not provided, use the file visited by the current
-buffer."
+If FILE is not provided, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
 	 (commit (tlon-babel-latest-user-commit-in-file file))
@@ -1007,15 +1002,14 @@ OPEN is the opening element and CLOSE is the closing element."
 
 (defun tlon-babel-markdown-insert-cite-element ()
   "Insert an HTML `cite' element pair at point or around the region if selected.
-When a Bibtex key is enclosed in a `cite' element pair, only its
-title will be displayed in the exported web page."
+When a Bibtex key is enclosed in a `cite' element pair, only its title will be
+displayed in the exported web page."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<cite>" "</cite>"))
 
 (defun tlon-babel-markdown-insert-small-caps-element ()
   "Insert an HTML `abbr' element pair at point or around the region if selected.
-Text enclosed by an `abbr' element pair will be displayed in small
-caps."
+Text enclosed by an `abbr' element pair will be displayed in small caps."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<abbr>" "</abbr>"))
 
@@ -1083,8 +1077,8 @@ If REPO is nil, return metadata of current repository."
 
 (defun tlon-babel-metadata-get-all-field-values (field metadata &optional other-field match)
   "Return all the values for FIELD in METADATA.
-If OTHER-FIELD is non-nil, return only FIELD values when
-OTHER-FIELD value in entry matches the regex MATCH."
+If OTHER-FIELD is non-nil, return only FIELD values when OTHER-FIELD value in
+entry matches the regex MATCH."
   (let ((result '()))
     (dolist (entry metadata)
       (when-let ((value (cdr (assoc field entry))))
@@ -1113,8 +1107,8 @@ If FILE is nil, use the file visited by the current buffer."
 
 (defun tlon-babel-get-locators-in-repo (&optional repo dir)
   "Return a list of all locators in SUBDIR of REPO.
-If REPO is nil, return files in current repository. DIR is one of
-`originals' or `translations'."
+If REPO is nil, return files in current repository. DIR is one of `originals' or
+`translations'."
   (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (files (directory-files-recursively (file-name-concat repo dir) "\\.md$")))
     (mapcar #'tlon-babel-get-locator-from-file files)))
@@ -1166,8 +1160,8 @@ If FILE-OR-BUFFER is nil, use the current buffer."
 
 (defun tlon-babel-read-until-match (delimiter)
   "Return a list of lines until DELIMITER is matched.
-The delimiter is not included in the result. If DELIMITER is not
-found, signal an error."
+The delimiter is not included in the result. If DELIMITER is not found, signal
+an error."
   (let ((result '()))
     (while (not (or (looking-at-p delimiter) (eobp)))
       (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) result)
@@ -1248,10 +1242,10 @@ If FILE is nil, use the current buffer."
 
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
   "Set the value of multivalue FIELD in metadata of REPO.
-If DIR is non-nil, only search in directory within the repo. Note
-DIR does not include the `translations' directory. That is, it is
-the directory component of the repo's locator. For example, to
-search only in `translations/autores', use `autores' as DIR."
+If DIR is non-nil, only search in directory within the repo. Note DIR does not
+include the `translations' directory. That is, it is the directory component of
+the repo's locator. For example, to search only in `translations/autores', use
+`autores' as DIR."
   (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (metadata (tlon-babel-get-repo-metadata repo))
 	 (full-dir (when dir (file-name-concat repo "translations" dir))))
@@ -1324,8 +1318,7 @@ AUTHOR is the first author of the original work."
 
 (defun tlon-babel-yaml-insert (list)
   "Insert YAML LIST at point.
-If point is on a list, pre-populate the selection with the list
-elements."
+If point is on a list, pre-populate the selection with the list elements."
   (let* ((bounds (bounds-of-thing-at-point 'line))
 	 ;; retrieve the line
 	 (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
@@ -1414,10 +1407,9 @@ Note that this searches in all repos, not just BAE."
 
 (defun tlon-babel-get-work-type (&optional reversed file)
   "Return the work type of file in FILE.
-A work is either `original' or `translation'. If REVERSED is
-non-nil, return `originals' when the work type is `translations'
-and vice versa. If FILE is nil, return the work type of the
-file visited by the current buffer."
+A work is either `original' or `translation'. If REVERSED is non-nil, return
+`originals' when the work type is `translations' and vice versa. If FILE is nil,
+return the work type of the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
 	 (repo-path (file-relative-name file repo))
@@ -1428,8 +1420,8 @@ file visited by the current buffer."
 
 (defun tlon-babel-get-counterpart (&optional file)
   "Get the counterpart file path of file in FILE.
-If FILE is nil, return the counterpart file path of the
-file visited by the current buffer."
+If FILE is nil, return the counterpart file path of the file visited by the
+current buffer."
   (let* ((file (or file (tlon-babel-buffer-file-name))))
     ;; we use a different method for getting the counterpart depending
     ;; on whether FILE is in `originals' or `translations', since
@@ -1446,8 +1438,7 @@ file visited by the current buffer."
 
 (defun tlon-babel-get-locator-from-file (&optional file)
   "Get the locator of file in FILE.
-If FILE is nil, return the locator of the file visited by
-the current buffer."
+If FILE is nil, return the locator of the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (repo (tlon-babel-get-repo 'error))
 	 (type (tlon-babel-get-work-type nil file)))
@@ -1461,12 +1452,10 @@ the current buffer."
 
 (defun tlon-babel-open-counterpart (&optional print-message file)
   "Open the counterpart of file in FILE and move point to matching position.
-If FILE is nil, open the counterpart of the file visited by
-the current buffer.
+If FILE is nil, open the counterpart of the file visited by the current buffer.
 
-When called interactively, PRINT-MESSAGE is non-nil, and the
-function signals an error if the current buffer is not in
-`markdown-mode' and FILE is nil."
+When called interactively, PRINT-MESSAGE is non-nil, and the function signals an
+error if the current buffer is not in `markdown-mode' and FILE is nil."
   (interactive "p")
   (when (and print-message
 	     (not (eq major-mode 'markdown-mode)))
@@ -1480,9 +1469,8 @@ function signals an error if the current buffer is not in
 
 (defun tlon-babel-count-paragraphs (&optional file start end)
   "Return number of paragraphs between START and END in FILE.
-If either START or END is nil, default to the beginning and end
-of the buffer. If FILE is nil, count paragraphs in the
-current buffer."
+If either START or END is nil, default to the beginning and end of the buffer.
+If FILE is nil, count paragraphs in the current buffer."
   (interactive)
   (let ((file (or file (buffer-file-name))))
     (with-temp-buffer
@@ -1509,8 +1497,8 @@ If FILE is not provided, use the current buffer."
 
 (defun tlon-babel-check-paragraph-number-match-in-dir (dir &optional extension)
   "Check that files in DIR and counterparts have the same number of paragraphs.
-If EXTENSION is provided, only check files with that extension.
-  Otherwise, default to \".md\"."
+If EXTENSION is provided, only check files with that extension. Otherwise,
+default to \".md\"."
   (let* ((extension (or extension ".md"))
 	 (files (directory-files dir t (concat ".*\\" extension "$"))))
     (cl-loop for file in files
@@ -1671,13 +1659,10 @@ Assumes action is first word of clocked task."
 
 (defun tlon-babel-make-todo-heading (&optional action)
   "Construct the name of TODO from `orgit' link.
-The resulting name will have a name with the form \"[REPO] ACTION
-NAME\". ACTION is optional, and used only for job TODOs. For
-example, if the TODO is
-\"[bae] #591 Job: `Handbook2022ExerciseForRadical`\",
-and ACTION is \"Process\",
-the function returns
-\"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\"."
+The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
+is optional, and used only for job TODOs. For example, if the TODO is \"[bae]
+#591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is \"Process\", the
+function returns \"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\"."
   (let* ((action (or action ""))
 	 (repo (tlon-babel-get-repo 'error 'genus))
 	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
@@ -1705,8 +1690,8 @@ the function returns
 
 (defun tlon-babel-copy-buffer (&optional file deepl)
   "Copy the contents of FILE to the kill ring.
-Defaults to the current buffer if no FILE is specified. If DEEPL
-  is non-nil, open DeepL."
+Defaults to the current buffer if no FILE is specified. If DEEPL is non-nil,
+open DeepL."
   (let ((file (or file (buffer-file-name))))
     (with-current-buffer (find-file-noselect file)
       (copy-region-as-kill (point-min) (point-max)))
@@ -1758,20 +1743,18 @@ Defaults to the current buffer if no FILE is specified. If DEEPL
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher.
 If the current directory matches none of the directories in
-`tlon-babel-project-names', prompt the user to select a repo from that
-list."
+`tlon-babel-project-names', prompt the user to select a repo from that list."
   (interactive)
   (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (call-interactively 'forge-dispatch)))
 
 (defun tlon-babel-get-repo (&optional no-prompt genus)
   "Get Babel repository path.
-If the current directory matches any of the directories in `tlon-
-babel-project-names', return it. Else, prompt the user to select
-a repo from that list, unless NO-PROMPT is non-nil. In that case,
-signal an error if its value is `error', else return nil. If
-GENUS is non-nil, include the `genus' repo. In that case, the
-matching will be made against `tlon-babel-repo-names'."
+If the current directory matches any of the directories in
+`tlon-babel-project-names', return it. Else, prompt the user to select a repo
+from that list, unless NO-PROMPT is non-nil. In that case, signal an error if
+its value is `error', else return nil. If GENUS is non-nil, include the `genus'
+repo. In that case, the matching will be made against `tlon-babel-repo-names'."
   (if-let ((current-repo (tlon-babel-get-repo-from-file)))
       current-repo
     (if no-prompt
@@ -1798,9 +1781,8 @@ If more than one file is being committed, get the first one."
 
 (defun tlon-babel-create-job ()
   "Create a new job for IDENTIFIER based on Ebib entry at point.
-Creating a new job means (1) importing a document and (2)
-creating a record for it. A record is (a) an issue in GitHub
-and (b) a heading in `jobs.org'.
+Creating a new job means (1) importing a document and (2) creating a record for
+it. A record is (a) an issue in GitHub and (b) a heading in `jobs.org'.
 
 IDENTIFIER can be a URL or a PDF file path."
   (interactive)
@@ -1839,8 +1821,8 @@ If REPO is nil, prompt the user for one."
   "Import a document with IDENTIFIER.
 IDENTIFIER can be a URL or a PDF file path.
 
-This command also imports EA Forum posts and tags. TITLE
-optionally specifies the title of the document to be imported."
+This command also imports EA Forum posts and tags. TITLE optionally specifies
+the title of the document to be imported."
   (interactive)
   (let ((identifier (or identifier (read-string "Identifier (URL or PDF path): "))))
     (if (ps/string-is-url-p identifier)
@@ -1856,10 +1838,9 @@ TITLE optionally specifies the title of the file to be imported."
 
 (defun tlon-babel-set-file-from-title (&optional title dir)
   "Set the file path based on its title.
-The file name is the slugified version of TITLE with the
-extension `.md'. This is appended to DIR to generate the file
-path. If DIR is not provided, use the current repository followed
-by `originals/'."
+The file name is the slugified version of TITLE with the extension `.md'. This
+is appended to DIR to generate the file path. If DIR is not provided, use the
+current repository followed by `originals/'."
   (let* ((title (or title
 		    (read-string "Title: ")))
 	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
@@ -1870,12 +1851,12 @@ by `originals/'."
 
 (defun tlon-babel-name-file-from-title (&optional title)
   "Save the current buffer to a file named after TITLE.
-Set the name to the slugified version of TITLE with the extension
-`.md'. If TITLE is nil, get it from the file metadata. If the
-file doesn't have metadata, prompt the user for a title.
+Set the name to the slugified version of TITLE with the extension `.md'. If
+TITLE is nil, get it from the file metadata. If the file doesn't have metadata,
+prompt the user for a title.
 
-When buffer is already visiting a file, prompt the user for
-confirmation before renaming it."
+When buffer is already visiting a file, prompt the user for confirmation before
+renaming it."
   (interactive)
   (let* ((title (or title
 		    (tlon-babel-metadata-get-field-value-in-file "titulo")
@@ -1921,8 +1902,8 @@ TITLE optionally specifies the title of the entity to be imported."
 
 (defun tlon-babel-html-to-markdown (source &optional title)
   "Convert HTML text in SOURCE to Markdown.
-SOURCE can be a URL or a file path. If TITLE is not provided,
-prompt the user for one."
+SOURCE can be a URL or a file path. If TITLE is not provided, prompt the user
+for one."
   (let* ((target (read-string "Save file in: " (tlon-babel-set-file-from-title title)))
 	 (pandoc (if (ps/string-is-url-p source)
 		     tlon-babel-pandoc-convert-from-url
@@ -1935,14 +1916,13 @@ prompt the user for one."
 
 (defun tlon-babel-import-pdf (path &optional title)
   "Import the PDF in PATH to TARGET and convert it to Markdown.
-This command requires the user to supply values for the header
-and footer elements to be excluded from the conversion, which are
-different for each PDF. To determine these values, measure the
-distance between the top/bottom of the PDF (which will open in
-the other window) and note the number of pixels until the end of
-the header/footer. (You can measure the number of pixels between
-two points by taking a screenshot: note the numbers next to the
-pointer.) Then enter these values when prompted.
+This command requires the user to supply values for the header and footer
+elements to be excluded from the conversion, which are different for each PDF.
+To determine these values, measure the distance between the top/bottom of the
+PDF (which will open in the other window) and note the number of pixels until
+the end of the header/footer. (You can measure the number of pixels between two
+points by taking a screenshot: note the numbers next to the pointer.) Then enter
+these values when prompted.
 
 If TITLE is nil, prompt the user for one."
   (find-file-other-window path)
@@ -1955,9 +1935,9 @@ If TITLE is nil, prompt the user for one."
 
 (defun tlon-babel-create-record-for-job (&optional key)
   "Create a record based on KEY.
-Creates a new record in the repository (with the format `Job:
-KEY') and a new heading in the file `jobs.org'. If KEY is not
-provided, the key in the current Markdown buffer at point is used."
+Creates a new record in the repository (with the format `Job: KEY') and a new
+heading in the file `jobs.org'. If KEY is not provided, the key in the current
+Markdown buffer at point is used."
   (interactive)
   (if-let ((key (or key
 		    (pcase major-mode
@@ -1970,8 +1950,7 @@ provided, the key in the current Markdown buffer at point is used."
 
 (defun tlon-babel-create-issue-for-job (&optional key)
   "Create an issue based on KEY.
-If KEY is not provided, the key in the Markdown buffer at point
-is used."
+If KEY is not provided, the key in the Markdown buffer at point is used."
   (let ((default-directory (tlon-babel-get-repo 'error))
 	(key (or key (tlon-babel-get-key-in-buffer))))
     (call-interactively #'forge-create-issue)
@@ -1985,8 +1964,8 @@ is used."
 
 (defun tlon-babel-create-heading-for-job (&optional key commit)
   "Create a heading based on KEY in `jobs.org'.
-If KEY is not provided, the key in the Markdown buffer at point
-is used. If COMMIT is non-nil, commit the change."
+If KEY is not provided, the key in the Markdown buffer at point is used. If
+COMMIT is non-nil, commit the change."
   (interactive)
   (let* ((key (or key (tlon-babel-get-key-in-buffer)))
 	 (heading (format "[cite:@%s]" key))
@@ -2082,8 +2061,8 @@ If COMMIT is non-nil, commit and push the changes."
 
 (defun tlon-babel-initialize (fun)
   "Initialize process associated with FUN.
-Runs all the general initialization functions, followed by the
-specific function for the process that is being initialized."
+Runs all the general initialization functions, followed by the specific function
+for the process that is being initialized."
   (let* ((key (tlon-babel-get-clock-key))
 	 (repo (tlon-babel-get-repo-from-key key))
 	 (default-directory repo))
@@ -2312,8 +2291,8 @@ This command should be run from the source window."
 
 (defun tlon-babel-check-file (&optional original)
   "Throw an error unless current file matches file in clock.
-If ORIGINAL is non-nil, check that current file matches original;
-otherwise, check that current file matches translation."
+If ORIGINAL is non-nil, check that current file matches original; otherwise,
+check that current file matches translation."
   (let* ((key (tlon-babel-get-clock-key))
 	 (field (if original "path_original" "file"))
 	 (expected-file (file-name-nondirectory
@@ -2461,13 +2440,12 @@ otherwise, check that current file matches translation."
 
 (defun tlon-babel-add-lang-id-to-entry (&optional key beg end)
   "Add `langid' field to entry at point, if appropriate.
-If the field `landig' is present, the function does nothing;
-else, it sets the `langid' field to `spanish' if the entry has
-either a `translation' or a `translator' field, and to `english'
-otherwise.
+If the field `landig' is present, the function does nothing; else, it sets the
+`langid' field to `spanish' if the entry has either a `translation' or a
+`translator' field, and to `english' otherwise.
 
-KEY, BEG and END are ignored; they are only there to satisfy the
-signature of `bibtex-map-entries'."
+KEY, BEG and END are ignored; they are only there to satisfy the signature of
+`bibtex-map-entries'."
   (unless (bibtex-text-in-field "langid")
     (if (or (bibtex-text-in-field "translation")
 	    (bibtex-text-in-field "translator"))
@@ -2476,8 +2454,8 @@ signature of `bibtex-map-entries'."
 
 (defun tlon-babel-act-on-topic (original-key label &optional assignee action)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-KEY.
-If ACTION is `convert', convert the existing issue into a pull
-request. If ACTION is `close', close issue."
+If ACTION is `convert', convert the existing issue into a pull request. If
+ACTION is `close', close issue."
   (let ((topic (format "Job: `%s" original-key))
 	(default-directory (tlon-babel-get-repo 'error 'genus)))
     (tlon-babel-magit-status)
@@ -2653,9 +2631,9 @@ If the topic has more than one assignee, return the first."
 
 (defun tlon-babel-forge-get-assignee-at-point (&optional full-name)
   "Return the assignee of the topic at point.
-If the topic has more than one assignee, return the first. If
-FULL-NAME is non-nil, return the full name of the assignee,
-rather than their GitHub user name."
+If the topic has more than one assignee, return the first. If FULL-NAME is
+non-nil, return the full name of the assignee, rather than their GitHub user
+name."
   (let ((exit-minibuffer-func (lambda () (exit-minibuffer))))
     (minibuffer-with-setup-hook
 	(lambda ()
@@ -2752,12 +2730,11 @@ If the topic has more than one label, return the first."
 
 (defun tlon-babel-glossary-commit (action term &optional description)
   "Commit glossary changes.
-ACTION describes the action (\"add\" or \"modify\") performed on
-the glossary. TERM refers to the English glossary term to which
-this action was performed. These two variables are used to
-construct a commit message of the form \='Glossary: ACTION
-\"TERM\"\=', such as \='Glossary: add \"repugnant conclusion\"\='.
-Optionally, DESCRIPTION provides an explanation of the change."
+ACTION describes the action (\"add\" or \"modify\") performed on the glossary.
+TERM refers to the English glossary term to which this action was performed.
+These two variables are used to construct a commit message of the form
+\='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
+conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   (let ((default-directory tlon-babel-dir-genus)
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
@@ -3136,8 +3113,8 @@ If ASYNC is t, run the request asynchronously."
   "Make URL request to BAE API and show updated logs.
 It will first authenticate and then make the request.
 
-Retries 2 more times if response code is 504 before giving up. If
-RETRIES is a number, it will retry that many times instead of 2."
+Retries 2 more times if response code is 504 before giving up. If RETRIES is a
+number, it will retry that many times instead of 2."
   (let* ((token (tlon-babel-get-bae-token))
 	 (retries (if (numberp retries) retries 0)))
     (request
