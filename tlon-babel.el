@@ -459,15 +459,6 @@ assignee, else it will refile it under the appropriate heading."
    todo-name
    (find-file-noselect tlon-babel-todos-file)))
 
-(defun tlon-babel-store-job-todo (&optional set-topic)
-  "Create a new TODO for a job.
-If SET-TOPIC is non-nil, set topic label to `Awaiting processing'
-and assignee to the current user."
-  (save-window-excursion
-    (when set-topic
-      (tlon-babel-set-initial-label-and-assignee))
-    (tlon-babel-store-todo "tbJ")))
-
 (defun tlon-babel-store-todo (template &optional action)
   "Store a new TODO using TEMPLATE.
 Optionally specify an ACTION.
@@ -480,6 +471,15 @@ duplicate."
       (user-error "TODO already exists!"))
     (kill-new todo)
     (org-capture nil template)))
+
+(defun tlon-babel-store-job-todo (&optional set-topic)
+  "Create a new TODO for a job.
+If SET-TOPIC is non-nil, set topic label to `Awaiting processing'
+and assignee to the current user."
+  (save-window-excursion
+    (when set-topic
+      (tlon-babel-set-initial-label-and-assignee))
+    (tlon-babel-store-todo "tbJ")))
 
 ;;;;; Org-github sync
 
