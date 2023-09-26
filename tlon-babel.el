@@ -1377,15 +1377,24 @@ elements."
 
 ;;;;;; Create repo-specific elements
 
-(defun tlon-babel-create-bae-author ()
-  "Create a new file for BAE author."
-  (interactive)
-  (let ((default-directory (file-name-concat tlon-babel-dir-bae-translations "autores/")))
+(defun tlon-babel-create-bae (dir)
+  "Create a new file for BAE entity in DIR."
+  (let ((default-directory (file-name-concat tlon-babel-dir-bae-translations (file-name-as-directory dir))))
     (ps/new-empty-buffer)
     (tlon-babel-yaml-set-front-matter-for-title)
     (tlon-babel-name-file-from-title)
     (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "titulo")))
     (save-buffer)))
+
+(defun tlon-babel-create-bae-author ()
+  "Create a new file for BAE author."
+  (interactive)
+  (tlon-babel-create-bae "autores"))
+
+(defun tlon-babel-create-bae-tag ()
+  "Create a new file for BAE tag."
+  (interactive)
+  (tlon-babel-create-bae "temas"))
 
 ;;;;;; Get repo-agnostic elements
 
