@@ -1673,6 +1673,12 @@ Assumes action is first word of clocked task."
   (let* ((orgit (tlon-babel-get-orgit-link-to-issue)))
     (org-link-make-string (car orgit) (cadr orgit))))
 
+(defun tlon-babel-get-issue-number ()
+  "Get the number of the GitHub issue at point or in current Forge buffer."
+  (let* ((issue-name (tlon-babel-get-issue-name)))
+    (when (string-match "#\\([[:digit:]]+?\\) " issue-name)
+      (string-to-number (match-string 1 issue-name)))))
+
 (defun tlon-babel-make-todo-heading (&optional action)
   "Construct the name of TODO from `orgit' link.
 The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
