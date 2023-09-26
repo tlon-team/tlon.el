@@ -416,15 +416,15 @@ depending on whether the issue is or is not a job. If it is a job,
 it will process it as a new job if it has neither a label nor an
 assignee, else it will refile it under the appropriate heading."
   (interactive)
-  (let ((assignee (alist-get
-		   (tlon-babel-forge-get-assignee-at-point)
-		   tlon-babel-github-users nil nil 'string=))
+  (let ((assignee (tlon-babel-forge-get-assignee-at-point 'full-name))
 	(label (tlon-babel-forge-get-label-at-point)))
     (if (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
 	(if (not (or assignee label))
+	    ;; when the topic has neither a label nor an assignee, we offer to
+	    ;; process it as a new job
 	    (if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
 		(progn
-		  (tlon-babel-start-job t)
+		  (tlon-babel-store-job-todo t)
 		  (sleep-for 4)
 		  (tlon-babel-create-todo-from-issue))
 	      (user-error "Aborted"))
@@ -442,25 +442,25 @@ assignee, else it will refile it under the appropriate heading."
 		(tlon-babel-set-label (tlon-babel-select-label))
 	      (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
 	      (user-error "Aborted")))
-	  (orgit-store-link nil)
-	  ;; (call-interactively #'magit-pull-from-upstream nil)
-	  (if-let* ((refile-position (org-find-exact-headline-in-buffer
-				      (tlon-babel-get-todo-name)
-				      (find-file-noselect tlon-babel-todos-file))))
+	  (if-let* ((refile-position (tlon-babel-get-todo-position (tlon-babel-make-todo-heading))))
 	      (let ((action (alist-get label tlon-babel-label-actions nil nil #'string=)))
 		(tlon-babel-store-todo "tbJ" action)
 		;; refile under job
 		(org-refile nil nil (list nil (buffer-file-name) nil refile-position))
 		(tlon-org-refile-goto-latest))
 	    (when (y-or-n-p "No master TODO found for this topic. Create?")
-	      (tlon-babel-start-job)
+	      (tlon-babel-store-job-todo)
 	      (tlon-babel-create-todo-from-issue))))
-      ;; when the topic has neither a label nor an assignee, we offer to
-      ;; process it as a new job
       (tlon-babel-store-todo "tbG"))))
 
-(defun tlon-babel-start-job (&optional set-topic)
-  "Create new job.
+(defun tlon-babel-get-todo-position (todo-name)
+  "Return the position of TODO-NAME in `tlon-babel-todos-file', else nil."
+  (org-find-exact-headline-in-buffer
+   todo-name
+   (find-file-noselect tlon-babel-todos-file)))
+
+(defun tlon-babel-store-job-todo (&optional set-topic)
+  "Create a new TODO for a job.
 If SET-TOPIC is non-nil, set topic label to `Awaiting processing'
 and assignee to the current user."
   (save-window-excursion
@@ -471,21 +471,8 @@ and assignee to the current user."
 (defun tlon-babel-store-todo (template &optional action)
   "Store a new TODO using TEMPLATE.
 Optionally specify an ACTION."
-  (kill-new (tlon-babel-get-todo-name action))
+  (kill-new (tlon-babel-make-todo-heading action))
   (org-capture nil template))
-
-(defun tlon-babel-get-todo-name (&optional action)
-  "Set the name of TODO from orgit stored link.
-Optionally specify an ACTION."
-  (let* ((action (or action ""))
-	 (link (car org-stored-links))
-	 (partial-name (org-link-make-string (car link) (cadr link)))
-	 (repo (tlon-babel-get-repo 'error 'genus))
-	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
-	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
-					      " "
-					      (format "[%s] %s %s" repo-abbrev action partial-name))))
-    full-name))
 
 ;;;;; Org-github sync
 
