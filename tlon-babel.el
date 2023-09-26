@@ -578,6 +578,16 @@ If ID is nil, try to find it from the issue at point, if possible."
     ;; Return the selected issue number
     selected-issue))
 
+(defun tlon-babel-get-latest-issue ()
+  "Return the most recently created issue in the current repository."
+  (let* ((repo (forge-get-repository t))
+	 (issues (forge-ls-issues repo))
+	 (latest-issue (car (sort issues (lambda (a b)
+                                           (time-less-p
+                                            (date-to-time (oref b created))
+                                            (date-to-time (oref a created))))))))
+    (list (oref latest-issue number) (oref latest-issue title))))
+
 (defun tlon-babel-get-todo-id-from-issue (issue &optional id)
   "Get TODO ID from GitHub ISSUE.
 If ID is nil, user `tlon-babel-todos-id'."
