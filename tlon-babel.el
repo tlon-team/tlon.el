@@ -1648,7 +1648,7 @@ Assumes action is first word of clocked task."
     orgit))
 
 (defun tlon-babel-get-issue-name ()
-  "Get the GitHub issue name at point or in current Forge buffer."
+  "Get the name of the GitHub issue at point or in current Forge buffer."
   (cadr (tlon-babel-get-orgit-link-to-issue)))
 
 (defun tlon-babel-get-issue-link ()
