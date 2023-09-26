@@ -57,7 +57,9 @@
 ;;;;; Files
 
 (defvar tlon-babel-dir-repos
-  (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")
+  (pcase user-full-name
+    ("Federico Stafforini" (expand-file-name "~/source/"))
+    (_ (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")))
   "Directory where the Tlön repos are stored.")
 
 ;; TODO: consolidate the vars below into a single var with multiple properties
