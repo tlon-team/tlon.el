@@ -549,9 +549,7 @@ If ID is nil, try to find it from the issue at point, if possible."
 	     (not (tlon-babel-get-repo-from-heading)))
     (let* ((repo-name (completing-read "Select repo: " tlon-babel-repo-names-and-abbrevs))
 	   (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=)))
-      ;; hack to put point immediately after TODO keyword and priority
-      (org-end-of-line)
-      (org-beginning-of-line)
+      (tlon-org-goto-beginning-of-heading-text)
       (insert (format "[%s] " abbrev-repo)))))
 
 (defun tlon-babel-get-issue-number-from-open-issues ()
