@@ -652,11 +652,6 @@ If ID is nil, user `tlon-babel-todos-id'."
   (tlon-babel-visit-issue issue-number repo)
   (tlon-babel-forge-close-topic))
 
-(defun tlon-babel-set-todo-done (id)
-  "Set the heading with ID to DONE."
-  (org-id-goto id)
-  (org-todo 'done))
-
 ;;;;; User commits
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
