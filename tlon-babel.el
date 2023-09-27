@@ -434,8 +434,8 @@ If not, offer to process it as a new job."
 	    (progn
 	      (tlon-babel-store-job-todo 'set-topic)
 	      (sleep-for 4)
-	      (tlon-babel-create-todo-from-issue)))
-      (user-error "Aborted"))))
+	      (tlon-babel-create-todo-from-issue))
+	  (user-error "Aborted")))))
 
 (defun tlon-babel-check-user-is-asignee ()
   "Check that the user is the assignee of issue at point."
@@ -606,45 +606,35 @@ If ID is nil, try to find it from the issue at point, if possible."
 					    (date-to-time (oref a created))))))))
     (list (oref latest-issue number) (oref latest-issue title))))
 
-(defun tlon-babel-get-todo-id-from-issue (issue &optional id)
-  "Get TODO ID from GitHub ISSUE.
-If ID is nil, user `tlon-babel-todos-id'."
-  (save-excursion
-    (let ((id (or id tlon-babel-todos-id)))
-      (org-id-goto id)
-      (catch 'found
-	(org-map-entries
-	 (lambda ()
-	   (let ((heading (substring-no-properties (org-get-heading t t t t))))
-	     (when (string-match issue heading)
-	       (throw 'found (org-id-get)))))
-	 nil 'tree)
-	nil))))
+(defun tlon-babel-get-todo-id-from-issue (issue)
+  "Get TODO ID from GitHub ISSUE."
+  (let ((todo (tlon-babel-make-todo-heading)))
+    (save-window-excursion
+      (tlon-babel-goto-todo todo tlon-babel-todos-file)
+      (org-id-get-create))))
 
-;; needs revision
 (defun tlon-babel-close-issue-and-todo ()
   "Close the issue or TODO at point."
   (interactive)
-  (let ((issue-number)
-	(id)
-	(repo))
+  (let ((message "Closed issue and TODO."))
     (pcase major-mode
       ('org-mode
        (unless (org-at-heading-p)
-	 (user-error "Point is not on an `org-mode' heading"))
+	 (user-error "I could not find an `org-mode' heading at point"))
        (if-let ((issue-number (tlon-babel-get-issue-number-from-heading))
 		(repo (tlon-babel-get-repo-from-heading)))
-	   (setq issue-number issue-number repo repo)
+	   (progn
+	     (tlon-babel-close-issue issue-number repo)
+	     (org-todo "DONE")
+	     (message message))
 	 (user-error "I could not find a issue number in the current `org-mode' heading")))
-      ('forge-topic-mode
-       (orgit-store-link nil)
-       (if-let ((issue (org-link-display-format (tlon-org-nth-stored-link 0))))
-	   (if-let ((id (tlon-babel-get-todo-id-from-issue issue)))
-	       (progn
-		 (tlon-babel-forge-close-topic)
-		 (tlon-babel-set-todo-done id))
-	     (user-error "I could not find `org-mode' ID for the current issue"))
-	 (user-error "I could not find a issue at point")))
+      ((or 'forge-topic-mode 'magit-status-mode)
+       (if-let ((todo (tlon-babel-make-todo-heading)))
+	   (progn
+	     (tlon-babel-mark-todo-done todo)
+	     (tlon-babel-forge-close-topic)
+	     (message message))
+	 (user-error "I could not find a GitHub issue at point")))
       (_ (user-error "This command cannot be invoked in `%s`" major-mode)))))
 
 (defun tlon-babel-close-issue (issue-number repo)
