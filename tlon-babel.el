@@ -1221,12 +1221,13 @@ If FILE is nil, use the current buffer."
 
 (defun tlon-babel-insert-yaml-fields (field-values)
   "Insert YAML fields in FIELD-VALUES at point."
-  (when (looking-at-p "---")
-    (user-error "File appears to already contain a front matter section"))
-  (insert "---\n")
-  (dolist (cons field-values)
-    (insert (format "%-20s%s\n" (concat (car cons) ":") (cdr cons))))
-  (insert "---\n"))
+  (let ((yaml-delimiter-and-newline (concat tlon-babel-yaml-delimiter "\n")))
+    (when (looking-at-p tlon-babel-yaml-delimiter)
+      (user-error "File appears to already contain a front matter section"))
+    (insert yaml-delimiter-and-newline)
+    (dolist (cons field-values)
+      (insert (format "%-20s%s\n" (concat (car cons) ":") (cdr cons))))
+    (insert yaml-delimiter-and-newline)))
 
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
   "Set the value of multivalue FIELD in metadata of REPO.
