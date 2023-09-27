@@ -420,7 +420,7 @@ the appropriate heading."
 	(tlon-babel-check-label-or-assignee-present)
 	(tlon-babel-check-user-is-asignee)
 	(tlon-babel-check-label-present)
-	(tlon-babel-create-or-refile-job))
+	(tlon-babel-store-or-refile-job-todo))
     (tlon-babel-check-user-is-asignee)
     (tlon-babel-store-todo "tbG")))
 
@@ -432,7 +432,7 @@ If not, offer to process it as a new job."
     (if (not (or assignee label))
 	(if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
 	    (progn
-	      (tlon-babel-store-job-todo 'set-topic)
+	      (tlon-babel-store-master-todo 'set-topic)
 	      (sleep-for 4)
 	      (tlon-babel-create-todo-from-issue))
 	  (user-error "Aborted")))))
@@ -457,16 +457,16 @@ If not, offer to process it as a new job."
 	(tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
 	(user-error "Aborted")))))
 
-(defun tlon-babel-create-or-refile-job ()
+(defun tlon-babel-store-or-refile-job-todo ()
   "Refile TODO under appropriate heading, or create new master TODO if none exists."
-  (if-let ((refile-position (tlon-babel-get-todo-position (tlon-babel-make-todo-heading))))
+  (if-let ((refile-position (tlon-babel-get-todo-position (tlon-babel-make-todo-heading 'no-action))))
       (progn
 	(tlon-babel-store-todo "tbJ")
 	;; refile under job
 	(org-refile nil nil (list nil (buffer-file-name) nil refile-position))
 	(tlon-org-refile-goto-latest))
     (when (y-or-n-p "No master TODO found for this topic. Create?")
-      (tlon-babel-store-job-todo)
+      (tlon-babel-store-master-todo)
       (tlon-babel-create-todo-from-issue))))
 
 (defun tlon-babel-get-todo-position (todo)
@@ -475,31 +475,32 @@ If not, offer to process it as a new job."
    todo
    (find-file-noselect tlon-babel-todos-file)))
 
-(defun tlon-babel-store-todo (template)
+(defun tlon-babel-store-todo (template &optional no-action)
   "Store a new TODO using TEMPLATE.
-If TODO already exists, move point to it and do not create a duplicate."
-  (let ((todo (tlon-babel-make-todo-heading)))
+If TODO already exists, move point to it and do not create a duplicate. If
+NO-ACTION is non-nil, store a master TODO."
+  (let ((todo (tlon-babel-make-todo-heading no-action)))
     (when (tlon-babel-get-todo-position todo)
       (tlon-babel-visit-todo)
       (user-error "TODO already exists!"))
     (kill-new todo)
     (org-capture nil template)))
 
-(defun tlon-babel-store-job-todo (&optional set-topic)
-  "Create a new TODO for a job.
+(defun tlon-babel-store-master-todo (&optional set-topic)
+  "Create a new job master TODO.
 If SET-TOPIC is non-nil, set topic label to `Awaiting processing' and assignee
 to the current user."
   (save-window-excursion
     (when set-topic
       (tlon-babel-set-initial-label-and-assignee))
-    (tlon-babel-store-todo "tbJ")))
+    (tlon-babel-store-todo "tbJ" 'master-todo)))
 
 ;;;;; Org-github sync
 
 (defun tlon-babel-visit-issue (&optional number repo)
   "Visit Github issue.
-If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
-link, else get their values from the heading title, if possible."
+  If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
+  link, else get their values from the heading title, if possible."
   (interactive)
   (if-let* ((number (or number
 			(tlon-babel-get-issue-number-from-heading)))
@@ -628,7 +629,7 @@ link, else get their values from the heading title, if possible."
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
   "Return latest commit by the current user in FILE.
-If no FILE is provided, use the file visited by the current buffer."
+  If no FILE is provided, use the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (default-directory (file-name-directory file))
 	 (user (tlon-babel-find-key-in-alist user-full-name tlon-babel-system-users))
@@ -639,7 +640,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-babel-log-buffer-latest-user-commit (&optional file)
   "Show changes to FILE since the latest commit by the current user.
-If no FILE is provided, use the file visited by the current buffer."
+  If no FILE is provided, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
 	 (commit (tlon-babel-latest-user-commit-in-file file)))
@@ -647,7 +648,7 @@ If no FILE is provided, use the file visited by the current buffer."
 
 (defun tlon-babel-log-buffer-latest-user-commit-ediff (&optional file)
   "Run `ediff' session for FILE and its state when last committed by current user.
-If FILE is not provided, use the file visited by the current buffer."
+  If FILE is not provided, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
 	 (commit (tlon-babel-latest-user-commit-in-file file))
@@ -785,9 +786,9 @@ If FILE is not provided, use the file visited by the current buffer."
 	(let* ((fn1 (tlon-babel-markdown-get-footnote n1 'delete))
 	       (fn2 (tlon-babel-markdown-get-footnote n2 'delete))
 	       (consolidated (tlon-babel-consolidate-bibtex-keys (format "%s; %s" fn1 fn2))))
-	  (markdown-insert-footnote)
-	  (insert (format "%s." consolidated))
-	  (goto-char (point-min)))))))
+	       (markdown-insert-footnote)
+	       (insert (format "%s." consolidated))
+	       (goto-char (point-min)))))))
 
 (defun tlon-babel-markdown-get-footnote (n &optional delete)
   "Get the content of footnote number N.
@@ -1649,13 +1650,14 @@ Assumes action is first word of clocked task."
     (when (string-match "#\\([[:digit:]]+?\\) " issue-name)
       (string-to-number (match-string 1 issue-name)))))
 
-(defun tlon-babel-make-todo-heading ()
+(defun tlon-babel-make-todo-heading (&optional no-action)
   "Construct the name of TODO from issue at point.
 The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
 is optional, and used only for job TODOs. For example, if the TODO is \"[bae]
 #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is \"Process\", the
 function returns \"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\"."
-  (let* ((action (if (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
+  (let* ((action (if (and (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
+			  (not no-action))
 		     (alist-get (tlon-babel-forge-get-label-at-point) tlon-babel-label-actions nil nil #'string=)
 		   ""))
 	 (repo (tlon-babel-get-repo 'error 'genus))
