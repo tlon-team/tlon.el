@@ -2376,9 +2376,10 @@ check that current file matches translation."
     (unless (string= all-changes filtered-changes)
       (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
 
-(defun tlon-babel-check-file-title-match  ()
-  "Check that FILE matches its title."
-  (let* ((file (buffer-file-name))
+(defun tlon-babel-check-file-title-match  (&optional file)
+  "Check that FILE matches its title.
+If FILE is nil, check the current buffer."
+  (let* ((file (or file (buffer-file-name)))
 	 (base (file-name-base file))
 	 (title (tlon-babel-metadata-get-field-value-in-file "titulo" file))
 	 (slugified-title (tlon-core-slugify title)))
