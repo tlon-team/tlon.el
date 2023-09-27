@@ -1577,16 +1577,18 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 
 ;;;;; Clocked heading
 
+(defun tlon-babel-get-clock ()
+  "Return the currently clocked heading."
+  (when org-clock-current-task
+    (substring-no-properties org-clock-current-task)))
+
 (defun tlon-babel-get-clock-key ()
   "Return bibtex key in clocked heading.
 Assumes key is enclosed in backticks."
-  (unless org-clock-current-task
-    (user-error "No clock running"))
-  (let ((clock (substring-no-properties org-clock-current-task)))
-    ;; second capture group handles optional .md extension
-    (if (string-match tlon-babel-key-regexp clock)
-	(match-string 1 clock)
-      (user-error "I wasn't able to find a file in clocked heading"))))
+  ;; second capture group handles optional .md extension
+  (if (string-match tlon-babel-key-regexp (tlon-babel-get-clock))
+      (match-string 1 (tlon-babel-get-clock))
+    (user-error "I wasn't able to find a file in clocked heading")))
 
 (defun tlon-babel-get-clock-file ()
   "Return the file path of the clocked task."
@@ -1622,7 +1624,7 @@ Assumes key is enclosed in backticks."
 Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-babel-get-clock-key)
-  (let ((action (nth 1 (split-string (substring-no-properties org-clock-current-task))))
+  (let ((action (nth 1 (split-string (tlon-babel-get-clock))))
 	(actions (mapcar #'cdr tlon-babel-label-actions)))
     (if (member action actions)
 	action
@@ -2043,21 +2045,39 @@ COMMIT is non-nil, commit the change."
     (when commit
       (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
 
-(defun tlon-babel-mark-clocked-task-done ()
-  "Mark the currently clocked task as DONE."
-  (save-window-excursion
-    (org-clock-goto)
-    (org-todo "DONE")
-    (save-buffer)))
+(defun tlon-babel-goto-todo (todo file)
+  "Jump to TODO in FILE."
+  (if-let ((pos (org-find-exact-headline-in-buffer
+		 todo
+		 (find-file-noselect file))))
+      (progn
+	(find-file file)
+	(goto-char pos))
+    (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo file)))
 
-(defun tlon-babel-mark-clocked-task-parent-done ()
-  "Mark the parent task of currently clocked task as DONE."
-  (save-window-excursion
-    (org-clock-goto)
-    (widen)
-    (org-up-heading-safe)
-    (org-todo "DONE")
-    (save-buffer)))
+(defun tlon-babel-get-parent-todo (&optional todo file)
+  "Get parent of TODO in FILE.
+If TODO is nil, user the currently clocked heading. If FILE is nil, use
+  `tlon-babel-todos-file'."
+  (let ((todo (or todo (tlon-babel-get-clock)))
+	(file (or file tlon-babel-todos-file)))
+    (save-window-excursion
+      (tlon-babel-goto-todo todo file)
+      (widen)
+      (org-up-heading-safe)
+      (org-no-properties (org-get-heading)))))
+
+(defun tlon-babel-mark-todo-done (&optional todo file)
+  "Mark TODO in FILE as DONE.
+If TODO is nil, user the currently clocked heading. If FILE is nil, use
+  `tlon-babel-todos-file'."
+  (let ((todo (or todo (tlon-babel-get-clock)))
+	(file (or file tlon-babel-todos-file)))
+    (save-window-excursion
+      (tlon-babel-goto-todo todo file)
+      (org-todo "DONE")
+      (save-buffer)
+      (message "Marked `%s' as DONE" todo))))
 
 (defun tlon-babel-get-key-in-heading ()
   "Get the key of the currently clocked task."
@@ -2068,19 +2088,6 @@ COMMIT is non-nil, commit the change."
 	(or (match-string 1 heading)
 	    (match-string 2 heading))
       (user-error "I wasn't able to find a key in clocked heading"))))
-
-(defun tlon-babel-mark-clocked-heading-done (&optional commit)
-  "Mark the heading of the currently clocked task as DONE.
-If COMMIT is non-nil, commit and push the changes."
-  (let ((key (tlon-babel-get-clock-key)))
-    (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
-			     (find-file-noselect tlon-babel-file-jobs))
-      (tlon-babel-goto-heading key)
-      (org-todo "DONE")
-      ;; (org-sort-entries nil ?o) ; sort entries by t(o)do order
-      (save-buffer))
-    (when commit
-      (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
 
 (defun tlon-babel-goto-heading (key)
   "Move point to the heading in `jobs.org' with KEY."
@@ -2157,12 +2164,13 @@ for the process that is being initialized."
 	(tlon-babel-act-on-topic original-key next-label next-assignee
 				 (when (string= current-action "Review")
 				   'close))
-	(tlon-babel-mark-clocked-task-done)
+	(tlon-babel-mark-todo-done)
 	(message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 		 next-label next-assignee)
 	(when (string= current-action "Review")
-	  (tlon-babel-mark-clocked-heading-done 'commit)
-	  (tlon-babel-mark-clocked-task-parent-done))))))
+	  (tlon-babel-mark-todo-done)
+	  (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs)
+	  (tlon-babel-mark-todo-done (tlon-babel-get-parent-todo)))))))
 
 (defun tlon-babel-initialize-processing ()
   "Initialize processing."
