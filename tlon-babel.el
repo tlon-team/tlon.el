@@ -193,7 +193,6 @@ of the variable that stores the path of the `originals' subdirectory of the
   "Org file of the user-specific heading where Babel TODOs are stored."
   :type 'string
   :group 'tlon-babel)
-
 (defcustom tlon-babel-todos-jobs-id ()
   "Org ID of the user-specific heading where Babel TODOs are stored."
   :type 'string
@@ -503,8 +502,8 @@ to the current user."
 
 (defun tlon-babel-visit-issue (&optional number repo)
   "Visit Github issue.
-  If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
-  link, else get their values from the heading title, if possible."
+If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
+link, else get their values from the heading title, if possible."
   (interactive)
   (if-let* ((number (or number
 			(tlon-babel-get-issue-number-from-heading)))
@@ -633,7 +632,7 @@ to the current user."
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
   "Return latest commit by the current user in FILE.
-  If no FILE is provided, use the file visited by the current buffer."
+If no FILE is provided, use the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (default-directory (file-name-directory file))
 	 (user (tlon-babel-find-key-in-alist user-full-name tlon-babel-system-users))
@@ -644,7 +643,7 @@ to the current user."
 
 (defun tlon-babel-log-buffer-latest-user-commit (&optional file)
   "Show changes to FILE since the latest commit by the current user.
-  If no FILE is provided, use the file visited by the current buffer."
+If no FILE is provided, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
 	 (commit (tlon-babel-latest-user-commit-in-file file)))
@@ -652,7 +651,7 @@ to the current user."
 
 (defun tlon-babel-log-buffer-latest-user-commit-ediff (&optional file)
   "Run `ediff' session for FILE and its state when last committed by current user.
-  If FILE is not provided, use the file visited by the current buffer."
+If FILE is not provided, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
 	 (commit (tlon-babel-latest-user-commit-in-file file))
@@ -790,9 +789,9 @@ to the current user."
 	(let* ((fn1 (tlon-babel-markdown-get-footnote n1 'delete))
 	       (fn2 (tlon-babel-markdown-get-footnote n2 'delete))
 	       (consolidated (tlon-babel-consolidate-bibtex-keys (format "%s; %s" fn1 fn2))))
-	       (markdown-insert-footnote)
-	       (insert (format "%s." consolidated))
-	       (goto-char (point-min)))))))
+	  (markdown-insert-footnote)
+	  (insert (format "%s." consolidated))
+	  (goto-char (point-min)))))))
 
 (defun tlon-babel-markdown-get-footnote (n &optional delete)
   "Get the content of footnote number N.
@@ -2220,7 +2219,7 @@ for the process that is being initialized."
     ;; we move point to the previous chunk, using the chunk divider
     ;; defined in `read-aloud--grab-text'
     (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
-			  (pop-to-buffer current-buffer)))
+    (pop-to-buffer current-buffer)))
 
 (defun tlon-babel--read-backward-or-forward (direction)
   "Move in DIRECTION in the target buffer."
