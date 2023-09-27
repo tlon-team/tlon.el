@@ -2385,6 +2385,17 @@ check that current file matches translation."
     (unless (string= base slugified-title)
       (error "The file `%s' does not match its title" title))))
 
+(defun tlon-babel-check-heading-hierarcy (&optional file)
+  "Check that the heading hierarchy in FILE is correct.
+Specifically, signal an error if FILE has a heading of level 1 or no headings of
+level 2. If FILE is nil, check the current buffer."
+  (let* ((file (or file (buffer-file-name))))
+    (save-excursion
+      (goto-char (point-min))
+      (when (or (re-search-forward "^# " nil t)
+		(not (re-search-forward "^## " nil t)))
+	(error "The file `%s' does not have the correct heading hierarchy structure" file)))))
+
 ;;;;; Bibtex
 
 (defun tlon-babel-bibtex-generate-autokey (author year title)
