@@ -478,7 +478,7 @@ If not, offer to process it as a new job."
 
 (defun tlon-babel-store-todo (template &optional action)
   "Store a new TODO using TEMPLATE.
-Optionally specify an ACTION.
+Optionally specify an ACTION (relevant for job TODOs only).
 
 If TODO already exists, move point to it and do not create a duplicate."
   (let ((todo (tlon-babel-make-todo-heading action)))
