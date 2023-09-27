@@ -2938,6 +2938,9 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("f g" "Glossary.csv"                 tlon-babel-open-glossary)
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
+    """Translate"
+    ("t t" "GPT"                          tlon-babel-gpt-translate)
+    ("t w" "Web"                          tlon-babel-search-for-translation)
     ]
    ["Visit dir"
     ("d d" "repo"                         tlon-babel-open-repo)
