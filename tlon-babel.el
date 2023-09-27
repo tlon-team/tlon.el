@@ -181,6 +181,10 @@ of the variable that stores the path of the `originals' subdirectory of the
   "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
   "Org ID of the `processing' heading in `manual.org'.")
 
+(defvar tlon-babel-jobs-id
+  "820BEDE2-F982-466F-A391-100235D4C596"
+  "ID of the `jobs' heading in `jobs.org'.")
+
 (defgroup tlon-babel ()
   "A companion package for the Babel project."
   :group 'files)
