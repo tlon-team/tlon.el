@@ -282,7 +282,7 @@ of the variable that stores the path of the `originals' subdirectory of the
 (defvar tlon-babel-markdown-eawiki-footnote-target
   "\\([[:digit:]]\\{1,3\\}\\). +?\\[\\[^\\*\\*\\[\\\\^\\](#[[:alnum:]]\\{12,18\\})\\*\\*^\\]\\]{#[[:alnum:]]\\{10,15\\}}
 
-    footnote-content.*?"
+  footnote-content.*?"
   "Regexp to match footnotes in the footnote section.")
 
 (defvar tlon-markdown-eawiki-links
@@ -553,12 +553,12 @@ If ID is nil, try to find it from the issue at point, if possible."
       (insert (format "[%s] " abbrev-repo)))))
 
 (defun tlon-babel-set-issue-number-in-heading (issue-number)
-"Set ISSUE-NUMBER in heading at point if not already present."
-(unless (tlon-babel-get-issue-number-from-heading)
-  (tlon-org-goto-beginning-of-heading-text)
-  ;; move past repo name
-  (re-search-forward "\\[.+?\\] ")
-  (insert (format "#%s " (number-to-string issue-number)))))
+  "Set ISSUE-NUMBER in heading at point if not already present."
+  (unless (tlon-babel-get-issue-number-from-heading)
+    (tlon-org-goto-beginning-of-heading-text)
+    ;; move past repo name
+    (re-search-forward "\\[.+?\\] ")
+    (insert (format "#%s " (number-to-string issue-number)))))
 
 (defun tlon-babel-get-issue-number-from-open-issues ()
   "Prompt user to select from a list of open issues and return number of selection."
@@ -583,9 +583,9 @@ If ID is nil, try to find it from the issue at point, if possible."
   (let* ((repo (forge-get-repository t))
 	 (issues (forge-ls-issues repo))
 	 (latest-issue (car (sort issues (lambda (a b)
-                                           (time-less-p
-                                            (date-to-time (oref b created))
-                                            (date-to-time (oref a created))))))))
+					   (time-less-p
+					    (date-to-time (oref b created))
+					    (date-to-time (oref a created))))))))
     (list (oref latest-issue number) (oref latest-issue title))))
 
 (defun tlon-babel-get-todo-id-from-issue (issue &optional id)
