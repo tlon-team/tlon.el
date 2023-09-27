@@ -460,9 +460,8 @@ If not, offer to process it as a new job."
 (defun tlon-babel-create-or-refile-job ()
   "Refile TODO under appropriate heading, or create new master TODO if none exists."
   (if-let ((refile-position (tlon-babel-get-todo-position (tlon-babel-make-todo-heading))))
-      (let* ((label (tlon-babel-forge-get-label-at-point))
-	     (action (alist-get label tlon-babel-label-actions nil nil #'string=)))
-	(tlon-babel-store-todo "tbJ" action)
+      (progn
+	(tlon-babel-store-todo "tbJ")
 	;; refile under job
 	(org-refile nil nil (list nil (buffer-file-name) nil refile-position))
 	(tlon-org-refile-goto-latest))
@@ -476,12 +475,10 @@ If not, offer to process it as a new job."
    todo
    (find-file-noselect tlon-babel-todos-file)))
 
-(defun tlon-babel-store-todo (template &optional action)
+(defun tlon-babel-store-todo (template)
   "Store a new TODO using TEMPLATE.
-Optionally specify an ACTION (relevant for job TODOs only).
-
 If TODO already exists, move point to it and do not create a duplicate."
-  (let ((todo (tlon-babel-make-todo-heading action)))
+  (let ((todo (tlon-babel-make-todo-heading)))
     (when (tlon-babel-get-todo-position todo)
       (tlon-babel-visit-todo)
       (user-error "TODO already exists!"))
@@ -518,14 +515,6 @@ link, else get their values from the heading title, if possible."
 	    (issue (forge-get-topic issue-id)))
       (forge-visit issue)
     (user-error "Could not find issue")))
-
-(defun tlon-babel-visit-todo (&optional id)
-  "Visit `org-mode' TODO.
-If ID is nil, try to find it from the issue at point, if possible."
-  (interactive)
-  (if-let ((id (or id (tlon-babel-get-id-from-issue (tlon-babel-get-issue-name)))))
-      (org-id-goto id)
-    (user-error "Could not find TODO")))
 
 (defun tlon-babel-visit-counterpart ()
   "Visit the ID associated with TODO, or vice versa."
@@ -606,15 +595,8 @@ If ID is nil, try to find it from the issue at point, if possible."
 					    (date-to-time (oref a created))))))))
     (list (oref latest-issue number) (oref latest-issue title))))
 
-(defun tlon-babel-get-todo-id-from-issue (issue)
-  "Get TODO ID from GitHub ISSUE."
-  (let ((todo (tlon-babel-make-todo-heading)))
-    (save-window-excursion
-      (tlon-babel-goto-todo todo tlon-babel-todos-file)
-      (org-id-get-create))))
-
 (defun tlon-babel-close-issue-and-todo ()
-  "Close the issue or TODO at point."
+  "With point on either, close issue and associated TODO."
   (interactive)
   (let ((message "Closed issue and TODO."))
     (pcase major-mode
@@ -1667,13 +1649,15 @@ Assumes action is first word of clocked task."
     (when (string-match "#\\([[:digit:]]+?\\) " issue-name)
       (string-to-number (match-string 1 issue-name)))))
 
-(defun tlon-babel-make-todo-heading (&optional action)
-  "Construct the name of TODO from `orgit' link.
+(defun tlon-babel-make-todo-heading ()
+  "Construct the name of TODO from issue at point.
 The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
 is optional, and used only for job TODOs. For example, if the TODO is \"[bae]
 #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is \"Process\", the
 function returns \"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\"."
-  (let* ((action (or action ""))
+  (let* ((action (if (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
+		     (alist-get (tlon-babel-forge-get-label-at-point) tlon-babel-label-actions nil nil #'string=)
+		   ""))
 	 (repo (tlon-babel-get-repo 'error 'genus))
 	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
 	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
@@ -2030,39 +2014,38 @@ COMMIT is non-nil, commit the change."
     (when commit
       (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
 
-(defun tlon-babel-goto-todo (todo file)
-  "Jump to TODO in FILE."
-  (if-let ((pos (org-find-exact-headline-in-buffer
-		 todo
-		 (find-file-noselect file))))
-      (progn
-	(find-file file)
-	(goto-char pos))
-    (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo file)))
+(defun tlon-babel-visit-todo (&optional todo file)
+  "Jump to TODO in FILE.
+If TODO is nil, user the heading at point. If FILE is nil, use
+`tlon-babel-todos-file'."
+  (interactive)
+  (let ((todo (or todo (tlon-babel-make-todo-heading)))
+	(file (or file tlon-babel-todos-file)))
+    (if-let ((pos (org-find-exact-headline-in-buffer
+		   todo
+		   (find-file-noselect file))))
+	(progn
+	  (find-file file)
+	  (goto-char pos))
+      (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo file))))
 
 (defun tlon-babel-get-parent-todo (&optional todo file)
   "Get parent of TODO in FILE.
 If TODO is nil, user the currently clocked heading. If FILE is nil, use
   `tlon-babel-todos-file'."
-  (let ((todo (or todo (tlon-babel-get-clock)))
-	(file (or file tlon-babel-todos-file)))
-    (save-window-excursion
-      (tlon-babel-goto-todo todo file)
-      (widen)
-      (org-up-heading-safe)
-      (org-no-properties (org-get-heading)))))
+  (save-window-excursion
+    (tlon-babel-visit-todo todo file)
+    (widen)
+    (org-up-heading-safe)
+    (org-no-properties (org-get-heading))))
 
 (defun tlon-babel-mark-todo-done (&optional todo file)
-  "Mark TODO in FILE as DONE.
-If TODO is nil, user the currently clocked heading. If FILE is nil, use
-  `tlon-babel-todos-file'."
-  (let ((todo (or todo (tlon-babel-get-clock)))
-	(file (or file tlon-babel-todos-file)))
-    (save-window-excursion
-      (tlon-babel-goto-todo todo file)
-      (org-todo "DONE")
-      (save-buffer)
-      (message "Marked `%s' as DONE" todo))))
+  "Mark TODO in FILE as DONE."
+  (save-window-excursion
+    (tlon-babel-visit-todo todo file)
+    (org-todo "DONE")
+    (save-buffer)
+    (message "Marked `%s' as DONE" todo)))
 
 (defun tlon-babel-get-key-in-heading ()
   "Get the key of the currently clocked task."
@@ -2231,7 +2214,7 @@ for the process that is being initialized."
     ;; we move point to the previous chunk, using the chunk divider
     ;; defined in `read-aloud--grab-text'
     (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
-    (pop-to-buffer current-buffer)))
+			  (pop-to-buffer current-buffer)))
 
 (defun tlon-babel--read-backward-or-forward (direction)
   "Move in DIRECTION in the target buffer."
