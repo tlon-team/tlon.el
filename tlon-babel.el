@@ -103,17 +103,15 @@
 
 (defun tlon-babel-generate-project-dir-vars ()
   "Generate variables for storing relevant paths in each project repo.
-The stored paths, for each repo, are the path to the repo itself,
-the path to the `originals' subdirectory, and the path to the
-`translations' subdirectory.
+The stored paths, for each repo, are the path to the repo itself, the path to
+the `originals' subdirectory, and the path to the `translations' subdirectory.
 
-The names of the variables are formed by the prefix
-`tlon-babel-dir-', the repo's canonical abbreviation (as defined
-in `tlon-babel-project-names-and-abbrevs') and either no suffix,
-the suffix `-originals', or the suffix `-translations',
-respectively. For example, the name of the variable that stores
-the path of the `originals' subdirectory of the `bae' repo is
-named `tlon-babel-dir-bae-originals'."
+The names of the variables are formed by the prefix `tlon-babel-dir-', the
+repo's canonical abbreviation (as defined in
+`tlon-babel-project-names-and-abbrevs') and either no suffix, the suffix
+`-originals', or the suffix `-translations', respectively. For example, the name
+of the variable that stores the path of the `originals' subdirectory of the
+`bae' repo is named `tlon-babel-dir-bae-originals'."
   (dolist (project tlon-babel-project-names)
     (let* ((abbrev (alist-get project tlon-babel-project-names-and-abbrevs nil nil 'string=))
 	   (dir (alist-get project tlon-babel-project-names-and-dirs nil nil 'string=)))
