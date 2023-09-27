@@ -2386,16 +2386,24 @@ If FILE is nil, check the current buffer."
     (unless (string= base slugified-title)
       (error "The file `%s' does not match its title" title))))
 
-(defun tlon-babel-check-heading-hierarcy (&optional file)
-  "Check that the heading hierarchy in FILE is correct.
-Specifically, signal an error if FILE has a heading of level 1 or no headings of
-level 2. If FILE is nil, check the current buffer."
+;; TODO: reconsider criterion; it fails when it contains a single level one title heading
+(defun tlon-babel-fix-heading-hierarcy (&optional file)
+  "Promote or demote headings in FILE when appropriate.
+Specifically, when FILE contains at least one heading, demote all headings if
+there is at least one level 1 heading, and promote all headings if there is at
+least one level 3 heading and no level 2 headings.
+
+ If FILE is nil, check the current buffer."
+  (require 'substitute)
   (let* ((file (or file (buffer-file-name))))
     (save-excursion
       (goto-char (point-min))
-      (when (or (re-search-forward "^# " nil t)
-		(not (re-search-forward "^## " nil t)))
-	(error "The file `%s' does not have the correct heading hierarchy structure" file)))))
+      (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
+	(if (re-search-forward "^# " nil t)
+	    (substitute-target-in-buffer "^#" "##")
+	  (goto-char (point-min))
+	  (unless (re-search-forward "^## " nil t)
+	    (substitute-target-in-buffer "^###" "##")))))))
 
 ;;;;; Bibtex
 
