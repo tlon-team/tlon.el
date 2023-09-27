@@ -470,10 +470,10 @@ If not, offer to process it as a new job."
       (tlon-babel-store-job-todo)
       (tlon-babel-create-todo-from-issue))))
 
-(defun tlon-babel-get-todo-position (todo-name)
-  "Return the position of TODO-NAME in `tlon-babel-todos-file', else nil."
+(defun tlon-babel-get-todo-position (todo)
+  "Return the position of TODO in `tlon-babel-todos-file', else nil."
   (org-find-exact-headline-in-buffer
-   todo-name
+   todo
    (find-file-noselect tlon-babel-todos-file)))
 
 (defun tlon-babel-store-todo (template &optional action)
