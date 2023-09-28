@@ -1987,6 +1987,7 @@ Markdown buffer at point is used."
 (defun tlon-babel-create-issue-from-todo ()
   "Create a new issue based on the current org heading."
   (interactive)
+  (require 'tlon-core)
   (unless (equal major-mode 'org-mode)
     (user-error "You need to be in `org-mode' to use this function"))
   (when (tlon-babel-get-issue-number-from-heading)
@@ -2004,7 +2005,7 @@ Markdown buffer at point is used."
 	     (latest-issue-post latest-issue-pre))
 	(tlon-babel-create-issue issue-title default-directory)
 	(forge-pull)
-	(message "Please wait...")
+	(message (concat "Reflect on this fine proverb while you wait: " (tlon-core-proverb)))
 	(while (eq latest-issue-pre latest-issue-post)
 	  (sleep-for 0.1)
 	  (setq latest-issue-post (car (tlon-babel-get-latest-issue))))
