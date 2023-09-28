@@ -2001,10 +2001,14 @@ Markdown buffer at point is used."
 	     (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=))
 	     (issue-title (substring heading (+ (length abbrev-repo) 3))))
 	(tlon-babel-create-issue issue-title default-directory)
+	(message "Please wait...")
 	(sleep-for 5)
 	(setq issue-number (car (tlon-babel-get-latest-issue)))))
     (tlon-babel-set-issue-number-in-heading issue-number)
-    (tlon-babel-visit-issue)))
+    (tlon-babel-visit-issue)
+    (tlon-babel-set-assignee (tlon-babel-find-key-in-alist
+			      user-full-name
+			      tlon-babel-github-users))))
 
 (defun tlon-babel-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
