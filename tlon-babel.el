@@ -211,7 +211,7 @@ of the variable that stores the path of the `originals' subdirectory of the
     ("Awaiting revision" . "Revise")
     ("Awaiting check" . "Check")
     ("Awaiting review" . "Review")
-    ("Awaiting publication" . "Publish")
+    ("Published" . "Publish")
     ("Awaiting rewrite" . "Rewrite")
     ("Glossary" . "Respond")
     ("Misc" . "Misc"))
@@ -223,7 +223,7 @@ of the variable that stores the path of the `originals' subdirectory of the
     ("Awaiting revision" . "worldsaround")
     ("Awaiting check" . "worldsaround")
     ("Awaiting review" . "benthamite")
-    ("Awaiting publication" . ""))
+    ("Published" . ""))
   "Alist of topic labels and corresponding assignees.")
 
 (defvar tlon-babel-github-users
