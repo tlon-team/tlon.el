@@ -1447,7 +1447,7 @@ When called interactively, PRINT-MESSAGE is non-nil, and the function signals an
 error if the current buffer is not in `markdown-mode' and FILE is nil."
   (interactive "p")
   (when (and print-message
-	     (not (eq major-mode 'markdown-mode)))
+	     (not (derived-mode-p 'markdown-mode)))
     (user-error "Not in markdown-mode"))
   (let* ((counterpart (tlon-babel-get-counterpart
 		       (or file (buffer-file-name))))
@@ -1988,7 +1988,7 @@ Markdown buffer at point is used."
   "Create a new issue based on the current org heading."
   (interactive)
   (require 'tlon-core)
-  (unless (equal major-mode 'org-mode)
+  (unless (derived-mode-p 'org-mode)
     (user-error "You need to be in `org-mode' to use this function"))
   (when (tlon-babel-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
@@ -2111,7 +2111,7 @@ If TODO is nil, user the currently clocked heading. If FILE is nil, use
 (defun tlon-babel-dwim ()
   "Initialize or finalize process based on clocked task."
   (interactive)
-  (when (eq major-mode 'org-mode)
+  (when (derived-mode-p 'org-mode)
     (org-clock-in))
   (save-buffer)
   (let* ((action (tlon-babel-get-action-in-label (tlon-babel-get-clock-label)))
