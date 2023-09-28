@@ -1993,22 +1993,28 @@ Markdown buffer at point is used."
     (user-error "This heading already has an issue"))
   (unless (tlon-babel-get-repo-from-heading)
     (tlon-babel-set-repo-in-heading))
-  (let (issue-number)
+  (let (todo-linkified)
     (save-excursion
       (let* ((default-directory (tlon-babel-get-repo-from-heading))
 	     (heading (substring-no-properties (org-get-heading t t t t)))
 	     (repo-name (tlon-babel-get-name-from-repo default-directory))
 	     (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=))
-	     (issue-title (substring heading (+ (length abbrev-repo) 3))))
+	     (issue-title (substring heading (+ (length abbrev-repo) 3)))
+	     (latest-issue-pre (car (tlon-babel-get-latest-issue)))
+	     (latest-issue-post latest-issue-pre))
 	(tlon-babel-create-issue issue-title default-directory)
+	(forge-pull)
 	(message "Please wait...")
-	(sleep-for 5)
-	(setq issue-number (car (tlon-babel-get-latest-issue)))))
-    (tlon-babel-set-issue-number-in-heading issue-number)
-    (tlon-babel-visit-issue)
-    (tlon-babel-set-assignee (tlon-babel-find-key-in-alist
-			      user-full-name
-			      tlon-babel-github-users))))
+	(while (eq latest-issue-pre latest-issue-post)
+	  (sleep-for 0.1)
+	  (setq latest-issue-post (car (tlon-babel-get-latest-issue))))
+	(tlon-babel-set-issue-number-in-heading latest-issue-post)
+	(tlon-babel-visit-issue)
+	(tlon-babel-set-assignee (tlon-babel-find-key-in-alist
+				  user-full-name
+				  tlon-babel-github-users))
+	(setq todo-linkified (tlon-babel-make-todo-heading))))
+    (org-edit-headline todo-linkified)))
 
 (defun tlon-babel-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
