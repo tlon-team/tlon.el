@@ -3010,7 +3010,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     """Sync"
     ("y y" "visit issue or todo"           tlon-babel-visit-counterpart)
     ("y x" "close issue & todo"            tlon-babel-close-issue-and-todo)
-    ("y t" "crete todo from issue"         tlon-babel-create-todo-from-issue)
+    ("y t" "create todo from issue"         tlon-babel-create-todo-from-issue)
     ("y i" "create issue from todo"        tlon-babel-create-issue-from-todo)
     ]
    ]
