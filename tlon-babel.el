@@ -2616,7 +2616,7 @@ The commit message is ACTION followed by the name of FILE."
 Note that this only works for topics listed in the main buffer."
   (interactive
    (list (tlon-babel-select-label)))
-  (let* ((topic (forge-get-topic (forge-topic-at-point)))
+  (let* ((topic (forge-get-topic (forge-current-topic)))
 	 (repo  (forge-get-repository topic))
 	 (crm-separator ","))
     (forge--set-topic-labels
@@ -2636,7 +2636,7 @@ The prompt defaults to the current user."
   "Make ASSIGNEE the assignee of topic at point."
   (interactive
    (list (tlon-babel-select-assignee)))
-  (let* ((topic (forge-get-topic (forge-topic-at-point)))
+  (let* ((topic (forge-get-topic (forge-current-topic)))
 	 (repo  (forge-get-repository topic))
 	 ;; (value (closql--iref topic 'assignees))
 	 ;; (choices (mapcar #'cadr (oref repo assignees)))
