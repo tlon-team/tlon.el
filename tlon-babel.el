@@ -1948,18 +1948,41 @@ Markdown buffer at point is used."
 	(tlon-babel-create-heading-for-job key 'commit))
     (user-error "I wasn't able to create a record because I didn't find a key")))
 
+(defun tlon-babel-create-issue (title &optional repo body)
+  "Create new GitHub issue in REPO with TITLE and BODY."
+  (let* ((repo (or repo (tlon-babel-get-repo 'error 'genus)))
+	 (body (or body ""))
+	 (default-directory repo)
+	 (repo (forge-get-repository t))
+         (owner (oref repo owner))
+         (reponame (oref repo name))
+         (resource (format "/repos/%s/%s/issues" owner reponame))
+         (data `(("title" . ,title)
+                 ("body" . ,body))))
+    (ghub-post resource data
+	       :auth 'forge
+               :noerror t ;; avoid showing the original large output
+               :reader 'ignore) ;; do not parse the response json
+    (message "Created issue with title %s" title)))
 
-(defun tlon-babel-create-issue (title repo)
-  "Create a new issue with TITLE in REPO."
-  (let ((default-directory repo))
-    (call-interactively #'forge-create-issue)
-    (insert title)
-    (call-interactively #'forge-post-submit)
-    (sleep-for 2)
-    (forge-pull)
-    ;; (magit-status-setup-buffer)
-    ;; needs to be done twice for some reason; FIXME
-    (forge-pull)))
+;; I wasn't able to make this work; perhaps try again in the future
+(defvar tlon-babel-apply-after-forge-pull nil
+  "Whether to apply advice after `forge--pull'.")
+
+(defun tlon-babel-after-forge-pull ()
+  ""
+  (cl-defmethod forge--pull :around ((repo forge-github-repository) until
+                                     &optional callback)
+    (if tlon-babel-apply-after-forge-pull
+	(cl-call-next-method repo until
+			     (or callback
+				 (lambda ()
+				   (tlon-babel-set-issue-number-in-heading (car (tlon-babel-get-latest-issue repo)))
+				   (tlon-babel-visit-issue)
+				   (tlon-babel-set-assignee (tlon-babel-find-key-in-alist
+							     user-full-name
+							     tlon-babel-github-users)))))
+      (cl-call-next-method))))
 
 (defun tlon-babel-create-issue-from-todo ()
   "Create a new issue based on the current org heading."
