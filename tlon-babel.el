@@ -525,7 +525,7 @@ link, else get their values from the heading title, if possible."
   (interactive)
   (pcase major-mode
     ('org-mode (tlon-babel-visit-issue))
-    ((or 'forge-topic-mode 'magit-status-mode) (tlon-babel-visit-todo))
+    ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode) (tlon-babel-visit-todo))
     (_ (user-error "This command cannot be invoked in `%s`" major-mode))))
 
 (defun tlon-babel-get-id-from-issue (issue-name)
@@ -614,7 +614,7 @@ link, else get their values from the heading title, if possible."
 	     (org-todo "DONE")
 	     (message message))
 	 (user-error "I could not find a issue number in the current `org-mode' heading")))
-      ((or 'forge-topic-mode 'magit-status-mode)
+      ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode)
        (if-let ((todo (tlon-babel-make-todo-heading)))
 	   (progn
 	     (tlon-babel-mark-todo-done todo)
@@ -1625,7 +1625,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-babel-cheeck-point-on-issue ()
   "Return t iff point is on an issue or a Forge buffer."
-  (unless (or (derived-mode-p 'forge-topic-mode)
+  (unless (or (or (derived-mode-p 'forge-topic-mode) (derived-mode-p 'forge-issue-list-mode))
 	      (and (derived-mode-p 'magit-status-mode)
 		   (save-excursion
 		     (re-search-backward "Issues (" nil t))))
