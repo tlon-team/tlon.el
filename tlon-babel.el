@@ -1700,7 +1700,9 @@ Assumes action is first word of clocked task."
 The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
 is optional, and used only for job TODOs. For example, if the TODO is \"[bae]
 #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is \"Process\", the
-function returns \"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\"."
+function returns \"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\".
+
+If NO-ACTION is non-nil, omit, the ACTION element."
   (let* ((action (if (and (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
 			  (not no-action))
 		     (alist-get (tlon-babel-forge-get-label-at-point) tlon-babel-label-actions nil nil #'string=)
