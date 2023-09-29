@@ -840,7 +840,7 @@ If DELETE is non-nil, delete the footnote."
       (setq start (match-end 0)))
     (format "[%s]" (mapconcat 'identity (nreverse matches) "; "))))
 
-(defun tlon-babel-fix-list ()
+(defun tlon-babel-make-list ()
   "Format the current paragraph into a proper list."
   (interactive)
   (save-excursion
@@ -849,7 +849,7 @@ If DELETE is non-nil, delete the footnote."
       (goto-char beg)
       (replace-regexp-in-region " - " "\n- " beg end))))
 
-(defun tlon-babel-fix (regexp-list newtext)
+(defun tlon-babel-autofix (regexp-list newtext)
   "Replace matches in REGEXP-LIST with NEWTEXT."
   (widen)
   (save-excursion
@@ -858,23 +858,42 @@ If DELETE is non-nil, delete the footnote."
       (while (re-search-forward regexp nil t)
 	(replace-match newtext)))))
 
-(defun tlon-babel-fix-curly-quotes ()
+(defun tlon-babel-autofix-curly-quotes ()
   "Replace straight quotes with curly qutoes when appropriate."
   (interactive)
-  (tlon-babel-fix '("\"\\[")
-		  "“["))
+  (tlon-babel-autofix '("\"\\[")
+		      "“["))
 
-(defun tlon-babel-fix-footnote-punctuation ()
+(defun tlon-babel-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
   (interactive)
-  (tlon-babel-fix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		  "\\1\\3\\2"))
+  (tlon-babel-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
+		      "\\1\\3\\2"))
 
-(defun tlon-babel-fix-ee-uu ()
+(defun tlon-babel-autofix-ee-uu ()
   "Add thin space between `EE.' and `UU.' in abbreviation."
   (interactive)
-  (tlon-babel-fix '("EE.UU." "EE. UU.")
-		  "EE. UU."))
+  (tlon-babel-autofix '("EE.UU." "EE. UU.")
+		      "EE. UU."))
+
+;; TODO: reconsider criterion; it fails when it contains a single level one title heading
+(defun tlon-babel-autofix-heading-hierarcy (&optional file)
+  "Promote or demote headings in FILE when appropriate.
+Specifically, when FILE contains at least one heading, demote all headings if
+there is at least one level 1 heading, and promote all headings if there is at
+least one level 3 heading and no level 2 headings.
+
+ If FILE is nil, check the current buffer."
+  (require 'substitute)
+  (let* ((file (or file (buffer-file-name))))
+    (save-excursion
+      (goto-char (point-min))
+      (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
+	(if (re-search-forward "^# " nil t)
+	    (substitute-target-in-buffer "^#" "##")
+	  (goto-char (point-min))
+	  (unless (re-search-forward "^## " nil t)
+	    (substitute-target-in-buffer "^###" "##")))))))
 
 (defun tlon-babel-confirm-fix (regexp-list newtext)
   "Prompt user to replace matches in REGEXP-LIST with NEWTEXT."
