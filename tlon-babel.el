@@ -2266,7 +2266,8 @@ for the process that is being initialized."
     (jinx--load-dicts)
     (jinx--cleanup)
     (goto-char (point-min))
-    (save-buffer)))
+    (save-buffer)
+    (ps/switch-to-alternate-buffer)))
 
 ;;;;; TTS
 
