@@ -2218,10 +2218,12 @@ for the process that is being initialized."
 	(tlon-babel-mark-todo-done)
 	(message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 		 next-label next-assignee)
-	(when (string= current-action "Review")
+	(when (or (string= current-action "Review")
+		  (string= current-action "Check"))
 	  (tlon-babel-mark-todo-done)
-	  (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs)
-	  (tlon-babel-mark-todo-done (tlon-babel-get-parent-todo)))))))
+	  (tlon-babel-mark-todo-done (tlon-babel-get-parent-todo)))
+	(when (string= current-action "Review")
+	  (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))))
 
 (defun tlon-babel-initialize-processing ()
   "Initialize processing."
