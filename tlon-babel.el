@@ -919,6 +919,28 @@ least one level 3 heading and no level 2 headings.
 			    "\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
 			  "\\1 %\\2"))
 
+(defun tlon-babel-confirm-fix-solo ()
+  "Prompt the user to replace `sólo' with `solo'."
+  (interactive)
+  (tlon-babel-confirm-fix '("sólo")
+			  "solo"))
+
+(defun tlon-babel-confirm-fix-podcast ()
+  "Prompt the user to replace `podcast' with `pódcast'.
+Enchant/Aspell do not make the correct suggestion, so it's easier to use a
+dedicated function."
+  (interactive)
+  (tlon-babel-confirm-fix '("podcast")
+			  "pódcast"))
+
+(defun tlon-babel-confirm-fix-all ()
+  "Run all the `tlon-babel-confirm-fix' commands."
+  (interactive)
+  (tlon-babel-confirm-fix-em-dashes)
+  (tlon-babel-confirm-fix-percent-signs)
+  (tlon-babel-confirm-fix-solo)
+  (tlon-babel-confirm-fix-podcast))
+
 ;;;;;; Insertion commands
 
 (defun tlon-babel-markdown-insert-element ()
