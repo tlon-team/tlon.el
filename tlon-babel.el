@@ -2996,7 +2996,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     """Search"
     ("s s" "multi"                        tlon-babel-search-multi)
     ("s c" "commits"                      tlon-babel-search-commits)
-    ("s d" "commits"                      tlon-babel-search-commit-diffs)
+    ("s d" "commit-diffs"                  tlon-babel-search-commit-diffs)
     ("s f" "files"                        tlon-babel-search-files)
     ("s i" "topics"                       tlon-babel-search-topics)
     ("s t" "translation"                  tlon-babel-search-for-translation)
