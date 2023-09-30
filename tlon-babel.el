@@ -615,6 +615,26 @@ link, else get their values from the heading title, if possible."
   (tlon-babel-visit-issue issue-number repo)
   (tlon-babel-forge-close-topic))
 
+;;;;;; Set heading elements
+
+(defun tlon-babel-set-repo-in-heading ()
+  "Set the repo in the heading at point if not already present."
+  (when (and (org-at-heading-p)
+	     (not (tlon-babel-get-repo-from-heading)))
+    (let* ((repo-name (completing-read "Select repo: " (tlon-babel-get-property-in-repos :name)))
+	   (abbrev-repo (tlon-babel-repo-lookup :abbrev :name repo-name)))
+      (tlon-org-goto-beginning-of-heading-text)
+      (insert (format "[%s] " abbrev-repo)))))
+
+(defun tlon-babel-set-issue-number-in-heading (issue-number)
+  "Set ISSUE-NUMBER in heading at point if not already present."
+  (unless (tlon-babel-get-issue-number-from-heading)
+    (tlon-org-goto-beginning-of-heading-text)
+    ;; move past repo name
+    (re-search-forward "\\[.+?\\] ")
+    (insert (format "#%s " (number-to-string issue-number)))))
+
+
 ;;;;; User commits
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
