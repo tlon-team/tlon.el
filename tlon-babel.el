@@ -2092,7 +2092,7 @@ If KEY is not provided, the key in the Markdown buffer at point is used."
     (tlon-babel-create-issue (format "Job: `%s`" key) default-directory)))
 
 (defun tlon-babel-create-heading-for-job (&optional key commit)
-  "Create a heading based on KEY in `jobs.org'.
+  "Create a heading based on BibTeX KEY in `jobs.org'.
 If KEY is not provided, the key in the Markdown buffer at point is used. If
 COMMIT is non-nil, commit the change."
   (interactive)
