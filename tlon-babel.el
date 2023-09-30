@@ -207,6 +207,21 @@
     ("Published" . ""))
   "Alist of topic labels and corresponding assignees.")
 
+(defvar tlon-babel-users
+  '(("Pablo Stafforini"
+     :name "Pablo Stafforini"
+     :system "Pablo Stafforini"
+     :github "benthamite")
+    ("Federico Stafforini"
+     :name "Federico Stafforini"
+     :system "Federico Stafforini"
+     :github "fstafforini")
+    ("Leonardo Picón"
+     :name "Leonardo Picón"
+     :system "cartago"
+     :github "worldsaround"))
+  "Property list of Tlön users.")
+
 (defvar tlon-babel-github-users
   '(("fstafforini" . "Federico Stafforini")
     ("worldsaround" . "Leonardo Picón")
