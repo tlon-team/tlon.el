@@ -2223,6 +2223,8 @@ for the process that is being initialized."
     (tlon-babel-check-file
      (when (string= current-action "Process")
        'original))
+    (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-confirm-fix-all'?")
+      (user-error "Aborted"))
     (cl-multiple-value-bind
 	(original-path translation-path original-key)
 	(tlon-babel-set-paths-from-clock)
