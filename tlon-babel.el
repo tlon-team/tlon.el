@@ -468,7 +468,7 @@ If not, offer to process it as a new job."
 
 (defun tlon-babel-store-or-refile-job-todo ()
   "Refile TODO under appropriate heading, or create new master TODO if none exists."
-  (if-let ((refile-position (tlon-babel-get-todo-position (tlon-babel-make-todo-heading 'no-action))))
+  (if-let ((refile-position (tlon-babel-get-todo-position (tlon-babel-make-todo-heading-from-issue 'no-action))))
       (progn
 	(tlon-babel-store-todo "tbJ")
 	;; refile under job
@@ -488,7 +488,7 @@ If not, offer to process it as a new job."
   "Store a new TODO using TEMPLATE.
 If TODO already exists, move point to it and do not create a duplicate. If
 NO-ACTION is non-nil, store a master TODO."
-  (let ((todo (tlon-babel-make-todo-heading no-action)))
+  (let ((todo (tlon-babel-make-todo-heading-from-issue no-action)))
     (when (tlon-babel-get-todo-position todo)
       (tlon-babel-visit-todo)
       (user-error "TODO already exists!"))
@@ -602,7 +602,7 @@ link, else get their values from the heading title, if possible."
 	     (message message))
 	 (user-error "I could not find a issue number in the current `org-mode' heading")))
       ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode)
-       (if-let ((todo (tlon-babel-make-todo-heading)))
+       (if-let ((todo (tlon-babel-make-todo-heading-from-issue)))
 	   (progn
 	     (tlon-babel-mark-todo-done todo)
 	     (tlon-babel-forge-close-topic)
@@ -1695,7 +1695,7 @@ Assumes action is first word of clocked task."
     (when (string-match "#\\([[:digit:]]+?\\) " issue-name)
       (string-to-number (match-string 1 issue-name)))))
 
-(defun tlon-babel-make-todo-heading (&optional no-action)
+(defun tlon-babel-make-todo-heading-from-issue (&optional no-action)
   "Construct the name of TODO from issue at point.
 The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
 is optional, and used only for job TODOs. For example, if the TODO is \"[bae]
@@ -2055,7 +2055,7 @@ Markdown buffer at point is used."
 	(tlon-babel-set-assignee (tlon-babel-find-key-in-alist
 				  user-full-name
 				  tlon-babel-github-users))
-	(setq todo-linkified (tlon-babel-make-todo-heading))))
+	(setq todo-linkified (tlon-babel-make-todo-heading-from-issue))))
     (org-edit-headline todo-linkified)))
 
 (defun tlon-babel-create-issue-from-key (&optional key)
@@ -2099,7 +2099,7 @@ COMMIT is non-nil, commit the change."
 If TODO is nil, user the heading at point. If FILE is nil, use
 `tlon-babel-todos-file'."
   (interactive)
-  (let ((todo (or todo (tlon-babel-make-todo-heading)))
+  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue)))
 	(file (or file tlon-babel-todos-file)))
     (if-let ((pos (org-find-exact-headline-in-buffer
 		   todo
