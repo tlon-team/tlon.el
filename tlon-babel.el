@@ -1658,7 +1658,7 @@ Assumes key is enclosed in backticks."
     (forge-visit-issue topic)))
 
 (defun tlon-babel-get-clock-action ()
-  "Return action in heading at point.
+  "Return action in clock.
 Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-babel-get-clock-key)
