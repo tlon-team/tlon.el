@@ -1076,19 +1076,22 @@ Text enclosed by an `abbr' element pair will be displayed in small caps."
 
 ;;;;;; Get metadata
 
-(defun tlon-babel-get-metadata-in-all-repos ()
-  "Return metadata of all repos."
-  (let ((metadata '()))
-    (dolist (dir (mapcar 'cdr tlon-babel-project-names-and-dirs))
-      (setq metadata (append (tlon-babel-get-repo-metadata dir) metadata)))
-    metadata))
-
-(defun tlon-babel-get-repo-metadata (&optional repo)
+(defun tlon-babel-get-metadata-in-repo (&optional repo)
   "Return metadata of REPO.
 If REPO is nil, return metadata of current repository."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (dir (file-name-concat repo "translations")))
-    (tlon-babel-get-dir-metadata dir)))
+  (let* ((repo (or repo (tlon-babel-get-repo))))
+    (if-let ((dir (tlon-babel-get-property-in-repo :dir-translations repo)))
+	(tlon-babel-get-dir-metadata dir)
+      (if-let ((name (tlon-babel-get-property-in-repo :name repo)))
+	  (user-error "The repository `%s' is not a `core' repository" name)
+	(user-error "The directory `%s' is not a recognized repository" dir)))))
+
+(defun tlon-babel-get-metadata-in-repos ()
+  "Return metadata of all repos."
+  (let ((metadata '()))
+    (dolist (dir (tlon-babel-get-property-in-repos :dir-translations))
+      (setq metadata (append (tlon-babel-get-dir-metadata dir) metadata)))
+    metadata))
 
 (defun tlon-babel-get-dir-metadata (dir)
   "Return the metadata in DIR and all its subdirectories as an association list."
@@ -1313,7 +1316,7 @@ the repo's locator. For example, to search only in `translations/autores', use
   (tlon-babel-elisp-list-to-yaml
    (completing-read-multiple
     "Traductores: "
-    (tlon-babel-metadata-get-all-field-values "traductores" (tlon-babel-get-metadata-in-all-repos)))))
+    (tlon-babel-metadata-get-all-field-values "traductores" (tlon-babel-get-metadata-in-repos)))))
 
 (defun tlon-babel-yaml-set-tags ()
   "Set the value of `temas' YAML field."
@@ -1451,7 +1454,7 @@ If point is on a list, pre-populate the selection with the list elements."
 Note that this searches in all repos, not just BAE."
   (tlon-babel-metadata-get-all-field-values
    "titulo"
-   (tlon-babel-get-metadata-in-all-repos)))
+   (tlon-babel-get-metadata-in-repos)))
 
 ;;;;;; Counterparts
 
@@ -1779,7 +1782,7 @@ open DeepL."
 (defun tlon-babel-set-paths-from-clock ()
   "Return paths for original and translation files based on clocked task."
   (let* ((key (tlon-babel-get-clock-key))
-	 (metadata (tlon-babel-get-metadata-in-all-repos))
+	 (metadata (tlon-babel-get-metadata-in-repos))
 	 (repo (tlon-babel-get-repo-from-key key))
 	 (identifier (tlon-babel-metadata-lookup "path_original" "key_original" key metadata))
 	 (original-path (file-name-concat repo "originals" identifier))
