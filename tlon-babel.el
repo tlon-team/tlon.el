@@ -255,46 +255,46 @@
 
 ;;;;; Cleanup
 
-(defvar tlon-babel-markdown-eawiki-footnote-source
+(defconst tlon-babel-markdown-eawiki-footnote-source
   "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
   "Regexp to match footnotes in the main body.")
 
-(defvar tlon-babel-markdown-eawiki-footnote-source2
+(defconst tlon-babel-markdown-eawiki-footnote-source2
   "\\[\\^\\[\\\\\\[\\([[:digit:]]\\)\\\\\\]\\](#.+?)\\^\\]{#\\\\\\\\\\\\\".+?\\\\\\\\\\\\\" .\\\\\\\\\\\\\\\"footnote-reference\\\\\\\\\\\\\" role=\"\\\\\\\\\\\\\"doc-noteref\\\\\\\\\\\\\"\"}"
   "Regexp to match footnotes in the main body.")
 
-(defvar tlon-babel-markdown-eawiki-footnote-target
+(defconst tlon-babel-markdown-eawiki-footnote-target
   "\\([[:digit:]]\\{1,3\\}\\). +?\\[\\[^\\*\\*\\[\\\\^\\](#[[:alnum:]]\\{12,18\\})\\*\\*^\\]\\]{#[[:alnum:]]\\{10,15\\}}
 
   footnote-content.*?"
   "Regexp to match footnotes in the footnote section.")
 
-(defvar tlon-markdown-eawiki-links
+(defconst tlon-markdown-eawiki-links
   "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
   "Regexp to match links.")
 
 ;;;;; YAML
 
-(defvar tlon-babel-yaml-delimiter "---"
+(defconst tlon-babel-yaml-delimiter "---"
   "Delimiter for YAML front matter.")
 
 ;;;;; Validation
 
-(defvar tlon-babel-eaf-p
+(defconst tlon-babel-eaf-p
   "forum\\.effectivealtruism\\.org/"
   "Regular expression for validating EAF URLs.")
 
-(defvar tlon-babel-eaf-post-id-regexp
+(defconst tlon-babel-eaf-post-id-regexp
   "\\([[:alnum:]]\\{17\\}\\)"
   "Regular expression for validating post IDs.")
 
-(defvar tlon-babel-eaf-tag-slug-regexp
+(defconst tlon-babel-eaf-tag-slug-regexp
   "\\([[:alnum:]-]*\\)"
   "Regular expression for validating tag slugs.")
 
 ;;;;; Clocked heading
 
-(defvar tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
+(defconst tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
   "Regular expression for matching bibtex keys in clocked headings.
 The second capture group handles the `.md' extension, which we used previously.")
 
