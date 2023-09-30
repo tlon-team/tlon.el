@@ -418,11 +418,11 @@ If FILE is nil, use the current buffer's file name."
   (string-match-p "[[:digit:]] Job: " issue-name))
 
 (defun tlon-babel-create-todo-from-issue ()
-  "Capture a new `org-mode' task for issue at point.
+  "Create a new `org-mode' heading based on the current GitHub issue.
 This command triggers one of two `org-capture' capture templates, depending on
-whether the issue is or is not a job. If it is a job, it will process it as a
-new job if it has neither a label nor an assignee, else it will refile it under
-the appropriate heading."
+whether the issue is or is not a job. If it is a job, it will process it as new
+job if it has neither a label nor an assignee, else it will refile it under the
+appropriate heading."
   (interactive)
   (if (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
       (progn
