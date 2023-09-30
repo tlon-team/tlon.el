@@ -62,77 +62,35 @@
     (_ (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")))
   "Directory where the Tlön repos are stored.")
 
-;; TODO: consolidate the vars below into a single var with multiple properties
-(defvar tlon-babel-project-names-and-abbrevs
-  '(("biblioteca-altruismo-eficaz" . "bae")
-    ("ensayos-sobre-largoplacismo" . "largoplacismo")
-    ("utilitarismo.net" . "utilitarismo"))
-  "List of Babel project names and associated abbreviations.")
-
-(defvar tlon-babel-project-names
-  (mapcar #'car tlon-babel-project-names-and-abbrevs)
-  "List of Babel project names.")
-
-(defvar tlon-babel-project-abbrevs
-  (mapcar #'cdr tlon-babel-project-names-and-abbrevs)
-  "List of Babel project names.")
-
-(defvar tlon-babel-project-names-and-dirs
-  (mapcar (lambda (project)
-	    (cons project (file-name-as-directory (file-name-concat tlon-babel-dir-repos project))))
-	  tlon-babel-project-names)
-  "Association list of Babel projects and their file paths.")
-
-(defvar tlon-babel-repo-names-and-abbrevs
-  (append  tlon-babel-project-names-and-abbrevs `(("genus" . "genus")))
-  "Association list of all repos and their file paths.")
-
-(defvar tlon-babel-repo-names
-  (mapcar #'car tlon-babel-repo-names-and-abbrevs)
-  "List of Babel repo names.")
-
-(defvar tlon-babel-repo-abbrevs
-  (mapcar #'cdr tlon-babel-repo-names-and-abbrevs)
-  "List of Babel repo abbrevs.")
-
-(defvar tlon-babel-repo-names-and-dirs
-  (mapcar (lambda (repo)
-	    (cons repo (file-name-as-directory (file-name-concat tlon-babel-dir-repos repo))))
-	  tlon-babel-repo-names)
-  "Association list of Babel repos and their file paths.")
-
-(defun tlon-babel-generate-project-dir-vars ()
-  "Generate variables for storing relevant paths in each project repo.
-The stored paths, for each repo, are the path to the repo itself, the path to
-the `originals' subdirectory, and the path to the `translations' subdirectory.
-
-The names of the variables are formed by the prefix `tlon-babel-dir-', the
-repo's canonical abbreviation (as defined in
-`tlon-babel-project-names-and-abbrevs') and either no suffix, the suffix
-`-originals', or the suffix `-translations', respectively. For example, the name
-of the variable that stores the path of the `originals' subdirectory of the
-`bae' repo is named `tlon-babel-dir-bae-originals'."
-  (dolist (project tlon-babel-project-names)
-    (let* ((abbrev (alist-get project tlon-babel-project-names-and-abbrevs nil nil 'string=))
-	   (dir (alist-get project tlon-babel-project-names-and-dirs nil nil 'string=)))
-      (dolist (suffix '("" "originals" "translations"))
-	(let* ((separator (if (string= suffix "") "" "-"))
-	       (var-name (concat "tlon-babel-dir-" abbrev separator suffix))
-	       (var-value (file-name-as-directory (file-name-concat dir suffix))))
-	  (set (intern var-name) var-value))))))
-
-(tlon-babel-generate-project-dir-vars)
-
-(defvar tlon-babel-dir-genus
-  (file-name-concat tlon-babel-dir-repos "genus/")
-  "Directory where the genus repo is stored.")
+(defvar tlon-babel-repos
+  `((bae
+     :name "biblioteca-altruismo-eficaz"
+     :abbrev "bae"
+     :type core)
+    (utilitarismo
+     :name "utilitarismo.net"
+     :abbrev "utilitarismo"
+     :type core)
+    (largoplacismo
+     :name "ensayos-sobre-largoplacismo"
+     :abbrev "largoplacismo"
+     :type core)
+    (genus
+     :name "genus"
+     :abbrev "genus"
+     :type aux)
+    ;; (sandbox
+    ;; :name "sandbox"
+    ;; :abbrev "sandbox"
+    ;; :type aux)
+    ))
 
 (defvar tlon-babel-dir-refs
-  (file-name-concat tlon-babel-dir-genus "refs/")
+  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "refs/")
   "Directory where BibTeX files are stored.")
 
 (defvar tlon-babel-dir-dict
-  (file-name-concat tlon-babel-dir-genus "dict/")
+  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "dict/")
   "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-dir-locales
@@ -144,19 +102,19 @@ of the variable that stores the path of the `originals' subdirectory of the
   "Directory where CSL style files are stored.")
 
 (defvar tlon-babel-file-manual
-  (file-name-concat tlon-babel-dir-genus "manual.org")
+  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "manual.org")
   "File containing the manual.")
 
 (defvar tlon-babel-file-readme
-  (file-name-concat tlon-babel-dir-genus "readme.md")
+  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "readme.md")
   "File containing the readme.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat tlon-babel-dir-genus "jobs.org")
+  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "jobs.org")
   "File containing the glossary.")
 
 (defvar tlon-babel-file-contacts
-  (file-name-concat tlon-babel-dir-genus "contacts.json")
+  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "contacts.json")
   "File containing the contacts.")
 
 (defvar tlon-babel-file-glossary
@@ -204,6 +162,29 @@ of the variable that stores the path of the `originals' subdirectory of the
   :group 'tlon-babel)
 
 ;;;;; Forge
+
+(defvar tlon-babel-labels
+  '(("Awaiting processing"
+     :label "Awaiting processing"
+     :action "Process"
+     :assignee "worldsaround")
+    ("Awaiting translation"
+     :label "Awaiting translation"
+     :action "Translate"
+     :assignee "benthamite")
+    ("Awaiting revision"
+     :label "Awaiting revision"
+     :action "Revise"
+     :assignee "worldsaround")
+    ("Awaiting check"
+     :label "Awaiting check"
+     :action "Check"
+     :assignee "worldsaround")
+    ("Awaiting review"
+     :label "Awaiting review"
+     :action "Review"
+     :assignee "benthamite"))
+  "Property list of labels and associated actions and assignees.")
 
 (defvar tlon-babel-label-actions
   '(("Awaiting processing" . "Process")
@@ -336,26 +317,66 @@ The second capture group handles the `.md' extension, which we used previously."
 
 ;;;; Functions
 
-;;;;; Version
+;;;;; Core
 
 (defun tlon-babel-version ()
   "Return the version of the `tlon-babel' package."
   (interactive)
   (message "`tlon-babel' version %s" tlon-babel-version))
 
-;;;;;
+(defun tlon-bae-set-dirs (repo)
+  "Set the directory properties in REPO in `tlon-babel-repos'.
+These properties are `:dir', `:dir-originals' and `:dir-translations'."
+  (let* ((dir (file-name-as-directory
+	       (file-name-concat tlon-babel-dir-repos
+				 (plist-get (cdr repo) :name))))
+	 (dir-originals (file-name-as-directory (file-name-concat dir "originals")))
+	 (dir-translations (file-name-as-directory (file-name-concat dir "translations"))))
+    (plist-put (cdr repo) :dir dir)
+    (dolist (property `((:dir-originals ,dir-originals)
+			(:dir-translations ,dir-translations)))
+      (when (eq (plist-get (cdr repo) :type) 'core)
+	(plist-put (cdr repo) (car property) (cadr property))))))
+
+(defun tlon-babel-repo-lookup (property1 property2 value2)
+  "Search `tlon-babel-repos' for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
+  (cl-loop for repo in tlon-babel-repos
+	   if (equal (plist-get (cdr repo) property2) value2)
+	   return (plist-get (cdr repo) property1)))
+
+(mapcar #'tlon-bae-set-dirs tlon-babel-repos)
+
+(defun tlon-babel-get-property-in-repo (property repo)
+  "Get the value of property PROPERTY in REPO."
+  (plist-get
+   (alist-get repo tlon-babel-repos)
+   property))
+
+(defun tlon-babel-get-property-in-repos (property1 &optional property2 value2)
+  "Get a list of all values for property PROPERTY1 in `tlon-babel-repos'.
+Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
+  (let ((result '()))
+    (dolist (repo tlon-babel-repos)
+      (let* ((plist (cdr repo))
+	     (value1 (plist-get plist property1))
+	     (value2-test (if property2 (plist-get plist property2))))
+	(when value1
+	  (if property2
+	      (when (eq value2 value2-test)
+		(setq result (append result (list value1))))
+	    (setq result (append result (list value1)))))))
+    result))
 
 (defun tlon-babel-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
 If FILE is nil, use the current buffer's file name."
   (let* ((file (or file (tlon-babel-buffer-file-name) default-directory))
 	 (directory-path (file-name-directory file)))
-    (cl-some (lambda (cons-cell)
-	       (let ((tlon-babel-repo-names-and-dirs (cdr cons-cell)))
-		 (when (string-prefix-p (file-name-as-directory tlon-babel-repo-names-and-dirs)
-					directory-path)
-		   tlon-babel-repo-names-and-dirs)))
-	     tlon-babel-repo-names-and-dirs)))
+    (catch 'found
+      (dolist (dir (tlon-babel-get-property-in-repos :dir))
+	(when (string-prefix-p (file-name-as-directory dir)
+			       directory-path)
+	  (throw 'found dir))))))
 
 (defun tlon-babel-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
@@ -370,21 +391,12 @@ If FILE is nil, use the current buffer's file name."
   "Return the repo corresponding to original KEY."
   (if-let ((file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-metadata-in-all-repos))))
       (if-let ((repo (catch 'found
-		       (dolist (repo tlon-babel-repo-names-and-dirs)
-			 (let ((repo-dir (cdr repo)))
-			   (when (string-prefix-p (file-name-as-directory repo-dir) file)
-			     (throw 'found repo-dir)))))))
+		       (dolist (dir (tlon-babel-get-property-in-repos :dir))
+			 (when (string-prefix-p (file-name-as-directory dir) file)
+			   (throw 'found dir))))))
 	  repo
 	(user-error "No repo found for key %s" key))
     (user-error "Metadata lookup for key `%s' returned nil" key)))
-
-(defun tlon-babel-get-name-from-repo (repo)
-  "Return the name of the repo REPO."
-  (tlon-babel-alist-key repo tlon-babel-repo-names-and-dirs))
-
-(defun tlon-babel-get-repo-from-name (repo-name)
-  "Return the path of the repo named REPO-NAME."
-  (alist-get repo-name tlon-babel-repo-names-and-dirs nil nil 'string=))
 
 (defun tlon-babel-get-file-from-key (key)
   "Return the file path of KEY."
@@ -400,12 +412,6 @@ If FILE is nil, use the current buffer's file name."
    ;; when file in `originals'
    (let ((translation (tlon-babel-get-counterpart file)))
      (tlon-babel-metadata-get-field-value-in-file "key_original" translation))))
-
-(defun tlon-babel-get-abbreviated-name-from-repo (&optional repo)
-  "Return the abbreviated name of the repo REPO."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (repo-name (tlon-babel-get-name-from-repo repo)))
-    (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=)))
 
 (defun tlon-babel-issue-is-job-p (issue-name)
   "Return t if ISSUE-NAME is a job."
@@ -549,27 +555,8 @@ link, else get their values from the heading title, if possible."
 
 (defun tlon-babel-get-repo-from-heading ()
   "Get the repo from the heading at point."
-  (let* ((abbrev-repo (tlon-babel-get-element-from-heading "^\\[\\(.*?\\)\\]"))
-	 (repo-name (tlon-babel-alist-key abbrev-repo
-					  tlon-babel-repo-names-and-abbrevs)))
-    (tlon-babel-get-repo-from-name repo-name)))
-
-(defun tlon-babel-set-repo-in-heading ()
-  "Set the repo in the heading at point if not already present."
-  (when (and (org-at-heading-p)
-	     (not (tlon-babel-get-repo-from-heading)))
-    (let* ((repo-name (completing-read "Select repo: " tlon-babel-repo-names-and-abbrevs))
-	   (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=)))
-      (tlon-org-goto-beginning-of-heading-text)
-      (insert (format "[%s] " abbrev-repo)))))
-
-(defun tlon-babel-set-issue-number-in-heading (issue-number)
-  "Set ISSUE-NUMBER in heading at point if not already present."
-  (unless (tlon-babel-get-issue-number-from-heading)
-    (tlon-org-goto-beginning-of-heading-text)
-    ;; move past repo name
-    (re-search-forward "\\[.+?\\] ")
-    (insert (format "#%s " (number-to-string issue-number)))))
+  (let* ((abbrev-repo (tlon-babel-get-element-from-heading "^\\[\\(.*?\\)\\]")))
+    (tlon-babel-repo-lookup :dir :abbrev abbrev-repo)))
 
 (defun tlon-babel-get-issue-number-from-open-issues ()
   "Prompt user to select from a list of open issues and return number of selection."
@@ -1720,8 +1707,7 @@ If NO-ACTION is non-nil, omit, the ACTION element."
 			  (not no-action))
 		     (alist-get (tlon-babel-forge-get-label-at-point) tlon-babel-label-actions nil nil #'string=)
 		   ""))
-	 (repo (tlon-babel-get-repo 'error 'genus))
-	 (repo-abbrev (tlon-babel-get-abbreviated-name-from-repo repo))
+	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'aux)))
 	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
 					      " "
 					      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link)))))
@@ -2054,8 +2040,7 @@ Markdown buffer at point is used."
     (save-excursion
       (let* ((default-directory (tlon-babel-get-repo-from-heading))
 	     (heading (substring-no-properties (org-get-heading t t t t)))
-	     (repo-name (tlon-babel-get-name-from-repo default-directory))
-	     (abbrev-repo (alist-get repo-name tlon-babel-repo-names-and-abbrevs nil nil 'string=))
+	     (abbrev-repo (tlon-babel-repo-lookup :abbrev :dir default-directory))
 	     (issue-title (substring heading (+ (length abbrev-repo) 3)))
 	     (latest-issue-pre (car (tlon-babel-get-latest-issue)))
 	     (latest-issue-post latest-issue-pre))
@@ -2089,8 +2074,7 @@ COMMIT is non-nil, commit the change."
 	 (heading (format "[cite:@%s]" key))
 	 (file (tlon-babel-metadata-lookup "key_original" key "file" (tlon-babel-get-repo-metadata)))
 	 (repo (tlon-babel-get-repo-from-file file))
-	 (repo-name (tlon-babel-alist-key repo tlon-babel-project-names-and-dirs))
-	 (repo-abbrev (alist-get repo-name tlon-babel-project-names-and-abbrevs nil nil 'string=)))
+	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir repo)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
 			     (find-file-noselect tlon-babel-file-jobs))
       (widen)
@@ -2862,7 +2846,7 @@ TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
 \='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
 conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
-  (let ((default-directory tlon-babel-dir-genus)
+  (let ((default-directory (tlon-babel-get-property-in-repo :dir 'genus))
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
@@ -3061,7 +3045,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   (interactive)
   (if-let (file (buffer-file-name))
       (if-let ((repo (tlon-babel-get-repo-from-file file)))
-	  (let* ((repo-name (tlon-babel-get-name-from-repo repo))
+	  (let* ((repo-name (tlon-babel-repo-lookup :name :dir repo))
 		 (repo-url (concat "https://github.com/tlon-team/" repo-name))
 		 (file-url (concat "/blob/main/" (file-relative-name (buffer-file-name) repo))))
 	    (browse-url (concat repo-url file-url)))
@@ -3069,10 +3053,11 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     (user-error "Buffer is not visiting a file")))
 
 (defun tlon-babel-browse-repo ()
-  "Browse the Tlon-Babel repository."
+  "Browse a Babel repository.
+If the current buffer is visiting a file in a Babel repository, browse that;
+otherwise prompt for a repo."
   (interactive)
-  (let* ((repo (tlon-babel-get-repo))
-	 (repo-name (tlon-babel-get-name-from-repo repo)))
+  (let* ((repo-name (tlon-babel-repo-lookup :name :dir (tlon-babel-get-repo))))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
 
 (defun tlon-babel-open-repo ()
@@ -3098,7 +3083,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-open-genus-repo ()
   "Open the Genus repository."
   (interactive)
-  (dired tlon-babel-dir-genus))
+  (dired (tlon-babel-get-property-in-repo :dir 'genus)))
 
 ;;;;; Request
 
