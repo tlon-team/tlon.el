@@ -775,10 +775,10 @@ If FILE is not provided, use the file visited by the current buffer."
     (while (re-search-forward "\\(\\[\\^[[:digit:]]\\{1,3\\}\\]:\\)" nil t)
       (replace-match "\n\n\\1"))))
 
-(defun tlon-babel-consolidate-all-footnotes (DIR)
+(defun tlon-babel-consolidate-all-footnotes (dir)
   "Consolidate all footnotes in DIR."
   (interactive "D")
-  (dolist (file (directory-files DIR nil "\\.md$"))
+  (dolist (file (directory-files dir nil "\\.md$"))
     (with-current-buffer (find-file-noselect file)
       (message "Consolidating footnotes in %s" (buffer-name))
       (tlon-babel-consolidate-footnotes)
