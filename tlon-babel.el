@@ -2053,7 +2053,7 @@ Markdown buffer at point is used."
       (cl-call-next-method))))
 
 (defun tlon-babel-create-issue-from-todo ()
-  "Create a new issue based on the current org heading."
+  "Create a new GitHub issue based on the current `org-mode' heading."
   (interactive)
   (require 'tlon-core)
   (unless (derived-mode-p 'org-mode)
