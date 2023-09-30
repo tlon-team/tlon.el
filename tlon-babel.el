@@ -549,7 +549,7 @@ link, else get their values from the heading title, if possible."
 	(match-string 1 heading)))))
 
 (defun tlon-babel-get-issue-number-from-heading ()
-  "Get the issue number from the heading at point."
+  "Get the GitHub issue number from the `org-mode' heading at point."
   (when-let ((issue-number (tlon-babel-get-element-from-heading "#\\([[:digit:]]\\{1,4\\}\\)")))
     (string-to-number issue-number)))
 
