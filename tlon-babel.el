@@ -1150,7 +1150,7 @@ If FILE is nil, use the file visited by the current buffer."
     (alist-get field metadata nil nil #'string=)))
 
 (defun tlon-babel-get-key-in-buffer ()
-  "Get the key in the current Markdown buffer."
+  "Get the BibTeX key in the current Markdown buffer."
   (tlon-babel-check-in-markdown-mode)
   (let ((key (tlon-babel-metadata-get-field-value-in-file "key_original")))
     (unless key
