@@ -1810,28 +1810,29 @@ open DeepL."
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher.
 If the current directory matches none of the directories in
-`tlon-babel-project-names', prompt the user to select a repo from that list."
+`tlon-babel-repos', prompt the user to select a repo from that list."
   (interactive)
   (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (call-interactively 'forge-dispatch)))
 
-(defun tlon-babel-get-repo (&optional no-prompt genus)
+(defun tlon-babel-get-repo (&optional no-prompt aux)
   "Get Babel repository path.
-If the current directory matches any of the directories in
-`tlon-babel-project-names', return it. Else, prompt the user to select a repo
-from that list, unless NO-PROMPT is non-nil. In that case, signal an error if
-its value is `error', else return nil. If GENUS is non-nil, include the `genus'
-repo. In that case, the matching will be made against `tlon-babel-repo-names'."
+If the current directory matches any of the directories in `tlon-babel-repos',
+return it. Else, prompt the user to select a repo from that list, unless
+NO-PROMPT is non-nil. In that case, signal an error if its value is `error',
+else return nil. If AUX is non-nil, include auxiliary repos. In that case,
+matching will be made against repos with both the `core' and `aux' value for the
+property `:type'."
   (if-let ((current-repo (tlon-babel-get-repo-from-file)))
       current-repo
     (if no-prompt
 	(when (eq no-prompt 'error)
 	  (user-error "Not in a recognized Babel repo"))
-      (alist-get (completing-read "Select repo: "
-				  (if genus
-				      tlon-babel-repo-names
-				    tlon-babel-project-names))
-		 tlon-babel-repo-names-and-dirs nil nil 'string=))))
+      (let* ((core-repos (tlon-babel-get-property-in-repos :name :type 'core))
+	     (repos (if aux
+			(append core-repos (tlon-babel-get-property-in-repos :name :type 'aux))
+		      core-repos)))
+	(tlon-babel-repo-lookup :dir :name (completing-read "Select repo: " repos))))))
 
 (defun tlon-babel-magit-get-commit-file ()
   "Get file to commit.
