@@ -849,6 +849,8 @@ If DELETE is non-nil, delete the footnote."
       (goto-char beg)
       (replace-regexp-in-region " - " "\n- " beg end))))
 
+;;;;;;; autofix
+
 (defun tlon-babel-autofix (regexp-list newtext)
   "Replace matches in REGEXP-LIST with NEWTEXT."
   (widen)
@@ -859,22 +861,24 @@ If DELETE is non-nil, delete the footnote."
 	(replace-match newtext)))))
 
 (defun tlon-babel-autofix-curly-quotes ()
-  "Replace straight quotes with curly qutoes when appropriate."
-  (interactive)
+  "Replace straight quotes with curly quotes when appropriate."
   (tlon-babel-autofix '("\"\\[")
 		      "“["))
 
 (defun tlon-babel-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
-  (interactive)
   (tlon-babel-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
 		      "\\1\\3\\2"))
 
 (defun tlon-babel-autofix-ee-uu ()
   "Add thin space between `EE.' and `UU.' in abbreviation."
-  (interactive)
   (tlon-babel-autofix '("EE.UU." "EE. UU.")
 		      "EE. UU."))
+
+(defun tlon-babel-autofix-periods-in-headings ()
+  "Remove periods at the end of headings."
+  (tlon-babel-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
+		      "\\1"))
 
 ;; TODO: reconsider criterion; it fails when it contains a single level one title heading
 (defun tlon-babel-autofix-heading-hierarcy (&optional file)
@@ -894,6 +898,15 @@ least one level 3 heading and no level 2 headings.
 	  (goto-char (point-min))
 	  (unless (re-search-forward "^## " nil t)
 	    (substitute-target-in-buffer "^###" "##")))))))
+
+(defun tlon-babel-autofix-all ()
+  "Run all the `tlon-babel-autofix' commands."
+  (interactive)
+  (tlon-babel-autofix-curly-quotes)
+  (tlon-babel-autofix-footnote-punctuation)
+  (tlon-babel-autofix-ee-uu)
+  (tlon-babel-autofix-periods-in-headings)
+  (tlon-babel-autofix-heading-hierarcy))
 
 (defun tlon-babel-confirm-fix (regexp-list newtext)
   "Prompt user to replace matches in REGEXP-LIST with NEWTEXT."
