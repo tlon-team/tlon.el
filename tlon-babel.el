@@ -667,12 +667,12 @@ If FILE is not provided, use the file visited by the current buffer."
 
 ;;;;; Markdown
 
-;;;;;; Cleanup
-
 (defun tlon-babel-check-in-markdown-mode ()
   "Check if the current buffer is in a Markdown-derived mode."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))
+
+;;;;;; Cleanup
 
 (defun tlon-babel-markdown-eaf-cleanup ()
   "Cleanup the buffer visiting an EAF entry."
@@ -914,6 +914,8 @@ least one level 3 heading and no level 2 headings.
   (tlon-babel-autofix-ee-uu)
   (tlon-babel-autofix-periods-in-headings)
   (tlon-babel-autofix-heading-hierarcy))
+
+;;;;;;; confirm-fix
 
 (defun tlon-babel-confirm-fix (regexp-list newtext)
   "Prompt user to replace matches in REGEXP-LIST with NEWTEXT."
