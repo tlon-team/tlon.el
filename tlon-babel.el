@@ -2022,15 +2022,15 @@ Markdown buffer at point is used."
 	 (body (or body ""))
 	 (default-directory repo)
 	 (repo (forge-get-repository t))
-         (owner (oref repo owner))
-         (reponame (oref repo name))
-         (resource (format "/repos/%s/%s/issues" owner reponame))
-         (data `(("title" . ,title)
-                 ("body" . ,body))))
+	 (owner (oref repo owner))
+	 (reponame (oref repo name))
+	 (resource (format "/repos/%s/%s/issues" owner reponame))
+	 (data `(("title" . ,title)
+		 ("body" . ,body))))
     (ghub-post resource data
 	       :auth 'forge
-               :noerror t ;; avoid showing the original large output
-               :reader 'ignore) ;; do not parse the response json
+	       :noerror t ;; avoid showing the original large output
+	       :reader 'ignore) ;; do not parse the response json
     (message "Created issue with title %s" title)))
 
 ;; I wasn't able to make this work; perhaps try again in the future
@@ -2040,7 +2040,7 @@ Markdown buffer at point is used."
 (defun tlon-babel-after-forge-pull ()
   ""
   (cl-defmethod forge--pull :around ((repo forge-github-repository) until
-                                     &optional callback)
+				     &optional callback)
     (if tlon-babel-apply-after-forge-pull
 	(cl-call-next-method repo until
 			     (or callback
