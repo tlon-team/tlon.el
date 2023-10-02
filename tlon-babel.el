@@ -56,6 +56,10 @@
 
 ;;;;; Files
 
+(defgroup tlon-babel ()
+  "A companion package for the Babel project."
+  :group 'files)
+
 (defvar tlon-babel-dir-repos
   (pcase user-full-name
     ("Federico Stafforini" (expand-file-name "~/source/"))
@@ -83,14 +87,86 @@
     ;; :name "sandbox"
     ;; :abbrev "sandbox"
     ;; :type aux)
-    ))
+    )
+  "List of repos and associated properties.")
 
-(defvar tlon-babel-dir-refs
-  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "refs/")
-  "Directory where BibTeX files are stored.")
+(defvar tlon-babel-labels
+  '(("Awaiting processing"
+     :label "Awaiting processing"
+     :action "Process"
+     :assignee "worldsaround")
+    ("Awaiting translation"
+     :label "Awaiting translation"
+     :action "Translate"
+     :assignee "benthamite")
+    ("Awaiting revision"
+     :label "Awaiting revision"
+     :action "Revise"
+     :assignee "worldsaround")
+    ("Awaiting check"
+     :label "Awaiting check"
+     :action "Check"
+     :assignee "worldsaround")
+    ("Awaiting review"
+     :label "Awaiting review"
+     :action "Review"
+     :assignee "benthamite"))
+  "List of labels and associated properties.")
+
+(defvar tlon-babel-users
+  '(("Pablo Stafforini"
+     :name "Pablo Stafforini"
+     :git "Pablo Stafforini"
+     :github "benthamite")
+    ("Federico Stafforini"
+     :name "Federico Stafforini"
+     :git "Federico Stafforini"
+     :github "fstafforini")
+    ("Leonardo Picón"
+     :name "Leonardo Picón"
+     :git "cartago"
+     :github "worldsaround"))
+  "Property list of users and associated properties.")
+
+(defun tlon-bae-set-dirs (repo)
+  "Set the directory properties in REPO in `tlon-babel-repos'.
+These properties are `:dir', `:dir-originals' and `:dir-translations'."
+  (let* ((dir (file-name-as-directory
+	       (file-name-concat tlon-babel-dir-repos
+				 (plist-get (cdr repo) :name))))
+	 (dir-originals (file-name-as-directory (file-name-concat dir "originals")))
+	 (dir-translations (file-name-as-directory (file-name-concat dir "translations"))))
+    (plist-put (cdr repo) :dir dir)
+    (dolist (property `((:dir-originals ,dir-originals)
+			(:dir-translations ,dir-translations)))
+      (when (eq (plist-get (cdr repo) :type) 'core)
+	(plist-put (cdr repo) (car property) (cadr property))))))
+
+(mapcar #'tlon-bae-set-dirs tlon-babel-repos)
+
+(defun tlon-babel-get-property-of-alist (property plist alist)
+  "Get the value of property PROPERTY of PLIST in ALIST."
+  (plist-get
+   (alist-get plist alist nil nil #'string=)
+   property))
+
+(defun tlon-babel-get-property-of-repo (property repo)
+  "Get the value of property PROPERTY in REPO."
+  (tlon-babel-get-property-of-alist property repo tlon-babel-repos))
+
+(defun tlon-babel-get-property-of-user (property user)
+  "Get the value of property PROPERTY in USER."
+  (tlon-babel-get-property-of-alist property user tlon-babel-users))
+
+(defun tlon-babel-get-property-of-label (property user)
+  "Get the value of property PROPERTY in USER."
+  (tlon-babel-get-property-of-alist property user tlon-babel-users))
+
+(setq tlon-babel-dir-refs
+      (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "refs/"))
 
 (defvar tlon-babel-dir-dict
-  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "dict/")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "dict/")
   "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-dir-locales
@@ -143,10 +219,6 @@
   "820BEDE2-F982-466F-A391-100235D4C596"
   "ID of the `jobs' heading in `jobs.org'.")
 
-(defgroup tlon-babel ()
-  "A companion package for the Babel project."
-  :group 'files)
-
 (defcustom tlon-babel-todos-file ()
   "Org file of the user-specific heading where Babel TODOs are stored."
   :type 'string
@@ -160,79 +232,6 @@
   "Org ID of the user-specific heading where Babel TODOs are stored."
   :type '(string)
   :group 'tlon-babel)
-
-;;;;; Forge
-
-(defvar tlon-babel-labels
-  '(("Awaiting processing"
-     :label "Awaiting processing"
-     :action "Process"
-     :assignee "worldsaround")
-    ("Awaiting translation"
-     :label "Awaiting translation"
-     :action "Translate"
-     :assignee "benthamite")
-    ("Awaiting revision"
-     :label "Awaiting revision"
-     :action "Revise"
-     :assignee "worldsaround")
-    ("Awaiting check"
-     :label "Awaiting check"
-     :action "Check"
-     :assignee "worldsaround")
-    ("Awaiting review"
-     :label "Awaiting review"
-     :action "Review"
-     :assignee "benthamite"))
-  "Property list of labels and associated actions and assignees.")
-
-(defvar tlon-babel-label-actions
-  '(("Awaiting processing" . "Process")
-    ("Awaiting translation" . "Translate")
-    ("Awaiting revision" . "Revise")
-    ("Awaiting check" . "Check")
-    ("Awaiting review" . "Review")
-    ("Published" . "Publish")
-    ("Awaiting rewrite" . "Rewrite")
-    ("Glossary" . "Respond")
-    ("Misc" . "Misc"))
-  "Alist of topic labels and corresponding actions.")
-
-(defvar tlon-babel-label-assignees
-  '(("Awaiting processing" . "worldsaround")
-    ("Awaiting translation" . "benthamite")
-    ("Awaiting revision" . "worldsaround")
-    ("Awaiting check" . "worldsaround")
-    ("Awaiting review" . "benthamite")
-    ("Published" . ""))
-  "Alist of topic labels and corresponding assignees.")
-
-(defvar tlon-babel-users
-  '(("Pablo Stafforini"
-     :name "Pablo Stafforini"
-     :system "Pablo Stafforini"
-     :github "benthamite")
-    ("Federico Stafforini"
-     :name "Federico Stafforini"
-     :system "Federico Stafforini"
-     :github "fstafforini")
-    ("Leonardo Picón"
-     :name "Leonardo Picón"
-     :system "cartago"
-     :github "worldsaround"))
-  "Property list of Tlön users.")
-
-(defvar tlon-babel-github-users
-  '(("fstafforini" . "Federico Stafforini")
-    ("worldsaround" . "Leonardo Picón")
-    ("benthamite" . "Pablo Stafforini"))
-  "Alist of GitHub usernames and corresponding full names.")
-
-(defvar tlon-babel-system-users
-  '(("Federico Stafforini" . "Federico Stafforini")
-    ("cartago" . "Leonardo Picón")
-    ("Pablo Stafforini" . "Pablo Stafforini"))
-  "Alist of system usernames and corresponding full names.")
 
 ;;;;; html import
 
