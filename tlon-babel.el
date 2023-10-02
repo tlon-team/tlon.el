@@ -178,15 +178,15 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   "Directory where CSL style files are stored.")
 
 (defvar tlon-babel-file-manual
-  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "manual.org")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "manual.org")
   "File containing the manual.")
 
 (defvar tlon-babel-file-readme
-  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "readme.md")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "readme.md")
   "File containing the readme.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat (tlon-babel-get-property-in-repo :dir 'genus) "jobs.org")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "jobs.org")
   "File containing the glossary.")
 
 (defvar tlon-babel-file-glossary
@@ -334,48 +334,52 @@ The second capture group handles the `.md' extension, which we used previously."
   (interactive)
   (message "`tlon-babel' version %s" tlon-babel-version))
 
-(defun tlon-bae-set-dirs (repo)
-  "Set the directory properties in REPO in `tlon-babel-repos'.
-These properties are `:dir', `:dir-originals' and `:dir-translations'."
-  (let* ((dir (file-name-as-directory
-	       (file-name-concat tlon-babel-dir-repos
-				 (plist-get (cdr repo) :name))))
-	 (dir-originals (file-name-as-directory (file-name-concat dir "originals")))
-	 (dir-translations (file-name-as-directory (file-name-concat dir "translations"))))
-    (plist-put (cdr repo) :dir dir)
-    (dolist (property `((:dir-originals ,dir-originals)
-			(:dir-translations ,dir-translations)))
-      (when (eq (plist-get (cdr repo) :type) 'core)
-	(plist-put (cdr repo) (car property) (cadr property))))))
+(defun tlon-babel-alist-lookup (property1 property2 value2 alist)
+  "Search ALIST for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
+  (cl-loop for plist in alist
+	   if (equal (plist-get (cdr plist) property2) value2)
+	   return (plist-get (cdr plist) property1)))
 
 (defun tlon-babel-repo-lookup (property1 property2 value2)
-  "Search `tlon-babel-repos' for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
-  (cl-loop for repo in tlon-babel-repos
-	   if (equal (plist-get (cdr repo) property2) value2)
-	   return (plist-get (cdr repo) property1)))
+  "Search repos for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
+  (tlon-babel-alist-lookup property1 property2 value2 tlon-babel-repos))
 
-(mapcar #'tlon-bae-set-dirs tlon-babel-repos)
+(defun tlon-babel-user-lookup (property1 property2 value2)
+  "Search users for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
+  (tlon-babel-alist-lookup property1 property2 value2 tlon-babel-users))
 
-(defun tlon-babel-get-property-in-repo (property repo)
-  "Get the value of property PROPERTY in REPO."
-  (plist-get
-   (alist-get repo tlon-babel-repos)
-   property))
+(defun tlon-babel-label-lookup (property1 property2 value2)
+  "Search labels for VALUE2 in PROPERTY2 and return value of PROPERTY1."
+  (tlon-babel-alist-lookup property1 property2 value2 tlon-babel-labels))
 
-(defun tlon-babel-get-property-in-repos (property1 &optional property2 value2)
-  "Get a list of all values for property PROPERTY1 in `tlon-babel-repos'.
+(defun tlon-babel-get-property-of-alists (property1 alist &optional property2 value2)
+  "Get a list of all values for property PROPERTY1 in ALIST.
 Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
   (let ((result '()))
-    (dolist (repo tlon-babel-repos)
-      (let* ((plist (cdr repo))
-	     (value1 (plist-get plist property1))
-	     (value2-test (if property2 (plist-get plist property2))))
+    (dolist (plist alist)
+      (let* ((value1 (plist-get (cdr plist) property1 #'string=))
+	     (value2-test (when property2 (plist-get (cdr plist) property2 #'string=))))
 	(when value1
 	  (if property2
-	      (when (eq value2 value2-test)
+	      (when (string= value2 value2-test)
 		(setq result (append result (list value1))))
 	    (setq result (append result (list value1)))))))
     result))
+
+(defun tlon-babel-get-property-of-repos (property1 &optional property2 value2)
+  "Get a list of all values for property PROPERTY1 in `tlon-babel-repos'.
+Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
+  (tlon-babel-get-property-of-alists property1 tlon-babel-repos property2 value2))
+
+(defun tlon-babel-get-property-of-users (property1 &optional property2 value2)
+  "Get a list of all values for property PROPERTY1 in `tlon-babel-users'.
+Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
+  (tlon-babel-get-property-of-alists property1 tlon-babel-users property2 value2))
+
+(defun tlon-babel-get-property-of-labels (property1 &optional property2 value2)
+  "Get a list of all values for property PROPERTY1 in `tlon-babel-labels'.
+Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
+  (tlon-babel-get-property-of-alists property1 tlon-babel-labels property2 value2))
 
 (defun tlon-babel-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
@@ -383,7 +387,7 @@ If FILE is nil, use the current buffer's file name."
   (let* ((file (or file (tlon-babel-buffer-file-name) default-directory))
 	 (directory-path (file-name-directory file)))
     (catch 'found
-      (dolist (dir (tlon-babel-get-property-in-repos :dir))
+      (dolist (dir (tlon-babel-get-property-of-repos :dir))
 	(when (string-prefix-p (file-name-as-directory dir)
 			       directory-path)
 	  (throw 'found dir))))))
@@ -401,7 +405,7 @@ If FILE is nil, use the current buffer's file name."
   "Return the repo corresponding to original KEY."
   (if-let ((file (tlon-babel-metadata-lookup "file" "key_original" key (tlon-babel-get-metadata-in-repos))))
       (if-let ((repo (catch 'found
-		       (dolist (dir (tlon-babel-get-property-in-repos :dir))
+		       (dolist (dir (tlon-babel-get-property-of-repos :dir))
 			 (when (string-prefix-p (file-name-as-directory dir) file)
 			   (throw 'found dir))))))
 	  repo
@@ -410,7 +414,7 @@ If FILE is nil, use the current buffer's file name."
 
 (defun tlon-babel-get-file-from-key (key)
   "Return the file path of KEY."
-  (if-let ((file (tlon-babel-metadata-lookup "file" "key_original" key (tlon-babel-get-repo-metadata))))
+  (if-let ((file (tlon-babel-metadata-lookup "file" "key_original" key (tlon-babel-get-metadata-in-repo))))
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
 
@@ -418,7 +422,7 @@ If FILE is nil, use the current buffer's file name."
   "Return the bibtex key of FILE."
   (or
    ;; when in `translations'
-   (tlon-babel-metadata-lookup "key_traduccion" "file" file (tlon-babel-get-repo-metadata))
+   (tlon-babel-metadata-lookup "key_traduccion" "file" file (tlon-babel-get-metadata-in-repo))
    ;; when file in `originals'
    (let ((translation (tlon-babel-get-counterpart file)))
      (tlon-babel-metadata-get-field-value-in-file "key_original" translation))))
@@ -463,7 +467,7 @@ If not, offer to process it as a new job."
       (if (y-or-n-p
 	   (format "The assignee of this topic is %s. Would you like to become the assignee?" assignee))
 	  (progn
-	    (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
+	    (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
 	    (sleep-for 2))
 	(user-error "Aborted")))))
 
@@ -473,7 +477,7 @@ If not, offer to process it as a new job."
     (unless label
       (if (y-or-n-p "The topic has no label. Would you like to add one?")
 	  (tlon-babel-set-label (tlon-babel-select-label))
-	(tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users))
+	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
 	(user-error "Aborted")))))
 
 (defun tlon-babel-store-or-refile-job-todo ()
@@ -631,7 +635,7 @@ link, else get their values from the heading title, if possible."
   "Set the repo in the heading at point if not already present."
   (when (and (org-at-heading-p)
 	     (not (tlon-babel-get-repo-from-heading)))
-    (let* ((repo-name (completing-read "Select repo: " (tlon-babel-get-property-in-repos :name)))
+    (let* ((repo-name (completing-read "Select repo: " (tlon-babel-get-property-of-repos :name)))
 	   (abbrev-repo (tlon-babel-repo-lookup :abbrev :name repo-name)))
       (tlon-org-goto-beginning-of-heading-text)
       (insert (format "[%s] " abbrev-repo)))))
@@ -652,7 +656,7 @@ link, else get their values from the heading title, if possible."
 If no FILE is provided, use the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (default-directory (file-name-directory file))
-	 (user (tlon-babel-find-key-in-alist user-full-name tlon-babel-system-users))
+	 (user (tlon-babel-user-lookup :git :name user-full-name))
 	 ;; get most recent commit in FILE by USER
 	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- '%s' | grep -m 1 '%s' | awk '{print $1}'" file user)))
 	 (commit (car (split-string output "\n"))))
@@ -993,7 +997,7 @@ The element can be a tag or an author."
 					       nil t
 					       (or current-element-title
 						   selection)))
-	   (new-target-file (tlon-babel-metadata-lookup "file" "titulo" new-element-title (tlon-babel-get-repo-metadata)))
+	   (new-target-file (tlon-babel-metadata-lookup "file" "titulo" new-element-title (tlon-babel-get-metadata-in-repo)))
 	   (new-target-dir (file-relative-name
 			    (file-name-directory new-target-file) (file-name-directory (buffer-file-name))))
 	   (new-target (file-name-concat new-target-dir (file-name-nondirectory new-target-file)))
@@ -1010,7 +1014,7 @@ The element can be a tag or an author."
 (defun tlon-babel-markdown-get-title-in-link-target (target)
   "Return the title of the tag to which the TARGET of a Markdown link points."
   (let* ((file (expand-file-name target default-directory))
-	 (title (tlon-babel-metadata-lookup "titulo" "file" file (tlon-babel-get-repo-metadata))))
+	 (title (tlon-babel-metadata-lookup "titulo" "file" file (tlon-babel-get-metadata-in-repo))))
     title))
 
 (defun tlon-babel-markdown-sort-elements-in-paragraph (separator)
@@ -1092,16 +1096,16 @@ Text enclosed by an `abbr' element pair will be displayed in small caps."
   "Return metadata of REPO.
 If REPO is nil, return metadata of current repository."
   (let* ((repo (or repo (tlon-babel-get-repo))))
-    (if-let ((dir (tlon-babel-get-property-in-repo :dir-translations repo)))
+    (if-let ((dir (tlon-babel-repo-lookup :dir-translations :dir repo)))
 	(tlon-babel-get-dir-metadata dir)
-      (if-let ((name (tlon-babel-get-property-in-repo :name repo)))
+      (if-let ((name (tlon-babel-get-property-of-repo :name repo)))
 	  (user-error "The repository `%s' is not a `core' repository" name)
 	(user-error "The directory `%s' is not a recognized repository" dir)))))
 
 (defun tlon-babel-get-metadata-in-repos ()
   "Return metadata of all repos."
   (let ((metadata '()))
-    (dolist (dir (tlon-babel-get-property-in-repos :dir-translations))
+    (dolist (dir (tlon-babel-get-property-of-repos :dir-translations))
       (setq metadata (append (tlon-babel-get-dir-metadata dir) metadata)))
     metadata))
 
@@ -1312,7 +1316,7 @@ include the `translations' directory. That is, it is the directory component of
 the repo's locator. For example, to search only in `translations/autores', use
 `autores' as DIR."
   (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (metadata (tlon-babel-get-repo-metadata repo))
+	 (metadata (tlon-babel-get-metadata-in-repo repo))
 	 (full-dir (when dir (file-name-concat repo "translations" dir))))
     (completing-read-multiple (format "%s: " (capitalize dir))
 			      (tlon-babel-metadata-get-all-field-values
@@ -1415,7 +1419,7 @@ If point is on a list, pre-populate the selection with the list elements."
   "Return a list of BAE elements of TYPE."
   (tlon-babel-metadata-get-all-field-values
    "titulo"
-   (tlon-babel-get-repo-metadata tlon-babel-dir-bae)
+   (tlon-babel-get-metadata-in-repo (tlon-babel-get-property-of-repo :dir 'bae))
    "file"
    (file-name-concat tlon-babel-dir-bae-translations type)))
 
@@ -1499,7 +1503,7 @@ current buffer."
       (tlon-babel-metadata-lookup "file"
 				  "path_original"
 				  (tlon-babel-get-locator-from-file file)
-				  (tlon-babel-get-repo-metadata)))))
+				  (tlon-babel-get-metadata-in-repo)))))
 
 (defun tlon-babel-get-locator-from-file (&optional file)
   "Get the locator of file in FILE.
@@ -1673,24 +1677,19 @@ Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-babel-get-clock-key)
   (let ((action (nth 1 (split-string (tlon-babel-get-clock))))
-	(actions (mapcar #'cdr tlon-babel-label-actions)))
+	(actions (tlon-babel-get-property-of-labels :action)))
     (if (member action actions)
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
 
 (defun tlon-babel-get-clock-label ()
   "Return label associated with action in heading at point."
-  (let ((label (car (rassoc (tlon-babel-get-clock-action) tlon-babel-label-actions))))
+  (let ((label (tlon-babel-label-lookup :label :action (tlon-babel-get-clock-action))))
     label))
 
 (defun tlon-babel-get-clock-next-label ()
   "Return label associated with the action after the one in heading at point."
-  (tlon-babel-get-next-car (tlon-babel-get-clock-label)
-			   tlon-babel-label-actions))
-
-(defun tlon-babel-get-clock-next-assignee (label)
-  "Return assignee associated with LABEL."
-  (alist-get label tlon-babel-label-assignees nil nil 'string=))
+  (tlon-babel-next-value :label (tlon-babel-get-clock-label) tlon-babel-labels))
 
 ;;;;;
 
@@ -1740,7 +1739,7 @@ function returns \"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\".
 If NO-ACTION is non-nil, omit, the ACTION element."
   (let* ((action (if (and (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
 			  (not no-action))
-		     (alist-get (tlon-babel-forge-get-label-at-point) tlon-babel-label-actions nil nil #'string=)
+		     (tlon-babel-label-lookup :action :label (tlon-babel-forge-get-label-at-point))
 		   ""))
 	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'aux)))
 	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
@@ -1838,9 +1837,9 @@ property `:type'."
     (if no-prompt
 	(when (eq no-prompt 'error)
 	  (user-error "Not in a recognized Babel repo"))
-      (let* ((core-repos (tlon-babel-get-property-in-repos :name :type 'core))
+      (let* ((core-repos (tlon-babel-get-property-of-repos :name :type 'core))
 	     (repos (if aux
-			(append core-repos (tlon-babel-get-property-in-repos :name :type 'aux))
+			(append core-repos (tlon-babel-get-property-of-repos :name :type 'aux))
 		      core-repos)))
 	(tlon-babel-repo-lookup :dir :name (completing-read "Select repo: " repos))))))
 
@@ -2057,9 +2056,7 @@ Markdown buffer at point is used."
 				 (lambda ()
 				   (tlon-babel-set-issue-number-in-heading (car (tlon-babel-get-latest-issue repo)))
 				   (tlon-babel-visit-issue)
-				   (tlon-babel-set-assignee (tlon-babel-find-key-in-alist
-							     user-full-name
-							     tlon-babel-github-users)))))
+				   (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name)))))
       (cl-call-next-method))))
 
 (defun tlon-babel-create-issue-from-todo ()
@@ -2088,9 +2085,7 @@ Markdown buffer at point is used."
 	  (setq latest-issue-post (car (tlon-babel-get-latest-issue))))
 	(tlon-babel-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-visit-issue)
-	(tlon-babel-set-assignee (tlon-babel-find-key-in-alist
-				  user-full-name
-				  tlon-babel-github-users))
+	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
 	(setq todo-linkified (tlon-babel-make-todo-heading-from-issue))))
     (org-edit-headline todo-linkified)))
 
@@ -2108,7 +2103,7 @@ COMMIT is non-nil, commit the change."
   (interactive)
   (let* ((key (or key (tlon-babel-get-key-in-buffer)))
 	 (heading (format "[cite:@%s]" key))
-	 (file (tlon-babel-metadata-lookup "file" "key_original" key (tlon-babel-get-repo-metadata)))
+	 (file (tlon-babel-metadata-lookup "file" "key_original" key (tlon-babel-get-metadata-in-repo)))
 	 (repo (tlon-babel-get-repo-from-file file))
 	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir repo)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
@@ -2239,7 +2234,7 @@ for the process that is being initialized."
 	(original-path translation-path original-key)
 	(tlon-babel-set-paths-from-clock)
       (let* ((next-label (tlon-babel-get-clock-next-label))
-	     (next-assignee (tlon-babel-get-clock-next-assignee next-label)))
+	     (next-assignee (tlon-babel-label-lookup :assignee :label next-label)))
 	(save-buffer)
 	(if (string= current-action "Process")
 	    (write-file original-path)
@@ -2444,7 +2439,7 @@ check that current file matches translation."
   (let* ((key (tlon-babel-get-clock-key))
 	 (field (if original "path_original" "file"))
 	 (expected-file (file-name-nondirectory
-			 (tlon-babel-metadata-lookup field "key_original" key (tlon-babel-get-repo-metadata))))
+			 (tlon-babel-metadata-lookup field "key_original" key (tlon-babel-get-metadata-in-repo))))
 	 (actual-file (file-name-nondirectory
 		       (buffer-file-name))))
     (if (string= expected-file actual-file)
@@ -2463,9 +2458,7 @@ check that current file matches translation."
       (goto-char (point-min))
       (if (search-forward topic nil t)
 	  (let ((label (tlon-babel-forge-get-label-at-point))
-		(assignee (alist-get
-			   (tlon-babel-forge-get-assignee-at-point)
-			   tlon-babel-github-users nil nil 'string=)))
+		(assignee (tlon-babel-user-lookup :name :github (tlon-babel-forge-get-assignee-at-point))))
 	    (unless (string= clocked-label label)
 	      (user-error "The `org-mode' TODO says the label is `%s', but the actual topic label is `%s'"
 			  clocked-label label))
@@ -2629,7 +2622,7 @@ If TOPIC is nil, use the topic at point."
 
 (defun tlon-babel-set-parameters (topic &optional label-or-assignee)
   "Set label or assignee for TOPIC, depending on value of LABEL-OR-ASSIGNEE."
-  (let ((assignee-p (member label-or-assignee (mapcar 'car tlon-babel-github-users))))
+  (let ((assignee-p (member label-or-assignee (tlon-babel-get-property-of-users :github))))
     (search-forward topic nil t)
     (if assignee-p
 	(tlon-babel-set-assignee label-or-assignee)
@@ -2704,7 +2697,7 @@ The commit message is ACTION followed by the name of FILE."
 (defun tlon-babel-select-label ()
   "Prompt the user to select a LABEL."
   (let ((label (completing-read "What should be the label? "
-				tlon-babel-label-actions)))
+				(tlon-babel-get-property-of-labels :label))))
     label))
 
 (defun tlon-babel-set-label (label)
@@ -2722,10 +2715,8 @@ Note that this only works for topics listed in the main buffer."
   "Prompt the user to select an ASSIGNEE.
 The prompt defaults to the current user."
   (let ((assignee (completing-read "Who should be the assignee? "
-				   tlon-babel-github-users nil nil
-				   (tlon-babel-find-key-in-alist
-				    user-full-name
-				    tlon-babel-github-users))))
+				   (tlon-babel-get-property-of-users :github) nil nil
+				   (tlon-babel-user-lookup :github :name user-full-name))))
     assignee))
 
 (defun tlon-babel-set-assignee (assignee)
@@ -2744,7 +2735,7 @@ The prompt defaults to the current user."
 (defun tlon-babel-set-initial-label-and-assignee ()
   "Set label to `Awaiting processing' and assignee to current user."
   (tlon-babel-set-label "Awaiting processing")
-  (tlon-babel-set-assignee (tlon-babel-find-key-in-alist user-full-name tlon-babel-github-users)))
+  (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name)))
 
 ;; this is just a slightly tweaked version of `forge-edit-topic-labels'.
 ;; It differs from that function only in that it returns the selection
@@ -2789,7 +2780,7 @@ name."
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
       (let ((assignee (tlon-babel-forge-get-assignee (forge-current-topic))))
 	(if full-name
-	    (alist-get assignee tlon-babel-github-users nil nil 'string=)
+	    (tlon-babel-user-lookup :name :github assignee)
 	  assignee)))))
 
 ;; This function simply confirms the selection offered to the user by
@@ -2811,16 +2802,16 @@ If the topic has more than one label, return the first."
     (when pair
       (car pair))))
 
-(defun tlon-babel-get-next-car (car alist)
-  "Find the car in cons following CAR in ALIST."
-  (catch 'result
+(defun tlon-babel-next-value (property value alist)
+  "Return the \"next\" value of PROPERTY with VALUE in ALIST."
+  (catch 'found
     (let ((found nil))
-      (dolist (pair alist)
-	(when (and found (not (string= car (car pair))))
-	  (throw 'result (car pair)))
-	(when (string= car (car pair))
-	  (setq found t)))
-      nil))) ;; if CAR was the last in ALIST, there's no "next"
+      (dolist (item alist)
+        (when (and found (not (equal (plist-get (cdr item) property) value)))
+          (throw 'found (plist-get (cdr item) property)))
+        (when (equal (plist-get (cdr item) property) value)
+          (setq found t))))
+    nil))
 
 ;;;;; Glossary
 
@@ -2884,7 +2875,7 @@ TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
 \='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
 conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
-  (let ((default-directory (tlon-babel-get-property-in-repo :dir 'genus))
+  (let ((default-directory (tlon-babel-get-property-of-repo :dir 'genus))
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
@@ -3040,7 +3031,6 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ]
    ["Visit file"
     ("f f" "counterpart"                  tlon-babel-open-counterpart)
-    ("f g" "Glossary.csv"                 tlon-babel-open-glossary)
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
     """Translate"
@@ -3106,7 +3096,7 @@ otherwise prompt for a repo."
 (defun tlon-babel-open-bae-repo ()
   "Open the Biblioteca Altruismo Eficaz repository."
   (interactive)
-  (dired tlon-babel-dir-bae))
+  (dired (tlon-babel-get-property-of-repo :dir 'bae)))
 
 (defun tlon-babel-open-utilitarismo-repo ()
   "Open the Utilitarismo repository."
@@ -3121,7 +3111,7 @@ otherwise prompt for a repo."
 (defun tlon-babel-open-genus-repo ()
   "Open the Genus repository."
   (interactive)
-  (dired (tlon-babel-get-property-in-repo :dir 'genus)))
+  (dired (tlon-babel-get-property-of-repo :dir 'genus)))
 
 ;;;;; Request
 
@@ -3288,7 +3278,7 @@ number, it will retry that many times instead of 2."
 
 (defun tlon-babel-get-bae-token ()
   "Get BAE API token."
-  (let* ((username (tlon-babel-alist-key user-full-name tlon-babel-github-users))
+  (let* ((username (tlon-babel-user-lookup :github :name user-full-name))
 	 (url "https://altruismoeficaz.net/api/auth/login")
 	 (url-request-method "POST")
 	 (url-request-extra-headers '(("Content-Type" . "application/x-www-form-urlencoded")))
@@ -3478,7 +3468,7 @@ Return the path of the temporary file created."
     (user-error "Please install `gdu' (e.g. `brew install gdu')"))
   (unless (executable-find "gnuplot")
     (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
-  (let* ((repo-name (or repo-name (completing-read "Repo: " (tlon-babel-get-property-in-repos :name :type 'core))))
+  (let* ((repo-name (or repo-name (completing-read "Repo: " (tlon-babel-get-property-of-repos :name :type 'core))))
 	 (dir (tlon-babel-repo-lookup :dir-translations :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
