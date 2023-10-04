@@ -500,14 +500,13 @@ If not, offer to process it as a new job."
 
 (defun tlon-babel-store-todo (template &optional no-action)
   "Store a new TODO using TEMPLATE.
-If TODO already exists, move point to it and do not create a duplicate. If
+If TODO already exiists, move point to it and do not create a duplicate. If
 NO-ACTION is non-nil, store a master TODO."
   (let ((todo (tlon-babel-make-todo-heading-from-issue no-action)))
-    (when (tlon-babel-get-todo-position todo)
-      (tlon-babel-visit-todo)
-      (user-error "TODO already exists!"))
-    (kill-new todo)
-    (org-capture nil template)))
+    (if (tlon-babel-get-todo-position todo)
+	(tlon-babel-visit-todo)
+      (kill-new todo)
+      (org-capture nil template))))
 
 (defun tlon-babel-store-master-todo (&optional set-topic)
   "Create a new job master TODO.
@@ -2140,35 +2139,28 @@ COMMIT is non-nil, commit the change."
     (when commit
       (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
 
-(defun tlon-babel-visit-todo (&optional todo file)
-  "Jump to TODO in FILE.
-If TODO is nil, user the heading at point. If FILE is nil, use
-`tlon-babel-todos-file'."
+(defun tlon-babel-visit-todo (&optional todo)
+  "Jump to TODO in `tlon-babel-todos-file'.
+If TODO is nil, use the heading at point."
   (interactive)
-  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue)))
-	(file (or file tlon-babel-todos-file)))
-    (if-let ((pos (org-find-exact-headline-in-buffer
-		   todo
-		   (find-file-noselect file))))
-	(progn
-	  (find-file file)
-	  (goto-char pos))
-      (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo file))))
+  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue))))
+    (if-let ((pos (tlon-babel-get-todo-position todo)))
+	(tlon-babel-open-todo pos)
+      (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file))))
 
-(defun tlon-babel-get-parent-todo (&optional todo file)
-  "Get parent of TODO in FILE.
-If TODO is nil, user the currently clocked heading. If FILE is nil, use
-  `tlon-babel-todos-file'."
+(defun tlon-babel-get-parent-todo (&optional todo)
+  "Get parent of TODO in `tlon-babel-todos-file'.
+If TODO is nil, user the currently clocked heading."
   (save-window-excursion
-    (tlon-babel-visit-todo todo file)
+    (tlon-babel-visit-todo todo)
     (widen)
     (org-up-heading-safe)
     (org-no-properties (org-get-heading))))
 
-(defun tlon-babel-mark-todo-done (&optional todo file)
-  "Mark TODO in FILE as DONE."
+(defun tlon-babel-mark-todo-done (todo)
+  "Mark TODO in `tlon-babel-todos-file' as DONE."
   (save-window-excursion
-    (tlon-babel-visit-todo todo file)
+    (tlon-babel-visit-todo todo)
     (org-todo "DONE")
     (save-buffer)
     (message "Marked `%s' as DONE" todo)))
