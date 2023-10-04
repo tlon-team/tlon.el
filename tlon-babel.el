@@ -1892,7 +1892,7 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (tlon-ebib-get-file "md")))
 	   (title (tlon-ebib-get-field-value "title"))
 	   (key (tlon-ebib-get-field-value "=key="))
-	   (repo (tlon-babel-get-repo)))
+	   (repo (tlon-babel-get-repo 'error)))
       (progn
 	(tlon-babel-import-document id title)
 	(tlon-babel-create-translation-file repo)
