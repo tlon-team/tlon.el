@@ -414,7 +414,8 @@ If FILE is nil, use the current buffer's file name."
 
 (defun tlon-babel-get-file-from-key (key)
   "Return the file path of KEY."
-  (if-let ((file (tlon-babel-metadata-lookup "file" "key_original" key (tlon-babel-get-metadata-in-repo))))
+  (if-let ((file (tlon-babel-metadata-lookup "file" "key_original" key
+					     (tlon-babel-get-metadata-in-repos))))
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
 
@@ -2820,10 +2821,10 @@ If the topic has more than one label, return the first."
   (catch 'found
     (let ((found nil))
       (dolist (item alist)
-        (when (and found (not (equal (plist-get (cdr item) property) value)))
-          (throw 'found (plist-get (cdr item) property)))
-        (when (equal (plist-get (cdr item) property) value)
-          (setq found t))))
+	(when (and found (not (equal (plist-get (cdr item) property) value)))
+	  (throw 'found (plist-get (cdr item) property)))
+	(when (equal (plist-get (cdr item) property) value)
+	  (setq found t))))
     nil))
 
 ;;;;; Glossary
