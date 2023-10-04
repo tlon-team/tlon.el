@@ -3040,9 +3040,12 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
    ["Visit dir"
     ("d d" "repo"                         tlon-babel-open-repo)
     ("d g" "genus"                        tlon-babel-open-genus-repo)
-    ("d b" "bae"                          tlon-babel-open-bae-repo)
     ("d u" "utilitarismo"                 tlon-babel-open-utilitarismo-repo)
     ("d l" "largoplacismo"                tlon-babel-open-largoplacismo-repo)
+    ("d b b" "bae"                        tlon-babel-open-bae-repo)
+    ("d b a" "bae: articles"              tlon-babel-open-bae-articles)
+    ("d b u" "bae: authors"               tlon-babel-open-bae-authors)
+    ("d b t" "bae: tags"                  tlon-babel-open-bae-tags)
     ]
    ["File changes"
     ("h h" "log"                          magit-log-buffer-file)
@@ -3112,6 +3115,26 @@ otherwise prompt for a repo."
   "Open the Genus repository."
   (interactive)
   (dired (tlon-babel-get-property-of-repo :dir 'genus)))
+
+(defun tlon-babel-open-bae-folder (folder)
+  "Open FOLDER of the Biblioteca Altruismo Eficaz repository."
+  (dired (file-name-concat
+	  (tlon-babel-get-property-of-repo :dir-translations 'bae) folder)))
+
+(defun tlon-babel-open-bae-articles ()
+  "Open the `articulos` folder of the Biblioteca Altruismo Eficaz repository."
+  (interactive)
+  (tlon-babel-open-bae-folder "articulos"))
+
+(defun tlon-babel-open-bae-authors ()
+  "Open the `autores` folder of the Biblioteca Altruismo Eficaz repository."
+  (interactive)
+  (tlon-babel-open-bae-folder "autores"))
+
+(defun tlon-babel-open-bae-tags ()
+  "Open the `temas` folder of the Biblioteca Altruismo Eficaz repository."
+  (interactive)
+  (tlon-babel-open-bae-folder "temas"))
 
 ;;;;; Request
 
