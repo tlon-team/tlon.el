@@ -3512,7 +3512,9 @@ Return the path of the temporary file created."
 ;;;;; Misc
 
 (defun tlon-babel-historic-word-count (&optional repo-name days chars-per-word)
-  ""
+  "Compute the historic word count of REPO-NAME for past DAYS.
+CHARS-PER-WORD is the average number of characters per word. The word count is
+computed by dividing the file size by CHARS-PER-WORD."
   (interactive)
   (unless (executable-find "gdu")
     (user-error "Please install `gdu' (e.g. `brew install gdu')"))
