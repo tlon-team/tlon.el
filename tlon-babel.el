@@ -1892,7 +1892,7 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (tlon-ebib-get-file "md")))
 	   (title (tlon-ebib-get-field-value "title"))
 	   (key (tlon-ebib-get-field-value "=key="))
-	   (repo (tlon-babel-get-repo 'error)))
+	   (repo (completing-read "Repo: " (tlon-babel-get-property-of-repos :dir :type 'core))))
       (progn
 	(tlon-babel-import-document id title)
 	(tlon-babel-create-translation-file repo)
@@ -1978,7 +1978,7 @@ TITLE optionally specifies the title of the entity to be imported."
 	 (title (or title (pcase object
 			    ('post (tlon-babel-eaf-get-post-title response))
 			    ('tag (tlon-babel-eaf-get-tag-title response)))))
-	 (dir (file-name-concat (tlon-babel-get-repo) "originals"))
+	 (dir (tlon-babel-get-property-of-repo :dir-originals 'bae))
 	 (target (read-string "Save file in: " (tlon-babel-set-file-from-title title dir)))
 	 (html (pcase object
 		 ('post (tlon-babel-eaf-get-post-html response))
