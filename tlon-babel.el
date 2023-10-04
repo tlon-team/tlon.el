@@ -497,8 +497,12 @@ If not, offer to process it as a new job."
 (defun tlon-babel-get-todo-position (todo)
   "Return the position of TODO in `tlon-babel-todos-file', else nil."
   (org-find-exact-headline-in-buffer
-   todo
-   (find-file-noselect tlon-babel-todos-file)))
+   todo (find-file-noselect tlon-babel-todos-file)))
+
+(defun tlon-babel-open-todo (position)
+  "Open `tlon-babel-todos-file' at TODO POSITION."
+  (find-file tlon-babel-todos-file)
+  (goto-char position))
 
 (defun tlon-babel-store-todo (template &optional no-action)
   "Store a new TODO using TEMPLATE.
