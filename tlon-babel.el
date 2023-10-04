@@ -1824,6 +1824,21 @@ If the current directory matches none of the directories in
   (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (call-interactively 'forge-dispatch)))
 
+(defun tlon-babel-forge-update-repos ()
+  "Update issues and notifications for all repos."
+  (dolist (dir (tlon-babel-get-property-of-repos :dir 'bae))
+    (let* ((default-directory dir)
+	   (file (file-name-concat default-directory "readme.md"))
+	   (repo (forge-get-repository 'full)))
+      (save-window-excursion
+	;; hack; `default-directory' doesn't seem to be enough to set the relevant directory
+	;; so we just open an arbitrary file in the repo
+	(with-current-buffer (find-file-noselect file)
+	  (forge-pull repo))))))
+
+(run-with-idle-timer (* 10 60) t #'tlon-babel-forge-update-repos)
+(run-with-timer (* 10 60) t #'forge-pull-notifications)
+
 (defun tlon-babel-get-repo (&optional no-prompt aux)
   "Get Babel repository path.
 If the current directory matches any of the directories in `tlon-babel-repos',
