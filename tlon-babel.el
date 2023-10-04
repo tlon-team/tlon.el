@@ -482,12 +482,14 @@ If not, offer to process it as a new job."
 
 (defun tlon-babel-store-or-refile-job-todo ()
   "Refile TODO under appropriate heading, or create new master TODO if none exists."
-  (if-let ((refile-position (tlon-babel-get-todo-position (tlon-babel-make-todo-heading-from-issue 'no-action))))
+  (if-let ((pos (tlon-babel-get-todo-position
+		 (tlon-babel-make-todo-heading-from-issue 'no-action))))
       (progn
 	(tlon-babel-store-todo "tbJ")
-	;; refile under job
-	(org-refile nil nil (list nil (buffer-file-name) nil refile-position))
-	(tlon-org-refile-goto-latest))
+	(let* ((inhibit-message t))
+	  (tlon-org-refile-at-position pos)
+	  (tlon-org-refile-goto-latest))
+	(message "TODO already exists"))
     (when (y-or-n-p "No master TODO found for this topic. Create?")
       (tlon-babel-store-master-todo)
       (tlon-babel-create-todo-from-issue))))
