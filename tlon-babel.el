@@ -2924,7 +2924,21 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
       (goto-char (- (point) 2))
       (delete-char 1)
       (insert "\n}")
-      (message "Added to `%s'" (file-name-nondirectory tlon-babel-file-url-correspondences)))))
+      (write-file tlon-babel-file-url-correspondences)
+      (tlon-babel-url-correspondence-commit))))
+
+(defun tlon-babel-url-correspondence-commit ()
+  "Commit URL correspondence changes."
+  (let ((default-directory (tlon-babel-get-property-of-repo :dir 'genus)))
+    ;; save all unsaved files in repo
+    (magit-save-repository-buffers)
+    (call-interactively #'magit-pull-from-upstream nil)
+    ;; if there are staged files, we do not commit or push the changes
+    (unless (magit-staged-files)
+      (tlon-babel-check-branch "main" default-directory)
+      (magit-run-git "add" tlon-babel-file-url-correspondences)
+      (let ((magit-commit-ask-to-stage nil))
+	(magit-commit-create (list "-m" "Update URL correspondences"))))))
 
 (defun tlon-babel-highlight-url-correspondences ()
   "Highlight source URLs in URL correspondences file."
