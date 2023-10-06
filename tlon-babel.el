@@ -954,6 +954,11 @@ least one level 3 heading and no level 2 headings.
 			    "\\( \\)-\\( \\)")
 			  "\\1—\\2"))
 
+(defun tlon-babel-confirm-fix-number-ranges ()
+  "Prompt the user to replace hyphens with em dashes, when appropriate."
+  (tlon-babel-confirm-fix '("\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)")
+			  "\\1–\\2"))
+
 (defun tlon-babel-confirm-fix-percent-signs ()
   "Prompt the user to add non-breaking space before percent sign."
   (interactive)
@@ -979,6 +984,7 @@ dedicated function."
   "Run all the `tlon-babel-confirm-fix' commands."
   (interactive)
   (tlon-babel-confirm-fix-em-dashes)
+  (tlon-babel-confirm-fix-number-ranges)
   (tlon-babel-confirm-fix-percent-signs)
   (tlon-babel-confirm-fix-solo)
   (tlon-babel-confirm-fix-podcast))
