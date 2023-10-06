@@ -948,7 +948,6 @@ least one level 3 heading and no level 2 headings.
 
 (defun tlon-babel-confirm-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (interactive)
   (tlon-babel-confirm-fix '("\\([)\\.[:alnum:]]\\)-\\([ ,]\\)"
 			    "\\([ ,]\\)-\\([([:alnum:]]\\)"
 			    "\\( \\)-\\( \\)")
@@ -961,14 +960,12 @@ least one level 3 heading and no level 2 headings.
 
 (defun tlon-babel-confirm-fix-percent-signs ()
   "Prompt the user to add non-breaking space before percent sign."
-  (interactive)
   (tlon-babel-confirm-fix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
 			    "\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
 			  "\\1 %\\2"))
 
 (defun tlon-babel-confirm-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
-  (interactive)
   (tlon-babel-confirm-fix '("sólo")
 			  "solo"))
 
@@ -976,7 +973,6 @@ least one level 3 heading and no level 2 headings.
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
-  (interactive)
   (tlon-babel-confirm-fix '("podcast")
 			  "pódcast"))
 
