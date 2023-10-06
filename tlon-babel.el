@@ -1910,7 +1910,6 @@ If the current directory matches none of the directories in
 	  (forge-pull repo))))))
 
 (run-with-idle-timer (* 10 60) t #'tlon-babel-forge-update-repos)
-(run-with-timer (* 10 60) t #'forge-pull-notifications)
 
 (defun tlon-babel-get-repo (&optional no-prompt aux)
   "Get Babel repository path.
