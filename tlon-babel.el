@@ -1586,6 +1586,66 @@ default to \".md\"."
     (cl-loop for file in files
 	     do (tlon-babel-check-paragraph-number-match file))))
 
+;;;;; Word count
+
+(defconst tlon-babel-local-variables-line-start
+  "<!-- Local Variables: -->"
+  "Start of the line that contains file local variables.")
+
+(defconst tlon-babel-local-variables-line-end
+  "<!-- End: -->"
+  "End of the line that contains file local variables.")
+
+(defun tlon-babel-get-text-between-lines (start-line end-line)
+  "Return the text between START-LINE and END-LINE in the current buffer."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward start-line nil t)
+	(let* ((start (line-beginning-position))
+	       (end (when (re-search-forward end-line nil t)
+		      (line-end-position))))
+	  (when (and start end)
+	    (buffer-substring-no-properties start end)))))))
+
+(defun tlon-babel-count-words-extra ()
+  "Count extraneous words in current buffer."
+  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-front-matter) " "))
+	(local-vars (tlon-babel-get-text-between-lines
+		     tlon-babel-local-variables-line-start
+		     tlon-babel-local-variables-line-end)))
+    (with-temp-buffer
+      (insert metadata)
+      (when local-vars
+	(insert local-vars))
+      (goto-char (point-min))
+      (count-words-region (point-min) (point-max)))))
+
+(defun tlon-babel-count-words-substance ()
+  "Count substantive words in current buffer."
+  (save-restriction
+    (widen)
+    (let ((raw (count-words (point-min) (point-max))))
+      (- raw (tlon-babel-count-words-extra)))))
+
+(defun tlon-babel-count-words-in-repo (&optional repo)
+  "Count words in Markdown files in REPO.
+If REPO is nil, prompt the user for one."
+  (interactive)
+  (let* ((repo (or repo (intern (completing-read "Repo: " (tlon-babel-get-property-of-repos :abbrev)))))
+	 (initial-buffers (buffer-list))
+	 (files (directory-files-recursively
+		 (tlon-babel-get-property-of-repo :dir-translations repo) "\\.md$"))
+	 (total-words 0))
+    (dolist (file files)
+      (with-current-buffer (find-file-noselect file)
+	(let ((words-in-file (tlon-babel-count-words-substance)))
+	  (setq total-words (+ total-words words-in-file)))
+	(unless (member (current-buffer) initial-buffers)
+	  (kill-buffer (current-buffer)))))
+    (message (number-to-string total-words))))
+
 ;;;;; EAF validation
 
 (defun tlon-babel-eaf-p (url)
