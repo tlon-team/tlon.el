@@ -1126,7 +1126,8 @@ If REPO is nil, return metadata of current repository."
 
 (defun tlon-babel-get-metadata-in-file-or-buffer (file-or-buffer)
   "Return the metadata in FILE-OR-BUFFER as an association list."
-  (let* ((metadata (tlon-babel-yaml-get-front-matter file-or-buffer))
+  (let* ((metadata (tlon-babel-yaml-to-alist
+		    (tlon-babel-yaml-get-front-matter file-or-buffer)))
 	 (extras `(("file" . ,file-or-buffer)
 		   ("type" . "online")
 		   ("database" . "Tlön")
@@ -1194,8 +1195,8 @@ If REPO is nil, return files in current repository. DIR is one of `originals' or
 ;;;;;; Get YAML values
 
 (defun tlon-babel-yaml-get-front-matter (&optional file-or-buffer)
-  "Return the YAML front matter from FILE-OR-BUFFER as an association list.
-If FILE-OR-BUFFER is nil, use the current buffer."
+  "Return the YAML front matter from FILE-OR-BUFFER as strings in a list.
+   If FILE-OR-BUFFER is nil, use the current buffer."
   (let ((file-or-buffer (or file-or-buffer
 			    (buffer-file-name)
 			    (current-buffer))))
@@ -1208,31 +1209,35 @@ If FILE-OR-BUFFER is nil, use the current buffer."
        ((stringp file-or-buffer)
 	(insert-file-contents file-or-buffer)))
       (goto-char (point-min))
-      (let ((metadata '()))
-	(when (looking-at-p tlon-babel-yaml-delimiter)
-	  (forward-line)
-	  (dolist (line (tlon-babel-read-until-match tlon-babel-yaml-delimiter))
-	    (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
-	      (let* ((key (match-string 1 line))
-		     (value (match-string 2 line))
-		     (trimmed-value (string-trim value)))
-		(push (cons (string-trim key)
-			    (cond
-			     ((and (string-prefix-p "[" trimmed-value)
-				   (string-suffix-p "]" trimmed-value))
-			      (mapcar #'string-trim
-				      (mapcar (lambda (s) (if (and (string-prefix-p "\"" s)
-							      (string-suffix-p "\"" s))
-							 (substring s 1 -1)
-						       s))
-					      (split-string (substring trimmed-value 1 -1) "\\s *,\\s *")
-					      )))
-			     ((and (string-prefix-p "\"" trimmed-value)
-				   (string-suffix-p "\"" trimmed-value))
-			      (substring trimmed-value 1 -1))
-			     (t trimmed-value)))
-		      metadata)))))
-	(nreverse metadata)))))
+      (when (looking-at-p tlon-babel-yaml-delimiter)
+	(forward-line)
+	(tlon-babel-read-until-match tlon-babel-yaml-delimiter)))))
+
+(defun tlon-babel-yaml-to-alist (strings)
+  "Convert STRINGS to an alist."
+  (let ((metadata '()))
+    (dolist (line strings)
+      (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
+	(let* ((key (match-string 1 line))
+	       (value (match-string 2 line))
+	       (trimmed-value (string-trim value)))
+	  (push (cons (string-trim key)
+		      (cond
+		       ((and (string-prefix-p "[" trimmed-value)
+			     (string-suffix-p "]" trimmed-value))
+			(mapcar #'string-trim
+				(mapcar (lambda (s) (if (and (string-prefix-p "\"" s)
+							(string-suffix-p "\"" s))
+						   (substring s 1 -1)
+						 s))
+					(split-string (substring trimmed-value 1 -1) "\\s *,\\s *")
+					)))
+		       ((and (string-prefix-p "\"" trimmed-value)
+			     (string-suffix-p "\"" trimmed-value))
+			(substring trimmed-value 1 -1))
+		       (t trimmed-value)))
+		metadata))))
+    (nreverse metadata)))
 
 (defun tlon-babel-read-until-match (delimiter)
   "Return a list of lines until DELIMITER is matched.
