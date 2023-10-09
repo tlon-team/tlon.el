@@ -928,6 +928,13 @@ least one level 3 heading and no level 2 headings.
 			"\\([A-Z]\\)\\.\\([ ]?\\)\\([A-Z]\\)\\."
 			) ; we need to run this twice to catch all cases
 		      "\\1. \\3."))
+
+(defun tlon-babel-autofix-percent-signs ()
+  "Prompt the user to add non-breaking space before percent sign."
+  (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
+			"\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
+		      "\\1 %\\2"))
+
 (defun tlon-babel-autofix-all ()
   "Run all the `tlon-babel-autofix' commands."
   (interactive)
@@ -936,6 +943,7 @@ least one level 3 heading and no level 2 headings.
   (tlon-babel-autofix-periods-in-headings)
   (tlon-babel-autofix-heading-hierarchy)
   (tlon-babel-autofix-spaces-in-abbreviations)
+  (tlon-babel-autofix-percent-signs))
 
 ;;;;;;; confirm-fix
 
@@ -960,11 +968,6 @@ least one level 3 heading and no level 2 headings.
   (tlon-babel-confirm-fix '("\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)")
 			  "\\1–\\2"))
 
-(defun tlon-babel-confirm-fix-percent-signs ()
-  "Prompt the user to add non-breaking space before percent sign."
-  (tlon-babel-confirm-fix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
-			    "\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
-			  "\\1 %\\2"))
 
 (defun tlon-babel-confirm-fix-periods-in-quotes ()
   "Prompt the user to move periods outsite quotes."
@@ -989,7 +992,6 @@ dedicated function."
   (interactive)
   (tlon-babel-confirm-fix-em-dashes)
   (tlon-babel-confirm-fix-number-ranges)
-  (tlon-babel-confirm-fix-percent-signs)
   (tlon-babel-confirm-fix-solo)
   (tlon-babel-confirm-fix-podcast))
 
