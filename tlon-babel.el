@@ -959,8 +959,8 @@ least one level 3 heading and no level 2 headings.
 (defun tlon-babel-confirm-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (tlon-babel-confirm-fix '("\\([)\\.[:alnum:]]\\)-\\([ ,]\\)"
-			    "\\([ ,]\\)-\\([([:alnum:]]\\)"
-			    "\\( \\)-\\( \\)")
+			    "[^ ]\\([ ,]\\)-\\([([:alnum:]]\\)"
+			    "[^ >)]\\( \\)-\\( \\)")
 			  "\\1—\\2"))
 
 (defun tlon-babel-confirm-fix-number-ranges ()
