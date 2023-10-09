@@ -2318,6 +2318,8 @@ for the process that is being initialized."
     (when (string= current-action "Translate")
       (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-confirm-fix-all'?")
 	(user-error "Aborted")))
+    (when (string= current-action "Check")
+      (tlon-babel-read-mode -1))
     (cl-multiple-value-bind
 	(original-path translation-path original-key)
 	(tlon-babel-set-paths-from-clock)
@@ -2370,6 +2372,7 @@ for the process that is being initialized."
   (ps/window-buffer-move-dwim)
   (ps/switch-to-last-window)
   (markdown-preview)
+  (tlon-babel-read-mode)
   (read-aloud-buf))
 
 (defun tlon-babel-initialize-review ()
@@ -2390,6 +2393,18 @@ for the process that is being initialized."
     (ps/switch-to-alternate-buffer)))
 
 ;;;;; TTS
+
+(define-minor-mode tlon-babel-read-mode
+  "Enable TTS mode locally."
+  :global nil
+  :init-value nil)
+
+(defvar tlon-babel-read-mode-map (make-sparse-keymap)
+  "Keymap for `tlon-babel-read-mode'.")
+
+(define-key tlon-babel-read-mode-map (kbd "H-,") 'tlon-babel-read-backward)
+(define-key tlon-babel-read-mode-map (kbd "H-.") 'tlon-babel-read-forward)
+(define-key tlon-babel-read-mode-map (kbd "H-;") 'tlon-babel-read-target-start-or-stop)
 
 (defun tlon-babel-read-target-buffer ()
   "Return the buffer that `read-aloud' should read."
