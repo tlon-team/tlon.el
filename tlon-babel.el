@@ -965,15 +965,8 @@ least one level 3 heading and no level 2 headings.
 
 (defun tlon-babel-confirm-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-confirm-fix '("\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)")
-			  "\\1–\\2"))
-
-
-(defun tlon-babel-confirm-fix-periods-in-quotes ()
-  "Prompt the user to move periods outsite quotes."
-  (tlon-babel-confirm-fix '("\\.\"")
-			  ".\'")
-  )
+  (tlon-babel-confirm-fix '("\\s-\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!]\\)")
+			  " \\1–\\2\\3"))
 
 (defun tlon-babel-confirm-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
