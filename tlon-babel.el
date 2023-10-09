@@ -3239,17 +3239,17 @@ otherwise prompt for a repo."
 	  (tlon-babel-get-property-of-repo :dir-translations 'bae) folder)))
 
 (defun tlon-babel-open-bae-articles ()
-  "Open the `articulos` folder of the Biblioteca Altruismo Eficaz repository."
+  "Open the `articulos' folder of the Biblioteca Altruismo Eficaz repository."
   (interactive)
   (tlon-babel-open-bae-folder "articulos"))
 
 (defun tlon-babel-open-bae-authors ()
-  "Open the `autores` folder of the Biblioteca Altruismo Eficaz repository."
+  "Open the `autores' folder of the Biblioteca Altruismo Eficaz repository."
   (interactive)
   (tlon-babel-open-bae-folder "autores"))
 
 (defun tlon-babel-open-bae-tags ()
-  "Open the `temas` folder of the Biblioteca Altruismo Eficaz repository."
+  "Open the `temas' folder of the Biblioteca Altruismo Eficaz repository."
   (interactive)
   (tlon-babel-open-bae-folder "temas"))
 
