@@ -1545,6 +1545,8 @@ error if the current buffer is not in `markdown-mode' and FILE is nil."
   (when (and print-message
 	     (not (derived-mode-p 'markdown-mode)))
     (user-error "Not in markdown-mode"))
+  (unless file
+    (save-buffer))
   (let* ((counterpart (tlon-babel-get-counterpart
 		       (or file (buffer-file-name))))
 	 (paragraphs (- (tlon-babel-count-paragraphs file (point-min) (+ (point) 2)) 1)))
