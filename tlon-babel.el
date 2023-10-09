@@ -3221,12 +3221,12 @@ otherwise prompt for a repo."
 (defun tlon-babel-open-utilitarismo-repo ()
   "Open the Utilitarismo repository."
   (interactive)
-  (dired tlon-babel-dir-utilitarismo))
+  (dired (tlon-babel-get-property-of-repo :dir 'bae)))
 
 (defun tlon-babel-open-largoplacismo-repo ()
   "Open the Largoplacismo repository."
   (interactive)
-  (dired tlon-babel-dir-largoplacismo))
+  (dired (tlon-babel-get-property-of-repo :dir 'largoplacismo)))
 
 (defun tlon-babel-open-genus-repo ()
   "Open the Genus repository."
