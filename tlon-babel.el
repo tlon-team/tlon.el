@@ -908,7 +908,7 @@ If DELETE is non-nil, delete the footnote."
 		      "\\1"))
 
 ;; TODO: reconsider criterion; it fails when it contains a single level one title heading
-(defun tlon-babel-autofix-heading-hierarcy (&optional file)
+(defun tlon-babel-autofix-heading-hierarchy (&optional file)
   "Promote or demote headings in FILE when appropriate.
 Specifically, when FILE contains at least one heading, demote all headings if
 there is at least one level 1 heading, and promote all headings if there is at
@@ -933,7 +933,7 @@ least one level 3 heading and no level 2 headings.
   (tlon-babel-autofix-footnote-punctuation)
   (tlon-babel-autofix-ee-uu)
   (tlon-babel-autofix-periods-in-headings)
-  (tlon-babel-autofix-heading-hierarcy))
+  (tlon-babel-autofix-heading-hierarchy)
 
 ;;;;;;; confirm-fix
 
@@ -963,6 +963,12 @@ least one level 3 heading and no level 2 headings.
   (tlon-babel-confirm-fix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
 			    "\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
 			  "\\1 %\\2"))
+
+(defun tlon-babel-confirm-fix-periods-in-quotes ()
+  "Prompt the user to move periods outsite quotes."
+  (tlon-babel-confirm-fix '("\\.\"")
+			  ".\'")
+  )
 
 (defun tlon-babel-confirm-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
