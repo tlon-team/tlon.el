@@ -2233,8 +2233,9 @@ If TODO is nil, user the currently clocked heading."
     (org-up-heading-safe)
     (org-no-properties (org-get-heading))))
 
-(defun tlon-babel-mark-todo-done (todo)
-  "Mark TODO in `tlon-babel-todos-file' as DONE."
+(defun tlon-babel-mark-todo-done (&optional todo)
+  "Mark TODO in `tlon-babel-todos-file' as DONE.
+If TODO is nil, use the heading at point."
   (save-window-excursion
     (tlon-babel-visit-todo todo)
     (org-todo "DONE")
