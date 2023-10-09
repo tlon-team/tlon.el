@@ -897,11 +897,6 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
 		      "\\1\\3\\2"))
 
-(defun tlon-babel-autofix-ee-uu ()
-  "Add thin space between `EE.' and `UU.' in abbreviation."
-  (tlon-babel-autofix '("EE.UU." "EE. UU.")
-		      "EE. UU."))
-
 (defun tlon-babel-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
   (tlon-babel-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
@@ -926,14 +921,21 @@ least one level 3 heading and no level 2 headings.
 	  (unless (re-search-forward "^## " nil t)
 	    (substitute-target-in-buffer "^###" "##")))))))
 
+;; TODO: this is not working
+(defun tlon-babel-autofix-spaces-in-abbreviations ()
+  "Prompt the user to add a thin space between abbreviations followed by a period."
+  (tlon-babel-autofix '("\\([A-Z]\\)\\.\\([ ]?\\)\\([A-Z]\\)\\."
+			"\\([A-Z]\\)\\.\\([ ]?\\)\\([A-Z]\\)\\."
+			) ; we need to run this twice to catch all cases
+		      "\\1. \\3."))
 (defun tlon-babel-autofix-all ()
   "Run all the `tlon-babel-autofix' commands."
   (interactive)
   (tlon-babel-autofix-curly-quotes)
   (tlon-babel-autofix-footnote-punctuation)
-  (tlon-babel-autofix-ee-uu)
   (tlon-babel-autofix-periods-in-headings)
   (tlon-babel-autofix-heading-hierarchy)
+  (tlon-babel-autofix-spaces-in-abbreviations)
 
 ;;;;;;; confirm-fix
 
