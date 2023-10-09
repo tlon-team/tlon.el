@@ -1636,7 +1636,10 @@ default to \".md\"."
   "Count words in Markdown files in REPO.
 If REPO is nil, prompt the user for one."
   (interactive)
-  (let* ((repo (or repo (intern (completing-read "Repo: " (tlon-babel-get-property-of-repos :abbrev)))))
+  (let* ((repo (or repo
+		   (intern (completing-read
+			    "Repo: "
+			    (tlon-babel-get-property-of-repos :abbrev :type 'core)))))
 	 (initial-buffers (buffer-list))
 	 (files (directory-files-recursively
 		 (tlon-babel-get-property-of-repo :dir-translations repo) "\\.md$"))
