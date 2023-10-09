@@ -1437,7 +1437,7 @@ If point is on a list, pre-populate the selection with the list elements."
    "titulo"
    (tlon-babel-get-metadata-in-repo (tlon-babel-get-property-of-repo :dir 'bae))
    "file"
-   (file-name-concat tlon-babel-dir-bae-translations type)))
+   (file-name-concat (tlon-babel-get-property-of-repo :dir-translations 'bae) type)))
 
 (defun tlon-babel-get-bae-articles ()
   "Get a list of BAE articles."
