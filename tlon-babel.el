@@ -1630,16 +1630,19 @@ default to \".md\"."
 	  (when (and start end)
 	    (buffer-substring-no-properties start end)))))))
 
+(defun tlon-babel-get-local-variables ()
+  "Get the text in the \"local variables\" section of the current buffer."
+  (tlon-babel-get-text-between-lines
+   tlon-babel-local-variables-line-start
+   tlon-babel-local-variables-line-end))
+
 (defun tlon-babel-count-words-extra ()
   "Count extraneous words in current buffer."
-  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-front-matter) " "))
-	(local-vars (tlon-babel-get-text-between-lines
-		     tlon-babel-local-variables-line-start
-		     tlon-babel-local-variables-line-end)))
+  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-front-matter) " ")))
     (with-temp-buffer
       (insert metadata)
-      (when local-vars
-	(insert local-vars))
+      (when-let ((vars (tlon-babel-get-local-variables)))
+	(insert vars))
       (goto-char (point-min))
       (count-words-region (point-min) (point-max)))))
 
