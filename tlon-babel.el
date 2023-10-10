@@ -162,6 +162,9 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   "Get the value of property PROPERTY in USER."
   (tlon-babel-get-property-of-alist property user tlon-babel-users))
 
+(defvar tlon-babel-dir-refs ""
+  "Directory where references files are stored.")
+
 (setq tlon-babel-dir-refs
       (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "refs/"))
 
