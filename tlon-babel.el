@@ -212,6 +212,24 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   (file-name-concat tlon-babel-dir-refs "section-correspondences.json")
   "File containing the section correspondences.")
 
+(defmacro tlon-babel-create-file-opening-command (file)
+  "Create a command to open FILE."
+  (let* ((file-base (downcase (file-name-base file)))
+	 (file-name (file-name-nondirectory file))
+	 (command-name (intern (concat "tlon-babel-open-" file-base))))
+    `(defun ,command-name ()
+       ,(format "Open `%s' file." file-name)
+       (interactive)
+       (find-file (symbol-value (intern (concat "tlon-babel-file-" ,file)))))))
+
+(tlon-babel-create-file-opening-command "manual")
+(tlon-babel-create-file-opening-command "readme")
+(tlon-babel-create-file-opening-command "jobs")
+(tlon-babel-create-file-opening-command "fluid")
+(tlon-babel-create-file-opening-command "stable")
+(tlon-babel-create-file-opening-command "url-correspondences")
+(tlon-babel-create-file-opening-command "section-correspondences")
+
 ;;;;; Org-mode ids
 
 (defvar tlon-babel-manual-processing-id
@@ -3160,25 +3178,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 	(push (list candidate translation category) json))
       (tlon-babel-write-json file json))))
 
-;;;;;
-
-(defmacro tlon-babel-create-file-opening-command (file)
-  "Create a command to open file in FILE."
-  (let* ((file-base (downcase (file-name-base file)))
-	 (file-name (file-name-nondirectory file))
-	 (command-name (intern (concat "tlon-babel-open-" file-base))))
-    `(defun ,command-name ()
-       ,(format "Open `%s'." file-name)
-       (interactive)
-       (find-file (file-name-concat
-		   tlon-babel-dir-babel
-		   ,file)))))
-
-(tlon-babel-create-file-opening-command "refs/Glossary.csv")
-(tlon-babel-create-file-opening-command "refs/fluid.bib")
-(tlon-babel-create-file-opening-command "refs/stable.bib")
-(tlon-babel-create-file-opening-command "manual.org")
-(tlon-babel-create-file-opening-command "readme.md")
+;;;;; dispatcher
 
 (transient-define-prefix tlon-babel-dispatch ()
   "Dispatch a `tlon-babel' command."
