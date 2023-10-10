@@ -142,7 +142,7 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
       (when (eq (plist-get (cdr repo) :type) 'core)
 	(plist-put (cdr repo) (car property) (cadr property))))))
 
-(mapcar #'tlon-bae-set-dirs tlon-babel-repos)
+(mapc #'tlon-bae-set-dirs tlon-babel-repos)
 
 (defun tlon-babel-get-property-of-alist (property plist alist)
   "Get the value of property PROPERTY of PLIST in ALIST."
