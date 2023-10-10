@@ -1320,12 +1320,10 @@ If TITLE is non-nil, use it instead of prompting for one."
     ;; TODO: reorder field-values
     (tlon-babel-insert-yaml-fields field-values)))
 
-(defun tlon-babel-yaml-set-front-matter-for-title (&optional file)
-  "Insert YAML fields for BAE tag in FILE.
-If FILE is nil, use the current buffer."
+(defun tlon-babel-yaml-set-front-matter-for-title ()
+  "Insert YAML fields for BAE tag in the current buffer."
   (interactive)
-  (let* ((file (or file (buffer-file-name)))
-	 (field-values
+  (let* ((field-values
 	  (tlon-babel--yaml-set-front-matter-fields
 	   '("titulo"))))
     (tlon-babel-insert-yaml-fields field-values)))
