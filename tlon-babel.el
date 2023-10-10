@@ -2740,8 +2740,8 @@ If TOPIC is nil, use the topic at point."
 (defun tlon-babel-search-topics (search-string &optional repo)
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
-  (require 'forge-search)
   (interactive "sSearch string: ")
+  (require 'forge-search)
   (let* ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	 (default-directory repo))
     (forge-search search-string)))
