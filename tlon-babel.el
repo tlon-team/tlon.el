@@ -906,23 +906,22 @@ If DELETE is non-nil, delete the footnote."
 		      "\\1"))
 
 ;; TODO: reconsider criterion; it fails when it contains a single level one title heading
-(defun tlon-babel-autofix-heading-hierarchy (&optional file)
-  "Promote or demote headings in FILE when appropriate.
+(defun tlon-babel-autofix-heading-hierarchy ()
+  "Promote or demote headings in current buffer when appropriate.
 Specifically, when FILE contains at least one heading, demote all headings if
 there is at least one level 1 heading, and promote all headings if there is at
 least one level 3 heading and no level 2 headings.
 
  If FILE is nil, check the current buffer."
   (require 'substitute)
-  (let* ((file (or file (buffer-file-name))))
-    (save-excursion
-      (goto-char (point-min))
-      (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
-	(if (re-search-forward "^# " nil t)
-	    (substitute-target-in-buffer "^#" "##")
-	  (goto-char (point-min))
-	  (unless (re-search-forward "^## " nil t)
-	    (substitute-target-in-buffer "^###" "##")))))))
+  (save-excursion
+    (goto-char (point-min))
+    (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
+      (if (re-search-forward "^# " nil t)
+	  (substitute-target-in-buffer "^#" "##")
+	(goto-char (point-min))
+	(unless (re-search-forward "^## " nil t)
+	  (substitute-target-in-buffer "^###" "##"))))))
 
 ;; TODO: this is not working
 (defun tlon-babel-autofix-spaces-in-abbreviations ()
