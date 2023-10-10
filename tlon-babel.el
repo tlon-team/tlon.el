@@ -1475,7 +1475,9 @@ If point is on a list, pre-populate the selection with the list elements."
 
 (defun tlon-babel-create-bae (dir)
   "Create a new file for BAE entity in DIR."
-  (let ((default-directory (file-name-concat tlon-babel-dir-bae-translations (file-name-as-directory dir))))
+  (let ((default-directory (file-name-concat
+			    (tlon-babel-get-property-of-repo :dir-translations 'bae)
+			    (file-name-as-directory dir))))
     (ps/new-empty-buffer)
     (tlon-babel-yaml-set-front-matter-for-title)
     (tlon-babel-name-file-from-title)
