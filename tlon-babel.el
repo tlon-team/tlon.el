@@ -208,6 +208,10 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   (file-name-concat tlon-babel-dir-refs "url-correspondences.json")
   "File containing the URL correspondences.")
 
+(defvar tlon-babel-file-section-correspondences
+  (file-name-concat tlon-babel-dir-refs "section-correspondences.json")
+  "File containing the section correspondences.")
+
 ;;;;; Org-mode ids
 
 (defvar tlon-babel-manual-processing-id
@@ -3072,6 +3076,55 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 	(while (re-search-forward keywords-regex nil t)
 	  (add-text-properties (match-beginning 0) (match-end 0)
 			       `(font-lock-face ,highlight-face)))))))
+
+;;;;; section correspondences
+
+(defun tlon-babel-section-correspondence-dwim ()
+  "Add a new section correspondence or modify an existing one."
+  (interactive)
+  (require 'citar)
+  (let* ((data (tlon-babel-parse-json 'list tlon-babel-file-section-correspondences))
+	 (keys (tlon-babel-get-keys data))
+	 (selected-key (let* ((keys (citar-select-refs)))
+			 (car keys))))
+    (tlon-babel-section-correspondence-check selected-key)
+    (let ((default-value (gethash selected-key data))
+	  (new-sectionOriginal (read-string (format "Enter value for key '%s', sectionOriginal: " selected-key)))
+	  (new-sectionSpanish (read-string (format "Enter value for key '%s', sectionSpanish: " selected-key)))
+	  (new-value (make-hash-table)))
+      (puthash "sectionOriginal" new-sectionOriginal new-value)
+      (puthash "sectionSpanish" new-sectionSpanish new-value)
+      (puthash selected-key
+	       (if default-value
+		   (append default-value (list new-value))
+		 (list new-value))
+	       data)
+      (with-temp-file tlon-babel-file-section-correspondences
+	(insert "{\n")
+	(maphash (lambda (k v)
+		   (insert (format "  \"%s\": [\n" k))
+		   (dolist (item v)
+		     (insert (format "    %s,\n" (json-encode item))))
+		   (delete-char -2)
+		   (insert "\n  ],\n"))
+		 data)
+	;; Remove last comma
+	(goto-char (- (point) 2))
+	(delete-char 1)
+	(insert "\n}")
+	(json-pretty-print (point-min) (point-max))
+	(write-file tlon-babel-file-section-correspondences)
+	;; (tlon-babel-url-correspondence-commit)
+	))))
+
+(defun tlon-babel-section-correspondence-check (key)
+  "Check that selected BibTeX key is associated with the original work."
+  (save-window-excursion
+    (tlon-ebib-open-key key)
+    (let ((langid (tlon-ebib-get-field-value "langid")))
+      (unless (member langid '("english" "american"))
+	(unless (y-or-n-p "The BibTeX entry you selected is not in English. In the `section-correspondences.json` file, you should use the BibTeX entry associated with the original work rather than with its translation. Are you sure you want to proceed?")
+	  (user-error "Aborted"))))))
 
 ;;;;; Bibtex correspondences
 
