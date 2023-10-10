@@ -2995,14 +2995,14 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 
 ;;;;; URL correspondences
 
-(defun tlon-babel-parse-json ()
-  "Parse JSON from the given file."
+(defun tlon-babel-parse-json (type file)
+  "Parse JSON FILE using array TYPE."
   (require 'json)
   (let ((json-object-type 'hash-table)
 	(json-key-type 'string)
-	(json-array-type 'list)
+	(json-array-type type)
 	(json-false :json-false))
-    (json-read-file tlon-babel-file-url-correspondences)))
+    (json-read-file file)))
 
 (defun tlon-babel-get-keys (data)
   "Get keys from hash table DATA."
@@ -3013,7 +3013,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-url-correspondence-dwim ()
   "Add a new URL correspondence or modify an existing one."
   (interactive)
-  (let* ((data (tlon-babel-parse-json))
+  (let* ((data (tlon-babel-parse-json 'hash-table tlon-babel-file-url-correspondences))
 	 (keys (tlon-babel-get-keys data))
 	 (selected-key (completing-read "Select existing URL or enter a new one: " keys))
 	 (default-value (gethash selected-key data))
