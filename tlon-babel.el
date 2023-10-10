@@ -54,7 +54,7 @@
 
 ;;;; Variables
 
-;;;;; Files
+;;;;; Files and dirs
 
 (defgroup tlon-babel ()
   "A companion package for the Babel project."
@@ -672,7 +672,7 @@ If no FILE is provided, use the file visited by the current buffer."
     commit))
 
 (defun tlon-babel-log-buffer-latest-user-commit (&optional file)
-  "Show changes to FILE since the latest commit by the current user.
+  "Show modifications to FILE since the latest commit by the current user.
 If no FILE is provided, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
@@ -1215,7 +1215,7 @@ If REPO is nil, return files in current repository. DIR is one of `originals' or
 
 (defun tlon-babel-yaml-get-front-matter (&optional file-or-buffer)
   "Return the YAML front matter from FILE-OR-BUFFER as strings in a list.
-   If FILE-OR-BUFFER is nil, use the current buffer."
+If FILE-OR-BUFFER is nil, use the current buffer."
   (let ((file-or-buffer (or file-or-buffer
 			    (buffer-file-name)
 			    (current-buffer))))
@@ -2554,7 +2554,7 @@ check that current file matches translation."
       (user-error "Current file does not match file in clock"))))
 
 (defun tlon-babel-check-label-and-assignee (repo)
-  "Check that clocked action matches label and assignee matches user of topic in REPO."
+  "Check that clocked action, user match label, assignee of topic in REPO."
   (save-window-excursion
     (let* ((default-directory repo)
 	   (key (tlon-babel-get-clock-key))
@@ -2576,7 +2576,7 @@ check that current file matches translation."
 	(user-error "No topic found for %s" key)))))
 
 (defun tlon-babel-check-staged-or-unstaged (file)
-  "Check if there are staged or unstaged changes in repo involving FILE."
+  "Check if there are staged or unstaged modifications in repo involving FILE."
   (catch 'found
     (dolist (flag '("staged" ""))
       (let ((git-command (format "git diff --%s --name-only %s" flag file)))
@@ -2584,7 +2584,7 @@ check that current file matches translation."
 	  (throw 'found t))))))
 
 (defun tlon-babel-check-staged-or-unstaged-other-than (file)
-  "Check if there are staged or unstaged changes in repo not involving FILE."
+  "Check if there are staged or unstaged modifications in repo not involving FILE."
   (let* ((default-directory (tlon-babel-get-repo-from-file file))
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file)))
@@ -2784,7 +2784,7 @@ If REPO is nil, use the current repo."
     (tlon-babel-search-files search-string repo)))
 
 (defun tlon-babel-commit-and-push (action file)
-  "Commit and push changes to FILE.
+  "Commit and push modifications to FILE.
 The commit message is ACTION followed by the name of FILE."
   (let* ((default-directory (tlon-babel-get-repo-from-file file)))
     (tlon-babel-check-staged-or-unstaged-other-than file)
@@ -2976,7 +2976,7 @@ If the topic has more than one label, return the first."
       (tlon-babel-glossary-commit "modify" english explanation))))
 
 (defun tlon-babel-glossary-commit (action term &optional description)
-  "Commit glossary changes.
+  "Commit glossary modifications.
 ACTION describes the action (\"add\" or \"modify\") performed on the glossary.
 TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
@@ -3034,8 +3034,9 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
       (write-file tlon-babel-file-url-correspondences)
       (tlon-babel-url-correspondence-commit))))
 
+;; TODO: consider adapting `tlon-babel-commit-and-push' instead
 (defun tlon-babel-url-correspondence-commit ()
-  "Commit URL correspondence changes."
+  "Commit modifications in `url-correspondences.json'."
   (let ((default-directory (tlon-babel-get-property-of-repo :dir 'genus)))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
@@ -3441,12 +3442,12 @@ number, it will retry that many times instead of 2."
 	(cdr (assoc "access_token" json-response))))))
 
 (defun tlon-babel-update-bae-genus ()
-  "Update the BAE website to reflect latest Genus changes."
+  "Update the BAE website to reflect latest Genus modifications."
   (interactive)
   (tlon-babel-make-bae-request "https://altruismoeficaz.net/api/update"))
 
 (defun tlon-babel-update-bae-images ()
-  "Update the BAE website to reflect latest image changes."
+  "Update the BAE website to reflect latest image modifications."
   (interactive)
   (tlon-babel-make-bae-request "https://altruismoeficaz.net/api/update/rebuild-frontend"))
 
