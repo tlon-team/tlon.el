@@ -2156,23 +2156,6 @@ Markdown buffer at point is used."
 	       :reader 'ignore) ;; do not parse the response json
     (message "Created issue with title %s" title)))
 
-;; I wasn't able to make this work; perhaps try again in the future
-(defvar tlon-babel-apply-after-forge-pull nil
-  "Whether to apply advice after `forge--pull'.")
-
-(defun tlon-babel-after-forge-pull ()
-  ""
-  (cl-defmethod forge--pull :around ((repo forge-github-repository) until
-				     &optional callback)
-    (if tlon-babel-apply-after-forge-pull
-	(cl-call-next-method repo until
-			     (or callback
-				 (lambda ()
-				   (tlon-babel-set-issue-number-in-heading (car (tlon-babel-get-latest-issue repo)))
-				   (tlon-babel-visit-issue)
-				   (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name)))))
-      (cl-call-next-method))))
-
 (defun tlon-babel-create-issue-from-todo ()
   "Create a new GitHub issue based on the current `org-mode' heading."
   (interactive)
