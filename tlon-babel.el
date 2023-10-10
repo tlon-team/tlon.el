@@ -3193,23 +3193,26 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("q l" "show log"                     tlon-babel-get-bae-log)
     ]
    ["Add or modify"
-    ("a a" "glossary"                    tlon-babel-glossary-dwim)
-    ("a u" "URL correspondences"         tlon-babel-url-correspondence-dwim)
+    ("a a" "glossary"                     tlon-babel-glossary-dwim)
+    ("a s" "section correspondences"      tlon-babel-section-correspondence-dwim)
+    ("a u" "URL correspondences"          tlon-babel-url-correspondence-dwim)
     """Search"
     ("s s" "multi"                        tlon-babel-search-multi)
     ("s c" "commits"                      tlon-babel-search-commits)
-    ("s d" "commit-diffs"                  tlon-babel-search-commit-diffs)
+    ("s d" "commit-diffs"                 tlon-babel-search-commit-diffs)
     ("s f" "files"                        tlon-babel-search-files)
     ("s i" "topics"                       tlon-babel-search-topics)
     ("s t" "translation"                  tlon-babel-search-for-translation)
     ]
    ["Visit file"
     ("f f" "counterpart"                  tlon-babel-open-counterpart)
+    ("f j" "jobs.org"                     tlon-babel-open-jobs)
+    ("f l" "fluid.bib"                    tlon-babel-open-fluid)
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
-    """Translate"
-    ("t t" "GPT"                          tlon-babel-gpt-translate)
-    ("t w" "Web"                          tlon-babel-search-for-translation)
+    ("f t" "stable.bib"                   tlon-babel-open-stable)
+    ("f u" "url-correspondences.json"     tlon-babel-open-url-correspondences)
+    ("f s" "section-correspondences.json" tlon-babel-open-section-correspondences)
     ]
    ["Visit dir"
     ("d d" "repo"                         tlon-babel-open-repo)
@@ -3224,7 +3227,10 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
    ["File changes"
     ("h h" "log"                          magit-log-buffer-file)
     ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
-    ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)]
+    ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
+    """Translate"
+    ("t t" "GPT"                          tlon-babel-gpt-translate)
+    ("t w" "Web"                          tlon-babel-search-for-translation)]
    ["Clock"
     ("c c" "issue"                        tlon-babel-open-clock-topic)
     ("c f" "file"                         tlon-babel-open-clock-file )
