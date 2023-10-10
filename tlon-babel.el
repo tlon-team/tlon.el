@@ -3211,8 +3211,8 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
     ("f t" "stable.bib"                   tlon-babel-open-stable)
-    ("f u" "url-correspondences.json"     tlon-babel-open-url-correspondences)
-    ("f s" "section-correspondences.json" tlon-babel-open-section-correspondences)
+    ("f u" "url-correspondences"          tlon-babel-open-url-correspondences)
+    ("f s" "section-correspondences"      tlon-babel-open-section-correspondences)
     ]
    ["Visit dir"
     ("d d" "repo"                         tlon-babel-open-repo)
