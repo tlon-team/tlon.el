@@ -3678,7 +3678,8 @@ computed by dividing the file size by CHARS-PER-WORD."
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat tlon-babel-dir-genus "count/historic-word-count")))
+	 (script (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus)
+				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
 
 (provide 'tlon-babel)
