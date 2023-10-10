@@ -3194,8 +3194,8 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ]
    ["Add or modify"
     ("a a" "glossary"                     tlon-babel-glossary-dwim)
-    ("a s" "section correspondences"      tlon-babel-section-correspondence-dwim)
-    ("a u" "URL correspondences"          tlon-babel-url-correspondence-dwim)
+    ("a s" "section corresp"      tlon-babel-section-correspondence-dwim)
+    ("a u" "URL corresp"          tlon-babel-url-correspondence-dwim)
     """Search"
     ("s s" "multi"                        tlon-babel-search-multi)
     ("s c" "commits"                      tlon-babel-search-commits)
@@ -3211,8 +3211,8 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
     ("f t" "stable.bib"                   tlon-babel-open-stable)
-    ("f u" "url-correspondences"          tlon-babel-open-url-correspondences)
-    ("f s" "section-correspondences"      tlon-babel-open-section-correspondences)
+    ("f u" "url-corresp"          tlon-babel-open-url-correspondences)
+    ("f s" "section-corresp"      tlon-babel-open-section-correspondences)
     ]
    ["Visit dir"
     ("d d" "repo"                         tlon-babel-open-repo)
