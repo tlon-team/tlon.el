@@ -1102,6 +1102,19 @@ Text enclosed by an `abbr' element pair will be displayed in small caps."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "$$\n" "\n$$"))
 
+(defun tlon-babel-markdown-end-of-buffer-dwim ()
+  "Move point to the end of the relevant part of the buffer.
+The relevant part of the buffer is the part of the buffer that excludes the
+\"local variables\" section.
+
+If this function is called twice consecutively, it will move the point to the
+end of the buffer unconditionally."
+  (interactive)
+  (let ((match (re-search-forward tlon-babel-local-variables-line-start nil t)))
+    (if (or (not match) (eq this-command last-command))
+	(goto-char (point-max))
+      (goto-char (- (match-beginning 0) 1)))))
+
 ;;;;; Metadata
 
 ;;;;;; Get metadata
