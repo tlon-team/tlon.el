@@ -3073,7 +3073,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   "Highlight source URLs in URL correspondences file."
   (interactive)
   ;; Load JSON file
-  (let* ((json-data (tlon-babel-parse-json))
+  (let* ((json-data (tlon-babel-parse-json 'hash-table tlon-babel-file-url-correspondences))
 	 (key-urls (tlon-babel-get-keys json-data))
 	 ;; Remove URL prefixes from keys
 	 (search-keywords (mapcar (lambda (url)
