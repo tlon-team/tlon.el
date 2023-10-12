@@ -3585,7 +3585,7 @@ If the key is not found, it is added to the list of missing keys."
 		"https://www.linguee.com/english-spanish/search?query=%s")))
     (dolist (url urls)
       (browse-url (format url (url-hexify-string string)) 'new-buffer)))
-  (ps/goldendict-search-input string))
+  (tlon-babel-goldendict-search-input string))
 
 (require 'gptel)
 (defun tlon-babel-gpt-rewrite ()
@@ -3661,6 +3661,29 @@ Return the path of the temporary file created."
 	(write-file new-file)))
     (message "File created: %s" new-file)
     new-file))
+
+;;;;; Goldendict
+
+(defun tlon-babel-goldendict-region-or-word ()
+  "Return region or word around point.
+If `mark-active' on, return region string. Otherwise return word
+around point."
+  (if (use-region-p)
+      (buffer-substring-no-properties (region-beginning)
+                                      (region-end))
+    (thing-at-point 'word)))
+
+(defun tlon-babel-goldendict-search-input (input &optional arg)
+  "Run an external search for INPUT in GoldenDict.
+If there is a word at point or an active selection, look it up,
+else prompt user for input. If invoked with prefix
+argument (ARG), always force prompt."
+  (interactive (list (tlon-babel-goldendict-region-or-word) current-prefix-arg))
+  (if (and input (not arg))
+      (kill-new input)
+    (kill-new (read-string "Expression: ")))
+  ;; KM macro name: "Goldendict: lookup text in clipboard"
+  (shell-command "osascript -e 'tell application \"Keyboard Maestro Engine\" to do script \"D4404D73-FF1D-4DF6-8107-7AB050C28C9F\"'"))
 
 ;;;;; Misc
 
