@@ -531,7 +531,7 @@ If not, offer to process it as a new job."
 
 (defun tlon-babel-store-todo (template &optional no-action)
   "Store a new TODO using TEMPLATE.
-If TODO already exiists, move point to it and do not create a duplicate. If
+If TODO already exists, move point to it and do not create a duplicate. If
 NO-ACTION is non-nil, store a master TODO."
   (let ((todo (tlon-babel-make-todo-heading-from-issue no-action)))
     (if (tlon-babel-get-todo-position todo)
