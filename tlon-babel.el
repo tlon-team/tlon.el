@@ -718,6 +718,89 @@ If FILE is not provided, use the file visited by the current buffer."
 
 ;;;;;; Cleanup
 
+;;;;;;; Cleanup common
+
+(defun tlon-babel-markdown-cleanup-common ()
+  "Cleanup a buffer visiting an imported document.
+These functions are to be called for all imported documents: both EAF and
+non-EAF."
+  (interactive)
+  (tlon-babel-markdown-cleanup-unescape-chars)
+  (tlon-babel-markdown-cleanup-unescape-lines)
+  (tlon-babel-markdown-cleanup-remove-linebreaks)
+  (tlon-babel-markdown-cleanup-format-heading)
+  (tlon-babel-markdown-cleanup-convert-hyphens)
+  (unfill-region (point-min) (point-max)))
+
+(defun tlon-babel-markdown-cleanup-unescape-chars ()
+  "Unescape relevant characters in the current buffer."
+  (dolist (char '("\"" "'" "|" ">" "<" "~" "."))
+    (let ((regexp (concat (regexp-quote "\\") char)))
+      (goto-char (point-min))
+      (while (re-search-forward regexp nil t)
+	(replace-match char)))))
+
+(defun tlon-babel-markdown-cleanup-unescape-lines ()
+  "Unescape consecutive empty lines."
+  (goto-char (point-min))
+  (while (re-search-forward "\\\\\n\\\\\n" nil t)
+    (replace-match "\n\n")))
+
+(defun tlon-babel-markdown-cleanup-remove-linebreaks ()
+  "Remove extra line breaks in the current buffer."
+  (goto-char (point-min))
+  (while (re-search-forward "\n\n\n" nil t)
+    (replace-match "\n\n")))
+
+(defun tlon-babel-markdown-cleanup-format-heading ()
+  "Remove boldfacing in headline elements."
+  (goto-char (point-min))
+  (while (re-search-forward "^\\(#\\{1,6\\} \\)\\*\\*\\(.*\\)\\*\\*$" nil t)
+    (replace-match "\\1\\2")))
+
+(defun tlon-babel-markdown-cleanup-convert-hyphens ()
+  "Convert double and triple hyphens into en and em dashes, respectively."
+  (dolist (cons '(("---" . "—")
+		  ("--" . "–")))
+    (goto-char (point-min))
+    (while (re-search-forward (car cons) nil t)
+      (replace-match (cdr cons)))))
+
+;;;;;;; Cleanup EA Forum
+
+(defun tlon-babel-markdown-cleanup-eaf ()
+  "Cleanup a buffer visiting an imported document from the EA Forum.
+Please note that the order in which these functions are called is relevant. Do
+not alter it unless you know what you are doing."
+  (interactive)
+  (tlon-babel-markdown-cleanup-fix-footnote-refs)
+  (tlon-babel-markdown-cleanup-remove-text))
+
+(defun tlon-babel-markdown-cleanup-fix-footnote-refs ()
+  "Convert footnote references to valid Markdown syntax."
+  (let* ((ref-number "[[:digit:]]\\{1,3\\}")
+	 (ref-source (format "\\^\\[\\(%s\\)\\](#fn%s){rel=\"footnote\"}\\^" ref-number ref-number))
+	 (ref-target (format "\\(%s\\)\\.  ::: {#fn%s} " ref-number ref-number))
+	 (find-replace `((,ref-source . "[^\\1]")
+			 (,ref-target . "[^\\1]: "))))
+    (dolist (elt find-replace)
+      (goto-char (point-min))
+      (while (re-search-forward (car elt) nil t)
+	(replace-match (cdr elt))))))
+
+(defun tlon-babel-markdown-cleanup-remove-text ()
+  "Remove various strings of text."
+  (dolist (string '("::: footnotes\n"
+		    "{rev=\"footnote\"} :::"
+		    "(#fnref[[:digit:]]\\{1,3\\})"
+		    " \\[↩]"
+		    " :::"
+		    "*This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/)*"))
+    (goto-char (point-min))
+    (while (re-search-forward string nil t)
+      (replace-match ""))))
+
+;; old function; should be deleted after relevant regexp strings have been subsumed into other funs
 (defun tlon-babel-markdown-eaf-cleanup ()
   "Cleanup the buffer visiting an EAF entry."
   (interactive)
@@ -768,31 +851,8 @@ If FILE is not provided, use the file visited by the current buffer."
     ;; remove double asterisks surrounding headings
     (while (re-search-forward "# \\*\\*\\(.*\\)\\*\\* *?$" nil t)
       (replace-match (format "# %s" (match-string-no-properties 1))))
-    (tlon-babel-markdown-non-eaf-cleanup)
+    (tlon-babel-markdown-cleanup-common)
     (save-buffer)))
-
-(defun tlon-babel-markdown-non-eaf-cleanup ()
-  "Cleanup the buffer visiting a non-EAF entry."
-  (interactive)
-  ;; TODO: Move this to a common function called by both the EAF and non-EAF commands.
-  (unfill-region (point-min) (point-max))
-  (goto-char (point-min))
-  (goto-char (point-min))
-  ;; unescape double quotes
-  (while (re-search-forward "\\\\\"" nil t)
-    (replace-match "\""))
-  (goto-char (point-min))
-  ;; unescape single quotes
-  (while (re-search-forward "\\\\'" nil t)
-    (replace-match "'"))
-  (goto-char (point-min))
-  ;; unescape vertical bars
-  (while (re-search-forward "\\\\|" nil t)
-    (replace-match "|"))
-  (goto-char (point-min))  ;; remove extra line breaks
-  (while (re-search-forward "\n\n\n" nil t)
-    (replace-match "\n\n"))
-  (goto-char (point-min)))
 
 (defun tlon-babel-convert-to-markdown ()
   "Convert a file from EA Wiki to Markdown."
@@ -802,14 +862,6 @@ If FILE is not provided, use the file visited by the current buffer."
       (shell-command (format "pandoc -s '%s' -t markdown -o '%s'"
 			     file
 			     md-file)))))
-
-(defun tlon-babel-cleanup-markdown-multiple ()
-  "Clean up html files imported from EA Wiki."
-  (interactive)
-  (dolist (file (directory-files "." nil "\\.md$"))
-    (with-current-buffer (find-file-noselect file)
-      (message "Cleaning up %s" (buffer-name))
-      (tlon-babel-markdown-eaf-cleanup))))
 
 (defun tlon-babel-split-footnotes-into-separate-paragraphs ()
   "Split footnotes into separate paragraphs."
@@ -840,9 +892,9 @@ If FILE is not provided, use the file visited by the current buffer."
 	(let* ((fn1 (tlon-babel-markdown-get-footnote n1 'delete))
 	       (fn2 (tlon-babel-markdown-get-footnote n2 'delete))
 	       (consolidated (tlon-babel-consolidate-bibtex-keys (format "%s; %s" fn1 fn2))))
-	  (markdown-insert-footnote)
-	  (insert (format "%s." consolidated))
-	  (goto-char (point-min)))))))
+	       (markdown-insert-footnote)
+	       (insert (format "%s." consolidated))
+	       (goto-char (point-min)))))))
 
 (defun tlon-babel-markdown-get-footnote (n &optional delete)
   "Get the content of footnote number N.
@@ -981,14 +1033,14 @@ least one level 3 heading and no level 2 headings.
 
 (defun tlon-babel-confirm-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-confirm-fix '("\\([)\\.[:alnum:]]\\)-\\([ ,]\\)"
-			    "[^ ]\\([ ,]\\)-\\([([:alnum:]]\\)"
+  (tlon-babel-confirm-fix '("[^ ]\\([ ,]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
+			    "\\([)\\.\"[:alnum:]]\\)-\\([ ,]\\)" ; closing dash
 			    "[^ >)]\\( \\)-\\( \\)")
 			  "\\1—\\2"))
 
 (defun tlon-babel-confirm-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-confirm-fix '("\\s-\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!]\\)")
+  (tlon-babel-confirm-fix '("\\s-\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?! ]\\)")
 			  " \\1–\\2\\3"))
 
 (defun tlon-babel-confirm-fix-solo ()
@@ -2100,7 +2152,8 @@ TITLE optionally specifies the title of the entity to be imported."
     (shell-command
      (format tlon-babel-pandoc-convert-from-file html-file target))
     (with-current-buffer (find-file-noselect target)
-      (tlon-babel-markdown-eaf-cleanup))
+      (tlon-babel-markdown-cleanup-common)
+      (tlon-babel-markdown-cleanup-eaf))
     (find-file target)))
 
 
@@ -2122,7 +2175,7 @@ for one."
     (shell-command
      (format pandoc source target))
     (with-current-buffer (find-file-noselect target)
-      (tlon-babel-markdown-non-eaf-cleanup))
+      (tlon-babel-markdown-cleanup-common))
     (find-file target)))
 
 (defun tlon-babel-import-pdf (path &optional title)
@@ -2362,6 +2415,7 @@ for the process that is being initialized."
 	(tlon-babel-mark-todo-done)
 	(message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 		 next-label next-assignee)
+	;; TODO: figure out why this isn’t working
 	(when (or (string= current-action "Review")
 		  (string= current-action "Check"))
 	  (tlon-babel-mark-todo-done)
@@ -2745,7 +2799,7 @@ ACTION is `close', close issue."
 If TOPIC is nil, use the topic at point."
   (let ((topic (or topic (forge-current-topic))))
     (when (eq 'open (oref topic state))
-      (forge--set-topic-state (forge-get-repository topic) topic))))
+      (forge--set-topic-state (forge-get-repository topic) topic 'closed))))
 
 (defun tlon-babel-set-parameters (topic &optional label-or-assignee)
   "Set label or assignee for TOPIC, depending on value of LABEL-OR-ASSIGNEE."
