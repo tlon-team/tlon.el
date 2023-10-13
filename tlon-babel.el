@@ -162,11 +162,13 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   "Get the value of property PROPERTY in USER."
   (tlon-babel-get-property-of-alist property user tlon-babel-users))
 
-(defvar tlon-babel-dir-refs ""
+(defvar tlon-babel-dir-refs
+  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "refs/")
   "Directory where references files are stored.")
 
-(setq tlon-babel-dir-refs
-      (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "refs/"))
+(defvar tlon-babel-dir-correspondences
+  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "correspondences/")
+  "Directory where correspondence files are stored.")
 
 (defvar tlon-babel-dir-dict
   (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "dict/")
@@ -205,12 +207,16 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   "File containing the stable bibliography.")
 
 (defvar tlon-babel-file-url-correspondences
-  (file-name-concat tlon-babel-dir-refs "url-correspondences.json")
+  (file-name-concat tlon-babel-dir-correspondences "url-correspondences.json")
   "File containing the URL correspondences.")
 
 (defvar tlon-babel-file-section-correspondences
-  (file-name-concat tlon-babel-dir-refs "section-correspondences.json")
+  (file-name-concat tlon-babel-dir-correspondences "section-correspondences.json")
   "File containing the section correspondences.")
+
+(defvar tlon-babel-file-bibtex-correspondences
+  (file-name-concat tlon-babel-dir-correspondences "bibtex-correspondences.json")
+  "File containing the BibTeX correspondences.")
 
 (defmacro tlon-babel-create-file-opening-command (file)
   "Create a command to open FILE."
@@ -229,6 +235,7 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
 (tlon-babel-create-file-opening-command "stable")
 (tlon-babel-create-file-opening-command "url-correspondences")
 (tlon-babel-create-file-opening-command "section-correspondences")
+(tlon-babel-create-file-opening-command "bibtex-correspondences")
 
 ;;;;; Org-mode ids
 
@@ -3268,6 +3275,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("f m" "manual.md"                    tlon-babel-open-manual)
     ("f r" "readme.md"                    tlon-babel-open-readme)
     ("f t" "stable.bib"                   tlon-babel-open-stable)
+    ("f u" "bibtex-corresp"               tlon-babel-open-bibtex-correspondences)
     ("f u" "url-corresp"                  tlon-babel-open-url-correspondences)
     ("f s" "section-corresp"              tlon-babel-open-section-correspondences)
     ]
