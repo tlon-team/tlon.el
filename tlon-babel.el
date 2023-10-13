@@ -795,7 +795,7 @@ not alter it unless you know what you are doing."
 		    "(#fnref[[:digit:]]\\{1,3\\})"
 		    " \\[↩]"
 		    " :::"
-		    "*This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/)*"))
+		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License\\](https://creativecommons.org/licenses/by/4.0/)\\*\n"))
     (goto-char (point-min))
     (while (re-search-forward string nil t)
       (replace-match ""))))
@@ -1637,7 +1637,9 @@ error if the current buffer is not in `markdown-mode' and FILE is nil."
     (save-buffer))
   (let* ((counterpart (tlon-babel-get-counterpart
 		       (or file (buffer-file-name))))
-	 (paragraphs (- (tlon-babel-count-paragraphs file (point-min) (+ (point) 2)) 1)))
+	 (paragraphs (- (tlon-babel-count-paragraphs
+			 file (point-min) (min (point-max) (+ (point) 2)))
+			1)))
     (find-file counterpart)
     (goto-char (point-min))
     (forward-paragraph paragraphs)))
@@ -2153,7 +2155,8 @@ TITLE optionally specifies the title of the entity to be imported."
      (format tlon-babel-pandoc-convert-from-file html-file target))
     (with-current-buffer (find-file-noselect target)
       (tlon-babel-markdown-cleanup-common)
-      (tlon-babel-markdown-cleanup-eaf))
+      (tlon-babel-markdown-cleanup-eaf)
+      (tlon-babel-autofix-all))
     (find-file target)))
 
 
@@ -2175,7 +2178,8 @@ for one."
     (shell-command
      (format pandoc source target))
     (with-current-buffer (find-file-noselect target)
-      (tlon-babel-markdown-cleanup-common))
+      (tlon-babel-markdown-cleanup-common)
+      (tlon-babel-autofix-all))
     (find-file target)))
 
 (defun tlon-babel-import-pdf (path &optional title)
