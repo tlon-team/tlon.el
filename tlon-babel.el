@@ -734,8 +734,9 @@ non-EAF."
   (tlon-babel-markdown-cleanup-unescape-chars)
   (tlon-babel-markdown-cleanup-unescape-lines)
   (tlon-babel-markdown-cleanup-remove-linebreaks)
-  (tlon-babel-markdown-cleanup-format-heading)
   (tlon-babel-markdown-cleanup-convert-hyphens)
+  (tlon-babel-markdown-cleanup-format-heading)
+  (tlon-babel-markdown-cleanup-set-heading-levels)
   (unfill-region (point-min) (point-max)))
 
 (defun tlon-babel-markdown-cleanup-unescape-chars ()
@@ -771,6 +772,22 @@ non-EAF."
     (goto-char (point-min))
     (while (re-search-forward (car cons) nil t)
       (replace-match (cdr cons)))))
+
+(defun tlon-babel-markdown-cleanup-set-heading-levels ()
+  "Promote or demote headings in the current buffer when appropriate.
+Specifically, when the buffer contains at least one heading, demote all headings
+if there is at least one level 1 heading, and promote all headings while there
+are no level 2 headings and some headings level 3 or higher."
+  (require 'substitute)
+  (save-excursion
+    (goto-char (point-min))
+    (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
+      (goto-char (point-min))
+      (when (re-search-forward "^# " nil t)
+	(substitute-target-in-buffer "^#" "##"))
+      (goto-char (point-min))
+      (while (not (re-search-forward "^## " nil t))
+	(substitute-target-in-buffer "^###" "##")))))
 
 ;;;;;;; Cleanup EA Forum
 
@@ -984,24 +1001,6 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
 		      "\\1"))
 
-;; TODO: reconsider criterion; it fails when it contains a single level one title heading
-(defun tlon-babel-autofix-heading-hierarchy ()
-  "Promote or demote headings in current buffer when appropriate.
-Specifically, when FILE contains at least one heading, demote all headings if
-there is at least one level 1 heading, and promote all headings if there is at
-least one level 3 heading and no level 2 headings.
-
- If FILE is nil, check the current buffer."
-  (require 'substitute)
-  (save-excursion
-    (goto-char (point-min))
-    (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
-      (if (re-search-forward "^# " nil t)
-	  (substitute-target-in-buffer "^#" "##")
-	(goto-char (point-min))
-	(unless (re-search-forward "^## " nil t)
-	  (substitute-target-in-buffer "^###" "##"))))))
-
 ;; TODO: this is not working
 (defun tlon-babel-autofix-spaces-in-abbreviations ()
   "Prompt the user to add a thin space between abbreviations followed by a period."
@@ -1022,7 +1021,6 @@ least one level 3 heading and no level 2 headings.
   (tlon-babel-autofix-curly-quotes)
   (tlon-babel-autofix-footnote-punctuation)
   (tlon-babel-autofix-periods-in-headings)
-  (tlon-babel-autofix-heading-hierarchy)
   (tlon-babel-autofix-spaces-in-abbreviations)
   (tlon-babel-autofix-percent-signs))
 
