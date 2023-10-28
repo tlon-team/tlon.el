@@ -1809,8 +1809,9 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 
 (defun tlon-babel-get-clock ()
   "Return the currently clocked heading."
-  (when org-clock-current-task
-    (substring-no-properties org-clock-current-task)))
+  (if org-clock-current-task
+      (substring-no-properties org-clock-current-task)
+    (user-error "No clock running")))
 
 (defun tlon-babel-get-clock-key ()
   "Return bibtex key in clocked heading.
