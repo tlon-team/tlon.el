@@ -2322,14 +2322,17 @@ If TODO is nil, user the currently clocked heading."
     (org-up-heading-safe)
     (org-no-properties (org-get-heading))))
 
-(defun tlon-babel-mark-todo-done (&optional todo)
-  "Mark TODO in `tlon-babel-todos-file' as DONE.
-If TODO is nil, use the heading at point."
-  (save-window-excursion
-    (org-todo "DONE")
-    (save-buffer)
-    (message "Marked `%s' as DONE" todo)))
+(defun tlon-babel-mark-todo-done (&optional todo file)
+  "Mark TODO in FILE as DONE.
+If TODO is nil, use the issue at point. If FILE is nil, use
+`tlon-babel-todos-file'."
+  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue)))
+	(file (or file tlon-babel-todos-file)))
+    (save-window-excursion
       (tlon-babel-visit-todo todo file)
+      (org-todo "DONE")
+      (save-buffer)
+      (message "Marked `%s' as DONE" todo))))
 
 (defun tlon-babel-get-key-in-heading ()
   "Get the key of the currently clocked task."
