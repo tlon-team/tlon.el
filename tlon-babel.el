@@ -526,10 +526,9 @@ If not, offer to process it as a new job."
       (tlon-babel-store-master-todo)
       (tlon-babel-create-todo-from-issue))))
 
-(defun tlon-babel-get-todo-position (todo)
-  "Return the position of TODO in `tlon-babel-todos-file', else nil."
-  (org-find-exact-headline-in-buffer
-   todo (find-file-noselect tlon-babel-todos-file)))
+(defun tlon-babel-get-todo-position (todo file)
+  "Return the position of TODO in FILE, else nil."
+  (org-find-exact-headline-in-buffer todo (find-file-noselect file)))
 
 (defun tlon-babel-open-todo (position)
   "Open `tlon-babel-todos-file' at TODO POSITION."
@@ -541,8 +540,8 @@ If not, offer to process it as a new job."
 If TODO already exists, move point to it and do not create a duplicate. If
 NO-ACTION is non-nil, store a master TODO."
   (let ((todo (tlon-babel-make-todo-heading-from-issue no-action)))
-    (if (tlon-babel-get-todo-position todo)
 	(tlon-babel-visit-todo)
+    (if (tlon-babel-get-todo-position todo tlon-babel-todos-file)
       (kill-new todo)
       (org-capture nil template))))
 
@@ -2311,8 +2310,8 @@ COMMIT is non-nil, commit the change."
 If TODO is nil, use the heading at point."
   (interactive)
   (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue))))
-    (if-let ((pos (tlon-babel-get-todo-position todo)))
 	(tlon-babel-open-todo pos)
+    (if-let ((pos (tlon-babel-get-todo-position todo tlon-babel-todos-file)))
       (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file))))
 
 (defun tlon-babel-get-parent-todo (&optional todo)
