@@ -530,9 +530,9 @@ If not, offer to process it as a new job."
   "Return the position of TODO in FILE, else nil."
   (org-find-exact-headline-in-buffer todo (find-file-noselect file)))
 
-(defun tlon-babel-open-todo (position)
-  "Open `tlon-babel-todos-file' at TODO POSITION."
-  (find-file tlon-babel-todos-file)
+(defun tlon-babel-open-todo (file position)
+  "Open FILE at TODO POSITION."
+  (find-file file)
   (goto-char position))
 
 (defun tlon-babel-store-todo (template &optional no-action)
@@ -2310,8 +2310,8 @@ COMMIT is non-nil, commit the change."
 If TODO is nil, use the heading at point."
   (interactive)
   (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue))))
-	(tlon-babel-open-todo pos)
     (if-let ((pos (tlon-babel-get-todo-position todo tlon-babel-todos-file)))
+	(tlon-babel-open-todo file pos)
       (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file))))
 
 (defun tlon-babel-get-parent-todo (&optional todo)
