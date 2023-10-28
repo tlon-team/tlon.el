@@ -516,7 +516,8 @@ If not, offer to process it as a new job."
 (defun tlon-babel-store-or-refile-job-todo ()
   "Refile TODO under appropriate heading, or create new master TODO if none exists."
   (if-let ((pos (tlon-babel-get-todo-position
-		 (tlon-babel-make-todo-heading-from-issue 'no-action))))
+		 (tlon-babel-make-todo-heading-from-issue 'no-action)
+		 tlon-babel-todos-file)))
       (progn
 	(tlon-babel-store-todo "tbJ")
 	(let* ((inhibit-message t))
