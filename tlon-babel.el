@@ -1024,9 +1024,9 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-autofix-spaces-in-abbreviations)
   (tlon-babel-autofix-percent-signs))
 
-;;;;;;; confirm-fix
+;;;;;;; manual-fix
 
-(defun tlon-babel-confirm-fix (regexp-list newtext)
+(defun tlon-babel-manual-fix (regexp-list newtext)
   "Prompt user to replace matches in REGEXP-LIST with NEWTEXT."
   (widen)
   (save-excursion
@@ -1035,37 +1035,37 @@ If DELETE is non-nil, delete the footnote."
       (goto-char (point-min))
       (query-replace-regexp regexp newtext nil (point-min) (point-max)))))
 
-(defun tlon-babel-confirm-fix-em-dashes ()
+(defun tlon-babel-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-confirm-fix '("[^ ]\\([ ,]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
-			    "\\([)\\.\"[:alnum:]]\\)-\\([ ,]\\)" ; closing dash
-			    "[^ >)]\\( \\)-\\( \\)")
-			  "\\1—\\2"))
+  (tlon-babel-manual-fix '("\\([^ ][ ,]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
+			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,]\\)" ; closing dash
+			   "\\([^ >)] \\)-\\( \\)")
+			 "\\1—\\2"))
 
-(defun tlon-babel-confirm-fix-number-ranges ()
+(defun tlon-babel-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-confirm-fix '("\\s-\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?! ]\\)")
-			  " \\1–\\2\\3"))
+  (tlon-babel-manual-fix '("\\s-\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?! ]\\)")
+			 " \\1–\\2\\3"))
 
-(defun tlon-babel-confirm-fix-solo ()
+(defun tlon-babel-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
-  (tlon-babel-confirm-fix '("sólo")
-			  "solo"))
+  (tlon-babel-manual-fix '("sólo")
+			 "solo"))
 
-(defun tlon-babel-confirm-fix-podcast ()
+(defun tlon-babel-manual-fix-podcast ()
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
-  (tlon-babel-confirm-fix '(" podcast")
-			  " pódcast"))
+  (tlon-babel-manual-fix '(" podcast")
+			 " pódcast"))
 
-(defun tlon-babel-confirm-fix-all ()
-  "Run all the `tlon-babel-confirm-fix' commands."
+(defun tlon-babel-manual-fix-all ()
+  "Run all the `tlon-babel-manual-fix' commands."
   (interactive)
-  (tlon-babel-confirm-fix-em-dashes)
-  (tlon-babel-confirm-fix-number-ranges)
-  (tlon-babel-confirm-fix-solo)
-  (tlon-babel-confirm-fix-podcast))
+  (tlon-babel-manual-fix-em-dashes)
+  (tlon-babel-manual-fix-number-ranges)
+  (tlon-babel-manual-fix-solo)
+  (tlon-babel-manual-fix-podcast))
 
 ;;;;;; Insertion commands
 
@@ -2401,7 +2401,7 @@ for the process that is being initialized."
      (when (string= current-action "Process")
        'original))
     (when (string= current-action "Translate")
-      (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-confirm-fix-all'?")
+      (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-manual-fix-all'?")
 	(user-error "Aborted")))
     (when (string= current-action "Check")
       (tlon-babel-read-mode -1))
