@@ -3358,7 +3358,7 @@ otherwise prompt for a repo."
 (defun tlon-babel-open-utilitarismo-repo ()
   "Open the Utilitarismo repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo :dir 'bae)))
+  (dired (tlon-babel-get-property-of-repo :dir 'utilitarismo)))
 
 (defun tlon-babel-open-largoplacismo-repo ()
   "Open the Largoplacismo repository."
