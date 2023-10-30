@@ -1048,6 +1048,11 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-manual-fix '("\\s-\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?! ]\\)")
 			 " \\1–\\2\\3"))
 
+(defun tlon-babel-manual-fix-roman-numerals ()
+  "Prompt the user to add small caps tags to roman numerals."
+  (tlon-babel-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
+			 " <abbr>\\1</abbr>"))
+
 (defun tlon-babel-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
   (tlon-babel-manual-fix '("sólo")
@@ -1065,6 +1070,7 @@ dedicated function."
   (interactive)
   (tlon-babel-manual-fix-em-dashes)
   (tlon-babel-manual-fix-number-ranges)
+  (tlon-babel-manual-fix-roman-numerals)
   (tlon-babel-manual-fix-solo)
   (tlon-babel-manual-fix-podcast))
 
