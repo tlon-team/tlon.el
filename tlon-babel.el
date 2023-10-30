@@ -2845,16 +2845,14 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO's commit history.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-babel-get-repo nil 'genus)))
-	 (default-directory repo))
+  (let ((default-directory (or repo default-directory)))
     (magit-log-all (list "--grep" search-string))))
 
 (defun tlon-babel-search-commit-diffs (search-string &optional repo)
   "Search for SEARCH-STRING in REPO's commit diff history.
 If REPO is nil, use the current repo."
   (interactive "sSearch commit diffs : ")
-  (let* ((repo (or repo (tlon-babel-get-repo nil 'genus)))
-	 (default-directory repo))
+  (let ((default-directory (or repo default-directory)))
     (magit-log-all `("-S" ,search-string))))
 
 (defun tlon-babel-search-files (search-string &optional repo)
