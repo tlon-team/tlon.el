@@ -1002,14 +1002,6 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
 		      "\\1"))
 
-;; TODO: this is not working
-(defun tlon-babel-autofix-spaces-in-abbreviations ()
-  "Prompt the user to add a thin space between abbreviations followed by a period."
-  (tlon-babel-autofix '("\\([A-Z]\\)\\.\\([ ]?\\)\\([A-Z]\\)\\."
-			"\\([A-Z]\\)\\.\\([ ]?\\)\\([A-Z]\\)\\."
-			) ; we need to run this twice to catch all cases
-		      "\\1. \\3."))
-
 (defun tlon-babel-autofix-percent-signs ()
   "Prompt the user to add non-breaking space before percent sign."
   (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
@@ -1022,7 +1014,6 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-autofix-curly-quotes)
   (tlon-babel-autofix-footnote-punctuation)
   (tlon-babel-autofix-periods-in-headings)
-  (tlon-babel-autofix-spaces-in-abbreviations)
   (tlon-babel-autofix-percent-signs))
 
 ;;;;;;; manual-fix
@@ -1053,6 +1044,11 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
 			 " <abbr>\\1</abbr>"))
 
+(defun tlon-babel-manual-fix-thin-spaces ()
+  "Prompt the user to add a thin space between abbreviations followed by a period."
+  (tlon-babel-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
+			 "\\1 \\2"))
+
 (defun tlon-babel-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
   (tlon-babel-manual-fix '("sólo")
@@ -1071,6 +1067,7 @@ dedicated function."
   (tlon-babel-manual-fix-em-dashes)
   (tlon-babel-manual-fix-number-ranges)
   (tlon-babel-manual-fix-roman-numerals)
+  (tlon-babel-manual-fix-thin-spaces)
   (tlon-babel-manual-fix-solo)
   (tlon-babel-manual-fix-podcast))
 
