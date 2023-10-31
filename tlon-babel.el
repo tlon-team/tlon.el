@@ -1003,7 +1003,7 @@ If DELETE is non-nil, delete the footnote."
 		      "\\1"))
 
 (defun tlon-babel-autofix-percent-signs ()
-  "Prompt the user to add non-breaking space before percent sign."
+  "Add non-breaking space before percent sign."
   (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
 			"\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
 		      "\\1 %\\2"))
