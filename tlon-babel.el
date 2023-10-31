@@ -1036,8 +1036,8 @@ If DELETE is non-nil, delete the footnote."
 
 (defun tlon-babel-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-manual-fix '("\\s-\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?! ]\\)")
-			 " \\1–\\2\\3"))
+  (tlon-babel-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!  ]\\)")
+			 "\\1\\2–\\3\\4"))
 
 (defun tlon-babel-manual-fix-roman-numerals ()
   "Prompt the user to add small caps tags to roman numerals."
