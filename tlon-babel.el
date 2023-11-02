@@ -826,6 +826,7 @@ not alter it unless you know what you are doing."
 		    "(#fnref[[:digit:]]\\{1,3\\})"
 		    " \\[↩]"
 		    " :::"
+		    "{.underline}"
 		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License\\](https://creativecommons.org/licenses/by/4.0/)\\*\n"))
     (goto-char (point-min))
     (while (re-search-forward string nil t)
