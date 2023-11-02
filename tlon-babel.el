@@ -886,9 +886,9 @@ not alter it unless you know what you are doing."
 	(let* ((fn1 (tlon-babel-markdown-get-footnote n1 'delete))
 	       (fn2 (tlon-babel-markdown-get-footnote n2 'delete))
 	       (consolidated (tlon-babel-consolidate-bibtex-keys (format "%s; %s" fn1 fn2))))
-	       (markdown-insert-footnote)
-	       (insert (format "%s." consolidated))
-	       (goto-char (point-min)))))))
+	  (markdown-insert-footnote)
+	  (insert (format "%s." consolidated))
+	  (goto-char (point-min)))))))
 
 (defun tlon-babel-markdown-get-footnote (n &optional delete)
   "Get the content of footnote number N.
