@@ -835,7 +835,7 @@ not alter it unless you know what you are doing."
   (dolist (string '("::: footnotes\n"
 		    "{rev=\"footnote\"} :::"
 		    "(#fnref[[:digit:]]\\{1,3\\})"
-		    " \\[..\\](#fnref-.*?){\\.footnote-backref}"
+		    " \\[↩](#fnref-.*?){\\.footnote-backref}"
 		    " \\[↩]"
 		    " :::"
 		    "————————————————————————
