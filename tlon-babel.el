@@ -739,6 +739,7 @@ non-EAF."
   (tlon-babel-markdown-cleanup-format-heading)
   (tlon-babel-markdown-cleanup-set-heading-levels)
   (tlon-babel-markdown-cleanup-remove-double-brackets)
+  (tlon-babel-markdown-cleanup-remove-nonbreaking-spaces)
   (unfill-region (point-min) (point-max)))
 
 (defun tlon-babel-markdown-cleanup-unescape-chars ()
@@ -806,6 +807,12 @@ are no level 2 headings and some headings level 3 or higher."
     (while (re-search-forward string nil t)
       (replace-match "\\1"))))
 
+(defun tlon-babel-markdown-cleanup-remove-nonbreaking-spaces ()
+  "Remove selected nonbreaking spaces."
+  (goto-char (point-min))
+  (while (re-search-forward "\\. \\([ \\[]\\)" nil t)
+    (replace-match ".\\1")))
+
 ;;;;;;; Cleanup EA Forum
 
 (defun tlon-babel-markdown-cleanup-eaf ()
@@ -836,7 +843,7 @@ not alter it unless you know what you are doing."
 		    "{rev=\"footnote\"} :::"
 		    "(#fnref[[:digit:]]\\{1,3\\})"
 		    " \\[↩︎](#fnref-.*?){\\.footnote-backref}"
-		    " \\[↩]"
+		    "\\[↩]"
 		    " :::"
 		    "————————————————————————
 
