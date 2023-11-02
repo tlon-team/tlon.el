@@ -833,59 +833,6 @@ not alter it unless you know what you are doing."
       (replace-match ""))))
 
 ;; old function; should be deleted after relevant regexp strings have been subsumed into other funs
-(defun tlon-babel-markdown-eaf-cleanup ()
-  "Cleanup the buffer visiting an EAF entry."
-  (interactive)
-  (tlon-babel-check-in-markdown-mode)
-  (save-excursion
-    (unfill-region (point-min) (point-max))
-    (goto-char (point-min))
-    (while (re-search-forward "{.underline}" nil t)
-      (replace-match ""))
-    (goto-char (point-min))
-    (while (re-search-forward "\\[\\[\\(.*?\\)\\]\\](" nil t)
-      (replace-match (format "[%s]("
-			     ;; remove extra backslashes in replacement text to avoid elisp errors
-			     (replace-regexp-in-string "\\\\" "" (match-string-no-properties 1)))))
-    (goto-char (point-min))
-    ;; remove asterisks surrounding links
-    (while (re-search-forward " ??\\* ??\\[\\*\\[\\(.*?\\)\\]\\*\\](\\(.*?\\)) ??\\* ??" nil t)
-      (replace-match (format " [%s](%s)" (match-string-no-properties 1) (match-string-no-properties 2))))
-    (goto-char (point-min))
-    ;; move double asterisks outside of link
-    (while (re-search-forward "\\[\\*\\*\\[\\(.*?\\)\\]\\*\\*\\](\\(.*?\\))" nil t)
-      (replace-match (format "**[%s](%s)**" (match-string-no-properties 1) (match-string-no-properties 2))))
-    (goto-char (point-min))
-    (while (re-search-forward "{.footnote-back-link}" nil t)
-      (replace-match ""))
-    (goto-char (point-min))
-    (while (re-search-forward " " nil t)
-      (replace-match " "))
-    (goto-char (point-min))
-    (while (re-search-forward " :::" nil t)
-      (replace-match ""))
-    (goto-char (point-min))
-    (while (re-search-forward "{.underline}" nil t)
-      (replace-match ""))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-babel-markdown-eawiki-footnote-source nil t)
-      (replace-match (format "[^%s] " (match-string-no-properties 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-babel-markdown-eawiki-footnote-source2 nil t)
-      (replace-match (format "[^%s]: " (match-string-no-properties 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-babel-markdown-eawiki-footnote-target nil t)
-      (replace-match (format "[^%s]:" (match-string-no-properties 1))))
-    (goto-char (point-min))
-    (while (re-search-forward tlon-markdown-eawiki-links nil t)
-      (replace-match (format "[%s](%s)" (match-string-no-properties 1) (match-string-no-properties 2)) nil t))
-    (goto-char (point-min))
-    ;; remove double asterisks surrounding headings
-    (while (re-search-forward "# \\*\\*\\(.*\\)\\*\\* *?$" nil t)
-      (replace-match (format "# %s" (match-string-no-properties 1))))
-    (tlon-babel-markdown-cleanup-common)
-    (save-buffer)))
-
 (defun tlon-babel-convert-to-markdown ()
   "Convert a file from EA Wiki to Markdown."
   (interactive)
