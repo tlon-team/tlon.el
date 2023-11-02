@@ -743,7 +743,7 @@ non-EAF."
 (defun tlon-babel-markdown-cleanup-unescape-chars ()
   "Unescape relevant characters in the current buffer."
   ;; characters that need to be escaped
-  (dolist (char '("."))
+  (dolist (char '("." "[" "]" "$"))
     (let ((regexp (concat "\\\\\\" char)))
       (goto-char (point-min))
       (while (re-search-forward regexp nil t)
