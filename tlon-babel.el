@@ -847,16 +847,6 @@ not alter it unless you know what you are doing."
     (while (re-search-forward string nil t)
       (replace-match ""))))
 
-;; old function; should be deleted after relevant regexp strings have been subsumed into other funs
-(defun tlon-babel-convert-to-markdown ()
-  "Convert a file from EA Wiki to Markdown."
-  (interactive)
-  (dolist (file (directory-files "." nil "\\.html$"))
-    (let ((md-file (file-name-with-extension file "md")))
-      (shell-command (format "pandoc -s '%s' -t markdown -o '%s'"
-			     file
-			     md-file)))))
-
 (defun tlon-babel-split-footnotes-into-separate-paragraphs ()
   "Split footnotes into separate paragraphs."
   (interactive)
