@@ -835,10 +835,14 @@ not alter it unless you know what you are doing."
   (dolist (string '("::: footnotes\n"
 		    "{rev=\"footnote\"} :::"
 		    "(#fnref[[:digit:]]\\{1,3\\})"
+		    " \\[..\\](#fnref-.*?){\\.footnote-backref}"
 		    " \\[↩]"
 		    " :::"
+		    "————————————————————————
+
+::: {.section .footnotes}"
 		    "{.underline}"
-		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License\\](https://creativecommons.org/licenses/by/4.0/)\\*\n"))
+		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License.\\](https://creativecommons.org/licenses/by/4.0/)\\*\n\n"))
     (goto-char (point-min))
     (while (re-search-forward string nil t)
       (replace-match ""))))
