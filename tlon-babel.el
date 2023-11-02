@@ -816,11 +816,13 @@ not alter it unless you know what you are doing."
   (tlon-babel-markdown-cleanup-fix-footnote-refs)
   (tlon-babel-markdown-cleanup-remove-text))
 
+;; If problems arise, test against documents imported from these URLs:
+;; https://forum.effectivealtruism.org/s/vSAFjmWsfbMrTonpq/p/u5JesqQ3jdLENXBtB
 (defun tlon-babel-markdown-cleanup-fix-footnote-refs ()
   "Convert footnote references to valid Markdown syntax."
   (let* ((ref-number "[[:digit:]]\\{1,3\\}")
-	 (ref-source (format "\\^\\[\\(%s\\)\\](#fn%s){rel=\"footnote\"}\\^" ref-number ref-number))
-	 (ref-target (format "\\(%s\\)\\.  ::: {#fn%s} " ref-number ref-number))
+	 (ref-source (format "\\^\\[\\(%s\\)\\](#fn.*?){.*?}\\^" ref-number ref-number))
+	 (ref-target (format "\\(%s\\)\\.  \\(::: \\)?{#fn.*?} " ref-number))
 	 (find-replace `((,ref-source . "[^\\1]")
 			 (,ref-target . "[^\\1]: "))))
     (dolist (elt find-replace)
