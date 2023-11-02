@@ -738,7 +738,7 @@ non-EAF."
   (tlon-babel-markdown-cleanup-convert-hyphens)
   (tlon-babel-markdown-cleanup-format-heading)
   (tlon-babel-markdown-cleanup-set-heading-levels)
-  (tlon-babel-markdown-remove-double-brackets)
+  (tlon-babel-markdown-cleanup-remove-double-brackets)
   (unfill-region (point-min) (point-max)))
 
 (defun tlon-babel-markdown-cleanup-unescape-chars ()
@@ -799,7 +799,7 @@ are no level 2 headings and some headings level 3 or higher."
 	(substitute-target-in-buffer "^###" "##")))))
 
 ;; Not sure what the cause of these double brackets is; for now, just remove them
-(defun tlon-babel-markdown-remove-double-brackets ()
+(defun tlon-babel-markdown-cleanup-remove-double-brackets ()
   "Remove consecutive double brackets."
   (dolist (string '("\\(\\]\\)\\]" "\\(\\[\\)\\["))
     (goto-char (point-min))
