@@ -996,8 +996,8 @@ If DELETE is non-nil, delete the footnote."
 
 (defun tlon-babel-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-manual-fix '("\\([^ ][ ,]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
-			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,]\\)" ; closing dash
+  (tlon-babel-manual-fix '("\\([^ ][ ,)]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
+			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
 			   "\\([^ >)] \\)-\\( \\)")
 			 "\\1—\\2"))
 
