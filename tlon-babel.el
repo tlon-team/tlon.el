@@ -2854,11 +2854,22 @@ The commit message is ACTION followed by the name of FILE."
       (call-interactively #'magit-pull-from-upstream nil)
       (sleep-for 2))
     (magit-stage-file file)
-    ;; we check for staged or unstaged changes to FILE because
-    ;; `magit-commit-create' interrupts the process if there aren't
-    (when (tlon-babel-check-staged-or-unstaged file)
-      (magit-commit-create (list "-m" (format "%s %s" action (tlon-babel-get-key-from-file file)))))
+    (tlon-babel-create-commit action file)
     (call-interactively #'magit-push-current-to-pushremote)))
+
+(defun tlon-babel-create-commit (action file)
+  "Create a commit modifications to FILE.
+The commit message is ACTION followed by either FILE or its BibTeX key,
+depending on whether the repo is an auxiliary or a core one, respectively."
+  ;; we check for staged or unstaged changes to FILE because
+  ;; `magit-commit-create' interrupts the process if there aren't
+  (when (tlon-babel-check-staged-or-unstaged file)
+    (let* ((repo (tlon-babel-get-repo-from-file file))
+	   (type (tlon-babel-repo-lookup :type :dir repo))
+	   (file-or-key (pcase type
+			  ('core (tlon-babel-get-key-from-file file))
+			  ('aux (file-name-nondirectory file)))))
+      (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
 
 ;;;;; Change topic properties
 
