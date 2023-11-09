@@ -2289,9 +2289,8 @@ COMMIT is non-nil, commit the change."
       (tlon-babel-open-todo file pos)
     (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file)))
 
-(defun tlon-babel-get-parent-todo (&optional todo)
-  "Get parent of TODO in `tlon-babel-todos-file'.
-If TODO is nil, user the currently clocked heading."
+(defun tlon-babel-get-parent-todo (todo)
+  "Get parent of TODO in `tlon-babel-todos-file'."
   (save-window-excursion
     (tlon-babel-visit-todo todo tlon-babel-todos-file)
     (widen)
