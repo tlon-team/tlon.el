@@ -110,7 +110,11 @@
     ("Awaiting review"
      :label "Awaiting review"
      :action "Review"
-     :assignee "benthamite"))
+     :assignee "benthamite")
+    ("Published"
+     :label "Published"
+     :action "Publish"
+     :assigne ""))
   "List of labels and associated properties.")
 
 (defvar tlon-babel-users
