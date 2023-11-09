@@ -544,7 +544,7 @@ If not, offer to process it as a new job."
   "Store a new TODO using TEMPLATE.
 If TODO already exists, move point to it and do not create a duplicate. If
 NO-ACTION is non-nil, store a master TODO."
-  (let ((todo (tlon-babel-make-todo-heading-from-issue 'no-action)))
+  (let ((todo (tlon-babel-make-todo-heading-from-issue no-action)))
     (if (tlon-babel-get-todo-position todo tlon-babel-todos-file)
 	(tlon-babel-visit-todo nil tlon-babel-todos-file)
       (kill-new todo)
