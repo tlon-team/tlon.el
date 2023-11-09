@@ -662,7 +662,7 @@ link, else get their values from the heading title, if possible."
       ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode)
        (if-let ((todo (tlon-babel-make-todo-heading-from-issue)))
 	   (progn
-	     (tlon-babel-mark-todo-done todo)
+	     (tlon-babel-mark-todo-done todo tlon-babel-todos-file)
 	     (tlon-babel-forge-close-topic)
 	     (message message))
 	 (user-error "I could not find a GitHub issue at point")))
@@ -2297,17 +2297,13 @@ COMMIT is non-nil, commit the change."
     (org-up-heading-safe)
     (org-no-properties (org-get-heading))))
 
-(defun tlon-babel-mark-todo-done (&optional todo file)
-  "Mark TODO in FILE as DONE.
-If TODO is nil, use the issue at point. If FILE is nil, use
-`tlon-babel-todos-file'."
-  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue)))
-	(file (or file tlon-babel-todos-file)))
-    (save-window-excursion
-      (tlon-babel-visit-todo todo file)
-      (org-todo "DONE")
-      (save-buffer)
-      (message "Marked `%s' as DONE" todo))))
+(defun tlon-babel-mark-todo-done (todo file)
+  "Mark TODO in FILE as DONE."
+  (save-window-excursion
+    (tlon-babel-visit-todo todo file)
+    (org-todo "DONE")
+    (save-buffer)
+    (message "Marked `%s' as DONE" todo)))
 
 (defun tlon-babel-get-key-in-heading ()
   "Get the key of the currently clocked task."
