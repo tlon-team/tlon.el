@@ -586,10 +586,7 @@ link, else get their values from the heading title, if possible."
   (interactive)
   (pcase major-mode
     ('org-mode (tlon-babel-visit-issue))
-    ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode)
-     (tlon-babel-visit-todo
-      (tlon-babel-make-todo-heading-from-issue)
-      tlon-babel-todos-file))
+    ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode) (tlon-babel-visit-todo))
     (_ (user-error "This command cannot be invoked in `%s`" major-mode))))
 
 (defun tlon-babel-get-id-from-issue (issue-name)
@@ -2282,12 +2279,14 @@ COMMIT is non-nil, commit the change."
     (when commit
       (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
 
-(defun tlon-babel-visit-todo (todo file)
-  "Jump to TODO in FILE."
+(defun tlon-babel-visit-todo (&optional todo file)
+  "Jump to TODO in FILE.
+If TODO is nil, use the heading at point."
   (interactive)
-  (if-let ((pos (tlon-babel-get-todo-position todo file)))
-      (tlon-babel-open-todo file pos)
-    (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file)))
+  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue))))
+    (if-let ((pos (tlon-babel-get-todo-position todo tlon-babel-todos-file)))
+	(tlon-babel-open-todo file pos)
+      (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file))))
 
 (defun tlon-babel-get-parent-todo (todo)
   "Get parent of TODO in `tlon-babel-todos-file'."
