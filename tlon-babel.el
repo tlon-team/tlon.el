@@ -192,7 +192,7 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
 
 (defvar tlon-babel-file-jobs
   (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "jobs.org")
-  "File containing the glossary.")
+  "File containing the jobs.")
 
 (defvar tlon-babel-file-glossary
   (file-name-concat tlon-babel-dir-dict "Glossary.csv")
