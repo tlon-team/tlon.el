@@ -2371,10 +2371,10 @@ for the process that is being initialized."
   (cl-multiple-value-bind
       (original-path translation-path original-key)
       (tlon-babel-set-paths-from-clock)
-    (let ((repo (tlon-babel-get-repo))
-	  (current-action (tlon-babel-get-clock-action))
-	  (next-label (tlon-babel-get-clock-next-label))
-	  (next-assignee (tlon-babel-label-lookup :assignee :label next-label)))
+    (let* ((repo (tlon-babel-get-repo))
+	   (current-action (tlon-babel-get-clock-action))
+	   (next-label (tlon-babel-get-clock-next-label))
+	   (next-assignee (tlon-babel-label-lookup :assignee :label next-label)))
       (tlon-babel-check-branch "main" repo)
       (tlon-babel-check-label-and-assignee repo)
       (tlon-babel-check-file
