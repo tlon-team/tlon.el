@@ -86,12 +86,7 @@
     (genus
      :name "genus"
      :abbrev "genus"
-     :type aux)
-    ;; (sandbox
-    ;; :name "sandbox"
-    ;; :abbrev "sandbox"
-    ;; :type aux)
-    )
+     :type aux))
   "List of repos and associated properties.")
 
 (defvar tlon-babel-labels
