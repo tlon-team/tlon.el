@@ -520,7 +520,7 @@ If not, offer to process it as a new job."
 (defun tlon-babel-store-or-refile-job-todo ()
   "Refile TODO under appropriate heading, or create new master TODO if none exists."
   (if-let ((pos (tlon-babel-get-todo-position
-		 (tlon-babel-make-todo-heading-from-issue 'no-action)
+		 (tlon-babel-make-todo-heading-from-issue-at-point 'no-action)
 		 tlon-babel-todos-file)))
       (progn
 	(tlon-babel-store-todo "tbJ")
@@ -544,7 +544,7 @@ If not, offer to process it as a new job."
   "Store a new TODO using TEMPLATE.
 If TODO already exists, move point to it and do not create a duplicate. If
 NO-ACTION is non-nil, store a master TODO."
-  (let ((todo (tlon-babel-make-todo-heading-from-issue no-action)))
+  (let ((todo (tlon-babel-make-todo-heading-from-issue-at-point no-action)))
     (if (tlon-babel-get-todo-position todo tlon-babel-todos-file)
 	(tlon-babel-visit-todo nil tlon-babel-todos-file)
       (kill-new todo)
@@ -657,7 +657,7 @@ link, else get their values from the heading title, if possible."
 	     (message message))
 	 (user-error "I could not find a issue number in the current `org-mode' heading")))
       ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode)
-       (if-let ((todo (tlon-babel-make-todo-heading-from-issue)))
+       (if-let ((todo (tlon-babel-make-todo-heading-from-issue-at-point)))
 	   (progn
 	     (tlon-babel-mark-todo-done todo tlon-babel-todos-file)
 	     (tlon-babel-forge-close-topic)
@@ -1883,7 +1883,7 @@ Assumes action is first word of clocked task."
     (when (string-match "#\\([[:digit:]]+?\\) " issue-name)
       (string-to-number (match-string 1 issue-name)))))
 
-(defun tlon-babel-make-todo-heading-from-issue (&optional no-action)
+(defun tlon-babel-make-todo-heading-from-issue-at-point (&optional no-action)
   "Construct the name of TODO from issue at point.
 The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
 is optional, and used only for job TODOs. For example, if the TODO is \"[bae]
@@ -1900,6 +1900,7 @@ If NO-ACTION is non-nil, omit, the ACTION element."
 					      " "
 					      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link)))))
     full-name))
+
 
 (defun tlon-babel-get-file-from-issue ()
   "Get the file path of the topic at point or in current forge buffer."
@@ -2240,7 +2241,7 @@ Markdown buffer at point is used."
 	(tlon-babel-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-visit-issue)
 	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
-	(setq todo-linkified (tlon-babel-make-todo-heading-from-issue))))
+	(setq todo-linkified (tlon-babel-make-todo-heading-from-issue-at-point))))
     (org-edit-headline todo-linkified)))
 
 (defun tlon-babel-create-issue-from-key (&optional key)
@@ -2283,7 +2284,7 @@ COMMIT is non-nil, commit the change."
   "Jump to TODO in FILE.
 If TODO is nil, use the heading at point."
   (interactive)
-  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue))))
+  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue-at-point))))
     (if-let ((pos (tlon-babel-get-todo-position todo tlon-babel-todos-file)))
 	(tlon-babel-open-todo file pos)
       (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file))))
