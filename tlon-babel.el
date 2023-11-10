@@ -589,13 +589,6 @@ link, else get their values from the heading title, if possible."
     ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode) (tlon-babel-visit-todo))
     (_ (user-error "This command cannot be invoked in `%s`" major-mode))))
 
-(defun tlon-babel-get-id-from-issue (issue-name)
-  "Try to get the ID of TODO corresponding to ISSUE-NAME."
-  (with-current-buffer (find-file-noselect tlon-babel-todos-file)
-    (goto-char (point-min))
-    (when (re-search-forward issue-name nil t)
-      (org-id-get))))
-
 (defun tlon-babel-get-element-from-heading (regexp)
   "Get element matching REGEXP from the heading at point."
   (when (org-at-heading-p)
