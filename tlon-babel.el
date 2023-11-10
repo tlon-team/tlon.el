@@ -2777,8 +2777,8 @@ ACTION is `close', close issue."
     (goto-char (point-min))
     (if (search-forward topic nil t)
 	(progn
-	  (tlon-babel-set-parameters topic label)
-	  (when assignee (tlon-babel-set-parameters topic assignee))
+	  (tlon-babel-set-topic-property topic label)
+	  (tlon-babel-set-topic-property topic assignee)
 	  (search-forward topic nil t)
 	  (pcase action
 	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
@@ -2791,15 +2791,6 @@ If TOPIC is nil, use the topic at point."
   (let ((topic (or topic (forge-current-topic))))
     (when (eq 'open (oref topic state))
       (forge--set-topic-state (forge-get-repository topic) topic 'closed))))
-
-(defun tlon-babel-set-parameters (topic &optional label-or-assignee)
-  "Set label or assignee for TOPIC, depending on value of LABEL-OR-ASSIGNEE."
-  (let ((assignee-p (member label-or-assignee (tlon-babel-get-property-of-users :github))))
-    (search-forward topic nil t)
-    (if assignee-p
-	(tlon-babel-set-assignee label-or-assignee)
-      (tlon-babel-set-label label-or-assignee))
-    (goto-char (point-min))))
 
 ;;;;; Search
 
@@ -2874,6 +2865,15 @@ depending on whether the repo is an auxiliary or a core one, respectively."
       (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
 
 ;;;;; Change topic properties
+
+(defun tlon-babel-set-topic-property (topic label-or-assignee)
+  "Set label or assignee for TOPIC, depending on value of LABEL-OR-ASSIGNEE."
+  (let ((assignee-p (member label-or-assignee (tlon-babel-get-property-of-users :github))))
+    (search-forward topic nil t)
+    (if assignee-p
+	(tlon-babel-set-assignee label-or-assignee)
+      (tlon-babel-set-label label-or-assignee))
+    (goto-char (point-min))))
 
 (defun tlon-babel-select-label ()
   "Prompt the user to select a LABEL."
