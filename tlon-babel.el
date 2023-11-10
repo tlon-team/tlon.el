@@ -114,7 +114,7 @@
     ("Published"
      :label "Published"
      :action "Publish"
-     :assigne ""))
+     :assignee ""))
   "List of labels and associated properties.")
 
 (defvar tlon-babel-users
