@@ -2205,6 +2205,8 @@ If TITLE is nil, prompt the user for one."
   (let ((target (read-string "Save file in: " (tlon-babel-set-file-from-title title)))
 	(header (read-string "Header: "))
 	(footer (read-string "Footer: ")))
+    (unless (executable-find "pdftotext")
+      (user-error "`pdftotext' not found. Please install it (`brew install poppler') and set `tlon-babel-pdftotext' to its path"))
     (shell-command (format "'%s' -margint %s -marginb %s '%s' '%s'"
 			   tlon-babel-pdftotext header footer path target))
     (find-file target)))
