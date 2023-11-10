@@ -1885,6 +1885,12 @@ Assumes action is first word of clocked task."
     (when (string-match "#\\([[:digit:]]+?\\) " issue-name)
       (string-to-number (match-string 1 issue-name)))))
 
+(defun tlon-babel-get-issue-name-sans-number ()
+  "Get the name of the issue at point or in current buffer, without its number."
+  (let ((name (tlon-babel-get-issue-name))
+	(number (tlon-babel-get-issue-number)))
+    (replace-regexp-in-string (format "#%s " number) "" name)))
+
 (defun tlon-babel-make-todo-heading-from-issue-at-point (&optional no-action)
   "Construct the name of TODO from issue at point.
 The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
