@@ -2777,8 +2777,8 @@ ACTION is `close', close issue."
     (goto-char (point-min))
     (if (search-forward topic nil t)
 	(progn
-	  (tlon-babel-set-topic-property topic label)
-	  (tlon-babel-set-topic-property topic assignee)
+	  (tlon-babel-set-label label topic)
+	  (tlon-babel-set-assignee assignee topic)
 	  (search-forward topic nil t)
 	  (pcase action
 	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
@@ -2866,31 +2866,24 @@ depending on whether the repo is an auxiliary or a core one, respectively."
 
 ;;;;; Change topic properties
 
-(defun tlon-babel-set-topic-property (topic label-or-assignee)
-  "Set label or assignee for TOPIC, depending on value of LABEL-OR-ASSIGNEE."
-  (let ((assignee-p (member label-or-assignee (tlon-babel-get-property-of-users :github))))
-    (search-forward topic nil t)
-    (if assignee-p
-	(tlon-babel-set-assignee label-or-assignee)
-      (tlon-babel-set-label label-or-assignee))
-    (goto-char (point-min))))
-
 (defun tlon-babel-select-label ()
   "Prompt the user to select a LABEL."
   (let ((label (completing-read "What should be the label? "
 				(tlon-babel-get-property-of-labels :label))))
     label))
 
-(defun tlon-babel-set-label (label)
-  "Apply LABEL to topic at point.
+(defun tlon-babel-set-label (label topic)
+  "Apply LABEL to TOPIC.
 Note that this only works for topics listed in the main buffer."
   (interactive
    (list (tlon-babel-select-label)))
+  (search-forward topic nil t)
   (let* ((topic (forge-get-topic (forge-current-topic)))
 	 (repo  (forge-get-repository topic))
 	 (crm-separator ","))
     (forge--set-topic-labels
-     repo topic (list label))))
+     repo topic (list label)))
+  (goto-char (point-min)))
 
 (defun tlon-babel-select-assignee ()
   "Prompt the user to select an ASSIGNEE.
@@ -2900,18 +2893,18 @@ The prompt defaults to the current user."
 				   (tlon-babel-user-lookup :github :name user-full-name))))
     assignee))
 
-(defun tlon-babel-set-assignee (assignee)
-  "Make ASSIGNEE the assignee of topic at point."
+(defun tlon-babel-set-assignee (assignee topic)
+  "Make ASSIGNEE the assignee of TOPIC."
   (interactive
    (list (tlon-babel-select-assignee)))
+  (search-forward topic nil t)
   (let* ((topic (forge-get-topic (forge-current-topic)))
 	 (repo  (forge-get-repository topic))
-	 ;; (value (closql--iref topic 'assignees))
-	 ;; (choices (mapcar #'cadr (oref repo assignees)))
 	 (crm-separator ","))
     (forge--set-topic-assignees
      repo topic
-     (list assignee))))
+     (list assignee)))
+  (goto-char (point-min)))
 
 (defun tlon-babel-set-initial-label-and-assignee ()
   "Set label to `Awaiting processing' and assignee to current user."
