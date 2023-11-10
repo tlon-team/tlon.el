@@ -1918,20 +1918,21 @@ Find the TODO that matches the name of the issue at point, excluding the issue
 number, to reflect the current issue details (such as the GID, the repo, or the
 issue number). This function is useful for updating a TODO after an issue has
 been moved to a new repository."
-  (let* ((current-name (tlon-babel-get-issue-name-sans-number))
-	 (file tlon-babel-todos-file)
-	 (pos (tlon-babel-get-todo-position-substring current-name file))
-	 (new-heading (tlon-babel-make-todo-heading-from-issue-at-point)))
-    (save-window-excursion
-      (tlon-babel-open-todo file pos)
-      (org-back-to-heading)
-      (let ((old-heading (substring-no-properties (org-get-heading t t t t))))
-	(if (string= old-heading new-heading)
-	    (user-error "Nothing to update")
+  (if-let* ((current-name (tlon-babel-get-issue-name-sans-number))
+	    (file tlon-babel-todos-file)
+	    (pos (tlon-babel-get-todo-position-substring current-name file)))
+      (let ((new-heading (tlon-babel-make-todo-heading-from-issue-at-point)))
+	(save-window-excursion
+	  (tlon-babel-open-todo file pos)
 	  (org-back-to-heading)
-	  (re-search-forward org-complex-heading-regexp)
-	  (replace-match new-heading t t nil 4)
-	  (message "TODO updated.\nOld heading: %s\nNew heading: %s" old-heading new-heading))))))
+	  (let ((old-heading (substring-no-properties (org-get-heading t t t t))))
+	    (if (string= old-heading new-heading)
+		(user-error "Nothing to update")
+	      (org-back-to-heading)
+	      (re-search-forward org-complex-heading-regexp)
+	      (replace-match new-heading t t nil 4)
+	      (message "TODO updated.\nOld heading: %s\nNew heading: %s" old-heading new-heading)))))
+    (user-error "No TODO matching issue name found")))
 
 (defun tlon-babel-get-file-from-issue ()
   "Get the file path of the topic at point or in current forge buffer."
