@@ -73,11 +73,11 @@
      :type core)
     (utilitarismo
      :name "utilitarismo.net"
-     :abbrev "utilitarismo"
+     :abbrev "util"
      :type core)
     (largoplacismo
      :name "ensayos-sobre-largoplacismo"
-     :abbrev "largoplacismo"
+     :abbrev "esl"
      :type core)
     (bibliotheca-issues
      :name "bibliotheca-issues"
