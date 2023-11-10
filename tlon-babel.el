@@ -2766,7 +2766,7 @@ KEY, BEG and END are ignored; they are only there to satisfy the signature of
 	(bibtex-set-field "langid" "spanish")
       (bibtex-set-field "langid" "english"))))
 
-(defun tlon-babel-act-on-topic (original-key label &optional assignee action)
+(defun tlon-babel-act-on-topic (original-key label assignee &optional action)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-KEY.
 If ACTION is `convert', convert the existing issue into a pull request. If
 ACTION is `close', close issue."
