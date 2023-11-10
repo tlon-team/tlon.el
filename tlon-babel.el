@@ -2900,12 +2900,13 @@ depending on whether the repo is an auxiliary or a core one, respectively."
 				(tlon-babel-get-property-of-labels :label))))
     label))
 
-(defun tlon-babel-set-label (label topic)
+(defun tlon-babel-set-label (label &optional topic)
   "Apply LABEL to TOPIC.
 Note that this only works for topics listed in the main buffer."
   (interactive
    (list (tlon-babel-select-label)))
-  (search-forward topic nil t)
+  (when topic
+    (search-forward topic nil t))
   (let* ((topic (forge-get-topic (forge-current-topic)))
 	 (repo  (forge-get-repository topic))
 	 (crm-separator ","))
@@ -2921,11 +2922,12 @@ The prompt defaults to the current user."
 				   (tlon-babel-user-lookup :github :name user-full-name))))
     assignee))
 
-(defun tlon-babel-set-assignee (assignee topic)
+(defun tlon-babel-set-assignee (assignee &optional topic)
   "Make ASSIGNEE the assignee of TOPIC."
   (interactive
    (list (tlon-babel-select-assignee)))
-  (search-forward topic nil t)
+  (when topic
+    (search-forward topic nil t))
   (let* ((topic (forge-get-topic (forge-current-topic)))
 	 (repo  (forge-get-repository topic))
 	 (crm-separator ","))
