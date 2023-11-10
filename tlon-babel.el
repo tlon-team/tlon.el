@@ -79,6 +79,10 @@
      :name "ensayos-sobre-largoplacismo"
      :abbrev "largoplacismo"
      :type core)
+    (bibliotheca-issues
+     :name "bibliotheca-issues"
+     :abbrev "bib-issues"
+     :type core)
     (genus
      :name "genus"
      :abbrev "genus"
