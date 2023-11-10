@@ -535,6 +535,15 @@ If not, offer to process it as a new job."
   "Return the position of TODO exactly matching heading in FILE."
   (org-find-exact-headline-in-buffer todo (find-file-noselect file)))
 
+(defun tlon-babel-get-todo-position-substring (todo file)
+  "Return the position of TODO matching a substring of heading in FILE."
+  (with-current-buffer (find-file-noselect file)
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (let (case-fold-search)
+       (when (re-search-forward (concat "^\\*+ .*" todo ".*") nil t)
+	 (point-marker))))))
+
 (defun tlon-babel-open-todo (file position)
   "Open FILE at TODO POSITION."
   (find-file file)
