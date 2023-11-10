@@ -71,17 +71,21 @@
      :name "biblioteca-altruismo-eficaz"
      :abbrev "bae"
      :type core)
-    (utilitarismo
+    (util
      :name "utilitarismo.net"
      :abbrev "util"
      :type core)
-    (largoplacismo
+    (esl
      :name "ensayos-sobre-largoplacismo"
      :abbrev "esl"
      :type core)
-    (bibliotheca-issues
+    (bib-issues
      :name "bibliotheca-issues"
      :abbrev "bib-issues"
+     :type core)
+    (ean-issues
+     :name "ea.news-issues"
+     :abbrev "ean-issues"
      :type core)
     (genus
      :name "genus"
