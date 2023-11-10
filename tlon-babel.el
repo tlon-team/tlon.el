@@ -1926,8 +1926,13 @@ been moved to a new repository."
     (save-window-excursion
       (tlon-babel-open-todo file pos)
       (org-back-to-heading)
-      (re-search-forward org-complex-heading-regexp)
-      (replace-match new-heading t t nil 4))))
+      (let ((old-heading (substring-no-properties (org-get-heading t t t t))))
+	(if (string= old-heading new-heading)
+	    (user-error "Nothing to update")
+	  (org-back-to-heading)
+	  (re-search-forward org-complex-heading-regexp)
+	  (replace-match new-heading t t nil 4)
+	  (message "TODO updated.\nOld heading: %s\nNew heading: %s" old-heading new-heading))))))
 
 (defun tlon-babel-get-file-from-issue ()
   "Get the file path of the topic at point or in current forge buffer."
