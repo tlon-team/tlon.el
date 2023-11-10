@@ -1909,6 +1909,21 @@ If NO-ACTION is non-nil, omit, the ACTION element."
 					      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link)))))
     full-name))
 
+(defun tlon-babel-update-todo-from-issue-at-point ()
+  "Update the TODO matching the name of issue at point.
+Find the TODO that matches the name of the issue at point, excluding the issue
+number, to reflect the current issue details (such as the GID, the repo, or the
+issue number). This function is useful for updating a TODO after an issue has
+been moved to a new repository."
+  (let* ((current-name (tlon-babel-get-issue-name-sans-number))
+	 (file tlon-babel-todos-file)
+	 (pos (tlon-babel-get-todo-position-substring current-name file))
+	 (new-heading (tlon-babel-make-todo-heading-from-issue-at-point)))
+    (save-window-excursion
+      (tlon-babel-open-todo file pos)
+      (org-back-to-heading)
+      (re-search-forward org-complex-heading-regexp)
+      (replace-match new-heading t t nil 4))))
 
 (defun tlon-babel-get-file-from-issue ()
   "Get the file path of the topic at point or in current forge buffer."
