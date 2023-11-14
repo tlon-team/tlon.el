@@ -2308,11 +2308,20 @@ COMMIT is non-nil, commit the change."
 	(insert heading)
 	(org-todo 'todo)
 	(org-set-tags repo-abbrev)
-	(org-sort-entries nil ?a) ; sort entries (a)lphabetically
-	(org-sort-entries nil ?o) ; sort entries by t(o)do order
+	(tlon-babel-sort-headings tlon-babel-file-jobs)
 	(save-buffer)))
     (when commit
       (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
+
+(defun tlon-babel-sort-headings (&optional file)
+  "Sort all headings under parent in FILE alphabetically and by TODO order."
+  (interactive)
+  (with-current-buffer (or (find-buffer-visiting file)
+			   (find-file-noselect file))
+    (widen)
+    (org-up-heading-safe)
+    (org-sort-entries nil ?a)
+    (org-sort-entries nil ?o)))
 
 (defun tlon-babel-visit-todo (&optional todo file)
   "Jump to TODO in FILE.
@@ -2446,6 +2455,7 @@ for the process that is being initialized."
     (when (string= current-action "Review")
       (let ((job-todo (format "[cite:@%s]" key)))
 	(tlon-babel-mark-todo-done job-todo tlon-babel-file-jobs)
+	(tlon-babel-sort-headings tlon-babel-file-jobs)
 	(tlon-babel-commit-and-push "Update"
 				    tlon-babel-file-jobs)))))
 
