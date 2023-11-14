@@ -2439,12 +2439,12 @@ for the process that is being initialized."
 	(key (tlon-babel-get-clock-key))
 	(current-action (tlon-babel-get-clock-action)))
     (tlon-babel-mark-todo-done todo tlon-babel-todos-file)
-    (let ((parent-todo (tlon-babel-get-parent-todo todo))
-	  (job-todo (format "[cite:@%s]" key)))
-      (when (or (string= current-action "Review")
-		(string= current-action "Check"))
-	(tlon-babel-mark-todo-done parent-todo tlon-babel-todos-file))
-      (when (string= current-action "Review")
+    (when (or (string= current-action "Review") (string= current-action "Check"))
+      (let ((parent-todo (tlon-babel-get-parent-todo todo)))
+	(tlon-babel-mark-todo-done parent-todo tlon-babel-todos-file)))
+    ;; TODO: this isn’t working; diagnose and fix it
+    (when (string= current-action "Review")
+      (let ((job-todo (format "[cite:@%s]" key)))
 	(tlon-babel-mark-todo-done job-todo tlon-babel-file-jobs)
 	(tlon-babel-commit-and-push "Update"
 				    tlon-babel-file-jobs)))))
