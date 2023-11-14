@@ -2301,7 +2301,6 @@ COMMIT is non-nil, commit the change."
       (widen)
       (goto-char (point-min))
       (unless (search-forward heading nil t)
-	(goto-char (point-min))
 	(re-search-forward tlon-babel-jobs-id nil t)
 	(while (and (not (org-at-heading-p)) (not (eobp)))
 	  (forward-line))
