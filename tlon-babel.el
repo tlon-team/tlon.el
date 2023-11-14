@@ -82,11 +82,11 @@
     (bib-issues
      :name "bibliotheca-issues"
      :abbrev "bib-issues"
-     :type core)
+     :type aux)
     (ean-issues
      :name "ea.news-issues"
      :abbrev "ean-issues"
-     :type core)
+     :type aux)
     (genus
      :name "genus"
      :abbrev "genus"
