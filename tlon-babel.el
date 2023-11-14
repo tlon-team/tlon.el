@@ -1252,6 +1252,7 @@ If FILE is nil, use the file visited by the current buffer."
 (defun tlon-babel-get-key-in-buffer ()
   "Get the BibTeX key in the current Markdown buffer."
   (tlon-babel-check-in-markdown-mode)
+  (save-buffer)
   (let ((key (tlon-babel-metadata-get-field-value-in-file "key_original")))
     (unless key
       (user-error "No key found"))
