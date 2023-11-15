@@ -214,6 +214,10 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   (file-name-concat tlon-babel-dir-refs "stable.bib")
   "File containing the stable bibliography.")
 
+(defvar tlon-babel-bibliography-files `(,tlon-babel-file-fluid
+					,tlon-babel-file-stable)
+  "List of bibliography files.")
+
 (defvar tlon-babel-file-url-correspondences
   (file-name-concat tlon-babel-dir-correspondences "url-correspondences.json")
   "File containing the URL correspondences.")
