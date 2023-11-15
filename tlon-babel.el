@@ -53,13 +53,15 @@
 
 ;;;; Customization:
 
-;;;; Variables
-
-;;;;; Files and dirs
+;;;; User options
 
 (defgroup tlon-babel ()
   "A companion package for the Babel project."
   :group 'files)
+
+;;;; Variables
+
+;;;;; Files and dirs
 
 (defvar tlon-babel-dir-repos
   (pcase user-full-name
