@@ -40,6 +40,7 @@
 (require 'org)
 (require 'org-clock)
 (require 'orgit-forge)
+(require 'path)
 (require 'read-aloud)
 (require 'request)
 (require 'subr-x)
