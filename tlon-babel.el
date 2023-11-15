@@ -290,11 +290,11 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
 ;;;;; Import
 
 (defvar tlon-babel-pdf2md
-  (file-name-concat ps/dir-source "pdf2md/lib/pdf2md-cli.js")
+  (file-name-concat path-dir-source "pdf2md/lib/pdf2md-cli.js")
   "Path to `pdf2md-cli.js' executable.")
 
 (defvar tlon-babel-pdftotext
-  (file-name-concat ps/dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
+  (file-name-concat path-dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
   "Path to `pdftotext' executable.")
 
 ;;;;; API
