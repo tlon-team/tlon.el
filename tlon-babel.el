@@ -255,18 +255,22 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   "820BEDE2-F982-466F-A391-100235D4C596"
   "ID of the `jobs' heading in `jobs.org'.")
 
-(defcustom tlon-babel-todos-file ()
+(defcustom tlon-babel-todos-file
+  (file-name-concat path-dir-dropbox "tlon-private/babel.org")
   "Org file of the user-specific heading where Babel TODOs are stored."
   :type 'string
   :group 'tlon-babel)
-(defcustom tlon-babel-todos-jobs-id ()
+
+(defcustom tlon-babel-todos-jobs-id
+  "F99006B0-3AFC-47A0-98C5-89FB86ADCDFB"
   "Org ID of the user-specific heading where Babel TODOs are stored."
   :type 'string
   :group 'tlon-babel)
 
-(defcustom tlon-babel-todos-generic-id ()
+(defcustom tlon-babel-todos-generic-id
+  "14AB72D8-D707-41B3-89FF-7A787F266E5E"
   "Org ID of the user-specific heading where Babel TODOs are stored."
-  :type '(string)
+  :type 'string
   :group 'tlon-babel)
 
 ;;;;; html import
