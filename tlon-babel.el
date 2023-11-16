@@ -3663,7 +3663,7 @@ If the key is not found, it is added to the list of missing keys."
 			   (line-beginning-position)
 			   (line-end-position))))
 	  (save-excursion
-	    (with-current-buffer (find-file-noselect path-dir-personal-bibliography-old)
+	    (with-current-buffer (find-file-noselect path-file-personal-bibliography-old)
 	      (goto-char (point-min))
 	      (if (re-search-forward (format "{%s," bibtex-key) nil t)
 		  (call-interactively 'bibtex-extras-move-entry-to-tlon)
