@@ -1048,6 +1048,17 @@ dedicated function."
   (tlon-babel-manual-fix-solo)
   (tlon-babel-manual-fix-podcast))
 
+(defun tlon-babel-fix-internet-archive-links ()
+  "Fix Internet Archive links in the current buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((cnt 0))
+      (while (re-search-forward "https://web\.archive\.org/web/[[:digit:]]*?/" nil t)
+        (replace-match "")
+        (setq cnt (1+ cnt)))
+      (message "Done. %d URLs were fixed." cnt))))
+
 ;;;;;; Insertion commands
 
 (defun tlon-babel-markdown-insert-element ()
