@@ -3017,12 +3017,6 @@ If the topic has more than one label, return the first."
 	  (add-hook 'post-command-hook exit-minibuffer-func t t))
       (tlon-babel-forge-get-label (forge-current-topic)))))
 
-(defun tlon-babel-find-key-in-alist (value alist)
-  "Find the corresponding key for a VALUE in ALIST."
-  (let ((pair (cl-find-if (lambda (x) (equal (cdr x) value)) alist)))
-    (when pair
-      (car pair))))
-
 (defun tlon-babel-next-value (property value alist)
   "Return the \"next\" value of PROPERTY with VALUE in ALIST."
   (catch 'found
