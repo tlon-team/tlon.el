@@ -69,118 +69,69 @@
   "Directory where the Tlön repos are stored.")
 
 (defvar tlon-babel-repos
-  `((bae
-     :name "biblioteca-altruismo-eficaz"
-     :abbrev "bae"
-     :type core)
-    (util
-     :name "utilitarismo.net"
-     :abbrev "util"
-     :type core)
-    (esl
-     :name "ensayos-sobre-largoplacismo"
-     :abbrev "esl"
-     :type core)
-    (bib-issues
-     :name "bibliotheca-issues"
-     :abbrev "bib-issues"
-     :type aux)
-    (ean-issues
-     :name "ea.news-issues"
-     :abbrev "ean-issues"
-     :type aux)
-    (genus
-     :name "genus"
-     :abbrev "genus"
-     :type aux))
+  `((:name "biblioteca-altruismo-eficaz"
+	   :abbrev "bae"
+	   :type core)
+    (:name "utilitarismo.net"
+	   :abbrev "util"
+	   :type core)
+    (:name "ensayos-sobre-largoplacismo"
+	   :abbrev "esl"
+	   :type core)
+    (:name "bibliotheca-issues"
+	   :abbrev "bib-issues"
+	   :type aux)
+    (:name "ea.news-issues"
+	   :abbrev "ean-issues"
+	   :type aux)
+    (:name "genus"
+	   :abbrev "genus"
+	   :type aux))
   "List of repos and associated properties.")
 
 (defvar tlon-babel-labels
-  '(("Awaiting processing"
-     :label "Awaiting processing"
-     :action "Process"
-     :assignee "worldsaround")
-    ("Awaiting translation"
-     :label "Awaiting translation"
-     :action "Translate"
-     :assignee "benthamite")
-    ("Awaiting revision"
-     :label "Awaiting revision"
-     :action "Revise"
-     :assignee "worldsaround")
-    ("Awaiting check"
-     :label "Awaiting check"
-     :action "Check"
-     :assignee "worldsaround")
-    ("Awaiting review"
-     :label "Awaiting review"
-     :action "Review"
-     :assignee "benthamite")
-    ("Published"
-     :label "Published"
-     :action "Publish"
-     :assignee ""))
+  '((:label "Awaiting processing"
+	    :action "Process"
+	    :assignee "worldsaround")
+    (:label "Awaiting translation"
+	    :action "Translate"
+	    :assignee "benthamite")
+    (:label "Awaiting revision"
+	    :action "Revise"
+	    :assignee "worldsaround")
+    (:label "Awaiting check"
+	    :action "Check"
+	    :assignee "worldsaround")
+    (:label "Awaiting review"
+	    :action "Review"
+	    :assignee "benthamite")
+    (:label "Published"
+	    :action "Publish"
+	    :assignee ""))
   "List of labels and associated properties.")
 
 (defvar tlon-babel-users
-  '(("Pablo Stafforini"
-     :name "Pablo Stafforini"
-     :git "Pablo Stafforini"
-     :github "benthamite")
-    ("Federico Stafforini"
-     :name "Federico Stafforini"
-     :git "Federico Stafforini"
-     :github "fstafforini")
-    ("Leonardo Picón"
-     :name "Leonardo Picón"
-     :git "cartago"
-     :github "worldsaround"))
+  '((:name "Pablo Stafforini"
+	   :git "Pablo Stafforini"
+	   :github "benthamite")
+    (:name "Federico Stafforini"
+	   :git "Federico Stafforini"
+	   :github "fstafforini")
+    (:name "Leonardo Picón"
+	   :git "cartago"
+	   :github "worldsaround"))
   "Property list of users and associated properties.")
 
-(defun tlon-bae-set-dirs (repo)
-  "Set the directory properties in REPO in `tlon-babel-repos'.
-These properties are `:dir', `:dir-originals' and `:dir-translations'."
-  (let* ((dir (file-name-as-directory
-	       (file-name-concat tlon-babel-dir-repos
-				 (plist-get (cdr repo) :name))))
-	 (dir-originals (file-name-as-directory (file-name-concat dir "originals")))
-	 (dir-translations (file-name-as-directory (file-name-concat dir "translations"))))
-    (plist-put (cdr repo) :dir dir)
-    (dolist (property `((:dir-originals ,dir-originals)
-			(:dir-translations ,dir-translations)))
-      (when (eq (plist-get (cdr repo) :type) 'core)
-	(plist-put (cdr repo) (car property) (cadr property))))))
-
-(mapc #'tlon-bae-set-dirs tlon-babel-repos)
-
-(defun tlon-babel-get-property-of-alist (property plist alist)
-  "Get the value of property PROPERTY of PLIST in ALIST."
-  (plist-get
-   (alist-get plist alist nil nil #'string=)
-   property))
-
-(defun tlon-babel-get-property-of-repo (property repo)
-  "Get the value of property PROPERTY in REPO."
-  (tlon-babel-get-property-of-alist property repo tlon-babel-repos))
-
-(defun tlon-babel-get-property-of-user (property user)
-  "Get the value of property PROPERTY in USER."
-  (tlon-babel-get-property-of-alist property user tlon-babel-users))
-
-(defun tlon-babel-get-property-of-label (property user)
-  "Get the value of property PROPERTY in USER."
-  (tlon-babel-get-property-of-alist property user tlon-babel-users))
-
 (defvar tlon-babel-dir-refs
-  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "refs/")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir "genus") "refs/")
   "Directory where references files are stored.")
 
 (defvar tlon-babel-dir-correspondences
-  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "correspondences/")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir "genus") "correspondences/")
   "Directory where correspondence files are stored.")
 
 (defvar tlon-babel-dir-dict
-  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "dict/")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir "genus") "dict/")
   "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-dir-locales
@@ -192,15 +143,15 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
   "Directory where CSL style files are stored.")
 
 (defvar tlon-babel-file-manual
-  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "manual.org")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir "genus") "manual.org")
   "File containing the manual.")
 
 (defvar tlon-babel-file-readme
-  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "readme.md")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir "genus") "readme.md")
   "File containing the readme.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus) "jobs.org")
+  (file-name-concat (tlon-babel-get-property-of-repo :dir "genus") "jobs.org")
   "File containing the jobs.")
 
 (defvar tlon-babel-file-glossary
@@ -378,57 +329,96 @@ The second capture group handles the `.md' extension, which we used previously."
 
 ;;;;; Core
 
+;;;;;; version
 (defun tlon-babel-version ()
   "Return the version of the `tlon-babel' package."
   (interactive)
   (message "`tlon-babel' version %s" tlon-babel-version))
 
-(defun tlon-babel-alist-lookup (property1 property2 value2 alist)
-  "Search ALIST for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
-  (cl-loop for plist in alist
-	   if (equal (plist-get (cdr plist) property2) value2)
-	   return (plist-get (cdr plist) property1)))
+;;;;;; lookup
 
-(defun tlon-babel-repo-lookup (property1 property2 value2)
-  "Search repos for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
-  (tlon-babel-alist-lookup property1 property2 value2 tlon-babel-repos))
+(defun tlon-bae-set-dirs (repo)
+  "Set the directory properties in REPO in `tlon-babel-repos'.
+These properties are `:dir', `:dir-originals' and `:dir-translations'."
+  (let* ((dir (file-name-as-directory
+	       (file-name-concat tlon-babel-dir-repos
+				 (plist-get repo :name))))
+	 (dir-originals (file-name-as-directory (file-name-concat dir "originals")))
+	 (dir-translations (file-name-as-directory (file-name-concat dir "translations"))))
+    (plist-put repo :dir dir)
+    (dolist (property `((:dir-originals ,dir-originals)
+			(:dir-translations ,dir-translations)))
+      (when (eq (plist-get repo :type) 'core)
+	(plist-put repo property property)))))
 
-(defun tlon-babel-user-lookup (property1 property2 value2)
-  "Search users for VALUE2 in PROPERTY2 and return the value of PROPERTY1."
-  (tlon-babel-alist-lookup property1 property2 value2 tlon-babel-users))
+(mapc #'tlon-bae-set-dirs tlon-babel-repos)
 
-(defun tlon-babel-label-lookup (property1 property2 value2)
-  "Search labels for VALUE2 in PROPERTY2 and return value of PROPERTY1."
-  (tlon-babel-alist-lookup property1 property2 value2 tlon-babel-labels))
+(defun tlon-babel-get-property-of-repo (property repo)
+  "Get the value of property PROPERTY in REPO.
+REPO is named in its abbreviated form, i.e. the value of `:abbrev' rather than
+`:name'."
+  (tlon-babel-plist-lookup property :abbrev repo tlon-babel-repos))
 
-(defun tlon-babel-get-property-of-alists (property1 alist &optional property2 value2)
-  "Get a list of all values for property PROPERTY1 in ALIST.
-Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
+(defun tlon-babel-get-property-of-user (property user)
+  "Get the value of property PROPERTY in USER."
+  (tlon-babel-plist-lookup property :name user tlon-babel-users))
+
+(defun tlon-babel-get-property-of-label (property user)
+  "Get the value of property PROPERTY in USER."
+  (tlon-babel-plist-lookup property :name user tlon-babel-users))
+
+(defun tlon-babel-plist-lookup (compare-prop target-prop target-value list)
+  "Search LIST for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
+  (cl-loop for plist in list
+           when (equal (plist-get plist target-prop) target-value)
+           return (plist-get plist compare-prop)))
+
+(defun tlon-babel-repo-lookup (compare-prop target-prop target-value)
+  "Search repos for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
+  (tlon-babel-plist-lookup compare-prop target-prop target-value tlon-babel-repos))
+
+(defun tlon-babel-user-lookup (compare-prop target-prop target-value)
+  "Search users for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
+  (tlon-babel-plist-lookup compare-prop target-prop target-value tlon-babel-users))
+
+(defun tlon-babel-label-lookup (compare-prop target-prop target-value)
+  "Search labels for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
+  (tlon-babel-plist-lookup compare-prop target-prop target-value tlon-babel-labels))
+
+(defun tlon-babel-get-property-of-plists (compare-prop plist &optional target-prop target-value)
+  "Get a list of all values for property COMPARE-PROP in PLIST.
+Optionally, return only the subset of values such that TARGET-PROP matches
+TARGET-VALUE."
   (let ((result '()))
-    (dolist (plist alist)
-      (let* ((value1 (plist-get (cdr plist) property1 #'string=))
-	     (value2-test (when property2 (plist-get (cdr plist) property2 #'string=))))
+    (dolist (plist plist)
+      (let* ((value1 (plist-get plist compare-prop #'string=))
+	     (target-value-test (when target-prop (plist-get plist target-prop #'string=))))
 	(when value1
-	  (if property2
-	      (when (string= value2 value2-test)
+	  (if target-prop
+	      (when (string= target-value target-value-test)
 		(setq result (append result (list value1))))
 	    (setq result (append result (list value1)))))))
     result))
 
-(defun tlon-babel-get-property-of-repos (property1 &optional property2 value2)
-  "Get a list of all values for property PROPERTY1 in `tlon-babel-repos'.
-Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
-  (tlon-babel-get-property-of-alists property1 tlon-babel-repos property2 value2))
+(defun tlon-babel-get-property-of-repos (compare-prop &optional target-prop target-value)
+  "Get a list of all values for property COMPARE-PROP in `tlon-babel-repos'.
+Optionally, return only the subset of values such that TARGET-PROP matches
+TARGET-VALUE."
+  (tlon-babel-get-property-of-plists compare-prop tlon-babel-repos target-prop target-value))
 
-(defun tlon-babel-get-property-of-users (property1 &optional property2 value2)
-  "Get a list of all values for property PROPERTY1 in `tlon-babel-users'.
-Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
-  (tlon-babel-get-property-of-alists property1 tlon-babel-users property2 value2))
+(defun tlon-babel-get-property-of-users (compare-prop &optional target-prop target-value)
+  "Get a list of all values for property COMPARE-PROP in `tlon-babel-users'.
+Optionally, return only the subset of values such that TARGET-PROP matches
+TARGET-VALUE."
+  (tlon-babel-get-property-of-plists compare-prop tlon-babel-users target-prop target-value))
 
-(defun tlon-babel-get-property-of-labels (property1 &optional property2 value2)
-  "Get a list of all values for property PROPERTY1 in `tlon-babel-labels'.
-Optionally, return only the subset of values such that PROPERTY2 matches VALUE2."
-  (tlon-babel-get-property-of-alists property1 tlon-babel-labels property2 value2))
+(defun tlon-babel-get-property-of-labels (compare-prop &optional target-prop target-value)
+  "Get a list of all values for property COMPARE-PROP in `tlon-babel-labels'.
+Optionally, return only the subset of values such that TARGET-PROP matches
+TARGET-VALUE."
+  (tlon-babel-get-property-of-plists compare-prop tlon-babel-labels target-prop target-value))
+
+;;;;; [name]
 
 (defun tlon-babel-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
@@ -1516,7 +1506,7 @@ If point is on a list, pre-populate the selection with the list elements."
   "Return a list of BAE elements of TYPE."
   (tlon-babel-metadata-get-all-field-values
    "titulo"
-   (tlon-babel-get-metadata-in-repo (tlon-babel-get-property-of-repo :dir 'bae))
+   (tlon-babel-get-metadata-in-repo (tlon-babel-get-property-of-repo :dir "bae"))
    "file"
    (file-name-concat (tlon-babel-get-property-of-repo :dir-translations 'bae) type)))
 
@@ -2024,7 +2014,7 @@ If the current directory matches none of the directories in
 
 (defun tlon-babel-forge-update-repos ()
   "Update issues and notifications for all repos."
-  (dolist (dir (tlon-babel-get-property-of-repos :dir 'bae))
+  (dolist (dir (tlon-babel-get-property-of-repos :dir "bae"))
     (let* ((default-directory dir)
 	   (file (file-name-concat default-directory "readme.md"))
 	   (repo (forge-get-repository 'full)))
@@ -2182,7 +2172,6 @@ TITLE optionally specifies the title of the entity to be imported."
       (tlon-babel-markdown-cleanup-eaf)
       (tlon-babel-autofix-all))
     (find-file target)))
-
 
 (defun tlon-babel-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
@@ -3038,9 +3027,9 @@ If the topic has more than one label, return the first."
   (catch 'found
     (let ((found nil))
       (dolist (item alist)
-	(when (and found (not (equal (plist-get (cdr item) property) value)))
-	  (throw 'found (plist-get (cdr item) property)))
-	(when (equal (plist-get (cdr item) property) value)
+	(when (and found (not (equal (plist-get item property) value)))
+	  (throw 'found (plist-get item property)))
+	(when (equal (plist-get item property) value)
 	  (setq found t))))
     nil))
 
@@ -3106,7 +3095,7 @@ TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
 \='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
 conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
-  (let ((default-directory (tlon-babel-get-property-of-repo :dir 'genus))
+  (let ((default-directory (tlon-babel-get-property-of-repo :dir "genus"))
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
@@ -3161,7 +3150,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 ;; TODO: consider adapting `tlon-babel-commit-and-push' instead
 (defun tlon-babel-url-correspondence-commit ()
   "Commit modifications in `url-correspondences.json'."
-  (let ((default-directory (tlon-babel-get-property-of-repo :dir 'genus)))
+  (let ((default-directory (tlon-babel-get-property-of-repo :dir "genus")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
     (call-interactively #'magit-pull-from-upstream nil)
@@ -3383,22 +3372,22 @@ otherwise prompt for a repo."
 (defun tlon-babel-open-bae-repo ()
   "Open the Biblioteca Altruismo Eficaz repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo :dir 'bae)))
+  (dired (tlon-babel-get-property-of-repo :dir "bae")))
 
 (defun tlon-babel-open-utilitarismo-repo ()
   "Open the Utilitarismo repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo :dir 'utilitarismo)))
+  (dired (tlon-babel-get-property-of-repo :dir "utilitarismo")))
 
 (defun tlon-babel-open-largoplacismo-repo ()
   "Open the Largoplacismo repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo :dir 'largoplacismo)))
+  (dired (tlon-babel-get-property-of-repo :dir "largoplacismo")))
 
 (defun tlon-babel-open-genus-repo ()
   "Open the Genus repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo :dir 'genus)))
+  (dired (tlon-babel-get-property-of-repo :dir "genus")))
 
 (defun tlon-babel-open-bae-folder (folder)
   "Open FOLDER of the Biblioteca Altruismo Eficaz repository."
@@ -3782,10 +3771,9 @@ computed by dividing the file size by CHARS-PER-WORD."
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat (tlon-babel-get-property-of-repo :dir 'genus)
+	 (script (file-name-concat (tlon-babel-get-property-of-repo :dir "genus")
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
 
 (provide 'tlon-babel)
-
 ;;; tlon-babel.el ends here
