@@ -1077,7 +1077,7 @@ The element can be a tag or an author."
 		       (or selection new-element-title)))
 	   (link (format "[%s](%s)" new-desc new-target)))
       (when current-target
-	(ps/markdown--delete-link))
+	(markdown--mode-extras-delete-link))
       (when selection
 	(delete-region (region-beginning) (region-end)))
       (insert link))))
@@ -1537,7 +1537,7 @@ If point is on a list, pre-populate the selection with the list elements."
   (let ((default-directory (file-name-concat
 			    (tlon-babel-get-property-of-repo :dir-translations 'bae)
 			    (file-name-as-directory dir))))
-    (ps/new-empty-buffer)
+    (files-extras-new-empty-buffer)
     (tlon-babel-yaml-set-front-matter-for-title)
     (tlon-babel-name-file-from-title)
     (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "titulo")))
@@ -1751,7 +1751,7 @@ If REPO is nil, prompt the user for one."
   "Return the EAF post ID or tag slug from IDENTIFIER, if found.
 IDENTIFIER can be an URL, a post ID or a tag slug."
   (interactive "sURL: ")
-  (if (ps/string-is-url-p identifier)
+  (if (simple-extras-string-is-url-p identifier)
       (or (tlon-babel-eaf-get-id-from-identifier identifier)
 	  (tlon-babel-eaf-get-slug-from-identifier identifier))
     ;; return id or slug if identifier is an id or slug
@@ -1991,7 +1991,7 @@ open DeepL."
 
 (defun tlon-babel-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
-  (ps/window-split-if-unsplit)
+  (window-extras-split-if-unsplit)
   (winum-select-window-1)
   (find-file original-path)
   (winum-select-window-2)
@@ -2069,11 +2069,11 @@ IDENTIFIER can be a URL or a PDF file path."
   (unless (or (derived-mode-p 'ebib-entry-mode)
 	      (derived-mode-p 'ebib-index-mode))
     (user-error "This command must be run from an Ebib buffer"))
-  (require 'tlon-ebib)
-  (if-let ((id (or (tlon-ebib-get-field-value "url")
-		   (tlon-ebib-get-file "md")))
-	   (title (tlon-ebib-get-field-value "title"))
-	   (key (tlon-ebib-get-field-value "=key="))
+  (require 'ebib-extras)
+  (if-let ((id (or (ebib-extras-get-field-value "url")
+		   (ebib-extras-get-file "md")))
+	   (title (ebib-extras-get-field-value "title"))
+	   (key (ebib-extras-get-field-value "=key="))
 	   (repo (completing-read "Repo: " (tlon-babel-get-property-of-repos :dir :type 'core))))
       (progn
 	(tlon-babel-import-document id title)
@@ -2105,7 +2105,7 @@ This command also imports EA Forum posts and tags. TITLE optionally specifies
 the title of the document to be imported."
   (interactive)
   (let ((identifier (or identifier (read-string "Identifier (URL or PDF path): "))))
-    (if (ps/string-is-url-p identifier)
+    (if (simple-extras-string-is-url-p identifier)
 	(tlon-babel-import-html identifier title)
       (tlon-babel-import-pdf (expand-file-name identifier)))))
 
@@ -2186,7 +2186,7 @@ TITLE optionally specifies the title of the entity to be imported."
 SOURCE can be a URL or a file path. If TITLE is not provided, prompt the user
 for one."
   (let* ((target (read-string "Save file in: " (tlon-babel-set-file-from-title title)))
-	 (pandoc (if (ps/string-is-url-p source)
+	 (pandoc (if (simple-extras-string-is-url-p source)
 		     tlon-babel-pandoc-convert-from-url
 		   tlon-babel-pandoc-convert-from-file)))
     (shell-command
@@ -2483,8 +2483,8 @@ for the process that is being initialized."
   "Initialize accuracy check."
   ;; we move the buffer displaying the issue to the right, to uncover
   ;; the original file
-  (ps/window-buffer-move-dwim)
-  (ps/switch-to-last-window)
+  (window-extras-buffer-move-dwim)
+  (window-extras-switch-to-last-window)
   (markdown-preview)
   (tlon-babel-read-mode)
   (read-aloud-buf))
@@ -2504,7 +2504,7 @@ for the process that is being initialized."
     (jinx--cleanup)
     (goto-char (point-min))
     (save-buffer)
-    (ps/switch-to-alternate-buffer)))
+    (files-extras-switch-to-alternate-buffer)))
 
 ;;;;; TTS
 
@@ -2875,7 +2875,7 @@ If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
   (let ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	(win1 (selected-window)))
-    (ps/window-split-if-unsplit)
+    (window-extras-split-if-unsplit)
     (tlon-babel-search-topics search-string repo)
     (split-window-below)
     (tlon-babel-search-commits search-string repo)
@@ -3230,9 +3230,10 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 
 (defun tlon-babel-section-correspondence-check (key)
   "Check that selected BibTeX key is associated with the original work."
+  (require 'ebib-extras)
   (save-window-excursion
-    (tlon-ebib-open-key key)
-    (let ((langid (tlon-ebib-get-field-value "langid")))
+    (ebib-extras-open-key key)
+    (let ((langid (ebib-extras-get-field-value "langid")))
       (unless (member langid '("english" "american"))
 	(unless (y-or-n-p "The BibTeX entry you selected is not in English. In the `section-correspondences.json` file, you should use the BibTeX entry associated with the original work rather than with its translation. Are you sure you want to proceed?")
 	  (user-error "Aborted"))))))
@@ -3657,10 +3658,10 @@ If the key is not found, it is added to the list of missing keys."
 			   (line-beginning-position)
 			   (line-end-position))))
 	  (save-excursion
-	    (with-current-buffer (find-file-noselect ps/file-personal-bibliography-old)
+	    (with-current-buffer (find-file-noselect path-dir-personal-bibliography-old)
 	      (goto-char (point-min))
 	      (if (re-search-forward (format "{%s," bibtex-key) nil t)
-		  (call-interactively 'ps/bibtex-move-entry-to-tlon)
+		  (call-interactively 'bibtex-extras-move-entry-to-tlon)
 		(push 'missing-keys bibtex-key))))
 	  (forward-line)))
       (with-output-to-temp-buffer "*Missing BibTeX Keys*"
