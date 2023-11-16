@@ -45,7 +45,6 @@
 (require 'request)
 (require 'subr-x)
 (require 'tlon-core)
-(require 'tlon-ebib)
 (require 'org-extras)
 (require 'transient)
 (require 'unfill)
