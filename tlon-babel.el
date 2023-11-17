@@ -35,19 +35,32 @@
 (require 'consult)
 (require 'dired)
 (require 'doi-utils)
+;; (require 'ebib-extras)
+(require 'files-extras)
 (require 'forge)
+(require 'forge-search)
+(require 'goldendict-ng)
+(require 'gptel)
+(require 'gptel)
+(require 'jinx)
+(require 'json)
 (require 'magit)
+(require 'markdown-mode-extras)
 (require 'org)
 (require 'org-clock)
+(require 'org-extras)
 (require 'orgit-forge)
 (require 'path)
 (require 'read-aloud)
 (require 'request)
+(require 'simple-extras)
 (require 'subr-x)
+(require 'substitute)
 (require 'tlon-core)
-(require 'org-extras)
 (require 'transient)
 (require 'unfill)
+(require 'url)
+(require 'window-extras)
 (require 'winum)
 
 ;;;; Customization:
@@ -798,7 +811,6 @@ non-EAF."
 Specifically, when the buffer contains at least one heading, demote all headings
 if there is at least one level 1 heading, and promote all headings while there
 are no level 2 headings and some headings level 3 or higher."
-  (require 'substitute)
   (save-excursion
     (goto-char (point-min))
     (when (> (point-max) (markdown-next-heading)) ; buffer has at least one heading
@@ -2080,7 +2092,6 @@ IDENTIFIER can be a URL or a PDF file path."
   (unless (or (derived-mode-p 'ebib-entry-mode)
 	      (derived-mode-p 'ebib-index-mode))
     (user-error "This command must be run from an Ebib buffer"))
-  (require 'ebib-extras)
   (if-let ((id (or (ebib-extras-get-field-value "url")
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field-value "title"))
@@ -2263,7 +2274,6 @@ Markdown buffer at point is used."
 (defun tlon-babel-create-issue-from-todo ()
   "Create a new GitHub issue based on the current `org-mode' heading."
   (interactive)
-  (require 'tlon-core)
   (unless (derived-mode-p 'org-mode)
     (user-error "You need to be in `org-mode' to use this function"))
   (when (tlon-babel-get-issue-number-from-heading)
@@ -2502,7 +2512,6 @@ for the process that is being initialized."
 
 (defun tlon-babel-initialize-review ()
   "Initialize review."
-  (require 'jinx)
   (cl-multiple-value-bind
       (original-path translation-path)
       (tlon-babel-set-paths-from-clock)
@@ -2854,7 +2863,6 @@ If TOPIC is nil, use the topic at point."
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (require 'forge-search)
   (let* ((repo (or repo (tlon-babel-get-repo nil 'genus)))
 	 (default-directory repo))
     (forge-search search-string)))
@@ -3119,7 +3127,6 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 
 (defun tlon-babel-parse-json (type file)
   "Parse JSON FILE using array TYPE."
-  (require 'json)
   (let ((json-object-type 'hash-table)
 	(json-key-type 'string)
 	(json-array-type type)
@@ -3198,7 +3205,6 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-section-correspondence-dwim ()
   "Add a new section correspondence or modify an existing one."
   (interactive)
-  (require 'citar)
   (let* ((data (tlon-babel-parse-json 'list tlon-babel-file-section-correspondences))
 	 (keys (tlon-babel-get-keys data))
 	 (selected-key (let* ((keys (citar-select-refs)))
@@ -3234,8 +3240,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 	))))
 
 (defun tlon-babel-section-correspondence-check (key)
-  "Check that selected BibTeX key is associated with the original work."
-  (require 'ebib-extras)
+  "Check that selected BibTeX KEY is associated with the original work."
   (save-window-excursion
     (ebib-extras-open-key key)
     (let ((langid (ebib-extras-get-field-value "langid")))
@@ -3529,8 +3534,6 @@ If ASYNC is t, run the request asynchronously."
 (defun tlon-babel-get-bae-log ()
   "Get error log from BAE repo."
   (interactive)
-  (require 'json)
-  (require 'url)
   (let* ((url "https://altruismoeficaz.net/api/logs")
 	 (url-request-method "GET")
 	 (url-mime-charset-string "utf-8;q=1, iso-8859-1")
@@ -3611,7 +3614,6 @@ number, it will retry that many times instead of 2."
 
 (defun tlon-babel-pretty-print-bae-hash-table (hash-table buffer)
   "Print HASH-TABLE in a human-friendly way in BUFFER."
-  (require 'cl)
   (with-current-buffer buffer
     (maphash
      (lambda (key value)
@@ -3687,7 +3689,6 @@ If the key is not found, it is added to the list of missing keys."
       (browse-url (format url (url-hexify-string string)) 'new-buffer)))
   (tlon-babel-goldendict-search-input string))
 
-(require 'gptel)
 (defun tlon-babel-gpt-rewrite ()
   "Docstring."
   (interactive)
@@ -3708,7 +3709,6 @@ If the key is not found, it is added to the list of missing keys."
 (defun tlon-babel-gpt-translate (text)
   "Return ten alternative translations of TEXT."
   (interactive "sText to translate: ")
-  (require 'gptel)
   (gptel-request
    (format "Generate the best ten Spanish translations of the following English text: '%s'. Please return each translation on the same line, separated by '|'. Do not add a space either before or after the '|'. Do not precede your answer by 'Here are ten Spanish translations' or any comments of that sort: just return the translations. An example return string for the word 'very beautiful' would be: 'muy bello|muy bonito|muy hermoso|muy atractivo' (etc). Thanks!" text)
    :callback
