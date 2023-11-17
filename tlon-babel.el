@@ -1110,7 +1110,7 @@ The element can be a tag or an author."
 		       (or selection new-element-title)))
 	   (link (format "[%s](%s)" new-desc new-target)))
       (when current-target
-	(markdown--mode-extras-delete-link))
+	(markdown-mode-extras-delete-link))
       (when selection
 	(delete-region (region-beginning) (region-end)))
       (insert link))))
