@@ -149,7 +149,7 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
     (dolist (property `((:dir-originals ,dir-originals)
 			(:dir-translations ,dir-translations)))
       (when (eq (plist-get repo :type) 'core)
-	(plist-put repo property property)))))
+	(plist-put repo (car property) (cadr property))))))
 
 (mapc #'tlon-bae-set-dirs tlon-babel-repos)
 
