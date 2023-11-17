@@ -1542,7 +1542,7 @@ If point is on a list, pre-populate the selection with the list elements."
    "titulo"
    (tlon-babel-get-metadata-in-repo (tlon-babel-get-property-of-repo :dir "bae"))
    "file"
-   (file-name-concat (tlon-babel-get-property-of-repo :dir-translations 'bae) type)))
+   (file-name-concat (tlon-babel-get-property-of-repo :dir-translations "bae") type)))
 
 (defun tlon-babel-get-bae-articles ()
   "Get a list of BAE articles."
@@ -1568,7 +1568,7 @@ If point is on a list, pre-populate the selection with the list elements."
 (defun tlon-babel-create-bae (dir)
   "Create a new file for BAE entity in DIR."
   (let ((default-directory (file-name-concat
-			    (tlon-babel-get-property-of-repo :dir-translations 'bae)
+			    (tlon-babel-get-property-of-repo :dir-translations "bae")
 			    (file-name-as-directory dir))))
     (files-extras-new-empty-buffer)
     (tlon-babel-yaml-set-front-matter-for-title)
@@ -2184,7 +2184,7 @@ TITLE optionally specifies the title of the entity to be imported."
 	 (title (or title (pcase object
 			    ('post (tlon-babel-eaf-get-post-title response))
 			    ('tag (tlon-babel-eaf-get-tag-title response)))))
-	 (dir (tlon-babel-get-property-of-repo :dir-originals 'bae))
+	 (dir (tlon-babel-get-property-of-repo :dir-originals "bae"))
 	 (target (read-string "Save file in: " (tlon-babel-set-file-from-title title dir)))
 	 (html (pcase object
 		 ('post (tlon-babel-eaf-get-post-html response))
@@ -3406,7 +3406,7 @@ otherwise prompt for a repo."
 (defun tlon-babel-open-bae-folder (folder)
   "Open FOLDER of the Biblioteca Altruismo Eficaz repository."
   (dired (file-name-concat
-	  (tlon-babel-get-property-of-repo :dir-translations 'bae) folder)))
+	  (tlon-babel-get-property-of-repo :dir-translations "bae") folder)))
 
 (defun tlon-babel-open-bae-articles ()
   "Open the `articulos' folder of the Biblioteca Altruismo Eficaz repository."
