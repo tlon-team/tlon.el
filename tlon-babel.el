@@ -860,7 +860,7 @@ not alter it unless you know what you are doing."
 (defun tlon-babel-markdown-cleanup-fix-footnote-refs ()
   "Convert footnote references to valid Markdown syntax."
   (let* ((ref-number "[[:digit:]]\\{1,3\\}")
-	 (ref-source (format "\\^\\[\\(%s\\)\\](#fn.*?){.*?}\\^" ref-number ref-number))
+	 (ref-source (format "\\^\\[\\(%s\\)\\](#fn.*?){.*?}\\^" ref-number))
 	 (ref-target (format "\\(%s\\)\\.  \\(::: \\)?{#fn.*?} " ref-number))
 	 (find-replace `((,ref-source . "[^\\1]")
 			 (,ref-target . "[^\\1]: "))))
