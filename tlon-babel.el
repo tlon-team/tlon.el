@@ -614,7 +614,7 @@ link, else get their values from the heading title, if possible."
 				       (oref forge-repo id)
 				       number)))
 	    (issue (forge-get-topic issue-id)))
-      (forge-visit issue)
+      (forge-visit-issue issue)
     (user-error "Could not find issue")))
 
 (defun tlon-babel-visit-counterpart ()
