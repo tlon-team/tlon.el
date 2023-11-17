@@ -3690,7 +3690,7 @@ If the key is not found, it is added to the list of missing keys."
 		"https://www.linguee.com/english-spanish/search?query=%s")))
     (dolist (url urls)
       (browse-url (format url (url-hexify-string string)) 'new-buffer)))
-  (tlon-babel-goldendict-search-input string))
+  (goldendict-ng-search-string string))
 
 (defun tlon-babel-gpt-rewrite ()
   "Docstring."
