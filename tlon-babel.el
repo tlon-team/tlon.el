@@ -422,6 +422,16 @@ The second capture group handles the `.md' extension, which we used previously."
 (defvar tlon-babel-enable-automatic-highlighting nil
   "Whether to automatically highlight corresponding sentences.")
 
+;;;;; Word count
+
+(defconst tlon-babel-local-variables-line-start
+  "<!-- Local Variables: -->"
+  "Start of the line that contains file local variables.")
+
+(defconst tlon-babel-local-variables-line-end
+  "<!-- End: -->"
+  "End of the line that contains file local variables.")
+
 ;;;; Functions
 
 ;;;;; Core
@@ -1691,14 +1701,6 @@ default to \".md\"."
 	     do (tlon-babel-check-paragraph-number-match file))))
 
 ;;;;; Word count
-
-(defconst tlon-babel-local-variables-line-start
-  "<!-- Local Variables: -->"
-  "Start of the line that contains file local variables.")
-
-(defconst tlon-babel-local-variables-line-end
-  "<!-- End: -->"
-  "End of the line that contains file local variables.")
 
 (defun tlon-babel-get-text-between-lines (start-line end-line)
   "Return the text between START-LINE and END-LINE in the current buffer."
