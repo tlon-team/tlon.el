@@ -2040,6 +2040,7 @@ If the current directory matches none of the directories in
 
 (defun tlon-babel-forge-update-repos ()
   "Update issues and notifications for all repos."
+  (interactive)
   (dolist (dir (tlon-babel-get-property-of-repos :dir "bae"))
     (let* ((default-directory dir)
 	   (file (file-name-concat default-directory "readme.md"))
