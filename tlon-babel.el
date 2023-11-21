@@ -50,7 +50,7 @@
 (require 'org-clock)
 (require 'org-extras)
 (require 'orgit-forge)
-(require 'path)
+(require 'paths)
 (require 'read-aloud)
 (require 'request)
 (require 'simple-extras)
