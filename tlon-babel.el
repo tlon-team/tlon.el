@@ -309,7 +309,7 @@ TARGET-VALUE."
   "ID of the `jobs' heading in `jobs.org'.")
 
 (defcustom tlon-babel-todos-file
-  (file-name-concat path-dir-dropbox "tlon-private/babel.org")
+  (file-name-concat paths-dir-dropbox "tlon-private/babel.org")
   "Org file of the user-specific heading where Babel TODOs are stored."
   :type 'string
   :group 'tlon-babel)
@@ -343,11 +343,11 @@ TARGET-VALUE."
 ;;;;; Import
 
 (defvar tlon-babel-pdf2md
-  (file-name-concat path-dir-source "pdf2md/lib/pdf2md-cli.js")
+  (file-name-concat paths-dir-source "pdf2md/lib/pdf2md-cli.js")
   "Path to `pdf2md-cli.js' executable.")
 
 (defvar tlon-babel-pdftotext
-  (file-name-concat path-dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
+  (file-name-concat paths-dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
   "Path to `pdftotext' executable.")
 
 ;;;;; API
@@ -3661,7 +3661,7 @@ If the key is not found, it is added to the list of missing keys."
 			   (line-beginning-position)
 			   (line-end-position))))
 	  (save-excursion
-	    (with-current-buffer (find-file-noselect path-file-personal-bibliography-old)
+	    (with-current-buffer (find-file-noselect paths-file-personal-bibliography-old)
 	      (goto-char (point-min))
 	      (if (re-search-forward (format "{%s," bibtex-key) nil t)
 		  (call-interactively 'bibtex-extras-move-entry-to-tlon)
