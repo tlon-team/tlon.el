@@ -2072,17 +2072,10 @@ property `:type'."
 		      core-repos)))
 	(tlon-babel-repo-lookup :dir :name (completing-read "Select repo: " repos))))))
 
-(defun tlon-babel-magit-get-commit-file ()
-  "Get file to commit.
-If more than one file is being committed, get the first one."
-  (save-excursion
-    (re-search-forward "Changes to be committed:\n#.*?:.  \\(.*/?.*\\)$" nil t)
-    (match-string-no-properties 1)))
-
 (defun tlon-babel-get-commit-key ()
   "Get key of commit file."
   (let ((path (file-name-concat (file-name-directory (tlon-babel-buffer-file-name))
-				(tlon-babel-magit-get-commit-file))))
+				(magit-extras-get-commit-file))))
     (tlon-babel-get-key-from-file path)))
 
 (defun tlon-babel-create-job ()
