@@ -90,8 +90,14 @@
     (:name "ensayos-sobre-largoplacismo"
 	   :abbrev "esl"
 	   :type core)
-    (:name "bibliotheca-issues"
-	   :abbrev "bib-issues"
+    (:name "uqbar-issues"
+	   :abbrev "uqbar-issues"
+	   :type aux)
+    (:name "uqbar-front"
+	   :abbrev "uqbar-front"
+	   :type aux)
+    (:name "uqbar-api"
+	   :abbrev "uqbar-api"
 	   :type aux)
     (:name "ea.news-issues"
 	   :abbrev "ean-issues"
