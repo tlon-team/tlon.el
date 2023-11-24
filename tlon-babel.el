@@ -42,7 +42,6 @@
 (require 'goldendict-ng)
 (require 'gptel)
 (require 'gptel)
-(require 'jinx)
 (require 'json)
 (require 'magit)
 (require 'markdown-mode-extras)
