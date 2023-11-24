@@ -74,10 +74,14 @@
 
 ;;;;; Files and dirs
 
+
 (defvar tlon-babel-dir-repos
-  (pcase user-full-name
-    ("Federico Stafforini" (expand-file-name "~/source/"))
-    (_ (expand-file-name "~/Library/CloudStorage/Dropbox/repos/")))
+  (let ((dir (pcase (getenv "HOME")
+	       ("/Users/pablostafforini" "Library/CloudStorage/Dropbox/repos/")
+	       ("/Users/fede" "source/")
+	       ("/Users/cartago" "Library/CloudStorage/Dropbox/repos/")
+	       (_ (user-error "Home directory does not match that of known user")))))
+    (file-name-concat (getenv "HOME") dir))
   "Directory where the Tlön repos are stored.")
 
 (defvar tlon-babel-repos
