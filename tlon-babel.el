@@ -106,6 +106,12 @@
     (:name "ea.news-issues"
 	   :abbrev "ean-issues"
 	   :type aux)
+    (:name "ea.news-front"
+	   :abbrev "ean-front"
+	   :type aux)
+    (:name "ea.news-api"
+	   :abbrev "ean-api"
+	   :type aux)
     (:name "genus"
 	   :abbrev "genus"
 	   :type aux))
