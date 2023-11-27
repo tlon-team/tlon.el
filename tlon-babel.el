@@ -2039,10 +2039,12 @@ open DeepL."
 
 ;;;;; [name section]
 
-(defun tlon-babel-magit-status ()
-  "Show the status of the current repository in a buffer."
-  (interactive)
-  (let ((default-directory (tlon-babel-get-repo nil 'genus)))
+(defun tlon-babel-magit-status (repo)
+  "Prompt the user for a REPO and show it in Magit."
+  (interactive (list
+		(completing-read
+		 "Repo: " (tlon-babel-get-property-of-repos :name))))
+  (let ((default-directory (tlon-babel-repo-lookup :dir :name repo)))
     (magit-status-setup-buffer)))
 
 (defun tlon-babel-forge ()
