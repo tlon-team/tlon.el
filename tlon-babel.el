@@ -3302,7 +3302,8 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   [["Main"
     ("j" "job"                            tlon-babel-create-job)
     ("r" "dwim"                           tlon-babel-dwim)
-    ("m" "magit"                          tlon-babel-magit-status)
+    ("m" "magit (prompt)"                 tlon-babel-magit-status)
+    ("." "magit (current)"                magit)
     ("n" "forge"                          tlon-babel-forge)
     """Request"
     ("q g" "update genus"                 tlon-babel-update-bae-genus)
