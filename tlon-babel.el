@@ -2070,18 +2070,19 @@ If the current directory matches none of the directories in
   (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (call-interactively 'forge-dispatch)))
 
-(defun tlon-babel-forge-update-repos ()
-  "Update issues and notifications for all repos."
+(defun tlon-babel-forge-update-repo (repo)
+  "Update issues and notifications for REPO name."
+  (let* ((default-directory (tlon-babel-repo-lookup :dir :name repo))
+         (repo (forge-get-repository 'full)))
+    (save-window-excursion
+      (with-current-buffer (dired-noselect default-directory)
+        (forge-pull repo)))))
+
+(defun tlon-babel-forge-update-all-repos ()
+  "Update issues and notifications for all active repos."
   (interactive)
-  (dolist (dir (tlon-babel-get-property-of-repos :dir))
-    (let* ((default-directory dir)
-	   (file (file-name-concat default-directory "readme.md"))
-	   (repo (forge-get-repository 'full)))
-      (save-window-excursion
-	;; hack; `default-directory' doesn't seem to be enough to set the relevant directory
-	;; so we just open an arbitrary file in the repo
-	(with-current-buffer (find-file-noselect file)
-	  (forge-pull repo))))))
+  (dolist (repo (tlon-babel-get-property-of-repos :name))
+    (tlon-babel-forge-update-repo repo)))
 
 (defun tlon-babel-initialize-repo-timers ()
   "Initialize timers for Babel repos.
@@ -2091,7 +2092,7 @@ value of 8 hours will be used."
   (cancel-function-timers #'tlon-babel-forge-update-repos)
   (dolist (repo (tlon-babel-get-property-of-repos :name))
     (let ((timer (or (alist-get repo tlon-babel-repo-timers nil nil 'string=) 8)))
-      (run-with-idle-timer (* timer 60 60) t #'tlon-babel-forge-update-repos))))
+      (run-with-idle-timer (* timer 60 60) t #'tlon-babel-forge-update-repo))))
 
 (tlon-babel-initialize-repo-timers)
 
