@@ -2052,7 +2052,7 @@ open DeepL."
   (winum-select-window-2)
   (find-file translation-path))
 
-;;;;; [name section]
+;;;;; Forge
 
 (defun tlon-babel-magit-status (repo)
   "Prompt the user for a REPO and show it in Magit."
