@@ -2060,6 +2060,14 @@ open DeepL."
   (let ((default-directory (tlon-babel-get-repo nil 'genus)))
     (magit-status-setup-buffer)))
 
+(defun tlon-babel-magit-prompt (repo)
+  "Prompt the user for a REPO and show it in Magit."
+  (interactive (list
+		(completing-read
+		 "Repo: " (tlon-babel-get-property-of-repos :name))))
+  (let ((default-directory (tlon-babel-repo-lookup :dir :name repo)))
+    (magit-status-setup-buffer)))
+
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher.
 If the current directory matches none of the directories in
@@ -3326,7 +3334,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   [["Main"
     ("j" "job"                            tlon-babel-create-job)
     ("r" "dwim"                           tlon-babel-dwim)
-    ("m" "magit (prompt)"                 tlon-babel-magit-status)
+    ("m" "magit (prompt)"                 tlon-babel-magit-prompt)
     ("." "magit (current)"                magit)
     ("n" "forge"                          tlon-babel-forge)
     """Request"
