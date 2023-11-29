@@ -70,7 +70,7 @@
   "A companion package for the Babel project."
   :group 'files)
 
-(defcustom tlon-babel-repo-timers
+(defcustom tlon-babel-repo-timer-durations
   '(("biblioteca-altruismo-eficaz" . 1)
     ("utilitarismo.net" . 1)
     ("ensayos-sobre-largoplacismo" . 1)
@@ -85,6 +85,12 @@
 A repo will be updated after that many hours of inactivity."
   :type '(alist :key-type string :value-type integer)
   :group 'tlon-babel)
+
+(defvar tlon-babel-repo-timers nil
+  "Timers for each repo.
+This variable is set by `tlon-babel-initialize-repo-timers' and its purpose is
+to store the timers created by that function so that they can be canceled
+via `tlon-babel-cancel-repo-timers'.")
 
 ;;;; Variables
 
@@ -2093,12 +2099,21 @@ If the current directory matches none of the directories in
 (defun tlon-babel-initialize-repo-timers ()
   "Initialize timers for Babel repos.
 Start an idle timer for each active repo, with an update frequency as specified
-in `tlon-babel-repo-timers'. If no duration is specified for an active repo, a
-value of 8 hours will be used."
-  (cancel-function-timers #'tlon-babel-forge-update-repos)
+in `tlon-babel-repo-timer-durations'. If no duration is specified for an active
+repo, a value of 8 hours will be used."
+  (tlon-babel-cancel-repo-timers)
   (dolist (repo (tlon-babel-get-property-of-repos :name))
-    (let ((timer (or (alist-get repo tlon-babel-repo-timers nil nil 'string=) 8)))
-      (run-with-idle-timer (* timer 60 60) t #'tlon-babel-forge-update-repo))))
+    (let ((interval (or (alist-get repo tlon-babel-repo-timer-durations nil nil 'string=) 8)))
+      (push
+       (run-with-idle-timer (* interval 60 60) t
+			    (lambda () (tlon-babel-forge-update-repo repo)))
+       tlon-babel-repo-timers))))
+
+(defun tlon-babel-cancel-repo-timers ()
+  "Cancel all timers for Babel repos."
+  (dolist (timer tlon-babel-repo-timers)
+    (cancel-timer timer))
+  (setq tlon-babel-repo-timers '()))
 
 (tlon-babel-initialize-repo-timers)
 
