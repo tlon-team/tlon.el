@@ -357,7 +357,7 @@ TARGET-VALUE."
   :group 'tlon-babel)
 
 (defcustom tlon-babel-todos-generic-id
-  "14AB72D8-D707-41B3-89FF-7A787F266E5E"
+  "4388B4D0-3830-48E0-A118-C3195B62F0D1"
   "Org ID of the user-specific heading where Babel TODOs are stored."
   :type 'string
   :group 'tlon-babel)
