@@ -564,12 +564,13 @@ If not, offer to process it as a new job."
   "Check that the user is the assignee of issue at point."
   (let ((assignee (tlon-babel-forge-get-assignee-at-point 'full-name)))
     (unless (string= user-full-name assignee)
-      (if (y-or-n-p
-	   (format "The assignee of this topic is %s. Would you like to become the assignee?" assignee))
-	  (progn
-	    (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
+      (pcase (read-char-choice
+	      (format "The assignee is %s. Self-assign? [y]es | no, and [c]apture | no, and [a]bort " assignee)
+	      '(?y ?c ?a))
+	(?y (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
 	    (sleep-for 2))
-	(user-error "Aborted")))))
+	(?c )
+	(?a (user-error "Aborted"))))))
 
 (defun tlon-babel-check-label-present ()
   "Check that the topic at point has a label."
