@@ -2407,12 +2407,14 @@ COMMIT is non-nil, commit the change."
 
 (defun tlon-babel-visit-todo (&optional todo file)
   "Jump to TODO in FILE.
-If TODO is nil, use the heading at point."
+If TODO is nil, use the heading at point. If FILE is nil, use
+`tlon-babel-todos-file'."
   (interactive)
-  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue-at-point))))
-    (if-let ((pos (tlon-babel-get-todo-position-strict todo tlon-babel-todos-file)))
+  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue-at-point)))
+	(file (or file tlon-babel-todos-file)))
+    (if-let ((pos (tlon-babel-get-todo-position-strict todo file)))
 	(tlon-babel-open-todo file pos)
-      (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo tlon-babel-todos-file))))
+      (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo file))))
 
 (defun tlon-babel-get-parent-todo (todo)
   "Get parent of TODO in `tlon-babel-todos-file'."
@@ -2533,7 +2535,6 @@ for the process that is being initialized."
     (when (or (string= current-action "Review") (string= current-action "Check"))
       (let ((parent-todo (tlon-babel-get-parent-todo todo)))
 	(tlon-babel-mark-todo-done parent-todo tlon-babel-todos-file)))
-    ;; TODO: this isn’t working; diagnose and fix it
     (when (string= current-action "Review")
       (let ((job-todo (format "[cite:@%s]" key)))
 	(tlon-babel-mark-todo-done job-todo tlon-babel-file-jobs)
