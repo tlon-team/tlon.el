@@ -541,10 +541,10 @@ appropriate heading."
   (if (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
       (progn
 	(tlon-babel-check-label-or-assignee-present)
-	(tlon-babel-check-user-is-asignee)
+	(tlon-babel-check-user-is-assignee)
 	(tlon-babel-check-label-present)
 	(tlon-babel-store-or-refile-job-todo))
-    (tlon-babel-check-user-is-asignee)
+    (tlon-babel-check-user-is-assignee)
     (tlon-babel-store-todo "tbG")))
 
 (defun tlon-babel-check-label-or-assignee-present ()
@@ -560,7 +560,7 @@ If not, offer to process it as a new job."
 	      (tlon-babel-create-todo-from-issue))
 	  (user-error "Aborted")))))
 
-(defun tlon-babel-check-user-is-asignee ()
+(defun tlon-babel-check-user-is-assignee ()
   "Check that the user is the assignee of issue at point."
   (let ((assignee (tlon-babel-forge-get-assignee-at-point 'full-name)))
     (unless (string= user-full-name assignee)
