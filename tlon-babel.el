@@ -3030,8 +3030,7 @@ The prompt defaults to the current user."
 	 (crm-separator ","))
     (forge--set-topic-assignees
      repo topic
-     (list assignee)))
-  (goto-char (point-min)))
+     (list assignee))))
 
 (defun tlon-babel-set-initial-label-and-assignee ()
   "Set label to `Awaiting processing' and assignee to current user."
