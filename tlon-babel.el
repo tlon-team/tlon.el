@@ -568,7 +568,8 @@ If not, offer to process it as a new job."
 	      (format "The assignee is %s. Self-assign? [y]es | no, and [c]apture | no, and [a]bort " assignee)
 	      '(?y ?c ?a))
 	(?y (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
-	    (sleep-for 2))
+	    (sleep-for 2)
+	    (tlon-babel-create-todo-from-issue))
 	(?c )
 	(?a (user-error "Aborted"))))))
 
