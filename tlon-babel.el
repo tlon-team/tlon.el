@@ -578,7 +578,6 @@ If not, offer to process it as a new job."
     (unless label
       (if (y-or-n-p "The topic has no label. Would you like to add one?")
 	  (tlon-babel-set-label (tlon-babel-select-label))
-	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
 	(user-error "Aborted")))))
 
 (defun tlon-babel-store-or-refile-job-todo ()
