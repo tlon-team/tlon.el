@@ -2403,7 +2403,8 @@ COMMIT is non-nil, commit the change."
     (widen)
     (org-up-heading-safe)
     (org-sort-entries nil ?a)
-    (org-sort-entries nil ?o)))
+    (org-sort-entries nil ?o)
+    (save-buffer)))
 
 (defun tlon-babel-visit-todo (&optional todo file)
   "Jump to TODO in FILE.
