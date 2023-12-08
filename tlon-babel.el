@@ -206,8 +206,8 @@ REPO is named in its abbreviated form, i.e. the value of `:abbrev' rather than
 (defun tlon-babel-plist-lookup (compare-prop target-prop target-value list)
   "Search LIST for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
   (cl-loop for plist in list
-           when (equal (plist-get plist target-prop) target-value)
-           return (plist-get plist compare-prop)))
+	   when (equal (plist-get plist target-prop) target-value)
+	   return (plist-get plist compare-prop)))
 
 (defun tlon-babel-repo-lookup (compare-prop target-prop target-value)
   "Search repos for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
@@ -1114,8 +1114,8 @@ dedicated function."
     (goto-char (point-min))
     (let ((cnt 0))
       (while (re-search-forward "https://web\.archive\.org/web/[[:digit:]]*?/" nil t)
-        (replace-match "")
-        (setq cnt (1+ cnt)))
+	(replace-match "")
+	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
 
 ;;;;;; Insertion commands
@@ -2086,10 +2086,10 @@ If the current directory matches none of the directories in
 (defun tlon-babel-forge-update-repo (repo)
   "Update issues and notifications for REPO name."
   (let* ((default-directory (tlon-babel-repo-lookup :dir :name repo))
-         (repo (forge-get-repository 'full)))
+	 (repo (forge-get-repository 'full)))
     (save-window-excursion
       (with-current-buffer (dired-noselect default-directory)
-        (forge-pull repo)))))
+	(forge-pull repo)))))
 
 (defun tlon-babel-forge-update-all-repos ()
   "Update issues and notifications for all active repos."
@@ -3182,8 +3182,8 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
       (magit-run-git "add" tlon-babel-file-glossary)
       (let ((magit-commit-ask-to-stage nil))
 	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
-						 action term description)))))))
-;; (call-interactively #'magit-push-current-to-pushremote))))
+						 action term description))))))
+  (call-interactively #'magit-push-current-to-pushremote))
 
 ;;;;; URL correspondences
 
