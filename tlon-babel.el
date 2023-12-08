@@ -108,34 +108,34 @@ via `tlon-babel-cancel-repo-timers'.")
 (defvar tlon-babel-repos
   `((:name "biblioteca-altruismo-eficaz"
 	   :abbrev "bae"
-	   :type core)
+	   :type content)
     (:name "utilitarismo.net"
 	   :abbrev "util"
-	   :type core)
+	   :type content)
     (:name "ensayos-sobre-largoplacismo"
 	   :abbrev "esl"
-	   :type core)
+	   :type content)
     (:name "uqbar-issues"
 	   :abbrev "uqbar-issues"
-	   :type aux)
+	   :type issues)
     (:name "uqbar-front"
 	   :abbrev "uqbar-front"
-	   :type aux)
+	   :type front)
     (:name "uqbar-api"
 	   :abbrev "uqbar-api"
-	   :type aux)
+	   :type api)
     (:name "ea.news-issues"
 	   :abbrev "ean-issues"
-	   :type aux)
+	   :type issues)
     (:name "ea.news-front"
 	   :abbrev "ean-front"
-	   :type aux)
+	   :type front)
     (:name "ea.news-api"
 	   :abbrev "ean-api"
-	   :type aux)
+	   :type api)
     (:name "genus"
 	   :abbrev "genus"
-	   :type aux))
+	   :type biblio))
   "List of repos and associated properties.")
 
 (defvar tlon-babel-labels
@@ -184,7 +184,7 @@ These properties are `:dir', `:dir-originals' and `:dir-translations'."
     (plist-put repo :dir dir)
     (dolist (property `((:dir-originals ,dir-originals)
 			(:dir-translations ,dir-translations)))
-      (when (eq (plist-get repo :type) 'core)
+      (when (eq (plist-get repo :type) 'content)
 	(plist-put repo (car property) (cadr property))))))
 
 (mapc #'tlon-bae-set-dirs tlon-babel-repos)
@@ -1253,7 +1253,7 @@ If REPO is nil, return metadata of current repository."
     (if-let ((dir (tlon-babel-repo-lookup :dir-translations :dir repo)))
 	(tlon-babel-get-dir-metadata dir)
       (if-let ((name (tlon-babel-get-property-of-repo :name repo)))
-	  (user-error "The repository `%s' is not a `core' repository" name)
+	  (user-error "The repository `%s' is not a `content' repository" name)
 	(user-error "The directory `%s' is not a recognized repository" dir)))))
 
 (defun tlon-babel-get-metadata-in-repos ()
@@ -1782,7 +1782,7 @@ If REPO is nil, prompt the user for one."
   (let* ((repo (or repo
 		   (intern (completing-read
 			    "Repo: "
-			    (tlon-babel-get-property-of-repos :abbrev :type 'core)))))
+			    (tlon-babel-get-property-of-repos :abbrev :type 'content)))))
 	 (initial-buffers (buffer-list))
 	 (files (directory-files-recursively
 		 (tlon-babel-get-property-of-repo :dir-translations repo) "\\.md$"))
@@ -1970,7 +1970,7 @@ If NO-ACTION is non-nil, omit, the ACTION element."
 			  (not no-action))
 		     (tlon-babel-label-lookup :action :label (tlon-babel-forge-get-label-at-point))
 		   ""))
-	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'aux)))
+	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'include-all)))
 	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
 					      " "
 					      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link)))))
@@ -2118,24 +2118,22 @@ repo, a value of 8 hours will be used."
 
 (tlon-babel-initialize-repo-timers)
 
-(defun tlon-babel-get-repo (&optional no-prompt aux)
+(defun tlon-babel-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
 If the current directory matches any of the directories in `tlon-babel-repos',
 return it. Else, prompt the user to select a repo from that list, unless
 NO-PROMPT is non-nil. In that case, signal an error if its value is `error',
-else return nil. If AUX is non-nil, include auxiliary repos. In that case,
-matching will be made against repos with both the `core' and `aux' value for the
-property `:type'."
+else return nil. If INCLUDE-ALL is non-nil, include all repos. In that case,
+matching will be made against repos with any value for the property `:type'."
   (if-let ((current-repo (tlon-babel-get-repo-from-file)))
       current-repo
     (if no-prompt
 	(when (eq no-prompt 'error)
 	  (user-error "Not in a recognized Babel repo"))
-      (let* ((core-repos (tlon-babel-get-property-of-repos :name :type 'core))
-	     (repos (if aux
-			(append core-repos (tlon-babel-get-property-of-repos :name :type 'aux))
-		      core-repos)))
-	(tlon-babel-repo-lookup :dir :name (completing-read "Select repo: " repos))))))
+      (let* ((content (tlon-babel-get-property-of-repos :name :type 'content))
+	     (all (tlon-babel-get-property-of-repos :name)))
+	(tlon-babel-repo-lookup :dir :name (completing-read "Select repo: ")
+				(if include-all all content))))))
 
 (defun tlon-babel-get-commit-key ()
   "Get key of commit file."
@@ -2157,7 +2155,7 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field-value "title"))
 	   (key (ebib-extras-get-field-value "=key="))
-	   (repo (completing-read "Repo: " (tlon-babel-get-property-of-repos :dir :type 'core))))
+	   (repo (completing-read "Repo: " (tlon-babel-get-property-of-repos :dir :type 'content))))
       (progn
 	(tlon-babel-import-document id title)
 	(tlon-babel-create-translation-file repo)
@@ -2980,15 +2978,15 @@ The commit message is ACTION followed by the name of FILE."
 (defun tlon-babel-create-commit (action file)
   "Create a commit modifications to FILE.
 The commit message is ACTION followed by either FILE or its BibTeX key,
-depending on whether the repo is an auxiliary or a core one, respectively."
+depending on whether the repo is of type `content` or `biblio', respectively."
   ;; we check for staged or unstaged changes to FILE because
   ;; `magit-commit-create' interrupts the process if there aren't
   (when (tlon-babel-check-staged-or-unstaged file)
     (let* ((repo (tlon-babel-get-repo-from-file file))
 	   (type (tlon-babel-repo-lookup :type :dir repo))
 	   (file-or-key (pcase type
-			  ('core (tlon-babel-get-key-from-file file))
-			  ('aux (file-name-nondirectory file)))))
+			  ('content (tlon-babel-get-key-from-file file))
+			  ('biblio (file-name-nondirectory file)))))
       (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
 
 ;;;;; Change topic properties
@@ -3836,7 +3834,7 @@ computed by dividing the file size by CHARS-PER-WORD."
     (user-error "Please install `gdu' (e.g. `brew install gdu')"))
   (unless (executable-find "gnuplot")
     (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
-  (let* ((repo-name (or repo-name (completing-read "Repo: " (tlon-babel-get-property-of-repos :name :type 'core))))
+  (let* ((repo-name (or repo-name (completing-read "Repo: " (tlon-babel-get-property-of-repos :name :type 'content))))
 	 (dir (tlon-babel-repo-lookup :dir-translations :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
