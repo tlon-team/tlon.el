@@ -97,7 +97,7 @@ via `tlon-babel-cancel-repo-timers'.")
 ;;;;; Files and dirs
 
 (defvar tlon-babel-dir-repos
-  (let ((dir (pcase (getenv "HOME")
+  (let ((dir (pcase (expand-file-name "~")
 	       ("/Users/pablostafforini" "Library/CloudStorage/Dropbox/repos/")
 	       ("/Users/fede" "source/")
 	       ("/Users/cartago" "Library/CloudStorage/Dropbox/repos/")
