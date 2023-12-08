@@ -1425,7 +1425,8 @@ If TITLE is non-nil, use it instead of prompting for one."
 	   (cmpl-generators
 	    `(("first-author" . ,first-author)
 	      ("autores" . ,autores)
-	      ("key_original" . ,(when first-author (tlon-babel-yaml-set-key_original (car first-author))))
+	      ("estado_de_publicacion" . "no publicado")
+	      ("key_original" . ,(when first-author (tlon-babel-yaml-set-original-key (car first-author))))
 	      ("key_traduccion" . ,(when first-author
 				     (tlon-babel-bibtex-generate-autokey
 				      (car first-author)
@@ -1506,7 +1507,7 @@ the repo's locator. For example, to search only in `translations/autores', use
   (completing-read "Locator original"
 		   (tlon-babel-get-locators-in-repo (tlon-babel-get-repo) "originals")))
 
-(defun tlon-babel-yaml-set-key_original (author)
+(defun tlon-babel-yaml-set-original-key (author)
   "Set the value of `key_original' YAML field.
 AUTHOR is the first author of the original work."
   (let ((first-author (car (last (split-string author)))))
