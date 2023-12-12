@@ -1530,7 +1530,12 @@ FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
   "Reorder the YAML front matter in the buffer at point."
   (interactive)
   (let* ((unsorted (tlon-babel-yaml-get-front-matter))
-	 (sorted (tlon-babel--yaml-sort-fields unsorted tlon-babel-yaml-article-keys)))
+	 (sorted (tlon-babel--yaml-sort-fields
+		  unsorted
+		  (pcase
+		      (file-name-nondirectory (directory-file-name default-directory))
+		    ("articles" tlon-babel-yaml-article-keys)
+		    ((or "temas" "autores") tlon-babel-yaml-tag-or-author-keys)))))
     (tlon-babel-delete-yaml-front-matter)
     (tlon-babel-insert-yaml-fields sorted)))
 
