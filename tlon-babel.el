@@ -1640,7 +1640,7 @@ overwrite."
     (if-let ((front-matter (tlon-babel-yaml-get-front-matter file)))
 	(let ((key-exists-p (assoc key front-matter)))
 	  (if (and key-exists-p (not overwrite))
-	      (user-error "Field `%s' already exists" key)
+	      (user-error "Field `%s' already exists in `%s'" key file)
 	    (with-current-buffer (find-file-noselect file)
 	      (when (and key-exists-p overwrite)
 		(tlon-babel-yaml-delete-field key file))
