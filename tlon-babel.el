@@ -334,6 +334,12 @@ TARGET-VALUE."
 (tlon-babel-create-file-opening-command "section-correspondences")
 (tlon-babel-create-file-opening-command "bibtex-correspondences")
 
+(defcustom tlon-babel-csl-styles
+  (file-name-concat tlon-babel-dir-refs "styles/")
+  "Directory where CSL style files are stored."
+  :type 'directory
+  :group 'tlon-babel)
+
 ;;;;; Org-mode ids
 
 (defvar tlon-babel-manual-processing-id
