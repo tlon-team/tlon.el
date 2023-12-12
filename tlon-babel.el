@@ -424,8 +424,24 @@ TARGET-VALUE."
 
 ;;;;; YAML
 
-(defconst tlon-babel-yaml-delimiter "---"
+(defconst tlon-babel-publication-statuses
+  '("no publicado" "prueba" "produccion")
+  "List of publication statuses.")
+
+(defconst tlon-babel-yaml-delimiter "---\n"
   "Delimiter for YAML front matter.")
+
+(defconst tlon-babel-yaml-article-keys
+  '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion" "estado_de_publicacion" "descripcion")
+  "List of YAML keys of fields to include in BAE articles.
+The order of the keys determines the sort order by
+`tlon-babel--yaml-sort-fields', unless overridden.")
+
+(defconst tlon-babel-yaml-tag-or-author-keys
+  '("titulo" "estado_de_publicacion")
+  "List of YAML keys of fields to include in BAE tags or authors.
+The order of the keys determines the sort order by
+`tlon-babel--yaml-sort-fields', unless overridden.")
 
 ;;;;; Validation
 
@@ -1278,7 +1294,7 @@ If REPO is nil, return metadata of current repository."
 
 (defun tlon-babel-get-metadata-in-file-or-buffer (file-or-buffer)
   "Return the metadata in FILE-OR-BUFFER as an association list."
-  (let* ((metadata (tlon-babel-yaml-to-alist
+  (let* ((metadata (tlon-babel-yaml-format-values-of-alist
 		    (tlon-babel-yaml-get-front-matter file-or-buffer)))
 	 (extras `(("file" . ,file-or-buffer)
 		   ("type" . "online")
@@ -1347,50 +1363,60 @@ If REPO is nil, return files in current repository. DIR is one of `originals' or
 
 ;;;;;; Get YAML values
 
-(defun tlon-babel-yaml-get-front-matter (&optional file-or-buffer)
+(defun tlon-babel-yaml-get-front-matter (&optional file-or-buffer raw)
   "Return the YAML front matter from FILE-OR-BUFFER as strings in a list.
-If FILE-OR-BUFFER is nil, use the current buffer."
+If FILE-OR-BUFFER is nil, use the current buffer. Return the front matter as an
+alist, unless RAW is non-nil."
   (let ((file-or-buffer (or file-or-buffer
 			    (buffer-file-name)
 			    (current-buffer))))
     (with-temp-buffer
       (cond
-       ;; If the argument is a buffer object
+       ;; If `file-or-buffer' is a buffer object
        ((bufferp file-or-buffer)
 	(insert (with-current-buffer file-or-buffer (buffer-string))))
-       ;; If the argument is a string
+       ;; If `file-or-buffer' is a string
        ((stringp file-or-buffer)
 	(insert-file-contents file-or-buffer)))
       (goto-char (point-min))
       (when (looking-at-p tlon-babel-yaml-delimiter)
 	(forward-line)
-	(tlon-babel-read-until-match tlon-babel-yaml-delimiter)))))
+	(let ((front-matter (tlon-babel-read-until-match tlon-babel-yaml-delimiter)))
+	  (if raw
+	      front-matter
+	    (tlon-babel-yaml-to-alist front-matter)))))))
 
 (defun tlon-babel-yaml-to-alist (strings)
-  "Convert STRINGS to an alist."
+  "Convert YAML STRINGS to an alist."
   (let ((metadata '()))
     (dolist (line strings)
       (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
 	(let* ((key (match-string 1 line))
 	       (value (match-string 2 line))
 	       (trimmed-value (string-trim value)))
-	  (push (cons (string-trim key)
-		      (cond
-		       ((and (string-prefix-p "[" trimmed-value)
-			     (string-suffix-p "]" trimmed-value))
-			(mapcar #'string-trim
-				(mapcar (lambda (s) (if (and (string-prefix-p "\"" s)
-							(string-suffix-p "\"" s))
-						   (substring s 1 -1)
-						 s))
-					(split-string (substring trimmed-value 1 -1) "\\s *,\\s *")
-					)))
-		       ((and (string-prefix-p "\"" trimmed-value)
-			     (string-suffix-p "\"" trimmed-value))
-			(substring trimmed-value 1 -1))
-		       (t trimmed-value)))
-		metadata))))
+	  (push (cons (string-trim key) trimmed-value) metadata))))
     (nreverse metadata)))
+
+(defun tlon-babel-yaml-format-values-of-alist (alist)
+  "Format the values of ALIST, converting from YAML format to Elisp format."
+  (mapcar (lambda (pair)
+	    (cons (car pair)
+		  (tlon-babel-yaml-format-value (cdr pair))))
+	  alist))
+
+(defun tlon-babel-yaml-format-value (value)
+  "Format VALUE by converting from the YAML format to an Elisp format."
+  (cond
+   ((and (string-prefix-p "[" value) (string-suffix-p "]" value)) ;; list
+    (mapcar #'string-trim
+	    (mapcar (lambda (s)
+		      (if (and (string-prefix-p "\"" s) (string-suffix-p "\"" s))
+			  (substring s 1 -1)
+			s))
+		    (split-string (substring value 1 -1) "\\s *,\\s *"))))
+   ((and (string-prefix-p "\"" value) (string-suffix-p "\"" value)) ;; string
+    (substring value 1 -1))
+   (t value)))
 
 (defun tlon-babel-read-until-match (delimiter)
   "Return a list of lines until DELIMITER is matched.
@@ -1404,7 +1430,7 @@ an error."
 	(error "Delimiter not found")
       (nreverse result))))
 
-;;;;;; Set YAML values
+;;;;; Set YAML values
 
 (defun tlon-babel--yaml-set-front-matter-fields (fields &optional title)
   "Get the field values for the given FIELDS in the current buffer.
@@ -1415,7 +1441,7 @@ If TITLE is non-nil, use it instead of prompting for one."
 	    ("authors-list" . ,(lambda () (tlon-babel-yaml-set-multi-value-field "titulo" "autores")))
 	    ("traductores" . ,#'tlon-babel-yaml-set-translators)
 	    ("temas" . ,#'tlon-babel-yaml-set-tags)
-	    ("path_original" . ,#'tlon-babel-yaml-set-path_original)))
+	    ("path_original" . ,#'tlon-babel-yaml-set-original-path)))
 	 (processed-fields (if (member "autores" fields)
 			       (cons "authors-list" fields)
 			     fields))
@@ -1445,34 +1471,68 @@ If TITLE is non-nil, use it instead of prompting for one."
 	  (push `(,field . ,(cdr (assoc field cmpl-generators))) field-values))))
     field-values))
 
-(defun tlon-babel-yaml-set-front-matter-for-post (&optional title)
+(defun tlon-babel-yaml-set-front-matter (keys &optional title)
+  "Insert YAML fields for KEYS for BAE post in the current buffer.
+If TITLE is non-nil, use it instead of prompting for one. The fields will be
+inserted in the order in which KEYS are listed."
+  (let* ((fields (tlon-babel--yaml-set-front-matter-fields keys title))
+	 (sorted-fields (tlon-babel--yaml-sort-fields fields keys)))
+    (tlon-babel-insert-yaml-fields sorted-fields)))
+
+(defun tlon-babel--yaml-sort-fields (fields &optional keys)
+  "Sort alist of YAML FIELDS by order of KEYS."
+  (mapcar (lambda (key)
+	    (if-let ((match (assoc key fields)))
+		match
+	      (user-error "Key `%s' not found in file `%s'" key (buffer-file-name))))
+	  keys))
+
+(defun tlon-babel-yaml-set-front-matter-for-article (&optional title)
   "Insert YAML fields for BAE post in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
-  (let* ((fields '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion"))
-	 (field-values
-	  (tlon-babel--yaml-set-front-matter-fields
-	   fields title)))
-    ;; TODO: reorder field-values
-    (tlon-babel-insert-yaml-fields field-values)))
+  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-article-keys title))
 
-(defun tlon-babel-yaml-set-front-matter-for-title ()
-  "Insert YAML fields for BAE tag in the current buffer."
+(defun tlon-babel-yaml-set-front-matter-for-tag-or-author ()
+  "Insert YAML fields for BAE tag or author in the current buffer.
+If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
-  (let* ((field-values
-	  (tlon-babel--yaml-set-front-matter-fields
-	   '("titulo"))))
-    (tlon-babel-insert-yaml-fields field-values)))
+  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-tag-or-author-keys title))
 
-(defun tlon-babel-insert-yaml-fields (field-values)
-  "Insert YAML fields in FIELD-VALUES at point."
-  (let ((yaml-delimiter-and-newline (concat tlon-babel-yaml-delimiter "\n")))
-    (when (looking-at-p tlon-babel-yaml-delimiter)
-      (user-error "File appears to already contain a front matter section"))
-    (insert yaml-delimiter-and-newline)
-    (dolist (cons field-values)
-      (insert (format "%-20s%s\n" (concat (car cons) ":") (cdr cons))))
-    (insert yaml-delimiter-and-newline)))
+(defun tlon-babel-insert-yaml-fields (fields)
+  "Insert YAML FIELDS at point.
+FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
+  (when (looking-at-p tlon-babel-yaml-delimiter)
+    (user-error "File appears to already contain a front matter section"))
+  ;; calculate the max key length
+  (let ((max-key-len (reduce 'max (mapcar (lambda (cons) (length (car cons))) fields)))
+	format-str)
+    ;; determine the format for string
+    (setq format-str (format "%%-%ds %%s\n" (+ max-key-len 2)))
+    ;; insert the yaml delimiter & fields
+    (insert tlon-babel-yaml-delimiter)
+    (dolist (cons fields)
+      (insert (format format-str (concat (car cons) ":") (cdr cons))))
+    (insert tlon-babel-yaml-delimiter)))
+
+(defun tlon-babel-delete-yaml-front-matter ()
+  "Delete YAML front matter section."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (unless (looking-at-p tlon-babel-yaml-delimiter)
+      (user-error "File does not appear to contain a front matter section"))
+    (forward-line)
+    (re-search-forward tlon-babel-yaml-delimiter)
+    (delete-region (point-min) (point))))
+
+(defun tlon-babel-yaml-reorder-front-matter ()
+  "Reorder the YAML front matter in the buffer at point."
+  (interactive)
+  (let* ((unsorted (tlon-babel-yaml-get-front-matter))
+	 (sorted (tlon-babel--yaml-sort-fields unsorted tlon-babel-yaml-article-keys)))
+    (tlon-babel-delete-yaml-front-matter)
+    (tlon-babel-insert-yaml-fields sorted)))
 
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
   "Set the value of multivalue FIELD in metadata of REPO.
@@ -1508,7 +1568,7 @@ the repo's locator. For example, to search only in `translations/autores', use
   "Convert an Elisp LIST to a YAML list."
   (concat "[\"" (mapconcat 'identity list "\", \"") "\"]"))
 
-(defun tlon-babel-yaml-set-path_original ()
+(defun tlon-babel-yaml-set-original-path ()
   "Set the value of `path_original' YAML field."
   (completing-read "Locator original"
 		   (tlon-babel-get-locators-in-repo (tlon-babel-get-repo) "originals")))
@@ -1526,45 +1586,109 @@ AUTHOR is the first author of the original work."
 	   (format "%s " first-author)
 	   'citar-history citar-presets nil)))))
 
+(defun tlon-babel-yaml-set-publication (&optional state)
+  "Set the value of `estado_de_publicacion' YAML field to STATE.
+If STATE is nil, default to `borrador'."
+  (let ((publicacion (completing-read "Publicación: " (tlon-babel-get-publicaciones))))
+    (if (string= publicacion "Tlön")
+	"online"
+      publicacion)))
+
 ;;;;;; Interactive editing
 
 (defun tlon-babel-yaml-edit-field ()
   "Edit the YAML field at point."
   (interactive)
-  (let ((key (tlon-babel-yaml-get-key-at-point)))
+  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field)
     (pcase key
-      ("traductores" (tlon-babel-yaml-insert (tlon-babel-get-translators)))
-      ("temas" (tlon-babel-yaml-insert (tlon-babel-get-bae-tags)))
-      ("autores" (tlon-babel-yaml-insert (tlon-babel-get-bae-authors)))
-      (_ (message "No field to edit")))))
+      ("traductores" (tlon-babel-yaml-insert-list (tlon-babel-get-translators)))
+      ("temas" (tlon-babel-yaml-insert-list (tlon-babel-get-bae-tags)))
+      ("autores" (tlon-babel-yaml-insert-list (tlon-babel-get-bae-authors)))
+      ("estado_de_publicacion" (tlon-babel-yaml-insert-string tlon-babel-publication-statuses))
+      (_ (tlon-babel-yaml-insert-string (list value))))))
 
-(defun tlon-babel-yaml-get-key-at-point ()
-  "Return the key at point, or nil if there is none."
+(defun tlon-babel-yaml-get-completions (key)
+  "Get completions for a YAML field with KEY."
+  (pcase key
+    ("traductores" (tlon-babel-get-translators))
+    ("temas" (tlon-babel-get-bae-tags))
+    ("autores" (tlon-babel-get-bae-authors))
+    ("path_original" (tlon-babel-get-locators-in-repo))
+    ("key_original" (citar--completion-table (citar--format-candidates) nil))
+    ("key_traduccion" (citar--completion-table (citar--format-candidates) nil))
+    ("estado_de_publicacion" tlon-babel-publication-statuses)
+    (_ nil)))
+
+(defun tlon-babel-yaml-get-completion-functions (key)
+  "Get completion functions for a YAML field with KEY."
+  (pcase key
+    ((or "autores" "traductores" "temas") #'tlon-babel-yaml-insert-list)
+    ((or "path_original" "key_original" "key_traduccion") #'completing-read)
+    ("estado_de_publicacion" #'tlon-babel-yaml-insert-string)
+    (_ nil)))
+
+;; TODO: integrate `tlon-babel-yaml-get-completions'
+(defun tlon-babel-yaml-insert-field (&optional key value file overwrite)
+  "Insert a new field in the YAML front matter of FILE.
+If FILE is nil, use the file visited by the current buffer. If KEY or VALUE are
+nil, prompt for one. If field exists, signal an error if OVERWRITE is nil, else
+overwrite."
   (interactive)
-  (let* ((bounds (bounds-of-thing-at-point 'line))
-	 ;; retrieve the line
-	 (line (buffer-substring-no-properties (car bounds) (cdr bounds)))
-	 ;; key and value are separated by a colon
-	 (key (car (split-string line ":"))))
-    ;; If there's a key in the line, return it. If not, return nil.
-    (when (and key (> (length (string-trim key)) 0))
-      (string-trim key))))
+  (let ((key (or key (completing-read "Key: " tlon-babel-yaml-article-keys)))
+	(value (or value (read-string "Value: ")))
+	(file (or file (buffer-file-name))))
+    (if-let ((front-matter (tlon-babel-yaml-get-front-matter file)))
+	(let ((key-exists-p (assoc key front-matter)))
+	  (if (and key-exists-p (not overwrite))
+	      (user-error "Field `%s' already exists" key)
+	    (with-current-buffer (find-file-noselect file)
+	      (when (and key-exists-p overwrite)
+		(tlon-babel-yaml-delete-field key file))
+	      (goto-char (point-min))
+	      (forward-line)
+	      (insert (format "%s:  %s\n" key value))
+	      (save-buffer)
+	      (tlon-babel-yaml-reorder-front-matter))))
+      (user-error "File `%s' does not appear to contain a front matter section" file))))
 
-(defun tlon-babel-yaml-insert (list)
-  "Insert YAML LIST at point.
-If point is on a list, pre-populate the selection with the list elements."
+;; TODO: refactor with above
+(defun tlon-babel-yaml-delete-field (&optional key file)
+  "Delete the YAML field with KEY in FILE."
+  (let ((key (or key (completing-read tlon-babel-yaml-article-keys)))
+	(file (or file (buffer-file-name))))
+    (if-let ((front-matter (tlon-babel-yaml-get-front-matter file)))
+	(if (assoc key front-matter)
+	    (with-current-buffer (find-file-noselect file)
+	      (goto-char (point-min))
+	      (re-search-forward (format "%s:.*\n" key))
+	      (delete-region (match-beginning 0) (match-end 0))
+	      (save-buffer))
+	  (user-error "Key `%s' not found in file `%s'" key file))
+      (user-error "File does not appear to contain a front matter section"))))
+
+(defun tlon-babel-yaml-get-field ()
+  "Return a list with the YAML key and value at point, or nil if there is none."
+  (when-let* ((bounds (bounds-of-thing-at-point 'line))
+	      (line (buffer-substring-no-properties (car bounds) (cdr bounds)))
+	      (elts (split-string line ":" nil "\\s-+")))
+    elts))
+
+(defun tlon-babel-yaml-insert-list (candidates)
+  "Insert a list in YAML field at point.
+Prompt the user to select one or more elements in CANDIDATES. If point is on a
+list, use them pre-populate the selection."
   (let* ((bounds (bounds-of-thing-at-point 'line))
 	 ;; retrieve the line
 	 (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
     (when (string-match "\\[\\(.*?\\)\\]" line)
-      ;; retrieve and parse the elements in the list, remove quotes
+      ;; retrieve and parse the elements in the list at point, removing quotes
       (let ((elems-at-point (mapcar (lambda (s)
 				      (replace-regexp-in-string "\\`\"\\|\"\\'" "" s))
 				    (split-string (match-string 1 line) ", "))))
 	;; prompt the user to select multiple elements from the list,
 	;; prefilling with previously selected items
-	(let ((choices (completing-read-multiple "Selection (comma-separated): "
-						 list
+	(let ((choices (completing-read-multiple "Value (comma-separated): "
+						 candidates
 						 nil nil
 						 (mapconcat 'identity elems-at-point ", "))))
 	  ;; delete the old line
@@ -1577,6 +1701,18 @@ If point is on a list, pre-populate the selection with the list elements."
 							       choices ", ")
 						    "]")
 					    line)))))))
+
+(defun tlon-babel-yaml-insert-string (candidates)
+  "Insert a string in the YAML field at point.
+Prompt the user to select one or more elements in CANDIDATES. If point is on a
+string, use it to pre-populate the selection."
+  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field)
+    (let* ((choice (completing-read "Value: "
+				    candidates))
+	   (bounds (bounds-of-thing-at-point 'line))
+	   (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
+      (delete-region (car bounds) (cdr bounds))
+      (insert (format "%s:  %s\n" key choice)))))
 
 ;;;;;; Get repo-specific elements
 
@@ -1615,7 +1751,7 @@ If point is on a list, pre-populate the selection with the list elements."
 			    (tlon-babel-get-property-of-repo :dir-translations "bae")
 			    (file-name-as-directory dir))))
     (files-extras-new-empty-buffer)
-    (tlon-babel-yaml-set-front-matter-for-title)
+    (tlon-babel-yaml-set-front-matter-for-tag-or-author)
     (tlon-babel-name-file-from-title)
     (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "titulo")))
     (save-buffer)))
@@ -1767,7 +1903,7 @@ default to \".md\"."
 
 (defun tlon-babel-count-words-extra ()
   "Count extraneous words in current buffer."
-  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-front-matter) " ")))
+  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-front-matter nil 'raw) " ")))
     (with-temp-buffer
       (insert metadata)
       (when-let ((vars (tlon-babel-get-local-variables)))
@@ -2180,7 +2316,7 @@ If REPO is nil, prompt the user for one."
 	 (dir (file-name-concat repo "translations/articulos/"))
 	 (path (tlon-babel-set-file-from-title title dir)))
     (find-file path)
-    (tlon-babel-yaml-set-front-matter-for-post title)
+    (tlon-babel-yaml-set-front-matter-for-article title)
     (save-buffer)))
 
 ;;;;; Importing
@@ -2796,7 +2932,10 @@ If FILE is nil, check the current buffer."
 	 (base (file-name-base file))
 	 (title (tlon-babel-metadata-get-field-value-in-file "titulo" file))
 	 (slugified-title (tlon-core-slugify title)))
-    (unless (string= base slugified-title)
+    (unless (or
+             (string= base slugified-title)
+	     ;; for articles with duplicate titles
+             (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
       (error "The file `%s' does not match its title" title))))
 
 ;;;;; Bibtex
@@ -3457,12 +3596,12 @@ otherwise prompt for a repo."
 (defun tlon-babel-open-utilitarismo-repo ()
   "Open the Utilitarismo repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo :dir "utilitarismo")))
+  (dired (tlon-babel-get-property-of-repo :dir "util")))
 
 (defun tlon-babel-open-largoplacismo-repo ()
   "Open the Largoplacismo repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo :dir "largoplacismo")))
+  (dired (tlon-babel-get-property-of-repo :dir "esl")))
 
 (defun tlon-babel-open-genus-repo ()
   "Open the Genus repository."
