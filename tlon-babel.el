@@ -1205,14 +1205,13 @@ The element can be a tag or an author."
 
 (defun tlon-babel-markdown-sort-related-entries ()
   "Sort the links in the `related entries' section in current buffer.
-If no section is found, signal an error."
+If no section is found, do nothing."
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (unless (re-search-forward "^## Entradas relacionadas" nil t)
-      (error "No `related entries' section found"))
-    (forward-paragraph)
-    (tlon-babel-markdown-sort-elements-in-paragraph " • ")))
+    (when (re-search-forward "^## Entradas relacionadas" nil t)
+      (forward-paragraph)
+      (tlon-babel-markdown-sort-elements-in-paragraph " • "))))
 
 (defun tlon-babel-markdown-insert-element-pair (open close)
   "Insert an element pair at point or around the region if selected.
@@ -2938,9 +2937,9 @@ If FILE is nil, check the current buffer."
 	 (title (tlon-babel-metadata-get-field-value-in-file "titulo" file))
 	 (slugified-title (tlon-core-slugify title)))
     (unless (or
-             (string= base slugified-title)
+	     (string= base slugified-title)
 	     ;; for articles with duplicate titles
-             (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
+	     (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
       (error "The file `%s' does not match its title" title))))
 
 ;;;;; Bibtex
