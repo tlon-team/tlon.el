@@ -1499,20 +1499,22 @@ If TITLE is non-nil, use it instead of prompting for one."
   (tlon-babel-yaml-set-front-matter tlon-babel-yaml-tag-or-author-keys title))
 
 (defun tlon-babel-insert-yaml-fields (fields)
-  "Insert YAML FIELDS at point.
+  "Insert YAML FIELDS in the buffer at point.
 FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
   (when (looking-at-p tlon-babel-yaml-delimiter)
     (user-error "File appears to already contain a front matter section"))
-  ;; calculate the max key length
-  (let ((max-key-len (reduce 'max (mapcar (lambda (cons) (length (car cons))) fields)))
-	format-str)
-    ;; determine the format for string
-    (setq format-str (format "%%-%ds %%s\n" (+ max-key-len 2)))
-    ;; insert the yaml delimiter & fields
-    (insert tlon-babel-yaml-delimiter)
-    (dolist (cons fields)
-      (insert (format format-str (concat (car cons) ":") (cdr cons))))
-    (insert tlon-babel-yaml-delimiter)))
+  (save-excursion
+    (goto-char (point-min))
+    ;; calculate the max key length
+    (let ((max-key-len (reduce 'max (mapcar (lambda (cons) (length (car cons))) fields)))
+	  format-str)
+      ;; determine the format for string
+      (setq format-str (format "%%-%ds %%s\n" (+ max-key-len 2)))
+      ;; insert the yaml delimiter & fields
+      (insert tlon-babel-yaml-delimiter)
+      (dolist (cons fields)
+	(insert (format format-str (concat (car cons) ":") (cdr cons))))
+      (insert tlon-babel-yaml-delimiter))))
 
 (defun tlon-babel-delete-yaml-front-matter ()
   "Delete YAML front matter section."
