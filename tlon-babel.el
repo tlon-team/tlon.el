@@ -778,6 +778,8 @@ link, else get their values from the heading title, if possible."
     (insert (format "#%s " (number-to-string issue-number)))))
 
 
+;;;;;; priorities
+
 ;;;;; User commits
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)
@@ -1759,6 +1761,7 @@ string, use it to pre-populate the selection."
 			    (file-name-as-directory dir))))
     (files-extras-new-empty-buffer)
     (tlon-babel-yaml-set-front-matter-for-tag-or-author)
+    (goto-char (point-max))
     (tlon-babel-name-file-from-title)
     (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "titulo")))
     (save-buffer)))
