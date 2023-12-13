@@ -1496,7 +1496,7 @@ If TITLE is non-nil, use it instead of prompting for one."
   "Insert YAML fields for BAE tag or author in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
-  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-tag-or-author-keys title))
+  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-tag-or-author-keys))
 
 (defun tlon-babel-insert-yaml-fields (fields)
   "Insert YAML FIELDS in the buffer at point.
