@@ -3504,7 +3504,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     """Request"
     ("q g" "update genus"                 tlon-babel-update-bae-genus)
     ("q i" "update images"                tlon-babel-update-bae-images)
-    ("q l" "show log"                     tlon-babel-get-bae-log)
+    ("q l" "show log"                     tlon-babel-show-bae-log)
     ]
    ["Add or modify"
     ("a a" "glossary"                     tlon-babel-glossary-dwim)
@@ -3742,13 +3742,12 @@ If ASYNC is t, run the request asynchronously."
 ;;;;;; BAE API
 
 (defun tlon-babel-get-bae-log ()
-  "Get error log from BAE repo."
-  (interactive)
+  "Get error log from BAE repo as an association list."
   (let* ((url "https://altruismoeficaz.net/api/logs")
 	 (url-request-method "GET")
 	 (url-mime-charset-string "utf-8;q=1, iso-8859-1")
 	 (response-buffer (url-retrieve-synchronously url))
-	 (json-object-type 'hash-table)
+	 (json-object-type 'plist)
 	 (json-array-type 'list)
 	 (output-buffer-name "*BAE error log*"))
     (with-current-buffer response-buffer
@@ -3758,15 +3757,43 @@ If ASYNC is t, run the request asynchronously."
       (when (get-buffer output-buffer-name)
 	(kill-buffer output-buffer-name))
       (let* ((output-buffer (get-buffer-create output-buffer-name))
-	     (logs (json-read)))
-	(with-current-buffer output-buffer
-	  (erase-buffer)) ; ensure the buffer is empty before inserting
-	(dolist (log logs)
-	  (tlon-babel-pretty-print-bae-hash-table log output-buffer))
-	(display-buffer output-buffer)
-	(switch-to-buffer output-buffer)
-	(read-only-mode)
-	(goto-char (point-min))))))
+	     (parsed-json (json-read))
+	     (modified-json (mapcar (lambda (entry)
+                                      (plist-put entry :source_filename
+                                                 (concat tlon-babel-dir-repos
+                                                         (plist-get entry :source_filename))))
+                                    parsed-json)))
+        modified-json))))
+
+(defun tlon-babel-print-log (log)
+  "Print LOG in a human-friendly way."
+  (let* ((buffer (generate-new-buffer "*Log*")))
+    (pp log buffer)
+    (switch-to-buffer buffer)
+    (emacs-lisp-mode)
+    (tlon-babel-make-paths-clickable)
+    (read-only-mode)
+    (goto-char (point-min))))
+
+(defun tlon-babel-make-paths-clickable ()
+  "Make file paths in the current buffer clickable."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "\"\\([^\"]+\\)\"" nil t)
+      (let* ((match (match-string-no-properties 0))
+	     (url (substring match 1 -1))
+	     (path (when (file-exists-p url)
+		     (abbreviate-file-name (expand-file-name url)))))
+	(when path
+	  (make-button (match-beginning 0) (match-end 0)
+		       'action (lambda (_) (find-file path))
+		       'follow-link t))))))
+
+(defun tlon-babel-show-bae-log ()
+  "Show the BAE error log."
+  (interactive)
+  (tlon-babel-print-log (tlon-babel-get-bae-log)))
 
 (defun tlon-babel-make-bae-request (url &optional retries)
   "Make URL request to BAE API and show updated logs.
