@@ -3501,7 +3501,6 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("r" "dwim"                           tlon-babel-dwim)
     ("m" "magit"                          tlon-babel-magit-prompt)
     ("n" "forge"                          tlon-babel-forge)
-    ("." "gh-notify"                      gh-notify)
     """Request"
     ("q g" "update genus"                 tlon-babel-update-bae-genus)
     ("q i" "update images"                tlon-babel-update-bae-images)
