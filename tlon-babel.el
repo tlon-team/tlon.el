@@ -1530,15 +1530,16 @@ FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
 (defun tlon-babel-yaml-reorder-front-matter ()
   "Reorder the YAML front matter in the buffer at point."
   (interactive)
-  (let* ((unsorted (tlon-babel-yaml-get-front-matter))
-	 (sorted (tlon-babel--yaml-sort-fields
-		  unsorted
-		  (pcase
-		      (file-name-nondirectory (directory-file-name default-directory))
-		    ("articles" tlon-babel-yaml-article-keys)
-		    ((or "temas" "autores") tlon-babel-yaml-tag-or-author-keys)))))
-    (tlon-babel-delete-yaml-front-matter)
-    (tlon-babel-insert-yaml-fields sorted)))
+  (save-excursion
+    (let* ((unsorted (tlon-babel-yaml-get-front-matter))
+	   (sorted (tlon-babel--yaml-sort-fields
+		    unsorted
+		    (pcase
+			(file-name-nondirectory (directory-file-name default-directory))
+		      ("articles" tlon-babel-yaml-article-keys)
+		      ((or "temas" "autores") tlon-babel-yaml-tag-or-author-keys)))))
+      (tlon-babel-delete-yaml-front-matter)
+      (tlon-babel-insert-yaml-fields sorted))))
 
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
   "Set the value of multivalue FIELD in metadata of REPO.
