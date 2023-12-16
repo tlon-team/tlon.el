@@ -355,23 +355,25 @@ TARGET-VALUE."
   "820BEDE2-F982-466F-A391-100235D4C596"
   "ID of the `jobs' heading in `jobs.org'.")
 
-(defcustom tlon-babel-todos-file
-  (file-name-concat paths-dir-dropbox "tlon-private/babel.org")
-  "Org file of the user-specific heading where Babel TODOs are stored."
+(defcustom tlon-babel-todos-generic-id nil
+  "ID of the user-specific `org-mode' heading where generic TODOs are stored.
+\"Generic\" TODOs are all TODOs except those related to a translation job."
   :type 'string
   :group 'tlon-babel)
 
-(defcustom tlon-babel-todos-jobs-id
-  "F99006B0-3AFC-47A0-98C5-89FB86ADCDFB"
-  "Org ID of the user-specific heading where Babel TODOs are stored."
+(defcustom tlon-babel-todos-jobs-id nil
+  "ID of the user-specific `org-mode' heading where job TODOs are stored.
+A job TODO is a TODO for a translation job."
   :type 'string
   :group 'tlon-babel)
 
-(defcustom tlon-babel-todos-generic-id
-  "4388B4D0-3830-48E0-A118-C3195B62F0D1"
-  "Org ID of the user-specific heading where Babel TODOs are stored."
-  :type 'string
-  :group 'tlon-babel)
+(defvar tlon-babel-todos-jobs-file nil
+  "Org file that contains the ID in `tlon-babel-todos-jobs-id'.
+This variable should not be set manually.")
+
+(defvar tlon-babel-todos-generic-file nil
+  "Org file that contains the ID in `tlon-babel-todos-generic-id'.
+This variable should not be set manually.")
 
 ;;;;; html import
 
@@ -634,6 +636,36 @@ If not, offer to process it as a new job."
      (let (case-fold-search)
        (when (re-search-forward (concat "^\\*+ .*" todo ".*") nil t)
 	 (point-marker))))))
+
+(defun tlon-babel-get-todos-file-from-issue ()
+  "Get the file where the current issue is or would be stored."
+  (if (tlon-babel-issue-is-job-p)
+      (tlon-babel-get-todos-jobs-file)
+    (tlon-babel-get-todos-generic-file)))
+
+(defun tlon-babel-get-todos-jobs-file ()
+  "Get the file containing the jobs `org-mode' ID."
+  (or tlon-babel-todos-jobs-file
+      (tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
+      (setq tlon-babel-todos-jobs-file
+	    (tlon-babel-get-file-with-id tlon-babel-todos-jobs-id))))
+
+(defun tlon-babel-get-todos-generic-file ()
+  "Get the file containing the generic `org-mode' ID."
+  (or tlon-babel-todos-generic-file
+      (tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
+      (setq tlon-babel-todos-generic-file
+	    (tlon-babel-get-file-with-id tlon-babel-todos-generic-id))))
+
+(defun tlon-babel-set-value-of-var (var)
+  "Signal an error to the value of VAR if nil."
+  (unless (symbol-value var)
+    (user-error "Please set the value of `%s'" (symbol-name var))))
+
+(defun tlon-babel-get-file-with-id (id)
+  "Return the file containing the heading with the given `org-mode' ID."
+  (when-let ((location (org-roam-id-find id)))
+    (car location)))
 
 (defun tlon-babel-open-todo (file position)
   "Open FILE at TODO POSITION."
