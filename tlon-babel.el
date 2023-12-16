@@ -2079,7 +2079,7 @@ Assumes action is first word of clocked task."
   (let ((action (cadr (split-string label))))
     action))
 
-(defun tlon-babel-cheeck-point-on-issue ()
+(defun tlon-babel-check-point-on-issue ()
   "Return t iff point is on an issue or a Forge buffer."
   (unless (or (or (derived-mode-p 'forge-topic-mode) (derived-mode-p 'forge-issue-list-mode))
 	      (and (derived-mode-p 'magit-status-mode)
@@ -2089,7 +2089,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-babel-get-orgit-link-to-issue ()
   "Get `orgit'-generated link to issue at point or in current forge buffer."
-  (tlon-babel-cheeck-point-on-issue)
+  (tlon-babel-check-point-on-issue)
   (let* ((inhibit-message t)
 	 (orgit (call-interactively #'orgit-store-link)))
     (setq org-stored-links (cdr org-stored-links))
