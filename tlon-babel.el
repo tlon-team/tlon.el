@@ -162,14 +162,19 @@ via `tlon-babel-cancel-repo-timers'.")
 (defvar tlon-babel-users
   '((:name "Pablo Stafforini"
 	   :git "Pablo Stafforini"
-	   :github "benthamite")
+	   :github "benthamite"
+	   :substitute "worldsaround")
     (:name "Federico Stafforini"
 	   :git "Federico Stafforini"
 	   :github "fstafforini")
     (:name "Leonardo Picón"
 	   :git "cartago"
-	   :github "worldsaround"))
-  "Property list of users and associated properties.")
+	   :github "worldsaround"
+	   :substitute "benthamite"))
+  "Property list of users and associated properties.
+The special property `:substitute' is used to determine which user should
+perform a given phase of the translation process when the designated user is not
+the actual user.")
 
 ;;;;;; lookup
 
@@ -2653,7 +2658,7 @@ for the process that is being initialized."
     (let* ((repo (tlon-babel-get-repo))
 	   (current-action (tlon-babel-get-clock-action))
 	   (next-label (tlon-babel-get-clock-next-label))
-	   (next-assignee (tlon-babel-label-lookup :assignee :label next-label)))
+	   (next-assignee (tlon-babel-get-next-assignee)))
       (tlon-babel-check-branch "main" repo)
       (tlon-babel-check-label-and-assignee repo)
       (tlon-babel-check-file
@@ -3187,6 +3192,20 @@ The prompt defaults to the current user."
     (forge--set-topic-assignees
      repo topic
      (list assignee))))
+
+(defun tlon-babel-get-next-assignee ()
+  "Get the next assignee based on the current user and clock label.
+This function returns the assignee designated for the next label if the current
+user is the user designated for the current label; otherwise, it returns the
+substitute assignee."
+  (let*
+      ((current-user (tlon-babel-user-lookup :github :name user-full-name))
+       (current-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-label)))
+       (designated-next-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-next-label)))
+       (substitute-next-assigne (tlon-babel-user-lookup :substitute :github designated-next-assignee)))
+    (if (string= current-user current-assignee)
+	designated-next-assignee
+      substitute-next-assigne)))
 
 (defun tlon-babel-set-initial-label-and-assignee ()
   "Set label to `Awaiting processing' and assignee to current user."
@@ -3766,11 +3785,11 @@ If ASYNC is t, run the request asynchronously."
       (let* ((output-buffer (get-buffer-create output-buffer-name))
 	     (parsed-json (json-read))
 	     (modified-json (mapcar (lambda (entry)
-                                      (plist-put entry :source_filename
-                                                 (concat tlon-babel-dir-repos
-                                                         (plist-get entry :source_filename))))
-                                    parsed-json)))
-        modified-json))))
+				      (plist-put entry :source_filename
+						 (concat tlon-babel-dir-repos
+							 (plist-get entry :source_filename))))
+				    parsed-json)))
+	modified-json))))
 
 (defun tlon-babel-print-log (log)
   "Print LOG in a human-friendly way."
