@@ -509,10 +509,19 @@ The second capture group handles the `.md' extension, which we used previously."
   (interactive)
   (message "`tlon-babel' version %s" tlon-babel-version))
 
-;;;;; org config init
+;;;;; init
 
-(tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
-(tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
+(defun tlon-babel-init ()
+  "Initialize `tlon-babel'."
+  (interactive)
+  (tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
+  (tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
+  (setq paths-files-bibliography-all
+        `(,@paths-files-bibliography-personal
+          ,@tlon-babel-bibliography-files))
+  (run-hooks 'tlon-babel-post-init-hook))
+
+;;;;; org-capture templates
 
 (dolist (template `(("tbJ" "Tlön: BAE: Create a new Babel job" entry
 		     (id ,tlon-babel-todos-jobs-id)
@@ -521,7 +530,6 @@ The second capture group handles the `.md' extension, which we used previously."
 		     (id ,tlon-babel-todos-generic-id)
 		     "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
   (push template org-capture-templates))
-
 
 ;;;;; [name]
 
