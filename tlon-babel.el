@@ -499,13 +499,26 @@ The second capture group handles the `.md' extension, which we used previously."
 
 ;;;; Functions
 
-;;;;; Core
+;;;;; version
 
-;;;;;; version
 (defun tlon-babel-version ()
   "Return the version of the `tlon-babel' package."
   (interactive)
   (message "`tlon-babel' version %s" tlon-babel-version))
+
+;;;;; org config init
+
+(tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
+(tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
+
+(dolist (template `(("tbJ" "Tlön: BAE: Create a new Babel job" entry
+		     (id ,tlon-babel-todos-jobs-id)
+		     "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
+		    ("tbG" "Tlön: BAE: Create new generic todo from GitHub" entry
+		     (id ,tlon-babel-todos-generic-id)
+		     "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
+  (push template org-capture-templates))
+
 
 ;;;;; [name]
 
