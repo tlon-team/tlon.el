@@ -176,6 +176,9 @@ The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
 the actual user.")
 
+(defvar tlon-babel-post-init-hook nil
+  "Hook run at the end of `tlon-babel-init'.")
+
 ;;;;;; lookup
 
 (defun tlon-bae-set-dirs (repo)
