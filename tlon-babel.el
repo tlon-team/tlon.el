@@ -569,25 +569,61 @@ If FILE is nil, use the current buffer's file name."
    (let ((translation (tlon-babel-get-counterpart file)))
      (tlon-babel-metadata-get-field-value-in-file "key_original" translation))))
 
-(defun tlon-babel-issue-is-job-p (issue-name)
-  "Return t if ISSUE-NAME is a job."
-  (string-match-p "[[:digit:]] Job: " issue-name))
+;;;;;; Create/visit todos
+
+(defun tlon-babel-create-or-visit-todo-from-issue ()
+  "Create an `org-mode' TODO based on issue at point or visit it if present."
+  (interactive)
+  (if-let ((pos (tlon-babel-get-todo-position-from-issue)))
+      (tlon-babel-visit-todo pos)
+    (tlon-babel-create-todo-from-issue)))
+
+(defun tlon-babel-get-todo-position-from-issue ()
+  "Get the TODO position of the issue at point, using the appropriate method.
+If the issue is a job, use the heading name, else use the `orgit-topic' ID."
+  (if (tlon-babel-issue-is-job-p)
+      (tlon-babel-get-todo-position
+       (tlon-babel-make-todo-name-from-issue-at-point nil 'no-state)
+       (tlon-babel-get-todos-jobs-file))
+    (tlon-babel-get-todo-position
+     (car (tlon-babel-get-orgit-link-to-issue))
+     (tlon-babel-get-todos-generic-file) 'loose)))
+
+(defun tlon-babel-visit-todo (&optional pos file)
+  "Visit TODO at POS in FILE.
+If POS is nil, use the position of the TODO associated with the issue at point.
+If FILE is nil, use the file where the issue at point would be stored (depending
+on whether or not is a job)."
+  (let ((pos (or pos (tlon-babel-get-todo-position-from-issue)))
+	(file (or file (tlon-babel-get-todos-file-from-issue))))
+    (tlon-babel-open-todo file pos)))
 
 (defun tlon-babel-create-todo-from-issue ()
-  "Create a new `org-mode' heading based on the current GitHub issue.
+  "Create a new `org-mode' TODO based on the current GitHub issue.
 This command triggers one of two `org-capture' capture templates, depending on
 whether the issue is or is not a job. If it is a job, it will process it as new
 job if it has neither a label nor an assignee, else it will refile it under the
 appropriate heading."
   (interactive)
-  (if (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
-      (progn
-	(tlon-babel-check-label-or-assignee-present)
-	(tlon-babel-check-user-is-assignee)
-	(tlon-babel-check-label-present)
-	(tlon-babel-store-or-refile-job-todo))
-    (tlon-babel-check-user-is-assignee)
-    (tlon-babel-store-todo "tbG")))
+  (if (tlon-babel-issue-is-job-p)
+      (tlon-babel-create-job-todo-from-issue)
+    (tlon-babel-create-generic-todo-from-issue)))
+
+(defun tlon-babel-issue-is-job-p ()
+  "Return t if the issue at point is a job."
+  (string-match-p "[[:digit:]] Job: " (tlon-babel-get-issue-name)))
+
+(defun tlon-babel-create-job-todo-from-issue ()
+  "Create a new `org-mode' job TODO based on the current GitHub issue."
+  (tlon-babel-check-label-or-assignee-present)
+  (tlon-babel-check-user-is-assignee)
+  (tlon-babel-check-label-present)
+  (tlon-babel-store-or-refile-job-todo))
+
+(defun tlon-babel-create-generic-todo-from-issue ()
+  "Create a new `org-mode' generic TODO based on the current GitHub issue."
+  (tlon-babel-check-user-is-assignee)
+  (tlon-babel-store-todo "tbG"))
 
 (defun tlon-babel-check-label-or-assignee-present ()
   "Check that the topic at point has a label or an assignee.
@@ -597,7 +633,7 @@ If not, offer to process it as a new job."
     (if (not (or assignee label))
 	(if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
 	    (progn
-	      (tlon-babel-store-master-todo 'set-topic)
+	      (tlon-babel-store-master-job-todo 'set-topic)
 	      (sleep-for 4)
 	      (tlon-babel-create-todo-from-issue))
 	  (user-error "Aborted")))))
@@ -625,21 +661,34 @@ If not, offer to process it as a new job."
 
 (defun tlon-babel-store-or-refile-job-todo ()
   "Refile TODO under appropriate heading, or create new master TODO if none exists."
-  (if-let ((pos (tlon-babel-get-todo-position-strict
-		 (tlon-babel-make-todo-heading-from-issue-at-point 'no-action)
-		 tlon-babel-todos-file)))
+  (if-let ((pos (tlon-babel-get-todo-position
+		 (tlon-babel-make-todo-name-from-issue-at-point 'no-action 'no-state)
+		 (tlon-babel-get-todos-jobs-file))))
       (progn
 	(tlon-babel-store-todo "tbJ")
 	(let* ((inhibit-message t))
 	  (org-extras-refile-at-position pos)
 	  (org-extras-refile-goto-latest)))
     (when (y-or-n-p "No master TODO found for this topic. Create?")
-      (tlon-babel-store-master-todo)
+      (tlon-babel-store-master-job-todo)
       (tlon-babel-create-todo-from-issue))))
 
-(defun tlon-babel-get-todo-position-strict (todo file)
-  "Return the position of TODO exactly matching heading in FILE."
-  (org-find-exact-headline-in-buffer todo (find-file-noselect file)))
+(defun tlon-babel-get-todo-position (todo file &optional loose)
+  "Return the position of TODO exactly matching heading in FILE.
+If LOOSE is non-nil, return the position of the first TODO matching a substring
+rather than strictly matching the heading."
+  (if loose
+      (tlon-babel-find-loose-headline-in-file todo file)
+    (org-find-exact-headline-in-buffer todo (find-file-noselect file))))
+
+(defun tlon-babel-find-loose-headline-in-file (todo file)
+  "Move point to TODO in FILE matching TODO."
+  (with-current-buffer (find-file-noselect file)
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (when (re-search-forward (concat "^\\*+.*" todo) nil t)
+	(point)))))
 
 (defun tlon-babel-get-todo-position-substring (todo file)
   "Return the position of TODO matching a substring of heading in FILE."
@@ -687,30 +736,41 @@ If not, offer to process it as a new job."
 
 (defun tlon-babel-store-todo (template &optional no-action)
   "Store a new TODO using TEMPLATE.
-If TODO already exists, move point to it and do not create a duplicate. If
-NO-ACTION is non-nil, store a master TODO."
-  (let ((todo (tlon-babel-make-todo-heading-from-issue-at-point no-action)))
-    (if (tlon-babel-get-todo-position-strict todo tlon-babel-todos-file)
-	(tlon-babel-visit-todo nil tlon-babel-todos-file)
-      (kill-new todo)
-      (org-capture nil template))))
+If TODO already exists, signal an error. If NO-ACTION is non-nil, store a master
+TODO."
+  (when (tlon-babel-get-todo-position-from-issue)
+    (user-error "TODO already exists"))
+  (let ((todo (tlon-babel-make-todo-name-from-issue-at-point no-action)))
+    (kill-new todo)
+    (org-capture nil template)))
 
-(defun tlon-babel-store-master-todo (&optional set-topic)
+(defun tlon-babel-store-master-job-todo (&optional set-topic)
   "Create a new job master TODO.
 If SET-TOPIC is non-nil, set topic label to `Awaiting processing' and assignee
 to the current user."
-  (save-window-excursion
-    (when set-topic
-      (tlon-babel-set-initial-label-and-assignee))
-    (tlon-babel-store-todo "tbJ" 'master-todo)))
+  (let ((todo (tlon-babel-make-todo-name-from-issue-at-point 'no-action 'no-state)))
+    (if-let ((pos (tlon-babel-get-todo-position todo (tlon-babel-get-todos-jobs-file))))
+	(tlon-babel-visit-todo pos)
+      (save-window-excursion
+	(when set-topic
+	  (tlon-babel-set-initial-label-and-assignee))
+	(tlon-babel-store-todo "tbJ" 'master-todo)))))
 
-;;;;; Org-github sync
+;;;;; Org-github integration
+
+;;;;;; Movement
 
 (defun tlon-babel-visit-issue (&optional number repo)
   "Visit Github issue.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
 link, else get their values from the heading title, if possible."
   (interactive)
+  (forge-visit-issue (tlon-babel-get-issue number repo)))
+
+(defun tlon-babel-get-issue (&optional number repo)
+  "Get Github issue.
+If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
+link, else get their values from the heading title, if possible."
   (if-let* ((number (or number
 			(tlon-babel-get-issue-number-from-heading)))
 	    (repo (or repo
@@ -721,18 +781,38 @@ link, else get their values from the heading title, if possible."
 						:where (and (= repository $s1)
 							    (= number $s2))]
 				       (oref forge-repo id)
-				       number)))
-	    (issue (forge-get-topic issue-id)))
-      (forge-visit-issue issue)
+				       number))))
+      (forge-get-topic issue-id)
     (user-error "Could not find issue")))
+
+(defun tlon-babel-get-issue-buffer (&optional number repo)
+  "Get Github issue buffer.
+If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
+link, else get their values from the heading title, if possible."
+  (save-window-excursion
+    (tlon-babel-visit-issue number repo)
+    (current-buffer)))
 
 (defun tlon-babel-visit-counterpart ()
   "Visit the ID associated with TODO, or vice versa."
   (interactive)
+  (tlon-babel-todo-issue-funcall #'tlon-babel-visit-issue
+				 #'tlon-babel-visit-todo))
+
+(defun tlon-babel-todo-issue-funcall (todo-fun issue-fun)
+  "Call TODO-FUN or ISSUE-FUN depending on the current major mode."
   (pcase major-mode
-    ('org-mode (tlon-babel-visit-issue))
-    ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode) (tlon-babel-visit-todo))
+    ('org-mode
+     (unless (org-at-heading-p)
+       (user-error "I could not find an `org-mode' heading at point"))
+     (funcall todo-fun))
+    ((or 'forge-topic-mode 'forge-issue-mode 'forge-issue-list-mode 'magit-status-mode)
+     (unless (tlon-babel-get-issue-name)
+       (user-error "I could not find a GitHub issue at point"))
+     (funcall issue-fun))
     (_ (user-error "This command cannot be invoked in `%s`" major-mode))))
+
+;;;;;; Get heading elements
 
 (defun tlon-babel-get-element-from-heading (regexp)
   "Get element matching REGEXP from the heading at point."
@@ -779,35 +859,6 @@ link, else get their values from the heading title, if possible."
 					    (date-to-time (oref a created))))))))
     (list (oref latest-issue number) (oref latest-issue title))))
 
-(defun tlon-babel-close-issue-and-todo ()
-  "With point on either, close issue and associated TODO."
-  (interactive)
-  (let ((message "Closed issue and TODO."))
-    (pcase major-mode
-      ('org-mode
-       (unless (org-at-heading-p)
-	 (user-error "I could not find an `org-mode' heading at point"))
-       (if-let ((issue-number (tlon-babel-get-issue-number-from-heading))
-		(repo (tlon-babel-get-repo-from-heading)))
-	   (progn
-	     (tlon-babel-close-issue issue-number repo)
-	     (org-todo "DONE")
-	     (message message))
-	 (user-error "I could not find a issue number in the current `org-mode' heading")))
-      ((or 'forge-topic-mode 'forge-issue-list-mode 'magit-status-mode)
-       (if-let ((todo (tlon-babel-make-todo-heading-from-issue-at-point)))
-	   (progn
-	     (tlon-babel-mark-todo-done todo tlon-babel-todos-file)
-	     (tlon-babel-forge-close-topic)
-	     (message message))
-	 (user-error "I could not find a GitHub issue at point")))
-      (_ (user-error "This command cannot be invoked in `%s`" major-mode)))))
-
-(defun tlon-babel-close-issue (issue-number repo)
-  "Close the topic with ISSUE-NUMBER in REPO."
-  (tlon-babel-visit-issue issue-number repo)
-  (tlon-babel-forge-close-topic))
-
 ;;;;;; Set heading elements
 
 (defun tlon-babel-set-repo-in-heading ()
@@ -828,7 +879,121 @@ link, else get their values from the heading title, if possible."
     (insert (format "#%s " (number-to-string issue-number)))))
 
 
-;;;;;; priorities
+;;;;;; Close issues/todo
+
+(defun tlon-babel-close-issue-and-todo ()
+  "With point on either, close issue and associated TODO."
+  (interactive)
+  (tlon-babel-todo-issue-funcall
+   #'tlon-babel-close-issue-and-todo-from-issue
+   (lambda ()
+     (tlon-babel-visit-counterpart)
+     (tlon-babel-close-issue-and-todo-from-issue))))
+
+(defun tlon-babel-close-issue-and-todo-from-issue ()
+  "With point on issue, close issue and associated TODO."
+  (let ((issue-number (tlon-babel-get-issue-number-from-heading))
+	(repo (tlon-babel-get-repo-from-heading)))
+    (tlon-babel-close-issue issue-number repo)
+    (tlon-babel-visit-todo)
+    (org-todo "DONE")
+    (message "Closed issue and TODO.")))
+
+(defun tlon-babel-close-issue (issue-number repo)
+  "Close the topic with ISSUE-NUMBER in REPO."
+  (tlon-babel-visit-issue issue-number repo)
+  (tlon-babel-forge-close-topic))
+
+;;;;;; Set TODO states
+
+(defvar tlon-babel-todo-states
+  '("IMPORTANT" "URGENT" "SOMEDAY" "MAYBE")
+  "List of admissible TODO states, besides \"TODO\" itself.
+Note that your `org-todo-keywords' user option should include these labels for
+`org-mode' to recognize them, and that the buffer has to be refreshed after the
+value of that option is reset.")
+
+(defun tlon-babel-set-local-todo-state (&optional state)
+  "Set the TODO state of the `org-mode' heading at point to STATE.
+If STATE is nil, use the label of the corresponding issue, if possible."
+  (let ((state (or state (tlon-babel-get-remote-todo-state))))
+    (tlon-babel-validate-state state)
+    (org-todo state)
+    (message "State set to `%s'." state)))
+
+(defun tlon-babel-get-remote-todo-state ()
+  "Get remote state of TODO or issue at point."
+  (if-let ((raw-state
+	    (tlon-babel-todo-issue-funcall
+	     #'tlon-babel-get-corresponding-label
+	     #'tlon-babel-forge-get-label-at-point)))
+      (upcase raw-state)
+    "TODO"))
+
+(defun tlon-babel-get-corresponding-label ()
+  "Get TODO state for `org-mode' heading at point from corresponding issue."
+  (save-window-excursion
+    (tlon-babel-visit-issue)
+    (tlon-babel-forge-get-label-at-point)))
+
+(defun tlon-babel-validate-state (state)
+  "Return STATE if it is a valid state, else signal an error.
+A state is valid iff it is a member of `tlon-babel-todo-states'."
+  (if (member state tlon-babel-todo-states)
+      state
+    (user-error "`%s' is not a valid state" state)))
+
+;;;;; Re-sync
+
+(defun tlon-babel-reconcile-issue-and-todo ()
+  "With point on either, reconcile issue and associated TODO."
+  (interactive)
+  (tlon-babel-todo-issue-funcall
+   (lambda ()
+     (with-current-buffer (tlon-babel-get-issue-buffer)
+       (tlon-babel-reconcile-issue-and-todo-from-issue)))
+   #'tlon-babel-reconcile-issue-and-todo-from-issue))
+
+(defun tlon-babel-reconcile-issue-and-todo-from-issue ()
+  "With point on issue, reconcile issue and associated TODO."
+  (let ((issue (tlon-babel-make-todo-name-from-issue-at-point)))
+    (save-window-excursion
+      (tlon-babel-visit-todo)
+      (let ((todo (substring-no-properties (org-get-heading t nil t t))))
+	(if (string= issue todo)
+	    (message "Issue and todo are identical.")
+	  (tlon-babel-reconcile-issue-and-todo-prompt issue todo))))))
+
+(defun tlon-babel-reconcile-issue-and-todo-prompt (issue todo)
+  "Prompt the user to reconcile discrepancies between ISSUE and TODO."
+  (pcase (read-char-choice
+	  (format "The issue differs from its todo. Keep (i)ssue | Keep (t)odo | (a)bort\nissue: `%s'\ntodo:  `%s' "
+		  issue todo)
+	  '(?i ?t ?a))
+    (?i (tlon-babel-update-todo-from-issue issue))
+    (?t (tlon-babel-update-issue-from-todo todo))
+    (_ (user-error "Aborted"))))
+
+(defun tlon-babel-update-todo-from-issue (issue)
+  "Update TODO to match ISSUE."
+  (save-window-excursion
+    (beginning-of-line)
+    (re-search-forward " ")
+    (let ((tags (org-get-tags nil t)))
+      (org-kill-line)
+      (insert issue)
+      (when tags
+	(org-set-tags tags)
+	(org-align-tags))
+      (message "TODO updated"))))
+
+(defun tlon-babel-update-issue-from-todo (todo)
+  "Update ISSUE to match TODO."
+  (string-match org-complex-heading-regexp todo)
+  (let ((title (match-string 4))
+	(state (match-string 2)))
+    (message "%s %s" title state)))
+
 
 ;;;;; User commits
 
@@ -2126,7 +2291,8 @@ Assumes action is first word of clocked task."
 
 (defun tlon-babel-check-point-on-issue ()
   "Return t iff point is on an issue or a Forge buffer."
-  (unless (or (or (derived-mode-p 'forge-topic-mode) (derived-mode-p 'forge-issue-list-mode))
+  (unless (or (or (derived-mode-p 'forge-topic-mode)
+		  (derived-mode-p 'forge-issue-list-mode))
 	      (and (derived-mode-p 'magit-status-mode)
 		   (save-excursion
 		     (re-search-backward "Issues (" nil t))))
@@ -2161,45 +2327,31 @@ Assumes action is first word of clocked task."
 	(number (tlon-babel-get-issue-number)))
     (replace-regexp-in-string (format "#%s " number) "" name)))
 
-(defun tlon-babel-make-todo-heading-from-issue-at-point (&optional no-action)
+(defun tlon-babel-make-todo-name-from-issue-at-point (&optional no-action no-state)
   "Construct the name of TODO from issue at point.
-The resulting name will have a name with the form \"[REPO] ACTION NAME\". ACTION
-is optional, and used only for job TODOs. For example, if the TODO is \"[bae]
-#591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is \"Process\", the
-function returns \"[bae] Process #591 Job: `Handbook2022ExerciseForRadical`\".
+For job TODOs, the resulting name will have a name with the form \"[REPO] ACTION
+NAME\". ACTION is optional, and used only for job TODOs. For example, if the
+TODO is \"[bae] #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is
+\"Process\", the function returns \"[bae] Process #591 Job:
+`Handbook2022ExerciseForRadical`\".
 
-If NO-ACTION is non-nil, omit, the ACTION element."
-  (let* ((action (if (and (tlon-babel-issue-is-job-p (tlon-babel-get-issue-name))
+If NO-ACTION is non-nil, omit, the ACTION element. If NO-STATE is non-nil, omit
+the STATE element."
+  (let* ((action (if (and (tlon-babel-issue-is-job-p)
 			  (not no-action))
 		     (tlon-babel-label-lookup :action :label (tlon-babel-forge-get-label-at-point))
 		   ""))
+	 (state (if (tlon-babel-issue-is-job-p)
+		    "TODO"
+		  (tlon-babel-get-remote-todo-state)))
 	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'include-all)))
-	 (full-name (replace-regexp-in-string "[[:space:]]\\{2,\\}"
-					      " "
-					      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link)))))
-    full-name))
-
-(defun tlon-babel-update-todo-from-issue-at-point ()
-  "Update the TODO matching the name of issue at point.
-Find the TODO that matches the name of the issue at point, excluding the issue
-number, to reflect the current issue details (such as the GID, the repo, or the
-issue number). This function is useful for updating a TODO after an issue has
-been moved to a new repository."
-  (if-let* ((current-name (tlon-babel-get-issue-name-sans-number))
-	    (file tlon-babel-todos-file)
-	    (pos (tlon-babel-get-todo-position-substring current-name file)))
-      (let ((new-heading (tlon-babel-make-todo-heading-from-issue-at-point)))
-	(save-window-excursion
-	  (tlon-babel-open-todo file pos)
-	  (org-back-to-heading)
-	  (let ((old-heading (substring-no-properties (org-get-heading t t t t))))
-	    (if (string= old-heading new-heading)
-		(user-error "Nothing to update")
-	      (org-back-to-heading)
-	      (re-search-forward org-complex-heading-regexp)
-	      (replace-match new-heading t t nil 4)
-	      (message "TODO updated.\nOld heading: %s\nNew heading: %s" old-heading new-heading)))))
-    (user-error "No TODO matching issue name found")))
+	 (todo-name (replace-regexp-in-string
+		     "[[:space:]]\\{2,\\}"
+		     " "
+		     (concat
+		      (unless no-state (format "%s " state))
+		      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link))))))
+    todo-name))
 
 (defun tlon-babel-get-file-from-issue ()
   "Get the file path of the topic at point or in current forge buffer."
@@ -2559,8 +2711,14 @@ Markdown buffer at point is used."
 	(tlon-babel-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-visit-issue)
 	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
-	(setq todo-linkified (tlon-babel-make-todo-heading-from-issue-at-point))))
+	(setq todo-linkified (tlon-babel-make-todo-name-from-issue-at-point nil 'no-state))))
     (org-edit-headline todo-linkified)))
+
+(defun tlon-babel-create-issue-or-todo ()
+  "Create issue from TODO or vice versa."
+  (interactive)
+  (tlon-babel-todo-issue-funcall #'tlon-babel-create-issue-from-todo
+				 #'tlon-babel-create-todo-from-issue))
 
 (defun tlon-babel-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
@@ -2607,32 +2765,23 @@ COMMIT is non-nil, commit the change."
     (org-sort-entries nil ?o)
     (save-buffer)))
 
-(defun tlon-babel-visit-todo (&optional todo file)
-  "Jump to TODO in FILE.
-If TODO is nil, use the heading at point. If FILE is nil, use
-`tlon-babel-todos-file'."
-  (interactive)
-  (let ((todo (or todo (tlon-babel-make-todo-heading-from-issue-at-point)))
-	(file (or file tlon-babel-todos-file)))
-    (if-let ((pos (tlon-babel-get-todo-position-strict todo file)))
-	(tlon-babel-open-todo file pos)
-      (user-error "I wasn't able to find a TODO with the exact name `%s` in `%s`" todo file))))
-
 (defun tlon-babel-get-parent-todo (todo)
-  "Get parent of TODO in `tlon-babel-todos-file'."
-  (save-window-excursion
-    (tlon-babel-visit-todo todo tlon-babel-todos-file)
-    (widen)
-    (org-up-heading-safe)
-    (org-no-properties (org-get-heading))))
+  "Get parent of TODO in `tlon-babel-todos-jobs-file'."
+  (let ((pos (tlon-babel-get-todo-position todo file)))
+    (save-window-excursion
+      (tlon-babel-get-todo-position-from-todo todo (tlon-babel-get-todos-jobs-file))
+      (widen)
+      (org-up-heading-safe)
+      (org-no-properties (org-get-heading)))))
 
 (defun tlon-babel-mark-todo-done (todo file)
   "Mark TODO in FILE as DONE."
-  (save-window-excursion
-    (tlon-babel-visit-todo todo file)
-    (org-todo "DONE")
-    (save-buffer)
-    (message "Marked `%s' as DONE" todo)))
+  (let ((pos (tlon-babel-get-todo-position todo file)))
+    (save-window-excursion
+      (tlon-babel-visit-todo pos)
+      (org-todo "DONE")
+      (save-buffer)
+      (message "Marked `%s' as DONE" todo))))
 
 (defun tlon-babel-get-key-in-heading ()
   "Get the key of the currently clocked task."
@@ -2733,10 +2882,10 @@ for the process that is being initialized."
   (let ((todo (tlon-babel-get-clock))
 	(key (tlon-babel-get-clock-key))
 	(current-action (tlon-babel-get-clock-action)))
-    (tlon-babel-mark-todo-done todo tlon-babel-todos-file)
+    (tlon-babel-mark-todo-done todo (tlon-babel-get-todos-jobs-file))
     (when (or (string= current-action "Review") (string= current-action "Check"))
       (let ((parent-todo (tlon-babel-get-parent-todo todo)))
-	(tlon-babel-mark-todo-done parent-todo tlon-babel-todos-file)))
+	(tlon-babel-mark-todo-done parent-todo (tlon-babel-get-todos-jobs-file))))
     (when (string= current-action "Review")
       (let ((job-todo (format "[cite:@%s]" key)))
 	(tlon-babel-mark-todo-done job-todo tlon-babel-file-jobs)
@@ -3629,10 +3778,10 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("b b" "file"                         tlon-babel-browse-file)
     ("b r" "repo"                         tlon-babel-browse-repo)
     """Sync"
-    ("y y" "visit issue or todo"           tlon-babel-visit-counterpart)
-    ("y x" "close issue & todo"            tlon-babel-close-issue-and-todo)
-    ("y t" "create todo from issue"         tlon-babel-create-todo-from-issue)
-    ("y i" "create issue from todo"        tlon-babel-create-issue-from-todo)
+    ("y y" "visit"                        tlon-babel-visit-counterpart)
+    ("y c" "create"                       tlon-babel-create-issue-or-todo)
+    ("y r" "reconcile"                    tlon-babel-reconcile-issue-and-todo)
+    ("y x" "close"                        tlon-babel-close-issue-and-todo)
     ]
    ]
   )
