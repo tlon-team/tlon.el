@@ -4233,8 +4233,9 @@ Return the path of the temporary file created."
 ;;;;;; Summarization
 
 (defun tlon-babel-gpt-summarize-file (file)
-  "Summarize FILE."
-  (interactive "f")
+  "Summarize FILE and copy the summary to the kill ring."
+  (interactive "fFile to summarize: ")
+  (message "Generating summary. This may take 5–30 seconds, depending on file size...")
   (gptel-request
    (format "Por favor, genera un resumen del siguiente artículo:\n\n```\n%s\n```\n\n. El resumen debe tener solamente un párrafo y no es necesario que mencione datos bibliográficos de la obra reusmida (como título o autor). Por favor, escribe el resumen afirmando directamente lo que el artículo sostiene, en lugar de utilizar giros como ‘El artículo sostiene que...’. Por ejemplo, en lugar de escribir ‘El artículo cuenta que la humanidad luchó contra la viruela durante siglos...’, escribe ‘La humanidad luchó contra la viruela durante siglos..."
 	   (tlon-babel-file-to-string file))
@@ -4242,7 +4243,8 @@ Return the path of the temporary file created."
    (lambda (response info)
      (if (not response)
 	 (message "gptel-quick failed with message: %s" (plist-get info :status))
-       (message response)))))
+       (kill-new response)
+       (message "Copied GPT-4 summary of `%s' to the kill ring:\n\n%s" (file-name-nondirectory file) response)))))
 
 ;;;;; Misc
 
