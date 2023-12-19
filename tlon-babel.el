@@ -448,6 +448,11 @@ The order of the keys determines the sort order by
 `tlon-babel--yaml-sort-fields', unless overridden.")
 
 (defconst tlon-babel-yaml-tag-or-author-keys
+(defconst tlon-babel-yaml-tag-keys
+  '("titulo" "titulo_breve" "estado_de_publicacion")
+  "List of YAML keys of fields to include in BAE tags.
+The order of the keys determines the sort order by
+`tlon-babel--yaml-sort-fields', unless overridden.")
   '("titulo" "estado_de_publicacion")
   "List of YAML keys of fields to include in BAE tags or authors.
 The order of the keys determines the sort order by
@@ -1717,11 +1722,17 @@ If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
   (tlon-babel-yaml-set-front-matter tlon-babel-yaml-article-keys title))
 
-(defun tlon-babel-yaml-set-front-matter-for-tag-or-author ()
-  "Insert YAML fields for BAE tag or author in the current buffer.
+(defun tlon-babel-yaml-set-front-matter-for-tag ()
+  "Insert YAML fields for BAE tag in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
-  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-tag-or-author-keys))
+  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-tag-keys))
+
+(defun tlon-babel-yaml-set-front-matter-for-author ()
+  "Insert YAML fields for BAE author in the current buffer.
+If TITLE is non-nil, use it instead of prompting for one."
+  (interactive)
+  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-author-keys))
 
 (defun tlon-babel-insert-yaml-fields (fields)
   "Insert YAML FIELDS in the buffer at point.
@@ -1762,7 +1773,7 @@ FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
 		    (pcase
 			(file-name-nondirectory (directory-file-name default-directory))
 		      ("articles" tlon-babel-yaml-article-keys)
-		      ((or "temas" "autores") tlon-babel-yaml-tag-or-author-keys)))))
+		    unsorted (tlon-babel-yaml-get-bae-keys) 'no-error)))
       (tlon-babel-delete-yaml-front-matter)
       (tlon-babel-insert-yaml-fields sorted))))
 
