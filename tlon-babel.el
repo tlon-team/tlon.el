@@ -447,14 +447,15 @@ This variable should not be set manually.")
 The order of the keys determines the sort order by
 `tlon-babel--yaml-sort-fields', unless overridden.")
 
-(defconst tlon-babel-yaml-tag-or-author-keys
 (defconst tlon-babel-yaml-tag-keys
   '("titulo" "titulo_breve" "estado_de_publicacion")
   "List of YAML keys of fields to include in BAE tags.
 The order of the keys determines the sort order by
 `tlon-babel--yaml-sort-fields', unless overridden.")
+
+(defconst tlon-babel-yaml-author-keys
   '("titulo" "estado_de_publicacion")
-  "List of YAML keys of fields to include in BAE tags or authors.
+  "List of YAML keys of fields to include in BAE authors.
 The order of the keys determines the sort order by
 `tlon-babel--yaml-sort-fields', unless overridden.")
 
@@ -745,6 +746,7 @@ rather than strictly matching the heading."
 (defun tlon-babel-open-todo (file position)
   "Open FILE at TODO POSITION."
   (find-file file)
+  (widen)
   (goto-char position))
 
 (defun tlon-babel-store-todo (template &optional no-action)
