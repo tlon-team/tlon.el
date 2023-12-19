@@ -1905,6 +1905,10 @@ overwrite."
 	      (elts (split-string line ":" nil "\\s-+")))
     elts))
 
+(defun tlon-babel-yaml-get-key (key)
+  "Get value of KEY in YAML metadata."
+  (alist-get key (tlon-babel-yaml-get-front-matter) nil nil #'string=))
+
 (defun tlon-babel-yaml-insert-list (candidates)
   "Insert a list in YAML field at point.
 Prompt the user to select one or more elements in CANDIDATES. If point is on a
