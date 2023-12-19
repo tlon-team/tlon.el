@@ -1949,10 +1949,10 @@ list, use them pre-populate the selection."
 
 (defun tlon-babel-yaml-insert-string (candidates)
   "Insert a string in the YAML field at point.
-Prompt the user to select one or more elements in CANDIDATES. If point is on a
-string, use it to pre-populate the selection."
+Prompt the user for a choice in CANDIDATES. If point is on a string, use it to
+pre-populate the selection."
   (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field)
-    (let* ((choice (completing-read "Value: "
+    (let* ((choice (completing-read (format "Value of `%s': " key)
 				    candidates))
 	   (bounds (bounds-of-thing-at-point 'line))
 	   (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
