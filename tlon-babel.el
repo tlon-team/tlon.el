@@ -2775,7 +2775,7 @@ COMMIT is non-nil, commit the change."
 
 (defun tlon-babel-get-parent-todo (todo)
   "Get parent of TODO in `tlon-babel-todos-jobs-file'."
-  (let ((pos (tlon-babel-get-todo-position todo file)))
+  (let ((pos (tlon-babel-get-todo-position todo (tlon-babel-get-todos-jobs-file))))
     (save-window-excursion
       (tlon-babel-get-todo-position-from-todo todo (tlon-babel-get-todos-jobs-file))
       (widen)
