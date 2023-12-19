@@ -1878,32 +1878,27 @@ If KEY already has VALUE, use it as the initial input."
   "Get completion functions for a YAML field with KEY."
   (pcase key
     ((or "autores" "traductores" "temas") #'tlon-babel-yaml-insert-list)
-    ((or "path_original" "key_original" "key_traduccion") #'completing-read)
-    ("estado_de_publicacion" #'tlon-babel-yaml-insert-string)
+    ((or "path_original" "key_original" "key_traduccion" "estado_de_publicacion") #'tlon-babel-yaml-insert-string)
     (_ nil)))
 
-;; TODO: integrate `tlon-babel-yaml-get-completions'
-(defun tlon-babel-yaml-insert-field (&optional key value file overwrite)
+;; TODO: integrate `tlon-babel-yaml-get-completion-values'
+(defun tlon-babel-yaml-insert-field (&optional key value file field-exists)
   "Insert a new field in the YAML front matter of FILE.
 If FILE is nil, use the file visited by the current buffer. If KEY or VALUE are
-nil, prompt for one. If field exists, signal an error if OVERWRITE is nil, else
-overwrite."
+nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
+`throw-error', overwrite if it is `overwrite', and do nothing otherwise."
   (interactive)
-  (let ((key (or key (completing-read "Key: " tlon-babel-yaml-article-keys)))
+  (let ((key (or key (completing-read "Key: " (tlon-babel-yaml-get-bae-keys))))
 	(value (or value (read-string "Value: ")))
 	(file (or file (buffer-file-name))))
     (if-let ((front-matter (tlon-babel-yaml-get-front-matter file)))
-	(let ((key-exists-p (assoc key front-matter)))
-	  (if (and key-exists-p (not overwrite))
-	      (user-error "Field `%s' already exists in `%s'" key file)
-	    (with-current-buffer (find-file-noselect file)
-	      (when (and key-exists-p overwrite)
-		(tlon-babel-yaml-delete-field key file))
-	      (goto-char (point-min))
-	      (forward-line)
-	      (insert (format "%s:  %s\n" key value))
-	      (save-buffer)
-	      (tlon-babel-yaml-reorder-front-matter))))
+	(if-let ((key-exists-p (assoc key front-matter)))
+	    (cond ((eq field-exists 'overwrite)
+		   (tlon-babel-yaml-delete-field key file)
+		   (tlon-babel-yaml-write-field key value file))
+		  ((eq field-exists 'throw-error)
+		   (user-error "Field `%s' already exists in `%s'" key file)))
+	  (tlon-babel-yaml-write-field key value file))
       (user-error "File `%s' does not appear to contain a front matter section" file))))
 
 (defun tlon-babel-yaml-write-field (key value file)
