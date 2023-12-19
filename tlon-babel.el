@@ -1883,6 +1883,15 @@ overwrite."
 	      (tlon-babel-yaml-reorder-front-matter))))
       (user-error "File `%s' does not appear to contain a front matter section" file))))
 
+(defun tlon-babel-yaml-write-field (key value file)
+  "Set KEY to VALUE in FILE."
+  (with-current-buffer (find-file-noselect file)
+    (goto-char (point-min))
+    (forward-line)
+    (insert (format "%s:  %s\n" key value))
+    (save-buffer)
+    (tlon-babel-yaml-reorder-front-matter)))
+
 ;; TODO: refactor with above
 (defun tlon-babel-yaml-delete-field (&optional key file)
   "Delete the YAML field with KEY in FILE."
