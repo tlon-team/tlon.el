@@ -530,8 +530,8 @@ The second capture group handles the `.md' extension, which we used previously."
 		       "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
     (push template org-capture-templates))
   (setq paths-files-bibliography-all
-        `(,@paths-files-bibliography-personal
-          ,@tlon-babel-bibliography-files))
+	`(,@paths-files-bibliography-personal
+	  ,@tlon-babel-bibliography-files))
   (run-hooks 'tlon-babel-post-init-hook))
 
 ;;;;; [name]
@@ -1710,12 +1710,14 @@ inserted in the order in which KEYS are listed."
 	 (sorted-fields (tlon-babel--yaml-sort-fields fields keys)))
     (tlon-babel-insert-yaml-fields sorted-fields)))
 
-(defun tlon-babel--yaml-sort-fields (fields &optional keys)
-  "Sort alist of YAML FIELDS by order of KEYS."
+(defun tlon-babel--yaml-sort-fields (fields &optional keys no-error)
+  "Sort alist of YAML FIELDS by order of KEYS.
+If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
   (mapcar (lambda (key)
 	    (if-let ((match (assoc key fields)))
 		match
-	      (user-error "Key `%s' not found in file `%s'" key (buffer-file-name))))
+	      (unless no-error
+		(user-error "Key `%s' not found in file `%s'" key (buffer-file-name)))))
 	  keys))
 
 (defun tlon-babel-yaml-set-front-matter-for-article (&optional title)
