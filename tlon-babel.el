@@ -1779,6 +1779,15 @@ FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
       (tlon-babel-delete-yaml-front-matter)
       (tlon-babel-insert-yaml-fields sorted))))
 
+(defun tlon-babel-yaml-get-bae-keys (&optional file)
+  "Return the admissible keys for BAE FILE.
+If FILE is nil, return the work type of the file visited by the current buffer."
+  (let* ((file (or file (buffer-file-name))))
+    (pcase (file-name-nondirectory (directory-file-name (file-name-directory file)))
+      ("articulos" tlon-babel-yaml-article-keys)
+      ("temas" tlon-babel-yaml-tag-keys)
+      ("autores" tlon-babel-yaml-author-keys))))
+
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
   "Set the value of multivalue FIELD in metadata of REPO.
 If DIR is non-nil, only search in directory within the repo. Note DIR does not
