@@ -1664,7 +1664,7 @@ an error."
 ;;;;; Set YAML values
 
 (defun tlon-babel--yaml-set-front-matter-fields (fields &optional title)
-  "Get the field values for the given FIELDS in the current buffer.
+  "Set the field values for the given FIELDS in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one."
   (let* ((var-generators
 	  `(("fecha" . ,(lambda () (format-time-string "%FT%T%z")))
