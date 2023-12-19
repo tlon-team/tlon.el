@@ -1773,10 +1773,6 @@ FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
   (save-excursion
     (let* ((unsorted (tlon-babel-yaml-get-front-matter))
 	   (sorted (tlon-babel--yaml-sort-fields
-		    unsorted
-		    (pcase
-			(file-name-nondirectory (directory-file-name default-directory))
-		      ("articles" tlon-babel-yaml-article-keys)
 		    unsorted (tlon-babel-yaml-get-bae-keys) 'no-error)))
       (tlon-babel-delete-yaml-front-matter)
       (tlon-babel-insert-yaml-fields sorted))))
@@ -1856,15 +1852,18 @@ If STATE is nil, default to `borrador'."
   "Edit the YAML field at point."
   (interactive)
   (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field)
-    (pcase key
-      ("traductores" (tlon-babel-yaml-insert-list (tlon-babel-get-translators)))
-      ("temas" (tlon-babel-yaml-insert-list (tlon-babel-get-bae-tags)))
-      ("autores" (tlon-babel-yaml-insert-list (tlon-babel-get-bae-authors)))
-      ("estado_de_publicacion" (tlon-babel-yaml-insert-string tlon-babel-publication-statuses))
-      (_ (tlon-babel-yaml-insert-string (list value))))))
+    (tlon-babel-yaml-get-completions key value)))
 
-(defun tlon-babel-yaml-get-completions (key)
-  "Get completions for a YAML field with KEY."
+(defun tlon-babel-yaml-get-completions (key value)
+  "Get completions based on KEY.
+If KEY already has VALUE, use it as the initial input."
+  (if-let ((val (tlon-babel-yaml-get-completion-values key))
+	   (fun (tlon-babel-yaml-get-completion-functions key)))
+      (funcall fun val)
+    (tlon-babel-yaml-insert-string (list value))))
+
+(defun tlon-babel-yaml-get-completion-values (key)
+  "Get completion values for a YAML field with KEY."
   (pcase key
     ("traductores" (tlon-babel-get-translators))
     ("temas" (tlon-babel-get-bae-tags))
