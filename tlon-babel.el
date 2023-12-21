@@ -144,7 +144,7 @@ via `tlon-babel-cancel-repo-timers'.")
 	    :assignee "worldsaround")
     (:label "Awaiting translation"
 	    :action "Translate"
-	    :assignee "benthamite")
+	    :assignee "")
     (:label "Awaiting revision"
 	    :action "Revise"
 	    :assignee "worldsaround")
