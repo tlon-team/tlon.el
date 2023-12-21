@@ -1308,14 +1308,16 @@ If DELETE is non-nil, delete the footnote."
 
 ;;;;;;; manual-fix
 
-(defun tlon-babel-manual-fix (regexp-list newtext)
-  "Prompt user to replace matches in REGEXP-LIST with NEWTEXT."
+(defun tlon-babel-manual-fix (regexp-list newtext &optional keep-case)
+  "Prompt user to replace matches in REGEXP-LIST with NEWTEXT.
+If KEEP-CASE is non-nil, keep the case of the matched text."
   (widen)
   (save-excursion
     (point-min)
     (dolist (regexp regexp-list)
       (goto-char (point-min))
-      (query-replace-regexp regexp newtext nil (point-min) (point-max)))))
+      (let ((case-replace keep-case))
+	(query-replace-regexp regexp newtext nil (point-min) (point-max))))))
 
 (defun tlon-babel-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
@@ -1342,14 +1344,16 @@ If DELETE is non-nil, delete the footnote."
 (defun tlon-babel-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
   (tlon-babel-manual-fix '("sólo")
-			 "solo"))
+			 "solo"
+			 'keep-case))
 
 (defun tlon-babel-manual-fix-podcast ()
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
   (tlon-babel-manual-fix '(" podcast")
-			 " pódcast"))
+			 " pódcast"
+			 'keep-case))
 
 (defun tlon-babel-manual-fix-all ()
   "Run all the `tlon-babel-manual-fix' commands."
