@@ -4267,19 +4267,31 @@ Return the path of the temporary file created."
 
 ;;;;;; Summarization
 
-(defun tlon-babel-gpt-summarize-file (file)
-  "Summarize FILE and copy the summary to the kill ring."
-  (interactive "fFile to summarize: ")
-  (message "Generating summary. This may take 5–30 seconds, depending on file size...")
-  (gptel-request
-   (format "Por favor, genera un resumen del siguiente artículo:\n\n```\n%s\n```\n\n. El resumen debe tener solamente un párrafo y no es necesario que mencione datos bibliográficos de la obra reusmida (como título o autor). Por favor, escribe el resumen afirmando directamente lo que el artículo sostiene, en lugar de utilizar giros como ‘El artículo sostiene que...’. Por ejemplo, en lugar de escribir ‘El artículo cuenta que la humanidad luchó contra la viruela durante siglos...’, escribe ‘La humanidad luchó contra la viruela durante siglos..."
-	   (tlon-babel-file-to-string file))
-   :callback
-   (lambda (response info)
-     (if (not response)
-	 (message "gptel-quick failed with message: %s" (plist-get info :status))
-       (kill-new response)
-       (message "Copied GPT-4 summary of `%s' to the kill ring:\n\n%s" (file-name-nondirectory file) response)))))
+(defun tlon-babel-gpt-summarize ()
+  "Summarize and copy the summary to the kill ring.
+If region is active, summarize the region; otherwise, prompt for a file to
+summarize."
+  (interactive)
+  (mullvad-connect-to-website "Gemini" "1")
+  (gptel-model-config "gemini-pro-no-stream")
+  (let ((string
+	 (if (region-active-p)
+	     (buffer-substring-no-properties (region-beginning) (region-end))
+	   (let* ((current-file (buffer-file-name))
+		  (selected-file (read-file-name "Select file to summarize (if you would like to summarize a region, run this command with an active region): " nil current-file nil (file-name-nondirectory current-file))))
+	     (with-temp-buffer
+	       (insert-file-contents selected-file)
+	       (buffer-string))))))
+    (message "Generating summary. This may take 5–30 seconds, depending on file size...")
+    (gptel-request
+     (format "Por favor, genera un resumen del siguiente artículo:\n\n```\n%s\n```\n\n. El resumen debe tener solamente un párrafo y no es necesario que mencione datos bibliográficos de la obra reusmida (como título o autor). Escribe el resumen afirmando directamente lo que el artículo sostiene, en lugar de utilizar giros como ‘El artículo sostiene que...’. Por ejemplo, en lugar de escribir ‘El artículo cuenta que la humanidad luchó contra la viruela durante siglos...’, escribe ‘La humanidad luchó contra la viruela durante siglos...’"
+	     string)
+     :callback
+     (lambda (response info)
+       (if (not response)
+	   (message "`gptel' failed with message: %s" (plist-get info :status))
+	 (kill-new response)
+	 (message "Copied AI-generated summary to the kill ring:\n\n%s" response))))))
 
 ;;;;; Misc
 
