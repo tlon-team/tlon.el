@@ -4267,13 +4267,13 @@ Return the path of the temporary file created."
 
 ;;;;;; Summarization
 
-(defun tlon-babel-gpt-summarize ()
-  "Summarize and copy the summary to the kill ring.
+(defun tlon-babel-gpt-summarize (model)
+  "Summarize and copy the summary to the kill ring using AI MODEL.
 If region is active, summarize the region; otherwise, prompt for a file to
 summarize."
-  (interactive)
-  (mullvad-connect-to-website "Gemini" "1")
-  (gptel-model-config "gemini-pro-no-stream")
+  (interactive (list (completing-read "Model: " gptel-extras-backends)))
+  (require 'gptel-extras)
+  (gptel-model-config model)
   (let ((string
 	 (if (region-active-p)
 	     (buffer-substring-no-properties (region-beginning) (region-end))
