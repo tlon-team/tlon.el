@@ -1917,7 +1917,7 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
 ;; TODO: refactor with above
 (defun tlon-babel-yaml-delete-field (&optional key file)
   "Delete the YAML field with KEY in FILE."
-  (let ((key (or key (completing-read tlon-babel-yaml-article-keys)))
+  (let ((key (or key (completing-read "Field: " tlon-babel-yaml-article-keys)))
 	(file (or file (buffer-file-name))))
     (if-let ((front-matter (tlon-babel-yaml-get-front-matter file)))
 	(if (assoc key front-matter)
