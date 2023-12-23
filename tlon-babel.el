@@ -1750,7 +1750,7 @@ FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
   (save-excursion
     (goto-char (point-min))
     ;; calculate the max key length
-    (let ((max-key-len (reduce 'max (mapcar (lambda (cons) (length (car cons))) fields)))
+    (let ((max-key-len (cl-reduce 'max (mapcar (lambda (cons) (length (car cons))) fields)))
 	  format-str)
       ;; determine the format for string
       (setq format-str (format "%%-%ds %%s\n" (+ max-key-len 2)))
