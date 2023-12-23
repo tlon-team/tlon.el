@@ -47,9 +47,7 @@
 (require 'markdown-mode-extras)
 (require 'org)
 (require 'org-clock)
-(require 'org-extras)
 (require 'orgit-forge)
-(require 'paths)
 (require 'read-aloud)
 (require 'request)
 (require 'simple-extras)
@@ -2530,8 +2528,9 @@ matching will be made against repos with any value for the property `:type'."
 	  (user-error "Not in a recognized Babel repo"))
       (let* ((content (tlon-babel-get-property-of-repos :name :type 'content))
 	     (all (tlon-babel-get-property-of-repos :name)))
-	(tlon-babel-repo-lookup :dir :name (completing-read "Select repo: ")
-				(if include-all all content))))))
+	(tlon-babel-repo-lookup :dir :name
+				(completing-read "Select repo: "
+						 (if include-all all content)))))))
 
 (defun tlon-babel-get-commit-key ()
   "Get key of commit file."
@@ -4004,16 +4003,30 @@ If ASYNC is t, run the request asynchronously."
 
 ;;;;;; BAE API
 
-(defun tlon-babel-get-bae-log ()
-  "Get error log from BAE repo as an association list."
-  (let* ((url "https://altruismoeficaz.net/api/logs")
-	 (url-request-method "GET")
-	 (url-mime-charset-string "utf-8;q=1, iso-8859-1")
-	 (response-buffer (url-retrieve-synchronously url))
-	 (json-object-type 'plist)
-	 (json-array-type 'list)
-	 (output-buffer-name "*BAE error log*"))
-    (with-current-buffer response-buffer
+(defun tlon-babel-show-bae-log ()
+  "Show the BAE error log."
+  (interactive)
+  ;; (tlon-babel-get-bae-log "POST" "https://altruismoeficaz.net/api/update/bae")
+  (tlon-babel-print-log
+   (tlon-babel-process-api-buffer
+    (tlon-babel-get-bae-log "GET" "https://altruismoeficaz.net/api/update/bae/log"))))
+
+;; TODO: make it work with POST request. Look at the script in
+;; https://github.com/tlon-team/uqbar-api/blob/main/deployment/request.sh
+(defun tlon-babel-get-bae-log (request url)
+  "Get error log from BAE repo as an association list.
+If not already authenticated, run `tlon-babel-get-bae-token' first."
+  (when-let* ((url-request-method request)
+	      (url-mime-charset-string "utf-8;q=1, iso-8859-1")
+	      (buffer (url-retrieve-synchronously url)))
+    buffer))
+
+(defun tlon-babel-process-api-buffer (buffer)
+  ""
+  (let ((json-object-type 'plist)
+	(json-array-type 'list)
+	(output-buffer-name "*BAE error log*"))
+    (with-current-buffer buffer
       (goto-char (point-min))
       (search-forward "\n\n")
       ;; Kill any existing buffer with the same name before creating a new one
@@ -4040,7 +4053,6 @@ If ASYNC is t, run the request asynchronously."
 
 (defun tlon-babel-make-paths-clickable ()
   "Make file paths in the current buffer clickable."
-  (interactive)
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward "\"\\([^\"]+\\)\"" nil t)
@@ -4052,11 +4064,6 @@ If ASYNC is t, run the request asynchronously."
 	  (make-button (match-beginning 0) (match-end 0)
 		       'action (lambda (_) (find-file path))
 		       'follow-link t))))))
-
-(defun tlon-babel-show-bae-log ()
-  "Show the BAE error log."
-  (interactive)
-  (tlon-babel-print-log (tlon-babel-get-bae-log)))
 
 (defun tlon-babel-make-bae-request (url &optional retries)
   "Make URL request to BAE API and show updated logs.
@@ -4272,6 +4279,7 @@ Return the path of the temporary file created."
 If region is active, summarize the region; otherwise, prompt for a file to
 summarize."
   (interactive (list (completing-read "Model: " gptel-extras-backends)))
+  (require 'gptel)
   (require 'gptel-extras)
   (gptel-model-config model)
   (let ((string
@@ -4282,7 +4290,7 @@ summarize."
 	     (with-temp-buffer
 	       (insert-file-contents selected-file)
 	       (buffer-string))))))
-    (message "Generating summary. This may take 5–30 seconds, depending on file size...")
+    (message "Generating summary. This may take 5–30 seconds, depending on length...")
     (gptel-request
      (format "Por favor, genera un resumen del siguiente artículo:\n\n```\n%s\n```\n\n. El resumen debe tener solamente un párrafo y no es necesario que mencione datos bibliográficos de la obra reusmida (como título o autor). Escribe el resumen afirmando directamente lo que el artículo sostiene, en lugar de utilizar giros como ‘El artículo sostiene que...’. Por ejemplo, en lugar de escribir ‘El artículo cuenta que la humanidad luchó contra la viruela durante siglos...’, escribe ‘La humanidad luchó contra la viruela durante siglos...’"
 	     string)
