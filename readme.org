@@ -1,12 +1,12 @@
-#+title: Tlon
+#+title: Tlön Babel
 
-~tlon~ is a repository of Emacs functions to be used by the Tlön team.
+~tlon-babel~ is a repository of Emacs functions to be used by the Tlön team.
 
 ** GitHub sync
 
 ~tlon-babel~ includes several functions to synchronize the GitHub issues on a given repository with the corresponding ~org-mode~ TODOs in the user’s local file. The relevant GitHub sync functions are accessed from ~tlon-babel-dispatch~ (~H-r~), under the “sync” section (~y~):
 
-- "visit or capture" (~tlon-babel-visit-counterpart-or-capture~, ~H-r y y~): visits the “counterpart” (the associated ~org-mode~ TODO if point is on a GitHub issue, and vice versa) or, if point is on an issue that has not yet been captured, creates an associated ~org-mode~ TODO. This command can also be invoked directly by pressing ~,~ with point on an issue or visiting an issue buffer.
+- "visit or capture" (~tlon-babel-visit-counterpart-or-capture~, ~H-r y y~): visits the “counterpart” (the associated ~org-mode~ TODO if point is on a GitHub issue, and vice versa) or, if point is on an issue that has not yet been captured, creates an associated ~org-mode~ TODO. This command can also be invoked directly by pressing ~,~ with point on an issue or visiting an issue buffer. It may be regarded as a “dwim” (“do-what-I-mean”) command, in the sense that it is meant to guess the action that the user will normally want to perform in the relevant context.
 - "visit" (~tlon-babel-visit-counterpart~, ~H-r y v~): visits the “counterpart”. If point is on an issue that has not yet been captured, no action will be taken.
 - "post" (~tlon-babel-create-issue-from-todo~, ~H-r y p~): posts the ~org-mode~ TODO at point to GitHub, i.e. creates an associated GitHub issue.
 - "capture" (~tlon-babel-capture-issue~, ~H-r y c~): captures the GitHub issue at point, i.e. creates an associated ~org-mode~ TODO.
