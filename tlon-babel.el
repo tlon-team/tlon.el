@@ -590,9 +590,14 @@ If FILE is nil, use the current buffer's file name."
 
 ;;;;;; Create/visit todos
 
-(defun tlon-babel-visit-or-capture ()
-  "Visit the ID associated with TODO, or vice versa, creating TODO if necessary."
+(defun tlon-babel-visit-counterpart-or-capture ()
+  "Visit the issue associated with TODO, or vice versa, creating TODO if necessary."
   (interactive)
+  (tlon-babel-todo-issue-funcall #'tlon-babel-visit-issue
+				 #'tlon-babel-visit-todo-or-capture))
+
+(defun tlon-babel-visit-todo-or-capture ()
+  "Visit the TODO associated with the current issue, creating one if necessary."
   (if-let ((pos (tlon-babel-get-todo-position-from-issue)))
       (tlon-babel-visit-todo pos)
     (tlon-babel-capture-issue)))
@@ -601,7 +606,7 @@ If FILE is nil, use the current buffer's file name."
   "Get the TODO position of ISSUE, using the appropriate method.
 If the issue is a job, use the heading name, else use the `orgit-topic' ID. If
 ISSUE is nil, use the issue at point."
-  (let ((issue (or issue (forge-current-topic))))
+  (when-let ((issue (or issue (forge-current-topic))))
     (if (tlon-babel-issue-is-job-p issue)
 	(tlon-babel-get-todo-position
 	 (tlon-babel-make-todo-name-from-issue nil 'no-state issue)
@@ -634,22 +639,24 @@ appropriate heading."
 	(tlon-babel-create-job-todo-from-issue issue)
       (tlon-babel-create-generic-todo-from-issue))))
 
-;; TODO: develop this function
 (defun tlon-babel-capture-all-issues ()
   "Capture all issues in the current repository."
   (interactive)
-  (dolist (issue (tlon-babel-get-open-issues))
-    (let ((assignee (tlon-babel-forge-get-assignee issue))
-	  (current-user (tlon-babel-user-lookup :github :name user-full-name)))
-      (when (and (not assignee)
-		 (y-or-n-p (format "Issue `%s' has no assignee. Assign to you?"
-				   (tlon-babel-get-issue-name issue))))
-	(tlon-babel-assign-issue issue current-user)
-	(while (not (tlon-babel-forge-get-assignee issue))
-	  (sleep-for 1)))
-      (when (and (string= current-user assignee)
-		 (not (tlon-babel-get-todo-position-from-issue issue)))
-	(tlon-babel-capture-issue issue))))
+  (tlon-babel-get-repo 'error 'include-all)
+  (let ((current-user (tlon-babel-user-lookup :github :name user-full-name)))
+    (dolist (issue (tlon-babel-get-open-issues))
+      (message "Processing `%s'" (oref issue title))
+      (let ((assignee (tlon-babel-forge-get-assignee issue)))
+	(when (and (not assignee)
+		   (y-or-n-p (format "Issue `%s' has no assignee. Assign to you?"
+				     (tlon-babel-get-issue-name issue))))
+	  (tlon-babel-assign-issue issue current-user)
+	  (while (not (tlon-babel-forge-get-assignee issue))
+	    (sleep-for 1)))
+	;; TODO: add counter and inform user of number of captured issues in concluding message
+	(when (and (string= current-user assignee)
+		   (not (tlon-babel-get-todo-position-from-issue issue)))
+	  (tlon-babel-capture-issue issue)))))
   (message "Up to date"))
 
 (defun tlon-babel-get-open-issues ()
@@ -657,7 +664,7 @@ appropriate heading."
   (let* ((repo (forge-get-repository nil))
 	 (all-issues (forge-ls-topics repo 'forge-issue)))
     (seq-filter (lambda (issue)
-		  (string-equal (oref issue state) "open"))
+		  (string= (oref issue state) "open"))
 		all-issues)))
 
 (defun tlon-babel-issue-is-job-p (&optional issue)
@@ -672,15 +679,15 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let ((issue (or issue (forge-current-topic))))
     (tlon-babel-check-label-or-assignee-present issue)
-    (tlon-babel-check-user-is-assignee issue)
     (tlon-babel-check-label-present issue)
-    (tlon-babel-store-or-refile-job-todo issue)))
+    (when (tlon-babel-capture-issue-p issue)
+      (tlon-babel-store-or-refile-job-todo issue))))
 
 (defun tlon-babel-create-generic-todo-from-issue (&optional issue)
   "Create a new `org-mode' generic TODO based on ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
-  (tlon-babel-check-user-is-assignee issue)
-  (tlon-babel-store-todo "tbG"))
+  (when (tlon-babel-capture-issue-p issue)
+    (tlon-babel-store-todo "tbG")))
 
 (defun tlon-babel-check-label-or-assignee-present (&optional issue)
   "Check that ISSUE has a label or an assignee.
@@ -704,29 +711,33 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Assign ISSUE to USER.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (interactive)
-  (let ((isue (or issue (forge-current-topic))))
+  (let ((issue (or issue (forge-current-topic))))
     (unless (tlon-babel-forge-get-assignee issue)
       (let ((user (or user
 		      (completing-read (format "Issue `%s' has no assignee. Assign to "
 					       (tlon-babel-get-issue-name issue))
 				       (tlon-babel-get-property-of-users :github)))))
-	(tlon-babel-set-assignee user)))))
+	(tlon-babel-set-assignee user issue)))))
 
-(defun tlon-babel-check-user-is-assignee (&optional issue)
-  "Check that the user is the assignee of ISSUE.
+(defun tlon-babel-capture-issue-p (&optional issue)
+  "Return t iff ISSUE should be captured.
+An issue should be captured either if it is assigned to the current user or if
+the user says so when prompted.
+
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (assignee (tlon-babel-user-lookup :name :github (tlon-babel-forge-get-assignee issue))))
-    (unless (string= user-full-name assignee)
+    (if (string= user-full-name assignee)
+	t
       (pcase (read-char-choice
-	      (format "The assignee is %s. Self-assign? [y]es | no, and [c]apture | no, and [a]bort " assignee)
-	      '(?y ?c ?a))
+	      (format "The assignee of `%s' is %s.\nSelf-assign? [y]es | no, and [c]apture | no, and do [n]ot capture"
+		      (oref issue title) assignee)
+	      '(?y ?c ?n))
 	(?y (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
-	    (while (not (tlon-babel-forge-get-assignee issue))
-	      (sleep-for 1))
-	    (tlon-babel-capture-issue issue))
-	(?c )
-	(?a (user-error "Aborted"))))))
+	    (while (not (tlon-babel-capture-issue-p issue))
+	      (sleep-for 1)))
+	(?c t)
+	(?n nil)))))
 
 (defun tlon-babel-check-label-present (&optional issue)
   "Check that ISSUE has a label.
@@ -745,13 +756,13 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	    (pos (tlon-babel-get-todo-position
 		  (tlon-babel-make-todo-name-from-issue 'no-action 'no-state issue)
 		  (tlon-babel-get-todos-jobs-file))))
-      (progn
-	(tlon-babel-store-todo "tbJ")
+      (save-window-excursion
+	(tlon-babel-store-todo "tbJ" nil issue)
 	(let* ((inhibit-message t))
 	  (org-extras-refile-at-position pos)
 	  (org-extras-refile-goto-latest)))
-    (when (y-or-n-p "No master TODO found for this topic. Create?")
-      (tlon-babel-store-master-job-todo)
+    (when (y-or-n-p (format "No master TODO found for issue `%s'. Create?" (oref issue title)))
+      (tlon-babel-store-master-job-todo nil issue)
       (tlon-babel-capture-issue issue))))
 
 (defun tlon-babel-get-todo-position (todo file &optional loose)
@@ -814,6 +825,7 @@ rather than strictly matching the heading."
   "Open FILE at TODO POSITION."
   (find-file file)
   (widen)
+  (org-kill-note-or-show-branches)
   (goto-char position))
 
 (defun tlon-babel-store-todo (template &optional no-action issue)
@@ -839,7 +851,7 @@ current buffer."
       (save-window-excursion
 	(when set-topic
 	  (tlon-babel-set-initial-label-and-assignee))
-	(tlon-babel-store-todo "tbJ" 'master-todo)))))
+	(tlon-babel-store-todo "tbJ" 'master-todo issue)))))
 
 ;;;;; Org-github integration
 
@@ -868,7 +880,7 @@ link, else get their values from the heading title, if possible."
 				       (oref forge-repo id)
 				       number))))
       (forge-get-topic issue-id)
-    (user-error "Could not find issue")))
+    (error "Could not find issue number %s in repo `%s'" number repo)))
 
 (defun tlon-babel-get-issue-buffer (&optional number repo)
   "Get Github issue buffer.
@@ -988,46 +1000,39 @@ link, else get their values from the heading title, if possible."
 (defun tlon-babel-close-issue (issue-number repo)
   "Close the topic with ISSUE-NUMBER in REPO."
   (tlon-babel-visit-issue issue-number repo)
-  (tlon-babel-forge-close-topic))
+  (tlon-babel-forge-close-issue))
 
-;;;;;; Set TODO states
+;;;;;; Set TODO statuses
 
-(defvar tlon-babel-todo-states
-  '("IMPORTANT" "URGENT" "SOMEDAY" "MAYBE")
-  "List of admissible TODO states, besides \"TODO\" itself.
+(defvar tlon-babel-todo-statuses
+  '("TODO" "IMPORTANT" "URGENT" "SOMEDAY" "MAYBE")
+  "List of admissible TODO statuses.
 Note that your `org-todo-keywords' user option should include these labels for
 `org-mode' to recognize them, and that the buffer has to be refreshed after the
 value of that option is reset.")
 
-(defun tlon-babel-set-local-todo-state (&optional state)
-  "Set the TODO state of the `org-mode' heading at point to STATE.
-If STATE is nil, use the label of the corresponding issue, if possible."
-  (let ((state (or state (tlon-babel-get-remote-todo-state))))
-    (tlon-babel-validate-state state)
-    (org-todo state)
-    (message "State set to `%s'." state)))
-
-(defun tlon-babel-get-remote-todo-state ()
-  "Get remote state of TODO or issue at point."
-  (if-let ((raw-state
-	    (tlon-babel-todo-issue-funcall
-	     #'tlon-babel-get-corresponding-label
-	     #'tlon-babel-forge-get-label)))
-      (upcase raw-state)
-    "TODO"))
+(defun tlon-babel-get-issue-status (&optional issue)
+  "Get remote status of ISSUE.
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (let ((issue (or issue (forge-current-topic))))
+    (if (eq (tlon-babel-forge-get-state) 'closed)
+	"DONE"
+      (if-let ((label (tlon-babel-forge-get-label issue)))
+	  (upcase label)
+	""))))
 
 (defun tlon-babel-get-corresponding-label ()
-  "Get TODO state for `org-mode' heading at point from corresponding issue."
+  "Get TODO status for `org-mode' heading at point from corresponding issue."
   (save-window-excursion
     (tlon-babel-visit-issue)
     (tlon-babel-forge-get-label)))
 
-(defun tlon-babel-validate-state (state)
-  "Return STATE if it is a valid state, else signal an error.
-A state is valid iff it is a member of `tlon-babel-todo-states'."
-  (if (member state tlon-babel-todo-states)
-      state
-    (user-error "`%s' is not a valid state" state)))
+(defun tlon-babel-validate-status (status)
+  "Return STATUS if it is a valid TODO status, else signal an error.
+A status is valid iff it is a member of `tlon-babel-todo-statuses'."
+  (if (member status tlon-babel-todo-statuses)
+      status
+    (user-error "`%s' is not a valid status" status)))
 
 ;;;;; Re-sync
 
@@ -1055,47 +1060,52 @@ A state is valid iff it is a member of `tlon-babel-todo-states'."
     (message "Finished reconciling.")))
 
 (defun tlon-babel-reconcile-issue-and-todo-from-issue ()
-  "With point on issue, reconcile issue and associated TODO."
-  (let ((issue (tlon-babel-make-todo-name-from-issue))
+  "With point on issue, reconcile issue and associated TODO-NAME."
+  (let ((issue-name (tlon-babel-make-todo-name-from-issue))
 	(pos (tlon-babel-get-todo-position-from-issue)))
     (save-window-excursion
       (tlon-babel-visit-todo pos)
-      (let ((todo (substring-no-properties (org-get-heading t nil t t))))
-	(unless (string= issue todo)
-	  (tlon-babel-reconcile-issue-and-todo-prompt issue todo))))))
+      (let ((todo-name (substring-no-properties (org-get-heading t nil t t))))
+	(unless (string= issue-name todo-name)
+	  (tlon-babel-reconcile-issue-and-todo-prompt issue-name todo-name))))))
 
-(defun tlon-babel-reconcile-issue-and-todo-prompt (issue todo)
-  "Prompt the user to reconcile discrepancies between ISSUE and TODO."
+(defun tlon-babel-reconcile-issue-and-todo-prompt (issue-name todo-name)
+  "Prompt the user to reconcile discrepancies between ISSUE-NAME and TODO-NAME."
   (pcase (read-char-choice
 	  (format "The issue differs from its todo. Keep (i)ssue | Keep (t)odo | (a)bort\nissue: `%s'\ntodo:  `%s' "
-		  issue todo)
+		  issue-name todo-name)
 	  '(?i ?t ?a))
-    (?i (tlon-babel-update-todo-from-issue issue))
-    (?t (tlon-babel-update-issue-from-todo todo))
+    (?i (tlon-babel-update-todo-from-issue issue-name))
+    (?t (tlon-babel-update-issue-from-todo todo-name))
     (_ (user-error "Aborted"))))
 
-(defun tlon-babel-update-todo-from-issue (issue)
-  "Update TODO to match ISSUE."
+(defun tlon-babel-update-todo-from-issue (issue-name)
+  "Update TODO to match ISSUE-NAME."
   (let ((original-visual-line-mode visual-line-mode))
     (visual-line-mode -1)
     (save-window-excursion
       (beginning-of-line)
       (re-search-forward " ")
       (let ((tags (org-get-tags nil t)))
+	(org-fold-show-subtree)
 	(org-kill-line)
-	(insert issue)
+	(insert issue-name)
 	(when tags
 	  (org-set-tags tags)
 	  (org-align-tags))
 	(message "TODO updated"))
       (visual-line-mode original-visual-line-mode))))
 
-(defun tlon-babel-update-issue-from-todo (todo)
-  "Update ISSUE to match TODO."
-  (string-match org-complex-heading-regexp todo)
-  (let ((title (match-string 4))
-	(state (match-string 2)))
-    (message "%s %s" title state)))
+(defun tlon-babel-update-issue-from-todo (todo-name)
+  "Update ISSUE to match TODO-NAME."
+  (user-error "This command has not yet been developed. Sorry!"))
+;; TODO: Develop function. The below approach doesn't work because
+;; `org-complex-heading-regexp' fails to match a heading
+
+;; (string-match org-complex-heading-regexp (concat "* " todo-name))
+;; (let ((title (match-string-no-properties 4))
+;; (state (match-string-no-properties 2)))
+;; (message "%s %s" title state)))
 
 ;;;;; User commits
 
@@ -1227,8 +1237,8 @@ are no level 2 headings and some headings level 3 or higher."
 
 (defun tlon-babel-markdown-cleanup-eaf ()
   "Cleanup a buffer visiting an imported document from the EA Forum.
-Please note that the order in which these functions are called is relevant. Do
-not alter it unless you know what you are doing."
+  Please note that the order in which these functions are called is relevant. Do
+  not alter it unless you know what you are doing."
   (interactive)
   (tlon-babel-markdown-cleanup-fix-footnote-refs)
   (tlon-babel-markdown-cleanup-remove-text))
@@ -1257,7 +1267,7 @@ not alter it unless you know what you are doing."
 		    " :::"
 		    "————————————————————————
 
-::: {.section .footnotes}"
+  ::: {.section .footnotes}"
 		    "{.underline}"
 		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License.\\](https://creativecommons.org/licenses/by/4.0/)\\*\n\n"))
     (goto-char (point-min))
@@ -1415,7 +1425,7 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
 
 (defun tlon-babel-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!  ]\\)")
+  (tlon-babel-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
 			 "\\1\\2–\\3\\4"))
 
 (defun tlon-babel-manual-fix-roman-numerals ()
@@ -1426,7 +1436,7 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
 (defun tlon-babel-manual-fix-thin-spaces ()
   "Prompt the user to add a thin space between abbreviations followed by a period."
   (tlon-babel-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
-			 "\\1 \\2"))
+			 "\\1 \\2"))
 
 (defun tlon-babel-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
@@ -2456,7 +2466,7 @@ buffer."
 		   ""))
 	 (state (if (tlon-babel-issue-is-job-p issue)
 		    "TODO"
-		  (tlon-babel-get-remote-todo-state)))
+		  (tlon-babel-get-issue-status issue)))
 	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'include-all)))
 	 (todo-name (replace-regexp-in-string
 		     "[[:space:]]\\{2,\\}"
@@ -2542,8 +2552,9 @@ open DeepL."
   (interactive (list
 		(completing-read
 		 "Repo: " (tlon-babel-get-property-of-repos :name))))
-  (let ((default-directory (tlon-babel-repo-lookup :dir :name repo)))
-    (magit-status-setup-buffer)))
+  (if-let ((default-directory (tlon-babel-repo-lookup :dir :name repo)))
+      (magit-status-setup-buffer)
+    (user-error "Repo `%s' not found" repo)))
 
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher.
@@ -2619,8 +2630,7 @@ it. A record is (a) an issue in GitHub and (b) a heading in `jobs.org'.
 
 IDENTIFIER can be a URL or a PDF file path."
   (interactive)
-  (unless (or (derived-mode-p 'ebib-entry-mode)
-	      (derived-mode-p 'ebib-index-mode))
+  (unless (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
     (user-error "This command must be run from an Ebib buffer"))
   (if-let ((id (or (ebib-extras-get-field-value "url")
 		   (ebib-extras-get-file "md")))
@@ -2827,6 +2837,7 @@ Markdown buffer at point is used."
 	(tlon-babel-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-visit-issue)
 	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
+	(tlon-babel-set-label "todo")
 	(setq todo-linkified (tlon-babel-make-todo-name-from-issue nil 'no-state))))
     (org-edit-headline todo-linkified)))
 
@@ -3363,31 +3374,39 @@ KEY, BEG and END are ignored; they are only there to satisfy the signature of
 	(bibtex-set-field "langid" "spanish")
       (bibtex-set-field "langid" "english"))))
 
-(defun tlon-babel-act-on-topic (original-key label assignee &optional action)
+(defun tlon-babel-act-on-topic (original-key label assignee &optional close)
   "Apply LABEL and ASSIGNEE to topic associated with ORIGINAL-KEY.
-If ACTION is `convert', convert the existing issue into a pull request. If
-ACTION is `close', close issue."
-  (let ((topic (format "Job: `%s" original-key))
-	(default-directory (tlon-babel-get-repo 'error 'genus)))
-    (tlon-babel-magit-status)
-    (magit-section-show-level-3-all)
-    (goto-char (point-min))
-    (if (search-forward topic nil t)
-	(progn
-	  (tlon-babel-set-label label topic)
-	  (tlon-babel-set-assignee assignee topic)
-	  (search-forward topic nil t)
-	  (pcase action
-	    (`convert (call-interactively 'forge-create-pullreq-from-issue))
-	    (`close (tlon-babel-forge-close-topic))))
-      (user-error "Could not find topic `%s' in Magit buffer" topic))))
+If CLOSE is non-nil, close the issue."
+  (let* ((issue-title (format "Job: `%s" original-key))
+	 (issue (tlon-babel-forge-issue-lookup issue-title))
+	 (default-directory (tlon-babel-get-repo 'error 'genus)))
+    (tlon-babel-set-label label issue)
+    (tlon-babel-set-assignee assignee issue)
+    (when close
+      (tlon-babel-forge-close-issue issue))))
 
-(defun tlon-babel-forge-close-topic (&optional topic)
-  "Close the topic TOPIC.
-If TOPIC is nil, use the topic at point."
-  (let ((topic (or topic (forge-current-topic))))
-    (when (eq 'open (oref topic state))
-      (forge--set-topic-state (forge-get-repository topic) topic 'closed))))
+(defun tlon-babel-forge-issue-lookup (string &optional repo)
+  "Return the first issue in REPO whose title includes STRING.
+If REPO is nil, use the current repository."
+  (let* ((string (concat "%" string "%"))
+	 (repo (or repo (forge-get-repository nil)))
+	 (issue-id (caar (emacsql (forge-db)
+				  [:select [number]
+					   :from 'issue
+					   :where (and (= repository $s1)
+						       (like title $s2))]
+				  (oref repo id)
+				  string))))
+    (when issue-id
+      (forge-get-issue repo issue-id))))
+
+(defun tlon-babel-forge-close-issue (&optional issue)
+  "Close the topic ISSUE.
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (let* ((issue (or issue (forge-current-topic)))
+	 (repo (forge-get-repository issue)))
+    (when (eq 'open (oref issue state))
+      (forge--set-topic-state repo issue 'closed))))
 
 ;;;;; Search
 
@@ -3462,26 +3481,41 @@ depending on whether the repo is of type `content` or `biblio', respectively."
 
 ;;;;; Change topic properties
 
+(defun tlon-babel-set-property (property type &optional issue)
+  "Set PROPERTY of TYPE in ISSUE.
+If ISSUE is nil, use issue at point or in the current buffer."
+  (interactive
+   (list ))
+  (let* ((fun (pcase type
+		('label #'forge--set-topic-labels)
+		('assignee #'forge--set-topic-assignees)
+		(_ (user-error "Property type `%s' not recognized" type))))
+	 (issue (or issue (forge-get-topic (forge-current-topic))))
+	 (repo (forge-get-repository issue))
+	 (crm-separator ","))
+    (funcall fun repo issue (list property))))
+
+(defun tlon-babel-set-label (label &optional issue)
+  "Apply LABEL to ISSUE.
+If ISSUE is nil, use issue at point or in the current buffer."
+  (interactive
+   (list (tlon-babel-select-label)))
+  (let ((issue (or issue (forge-get-topic (forge-current-topic)))))
+    (tlon-babel-set-property label 'label issue)))
+
 (defun tlon-babel-select-label ()
   "Prompt the user to select a LABEL."
   (let ((label (completing-read "What should be the label? "
 				(tlon-babel-get-property-of-labels :label))))
     label))
 
-;; TODO: do this properly
-(defun tlon-babel-set-label (label &optional issue)
-  "Apply LABEL to ISSUE.
-Note that this only works for issues listed in the main buffer."
+(defun tlon-babel-set-assignee (assignee &optional issue)
+  "Make ASSIGNEE the assignee of ISSUE.
+If ISSUE is nil, use issue at point or in the current buffer."
   (interactive
-   (list (tlon-babel-select-label)))
-  (when issue
-    (search-forward issue nil t))
-  (let* ((issue (forge-get-topic (forge-current-topic)))
-	 (repo  (forge-get-repository issue))
-	 (crm-separator ","))
-    (forge--set-topic-labels
-     repo issue (list label)))
-  (goto-char (point-min)))
+   (list (tlon-babel-select-assignee)))
+  (let ((issue (or issue (forge-get-topic (forge-current-topic)))))
+    (tlon-babel-set-property assignee 'assignee issue)))
 
 (defun tlon-babel-select-assignee ()
   "Prompt the user to select an ASSIGNEE.
@@ -3490,20 +3524,6 @@ The prompt defaults to the current user."
 				   (tlon-babel-get-property-of-users :github) nil nil
 				   (tlon-babel-user-lookup :github :name user-full-name))))
     assignee))
-
-;; TODO: do this properly
-(defun tlon-babel-set-assignee (assignee &optional issue)
-  "Make ASSIGNEE the assignee of ISSUE."
-  (interactive
-   (list (tlon-babel-select-assignee)))
-  (when issue
-    (search-forward issue nil t))
-  (let* ((issue (forge-get-topic (forge-current-topic)))
-	 (repo  (forge-get-repository issue))
-	 (crm-separator ","))
-    (forge--set-topic-assignees
-     repo issue
-     (list assignee))))
 
 (defun tlon-babel-get-next-assignee ()
   "Get the next assignee based on the current user and clock label.
@@ -3528,7 +3548,7 @@ substitute assignee."
   "Return ELEMENT of ISSUE.
 If the topic has more than one element, return the first. If ISSUE is nil, use
 the issue at point or in the current buffer."
-  (let ((issue (or issue (forge-current-topic))))
+  (when-let ((issue (or issue (forge-current-topic))))
     (caar (closql--iref issue element))))
 
 (defun tlon-babel-forge-get-assignee (&optional issue)
@@ -3553,6 +3573,12 @@ issue at point or in the current buffer."
 	(when (equal (plist-get item property) value)
 	  (setq found t))))
     nil))
+
+(defun tlon-babel-forge-get-state (&optional issue)
+  "Return state of ISSUE.
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (when-let ((issue (or issue (forge-current-topic))))
+    (oref (forge-current-topic) state)))
 
 ;;;;; Glossary
 
@@ -3856,8 +3882,9 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("b r" "repo"                         tlon-babel-browse-repo)
     ]
    ["Sync"
-    ("y y" "visit or capture"             tlon-babel-visit-or-capture)
+    ("y y" "visit or capture"             tlon-babel-visit-counterpart-or-capture)
     ("y v" "visit"                        tlon-babel-visit-counterpart)
+    ("y p" "post"                         tlon-babel-create-issue-from-todo)
     ("y c" "capture"                      tlon-babel-capture-issue)
     ("y C" "capture all"                  tlon-babel-capture-all-issues)
     ("y r" "reconcile"                    tlon-babel-reconcile-issue-and-todo)
