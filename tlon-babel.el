@@ -137,7 +137,10 @@ via `tlon-babel-cancel-repo-timers'.")
 	   :type api)
     (:name "genus"
 	   :abbrev "genus"
-	   :type biblio))
+	   :type biblio)
+    (:name "tlon-docs"
+	   :abbrev "docs"
+	   :type docs))
   "List of repos and associated properties.")
 
 (defvar tlon-babel-labels
