@@ -78,6 +78,7 @@
     ("ea.news-issues" . 1)
     ("ea.news-front" . 8)
     ("ea.news-api" . 8)
+    ("bisagra" . 8)
     ("genus" . 1))
   "Alist of repos and associated update frequencies, in hours.
 A repo will be updated after that many hours of inactivity."
@@ -113,6 +114,9 @@ via `tlon-babel-cancel-repo-timers'.")
     (:name "ensayos-sobre-largoplacismo"
 	   :abbrev "esl"
 	   :type content)
+    (:name "bisagra"
+	   :abbrev "bisagra"
+	   :type multi)
     (:name "uqbar-issues"
 	   :abbrev "uqbar-issues"
 	   :type issues)
