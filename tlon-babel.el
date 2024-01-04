@@ -141,7 +141,10 @@ via `tlon-babel-cancel-repo-timers'.")
     (:name "tlon-docs"
 	   :abbrev "docs"
 	   :type docs))
-  "List of repos and associated properties.")
+  "List of repos and associated properties.
+The `:name' property is the full name of the repo, as it appears in the URL. The
+`:abbrev' property is an abbreviated form of the name, used, for example, for
+creating `org-mode' TODOs.")
 
 (defvar tlon-babel-labels
   '((:label "Awaiting processing"
@@ -947,15 +950,27 @@ link, else get their values from the heading title, if possible."
     ;; Return the selected issue number
     selected-issue))
 
-(defun tlon-babel-get-latest-issue ()
-  "Return the most recently created issue in the current repository."
-  (let* ((repo (forge-get-repository t))
-	 (issues (forge-ls-issues repo))
+(defun tlon-babel-get-issues (&optional repo)
+  "Return a list of all open issues in REPO.
+If REPO is nil, use the current repository."
+  (let* ((repo (or repo (forge-get-repository t)))
+	 (issues (forge-ls-issues repo)))
+    issues))
+
+(defun tlon-babel-get-latest-issue (&optional repo)
+  "Return the most recently created issue in REPO.
+If REPO is nil, use the current repository."
+  (let* ((issues (tlon-babel-get-issues repo))
 	 (latest-issue (car (sort issues (lambda (a b)
 					   (time-less-p
 					    (date-to-time (oref b created))
 					    (date-to-time (oref a created))))))))
     (list (oref latest-issue number) (oref latest-issue title))))
+
+(defun tlon-babel-count-issues (&optional repo)
+  "Return the number of open issues in REPO.
+If REPO is nil, use the current repository."
+  (length (tlon-babel-get-issues repo)))
 
 ;;;;;; Set heading elements
 
