@@ -838,7 +838,7 @@ If TODO already exists, signal an error. If NO-ACTION is non-nil, store a master
 TODO. If ISSUE is non-nil, use it instead of the issue at point."
   (let ((issue (or issue (forge-current-topic))))
     (when (tlon-babel-get-todo-position-from-issue issue)
-      (user-error "TODO already exists"))
+      (user-error "TODO `%s' already exists" (tlon-babel-get-issue-name issue)))
     (let ((todo (tlon-babel-make-todo-name-from-issue no-action nil issue)))
       (kill-new todo)
       (org-capture nil template))))
