@@ -645,8 +645,9 @@ appropriate heading."
 (defun tlon-babel-capture-all-issues ()
   "Capture all issues in the current repository."
   (interactive)
-  (tlon-babel-get-repo 'error 'include-all)
-  (let ((current-user (tlon-babel-user-lookup :github :name user-full-name)))
+  (let ((default-directory (tlon-babel-get-repo 'error 'include-all))
+	(current-user (tlon-babel-user-lookup :github :name user-full-name))
+	(num-captured 0))
     (dolist (issue (tlon-babel-get-open-issues))
       (message "Processing `%s'" (oref issue title))
       (let ((assignee (tlon-babel-forge-get-assignee issue)))
@@ -660,8 +661,10 @@ appropriate heading."
 	;; TODO: add counter and inform user of number of captured issues in concluding message
 	(when (and (string= current-user assignee)
 		   (not (tlon-babel-get-todo-position-from-issue issue)))
-	  (tlon-babel-capture-issue issue)))))
-  (message "Up to date"))
+	  (save-window-excursion
+	    (tlon-babel-capture-issue issue))
+	  (setq num-captured (1+ num-captured)))))
+    (message (format "%s issues captured." num-captured))))
 
 (defun tlon-babel-get-open-issues ()
   "Return a list of all open issues in the current repository."
