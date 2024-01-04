@@ -141,7 +141,10 @@ via `tlon-babel-cancel-repo-timers'.")
     (:name "tlon-docs"
 	   :abbrev "docs"
 	   :type docs))
-  "List of repos and associated properties.")
+  "List of repos and associated properties.
+The `:name' property is the full name of the repo, as it appears in the URL. The
+`:abbrev' property is an abbreviated form of the name, used, for example, for
+creating `org-mode' TODOs.")
 
 (defvar tlon-babel-labels
   '((:label "Awaiting processing"
