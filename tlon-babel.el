@@ -651,7 +651,8 @@ appropriate heading."
 		   (y-or-n-p (format "Issue `%s' has no assignee. Assign to you?"
 				     (tlon-babel-get-issue-name issue))))
 	  (tlon-babel-assign-issue issue current-user)
-	  (while (not (tlon-babel-forge-get-assignee issue))
+	  (while (not (string= current-user assignee))
+	    (setq assignee (tlon-babel-forge-get-assignee issue))
 	    (sleep-for 1)))
 	;; TODO: add counter and inform user of number of captured issues in concluding message
 	(when (and (string= current-user assignee)
