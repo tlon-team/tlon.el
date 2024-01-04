@@ -691,7 +691,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Create a new `org-mode' generic TODO based on ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (when (tlon-babel-capture-issue-p issue)
-    (tlon-babel-store-todo "tbG")))
+    (tlon-babel-store-todo "tbG" nil issue)))
 
 (defun tlon-babel-check-label-or-assignee-present (&optional issue)
   "Check that ISSUE has a label or an assignee.
