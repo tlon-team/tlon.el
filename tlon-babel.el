@@ -637,7 +637,7 @@ appropriate heading."
   (let ((issue (or issue (forge-current-topic))))
     (if (tlon-babel-issue-is-job-p issue)
 	(tlon-babel-create-job-todo-from-issue issue)
-      (tlon-babel-create-generic-todo-from-issue))))
+      (tlon-babel-create-generic-todo-from-issue issue))))
 
 (defun tlon-babel-capture-all-issues ()
   "Capture all issues in the current repository."
@@ -705,7 +705,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	    (while (not (and (tlon-babel-forge-get-assignee)
 			     (tlon-babel-forge-get-label)))
 	      (sleep-for 1))
-	    (tlon-babel-capture-issue))
+	    (tlon-babel-capture-issue issue))
 	(user-error "Aborted")))))
 
 (defun tlon-babel-assign-issue (&optional issue user)
