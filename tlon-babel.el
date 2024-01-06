@@ -696,6 +696,11 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Create a new `org-mode' generic TODO based on ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (when (tlon-babel-capture-issue-p issue)
+    (let ((label (tlon-babel-forge-get-label issue)))
+      (unless (tlon-babel-is-valid-status-p label)
+	(tlon-babel-set-label "todo" issue)
+	(while (not (tlon-babel-is-valid-status-p label))
+	  (sleep-for 1))))
     (tlon-babel-store-todo "tbG" nil issue)))
 
 (defun tlon-babel-check-label-or-assignee-present (&optional issue)
@@ -755,7 +760,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	 (label (tlon-babel-forge-get-label issue)))
     (unless label
       (if (y-or-n-p "The topic has no label. Would you like to add one?")
-	  (tlon-babel-set-label (tlon-babel-select-label))
+	  (tlon-babel-set-label (tlon-babel-set-job-label))
 	(user-error "Aborted")))))
 
 (defun tlon-babel-store-or-refile-job-todo (&optional issue)
@@ -1048,15 +1053,18 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (tlon-babel-visit-issue)
     (tlon-babel-forge-get-label)))
 
-(defun tlon-babel-validate-status (&optional status)
-  "Return STATUS if it is a valid TODO status, else signal an error.
+(defun tlon-babel-is-valid-status-p (&optional status)
+  "Return t iff STATUS it is a valid TODO status.
 A status is valid iff it is a member of `tlon-babel-todo-statuses'. If STATUS is
-nil, use the status of heading at point."
-  (if-let ((status (or status (org-get-todo-state))))
-      (if (member status tlon-babel-todo-statuses)
-	  status
-	(user-error "`%s' is not a valid TODO status" status))
-    (user-error "No TODO status found")))
+nil, use the status of heading or issue at point."
+  (if-let ((status (or status (pcase major-mode
+				('org-mode (org-get-todo-state))
+				((or 'forge-topic-mode 'forge-issue-mode 'forge-issue-list-mode)
+				 (tlon-babel-forge-get-label))))))
+      (when (or (member status tlon-babel-todo-statuses)
+		(member status (mapcar #'downcase tlon-babel-todo-statuses)))
+	t)
+    nil))
 
 ;;;;; Re-sync
 
@@ -2881,7 +2889,8 @@ Markdown buffer at point is used."
     (user-error "You need to be in `org-mode' to use this function"))
   (when (tlon-babel-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
-  (tlon-babel-validate-status)
+  (unless (tlon-babel-is-valid-status-p)
+    (user-error "Invalid TODO status"))
   (unless (tlon-babel-get-repo-from-heading)
     (tlon-babel-set-repo-in-heading))
   (let (todo-linkified)
@@ -3560,18 +3569,26 @@ If ISSUE is nil, use issue at point or in the current buffer."
 	 (crm-separator ","))
     (funcall fun repo issue (list property))))
 
-(defun tlon-babel-set-label (label &optional issue)
+;; TODO: Cleanup the three functions below
+(defun tlon-babel-set-label (&optional label issue)
   "Apply LABEL to ISSUE.
 If ISSUE is nil, use issue at point or in the current buffer."
-  (interactive
-   (list (tlon-babel-select-label)))
-  (let ((issue (or issue (forge-get-topic (forge-current-topic)))))
+  (interactive)
+  (let* ((issue (or issue (forge-get-topic (forge-current-topic))))
+	 (label (or label (if (tlon-babel-issue-is-job-p issue)
+			      (tlon-babel-set-job-label)
+			    (tlon-babel-set-status-label)))))
     (tlon-babel-set-property label 'label issue)))
 
-(defun tlon-babel-select-label ()
-  "Prompt the user to select a LABEL."
+(defun tlon-babel-set-job-label ()
+  "Prompt the user to select a job label."
   (let ((label (completing-read "What should be the label? "
 				(tlon-babel-get-property-of-labels :label))))
+    label))
+
+(defun tlon-babel-set-status-label ()
+  "Promp the user to select a status label."
+  (let ((label (completing-read "TODO status? " (mapcar #'downcase tlon-babel-todo-statuses) nil t)))
     label))
 
 (defun tlon-babel-set-assignee (assignee &optional issue)
