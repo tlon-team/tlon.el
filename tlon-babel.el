@@ -649,22 +649,24 @@ appropriate heading."
 	(current-user (tlon-babel-user-lookup :github :name user-full-name))
 	(num-captured 0))
     (dolist (issue (tlon-babel-get-open-issues))
-      (message "Processing `%s'" (oref issue title))
-      (let ((assignee (tlon-babel-forge-get-assignee issue)))
-	(when (and (not assignee)
-		   (y-or-n-p (format "Issue `%s' has no assignee. Assign to you?"
-				     (tlon-babel-get-issue-name issue))))
-	  (tlon-babel-assign-issue issue current-user)
-	  (while (not (string= current-user assignee))
-	    (setq assignee (tlon-babel-forge-get-assignee issue))
-	    (sleep-for 1)))
-	;; TODO: add counter and inform user of number of captured issues in concluding message
-	(when (and (string= current-user assignee)
-		   (not (tlon-babel-get-todo-position-from-issue issue)))
-	  (save-window-excursion
-	    (tlon-babel-capture-issue issue))
-	  (setq num-captured (1+ num-captured)))))
-    (message (format "%s issues captured." num-captured))))
+      (let ((assignee (tlon-babel-forge-get-assignee issue))
+	    (issue-name (tlon-babel-get-issue-name issue)))
+	(when (not assignee)
+	  (if (y-or-n-p (format "Issue `%s' has no assignee. Assign to you?" issue-name))
+	      (progn
+		(tlon-babel-assign-issue issue current-user)
+		(while (not (string= current-user assignee))
+		  (setq assignee (tlon-babel-forge-get-assignee issue))
+		  (sleep-for 1)))
+	    (message "Issue `%s' skipped: assigned to no one." issue-name)))
+	(if (and (string= current-user assignee)
+		 (not (tlon-babel-get-todo-position-from-issue issue)))
+	    (save-window-excursion
+	      (tlon-babel-capture-issue issue)
+	      (message "Issue `%s' captured." issue-name)
+	      (setq num-captured (1+ num-captured)))
+	  (message "Issue `%s' skipped: assigned to %s." issue-name assignee))))
+    (message "%s issues captured." num-captured)))
 
 (defun tlon-babel-get-open-issues ()
   "Return a list of all open issues in the current repository."
