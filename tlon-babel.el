@@ -2881,12 +2881,14 @@ Markdown buffer at point is used."
     (user-error "You need to be in `org-mode' to use this function"))
   (when (tlon-babel-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
+  (tlon-babel-validate-status)
   (unless (tlon-babel-get-repo-from-heading)
     (tlon-babel-set-repo-in-heading))
   (let (todo-linkified)
     (save-excursion
       (let* ((default-directory (tlon-babel-get-repo-from-heading))
 	     (heading (substring-no-properties (org-get-heading t t t t)))
+	     (status (downcase (org-get-todo-state)))
 	     (abbrev-repo (tlon-babel-repo-lookup :abbrev :dir default-directory))
 	     (issue-title (substring heading (+ (length abbrev-repo) 3)))
 	     (latest-issue-pre (car (tlon-babel-get-latest-issue)))
@@ -2900,7 +2902,7 @@ Markdown buffer at point is used."
 	(tlon-babel-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-visit-issue)
 	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
-	(tlon-babel-set-label "todo")
+	(tlon-babel-set-label status)
 	(setq todo-linkified (tlon-babel-make-todo-name-from-issue nil 'no-state))))
     (org-edit-headline todo-linkified)))
 
