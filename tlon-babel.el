@@ -1048,12 +1048,15 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (tlon-babel-visit-issue)
     (tlon-babel-forge-get-label)))
 
-(defun tlon-babel-validate-status (status)
+(defun tlon-babel-validate-status (&optional status)
   "Return STATUS if it is a valid TODO status, else signal an error.
-A status is valid iff it is a member of `tlon-babel-todo-statuses'."
-  (if (member status tlon-babel-todo-statuses)
-      status
-    (user-error "`%s' is not a valid status" status)))
+A status is valid iff it is a member of `tlon-babel-todo-statuses'. If STATUS is
+nil, use the status of heading at point."
+  (if-let ((status (or status (org-get-todo-state))))
+      (if (member status tlon-babel-todo-statuses)
+	  status
+	(user-error "`%s' is not a valid TODO status" status))
+    (user-error "No TODO status found")))
 
 ;;;;; Re-sync
 
