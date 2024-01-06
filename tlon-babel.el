@@ -1592,6 +1592,20 @@ Text enclosed by an `abbr' element pair will be displayed in small caps."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<abbr>" "</abbr>"))
 
+(defun tlon-babel-markdown-insert-footnote-element ()
+  "Insert an MDX `Footnote' element pair at point or around the region if selected.
+Text enclosed by a `Footnote' element pair will be displayed as a footnote, as
+opposed to a sidenote."
+  (interactive)
+  (tlon-babel-markdown-insert-element-pair "<Footnote>" "</Footnote>"))
+
+(defun tlon-babel-markdown-insert-sidenote-element ()
+  "Insert an MDX `Sidenote' element pair at point or around the region if selected.
+Text enclosed by a `Sidenote' element pair will be displayed as a sidenote, as
+opposed to a footnote."
+  (interactive)
+  (tlon-babel-markdown-insert-element-pair "<Sidenote>" "</Sidenote>"))
+
 (defun tlon-babel-markdown-insert-inline-math-element ()
   "Insert an inline math element pair at point or around the region if selected."
   (interactive)
