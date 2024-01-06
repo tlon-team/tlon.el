@@ -1642,6 +1642,20 @@ end of the buffer unconditionally."
 	(goto-char (point-max))
       (goto-char (- (match-beginning 0) 1)))))
 
+(transient-define-prefix tlon-babel-markdown-insert-dispatch ()
+  "Dispatch a `tlon-babel' command for Markdown insertion."
+  [["MDX"
+    ("c" "cite"                 tlon-babel-markdown-insert-mdx-cite)
+    ("l" "lang"                 tlon-babel-markdown-insert-mdx-lang)
+    ("m" "small caps"           tlon-babel-markdown-insert-mdx-small-caps)
+    ("f" "footnote"             tlon-babel-markdown-insert-mdx-footnote)
+    ("s" "sidenote"             tlon-babel-markdown-insert-mdx-sidenote)
+    ]
+   ["Math"
+    ("i" "inline"               tlon-babel-markdown-insert-math-inline)
+    ("d" "display"              tlon-babel-markdown-insert-math-display)
+    ]]
+  )
 ;;;;; Metadata
 
 ;;;;;; Get metadata
