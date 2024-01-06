@@ -1567,6 +1567,8 @@ If no section is found, do nothing."
       (forward-paragraph)
       (tlon-babel-markdown-sort-elements-in-paragraph " • "))))
 
+;;;;;;; Insert elements
+
 (defun tlon-babel-markdown-insert-element-pair (open close)
   "Insert an element pair at point or around the selected region.
 OPEN is the opening element and CLOSE is the closing element."
@@ -1581,14 +1583,14 @@ OPEN is the opening element and CLOSE is the closing element."
     (insert (concat open close))
     (backward-char (length close))))
 
-(defun tlon-babel-markdown-insert-cite-element ()
+(defun tlon-babel-markdown-insert-mdx-cite ()
   "Insert an MDX `Cite' element pair at point or around the selected region.
 When a Bibtex key is enclosed in a `Cite' element pair, only its title will be
 displayed in the exported web page."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<Cite>" "</Cite>"))
 
-(defun tlon-babel-markdown-insert-lang-element (language)
+(defun tlon-babel-markdown-insert-mdx-lang (language)
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
@@ -1597,32 +1599,32 @@ written in that language."
 						   language)
 					   "</Lang>"))
 
-(defun tlon-babel-markdown-insert-small-caps-element ()
+(defun tlon-babel-markdown-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
 Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<SmallCaps>" "</SmallCaps>"))
 
-(defun tlon-babel-markdown-insert-footnote-element ()
+(defun tlon-babel-markdown-insert-mdx-footnote ()
   "Insert an MDX `Footnote' element pair at point or around the selected region.
 Text enclosed by a `Footnote' element pair will be displayed as a footnote, as
 opposed to a sidenote."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<Footnote>" "</Footnote>"))
 
-(defun tlon-babel-markdown-insert-sidenote-element ()
+(defun tlon-babel-markdown-insert-mdx-sidenote ()
   "Insert an MDX `Sidenote' element pair at point or around the selected region.
 Text enclosed by a `Sidenote' element pair will be displayed as a sidenote, as
 opposed to a footnote."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<Sidenote>" "</Sidenote>"))
 
-(defun tlon-babel-markdown-insert-inline-math-element ()
+(defun tlon-babel-markdown-insert-math-inline ()
   "Insert an inline math element pair at point or around the selected region."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "$`" "`$"))
 
-(defun tlon-babel-markdown-insert-display-math-element ()
+(defun tlon-babel-markdown-insert-math-display ()
   "Insert a display math element pair at point or around the selected region."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "$$\n" "\n$$"))
