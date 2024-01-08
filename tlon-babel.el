@@ -456,7 +456,7 @@ The order of the keys determines the sort order by
 `tlon-babel--yaml-sort-fields', unless overridden.")
 
 (defconst tlon-babel-yaml-tag-keys
-  '("titulo" "titulo_breve" "estado_de_publicacion")
+  '("titulo" "titulo_breve" "path_original" "estado_de_publicacion")
   "List of YAML keys of fields to include in BAE tags.
 The order of the keys determines the sort order by
 `tlon-babel--yaml-sort-fields', unless overridden.")
@@ -2018,6 +2018,38 @@ If STATE is nil, default to `borrador'."
 	"online"
       publicacion)))
 
+;;;;;; Temp funs to add front matter to tags
+
+(defun tlon-babel-yaml-set-original-tag-path ()
+  "Set the value of `path_original' YAML field."
+  (interactive)
+  (let* ((front-matter (tlon-babel-yaml-get-front-matter))
+	 (path-field (file-name-nondirectory
+		      (completing-read "Locator original"
+				       (tlon-babel-get-locators-in-repo (tlon-babel-get-repo) "originals/tags"))))
+	 (new-front-matter (push (cons "path_original" path-field) front-matter)))
+    (tlon-babel-delete-yaml-front-matter)
+    (tlon-babel-insert-yaml-fields new-front-matter)
+    (save-buffer)
+    (tlon-babel-yaml-reorder-front-matter)
+    (save-buffer)))
+
+(defun tlon-babel-get-tag-counterpart ()
+  "Get the tag counterpart."
+  (if-let* ((counterpart (tlon-babel-get-counterpart))
+	    (file-name (file-name-nondirectory counterpart))
+	    (path (file-name-concat (tlon-babel-get-repo) "originals/tags" file-name)))
+      path))
+
+(defun tlon-babel-record-missing-tag-counterpart ()
+  "Record missing tag counterpart."
+  (let ((file-name (file-name-nondirectory (buffer-file-name))))
+  (unless (tlon-babel-get-counterpart)
+    (with-current-buffer (find-file-noselect "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/missing-tags.txt")
+      (goto-char (point-max))
+      (insert (format "%s\n" file-name))
+      (save-buffer)))))
+
 ;;;;;; Interactive editing
 
 (defun tlon-babel-yaml-edit-field ()
@@ -2270,8 +2302,12 @@ error if the current buffer is not in `markdown-mode' and FILE is nil."
     (user-error "Not in markdown-mode"))
   (unless file
     (save-buffer))
-  (let* ((counterpart (tlon-babel-get-counterpart
-		       (or file (buffer-file-name))))
+  (let* ((temas-folder (file-name-concat
+			(tlon-babel-get-property-of-repo :dir-translations "bae") "temas/"))
+	 (counterpart (if (string= default-directory temas-folder)
+			  (tlon-babel-get-tag-counterpart)
+			(tlon-babel-get-counterpart
+			 (or file (buffer-file-name)))))
 	 (paragraphs (- (tlon-babel-count-paragraphs
 			 file (point-min) (min (point-max) (+ (point) 2)))
 			1)))
@@ -4162,7 +4198,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 ;; https://github.com/tlon-team/uqbar-api/blob/main/deployment/request.sh
 (defun tlon-babel-get-bae-log (request url)
   "Get error log from BAE repo as an association list.
-  If not already authenticated, run `tlon-babel-get-bae-token' first."
+If not already authenticated, run `tlon-babel-get-bae-token' first."
   (when-let* ((url-request-method request)
 	      (url-mime-charset-string "utf-8;q=1, iso-8859-1")
 	      (buffer (url-retrieve-synchronously url)))
