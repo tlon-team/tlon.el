@@ -696,10 +696,12 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Create a new `org-mode' generic TODO based on ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (when (tlon-babel-capture-issue-p issue)
-    (let ((label (tlon-babel-forge-get-label issue)))
-      (unless (tlon-babel-is-valid-status-p label)
+    (let ((label (tlon-babel-forge-get-label issue))
+	  (issue (or issue (forge-current-topic))))
+      (unless (tlon-babel-is-valid-status-p label issue)
 	(tlon-babel-set-label "todo" issue)
-	(while (not (tlon-babel-is-valid-status-p label))
+	(forge-pull-topic issue)
+	(while (not (tlon-babel-is-valid-status-p label issue))
 	  (sleep-for 1))))
     (tlon-babel-store-todo "tbG" nil issue)))
 
@@ -882,27 +884,26 @@ link, else get their values from the heading title, if possible."
   "Get Github issue.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
 link, else get their values from the heading title, if possible."
-  (if-let* ((number (or number
-			(tlon-babel-get-issue-number-from-heading)))
-	    (repo (or repo
-		      (tlon-babel-get-repo-from-heading)))
-	    (default-directory repo)
-	    (forge-repo (forge-get-repository nil))
-	    (issue-id (caar (forge-sql [:select [id] :from issue
-						:where (and (= repository $s1)
-							    (= number $s2))]
-				       (oref forge-repo id)
-				       number))))
-      (forge-get-topic issue-id)
-    (error "Could not find issue number %s in repo `%s'" number repo)))
+  (when-let* ((number (or number
+			  (tlon-babel-get-issue-number-from-heading)))
+	      (repo (or repo
+			(tlon-babel-get-repo-from-heading)))
+	      (default-directory repo)
+	      (forge-repo (forge-get-repository nil))
+	      (issue-id (caar (forge-sql [:select [id] :from issue
+						  :where (and (= repository $s1)
+							      (= number $s2))]
+					 (oref forge-repo id)
+					 number))))
+    (forge-get-topic issue-id)))
 
-(defun tlon-babel-get-issue-buffer (&optional number repo)
-  "Get Github issue buffer.
+  (defun tlon-babel-get-issue-buffer (&optional number repo)
+    "Get Github issue buffer.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
 link, else get their values from the heading title, if possible."
-  (save-window-excursion
-    (tlon-babel-visit-issue number repo)
-    (current-buffer)))
+    (save-window-excursion
+      (tlon-babel-visit-issue number repo)
+      (current-buffer)))
 
 (defun tlon-babel-visit-counterpart ()
   "Visit the ID associated with TODO, or vice versa."
@@ -1053,14 +1054,16 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (tlon-babel-visit-issue)
     (tlon-babel-forge-get-label)))
 
-(defun tlon-babel-is-valid-status-p (&optional status)
+(defun tlon-babel-is-valid-status-p (&optional status issue)
   "Return t iff STATUS it is a valid TODO status.
 A status is valid iff it is a member of `tlon-babel-todo-statuses'. If STATUS is
-nil, use the status of heading or issue at point."
+nil, use the status of heading or issue at point.
+
+If ISSUE is nil, use the issue at point or in the current buffer."
   (if-let ((status (or status (pcase major-mode
 				('org-mode (org-get-todo-state))
-				((or 'forge-topic-mode 'forge-issue-mode 'forge-issue-list-mode)
-				 (tlon-babel-forge-get-label))))))
+				((or 'forge-topic-mode 'forge-issue-mode 'forge-issue-list-mode 'magit-status-mode)
+				 (tlon-babel-forge-get-label issue))))))
       (when (or (member status tlon-babel-todo-statuses)
 		(member status (mapcar #'downcase tlon-babel-todo-statuses)))
 	t)
@@ -1085,8 +1088,9 @@ nil, use the status of heading or issue at point."
     (let ((level (org-current-level)))
       (call-interactively 'org-next-visible-heading)
       (while (> (org-current-level) level)
-	(if (member org-archive-tag (org-get-tags))
-	    (org-forward-heading-same-level 1)
+	(if (or (not (tlon-babel-get-issue))
+		(member org-archive-tag (org-get-tags)))
+	    (org-next-visible-heading 1)
 	  (tlon-babel-reconcile-issue-and-todo)
 	  (call-interactively 'org-next-visible-heading))))
     (message "Finished reconciling.")))
