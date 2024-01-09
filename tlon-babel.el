@@ -1605,6 +1605,11 @@ displayed in the exported web page."
   (interactive)
   (tlon-babel-markdown-insert-element-pair "<Cite>" "</Cite>"))
 
+(defun tlon-babel-markdown-insert-mdx-aside ()
+  "Insert an MDX `Aside' element pair at point or around the selected region."
+  (interactive)
+  (tlon-babel-markdown-insert-element-pair "<Aside>" "</Aside>"))
+
 (defun tlon-babel-markdown-insert-mdx-lang (language)
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
