@@ -699,7 +699,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (let ((label (tlon-babel-forge-get-label issue))
 	  (issue (or issue (forge-current-topic))))
       (unless (tlon-babel-is-valid-status-p label issue)
-	(tlon-babel-set-label "todo" issue)
+	(tlon-babel-set-label (tlon-babel-set-status-label) issue)
 	(forge-pull-topic issue)
 	(while (not (tlon-babel-is-valid-status-p label issue))
 	  (sleep-for 1))))
