@@ -1412,8 +1412,8 @@ If DELETE is non-nil, delete the footnote."
 
 (defun tlon-babel-autofix-curly-quotes ()
   "Replace straight quotes with curly quotes when appropriate."
-  (tlon-babel-autofix '("[^\\.]\"\\[")
-		      "“["))
+  (tlon-babel-autofix '("\\([^\\.\\?]\"\\)\\[")
+		      "\\1["))
 
 (defun tlon-babel-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
@@ -1425,7 +1425,8 @@ If DELETE is non-nil, delete the footnote."
   "Reverse undesired effects of `tlon-babel-autofix-footnote-punctuation'.
 Ideally the function should be amended so that it doesn’t introduce these
 effects to begin with."
-  (tlon-babel-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]")
+  (tlon-babel-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]"  ; fixes `[[^1]^2]'
+			"\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
 		      "[^\\1][^\\2]"))
 
 (defun tlon-babel-autofix-periods-in-headings ()
@@ -1435,8 +1436,8 @@ effects to begin with."
 
 (defun tlon-babel-autofix-percent-signs ()
   "Add non-breaking space before percent sign."
-  (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^[:alnum:]]\\)"
-			"\\([[:digit:],()]+\\) %\\([^[:alnum:]]\\)")
+  (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
+			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
 		      "\\1 %\\2"))
 
 (defun tlon-babel-autofix-all ()
