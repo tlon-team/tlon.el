@@ -1412,13 +1412,21 @@ If DELETE is non-nil, delete the footnote."
 
 (defun tlon-babel-autofix-curly-quotes ()
   "Replace straight quotes with curly quotes when appropriate."
-  (tlon-babel-autofix '("\"\\[")
+  (tlon-babel-autofix '("[^\\.]\"\\[")
 		      "“["))
 
 (defun tlon-babel-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
   (tlon-babel-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		      "\\1\\3\\2"))
+		      "\\1\\3\\2")
+  (tlon-babel-autofix-footnote-punctuation-amend))
+
+(defun tlon-babel-autofix-footnote-punctuation-amend ()
+  "Reverse undesired effects of `tlon-babel-autofix-footnote-punctuation'.
+Ideally the function should be amended so that it doesn’t introduce these
+effects to begin with."
+  (tlon-babel-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]")
+		      "[^\\1][^\\2]"))
 
 (defun tlon-babel-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
@@ -1437,7 +1445,10 @@ If DELETE is non-nil, delete the footnote."
   (tlon-babel-autofix-curly-quotes)
   (tlon-babel-autofix-footnote-punctuation)
   (tlon-babel-autofix-periods-in-headings)
-  (tlon-babel-autofix-percent-signs))
+  (tlon-babel-autofix-percent-signs)
+  (let ((after-save-hook (remove #'tlon-babel-autofix-all after-save-hook)))
+    (save-buffer)
+    (add-hook 'after-save-hook #'tlon-babel-autofix-all nil t)))
 
 ;;;;;;; manual-fix
 
