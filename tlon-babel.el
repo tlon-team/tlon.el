@@ -2355,19 +2355,22 @@ If FILE is nil, return the locator of the file visited by the current buffer."
 	 (type (tlon-babel-get-work-type nil locator)))
     (file-name-concat repo type locator)))
 
-(defun tlon-babel-open-counterpart (&optional print-message file)
+(defun tlon-babel-open-counterpart (arg &optional print-message file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
 
 When called interactively, PRINT-MESSAGE is non-nil, and the function signals an
-error if the current buffer is not in `markdown-mode' and FILE is nil."
-  (interactive "p")
+error if the current buffer is not in `markdown-mode' and FILE is nil.
+
+If called with a prefix ARG, open the counterpart in the other window."
+  (interactive "P")
   (when (and print-message
 	     (not (derived-mode-p 'markdown-mode)))
     (user-error "Not in markdown-mode"))
   (unless file
     (save-buffer))
-  (let* ((counterpart
+  (let* ((fun (if arg #'find-file-other-window #'find-file))
+	 (counterpart
 	  ;; temporary hack
 	  (if (string= default-directory
 		       (file-name-concat
@@ -2378,9 +2381,14 @@ error if the current buffer is not in `markdown-mode' and FILE is nil."
 	 (paragraphs (- (tlon-babel-count-paragraphs
 			 file (point-min) (min (point-max) (+ (point) 2)))
 			1)))
-    (find-file counterpart)
+    (funcall fun counterpart)
     (goto-char (point-min))
     (forward-paragraph paragraphs)))
+
+(defun tlon-babel-open-counterpart-other-window ()
+  "Open the counterpart of file in FILE in the other window."
+  (interactive)
+  (tlon-babel-open-counterpart t))
 
 (defun tlon-babel-count-paragraphs (&optional file start end)
   "Return number of paragraphs between START and END in FILE.
@@ -4029,6 +4037,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ]
    ["Visit file"
     ("f f" "counterpart"                  tlon-babel-open-counterpart)
+    ("f F" "counterpart other win"        tlon-babel-open-counterpart-other-window)
     ("f j" "jobs.org"                     tlon-babel-open-jobs)
     ("f l" "fluid.bib"                    tlon-babel-open-fluid)
     ("f m" "manual.md"                    tlon-babel-open-manual)
