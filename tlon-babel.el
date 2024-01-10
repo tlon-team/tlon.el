@@ -2065,11 +2065,54 @@ If STATE is nil, default to `borrador'."
 (defun tlon-babel-record-missing-tag-counterpart ()
   "Record missing tag counterpart."
   (let ((file-name (file-name-nondirectory (buffer-file-name))))
-  (unless (tlon-babel-get-counterpart)
-    (with-current-buffer (find-file-noselect "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/missing-tags.txt")
+    (when (string= (tlon-babel-get-counterpart) "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/originals")
+      (with-current-buffer (find-file-noselect "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/missing-tags.txt")
+	(goto-char (point-max))
+	(insert (format "%s\n" file-name))
+	(save-buffer)))))
+
+(defun tlon-babel-replace-further-reading ()
+  "Replace ‘Further reading’ in counterpart of Spanish tag in current buffer."
+  (goto-char (point-min))
+  (when (re-search-forward "## Más información\n" nil t)
+    (markdown-narrow-to-subtree)
+    (let ((start (point)))
       (goto-char (point-max))
-      (insert (format "%s\n" file-name))
-      (save-buffer)))))
+      (copy-region-as-kill start (point)))
+    (tlon-babel-open-counterpart)
+    (goto-char (point-min))
+    (re-search-forward "## Further reading\n" nil t)
+    (markdown-narrow-to-subtree)
+    (let ((start (point)))
+      (goto-char (point-max))
+      (delete-region start (point))
+      (yank)
+      (save-buffer))))
+
+(defun tlon-babel-replace-footnotes ()
+  "Replace footnotes in counterpart of Spanish tag in current buffer."
+  (interactive)
+  (tlon-babel-open-counterpart)
+  (widen)
+  (goto-char (point-min))
+  (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
+    (if (re-search-forward fn-regexp nil t)
+	(progn
+	  (beginning-of-line)
+	  (let ((start (point)))
+	    (goto-char (point-max))
+	    (copy-region-as-kill start (point)))
+	  (tlon-babel-open-counterpart)
+	  (goto-char (point-min))
+	  (re-search-forward fn-regexp nil t)
+	  (markdown-narrow-to-subtree)
+	  (let ((start (point)))
+	    (goto-char (point-max))
+	    (delete-region start (point))
+	    (yank)
+	    (save-buffer)))
+      (tlon-babel-open-counterpart)
+      (message "No footnotes found"))))
 
 ;;;;;; Interactive editing
 
@@ -2294,7 +2337,8 @@ current buffer."
 	 locator)
       (tlon-babel-metadata-lookup "file"
 				  "path_original"
-				  (tlon-babel-get-locator-from-file file)
+				  ;; (tlon-babel-get-locator-from-file file)
+				  (file-name-nondirectory file)
 				  (tlon-babel-get-metadata-in-repo)))))
 
 (defun tlon-babel-get-locator-from-file (&optional file)
@@ -2323,12 +2367,14 @@ error if the current buffer is not in `markdown-mode' and FILE is nil."
     (user-error "Not in markdown-mode"))
   (unless file
     (save-buffer))
-  (let* ((temas-folder (file-name-concat
+  (let* ((counterpart
+	  ;; temporary hack
+	  (if (string= default-directory
+		       (file-name-concat
 			(tlon-babel-get-property-of-repo :dir-translations "bae") "temas/"))
-	 (counterpart (if (string= default-directory temas-folder)
-			  (tlon-babel-get-tag-counterpart)
-			(tlon-babel-get-counterpart
-			 (or file (buffer-file-name)))))
+	      (tlon-babel-get-tag-counterpart)
+	    (tlon-babel-get-counterpart
+	     (or file (buffer-file-name)))))
 	 (paragraphs (- (tlon-babel-count-paragraphs
 			 file (point-min) (min (point-max) (+ (point) 2)))
 			1)))
