@@ -1,16 +1,16 @@
-#+title: Elbab
+#+title: tlon-babel
 
-~elbab~ is a repository of Emacs functions to be used by the Tlön team.
+~tlon-babel~ is a repository of Emacs functions for the Tlön ~babel~ projects.
 
 ** GitHub sync
 
-~elbab~ includes several functions to synchronize the GitHub issues on a given repository with the corresponding ~org-mode~ TODOs in the user’s local file. The relevant GitHub sync functions are accessed from ~elbab-dispatch~ (~H-r~), under the “sync” section (~y~):
+~tlon-babel~ includes several functions to synchronize the GitHub issues on a given repository with the corresponding ~org-mode~ TODOs in the user’s local file. The relevant GitHub sync functions are accessed from ~tlon-babel-dispatch~ (~H-r~), under the “sync” section (~y~):
 
-- "visit or capture" (~elbab-visit-counterpart-or-capture~, ~H-r y y~): visits the “counterpart” (the associated ~org-mode~ TODO if point is on a GitHub issue, and vice versa) or, if point is on an issue that has not yet been captured, creates an associated ~org-mode~ TODO. This command can also be invoked directly by pressing ~,~ with point on an issue or visiting an issue buffer. It may be regarded as a “dwim” (“do-what-I-mean”) command, in the sense that it is meant to guess the action that the user will normally want to perform in the relevant context.
-- "visit" (~elbab-visit-counterpart~, ~H-r y v~): visits the “counterpart”. If point is on an issue that has not yet been captured, no action will be taken.
-- "post" (~elbab-create-issue-from-todo~, ~H-r y p~): posts the ~org-mode~ TODO at point to GitHub, i.e. creates an associated GitHub issue.
-- "capture" (~elbab-capture-issue~, ~H-r y c~): captures the GitHub issue at point, i.e. creates an associated ~org-mode~ TODO.
-- "capture all" (~elbab-capture-all-issues~, ~H-r y C~): like the above, but iterates over all GitHub issues in the repository.
-- "reconcile" (~elbab-reconcile-issue-and-todo~ , ~H-r y r~): reconcile any differences between a GitHub issue and its associated ~org-mode~ TODO. If differences are found, the user will be prompted to indicate whether they want to keep the GitHub issue and modify the ~org-mode~ TODO to match it (~i~), or vice versa (~t~). (Note: usually you want to keep the issue, so you will normally press ~i~ when prompted).
-- "reconcile all" (~elbab-reconcile-all-issues-and-todos~, ~H-r y R~): like the above, but iterates over all GitHub issues in the repository. Note that issues not yet captured will be ignored, so you may want to  capture all issues (~elbab-capture-all-issues~) before reconciling them, if your goal is to ensure that the your ~org-mode~ TODOs are fully in sync with the GitHub issues.
-- "close" (~elbab-close-issue-and-todo~, ~H-r y x~): close the GitHub issue and mark its associated ~org-mode~ TODO as DONE.
+- "visit or capture" (~tlon-babel-visit-counterpart-or-capture~, ~H-r y y~): visits the “counterpart” (the associated ~org-mode~ TODO if point is on a GitHub issue, and vice versa) or, if point is on an issue that has not yet been captured, creates an associated ~org-mode~ TODO. This command can also be invoked directly by pressing ~,~ with point on an issue or visiting an issue buffer. It may be regarded as a “dwim” (“do-what-I-mean”) command, in the sense that it is meant to guess the action that the user will normally want to perform in the relevant context.
+- "visit" (~tlon-babel-visit-counterpart~, ~H-r y v~): visits the “counterpart”. If point is on an issue that has not yet been captured, no action will be taken.
+- "post" (~tlon-babel-create-issue-from-todo~, ~H-r y p~): posts the ~org-mode~ TODO at point to GitHub, i.e. creates an associated GitHub issue.
+- "capture" (~tlon-babel-capture-issue~, ~H-r y c~): captures the GitHub issue at point, i.e. creates an associated ~org-mode~ TODO.
+- "capture all" (~tlon-babel-capture-all-issues~, ~H-r y C~): like the above, but iterates over all GitHub issues in the repository.
+- "reconcile" (~tlon-babel-reconcile-issue-and-todo~ , ~H-r y r~): reconcile any differences between a GitHub issue and its associated ~org-mode~ TODO. If differences are found, the user will be prompted to indicate whether they want to keep the GitHub issue and modify the ~org-mode~ TODO to match it (~i~), or vice versa (~t~). (Note: usually you want to keep the issue, so you will normally press ~i~ when prompted).
+- "reconcile all" (~tlon-babel-reconcile-all-issues-and-todos~, ~H-r y R~): like the above, but iterates over all GitHub issues in the repository. Note that issues not yet captured will be ignored, so you may want to  capture all issues (~tlon-babel-capture-all-issues~) before reconciling them, if your goal is to ensure that the your ~org-mode~ TODOs are fully in sync with the GitHub issues.
+- "close" (~tlon-babel-close-issue-and-todo~, ~H-r y x~): close the GitHub issue and mark its associated ~org-mode~ TODO as DONE.
