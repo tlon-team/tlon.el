@@ -68,18 +68,21 @@
   "A companion package for the Babel project."
   :group 'files)
 
+;; TODO: turn into properties of `elbab-repos'
 (defcustom elbab-repo-timer-durations
-  '(("biblioteca-altruismo-eficaz" . 1)
-    ("utilitarismo.net" . 1)
-    ("ensayos-sobre-largoplacismo" . 1)
+  '(("babel" . 1)
+    ("babel-es" . 1)
+    ("uqbar-es" . 1)
+    ("uqbar-en" . 1)
     ("uqbar-issues" . 1)
     ("uqbar-front" . 8)
     ("uqbar-api" . 8)
     ("ea.news-issues" . 1)
     ("ea.news-front" . 8)
     ("ea.news-api" . 8)
-    ("bisagra" . 8)
-    ("genus" . 1))
+    ("utilitarismo.net" . 1)
+    ("ensayos-sobre-largoplacismo" . 1)
+    ("bisagra" . 8))
   "Alist of repos and associated update frequencies, in hours.
 A repo will be updated after that many hours of inactivity."
   :type '(alist :key-type string :value-type integer)
@@ -104,19 +107,22 @@ via `elbab-cancel-repo-timers'.")
     (file-name-concat (getenv "HOME") dir))
   "Directory where the Tlön repos are stored.")
 
+;; TODO: Revise type `biblio'
 (defvar elbab-repos
-  `((:name "biblioteca-altruismo-eficaz"
-	   :abbrev "bae"
-	   :type content)
-    (:name "utilitarismo.net"
-	   :abbrev "util"
-	   :type content)
-    (:name "ensayos-sobre-largoplacismo"
-	   :abbrev "esl"
-	   :type content)
-    (:name "bisagra"
-	   :abbrev "bisagra"
-	   :type multi)
+  `((:name "babel"
+	   :abbrev "babel"
+	   :type biblio)
+    (:name "babel-es"
+	   :abbrev "babel-es"
+	   :type biblio)
+    (:name "uqbar-en"
+	   :abbrev "uqbar-en"
+	   :type content
+	   :subtype originals)
+    (:name "uqbar-es"
+	   :abbrev "uqbar-es"
+	   :type content
+	   :subtype translations)
     (:name "uqbar-issues"
 	   :abbrev "uqbar-issues"
 	   :type issues)
@@ -126,6 +132,14 @@ via `elbab-cancel-repo-timers'.")
     (:name "uqbar-api"
 	   :abbrev "uqbar-api"
 	   :type api)
+    (:name "utilitarismo.net"
+	   :abbrev "util"
+	   :type content
+	   ;; :subtype ??? <- TODO: fix this (split repo in two?)
+	   )
+    (:name "ensayos-sobre-largoplacismo"
+	   :abbrev "esl"
+	   :type translations)
     (:name "ea.news-issues"
 	   :abbrev "ean-issues"
 	   :type issues)
@@ -135,9 +149,9 @@ via `elbab-cancel-repo-timers'.")
     (:name "ea.news-api"
 	   :abbrev "ean-api"
 	   :type api)
-    (:name "genus"
-	   :abbrev "genus"
-	   :type biblio)
+    (:name "bisagra"
+	   :abbrev "bisagra"
+	   :type multi)
     (:name "tlon-docs"
 	   :abbrev "docs"
 	   :type docs))
@@ -184,28 +198,44 @@ The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
 the actual user.")
 
+(defvar elbab-bare-dirs
+  '(("articles" .
+     ("es" "articulos"))
+    ("tags" .
+     ("es" . "temas"))
+    ("authors" .
+     ("es" . "autores"))
+    ("collections" .
+     ("es" . "colecciones")))
+  "Alist of bare directories and associated translations.")
+
+(defconst elbab-languages
+  '(("en" . "english")
+    ("es" . "spanish")
+    ("it" . "italian")
+    ("fr" . "french")
+    ("de" . "german")
+    ("pt" . "portuguese"))
+  "Alist of languages and associated names.")
+
+(defvar elbab-translation-language "es"
+  "The current translation language.")
+
 (defvar elbab-post-init-hook nil
   "Hook run at the end of `elbab-init'.")
 
 ;;;;;; lookup
 
-(defun tlon-bae-set-dirs (repo)
-  "Set the directory properties in REPO in `elbab-repos'.
-These properties are `:dir', `:dir-originals' and `:dir-translations'."
+(defun elbab-set-dir (repo)
+  "Set the `:directory' property for REPO in `elbab-repos'."
   (let* ((dir (file-name-as-directory
 	       (file-name-concat elbab-dir-repos
-				 (plist-get repo :name))))
-	 (dir-originals (file-name-as-directory (file-name-concat dir "originals")))
-	 (dir-translations (file-name-as-directory (file-name-concat dir "translations"))))
-    (plist-put repo :dir dir)
-    (dolist (property `((:dir-originals ,dir-originals)
-			(:dir-translations ,dir-translations)))
-      (when (eq (plist-get repo :type) 'content)
-	(plist-put repo (car property) (cadr property))))))
+				 (plist-get repo :name)))))
+    (plist-put repo :dir dir)))
 
-(mapc #'tlon-bae-set-dirs elbab-repos)
+;; (mapc #'elbab-set-dir elbab-repos)
 
-(defun elbab-get-property-of-repo (property repo)
+(defun elbab-get-property-of-repo-name (property repo)
   "Get the value of property PROPERTY in REPO.
 REPO is named in its abbreviated form, i.e. the value of `:abbrev' rather than
 `:name'."
@@ -218,6 +248,12 @@ REPO is named in its abbreviated form, i.e. the value of `:abbrev' rather than
 (defun elbab-get-property-of-label (property user)
   "Get the value of property PROPERTY in USER."
   (elbab-plist-lookup property :name user elbab-users))
+
+(defun elbab-alist-lookup (compare-prop target-prop target-value list)
+  "Search LIST for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
+  (cl-loop for plist in list
+	   when (equal (plist-get plist target-prop) target-value)
+	   return (plist-get plist compare-prop)))
 
 (defun elbab-plist-lookup (compare-prop target-prop target-value list)
   "Search LIST for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
@@ -270,16 +306,27 @@ Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
   (elbab-get-property-of-plists compare-prop elbab-labels target-prop target-value))
 
+(defun elbab-get-property-of-languages (compare-prop &optional target-prop target-value)
+  "Get a list of all values for property COMPARE-PROP in `elbab-languages'.
+Optionally, return only the subset of values such that TARGET-PROP matches
+TARGET-VALUE."
+  (elbab-get-property-of-plists compare-prop elbab-languages target-prop target-value))
+
+(defun elbab-get-dir-translation (dir target-lang &optional source-lang)
+  "Get DIR translation in TARGET-LANG.
+If SOURCE-LANG is nil, default to `:en'."
+  (elbab-plist-lookup target-lang (or source-lang :en) dir elbab-bare-dirs))
+
 (defvar elbab-dir-refs
-  (file-name-concat (elbab-get-property-of-repo :dir "genus") "refs/")
+  (file-name-concat (elbab-get-property-of-repo-name :dir "babel") "refs/")
   "Directory where references files are stored.")
 
 (defvar elbab-dir-correspondences
-  (file-name-concat (elbab-get-property-of-repo :dir "genus") "correspondences/")
+  (file-name-concat (elbab-get-property-of-repo-name :dir "babel-es") "correspondences/")
   "Directory where correspondence files are stored.")
 
 (defvar elbab-dir-dict
-  (file-name-concat (elbab-get-property-of-repo :dir "genus") "dict/")
+  (file-name-concat (elbab-get-property-of-repo-name :dir "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
 (defvar elbab-dir-locales
@@ -290,16 +337,12 @@ TARGET-VALUE."
   (file-name-concat elbab-dir-refs "styles/")
   "Directory where CSL style files are stored.")
 
-(defvar elbab-file-manual
-  (file-name-concat (elbab-get-property-of-repo :dir "genus") "manual.org")
-  "File containing the manual.")
-
-(defvar elbab-file-readme
-  (file-name-concat (elbab-get-property-of-repo :dir "genus") "readme.md")
-  "File containing the readme.")
+(defvar elbab-file-babel-manual
+  (file-name-concat (elbab-get-property-of-repo-name :dir "babel") "manual.org")
+  "File containing the Babel manual.")
 
 (defvar elbab-file-jobs
-  (file-name-concat (elbab-get-property-of-repo :dir "genus") "jobs.org")
+  (file-name-concat (elbab-get-property-of-repo-name :dir "babel") "jobs.org")
   "File containing the jobs.")
 
 (defvar elbab-file-glossary
@@ -451,19 +494,19 @@ This variable should not be set manually.")
 
 (defconst elbab-yaml-article-keys
   '("titulo" "autores" "traductores" "temas" "fecha" "path_original" "key_original" "key_traduccion" "estado_de_publicacion" "descripcion")
-  "List of YAML keys of fields to include in BAE articles.
+  "List of YAML keys of fields to include in `uqbar-es' articles.
 The order of the keys determines the sort order by
 `elbab--yaml-sort-fields', unless overridden.")
 
 (defconst elbab-yaml-tag-keys
   '("titulo" "titulo_breve" "path_original" "estado_de_publicacion")
-  "List of YAML keys of fields to include in BAE tags.
+  "List of YAML keys of fields to include in `uqbar-es' tags.
 The order of the keys determines the sort order by
 `elbab--yaml-sort-fields', unless overridden.")
 
 (defconst elbab-yaml-author-keys
   '("titulo" "estado_de_publicacion")
-  "List of YAML keys of fields to include in BAE authors.
+  "List of YAML keys of fields to include in `uqbar-es' authors.
 The order of the keys determines the sort order by
 `elbab--yaml-sort-fields', unless overridden.")
 
@@ -528,12 +571,13 @@ The second capture group handles the `.md' extension, which we used previously."
 (defun elbab-init ()
   "Initialize `elbab'."
   (interactive)
+  (mapc #'elbab-set-dir elbab-repos)
   (elbab-set-value-of-var 'elbab-todos-jobs-id)
   (elbab-set-value-of-var 'elbab-todos-generic-id)
-  (dolist (template `(("tbJ" "Tlön: BAE: Create a new Babel job" entry
+  (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
 		       (id ,elbab-todos-jobs-id)
 		       "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
-		      ("tbG" "Tlön: BAE: Create new generic todo from GitHub" entry
+		      ("tbG" "Tlön: Babel: Create new generic todo from GitHub" entry
 		       (id ,elbab-todos-generic-id)
 		       "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
     (push template org-capture-templates))
@@ -578,7 +622,7 @@ If FILE is nil, use the current buffer's file name."
 (defun elbab-get-file-from-key (key)
   "Return the file path of KEY."
   (if-let ((file (elbab-metadata-lookup "file" "key_original" key
-					     (elbab-get-metadata-in-repos))))
+					(elbab-get-metadata-in-repos))))
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
 
@@ -591,13 +635,18 @@ If FILE is nil, use the current buffer's file name."
    (let ((translation (elbab-get-counterpart file)))
      (elbab-metadata-get-field-value-in-file "key_original" translation))))
 
+(defun elbab-set-translation-language (lang)
+  "Set the translation LANG."
+  (interactive (list (completing-read "Language: " elbab-languages)))
+  (setq elbab-translation-language lang))
+
 ;;;;;; Create/visit todos
 
 (defun elbab-visit-counterpart-or-capture ()
   "Visit the issue associated with TODO, or vice versa, creating TODO if necessary."
   (interactive)
   (elbab-todo-issue-funcall #'elbab-visit-issue
-				 #'elbab-visit-todo-or-capture))
+			    #'elbab-visit-todo-or-capture))
 
 (defun elbab-visit-todo-or-capture ()
   "Visit the TODO associated with the current issue, creating one if necessary."
@@ -897,19 +946,19 @@ link, else get their values from the heading title, if possible."
 					 number))))
     (forge-get-topic issue-id)))
 
-  (defun elbab-get-issue-buffer (&optional number repo)
-    "Get Github issue buffer.
+(defun elbab-get-issue-buffer (&optional number repo)
+  "Get Github issue buffer.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
 link, else get their values from the heading title, if possible."
-    (save-window-excursion
-      (elbab-visit-issue number repo)
-      (current-buffer)))
+  (save-window-excursion
+    (elbab-visit-issue number repo)
+    (current-buffer)))
 
 (defun elbab-visit-counterpart ()
   "Visit the ID associated with TODO, or vice versa."
   (interactive)
   (elbab-todo-issue-funcall #'elbab-visit-issue
-				 #'elbab-visit-todo))
+			    #'elbab-visit-todo))
 
 (defun elbab-todo-issue-funcall (todo-fun issue-fun)
   "Call TODO-FUN or ISSUE-FUN depending on the current major mode."
@@ -945,7 +994,7 @@ link, else get their values from the heading title, if possible."
 
 (defun elbab-get-issue-number-from-open-issues ()
   "Prompt user to select from a list of open issues and return number of selection."
-  (let* ((default-directory (elbab-get-repo nil 'genus))
+  (let* ((default-directory (elbab-get-repo nil 'include-all))
 	 (repo (forge-get-repository 'full))
 	 ;; Fetch all issues, but filter for open ones
 	 (issue-list (mapcar #'(lambda (issue)
@@ -1413,12 +1462,12 @@ If DELETE is non-nil, delete the footnote."
 (defun elbab-autofix-curly-quotes ()
   "Replace straight quotes with curly quotes when appropriate."
   (elbab-autofix '("\\([^\\.\\?]\"\\)\\[")
-		      "\\1["))
+		 "\\1["))
 
 (defun elbab-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
   (elbab-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		      "\\1\\3\\2")
+		 "\\1\\3\\2")
   (elbab-autofix-footnote-punctuation-amend))
 
 (defun elbab-autofix-footnote-punctuation-amend ()
@@ -1426,19 +1475,19 @@ If DELETE is non-nil, delete the footnote."
 Ideally the function should be amended so that it doesn’t introduce these
 effects to begin with."
   (elbab-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]"  ; fixes `[[^1]^2]'
-			"\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
-		      "[^\\1][^\\2]"))
+		   "\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
+		 "[^\\1][^\\2]"))
 
 (defun elbab-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
   (elbab-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
-		      "\\1"))
+		 "\\1"))
 
 (defun elbab-autofix-percent-signs ()
   "Add non-breaking space before percent sign."
   (elbab-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
-			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-		      "\\1 %\\2"))
+		   "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
+		 "\\1 %\\2"))
 
 (defun elbab-autofix-all ()
   "Run all the `elbab-autofix' commands."
@@ -1467,38 +1516,38 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
 (defun elbab-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (elbab-manual-fix '("\\([^ ][ ,)]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
-			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
-			   "\\([^ >)] \\)-\\( \\)")
-			 "\\1—\\2"))
+		      "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
+		      "\\([^ >)] \\)-\\( \\)")
+		    "\\1—\\2"))
 
 (defun elbab-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (elbab-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
-			 "\\1\\2–\\3\\4"))
+		    "\\1\\2–\\3\\4"))
 
 (defun elbab-manual-fix-roman-numerals ()
   "Prompt the user to add small caps tags to roman numerals."
   (elbab-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
-			 " <abbr>\\1</abbr>"))
+		    " <abbr>\\1</abbr>"))
 
 (defun elbab-manual-fix-thin-spaces ()
   "Prompt the user to add a thin space between abbreviations followed by a period."
   (elbab-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
-			 "\\1 \\2"))
+		    "\\1 \\2"))
 
 (defun elbab-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
   (elbab-manual-fix '("sólo")
-			 "solo"
-			 'keep-case))
+		    "solo"
+		    'keep-case))
 
 (defun elbab-manual-fix-podcast ()
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
   (elbab-manual-fix '(" podcast")
-			 " pódcast"
-			 'keep-case))
+		    " pódcast"
+		    'keep-case))
 
 (defun elbab-manual-fix-all ()
   "Run all the `elbab-manual-fix' commands."
@@ -1537,7 +1586,7 @@ The element can be a tag or an author."
       (setq current-element-title
 	    (elbab-markdown-get-title-in-link-target
 	     current-target)))
-    (let* ((new-element-title (completing-read "Selection: " (elbab-get-bae-all-elements)
+    (let* ((new-element-title (completing-read "Selection: " (elbab-get-all-uqbar-entities)
 					       nil t
 					       (or current-element-title
 						   selection)))
@@ -1626,10 +1675,10 @@ displayed in the exported web page."
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (list (completing-read "Language: " '("es" "en" "fr" "it" "de" "pt"))))
+  (interactive (list (completing-read "Language: " (mapcar #'car elbab-languages))))
   (elbab-markdown-insert-element-pair (format "<Lang id=\"%s\">"
-						   language)
-					   "</Lang>"))
+					      language)
+				      "</Lang>"))
 
 (defun elbab-markdown-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
@@ -1696,16 +1745,16 @@ end of the buffer unconditionally."
   "Return metadata of REPO.
 If REPO is nil, return metadata of current repository."
   (let* ((repo (or repo (elbab-get-repo))))
-    (if-let ((dir (elbab-repo-lookup :dir-translations :dir repo)))
+    (if-let ((dir (elbab-get-property-of-repo-name :dir repo)))
 	(elbab-get-dir-metadata dir)
-      (if-let ((name (elbab-get-property-of-repo :name repo)))
-	  (user-error "The repository `%s' is not a `content' repository" name)
+      (if-let ((name (elbab-get-property-of-repo-name :name repo)))
+	  (user-error "The repository `%s' is not a `translations' repository" name)
 	(user-error "The directory `%s' is not a recognized repository" dir)))))
 
 (defun elbab-get-metadata-in-repos ()
   "Return metadata of all repos."
   (let ((metadata '()))
-    (dolist (dir (elbab-get-property-of-repos :dir-translations))
+    (dolist (dir (elbab-get-property-of-repos :dir :type 'translations))
       (setq metadata (append (elbab-get-dir-metadata dir) metadata)))
     metadata))
 
@@ -1896,7 +1945,7 @@ If TITLE is non-nil, use it instead of prompting for one."
     field-values))
 
 (defun elbab-yaml-set-front-matter (keys &optional title)
-  "Insert YAML fields for KEYS for BAE post in the current buffer.
+  "Insert YAML fields for KEYS for `uqbar-en' article in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one. The fields will be
 inserted in the order in which KEYS are listed."
   (let* ((fields (elbab--yaml-set-front-matter-fields keys title))
@@ -1914,19 +1963,19 @@ If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
 	  keys))
 
 (defun elbab-yaml-set-front-matter-for-article (&optional title)
-  "Insert YAML fields for BAE post in the current buffer.
+  "Insert YAML fields for `uqbar-en' article in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
   (elbab-yaml-set-front-matter elbab-yaml-article-keys title))
 
 (defun elbab-yaml-set-front-matter-for-tag ()
-  "Insert YAML fields for BAE tag in the current buffer.
+  "Insert YAML fields for `uqbar-en' tag in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
   (elbab-yaml-set-front-matter elbab-yaml-tag-keys))
 
 (defun elbab-yaml-set-front-matter-for-author ()
-  "Insert YAML fields for BAE author in the current buffer.
+  "Insert YAML fields for `uqbar-en' author in the current buffer.
 If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
   (elbab-yaml-set-front-matter elbab-yaml-author-keys))
@@ -1966,12 +2015,12 @@ FIELDS is an alist, typically generated via `elbab-yaml-to-alist'."
   (save-excursion
     (let* ((unsorted (elbab-yaml-get-front-matter))
 	   (sorted (elbab--yaml-sort-fields
-		    unsorted (elbab-yaml-get-bae-keys) 'no-error)))
+		    unsorted (elbab-yaml-get-uqbar-keys) 'no-error)))
       (elbab-delete-yaml-front-matter)
       (elbab-insert-yaml-fields sorted))))
 
-(defun elbab-yaml-get-bae-keys (&optional file)
-  "Return the admissible keys for BAE FILE.
+(defun elbab-yaml-get-uqbar-keys (&optional file)
+  "Return the admissible keys for `uqbar-es' FILE.
 If FILE is nil, return the work type of the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name))))
     (pcase (file-name-nondirectory (directory-file-name (file-name-directory file)))
@@ -2062,15 +2111,6 @@ If STATE is nil, default to `borrador'."
 	    (path (file-name-concat (elbab-get-repo) "originals/tags" file-name)))
       path))
 
-(defun elbab-record-missing-tag-counterpart ()
-  "Record missing tag counterpart."
-  (let ((file-name (file-name-nondirectory (buffer-file-name))))
-    (when (string= (elbab-get-counterpart) "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/originals")
-      (with-current-buffer (find-file-noselect "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/missing-tags.txt")
-	(goto-char (point-max))
-	(insert (format "%s\n" file-name))
-	(save-buffer)))))
-
 (defun elbab-replace-further-reading ()
   "Replace ‘Further reading’ in counterpart of Spanish tag in current buffer."
   (goto-char (point-min))
@@ -2134,8 +2174,8 @@ If KEY already has VALUE, use it as the initial input."
   "Get completion values for a YAML field with KEY."
   (pcase key
     ("traductores" (elbab-get-translators))
-    ("temas" (elbab-get-bae-tags))
-    ("autores" (elbab-get-bae-authors))
+    ("temas" (elbab-get-uqbar-tags))
+    ("autores" (elbab-get-uqbar-authors))
     ("path_original" (elbab-get-locators-in-repo))
     ("key_original" (citar--completion-table (citar--format-candidates) nil))
     ("key_traduccion" (citar--completion-table (citar--format-candidates) nil))
@@ -2156,7 +2196,7 @@ If FILE is nil, use the file visited by the current buffer. If KEY or VALUE are
 nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
 `throw-error', overwrite if it is `overwrite', and do nothing otherwise."
   (interactive)
-  (let ((key (or key (completing-read "Key: " (elbab-yaml-get-bae-keys))))
+  (let ((key (or key (completing-read "Key: " (elbab-yaml-get-uqbar-keys))))
 	(value (or value (read-string "Value: ")))
 	(file (or file (buffer-file-name))))
     (if-let ((front-matter (elbab-yaml-get-front-matter file)))
@@ -2245,41 +2285,42 @@ pre-populate the selection."
       (delete-region (car bounds) (cdr bounds))
       (insert (format "%s:  %s\n" key choice)))))
 
-;;;;;; Get repo-specific elements
+;;;;;; Get repo-specific entities
 
-(defun elbab-get-bae-element (type)
-  "Return a list of BAE elements of TYPE."
+;; TODO: handle changing type names in different langs
+(defun elbab-get-uqbar-entity (type)
+  "Return a list of `uqbar-en' elements of TYPE."
   (elbab-metadata-get-all-field-values
    "titulo"
-   (elbab-get-metadata-in-repo (elbab-get-property-of-repo :dir "bae"))
+   (elbab-get-metadata-in-repo (elbab-get-property-of-repo-name :dir "uqbar-es"))
    "file"
-   (file-name-concat (elbab-get-property-of-repo :dir-translations "bae") type)))
+   (file-name-concat (elbab-get-property-of-repo-name :dir "uqbar-es") type)))
 
-(defun elbab-get-bae-articles ()
-  "Get a list of BAE articles."
-  (elbab-get-bae-element "articulos"))
+(defun elbab-get-uqbar-articles ()
+  "Get a list of `uqbar-en' articles."
+  (elbab-get-uqbar-entity "articulos"))
 
-(defun elbab-get-bae-authors ()
-  "Get a list of BAE authors."
-  (elbab-get-bae-element "autores"))
+(defun elbab-get-uqbar-authors ()
+  "Get a list of `uqbar-en' authors."
+  (elbab-get-uqbar-entity "autores"))
 
-(defun elbab-get-bae-tags ()
-  "Get a list of BAE tags."
-  (elbab-get-bae-element "temas"))
+(defun elbab-get-uqbar-tags ()
+  "Get a list of `uqbar-en' tags."
+  (elbab-get-uqbar-entity "temas"))
 
-(defun elbab-get-bae-all-elements ()
-  "Get a list of all BAE elements."
+(defun elbab-get-all-uqbar-entities ()
+  "Get a list of all `uqbar-en' entities."
   (append
-   (elbab-get-bae-element "articulos")
-   (elbab-get-bae-element "autores")
-   (elbab-get-bae-element "temas")))
+   (elbab-get-uqbar-entity "articulos")
+   (elbab-get-uqbar-entity "autores")
+   (elbab-get-uqbar-entity "temas")))
 
-;;;;;; Create repo-specific elements
+;;;;;; Create repo-specific entities
 
-(defun elbab-create-bae (dir)
-  "Create a new file for BAE entity in DIR."
+(defun elbab-create-uqbar-entity (dir)
+  "Create a new file for `uqbar-es' entity in DIR."
   (let ((default-directory (file-name-concat
-			    (elbab-get-property-of-repo :dir-translations "bae")
+			    (elbab-get-property-of-repo-name :dir "uqbar-es")
 			    (file-name-as-directory dir))))
     (files-extras-new-empty-buffer)
     (elbab-yaml-set-front-matter-for-tag-or-author)
@@ -2288,27 +2329,39 @@ pre-populate the selection."
     (insert (format "**%s** es " (elbab-metadata-get-field-value-in-file "titulo")))
     (save-buffer)))
 
-(defun elbab-create-bae-author ()
-  "Create a new file for BAE author."
+(defun elbab-create-uqbar-author ()
+  "Create a new file for `uqbar-es' author."
   (interactive)
-  (elbab-create-bae "autores"))
+  (elbab-create-uqbar-entity "autores"))
 
-(defun elbab-create-bae-tag ()
-  "Create a new file for BAE tag."
+(defun elbab-create-uqbar-tag ()
+  "Create a new file for `uqbar-es' tag."
   (interactive)
-  (elbab-create-bae "temas"))
+  (elbab-create-uqbar-entity "temas"))
 
 ;;;;;; Get repo-agnostic elements
 
 (defun elbab-get-translators ()
   "Get a list of translators.
-Note that this searches in all repos, not just BAE."
+Note that this searches in all repos, not just `uqbar-en'."
   (elbab-metadata-get-all-field-values
    "titulo"
    (elbab-get-metadata-in-repos)))
 
 ;;;;;; Counterparts
 
+(defun elbab-get-content-subtype (&optional file)
+  "For repo of FILE, get the value of its `:subtype' property.
+If FILE is nil, return the counterpart of the file visited by the current
+buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (repo (elbab-get-repo-from-file file))
+	 (type (elbab-repo-lookup :type :dir repo)))
+    (unless (eq type 'content)
+      (user-error "Repo of file `%s' is not of type `content'" file))
+    (elbab-repo-lookup :subtype :dir repo)))
+
+;; TODO: delete
 (defun elbab-get-work-type (&optional reversed file)
   "Return the work type of file in FILE.
 A work is either `original' or `translation'. If REVERSED is non-nil, return
@@ -2324,22 +2377,68 @@ return the work type of the file visited by the current buffer."
 
 (defun elbab-get-counterpart (&optional file)
   "Get the counterpart file path of file in FILE.
-If FILE is nil, return the counterpart file path of the file visited by the
-current buffer."
-  (let* ((file (or file (elbab-buffer-file-name))))
+A file's counterpart is its translation if it is an original, and vice versa.
+The translation language is defined by `elbab-translation-language'.
+
+If FILE is nil, return the counterpart of the file visited by the current
+buffer."
+  (let ((file (or file (elbab-buffer-file-name))))
     ;; we use a different method for getting the counterpart depending
     ;; on whether FILE is in `originals' or `translations', since
     ;; only translation files have YAML metadata.
     (if-let ((locator (elbab-metadata-get-field-value-in-file "path_original" file)))
 	(file-name-concat
-	 (elbab-get-repo)
-	 (elbab-get-work-type 'reversed)
+	 (elbab-get-counterpart-repo file)
+
 	 locator)
       (elbab-metadata-lookup "file"
-				  "path_original"
-				  ;; (elbab-get-locator-from-file file)
-				  (file-name-nondirectory file)
-				  (elbab-get-metadata-in-repo)))))
+			     "path_original"
+			     ;; (elbab-get-locator-from-file file)
+			     (file-name-nondirectory file)
+			     (elbab-get-metadata-in-repo)))))
+
+(defun elbab-get-counterpart-repo (&optional file)
+  "Get the counterpart repo of FILE.
+A file's counterpart repo is the repo of that file's counterpart.
+
+If FILE is nil, return the counterpart repo of the file visited by the current
+buffer."
+  (let* ((file (or file (elbab-buffer-file-name)))
+	 (repo (elbab-get-repo-from-file file))
+	 (repo-name (elbab-repo-lookup :name :dir repo))
+	 (subtype (elbab-get-property-of-repo-name :subtype repo-name))
+	 (repo-base-name (car (string-split repo-name "-")))
+	 (counterpart-repo-name
+	  (pcase subtype
+	    ('originals (format "%s-%s" repo-base-name elbab-translation-language))
+	    ('translations (format "%s-en" repo-base-name))
+	    (_ (user-error "Repo `%s' is neither an `originals' nor a `translations'" repo)))))
+    (file-name-concat elbab-dir-repos counterpart-repo-name)))
+
+(defun elbab-get-counterpart-dir (&optional file)
+  "Get the counterpart directory of FILE.
+A file's counterpart directory is the directory of that file's counterpart. For example, the
+counterpart directory of `~/Dropbox/repos/uqbar-es/autores/' is `~/Dropbox/repos/uqbar-en/authors/'.
+
+If FILE is nil, return the counterpart repo of the file visited by the current
+buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (repo (elbab-get-repo-from-file file))
+	 (counterpart-repo (elbab-get-counterpart-repo file))
+	 (bare-dir (elbab-get-bare-dir file))
+	 (counterpart-bare-dir (elbab-get-property-of-languages )))
+    (file-name-concat counterpart-repo counterpart-bare-dir)))
+
+(defun elbab-get-bare-dir (&optional file)
+  "Get the bare directory of FILE.
+A file’s bare directory is its directory minus its repository. For example, the
+bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
+
+If FILE is nil, return the counterpart repo of the file visited by the current
+buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (repo (elbab-get-repo-from-file file)))
+    (directory-file-name (file-name-directory (file-relative-name file repo)))))
 
 (defun elbab-get-locator-from-file (&optional file)
   "Get the locator of file in FILE.
@@ -2374,7 +2473,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 	  ;; temporary hack
 	  (if (string= default-directory
 		       (file-name-concat
-			(elbab-get-property-of-repo :dir-translations "bae") "temas/"))
+			(elbab-get-property-of-repo-name :dir "uqbar-es") "temas/"))
 	      (elbab-get-tag-counterpart)
 	    (elbab-get-counterpart
 	     (or file (buffer-file-name)))))
@@ -2472,10 +2571,10 @@ If REPO is nil, prompt the user for one."
   (let* ((repo (or repo
 		   (intern (completing-read
 			    "Repo: "
-			    (elbab-get-property-of-repos :abbrev :type 'content)))))
+			    (elbab-get-property-of-repos :abbrev :type 'translations)))))
 	 (initial-buffers (buffer-list))
 	 (files (directory-files-recursively
-		 (elbab-get-property-of-repo :dir-translations repo) "\\.md$"))
+		 (elbab-get-property-of-repo-name :dir repo) "\\.md$"))
 	 (total-words 0))
     (dolist (file files)
       (with-current-buffer (find-file-noselect file)
@@ -2633,8 +2732,8 @@ If ISSUE is nil, get the issue at point or in current buffer."
   "Construct the name of TODO from ISSUE.
 For job TODOs, the resulting name will have a name with the form \"[REPO] ACTION
 NAME\". ACTION is optional, and used only for job TODOs. For example, if the
-TODO is \"[bae] #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is
-\"Process\", the function returns \"[bae] Process #591 Job:
+TODO is \"[uqbar-es] #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is
+\"Process\", the function returns \"[uqbar-es] Process #591 Job:
 `Handbook2022ExerciseForRadical`\".
 
 If NO-ACTION is non-nil, omit, the ACTION element. If NO-STATE is non-nil, omit
@@ -2726,7 +2825,7 @@ open DeepL."
 (defun elbab-magit-status ()
   "Show the status of the current repository in a buffer."
   (interactive)
-  (let ((default-directory (elbab-get-repo nil 'genus)))
+  (let ((default-directory (elbab-get-repo nil 'include-all)))
     (magit-status-setup-buffer)))
 
 (defun elbab-magit-prompt (repo)
@@ -2743,7 +2842,7 @@ open DeepL."
 If the current directory matches none of the directories in
 `elbab-repos', prompt the user to select a repo from that list."
   (interactive)
-  (let ((default-directory (elbab-get-repo nil 'genus)))
+  (let ((default-directory (elbab-get-repo nil 'include-all)))
     (call-interactively 'forge-dispatch)))
 
 (defun elbab-forge-update-repo (repo)
@@ -2793,11 +2892,11 @@ matching will be made against repos with any value for the property `:type'."
     (if no-prompt
 	(when (eq no-prompt 'error)
 	  (user-error "Not in a recognized Babel repo"))
-      (let* ((content (elbab-get-property-of-repos :name :type 'content))
+      (let* ((content (elbab-get-property-of-repos :name :type 'translations))
 	     (all (elbab-get-property-of-repos :name)))
 	(elbab-repo-lookup :dir :name
-				(completing-read "Select repo: "
-						 (if include-all all content)))))))
+			   (completing-read "Select repo: "
+					    (if include-all all content)))))))
 
 (defun elbab-get-commit-key ()
   "Get key of commit file."
@@ -2818,7 +2917,7 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field-value "title"))
 	   (key (ebib-extras-get-field-value "=key="))
-	   (repo (completing-read "Repo: " (elbab-get-property-of-repos :dir :type 'content))))
+	   (repo (completing-read "Repo: " (elbab-get-property-of-repos :dir :type 'translations))))
       (progn
 	(elbab-import-document id title)
 	(elbab-create-translation-file repo)
@@ -2904,7 +3003,7 @@ TITLE optionally specifies the title of the entity to be imported."
 	 (title (or title (pcase object
 			    ('post (elbab-eaf-get-post-title response))
 			    ('tag (elbab-eaf-get-tag-title response)))))
-	 (dir (elbab-get-property-of-repo :dir-originals "bae"))
+	 (dir (elbab-get-property-of-repo-name :dir "uqbar-en"))
 	 (target (read-string "Save file in: " (elbab-set-file-from-title title dir)))
 	 (html (pcase object
 		 ('post (elbab-eaf-get-post-html response))
@@ -2978,7 +3077,7 @@ Markdown buffer at point is used."
 
 (defun elbab-create-issue (title &optional repo body)
   "Create new GitHub issue in REPO with TITLE and BODY."
-  (let* ((repo (or repo (elbab-get-repo 'error 'genus)))
+  (let* ((repo (or repo (elbab-get-repo 'error 'include-all)))
 	 (body (or body ""))
 	 (default-directory repo)
 	 (repo (forge-get-repository t))
@@ -3030,7 +3129,7 @@ Markdown buffer at point is used."
   "Create issue from TODO or vice versa."
   (interactive)
   (elbab-todo-issue-funcall #'elbab-create-issue-from-todo
-				 #'elbab-capture-issue))
+			    #'elbab-capture-issue))
 
 (defun elbab-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
@@ -3183,8 +3282,8 @@ for the process that is being initialized."
 	(elbab-commit-and-push current-action original-path))
       (elbab-commit-and-push current-action translation-path)
       (elbab-act-on-topic original-key next-label next-assignee
-			       (when (string= current-action "Review")
-				 'close))
+			  (when (string= current-action "Review")
+			    'close))
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 	       next-label next-assignee))
     (elbab-finalize-set-todos)))
@@ -3203,14 +3302,14 @@ for the process that is being initialized."
 	(elbab-mark-todo-done job-todo elbab-file-jobs)
 	(elbab-sort-headings elbab-file-jobs)
 	(elbab-commit-and-push "Update"
-				    elbab-file-jobs)))))
+			       elbab-file-jobs)))))
 
 (defun elbab-initialize-processing ()
   "Initialize processing."
   (cl-multiple-value-bind
       (original-path)
       (elbab-set-paths-from-clock)
-    (elbab-set-windows original-path elbab-file-manual)
+    (elbab-set-windows original-path elbab-file-babel-manual)
     (org-id-goto elbab-manual-processing-id)
     (org-narrow-to-subtree)
     (org-extras-show-subtree-hide-drawers)
@@ -3545,6 +3644,7 @@ If FILE is nil, check the current buffer."
       (goto-char (point-min))
       (bibtex-map-entries 'elbab-add-lang-id-to-entry))))
 
+;; TODO: support arbitrary langs
 (defun elbab-add-lang-id-to-entry (&optional key beg end)
   "Add `langid' field to entry at point, if appropriate.
 If the field `landig' is present, the function does nothing; else, it sets the
@@ -3564,7 +3664,7 @@ KEY, BEG and END are ignored; they are only there to satisfy the signature of
 If CLOSE is non-nil, close the issue."
   (let* ((issue-title (format "Job: `%s" original-key))
 	 (issue (elbab-forge-issue-lookup issue-title))
-	 (default-directory (elbab-get-repo 'error 'genus)))
+	 (default-directory (elbab-get-repo 'error 'include-all)))
     (elbab-set-label label issue)
     (elbab-set-assignee assignee issue)
     (when close
@@ -3599,7 +3699,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (elbab-get-repo nil 'genus)))
+  (let* ((repo (or repo (elbab-get-repo nil 'include-all)))
 	 (default-directory repo))
     (forge-search search-string)))
 
@@ -3621,14 +3721,14 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (elbab-get-repo nil 'genus))))
+  (let* ((repo (or repo (elbab-get-repo nil 'include-all))))
     (consult-ripgrep repo search-string)))
 
 (defun elbab-search-multi (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (elbab-get-repo nil 'genus)))
+  (let ((repo (or repo (elbab-get-repo nil 'include-all)))
 	(win1 (selected-window)))
     (window-extras-split-if-unsplit)
     (elbab-search-topics search-string repo)
@@ -3650,17 +3750,19 @@ The commit message is ACTION followed by the name of FILE."
     (elbab-create-commit action file)
     (call-interactively #'magit-push-current-to-pushremote)))
 
+;; TODO: find a way to handle `biblio' type now that `babel' includes both
+;; biblio and non-biblio content
 (defun elbab-create-commit (action file)
   "Create a commit modifications to FILE.
 The commit message is ACTION followed by either FILE or its BibTeX key,
-depending on whether the repo is of type `content` or `biblio', respectively."
+depending on whether the repo is of type `translations` or `biblio', respectively."
   ;; we check for staged or unstaged changes to FILE because
   ;; `magit-commit-create' interrupts the process if there aren't
   (when (elbab-check-staged-or-unstaged file)
     (let* ((repo (elbab-get-repo-from-file file))
 	   (type (elbab-repo-lookup :type :dir repo))
 	   (file-or-key (pcase type
-			  ('content (elbab-get-key-from-file file))
+			  ('translations (elbab-get-key-from-file file))
 			  ('biblio (file-name-nondirectory file)))))
       (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
 
@@ -3798,6 +3900,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	(elbab-glossary-modify term)
       (elbab-glossary-add term))))
 
+;; TODO: support arbitrary langs
 (defun elbab-glossary-add (&optional english spanish)
   "Add a new entry to the glossary for ENGLISH and SPANISH terms."
   (interactive)
@@ -3835,7 +3938,7 @@ TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
 \='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
 conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
-  (let ((default-directory (elbab-get-property-of-repo :dir "genus"))
+  (let ((default-directory (elbab-get-property-of-repo-name :dir "babel-es"))
 	(description (if description (concat "\n\n" description) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
@@ -3889,7 +3992,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 ;; TODO: consider adapting `elbab-commit-and-push' instead
 (defun elbab-url-correspondence-commit ()
   "Commit modifications in `url-correspondences.json'."
-  (let ((default-directory (elbab-get-property-of-repo :dir "genus")))
+  (let ((default-directory (elbab-get-property-of-repo-name :dir "babel-es")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
     (call-interactively #'magit-pull-from-upstream nil)
@@ -4019,9 +4122,9 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("n" "forge"                          elbab-forge)
     ("." "gh-notify"                      gh-notify)
     """Request"
-    ("q g" "update genus"                 elbab-update-bae-genus)
-    ("q i" "update images"                elbab-update-bae-images)
-    ("q l" "show log"                     elbab-show-bae-log)
+    ("q g" "update babel"                 elbab-update-babel-in-uqbar-es)
+    ("q i" "update images"                elbab-update-uqbar-images)
+    ("q l" "show log"                     elbab-show-uqbar-log)
     ]
    ["Add or modify"
     ("a a" "glossary"                     elbab-glossary-dwim)
@@ -4049,13 +4152,13 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ]
    ["Visit dir"
     ("d d" "repo"                         elbab-open-repo)
-    ("d g" "genus"                        elbab-open-genus-repo)
+    ("d b" "babel"                        elbab-open-babel-repo)
     ("d u" "utilitarismo"                 elbab-open-utilitarismo-repo)
     ("d l" "largoplacismo"                elbab-open-largoplacismo-repo)
-    ("d b b" "bae"                        elbab-open-bae-repo)
-    ("d b a" "bae: articles"              elbab-open-bae-articles)
-    ("d b u" "bae: authors"               elbab-open-bae-authors)
-    ("d b t" "bae: tags"                  elbab-open-bae-tags)
+    ("d q b" "uqbar"                      elbab-open-uqbar-es-repo)
+    ("d q a" "uqbar: articles"            elbab-open-uqbar-es-articles)
+    ("d q u" "uqbar: authors"             elbab-open-uqbar-es-authors)
+    ("d q t" "uqbar: tags"                elbab-open-uqbar-es-tags)
     ]
    ["File changes"
     ("h h" "log"                          magit-log-buffer-file)
@@ -4110,47 +4213,48 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 (defun elbab-open-repo ()
   "Open the Babel repository."
   (interactive)
-  (dired (elbab-get-repo nil 'genus)))
+  (dired (elbab-get-repo nil 'include-all)))
 
-(defun elbab-open-bae-repo ()
-  "Open the Biblioteca Altruismo Eficaz repository."
+(defun elbab-open-uqbar-es-repo ()
+  "Open the `uqbar-es' repository."
   (interactive)
-  (dired (elbab-get-property-of-repo :dir "bae")))
+  (dired (elbab-get-property-of-repo-name :dir "uqbar-es")))
 
 (defun elbab-open-utilitarismo-repo ()
   "Open the Utilitarismo repository."
   (interactive)
-  (dired (elbab-get-property-of-repo :dir "util")))
+  (dired (elbab-get-property-of-repo-name :dir "util")))
 
 (defun elbab-open-largoplacismo-repo ()
   "Open the Largoplacismo repository."
   (interactive)
-  (dired (elbab-get-property-of-repo :dir "esl")))
+  (dired (elbab-get-property-of-repo-name :dir "esl")))
 
-(defun elbab-open-genus-repo ()
-  "Open the Genus repository."
+(defun elbab-open-babel-repo ()
+  "Open the Babel repository."
   (interactive)
-  (dired (elbab-get-property-of-repo :dir "genus")))
+  (dired (elbab-get-property-of-repo-name :dir "babel")))
 
-(defun elbab-open-bae-folder (folder)
-  "Open FOLDER of the Biblioteca Altruismo Eficaz repository."
+;; TODO: this should be revised to support folders in different `uqbar' repos
+(defun elbab-open-uqbar-es-folder (folder)
+  "Open FOLDER of the `uqbar-es' repository."
   (dired (file-name-concat
-	  (elbab-get-property-of-repo :dir-translations "bae") folder)))
+	  (elbab-get-property-of-repo-name :dir "uqbar-es") folder)))
 
-(defun elbab-open-bae-articles ()
-  "Open the `articulos' folder of the Biblioteca Altruismo Eficaz repository."
+(defun elbab-open-uqbar-es-articles ()
+  "Open the `articulos' folder of the `uqbar-es' repository."
   (interactive)
-  (elbab-open-bae-folder "articulos"))
+  (elbab-open-uqbar-es-folder "articulos"))
 
-(defun elbab-open-bae-authors ()
-  "Open the `autores' folder of the Biblioteca Altruismo Eficaz repository."
+(defun elbab-open-uqbar-es-authors ()
+  "Open the `autores' folder of the `uqbar-es' repository."
   (interactive)
-  (elbab-open-bae-folder "autores"))
+  (elbab-open-uqbar-es-folder "autores"))
 
-(defun elbab-open-bae-tags ()
-  "Open the `temas' folder of the Biblioteca Altruismo Eficaz repository."
+(defun elbab-open-uqbar-es-tags ()
+  "Open the `temas' folder of the `uqbar-es' repository."
   (interactive)
-  (elbab-open-bae-folder "temas"))
+  (elbab-open-uqbar-es-folder "temas"))
 
 ;;;;; Request
 
@@ -4260,21 +4364,21 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   (string-match "\\([[:alnum:] ,'‘’“”@#$%*\\^`~&\"]*\\)" title)
   (match-string 1 title))
 
-;;;;;; BAE API
+;;;;;; `uqbar' API
 
-(defun elbab-show-bae-log ()
-  "Show the BAE error log."
+(defun elbab-show-uqbar-log ()
+  "Show the `uqbar-es' error log."
   (interactive)
-  ;; (elbab-get-bae-log "POST" "https://altruismoeficaz.net/api/update/bae")
+  ;; (elbab-get-uqbar-log "POST" "https://altruismoeficaz.net/api/update/bae")
   (elbab-print-log
    (elbab-process-api-buffer
-    (elbab-get-bae-log "GET" "https://altruismoeficaz.net/api/update/bae/log"))))
+    (elbab-get-uqbar-log "GET" "https://altruismoeficaz.net/api/update/bae/log"))))
 
 ;; TODO: make it work with POST request. Look at the script in
 ;; https://github.com/tlon-team/uqbar-api/blob/main/deployment/request.sh
-(defun elbab-get-bae-log (request url)
-  "Get error log from BAE repo as an association list.
-If not already authenticated, run `elbab-get-bae-token' first."
+(defun elbab-get-uqbar-log (request url)
+  "Get error log from `uqbar-es' repo as an association list.
+If not already authenticated, run `elbab-get-uqbar-token' first."
   (when-let* ((url-request-method request)
 	      (url-mime-charset-string "utf-8;q=1, iso-8859-1")
 	      (buffer (url-retrieve-synchronously url)))
@@ -4284,7 +4388,7 @@ If not already authenticated, run `elbab-get-bae-token' first."
   ""
   (let ((json-object-type 'plist)
 	(json-array-type 'list)
-	(output-buffer-name "*BAE error log*"))
+	(output-buffer-name "*uqbar error log*"))
     (with-current-buffer buffer
       (goto-char (point-min))
       (search-forward "\n\n")
@@ -4324,13 +4428,13 @@ If not already authenticated, run `elbab-get-bae-token' first."
 		       'action (lambda (_) (find-file path))
 		       'follow-link t))))))
 
-(defun elbab-make-bae-request (url &optional retries)
-  "Make URL request to BAE API and show updated logs.
+(defun elbab-make-uqbar-request (url &optional retries)
+  "Make URL request to `uqbar' API and show updated logs.
 It will first authenticate and then make the request.
 
 Retries 2 more times if response code is 504 before giving up. If RETRIES is a
 number, it will retry that many times instead of 2."
-  (let* ((token (elbab-get-bae-token))
+  (let* ((token (elbab-get-uqbar-token))
 	 (retries (if (numberp retries) retries 0)))
     (request
       url
@@ -4338,18 +4442,14 @@ number, it will retry that many times instead of 2."
       :headers `(("Authorization" . ,(concat "Bearer " token)))
       :sync nil
       :status-code '((504 . (lambda (&rest _)
-			      (if (< retries 2)
-				  (progn
-				    (message "Got 504, Gateway Timeout. Retrying...")
-				    (elbab-update-bae-log (1+ retries)))
-				(message "Got 504, Gateway Timeout. My patience has a limit!")))))
+			      (message "Got 504, Gateway Timeout. My patience has a limit!"))))
       :complete (cl-function
 		 (lambda (&key response &allow-other-keys)
 		   (unless (request-response-error-thrown response)
-		     (elbab-get-bae-log)))))))
+		     (elbab-get-uqbar-log)))))))
 
-(defun elbab-get-bae-token ()
-  "Get BAE API token."
+(defun elbab-get-uqbar-token ()
+  "Get `uqbar-es' API token."
   (let* ((username (elbab-user-lookup :github :name user-full-name))
 	 (url "https://altruismoeficaz.net/api/auth/login")
 	 (url-request-method "POST")
@@ -4368,42 +4468,15 @@ number, it will retry that many times instead of 2."
 	     (json-response (json-read-from-string (buffer-string))))
 	(cdr (assoc "access_token" json-response))))))
 
-(defun elbab-update-bae-genus ()
-  "Update the BAE website to reflect latest Genus modifications."
+(defun elbab-update-babel-in-uqbar-es ()
+  "Update the `uqbar-es' website to reflect latest changes in `babel'."
   (interactive)
-  (elbab-make-bae-request "https://altruismoeficaz.net/api/update"))
+  (elbab-make-uqbar-request "https://altruismoeficaz.net/api/update"))
 
-(defun elbab-update-bae-images ()
-  "Update the BAE website to reflect latest image modifications."
+(defun elbab-update-uqbar-images ()
+  "Update the `uqbar-es' website to reflect latest image modifications."
   (interactive)
-  (elbab-make-bae-request "https://altruismoeficaz.net/api/update/rebuild-frontend"))
-
-(defun elbab-pretty-print-bae-hash-table (hash-table buffer)
-  "Print HASH-TABLE in a human-friendly way in BUFFER."
-  (with-current-buffer buffer
-    (maphash
-     (lambda (key value)
-       (if (string= key "message")
-	   (let* ((message-parts (split-string value " filename="))
-		  (text (car message-parts))
-		  (raw-filename (cadr message-parts)))
-	     (insert (format "%s\n" text))
-	     (when raw-filename
-	       (let* ((filename-parts (split-string raw-filename ": "))
-		      (filename (car filename-parts))
-		      (more-text (cadr filename-parts)))
-		 (let* ((true-filename (replace-regexp-in-string
-					"/home/fede/biblioteca-altruismo-eficaz/translations/"
-					(expand-file-name "~/Library/CloudStorage/Dropbox/repos/biblioteca-altruismo-eficaz/translations/")
-					filename)))
-		   (let ((file true-filename))
-		     (insert-button true-filename
-				    'action (lambda (x) (find-file file))
-				    'follow-link t)
-		     (insert (format " %s" more-text))))))
-	     (insert "\n\n"))
-	 (insert (format "%s: %s\n" key value))))
-     hash-table)))
+  (elbab-make-uqbar-request "https://altruismoeficaz.net/api/update/rebuild-frontend"))
 
 ;;;;;;; Fix log errors helper functions
 
@@ -4419,7 +4492,7 @@ Display the collected keys in a new buffer."
       (with-output-to-temp-buffer "*Bibtex keys*"
 	(princ (mapconcat #'identity (delete-dups keys) "\n"))))))
 
-(defun elbab-move-bibtex-entries-to-genus ()
+(defun elbab-move-bibtex-entries-to-babel ()
   "Move the bibtex entries in the current buffer from `old.bib' to `fluid.bib'.
 If the key is not found, it is added to the list of missing keys."
   (interactive)
@@ -4571,12 +4644,14 @@ computed by dividing the file size by CHARS-PER-WORD."
     (user-error "Please install `gdu' (e.g. `brew install gdu')"))
   (unless (executable-find "gnuplot")
     (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
-  (let* ((repo-name (or repo-name (completing-read "Repo: " (elbab-get-property-of-repos :name :type 'content))))
-	 (dir (elbab-repo-lookup :dir-translations :name repo-name))
+  (let* ((repo-name (or repo-name
+			(completing-read "Repo: "
+					 (elbab-get-property-of-repos :name :type 'translations))))
+	 (dir (elbab-repo-lookup :dir :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat (elbab-get-property-of-repo :dir "genus")
+	 (script (file-name-concat (elbab-get-property-of-repo-name :dir "babel")
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
 
