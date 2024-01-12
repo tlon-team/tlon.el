@@ -236,11 +236,15 @@ the actual user.")
 
 ;; (mapc #'tlon-babel-set-dir tlon-babel-repos)
 
-(defun tlon-babel-get-property-of-repo-name (property repo)
-  "Get the value of property PROPERTY in REPO.
-REPO is named in its abbreviated form, i.e. the value of `:abbrev' rather than
-`:name'."
-  (tlon-babel-plist-lookup property :abbrev repo tlon-babel-repos))
+(defun tlon-babel-get-property-of-repo (property repo)
+  "Get the value of property PROPERTY in REPO."
+  (tlon-babel-plist-lookup property :dir repo tlon-babel-repos))
+
+(defun tlon-babel-get-property-of-repo-name (property repo-name)
+  "Get the value of property PROPERTY in REPO-NAME.
+REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
+than `:name'."
+  (tlon-babel-plist-lookup property :abbrev repo-name tlon-babel-repos))
 
 (defun tlon-babel-get-property-of-user (property user)
   "Get the value of property PROPERTY in USER."
@@ -1744,14 +1748,12 @@ end of the buffer unconditionally."
   "Return metadata of REPO.
 If REPO is nil, return metadata of current repository."
   (let* ((repo (or repo (tlon-babel-get-repo))))
-    (if-let ((dir (tlon-babel-get-property-of-repo-name :dir repo)))
-	(tlon-babel-get-dir-metadata dir)
-      (if-let ((name (tlon-babel-get-property-of-repo-name :name repo)))
-	  (user-error "The repository `%s' is not a `translations' repository" name)
-	(user-error "The directory `%s' is not a recognized repository" dir)))))
+    (if (eq (tlon-babel-get-property-of-repo :subtype repo) 'translations)
+	(tlon-babel-get-dir-metadata repo)
+      (user-error "The repository `%s' is not a `translations' repository" repo))))
 
 (defun tlon-babel-get-metadata-in-repos ()
-  "Return metadata of all repos."
+  "Return metadata of all `translation' repos."
   (let ((metadata '()))
     (dolist (dir (tlon-babel-get-property-of-repos :dir :type 'translations))
       (setq metadata (append (tlon-babel-get-dir-metadata dir) metadata)))
@@ -2131,7 +2133,7 @@ If STATE is nil, default to `borrador'."
 (defun tlon-babel-replace-footnotes ()
   "Replace footnotes in counterpart of Spanish tag in current buffer."
   (interactive)
-  (tlon-babel-open-counterpart)
+  (tlon-babel-open-counterpart nil)
   (widen)
   (goto-char (point-min))
   (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
@@ -2375,7 +2377,7 @@ return the work type of the file visited by the current buffer."
       ("translations" (if reversed "originals" "translations")))))
 
 (defun tlon-babel-get-counterpart (&optional file)
-  "Get the counterpart file path of file in FILE.
+  "Get the counterpart file of FILE.
 A file's counterpart is its translation if it is an original, and vice versa.
 The translation language is defined by `tlon-babel-translation-language'.
 
@@ -2387,14 +2389,13 @@ buffer."
     ;; only translation files have YAML metadata.
     (if-let ((locator (tlon-babel-metadata-get-field-value-in-file "path_original" file)))
 	(file-name-concat
-	 (tlon-babel-get-counterpart-repo file)
-
+	 (tlon-babel-get-counterpart-dir file)
 	 locator)
       (tlon-babel-metadata-lookup "file"
-			     "path_original"
-			     ;; (tlon-babel-get-locator-from-file file)
-			     (file-name-nondirectory file)
-			     (tlon-babel-get-metadata-in-repo)))))
+				  "path_original"
+				  ;; (tlon-babel-get-locator-from-file file)
+				  (file-name-nondirectory file)
+				  (tlon-babel-get-metadata-in-repo)))))
 
 (defun tlon-babel-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
@@ -2416,16 +2417,20 @@ buffer."
 
 (defun tlon-babel-get-counterpart-dir (&optional file)
   "Get the counterpart directory of FILE.
-A file's counterpart directory is the directory of that file's counterpart. For example, the
-counterpart directory of `~/Dropbox/repos/uqbar-es/autores/' is `~/Dropbox/repos/uqbar-en/authors/'.
+A file's counterpart directory is the directory of that file's counterpart. For
+example, the counterpart directory of `~/Dropbox/repos/uqbar-es/autores/' is
+`~/Dropbox/repos/uqbar-en/authors/'.
 
 If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
+	 (repo-name (tlon-babel-repo-lookup :name :dir repo))
 	 (counterpart-repo (tlon-babel-get-counterpart-repo file))
 	 (bare-dir (tlon-babel-get-bare-dir file))
-	 (counterpart-bare-dir (tlon-babel-get-property-of-languages )))
+	 (source-lang (tlon-babel-get-property-of-repo-name :language repo-name))
+	 (target-lang (if (string= source-lang "en") tlon-babel-translation-language "en"))
+	 (counterpart-bare-dir (tlon-babel-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
 
 (defun tlon-babel-get-bare-dir (&optional file)
@@ -2447,13 +2452,7 @@ If FILE is nil, return the locator of the file visited by the current buffer."
 	 (type (tlon-babel-get-work-type nil file)))
     (file-relative-name file (file-name-concat repo type))))
 
-(defun tlon-babel-get-file-from-locator (locator)
-  "Get the file path of LOCATOR in the current repo."
-  (let* ((repo (tlon-babel-get-repo 'error))
-	 (type (tlon-babel-get-work-type nil locator)))
-    (file-name-concat repo type locator)))
-
-(defun tlon-babel-open-counterpart (arg &optional print-message file)
+(defun tlon-babel-open-counterpart (&optional arg print-message file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
 
@@ -2773,7 +2772,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 (defun tlon-babel-open-forge-counterpart ()
   "Open the file counterpart of the topic at point or in the current buffer."
   (interactive)
-  (tlon-babel-open-counterpart (tlon-babel-get-file-from-issue)))
+  (tlon-babel-open-counterpart nil nil (tlon-babel-get-file-from-issue)))
 
 (defun tlon-babel-copy-buffer (&optional file deepl)
   "Copy the contents of FILE to the kill ring.
