@@ -117,11 +117,13 @@ via `tlon-babel-cancel-repo-timers'.")
     (:name "uqbar-en"
 	   :abbrev "uqbar-en"
 	   :type content
-	   :subtype originals)
+	   :subtype originals
+	   :language "en")
     (:name "uqbar-es"
 	   :abbrev "uqbar-es"
 	   :type content
-	   :subtype translations)
+	   :subtype translations
+	   :language "es")
     (:name "uqbar-issues"
 	   :abbrev "uqbar-issues"
 	   :type issues)
