@@ -200,13 +200,13 @@ perform a given phase of the translation process when the designated user is not
 the actual user.")
 
 (defvar tlon-babel-bare-dirs
-  '(("articles" .
-     ("es" "articulos"))
-    ("tags" .
+  '((("en" . "articles")
+     ("es" . "articulos"))
+    (("en" . "tags")
      ("es" . "temas"))
-    ("authors" .
+    (("en". "authors")
      ("es" . "autores"))
-    ("collections" .
+    (("en" . "collections")
      ("es" . "colecciones")))
   "Alist of bare directories and associated translations.")
 
