@@ -307,16 +307,14 @@ Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
   (tlon-babel-get-property-of-plists compare-prop tlon-babel-labels target-prop target-value))
 
-(defun tlon-babel-get-property-of-languages (compare-prop &optional target-prop target-value)
-  "Get a list of all values for property COMPARE-PROP in `tlon-babel-languages'.
-Optionally, return only the subset of values such that TARGET-PROP matches
-TARGET-VALUE."
-  (tlon-babel-get-property-of-plists compare-prop tlon-babel-languages target-prop target-value))
-
-(defun tlon-babel-get-dir-translation (dir target-lang &optional source-lang)
-  "Get DIR translation in TARGET-LANG.
-If SOURCE-LANG is nil, default to `:en'."
-  (tlon-babel-plist-lookup target-lang (or source-lang :en) dir tlon-babel-bare-dirs))
+(defun tlon-babel-get-bare-dir-translation (target-lang source-lang bare-dir)
+  "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
+  (let (result)
+    (dolist (outer tlon-babel-bare-dirs result)
+      (dolist (inner outer)
+	(when (and (equal (cdr inner) bare-dir)
+		   (equal (car inner) source-lang))
+	  (setq result (cdr (assoc target-lang outer))))))))
 
 (defvar tlon-babel-dir-refs
   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel") "refs/")
