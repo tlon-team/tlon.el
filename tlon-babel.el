@@ -52,7 +52,6 @@
 (require 'request)
 (require 'simple-extras)
 (require 'subr-x)
-(require 'substitute)
 (require 'tlon-core)
 (require 'transient)
 (require 'unfill)
