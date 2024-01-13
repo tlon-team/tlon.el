@@ -108,77 +108,120 @@ via `tlon-babel-cancel-repo-timers'.")
 
 ;; TODO: Revise type `biblio'
 (defvar tlon-babel-repos
-  `((:name "babel"
+  `((:name "babel-core"
 	   :project "babel"
-	   :abbrev "babel"
-	   :type biblio
-	   :key "b g")
+	   :subproject "babel"
+	   :abbrev "babel-core"
+	   :type meta
+	   :key "b c")
+    (:name "babel-refs"
+	   :project "babel"
+	   :subproject "babel"
+	   :abbrev "babel-refs"
+	   :type meta
+	   :subtype biblio
+	   :key "b r")
     (:name "babel-es"
 	   :project "babel"
+	   :subproject "babel"
 	   :abbrev "babel-es"
-	   :type biblio
+	   :type meta
 	   :key "b s")
+    (:name "uqbar-issues"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-issues"
+	   :type development
+	   :subtype issues
+	   :key "q i")
+    (:name "uqbar-front"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-front"
+	   :type development
+	   :subtype front
+	   :key "q f")
+    (:name "uqbar-api"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-api"
+	   :type development
+	   :subtype api
+	   :key "q a")
     (:name "uqbar-en"
-	   :project "uqbar"
+	   :project "babel"
+	   :subproject "uqbar"
 	   :abbrev "uqbar-en"
 	   :type content
 	   :subtype originals
 	   :language "en"
 	   :key "q n")
     (:name "uqbar-es"
-	   :project "uqbar"
+	   :project "babel"
+	   :subproject "uqbar"
 	   :abbrev "uqbar-es"
 	   :type content
 	   :subtype translations
 	   :language "es"
 	   :key "q s")
-    (:name "uqbar-issues"
-	   :project "uqbar"
-	   :abbrev "uqbar-issues"
-	   :type issues
-	   :key "q i")
-    (:name "uqbar-front"
-	   :project "uqbar"
-	   :abbrev "uqbar-front"
-	   :type front
-	   :key "q f")
-    (:name "uqbar-api"
-	   :project "uqbar"
-	   :abbrev "uqbar-api"
-	   :type api
-	   :key "q a")
-    (:name "utilitarismo.net"
-	   :project "utilitarismo"
-	   :abbrev "util"
+    (:name "utilitarismo-en"
+	   :project "babel"
+	   :subproject "utilitarismo"
+	   :abbrev "utilitarismo-en"
 	   :type content
-	   ;; :subtype ??? <- TODO: fix this (split repo in two?)
-	   :key "u")
-    (:name "ensayos-sobre-largoplacismo"
-	   :project "ensayos-sobre-largoplacismo"
-	   :abbrev "esl"
-	   :type translations)
+	   :subtype originals
+	   :key "u n")
+    (:name "utilitarismo"
+	   :project "babel"
+	   :subproject "utilitarismo"
+	   :abbrev "utilitarismo-es"
+	   :type content
+	   :subtype translations
+	   :key "u s")
+    (:name "ensayos-sobre-largoplacismo-en"
+	   :project "babel"
+	   :subproject "ensayos-sobre-largoplacismo"
+	   :abbrev "ensayos-en"
+	   :type content
+	   :subtype originals
+	   :key "l n")
+    (:name "ensayos-sobre-largoplacismo-es"
+	   :project "babel"
+	   :subproject "ensayos-sobre-largoplacismo"
+	   :abbrev "ensayos-es"
+	   :type content
+	   :subtype translations
+	   :key "l s")    
     (:name "ea.news-issues"
-	   :project "ea.news"
+	   :project "other"
+	   :subproject "ea.news"
 	   :abbrev "ean-issues"
-	   :type issues
+	   :type development
+	   :subtype issues
 	   :key "e i")
     (:name "ea.news-front"
-	   :project "ea.news"
+	   :project "other"
+	   :subproject "ea.news"
 	   :abbrev "ean-front"
-	   :type front
+	   :type development
+	   :subtype front
 	   :key "f")
     (:name "ea.news-api"
-	   :project "ea.news"
+	   :project "other"
+	   :subproject "ea.news"
 	   :abbrev "ean-api"
-	   :type api
+	   :type development
+	   :subtype api
 	   :key "a")
     (:name "bisagra"
-	   :project "bisagra"
+	   :project "other"
+	   :subproject "bisagra"
 	   :abbrev "bisagra"
-	   :type multi
+	   :type misc
 	   :key "b")
     (:name "tlon-docs"
-	   :project "docs"
+	   :project "other"
+	   :subproject "docs"
 	   :abbrev "docs"
 	   :type docs
 	   :key "d"))
