@@ -305,14 +305,62 @@ the actual user.")
 
 (mapc #'tlon-babel-set-dir tlon-babel-repos)
 
+(defmacro tlon-babel-generate-repo-commands (name dir)
+  `(progn
+     (defun ,(intern (format "tlon-babel-dired-browse-%s" name)) ()
+       ,(format "Browse the %s repository in Dired." name)
+       (interactive)
+       (dired ,dir))
+     (defun ,(intern (format "tlon-babel-magit-browse-%s" name)) ()
+       ,(format "Browse the %s repository in Magit." name)
+       (interactive)
+       (magit-status ,dir))))
+
+(dolist (repo tlon-babel-repos)
+  (eval `(tlon-babel-generate-repo-commands
+          ,(plist-get repo :abbrev)
+          ,(plist-get repo :dir))))
+
+(defmacro tlon-babel-generate-dir-commands (name dir entity)
+  `(progn
+     (defun ,(intern (format "tlon-babel-dired-browse-%s-dir-in-%s" entity name)) ()
+       ,(format "Browse the `%s' directory in the `%s' repository." entity name)
+       (interactive)
+       (tlon-babel-browse-entity-dir ,entity ,dir))))
+
+(dolist (repo tlon-babel-repos)
+  (dolist (entity (tlon-babel-get-entity-types))
+    (eval `(tlon-babel-generate-dir-commands
+            ,(plist-get repo :abbrev)
+            ,(plist-get repo :dir)
+	    ,entity))))
+
+
+(defmacro tlon-babel-generate-entity-dispatch (name)
+  `(transient-define-prefix ,(intern (format "tlon-babel-browse-entity-in-%s-dispatch" name)) ()
+     ,(format "Browse a directory in the `%s' repo." name)
+     [["directories"
+       ("a" "articles"         ,(intern (format "tlon-babel-dired-browse-articles-dir-in-%s" name)))
+       ("t" "tags"             ,(intern (format "tlon-babel-dired-browse-tags-dir-in-%s" name)))
+       ("u" "authors"          ,(intern (format "tlon-babel-dired-browse-authors-dir-in-%s" name)))
+       ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))
+       ;; ("i" "images"           ,(intern (format "tlon-babel-dired-browse-images-dir-in-%s" name)))
+       ]
+      ]
+     )
+  )
+
+(dolist (repo (tlon-babel-get-property-of-repos :abbrev :type 'content))
+  (eval `(tlon-babel-generate-entity-dispatch ,repo)))
+
 (defun tlon-babel-get-property-of-repo (property repo)
   "Get the value of property PROPERTY in REPO."
   (tlon-babel-plist-lookup property :dir repo tlon-babel-repos))
 
 (defun tlon-babel-get-property-of-repo-name (property repo-name)
   "Get the value of property PROPERTY in REPO-NAME.
-REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
-than `:name'."
+  REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
+  than `:name'."
   (tlon-babel-plist-lookup property :abbrev repo-name tlon-babel-repos))
 
 (defun tlon-babel-get-property-of-user (property user)
@@ -1807,6 +1855,22 @@ end of the buffer unconditionally."
     ("d" "display"              tlon-babel-markdown-insert-math-display)
     ]]
   )
+
+(defun tlon-babel-repos-transient ()
+  "Transient for opening projects in Magit."
+  (interactive)
+  (let ((transient-args (mapcar (lambda (repo)
+                                  (let* ((abbrev (plist-get repo :abbrev))
+                                         (fun-name (intern (concat "tlon-open-repo-" abbrev))))
+                                    (fset fun-name
+                                          `(lambda ()
+                                             (interactive)
+                                             (magit-status ,(plist-get repo :dir))))
+                                    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
+                                tlon-babel-repos)))
+    (eval `(transient-define-prefix tlon-open-repo-transient ()
+             "Transient that dispatches to Magit open repo commands."
+             ,@transient-args))))
 ;;;;; Metadata
 
 ;;;;;; Get metadata
@@ -2453,6 +2517,9 @@ buffer."
 				    (file-name-nondirectory file)
 				    (tlon-babel-get-metadata-in-repo translations-repo))))))
 
+;; TODO: not urgent, but ideally the counterpart repo should be obtained by
+;; looking up `tlon-babel-repos'; inferring it from the name is not robust, and
+;; is inconsistent with the approach I took elsewhere
 (defun tlon-babel-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
 A file's counterpart repo is the repo of that file's counterpart.
@@ -2942,8 +3009,8 @@ matching will be made against repos with any value for the property `:type'."
       (let* ((content (tlon-babel-get-property-of-repos :name :type 'translations))
 	     (all (tlon-babel-get-property-of-repos :name)))
 	(tlon-babel-repo-lookup :dir :name
-			   (completing-read "Select repo: "
-					    (if include-all all content)))))))
+				(completing-read "Select repo: "
+						 (if include-all all content)))))))
 
 (defun tlon-babel-get-commit-key ()
   "Get key of commit file."
@@ -3176,7 +3243,7 @@ Markdown buffer at point is used."
   "Create issue from TODO or vice versa."
   (interactive)
   (tlon-babel-todo-issue-funcall #'tlon-babel-create-issue-from-todo
-			    #'tlon-babel-capture-issue))
+				 #'tlon-babel-capture-issue))
 
 (defun tlon-babel-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
@@ -3329,8 +3396,8 @@ for the process that is being initialized."
 	(tlon-babel-commit-and-push current-action original-path))
       (tlon-babel-commit-and-push current-action translation-path)
       (tlon-babel-act-on-topic original-key next-label next-assignee
-			  (when (string= current-action "Review")
-			    'close))
+			       (when (string= current-action "Review")
+				 'close))
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 	       next-label next-assignee))
     (tlon-babel-finalize-set-todos)))
@@ -4165,7 +4232,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   [["Main"
     ("j" "job"                            tlon-babel-create-job)
     ("r" "dwim"                           tlon-babel-dwim)
-    ("m" "magit"                          tlon-babel-magit-prompt)
+    ("m" "Magit"                   tlon-babel-magit-repo-dispatch)
     ("n" "forge"                          tlon-babel-forge)
     ("." "gh-notify"                      gh-notify)
     """Request"
@@ -4182,32 +4249,19 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("s c" "commits"                      tlon-babel-search-commits)
     ("s d" "commit-diffs"                 tlon-babel-search-commit-diffs)
     ("s f" "files"                        tlon-babel-search-files)
-    ("s i" "topics"                       tlon-babel-search-topics)
+    ("s i" "issues"                       tlon-babel-search-topics)
     ("s t" "translation"                  tlon-babel-search-for-translation)
     ]
-   ["Visit file"
-    ("f f" "counterpart"                  tlon-babel-open-counterpart)
-    ("f F" "counterpart other win"        tlon-babel-open-counterpart-other-window)
-    ("f j" "jobs.org"                     tlon-babel-open-jobs)
-    ("f l" "fluid.bib"                    tlon-babel-open-fluid)
-    ("f m" "manual.md"                    tlon-babel-open-manual)
-    ("f r" "readme.md"                    tlon-babel-open-readme)
-    ("f t" "stable.bib"                   tlon-babel-open-stable)
-    ("f u" "bibtex-corresp"               tlon-babel-open-bibtex-correspondences)
-    ("f u" "url-corresp"                  tlon-babel-open-url-correspondences)
-    ("f s" "section-corresp"              tlon-babel-open-section-correspondences)
+   ["Browse in Dired"
+    ("d" "dir"               tlon-babel-dired-dir-dispatch)
+    ("D" "repo"                   tlon-babel-dired-repo-dispatch)
+    ""
+    """Browse externally"
+    ("b" "current file"                         tlon-babel-browse-file)
+    ("B" "current repo"                         tlon-babel-browse-repo)
     ]
-   ["Visit dir"
-    ("d d" "repo"                         tlon-babel-open-repo)
-    ("d b" "babel"                        tlon-babel-open-babel-repo)
-    ("d u" "utilitarismo"                 tlon-babel-open-utilitarismo-repo)
-    ("d l" "largoplacismo"                tlon-babel-open-largoplacismo-repo)
-    ("d q b" "uqbar"                      tlon-babel-open-uqbar-es-repo)
-    ("d q a" "uqbar: articles"            tlon-babel-open-uqbar-es-articles)
-    ("d q u" "uqbar: authors"             tlon-babel-open-uqbar-es-authors)
-    ("d q t" "uqbar: tags"                tlon-babel-open-uqbar-es-tags)
-    ]
-   ["File changes"
+   [
+    "File changes"
     ("h h" "log"                          magit-log-buffer-file)
     ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
     ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
@@ -4221,9 +4275,6 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     """Issue"
     ("i i" "open counterpart"             tlon-babel-open-forge-counterpart)
     ("i I" "open file"                    tlon-babel-open-forge-file)
-    """Browse"
-    ("b b" "file"                         tlon-babel-browse-file)
-    ("b r" "repo"                         tlon-babel-browse-repo)
     ]
    ["Sync"
     ("y y" "visit or capture"             tlon-babel-visit-counterpart-or-capture)
@@ -4234,6 +4285,115 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ("y r" "reconcile"                    tlon-babel-reconcile-issue-and-todo)
     ("y R" "reconcile all"                tlon-babel-reconcile-all-issues-and-todos)
     ("y x" "close"                        tlon-babel-close-issue-and-todo)]
+   ]
+  )
+
+(transient-define-prefix tlon-babel-magit-repo-dispatch ()
+  "Browse a Tlön repo in Magit."
+  [["Babel"
+    ("b c" "babel-core"                       tlon-babel-magit-babel-core)
+    ("b r" "babel-refs"                       tlon-babel-magit-babel-refs)
+    ("b s" "babel-es"                         tlon-babel-magit-babel-es)
+    ]
+   ["Uqbar"
+    ("q i" "uqbar-issues"                     tlon-babel-magit-uqbar-issues)
+    ("q f" "uqbar-front"                      tlon-babel-magit-uqbar-front)
+    ("q a" "uqbar-api"                        tlon-babel-magit-uqbar-api)
+    ("q n" "uqbar-en"                         tlon-babel-magit-uqbar-en)
+    ("q s" "uqbar-es"                         tlon-babel-magit-uqbar-es)
+    ]
+   ["Utilitarismo"
+    ("u n" "utilitarismo-en"                     tlon-babel-magit-utilitarismo-en)
+    ("u s" "utilitarismo-es"                     tlon-babel-magit-utilitarismo-es)
+    ]
+   ["Ensayos sobre largoplacismo"
+    ("e n" "ensayos-en"                     tlon-babel-magit-ensayos-en)
+    ("e s" "ensayos-es"                     tlon-babel-magit-ensayos-es)
+    ]
+   ["EA News"
+    ("n i" "ean-issues"                     tlon-babel-magit-ean-issues)
+    ("n f" "ean-front"                     tlon-babel-magit-ean-front)
+    ("n a" "ean-api"                     tlon-babel-magit-ean-api)
+    ]
+   ["La Bisagra"
+    ("s s" "bisagra"                     tlon-babel-magit-bisagra)
+    ]
+   ["Docs"
+    ("d d" "tlon-docs"                     tlon-babel-magit-docs)
+    ]
+   ]
+  )
+
+(transient-define-prefix tlon-babel-dired-repo-dispatch ()
+  "Browse a Tlön repo in Dired."
+  [["Babel"
+    ("b c" "babel-core"                       tlon-babel-dired-babel-core)
+    ("b r" "babel-refs"                       tlon-babel-dired-babel-refs)
+    ("b s" "babel-es"                         tlon-babel-dired-babel-es)
+    ]
+   ["Uqbar"
+    ("q i" "uqbar-issues"                     tlon-babel-dired-uqbar-issues)
+    ("q f" "uqbar-front"                      tlon-babel-dired-uqbar-front)
+    ("q a" "uqbar-api"                        tlon-babel-dired-uqbar-api)
+    ("q n" "uqbar-en"                         tlon-babel-dired-uqbar-en)
+    ("q s" "uqbar-es"                         tlon-babel-dired-uqbar-es)
+    ]
+   ["Utilitarismo"
+    ("u n" "utilitarismo-en"                     tlon-babel-dired-utilitarismo-en)
+    ("u s" "utilitarismo-es"                     tlon-babel-dired-utilitarismo-es)
+    ]
+   ["Ensayos sobre largoplacismo"
+    ("e n" "ensayos-en"                     tlon-babel-dired-ensayos-en)
+    ("e s" "ensayos-es"                     tlon-babel-dired-ensayos-es)
+    ]
+   ["EA News"
+    ("n i" "ean-issues"                     tlon-babel-dired-ean-issues)
+    ("n f" "ean-front"                     tlon-babel-dired-ean-front)
+    ("n a" "ean-api"                     tlon-babel-dired-ean-api)
+    ]
+   ["La Bisagra"
+    ("s s" "bisagra"                     tlon-babel-dired-bisagra)
+    ]
+   ["Docs"
+    ("d d" "tlon-docs"                     tlon-babel-dired-docs)
+    ]
+   ]
+  )
+
+(transient-define-prefix tlon-babel-dired-dir-dispatch ()
+  "Browse a Tlön repo directory in Dired."
+  [
+   ;; ["Babel"
+   ;; ("b c" "babel-core"                       tlon-babel-dired-babel-core)
+   ;; ("b r" "babel-refs"                       tlon-babel-dired-babel-refs)
+   ;; ("b s" "babel-es"                         tlon-babel-dired-babel-es)
+   ;; ]
+   ["Uqbar"
+    ;; ("q i" "uqbar-issues"                     )
+    ;; ("q f" "uqbar-front"                      )
+    ;; ("q a" "uqbar-api"                        )
+    ("q n" "uqbar-en"                         tlon-babel-browse-entity-in-uqbar-en-dispatch)
+    ("q s" "uqbar-es"                         tlon-babel-browse-entity-in-uqbar-es-dispatch)
+    ]
+   ["Utilitarismo"
+    ("u n" "utilitarismo-en"                     tlon-babel-browse-entity-in-utilitarismo-en-dispatch)
+    ("u s" "utilitarismo-es"                     tlon-babel-browse-entity-in-utilitarismo-es-dispatch)
+    ]
+   ["Ensayos sobre largoplacismo"
+    ("e n" "ensayos-en"                     tlon-babel-browse-entity-in-ensayos-en-dispatch)
+    ("e s" "ensayos-es"                     tlon-babel-browse-entity-in-ensayos-es-dispatch)
+    ]
+   ;; ["EA News"
+   ;; ("n i" "ean-issues"                     )
+   ;; ("n f" "ean-front"                     )
+   ;; ("n a" "ean-api"                     )
+   ;; ]
+   ;; ["La Bisagra"
+   ;; ("s s" "bisagra"                     )
+   ;; ]
+   ;; ["Docs"
+   ;; ("d d" "tlon-docs"                     )
+   ;; ]
    ]
   )
 
@@ -4275,7 +4435,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 (defun tlon-babel-open-largoplacismo-repo ()
   "Open the Largoplacismo repository."
   (interactive)
-  (dired (tlon-babel-get-property-of-repo-name :dir "esl")))
+  (dired (tlon-babel-get-property-of-repo-name :dir "ensayos")))
 
 (defun tlon-babel-open-babel-repo ()
   "Open the Babel repository."
@@ -4302,6 +4462,39 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   "Open the `temas' folder of the `uqbar-es' repository."
   (interactive)
   (tlon-babel-open-uqbar-es-folder "temas"))
+
+(defun tlon-babel-browse-entity-dir (entity &optional repo source-lang)
+  "Browse the directory of ENTITY in REPO.
+ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
+REPO is nil, default to the current repository."
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (source-lang (or source-lang "en"))
+	 (target-lang (tlon-babel-repo-lookup :language :dir repo))
+	 (dir (tlon-babel-get-bare-dir-translation target-lang source-lang entity))
+	 (path (file-name-concat repo dir)))
+    (dired path)))
+
+(defmacro tlon-babel-generate-browse-entity-dir-commands (entity)
+  "Generate commands to browse ENTITY dirs."
+  (let ((command-name (intern (concat "tlon-babel-browse-dir-" entity))))
+    `(defun ,command-name (&optional repo)
+       ,(format "Browse the `%s' directory in REPO.
+If REPO is nil, default to the current repository." entity)
+       (interactive)
+       (let ((repo (or repo (tlon-babel-get-repo))))
+	 (tlon-babel-browse-entity-dir ,entity repo)))))
+
+(defun tlon-babel-get-entity-types ()
+  "Return a list of entity types."
+  (let (collection)
+    (dolist (list tlon-babel-bare-dirs)
+      (dolist (cons list)
+	(when (string= (car cons) "en")
+	  (push (cdr cons) collection))))
+    collection))
+
+(dolist (entity (tlon-babel-get-entity-types))
+  (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
 
 ;;;;; Request
 
