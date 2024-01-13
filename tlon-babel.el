@@ -109,53 +109,79 @@ via `tlon-babel-cancel-repo-timers'.")
 ;; TODO: Revise type `biblio'
 (defvar tlon-babel-repos
   `((:name "babel"
+	   :project "babel"
 	   :abbrev "babel"
-	   :type biblio)
+	   :type biblio
+	   :key "b g")
     (:name "babel-es"
+	   :project "babel"
 	   :abbrev "babel-es"
-	   :type biblio)
+	   :type biblio
+	   :key "b s")
     (:name "uqbar-en"
+	   :project "uqbar"
 	   :abbrev "uqbar-en"
 	   :type content
 	   :subtype originals
-	   :language "en")
+	   :language "en"
+	   :key "q n")
     (:name "uqbar-es"
+	   :project "uqbar"
 	   :abbrev "uqbar-es"
 	   :type content
 	   :subtype translations
-	   :language "es")
+	   :language "es"
+	   :key "q s")
     (:name "uqbar-issues"
+	   :project "uqbar"
 	   :abbrev "uqbar-issues"
-	   :type issues)
+	   :type issues
+	   :key "q i")
     (:name "uqbar-front"
+	   :project "uqbar"
 	   :abbrev "uqbar-front"
-	   :type front)
+	   :type front
+	   :key "q f")
     (:name "uqbar-api"
+	   :project "uqbar"
 	   :abbrev "uqbar-api"
-	   :type api)
+	   :type api
+	   :key "q a")
     (:name "utilitarismo.net"
+	   :project "utilitarismo"
 	   :abbrev "util"
 	   :type content
 	   ;; :subtype ??? <- TODO: fix this (split repo in two?)
-	   )
+	   :key "u")
     (:name "ensayos-sobre-largoplacismo"
+	   :project "ensayos-sobre-largoplacismo"
 	   :abbrev "esl"
 	   :type translations)
     (:name "ea.news-issues"
+	   :project "ea.news"
 	   :abbrev "ean-issues"
-	   :type issues)
+	   :type issues
+	   :key "e i")
     (:name "ea.news-front"
+	   :project "ea.news"
 	   :abbrev "ean-front"
-	   :type front)
+	   :type front
+	   :key "f")
     (:name "ea.news-api"
+	   :project "ea.news"
 	   :abbrev "ean-api"
-	   :type api)
+	   :type api
+	   :key "a")
     (:name "bisagra"
+	   :project "bisagra"
 	   :abbrev "bisagra"
-	   :type multi)
+	   :type multi
+	   :key "b")
     (:name "tlon-docs"
+	   :project "docs"
 	   :abbrev "docs"
-	   :type docs))
+	   :type docs
+	   :key "d"))
   "List of repos and associated properties.
 The `:name' property is the full name of the repo, as it appears in the URL. The
 `:abbrev' property is an abbreviated form of the name, used, for example, for
