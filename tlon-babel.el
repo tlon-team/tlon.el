@@ -2105,13 +2105,6 @@ If STATE is nil, default to `borrador'."
     (tlon-babel-yaml-reorder-front-matter)
     (save-buffer)))
 
-(defun tlon-babel-get-tag-counterpart ()
-  "Get the tag counterpart."
-  (if-let* ((counterpart (tlon-babel-get-counterpart))
-	    (file-name (file-name-nondirectory counterpart))
-	    (path (file-name-concat (tlon-babel-get-repo) "originals/tags" file-name)))
-      path))
-
 (defun tlon-babel-replace-further-reading ()
   "Replace ‘Further reading’ in counterpart of Spanish tag in current buffer."
   (goto-char (point-min))
@@ -2383,19 +2376,15 @@ The translation language is defined by `tlon-babel-translation-language'.
 
 If FILE is nil, return the counterpart of the file visited by the current
 buffer."
-  (let ((file (or file (tlon-babel-buffer-file-name))))
-    ;; we use a different method for getting the counterpart depending
-    ;; on whether FILE is in `originals' or `translations', since
-    ;; only translation files have YAML metadata.
-    (if-let ((locator (tlon-babel-metadata-get-field-value-in-file "path_original" file)))
-	(file-name-concat
-	 (tlon-babel-get-counterpart-dir file)
-	 locator)
-      (tlon-babel-metadata-lookup "file"
-				  "path_original"
-				  ;; (tlon-babel-get-locator-from-file file)
-				  (file-name-nondirectory file)
-				  (tlon-babel-get-metadata-in-repo)))))
+  (let* ((file (or file (tlon-babel-buffer-file-name))))
+    (if-let ((dir (tlon-babel-get-counterpart-dir file))
+	     (locator (tlon-babel-metadata-get-field-value-in-file "path_original" file)))
+	(file-name-concat dir locator)
+      (let ((translations-repo (tlon-babel-get-counterpart-repo file)))
+	(tlon-babel-metadata-lookup "file"
+				    "path_original"
+				    (file-name-nondirectory file)
+				    (tlon-babel-get-metadata-in-repo translations-repo))))))
 
 (defun tlon-babel-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
@@ -2413,7 +2402,7 @@ buffer."
 	    ('originals (format "%s-%s" repo-base-name tlon-babel-translation-language))
 	    ('translations (format "%s-en" repo-base-name))
 	    (_ (user-error "Repo `%s' is neither an `originals' nor a `translations'" repo)))))
-    (file-name-concat tlon-babel-dir-repos counterpart-repo-name)))
+    (file-name-as-directory (file-name-concat tlon-babel-dir-repos counterpart-repo-name))))
 
 (defun tlon-babel-get-counterpart-dir (&optional file)
   "Get the counterpart directory of FILE.
@@ -2425,10 +2414,9 @@ If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
-	 (repo-name (tlon-babel-repo-lookup :name :dir repo))
 	 (counterpart-repo (tlon-babel-get-counterpart-repo file))
 	 (bare-dir (tlon-babel-get-bare-dir file))
-	 (source-lang (tlon-babel-get-property-of-repo-name :language repo-name))
+	 (source-lang (tlon-babel-get-property-of-repo :language repo))
 	 (target-lang (if (string= source-lang "en") tlon-babel-translation-language "en"))
 	 (counterpart-bare-dir (tlon-babel-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
@@ -2467,14 +2455,8 @@ If called with a prefix ARG, open the counterpart in the other window."
   (unless file
     (save-buffer))
   (let* ((fun (if arg #'find-file-other-window #'find-file))
-	 (counterpart
-	  ;; temporary hack
-	  (if (string= default-directory
-		       (file-name-concat
-			(tlon-babel-get-property-of-repo-name :dir "uqbar-es") "temas/"))
-	      (tlon-babel-get-tag-counterpart)
-	    (tlon-babel-get-counterpart
-	     (or file (buffer-file-name)))))
+	 (counterpart (tlon-babel-get-counterpart
+		       (or file (buffer-file-name))))
 	 (paragraphs (- (tlon-babel-count-paragraphs
 			 file (point-min) (min (point-max) (+ (point) 2)))
 			1)))
