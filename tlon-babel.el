@@ -390,7 +390,7 @@ TARGET-VALUE."
 	  (setq result (cdr (assoc target-lang outer))))))))
 
 (defvar tlon-babel-dir-refs
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel") "refs/")
+  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-refs"))
   "Directory where references files are stored.")
 
 (defvar tlon-babel-dir-correspondences
@@ -401,6 +401,10 @@ TARGET-VALUE."
   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
+(defvar tlon-babel-dir-bib
+  (file-name-concat tlon-babel-dir-refs "bib/")
+  "Directory where BibTeX files are stored.")
+
 (defvar tlon-babel-dir-locales
   (file-name-concat tlon-babel-dir-refs "locales/")
   "Directory where CSL locale files are stored.")
@@ -410,11 +414,11 @@ TARGET-VALUE."
   "Directory where CSL style files are stored.")
 
 (defvar tlon-babel-file-babel-manual
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel") "manual.org")
+  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-core") "manual.org")
   "File containing the Babel manual.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel") "jobs.org")
+  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-core") "jobs.org")
   "File containing the jobs.")
 
 (defvar tlon-babel-file-glossary
@@ -422,11 +426,11 @@ TARGET-VALUE."
   "File containing the glossary.")
 
 (defvar tlon-babel-file-fluid
-  (file-name-concat tlon-babel-dir-refs "fluid.bib")
+  (file-name-concat tlon-babel-dir-bib "fluid.bib")
   "File containing the fluid bibliography.")
 
 (defvar tlon-babel-file-stable
-  (file-name-concat tlon-babel-dir-refs "stable.bib")
+  (file-name-concat tlon-babel-dir-bib "stable.bib")
   "File containing the stable bibliography.")
 
 (defvar tlon-babel-bibliography-files
@@ -464,12 +468,6 @@ TARGET-VALUE."
 (tlon-babel-create-file-opening-command "url-correspondences")
 (tlon-babel-create-file-opening-command "section-correspondences")
 (tlon-babel-create-file-opening-command "bibtex-correspondences")
-
-(defcustom tlon-babel-csl-styles
-  (file-name-concat tlon-babel-dir-refs "styles/")
-  "Directory where CSL style files are stored."
-  :type 'directory
-  :group 'tlon-babel)
 
 ;;;;; Org-mode ids
 
