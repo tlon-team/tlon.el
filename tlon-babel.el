@@ -260,7 +260,7 @@ the actual user.")
 				 (plist-get repo :name)))))
     (plist-put repo :dir dir)))
 
-;; (mapc #'tlon-babel-set-dir tlon-babel-repos)
+(mapc #'tlon-babel-set-dir tlon-babel-repos)
 
 (defun tlon-babel-get-property-of-repo (property repo)
   "Get the value of property PROPERTY in REPO."
