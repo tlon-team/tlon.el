@@ -67,32 +67,6 @@
   "A companion package for the Babel project."
   :group 'files)
 
-;; TODO: turn into properties of `tlon-babel-repos'
-(defcustom tlon-babel-repo-timer-durations
-  '(("babel" . 1)
-    ("babel-es" . 1)
-    ("uqbar-es" . 1)
-    ("uqbar-en" . 1)
-    ("uqbar-issues" . 1)
-    ("uqbar-front" . 8)
-    ("uqbar-api" . 8)
-    ("ea.news-issues" . 1)
-    ("ea.news-front" . 8)
-    ("ea.news-api" . 8)
-    ("utilitarismo.net" . 1)
-    ("ensayos-sobre-largoplacismo" . 1)
-    ("bisagra" . 8))
-  "Alist of repos and associated update frequencies, in hours.
-A repo will be updated after that many hours of inactivity."
-  :type '(alist :key-type string :value-type integer)
-  :group 'tlon-babel)
-
-(defvar tlon-babel-repo-timers nil
-  "Timers for each repo.
-This variable is set by `tlon-babel-initialize-repo-timers' and its purpose is
-to store the timers created by that function so that they can be canceled
-via `tlon-babel-cancel-repo-timers'.")
-
 ;;;; Variables
 
 ;;;;; Files and dirs
@@ -2986,27 +2960,6 @@ If the current directory matches none of the directories in
   (interactive)
   (dolist (repo (tlon-babel-get-property-of-repos :name))
     (tlon-babel-forge-update-repo repo)))
-
-(defun tlon-babel-initialize-repo-timers ()
-  "Initialize timers for Babel repos.
-Start an idle timer for each active repo, with an update frequency as specified
-in `tlon-babel-repo-timer-durations'. If no duration is specified for an active
-repo, a value of 8 hours will be used."
-  (tlon-babel-cancel-repo-timers)
-  (dolist (repo (tlon-babel-get-property-of-repos :name))
-    (let ((interval (or (alist-get repo tlon-babel-repo-timer-durations nil nil 'string=) 8)))
-      (push
-       (run-with-idle-timer (* interval 60 60) t
-			    (lambda () (tlon-babel-forge-update-repo repo)))
-       tlon-babel-repo-timers))))
-
-(defun tlon-babel-cancel-repo-timers ()
-  "Cancel all timers for Babel repos."
-  (dolist (timer tlon-babel-repo-timers)
-    (cancel-timer timer))
-  (setq tlon-babel-repo-timers '()))
-
-(tlon-babel-initialize-repo-timers)
 
 (defun tlon-babel-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
