@@ -2565,18 +2565,12 @@ If FILE is nil, return the locator of the file visited by the current buffer."
 	 (type (tlon-babel-get-work-type nil file)))
     (file-relative-name file (file-name-concat repo type))))
 
-(defun tlon-babel-open-counterpart (&optional arg print-message file)
+(defun tlon-babel-open-counterpart (&optional arg file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
 
-When called interactively, PRINT-MESSAGE is non-nil, and the function signals an
-error if the current buffer is not in `markdown-mode' and FILE is nil.
-
 If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
-  (when (and print-message
-	     (not (derived-mode-p 'markdown-mode)))
-    (user-error "Not in markdown-mode"))
   (unless file
     (save-buffer))
   (let* ((fun (if arg #'find-file-other-window #'find-file))
@@ -2589,10 +2583,39 @@ If called with a prefix ARG, open the counterpart in the other window."
     (goto-char (point-min))
     (forward-paragraph paragraphs)))
 
-(defun tlon-babel-open-counterpart-other-window ()
-  "Open the counterpart of file in FILE in the other window."
-  (interactive)
-  (tlon-babel-open-counterpart t))
+(defun tlon-babel-open-dired-counterpart (&optional arg file)
+  "Open the counterpart of file in FILE in Dired.
+If FILE is nil, open the counterpart of the file at point.
+
+If called with a prefix ARG, open the counterpart in the other window."
+  (interactive "P")
+  (let* ((counterpart (tlon-babel-get-counterpart
+		       (or file (dired-x-guess-file-name-at-point)))))
+    (dired-jump arg counterpart)))
+
+(defun tlon-babel-open-counterpart-dwim (&optional arg file)
+  "Open the counterpart of file in FILE as appropriate.
+If called in `markdown-mode', open FILE’s counterpart. If called in
+`dired-mode', jump to its counterpart’s Dired buffer.
+
+If FILE is nil, act on the file at point or visited in the current buffer.
+
+If called with a prefix ARG, open the counterpart in the other window."
+  (interactive "P")
+  (pcase major-mode
+    ('markdown-mode (tlon-babel-open-counterpart arg file))
+    ('dired-mode (tlon-babel-open-dired-counterpart arg file))))
+
+(defun tlon-babel-open-counterpart-other-window-dwim (&optional file)
+  "Open the counterpart of file in FILE as appropriate.
+If called in `markdown-mode', open FILE’s counterpart. If called in
+`dired-mode', jump to its counterpart’s Dired buffer.
+
+If FILE is nil, act on the file at point or visited in the current buffer.
+
+If called with a prefix ARG, open the counterpart in the other window."
+  (interactive "P")
+  (tlon-babel-open-counterpart-dwim file))
 
 (defun tlon-babel-count-paragraphs (&optional file start end)
   "Return number of paragraphs between START and END in FILE.
@@ -2879,7 +2902,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 (defun tlon-babel-open-forge-counterpart ()
   "Open the file counterpart of the topic at point or in the current buffer."
   (interactive)
-  (tlon-babel-open-counterpart nil nil (tlon-babel-get-file-from-issue)))
+  (tlon-babel-open-counterpart nil (tlon-babel-get-file-from-issue)))
 
 (defun tlon-babel-copy-buffer (&optional file deepl)
   "Copy the contents of FILE to the kill ring.
