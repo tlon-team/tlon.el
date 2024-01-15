@@ -335,24 +335,6 @@ the actual user.")
             ,(plist-get repo :dir)
 	    ,entity))))
 
-
-(defmacro tlon-babel-generate-entity-dispatch (name)
-  `(transient-define-prefix ,(intern (format "tlon-babel-browse-entity-in-%s-dispatch" name)) ()
-     ,(format "Browse a directory in the `%s' repo." name)
-     [["directories"
-       ("a" "articles"         ,(intern (format "tlon-babel-dired-browse-articles-dir-in-%s" name)))
-       ("t" "tags"             ,(intern (format "tlon-babel-dired-browse-tags-dir-in-%s" name)))
-       ("u" "authors"          ,(intern (format "tlon-babel-dired-browse-authors-dir-in-%s" name)))
-       ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))
-       ;; ("i" "images"           ,(intern (format "tlon-babel-dired-browse-images-dir-in-%s" name)))
-       ]
-      ]
-     )
-  )
-
-(dolist (repo (tlon-babel-get-property-of-repos :abbrev :type 'content))
-  (eval `(tlon-babel-generate-entity-dispatch ,repo)))
-
 (defun tlon-babel-get-property-of-repo (property repo)
   "Get the value of property PROPERTY in REPO."
   (tlon-babel-plist-lookup property :dir repo tlon-babel-repos))
@@ -4225,8 +4207,9 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 	(push (list candidate translation category) json))
       (tlon-babel-write-json file json))))
 
-;;;;; dispatcher
+;;;;; dispatchers
 
+;; TODO: add flag to set translation language, similar to Magit dispatch
 (transient-define-prefix tlon-babel-dispatch ()
   "Dispatch a `tlon-babel' command."
   [["Main"
@@ -4254,11 +4237,14 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ]
    ["Browse in Dired"
     ("d" "dir"               tlon-babel-dired-dir-dispatch)
-    ("D" "repo"                   tlon-babel-dired-repo-dispatch)
+    ("H-d" "repo"                   tlon-babel-dired-repo-dispatch)
     ""
     """Browse externally"
     ("b" "current file"                         tlon-babel-browse-file)
-    ("B" "current repo"                         tlon-babel-browse-repo)
+    ("H-b" "current repo"                         tlon-babel-browse-repo)
+    """Counterpart"
+    ("f" "current win" tlon-babel-open-counterpart-dwim)
+    ("H-f" "other win" tlon-babel-open-counterpart-other-window-dwim)
     ]
    [
     "File changes"
@@ -4396,6 +4382,23 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
    ;; ]
    ]
   )
+
+(defmacro tlon-babel-generate-entity-dispatch (name)
+  `(transient-define-prefix ,(intern (format "tlon-babel-browse-entity-in-%s-dispatch" name)) ()
+     ,(format "Browse a directory in the `%s' repo." name)
+     [["directories"
+       ("a" "articles"         ,(intern (format "tlon-babel-dired-browse-articles-dir-in-%s" name)))
+       ("t" "tags"             ,(intern (format "tlon-babel-dired-browse-tags-dir-in-%s" name)))
+       ("u" "authors"          ,(intern (format "tlon-babel-dired-browse-authors-dir-in-%s" name)))
+       ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))
+       ;; ("i" "images"           ,(intern (format "tlon-babel-dired-browse-images-dir-in-%s" name)))
+       ]
+      ]
+     )
+  )
+
+(dolist (repo (tlon-babel-get-property-of-repos :abbrev :type 'content))
+  (eval `(tlon-babel-generate-entity-dispatch ,repo)))
 
 (defun tlon-babel-browse-file ()
   "Browse the current file in the tlon-babel repository."
