@@ -4247,7 +4247,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
   [["Main"
     ("j" "job"                            tlon-babel-create-job)
     ("r" "dwim"                           tlon-babel-dwim)
-    ("m" "Magit"                   tlon-babel-magit-repo-dispatch)
+    ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
     ("n" "forge"                          tlon-babel-forge)
     ("." "gh-notify"                      gh-notify)
     """Request"
@@ -4309,35 +4309,35 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 (transient-define-prefix tlon-babel-magit-repo-dispatch ()
   "Browse a Tlön repo in Magit."
   [["Babel"
-    ("b c" "babel-core"                       tlon-babel-magit-babel-core)
-    ("b r" "babel-refs"                       tlon-babel-magit-babel-refs)
-    ("b s" "babel-es"                         tlon-babel-magit-babel-es)
+    ("b c" "babel-core"                       tlon-babel-magit-browse-babel-core)
+    ("b r" "babel-refs"                       tlon-babel-magit-browse-babel-refs)
+    ("b s" "babel-es"                         tlon-babel-magit-browse-babel-es)
     ]
    ["Uqbar"
-    ("q i" "uqbar-issues"                     tlon-babel-magit-uqbar-issues)
-    ("q f" "uqbar-front"                      tlon-babel-magit-uqbar-front)
-    ("q a" "uqbar-api"                        tlon-babel-magit-uqbar-api)
-    ("q n" "uqbar-en"                         tlon-babel-magit-uqbar-en)
-    ("q s" "uqbar-es"                         tlon-babel-magit-uqbar-es)
+    ("q i" "uqbar-issues"                     tlon-babel-magit-browse-uqbar-issues)
+    ("q f" "uqbar-front"                      tlon-babel-magit-browse-uqbar-front)
+    ("q a" "uqbar-api"                        tlon-babel-magit-browse-uqbar-api)
+    ("q n" "uqbar-en"                         tlon-babel-magit-browse-uqbar-en)
+    ("q s" "uqbar-es"                         tlon-babel-magit-browse-uqbar-es)
     ]
    ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-magit-utilitarismo-en)
-    ("u s" "utilitarismo-es"                     tlon-babel-magit-utilitarismo-es)
+    ("u n" "utilitarismo-en"                     tlon-babel-magit-browse-utilitarismo-en)
+    ("u s" "utilitarismo-es"                     tlon-babel-magit-browse-utilitarismo-es)
     ]
    ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-magit-ensayos-en)
-    ("e s" "ensayos-es"                     tlon-babel-magit-ensayos-es)
+    ("e n" "ensayos-en"                     tlon-babel-magit-browse-ensayos-en)
+    ("e s" "ensayos-es"                     tlon-babel-magit-browse-ensayos-es)
     ]
    ["EA News"
-    ("n i" "ean-issues"                     tlon-babel-magit-ean-issues)
-    ("n f" "ean-front"                     tlon-babel-magit-ean-front)
-    ("n a" "ean-api"                     tlon-babel-magit-ean-api)
+    ("n i" "ean-issues"                     tlon-babel-magit-browse-ean-issues)
+    ("n f" "ean-front"                     tlon-babel-magit-browse-ean-front)
+    ("n a" "ean-api"                     tlon-babel-magit-browse-ean-api)
     ]
    ["La Bisagra"
-    ("s s" "bisagra"                     tlon-babel-magit-bisagra)
+    ("s s" "bisagra"                     tlon-babel-magit-browse-bisagra)
     ]
    ["Docs"
-    ("d d" "tlon-docs"                     tlon-babel-magit-docs)
+    ("d d" "tlon-docs"                     tlon-babel-magit-browse-docs)
     ]
    ]
   )
@@ -4424,10 +4424,8 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
        ("u" "authors"          ,(intern (format "tlon-babel-dired-browse-authors-dir-in-%s" name)))
        ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))
        ;; ("i" "images"           ,(intern (format "tlon-babel-dired-browse-images-dir-in-%s" name)))
-       ]
-      ]
-     )
-  )
+       ]]
+     ))
 
 (dolist (repo (tlon-babel-get-property-of-repos :abbrev :type 'content))
   (eval `(tlon-babel-generate-entity-dispatch ,repo)))
@@ -4446,8 +4444,8 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
 
 (defun tlon-babel-browse-repo ()
   "Browse a Babel repository.
-  If the current buffer is visiting a file in a Babel repository, browse that;
-  otherwise prompt for a repo."
+If the current buffer is visiting a file in a Babel repository, browse that;
+otherwise prompt for a repo."
   (interactive)
   (let* ((repo-name (tlon-babel-repo-lookup :name :dir (tlon-babel-get-repo))))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
