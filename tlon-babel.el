@@ -305,6 +305,15 @@ the actual user.")
 
 (mapc #'tlon-babel-set-dir tlon-babel-repos)
 
+(defun tlon-babel-get-entity-types ()
+  "Return a list of entity types."
+  (let (collection)
+    (dolist (list tlon-babel-bare-dirs)
+      (dolist (cons list)
+	(when (string= (car cons) "en")
+	  (push (cdr cons) collection))))
+    collection))
+
 (defmacro tlon-babel-generate-repo-commands (name dir)
   `(progn
      (defun ,(intern (format "tlon-babel-dired-browse-%s" name)) ()
@@ -4486,15 +4495,6 @@ If REPO is nil, default to the current repository." entity)
        (interactive)
        (let ((repo (or repo (tlon-babel-get-repo))))
 	 (tlon-babel-browse-entity-dir ,entity repo)))))
-
-(defun tlon-babel-get-entity-types ()
-  "Return a list of entity types."
-  (let (collection)
-    (dolist (list tlon-babel-bare-dirs)
-      (dolist (cons list)
-	(when (string= (car cons) "en")
-	  (push (cdr cons) collection))))
-    collection))
 
 (dolist (entity (tlon-babel-get-entity-types))
   (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
