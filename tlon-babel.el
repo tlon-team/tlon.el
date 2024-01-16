@@ -346,11 +346,11 @@ If multiple matches are found, return the first match."
   "Return the value of PROP in REPO-NAME.
 REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
 than `:name'."
-  (tlon-babel-plist-lookup prop tlon-babel-repos :abbrev repo-name))
+  (tlon-babel-plist-lookup tlon-babel-repos prop :abbrev repo-name))
 
 (defun tlon-babel-get-property-of-user (prop user)
   "Return the value of PROP in USER."
-  (tlon-babel-plist-lookup prop tlon-babel-users :name user))
+  (tlon-babel-plist-lookup tlon-babel-users prop :name user))
 
 (defun tlon-babel-get-property-of-label (prop user)
   "Return the value of PROP in USER."
