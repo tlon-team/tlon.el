@@ -1929,13 +1929,15 @@ If FILE is nil, use the file visited by the current buffer."
       (user-error "No key found"))
     key))
 
-(defun tlon-babel-get-locators-in-repo (&optional repo dir)
-  "Return a list of all locators in SUBDIR of REPO.
-If REPO is nil, return files in current repository. DIR is one of `originals' or
-`translations'."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (files (directory-files-recursively (file-name-concat repo dir) "\\.md$")))
-    (mapcar #'tlon-babel-get-locator-from-file files)))
+(defun tlon-babel-get-filenames-in-dir (&optional dir extension)
+  "Return a list of all filenames in DIR.
+If DIR is nil, use the current directory. EXTENSION defaults to \"md\". If you
+want to search all files, use the empty string."
+  (let* ((dir (or dir default-directory))
+	 (extension (or extension "md"))
+	 (extension-regex (format "\\.%s$" extension))
+	 (files (directory-files-recursively dir extension-regex)))
+    (mapcar #'file-name-nondirectory files)))
 
 ;;;;; YAML front matter
 
@@ -2169,8 +2171,16 @@ the repo's locator. For example, to search only in `translations/autores', use
 
 (defun tlon-babel-yaml-set-original-path ()
   "Set the value of `path_original' YAML field."
-  (completing-read "Locator original"
-		   (tlon-babel-get-locators-in-repo (tlon-babel-get-repo) "originals")))
+  (let ((dir (tlon-babel-get-counterpart-dir (buffer-file-name))))
+    (completing-read "Original filename: "
+		     (tlon-babel-get-filenames-in-dir dir))))
+
+(defun tlon-babel-get-repo-in-subproject-language (language &optional repo)
+  "Return the path of the subproject in REPO corresopnding to LANGUAGE.
+If REPO is nil, use the current repository."
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (subproject (tlon-babel-get-property-of-repo :subproject repo)))
+    (tlon-babel-repo-lookup :dir :subproject subproject :language language)))
 
 (defun tlon-babel-yaml-set-original-key (author)
   "Set the value of `key_original' YAML field.
@@ -2274,7 +2284,7 @@ If KEY already has VALUE, use it as the initial input."
     ("traductores" (tlon-babel-get-translators))
     ("temas" (tlon-babel-get-uqbar-tags))
     ("autores" (tlon-babel-get-uqbar-authors))
-    ("path_original" (tlon-babel-get-locators-in-repo))
+    ("path_original" (tlon-babel-get-filenames-in-dir))
     ("key_original" (citar--completion-table (citar--format-candidates) nil))
     ("key_traduccion" (citar--completion-table (citar--format-candidates) nil))
     ("estado_de_publicacion" tlon-babel-publication-statuses)
