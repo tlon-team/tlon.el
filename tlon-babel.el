@@ -2495,14 +2495,6 @@ buffer."
 	 (repo (tlon-babel-get-repo-from-file file)))
     (directory-file-name (file-name-directory (file-relative-name file repo)))))
 
-(defun tlon-babel-get-locator-from-file (&optional file)
-  "Get the locator of file in FILE.
-If FILE is nil, return the locator of the file visited by the current buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-babel-get-repo 'error))
-	 (type (tlon-babel-get-work-type nil file)))
-    (file-relative-name file (file-name-concat repo type))))
-
 (defun tlon-babel-open-counterpart (&optional arg file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
