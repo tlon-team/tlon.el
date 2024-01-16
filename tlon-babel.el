@@ -1413,8 +1413,8 @@ are no level 2 headings and some headings level 3 or higher."
 
 (defun tlon-babel-markdown-cleanup-eaf ()
   "Cleanup a buffer visiting an imported document from the EA Forum.
-  Please note that the order in which these functions are called is relevant. Do
-  not alter it unless you know what you are doing."
+Please note that the order in which these functions are called is relevant. Do
+not alter it unless you know what you are doing."
   (interactive)
   (tlon-babel-markdown-cleanup-fix-footnote-refs)
   (tlon-babel-markdown-cleanup-remove-text))
@@ -1844,6 +1844,7 @@ end of the buffer unconditionally."
     (eval `(transient-define-prefix tlon-open-repo-transient ()
 	     "Transient that dispatches to Magit open repo commands."
 	     ,@transient-args))))
+
 ;;;;; Metadata
 
 ;;;;;; Get metadata
@@ -2227,6 +2228,7 @@ If STATE is nil, default to `borrador'."
 	    (save-buffer)))
       (tlon-babel-open-counterpart)
       (message "No footnotes found"))))
+
 ;;;;;; Interactive editing
 
 (defun tlon-babel-yaml-edit-field ()
