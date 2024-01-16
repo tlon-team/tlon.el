@@ -2203,65 +2203,6 @@ If STATE is nil, default to `borrador'."
 	"online"
       publicacion)))
 
-;;;;;; Temp funs to add front matter to tags
-
-(defun tlon-babel-yaml-set-original-tag-path ()
-  "Set the value of `path_original' YAML field."
-  (interactive)
-  (let* ((front-matter (tlon-babel-yaml-get-front-matter))
-	 (path-field (file-name-nondirectory
-		      (completing-read "Locator original"
-				       (tlon-babel-get-locators-in-repo (tlon-babel-get-repo) "originals/tags"))))
-	 (new-front-matter (push (cons "path_original" path-field) front-matter)))
-    (tlon-babel-delete-yaml-front-matter)
-    (tlon-babel-insert-yaml-fields new-front-matter)
-    (save-buffer)
-    (tlon-babel-yaml-reorder-front-matter)
-    (save-buffer)))
-
-(defun tlon-babel-replace-further-reading ()
-  "Replace ‘Further reading’ in counterpart of Spanish tag in current buffer."
-  (goto-char (point-min))
-  (when (re-search-forward "## Más información\n" nil t)
-    (markdown-narrow-to-subtree)
-    (let ((start (point)))
-      (goto-char (point-max))
-      (copy-region-as-kill start (point)))
-    (tlon-babel-open-counterpart)
-    (goto-char (point-min))
-    (re-search-forward "## Further reading\n" nil t)
-    (markdown-narrow-to-subtree)
-    (let ((start (point)))
-      (goto-char (point-max))
-      (delete-region start (point))
-      (yank)
-      (save-buffer))))
-
-(defun tlon-babel-replace-footnotes ()
-  "Replace footnotes in counterpart of Spanish tag in current buffer."
-  (interactive)
-  (tlon-babel-open-counterpart nil)
-  (widen)
-  (goto-char (point-min))
-  (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
-    (if (re-search-forward fn-regexp nil t)
-	(progn
-	  (beginning-of-line)
-	  (let ((start (point)))
-	    (goto-char (point-max))
-	    (copy-region-as-kill start (point)))
-	  (tlon-babel-open-counterpart)
-	  (goto-char (point-min))
-	  (re-search-forward fn-regexp nil t)
-	  (markdown-narrow-to-subtree)
-	  (let ((start (point)))
-	    (goto-char (point-max))
-	    (delete-region start (point))
-	    (yank)
-	    (save-buffer)))
-      (tlon-babel-open-counterpart)
-      (message "No footnotes found"))))
-
 ;;;;;; Interactive editing
 
 (defun tlon-babel-yaml-edit-field ()
