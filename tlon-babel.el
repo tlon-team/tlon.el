@@ -2441,9 +2441,6 @@ buffer."
 				    (file-name-nondirectory file)
 				    (tlon-babel-get-metadata-in-repo translations-repo))))))
 
-;; TODO: not urgent, but ideally the counterpart repo should be obtained by
-;; looking up `tlon-babel-repos'; inferring it from the name is not robust, and
-;; is inconsistent with the approach I took elsewhere
 (defun tlon-babel-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
 A file's counterpart repo is the repo of that file's counterpart.
@@ -2452,15 +2449,15 @@ If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
   (let* ((file (or file (tlon-babel-buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
-	 (repo-name (tlon-babel-repo-lookup :name :dir repo))
-	 (subtype (tlon-babel-get-property-of-repo-name :subtype repo-name))
-	 (repo-base-name (car (string-split repo-name "-")))
-	 (counterpart-repo-name
-	  (pcase subtype
-	    ('originals (format "%s-%s" repo-base-name tlon-babel-translation-language))
-	    ('translations (format "%s-en" repo-base-name))
-	    (_ (user-error "Repo `%s' is neither an `originals' nor a `translations'" repo)))))
-    (file-name-as-directory (file-name-concat tlon-babel-dir-repos counterpart-repo-name))))
+	 (subtype (tlon-babel-get-property-of-repo :subtype repo))
+	 (subproject (tlon-babel-get-property-of-repo :subproject repo))
+	 (language (tlon-babel-get-counterpart-language repo))
+	 (counterpart-repo
+	  (tlon-babel-repo-lookup :dir
+				  :subproject subproject
+				  :language language)))
+    counterpart-repo))
+
 
 (defun tlon-babel-get-counterpart-dir (&optional file)
   "Get the counterpart directory of FILE.
