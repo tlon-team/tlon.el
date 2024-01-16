@@ -2203,6 +2203,30 @@ If STATE is nil, default to `borrador'."
 	"online"
       publicacion)))
 
+(defun tlon-babel-replace-footnotes ()
+  "Replace footnotes in counterpart of Spanish tag in current buffer."
+  (interactive)
+  (tlon-babel-open-counterpart nil)
+  (widen)
+  (goto-char (point-min))
+  (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
+    (if (re-search-forward fn-regexp nil t)
+	(progn
+	  (beginning-of-line)
+	  (let ((start (point)))
+	    (goto-char (point-max))
+	    (copy-region-as-kill start (point)))
+	  (tlon-babel-open-counterpart)
+	  (goto-char (point-min))
+	  (re-search-forward fn-regexp nil t)
+	  (markdown-narrow-to-subtree)
+	  (let ((start (point)))
+	    (goto-char (point-max))
+	    (delete-region start (point))
+	    (yank)
+	    (save-buffer)))
+      (tlon-babel-open-counterpart)
+      (message "No footnotes found"))))
 ;;;;;; Interactive editing
 
 (defun tlon-babel-yaml-edit-field ()
