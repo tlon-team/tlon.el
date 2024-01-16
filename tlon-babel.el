@@ -2545,7 +2545,7 @@ If FILE is nil, act on the file at point or visited in the current buffer.
 
 If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
-  (tlon-babel-open-counterpart-dwim file))
+  (tlon-babel-open-counterpart-dwim t file))
 
 (defun tlon-babel-count-paragraphs (&optional file start end)
   "Return number of paragraphs between START and END in FILE.
