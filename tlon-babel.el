@@ -3839,18 +3839,17 @@ The commit message is ACTION followed by the name of FILE."
     (tlon-babel-create-commit action file)
     (call-interactively #'magit-push-current-to-pushremote)))
 
-;; TODO: find a way to handle `biblio' type now that `babel' includes both
-;; biblio and non-biblio content
 (defun tlon-babel-create-commit (action file)
   "Create a commit modifications to FILE.
 The commit message is ACTION followed by either FILE or its BibTeX key,
-depending on whether the repo is of type `translations` or `biblio', respectively."
+depending on whether the repo is of subtype `translations' or `biblio',
+respectively."
   ;; we check for staged or unstaged changes to FILE because
   ;; `magit-commit-create' interrupts the process if there aren't
   (when (tlon-babel-check-staged-or-unstaged file)
     (let* ((repo (tlon-babel-get-repo-from-file file))
-	   (type (tlon-babel-repo-lookup :type :dir repo))
-	   (file-or-key (pcase type
+	   (subtype (tlon-babel-repo-lookup :type :dir repo))
+	   (file-or-key (pcase subtype
 			  ('translations (tlon-babel-get-key-from-file file))
 			  ('biblio (file-name-nondirectory file)))))
       (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
