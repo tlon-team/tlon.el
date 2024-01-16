@@ -3983,52 +3983,69 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 (defun tlon-babel-glossary-dwim ()
   "Add a new entry to the glossary or modify an existing entry."
   (interactive)
-  (let* ((english-terms (mapcar 'car (tlon-babel-glossary-alist)))
-	 (term (completing-read "Term: " english-terms)))
-    (if (member term english-terms)
+  (let* ((terms (mapcar 'car (tlon-babel-glossary-alist)))
+	 (term (completing-read "Term: " terms)))
+    (if (member term terms)
 	(tlon-babel-glossary-modify term)
       (tlon-babel-glossary-add term))))
 
-;; TODO: support arbitrary langs
-(defun tlon-babel-glossary-add (&optional english spanish)
-  "Add a new entry to the glossary for ENGLISH and SPANISH terms."
+(defun tlon-babel-glossary-add (&optional original translation)
+  "Add a new entry to the glossary for ORIGINAL and TRANSLATION terms."
   (interactive)
-  (let ((english (or english (read-string "English term: ")))
-	(spanish (or spanish (read-string "Spanish term: ")))
-	(explanation (read-string "Explanation (optional; in Spanish): ")))
-    (with-current-buffer (find-file-noselect tlon-babel-file-glossary)
-      (goto-char (point-max))
-      (insert (format "\n\"%s\",\"%s\",\"EN\",\"ES\"" english spanish))
-      (goto-char (point-min))
-      (flush-lines "^$")
-      (save-buffer)
-      (tlon-babel-glossary-commit "add" english explanation))))
+  (let ((original (or original (read-string "original term: "))))
+    (cl-destructuring-bind (translation explanation) (tlon-babel-glossary-prompt translation)
+      (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary translation))
+	(goto-char (point-max))
+	(insert (tlon-babel-glossary-regexp-pattern original translation))
+	(tlon-babel-glossary-finalize "add" original explanation)))))
 
-(defun tlon-babel-glossary-modify (english)
-  "Modify an entry in the glossary corresponding to the ENGLISH term."
-  ;; TODO: notify the user of all occurrences of the old translation so
-  ;; that they can update it if necessary
-  (let* ((spanish (cdr (assoc english (tlon-babel-glossary-alist))))
-	 (spanish-new (read-string "Spanish term: " spanish))
-	 (explanation (read-string "Explanation (optional; in Spanish): ")))
-    (with-current-buffer (find-file-noselect tlon-babel-file-glossary)
-      (goto-char (point-min))
-      (while (re-search-forward (format "^\"%s\",\"%s\",\"EN\",\"ES\"" english spanish) nil t)
-	(replace-match (format "\"%s\",\"%s\",\"EN\",\"ES\"" english spanish-new)))
-      (goto-char (point-min))
-      (flush-lines "^$")
-      (save-buffer)
-      (tlon-babel-glossary-commit "modify" english explanation))))
+(defun tlon-babel-glossary-modify (original)
+  "Modify an entry in the glossary corresponding to the ORIGINAL term."
+  (let* ((existing-translation (cdr (assoc original (tlon-babel-glossary-alist)))))
+    (cl-destructuring-bind (new-translation explanation) (tlon-babel-glossary-prompt)
+      (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary))
+	(goto-char (point-min))
+	(while (re-search-forward (tlon-babel-glossary-regexp-pattern original existing-translation) nil t)
+	  (replace-match (tlon-babel-glossary-regexp-pattern original new-translation)))
+	(tlon-babel-glossary-finalize "modify" original explanation)
+	(message "Remember to run a `ripgrep' search for the original translation (\"%s\") across all the Babel repos in the translation language (%s), making any necessary replacements."
+		 existing-translation tlon-babel-translation-language)))))
 
-(defun tlon-babel-glossary-commit (action term &optional description)
+(defun tlon-babel-glossary-prompt (&optional translation)
+  "Prompt the user for a translation and and an explanation.
+If TRANSLATION is non-nil, prompt for an explanation only."
+  (let ((translation (or translation (read-string
+				      (format "translation term [%s]: "
+					      tlon-babel-translation-language))))
+	(explanation (read-string (format
+				   "Explanation (optional; please write it in the translation language [%s]): "
+				   tlon-babel-translation-language))))
+    (list translation explanation)))
+
+(defun tlon-babel-glossary-regexp-pattern (original translation)
+  "Get the regexp pattern for the glossary entry corresponding to ORIGINAL and TRANSLATION."
+  (format "\"%s\",\"%s\",\"EN\",\"%s\"" original translation
+	  (upcase tlon-babel-translation-language)))
+
+(defun tlon-babel-glossary-finalize (action original explanation)
+  "Finalize the addition of a word to the glossary or its modification.
+ACTION is either \"add\" or \"modify\". ORIGINAL is the term in the original
+language. EXPLANATION is the explanation of the translation."
+  (goto-char (point-min))
+  (flush-lines "^$")
+  (save-buffer)
+  (tlon-babel-glossary-commit action original explanation))
+
+;; TODO: fix this
+(defun tlon-babel-glossary-commit (action term &optional explanation)
   "Commit glossary modifications.
 ACTION describes the action (\"add\" or \"modify\") performed on the glossary.
 TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
 \='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
-conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
+conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
   (let ((default-directory (tlon-babel-get-property-of-repo-name :dir "babel-es"))
-	(description (if description (concat "\n\n" description) "")))
+	(explanation (if explanation (concat "\n\n" explanation) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
     (call-interactively #'magit-pull-from-upstream nil)
@@ -4038,7 +4055,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
       (magit-run-git "add" (tlon-babel-get-file-glossary))
       (let ((magit-commit-ask-to-stage nil))
 	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
-						 action term description))))))
+						 action term explanation))))))
   (call-interactively #'magit-push-current-to-pushremote))
 
 ;;;;; URL correspondences
