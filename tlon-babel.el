@@ -80,7 +80,6 @@
     (file-name-concat (getenv "HOME") dir))
   "Directory where the Tlön repos are stored.")
 
-;; TODO: Revise type `biblio'
 (defvar tlon-babel-repos
   `((:name "babel-core"
 	   :project "babel"
@@ -100,6 +99,7 @@
 	   :subproject "babel"
 	   :abbrev "babel-es"
 	   :type meta
+	   :language "es"
 	   :key "b s")
     (:name "uqbar-issues"
 	   :project "babel"
@@ -165,7 +165,7 @@
 	   :abbrev "ensayos-es"
 	   :type content
 	   :subtype translations
-	   :key "l s")    
+	   :key "l s")
     (:name "ea.news-issues"
 	   :project "other"
 	   :subproject "ea.news"
@@ -301,8 +301,8 @@ the actual user.")
 
 (dolist (repo tlon-babel-repos)
   (eval `(tlon-babel-generate-repo-commands
-          ,(plist-get repo :abbrev)
-          ,(plist-get repo :dir))))
+	  ,(plist-get repo :abbrev)
+	  ,(plist-get repo :dir))))
 
 (defmacro tlon-babel-generate-dir-commands (name dir entity)
   `(progn
