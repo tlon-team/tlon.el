@@ -340,13 +340,13 @@ If multiple matches are found, return the first match."
 
 (defun tlon-babel-get-property-of-repo (prop repo)
   "Return the value of PROP in REPO."
-  (apply #'tlon-babel-plist-lookup tlon-babel-repos prop :dir repo))
+  (tlon-babel-plist-lookup tlon-babel-repos prop :dir repo))
 
 (defun tlon-babel-get-property-of-repo-name (prop repo-name)
   "Return the value of PROP in REPO-NAME.
 REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
 than `:name'."
-  (apply #'tlon-babel-plist-lookup prop tlon-babel-repos :abbrev repo-name))
+  (tlon-babel-plist-lookup prop tlon-babel-repos :abbrev repo-name))
 
 (defun tlon-babel-get-property-of-user (prop user)
   "Return the value of PROP in USER."
