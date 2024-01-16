@@ -314,59 +314,55 @@ the actual user.")
 (dolist (repo tlon-babel-repos)
   (dolist (entity (tlon-babel-get-entity-types))
     (eval `(tlon-babel-generate-dir-commands
-            ,(plist-get repo :abbrev)
-            ,(plist-get repo :dir)
+	    ,(plist-get repo :abbrev)
+	    ,(plist-get repo :dir)
 	    ,entity))))
 
-(defun tlon-babel-get-property-of-repo (property repo)
-  "Get the value of property PROPERTY in REPO."
-  (tlon-babel-plist-lookup property :dir repo tlon-babel-repos))
-
-(defun tlon-babel-get-property-of-repo-name (property repo-name)
-  "Get the value of property PROPERTY in REPO-NAME.
-  REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
-  than `:name'."
-  (tlon-babel-plist-lookup property :abbrev repo-name tlon-babel-repos))
-
-(defun tlon-babel-get-property-of-user (property user)
-  "Get the value of property PROPERTY in USER."
-  (tlon-babel-plist-lookup property :name user tlon-babel-users))
-
-(defun tlon-babel-get-property-of-label (property user)
-  "Get the value of property PROPERTY in USER."
-  (tlon-babel-plist-lookup property :name user tlon-babel-users))
-
-(defun tlon-babel-alist-lookup (compare-prop target-prop target-value list)
-  "Search LIST for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
+(defun tlon-babel-plist-lookup (list prop &rest props-values)
+  "Return the value of PROP in LIST matching one or more PROPS-VALUES pairs.
+If multiple matches are found, return the first match."
   (cl-loop for plist in list
-	   when (equal (plist-get plist target-prop) target-value)
-	   return (plist-get plist compare-prop)))
+	   when (cl-loop for (prop value) on props-values by #'cddr
+			 always (equal (plist-get plist prop) value))
+	   return (plist-get plist prop)))
 
-(defun tlon-babel-plist-lookup (compare-prop target-prop target-value list)
-  "Search LIST for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
-  (cl-loop for plist in list
-	   when (equal (plist-get plist target-prop) target-value)
-	   return (plist-get plist compare-prop)))
+(defun tlon-babel-repo-lookup (prop &rest props-values)
+  "Return the value of PROP in repos matching one or more PROPS-VALUES pairs."
+  (apply #'tlon-babel-plist-lookup tlon-babel-repos prop props-values))
 
-(defun tlon-babel-repo-lookup (compare-prop target-prop target-value)
-  "Search repos for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
-  (tlon-babel-plist-lookup compare-prop target-prop target-value tlon-babel-repos))
+(defun tlon-babel-user-lookup (prop &rest props-values)
+  "Return the value of PROP in users matching one or more PROPS-VALUES pairs."
+  (apply #'tlon-babel-plist-lookup tlon-babel-users prop props-values))
 
-(defun tlon-babel-user-lookup (compare-prop target-prop target-value)
-  "Search users for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
-  (tlon-babel-plist-lookup compare-prop target-prop target-value tlon-babel-users))
+(defun tlon-babel-label-lookup (prop &rest props-values)
+  "Return the value of PROP in labels matching one or more PROPS-VALUES pairs.."
+  (apply #'tlon-babel-plist-lookup tlon-babel-labels prop props-values))
 
-(defun tlon-babel-label-lookup (compare-prop target-prop target-value)
-  "Search labels for TARGET-VALUE in TARGET-PROP and return value of COMPARE-PROP."
-  (tlon-babel-plist-lookup compare-prop target-prop target-value tlon-babel-labels))
+(defun tlon-babel-get-property-of-repo (prop repo)
+  "Return the value of PROP in REPO."
+  (apply #'tlon-babel-plist-lookup tlon-babel-repos prop :dir repo))
 
-(defun tlon-babel-get-property-of-plists (compare-prop plist &optional target-prop target-value)
-  "Get a list of all values for property COMPARE-PROP in PLIST.
+(defun tlon-babel-get-property-of-repo-name (prop repo-name)
+  "Return the value of PROP in REPO-NAME.
+REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
+than `:name'."
+  (apply #'tlon-babel-plist-lookup prop tlon-babel-repos :abbrev repo-name))
+
+(defun tlon-babel-get-property-of-user (prop user)
+  "Return the value of PROP in USER."
+  (tlon-babel-plist-lookup prop tlon-babel-users :name user))
+
+(defun tlon-babel-get-property-of-label (prop user)
+  "Return the value of PROP in USER."
+  (tlon-babel-plist-lookup prop tlon-babel-users :name user))
+
+(defun tlon-babel-get-property-of-plists (prop plist &optional target-prop target-value)
+  "Return a list of all PROP values in PLIST.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
   (let ((result '()))
     (dolist (plist plist)
-      (let* ((value1 (plist-get plist compare-prop #'string=))
+      (let* ((value1 (plist-get plist prop #'string=))
 	     (target-value-test (when target-prop (plist-get plist target-prop #'string=))))
 	(when value1
 	  (if target-prop
@@ -375,23 +371,23 @@ TARGET-VALUE."
 	    (setq result (append result (list value1)))))))
     result))
 
-(defun tlon-babel-get-property-of-repos (compare-prop &optional target-prop target-value)
-  "Get a list of all values for property COMPARE-PROP in `tlon-babel-repos'.
+(defun tlon-babel-get-property-of-repos (prop &optional target-prop target-value)
+  "Return a list of all PROP values in `tlon-babel-repos'.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
-  (tlon-babel-get-property-of-plists compare-prop tlon-babel-repos target-prop target-value))
+  (tlon-babel-get-property-of-plists prop tlon-babel-repos target-prop target-value))
 
-(defun tlon-babel-get-property-of-users (compare-prop &optional target-prop target-value)
-  "Get a list of all values for property COMPARE-PROP in `tlon-babel-users'.
+(defun tlon-babel-get-property-of-users (prop &optional target-prop target-value)
+  "Return a list of all PROP values in PLIST `tlon-babel-users'.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
-  (tlon-babel-get-property-of-plists compare-prop tlon-babel-users target-prop target-value))
+  (tlon-babel-get-property-of-plists prop tlon-babel-users target-prop target-value))
 
-(defun tlon-babel-get-property-of-labels (compare-prop &optional target-prop target-value)
-  "Get a list of all values for property COMPARE-PROP in `tlon-babel-labels'.
+(defun tlon-babel-get-property-of-labels (prop &optional target-prop target-value)
+  "Return a list of all PROP values in PLIST `tlon-babel-labels'.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
-  (tlon-babel-get-property-of-plists compare-prop tlon-babel-labels target-prop target-value))
+  (tlon-babel-get-property-of-plists prop tlon-babel-labels target-prop target-value))
 
 (defun tlon-babel-get-bare-dir-translation (target-lang source-lang bare-dir)
   "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
