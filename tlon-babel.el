@@ -3845,7 +3845,7 @@ The commit message is ACTION followed by either FILE or its BibTeX key,
 depending on whether the repo is of subtype `translations' or `biblio',
 respectively."
   ;; we check for staged or unstaged changes to FILE because
-  ;; `magit-commit-create' interrupts the process if there aren't
+  ;; `magit-commit-create' interrupts the process if there aren't any
   (when (tlon-babel-check-staged-or-unstaged file)
     (let* ((repo (tlon-babel-get-repo-from-file file))
 	   (subtype (tlon-babel-repo-lookup :type :dir repo))
@@ -3888,7 +3888,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
     label))
 
 (defun tlon-babel-set-status-label ()
-  "Promp the user to select a status label."
+  "Prompt the user to select a status label."
   (let ((label (completing-read "TODO status? " (mapcar #'downcase tlon-babel-todo-statuses) nil t)))
     label))
 
