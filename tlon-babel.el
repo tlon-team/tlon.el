@@ -2458,6 +2458,14 @@ buffer."
 				  :language language)))
     counterpart-repo))
 
+(defun tlon-babel-get-counterpart-language (&optional repo)
+  "Return the language of the counterpart of REPO."
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (language (tlon-babel-get-property-of-repo :language repo)))
+    (pcase language
+      ("en" tlon-babel-translation-language)
+      ((pred (lambda (lang) (member lang (mapcar #'car tlon-babel-languages)))) "en")
+      (_ (user-error "Language not recognized")))))
 
 (defun tlon-babel-get-counterpart-dir (&optional file)
   "Get the counterpart directory of FILE.
@@ -2472,7 +2480,7 @@ buffer."
 	 (counterpart-repo (tlon-babel-get-counterpart-repo file))
 	 (bare-dir (tlon-babel-get-bare-dir file))
 	 (source-lang (tlon-babel-get-property-of-repo :language repo))
-	 (target-lang (if (string= source-lang "en") tlon-babel-translation-language "en"))
+	 (target-lang (tlon-babel-get-counterpart-language repo))
 	 (counterpart-bare-dir (tlon-babel-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
 
