@@ -697,7 +697,7 @@ If FILE is nil, use the current buffer's file name."
 (defun tlon-babel-get-file-from-key (key)
   "Return the file path of KEY."
   (if-let ((file (tlon-babel-metadata-lookup "file" "key_original" key
-					(tlon-babel-get-metadata-in-repos))))
+					     (tlon-babel-get-metadata-in-repos))))
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
 
@@ -1049,7 +1049,7 @@ link, else get their values from the heading title, if possible."
   "Visit the ID associated with TODO, or vice versa."
   (interactive)
   (tlon-babel-todo-issue-funcall #'tlon-babel-visit-issue
-			    #'tlon-babel-visit-todo))
+				 #'tlon-babel-visit-todo))
 
 (defun tlon-babel-todo-issue-funcall (todo-fun issue-fun)
   "Call TODO-FUN or ISSUE-FUN depending on the current major mode."
@@ -1553,12 +1553,12 @@ If DELETE is non-nil, delete the footnote."
 (defun tlon-babel-autofix-curly-quotes ()
   "Replace straight quotes with curly quotes when appropriate."
   (tlon-babel-autofix '("\\([^\\.\\?]\"\\)\\[")
-		 "\\1["))
+		      "\\1["))
 
 (defun tlon-babel-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
   (tlon-babel-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		 "\\1\\3\\2")
+		      "\\1\\3\\2")
   (tlon-babel-autofix-footnote-punctuation-amend))
 
 (defun tlon-babel-autofix-footnote-punctuation-amend ()
@@ -1566,19 +1566,19 @@ If DELETE is non-nil, delete the footnote."
 Ideally the function should be amended so that it doesn’t introduce these
 effects to begin with."
   (tlon-babel-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]"  ; fixes `[[^1]^2]'
-		   "\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
-		 "[^\\1][^\\2]"))
+			"\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
+		      "[^\\1][^\\2]"))
 
 (defun tlon-babel-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
   (tlon-babel-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
-		 "\\1"))
+		      "\\1"))
 
 (defun tlon-babel-autofix-percent-signs ()
   "Add non-breaking space before percent sign."
   (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
-		   "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-		 "\\1 %\\2"))
+			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
+		      "\\1 %\\2"))
 
 (defun tlon-babel-autofix-all ()
   "Run all the `tlon-babel-autofix' commands."
@@ -1607,38 +1607,38 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
 (defun tlon-babel-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (tlon-babel-manual-fix '("\\([^ ][ ,)]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
-		      "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
-		      "\\([^ >)] \\)-\\( \\)")
-		    "\\1—\\2"))
+			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
+			   "\\([^ >)] \\)-\\( \\)")
+			 "\\1—\\2"))
 
 (defun tlon-babel-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (tlon-babel-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
-		    "\\1\\2–\\3\\4"))
+			 "\\1\\2–\\3\\4"))
 
 (defun tlon-babel-manual-fix-roman-numerals ()
   "Prompt the user to add small caps tags to roman numerals."
   (tlon-babel-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
-		    " <abbr>\\1</abbr>"))
+			 " <abbr>\\1</abbr>"))
 
 (defun tlon-babel-manual-fix-thin-spaces ()
   "Prompt the user to add a thin space between abbreviations followed by a period."
   (tlon-babel-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
-		    "\\1 \\2"))
+			 "\\1 \\2"))
 
 (defun tlon-babel-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
   (tlon-babel-manual-fix '("sólo")
-		    "solo"
-		    'keep-case))
+			 "solo"
+			 'keep-case))
 
 (defun tlon-babel-manual-fix-podcast ()
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
   (tlon-babel-manual-fix '(" podcast")
-		    " pódcast"
-		    'keep-case))
+			 " pódcast"
+			 'keep-case))
 
 (defun tlon-babel-manual-fix-all ()
   "Run all the `tlon-babel-manual-fix' commands."
@@ -1768,8 +1768,8 @@ Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-languages))))
   (tlon-babel-markdown-insert-element-pair (format "<Lang id=\"%s\">"
-					      language)
-				      "</Lang>"))
+						   language)
+					   "</Lang>"))
 
 (defun tlon-babel-markdown-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
@@ -1833,17 +1833,17 @@ end of the buffer unconditionally."
   "Transient for opening projects in Magit."
   (interactive)
   (let ((transient-args (mapcar (lambda (repo)
-                                  (let* ((abbrev (plist-get repo :abbrev))
-                                         (fun-name (intern (concat "tlon-open-repo-" abbrev))))
-                                    (fset fun-name
-                                          `(lambda ()
-                                             (interactive)
-                                             (magit-status ,(plist-get repo :dir))))
-                                    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
-                                tlon-babel-repos)))
+				  (let* ((abbrev (plist-get repo :abbrev))
+					 (fun-name (intern (concat "tlon-open-repo-" abbrev))))
+				    (fset fun-name
+					  `(lambda ()
+					     (interactive)
+					     (magit-status ,(plist-get repo :dir))))
+				    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
+				tlon-babel-repos)))
     (eval `(transient-define-prefix tlon-open-repo-transient ()
-             "Transient that dispatches to Magit open repo commands."
-             ,@transient-args))))
+	     "Transient that dispatches to Magit open repo commands."
+	     ,@transient-args))))
 ;;;;; Metadata
 
 ;;;;;; Get metadata
@@ -3391,7 +3391,7 @@ for the process that is being initialized."
 	(tlon-babel-mark-todo-done job-todo tlon-babel-file-jobs)
 	(tlon-babel-sort-headings tlon-babel-file-jobs)
 	(tlon-babel-commit-and-push "Update"
-			       tlon-babel-file-jobs)))))
+				    tlon-babel-file-jobs)))))
 
 (defun tlon-babel-initialize-processing ()
   "Initialize processing."
