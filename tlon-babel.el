@@ -434,10 +434,6 @@ TARGET-VALUE."
   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-core") "jobs.org")
   "File containing the jobs.")
 
-(defvar tlon-babel-file-glossary
-  (file-name-concat tlon-babel-dir-dict "Glossary.csv")
-  "File containing the glossary.")
-
 (defvar tlon-babel-file-fluid
   (file-name-concat tlon-babel-dir-bib "fluid.bib")
   "File containing the fluid bibliography.")
@@ -723,13 +719,29 @@ If FILE is nil, use the current buffer's file name."
   (interactive (list (completing-read "Language: " tlon-babel-languages)))
   (setq tlon-babel-translation-language lang))
 
+;;;;;; get file paths
+
+;; Some file paths cannot be set as vars because they change dynamically
+;; depending on the value of `tlon-babel-gpt-translate-file'. We define the
+;; relevant functions here.
+
+(defun tlon-babel-get-file-glossary (&optional lang)
+  "Return the file containing the glossary for LANG.
+If LANG is nil, default to the language set in
+`tlon-babel-translation-language'."
+  (let ((lang (or lang tlon-babel-translation-language))
+	(repo (tlon-babel-repo-lookup :dir
+				      :subproject "babel"
+				      :language tlon-babel-translation-language)))
+    (file-name-concat repo "dict/Glossary.csv")))
+
 ;;;;;; Create/visit todos
 
 (defun tlon-babel-visit-counterpart-or-capture ()
   "Visit the issue associated with TODO, or vice versa, creating TODO if necessary."
   (interactive)
   (tlon-babel-todo-issue-funcall #'tlon-babel-visit-issue
-			    #'tlon-babel-visit-todo-or-capture))
+				 #'tlon-babel-visit-todo-or-capture))
 
 (defun tlon-babel-visit-todo-or-capture ()
   "Visit the TODO associated with the current issue, creating one if necessary."
@@ -3961,7 +3973,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 (defun tlon-babel-glossary-alist ()
   "Read `Glossary.csv` and return it as an alist."
   (with-temp-buffer
-    (insert-file-contents tlon-babel-file-glossary)
+    (insert-file-contents (tlon-babel-get-file-glossary))
     (let ((lines (split-string (buffer-string) "\n" t))
 	  (result '()))
       (dolist (line lines result)
@@ -4027,7 +4039,7 @@ conclusion\"\='. Optionally, DESCRIPTION provides an explanation of the change."
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
       (tlon-babel-check-branch "main" default-directory)
-      (magit-run-git "add" tlon-babel-file-glossary)
+      (magit-run-git "add" (tlon-babel-get-file-glossary))
       (let ((magit-commit-ask-to-stage nil))
 	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
 						 action term description))))))
