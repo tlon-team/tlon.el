@@ -2436,20 +2436,6 @@ buffer."
       (user-error "Repo of file `%s' is not of type `content'" file))
     (tlon-babel-repo-lookup :subtype :dir repo)))
 
-;; TODO: delete
-(defun tlon-babel-get-work-type (&optional reversed file)
-  "Return the work type of file in FILE.
-A work is either `original' or `translation'. If REVERSED is non-nil, return
-`originals' when the work type is `translations' and vice versa. If FILE is nil,
-return the work type of the file visited by the current buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-babel-get-repo-from-file file))
-	 (repo-path (file-relative-name file repo))
-	 (root-dir-in-repo-path (car (split-string repo-path "/"))))
-    (pcase root-dir-in-repo-path
-      ("originals" (if reversed "translations" "originals"))
-      ("translations" (if reversed "originals" "translations")))))
-
 (defun tlon-babel-get-counterpart (&optional file)
   "Get the counterpart file of FILE.
 A file's counterpart is its translation if it is an original, and vice versa.
