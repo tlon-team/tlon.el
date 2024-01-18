@@ -137,7 +137,8 @@
 	   :type content
 	   :subtype translations
 	   :language "es"
-	   :key "q s")
+	   :key "q s"
+	   :url "https://altruismoeficaz.net/")
     (:name "utilitarismo-en"
 	   :project "babel"
 	   :subproject "utilitarismo"
@@ -151,7 +152,8 @@
 	   :abbrev "utilitarismo-es"
 	   :type content
 	   :subtype translations
-	   :key "u s")
+	   :key "u s"
+	   :url "https://utilitarismo.net/")
     (:name "ensayos-sobre-largoplacismo-en"
 	   :project "babel"
 	   :subproject "ensayos-sobre-largoplacismo"
