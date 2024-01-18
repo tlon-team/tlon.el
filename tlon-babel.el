@@ -4660,7 +4660,7 @@ number, it will retry that many times instead of 2."
 	 (url-request-data
 	  (concat "username=" (url-hexify-string username)
 		  "&password=" (url-hexify-string
-				(auth-source-pass-get 'secret (concat "tlon/BAE/altruismoeficaz.net/" username))))))
+				(auth-source-pass-get 'secret (concat "tlon/babel/altruismoeficaz.net/" username))))))
     (with-current-buffer (url-retrieve-synchronously url)
       (goto-char (point-min))
       (re-search-forward "^$")
