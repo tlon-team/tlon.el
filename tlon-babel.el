@@ -1780,6 +1780,15 @@ written in that language."
 						   language)
 					   "</Lang>"))
 
+;; TODO: revise to offer the url at point as default completion candidate
+(defun tlon-babel-markdown-insert-mdx-literal-link (url)
+  "Insert an MDX `LiteralLink' element pair at point or around the selected region.
+Prompt the user to select a URL."
+  (interactive (list (read-string "URL: ")))
+  (tlon-babel-markdown-insert-element-pair (format "<LiteralLink src={\"%s\"}>"
+						   url)
+					   "</LiteralLink>"))
+
 (defun tlon-babel-markdown-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
 Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
