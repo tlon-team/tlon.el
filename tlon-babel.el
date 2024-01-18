@@ -1776,7 +1776,7 @@ displayed in the exported web page."
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-languages))))
-  (tlon-babel-markdown-insert-element-pair (format "<Lang id={%s}>"
+  (tlon-babel-markdown-insert-element-pair (format "<Lang id={\"%s\"}>"
 						   language)
 					   "</Lang>"))
 
