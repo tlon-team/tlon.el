@@ -71,7 +71,7 @@
 
 ;;;;; Files and dirs
 
-(defvar tlon-babel-dir-repos
+(defconst tlon-babel-dir-repos
   (let ((dir (pcase (expand-file-name "~")
 	       ("/Users/pablostafforini" "Library/CloudStorage/Dropbox/repos/")
 	       ("/Users/fede" "source/")
@@ -80,7 +80,7 @@
     (file-name-concat (getenv "HOME") dir))
   "Directory where the Tlön repos are stored.")
 
-(defvar tlon-babel-repos
+(defconst tlon-babel-repos
   `((:name "babel-core"
 	   :project "babel"
 	   :subproject "babel"
@@ -204,7 +204,7 @@ The `:name' property is the full name of the repo, as it appears in the URL. The
 `:abbrev' property is an abbreviated form of the name, used, for example, for
 creating `org-mode' TODOs.")
 
-(defvar tlon-babel-labels
+(defconst tlon-babel-labels
   '((:label "Awaiting processing"
 	    :action "Process"
 	    :assignee "worldsaround")
@@ -242,7 +242,7 @@ The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
 the actual user.")
 
-(defvar tlon-babel-bare-dirs
+(defconst tlon-babel-bare-dirs
   '((("en" . "articles")
      ("es" . "articulos"))
     (("en" . "tags")
