@@ -1892,12 +1892,6 @@ If REPO is nil, return metadata of current repository."
 
 ;;;;;; Query metadata
 
-(defun tlon-babel-alist-key (value alist)
-  "Find the first key from ALIST that corresponds to VALUE."
-  (cl-loop for (key . val) in alist
-	   when (equal val value)
-	   return key))
-
 (defun tlon-babel-metadata-lookup (field1 field2 value2 metadata)
   "Search METADATA for VALUE2 in FIELD2 and return the value of FIELD1."
   (let ((found nil)
