@@ -146,7 +146,7 @@
 	   :type content
 	   :subtype originals
 	   :key "u n")
-    (:name "utilitarismo"
+    (:name "utilitarismo-es"
 	   :project "babel"
 	   :subproject "utilitarismo"
 	   :abbrev "utilitarismo-es"
