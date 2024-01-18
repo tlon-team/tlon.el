@@ -2445,15 +2445,27 @@ The translation language is defined by `tlon-babel-translation-language'.
 
 If FILE is nil, return the counterpart of the file visited by the current
 buffer."
-  (let* ((file (or file (tlon-babel-buffer-file-name))))
-    (if-let ((dir (tlon-babel-get-counterpart-dir file))
-	     (locator (tlon-babel-metadata-get-field-value-in-file "path_original" file)))
-	(file-name-concat dir locator)
-      (let ((translations-repo (tlon-babel-get-counterpart-repo file)))
-	(tlon-babel-metadata-lookup "file"
-				    "path_original"
-				    (file-name-nondirectory file)
-				    (tlon-babel-get-metadata-in-repo translations-repo))))))
+  (let* ((file (or file (tlon-babel-buffer-file-name)))
+	 (repo (tlon-babel-get-repo-from-file file)))
+    (pcase (tlon-babel-get-property-of-repo :subtype repo)
+      ('translations (tlon-babel-get-counterpart-in-translations file))
+      ('originals (tlon-babel-get-counterpart-in-originals file))
+      (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
+
+(defun tlon-babel-get-counterpart-in-translations (file)
+  "Get the counterpart of FILE, when FILE is in `translations'."
+  (if-let ((dir (tlon-babel-get-counterpart-dir file))
+	   (locator (tlon-babel-metadata-get-field-value-in-file "path_original" file)))
+      (file-name-concat dir locator)
+    (user-error "Couldn’t find relevant metadata")))
+
+(defun tlon-babel-get-counterpart-in-originals (file)
+  "Get the counterpart of FILE, when FILE is in `originals'."
+  (let ((translations-repo (tlon-babel-get-counterpart-repo file)))
+    (tlon-babel-metadata-lookup "file"
+				"path_original"
+				(file-name-nondirectory file)
+				(tlon-babel-get-metadata-in-repo translations-repo))))
 
 (defun tlon-babel-get-counterpart-repo (&optional file)
   "Get the counterpart repo of FILE.
