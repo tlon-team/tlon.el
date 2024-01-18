@@ -4190,9 +4190,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
     ("n" "forge"                          tlon-babel-forge)
     ("." "gh-notify"                      gh-notify)
     """Request"
-    ("q g" "update babel"                 tlon-babel-update-babel-in-uqbar-es)
-    ("q i" "update images"                tlon-babel-update-uqbar-images)
-    ("q l" "show log"                     tlon-babel-show-uqbar-log)
+    ("q q" "uqbar"                        tlon-babel-uqbar-api-request)
     ]
    ["Add or modify"
     ("a a" "glossary"                     tlon-babel-glossary-dwim)
@@ -4569,87 +4567,79 @@ If REPO is nil, default to the current repository." entity)
 
 ;;;;;; `uqbar' API
 
-(defun tlon-babel-show-uqbar-log ()
-  "Show the `uqbar-es' error log."
-  (interactive)
-  ;; (tlon-babel-get-uqbar-log "POST" "https://altruismoeficaz.net/api/update/bae")
-  (tlon-babel-print-log
-   (tlon-babel-process-api-buffer
-    (tlon-babel-get-uqbar-log "GET" "https://altruismoeficaz.net/api/update/bae/log"))))
 
-;; TODO: make it work with POST request. Look at the script in
-;; https://github.com/tlon-team/uqbar-api/blob/main/deployment/request.sh
-(defun tlon-babel-get-uqbar-log (request url)
-  "Get error log from `uqbar-es' repo as an association list.
-If not already authenticated, run `tlon-babel-get-uqbar-token' first."
-  (when-let* ((url-request-method request)
-	      (url-mime-charset-string "utf-8;q=1, iso-8859-1")
-	      (buffer (url-retrieve-synchronously url)))
-    buffer))
+(defconst tlon-babel-uqbar-api-routes
+  '((:route "update/babel-refs"
+	    :type "POST"
+	    :docstring "Apply CSL and regenerate BibTeX keys.")
+    (:route "update/babel-refs/log"
+	    :type "GET"
+	    :docstring "Show log of \"update/babel-refs\" request.")
+    (:route "update/uqbar/%s"
+	    :type "POST"
+	    :docstring "Update `uqbar’ source files.")
+    (:route "update/uqbar/%s/log"
+	    :type "GET"
+	    :docstring "Show log of \"update/uqbar\" request.")
+    (:route "update/rebuild-frontend"
+	    :type "POST"
+	    :docstring "Rebuild `uqbar' frontend.")
+    (:route "update/rebuild-frontend/log"
+	    :type "GET"
+	    :docstring "Show log of \"update/rebuild-frontend\" request."))
+  "Paths for `uqbar' API requests.")
 
-(defun tlon-babel-process-api-buffer (buffer)
-  ""
-  (let ((json-object-type 'plist)
-	(json-array-type 'list)
-	(output-buffer-name "*uqbar error log*"))
-    (with-current-buffer buffer
-      (goto-char (point-min))
-      (search-forward "\n\n")
-      ;; Kill any existing buffer with the same name before creating a new one
-      (when (get-buffer output-buffer-name)
-	(kill-buffer output-buffer-name))
-      (let* ((output-buffer (get-buffer-create output-buffer-name))
-	     (parsed-json (json-read))
-	     (modified-json (mapcar (lambda (entry)
-				      (plist-put entry :source_filename
-						 (concat tlon-babel-dir-repos
-							 (plist-get entry :source_filename))))
-				    parsed-json)))
-	modified-json))))
+(defun tlon-babel-uqbar-api-request (route)
+  "Make a request for ROUTE with the `uqbar' API."
+  (interactive (list (tlon-select-api-route)))
+  (let* ((site "altruismoeficaz.net")
+         (route-url (concat "https://" site "/api/" route))
+	 (type (tlon-babel-plist-lookup (tlon-babel-get-uqbar-api-routes) :type :route route))
+	 (access-token (tlon-babel-get-uqbar-token)))
+    (if (not access-token)
+	(message "Failed to authenticate")
+      (request route-url
+	:type type
+	:headers `(("Content-Type" . "application/json")
+		   ("Authorization" . ,(concat "Bearer " access-token)))
+	:parser 'json-read
+	:success (cl-function
+		  (lambda (&key data &allow-other-keys)
+		    (with-current-buffer (get-buffer-create (format "*Uqbar log for %s*" route))
+		      (erase-buffer)
+		      (insert (json-encode data))
+		      (json-pretty-print-buffer)
+		      (tlon-babel-append-to-source-filename)
+		      (tlon-babel-make-paths-clickable)
+		      (switch-to-buffer (current-buffer)))))))))
 
-(defun tlon-babel-print-log (log)
-  "Print LOG in a human-friendly way."
-  (let* ((buffer (generate-new-buffer "*Log*")))
-    (pp log buffer)
-    (switch-to-buffer buffer)
-    (emacs-lisp-mode)
-    (tlon-babel-make-paths-clickable)
-    (read-only-mode)
-    (goto-char (point-min))))
+(defun tlon-babel-get-uqbar-api-routes ()
+  "Return the `uqbar' API paths reflecting the current translation language."
+  (mapcar
+   (lambda (x)
+     (if (and (listp x)
+	      (stringp (plist-get x :route))
+	      (string-match "%s" (plist-get x :route)))
+	 (plist-put (copy-sequence x) :route (replace-regexp-in-string
+					      "%s"
+					      tlon-babel-translation-language
+					      (plist-get x :route)))
+       x))
+   (copy-sequence tlon-babel-uqbar-api-routes)))
 
-(defun tlon-babel-make-paths-clickable ()
-  "Make file paths in the current buffer clickable."
-  (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward "\"\\([^\"]+\\)\"" nil t)
-      (let* ((match (match-string-no-properties 0))
-	     (url (substring match 1 -1))
-	     (path (when (file-exists-p url)
-		     (abbreviate-file-name (expand-file-name url)))))
-	(when path
-	  (make-button (match-beginning 0) (match-end 0)
-		       'action (lambda (_) (find-file path))
-		       'follow-link t))))))
-
-(defun tlon-babel-make-uqbar-request (url &optional retries)
-  "Make URL request to `uqbar' API and show updated logs.
-It will first authenticate and then make the request.
-
-Retries 2 more times if response code is 504 before giving up. If RETRIES is a
-number, it will retry that many times instead of 2."
-  (let* ((token (tlon-babel-get-uqbar-token))
-	 (retries (if (numberp retries) retries 0)))
-    (request
-      url
-      :type "POST"
-      :headers `(("Authorization" . ,(concat "Bearer " token)))
-      :sync nil
-      :status-code '((504 . (lambda (&rest _)
-			      (message "Got 504, Gateway Timeout. My patience has a limit!"))))
-      :complete (cl-function
-		 (lambda (&key response &allow-other-keys)
-		   (unless (request-response-error-thrown response)
-		     (tlon-babel-get-uqbar-log)))))))
+;; TODO: consider using `marginalia' for this
+;; see my questions to GPT-4 on what to implement it:
+;; [[id:625AC8A3-F330-4DD2-B8F6-8FF432158057][pass text to marginalia]]
+(defun tlon-select-api-route ()
+  "Prompt the user to select an API route from `tlon-babel-uqbar-api-routes'."
+  (let* ((choices (mapcar (lambda (plist)
+                            (let ((route (plist-get plist :route))
+                                  (docstring (plist-get plist :docstring))
+				  (type (plist-get plist :type)))
+                              (cons (format "%s  |  %s" route (propertize docstring 'face 'italic)) route)))
+			  (tlon-babel-get-uqbar-api-routes)))
+	 (user-choice (completing-read "Please select an API path: " choices nil t)))
+    (cdr (assoc user-choice choices))))
 
 (defun tlon-babel-get-uqbar-token ()
   "Get `uqbar-es' API token."
@@ -4671,15 +4661,52 @@ number, it will retry that many times instead of 2."
 	     (json-response (json-read-from-string (buffer-string))))
 	(cdr (assoc "access_token" json-response))))))
 
-(defun tlon-babel-update-babel-in-uqbar-es ()
-  "Update the `uqbar-es' website to reflect latest changes in `babel'."
-  (interactive)
-  (tlon-babel-make-uqbar-request "https://altruismoeficaz.net/api/update"))
+(defun tlon-babel-append-to-source-filename (&optional buffer)
+  "Fix `:source_filename' paths in output log in BUFFER.
+If BUFFER is nil, default to the current buffer."
+  (let ((buffer (or buffer (current-buffer))))
+    (with-current-buffer buffer
+      ;; Delete trailing whitespace and newlines
+      (goto-char (point-max))
+      (delete-trailing-whitespace)
+      ;; Parse the JSON.
+      (goto-char (point-min))
+      (let* ((json-array-type 'list)
+             (json-object-type 'alist)
+             (json-data (json-read))
+             ;; Modify the JSON
+             (json-modified
+              (mapcar (lambda (json-object)
+			(let ((filename (file-name-concat tlon-babel-dir-repos
+							  (cdr (assoc 'source_filename json-object)))))
+                          (setf (cdr (assoc 'source_filename json-object)) filename)
+                          json-object))
+                      json-data)))
+	;; Erase the buffer and insert the modified JSON, making sure it's pretty-printed
+	(erase-buffer)
+	(insert (json-encode json-modified))
+	(json-pretty-print-buffer)))))
 
-(defun tlon-babel-update-uqbar-images ()
-  "Update the `uqbar-es' website to reflect latest image modifications."
-  (interactive)
-  (tlon-babel-make-uqbar-request "https://altruismoeficaz.net/api/update/rebuild-frontend"))
+(defun tlon-babel-make-paths-clickable (&optional buffer)
+  "Make file paths in the current buffer clickable.
+The paths and also be opened with RET.
+
+If BUFFER is nil, default to the current buffer."
+  (let ((buffer (or buffer (or (current-buffer)))))
+    (with-current-buffer buffer
+      (save-excursion
+	(goto-char (point-min))
+	(goto-address-mode 1)
+	(while (re-search-forward "\"\\([^\"]+\\)\"" nil t)
+	  (let* ((match (match-string-no-properties 0))
+		 (url (substring match 1 -1))
+		 (path (when (file-exists-p url)
+			 (abbreviate-file-name (expand-file-name url)))))
+	    (when path
+	      (make-button (match-beginning 0) (match-end 0)
+			   'action (lambda (_) (find-file path))
+			   'follow-link t))))
+	(local-set-key (kbd "<RET>") 'ffap)))))
 
 ;;;;;;; Fix log errors helper functions
 
