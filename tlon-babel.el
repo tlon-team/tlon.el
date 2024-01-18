@@ -4586,7 +4586,6 @@ If REPO is nil, default to the current repository." entity)
 
 ;;;;;; `uqbar' API
 
-
 (defconst tlon-babel-uqbar-api-routes
   '((:route "update/babel-refs"
 	    :type "POST"
@@ -4606,7 +4605,7 @@ If REPO is nil, default to the current repository." entity)
     (:route "update/rebuild-frontend/log"
 	    :type "GET"
 	    :docstring "Show log of \"update/rebuild-frontend\" request."))
-  "Paths for `uqbar' API requests.")
+  "Routes for `uqbar' API requests.")
 
 (defun tlon-babel-uqbar-api-request (route)
   "Make a request for ROUTE with the `uqbar' API."
