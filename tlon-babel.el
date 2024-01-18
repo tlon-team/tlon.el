@@ -4633,7 +4633,7 @@ If REPO is nil, default to the current repository." entity)
 		      (switch-to-buffer (current-buffer)))))))))
 
 (defun tlon-babel-get-uqbar-api-routes ()
-  "Return the `uqbar' API paths reflecting the current translation language."
+  "Return the `uqbar' API routes reflecting the current translation language."
   (mapcar
    (lambda (x)
      (if (and (listp x)
@@ -4657,7 +4657,7 @@ If REPO is nil, default to the current repository." entity)
 				  (type (plist-get plist :type)))
                               (cons (format "%s  |  %s" route (propertize docstring 'face 'italic)) route)))
 			  (tlon-babel-get-uqbar-api-routes)))
-	 (user-choice (completing-read "Please select an API path: " choices nil t)))
+	 (user-choice (completing-read "Please select an API route: " choices nil t)))
     (cdr (assoc user-choice choices))))
 
 (defun tlon-babel-get-uqbar-token ()
