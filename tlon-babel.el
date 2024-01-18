@@ -2091,6 +2091,13 @@ If TITLE is non-nil, use it instead of prompting for one."
   (interactive)
   (tlon-babel-yaml-set-front-matter tlon-babel-yaml-author-keys))
 
+(defun tlon-babel-yaml-set-front-matter-for-original-author (&optional title)
+  "Insert YAML fields for `uqbar-en' author in the current buffer.
+If TITLE is non-nil, use it instead of prompting for one."
+  (interactive)
+  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-original-author-keys title))
+
+;; TODO: throw error if any of fields already present
 (defun tlon-babel-insert-yaml-fields (fields)
   "Insert YAML FIELDS in the buffer at point.
 FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
