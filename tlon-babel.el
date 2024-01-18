@@ -1671,6 +1671,7 @@ dedicated function."
 
 ;;;;;; Insertion commands
 
+;; TODO: revise to support multiple langs, including en
 (defun tlon-babel-markdown-insert-element ()
   "Insert a link to an element at point.
 The element can be a tag or an author."
