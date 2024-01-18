@@ -2220,7 +2220,7 @@ If STATE is nil, default to `borrador'."
 	  (tlon-babel-open-counterpart)
 	  (goto-char (point-min))
 	  (re-search-forward fn-regexp nil t)
-	  (markdown-narrow-to-subtree)
+	  (goto-char (match-beginning 0))
 	  (let ((start (point)))
 	    (goto-char (point-max))
 	    (delete-region start (point))
