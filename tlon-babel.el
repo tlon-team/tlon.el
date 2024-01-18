@@ -4695,11 +4695,11 @@ If BUFFER is nil, default to the current buffer."
              ;; Modify the JSON
              (json-modified
               (mapcar (lambda (json-object)
-			(let ((filename (file-name-concat tlon-babel-dir-repos
-							  (cdr (assoc 'source_filename json-object)))))
-                          (setf (cdr (assoc 'source_filename json-object)) filename)
-                          json-object))
-                      json-data)))
+			(when-let* ((old-filename (cdr (assoc 'source_filename json-object)))
+				    (new-filename (file-name-concat tlon-babel-dir-repos old-filename)))
+			  (setf (cdr (assoc 'source_filename json-object)) new-filename))
+                        json-object)
+		      json-data)))
 	;; Erase the buffer and insert the modified JSON, making sure it's pretty-printed
 	(erase-buffer)
 	(insert (json-encode json-modified))
