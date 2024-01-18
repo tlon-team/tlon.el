@@ -4703,7 +4703,8 @@ If BUFFER is nil, default to the current buffer."
 	;; Erase the buffer and insert the modified JSON, making sure it's pretty-printed
 	(erase-buffer)
 	(insert (json-encode json-modified))
-	(json-pretty-print-buffer)))))
+	(json-pretty-print-buffer)
+	(json-mode)))))
 
 (defun tlon-babel-make-paths-clickable (&optional buffer)
   "Make file paths in the current buffer clickable.
