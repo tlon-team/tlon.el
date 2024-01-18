@@ -4628,7 +4628,7 @@ If REPO is nil, default to the current repository." entity)
 		      (erase-buffer)
 		      (insert (json-encode data))
 		      (json-pretty-print-buffer)
-		      (tlon-babel-append-to-source-filename)
+		      (tlon-babel-fix-source-filename-paths)
 		      (tlon-babel-make-paths-clickable)
 		      (switch-to-buffer (current-buffer)))))))))
 
@@ -4680,7 +4680,7 @@ If REPO is nil, default to the current repository." entity)
 	     (json-response (json-read-from-string (buffer-string))))
 	(cdr (assoc "access_token" json-response))))))
 
-(defun tlon-babel-append-to-source-filename (&optional buffer)
+(defun tlon-babel-fix-source-filename-paths (&optional buffer)
   "Fix `:source_filename' paths in output log in BUFFER.
 If BUFFER is nil, default to the current buffer."
   (let ((buffer (or buffer (current-buffer))))
