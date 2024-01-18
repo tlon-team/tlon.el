@@ -2251,8 +2251,8 @@ If KEY already has VALUE, use it as the initial input."
   "Get completion values for a YAML field with KEY."
   (pcase key
     ("traductores" (tlon-babel-get-translators))
-    ("temas" (tlon-babel-get-uqbar-tags))
-    ("autores" (tlon-babel-get-uqbar-authors))
+    ("temas" (tlon-babel-get-uqbar-fields "tags"))
+    ("autores" (tlon-babel-get-uqbar-fields "authors"))
     ("path_original" (tlon-babel-get-filenames-in-dir))
     ("key_original" (citar--completion-table (citar--format-candidates) nil))
     ("key_traduccion" (citar--completion-table (citar--format-candidates) nil))
@@ -2364,33 +2364,23 @@ pre-populate the selection."
 
 ;;;;;; Get repo-specific entities
 
-;; TODO: handle changing type names in different langs
-(defun tlon-babel-get-uqbar-entity (type)
-  "Return a list of `uqbar-en' elements of TYPE."
-  (tlon-babel-metadata-get-all-field-values
-   "titulo"
-   (tlon-babel-get-metadata-in-repo (tlon-babel-get-property-of-repo-name :dir "uqbar-es"))
-   "file"
-   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "uqbar-es") type)))
-
-(defun tlon-babel-get-uqbar-articles ()
-  "Get a list of `uqbar-en' articles."
-  (tlon-babel-get-uqbar-entity "articulos"))
-
-(defun tlon-babel-get-uqbar-authors ()
-  "Get a list of `uqbar-en' authors."
-  (tlon-babel-get-uqbar-entity "autores"))
-
-(defun tlon-babel-get-uqbar-tags ()
-  "Get a list of `uqbar-en' tags."
-  (tlon-babel-get-uqbar-entity "temas"))
+(defun tlon-babel-get-uqbar-fields (type &optional field language)
+  "Return FIELDS in files of TYPE in `uqbar' repo of LANGUAGE.
+If FIELD is nil, default to \"titulo\". If LANG is nil, default to
+`tlon-babel-translation-language'."
+  (let* ((field (or field "titulo"))
+	 (language (or language tlon-babel-translation-language))
+	 (type-in-language (tlon-babel-get-bare-dir-translation "en" language type))
+	 (repo (tlon-babel-repo-lookup :dir :subproject "uqbar" :language language)))
+    (tlon-babel-metadata-get-all-field-values
+     field (tlon-babel-get-metadata-in-repo repo) "file" (file-name-concat repo type-in-language))))
 
 (defun tlon-babel-get-all-uqbar-entities ()
   "Get a list of all `uqbar-en' entities."
   (append
-   (tlon-babel-get-uqbar-entity "articulos")
-   (tlon-babel-get-uqbar-entity "autores")
-   (tlon-babel-get-uqbar-entity "temas")))
+   (tlon-babel-get-uqbar-fields "articles")
+   (tlon-babel-get-uqbar-fields "authors")
+   (tlon-babel-get-uqbar-fields "tags")))
 
 ;;;;;; Create repo-specific entities
 
