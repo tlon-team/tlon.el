@@ -2053,10 +2053,10 @@ If TITLE is non-nil, use it instead of prompting for one."
 	      ("publication_status" . "no publicado")
 	      ("original_key" . ,(when first-author (tlon-babel-yaml-set-original-key (car first-author))))
 	      ("translation_key" . ,(when first-author
-				     (tlon-babel-bibtex-generate-autokey
-				      (car first-author)
-				      (substring (cdr (assoc "date" field-values)) 0 4)
-				      (cdr (assoc "title" field-values))))))))
+				      (tlon-babel-bibtex-generate-autokey
+				       (car first-author)
+				       (substring (cdr (assoc "date" field-values)) 0 4)
+				       (cdr (assoc "title" field-values))))))))
       ;; revise field-values
       (setq field-values (assoc-delete-all "authors-list" field-values))
       (dolist (field fields)
@@ -4448,7 +4448,7 @@ If REPO is nil, default to the current repository." entity)
 
 (defun tlon-babel-eaf-request (id-or-slug &optional async)
   "Run an EAF request for ID-OR-SLUG.
-  If ASYNC is t, run the request asynchronously."
+If ASYNC is t, run the request asynchronously."
   (let* ((object (tlon-babel-eaf-get-object id-or-slug))
 	 (fun (pcase object
 		('post 'tlon-babel-eaf-post-query)
@@ -4565,7 +4565,7 @@ If REPO is nil, default to the current repository." entity)
   "Make a request for ROUTE with the `uqbar' API."
   (interactive (list (tlon-select-api-route)))
   (let* ((site "altruismoeficaz.net")
-         (route-url (concat "https://" site "/api/" route))
+	 (route-url (concat "https://" site "/api/" route))
 	 (type (tlon-babel-plist-lookup (tlon-babel-get-uqbar-api-routes) :type :route route))
 	 (access-token (tlon-babel-get-uqbar-token)))
     (if (not access-token)
@@ -4605,10 +4605,10 @@ If REPO is nil, default to the current repository." entity)
 (defun tlon-select-api-route ()
   "Prompt the user to select an API route from `tlon-babel-uqbar-api-routes'."
   (let* ((choices (mapcar (lambda (plist)
-                            (let ((route (plist-get plist :route))
-                                  (docstring (plist-get plist :docstring))
+			    (let ((route (plist-get plist :route))
+				  (docstring (plist-get plist :docstring))
 				  (type (plist-get plist :type)))
-                              (cons (format "%s  |  %s" route (propertize docstring 'face 'italic)) route)))
+			      (cons (format "%s  |  %s" route (propertize docstring 'face 'italic)) route)))
 			  (tlon-babel-get-uqbar-api-routes)))
 	 (user-choice (completing-read "Please select an API route: " choices nil t)))
     (cdr (assoc user-choice choices))))
@@ -4644,15 +4644,15 @@ If BUFFER is nil, default to the current buffer."
       ;; Parse the JSON.
       (goto-char (point-min))
       (let* ((json-array-type 'list)
-             (json-object-type 'alist)
-             (json-data (json-read))
-             ;; Modify the JSON
-             (json-modified
-              (mapcar (lambda (json-object)
+	     (json-object-type 'alist)
+	     (json-data (json-read))
+	     ;; Modify the JSON
+	     (json-modified
+	      (mapcar (lambda (json-object)
 			(when-let* ((old-filename (cdr (assoc 'source_filename json-object)))
 				    (new-filename (file-name-concat tlon-babel-dir-repos old-filename)))
 			  (setf (cdr (assoc 'source_filename json-object)) new-filename))
-                        json-object)
+			json-object)
 		      json-data)))
 	;; Erase the buffer and insert the modified JSON, making sure it's pretty-printed
 	(erase-buffer)
