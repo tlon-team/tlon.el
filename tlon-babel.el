@@ -2263,8 +2263,8 @@ If STATE is nil, default to `borrador'."
 (defun tlon-babel-yaml-get-completions (key value)
   "Get completions based on KEY.
 If KEY already has VALUE, use it as the initial input."
-  (if-let ((val (tlon-babel-yaml-get-completion-values key))
-	   (fun (tlon-babel-yaml-get-completion-functions key)))
+  (if-let ((fun (tlon-babel-yaml-get-completion-functions key))
+	   (val (tlon-babel-yaml-get-completion-values key)))
       (funcall fun val)
     (tlon-babel-yaml-insert-string (list value))))
 
