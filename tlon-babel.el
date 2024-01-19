@@ -1728,12 +1728,15 @@ OPEN is the opening element and CLOSE is the closing element."
     (insert (concat open close))
     (backward-char (length close))))
 
-(defun tlon-babel-markdown-insert-mdx-cite ()
+;; TODO: revise to offer the key at point as default completion candidate
+(defun tlon-babel-markdown-insert-mdx-cite (key)
   "Insert an MDX `Cite' element pair at point or around the selected region.
-When a Bibtex key is enclosed in a `Cite' element pair, only its title will be
-displayed in the exported web page."
-  (interactive)
-  (tlon-babel-markdown-insert-element-pair "<Cite>" "</Cite>"))
+Prompt the user to select a BibTeX KEY. When a key is enclosed in a `Cite'
+element pair, only its title will be displayed in the exported web page."
+  (interactive (list (read-string "Key: ")))
+  (tlon-babel-markdown-insert-element-pair (format "<Cite id={\"%s\"}>"
+						   key)
+					   "</Cite>"))
 
 (defun tlon-babel-markdown-insert-mdx-aside ()
   "Insert an MDX `Aside' element pair at point or around the selected region."
