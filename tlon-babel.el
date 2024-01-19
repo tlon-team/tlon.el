@@ -2155,6 +2155,7 @@ If FILE is nil, return the work type of the file visited by the current buffer."
       ("temas" tlon-babel-yaml-tag-keys)
       ("authors" tlon-babel-yaml-author-keys))))
 
+;; TODO: revise `translations' now that we use separate repos
 (defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
   "Set the value of multivalue FIELD in metadata of REPO.
 If DIR is non-nil, only search in directory within the repo. Note DIR does not
