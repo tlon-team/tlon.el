@@ -4562,6 +4562,7 @@ If ASYNC is t, run the request asynchronously."
 	    :docstring "Show log of \"update/rebuild-frontend\" request."))
   "Routes for `uqbar' API requests.")
 
+;; generalize to all APIs
 (defun tlon-babel-uqbar-api-request (route)
   "Make a request for ROUTE with the `uqbar' API."
   (interactive (list (tlon-select-api-route)))
