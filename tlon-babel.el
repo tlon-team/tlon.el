@@ -2257,7 +2257,7 @@ If STATE is nil, default to `borrador'."
 (defun tlon-babel-yaml-edit-field ()
   "Edit the YAML field at point."
   (interactive)
-  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field)
+  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field-at-point)
     (tlon-babel-yaml-get-completions key value)))
 
 (defun tlon-babel-yaml-get-completions (key value)
@@ -2331,7 +2331,8 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
 	  (user-error "Key `%s' not found in file `%s'" key file))
       (user-error "File does not appear to contain a front matter section"))))
 
-(defun tlon-babel-yaml-get-field ()
+;; TODO: Handle multiline fields, specifically `description’
+(defun tlon-babel-yaml-get-field-at-point ()
   "Return a list with the YAML key and value at point, or nil if there is none."
   (when-let* ((bounds (bounds-of-thing-at-point 'line))
 	      (line (buffer-substring-no-properties (car bounds) (cdr bounds)))
@@ -2375,7 +2376,7 @@ list, use them pre-populate the selection."
   "Insert a string in the YAML field at point.
 Prompt the user for a choice in CANDIDATES. If point is on a string, use it to
 pre-populate the selection."
-  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field)
+  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field-at-point)
     (let* ((choice (completing-read (format "Value of `%s': " key)
 				    candidates))
 	   (bounds (bounds-of-thing-at-point 'line))
