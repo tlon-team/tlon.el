@@ -4406,52 +4406,6 @@ otherwise prompt for a repo."
   (let* ((repo-name (tlon-babel-repo-lookup :name :dir (tlon-babel-get-repo))))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
 
-(defun tlon-babel-open-repo ()
-  "Open the Babel repository."
-  (interactive)
-  (dired (tlon-babel-get-repo nil 'include-all)))
-
-(defun tlon-babel-open-uqbar-es-repo ()
-  "Open the `uqbar-es' repository."
-  (interactive)
-  (dired (tlon-babel-get-property-of-repo-name :dir "uqbar-es")))
-
-(defun tlon-babel-open-utilitarismo-repo ()
-  "Open the Utilitarismo repository."
-  (interactive)
-  (dired (tlon-babel-get-property-of-repo-name :dir "util")))
-
-(defun tlon-babel-open-largoplacismo-repo ()
-  "Open the Largoplacismo repository."
-  (interactive)
-  (dired (tlon-babel-get-property-of-repo-name :dir "ensayos")))
-
-(defun tlon-babel-open-babel-repo ()
-  "Open the Babel repository."
-  (interactive)
-  (dired (tlon-babel-get-property-of-repo-name :dir "babel")))
-
-;; TODO: this should be revised to support folders in different `uqbar' repos
-(defun tlon-babel-open-uqbar-es-folder (folder)
-  "Open FOLDER of the `uqbar-es' repository."
-  (dired (file-name-concat
-	  (tlon-babel-get-property-of-repo-name :dir "uqbar-es") folder)))
-
-(defun tlon-babel-open-uqbar-es-articles ()
-  "Open the `articulos' folder of the `uqbar-es' repository."
-  (interactive)
-  (tlon-babel-open-uqbar-es-folder "articulos"))
-
-(defun tlon-babel-open-uqbar-es-authors ()
-  "Open the `autores' folder of the `uqbar-es' repository."
-  (interactive)
-  (tlon-babel-open-uqbar-es-folder "autores"))
-
-(defun tlon-babel-open-uqbar-es-tags ()
-  "Open the `temas' folder of the `uqbar-es' repository."
-  (interactive)
-  (tlon-babel-open-uqbar-es-folder "temas"))
-
 (defun tlon-babel-browse-entity-dir (entity &optional repo source-lang)
   "Browse the directory of ENTITY in REPO.
 ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
