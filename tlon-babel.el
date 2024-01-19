@@ -4429,6 +4429,17 @@ If REPO is nil, default to the current repository." entity)
 (dolist (entity (tlon-babel-get-entity-types))
   (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
 
+;; TODO: create macro to generate these commands
+(defun tlon-babel-open-file-in-repo (&optional repo)
+  ""
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (alist (mapcar (lambda (file)
+			  (cons (file-relative-name file repo) file))
+			(directory-files-recursively repo "^[^.][^/]*$")))
+	 (selection (completing-read "Select file: " alist))
+	 (file (cdr (assoc selection alist))))
+    (find-file file)))
+
 ;;;;; Request
 
 ;;;;;; EAF API
@@ -4682,6 +4693,28 @@ If BUFFER is nil, default to the current buffer."
 			   'action (lambda (_) (find-file path))
 			   'follow-link t))))
 	(local-set-key (kbd "<RET>") 'ffap)))))
+
+;; TODO do this properly by getting request from `tlon-babel-get-uqbar-api-routes'
+(defun tlon-babel-magit-trigger-request (&rest args)
+  "Trigger appropriate request when a commit is pushed in Magit.
+ARGS is passed to `'magit-push'."
+  (let ((uqbar-es (tlon-babel-get-property-of-repo-name :dir "uqbar-es"))
+	(babel-refs (tlon-babel-get-property-of-repo-name :dir "babel-refs"))
+	route)
+    ;; can’t be done with `pcase'
+    (cond
+     ((string= default-directory uqbar-es)
+      (setq route "update/uqbar/es"))
+     ((string= default-directory babel-refs)
+      (setq route "update/babel-refs")))
+    (run-with-timer
+     3 nil (lambda ()
+	     "Run `tlon-babel-uqbar-api-request' once the push is expected to complete."
+	     (tlon-babel-uqbar-api-request route)))))
+
+(dolist (fun (list 'magit-push-current-to-upstream
+		   'magit-push-current-to-pushremote))
+  (advice-add fun :after 'tlon-babel-magit-trigger-request))
 
 ;;;;;;; Fix log errors helper functions
 
