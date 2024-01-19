@@ -807,6 +807,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (when (tlon-babel-capture-issue-p issue)
       (tlon-babel-store-or-refile-job-todo issue))))
 
+;; TODO: revise so that it alerts the user when no label is present instead of
+;; prompting for a label
 (defun tlon-babel-create-generic-todo-from-issue (&optional issue)
   "Create a new `org-mode' generic TODO based on ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
