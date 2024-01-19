@@ -4862,7 +4862,7 @@ summarize."
   (interactive (list (completing-read "Model: " gptel-extras-backends)))
   (require 'gptel)
   (require 'gptel-extras)
-  (gptel-model-config model)
+  (gptel-extras-model-config model)
   (let ((string
 	 (if (region-active-p)
 	     (buffer-substring-no-properties (region-beginning) (region-end))
