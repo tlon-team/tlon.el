@@ -4539,6 +4539,8 @@ If ASYNC is t, run the request asynchronously."
 
 ;;;;;; `uqbar' API
 
+;; TODO: add `:repo-name' property, then constract `:route' dynamically with
+;; `tlon-babel-get-uqbar-api-routes'
 (defconst tlon-babel-uqbar-api-routes
   '((:route "update/babel-refs"
 	    :type "POST"
