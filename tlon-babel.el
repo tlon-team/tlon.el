@@ -560,39 +560,6 @@ This variable should not be set manually.")
   "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
   "Regexp to match links.")
 
-;;;;; YAML
-
-(defconst tlon-babel-publication-statuses
-  '("no publicado" "prueba" "produccion")
-  "List of publication statuses.")
-
-(defconst tlon-babel-yaml-delimiter "---\n"
-  "Delimiter for YAML front matter.")
-
-(defconst tlon-babel-yaml-article-keys
-  '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
-  "List of YAML keys of fields to include in `uqbar-es' articles.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
-(defconst tlon-babel-yaml-tag-keys
-  '("title" "brief_title" "original_path" "publication_status")
-  "List of YAML keys of fields to include in `uqbar-es' tags.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
-(defconst tlon-babel-yaml-author-keys
-  '("title" "original_path" "publication_status")
-  "List of YAML keys of fields to include in `uqbar-es' authors.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
-(defconst tlon-babel-yaml-original-author-keys
-  '("title")
-  "List of YAML keys of fields to include in `uqbar-es' authors.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
 ;;;;; Validation
 
 (defconst tlon-babel-eaf-p
@@ -1953,6 +1920,37 @@ want to search all files, use the empty string."
     (mapcar #'file-name-nondirectory files)))
 
 ;;;;; YAML front matter
+
+(defconst tlon-babel-yaml-delimiter "---\n"
+  "Delimiter for YAML front matter.")
+
+(defconst tlon-babel-yaml-article-keys
+  '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
+  "List of YAML keys of fields to include in `uqbar-es' articles.
+The order of the keys determines the sort order by
+`tlon-babel--yaml-sort-fields', unless overridden.")
+
+(defconst tlon-babel-yaml-tag-keys
+  '("title" "brief_title" "original_path" "publication_status")
+  "List of YAML keys of fields to include in `uqbar-es' tags.
+The order of the keys determines the sort order by
+`tlon-babel--yaml-sort-fields', unless overridden.")
+
+(defconst tlon-babel-yaml-author-keys
+  '("title" "original_path" "publication_status")
+  "List of YAML keys of fields to include in `uqbar-es' authors.
+The order of the keys determines the sort order by
+`tlon-babel--yaml-sort-fields', unless overridden.")
+
+(defconst tlon-babel-yaml-original-author-keys
+  '("title")
+  "List of YAML keys of fields to include in `uqbar-es' authors.
+The order of the keys determines the sort order by
+`tlon-babel--yaml-sort-fields', unless overridden.")
+
+(defconst tlon-babel-yaml-publication-statuses
+  '("unpublished" "test" "production")
+  "List of publication statuses.")
 
 ;;;;;; Get YAML values
 
