@@ -2272,7 +2272,7 @@ If KEY already has VALUE, use it as the initial input."
     ("original_path" (tlon-babel-get-filenames-in-dir))
     ("original_key" (citar--completion-table (citar--format-candidates) nil))
     ("translation_key" (citar--completion-table (citar--format-candidates) nil))
-    ("publication_status" tlon-babel-publication-statuses)
+    ("publication_status" tlon-babel-yaml-publication-statuses)
     (_ nil)))
 
 (defun tlon-babel-yaml-get-completion-functions (key)
