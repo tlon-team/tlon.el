@@ -1850,7 +1850,7 @@ If REPO is nil, return metadata of current repository."
 (defun tlon-babel-get-metadata-in-repos ()
   "Return metadata of all `translation' repos."
   (let ((metadata '()))
-    (dolist (dir (tlon-babel-get-property-of-repos :dir :type 'translations))
+    (dolist (dir (tlon-babel-get-property-of-repos :dir :subtype 'translations))
       (setq metadata (append (tlon-babel-get-dir-metadata dir) metadata)))
     metadata))
 
