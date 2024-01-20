@@ -2392,7 +2392,7 @@ If FIELD is nil, default to \"title\". If LANG is nil, default to
 `tlon-babel-translation-language'."
   (let* ((field (or field "title"))
 	 (language (or language tlon-babel-translation-language))
-	 (type-in-language (tlon-babel-get-bare-dir-translation "en" language type))
+	 (type-in-language (tlon-babel-get-bare-dir-translation language "en" type))
 	 (repo (tlon-babel-repo-lookup :dir :subproject "uqbar" :language language)))
     (tlon-babel-metadata-get-all-field-values
      field (tlon-babel-get-metadata-in-repo repo) "file" (file-name-concat repo type-in-language))))
