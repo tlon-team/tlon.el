@@ -154,16 +154,16 @@
 	   :subtype translations
 	   :key "u s"
 	   :url "https://utilitarismo.net/")
-    (:name "ensayos-sobre-largoplacismo-en"
+    (:name "ensayos-en"
 	   :project "babel"
-	   :subproject "ensayos-sobre-largoplacismo"
+	   :subproject "ensayos"
 	   :abbrev "ensayos-en"
 	   :type content
 	   :subtype originals
 	   :key "l n")
-    (:name "ensayos-sobre-largoplacismo-es"
+    (:name "ensayos-es"
 	   :project "babel"
-	   :subproject "ensayos-sobre-largoplacismo"
+	   :subproject "ensayos"
 	   :abbrev "ensayos-es"
 	   :type content
 	   :subtype translations
