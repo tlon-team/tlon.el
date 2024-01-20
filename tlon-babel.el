@@ -4484,6 +4484,51 @@ If REPO is nil, default to the current repository." entity)
 (dolist (entity (tlon-babel-get-entity-types))
   (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
 
+(defun tlon-babel-open-file-in-repo (&optional repo)
+  "Interactively open a file from a list of all files in REPO.
+If REPO is nil, default to the current repository."
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (alist (tlon-babel-files-and-display-names-alist (list repo) repo)))
+    (tlon-babel-open-file-in-alist alist)))
+
+(defun tlon-babel-open-file-in-all-repos ()
+  "Interactively open a file froma list of all files in all repos."
+  (interactive)
+  (let* ((alist (tlon-babel-files-and-display-names-alist
+		 (tlon-babel-get-property-of-repos :dir)
+		 tlon-babel-dir-repos)))
+    (tlon-babel-open-file-in-alist alist)))
+
+(defun tlon-babel-files-and-display-names-alist (dirs relative-path)
+  "Return a alist of files, and display names, in DIRS.
+The display names are constructed by subtracting the RELATIVE-PATH."
+  (mapcar (lambda (file)
+	    (cons (file-relative-name file relative-path) file))
+	  (apply 'append (mapcar
+			  (lambda (dir)
+			    (directory-files-recursively dir "^[^.][^/]*$"))
+			  dirs))))
+
+(defun tlon-babel-open-file-in-alist (alist)
+  "Interactively open a file from ALIST.
+The car in each cons cell is the file to open, and its cdr is the candidate
+presented to the user."
+  (let* ((selection (completing-read "Select file: " alist))
+	 (file (cdr (assoc selection alist))))
+    (find-file file)))
+
+(defmacro tlon-babel-generate-open-file-in-repo-commands (repo)
+  "Generate commands to open file in REPO."
+  (let* ((repo-name (tlon-babel-repo-lookup :abbrev :dir repo))
+	 (command-name (intern (concat "tlon-babel-open-file-in-" repo-name))))
+    `(defun ,command-name ()
+       ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
+       (interactive)
+       (tlon-babel-open-file-in-repo ,repo))))
+
+(dolist (repo (tlon-babel-get-property-of-repos :dir))
+  (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
+
 ;;;;; Request
 
 ;;;;;; EAF API
