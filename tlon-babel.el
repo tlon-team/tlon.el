@@ -4210,7 +4210,6 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
     ("j" "job"                            tlon-babel-create-job)
     ("r" "dwim"                           tlon-babel-dwim)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
-    ("n" "forge"                          tlon-babel-forge)
     ("." "gh-notify"                      gh-notify)
     """Request"
     ("q q" "uqbar"                        tlon-babel-uqbar-api-request)
