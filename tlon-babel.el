@@ -3075,10 +3075,16 @@ renaming it."
 TITLE optionally specifies the title of the entity to be imported."
   (let* ((response (tlon-babel-eaf-request id-or-slug))
 	 (object (tlon-babel-eaf-get-object id-or-slug))
+	 (dir (tlon-babel-get-property-of-repo-name :dir "uqbar-en"))
+	 (subdir (pcase object
+		   ('article "articles")
+		   ('tag "tags")))
 	 (title (or title (pcase object
 			    ('article (tlon-babel-eaf-get-article-title response))
 			    ('tag (tlon-babel-eaf-get-tag-title response)))))
-	 (target (read-string "Save file in: " (tlon-babel-set-file-from-title title dir)))
+	 (target (read-string "Save file in: "
+			      (tlon-babel-set-file-from-title title
+							      (file-name-concat dir subdir))))
 	 (html (pcase object
 		 ('article (tlon-babel-eaf-get-article-html response))
 		 ('tag (tlon-babel-eaf-get-tag-html response))))
