@@ -821,6 +821,14 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	(while (not (tlon-babel-is-valid-status-p label issue))
 	  (sleep-for 1))))
     (tlon-babel-store-todo "tbG" nil issue)))
+(defcustom tlon-babel-gh-warn-when-no-valid-label t
+  "Whether to warn the user when the issue has no valid label.
+If t, warn the user. If `prompt', prompt the user for a label. If nil, do
+nothing."
+  :type '(choice (const :tag "Warn" t)
+		 (const :tag "Prompt" 'prompt)
+		 (const :tag "Do nothing" nil))
+  :group 'tlon-babel)
 
 (defun tlon-babel-check-label-or-assignee-present (&optional issue)
   "Check that ISSUE has a label or an assignee.
