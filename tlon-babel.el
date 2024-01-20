@@ -566,7 +566,7 @@ This variable should not be set manually.")
   "forum\\.effectivealtruism\\.org/"
   "Regular expression for validating EAF URLs.")
 
-(defconst tlon-babel-eaf-post-id-regexp
+(defconst tlon-babel-eaf-article-id-regexp
   "\\([[:alnum:]]\\{17\\}\\)"
   "Regular expression for validating post IDs.")
 
@@ -2686,9 +2686,9 @@ If REPO is nil, prompt the user for one."
   "Return t if URL is an EAF URL, nil otherwise."
   (not (not (string-match tlon-babel-eaf-p url))))
 
-(defun tlon-babel-eaf-post-id-p (identifier)
+(defun tlon-babel-eaf-article-id-p (identifier)
   "Return t if IDENTIFIER is a post ID, nil otherwise."
-  (not (not (string-match (format "^%s$" tlon-babel-eaf-post-id-regexp) identifier))))
+  (not (not (string-match (format "^%s$" tlon-babel-eaf-article-id-regexp) identifier))))
 
 (defun tlon-babel-eaf-tag-slug-p (identifier)
   "Return t if IDENTIFIER is a tag slug, nil otherwise."
@@ -2703,17 +2703,17 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 	  (tlon-babel-eaf-get-slug-from-identifier identifier))
     ;; return id or slug if identifier is an id or slug
     (pcase identifier
-      ((pred tlon-babel-eaf-post-id-p) identifier)
+      ((pred tlon-babel-eaf-article-id-p) identifier)
       ((pred tlon-babel-eaf-tag-slug-p) identifier))))
 
 (defun tlon-babel-eaf-get-id-from-identifier (identifier)
   "Return the EAF post ID from IDENTIFIER, if found."
   (when-let ((id (or (when (string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
-						 tlon-babel-eaf-post-id-regexp)
+						 tlon-babel-eaf-article-id-regexp)
 					 identifier)
 		       (match-string-no-properties 1 identifier))
 		     (when (string-match (format "^.+?forum.effectivealtruism.org/s/%s/p/%s"
-						 tlon-babel-eaf-post-id-regexp tlon-babel-eaf-post-id-regexp)
+						 tlon-babel-eaf-article-id-regexp tlon-babel-eaf-article-id-regexp)
 					 identifier)
 		       (match-string-no-properties 2 identifier)))))
     id))
@@ -2727,8 +2727,8 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 
 (defun tlon-babel-eaf-get-object (id-or-slug)
   "Return the EAF object in ID-OR-SLUG."
-  (let ((object (cond ((tlon-babel-eaf-post-id-p id-or-slug)
-		       'post)
+  (let ((object (cond ((tlon-babel-eaf-article-id-p id-or-slug)
+		       'article)
 		      ((tlon-babel-eaf-tag-slug-p id-or-slug)
 		       'tag)
 		      (t (user-error "Not an ID or slug: %S" id-or-slug)))))
@@ -3076,12 +3076,11 @@ TITLE optionally specifies the title of the entity to be imported."
   (let* ((response (tlon-babel-eaf-request id-or-slug))
 	 (object (tlon-babel-eaf-get-object id-or-slug))
 	 (title (or title (pcase object
-			    ('post (tlon-babel-eaf-get-post-title response))
+			    ('article (tlon-babel-eaf-get-article-title response))
 			    ('tag (tlon-babel-eaf-get-tag-title response)))))
-	 (dir (tlon-babel-get-property-of-repo-name :dir "uqbar-en"))
 	 (target (read-string "Save file in: " (tlon-babel-set-file-from-title title dir)))
 	 (html (pcase object
-		 ('post (tlon-babel-eaf-get-post-html response))
+		 ('article (tlon-babel-eaf-get-article-html response))
 		 ('tag (tlon-babel-eaf-get-tag-html response))))
 	 (html-file (tlon-babel-save-html-to-file html)))
     (shell-command
@@ -4435,23 +4434,57 @@ If REPO is nil, default to the current repository." entity)
 (dolist (entity (tlon-babel-get-entity-types))
   (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
 
-;; TODO: create macro to generate these commands
 (defun tlon-babel-open-file-in-repo (&optional repo)
-  ""
+  "Interactively open a file from a list of all files in REPO.
+If REPO is nil, default to the current repository."
   (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (alist (mapcar (lambda (file)
-			  (cons (file-relative-name file repo) file))
-			(directory-files-recursively repo "^[^.][^/]*$")))
-	 (selection (completing-read "Select file: " alist))
+	 (alist (tlon-babel-files-and-display-names-alist (list repo) repo)))
+    (tlon-babel-open-file-in-alist alist)))
+
+(defun tlon-babel-open-file-in-all-repos ()
+  "Interactively open a file froma list of all files in all repos."
+  (interactive)
+  (let* ((alist (tlon-babel-files-and-display-names-alist
+		 (tlon-babel-get-property-of-repos :dir)
+		 tlon-babel-dir-repos)))
+    (tlon-babel-open-file-in-alist alist)))
+
+(defun tlon-babel-files-and-display-names-alist (dirs relative-path)
+  "Return a alist of files, and display names, in DIRS.
+The display names are constructed by subtracting the RELATIVE-PATH."
+  (mapcar (lambda (file)
+	    (cons (file-relative-name file relative-path) file))
+	  (apply 'append (mapcar
+			  (lambda (dir)
+			    (directory-files-recursively dir "^[^.][^/]*$"))
+			  dirs))))
+
+(defun tlon-babel-open-file-in-alist (alist)
+  "Interactively open a file from ALIST.
+The car in each cons cell is the file to open, and its cdr is the candidate
+presented to the user."
+  (let* ((selection (completing-read "Select file: " alist))
 	 (file (cdr (assoc selection alist))))
     (find-file file)))
+
+(defmacro tlon-babel-generate-open-file-in-repo-commands (repo)
+  "Generate commands to open file in REPO."
+  (let* ((repo-name (tlon-babel-repo-lookup :abbrev :dir repo))
+	 (command-name (intern (concat "tlon-babel-open-file-in-" repo-name))))
+    `(defun ,command-name ()
+       ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
+       (interactive)
+       (tlon-babel-open-file-in-repo ,repo))))
+
+(dolist (repo (tlon-babel-get-property-of-repos :dir))
+  (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
 
 ;;;;; Request
 
 ;;;;;; EAF API
 
-(defun tlon-babel-eaf-post-query (id)
-  "Return an EA Forum GraphQL query for post whose ID is ID."
+(defun tlon-babel-eaf-article-query (id)
+  "Return an EA Forum GraphQL query for article whose ID is ID."
   (concat "{\"query\":\"{\\n  post(\\n    input: {\\n      selector: {\\n        _id: \\\""
 	  id
 	  "\\\"\\n      }\\n    }\\n  ) {\\n    result {\\n      _id\\n      postedAt\\n      url\\n      canonicalSource\\n      title\\n      contents {\\n        markdown\\n        ckEditorMarkup\\n      }\\n      slug\\n      commentCount\\n      htmlBody\\n      baseScore\\n      voteCount\\n      pageUrl\\n      legacyId\\n      question\\n      tableOfContents\\n      author\\n      user {\\n        username\\n        displayName\\n        slug\\n        bio\\n      }\\n      coauthors {\\n        _id\\n        username\\n        displayName\\n        slug\\n      }\\n    }\\n  }\\n}\\n\"}"))
@@ -4467,7 +4500,7 @@ If REPO is nil, default to the current repository." entity)
 If ASYNC is t, run the request asynchronously."
   (let* ((object (tlon-babel-eaf-get-object id-or-slug))
 	 (fun (pcase object
-		('post 'tlon-babel-eaf-post-query)
+		('article 'tlon-babel-eaf-article-query)
 		('tag 'tlon-babel-eaf-tag-query)
 		(_ (error "Invalid object: %S" object))))
 	 (query (funcall fun id-or-slug))
@@ -4487,39 +4520,39 @@ If ASYNC is t, run the request asynchronously."
 		(message "Error: %S" error-thrown))))
     response))
 
-(defun tlon-babel--eaf-get-post-result (response)
-  "Get post details from EA Forum API RESPONSE."
-  (let* ((post (cdr (assoc 'post response)))
-	 (result (cdr (assoc 'result post))))
+(defun tlon-babel--eaf-get-article-result (response)
+  "Get article details from EA Forum API RESPONSE."
+  (let* ((article (cdr (assoc 'post response)))
+	 (result (cdr (assoc 'result article))))
     result))
 
-(defun tlon-babel-eaf-get-post-id (response)
-  "Get post ID from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-post-result response))
+(defun tlon-babel-eaf-get-article-id (response)
+  "Get article ID from EA Forum API RESPONSE."
+  (let* ((result (tlon-babel--eaf-get-article-result response))
 	 (id (cdr (assoc '_id result))))
     id))
 
-(defun tlon-babel-eaf-get-post-html (response)
-  "Get post HTML from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-post-result response))
+(defun tlon-babel-eaf-get-article-html (response)
+  "Get article HTML from EA Forum API RESPONSE."
+  (let* ((result (tlon-babel--eaf-get-article-result response))
 	 (html (cdr (assoc 'htmlBody result))))
     html))
 
-(defun tlon-babel-eaf-get-post-title (response)
-  "Get post title from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-post-result response))
+(defun tlon-babel-eaf-get-article-title (response)
+  "Get article title from EA Forum API RESPONSE."
+  (let* ((result (tlon-babel--eaf-get-article-result response))
 	 (title (cdr (assoc 'title result))))
     title))
 
-(defun tlon-babel-eaf-get-post-author (response)
-  "Get post author from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-post-result response))
+(defun tlon-babel-eaf-get-article-author (response)
+  "Get article author from EA Forum API RESPONSE."
+  (let* ((result (tlon-babel--eaf-get-article-result response))
 	 (author (cdr (assoc 'author result))))
     author))
 
-(defun tlon-babel-eaf-get-post-username (response)
-  "Get post author username from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-post-result response))
+(defun tlon-babel-eaf-get-article-username (response)
+  "Get article author username from EA Forum API RESPONSE."
+  (let* ((result (tlon-babel--eaf-get-article-result response))
 	 (user (cdr (assoc 'user result)))
 	 (username (cdr (assoc 'username user))))
     username))
