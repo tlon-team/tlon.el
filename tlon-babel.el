@@ -4750,10 +4750,11 @@ ARGS is passed to `'magit-push'."
       (setq route "update/uqbar/es"))
      ((string= default-directory babel-refs)
       (setq route "update/babel-refs")))
-    (run-with-timer
-     3 nil (lambda ()
-	     "Run `tlon-babel-uqbar-api-request' once the push is expected to complete."
-	     (tlon-babel-uqbar-api-request route)))))
+    (when route
+      (run-with-timer
+       3 nil (lambda ()
+	       "Run `tlon-babel-uqbar-api-request' once the push is expected to complete."
+	       (tlon-babel-uqbar-api-request route))))))
 
 (dolist (fun (list 'magit-push-current-to-upstream
 		   'magit-push-current-to-pushremote))
