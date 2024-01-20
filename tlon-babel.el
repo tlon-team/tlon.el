@@ -4530,12 +4530,6 @@ If ASYNC is t, run the request asynchronously."
 	 (result (cdr (assoc 'result article))))
     result))
 
-(defun tlon-babel-eaf-get-article-id (response)
-  "Get article ID from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-article-result response))
-	 (id (cdr (assoc '_id result))))
-    id))
-
 (defun tlon-babel-eaf-get-article-html (response)
   "Get article HTML from EA Forum API RESPONSE."
   (let* ((result (tlon-babel--eaf-get-article-result response))
@@ -4548,30 +4542,11 @@ If ASYNC is t, run the request asynchronously."
 	 (title (cdr (assoc 'title result))))
     title))
 
-(defun tlon-babel-eaf-get-article-author (response)
-  "Get article author from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-article-result response))
-	 (author (cdr (assoc 'author result))))
-    author))
-
-(defun tlon-babel-eaf-get-article-username (response)
-  "Get article author username from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-article-result response))
-	 (user (cdr (assoc 'user result)))
-	 (username (cdr (assoc 'username user))))
-    username))
-
 (defun tlon-babel--eaf-get-tag-result (response)
   "Get tag details from EA Forum API RESPONSE."
   (let* ((tag (cdr (assoc 'tag response)))
 	 (result (cdr (assoc 'result tag))))
     result))
-
-(defun tlon-babel-eaf-get-tag-slug (response)
-  "Get tag slug from EA Forum API RESPONSE."
-  (let* ((result (tlon-babel--eaf-get-tag-result response))
-	 (slug (cdr (assoc 'slug result))))
-    slug))
 
 (defun tlon-babel-eaf-get-tag-html (response)
   "Get tag HTML from EA Forum API RESPONSE."
