@@ -4227,21 +4227,24 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
     ("s t" "translation"                  tlon-babel-search-for-translation)
     ]
    ["Browse in Dired"
-    ("d" "dir"               tlon-babel-dired-dir-dispatch)
-    ("H-d" "repo"                   tlon-babel-dired-repo-dispatch)
+    ("d" "dir"                            tlon-babel-dired-dir-dispatch)
+    ("H-d" "repo"                         tlon-babel-dired-repo-dispatch)
     ""
     """Browse externally"
-    ("b" "current file"                         tlon-babel-browse-file)
-    ("H-b" "current repo"                         tlon-babel-browse-repo)
-    """Counterpart"
-    ("f" "current win" tlon-babel-open-counterpart-dwim)
-    ("H-f" "other win" tlon-babel-open-counterpart-other-window-dwim)
+    ("b" "current file"                   tlon-babel-browse-file)
+    ("H-b" "current repo"                 tlon-babel-browse-repo)
+    """Open"
+    ("o" "in repo"                        tlon-babel-open-repo-dispatch)
+    ("H-o" "in all repos"                 tlon-babel-open-file-in-all-repos)
     ]
    [
     "File changes"
     ("h h" "log"                          magit-log-buffer-file)
     ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
     ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
+    """Counterpart"
+    ("f" "current win"                    tlon-babel-open-counterpart-dwim)
+    ("H-f" "other win"                    tlon-babel-open-counterpart-other-window-dwim)
     """Translate"
     ("t t" "GPT"                          tlon-babel-gpt-translate)
     ("t w" "Web"                          tlon-babel-search-for-translation)]
@@ -4297,6 +4300,42 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
     ]
    ["Docs"
     ("d d" "tlon-docs"                     tlon-babel-magit-browse-docs)
+    ]
+   ]
+  )
+
+(transient-define-prefix tlon-babel-open-repo-dispatch ()
+  "Interactively open a file from a Tlön repo."
+  [["Babel"
+    ("b c" "babel-core"                       tlon-babel-open-file-in-babel-core)
+    ("b r" "babel-refs"                       tlon-babel-open-file-in-babel-refs)
+    ("b s" "babel-es"                         tlon-babel-open-file-in-babel-es)
+    ]
+   ["Uqbar"
+    ("q i" "uqbar-issues"                     tlon-babel-open-file-in-uqbar-issues)
+    ("q f" "uqbar-front"                      tlon-babel-open-file-in-uqbar-front)
+    ("q a" "uqbar-api"                        tlon-babel-open-file-in-uqbar-api)
+    ("q n" "uqbar-en"                         tlon-babel-open-file-in-uqbar-en)
+    ("q s" "uqbar-es"                         tlon-babel-open-file-in-uqbar-es)
+    ]
+   ["Utilitarismo"
+    ("u n" "utilitarismo-en"                     tlon-babel-open-file-in-utilitarismo-en)
+    ("u s" "utilitarismo-es"                     tlon-babel-open-file-in-utilitarismo-es)
+    ]
+   ["Ensayos sobre largoplacismo"
+    ("e n" "ensayos-en"                     tlon-babel-open-file-in-ensayos-en)
+    ("e s" "ensayos-es"                     tlon-babel-open-file-in-ensayos-es)
+    ]
+   ["EA News"
+    ("n i" "ean-issues"                     tlon-babel-open-file-in-ean-issues)
+    ("n f" "ean-front"                     tlon-babel-open-file-in-ean-front)
+    ("n a" "ean-api"                     tlon-babel-open-file-in-ean-api)
+    ]
+   ["La Bisagra"
+    ("s s" "bisagra"                     tlon-babel-open-file-in-bisagra)
+    ]
+   ["Docs"
+    ("d d" "tlon-docs"                     tlon-babel-open-file-in-docs)
     ]
    ]
   )
@@ -4433,57 +4472,23 @@ If REPO is nil, default to the current repository." entity)
 (dolist (entity (tlon-babel-get-entity-types))
   (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
 
+;; TODO: create macro to generate these commands
 (defun tlon-babel-open-file-in-repo (&optional repo)
-  "Interactively open a file from a list of all files in REPO.
-If REPO is nil, default to the current repository."
+  ""
   (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (alist (tlon-babel-files-and-display-names-alist (list repo) repo)))
-    (tlon-babel-open-file-in-alist alist)))
-
-(defun tlon-babel-open-file-in-all-repos ()
-  "Interactively open a file froma list of all files in all repos."
-  (interactive)
-  (let* ((alist (tlon-babel-files-and-display-names-alist
-		 (tlon-babel-get-property-of-repos :dir)
-		 tlon-babel-dir-repos)))
-    (tlon-babel-open-file-in-alist alist)))
-
-(defun tlon-babel-files-and-display-names-alist (dirs relative-path)
-  "Return a alist of files, and display names, in DIRS.
-The display names are constructed by subtracting the RELATIVE-PATH."
-  (mapcar (lambda (file)
-	    (cons (file-relative-name file relative-path) file))
-	  (apply 'append (mapcar
-			  (lambda (dir)
-			    (directory-files-recursively dir "^[^.][^/]*$"))
-			  dirs))))
-
-(defun tlon-babel-open-file-in-alist (alist)
-  "Interactively open a file from ALIST.
-The car in each cons cell is the file to open, and its cdr is the candidate
-presented to the user."
-  (let* ((selection (completing-read "Select file: " alist))
+	 (alist (mapcar (lambda (file)
+			  (cons (file-relative-name file repo) file))
+			(directory-files-recursively repo "^[^.][^/]*$")))
+	 (selection (completing-read "Select file: " alist))
 	 (file (cdr (assoc selection alist))))
     (find-file file)))
-
-(defmacro tlon-babel-generate-open-file-in-repo-commands (repo)
-  "Generate commands to open file in REPO."
-  (let* ((repo-name (tlon-babel-repo-lookup :abbrev :dir repo))
-	 (command-name (intern (concat "tlon-babel-open-file-in-" repo-name))))
-    `(defun ,command-name ()
-       ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
-       (interactive)
-       (tlon-babel-open-file-in-repo ,repo))))
-
-(dolist (repo (tlon-babel-get-property-of-repos :dir))
-  (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
 
 ;;;;; Request
 
 ;;;;;; EAF API
 
-(defun tlon-babel-eaf-article-query (id)
-  "Return an EA Forum GraphQL query for article whose ID is ID."
+(defun tlon-babel-eaf-post-query (id)
+  "Return an EA Forum GraphQL query for post whose ID is ID."
   (concat "{\"query\":\"{\\n  post(\\n    input: {\\n      selector: {\\n        _id: \\\""
 	  id
 	  "\\\"\\n      }\\n    }\\n  ) {\\n    result {\\n      _id\\n      postedAt\\n      url\\n      canonicalSource\\n      title\\n      contents {\\n        markdown\\n        ckEditorMarkup\\n      }\\n      slug\\n      commentCount\\n      htmlBody\\n      baseScore\\n      voteCount\\n      pageUrl\\n      legacyId\\n      question\\n      tableOfContents\\n      author\\n      user {\\n        username\\n        displayName\\n        slug\\n        bio\\n      }\\n      coauthors {\\n        _id\\n        username\\n        displayName\\n        slug\\n      }\\n    }\\n  }\\n}\\n\"}"))
