@@ -2282,7 +2282,7 @@ Markdown buffer at point is used."
 		      ('markdown-mode (tlon-babel-get-key-in-buffer))
 		      ('ebib-entry-mode (ebib--get-key-at-point))))))
       (progn
-	(tlon-babel-create-issue-from-key key)
+	(tlon-babel-ogh-create-issue-from-key key)
 	(tlon-babel-create-heading-for-job key 'commit))
     (user-error "I wasn't able to create a record because I didn't find a key")))
 
@@ -2455,8 +2455,8 @@ check that current file matches translation."
       (magit-section-show-level-3-all)
       (goto-char (point-min))
       (if (search-forward issue nil t)
-	  (let ((label (tlon-babel-forge-get-label))
-		(assignee (tlon-babel-user-lookup :name :github (tlon-babel-forge-get-assignee))))
+	  (let ((label (tlon-babel-ogh-get-label))
+		(assignee (tlon-babel-user-lookup :name :github (tlon-babel-ogh-get-assignee))))
 	    (unless (string= clocked-label label)
 	      (user-error "The `org-mode' TODO says the label is `%s', but the actual issue label is `%s'"
 			  clocked-label label))
@@ -2973,18 +2973,18 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
     ("c f" "file"                         tlon-babel-open-clock-file )
     ("c o" "heading"                      org-clock-goto)
     """Issue"
-    ("i i" "open counterpart"             tlon-babel-open-forge-counterpart)
-    ("i I" "open file"                    tlon-babel-open-forge-file)
+    ("i i" "open counterpart"             tlon-babel-ogh-open-forge-counterpart)
+    ("i I" "open file"                    tlon-babel-ogh-open-forge-file)
     ]
    ["Sync"
-    ("y y" "visit or capture"             tlon-babel-visit-counterpart-or-capture)
-    ("y v" "visit"                        tlon-babel-visit-counterpart)
-    ("y p" "post"                         tlon-babel-create-issue-from-todo)
-    ("y c" "capture"                      tlon-babel-capture-issue)
-    ("y C" "capture all"                  tlon-babel-capture-all-issues)
-    ("y r" "reconcile"                    tlon-babel-reconcile-issue-and-todo)
-    ("y R" "reconcile all"                tlon-babel-reconcile-all-issues-and-todos)
-    ("y x" "close"                        tlon-babel-close-issue-and-todo)]
+    ("y y" "visit or capture"             tlon-babel-ogh-visit-counterpart-or-capture)
+    ("y v" "visit"                        tlon-babel-ogh-visit-counterpart)
+    ("y p" "post"                         tlon-babel-ogh-create-issue-from-todo)
+    ("y c" "capture"                      tlon-babel-ogh-capture-issue)
+    ("y C" "capture all"                  tlon-babel-ogh-capture-all-issues)
+    ("y r" "reconcile"                    tlon-babel-ogh-reconcile-issue-and-todo)
+    ("y R" "reconcile all"                tlon-babel-ogh-reconcile-all-issues-and-todos)
+    ("y x" "close"                        tlon-babel-ogh-close-issue-and-todo)]
    ]
   )
 
