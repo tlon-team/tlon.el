@@ -2583,14 +2583,11 @@ If FILE is nil, check the current buffer."
       (bibtex-map-entries 'tlon-babel-add-lang-id-to-entry))))
 
 ;; TODO: support arbitrary langs
-(defun tlon-babel-add-lang-id-to-entry (&optional key beg end)
+(defun tlon-babel-add-lang-id-to-entry (&optional _ _ _)
   "Add `langid' field to entry at point, if appropriate.
 If the field `landig' is present, the function does nothing; else, it sets the
 `langid' field to `spanish' if the entry has either a `translation' or a
-`translator' field, and to `english' otherwise.
-
-KEY, BEG and END are ignored; they are only there to satisfy the signature of
-`bibtex-map-entries'."
+`translator' field, and to `english' otherwise."
   (unless (bibtex-text-in-field "langid")
     (if (or (bibtex-text-in-field "translation")
 	    (bibtex-text-in-field "translator"))
