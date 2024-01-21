@@ -75,28 +75,28 @@ the title of the document to be imported."
   "Import the HTML in URL and convert it to Markdown.
 TITLE optionally specifies the title of the file to be imported."
   (if-let ((id-or-slug (tlon-babel-eaf-get-id-or-slug-from-identifier url)))
-      (tlon-babel-import-html-eaf id-or-slug title)
+      (tlon-babel-import-eaf-html id-or-slug title)
     (tlon-babel-import-convert-html-to-markdown url title)))
 
 ;; TODO: make it also work with LessWrong
-(defun tlon-babel-import-html-eaf (id-or-slug &optional title)
+(defun tlon-babel-import-eaf-html (id-or-slug &optional title)
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
 TITLE optionally specifies the title of the entity to be imported."
-  (let* ((response (tlon-babel-eaf-request id-or-slug))
+  (let* ((response (tlon-babel-import-eaf-request id-or-slug))
 	 (object (tlon-babel-eaf-get-object id-or-slug))
 	 (dir (tlon-babel-get-property-of-repo-name :dir "uqbar-en"))
 	 (subdir (pcase object
 		   ('article "articles")
 		   ('tag "tags")))
 	 (title (or title (pcase object
-			    ('article (tlon-babel-eaf-get-article-title response))
-			    ('tag (tlon-babel-eaf-get-tag-title response)))))
+			    ('article (tlon-babel-import-eaf-get-article-title response))
+			    ('tag (tlon-babel-import-eaf-get-tag-title response)))))
 	 (target (read-string "Save file in: "
 			      (tlon-babel-set-file-from-title title
 							      (file-name-concat dir subdir))))
 	 (html (pcase object
-		 ('article (tlon-babel-eaf-get-article-html response))
-		 ('tag (tlon-babel-eaf-get-tag-html response))))
+		 ('article (tlon-babel-import-eaf-get-article-html response))
+		 ('tag (tlon-babel-import-eaf-get-tag-html response))))
 	 (html-file (tlon-babel-import-save-html-to-file html)))
     (shell-command
      (format tlon-babel-pandoc-convert-from-file html-file target))
