@@ -27,6 +27,8 @@
 
 ;;; Code:
 
+(require 'request)
+(require 'simple-extras)
 (require 'tlon-babel)
 
 ;;;; Variables
