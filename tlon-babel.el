@@ -2844,9 +2844,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
   "Add a new section correspondence or modify an existing one."
   (interactive)
   (let* ((data (tlon-babel-parse-json 'list tlon-babel-file-section-correspondences))
-	 (keys (tlon-babel-get-keys data))
-	 (selected-key (let* ((keys (citar-select-refs)))
-			 (car keys))))
+	 (selected-key (citar-select-refs)))
     (tlon-babel-section-correspondence-check selected-key)
     (let ((default-value (gethash selected-key data))
 	  (new-sectionOriginal (read-string (format "Enter value for key '%s', sectionOriginal: " selected-key)))
