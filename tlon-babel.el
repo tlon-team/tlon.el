@@ -307,6 +307,8 @@ DIR is the directory where the repo is stored."
 	  ,(plist-get repo :dir))))
 
 (defmacro tlon-babel-generate-dir-commands (name dir entity)
+  "Generate commands for browsing ENTITY subdirectory in repo named NAME.
+DIR is the directory where the repo is stored."
   `(progn
      (defun ,(intern (format "tlon-babel-dired-browse-%s-dir-in-%s" entity name)) ()
        ,(format "Browse the `%s' directory in the `%s' repository." entity name)
