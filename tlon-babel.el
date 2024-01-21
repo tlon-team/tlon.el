@@ -2725,7 +2725,8 @@ If TRANSLATION is non-nil, prompt for an explanation only."
     (list translation explanation)))
 
 (defun tlon-babel-glossary-regexp-pattern (original translation)
-  "Get the regexp pattern for the glossary entry corresponding to ORIGINAL and TRANSLATION."
+  "Get the regexp pattern for glossary entry.
+The glossary entry is that corresponding to ORIGINAL and TRANSLATION."
   (format "\"%s\",\"%s\",\"EN\",\"%s\"" original translation
 	  (upcase tlon-babel-translation-language)))
 
