@@ -206,7 +206,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 (defun tlon-babel-ogh-when-no-valid-label (issue)
   "Take appropriate action when ISSUE has no valid label."
-  (pcase tlon-babel-warn-when-no-valid-label
+  (pcase tlon-babel-ogh-warn-when-no-valid-label
     ('prompt (progn
 	       (tlon-babel-ogh-set-label (tlon-babel-ogh-set-status-label) issue)
 	       (forge-pull-topic issue)
@@ -512,16 +512,16 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 (defun tlon-babel-ogh-is-valid-status-p (&optional status issue)
   "Return t iff STATUS it is a valid TODO status.
-A status is valid iff it is a member of `tlon-babel-todo-statuses'. If STATUS is
-nil, use the status of heading or issue at point.
+A status is valid iff it is a member of `tlon-babel-ogh-todo-statuses'. If
+STATUS is nil, use the status of heading or issue at point.
 
 If ISSUE is nil, use the issue at point or in the current buffer."
   (if-let ((status (or status (pcase major-mode
 				('org-mode (org-get-todo-state))
 				((or 'forge-topic-mode 'forge-issue-mode 'forge-issue-list-mode 'magit-status-mode)
 				 (tlon-babel-ogh-get-label issue))))))
-      (when (or (member status tlon-babel-todo-statuses)
-		(member status (mapcar #'downcase tlon-babel-todo-statuses)))
+      (when (or (member status tlon-babel-ogh-todo-statuses)
+		(member status (mapcar #'downcase tlon-babel-ogh-todo-statuses)))
 	t)
     nil))
 
@@ -636,7 +636,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
 
 (defun tlon-babel-ogh-set-status-label ()
   "Prompt the user to select a status label."
-  (let ((label (completing-read "TODO status? " (mapcar #'downcase tlon-babel-todo-statuses) nil t)))
+  (let ((label (completing-read "TODO status? " (mapcar #'downcase tlon-babel-ogh-todo-statuses) nil t)))
     label))
 
 (defun tlon-babel-ogh-set-assignee (assignee &optional issue)
