@@ -1771,7 +1771,7 @@ list, use them pre-populate the selection."
   "Insert a string in the YAML field at point.
 Prompt the user for a choice in CANDIDATES. If point is on a string, use it to
 pre-populate the selection."
-  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field-at-point)
+  (cl-destructuring-bind (key _) (tlon-babel-yaml-get-field-at-point)
     (let* ((choice (completing-read (format "Value of `%s': " key)
 				    candidates))
 	   (bounds (bounds-of-thing-at-point 'line)))
