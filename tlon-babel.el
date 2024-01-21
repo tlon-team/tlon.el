@@ -289,6 +289,8 @@ the actual user.")
     collection))
 
 (defmacro tlon-babel-generate-repo-commands (name dir)
+  "Generate commands for browsing repo named NAME.
+DIR is the directory where the repo is stored."
   `(progn
      (defun ,(intern (format "tlon-babel-dired-browse-%s" name)) ()
        ,(format "Browse the %s repository in Dired." name)
