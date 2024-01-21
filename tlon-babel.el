@@ -649,18 +649,17 @@ If FILE is nil, use the current buffer's file name."
 ;; depending on the value of `tlon-babel-gpt-translate-file'. We define the
 ;; relevant functions here.
 
-(defun tlon-babel-get-file-glossary (&optional lang)
-  "Return the file containing the glossary for LANG.
-If LANG is nil, default to the language set in
+(defun tlon-babel-get-file-glossary (&optional language)
+  "Return the file containing the glossary for LANGUAGE.
+If LANGUAGE is nil, default to the languageuage set in
 `tlon-babel-translation-language'."
-  (let ((lang (or lang tlon-babel-translation-language))
-	(repo (tlon-babel-repo-lookup :dir
-				      :subproject "babel"
-				      :language tlon-babel-translation-language)))
+  (let* ((language (or language tlon-babel-translation-language))
+	 (repo (tlon-babel-repo-lookup :dir
+				       :subproject "babel"
+				       :language language)))
     (file-name-concat repo "dict/Glossary.csv")))
 
 ;;;;;; Create/visit todos
-
 
 ;;;;; User commits
 
