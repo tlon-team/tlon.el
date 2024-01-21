@@ -27,6 +27,8 @@
 
 ;;; Code:
 
+(require 'tlon-babel-repo)
+
 ;;;; Requirements:
 
 (require 'citar)
@@ -80,140 +82,7 @@ This variable should not be set manually.")
   "Org file that contains the ID in `tlon-babel-todos-generic-id'.
 This variable should not be set manually.")
 
-(defconst tlon-babel-dir-repos
-  (let ((dir (pcase (expand-file-name "~")
-	       ("/Users/pablostafforini" "Library/CloudStorage/Dropbox/repos/")
-	       ("/Users/fede" "source/")
-	       ("/Users/cartago" "Library/CloudStorage/Dropbox/repos/")
-	       (_ (user-error "Home directory does not match that of known user")))))
-    (file-name-concat (getenv "HOME") dir))
-  "Directory where the Tlön repos are stored.")
 
-(defconst tlon-babel-repos
-  `((:name "babel-core"
-	   :project "babel"
-	   :subproject "babel"
-	   :abbrev "babel-core"
-	   :type meta
-	   :key "b c")
-    (:name "babel-refs"
-	   :project "babel"
-	   :subproject "babel"
-	   :abbrev "babel-refs"
-	   :type meta
-	   :subtype biblio
-	   :key "b r")
-    (:name "babel-es"
-	   :project "babel"
-	   :subproject "babel"
-	   :abbrev "babel-es"
-	   :type meta
-	   :language "es"
-	   :key "b s")
-    (:name "uqbar-issues"
-	   :project "babel"
-	   :subproject "uqbar"
-	   :abbrev "uqbar-issues"
-	   :type development
-	   :subtype issues
-	   :key "q i")
-    (:name "uqbar-front"
-	   :project "babel"
-	   :subproject "uqbar"
-	   :abbrev "uqbar-front"
-	   :type development
-	   :subtype front
-	   :key "q f")
-    (:name "uqbar-api"
-	   :project "babel"
-	   :subproject "uqbar"
-	   :abbrev "uqbar-api"
-	   :type development
-	   :subtype api
-	   :key "q a")
-    (:name "uqbar-en"
-	   :project "babel"
-	   :subproject "uqbar"
-	   :abbrev "uqbar-en"
-	   :type content
-	   :subtype originals
-	   :language "en"
-	   :key "q n")
-    (:name "uqbar-es"
-	   :project "babel"
-	   :subproject "uqbar"
-	   :abbrev "uqbar-es"
-	   :type content
-	   :subtype translations
-	   :language "es"
-	   :key "q s"
-	   :url "https://altruismoeficaz.net/")
-    (:name "utilitarismo-en"
-	   :project "babel"
-	   :subproject "utilitarismo"
-	   :abbrev "utilitarismo-en"
-	   :type content
-	   :subtype originals
-	   :key "u n")
-    (:name "utilitarismo-es"
-	   :project "babel"
-	   :subproject "utilitarismo"
-	   :abbrev "utilitarismo-es"
-	   :type content
-	   :subtype translations
-	   :key "u s"
-	   :url "https://utilitarismo.net/")
-    (:name "ensayos-en"
-	   :project "babel"
-	   :subproject "ensayos"
-	   :abbrev "ensayos-en"
-	   :type content
-	   :subtype originals
-	   :key "l n")
-    (:name "ensayos-es"
-	   :project "babel"
-	   :subproject "ensayos"
-	   :abbrev "ensayos-es"
-	   :type content
-	   :subtype translations
-	   :key "l s")
-    (:name "ea.news-issues"
-	   :project "other"
-	   :subproject "ea.news"
-	   :abbrev "ean-issues"
-	   :type development
-	   :subtype issues
-	   :key "e i")
-    (:name "ea.news-front"
-	   :project "other"
-	   :subproject "ea.news"
-	   :abbrev "ean-front"
-	   :type development
-	   :subtype front
-	   :key "f")
-    (:name "ea.news-api"
-	   :project "other"
-	   :subproject "ea.news"
-	   :abbrev "ean-api"
-	   :type development
-	   :subtype api
-	   :key "a")
-    (:name "bisagra"
-	   :project "other"
-	   :subproject "bisagra"
-	   :abbrev "bisagra"
-	   :type misc
-	   :key "b")
-    (:name "tlon-docs"
-	   :project "other"
-	   :subproject "docs"
-	   :abbrev "docs"
-	   :type docs
-	   :key "d"))
-  "List of repos and associated properties.
-The `:name' property is the full name of the repo, as it appears in the URL. The
-`:abbrev' property is an abbreviated form of the name, used, for example, for
-creating `org-mode' TODOs.")
 
 (defconst tlon-babel-labels
   '((:label "Awaiting processing"
@@ -281,14 +150,7 @@ the actual user.")
 
 ;;;;;; lookup
 
-(defun tlon-babel-set-dir (repo)
-  "Set the `:directory' property for REPO in `tlon-babel-repos'."
-  (let* ((dir (file-name-as-directory
-	       (file-name-concat tlon-babel-dir-repos
-				 (plist-get repo :name)))))
-    (plist-put repo :dir dir)))
 
-(mapc #'tlon-babel-set-dir tlon-babel-repos)
 
 (defun tlon-babel-get-entity-types ()
   "Return a list of entity types."
@@ -312,7 +174,7 @@ DIR is the directory where the repo is stored."
        (interactive)
        (magit-status ,dir))))
 
-(dolist (repo tlon-babel-repos)
+(dolist (repo tlon-babel-repo-props)
   (eval `(tlon-babel-generate-repo-commands
 	  ,(plist-get repo :abbrev)
 	  ,(plist-get repo :dir))))
@@ -326,7 +188,7 @@ DIR is the directory where the repo is stored."
        (interactive)
        (tlon-babel-browse-entity-dir ,entity ,dir))))
 
-(dolist (repo tlon-babel-repos)
+(dolist (repo tlon-babel-repo-props)
   (dolist (entity (tlon-babel-get-entity-types))
     (eval `(tlon-babel-generate-dir-commands
 	    ,(plist-get repo :abbrev)
@@ -343,7 +205,7 @@ If multiple matches are found, return the first match."
 
 (defun tlon-babel-repo-lookup (prop &rest props-values)
   "Return the value of PROP in repos matching one or more PROPS-VALUES pairs."
-  (apply #'tlon-babel-plist-lookup tlon-babel-repos prop props-values))
+  (apply #'tlon-babel-plist-lookup tlon-babel-repo-props prop props-values))
 
 (defun tlon-babel-user-lookup (prop &rest props-values)
   "Return the value of PROP in users matching one or more PROPS-VALUES pairs."
@@ -355,13 +217,13 @@ If multiple matches are found, return the first match."
 
 (defun tlon-babel-get-property-of-repo (prop repo)
   "Return the value of PROP in REPO."
-  (tlon-babel-plist-lookup tlon-babel-repos prop :dir repo))
+  (tlon-babel-plist-lookup tlon-babel-repo-props prop :dir repo))
 
 (defun tlon-babel-get-property-of-repo-name (prop repo-name)
   "Return the value of PROP in REPO-NAME.
 REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
 than `:name'."
-  (tlon-babel-plist-lookup tlon-babel-repos prop :abbrev repo-name))
+  (tlon-babel-plist-lookup tlon-babel-repo-props prop :abbrev repo-name))
 
 (defun tlon-babel-get-property-of-user (prop user)
   "Return the value of PROP in USER."
@@ -387,10 +249,10 @@ TARGET-VALUE."
     result))
 
 (defun tlon-babel-get-property-of-repos (prop &optional target-prop target-value)
-  "Return a list of all PROP values in `tlon-babel-repos'.
+  "Return a list of all PROP values in `tlon-babel-repo-props'.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
-  (tlon-babel-get-property-of-plists prop tlon-babel-repos target-prop target-value))
+  (tlon-babel-get-property-of-plists prop tlon-babel-repo-props target-prop target-value))
 
 (defun tlon-babel-get-property-of-users (prop &optional target-prop target-value)
   "Return a list of all PROP values in PLIST `tlon-babel-users'.
@@ -582,7 +444,7 @@ The second capture group handles the `.md' extension, which we used previously."
 (defun tlon-babel-init ()
   "Initialize `tlon-babel'."
   (interactive)
-  (mapc #'tlon-babel-set-dir tlon-babel-repos)
+  (mapc #'tlon-babel-repo-set-dir tlon-babel-repo-props)
   (tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
   (tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
   (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
@@ -1066,7 +928,7 @@ dedicated function."
 					     (interactive)
 					     (magit-status ,(plist-get repo :dir))))
 				    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
-				tlon-babel-repos)))
+				tlon-babel-repo-props)))
     (eval `(transient-define-prefix tlon-open-repo-transient ()
 	     "Transient that dispatches to Magit open repo commands."
 	     ,@transient-args))))
@@ -2082,7 +1944,7 @@ open DeepL."
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher.
 If the current directory matches none of the directories in
-`tlon-babel-repos', prompt the user to select a repo from that list."
+`tlon-babel-repo-props', prompt the user to select a repo from that list."
   (interactive)
   (let ((default-directory (tlon-babel-get-repo nil 'include-all)))
     (call-interactively 'forge-dispatch)))
@@ -2103,7 +1965,7 @@ If the current directory matches none of the directories in
 
 (defun tlon-babel-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
-If the current directory matches any of the directories in `tlon-babel-repos',
+If the current directory matches any of the directories in `tlon-babel-repo-props',
 return it. Else, prompt the user to select a repo from that list, unless
 NO-PROMPT is non-nil. In that case, signal an error if its value is `error',
 else return nil. If INCLUDE-ALL is non-nil, include all repos. In that case,
@@ -2904,7 +2766,7 @@ If REPO is nil, default to the current repository."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist
 		 (tlon-babel-get-property-of-repos :dir)
-		 tlon-babel-dir-repos)))
+		 tlon-babel-repo-dirs)))
     (tlon-babel-open-file-in-alist alist)))
 
 (defun tlon-babel-files-and-display-names-alist (dirs relative-path)
