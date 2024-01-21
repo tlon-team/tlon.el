@@ -27,6 +27,8 @@
 
 ;;; Code:
 
+(require 'ebib)
+(require 'ebib-extras)
 (require 'tlon-babel)
 (require 'tlon-babel-ogh)
 (require 'tlon-babel-import)
