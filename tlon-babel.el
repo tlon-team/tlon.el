@@ -1954,7 +1954,7 @@ If FILE is nil, open the counterpart of the file at point.
 If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
   (let* ((counterpart (tlon-babel-get-counterpart
-		       (or file (dired-x-guess-file-name-at-point)))))
+		       (or file (thing-at-point 'filename)))))
     (dired-jump arg counterpart)))
 
 (defun tlon-babel-open-counterpart-dwim (&optional arg file)
