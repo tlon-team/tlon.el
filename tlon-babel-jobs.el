@@ -32,6 +32,7 @@
 (require 'tlon-babel)
 (require 'tlon-babel-ogh)
 (require 'tlon-babel-import)
+(require 'tlon-babel-tts)
 
 ;;;; Main variables
 
@@ -204,7 +205,7 @@ for the process that is being initialized."
 	(unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-manual-fix-all'?")
 	  (user-error "Aborted")))
       (when (string= current-action "Check")
-	(tlon-babel-read-mode -1))
+	(tlon-babel-tts-mode -1))
       (save-buffer)
       (if (string= current-action "Process")
 	  (write-file original-path)
@@ -287,7 +288,7 @@ substitute assignee."
   (window-extras-buffer-move-dwim)
   (window-extras-switch-to-last-window)
   (markdown-preview)
-  (tlon-babel-read-mode)
+  (tlon-babel-tts-mode)
   (read-aloud-buf))
 
 (defun tlon-babel-jobs-initialize-review ()
