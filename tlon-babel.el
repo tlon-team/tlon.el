@@ -3134,7 +3134,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
   )
 
 (defmacro tlon-babel-generate-entity-dispatch (name)
-  "Generate a dispatcher for browsing an entity in a repo."
+  "Generate a dispatcher for browsing an entity named NAME in a repo."
   `(transient-define-prefix ,(intern (format "tlon-babel-browse-entity-in-%s-dispatch" name)) ()
      ,(format "Browse a directory in the `%s' repo." name)
      [["directories"
