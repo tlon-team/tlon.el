@@ -566,9 +566,6 @@ If FILE is not provided, use the file visited by the current buffer."
 	 (commit-file (tlon-babel-create-file-from-commit file commit)))
     (ediff-files commit-file file)))
 
-;;;;; Org-github integration
-
-
 ;;;;; Markdown
 
 (defun tlon-babel-check-in-markdown-mode ()
