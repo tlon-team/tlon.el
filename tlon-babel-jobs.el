@@ -254,7 +254,7 @@ substitute assignee."
     (when (string= current-action "Review")
       (let ((job-todo (format "[cite:@%s]" key)))
 	(tlon-babel-ogh-mark-todo-done job-todo tlon-babel-file-jobs)
-	(tlon-babel-sort-headings tlon-babel-file-jobs)
+	(tlon-babel-jobs-sort-headings tlon-babel-file-jobs)
 	(tlon-babel-commit-and-push "Update"
 				    tlon-babel-file-jobs)))))
 
