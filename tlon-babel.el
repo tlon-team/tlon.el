@@ -69,6 +69,26 @@
 
 ;;;;; Files and dirs
 
+(defcustom tlon-babel-todos-generic-id nil
+  "ID of the user-specific `org-mode' heading where generic TODOs are stored.
+\"Generic\" TODOs are all TODOs except those related to a translation job."
+  :type 'string
+  :group 'tlon-babel)
+
+(defcustom tlon-babel-todos-jobs-id nil
+  "ID of the user-specific `org-mode' heading where job TODOs are stored.
+A job TODO is a TODO for a translation job."
+  :type 'string
+  :group 'tlon-babel)
+
+(defvar tlon-babel-todos-jobs-file nil
+  "Org file that contains the ID in `tlon-babel-todos-jobs-id'.
+This variable should not be set manually.")
+
+(defvar tlon-babel-todos-generic-file nil
+  "Org file that contains the ID in `tlon-babel-todos-generic-id'.
+This variable should not be set manually.")
+
 (defconst tlon-babel-dir-repos
   (let ((dir (pcase (expand-file-name "~")
 	       ("/Users/pablostafforini" "Library/CloudStorage/Dropbox/repos/")
@@ -1815,6 +1835,41 @@ If FIELD is nil, default to \"title\". If LANG is nil, default to
     (tlon-babel-name-file-from-title)
     (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "title")))
     (save-buffer)))
+
+(defun tlon-babel-name-file-from-title (&optional title)
+  "Save the current buffer to a file named after TITLE.
+Set the name to the slugified version of TITLE with the extension `.md'. If
+TITLE is nil, get it from the file metadata. If the file doesn't have metadata,
+prompt the user for a title.
+
+When buffer is already visiting a file, prompt the user for confirmation before
+renaming it."
+  (interactive)
+  (let* ((title (or title
+		    (tlon-babel-metadata-get-field-value-in-file "title")
+		    (read-string "Title: ")))
+	 (target (tlon-babel-set-file-from-title title default-directory)))
+    (if-let ((buf (buffer-file-name)))
+	(when (yes-or-no-p (format "Rename `%s` to `%s`? "
+				   (file-name-nondirectory buf)
+				   (file-name-nondirectory target)))
+	  (rename-file buf target)
+	  (set-visited-file-name target)
+	  (save-buffer))
+      (write-file target))))
+
+(defun tlon-babel-set-file-from-title (&optional title dir)
+  "Set the file path based on its title.
+The file name is the slugified version of TITLE with the extension `.md'. This
+is appended to DIR to generate the file path. If DIR is not provided, use the
+current repository followed by `originals/'."
+  (let* ((title (or title
+		    (read-string "Title: ")))
+	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
+	 (dirname (file-name-as-directory
+		   (or dir
+		       (file-name-concat (tlon-babel-get-repo) "originals")))))
+    (file-name-concat dirname filename)))
 
 (defun tlon-babel-create-uqbar-author ()
   "Create a new file for `uqbar-es' author."
