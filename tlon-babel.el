@@ -2924,7 +2924,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 (transient-define-prefix tlon-babel-dispatch ()
   "Dispatch a `tlon-babel' command."
   [["Main"
-    ("j" "job"                            tlon-babel-create-job)
+    ("j" "job"                            tlon-babel-jobs-create-job)
     ("r" "dwim"                           tlon-babel-jobs-dwim)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
     ("." "gh-notify"                      gh-notify)
