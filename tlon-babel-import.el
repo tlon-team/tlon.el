@@ -74,7 +74,7 @@ the title of the document to be imported."
 (defun tlon-babel-import-html (url &optional title)
   "Import the HTML in URL and convert it to Markdown.
 TITLE optionally specifies the title of the file to be imported."
-  (if-let ((id-or-slug (tlon-babel-eaf-get-id-or-slug-from-identifier url)))
+  (if-let ((id-or-slug (tlon-babel-import-eaf-get-id-or-slug-from-identifier url)))
       (tlon-babel-import-eaf-html id-or-slug title)
     (tlon-babel-import-convert-html-to-markdown url title)))
 
@@ -83,7 +83,7 @@ TITLE optionally specifies the title of the file to be imported."
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
 TITLE optionally specifies the title of the entity to be imported."
   (let* ((response (tlon-babel-import-eaf-request id-or-slug))
-	 (object (tlon-babel-eaf-get-object id-or-slug))
+	 (object (tlon-babel-import-eaf-get-object id-or-slug))
 	 (dir (tlon-babel-get-property-of-repo-name :dir "uqbar-en"))
 	 (subdir (pcase object
 		   ('article "articles")
@@ -101,8 +101,8 @@ TITLE optionally specifies the title of the entity to be imported."
     (shell-command
      (format tlon-babel-pandoc-convert-from-file html-file target))
     (with-current-buffer (find-file-noselect target)
-      (tlon-babel-markdown-cleanup-common)
-      (tlon-babel-markdown-cleanup-eaf)
+      (tlon-babel-cleanup-common)
+      (tlon-babel-cleanup-eaf)
       (tlon-babel-autofix-all))
     (find-file target)))
 
@@ -124,7 +124,7 @@ for one."
     (shell-command
      (format pandoc source target))
     (with-current-buffer (find-file-noselect target)
-      (tlon-babel-markdown-cleanup-common)
+      (tlon-babel-cleanup-common)
       (tlon-babel-autofix-all))
     (find-file target)))
 
@@ -166,7 +166,7 @@ If TITLE is nil, prompt the user for one."
 (defun tlon-babel-import-eaf-request (id-or-slug &optional async)
   "Run an EAF request for ID-OR-SLUG.
 If ASYNC is t, run the request asynchronously."
-  (let* ((object (tlon-babel-eaf-get-object id-or-slug))
+  (let* ((object (tlon-babel-import-eaf-get-object id-or-slug))
 	 (fun (pcase object
 		('article 'tlon-babel-import-eaf-article-query)
 		('tag 'tlon-babel-import-eaf-tag-query)
@@ -174,7 +174,7 @@ If ASYNC is t, run the request asynchronously."
 	 (query (funcall fun id-or-slug))
 	 response)
     (request
-      tlon-babel-eaf-api-url
+      tlon-babel-import-eaf-api-url
       :type "POST"
       :headers '(("Content-Type" . "application/json"))
       :data query
