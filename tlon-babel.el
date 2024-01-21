@@ -1883,7 +1883,6 @@ If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
   (let* ((file (or file (tlon-babel-buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
-	 (subtype (tlon-babel-get-property-of-repo :subtype repo))
 	 (subproject (tlon-babel-get-property-of-repo :subproject repo))
 	 (language (tlon-babel-get-counterpart-language repo))
 	 (counterpart-repo
