@@ -1774,8 +1774,7 @@ pre-populate the selection."
   (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field-at-point)
     (let* ((choice (completing-read (format "Value of `%s': " key)
 				    candidates))
-	   (bounds (bounds-of-thing-at-point 'line))
-	   (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
+	   (bounds (bounds-of-thing-at-point 'line)))
       (delete-region (car bounds) (cdr bounds))
       (insert (format "%s:  %s\n" key choice)))))
 
