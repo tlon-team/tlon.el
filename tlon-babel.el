@@ -40,8 +40,6 @@
 (require 'forge)
 (require 'forge-search)
 (require 'goldendict-ng)
-(require 'gptel)
-(require 'gptel)
 (require 'json)
 (require 'magit)
 (require 'markdown-mode-extras)
@@ -4817,15 +4815,7 @@ If the key is not found, it is added to the list of missing keys."
 	(dolist (key missing-keys)
 	  (princ (format "%s\n" key)))))))
 
-;;;;; GPT-4
-
-(defun tlon-babel-file-to-string (file)
-  "Read the contents of FILE and return it as a string."
-  (with-temp-buffer
-    (insert-file-contents file)
-    (unfill-region (point-min) (point-max))
-    (buffer-string)))
-
+;; TODO: Move to appropriate section
 (defun tlon-babel-create-file-from-commit (file commit-hash)
   "Create a temporary file with the state of the FILE at the COMMIT-HASH.
 Return the path of the temporary file created."
@@ -4844,57 +4834,8 @@ Return the path of the temporary file created."
 	(write-file new-file)))
     (message "File created: %s" new-file)
     new-file))
-					;
-;;;;; Translation
 
-(defun tlon-babel-gpt-rewrite ()
-  "Docstring."
-  (interactive)
-  (let* ((text (if (region-active-p)
-		   (buffer-substring-no-properties (region-beginning) (region-end))
-		 (read-string "Text to rewrite: "))))
-    (gptel-request
-     (format "Por favor, genera las mejores diez variantes del siguiente texto castellano:\n\n```\n%s\n```\n\n. Por favor, devuelve todas las variantes en una única linea, separadas por '|'. No insertes un espacio ni antes ni después de '|'. No agregues ningún comentario aclaratorio: solo necesito la lista de variantes. A modo de ejemplo, para la expresión 'búsqueda de poder' el texto a devolver sería: 'ansia de poder|ambición de poder|búsqueda de autoridad|sed de poder|afán de poder|aspiración de poder|anhelo de poder|deseo de control|búsqueda de dominio|búsqueda de control' (esta lista solo pretende ilustrar el formato en que debes presentar tu respuesta). Gracias!" text)
-     :callback
-     (lambda (response info)
-       (if (not response)
-	   (message "gptel-quick failed with message: %s" (plist-get info :status))
-	 (let* ((variants (split-string response "|"))
-		(variant (completing-read "Variant: " variants)))
-	   (delete-region (region-beginning) (region-end))
-	   (kill-new variant)))))))
-
-(defun tlon-babel-gpt-translate (text)
-  "Return ten alternative translations of TEXT."
-  (interactive "sText to translate: ")
-  (gptel-request
-   (format "Generate the best ten Spanish translations of the following English text:\n\n```\n%s\n```\n\nPlease return each translation on the same line, separated by '|'. Do not add a space either before or after the '|'. Do not precede your answer by 'Here are ten Spanish translations' or any comments of that sort: just return the translations. An example return string for the word 'very beautiful' would be: 'muy bello|muy bonito|muy hermoso|muy atractivo' (etc). Thanks!" text)
-   :callback
-   (lambda (response info)
-     (if (not response)
-	 (message "gptel-quick failed with message: %s" (plist-get info :status))
-       (let ((translations (split-string response "|")))
-	 (kill-new (completing-read "Translation: " translations)))))))
-
-(defun tlon-babel-gpt-translate-file (file)
-  "Translate FILE."
-  (let* ((counterpart (tlon-babel-get-counterpart file))
-	 (filename (file-name-nondirectory counterpart))
-	 (target-path (concat
-		       (file-name-sans-extension filename)
-		       "--gpt-translated.md")))
-    (gptel-request
-     (format "Translate the following text into Spanish:\n\n```\n%s\n```\n\n"
-	     (tlon-babel-file-to-string file))
-     :callback
-     (lambda (response info)
-       (if (not response)
-	   (message "gptel-quick failed with message: %s" (plist-get info :status))
-	 (with-temp-buffer
-	   (insert response)
-	   (write-region (point-min) (point-max) target-path)))))))
-
-;; TODO: move to relevant section; not GPT-related
+;; TODO: move to relevant section
 (defun tlon-babel-search-for-translation (string)
   "Search for a Spanish translation of English STRING."
   (interactive "sString to translate: ")
@@ -4906,35 +4847,6 @@ Return the path of the temporary file created."
     (dolist (url urls)
       (browse-url (format url (url-hexify-string string)) 'new-buffer)))
   (goldendict-ng-search-string string))
-
-;;;;;; Summarization
-
-(defun tlon-babel-gpt-summarize (model)
-  "Summarize and copy the summary to the kill ring using AI MODEL.
-If region is active, summarize the region; otherwise, prompt for a file to
-summarize."
-  (interactive (list (completing-read "Model: " gptel-extras-backends)))
-  (require 'gptel)
-  (require 'gptel-extras)
-  (gptel-extras-model-config model)
-  (let ((string
-	 (if (region-active-p)
-	     (buffer-substring-no-properties (region-beginning) (region-end))
-	   (let* ((current-file (buffer-file-name))
-		  (selected-file (read-file-name "Select file to summarize (if you would like to summarize a region, run this command with an active region): " nil current-file nil (file-name-nondirectory current-file))))
-	     (with-temp-buffer
-	       (insert-file-contents selected-file)
-	       (buffer-string))))))
-    (message "Generating summary. This may take 5–30 seconds, depending on length...")
-    (gptel-request
-     (format "Por favor, genera un resumen del siguiente artículo:\n\n```\n%s\n```\n\n. El resumen debe tener solamente un párrafo y no es necesario que mencione datos bibliográficos de la obra reusmida (como título o autor). Escribe el resumen afirmando directamente lo que el artículo sostiene, en lugar de utilizar giros como ‘El artículo sostiene que...’. Por ejemplo, en lugar de escribir ‘El artículo cuenta que la humanidad luchó contra la viruela durante siglos...’, escribe ‘La humanidad luchó contra la viruela durante siglos...’"
-	     string)
-     :callback
-     (lambda (response info)
-       (if (not response)
-	   (message "`gptel' failed with message: %s" (plist-get info :status))
-	 (kill-new response)
-	 (message "Copied AI-generated summary to the kill ring:\n\n%s" response))))))
 
 ;;;;; Misc
 
