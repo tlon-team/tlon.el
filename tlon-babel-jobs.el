@@ -139,7 +139,7 @@ IDENTIFIER can be a URL or a PDF file path."
       (progn
 	(tlon-babel-import-document id title)
 	(tlon-babel-create-translation-file repo)
-	(tlon-babel-create-record-for-job key))
+	(tlon-babel-jobs-create-record-for-job key))
     (user-error "The current Ebib entry seems to be missing one of the following
 fields, which are needed to create a new job: `url' or `file',
 `title' and `key'")))
