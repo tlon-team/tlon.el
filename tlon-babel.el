@@ -27,10 +27,6 @@
 
 ;;; Code:
 
-(require 'tlon-babel-repo)
-
-;;;; Requirements:
-
 (require 'citar)
 (require 'consult)
 (require 'doi-utils)
@@ -44,6 +40,7 @@
 (require 'org-clock)
 (require 'org-roam)
 (require 'substitute)
+(require 'tlon-babel-repo)
 (require 'tlon-core)
 (require 'unfill)
 (require 'window-extras)
