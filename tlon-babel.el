@@ -41,7 +41,7 @@
 (require 'org-roam)
 (require 'substitute)
 (require 'tlon-babel-refs)
-(require 'tlon-babel-repo)
+(require 'tlon-babel-core)
 (require 'tlon-core)
 (require 'unfill)
 (require 'window-extras)
@@ -79,8 +79,6 @@ This variable should not be set manually.")
 (defvar tlon-babel-todos-generic-file nil
   "Org file that contains the ID in `tlon-babel-todos-generic-id'.
 This variable should not be set manually.")
-
-
 
 (defconst tlon-babel-bare-dirs
   '((("en" . "articles")
@@ -132,7 +130,7 @@ DIR is the directory where the repo is stored."
        (interactive)
        (magit-status ,dir))))
 
-(dolist (repo tlon-babel-repo-props)
+(dolist (repo tlon-babel-core-repos)
   (eval `(tlon-babel-generate-repo-commands
 	  ,(plist-get repo :abbrev)
 	  ,(plist-get repo :dir))))
@@ -146,7 +144,7 @@ DIR is the directory where the repo is stored."
        (interactive)
        (tlon-babel-browse-entity-dir ,entity ,dir))))
 
-(dolist (repo tlon-babel-repo-props)
+(dolist (repo tlon-babel-core-repos)
   (dolist (entity (tlon-babel-get-entity-types))
     (eval `(tlon-babel-generate-dir-commands
 	    ,(plist-get repo :abbrev)
@@ -304,7 +302,7 @@ The second capture group handles the `.md' extension, which we used previously."
 (defun tlon-babel-init ()
   "Initialize `tlon-babel'."
   (interactive)
-  (mapc #'tlon-babel-repo-set-dir tlon-babel-repo-props)
+  (mapc #'tlon-babel-core-set-dir tlon-babel-core-repos)
   (tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
   (tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
   (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
@@ -389,7 +387,7 @@ If FILE is nil, use the current buffer's file name."
 If LANGUAGE is nil, default to the languageuage set in
 `tlon-babel-translation-language'."
   (let* ((language (or language tlon-babel-translation-language))
-	 (repo (tlon-babel-repo-lookup :dir
+	 (repo (tlon-babel-core-repo-lookup :dir
 				       :subproject "babel"
 				       :language language)))
     (file-name-concat repo "dict/Glossary.csv")))
@@ -568,7 +566,7 @@ dedicated function."
 					     (interactive)
 					     (magit-status ,(plist-get repo :dir))))
 				    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
-				tlon-babel-repo-props)))
+				tlon-babel-core-repos)))
     (eval `(transient-define-prefix tlon-open-repo-transient ()
 	     "Transient that dispatches to Magit open repo commands."
 	     ,@transient-args))))
@@ -942,7 +940,7 @@ the repo's locator. For example, to search only in `translations/autores', use
 If REPO is nil, use the current repository."
   (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (subproject (tlon-babel-get-property-of-repo :subproject repo)))
-    (tlon-babel-repo-lookup :dir :subproject subproject :language language)))
+    (tlon-babel-core-repo-lookup :dir :subproject subproject :language language)))
 
 (defun tlon-babel-yaml-set-original-key (author)
   "Set the value of `original_key' YAML field.
@@ -1122,7 +1120,7 @@ If FIELD is nil, default to \"title\". If LANG is nil, default to
   (let* ((field (or field "title"))
 	 (language (or language tlon-babel-translation-language))
 	 (type-in-language (tlon-babel-get-bare-dir-translation language "en" type))
-	 (repo (tlon-babel-repo-lookup :dir :subproject "uqbar" :language language)))
+	 (repo (tlon-babel-core-repo-lookup :dir :subproject "uqbar" :language language)))
     (tlon-babel-metadata-get-all-field-values
      field (tlon-babel-get-metadata-in-repo repo) "file" (file-name-concat repo type-in-language))))
 
@@ -1210,10 +1208,10 @@ If FILE is nil, return the counterpart of the file visited by the current
 buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
-	 (type (tlon-babel-repo-lookup :type :dir repo)))
+	 (type (tlon-babel-core-repo-lookup :type :dir repo)))
     (unless (eq type 'content)
       (user-error "Repo of file `%s' is not of type `content'" file))
-    (tlon-babel-repo-lookup :subtype :dir repo)))
+    (tlon-babel-core-repo-lookup :subtype :dir repo)))
 
 (defun tlon-babel-get-counterpart (&optional file)
   "Get the counterpart file of FILE.
@@ -1255,7 +1253,7 @@ buffer."
 	 (subproject (tlon-babel-get-property-of-repo :subproject repo))
 	 (language (tlon-babel-get-counterpart-language repo))
 	 (counterpart-repo
-	  (tlon-babel-repo-lookup :dir
+	  (tlon-babel-core-repo-lookup :dir
 				  :subproject subproject
 				  :language language)))
     counterpart-repo))
@@ -1507,7 +1505,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-babel-get-clock-next-label ()
   "Return label associated with the action after the one in heading at point."
-  (tlon-babel-next-value :label (tlon-babel-get-clock-label) tlon-babel-labels))
+  (tlon-babel-next-value :label (tlon-babel-get-clock-label) tlon-babel-core-labels))
 
 (defun tlon-babel-next-value (property value alist)
   "Return the \"next\" value of PROPERTY with VALUE in ALIST."
@@ -1577,21 +1575,21 @@ open DeepL."
   (interactive (list
 		(completing-read
 		 "Repo: " (tlon-babel-get-property-of-repos :name))))
-  (if-let ((default-directory (tlon-babel-repo-lookup :dir :name repo)))
+  (if-let ((default-directory (tlon-babel-core-repo-lookup :dir :name repo)))
       (magit-status-setup-buffer)
     (user-error "Repo `%s' not found" repo)))
 
 (defun tlon-babel-forge ()
   "Launch the Forge dispatcher.
 If the current directory matches none of the directories in
-`tlon-babel-repo-props', prompt the user to select a repo from that list."
+`tlon-babel-core-repos', prompt the user to select a repo from that list."
   (interactive)
   (let ((default-directory (tlon-babel-get-repo nil 'include-all)))
     (call-interactively 'forge-dispatch)))
 
 (defun tlon-babel-forge-update-repo (repo)
   "Update issues and notifications for REPO name."
-  (let* ((default-directory (tlon-babel-repo-lookup :dir :name repo))
+  (let* ((default-directory (tlon-babel-core-repo-lookup :dir :name repo))
 	 (repo (forge-get-repository 'full)))
     (save-window-excursion
       (with-current-buffer (dired-noselect default-directory)
@@ -1606,7 +1604,7 @@ If the current directory matches none of the directories in
 (defun tlon-babel-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
 If the current directory matches any of the directories in
-`tlon-babel-repo-props', return it. Else, prompt the user to select a repo from
+`tlon-babel-core-repos', return it. Else, prompt the user to select a repo from
 that list, unless NO-PROMPT is non-nil. In that case, signal an error if its
 value is `error', else return nil. If INCLUDE-ALL is non-nil, include all repos.
 In that case, matching will be made against repos with any value for the
@@ -1618,7 +1616,7 @@ property `:type'."
 	  (user-error "Not in a recognized Babel repo"))
       (let* ((content (tlon-babel-get-property-of-repos :name :type 'translations))
 	     (all (tlon-babel-get-property-of-repos :name)))
-	(tlon-babel-repo-lookup :dir :name
+	(tlon-babel-core-repo-lookup :dir :name
 				(completing-read "Select repo: "
 						 (if include-all all content)))))))
 
@@ -1862,7 +1860,7 @@ respectively."
   ;; `magit-commit-create' interrupts the process if there aren't any
   (when (tlon-babel-check-staged-or-unstaged file)
     (let* ((repo (tlon-babel-get-repo-from-file file))
-	   (subtype (tlon-babel-repo-lookup :type :dir repo))
+	   (subtype (tlon-babel-core-repo-lookup :type :dir repo))
 	   (file-or-key (pcase subtype
 			  ('translations (tlon-babel-get-key-from-file file))
 			  ('biblio (file-name-nondirectory file)))))
@@ -2258,7 +2256,7 @@ respectively."
   (interactive)
   (if-let (file (buffer-file-name))
       (if-let ((repo (tlon-babel-get-repo-from-file file)))
-	  (let* ((repo-name (tlon-babel-repo-lookup :name :dir repo))
+	  (let* ((repo-name (tlon-babel-core-repo-lookup :name :dir repo))
 		 (repo-url (concat "https://github.com/tlon-team/" repo-name))
 		 (file-url (concat "/blob/main/" (file-relative-name (buffer-file-name) repo))))
 	    (browse-url (concat repo-url file-url)))
@@ -2270,7 +2268,7 @@ respectively."
 If the current buffer is visiting a file in a Babel repository, browse that;
 otherwise prompt for a repo."
   (interactive)
-  (let* ((repo-name (tlon-babel-repo-lookup :name :dir (tlon-babel-get-repo))))
+  (let* ((repo-name (tlon-babel-core-repo-lookup :name :dir (tlon-babel-get-repo))))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
 
 (defun tlon-babel-browse-entity-dir (entity &optional repo source-lang)
@@ -2279,7 +2277,7 @@ ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
 REPO is nil, default to the current repository."
   (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (source-lang (or source-lang "en"))
-	 (target-lang (tlon-babel-repo-lookup :language :dir repo))
+	 (target-lang (tlon-babel-core-repo-lookup :language :dir repo))
 	 (dir (tlon-babel-get-bare-dir-translation target-lang source-lang entity))
 	 (path (file-name-concat repo dir)))
     (dired path)))
@@ -2332,7 +2330,7 @@ presented to the user."
 
 (defmacro tlon-babel-generate-open-file-in-repo-commands (repo)
   "Generate commands to open file in REPO."
-  (let* ((repo-name (tlon-babel-repo-lookup :abbrev :dir repo))
+  (let* ((repo-name (tlon-babel-core-repo-lookup :abbrev :dir repo))
 	 (command-name (intern (concat "tlon-babel-open-file-in-" repo-name))))
     `(defun ,command-name ()
        ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
@@ -2425,7 +2423,7 @@ computed by dividing the file size by CHARS-PER-WORD."
   (let* ((repo-name (or repo-name
 			(completing-read "Repo: "
 					 (tlon-babel-get-property-of-repos :name :type 'translations))))
-	 (dir (tlon-babel-repo-lookup :dir :name repo-name))
+	 (dir (tlon-babel-core-repo-lookup :dir :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))

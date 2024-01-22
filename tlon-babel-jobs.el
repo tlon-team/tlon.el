@@ -70,7 +70,7 @@ COMMIT is non-nil, commit the change."
 	 (heading (format "[cite:@%s]" key))
 	 (file (tlon-babel-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repo)))
 	 (repo (tlon-babel-get-repo-from-file file))
-	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir repo)))
+	 (repo-abbrev (tlon-babel-core-repo-lookup :abbrev :dir repo)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
 			     (find-file-noselect tlon-babel-file-jobs))
       (widen)

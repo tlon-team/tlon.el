@@ -403,7 +403,7 @@ ISSUE is nil, use the issue at point."
 (defun tlon-babel-ogh-get-repo-from-heading ()
   "Get the repo from the heading at point."
   (let* ((abbrev-repo (tlon-babel-ogh-get-element-from-heading "^\\[\\(.*?\\)\\]")))
-    (tlon-babel-repo-lookup :dir :abbrev abbrev-repo)))
+    (tlon-babel-core-repo-lookup :dir :abbrev abbrev-repo)))
 
 (defun tlon-babel-ogh-get-issue-number-from-open-issues ()
   "Prompt user to select from a list of open issues and return number of selection."
@@ -452,7 +452,7 @@ If REPO is nil, use the current repository."
   (when (and (org-at-heading-p)
 	     (not (tlon-babel-ogh-get-repo-from-heading)))
     (let* ((repo-name (completing-read "Select repo: " (tlon-babel-get-property-of-repos :name)))
-	   (abbrev-repo (tlon-babel-repo-lookup :abbrev :name repo-name)))
+	   (abbrev-repo (tlon-babel-core-repo-lookup :abbrev :name repo-name)))
       (org-extras-goto-beginning-of-heading-text)
       (insert (format "[%s] " abbrev-repo)))))
 
@@ -725,7 +725,7 @@ buffer."
 	 (state (if (tlon-babel-ogh-issue-is-job-p issue)
 		    "TODO"
 		  (tlon-babel-ogh-get-issue-status issue)))
-	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'include-all)))
+	 (repo-abbrev (tlon-babel-core-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'include-all)))
 	 (todo-name (replace-regexp-in-string
 		     "[[:space:]]\\{2,\\}"
 		     " "
@@ -791,7 +791,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
       (let* ((default-directory (tlon-babel-ogh-get-repo-from-heading))
 	     (heading (substring-no-properties (org-get-heading t t t t)))
 	     (status (downcase (org-get-todo-state)))
-	     (abbrev-repo (tlon-babel-repo-lookup :abbrev :dir default-directory))
+	     (abbrev-repo (tlon-babel-core-repo-lookup :abbrev :dir default-directory))
 	     (issue-title (substring heading (+ (length abbrev-repo) 3)))
 	     (latest-issue-pre (car (tlon-babel-ogh-get-latest-issue)))
 	     (latest-issue-post latest-issue-pre))

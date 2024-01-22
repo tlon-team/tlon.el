@@ -27,9 +27,9 @@
 
 ;;; Code:
 
-(require 'tlon-babel-repo)
 (require 'bibtex)
 (require 'doi-utils)
+(require 'tlon-babel-core)
 
 ;;;; Variables
 

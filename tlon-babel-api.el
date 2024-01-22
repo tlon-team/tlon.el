@@ -62,7 +62,7 @@
   (interactive (list (tlon-select-api-route)))
   (let* ((site "altruismoeficaz.net")
          (route-url (concat "https://" site "/api/" route))
-         (type (tlon-babel-plist-lookup (tlon-babel-api-get-routes) :type :route route)))
+         (type (tlon-babel-core-plist-lookup (tlon-babel-api-get-routes) :type :route route)))
     (tlon-babel-api-get-token
      (lambda (access-token)
        "Make request, authenticating with ACCESS-TOKEN."

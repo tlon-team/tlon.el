@@ -1,4 +1,4 @@
-;;; tlon-babel-repo.el --- Set main repo properties -*- lexical-binding: t -*-
+;;; tlon-babel-core.el --- Core Babel functionality  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -165,7 +165,7 @@ creating `org-mode' TODOs.")
 
 ;;;;; To sort
 
-(defconst tlon-babel-labels
+(defconst tlon-babel-core-labels
   '((:label "Awaiting processing"
 	    :action "Process"
 	    :assignee "worldsaround")
@@ -186,7 +186,7 @@ creating `org-mode' TODOs.")
 	    :assignee ""))
   "List of labels and associated properties.")
 
-(defvar tlon-babel-users
+(defvar tlon-babel-core-users
   '((:name "Pablo Stafforini"
 	   :git "Pablo Stafforini"
 	   :github "benthamite"
@@ -205,18 +205,18 @@ the actual user.")
 
 ;;;; Functions
 
-(defun tlon-babel-repo-set-dir (repo)
-  "Set the `:directory' property for REPO in `tlon-babel-repo-props'."
+(defun tlon-babel-core-set-dir (repo)
+  "Set the `:directory' property for REPO in `tlon-babel-core-repos'."
   (let* ((dir (file-name-as-directory
-	       (file-name-concat tlon-core-repo-dirs
+	       (file-name-concat tlon-babel-core-repo-dir
 				 (plist-get repo :name)))))
     (plist-put repo :dir dir)))
 
-(mapc #'tlon-babel-repo-set-dir tlon-babel-repo-props)
+(mapc #'tlon-babel-core-set-dir tlon-babel-core-repos)
 
 ;;;;; Extra funs to sort
 
-(defun tlon-babel-plist-lookup (list prop &rest props-values)
+(defun tlon-babel-core-plist-lookup (list prop &rest props-values)
   "Return the value of PROP in LIST matching one or more PROPS-VALUES pairs.
 If multiple matches are found, return the first match."
   (cl-loop for plist in list
@@ -224,37 +224,37 @@ If multiple matches are found, return the first match."
 			 always (equal (plist-get plist prop) value))
 	   return (plist-get plist prop)))
 
-(defun tlon-babel-repo-lookup (prop &rest props-values)
+(defun tlon-babel-core-repo-lookup (prop &rest props-values)
   "Return the value of PROP in repos matching one or more PROPS-VALUES pairs."
-  (apply #'tlon-babel-plist-lookup tlon-babel-repo-props prop props-values))
+  (apply #'tlon-babel-core-plist-lookup tlon-babel-core-repos prop props-values))
 
-(defun tlon-babel-user-lookup (prop &rest props-values)
+(defun tlon-babel-core-user-lookup (prop &rest props-values)
   "Return the value of PROP in users matching one or more PROPS-VALUES pairs."
-  (apply #'tlon-babel-plist-lookup tlon-babel-users prop props-values))
+  (apply #'tlon-babel-core-plist-lookup tlon-babel-core-users prop props-values))
 
-(defun tlon-babel-label-lookup (prop &rest props-values)
+(defun tlon-babel-core-label-lookup (prop &rest props-values)
   "Return the value of PROP in labels matching one or more PROPS-VALUES pairs.."
-  (apply #'tlon-babel-plist-lookup tlon-babel-labels prop props-values))
+  (apply #'tlon-babel-core-plist-lookup tlon-babel-core-labels prop props-values))
 
-(defun tlon-babel-get-property-of-repo (prop repo)
+(defun tlon-babel-get-property-core-of-repo (prop repo)
   "Return the value of PROP in REPO."
-  (tlon-babel-plist-lookup tlon-babel-repo-props prop :dir repo))
+  (tlon-babel-core-plist-lookup tlon-babel-core-repos prop :dir repo))
 
-(defun tlon-babel-get-property-of-repo-name (prop repo-name)
+(defun tlon-babel-get-property-of-core-repo-name (prop repo-name)
   "Return the value of PROP in REPO-NAME.
 REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
 than `:name'."
-  (tlon-babel-plist-lookup tlon-babel-repo-props prop :abbrev repo-name))
+  (tlon-babel-core-plist-lookup tlon-babel-core-repos prop :abbrev repo-name))
 
-(defun tlon-babel-get-property-of-user (prop user)
+(defun tlon-babel-get-property-core-of-user (prop user)
   "Return the value of PROP in USER."
-  (tlon-babel-plist-lookup tlon-babel-users prop :name user))
+  (tlon-babel-core-plist-lookup tlon-babel-core-users prop :name user))
 
-(defun tlon-babel-get-property-of-label (prop user)
+(defun tlon-babel-get-property-core-of-label (prop user)
   "Return the value of PROP in USER."
-  (tlon-babel-plist-lookup prop tlon-babel-users :name user))
+  (tlon-babel-core-plist-lookup prop tlon-babel-core-users :name user))
 
-(defun tlon-babel-get-property-of-plists (prop plist &optional target-prop target-value)
+(defun tlon-babel-get-property-core-of-plists (prop plist &optional target-prop target-value)
   "Return a list of all PROP values in PLIST.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
@@ -269,24 +269,23 @@ TARGET-VALUE."
 	    (setq result (append result (list value1)))))))
     result))
 
-(defun tlon-babel-get-property-of-repos (prop &optional target-prop target-value)
-  "Return a list of all PROP values in `tlon-babel-repo-props'.
+(defun tlon-babel-get-property-core-of-repos (prop &optional target-prop target-value)
+  "Return a list of all PROP values in `tlon-babel-core-repos'.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
-  (tlon-babel-get-property-of-plists prop tlon-babel-repo-props target-prop target-value))
+  (tlon-babel-get-property-core-of-plists prop tlon-babel-core-repos target-prop target-value))
 
-(defun tlon-babel-get-property-of-users (prop &optional target-prop target-value)
-  "Return a list of all PROP values in PLIST `tlon-babel-users'.
+(defun tlon-babel-get-property-core-of-users (prop &optional target-prop target-value)
+  "Return a list of all PROP values in PLIST `tlon-babel-core-users'.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
-  (tlon-babel-get-property-of-plists prop tlon-babel-users target-prop target-value))
+  (tlon-babel-get-property-core-of-plists prop tlon-babel-core-users target-prop target-value))
 
-(defun tlon-babel-get-property-of-labels (prop &optional target-prop target-value)
-  "Return a list of all PROP values in PLIST `tlon-babel-labels'.
+(defun tlon-babel-get-property-core-of-labels (prop &optional target-prop target-value)
+  "Return a list of all PROP values in PLIST `tlon-babel-core-labels'.
 Optionally, return only the subset of values such that TARGET-PROP matches
 TARGET-VALUE."
-  (tlon-babel-get-property-of-plists prop tlon-babel-labels target-prop target-value))
+  (tlon-babel-get-property-core-of-plists prop tlon-babel-core-labels target-prop target-value))
 
-(provide 'tlon-babel-repo)
-;;; tlon-babel-repo.el ends here
-
+(provide 'tlon-babel-core)
+;;; tlon-babel-core.el ends here
