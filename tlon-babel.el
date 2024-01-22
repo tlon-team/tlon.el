@@ -46,7 +46,7 @@
 (require 'unfill)
 (require 'window-extras)
 (require 'winum)
-;; (require 'ebib-extras) ; recursive requirement
+(require 'ebib-extras)
 
 ;;;; Customization:
 
