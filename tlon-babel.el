@@ -1638,21 +1638,6 @@ If REPO is nil, prompt the user for one."
     (tlon-babel-yaml-set-front-matter-for-article title)
     (save-buffer)))
 
-(defun tlon-babel-create-record-for-job (&optional key)
-  "Create a record based on KEY.
-Creates a new record in the repository (with the format `Job: KEY') and a new
-heading in the file `jobs.org'. If KEY is not provided, the key in the current
-Markdown buffer at point is used."
-  (interactive)
-  (if-let ((key (or key
-		    (pcase major-mode
-		      ('markdown-mode (tlon-babel-get-key-in-buffer))
-		      ('ebib-entry-mode (ebib--get-key-at-point))))))
-      (progn
-	(tlon-babel-ogh-create-issue-from-key key)
-	(tlon-babel-create-heading-for-job key 'commit))
-    (user-error "I wasn't able to create a record because I didn't find a key")))
-
 ;;;;; Sentence highlighting
 
 (defun tlon-babel-sentence-highlight-offset-set ()
