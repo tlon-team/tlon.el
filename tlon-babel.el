@@ -1743,28 +1743,6 @@ check that current file matches translation."
 	t
       (user-error "Current file does not match file in clock"))))
 
-(defun tlon-babel-check-label-and-assignee (repo)
-  "Check that clocked action, user match label, assignee of issue in REPO."
-  (save-window-excursion
-    (let* ((default-directory repo)
-	   (key (tlon-babel-get-clock-key))
-	   (issue (format "Job: `%s" key))
-	   (clocked-label (tlon-babel-get-clock-label)))
-      (magit-status-setup-buffer repo)
-      (magit-section-show-level-3-all)
-      (goto-char (point-min))
-      (if (search-forward issue nil t)
-	  (let ((label (tlon-babel-ogh-get-label))
-		(assignee (tlon-babel-user-lookup :name :github (tlon-babel-ogh-get-assignee))))
-	    (unless (string= clocked-label label)
-	      (user-error "The `org-mode' TODO says the label is `%s', but the actual issue label is `%s'"
-			  clocked-label label))
-	    (unless (string= user-full-name assignee)
-	      (user-error "The `org-mode' TODO says the assignee is `%s', but the actual issue assignee is `%s'"
-			  user-full-name assignee))
-	    t)
-	(user-error "No issue found for %s" key)))))
-
 (defun tlon-babel-check-staged-or-unstaged (file)
   "Check if there are staged or unstaged modifications in repo involving FILE."
   (catch 'found
