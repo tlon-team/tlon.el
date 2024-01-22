@@ -275,10 +275,6 @@ TARGET-VALUE."
 		   (equal (car inner) source-lang))
 	  (setq result (cdr (assoc target-lang outer))))))))
 
-(defvar tlon-babel-dir-refs
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-refs"))
-  "Directory where references files are stored.")
-
 (defvar tlon-babel-dir-correspondences
   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-es") "correspondences/")
   "Directory where correspondence files are stored.")
@@ -287,18 +283,6 @@ TARGET-VALUE."
   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
-(defvar tlon-babel-dir-bib
-  (file-name-concat tlon-babel-dir-refs "bib/")
-  "Directory where BibTeX files are stored.")
-
-(defvar tlon-babel-dir-locales
-  (file-name-concat tlon-babel-dir-refs "locales/")
-  "Directory where CSL locale files are stored.")
-
-(defvar tlon-babel-dir-styles
-  (file-name-concat tlon-babel-dir-refs "styles/")
-  "Directory where CSL style files are stored.")
-
 (defvar tlon-babel-file-babel-manual
   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-core") "manual.org")
   "File containing the Babel manual.")
@@ -306,19 +290,6 @@ TARGET-VALUE."
 (defvar tlon-babel-file-jobs
   (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-core") "jobs.org")
   "File containing the jobs.")
-
-(defvar tlon-babel-file-fluid
-  (file-name-concat tlon-babel-dir-bib "fluid.bib")
-  "File containing the fluid bibliography.")
-
-(defvar tlon-babel-file-stable
-  (file-name-concat tlon-babel-dir-bib "stable.bib")
-  "File containing the stable bibliography.")
-
-(defvar tlon-babel-bibliography-files
-  `(,tlon-babel-file-fluid
-    ,tlon-babel-file-stable)
-  "List of bibliography files.")
 
 (defvar tlon-babel-file-url-correspondences
   (file-name-concat tlon-babel-dir-correspondences "url-correspondences.json")
@@ -456,7 +427,7 @@ The second capture group handles the `.md' extension, which we used previously."
     (push template org-capture-templates))
   (setq paths-files-bibliography-all
 	`(,@paths-files-bibliography-personal
-	  ,@tlon-babel-bibliography-files))
+	  ,@tlon-babel-refs-bibliography-files))
   (run-hooks 'tlon-babel-post-init-hook))
 
 (defun tlon-babel-set-value-of-var (var)
@@ -1745,11 +1716,12 @@ If the current directory matches none of the directories in
 
 (defun tlon-babel-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
-If the current directory matches any of the directories in `tlon-babel-repo-props',
-return it. Else, prompt the user to select a repo from that list, unless
-NO-PROMPT is non-nil. In that case, signal an error if its value is `error',
-else return nil. If INCLUDE-ALL is non-nil, include all repos. In that case,
-matching will be made against repos with any value for the property `:type'."
+If the current directory matches any of the directories in
+`tlon-babel-repo-props', return it. Else, prompt the user to select a repo from
+that list, unless NO-PROMPT is non-nil. In that case, signal an error if its
+value is `error', else return nil. If INCLUDE-ALL is non-nil, include all repos.
+In that case, matching will be made against repos with any value for the
+property `:type'."
   (if-let ((current-repo (tlon-babel-get-repo-from-file)))
       current-repo
     (if no-prompt
@@ -1934,104 +1906,6 @@ If FILE is nil, check the current buffer."
 	     ;; for articles with duplicate titles
 	     (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
       (error "The file `%s' does not match its title" title))))
-
-;;;;; Bibtex
-
-(defun tlon-babel-bibtex-generate-autokey (author year title)
-  "Generate a BibTeX key based on AUTHOR, YEAR, and TITLE."
-  ;; TODO: check that they key doesn't already exist in all metadata
-  (let* ((author (tlon-babel-bibtex-autokey-get-names author))
-	 (year (tlon-babel-bibtex-autokey-get-year year))
-	 (title (tlon-babel-bibtex-autokey-get-title title))
-	 (autokey (concat bibtex-autokey-prefix-string
-			  author
-			  (unless (or (equal author "")
-				      (equal year ""))
-			    bibtex-autokey-name-year-separator)
-			  year
-			  (unless (or (and (equal author "")
-					   (equal year ""))
-				      (equal title ""))
-			    bibtex-autokey-year-title-separator)
-			  title)))
-    (if bibtex-autokey-before-presentation-function
-	(funcall bibtex-autokey-before-presentation-function autokey)
-      autokey)))
-
-(defun tlon-babel-bibtex-autokey-get-names (name)
-  "Return formatted contents of NAME field."
-  (if (string= "" name)
-      name
-    (let* ((case-fold-search t)
-	   (name-list (mapcar #'bibtex-autokey-demangle-name
-			      (split-string name "[ \t\n]+and[ \t\n]+")))
-	   additional-name)
-      (unless (or (not (numberp bibtex-autokey-names))
-		  (<= (length name-list)
-		      (+ bibtex-autokey-names
-			 bibtex-autokey-names-stretch)))
-	(setq name-list (nreverse (nthcdr (- (length name-list)
-					     bibtex-autokey-names)
-					  (nreverse name-list)))
-	      additional-name bibtex-autokey-additional-names))
-      (concat (mapconcat #'identity name-list
-			 bibtex-autokey-name-separator)
-	      additional-name))))
-
-(defun tlon-babel-bibtex-autokey-get-year (year)
-  "Get formatted contents of YEAR field."
-  (substring year (max 0 (- (length year) bibtex-autokey-year-length))))
-
-(defun tlon-babel-bibtex-autokey-get-title (title)
-  "Get formatted contents of TITLE field."
-  (let ((case-fold-search t))
-    (if (string-match bibtex-autokey-title-terminators title)
-	(setq title (substring title 0 (match-beginning 0))))
-    (let ((counter 0)
-	  (ignore-re (concat "\\`\\(?:"
-			     (mapconcat #'identity
-					bibtex-autokey-titleword-ignore "\\|")
-			     "\\)\\'"))
-	  titlewords titlewords-extra word)
-      (while (and (or (not (numberp bibtex-autokey-titlewords))
-		      (< counter (+ bibtex-autokey-titlewords
-				    bibtex-autokey-titlewords-stretch)))
-		  (string-match "\\b\\w+" title))
-	(setq word (match-string 0 title)
-	      title (substring title (match-end 0)))
-	;; `bibtex-autokey-titleword-ignore'.
-	(unless (let (case-fold-search)
-		  (string-match ignore-re word))
-	  (setq counter (1+ counter))
-	  (if (or (not (numberp bibtex-autokey-titlewords))
-		  (<= counter bibtex-autokey-titlewords))
-	      (push word titlewords)
-	    (push word titlewords-extra))))
-      (unless (string-match "\\b\\w+" title)
-	(setq titlewords (append titlewords-extra titlewords)))
-      (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
-		 bibtex-autokey-titleword-separator))))
-
-(defun tlon-babel-bibtex-add-lang-id-to-bib-files ()
-  "Supply missing Spanish `landid' field to all bib files."
-  (interactive)
-  (dolist (file `(,tlon-babel-file-fluid ,tlon-babel-file-stable))
-    (with-current-buffer (or (find-buffer-visiting file)
-			     (find-file-noselect file))
-      (goto-char (point-min))
-      (bibtex-map-entries 'tlon-babel-add-lang-id-to-entry))))
-
-;; TODO: support arbitrary langs
-(defun tlon-babel-add-lang-id-to-entry (&optional _ _ _)
-  "Add `langid' field to entry at point, if appropriate.
-If the field `landig' is present, the function does nothing; else, it sets the
-`langid' field to `spanish' if the entry has either a `translation' or a
-`translator' field, and to `english' otherwise."
-  (unless (bibtex-text-in-field "langid")
-    (if (or (bibtex-text-in-field "translation")
-	    (bibtex-text-in-field "translator"))
-	(bibtex-set-field "langid" "spanish")
-      (bibtex-set-field "langid" "english"))))
 
 ;;;;; Search
 
