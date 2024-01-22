@@ -29,16 +29,6 @@
 
 ;;;; Variables
 
-;; TODO: define this properly
-(defconst tlon-babel-repo-dirs
-  (let ((dir (pcase (expand-file-name "~")
-	       ("/Users/pablostafforini" "Library/CloudStorage/Dropbox/repos/")
-	       ("/Users/fede" "source/")
-	       ("/Users/cartago" "Library/CloudStorage/Dropbox/repos/")
-	       (_ (user-error "Home directory does not match that of known user")))))
-    (file-name-concat (getenv "HOME") dir))
-  "Directory where the Tlön repos are stored.")
-
 (defconst tlon-babel-repo-props
   `((:name "babel-core"
 	   :project "babel"
@@ -170,7 +160,7 @@ creating `org-mode' TODOs.")
 (defun tlon-babel-repo-set-dir (repo)
   "Set the `:directory' property for REPO in `tlon-babel-repo-props'."
   (let* ((dir (file-name-as-directory
-	       (file-name-concat tlon-babel-repo-dirs
+	       (file-name-concat tlon-core-repo-dirs
 				 (plist-get repo :name)))))
     (plist-put repo :dir dir)))
 
