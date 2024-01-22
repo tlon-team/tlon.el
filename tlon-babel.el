@@ -2067,9 +2067,10 @@ respectively."
     """Counterpart"
     ("f" "current win"                    tlon-babel-open-counterpart-dwim)
     ("H-f" "other win"                    tlon-babel-open-counterpart-other-window-dwim)
-    """Translate"
-    ("t t" "GPT"                          tlon-babel-gpt-translate)
-    ("t w" "Web"                          tlon-babel-search-for-translation)]
+    """AI"
+    ("g r" "rewrite"                      tlon-babel-ai-rewrite)
+    ("g s" "summarize"                    tlon-babel-ai-summarize)
+    ("g t" "translate"                    tlon-babel-ai-translate)]
    ["Clock"
     ("c c" "issue"                        tlon-babel-open-clock-issue)
     ("c f" "file"                         tlon-babel-open-clock-file )

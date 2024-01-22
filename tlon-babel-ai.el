@@ -36,7 +36,7 @@
 ;;;;; Translation
 
 ;;;###autoload
-(defun tlon-babel-gpt-rewrite ()
+(defun tlon-babel-ai-rewrite ()
   "Docstring."
   (interactive)
   (let* ((text (if (region-active-p)
@@ -54,7 +54,7 @@
 	   (kill-new variant)))))))
 
 ;;;###autoload
-(defun tlon-babel-gpt-translate (text)
+(defun tlon-babel-ai-translate (text)
   "Return ten alternative translations of TEXT."
   (interactive "sText to translate: ")
   (gptel-request
@@ -66,13 +66,13 @@
        (let ((translations (split-string response "|")))
 	 (kill-new (completing-read "Translation: " translations)))))))
 
-(defun tlon-babel-gpt-translate-file (file)
+(defun tlon-babel-ai-translate-file (file)
   "Translate FILE."
   (let* ((counterpart (tlon-babel-get-counterpart file))
 	 (filename (file-name-nondirectory counterpart))
 	 (target-path (concat
 		       (file-name-sans-extension filename)
-		       "--gpt-translated.md"))
+		       "--ai-translated.md"))
 	 (text (with-temp-buffer
 		 (insert-file-contents file)
 		 (buffer-string))))
@@ -89,7 +89,7 @@
 ;;;;; Summarization
 
 ;;;###autoload
-(defun tlon-babel-gpt-summarize (model)
+(defun tlon-babel-ai-summarize (model)
   "Summarize and copy the summary to the kill ring using AI MODEL.
 If region is active, summarize the region; otherwise, prompt for a file to
 summarize."
