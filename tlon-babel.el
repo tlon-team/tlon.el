@@ -794,7 +794,7 @@ If TITLE is non-nil, use it instead of prompting for one."
 	      ("publication_status" . "no publicado")
 	      ("original_key" . ,(when first-author (tlon-babel-yaml-set-original-key (car first-author))))
 	      ("translation_key" . ,(when first-author
-				      (tlon-babel-bibtex-generate-autokey
+				      (tlon-babel-refs-generate-autokey
 				       (car first-author)
 				       (substring (cdr (assoc "date" field-values)) 0 4)
 				       (cdr (assoc "title" field-values))))))))
