@@ -36,7 +36,7 @@
 
 ;; TODO: revise to support multiple langs, including en
 ;;;###autoload
-(defun tlon-babel-markdown-insert-element ()
+(defun tlon-babel-md-insert-element ()
   "Insert a link to an element at point.
 The element can be a tag or an author."
   (interactive)
@@ -48,13 +48,13 @@ The element can be a tag or an author."
 	 current-element-title)
     (when current-target
       (setq current-element-title
-	    (tlon-babel-markdown-get-title-in-link-target
+	    (tlon-babel-md-get-title-in-link-target
 	     current-target)))
     (let* ((new-element-title (completing-read "Selection: " (tlon-babel-get-all-uqbar-entities)
 					       nil t
 					       (or current-element-title
 						   selection)))
-	   (new-target-file (tlon-babel-metadata-lookup "file" "title" new-element-title (tlon-babel-get-metadata-in-repo)))
+	   (new-target-file (tlon-babel-core-metadata-lookup "file" "title" new-element-title (tlon-babel-get-metadata-in-repo)))
 	   (new-target-dir (file-relative-name
 			    (file-name-directory new-target-file) (file-name-directory (buffer-file-name))))
 	   (new-target (file-name-concat new-target-dir (file-name-nondirectory new-target-file)))
@@ -68,13 +68,13 @@ The element can be a tag or an author."
 	(delete-region (region-beginning) (region-end)))
       (insert link))))
 
-(defun tlon-babel-markdown-get-title-in-link-target (target)
+(defun tlon-babel-md-get-title-in-link-target (target)
   "Return the title of the tag to which the TARGET of a Markdown link points."
   (let* ((file (expand-file-name target default-directory))
-	 (title (tlon-babel-metadata-lookup "title" "file" file (tlon-babel-get-metadata-in-repo))))
+	 (title (tlon-babel-core-metadata-lookup "title" "file" file (tlon-babel-get-metadata-in-repo))))
     title))
 
-(defun tlon-babel-markdown-sort-elements-in-paragraph (separator)
+(defun tlon-babel-md-sort-elements-in-paragraph (separator)
   "Sort the elements separated by SEPARATOR in the current paragraph."
   (save-excursion
     ;; Get paragraph boundaries
@@ -98,7 +98,7 @@ The element can be a tag or an author."
       (insert (mapconcat 'identity sorted-links separator)))))
 
 ;;;###autoload
-(defun tlon-babel-markdown-sort-related-entries ()
+(defun tlon-babel-md-sort-related-entries ()
   "Sort the links in the `related entries' section in current buffer.
 If no section is found, do nothing."
   (interactive)
@@ -106,12 +106,12 @@ If no section is found, do nothing."
     (goto-char (point-min))
     (when (re-search-forward "^## Entradas relacionadas" nil t)
       (forward-paragraph)
-      (tlon-babel-markdown-sort-elements-in-paragraph " • "))))
+      (tlon-babel-md-sort-elements-in-paragraph " • "))))
 
 ;;;;;; Insert elements
 
 ;;;###autoload
-(defun tlon-babel-markdown-insert-element-pair (open close)
+(defun tlon-babel-md-insert-element-pair (open close)
   "Insert an element pair at point or around the selected region.
 OPEN is the opening element and CLOSE is the closing element."
   (interactive)
@@ -126,76 +126,79 @@ OPEN is the opening element and CLOSE is the closing element."
     (backward-char (length close))))
 
 ;; TODO: revise to offer the key at point as default completion candidate
-(defun tlon-babel-markdown-insert-mdx-cite (key)
+;;;###autoload
+(defun tlon-babel-md-insert-mdx-cite (key)
   "Insert an MDX `Cite' element pair at point or around the selected region.
 Prompt the user to select a BibTeX KEY. When a key is enclosed in a `Cite'
 element pair, only its title will be displayed in the exported web page."
   (interactive (list (read-string "Key: ")))
-  (tlon-babel-markdown-insert-element-pair (format "<Cite id={\"%s\"}>"
+  (tlon-babel-md-insert-element-pair (format "<Cite id={\"%s\"}>"
 						   key)
 					   "</Cite>"))
 
 ;;;###autoload
-(defun tlon-babel-markdown-insert-mdx-aside ()
+(defun tlon-babel-md-insert-mdx-aside ()
   "Insert an MDX `Aside' element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-markdown-insert-element-pair "<Aside>" "</Aside>"))
+  (tlon-babel-md-insert-element-pair "<Aside>" "</Aside>"))
 
-(defun tlon-babel-markdown-insert-mdx-lang (language)
+;;;###autoload
+(defun tlon-babel-md-insert-mdx-lang (language)
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-languages))))
-  (tlon-babel-markdown-insert-element-pair (format "<Lang id={\"%s\"}>"
+  (tlon-babel-md-insert-element-pair (format "<Lang id={\"%s\"}>"
 						   language)
 					   "</Lang>"))
 
 ;; TODO: revise to offer the url at point as default completion candidate
-(defun tlon-babel-markdown-insert-mdx-literal-link (url)
+;;;###autoload
+(defun tlon-babel-md-insert-mdx-literal-link (url)
   "Insert an MDX `LiteralLink' element pair at point or around the selected region.
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
-  (tlon-babel-markdown-insert-element-pair (format "<LiteralLink src={\"%s\"}>"
+  (tlon-babel-md-insert-element-pair (format "<LiteralLink src={\"%s\"}>"
 						   url)
 					   "</LiteralLink>"))
 
 ;;;###autoload
-(defun tlon-babel-markdown-insert-mdx-small-caps ()
+(defun tlon-babel-md-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
 Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
-  (tlon-babel-markdown-insert-element-pair "<SmallCaps>" "</SmallCaps>"))
+  (tlon-babel-md-insert-element-pair "<SmallCaps>" "</SmallCaps>"))
 
 ;;;###autoload
-(defun tlon-babel-markdown-insert-mdx-footnote ()
+(defun tlon-babel-md-insert-mdx-footnote ()
   "Insert an MDX `Footnote' element pair at point or around the selected region.
 Text enclosed by a `Footnote' element pair will be displayed as a footnote, as
 opposed to a sidenote."
   (interactive)
-  (tlon-babel-markdown-insert-element-pair "<Footnote>" "</Footnote>"))
+  (tlon-babel-md-insert-element-pair "<Footnote>" "</Footnote>"))
 
 ;;;###autoload
-(defun tlon-babel-markdown-insert-mdx-sidenote ()
+(defun tlon-babel-md-insert-mdx-sidenote ()
   "Insert an MDX `Sidenote' element pair at point or around the selected region.
 Text enclosed by a `Sidenote' element pair will be displayed as a sidenote, as
 opposed to a footnote."
   (interactive)
-  (tlon-babel-markdown-insert-element-pair "<Sidenote>" "</Sidenote>"))
+  (tlon-babel-md-insert-element-pair "<Sidenote>" "</Sidenote>"))
 
 ;;;###autoload
-(defun tlon-babel-markdown-insert-math-inline ()
+(defun tlon-babel-md-insert-math-inline ()
   "Insert an inline math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-markdown-insert-element-pair "$`" "`$"))
+  (tlon-babel-md-insert-element-pair "$`" "`$"))
 
 ;;;###autoload
-(defun tlon-babel-markdown-insert-math-display ()
+(defun tlon-babel-md-insert-math-display ()
   "Insert a display math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-markdown-insert-element-pair "$$\n" "\n$$"))
+  (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
 
 ;;;###autoload
-(defun tlon-babel-markdown-end-of-buffer-dwim ()
+(defun tlon-babel-md-end-of-buffer-dwim ()
   "Move point to the end of the relevant part of the buffer.
 The relevant part of the buffer is the part of the buffer that excludes the
 \"local variables\" section.
@@ -208,22 +211,22 @@ end of the buffer unconditionally."
 	(goto-char (point-max))
       (goto-char (- (match-beginning 0) 1)))))
 
-(transient-define-prefix tlon-babel-markdown-insert-dispatch ()
+(transient-define-prefix tlon-babel-md-insert-dispatch ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
   [["MDX: notes"
-    ("f" "footnote"             tlon-babel-markdown-insert-mdx-footnote)
-    ("s" "sidenote"             tlon-babel-markdown-insert-mdx-sidenote)
+    ("f" "footnote"             tlon-babel-md-insert-mdx-footnote)
+    ("s" "sidenote"             tlon-babel-md-insert-mdx-sidenote)
     ]
    ["MDX: other"
-    ("a" "aside"                tlon-babel-markdown-insert-mdx-aside)
-    ("c" "cite"                 tlon-babel-markdown-insert-mdx-cite)
-    ("g" "lang"                 tlon-babel-markdown-insert-mdx-lang)
-    ("l" "literal link"         tlon-babel-markdown-insert-mdx-literal-link)
-    ("m" "small caps"           tlon-babel-markdown-insert-mdx-small-caps)
+    ("a" "aside"                tlon-babel-md-insert-mdx-aside)
+    ("c" "cite"                 tlon-babel-md-insert-mdx-cite)
+    ("g" "lang"                 tlon-babel-md-insert-mdx-lang)
+    ("l" "literal link"         tlon-babel-md-insert-mdx-literal-link)
+    ("m" "small caps"           tlon-babel-md-insert-mdx-small-caps)
     ]
    ["Math"
-    ("i" "inline"               tlon-babel-markdown-insert-math-inline)
-    ("d" "display"              tlon-babel-markdown-insert-math-display)
+    ("i" "inline"               tlon-babel-md-insert-math-inline)
+    ("d" "display"              tlon-babel-md-insert-math-display)
     ]]
   )
 
