@@ -174,7 +174,7 @@ for the process that is being initialized."
   (let* ((key (tlon-babel-get-clock-key))
 	 (repo (tlon-babel-get-repo-from-key key))
 	 (default-directory repo))
-    (tlon-babel-check-label-and-assignee repo)
+    (tlon-babel-ogh-check-label-and-assignee repo)
     (tlon-babel-check-branch "main" repo)
     (call-interactively #'magit-pull-from-upstream nil)
     (sleep-for 2)
@@ -200,7 +200,7 @@ for the process that is being initialized."
 	   (next-label (tlon-babel-get-clock-next-label))
 	   (next-assignee (tlon-babel-jobs-get-next-assignee)))
       (tlon-babel-check-branch "main" repo)
-      (tlon-babel-check-label-and-assignee repo)
+      (tlon-babel-ogh-check-label-and-assignee repo)
       (tlon-babel-check-file
        (when (string= current-action "Process")
 	 'original))
