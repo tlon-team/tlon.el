@@ -33,10 +33,6 @@
 
 ;;;; User options
 
-(defgroup tlon-babel-gh ()
-  "Org-GitHub integration."
-  :group 'tlon-babel)
-
 (defcustom tlon-babel-ogh-warn-when-no-valid-label t
   "Whether to warn the user when the issue has no valid label.
 If t, warn the user. If `prompt', prompt the user for a label. If nil, do
@@ -44,7 +40,7 @@ nothing."
   :type '(choice (const :tag "Warn" t)
                  (const :tag "Prompt" prompt)
                  (const :tag "Do nothing" nil))
-  :group 'tlon-babel-gh)
+  :group 'tlon-babel)
 
 ;;;; Main variables
 
