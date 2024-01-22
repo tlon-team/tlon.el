@@ -71,7 +71,7 @@ COMMIT is non-nil, commit the change."
   (interactive)
   (let* ((key (or key (tlon-babel-get-key-in-buffer)))
 	 (heading (format "[cite:@%s]" key))
-	 (file (tlon-babel-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repo)))
+	 (file (tlon-babel-core-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repo)))
 	 (repo (tlon-babel-get-repo-from-file file))
 	 (repo-abbrev (tlon-babel-core-repo-lookup :abbrev :dir repo)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
@@ -240,10 +240,10 @@ This function returns the assignee designated for the next label if the current
 user is the user designated for the current label; otherwise, it returns the
 substitute assignee."
   (let*
-      ((current-user (tlon-babel-user-lookup :github :name user-full-name))
-       (current-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-label)))
-       (designated-next-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-next-label)))
-       (substitute-next-assigne (tlon-babel-user-lookup :substitute :github designated-next-assignee)))
+      ((current-user (tlon-babel-core-user-lookup :github :name user-full-name))
+       (current-assignee (tlon-babel-core-label-lookup :assignee :label (tlon-babel-get-clock-label)))
+       (designated-next-assignee (tlon-babel-core-label-lookup :assignee :label (tlon-babel-get-clock-next-label)))
+       (substitute-next-assigne (tlon-babel-core-user-lookup :substitute :github designated-next-assignee)))
     (if (string= current-user current-assignee)
 	designated-next-assignee
       substitute-next-assigne)))

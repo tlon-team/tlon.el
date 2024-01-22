@@ -89,7 +89,7 @@
 (defun tlon-babel-api-get-token (callback)
   "Get `uqbar' API token.
 CALLBACK is called with the token as its argument."
-  (let* ((username (tlon-babel-user-lookup :github :name user-full-name))
+  (let* ((username (tlon-babel-core-user-lookup :github :name user-full-name))
          (data (concat "username=" (url-hexify-string username)
                        "&password=" (url-hexify-string
 				     (auth-source-pass-get 'secret
@@ -148,7 +148,7 @@ If BUFFER is nil, default to the current buffer."
 	     (json-modified
 	      (mapcar (lambda (json-object)
 			(when-let* ((old-filename (cdr (assoc 'source_filename json-object)))
-				    (new-filename (file-name-concat tlon-babel-dir-repos old-filename)))
+				    (new-filename (file-name-concat tlon-babel-core-repo-dir old-filename)))
 			  (setf (cdr (assoc 'source_filename json-object)) new-filename))
 			json-object)
 		      json-data)))

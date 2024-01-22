@@ -346,7 +346,7 @@ If FILE is nil, use the current buffer's file name."
 
 (defun tlon-babel-get-repo-from-key (key)
   "Return the repo corresponding to original KEY."
-  (if-let ((file (tlon-babel-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repos))))
+  (if-let ((file (tlon-babel-core-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repos))))
       (if-let ((repo (catch 'found
 		       (dolist (dir (tlon-babel-core-get-property-of-repos :dir))
 			 (when (string-prefix-p (file-name-as-directory dir) file)
@@ -357,7 +357,7 @@ If FILE is nil, use the current buffer's file name."
 
 (defun tlon-babel-get-file-from-key (key)
   "Return the file path of KEY."
-  (if-let ((file (tlon-babel-metadata-lookup "file" "original_key" key
+  (if-let ((file (tlon-babel-core-metadata-lookup "file" "original_key" key
 					     (tlon-babel-get-metadata-in-repos))))
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
@@ -366,7 +366,7 @@ If FILE is nil, use the current buffer's file name."
   "Return the bibtex key of FILE."
   (or
    ;; when in `translations'
-   (tlon-babel-metadata-lookup "translation_key" "file" file (tlon-babel-get-metadata-in-repo))
+   (tlon-babel-core-metadata-lookup "translation_key" "file" file (tlon-babel-get-metadata-in-repo))
    ;; when file in `originals'
    (let ((translation (tlon-babel-get-counterpart file)))
      (tlon-babel-metadata-get-field-value-in-file "original_key" translation))))
@@ -401,7 +401,7 @@ If LANGUAGE is nil, default to the languageuage set in
 If no FILE is provided, use the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (default-directory (file-name-directory file))
-	 (user (tlon-babel-user-lookup :git :name user-full-name))
+	 (user (tlon-babel-core-user-lookup :git :name user-full-name))
 	 ;; get most recent commit in FILE by USER
 	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- '%s' | grep -m 1 '%s' | awk '{print $1}'" file user)))
 	 (commit (car (split-string output "\n"))))
@@ -609,7 +609,7 @@ If REPO is nil, return metadata of current repository."
 
 ;;;;;; Query metadata
 
-(defun tlon-babel-metadata-lookup (field1 field2 value2 metadata)
+(defun tlon-babel-core-metadata-lookup (field1 field2 value2 metadata)
   "Search METADATA for VALUE2 in FIELD2 and return the value of FIELD1."
   (let ((found nil)
 	(i 0))
@@ -1237,7 +1237,7 @@ buffer."
 (defun tlon-babel-get-counterpart-in-originals (file)
   "Get the counterpart of FILE, when FILE is in `originals'."
   (let ((translations-repo (tlon-babel-get-counterpart-repo file)))
-    (tlon-babel-metadata-lookup "file"
+    (tlon-babel-core-metadata-lookup "file"
 				"original_path"
 				(file-name-nondirectory file)
 				(tlon-babel-get-metadata-in-repo translations-repo))))
@@ -1500,7 +1500,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-babel-get-clock-label ()
   "Return label associated with action in heading at point."
-  (let ((label (tlon-babel-label-lookup :label :action (tlon-babel-get-clock-action))))
+  (let ((label (tlon-babel-core-label-lookup :label :action (tlon-babel-get-clock-action))))
     label))
 
 (defun tlon-babel-get-clock-next-label ()
@@ -1549,9 +1549,9 @@ open DeepL."
   (let* ((key (tlon-babel-get-clock-key))
 	 (metadata (tlon-babel-get-metadata-in-repos))
 	 (repo (tlon-babel-get-repo-from-key key))
-	 (identifier (tlon-babel-metadata-lookup "original_path" "original_key" key metadata))
+	 (identifier (tlon-babel-core-metadata-lookup "original_path" "original_key" key metadata))
 	 (original-path (file-name-concat repo "originals" identifier))
-	 (translation-path (tlon-babel-metadata-lookup "file" "original_key" key metadata)))
+	 (translation-path (tlon-babel-core-metadata-lookup "file" "original_key" key metadata)))
     (cl-values original-path translation-path key)))
 
 (defun tlon-babel-set-windows (original-path translation-path)
@@ -1721,7 +1721,7 @@ check that current file matches translation."
   (let* ((key (tlon-babel-get-clock-key))
 	 (field (if original "original_path" "file"))
 	 (expected-file (file-name-nondirectory
-			 (tlon-babel-metadata-lookup field "original_key" key (tlon-babel-get-metadata-in-repo))))
+			 (tlon-babel-core-metadata-lookup field "original_key" key (tlon-babel-get-metadata-in-repo))))
 	 (actual-file (file-name-nondirectory
 		       (buffer-file-name))))
     (if (string= expected-file actual-file)

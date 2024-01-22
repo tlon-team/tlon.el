@@ -130,7 +130,7 @@ appropriate heading."
   "Capture all issues in the current repository."
   (interactive)
   (let ((default-directory (tlon-babel-get-repo 'error 'include-all))
-	(current-user (tlon-babel-user-lookup :github :name user-full-name))
+	(current-user (tlon-babel-core-user-lookup :github :name user-full-name))
 	(num-captured 0))
     (dolist (issue (tlon-babel-ogh-get-open-issues))
       (let ((assignee (tlon-babel-ogh-get-assignee issue))
@@ -295,14 +295,14 @@ the user says so when prompted.
 
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-	 (assignee (tlon-babel-user-lookup :name :github (tlon-babel-ogh-get-assignee issue))))
+	 (assignee (tlon-babel-core-user-lookup :name :github (tlon-babel-ogh-get-assignee issue))))
     (if (string= user-full-name assignee)
 	t
       (pcase (read-char-choice
 	      (format "The assignee of `%s' is %s.\nSelf-assign? [y]es | no, and [c]apture | no, and do [n]ot capture"
 		      (oref issue title) assignee)
 	      '(?y ?c ?n))
-	(?y (tlon-babel-ogh-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
+	(?y (tlon-babel-ogh-set-assignee (tlon-babel-core-user-lookup :github :name user-full-name))
 	    (while (not (tlon-babel-ogh-capture-issue-p issue))
 	      (sleep-for 1)))
 	(?c t)
@@ -314,7 +314,7 @@ If not, offer to process it as a new job.
 
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-	 (assignee (tlon-babel-user-lookup :name :github (tlon-babel-ogh-get-assignee issue)))
+	 (assignee (tlon-babel-core-user-lookup :name :github (tlon-babel-ogh-get-assignee issue)))
 	 (label (tlon-babel-ogh-get-label issue)))
     (unless (and assignee label)
       (if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
@@ -648,13 +648,13 @@ If ISSUE is nil, use issue at point or in the current buffer."
 The prompt defaults to the current user."
   (let ((assignee (completing-read "Who should be the assignee? "
 				   (tlon-babel-core-get-property-of-users :github) nil nil
-				   (tlon-babel-user-lookup :github :name user-full-name))))
+				   (tlon-babel-core-user-lookup :github :name user-full-name))))
     assignee))
 
 (defun tlon-babel-ogh-set-initial-label-and-assignee ()
   "Set label to `Awaiting processing' and assignee to current user."
   (tlon-babel-ogh-set-label "Awaiting processing")
-  (tlon-babel-ogh-set-assignee (tlon-babel-user-lookup :github :name user-full-name)))
+  (tlon-babel-ogh-set-assignee (tlon-babel-core-user-lookup :github :name user-full-name)))
 
 (defun tlon-babel-ogh-get-element (element &optional issue)
   "Return ELEMENT of ISSUE.
@@ -715,7 +715,7 @@ buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (action (if (and (tlon-babel-ogh-issue-is-job-p issue)
 			  (not no-action))
-		     (or (tlon-babel-label-lookup :action :label (tlon-babel-ogh-get-label issue))
+		     (or (tlon-babel-core-label-lookup :action :label (tlon-babel-ogh-get-label issue))
 			 "")
 		   ""))
 	 (state (if (tlon-babel-ogh-issue-is-job-p issue)
@@ -799,7 +799,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	  (setq latest-issue-post (car (tlon-babel-ogh-get-latest-issue))))
 	(tlon-babel-ogh-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-ogh-visit-issue)
-	(tlon-babel-ogh-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
+	(tlon-babel-ogh-set-assignee (tlon-babel-core-user-lookup :github :name user-full-name))
 	(tlon-babel-ogh-set-label status)
 	(setq todo-linkified (tlon-babel-ogh-make-todo-name-from-issue nil 'no-state))))
     (org-edit-headline todo-linkified)))
@@ -870,7 +870,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (goto-char (point-min))
       (if (search-forward issue nil t)
 	  (let ((label (tlon-babel-ogh-get-label))
-		(assignee (tlon-babel-user-lookup :name :github (tlon-babel-ogh-get-assignee))))
+		(assignee (tlon-babel-core-user-lookup :name :github (tlon-babel-ogh-get-assignee))))
 	    (unless (string= clocked-label label)
 	      (user-error "The `org-mode' TODO says the label is `%s', but the actual issue label is `%s'"
 			  clocked-label label))
