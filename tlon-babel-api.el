@@ -27,7 +27,10 @@
 
 ;;; Code:
 
+(require 'json-mode)
+(require 'request)
 (require 'tlon-babel)
+(require 'tlon-babel-core)
 
 ;;;; Variables
 
