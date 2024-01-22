@@ -30,6 +30,7 @@
 (require 'request)
 (require 'simple-extras)
 (require 'tlon-babel)
+(require 'tlon-babel-cleanup)
 
 ;;;; Variables
 
