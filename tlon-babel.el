@@ -235,26 +235,6 @@ DIR is the directory where the repo is stored."
   (file-name-concat paths-dir-source "xpdf-tools-mac-4.04/bin64/pdftotext")
   "Path to `pdftotext' executable.")
 
-;;;;; Cleanup
-
-(defconst tlon-babel-markdown-eawiki-footnote-source
-  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\{1,2\\}\\)\\\\\\]\\](#.+?)\\^\\]{#.+? .footnote-reference role=\"doc-noteref\"}"
-  "Regexp to match footnotes in the main body.")
-
-(defconst tlon-babel-markdown-eawiki-footnote-source2
-  "\\[\\^\\[\\\\\\[\\([[:digit:]]\\)\\\\\\]\\](#.+?)\\^\\]{#\\\\\\\\\\\\\".+?\\\\\\\\\\\\\" .\\\\\\\\\\\\\\\"footnote-reference\\\\\\\\\\\\\" role=\"\\\\\\\\\\\\\"doc-noteref\\\\\\\\\\\\\"\"}"
-  "Regexp to match footnotes in the main body.")
-
-(defconst tlon-babel-markdown-eawiki-footnote-target
-  "\\([[:digit:]]\\{1,3\\}\\). +?\\[\\[^\\*\\*\\[\\\\^\\](#[[:alnum:]]\\{12,18\\})\\*\\*^\\]\\]{#[[:alnum:]]\\{10,15\\}}
-
-  footnote-content.*?"
-  "Regexp to match footnotes in the footnote section.")
-
-(defconst tlon-markdown-eawiki-links
-  "\\[\\(.+?\\)\\](\\\\%22\\(.+?\\)\\\\%22)"
-  "Regexp to match links.")
-
 ;;;;; Clocked heading
 
 (defconst tlon-babel-key-regexp "`\\(.+?\\)\\(\\.md\\)?`"
