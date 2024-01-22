@@ -1140,7 +1140,7 @@ If FIELD is nil, default to \"title\". If LANG is nil, default to
 			    (tlon-babel-get-property-of-repo-name :dir "uqbar-es")
 			    (file-name-as-directory dir))))
     (files-extras-new-empty-buffer)
-    (tlon-babel-yaml-set-front-matter-for-tag-or-author)
+    ;; (tlon-babel-yaml-set-front-matter-for-tag-or-author) <- not found
     (goto-char (point-max))
     (tlon-babel-name-file-from-title)
     (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "title")))
