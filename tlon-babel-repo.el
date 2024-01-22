@@ -27,6 +27,8 @@
 
 ;;; Code:
 
+(require 'tlon-core)
+
 ;;;; Variables
 
 (defconst tlon-babel-repo-props
