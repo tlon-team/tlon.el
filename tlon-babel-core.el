@@ -23,11 +23,11 @@
 
 ;;; Commentary:
 
-;; Set main repo properties.
+;; Core Babel functionality.
 
 ;;; Code:
 
-(require 'tlon-core)
+(require 'paths)
 
 ;;;; Variables
 
