@@ -31,7 +31,13 @@
 
 ;;;; Variables
 
-(defconst tlon-babel-repo-props
+(defcustom tlon-babel-core-repo-dir
+  (file-name-concat paths-dir-dropbox "repos/")
+  "Directory where the Tlön repositories are stored."
+  :type 'directory
+  :group 'tlon-babel)
+
+(defconst tlon-babel-core-repos
   `((:name "babel-core"
 	   :project "babel"
 	   :subproject "babel"
