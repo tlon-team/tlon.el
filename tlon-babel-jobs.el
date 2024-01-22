@@ -288,7 +288,7 @@ substitute assignee."
   "Initialize accuracy check."
   ;; we move the buffer displaying the issue to the right, to uncover
   ;; the original file
-  (window-extras-buffer-move-dwim)
+  (window-extras-buffer-move-right)
   (window-extras-switch-to-last-window)
   (markdown-preview)
   (tlon-babel-tts-mode)
