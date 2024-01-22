@@ -27,7 +27,7 @@
 
 ;;; Code:
 
-;; (require 'tlon-babel)
+(require 'tlon-babel-repo)
 (require 'bibtex)
 (require 'doi-utils)
 
