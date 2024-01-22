@@ -163,19 +163,19 @@ DIR is the directory where the repo is stored."
 	  (setq result (cdr (assoc target-lang outer))))))))
 
 (defvar tlon-babel-dir-correspondences
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-es") "correspondences/")
+  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-es") "correspondences/")
   "Directory where correspondence files are stored.")
 
 (defvar tlon-babel-dir-dict
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-es") "dict/")
+  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-file-babel-manual
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-core") "manual.org")
+  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-core") "manual.org")
   "File containing the Babel manual.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-core") "jobs.org")
+  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-core") "jobs.org")
   "File containing the jobs.")
 
 (defvar tlon-babel-file-url-correspondences
@@ -330,7 +330,7 @@ If FILE is nil, use the current buffer's file name."
   (let* ((file (or file (tlon-babel-buffer-file-name) default-directory))
 	 (directory-path (file-name-directory file)))
     (catch 'found
-      (dolist (dir (tlon-babel-get-property-of-repos :dir))
+      (dolist (dir (tlon-babel-core-get-property-of-repos :dir))
 	(when (string-prefix-p (file-name-as-directory dir)
 			       directory-path)
 	  (throw 'found dir))))))
@@ -348,7 +348,7 @@ If FILE is nil, use the current buffer's file name."
   "Return the repo corresponding to original KEY."
   (if-let ((file (tlon-babel-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repos))))
       (if-let ((repo (catch 'found
-		       (dolist (dir (tlon-babel-get-property-of-repos :dir))
+		       (dolist (dir (tlon-babel-core-get-property-of-repos :dir))
 			 (when (string-prefix-p (file-name-as-directory dir) file)
 			   (throw 'found dir))))))
 	  repo
@@ -579,14 +579,14 @@ dedicated function."
   "Return metadata of REPO.
 If REPO is nil, return metadata of current repository."
   (let* ((repo (or repo (tlon-babel-get-repo))))
-    (if (eq (tlon-babel-get-property-of-repo :subtype repo) 'translations)
+    (if (eq (tlon-babel-core-get-property-of-repo :subtype repo) 'translations)
 	(tlon-babel-get-dir-metadata repo)
       (user-error "The repository `%s' is not a `translations' repository" repo))))
 
 (defun tlon-babel-get-metadata-in-repos ()
   "Return metadata of all `translation' repos."
   (let ((metadata '()))
-    (dolist (dir (tlon-babel-get-property-of-repos :dir :subtype 'translations))
+    (dolist (dir (tlon-babel-core-get-property-of-repos :dir :subtype 'translations))
       (setq metadata (append (tlon-babel-get-dir-metadata dir) metadata)))
     metadata))
 
@@ -939,7 +939,7 @@ the repo's locator. For example, to search only in `translations/autores', use
   "Return the path of the subproject in REPO corresopnding to LANGUAGE.
 If REPO is nil, use the current repository."
   (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (subproject (tlon-babel-get-property-of-repo :subproject repo)))
+	 (subproject (tlon-babel-core-get-property-of-repo :subproject repo)))
     (tlon-babel-core-repo-lookup :dir :subproject subproject :language language)))
 
 (defun tlon-babel-yaml-set-original-key (author)
@@ -1137,7 +1137,7 @@ If FIELD is nil, default to \"title\". If LANG is nil, default to
 (defun tlon-babel-create-uqbar-entity (dir)
   "Create a new file for `uqbar-es' entity in DIR."
   (let ((default-directory (file-name-concat
-			    (tlon-babel-get-property-of-repo-name :dir "uqbar-es")
+			    (tlon-babel-core-get-property-of-repo-name :dir "uqbar-es")
 			    (file-name-as-directory dir))))
     (files-extras-new-empty-buffer)
     ;; (tlon-babel-yaml-set-front-matter-for-tag-or-author) <- not found
@@ -1222,7 +1222,7 @@ If FILE is nil, return the counterpart of the file visited by the current
 buffer."
   (let* ((file (or file (tlon-babel-buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file)))
-    (pcase (tlon-babel-get-property-of-repo :subtype repo)
+    (pcase (tlon-babel-core-get-property-of-repo :subtype repo)
       ('translations (tlon-babel-get-counterpart-in-translations file))
       ('originals (tlon-babel-get-counterpart-in-originals file))
       (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
@@ -1250,7 +1250,7 @@ If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
   (let* ((file (or file (tlon-babel-buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
-	 (subproject (tlon-babel-get-property-of-repo :subproject repo))
+	 (subproject (tlon-babel-core-get-property-of-repo :subproject repo))
 	 (language (tlon-babel-get-counterpart-language repo))
 	 (counterpart-repo
 	  (tlon-babel-core-repo-lookup :dir
@@ -1261,7 +1261,7 @@ buffer."
 (defun tlon-babel-get-counterpart-language (&optional repo)
   "Return the language of the counterpart of REPO."
   (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (language (tlon-babel-get-property-of-repo :language repo)))
+	 (language (tlon-babel-core-get-property-of-repo :language repo)))
     (pcase language
       ("en" tlon-babel-translation-language)
       ((pred (lambda (lang) (member lang (mapcar #'car tlon-babel-languages)))) "en")
@@ -1279,7 +1279,7 @@ buffer."
 	 (repo (tlon-babel-get-repo-from-file file))
 	 (counterpart-repo (tlon-babel-get-counterpart-repo file))
 	 (bare-dir (tlon-babel-get-bare-dir file))
-	 (source-lang (tlon-babel-get-property-of-repo :language repo))
+	 (source-lang (tlon-babel-core-get-property-of-repo :language repo))
 	 (target-lang (tlon-babel-get-counterpart-language repo))
 	 (counterpart-bare-dir (tlon-babel-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
@@ -1429,10 +1429,10 @@ If REPO is nil, prompt the user for one."
   (let* ((repo (or repo
 		   (intern (completing-read
 			    "Repo: "
-			    (tlon-babel-get-property-of-repos :abbrev :type 'translations)))))
+			    (tlon-babel-core-get-property-of-repos :abbrev :type 'translations)))))
 	 (initial-buffers (buffer-list))
 	 (files (directory-files-recursively
-		 (tlon-babel-get-property-of-repo-name :dir repo) "\\.md$"))
+		 (tlon-babel-core-get-property-of-repo-name :dir repo) "\\.md$"))
 	 (total-words 0))
     (dolist (file files)
       (with-current-buffer (find-file-noselect file)
@@ -1493,7 +1493,7 @@ Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-babel-get-clock-key)
   (let ((action (nth 1 (split-string (tlon-babel-get-clock))))
-	(actions (tlon-babel-get-property-of-labels :action)))
+	(actions (tlon-babel-core-get-property-of-labels :action)))
     (if (member action actions)
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
@@ -1574,7 +1574,7 @@ open DeepL."
   "Prompt the user for a REPO and show it in Magit."
   (interactive (list
 		(completing-read
-		 "Repo: " (tlon-babel-get-property-of-repos :name))))
+		 "Repo: " (tlon-babel-core-get-property-of-repos :name))))
   (if-let ((default-directory (tlon-babel-core-repo-lookup :dir :name repo)))
       (magit-status-setup-buffer)
     (user-error "Repo `%s' not found" repo)))
@@ -1598,7 +1598,7 @@ If the current directory matches none of the directories in
 (defun tlon-babel-forge-update-all-repos ()
   "Update issues and notifications for all active repos."
   (interactive)
-  (dolist (repo (tlon-babel-get-property-of-repos :name))
+  (dolist (repo (tlon-babel-core-get-property-of-repos :name))
     (tlon-babel-forge-update-repo repo)))
 
 (defun tlon-babel-get-repo (&optional no-prompt include-all)
@@ -1614,8 +1614,8 @@ property `:type'."
     (if no-prompt
 	(when (eq no-prompt 'error)
 	  (user-error "Not in a recognized Babel repo"))
-      (let* ((content (tlon-babel-get-property-of-repos :name :type 'translations))
-	     (all (tlon-babel-get-property-of-repos :name)))
+      (let* ((content (tlon-babel-core-get-property-of-repos :name :type 'translations))
+	     (all (tlon-babel-core-get-property-of-repos :name)))
 	(tlon-babel-core-repo-lookup :dir :name
 				(completing-read "Select repo: "
 						 (if include-all all content)))))))
@@ -1869,7 +1869,7 @@ respectively."
 ;; TODO: consider adapting `tlon-babel-commit-and-push' instead
 (defun tlon-babel-url-correspondence-commit ()
   "Commit modifications in `url-correspondences.json'."
-  (let ((default-directory (tlon-babel-get-property-of-repo-name :dir "babel-es")))
+  (let ((default-directory (tlon-babel-core-get-property-of-repo-name :dir "babel-es")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
     (call-interactively #'magit-pull-from-upstream nil)
@@ -2212,7 +2212,7 @@ respectively."
        ]]
      ))
 
-(dolist (repo (tlon-babel-get-property-of-repos :abbrev :type 'content))
+(dolist (repo (tlon-babel-core-get-property-of-repos :abbrev :type 'content))
   (eval `(tlon-babel-generate-entity-dispatch ,repo)))
 
 (defun tlon-babel-browse-file ()
@@ -2270,7 +2270,7 @@ If REPO is nil, default to the current repository."
   "Interactively open a file froma list of all files in all repos."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist
-		 (tlon-babel-get-property-of-repos :dir)
+		 (tlon-babel-core-get-property-of-repos :dir)
 		 tlon-core-repo-dirs)))
     (tlon-babel-open-file-in-alist alist)))
 
@@ -2301,7 +2301,7 @@ presented to the user."
        (interactive)
        (tlon-babel-open-file-in-repo ,repo))))
 
-(dolist (repo (tlon-babel-get-property-of-repos :dir))
+(dolist (repo (tlon-babel-core-get-property-of-repos :dir))
   (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
 
 ;;;;;;; Fix log errors helper functions
@@ -2386,12 +2386,12 @@ computed by dividing the file size by CHARS-PER-WORD."
     (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
   (let* ((repo-name (or repo-name
 			(completing-read "Repo: "
-					 (tlon-babel-get-property-of-repos :name :type 'translations))))
+					 (tlon-babel-core-get-property-of-repos :name :type 'translations))))
 	 (dir (tlon-babel-core-repo-lookup :dir :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel")
+	 (script (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel")
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
 

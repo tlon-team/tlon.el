@@ -34,7 +34,7 @@
 ;;;; Variables
 
 (defvar tlon-babel-refs-dir
-  (file-name-concat (tlon-babel-get-property-of-repo-name :dir "babel-refs"))
+  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-refs"))
   "Directory where references files are stored.")
 
 (defvar tlon-babel-refs-dir

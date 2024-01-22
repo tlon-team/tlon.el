@@ -86,7 +86,7 @@ TITLE optionally specifies the title of the file to be imported."
 TITLE optionally specifies the title of the entity to be imported."
   (let* ((response (tlon-babel-import-eaf-request id-or-slug))
 	 (object (tlon-babel-import-eaf-get-object id-or-slug))
-	 (dir (tlon-babel-get-property-of-repo-name :dir "uqbar-en"))
+	 (dir (tlon-babel-core-get-property-of-repo-name :dir "uqbar-en"))
 	 (subdir (pcase object
 		   ('article "articles")
 		   ('tag "tags")))

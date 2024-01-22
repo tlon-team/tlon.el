@@ -135,7 +135,7 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field-value "title"))
 	   (key (ebib-extras-get-field-value "=key="))
-	   (repo (completing-read "Repo: " (tlon-babel-get-property-of-repos :dir :type 'translations))))
+	   (repo (completing-read "Repo: " (tlon-babel-core-get-property-of-repos :dir :type 'translations))))
       (progn
 	(tlon-babel-import-document id title)
 	(tlon-babel-create-translation-file repo)

@@ -112,7 +112,7 @@ TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
 \='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
 conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
-  (let ((default-directory (tlon-babel-get-property-of-repo-name :dir "babel-es"))
+  (let ((default-directory (tlon-babel-core-get-property-of-repo-name :dir "babel-es"))
 	(explanation (if explanation (concat "\n\n" explanation) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)

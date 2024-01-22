@@ -161,7 +161,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (let ((user (or user
 		      (completing-read (format "Issue `%s' has no assignee. Assign to "
 					       (tlon-babel-ogh-get-issue-name issue))
-				       (tlon-babel-get-property-of-users :github)))))
+				       (tlon-babel-core-get-property-of-users :github)))))
 	(tlon-babel-ogh-set-assignee user issue)))))
 
 (defun tlon-babel-ogh-get-open-issues ()
@@ -447,7 +447,7 @@ If REPO is nil, use the current repository."
   "Set the repo in the heading at point if not already present."
   (when (and (org-at-heading-p)
 	     (not (tlon-babel-ogh-get-repo-from-heading)))
-    (let* ((repo-name (completing-read "Select repo: " (tlon-babel-get-property-of-repos :name)))
+    (let* ((repo-name (completing-read "Select repo: " (tlon-babel-core-get-property-of-repos :name)))
 	   (abbrev-repo (tlon-babel-core-repo-lookup :abbrev :name repo-name)))
       (org-extras-goto-beginning-of-heading-text)
       (insert (format "[%s] " abbrev-repo)))))
@@ -627,7 +627,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
 (defun tlon-babel-ogh-set-job-label ()
   "Prompt the user to select a job label."
   (let ((label (completing-read "What should be the label? "
-				(tlon-babel-get-property-of-labels :label))))
+				(tlon-babel-core-get-property-of-labels :label))))
     label))
 
 (defun tlon-babel-ogh-set-status-label ()
@@ -647,7 +647,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
   "Prompt the user to select an ASSIGNEE.
 The prompt defaults to the current user."
   (let ((assignee (completing-read "Who should be the assignee? "
-				   (tlon-babel-get-property-of-users :github) nil nil
+				   (tlon-babel-core-get-property-of-users :github) nil nil
 				   (tlon-babel-user-lookup :github :name user-full-name))))
     assignee))
 

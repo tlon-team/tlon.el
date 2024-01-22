@@ -179,8 +179,8 @@ If BUFFER is nil, default to the current buffer."
 ;; TODO do this properly by getting request from `tlon-babel-api-get-routes'
 (defun tlon-babel-api-magit-trigger-request (&rest _)
   "Trigger appropriate request when a commit is pushed in Magit."
-  (let ((uqbar-es (tlon-babel-get-property-of-repo-name :dir "uqbar-es"))
-	(babel-refs (tlon-babel-get-property-of-repo-name :dir "babel-refs"))
+  (let ((uqbar-es (tlon-babel-core-get-property-of-repo-name :dir "uqbar-es"))
+	(babel-refs (tlon-babel-core-get-property-of-repo-name :dir "babel-refs"))
 	route)
     ;; can’t be done with `pcase'
     (cond
