@@ -197,8 +197,8 @@ not alter it unless you know what you are doing."
 (defun tlon-babel-cleanup-get-footnote (n &optional delete)
   "Get the content of footnote number N.
 If DELETE is non-nil, delete the footnote."
-  (save-excursion                         ; Preserve initial position
-    (goto-char (point-min))               ; Go to beginning of buffer
+  (save-excursion
+    (goto-char (point-min))
     (let ((footnote-start)
 	  (footnote-end)
 	  (footnote-content))

@@ -65,7 +65,7 @@
   (interactive (list (tlon-select-api-route)))
   (let* ((site "altruismoeficaz.net")
          (route-url (concat "https://" site "/api/" route))
-         (type (tlon-babel-core-plist-lookup (tlon-babel-api-get-routes) :type :route route)))
+         (type (tlon-babel-lookup (tlon-babel-api-get-routes) :type :route route)))
     (tlon-babel-api-get-token
      (lambda (access-token)
        "Make request, authenticating with ACCESS-TOKEN."
@@ -113,7 +113,7 @@ CALLBACK is called with the token as its argument."
 	      (string-match "%s" (plist-get x :route)))
 	 (plist-put (copy-sequence x) :route (replace-regexp-in-string
 					      "%s"
-					      tlon-babel-translation-language
+					      tlon-babel-core-translation-language
 					      (plist-get x :route)))
        x))
    (copy-sequence tlon-babel-uqbar-api-routes)))
@@ -148,7 +148,7 @@ If BUFFER is nil, default to the current buffer."
 	     (json-modified
 	      (mapcar (lambda (json-object)
 			(when-let* ((old-filename (cdr (assoc 'source_filename json-object)))
-				    (new-filename (file-name-concat tlon-babel-core-repo-dir old-filename)))
+				    (new-filename (file-name-concat paths-dir-tlon-repos old-filename)))
 			  (setf (cdr (assoc 'source_filename json-object)) new-filename))
 			json-object)
 		      json-data)))
@@ -182,8 +182,8 @@ If BUFFER is nil, default to the current buffer."
 ;; TODO do this properly by getting request from `tlon-babel-api-get-routes'
 (defun tlon-babel-api-magit-trigger-request (&rest _)
   "Trigger appropriate request when a commit is pushed in Magit."
-  (let ((uqbar-es (tlon-babel-core-get-property-of-repo-name :dir "uqbar-es"))
-	(babel-refs (tlon-babel-core-get-property-of-repo-name :dir "babel-refs"))
+  (let ((uqbar-es (tlon-babel-core-repo-lookup :dir :name "uqbar-es"))
+	(babel-refs (tlon-babel-core-repo-lookup :dir :name "babel-refs"))
 	route)
     ;; can’t be done with `pcase'
     (cond

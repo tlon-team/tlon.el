@@ -31,12 +31,6 @@
 
 ;;;; Variables
 
-(defcustom tlon-babel-core-repo-dir
-  (file-name-concat paths-dir-dropbox "repos/")
-  "Directory where the Tlön repositories are stored."
-  :type 'directory
-  :group 'tlon-babel)
-
 (defconst tlon-babel-core-repos
   `((:name "babel-core"
 	   :project "babel"
@@ -203,89 +197,158 @@ The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
 the actual user.")
 
+(defvar tlon-babel-core-translation-language "es"
+  "The current translation language.")
+
+(defconst tlon-babel-core-bare-dirs
+  '((("en" . "articles")
+     ("es" . "articulos"))
+    (("en" . "tags")
+     ("es" . "temas"))
+    (("en". "authors")
+     ("es" . "autores"))
+    (("en" . "collections")
+     ("es" . "colecciones")))
+  "Alist of bare directories and associated translations.")
+
+(defconst tlon-babel-core-languages
+  '(("en" . "english")
+    ("es" . "spanish")
+    ("it" . "italian")
+    ("fr" . "french")
+    ("de" . "german")
+    ("pt" . "portuguese"))
+  "Alist of languages and associated names.")
+
 ;;;; Functions
 
 (defun tlon-babel-core-set-dir (repo)
   "Set the `:directory' property for REPO in `tlon-babel-core-repos'."
   (let* ((dir (file-name-as-directory
-	       (file-name-concat tlon-babel-core-repo-dir
+	       (file-name-concat paths-dir-tlon-repos
 				 (plist-get repo :name)))))
     (plist-put repo :dir dir)))
 
 (mapc #'tlon-babel-core-set-dir tlon-babel-core-repos)
 
-;;;;; Extra funs to sort
+;;;;; Ger repo
 
-(defun tlon-babel-core-plist-lookup (list prop &rest props-values)
-  "Return the value of PROP in LIST matching one or more PROPS-VALUES pairs.
+(defun tlon-babel-core-get-repo (&optional no-prompt include-all)
+  "Get Babel repository path.
+If the current directory matches any of the directories in
+`tlon-babel-core-repos', return it. Else, prompt the user to select a repo from
+that list, unless NO-PROMPT is non-nil. In that case, signal an error if its
+value is `error', else return nil. If INCLUDE-ALL is non-nil, include all repos.
+In that case, matching will be made against repos with any value for the
+property `:type'."
+  (if-let ((current-repo (tlon-babel-core-get-repo-from-file)))
+      current-repo
+    (if no-prompt
+	(when (eq no-prompt 'error)
+	  (user-error "Not in a recognized Babel repo"))
+      (let* ((content (tlon-babel-core-repo-lookup-all :name :subtype 'translations))
+	     (all (tlon-babel-core-repo-lookup-all :name)))
+	(tlon-babel-core-repo-lookup :dir :name
+				     (completing-read "Select repo: "
+						      (if include-all all content)))))))
+
+(defun tlon-babel-core-get-repo-from-file (&optional file)
+  "Return the repo to which FILE belongs.
+If FILE is nil, use the current buffer's file name."
+  (let* ((file (or file (tlon-babel-core-buffer-file-name) default-directory))
+	 (directory-path (file-name-directory file)))
+    (catch 'found
+      (dolist (dir (tlon-babel-core-repo-lookup-all :dir))
+	(when (string-prefix-p (file-name-as-directory dir)
+			       directory-path)
+	  (throw 'found dir))))))
+
+;;;;; Lookup
+
+(defun tlon-babel-lookup (list key &rest pairs)
+  "Return the value of KEY in LIST matching all PAIRS.
+PAIRS is expected to be an even-sized list of <key value> tuples.
 If multiple matches are found, return the first match."
-  (cl-loop for plist in list
-	   when (cl-loop for (prop value) on props-values by #'cddr
-			 always (equal (plist-get plist prop) value))
-	   return (plist-get plist prop)))
+  (cl-loop for entry in list
+           when (cl-loop for (prop value) on pairs by #'cddr
+                         always (equal (if (stringp key)
+					   (alist-get prop entry nil nil 'string=)
+                                         (plist-get entry prop))
+				       value))
+           return (if (stringp key)
+		      (alist-get key entry nil nil 'string=)
+		    (plist-get entry key))))
 
-(defun tlon-babel-core-repo-lookup (prop &rest props-values)
-  "Return the value of PROP in repos matching one or more PROPS-VALUES pairs."
-  (apply #'tlon-babel-core-plist-lookup tlon-babel-core-repos prop props-values))
+(defun tlon-babel-lookup-all (list key &rest pairs)
+  "Return all unique values of KEY in LIST matching all PAIRS.
+PAIRS is expected to be an even-sized list of <key value> tuples."
+  (let ((results '()))
+    (cl-loop for entry in list
+             do (when (cl-loop for (prop value) on pairs by #'cddr
+                               always (equal (if (stringp key)
+                                                 (alist-get prop entry nil nil 'string=)
+                                               (plist-get entry prop))
+                                             value))
+		  (when-let* ((result (if (stringp key)
+					  (alist-get key entry nil nil 'string=)
+					(plist-get entry key)))
+			      (flat-result (if (listp result) result (list result))))
+		    (dolist (r flat-result)
+		      (push r results)))))
+    (delete-dups (nreverse results))))
 
-(defun tlon-babel-core-user-lookup (prop &rest props-values)
-  "Return the value of PROP in users matching one or more PROPS-VALUES pairs."
-  (apply #'tlon-babel-core-plist-lookup tlon-babel-core-users prop props-values))
+(defun tlon-babel-metadata-lookup (metadata key &rest key-value)
+  "Return the value of KEY in METADATA matching all KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup metadata key key-value))
 
-(defun tlon-babel-core-label-lookup (prop &rest props-values)
-  "Return the value of PROP in labels matching one or more PROPS-VALUES pairs.."
-  (apply #'tlon-babel-core-plist-lookup tlon-babel-core-labels prop props-values))
+(defun tlon-babel-metadata-lookup-all (metadata key &rest key-value)
+  "Return all unique values of KEY in METADATA matching alll KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup-all metadata key key-value))
 
-(defun tlon-babel-core-get-property-of-repo (prop repo)
-  "Return the value of PROP in REPO."
-  (tlon-babel-core-plist-lookup tlon-babel-core-repos prop :dir repo))
+(defun tlon-babel-core-repo-lookup (key &rest key-value)
+  "Return the value of KEY in repos matching all KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup tlon-babel-core-repos key key-value))
 
-(defun tlon-babel-core-get-property-of-repo-name (prop repo-name)
-  "Return the value of PROP in REPO-NAME.
-REPO-NAME is named in its abbreviated form, i.e. the value of `:abbrev' rather
-than `:name'."
-  (tlon-babel-core-plist-lookup tlon-babel-core-repos prop :abbrev repo-name))
+(defun tlon-babel-core-repo-lookup-all (key &rest key-value)
+  "Return all unique values of KEY in repos matching all KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup-all tlon-babel-core-repos key key-value))
 
-(defun tlon-babel-core-get-property-of-user (prop user)
-  "Return the value of PROP in USER."
-  (tlon-babel-core-plist-lookup tlon-babel-core-users prop :name user))
+(defun tlon-babel-core-user-lookup (key &rest key-value)
+  "Return the value of KEY in users matching all KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup tlon-babel-core-users key key-value))
 
-(defun tlon-babel-core-get-property-of-label (prop user)
-  "Return the value of PROP in USER."
-  (tlon-babel-core-plist-lookup prop tlon-babel-core-users :name user))
+(defun tlon-babel-core-user-lookup-all (key &rest key-value)
+  "Return all unique values of KEY in users matching all KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup-all tlon-babel-core-users key key-value))
 
-(defun tlon-babel-core-get-property-of-plists (prop plist &optional target-prop target-value)
-  "Return a list of all PROP values in PLIST.
-Optionally, return only the subset of values such that TARGET-PROP matches
-TARGET-VALUE."
-  (let ((result '()))
-    (dolist (plist plist)
-      (let* ((value1 (plist-get plist prop #'string=))
-	     (target-value-test (when target-prop (plist-get plist target-prop #'string=))))
-	(when value1
-	  (if target-prop
-	      (when (string= target-value target-value-test)
-		(setq result (append result (list value1))))
-	    (setq result (append result (list value1)))))))
-    result))
+(defun tlon-babel-core-label-lookup (key &rest key-value)
+  "Return the value of KEY in labels matching all KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup tlon-babel-core-labels key key-value))
 
-(defun tlon-babel-core-get-property-of-repos (prop &optional target-prop target-value)
-  "Return a list of all PROP values in `tlon-babel-core-repos'.
-Optionally, return only the subset of values such that TARGET-PROP matches
-TARGET-VALUE."
-  (tlon-babel-core-get-property-of-plists prop tlon-babel-core-repos target-prop target-value))
+(defun tlon-babel-core-label-lookup-all (key &rest key-value)
+  "Return all values of KEY in labels matching all KEY-VALUE pairs."
+  (apply #'tlon-babel-lookup-all tlon-babel-core-labels key key-value))
 
-(defun tlon-babel-core-get-property-of-users (prop &optional target-prop target-value)
-  "Return a list of all PROP values in PLIST `tlon-babel-core-users'.
-Optionally, return only the subset of values such that TARGET-PROP matches
-TARGET-VALUE."
-  (tlon-babel-core-get-property-of-plists prop tlon-babel-core-users target-prop target-value))
+(defun tlon-babel-core-buffer-file-name ()
+  "Return name of file BUFFER is visiting, handling `git-dirs' path."
+  ;; check that current buffer is visiting a file
+  (when-let ((file (buffer-file-name)))
+    (replace-regexp-in-string
+     "/git-dirs/"
+     "/Library/CloudStorage/Dropbox/repos/"
+     (buffer-file-name))))
 
-(defun tlon-babel-core-get-property-of-labels (prop &optional target-prop target-value)
-  "Return a list of all PROP values in PLIST `tlon-babel-core-labels'.
-Optionally, return only the subset of values such that TARGET-PROP matches
-TARGET-VALUE."
-  (tlon-babel-core-get-property-of-plists prop tlon-babel-core-labels target-prop target-value))
+;;;;; Misc
+;; this function will eventually be deleted once we migrate to a system of English-only directory names
+
+(defun tlon-babel-core-get-bare-dir-translation (target-lang source-lang bare-dir)
+  "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
+  (let (result)
+    (dolist (outer tlon-babel-core-bare-dirs result)
+      (dolist (inner outer)
+	(when (and (equal (cdr inner) bare-dir)
+		   (equal (car inner) source-lang))
+	  (setq result (cdr (assoc target-lang outer))))))))
 
 (provide 'tlon-babel-core)
 ;;; tlon-babel-core.el ends here

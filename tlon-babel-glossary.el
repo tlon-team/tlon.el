@@ -76,24 +76,24 @@
 	  (replace-match (tlon-babel-glossary-regexp-pattern original new-translation)))
 	(tlon-babel-glossary-finalize "modify" original explanation)
 	(message "Remember to run a `ripgrep' search for the original translation (\"%s\") across all the Babel repos in the translation language (%s), making any necessary replacements."
-		 existing-translation tlon-babel-translation-language)))))
+		 existing-translation tlon-babel-core-translation-language)))))
 
 (defun tlon-babel-glossary-prompt (&optional translation)
   "Prompt the user for a translation and and an explanation.
 If TRANSLATION is non-nil, prompt for an explanation only."
   (let ((translation (or translation (read-string
 				      (format "translation term [%s]: "
-					      tlon-babel-translation-language))))
+					      tlon-babel-core-translation-language))))
 	(explanation (read-string (format
 				   "Explanation (optional; please write it in the translation language [%s]): "
-				   tlon-babel-translation-language))))
+				   tlon-babel-core-translation-language))))
     (list translation explanation)))
 
 (defun tlon-babel-glossary-regexp-pattern (original translation)
   "Get the regexp pattern for glossary entry.
 The glossary entry is that corresponding to ORIGINAL and TRANSLATION."
   (format "\"%s\",\"%s\",\"EN\",\"%s\"" original translation
-	  (upcase tlon-babel-translation-language)))
+	  (upcase tlon-babel-core-translation-language)))
 
 (defun tlon-babel-glossary-finalize (action original explanation)
   "Finalize the addition of a word to the glossary or its modification.
@@ -112,7 +112,7 @@ TERM refers to the English glossary term to which this action was performed.
 These two variables are used to construct a commit message of the form
 \='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
 conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
-  (let ((default-directory (tlon-babel-core-get-property-of-repo-name :dir "babel-es"))
+  (let ((default-directory (tlon-babel-core-repo-lookup :dir :name "babel-es"))
 	(explanation (if explanation (concat "\n\n" explanation) "")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)

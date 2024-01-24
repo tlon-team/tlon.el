@@ -129,7 +129,7 @@ appropriate heading."
 (defun tlon-babel-ogh-capture-all-issues ()
   "Capture all issues in the current repository."
   (interactive)
-  (let ((default-directory (tlon-babel-get-repo 'error 'include-all))
+  (let ((default-directory (tlon-babel-core-get-repo 'error 'include-all))
 	(current-user (tlon-babel-core-user-lookup :github :name user-full-name))
 	(num-captured 0))
     (dolist (issue (tlon-babel-ogh-get-open-issues))
@@ -161,7 +161,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (let ((user (or user
 		      (completing-read (format "Issue `%s' has no assignee. Assign to "
 					       (tlon-babel-ogh-get-issue-name issue))
-				       (tlon-babel-core-get-property-of-users :github)))))
+				       (tlon-babel-core-user-lookup-all :github)))))
 	(tlon-babel-ogh-set-assignee user issue)))))
 
 (defun tlon-babel-ogh-get-open-issues ()
@@ -255,16 +255,16 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 (defun tlon-babel-ogh-get-todos-jobs-file ()
   "Get the file containing the jobs `org-mode' ID."
   (or tlon-babel-todos-jobs-file
-      (tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
+      (tlon-babel-warn-if-unbound 'paths-tlon-babel-todos-jobs-id)
       (setq tlon-babel-todos-jobs-file
-	    (tlon-babel-ogh-get-file-with-id tlon-babel-todos-jobs-id))))
+	    (tlon-babel-ogh-get-file-with-id paths-tlon-babel-todos-jobs-id))))
 
 (defun tlon-babel-ogh-get-todos-generic-file ()
   "Get the file containing the generic `org-mode' ID."
   (or tlon-babel-todos-generic-file
-      (tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
+      (tlon-babel-warn-if-unbound 'paths-tlon-babel-todos-generic-id)
       (setq tlon-babel-todos-generic-file
-	    (tlon-babel-ogh-get-file-with-id tlon-babel-todos-generic-id))))
+	    (tlon-babel-ogh-get-file-with-id paths-tlon-babel-todos-generic-id))))
 
 (defun tlon-babel-ogh-get-file-with-id (id)
   "Return the file containing the heading with the given `org-mode' ID."
@@ -403,7 +403,7 @@ ISSUE is nil, use the issue at point."
 
 (defun tlon-babel-ogh-get-issue-number-from-open-issues ()
   "Prompt user to select from a list of open issues and return number of selection."
-  (let* ((default-directory (tlon-babel-get-repo nil 'include-all))
+  (let* ((default-directory (tlon-babel-core-get-repo nil 'include-all))
 	 (repo (forge-get-repository 'full))
 	 ;; Fetch all issues, but filter for open ones
 	 (issue-list (mapcar #'(lambda (issue)
@@ -447,7 +447,7 @@ If REPO is nil, use the current repository."
   "Set the repo in the heading at point if not already present."
   (when (and (org-at-heading-p)
 	     (not (tlon-babel-ogh-get-repo-from-heading)))
-    (let* ((repo-name (completing-read "Select repo: " (tlon-babel-core-get-property-of-repos :name)))
+    (let* ((repo-name (completing-read "Select repo: " (tlon-babel-core-repo-lookup-all :name)))
 	   (abbrev-repo (tlon-babel-core-repo-lookup :abbrev :name repo-name)))
       (org-extras-goto-beginning-of-heading-text)
       (insert (format "[%s] " abbrev-repo)))))
@@ -535,10 +535,10 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 ;;;###autoload
 (defun tlon-babel-ogh-reconcile-all-issues-and-todos ()
-  "Reconcile all TODOs under `tlon-babel-todos-generic-id'."
+  "Reconcile all TODOs under `paths-tlon-babel-todos-generic-id'."
   (interactive)
   (save-window-excursion
-    (org-roam-id-open tlon-babel-todos-generic-id nil)
+    (org-roam-id-open paths-tlon-babel-todos-generic-id nil)
     (let ((level (org-current-level)))
       (call-interactively 'org-next-visible-heading)
       (while (> (org-current-level) level)
@@ -627,7 +627,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
 (defun tlon-babel-ogh-set-job-label ()
   "Prompt the user to select a job label."
   (let ((label (completing-read "What should be the label? "
-				(tlon-babel-core-get-property-of-labels :label))))
+				(tlon-babel-core-label-lookup-all :label))))
     label))
 
 (defun tlon-babel-ogh-set-status-label ()
@@ -647,7 +647,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
   "Prompt the user to select an ASSIGNEE.
 The prompt defaults to the current user."
   (let ((assignee (completing-read "Who should be the assignee? "
-				   (tlon-babel-core-get-property-of-users :github) nil nil
+				   (tlon-babel-core-user-lookup-all :github) nil nil
 				   (tlon-babel-core-user-lookup :github :name user-full-name))))
     assignee))
 
@@ -721,7 +721,7 @@ buffer."
 	 (state (if (tlon-babel-ogh-issue-is-job-p issue)
 		    "TODO"
 		  (tlon-babel-ogh-get-issue-status issue)))
-	 (repo-abbrev (tlon-babel-core-repo-lookup :abbrev :dir (tlon-babel-get-repo 'error 'include-all)))
+	 (repo-abbrev (tlon-babel-core-repo-lookup :abbrev :dir (tlon-babel-core-get-repo 'error 'include-all)))
 	 (todo-name (replace-regexp-in-string
 		     "[[:space:]]\\{2,\\}"
 		     " "
@@ -755,7 +755,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 
 (defun tlon-babel-ogh-create-issue (title &optional repo body)
   "Create new GitHub issue in REPO with TITLE and BODY."
-  (let* ((repo (or repo (tlon-babel-get-repo 'error 'include-all)))
+  (let* ((repo (or repo (tlon-babel-core-get-repo 'error 'include-all)))
 	 (body (or body ""))
 	 (default-directory repo)
 	 (repo (forge-get-repository t))
@@ -813,7 +813,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 (defun tlon-babel-ogh-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
 If KEY is not provided, the key in the Markdown buffer at point is used."
-  (let ((default-directory (tlon-babel-get-repo 'error))
+  (let ((default-directory (tlon-babel-core-get-repo 'error))
 	(key (or key (tlon-babel-get-key-in-buffer))))
     (tlon-babel-ogh-create-issue (format "Job: `%s`" key) default-directory)))
 

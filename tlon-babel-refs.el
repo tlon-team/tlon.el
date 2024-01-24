@@ -1,4 +1,4 @@
-;;; tlon-babel-refs.el --- Reference functionality for the Babel project -*- lexical-binding: t -*-
+;;; tlon-babel-refs.el --- Reference-handling functionality for the Babel project -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -34,12 +34,8 @@
 ;;;; Variables
 
 (defvar tlon-babel-refs-dir
-  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-refs"))
-  "Directory where references files are stored.")
-
-(defvar tlon-babel-refs-dir
-  (file-name-directory (or load-file-name buffer-file-name))
-  "Directory where the Babel reference files are stored.")
+  paths-dir-babel-refs
+  "Directory of the `babel-refs' repo.")
 
 (defvar tlon-babel-refs-locales-dir
   (file-name-concat tlon-babel-refs-dir "locales/")

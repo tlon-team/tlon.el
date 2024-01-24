@@ -71,8 +71,8 @@ COMMIT is non-nil, commit the change."
   (interactive)
   (let* ((key (or key (tlon-babel-get-key-in-buffer)))
 	 (heading (format "[cite:@%s]" key))
-	 (file (tlon-babel-core-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repo)))
-	 (repo (tlon-babel-get-repo-from-file file))
+	 (file (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "file" "original_key" key))
+	 (repo (tlon-babel-core-get-repo-from-file file))
 	 (repo-abbrev (tlon-babel-core-repo-lookup :abbrev :dir repo)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
 			     (find-file-noselect tlon-babel-file-jobs))
@@ -135,7 +135,7 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field-value "title"))
 	   (key (ebib-extras-get-field-value "=key="))
-	   (repo (completing-read "Repo: " (tlon-babel-core-get-property-of-repos :dir :type 'translations))))
+	   (repo (completing-read "Repo: " (tlon-babel-core-repo-lookup-all :dir :subtype 'translations))))
       (progn
 	(tlon-babel-import-document id title)
 	(tlon-babel-create-translation-file repo)
@@ -172,7 +172,7 @@ fields, which are needed to create a new job: `url' or `file',
 Runs all the general initialization functions, followed by the specific function
 for the process that is being initialized."
   (let* ((key (tlon-babel-get-clock-key))
-	 (repo (tlon-babel-get-repo-from-key key))
+	 (repo (tlon-babel-metadata-get-repo-from-key key))
 	 (default-directory repo))
     (tlon-babel-ogh-check-label-and-assignee repo)
     (tlon-babel-check-branch "main" repo)
@@ -195,7 +195,7 @@ for the process that is being initialized."
   (cl-multiple-value-bind
       (original-path translation-path original-key)
       (tlon-babel-set-paths-from-clock)
-    (let* ((repo (tlon-babel-get-repo))
+    (let* ((repo (tlon-babel-core-get-repo))
 	   (current-action (tlon-babel-get-clock-action))
 	   (next-label (tlon-babel-get-clock-next-label))
 	   (next-assignee (tlon-babel-jobs-get-next-assignee)))
@@ -228,7 +228,7 @@ for the process that is being initialized."
 If CLOSE is non-nil, close the issue."
   (let* ((issue-title (format "Job: `%s" original-key))
 	 (issue (tlon-babel-ogh-issue-lookup issue-title))
-	 (default-directory (tlon-babel-get-repo 'error 'include-all)))
+	 (default-directory (tlon-babel-core-get-repo 'error 'include-all)))
     (tlon-babel-ogh-set-label label issue)
     (tlon-babel-ogh-set-assignee assignee issue)
     (when close

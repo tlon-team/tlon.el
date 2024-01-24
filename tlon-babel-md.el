@@ -29,6 +29,7 @@
 
 (require 'markdown-mode-extras)
 (require 'tlon-babel)
+(require 'tlon-babel-yaml)
 
 ;;;; Functions
 
@@ -50,11 +51,11 @@ The element can be a tag or an author."
       (setq current-element-title
 	    (tlon-babel-md-get-title-in-link-target
 	     current-target)))
-    (let* ((new-element-title (completing-read "Selection: " (tlon-babel-get-all-uqbar-entities)
+    (let* ((new-element-title (completing-read "Selection: " (tlon-babel-metadata-get-all-uqbar-entities)
 					       nil t
 					       (or current-element-title
 						   selection)))
-	   (new-target-file (tlon-babel-core-metadata-lookup "file" "title" new-element-title (tlon-babel-get-metadata-in-repo)))
+	   (new-target-file (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "file" "title" new-element-title))
 	   (new-target-dir (file-relative-name
 			    (file-name-directory new-target-file) (file-name-directory (buffer-file-name))))
 	   (new-target (file-name-concat new-target-dir (file-name-nondirectory new-target-file)))
@@ -71,7 +72,7 @@ The element can be a tag or an author."
 (defun tlon-babel-md-get-title-in-link-target (target)
   "Return the title of the tag to which the TARGET of a Markdown link points."
   (let* ((file (expand-file-name target default-directory))
-	 (title (tlon-babel-core-metadata-lookup "title" "file" file (tlon-babel-get-metadata-in-repo))))
+	 (title (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "title" "file" file)))
     title))
 
 (defun tlon-babel-md-sort-elements-in-paragraph (separator)
@@ -147,7 +148,7 @@ element pair, only its title will be displayed in the exported web page."
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-languages))))
+  (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-core-languages))))
   (tlon-babel-md-insert-element-pair (format "<Lang id={\"%s\"}>"
 						   language)
 					   "</Lang>"))

@@ -3,7 +3,7 @@
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
 ;; Version: 0.1.14
-;; Homepage: https://github.com/tlon-team/tlon-babel
+;; URL: https://github.com/tlon-team/tlon-babel
 ;; Keywords: convenience tools
 
 
@@ -30,6 +30,7 @@
 (require 'citar)
 (require 'consult)
 (require 'doi-utils)
+(require 'ebib-extras)
 (require 'files-extras)
 (require 'forge)
 (require 'forge-search)
@@ -40,13 +41,14 @@
 (require 'org-clock)
 (require 'org-roam)
 (require 'substitute)
-(require 'tlon-babel-refs)
 (require 'tlon-babel-core)
+(require 'tlon-babel-refs)
+(require 'tlon-babel-yaml)
+(require 'tlon-babel-counterpart)
 (require 'tlon-core)
 (require 'unfill)
 (require 'window-extras)
 (require 'winum)
-(require 'ebib-extras)
 
 ;;;; Customization:
 
@@ -60,48 +62,13 @@
 
 ;;;;; Files and dirs
 
-(defcustom tlon-babel-todos-generic-id nil
-  "ID of the user-specific `org-mode' heading where generic TODOs are stored.
-\"Generic\" TODOs are all TODOs except those related to a translation job."
-  :type 'string
-  :group 'tlon-babel)
-
-(defcustom tlon-babel-todos-jobs-id nil
-  "ID of the user-specific `org-mode' heading where job TODOs are stored.
-A job TODO is a TODO for a translation job."
-  :type 'string
-  :group 'tlon-babel)
-
 (defvar tlon-babel-todos-jobs-file nil
-  "Org file that contains the ID in `tlon-babel-todos-jobs-id'.
+  "Org file that contains the ID in `paths-tlon-babel-todos-jobs-id'.
 This variable should not be set manually.")
 
 (defvar tlon-babel-todos-generic-file nil
-  "Org file that contains the ID in `tlon-babel-todos-generic-id'.
+  "Org file that contains the ID in `paths-tlon-babel-todos-generic-id'.
 This variable should not be set manually.")
-
-(defconst tlon-babel-bare-dirs
-  '((("en" . "articles")
-     ("es" . "articulos"))
-    (("en" . "tags")
-     ("es" . "temas"))
-    (("en". "authors")
-     ("es" . "autores"))
-    (("en" . "collections")
-     ("es" . "colecciones")))
-  "Alist of bare directories and associated translations.")
-
-(defconst tlon-babel-languages
-  '(("en" . "english")
-    ("es" . "spanish")
-    ("it" . "italian")
-    ("fr" . "french")
-    ("de" . "german")
-    ("pt" . "portuguese"))
-  "Alist of languages and associated names.")
-
-(defvar tlon-babel-translation-language "es"
-  "The current translation language.")
 
 (defvar tlon-babel-post-init-hook nil
   "Hook run at the end of `tlon-babel-init'.")
@@ -111,7 +78,7 @@ This variable should not be set manually.")
 (defun tlon-babel-get-entity-types ()
   "Return a list of entity types."
   (let (collection)
-    (dolist (list tlon-babel-bare-dirs)
+    (dolist (list tlon-babel-core-bare-dirs)
       (dolist (cons list)
 	(when (string= (car cons) "en")
 	  (push (cdr cons) collection))))
@@ -151,31 +118,20 @@ DIR is the directory where the repo is stored."
 	    ,(plist-get repo :dir)
 	    ,entity))))
 
-
-
-(defun tlon-babel-get-bare-dir-translation (target-lang source-lang bare-dir)
-  "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
-  (let (result)
-    (dolist (outer tlon-babel-bare-dirs result)
-      (dolist (inner outer)
-	(when (and (equal (cdr inner) bare-dir)
-		   (equal (car inner) source-lang))
-	  (setq result (cdr (assoc target-lang outer))))))))
-
 (defvar tlon-babel-dir-correspondences
-  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-es") "correspondences/")
+  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-es") "correspondences/")
   "Directory where correspondence files are stored.")
 
 (defvar tlon-babel-dir-dict
-  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-es") "dict/")
+  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-file-babel-manual
-  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-core") "manual.org")
+  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-core") "manual.org")
   "File containing the Babel manual.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel-core") "jobs.org")
+  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-core") "jobs.org")
   "File containing the jobs.")
 
 (defvar tlon-babel-file-url-correspondences
@@ -279,66 +235,40 @@ The second capture group handles the `.md' extension, which we used previously."
 
 ;;;;; init
 
+(defvar paths-tlon-babel-todos-jobs-id)
+(defvar paths-tlon-babel-todos-generic-id)
+(defvar org-capture-templates)
+(defvar tlon-babel-refs-bibliography-files)
 (defun tlon-babel-init ()
   "Initialize `tlon-babel'."
   (interactive)
-  (mapc #'tlon-babel-core-set-dir tlon-babel-core-repos)
-  (tlon-babel-set-value-of-var 'tlon-babel-todos-jobs-id)
-  (tlon-babel-set-value-of-var 'tlon-babel-todos-generic-id)
-  (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
-		       (id ,tlon-babel-todos-jobs-id)
-		       "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
-		      ("tbG" "Tlön: Babel: Create new generic todo from GitHub" entry
-		       (id ,tlon-babel-todos-generic-id)
-		       "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
-    (push template org-capture-templates))
+  (tlon-babel-warn-if-unbound 'paths-tlon-babel-todos-jobs-id)
+  (tlon-babel-warn-if-unbound 'paths-tlon-babel-todos-generic-id)
   (setq paths-files-bibliography-all
 	`(,@paths-files-bibliography-personal
 	  ,@tlon-babel-refs-bibliography-files))
-  (run-hooks 'tlon-babel-post-init-hook))
+  (run-hooks 'tlon-babel-post-init-hook)
+  (message "Initialized `tlon-babel'"))
 
-(defun tlon-babel-set-value-of-var (var)
+(dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
+		     (id ,paths-tlon-babel-todos-jobs-id)
+		     "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
+		    ("tbG" "Tlön: Babel: Create new generic todo from GitHub" entry
+		     (id ,paths-tlon-babel-todos-generic-id)
+		     "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
+  (push template org-capture-templates))
+
+(defun tlon-babel-warn-if-unbound (var)
   "Signal an error if the value of VAR is not set."
   (unless (symbol-value var)
     (user-error "Please set the value of `%s'" (symbol-name var))))
 
 ;;;;; [name]
 
-(defun tlon-babel-get-repo-from-file (&optional file)
-  "Return the repo to which FILE belongs.
-If FILE is nil, use the current buffer's file name."
-  (let* ((file (or file (tlon-babel-buffer-file-name) default-directory))
-	 (directory-path (file-name-directory file)))
-    (catch 'found
-      (dolist (dir (tlon-babel-core-get-property-of-repos :dir))
-	(when (string-prefix-p (file-name-as-directory dir)
-			       directory-path)
-	  (throw 'found dir))))))
-
-(defun tlon-babel-buffer-file-name ()
-  "Return name of file BUFFER is visiting, handling `git-dirs' path."
-  ;; check that current buffer is visiting a file
-  (when-let ((file (buffer-file-name)))
-    (replace-regexp-in-string
-     "/git-dirs/"
-     "/Library/CloudStorage/Dropbox/repos/"
-     (buffer-file-name))))
-
-(defun tlon-babel-get-repo-from-key (key)
-  "Return the repo corresponding to original KEY."
-  (if-let ((file (tlon-babel-core-metadata-lookup "file" "original_key" key (tlon-babel-get-metadata-in-repos))))
-      (if-let ((repo (catch 'found
-		       (dolist (dir (tlon-babel-core-get-property-of-repos :dir))
-			 (when (string-prefix-p (file-name-as-directory dir) file)
-			   (throw 'found dir))))))
-	  repo
-	(user-error "No repo found for key %s" key))
-    (user-error "Metadata lookup for key `%s' returned nil" key)))
-
 (defun tlon-babel-get-file-from-key (key)
   "Return the file path of KEY."
-  (if-let ((file (tlon-babel-core-metadata-lookup "file" "original_key" key
-					     (tlon-babel-get-metadata-in-repos))))
+  (if-let ((file (tlon-babel-metadata-lookup
+		  (tlon-babel-metadata-in-repos :subtype 'translations) "file" "original_key" key)))
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
 
@@ -346,15 +276,15 @@ If FILE is nil, use the current buffer's file name."
   "Return the bibtex key of FILE."
   (or
    ;; when in `translations'
-   (tlon-babel-core-metadata-lookup "translation_key" "file" file (tlon-babel-get-metadata-in-repo))
+   (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "translation_key" "file" file)
    ;; when file in `originals'
    (let ((translation (tlon-babel-get-counterpart file)))
      (tlon-babel-metadata-get-field-value-in-file "original_key" translation))))
 
-(defun tlon-babel-set-translation-language (lang)
-  "Set the translation LANG."
-  (interactive (list (completing-read "Language: " tlon-babel-languages)))
-  (setq tlon-babel-translation-language lang))
+(defun tlon-babel-set-translation-language (language)
+  "Set the translation LANGUAGE."
+  (interactive (list (completing-read "Language: " tlon-babel-core-languages)))
+  (setq tlon-babel-core-translation-language language))
 
 ;;;;;; get file paths
 
@@ -365,8 +295,8 @@ If FILE is nil, use the current buffer's file name."
 (defun tlon-babel-get-file-glossary (&optional language)
   "Return the file containing the glossary for LANGUAGE.
 If LANGUAGE is nil, default to the languageuage set in
-`tlon-babel-translation-language'."
-  (let* ((language (or language tlon-babel-translation-language))
+`tlon-babel-core-translation-language'."
+  (let* ((language (or language tlon-babel-core-translation-language))
 	 (repo (tlon-babel-core-repo-lookup :dir
 				       :subproject "babel"
 				       :language language)))
@@ -404,222 +334,7 @@ If FILE is not provided, use the file visited by the current buffer."
 	 (commit-file (tlon-babel-create-file-from-commit file commit)))
     (ediff-files commit-file file)))
 
-;;;;; Markdown
-
-(defun tlon-babel-check-in-markdown-mode ()
-  "Check if the current buffer is in a Markdown-derived mode."
-  (unless (derived-mode-p 'markdown-mode)
-    (user-error "Not in a Markdown buffer")))
-
-;;;;;; Cleanup
-
-;;;;;;; autofix
-
-(defun tlon-babel-autofix (regexp-list newtext)
-  "Replace matches in REGEXP-LIST with NEWTEXT."
-  (widen)
-  (save-excursion
-    (dolist (regexp regexp-list)
-      (goto-char (point-min))
-      (while (re-search-forward regexp nil t)
-	(replace-match newtext)))))
-
-(defun tlon-babel-autofix-curly-quotes ()
-  "Replace straight quotes with curly quotes when appropriate."
-  (tlon-babel-autofix '("\\([^\\.\\?]\"\\)\\[")
-		      "\\1["))
-
-(defun tlon-babel-autofix-footnote-punctuation ()
-  "Place footnotes after punctuation mark."
-  (tlon-babel-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		      "\\1\\3\\2")
-  (tlon-babel-autofix-footnote-punctuation-amend))
-
-(defun tlon-babel-autofix-footnote-punctuation-amend ()
-  "Reverse undesired effects of `tlon-babel-autofix-footnote-punctuation'.
-Ideally the function should be amended so that it doesn’t introduce these
-effects to begin with."
-  (tlon-babel-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]"  ; fixes `[[^1]^2]'
-			"\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
-		      "[^\\1][^\\2]"))
-
-(defun tlon-babel-autofix-periods-in-headings ()
-  "Remove periods at the end of headings."
-  (tlon-babel-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
-		      "\\1"))
-
-(defun tlon-babel-autofix-percent-signs ()
-  "Add non-breaking space before percent sign."
-  (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
-			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-		      "\\1 %\\2"))
-
-(defun tlon-babel-autofix-all ()
-  "Run all the `tlon-babel-autofix' commands."
-  (interactive)
-  (tlon-babel-autofix-curly-quotes)
-  (tlon-babel-autofix-footnote-punctuation)
-  (tlon-babel-autofix-periods-in-headings)
-  (tlon-babel-autofix-percent-signs)
-  (let ((after-save-hook (remove #'tlon-babel-autofix-all after-save-hook)))
-    (save-buffer)
-    (add-hook 'after-save-hook #'tlon-babel-autofix-all nil t)))
-
-;;;;;;; manual-fix
-
-(defun tlon-babel-manual-fix (regexp-list newtext &optional keep-case)
-  "Prompt user to replace matches in REGEXP-LIST with NEWTEXT.
-If KEEP-CASE is non-nil, keep the case of the matched text."
-  (widen)
-  (save-excursion
-    (point-min)
-    (dolist (regexp regexp-list)
-      (goto-char (point-min))
-      (let ((case-replace keep-case))
-	(query-replace-regexp regexp newtext nil (point-min) (point-max))))))
-
-(defun tlon-babel-manual-fix-em-dashes ()
-  "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-manual-fix '("\\([^ ][ ,)]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
-			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
-			   "\\([^ >)] \\)-\\( \\)")
-			 "\\1—\\2"))
-
-(defun tlon-babel-manual-fix-number-ranges ()
-  "Prompt the user to replace hyphens with em dashes, when appropriate."
-  (tlon-babel-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
-			 "\\1\\2–\\3\\4"))
-
-(defun tlon-babel-manual-fix-roman-numerals ()
-  "Prompt the user to add small caps tags to roman numerals."
-  (tlon-babel-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
-			 " <abbr>\\1</abbr>"))
-
-(defun tlon-babel-manual-fix-thin-spaces ()
-  "Prompt the user to add a thin space between abbreviations followed by a period."
-  (tlon-babel-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
-			 "\\1 \\2"))
-
-(defun tlon-babel-manual-fix-solo ()
-  "Prompt the user to replace `sólo' with `solo'."
-  (tlon-babel-manual-fix '("sólo")
-			 "solo"
-			 'keep-case))
-
-(defun tlon-babel-manual-fix-podcast ()
-  "Prompt the user to replace `podcast' with `pódcast'.
-Enchant/Aspell do not make the correct suggestion, so it's easier to use a
-dedicated function."
-  (tlon-babel-manual-fix '(" podcast")
-			 " pódcast"
-			 'keep-case))
-
-(defun tlon-babel-manual-fix-all ()
-  "Run all the `tlon-babel-manual-fix' commands."
-  (interactive)
-  (tlon-babel-manual-fix-em-dashes)
-  (tlon-babel-manual-fix-number-ranges)
-  (tlon-babel-manual-fix-roman-numerals)
-  (tlon-babel-manual-fix-thin-spaces)
-  (tlon-babel-manual-fix-solo)
-  (tlon-babel-manual-fix-podcast))
-
-(defun tlon-babel-fix-internet-archive-links ()
-  "Fix Internet Archive links in the current buffer."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (let ((cnt 0))
-      (while (re-search-forward "https://web\.archive\.org/web/[[:digit:]]*?/" nil t)
-	(replace-match "")
-	(setq cnt (1+ cnt)))
-      (message "Done. %d URLs were fixed." cnt))))
-
-(defun tlon-babel-repos-transient ()
-  "Transient for opening projects in Magit."
-  (interactive)
-  (let ((transient-args (mapcar (lambda (repo)
-				  (let* ((abbrev (plist-get repo :abbrev))
-					 (fun-name (intern (concat "tlon-open-repo-" abbrev))))
-				    (fset fun-name
-					  `(lambda ()
-					     (interactive)
-					     (magit-status ,(plist-get repo :dir))))
-				    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
-				tlon-babel-core-repos)))
-    (eval `(transient-define-prefix tlon-open-repo-transient ()
-	     "Transient that dispatches to Magit open repo commands."
-	     ,@transient-args))))
-
 ;;;;; Metadata
-
-;;;;;; Get metadata
-
-(defun tlon-babel-get-metadata-in-repo (&optional repo)
-  "Return metadata of REPO.
-If REPO is nil, return metadata of current repository."
-  (let* ((repo (or repo (tlon-babel-get-repo))))
-    (if (eq (tlon-babel-core-get-property-of-repo :subtype repo) 'translations)
-	(tlon-babel-get-dir-metadata repo)
-      (user-error "The repository `%s' is not a `translations' repository" repo))))
-
-(defun tlon-babel-get-metadata-in-repos ()
-  "Return metadata of all `translation' repos."
-  (let ((metadata '()))
-    (dolist (dir (tlon-babel-core-get-property-of-repos :dir :subtype 'translations))
-      (setq metadata (append (tlon-babel-get-dir-metadata dir) metadata)))
-    metadata))
-
-(defun tlon-babel-get-dir-metadata (dir)
-  "Return the metadata in DIR and all its subdirectories as an association list."
-  (let ((metadata '()))
-    (dolist (file (directory-files-recursively dir "\\.md$"))
-      (push (tlon-babel-get-metadata-in-file-or-buffer file) metadata))
-    metadata))
-
-(defun tlon-babel-get-metadata-in-file-or-buffer (file-or-buffer)
-  "Return the metadata in FILE-OR-BUFFER as an association list."
-  (let* ((metadata (tlon-babel-yaml-format-values-of-alist
-		    (tlon-babel-yaml-get-front-matter file-or-buffer)))
-	 (extras `(("file" . ,file-or-buffer)
-		   ("type" . "online")
-		   ("database" . "Tlön")
-		   ("landid" . "es"))))
-    (append metadata extras)))
-
-;;;;;; Query metadata
-
-(defun tlon-babel-core-metadata-lookup (field1 field2 value2 metadata)
-  "Search METADATA for VALUE2 in FIELD2 and return the value of FIELD1."
-  (let ((found nil)
-	(i 0))
-    (while (and (not found) (< i (length metadata)))
-      (when (equal (cdr (assoc field2 (nth i metadata))) value2)
-	(setq found (cdr (assoc field1 (nth i metadata)))))
-      (setq i (1+ i)))
-    found))
-
-(defun tlon-babel-metadata-get-all-field-values (field metadata &optional other-field match)
-  "Return all the values for FIELD in METADATA.
-If OTHER-FIELD is non-nil, return only FIELD values when OTHER-FIELD value in
-entry matches the regex MATCH."
-  (let ((result '()))
-    (dolist (entry metadata)
-      (when-let ((value (cdr (assoc field entry))))
-	(if other-field
-	    (when (string-match match (cdr (assoc other-field entry)))
-	      (push value result))
-	  (push value result))))
-    result))
-
-(defun tlon-babel-metadata-get-field-value-in-file (field &optional file-or-buffer)
-  "Return the value of FIELD in metadata of FILE-OR-BUFFER.
-If FILE is nil, use the file visited by the current buffer."
-  (when-let* ((file-or-buffer (or file-or-buffer
-				  (buffer-file-name)
-				  (current-buffer)))
-	      (metadata (tlon-babel-get-metadata-in-file-or-buffer file-or-buffer)))
-    (alist-get field metadata nil nil #'string=)))
 
 (defun tlon-babel-get-key-in-buffer ()
   "Get the BibTeX key in the current Markdown buffer."
@@ -630,739 +345,7 @@ If FILE is nil, use the file visited by the current buffer."
       (user-error "No key found"))
     key))
 
-(defun tlon-babel-get-filenames-in-dir (&optional dir extension)
-  "Return a list of all filenames in DIR.
-If DIR is nil, use the current directory. EXTENSION defaults to \"md\". If you
-want to search all files, use the empty string."
-  (let* ((dir (or dir default-directory))
-	 (extension (or extension "md"))
-	 (extension-regex (format "\\.%s$" extension))
-	 (files (directory-files-recursively dir extension-regex)))
-    (mapcar #'file-name-nondirectory files)))
-
-;;;;; YAML front matter
-
-(defconst tlon-babel-yaml-delimiter "---\n"
-  "Delimiter for YAML front matter.")
-
-(defconst tlon-babel-yaml-article-keys
-  '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
-  "List of YAML keys of fields to include in `uqbar-es' articles.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
-(defconst tlon-babel-yaml-tag-keys
-  '("title" "brief_title" "original_path" "publication_status")
-  "List of YAML keys of fields to include in `uqbar-es' tags.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
-(defconst tlon-babel-yaml-author-keys
-  '("title" "original_path" "publication_status")
-  "List of YAML keys of fields to include in `uqbar-es' authors.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
-(defconst tlon-babel-yaml-original-author-keys
-  '("title")
-  "List of YAML keys of fields to include in `uqbar-es' authors.
-The order of the keys determines the sort order by
-`tlon-babel--yaml-sort-fields', unless overridden.")
-
-(defconst tlon-babel-yaml-publication-statuses
-  '("unpublished" "test" "production")
-  "List of publication statuses.")
-
-;;;;;; Get YAML values
-
-(defun tlon-babel-yaml-get-front-matter (&optional file-or-buffer raw)
-  "Return the YAML front matter from FILE-OR-BUFFER as strings in a list.
-If FILE-OR-BUFFER is nil, use the current buffer. Return the front matter as an
-alist, unless RAW is non-nil."
-  (let ((file-or-buffer (or file-or-buffer
-			    (buffer-file-name)
-			    (current-buffer))))
-    (with-temp-buffer
-      (cond
-       ;; If `file-or-buffer' is a buffer object
-       ((bufferp file-or-buffer)
-	(insert (with-current-buffer file-or-buffer (buffer-string))))
-       ;; If `file-or-buffer' is a string
-       ((stringp file-or-buffer)
-	(insert-file-contents file-or-buffer)))
-      (goto-char (point-min))
-      (when (looking-at-p tlon-babel-yaml-delimiter)
-	(forward-line)
-	(let ((front-matter (tlon-babel-read-until-match tlon-babel-yaml-delimiter)))
-	  (if raw
-	      front-matter
-	    (tlon-babel-yaml-to-alist front-matter)))))))
-
-(defun tlon-babel-yaml-to-alist (strings)
-  "Convert YAML STRINGS to an alist."
-  (let ((metadata '()))
-    (dolist (line strings)
-      (when (string-match "^\\(.*?\\):\\s-+\\(.*\\)$" line)
-	(let* ((key (match-string 1 line))
-	       (value (match-string 2 line))
-	       (trimmed-value (string-trim value)))
-	  (push (cons (string-trim key) trimmed-value) metadata))))
-    (nreverse metadata)))
-
-(defun tlon-babel-yaml-format-values-of-alist (alist)
-  "Format the values of ALIST, converting from YAML format to Elisp format."
-  (mapcar (lambda (pair)
-	    (cons (car pair)
-		  (tlon-babel-yaml-format-value (cdr pair))))
-	  alist))
-
-(defun tlon-babel-yaml-format-value (value)
-  "Format VALUE by converting from the YAML format to an Elisp format."
-  (cond
-   ((and (string-prefix-p "[" value) (string-suffix-p "]" value)) ;; list
-    (mapcar #'string-trim
-	    (mapcar (lambda (s)
-		      (if (and (string-prefix-p "\"" s) (string-suffix-p "\"" s))
-			  (substring s 1 -1)
-			s))
-		    (split-string (substring value 1 -1) "\\s *,\\s *"))))
-   ((and (string-prefix-p "\"" value) (string-suffix-p "\"" value)) ;; string
-    (substring value 1 -1))
-   (t value)))
-
-(defun tlon-babel-read-until-match (delimiter)
-  "Return a list of lines until DELIMITER is matched.
-The delimiter is not included in the result. If DELIMITER is not found, signal
-an error."
-  (let ((result '()))
-    (while (not (or (looking-at-p delimiter) (eobp)))
-      (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) result)
-      (forward-line))
-    (if (eobp)
-	(error "Delimiter not found")
-      (nreverse result))))
-
-;;;;; Set YAML values
-
-(defun tlon-babel--yaml-set-front-matter-fields (fields &optional title)
-  "Set the field values for the given FIELDS in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one."
-  (let* ((var-generators
-	  `(("date" . ,(lambda () (format-time-string "%FT%T%z")))
-	    ("title" . ,(lambda () (or title (read-string "Title: "))))
-	    ("authors-list" . ,(lambda () (tlon-babel-yaml-set-multi-value-field "title" "authors")))
-	    ("translators" . ,#'tlon-babel-yaml-set-translators)
-	    ("tags" . ,#'tlon-babel-yaml-set-tags)
-	    ("original_path" . ,#'tlon-babel-yaml-set-original-path)))
-	 (processed-fields (if (member "authors" fields)
-			       (cons "authors-list" fields)
-			     fields))
-	 (field-values (cl-loop for field in processed-fields
-				for generator = (cdr (assoc field var-generators))
-				if generator collect `(,field . ,(funcall generator)))))
-    ;; calculate first-author and adjust field-values
-    (let* ((first-author (cdr (or (assoc "authors" field-values) (assoc "authors-list" field-values))))
-	   (authors (when first-author
-		      (or
-		       (cdr (assoc "authors" field-values))
-		       (tlon-babel-elisp-list-to-yaml first-author))))
-	   (cmpl-generators
-	    `(("first-author" . ,first-author)
-	      ("authors" . ,authors)
-	      ("publication_status" . "no publicado")
-	      ("original_key" . ,(when first-author (tlon-babel-yaml-set-original-key (car first-author))))
-	      ("translation_key" . ,(when first-author
-				      (tlon-babel-refs-generate-autokey
-				       (car first-author)
-				       (substring (cdr (assoc "date" field-values)) 0 4)
-				       (cdr (assoc "title" field-values))))))))
-      ;; revise field-values
-      (setq field-values (assoc-delete-all "authors-list" field-values))
-      (dolist (field fields)
-	(when (cdr (assoc field cmpl-generators))
-	  (push `(,field . ,(cdr (assoc field cmpl-generators))) field-values))))
-    field-values))
-
-(defun tlon-babel-yaml-set-front-matter (keys &optional title)
-  "Insert YAML fields for KEYS for `uqbar-en' article in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one. The fields will be
-inserted in the order in which KEYS are listed."
-  (let* ((fields (tlon-babel--yaml-set-front-matter-fields keys title))
-	 (sorted-fields (tlon-babel--yaml-sort-fields fields keys)))
-    (tlon-babel-insert-yaml-fields sorted-fields)))
-
-(defun tlon-babel--yaml-sort-fields (fields &optional keys no-error)
-  "Sort alist of YAML FIELDS by order of KEYS.
-If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
-  (mapcar (lambda (key)
-	    (if-let ((match (assoc key fields)))
-		match
-	      (unless no-error
-		(user-error "Key `%s' not found in file `%s'" key (buffer-file-name)))))
-	  keys))
-
-(defun tlon-babel-yaml-set-front-matter-for-article (&optional title)
-  "Insert YAML fields for `uqbar-en' article in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one."
-  (interactive)
-  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-article-keys title))
-
-(defun tlon-babel-yaml-set-front-matter-for-tag ()
-  "Insert YAML fields for `uqbar-en' tag in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one."
-  (interactive)
-  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-tag-keys))
-
-(defun tlon-babel-yaml-set-front-matter-for-author ()
-  "Insert YAML fields for `uqbar-en' author in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one."
-  (interactive)
-  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-author-keys))
-
-(defun tlon-babel-yaml-set-front-matter-for-original-author (&optional title)
-  "Insert YAML fields for `uqbar-en' author in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one."
-  (interactive)
-  (tlon-babel-yaml-set-front-matter tlon-babel-yaml-original-author-keys title))
-
-;; TODO: throw error if any of fields already present
-(defun tlon-babel-insert-yaml-fields (fields)
-  "Insert YAML FIELDS in the buffer at point.
-FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
-  (when (looking-at-p tlon-babel-yaml-delimiter)
-    (user-error "File appears to already contain a front matter section"))
-  (save-excursion
-    (goto-char (point-min))
-    ;; calculate the max key length
-    (let ((max-key-len (cl-reduce 'max (mapcar (lambda (cons) (length (car cons))) fields)))
-	  format-str)
-      ;; determine the format for string
-      (setq format-str (format "%%-%ds %%s\n" (+ max-key-len 2)))
-      ;; insert the yaml delimiter & fields
-      (insert tlon-babel-yaml-delimiter)
-      (dolist (cons fields)
-	(insert (format format-str (concat (car cons) ":") (cdr cons))))
-      (insert tlon-babel-yaml-delimiter))))
-
-(defun tlon-babel-delete-yaml-front-matter ()
-  "Delete YAML front matter section."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (unless (looking-at-p tlon-babel-yaml-delimiter)
-      (user-error "File does not appear to contain a front matter section"))
-    (forward-line)
-    (re-search-forward tlon-babel-yaml-delimiter)
-    (delete-region (point-min) (point))))
-
-(defun tlon-babel-yaml-reorder-front-matter ()
-  "Reorder the YAML front matter in the buffer at point."
-  (interactive)
-  (save-excursion
-    (let* ((unsorted (tlon-babel-yaml-get-front-matter))
-	   (sorted (tlon-babel--yaml-sort-fields
-		    unsorted (tlon-babel-yaml-get-uqbar-keys) 'no-error)))
-      (tlon-babel-delete-yaml-front-matter)
-      (tlon-babel-insert-yaml-fields sorted))))
-
-(defun tlon-babel-yaml-get-uqbar-keys (&optional file)
-  "Return the admissible keys for `uqbar-es' FILE.
-If FILE is nil, return the work type of the file visited by the current buffer."
-  (let* ((file (or file (buffer-file-name))))
-    (pcase (file-name-nondirectory (directory-file-name (file-name-directory file)))
-      ("articulos" tlon-babel-yaml-article-keys)
-      ("temas" tlon-babel-yaml-tag-keys)
-      ("authors" tlon-babel-yaml-author-keys))))
-
-;; TODO: revise `translations' now that we use separate repos
-(defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
-  "Set the value of multivalue FIELD in metadata of REPO.
-If DIR is non-nil, only search in directory within the repo. Note DIR does not
-include the `translations' directory. That is, it is the directory component of
-the repo's locator. For example, to search only in `translations/autores', use
-`autores' as DIR."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (metadata (tlon-babel-get-metadata-in-repo repo))
-	 (full-dir (when dir (file-name-concat repo "translations" dir))))
-    (completing-read-multiple (format "%s: " (capitalize dir))
-			      (tlon-babel-metadata-get-all-field-values
-			       field metadata (when dir "file") (when dir full-dir)))))
-
-(defun tlon-babel-yaml-set-authors ()
-  "Set the value of `authors' YAML field."
-  (tlon-babel-elisp-list-to-yaml
-   (tlon-babel-yaml-set-multi-value-field "title" "authors")))
-
-(defun tlon-babel-yaml-set-translators ()
-  "Set the value of `translators' YAML field."
-  (tlon-babel-elisp-list-to-yaml
-   (completing-read-multiple
-    "Translators: "
-    (tlon-babel-metadata-get-all-field-values "translators" (tlon-babel-get-metadata-in-repos)))))
-
-(defun tlon-babel-yaml-set-tags ()
-  "Set the value of `tags' YAML field."
-  (tlon-babel-elisp-list-to-yaml
-   (tlon-babel-yaml-set-multi-value-field "title" "tags")))
-
-(defun tlon-babel-elisp-list-to-yaml (list)
-  "Convert an Elisp LIST to a YAML list."
-  (concat "[\"" (mapconcat 'identity list "\", \"") "\"]"))
-
-(defun tlon-babel-yaml-set-original-path ()
-  "Set the value of `original_path' YAML field."
-  (let ((dir (tlon-babel-get-counterpart-dir (buffer-file-name))))
-    (completing-read "Original filename: "
-		     (tlon-babel-get-filenames-in-dir dir))))
-
-(defun tlon-babel-get-repo-in-subproject-language (language &optional repo)
-  "Return the path of the subproject in REPO corresopnding to LANGUAGE.
-If REPO is nil, use the current repository."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (subproject (tlon-babel-core-get-property-of-repo :subproject repo)))
-    (tlon-babel-core-repo-lookup :dir :subproject subproject :language language)))
-
-(defun tlon-babel-yaml-set-original-key (author)
-  "Set the value of `original_key' YAML field.
-AUTHOR is the first author of the original work."
-  (let ((first-author (car (last (split-string author)))))
-    (car (split-string
-	  (completing-read
-	   "English original: "
-	   (citar--completion-table (citar--format-candidates) nil)
-	   nil
-	   nil
-	   (format "%s " first-author)
-	   'citar-history citar-presets nil)))))
-
-(defun tlon-babel-replace-footnotes ()
-  "Replace footnotes in counterpart of Spanish tag in current buffer."
-  (interactive)
-  (tlon-babel-open-counterpart nil)
-  (widen)
-  (goto-char (point-min))
-  (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
-    (if (re-search-forward fn-regexp nil t)
-	(progn
-	  (beginning-of-line)
-	  (let ((start (point)))
-	    (goto-char (point-max))
-	    (copy-region-as-kill start (point)))
-	  (tlon-babel-open-counterpart)
-	  (goto-char (point-min))
-	  (re-search-forward fn-regexp nil t)
-	  (goto-char (match-beginning 0))
-	  (let ((start (point)))
-	    (goto-char (point-max))
-	    (delete-region start (point))
-	    (yank)
-	    (save-buffer)))
-      (tlon-babel-open-counterpart)
-      (message "No footnotes found"))))
-
-;;;;;; Interactive editing
-
-(defun tlon-babel-yaml-edit-field ()
-  "Edit the YAML field at point."
-  (interactive)
-  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field-at-point)
-    (tlon-babel-yaml-get-completions key value)))
-
-(defun tlon-babel-yaml-get-completions (key value)
-  "Get completions based on KEY.
-If KEY already has VALUE, use it as the initial input."
-  (if-let ((fun (tlon-babel-yaml-get-completion-functions key))
-	   (val (tlon-babel-yaml-get-completion-values key)))
-      (funcall fun val)
-    (tlon-babel-yaml-insert-string (list value))))
-
-(defun tlon-babel-yaml-get-completion-values (key)
-  "Get completion values for a YAML field with KEY."
-  (pcase key
-    ("translators" (tlon-babel-get-translators))
-    ("tags" (tlon-babel-get-uqbar-fields "tags"))
-    ("authors" (tlon-babel-get-uqbar-fields "authors"))
-    ("original_path" (tlon-babel-get-filenames-in-dir))
-    ("original_key" (citar--completion-table (citar--format-candidates) nil))
-    ("translation_key" (citar--completion-table (citar--format-candidates) nil))
-    ("publication_status" tlon-babel-yaml-publication-statuses)
-    (_ nil)))
-
-(defun tlon-babel-yaml-get-completion-functions (key)
-  "Get completion functions for a YAML field with KEY."
-  (pcase key
-    ((or "authors" "translators" "tags") #'tlon-babel-yaml-insert-list)
-    ((or "original_path" "original_key" "translation_key" "publication_status") #'tlon-babel-yaml-insert-string)
-    (_ nil)))
-
-;; TODO: integrate `tlon-babel-yaml-get-completion-values'
-(defun tlon-babel-yaml-insert-field (&optional key value file field-exists)
-  "Insert a new field in the YAML front matter of FILE.
-If FILE is nil, use the file visited by the current buffer. If KEY or VALUE are
-nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
-`throw-error', overwrite if it is `overwrite', and do nothing otherwise."
-  (interactive)
-  (let ((key (or key (completing-read "Key: " (tlon-babel-yaml-get-uqbar-keys))))
-	(value (or value (read-string "Value: ")))
-	(file (or file (buffer-file-name))))
-    (if-let ((front-matter (tlon-babel-yaml-get-front-matter file)))
-	(if-let ((key-exists-p (assoc key front-matter)))
-	    (cond ((eq field-exists 'overwrite)
-		   (tlon-babel-yaml-delete-field key file)
-		   (tlon-babel-yaml-write-field key value file))
-		  ((eq field-exists 'throw-error)
-		   (user-error "Field `%s' already exists in `%s'" key file)))
-	  (tlon-babel-yaml-write-field key value file))
-      (user-error "File `%s' does not appear to contain a front matter section" file))))
-
-(defun tlon-babel-yaml-write-field (key value file)
-  "Set KEY to VALUE in FILE."
-  (with-current-buffer (find-file-noselect file)
-    (goto-char (point-min))
-    (forward-line)
-    (insert (format "%s:  %s\n" key value))
-    (save-buffer)
-    (tlon-babel-yaml-reorder-front-matter)))
-
-;; TODO: refactor with above
-(defun tlon-babel-yaml-delete-field (&optional key file)
-  "Delete the YAML field with KEY in FILE."
-  (let ((key (or key (completing-read "Field: " tlon-babel-yaml-article-keys)))
-	(file (or file (buffer-file-name))))
-    (if-let ((front-matter (tlon-babel-yaml-get-front-matter file)))
-	(if (assoc key front-matter)
-	    (with-current-buffer (find-file-noselect file)
-	      (goto-char (point-min))
-	      (re-search-forward (format "%s:.*\n" key))
-	      (delete-region (match-beginning 0) (match-end 0))
-	      (save-buffer))
-	  (user-error "Key `%s' not found in file `%s'" key file))
-      (user-error "File does not appear to contain a front matter section"))))
-
-;; TODO: Handle multiline fields, specifically `description’
-(defun tlon-babel-yaml-get-field-at-point ()
-  "Return a list with the YAML key and value at point, or nil if there is none."
-  (when-let* ((bounds (bounds-of-thing-at-point 'line))
-	      (line (buffer-substring-no-properties (car bounds) (cdr bounds)))
-	      (elts (split-string line ":" nil "\\s-+")))
-    elts))
-
-(defun tlon-babel-yaml-get-key (key)
-  "Get value of KEY in YAML metadata."
-  (alist-get key (tlon-babel-yaml-get-front-matter) nil nil #'string=))
-
-(defun tlon-babel-yaml-insert-list (candidates)
-  "Insert a list in YAML field at point.
-Prompt the user to select one or more elements in CANDIDATES. If point is on a
-list, use them pre-populate the selection."
-  (let* ((bounds (bounds-of-thing-at-point 'line))
-	 ;; retrieve the line
-	 (line (buffer-substring-no-properties (car bounds) (cdr bounds))))
-    (when (string-match "\\[\\(.*?\\)\\]" line)
-      ;; retrieve and parse the elements in the list at point, removing quotes
-      (let ((elems-at-point (mapcar (lambda (s)
-				      (replace-regexp-in-string "\\`\"\\|\"\\'" "" s))
-				    (split-string (match-string 1 line) ", "))))
-	;; prompt the user to select multiple elements from the list,
-	;; prefilling with previously selected items
-	(let ((choices (completing-read-multiple "Value (comma-separated): "
-						 candidates
-						 nil nil
-						 (mapconcat 'identity elems-at-point ", "))))
-	  ;; delete the old line
-	  (delete-region (car bounds) (cdr bounds))
-	  ;; insert the new line into the current buffer
-	  (insert (replace-regexp-in-string "\\[.*?\\]"
-					    (concat "["
-						    (mapconcat (lambda (item)
-								 (format "\"%s\"" item))
-							       choices ", ")
-						    "]")
-					    line)))))))
-
-(defun tlon-babel-yaml-insert-string (candidates)
-  "Insert a string in the YAML field at point.
-Prompt the user for a choice in CANDIDATES. If point is on a string, use it to
-pre-populate the selection."
-  (cl-destructuring-bind (key _) (tlon-babel-yaml-get-field-at-point)
-    (let* ((choice (completing-read (format "Value of `%s': " key)
-				    candidates))
-	   (bounds (bounds-of-thing-at-point 'line)))
-      (delete-region (car bounds) (cdr bounds))
-      (insert (format "%s:  %s\n" key choice)))))
-
-;;;;;; Get repo-specific entities
-
-(defun tlon-babel-get-uqbar-fields (type &optional field language)
-  "Return FIELDS in files of TYPE in `uqbar' repo of LANGUAGE.
-If FIELD is nil, default to \"title\". If LANG is nil, default to
-`tlon-babel-translation-language'."
-  (let* ((field (or field "title"))
-	 (language (or language tlon-babel-translation-language))
-	 (type-in-language (tlon-babel-get-bare-dir-translation language "en" type))
-	 (repo (tlon-babel-core-repo-lookup :dir :subproject "uqbar" :language language)))
-    (tlon-babel-metadata-get-all-field-values
-     field (tlon-babel-get-metadata-in-repo repo) "file" (file-name-concat repo type-in-language))))
-
-(defun tlon-babel-get-all-uqbar-entities ()
-  "Get a list of all `uqbar-en' entities."
-  (append
-   (tlon-babel-get-uqbar-fields "articles")
-   (tlon-babel-get-uqbar-fields "authors")
-   (tlon-babel-get-uqbar-fields "tags")))
-
-;;;;;; Create repo-specific entities
-
-;; TODO: fix; `tlon-babel-yaml-set-front-matter-for-tag-or-author' does not exist
-(defun tlon-babel-create-uqbar-entity (dir)
-  "Create a new file for `uqbar-es' entity in DIR."
-  (let ((default-directory (file-name-concat
-			    (tlon-babel-core-get-property-of-repo-name :dir "uqbar-es")
-			    (file-name-as-directory dir))))
-    (files-extras-new-empty-buffer)
-    ;; (tlon-babel-yaml-set-front-matter-for-tag-or-author) <- not found
-    (goto-char (point-max))
-    (tlon-babel-name-file-from-title)
-    (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "title")))
-    (save-buffer)))
-
-(defun tlon-babel-name-file-from-title (&optional title)
-  "Save the current buffer to a file named after TITLE.
-Set the name to the slugified version of TITLE with the extension `.md'. If
-TITLE is nil, get it from the file metadata. If the file doesn't have metadata,
-prompt the user for a title.
-
-When buffer is already visiting a file, prompt the user for confirmation before
-renaming it."
-  (interactive)
-  (let* ((title (or title
-		    (tlon-babel-metadata-get-field-value-in-file "title")
-		    (read-string "Title: ")))
-	 (target (tlon-babel-set-file-from-title title default-directory)))
-    (if-let ((buf (buffer-file-name)))
-	(when (yes-or-no-p (format "Rename `%s` to `%s`? "
-				   (file-name-nondirectory buf)
-				   (file-name-nondirectory target)))
-	  (rename-file buf target)
-	  (set-visited-file-name target)
-	  (save-buffer))
-      (write-file target))))
-
-(defun tlon-babel-set-file-from-title (&optional title dir)
-  "Set the file path based on its title.
-The file name is the slugified version of TITLE with the extension `.md'. This
-is appended to DIR to generate the file path. If DIR is not provided, use the
-current repository followed by `originals/'."
-  (let* ((title (or title
-		    (read-string "Title: ")))
-	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
-	 (dirname (file-name-as-directory
-		   (or dir
-		       (file-name-concat (tlon-babel-get-repo) "originals")))))
-    (file-name-concat dirname filename)))
-
-(defun tlon-babel-create-uqbar-author ()
-  "Create a new file for `uqbar-es' author."
-  (interactive)
-  (tlon-babel-create-uqbar-entity "autores"))
-
-(defun tlon-babel-create-uqbar-tag ()
-  "Create a new file for `uqbar-es' tag."
-  (interactive)
-  (tlon-babel-create-uqbar-entity "temas"))
-
-;;;;;; Get repo-agnostic elements
-
-(defun tlon-babel-get-translators ()
-  "Get a list of translators.
-Note that this searches in all repos, not just `uqbar-en'."
-  (tlon-babel-metadata-get-all-field-values
-   "title"
-   (tlon-babel-get-metadata-in-repos)))
-
 ;;;;;; Counterparts
-
-(defun tlon-babel-get-content-subtype (&optional file)
-  "For repo of FILE, get the value of its `:subtype' property.
-If FILE is nil, return the counterpart of the file visited by the current
-buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-babel-get-repo-from-file file))
-	 (type (tlon-babel-core-repo-lookup :type :dir repo)))
-    (unless (eq type 'content)
-      (user-error "Repo of file `%s' is not of type `content'" file))
-    (tlon-babel-core-repo-lookup :subtype :dir repo)))
-
-(defun tlon-babel-get-counterpart (&optional file)
-  "Get the counterpart file of FILE.
-A file's counterpart is its translation if it is an original, and vice versa.
-The translation language is defined by `tlon-babel-translation-language'.
-
-If FILE is nil, return the counterpart of the file visited by the current
-buffer."
-  (let* ((file (or file (tlon-babel-buffer-file-name)))
-	 (repo (tlon-babel-get-repo-from-file file)))
-    (pcase (tlon-babel-core-get-property-of-repo :subtype repo)
-      ('translations (tlon-babel-get-counterpart-in-translations file))
-      ('originals (tlon-babel-get-counterpart-in-originals file))
-      (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
-
-(defun tlon-babel-get-counterpart-in-translations (file)
-  "Get the counterpart of FILE, when FILE is in `translations'."
-  (if-let ((dir (tlon-babel-get-counterpart-dir file))
-	   (locator (tlon-babel-metadata-get-field-value-in-file "original_path" file)))
-      (file-name-concat dir locator)
-    (user-error "Couldn’t find relevant metadata")))
-
-(defun tlon-babel-get-counterpart-in-originals (file)
-  "Get the counterpart of FILE, when FILE is in `originals'."
-  (let ((translations-repo (tlon-babel-get-counterpart-repo file)))
-    (tlon-babel-core-metadata-lookup "file"
-				"original_path"
-				(file-name-nondirectory file)
-				(tlon-babel-get-metadata-in-repo translations-repo))))
-
-(defun tlon-babel-get-counterpart-repo (&optional file)
-  "Get the counterpart repo of FILE.
-A file's counterpart repo is the repo of that file's counterpart.
-
-If FILE is nil, return the counterpart repo of the file visited by the current
-buffer."
-  (let* ((file (or file (tlon-babel-buffer-file-name)))
-	 (repo (tlon-babel-get-repo-from-file file))
-	 (subproject (tlon-babel-core-get-property-of-repo :subproject repo))
-	 (language (tlon-babel-get-counterpart-language repo))
-	 (counterpart-repo
-	  (tlon-babel-core-repo-lookup :dir
-				  :subproject subproject
-				  :language language)))
-    counterpart-repo))
-
-(defun tlon-babel-get-counterpart-language (&optional repo)
-  "Return the language of the counterpart of REPO."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (language (tlon-babel-core-get-property-of-repo :language repo)))
-    (pcase language
-      ("en" tlon-babel-translation-language)
-      ((pred (lambda (lang) (member lang (mapcar #'car tlon-babel-languages)))) "en")
-      (_ (user-error "Language not recognized")))))
-
-(defun tlon-babel-get-counterpart-dir (&optional file)
-  "Get the counterpart directory of FILE.
-A file's counterpart directory is the directory of that file's counterpart. For
-example, the counterpart directory of `~/Dropbox/repos/uqbar-es/autores/' is
-`~/Dropbox/repos/uqbar-en/authors/'.
-
-If FILE is nil, return the counterpart repo of the file visited by the current
-buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-babel-get-repo-from-file file))
-	 (counterpart-repo (tlon-babel-get-counterpart-repo file))
-	 (bare-dir (tlon-babel-get-bare-dir file))
-	 (source-lang (tlon-babel-core-get-property-of-repo :language repo))
-	 (target-lang (tlon-babel-get-counterpart-language repo))
-	 (counterpart-bare-dir (tlon-babel-get-bare-dir-translation target-lang source-lang bare-dir)))
-    (file-name-concat counterpart-repo counterpart-bare-dir)))
-
-(defun tlon-babel-get-bare-dir (&optional file)
-  "Get the bare directory of FILE.
-A file’s bare directory is its directory minus its repository. For example, the
-bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
-
-If FILE is nil, return the counterpart repo of the file visited by the current
-buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-babel-get-repo-from-file file)))
-    (directory-file-name (file-name-directory (file-relative-name file repo)))))
-
-(defun tlon-babel-open-counterpart (&optional arg file)
-  "Open the counterpart of file in FILE and move point to matching position.
-If FILE is nil, open the counterpart of the file visited by the current buffer.
-
-If called with a prefix ARG, open the counterpart in the other window."
-  (interactive "P")
-  (unless file
-    (save-buffer))
-  (let* ((fun (if arg #'find-file-other-window #'find-file))
-	 (counterpart (tlon-babel-get-counterpart
-		       (or file (buffer-file-name))))
-	 (paragraphs (- (tlon-babel-count-paragraphs
-			 file (point-min) (min (point-max) (+ (point) 2)))
-			1)))
-    (funcall fun counterpart)
-    (goto-char (point-min))
-    (forward-paragraph paragraphs)))
-
-(defun tlon-babel-open-dired-counterpart (&optional arg file)
-  "Open the counterpart of file in FILE in Dired.
-If FILE is nil, open the counterpart of the file at point.
-
-If called with a prefix ARG, open the counterpart in the other window."
-  (interactive "P")
-  (let* ((counterpart (tlon-babel-get-counterpart
-		       (or file (thing-at-point 'filename)))))
-    (dired-jump arg counterpart)))
-
-(defun tlon-babel-open-counterpart-dwim (&optional arg file)
-  "Open the counterpart of file in FILE as appropriate.
-If called in `markdown-mode', open FILE’s counterpart. If called in
-`dired-mode', jump to its counterpart’s Dired buffer.
-
-If FILE is nil, act on the file at point or visited in the current buffer.
-
-If called with a prefix ARG, open the counterpart in the other window."
-  (interactive "P")
-  (pcase major-mode
-    ('markdown-mode (tlon-babel-open-counterpart arg file))
-    ('dired-mode (tlon-babel-open-dired-counterpart arg file))))
-
-(defun tlon-babel-open-counterpart-other-window-dwim (&optional file)
-  "Open the counterpart of file in FILE as appropriate.
-If called in `markdown-mode', open FILE’s counterpart. If called in
-`dired-mode', jump to its counterpart’s Dired buffer.
-
-If FILE is nil, act on the file at point or visited in the current buffer.
-
-If called with a prefix ARG, open the counterpart in the other window."
-  (interactive "P")
-  (tlon-babel-open-counterpart-dwim t file))
-
-(defun tlon-babel-count-paragraphs (&optional file start end)
-  "Return number of paragraphs between START and END in FILE.
-If either START or END is nil, default to the beginning and end of the buffer.
-If FILE is nil, count paragraphs in the current buffer."
-  (interactive)
-  (let ((file (or file (buffer-file-name))))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (let ((start (or start (point-min)))
-	    (end (min (or end (point-max)))))
-	(narrow-to-region start end)
-	(goto-char (point-min))
-	(- (buffer-size) (forward-paragraph (buffer-size)))))))
-
-(defun tlon-babel-check-paragraph-number-match (&optional file)
-  "Check that FILE and its counterpart have the same number of paragraphs.
-If FILE is not provided, use the current buffer."
-  (interactive)
-  (let* ((part (or file (buffer-file-name)))
-	 (counterpart (tlon-babel-get-counterpart part))
-	 (paras-in-part (tlon-babel-count-paragraphs part))
-	 (paras-in-counterpart (tlon-babel-count-paragraphs counterpart)))
-    (if (= paras-in-part paras-in-counterpart)
-	t
-      (message "Paragraph number mismatch: \n%s has %s paragraphs\n%s has %s paragraphs"
-	       (file-name-nondirectory part) paras-in-part
-	       (file-name-nondirectory counterpart) paras-in-counterpart))))
-
-(defun tlon-babel-check-paragraph-number-match-in-dir (dir &optional extension)
-  "Check that files in DIR and counterparts have the same number of paragraphs.
-If EXTENSION is provided, only check files with that extension. Otherwise,
-default to \".md\"."
-  (let* ((extension (or extension ".md"))
-	 (files (directory-files dir t (concat ".*\\" extension "$"))))
-    (cl-loop for file in files
-	     do (tlon-babel-check-paragraph-number-match file))))
 
 ;;;;; Word count
 
@@ -1387,7 +370,7 @@ default to \".md\"."
 
 (defun tlon-babel-count-words-extra ()
   "Count extraneous words in current buffer."
-  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-front-matter nil 'raw) " ")))
+  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-metadata nil 'raw) " ")))
     (with-temp-buffer
       (insert metadata)
       (when-let ((vars (tlon-babel-get-local-variables)))
@@ -1409,10 +392,10 @@ If REPO is nil, prompt the user for one."
   (let* ((repo (or repo
 		   (intern (completing-read
 			    "Repo: "
-			    (tlon-babel-core-get-property-of-repos :abbrev :type 'translations)))))
+			    (tlon-babel-core-repo-lookup-all :abbrev :subtype 'translations)))))
 	 (initial-buffers (buffer-list))
 	 (files (directory-files-recursively
-		 (tlon-babel-core-get-property-of-repo-name :dir repo) "\\.md$"))
+		 (tlon-babel-core-repo-lookup :dir :name repo) "\\.md$"))
 	 (total-words 0))
     (dolist (file files)
       (with-current-buffer (find-file-noselect file)
@@ -1463,7 +446,7 @@ Assumes key is enclosed in backticks."
 (defun tlon-babel-open-clock-issue ()
   "Open the issue from `orgit-forge' link in heading at point."
   (interactive)
-  (let ((default-directory (tlon-babel-get-repo))
+  (let ((default-directory (tlon-babel-core-get-repo))
 	(issue (tlon-babel-get-clock-issue)))
     (forge-visit-issue issue)))
 
@@ -1473,7 +456,7 @@ Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-babel-get-clock-key)
   (let ((action (nth 1 (split-string (tlon-babel-get-clock))))
-	(actions (tlon-babel-core-get-property-of-labels :action)))
+	(actions (tlon-babel-core-label-lookup-all :action)))
     (if (member action actions)
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
@@ -1527,11 +510,11 @@ open DeepL."
 (defun tlon-babel-set-paths-from-clock ()
   "Return paths for original and translation files based on clocked task."
   (let* ((key (tlon-babel-get-clock-key))
-	 (metadata (tlon-babel-get-metadata-in-repos))
-	 (repo (tlon-babel-get-repo-from-key key))
-	 (identifier (tlon-babel-core-metadata-lookup "original_path" "original_key" key metadata))
+	 (metadata (tlon-babel-metadata-in-repos :subtype 'translations))
+	 (repo (tlon-babel-metadata-get-repo-from-key key))
+	 (identifier (tlon-babel-metadata-lookup metadata "original_path" "original_key" key))
 	 (original-path (file-name-concat repo "originals" identifier))
-	 (translation-path (tlon-babel-core-metadata-lookup "file" "original_key" key metadata)))
+	 (translation-path (tlon-babel-metadata-lookup metadata "file" "original_key" key)))
     (cl-values original-path translation-path key)))
 
 (defun tlon-babel-set-windows (original-path translation-path)
@@ -1542,30 +525,22 @@ open DeepL."
   (winum-select-window-2)
   (find-file translation-path))
 
-;;;;; Forge
+;;;;; Magit/Forge
 
 (defun tlon-babel-magit-status ()
   "Show the status of the current repository in a buffer."
   (interactive)
-  (let ((default-directory (tlon-babel-get-repo nil 'include-all)))
+  (let ((default-directory (tlon-babel-core-get-repo nil 'include-all)))
     (magit-status-setup-buffer)))
 
 (defun tlon-babel-magit-prompt (repo)
   "Prompt the user for a REPO and show it in Magit."
   (interactive (list
 		(completing-read
-		 "Repo: " (tlon-babel-core-get-property-of-repos :name))))
+		 "Repo: " (tlon-babel-core-repo-lookup-all :name))))
   (if-let ((default-directory (tlon-babel-core-repo-lookup :dir :name repo)))
       (magit-status-setup-buffer)
     (user-error "Repo `%s' not found" repo)))
-
-(defun tlon-babel-forge ()
-  "Launch the Forge dispatcher.
-If the current directory matches none of the directories in
-`tlon-babel-core-repos', prompt the user to select a repo from that list."
-  (interactive)
-  (let ((default-directory (tlon-babel-get-repo nil 'include-all)))
-    (call-interactively 'forge-dispatch)))
 
 (defun tlon-babel-forge-update-repo (repo)
   "Update issues and notifications for REPO name."
@@ -1578,31 +553,12 @@ If the current directory matches none of the directories in
 (defun tlon-babel-forge-update-all-repos ()
   "Update issues and notifications for all active repos."
   (interactive)
-  (dolist (repo (tlon-babel-core-get-property-of-repos :name))
+  (dolist (repo (tlon-babel-core-repo-lookup-all :name))
     (tlon-babel-forge-update-repo repo)))
-
-(defun tlon-babel-get-repo (&optional no-prompt include-all)
-  "Get Babel repository path.
-If the current directory matches any of the directories in
-`tlon-babel-core-repos', return it. Else, prompt the user to select a repo from
-that list, unless NO-PROMPT is non-nil. In that case, signal an error if its
-value is `error', else return nil. If INCLUDE-ALL is non-nil, include all repos.
-In that case, matching will be made against repos with any value for the
-property `:type'."
-  (if-let ((current-repo (tlon-babel-get-repo-from-file)))
-      current-repo
-    (if no-prompt
-	(when (eq no-prompt 'error)
-	  (user-error "Not in a recognized Babel repo"))
-      (let* ((content (tlon-babel-core-get-property-of-repos :name :type 'translations))
-	     (all (tlon-babel-core-get-property-of-repos :name)))
-	(tlon-babel-core-repo-lookup :dir :name
-				(completing-read "Select repo: "
-						 (if include-all all content)))))))
 
 (defun tlon-babel-get-commit-key ()
   "Get key of commit file."
-  (let ((path (file-name-concat (file-name-directory (tlon-babel-buffer-file-name))
+  (let ((path (file-name-concat (file-name-directory (tlon-babel-core-buffer-file-name))
 				(magit-extras-get-commit-file))))
     (tlon-babel-get-key-from-file path)))
 
@@ -1610,15 +566,15 @@ property `:type'."
   "Create a new translation file and set its front matter.
 If REPO is nil, prompt the user for one."
   (interactive)
-  (let* ((repo (or repo (tlon-babel-get-repo)))
+  (let* ((repo (or repo (tlon-babel-core-get-repo)))
 	 (title (read-string "Translated title: "))
 	 (dir (file-name-concat repo "translations/articulos/"))
 	 (path (tlon-babel-set-file-from-title title dir)))
     (find-file path)
-    (tlon-babel-yaml-set-front-matter-for-article title)
+    (tlon-babel-yaml-set-metadata tlon-babel-yaml-article-keys title)
     (save-buffer)))
 
-;;;;; Sentence highlighting
+;;;;;; Sentence highlighting
 
 (defun tlon-babel-sentence-highlight-offset-set ()
   "Set the sentence offset.
@@ -1685,7 +641,7 @@ This command should be run from the source window."
     (setq tlon-babel-enable-automatic-highlighting t)
     (message "Automatic sentence highlighting enabled.")))
 
-;;;;; Checking
+;;;;; Checks
 
 (defun tlon-babel-check-branch (branch repo)
   "Throw an error unless current buffer is in REPO branch BRANCH."
@@ -1701,7 +657,7 @@ check that current file matches translation."
   (let* ((key (tlon-babel-get-clock-key))
 	 (field (if original "original_path" "file"))
 	 (expected-file (file-name-nondirectory
-			 (tlon-babel-core-metadata-lookup field "original_key" key (tlon-babel-get-metadata-in-repo))))
+			 (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) field "original_key" key)))
 	 (actual-file (file-name-nondirectory
 		       (buffer-file-name))))
     (if (string= expected-file actual-file)
@@ -1718,7 +674,7 @@ check that current file matches translation."
 
 (defun tlon-babel-check-staged-or-unstaged-other-than (file)
   "Check if there are staged or unstaged modifications in repo not involving FILE."
-  (let* ((default-directory (tlon-babel-get-repo-from-file file))
+  (let* ((default-directory (tlon-babel-core-get-repo-from-file file))
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file)))
     (unless (string= all-changes filtered-changes)
@@ -1737,13 +693,18 @@ If FILE is nil, check the current buffer."
 	     (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
       (error "The file `%s' does not match its title" title))))
 
+(defun tlon-babel-check-in-markdown-mode ()
+  "Check if the current buffer is in a Markdown-derived mode."
+  (unless (derived-mode-p 'markdown-mode)
+    (user-error "Not in a Markdown buffer")))
+
 ;;;;; Search
 
 (defun tlon-babel-search-issues (search-string &optional repo)
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-babel-get-repo nil 'include-all)))
+  (let* ((repo (or repo (tlon-babel-core-get-repo nil 'include-all)))
 	 (default-directory repo))
     (forge-search search-string)))
 
@@ -1765,14 +726,14 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-babel-get-repo nil 'include-all))))
+  (let* ((repo (or repo (tlon-babel-core-get-repo nil 'include-all))))
     (consult-ripgrep repo search-string)))
 
 (defun tlon-babel-search-multi (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-get-repo nil 'include-all)))
+  (let ((repo (or repo (tlon-babel-core-get-repo nil 'include-all)))
 	(win1 (selected-window)))
     (window-extras-split-if-unsplit)
     (tlon-babel-search-issues search-string repo)
@@ -1784,7 +745,7 @@ If REPO is nil, use the current repo."
 (defun tlon-babel-commit-and-push (action file)
   "Commit and push modifications to FILE.
 The commit message is ACTION followed by the name of FILE."
-  (let* ((default-directory (tlon-babel-get-repo-from-file file)))
+  (let* ((default-directory (tlon-babel-core-get-repo-from-file file)))
     (tlon-babel-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
       ;; TODO: Replace interactive call with programmatic way of doing this
@@ -1802,7 +763,7 @@ respectively."
   ;; we check for staged or unstaged changes to FILE because
   ;; `magit-commit-create' interrupts the process if there aren't any
   (when (tlon-babel-check-staged-or-unstaged file)
-    (let* ((repo (tlon-babel-get-repo-from-file file))
+    (let* ((repo (tlon-babel-core-get-repo-from-file file))
 	   (subtype (tlon-babel-core-repo-lookup :type :dir repo))
 	   (file-or-key (pcase subtype
 			  ('translations (tlon-babel-get-key-from-file file))
@@ -1849,7 +810,7 @@ respectively."
 ;; TODO: consider adapting `tlon-babel-commit-and-push' instead
 (defun tlon-babel-url-correspondence-commit ()
   "Commit modifications in `url-correspondences.json'."
-  (let ((default-directory (tlon-babel-core-get-property-of-repo-name :dir "babel-es")))
+  (let ((default-directory (tlon-babel-core-repo-lookup :dir :name "babel-es")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
     (call-interactively #'magit-pull-from-upstream nil)
@@ -1968,238 +929,11 @@ respectively."
 
 ;;;;; dispatchers
 
-;; TODO: add flag to set translation language, similar to Magit dispatch
-(transient-define-prefix tlon-babel-dispatch ()
-  "Dispatch a `tlon-babel' command."
-  [["Main"
-    ("j" "job"                            tlon-babel-jobs-create-job)
-    ("r" "dwim"                           tlon-babel-jobs-dwim)
-    ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
-    ("." "gh-notify"                      gh-notify)
-    """Request"
-    ("q q" "uqbar"                        tlon-babel-api-request)
-    ]
-   ["Add or modify"
-    ("a a" "glossary"                     tlon-babel-glossary-dwim)
-    ("a s" "section corresp"              tlon-babel-section-correspondence-dwim)
-    ("a u" "URL corresp"                  tlon-babel-url-correspondence-dwim)
-    """Search"
-    ("s s" "multi"                        tlon-babel-search-multi)
-    ("s c" "commits"                      tlon-babel-search-commits)
-    ("s d" "commit-diffs"                 tlon-babel-search-commit-diffs)
-    ("s f" "files"                        tlon-babel-search-files)
-    ("s i" "issues"                       tlon-babel-search-issues)
-    ("s t" "translation"                  tlon-babel-search-for-translation)
-    ]
-   ["Browse in Dired"
-    ("d" "dir"                            tlon-babel-dired-dir-dispatch)
-    ("H-d" "repo"                         tlon-babel-dired-repo-dispatch)
-    ""
-    """Browse externally"
-    ("b" "current file"                   tlon-babel-browse-file)
-    ("H-b" "current repo"                 tlon-babel-browse-repo)
-    """Open"
-    ("o" "in repo"                        tlon-babel-open-repo-dispatch)
-    ("H-o" "in all repos"                 tlon-babel-open-file-in-all-repos)
-    ]
-   [
-    "File changes"
-    ("h h" "log"                          magit-log-buffer-file)
-    ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
-    ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
-    """Counterpart"
-    ("f" "current win"                    tlon-babel-open-counterpart-dwim)
-    ("H-f" "other win"                    tlon-babel-open-counterpart-other-window-dwim)
-    """AI"
-    ("g r" "rewrite"                      tlon-babel-ai-rewrite)
-    ("g s" "summarize"                    tlon-babel-ai-summarize)
-    ("g t" "translate"                    tlon-babel-ai-translate)]
-   ["Clock"
-    ("c c" "issue"                        tlon-babel-open-clock-issue)
-    ("c f" "file"                         tlon-babel-open-clock-file )
-    ("c o" "heading"                      org-clock-goto)
-    """Issue"
-    ("i i" "open counterpart"             tlon-babel-ogh-open-forge-counterpart)
-    ("i I" "open file"                    tlon-babel-ogh-open-forge-file)
-    ]
-   ["Sync"
-    ("y y" "visit or capture"             tlon-babel-ogh-visit-counterpart-or-capture)
-    ("y v" "visit"                        tlon-babel-ogh-visit-counterpart)
-    ("y p" "post"                         tlon-babel-ogh-create-issue-from-todo)
-    ("y c" "capture"                      tlon-babel-ogh-capture-issue)
-    ("y C" "capture all"                  tlon-babel-ogh-capture-all-issues)
-    ("y r" "reconcile"                    tlon-babel-ogh-reconcile-issue-and-todo)
-    ("y R" "reconcile all"                tlon-babel-ogh-reconcile-all-issues-and-todos)
-    ("y x" "close"                        tlon-babel-ogh-close-issue-and-todo)]
-   ]
-  )
-
-(transient-define-prefix tlon-babel-magit-repo-dispatch ()
-  "Browse a Tlön repo in Magit."
-  [["Babel"
-    ("b c" "babel-core"                       tlon-babel-magit-browse-babel-core)
-    ("b r" "babel-refs"                       tlon-babel-magit-browse-babel-refs)
-    ("b s" "babel-es"                         tlon-babel-magit-browse-babel-es)
-    ]
-   ["Uqbar"
-    ("q i" "uqbar-issues"                     tlon-babel-magit-browse-uqbar-issues)
-    ("q f" "uqbar-front"                      tlon-babel-magit-browse-uqbar-front)
-    ("q a" "uqbar-api"                        tlon-babel-magit-browse-uqbar-api)
-    ("q n" "uqbar-en"                         tlon-babel-magit-browse-uqbar-en)
-    ("q s" "uqbar-es"                         tlon-babel-magit-browse-uqbar-es)
-    ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-magit-browse-utilitarismo-en)
-    ("u s" "utilitarismo-es"                     tlon-babel-magit-browse-utilitarismo-es)
-    ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-magit-browse-ensayos-en)
-    ("e s" "ensayos-es"                     tlon-babel-magit-browse-ensayos-es)
-    ]
-   ["EA News"
-    ("n i" "ean-issues"                     tlon-babel-magit-browse-ean-issues)
-    ("n f" "ean-front"                     tlon-babel-magit-browse-ean-front)
-    ("n a" "ean-api"                     tlon-babel-magit-browse-ean-api)
-    ]
-   ["La Bisagra"
-    ("s s" "bisagra"                     tlon-babel-magit-browse-bisagra)
-    ]
-   ["Docs"
-    ("d d" "tlon-docs"                     tlon-babel-magit-browse-docs)
-    ]
-   ]
-  )
-
-(transient-define-prefix tlon-babel-open-repo-dispatch ()
-  "Interactively open a file from a Tlön repo."
-  [["Babel"
-    ("b c" "babel-core"                       tlon-babel-open-file-in-babel-core)
-    ("b r" "babel-refs"                       tlon-babel-open-file-in-babel-refs)
-    ("b s" "babel-es"                         tlon-babel-open-file-in-babel-es)
-    ]
-   ["Uqbar"
-    ("q i" "uqbar-issues"                     tlon-babel-open-file-in-uqbar-issues)
-    ("q f" "uqbar-front"                      tlon-babel-open-file-in-uqbar-front)
-    ("q a" "uqbar-api"                        tlon-babel-open-file-in-uqbar-api)
-    ("q n" "uqbar-en"                         tlon-babel-open-file-in-uqbar-en)
-    ("q s" "uqbar-es"                         tlon-babel-open-file-in-uqbar-es)
-    ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-open-file-in-utilitarismo-en)
-    ("u s" "utilitarismo-es"                     tlon-babel-open-file-in-utilitarismo-es)
-    ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-open-file-in-ensayos-en)
-    ("e s" "ensayos-es"                     tlon-babel-open-file-in-ensayos-es)
-    ]
-   ["EA News"
-    ("n i" "ean-issues"                     tlon-babel-open-file-in-ean-issues)
-    ("n f" "ean-front"                     tlon-babel-open-file-in-ean-front)
-    ("n a" "ean-api"                     tlon-babel-open-file-in-ean-api)
-    ]
-   ["La Bisagra"
-    ("s s" "bisagra"                     tlon-babel-open-file-in-bisagra)
-    ]
-   ["Docs"
-    ("d d" "tlon-docs"                     tlon-babel-open-file-in-docs)
-    ]
-   ]
-  )
-
-(transient-define-prefix tlon-babel-dired-repo-dispatch ()
-  "Browse a Tlön repo in Dired."
-  [["Babel"
-    ("b c" "babel-core"                       tlon-babel-dired-browse-babel-core)
-    ("b r" "babel-refs"                       tlon-babel-dired-browse-babel-refs)
-    ("b s" "babel-es"                         tlon-babel-dired-browse-babel-es)
-    ]
-   ["Uqbar"
-    ("q i" "uqbar-issues"                     tlon-babel-dired-browse-uqbar-issues)
-    ("q f" "uqbar-front"                      tlon-babel-dired-browse-uqbar-front)
-    ("q a" "uqbar-api"                        tlon-babel-dired-browse-uqbar-api)
-    ("q n" "uqbar-en"                         tlon-babel-dired-browse-uqbar-en)
-    ("q s" "uqbar-es"                         tlon-babel-dired-browse-uqbar-es)
-    ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-dired-browse-utilitarismo-en)
-    ("u s" "utilitarismo-es"                     tlon-babel-dired-browse-utilitarismo-es)
-    ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-dired-browse-ensayos-en)
-    ("e s" "ensayos-es"                     tlon-babel-dired-browse-ensayos-es)
-    ]
-   ["EA News"
-    ("n i" "ean-issues"                     tlon-babel-dired-browse-ean-issues)
-    ("n f" "ean-front"                     tlon-babel-dired-browse-ean-front)
-    ("n a" "ean-api"                     tlon-babel-dired-browse-ean-api)
-    ]
-   ["La Bisagra"
-    ("s s" "bisagra"                     tlon-babel-dired-browse-bisagra)
-    ]
-   ["Docs"
-    ("d d" "tlon-docs"                     tlon-babel-dired-browse-docs)
-    ]
-   ]
-  )
-
-(transient-define-prefix tlon-babel-dired-dir-dispatch ()
-  "Browse a Tlön repo directory in Dired."
-  [
-   ;; ["Babel"
-   ;; ("b c" "babel-core"                       tlon-babel-dired-babel-core)
-   ;; ("b r" "babel-refs"                       tlon-babel-dired-babel-refs)
-   ;; ("b s" "babel-es"                         tlon-babel-dired-babel-es)
-   ;; ]
-   ["Uqbar"
-    ;; ("q i" "uqbar-issues"                     )
-    ;; ("q f" "uqbar-front"                      )
-    ;; ("q a" "uqbar-api"                        )
-    ("q n" "uqbar-en"                         tlon-babel-browse-entity-in-uqbar-en-dispatch)
-    ("q s" "uqbar-es"                         tlon-babel-browse-entity-in-uqbar-es-dispatch)
-    ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-browse-entity-in-utilitarismo-en-dispatch)
-    ("u s" "utilitarismo-es"                     tlon-babel-browse-entity-in-utilitarismo-es-dispatch)
-    ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-browse-entity-in-ensayos-en-dispatch)
-    ("e s" "ensayos-es"                     tlon-babel-browse-entity-in-ensayos-es-dispatch)
-    ]
-   ;; ["EA News"
-   ;; ("n i" "ean-issues"                     )
-   ;; ("n f" "ean-front"                     )
-   ;; ("n a" "ean-api"                     )
-   ;; ]
-   ;; ["La Bisagra"
-   ;; ("s s" "bisagra"                     )
-   ;; ]
-   ;; ["Docs"
-   ;; ("d d" "tlon-docs"                     )
-   ;; ]
-   ]
-  )
-
-(defmacro tlon-babel-generate-entity-dispatch (name)
-  "Generate a dispatcher for browsing an entity named NAME in a repo."
-  `(transient-define-prefix ,(intern (format "tlon-babel-browse-entity-in-%s-dispatch" name)) ()
-     ,(format "Browse a directory in the `%s' repo." name)
-     [["directories"
-       ("a" "articles"         ,(intern (format "tlon-babel-dired-browse-articles-dir-in-%s" name)))
-       ("t" "tags"             ,(intern (format "tlon-babel-dired-browse-tags-dir-in-%s" name)))
-       ("u" "authors"          ,(intern (format "tlon-babel-dired-browse-authors-dir-in-%s" name)))
-       ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))
-       ;; ("i" "images"           ,(intern (format "tlon-babel-dired-browse-images-dir-in-%s" name)))
-       ]]
-     ))
-
-(dolist (repo (tlon-babel-core-get-property-of-repos :abbrev :type 'content))
-  (eval `(tlon-babel-generate-entity-dispatch ,repo)))
-
 (defun tlon-babel-browse-file ()
   "Browse the current file in the tlon-babel repository."
   (interactive)
   (if-let (file (buffer-file-name))
-      (if-let ((repo (tlon-babel-get-repo-from-file file)))
+      (if-let ((repo (tlon-babel-core-get-repo-from-file file)))
 	  (let* ((repo-name (tlon-babel-core-repo-lookup :name :dir repo))
 		 (repo-url (concat "https://github.com/tlon-team/" repo-name))
 		 (file-url (concat "/blob/main/" (file-relative-name (buffer-file-name) repo))))
@@ -2212,17 +946,17 @@ respectively."
 If the current buffer is visiting a file in a Babel repository, browse that;
 otherwise prompt for a repo."
   (interactive)
-  (let* ((repo-name (tlon-babel-core-repo-lookup :name :dir (tlon-babel-get-repo))))
+  (let* ((repo-name (tlon-babel-core-repo-lookup :name :dir (tlon-babel-core-get-repo))))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
 
 (defun tlon-babel-browse-entity-dir (entity &optional repo source-lang)
   "Browse the directory of ENTITY in REPO.
 ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
 REPO is nil, default to the current repository."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
+  (let* ((repo (or repo (tlon-babel-core-get-repo)))
 	 (source-lang (or source-lang "en"))
 	 (target-lang (tlon-babel-core-repo-lookup :language :dir repo))
-	 (dir (tlon-babel-get-bare-dir-translation target-lang source-lang entity))
+	 (dir (tlon-babel-core-get-bare-dir-translation target-lang source-lang entity))
 	 (path (file-name-concat repo dir)))
     (dired path)))
 
@@ -2233,7 +967,7 @@ REPO is nil, default to the current repository."
        ,(format "Browse the `%s' directory in REPO.
 If REPO is nil, default to the current repository." entity)
        (interactive)
-       (let ((repo (or repo (tlon-babel-get-repo))))
+       (let ((repo (or repo (tlon-babel-core-get-repo))))
 	 (tlon-babel-browse-entity-dir ,entity repo)))))
 
 (dolist (entity (tlon-babel-get-entity-types))
@@ -2242,7 +976,7 @@ If REPO is nil, default to the current repository." entity)
 (defun tlon-babel-open-file-in-repo (&optional repo)
   "Interactively open a file from a list of all files in REPO.
 If REPO is nil, default to the current repository."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
+  (let* ((repo (or repo (tlon-babel-core-get-repo)))
 	 (alist (tlon-babel-files-and-display-names-alist (list repo) repo)))
     (tlon-babel-open-file-in-alist alist)))
 
@@ -2250,7 +984,7 @@ If REPO is nil, default to the current repository."
   "Interactively open a file froma list of all files in all repos."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist
-		 (tlon-babel-core-get-property-of-repos :dir)
+		 (tlon-babel-core-repo-lookup-all :dir)
 		 tlon-core-repo-dirs)))
     (tlon-babel-open-file-in-alist alist)))
 
@@ -2279,9 +1013,9 @@ presented to the user."
     `(defun ,command-name ()
        ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
        (interactive)
-       (tlon-babel-open-file-in-repo ,repo))))
+       (tlon-babelq-open-file-in-repo ,repo))))
 
-(dolist (repo (tlon-babel-core-get-property-of-repos :dir))
+(dolist (repo (tlon-babel-core-repo-lookup-all :dir))
   (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
 
 ;;;;;;; Fix log errors helper functions
@@ -2366,14 +1100,65 @@ computed by dividing the file size by CHARS-PER-WORD."
     (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
   (let* ((repo-name (or repo-name
 			(completing-read "Repo: "
-					 (tlon-babel-core-get-property-of-repos :name :type 'translations))))
+					 (tlon-babel-core-repo-lookup-all :name :subtype 'translations))))
 	 (dir (tlon-babel-core-repo-lookup :dir :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat (tlon-babel-core-get-property-of-repo-name :dir "babel")
+	 (script (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel")
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
+
+;;;;; Temp
+
+(defun tlon-babel-set-tags ()
+  "Docstring."
+  (interactive)
+  (let* ((tags (tlon-babel-yaml-format-value (tlon-babel-yaml-get-key "tags")))
+	 (english-file (tlon-babel-get-counterpart))
+	 (field (cons "tags" tags)))
+    (with-current-buffer (find-file-noselect english-file)
+      (tlon-babel-yaml-insert-fields `(,field)))))
+
+(defun tlon-babel-translate-tag (tag)
+  "Docstring TAG."
+  (tlon-babel-metadata-in-repo "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/")
+  (let* ((tag-slug (tlon-core-slugify tag))
+	 (tag-filename (file-name-with-extension tag-slug "md"))
+	 (tag-file (file-name-concat
+		    "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/temas"
+		    tag-filename))
+	 (tag-file-en (tlon-babel-get-counterpart tag-file))
+	 (tag-name-en (tlon-babel-metadata-lookup
+		       (tlon-babel-metadata-in-repo
+			"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/")
+		       "title" "file" tag-file-en)))
+    (message tag-name-en)))
+
+(defun tlon-babel-replace-footnotes ()
+  "Replace footnotes in counterpart of Spanish tag in current buffer."
+  (interactive)
+  (tlon-babel-open-counterpart nil)
+  (widen)
+  (goto-char (point-min))
+  (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
+    (if (re-search-forward fn-regexp nil t)
+	(progn
+	  (beginning-of-line)
+	  (let ((start (point)))
+	    (goto-char (point-max))
+	    (copy-region-as-kill start (point)))
+	  (tlon-babel-open-counterpart)
+	  (goto-char (point-min))
+	  (re-search-forward fn-regexp nil t)
+	  (goto-char (match-beginning 0))
+	  (let ((start (point)))
+	    (goto-char (point-max))
+	    (delete-region start (point))
+	    (yank)
+	    (save-buffer)))
+      (tlon-babel-open-counterpart)
+      (message "No footnotes found"))))
 
 (provide 'tlon-babel)
 ;;; tlon-babel.el ends here
