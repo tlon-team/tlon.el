@@ -32,6 +32,7 @@
 ;;;; Functions
 
 ;; TODO: add flag to set translation language, similar to Magit dispatch
+;;;###autoload
 (transient-define-prefix tlon-babel-dispatch ()
   "Dispatch a `tlon-babel' command."
   [["Main"
@@ -97,6 +98,7 @@
    ]
   )
 
+;;;###autoload
 (transient-define-prefix tlon-babel-magit-repo-dispatch ()
   "Browse a Tlön repo in Magit."
   [["Babel"
@@ -133,6 +135,7 @@
    ]
   )
 
+;;;###autoload
 (transient-define-prefix tlon-babel-open-repo-dispatch ()
   "Interactively open a file from a Tlön repo."
   [["Babel"
@@ -169,6 +172,7 @@
    ]
   )
 
+;;;###autoload
 (transient-define-prefix tlon-babel-dired-repo-dispatch ()
   "Browse a Tlön repo in Dired."
   [["Babel"
@@ -205,6 +209,7 @@
    ]
   )
 
+;;;###autoload
 (transient-define-prefix tlon-babel-dired-dir-dispatch ()
   "Browse a Tlön repo directory in Dired."
   [
