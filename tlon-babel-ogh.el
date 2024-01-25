@@ -45,7 +45,7 @@ nothing."
 ;;;; Main variables
 
 (defconst tlon-babel-ogh-todo-statuses
-  '("TODO" "IMPORTANT" "URGENT" "SOMEDAY" "MAYBE")
+  '("TODO" "IMPORTANT" "URGENT" "SOMEDAY" "MAYBE" "WAITING")
   "List of admissible TODO statuses.
 Note that your `org-todo-keywords' user option should include these labels for
 `org-mode' to recognize them, and that the buffer has to be refreshed after the
