@@ -30,17 +30,8 @@
 (require 'dired)
 (require 'markdown-mode)
 (require 'tlon-babel-core)
+(require 'tlon-babel-md)
 (require 'tlon-babel-yaml)
-
-;;;; Variables
-
-(defconst tlon-babel-counterpart-local-variables-line-start
-  "<!-- Local Variables: -->"
-  "Start of the line that contains file local variables.")
-
-(defconst tlon-babel-counterpart-local-variables-line-end
-  "<!-- End: -->"
-  "End of the line that contains file local variables.")
 
 ;;;; Functions
 
@@ -223,8 +214,8 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
     (let ((count 0))
       (while (< (point) (or end
 			    (cdr (tlon-babel-counterpart-get-delimiter-region-position
-				  tlon-babel-counterpart-local-variables-line-start
-				  tlon-babel-counterpart-local-variables-line-end))
+				  tlon-babel-md-local-variables-line-start
+				  tlon-babel-md-local-variables-line-end))
 			    (point-max)))
         (let ((pos (point)))
           (markdown-forward-paragraph)
@@ -267,8 +258,8 @@ default to \".md\"."
   "Get the text in the \"local variables\" section of the current buffer."
   (cl-destructuring-bind (start . end)
       (tlon-babel-counterpart-get-delimiter-region-position
-       tlon-babel-counterpart-local-variables-line-start
-       tlon-babel-counterpart-local-variables-line-end)
+       tlon-babel-md-local-variables-line-start
+       tlon-babel-md-local-variables-line-end)
     (buffer-substring-no-properties start end)))
 
 (defun tlon-babel-counterpart-count-words-extra ()

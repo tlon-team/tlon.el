@@ -31,6 +31,16 @@
 (require 'tlon-babel)
 (require 'tlon-babel-yaml)
 
+;;;; Variables
+
+(defconst tlon-babel-md-local-variables-line-start
+  "<!-- Local Variables: -->"
+  "Start of the line that contains file local variables.")
+
+(defconst tlon-babel-md-local-variables-line-end
+  "<!-- End: -->"
+  "End of the line that contains file local variables.")
+
 ;;;; Functions
 
 ;;;;; Insertion
