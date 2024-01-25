@@ -40,6 +40,7 @@
 (require 'org)
 (require 'org-clock)
 (require 'org-roam)
+(require 'paths)
 (require 'substitute)
 (require 'tlon-babel-core)
 (require 'tlon-babel-refs)

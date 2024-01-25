@@ -72,6 +72,7 @@ effects to begin with."
 			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
 		      "\\1 %\\2"))
 
+;;;###autoload
 (defun tlon-babel-autofix-all ()
   "Run all the `tlon-babel-autofix' commands."
   (interactive)
