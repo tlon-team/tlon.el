@@ -38,8 +38,9 @@
 
 (define-minor-mode tlon-babel-split-mode
   "Enable `tlon-babel-split-mode' locally."
-  :global nil
-  :init-value nil)
+  :init-value nil
+  (let ((fun (if tlon-babel-split-mode 'add-hook 'remove-hook)))
+    (funcall fun 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)))
 
 (defun tlon-babel-split-screen-line-changed-p ()
   "Return t iff the cursor in on a different screen line."
@@ -85,8 +86,6 @@ The alignment is performed by scrolling up or down the other window."
   (when (and tlon-babel-split-mode
 	     (tlon-babel-split-screen-line-changed-p))
     (tlon-babel-split-align-paragraphs)))
-
-(add-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)
 
 (provide 'tlon-babel-split)
 ;;; tlon-babel-split.el ends here

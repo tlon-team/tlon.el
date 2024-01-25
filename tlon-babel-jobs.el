@@ -194,6 +194,7 @@ for the process that is being initialized."
 
 (defun tlon-babel-jobs-finalize ()
   "Finalize current stage of translation process."
+  (tlon-babel-split-mode -1)
   (save-buffer)
   (cl-multiple-value-bind
       (original-path translation-path original-key)
@@ -285,7 +286,8 @@ substitute assignee."
   (tlon-core-macos-open-app "deepl"))
 
 (defun tlon-babel-jobs-initialize-revision ()
-  "Initialize stylistic revision.")
+  "Initialize stylistic revision."
+  (tlon-babel-split-mode))
 
 (defun tlon-babel-jobs-initialize-check ()
   "Initialize accuracy check."
