@@ -172,7 +172,9 @@ fields, which are needed to create a new job: `url' or `file',
 Runs all the general initialization functions, followed by the specific function
 for the process that is being initialized."
   (let* ((key (tlon-babel-get-clock-key))
-	 (repo (tlon-babel-metadata-get-repo-from-key key))
+	 (metadata (tlon-babel-metadata-in-repos :subtype 'translations))
+	 (file (tlon-babel-metadata-lookup metadata "file" "original_key" key))
+	 (repo (tlon-babel-core-get-repo-from-file file))
 	 (default-directory repo))
     (tlon-babel-ogh-check-label-and-assignee repo)
     (tlon-babel-check-branch "main" repo)

@@ -590,21 +590,5 @@ If FILE is nil, use the file visited by the current buffer."
    (tlon-babel-metadata-in-repos :subtype 'translations)
    "translators"))
 
-;;;;; Query metadata
-
-;; query metadata
-(defun tlon-babel-metadata-get-repo-from-key (key)
-  "Return the repo corresponding to original KEY."
-  (if-let ((file (tlon-babel-metadata-lookup
-		  (tlon-babel-metadata-in-repos :subtype 'translations) "file" "original_key"
-		  key)))
-      (if-let ((repo (catch 'found
-		       (dolist (dir (tlon-babel-core-repo-lookup-all :dir))
-			 (when (string-prefix-p (file-name-as-directory dir) file)
-			   (throw 'found dir))))))
-	  repo
-	(user-error "No repo found for key %s" key))
-    (user-error "Metadata lookup for key `%s' returned nil" key)))
-
 (provide 'tlon-babel-yaml)
 ;;; tlon-babel-yaml.el ends here
