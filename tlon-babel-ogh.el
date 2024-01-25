@@ -253,21 +253,17 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (tlon-babel-ogh-store-master-job-todo nil issue)
       (tlon-babel-ogh-capture-issue issue))))
 
-;; Testing if getting the file by evaluating the function each time has
-;; significant performance costs; if not, we should get read of the variables
 (defun tlon-babel-ogh-get-todos-jobs-file ()
   "Get the file containing the jobs `org-mode' ID."
-  ;; (or tlon-babel-todos-jobs-file
-  ;; (tlon-babel-warn-if-unbound 'paths-tlon-babel-todos-jobs-id)
-  ;; (setq tlon-babel-todos-jobs-file
-  (tlon-babel-ogh-get-file-with-id paths-tlon-babel-todos-jobs-id))
+  (or tlon-babel-todos-jobs-file
+      (setq tlon-babel-todos-jobs-file
+	    (tlon-babel-ogh-get-file-with-id paths-tlon-babel-todos-jobs-id))))
 
 (defun tlon-babel-ogh-get-todos-generic-file ()
   "Get the file containing the generic `org-mode' ID."
-  ;; (or tlon-babel-todos-generic-file
-  ;; (tlon-babel-warn-if-unbound 'paths-tlon-babel-todos-generic-id)
-  ;; (setq tlon-babel-todos-generic-file
-  (tlon-babel-ogh-get-file-with-id paths-tlon-babel-todos-generic-id))
+  (or tlon-babel-todos-generic-file
+      (setq tlon-babel-todos-generic-file
+	    (tlon-babel-ogh-get-file-with-id paths-tlon-babel-todos-generic-id))))
 
 (defun tlon-babel-ogh-get-file-with-id (id)
   "Return the file containing the heading with the given `org-mode' ID."
