@@ -201,7 +201,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (tlon-babel-ogh-store-todo "tbG" nil issue))))
 
 (defun tlon-babel-ogh-when-no-valid-label (issue)
-  "Take appropriate action when ISSUE has no valid label."
+  "Take appropriate action when ISSUE does not have a valid label.
+A label is considered valid if it is a member of `tlon-babel-ogh-todo-statuses'."
   (pcase tlon-babel-ogh-warn-when-no-valid-label
     ('prompt (progn
 	       (tlon-babel-ogh-set-label (tlon-babel-ogh-set-status-label) issue)
