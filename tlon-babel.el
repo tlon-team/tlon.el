@@ -278,7 +278,7 @@ The second capture group handles the `.md' extension, which we used previously."
    ;; when in `translations'
    (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "translation_key" "file" file)
    ;; when file in `originals'
-   (let ((translation (tlon-babel-get-counterpart file)))
+   (let ((translation (tlon-babel-counterpart-get file)))
      (tlon-babel-metadata-get-field-value-in-file "original_key" translation))))
 
 (defun tlon-babel-set-translation-language (language)
@@ -1115,7 +1115,7 @@ computed by dividing the file size by CHARS-PER-WORD."
   "Docstring."
   (interactive)
   (let* ((tags (tlon-babel-yaml-format-value (tlon-babel-yaml-get-key "tags")))
-	 (english-file (tlon-babel-get-counterpart))
+	 (english-file (tlon-babel-counterpart-get))
 	 (field (cons "tags" tags)))
     (with-current-buffer (find-file-noselect english-file)
       (tlon-babel-yaml-insert-fields `(,field)))))
@@ -1128,7 +1128,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 	 (tag-file (file-name-concat
 		    "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/temas"
 		    tag-filename))
-	 (tag-file-en (tlon-babel-get-counterpart tag-file))
+	 (tag-file-en (tlon-babel-counterpart-get tag-file))
 	 (tag-name-en (tlon-babel-metadata-lookup
 		       (tlon-babel-metadata-in-repo
 			"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/")
@@ -1138,7 +1138,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 (defun tlon-babel-replace-footnotes ()
   "Replace footnotes in counterpart of Spanish tag in current buffer."
   (interactive)
-  (tlon-babel-open-counterpart nil)
+  (tlon-babel-counterpart-open nil)
   (widen)
   (goto-char (point-min))
   (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
@@ -1148,7 +1148,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 	  (let ((start (point)))
 	    (goto-char (point-max))
 	    (copy-region-as-kill start (point)))
-	  (tlon-babel-open-counterpart)
+	  (tlon-babel-counterpart-open)
 	  (goto-char (point-min))
 	  (re-search-forward fn-regexp nil t)
 	  (goto-char (match-beginning 0))
@@ -1157,7 +1157,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 	    (delete-region start (point))
 	    (yank)
 	    (save-buffer)))
-      (tlon-babel-open-counterpart)
+      (tlon-babel-counterpart-open)
       (message "No footnotes found"))))
 
 (provide 'tlon-babel)

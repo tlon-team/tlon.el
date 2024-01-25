@@ -43,7 +43,7 @@ buffer."
       (user-error "Repo of file `%s' is not of type `content'" file))
     (tlon-babel-core-repo-lookup :subtype :dir repo)))
 
-(defun tlon-babel-get-counterpart (&optional file)
+(defun tlon-babel-counterpart-get (&optional file)
   "Get the counterpart file of FILE.
 A file's counterpart is its translation if it is an original, and vice versa.
 The translation language is defined by `tlon-babel-core-translation-language'.
@@ -53,26 +53,26 @@ buffer."
   (let* ((file (or file (tlon-babel-core-buffer-file-name)))
 	 (repo (tlon-babel-core-get-repo-from-file file)))
     (pcase (tlon-babel-core-repo-lookup :subtype :dir repo)
-      ('translations (tlon-babel-get-counterpart-in-translations file))
-      ('originals (tlon-babel-get-counterpart-in-originals file))
+      ('translations (tlon-babel-counterpart-get-in-translations file))
+      ('originals (tlon-babel-counterpart-get-in-originals file))
       (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
 
-(defun tlon-babel-get-counterpart-in-translations (file)
+(defun tlon-babel-counterpart-get-in-translations (file)
   "Get the counterpart of FILE, when FILE is in `translations'."
-  (if-let ((dir (tlon-babel-get-counterpart-dir file))
+  (if-let ((dir (tlon-babel-counterpart-get-dir file))
 	   (locator (tlon-babel-metadata-get-field-value-in-file "original_path" file)))
       (file-name-concat dir locator)
     (user-error "Couldn’t find relevant metadata")))
 
-(defun tlon-babel-get-counterpart-in-originals (file)
+(defun tlon-babel-counterpart-get-in-originals (file)
   "Get the counterpart of FILE, when FILE is in `originals'."
-  (let ((translations-repo (tlon-babel-get-counterpart-repo file)))
+  (let ((translations-repo (tlon-babel-counterpart-get-repo file)))
     (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo translations-repo)
 				"file"
 				"original_path"
 				(file-name-nondirectory file))))
 
-(defun tlon-babel-get-counterpart-repo (&optional file)
+(defun tlon-babel-counterpart-get-repo (&optional file)
   "Get the counterpart repo of FILE.
 A file's counterpart repo is the repo of that file's counterpart.
 
@@ -81,14 +81,14 @@ buffer."
   (let* ((file (or file (tlon-babel-core-buffer-file-name)))
 	 (repo (tlon-babel-core-get-repo-from-file file))
 	 (subproject (tlon-babel-core-repo-lookup :subproject :dir repo))
-	 (language (tlon-babel-get-counterpart-language repo))
+	 (language (tlon-babel-counterpart-get-language repo))
 	 (counterpart-repo
 	  (tlon-babel-core-repo-lookup :dir
 				       :subproject subproject
 				       :language language)))
     counterpart-repo))
 
-(defun tlon-babel-get-counterpart-language (&optional repo)
+(defun tlon-babel-counterpart-get-language (&optional repo)
   "Return the language of the counterpart of REPO."
   (let* ((repo (or repo (tlon-babel-core-get-repo)))
 	 (language (tlon-babel-core-repo-lookup :language :dir repo)))
@@ -97,7 +97,7 @@ buffer."
       ((pred (lambda (lang) (member lang (mapcar #'car tlon-babel-core-languages)))) "en")
       (_ (user-error "Language not recognized")))))
 
-(defun tlon-babel-get-counterpart-dir (&optional file)
+(defun tlon-babel-counterpart-get-dir (&optional file)
   "Get the counterpart directory of FILE.
 A file's counterpart directory is the directory of that file's counterpart. For
 example, the counterpart directory of `~/Dropbox/repos/uqbar-es/autores/' is
@@ -107,14 +107,14 @@ If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (repo (tlon-babel-core-get-repo-from-file file))
-	 (counterpart-repo (tlon-babel-get-counterpart-repo file))
-	 (bare-dir (tlon-babel-get-bare-dir file))
+	 (counterpart-repo (tlon-babel-counterpart-get-repo file))
+	 (bare-dir (tlon-babel-counterpart-get-bare-dir file))
 	 (source-lang (tlon-babel-core-repo-lookup :language :dir repo))
-	 (target-lang (tlon-babel-get-counterpart-language repo))
+	 (target-lang (tlon-babel-counterpart-get-language repo))
 	 (counterpart-bare-dir (tlon-babel-core-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
 
-(defun tlon-babel-get-bare-dir (&optional file)
+(defun tlon-babel-counterpart-get-bare-dir (&optional file)
   "Get the bare directory of FILE.
 A file’s bare directory is its directory minus its repository. For example, the
 bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
@@ -125,7 +125,7 @@ buffer."
 	 (repo (tlon-babel-core-get-repo-from-file file)))
     (directory-file-name (file-name-directory (file-relative-name file repo)))))
 
-(defun tlon-babel-open-counterpart (&optional arg file)
+(defun tlon-babel-counterpart-open (&optional arg file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
 
@@ -134,7 +134,7 @@ If called with a prefix ARG, open the counterpart in the other window."
   (unless file
     (save-buffer))
   (let* ((fun (if arg #'find-file-other-window #'find-file))
-	 (counterpart (tlon-babel-get-counterpart
+	 (counterpart (tlon-babel-counterpart-get
 		       (or file (buffer-file-name))))
 	 (paragraphs (- (tlon-babel-count-paragraphs
 			 file (point-min) (min (point-max) (+ (point) 2)))
@@ -143,17 +143,17 @@ If called with a prefix ARG, open the counterpart in the other window."
     (goto-char (point-min))
     (forward-paragraph paragraphs)))
 
-(defun tlon-babel-open-dired-counterpart (&optional arg file)
+(defun tlon-babel-counterpart-open-in-dired (&optional arg file)
   "Open the counterpart of file in FILE in Dired.
 If FILE is nil, open the counterpart of the file at point.
 
 If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
-  (let* ((counterpart (tlon-babel-get-counterpart
+  (let* ((counterpart (tlon-babel-counterpart-get
 		       (or file (dired-get-file-for-visit)))))
     (dired-jump arg counterpart)))
 
-(defun tlon-babel-open-counterpart-dwim (&optional arg file)
+(defun tlon-babel-counterpart-open-dwim (&optional arg file)
   "Open the counterpart of file in FILE as appropriate.
 If called in `markdown-mode', open FILE’s counterpart. If called in
 `dired-mode', jump to its counterpart’s Dired buffer.
@@ -163,10 +163,10 @@ If FILE is nil, act on the file at point or visited in the current buffer.
 If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
   (pcase major-mode
-    ('markdown-mode (tlon-babel-open-counterpart arg file))
-    ('dired-mode (tlon-babel-open-dired-counterpart arg file))))
+    ('markdown-mode (tlon-babel-counterpart-open arg file))
+    ('dired-mode (tlon-babel-counterpart-open-in-dired arg file))))
 
-(defun tlon-babel-open-counterpart-other-window-dwim (&optional file)
+(defun tlon-babel-counterpart-open-in-other-window-dwim (&optional file)
   "Open the counterpart of file in FILE as appropriate.
 If called in `markdown-mode', open FILE’s counterpart. If called in
 `dired-mode', jump to its counterpart’s Dired buffer.
@@ -205,7 +205,7 @@ If FILE is not provided, use the current buffer."
 	       (file-name-nondirectory part) paras-in-part
 	       (file-name-nondirectory counterpart) paras-in-counterpart))))
 
-(defun tlon-babel-check-paragraph-number-match-in-dir (dir &optional extension)
+(defun tlon-babel-counterpart-check-paragraph-number-match-in-dir (dir &optional extension)
   "Check that files in DIR and counterparts have the same number of paragraphs.
 If EXTENSION is provided, only check files with that extension. Otherwise,
 default to \".md\"."

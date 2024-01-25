@@ -72,8 +72,8 @@
     ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
     ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
     """Counterpart"
-    ("f" "current win"                    tlon-babel-open-counterpart-dwim)
-    ("H-f" "other win"                    tlon-babel-open-counterpart-other-window-dwim)
+    ("f" "current win"                    tlon-babel-counterpart-open-dwim)
+    ("H-f" "other win"                    tlon-babel-counterpart-open-in-other-window-dwim)
     """AI"
     ("g r" "rewrite"                      tlon-babel-ai-rewrite)
     ("g s" "summarize"                    tlon-babel-ai-summarize)

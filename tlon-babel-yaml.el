@@ -313,7 +313,7 @@ the repo's locator. For example, to search only in `translations/autores', use
 
 (defun tlon-babel-yaml-set-original-path ()
   "Set the value of `original_path' YAML field."
-  (let ((dir (tlon-babel-get-counterpart-dir (buffer-file-name))))
+  (let ((dir (tlon-babel-counterpart-get-dir (buffer-file-name))))
     (completing-read "Original filename: "
 		     (tlon-babel-yaml-get-filenames-in-dir dir))))
 

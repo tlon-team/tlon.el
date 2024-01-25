@@ -748,7 +748,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 (defun tlon-babel-ogh-open-forge-counterpart ()
   "Open the file counterpart of the issue at point or in the current buffer."
   (interactive)
-  (tlon-babel-open-counterpart nil (tlon-babel-ogh-get-file-from-issue)))
+  (tlon-babel-counterpart-open nil (tlon-babel-ogh-get-file-from-issue)))
 
 ;;;;
 
