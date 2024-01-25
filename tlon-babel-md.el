@@ -136,6 +136,8 @@ OPEN is the opening element and CLOSE is the closing element."
     (insert (concat open close))
     (backward-char (length close))))
 
+;;;;;;; MDX
+
 ;; TODO: revise to offer the key at point as default completion candidate
 ;;;###autoload
 (defun tlon-babel-md-insert-mdx-cite (key)
@@ -144,8 +146,8 @@ Prompt the user to select a BibTeX KEY. When a key is enclosed in a `Cite'
 element pair, only its title will be displayed in the exported web page."
   (interactive (list (read-string "Key: ")))
   (tlon-babel-md-insert-element-pair (format "<Cite id={\"%s\"}>"
-						   key)
-					   "</Cite>"))
+					     key)
+				     "</Cite>"))
 
 ;;;###autoload
 (defun tlon-babel-md-insert-mdx-aside ()
@@ -160,8 +162,8 @@ Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-core-languages))))
   (tlon-babel-md-insert-element-pair (format "<Lang id={\"%s\"}>"
-						   language)
-					   "</Lang>"))
+					     language)
+				     "</Lang>"))
 
 ;; TODO: revise to offer the url at point as default completion candidate
 ;;;###autoload
@@ -170,8 +172,8 @@ written in that language."
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
   (tlon-babel-md-insert-element-pair (format "<LiteralLink src={\"%s\"}>"
-						   url)
-					   "</LiteralLink>"))
+					     url)
+				     "</LiteralLink>"))
 
 ;;;###autoload
 (defun tlon-babel-md-insert-mdx-small-caps ()
@@ -196,6 +198,8 @@ opposed to a footnote."
   (interactive)
   (tlon-babel-md-insert-element-pair "<Sidenote>" "</Sidenote>"))
 
+;;;;;;; Math
+
 ;;;###autoload
 (defun tlon-babel-md-insert-math-inline ()
   "Insert an inline math element pair at point or around the selected region."
@@ -207,6 +211,8 @@ opposed to a footnote."
   "Insert a display math element pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
+
+;;;;; Misc
 
 ;;;###autoload
 (defun tlon-babel-md-end-of-buffer-dwim ()
@@ -221,6 +227,8 @@ end of the buffer unconditionally."
     (if (or (not match) (eq this-command last-command))
 	(goto-char (point-max))
       (goto-char (- (match-beginning 0) 1)))))
+
+;;;;; Dispatcher
 
 (transient-define-prefix tlon-babel-md-insert-dispatch ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
@@ -243,4 +251,3 @@ end of the buffer unconditionally."
 
 (provide 'tlon-babel-md)
 ;;; tlon-babel-md.el ends here
-
