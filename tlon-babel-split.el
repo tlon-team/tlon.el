@@ -65,22 +65,6 @@ The alignment is performed by scrolling up or down the other window."
       (scroll-up offset))
     (other-window -1)))
 
-;; I am currently not using this function. It was meant to conditionalize the
-;; activation of `tlon-babel-split-align-paragraphs', but I found that I liked
-;; the behavior without the conditional better.
-(defun tlon-babel-split-paragraphs-aligned-p ()
-  "Return t iff the paragraphs in both windows are aligned.
-The paragraphs are considered to be aligned if the number of paragraphs up to
-the current paragraph in the current window equals the number of paragraphs up
-to the paragraph in the other window at the same screen line."
-  (let* ((offset (tlon-babel-split-screen-line-offset))
-	 (current-paragraphs (tlon-babel-counterpart-count-paragraphs (point-min) (point))))
-    (save-selected-window
-      (other-window 1)
-      (save-excursion
-	(next-line offset)
-	(eq current-paragraphs (tlon-babel-counterpart-count-paragraphs (point-min) (point)))))))
-
 (defun tlon-babel-split-align-paragraphs ()
   "Align the paragraphs in the current and other windows.
 The alignment is performed by scrolling up or down the other window."
