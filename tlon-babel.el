@@ -214,16 +214,6 @@ The second capture group handles the `.md' extension, which we used previously."
 (defvar tlon-babel-enable-automatic-highlighting nil
   "Whether to automatically highlight corresponding sentences.")
 
-;;;;; Word count
-
-(defconst tlon-babel-local-variables-line-start
-  "<!-- Local Variables: -->"
-  "Start of the line that contains file local variables.")
-
-(defconst tlon-babel-local-variables-line-end
-  "<!-- End: -->"
-  "End of the line that contains file local variables.")
-
 ;;;; Functions
 
 ;;;;; version
@@ -344,66 +334,6 @@ If FILE is not provided, use the file visited by the current buffer."
     (unless key
       (user-error "No key found"))
     key))
-
-;;;;;; Counterparts
-
-;;;;; Word count
-
-(defun tlon-babel-get-text-between-lines (start-line end-line)
-  "Return the text between START-LINE and END-LINE in the current buffer."
-  (save-restriction
-    (widen)
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward start-line nil t)
-	(let* ((start (line-beginning-position))
-	       (end (when (re-search-forward end-line nil t)
-		      (line-end-position))))
-	  (when (and start end)
-	    (buffer-substring-no-properties start end)))))))
-
-(defun tlon-babel-get-local-variables ()
-  "Get the text in the \"local variables\" section of the current buffer."
-  (tlon-babel-get-text-between-lines
-   tlon-babel-local-variables-line-start
-   tlon-babel-local-variables-line-end))
-
-(defun tlon-babel-count-words-extra ()
-  "Count extraneous words in current buffer."
-  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-metadata nil 'raw) " ")))
-    (with-temp-buffer
-      (insert metadata)
-      (when-let ((vars (tlon-babel-get-local-variables)))
-	(insert vars))
-      (goto-char (point-min))
-      (count-words-region (point-min) (point-max)))))
-
-(defun tlon-babel-count-words-substance ()
-  "Count substantive words in current buffer."
-  (save-restriction
-    (widen)
-    (let ((raw (count-words (point-min) (point-max))))
-      (- raw (tlon-babel-count-words-extra)))))
-
-(defun tlon-babel-count-words-in-repo (&optional repo)
-  "Count words in Markdown files in REPO.
-If REPO is nil, prompt the user for one."
-  (interactive)
-  (let* ((repo (or repo
-		   (intern (completing-read
-			    "Repo: "
-			    (tlon-babel-core-repo-lookup-all :abbrev :subtype 'translations)))))
-	 (initial-buffers (buffer-list))
-	 (files (directory-files-recursively
-		 (tlon-babel-core-repo-lookup :dir :name repo) "\\.md$"))
-	 (total-words 0))
-    (dolist (file files)
-      (with-current-buffer (find-file-noselect file)
-	(let ((words-in-file (tlon-babel-count-words-substance)))
-	  (setq total-words (+ total-words words-in-file)))
-	(unless (member (current-buffer) initial-buffers)
-	  (kill-buffer (current-buffer)))))
-    (message (number-to-string total-words))))
 
 ;;;;; Clocked heading
 
