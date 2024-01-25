@@ -136,6 +136,18 @@ OPEN is the opening element and CLOSE is the closing element."
     (insert (concat open close))
     (backward-char (length close))))
 
+;;;;;;; HTML
+
+(defun tlon-babel-md-insert-html-subscript ()
+  "Insert an HTML `sub' element pair at point or around the selected region."
+  (interactive)
+  (tlon-babel-md-insert-element-pair "<sub>" "</sub>"))
+
+(defun tlon-babel-md-insert-html-superscript ()
+  "Insert an HTML `sup' element pair at point or around the selected region."
+  (interactive)
+  (tlon-babel-md-insert-element-pair "<sub>" "</sub>"))
+
 ;;;;;;; MDX
 
 ;; TODO: revise to offer the key at point as default completion candidate
@@ -232,7 +244,11 @@ end of the buffer unconditionally."
 
 (transient-define-prefix tlon-babel-md-insert-dispatch ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
-  [["MDX: notes"
+  [["HTML"
+    ("b" "subscript"            tlon-babel-md-insert-html-subscript)
+    ("p" "superscript"          tlon-babel-md-insert-html-superscript)
+    ]
+   ["MDX: notes"
     ("f" "footnote"             tlon-babel-md-insert-mdx-footnote)
     ("s" "sidenote"             tlon-babel-md-insert-mdx-sidenote)
     ]
@@ -246,8 +262,7 @@ end of the buffer unconditionally."
    ["Math"
     ("i" "inline"               tlon-babel-md-insert-math-inline)
     ("d" "display"              tlon-babel-md-insert-math-display)
-    ]]
-  )
+    ]])
 
 (provide 'tlon-babel-md)
 ;;; tlon-babel-md.el ends here
