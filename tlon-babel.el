@@ -225,8 +225,6 @@ The second capture group handles the `.md' extension, which we used previously."
 
 ;;;;; init
 
-(defvar paths-tlon-babel-todos-jobs-id)
-(defvar paths-tlon-babel-todos-generic-id)
 (defvar org-capture-templates)
 (defvar tlon-babel-refs-bibliography-files)
 (defun tlon-babel-init ()
