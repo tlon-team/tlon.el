@@ -441,11 +441,9 @@ open DeepL."
   "Return paths for original and translation files based on clocked task."
   (let* ((key (tlon-babel-get-clock-key))
 	 (metadata (tlon-babel-metadata-in-repos :subtype 'translations))
-	 (repo (tlon-babel-metadata-get-repo-from-key key))
-	 (identifier (tlon-babel-metadata-lookup metadata "original_path" "original_key" key))
-	 (original-path (file-name-concat repo "originals" identifier))
-	 (translation-path (tlon-babel-metadata-lookup metadata "file" "original_key" key)))
-    (cl-values original-path translation-path key)))
+	 (translation (tlon-babel-metadata-lookup metadata "file" "original_key" key))
+	 (original (tlon-babel-counterpart-get translation)))
+    (cl-values original translation key)))
 
 (defun tlon-babel-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
