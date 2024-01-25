@@ -28,11 +28,23 @@
 ;;; Code:
 
 (require 'dired)
+(require 'markdown-mode)
 (require 'tlon-babel-core)
+(require 'tlon-babel-yaml)
+
+;;;; Variables
+
+(defconst tlon-babel-counterpart-local-variables-line-start
+  "<!-- Local Variables: -->"
+  "Start of the line that contains file local variables.")
+
+(defconst tlon-babel-counterpart-local-variables-line-end
+  "<!-- End: -->"
+  "End of the line that contains file local variables.")
 
 ;;;; Functions
 
-(defun tlon-babel-get-content-subtype (&optional file)
+(defun tlon-babel-counterpart-get-content-subtype (&optional file)
   "For repo of FILE, get the value of its `:subtype' property.
 If FILE is nil, return the counterpart of the file visited by the current
 buffer."
@@ -136,12 +148,16 @@ If called with a prefix ARG, open the counterpart in the other window."
   (let* ((fun (if arg #'find-file-other-window #'find-file))
 	 (counterpart (tlon-babel-counterpart-get
 		       (or file (buffer-file-name))))
-	 (paragraphs (- (tlon-babel-count-paragraphs
-			 file (point-min) (min (point-max) (+ (point) 2)))
-			1)))
+	 (paragraphs (tlon-babel-counterpart-count-paragraphs
+		      (point-min)
+		      (point)))
+	 (offset (if (tlon-babel-counterpart-between-paragraphs-p) 0 1)))
     (funcall fun counterpart)
-    (goto-char (point-min))
-    (forward-paragraph paragraphs)))
+    (goto-char (or (cdr (tlon-babel-counterpart-get-delimiter-region-position
+			 tlon-babel-yaml-delimiter))
+		   (point-min)))
+    (markdown-forward-paragraph (- paragraphs offset))
+    (goto-char (1+ (point)))))
 
 (defun tlon-babel-counterpart-open-in-dired (&optional arg file)
   "Open the counterpart of file in FILE in Dired.
@@ -175,30 +191,61 @@ If FILE is nil, act on the file at point or visited in the current buffer.
 
 If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
-  (tlon-babel-open-counterpart-dwim t file))
+  (tlon-babel-counterpart-open-dwim t file))
 
-(defun tlon-babel-count-paragraphs (&optional file start end)
-  "Return number of paragraphs between START and END in FILE.
-If either START or END is nil, default to the beginning and end of the buffer.
-If FILE is nil, count paragraphs in the current buffer."
+(defun tlon-babel-counterpart-between-paragraphs-p ()
+  "Return t iff point is right between to paragraphs."
+  (not (= (tlon-babel-counterpart-count-paragraphs nil (point))
+	  (tlon-babel-counterpart-count-paragraphs nil (1+ (point))))))
+
+(defun tlon-babel-counterpart-get-delimiter-region-position (start-delimiter &optional end-delimiter)
+  "Get the position of the region between START-DELIMITER and END-DELIMITER.
+If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward start-delimiter nil t)
+	(let* ((start (match-beginning 0))
+	       (end (when (re-search-forward (or end-delimiter start-delimiter) nil t)
+		      (match-end 0))))
+	  (when (and start end)
+	    (cons start end)))))))
+
+(defun tlon-babel-counterpart-count-paragraphs (&optional start end)
+  "Count the number of paragraphs in a Markdown buffer between START and END."
   (interactive)
-  (let ((file (or file (buffer-file-name))))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (let ((start (or start (point-min)))
-	    (end (min (or end (point-max)))))
-	(narrow-to-region start end)
-	(goto-char (point-min))
-	(- (buffer-size) (forward-paragraph (buffer-size)))))))
+  (save-excursion
+    (goto-char (or start
+		   (cdr (tlon-babel-counterpart-get-delimiter-region-position
+			 tlon-babel-yaml-delimiter))
+		   (point-min)))
+    (let ((count 0))
+      (while (< (point) (or end
+			    (cdr (tlon-babel-counterpart-get-delimiter-region-position
+				  tlon-babel-counterpart-local-variables-line-start
+				  tlon-babel-counterpart-local-variables-line-end))
+			    (point-max)))
+        (let ((pos (point)))
+          (markdown-forward-paragraph)
+          (when (> (point) pos)
+            (setq count (1+ count)))))
+      (if (called-interactively-p t)
+	  (message "%d" count)
+	count))))
 
-(defun tlon-babel-check-paragraph-number-match (&optional file)
+;; TODO: make it inform the user where the discrepancies arise, e.g. by coloring
+;; the relevant paragraphs
+(defun tlon-babel-counterpart-check-paragraph-number-match (&optional file)
   "Check that FILE and its counterpart have the same number of paragraphs.
 If FILE is not provided, use the current buffer."
   (interactive)
   (let* ((part (or file (buffer-file-name)))
-	 (counterpart (tlon-babel-get-counterpart part))
-	 (paras-in-part (tlon-babel-count-paragraphs part))
-	 (paras-in-counterpart (tlon-babel-count-paragraphs counterpart)))
+	 (counterpart (tlon-babel-counterpart-get part))
+	 (paras-in-part (tlon-babel-counterpart-count-paragraphs))
+	 paras-in-counterpart)
+    (with-current-buffer (find-file-noselect counterpart)
+      (setq paras-in-counterpart (tlon-babel-counterpart-count-paragraphs)))
     (if (= paras-in-part paras-in-counterpart)
 	t
       (message "Paragraph number mismatch: \n%s has %s paragraphs\n%s has %s paragraphs"
@@ -212,7 +259,8 @@ default to \".md\"."
   (let* ((extension (or extension ".md"))
 	 (files (directory-files dir t (concat ".*\\" extension "$"))))
     (cl-loop for file in files
-	     do (tlon-babel-check-paragraph-number-match file))))
+	     do (tlon-babel-counterpart-check-paragraph-number-match file))))
+
 
 (provide 'tlon-babel-counterpart)
 ;;; tlon-babel-counterpart.el ends here
