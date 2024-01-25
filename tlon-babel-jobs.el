@@ -34,6 +34,7 @@
 (require 'tlon-babel)
 (require 'tlon-babel-import)
 (require 'tlon-babel-ogh)
+(require 'tlon-babel-split)
 (require 'tlon-babel-tts)
 (require 'window-extras)
 
