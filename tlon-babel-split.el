@@ -69,17 +69,24 @@ The alignment is performed by scrolling up or down the other window."
 (defun tlon-babel-split-align-paragraphs ()
   "Align the paragraphs in the current and other windows.
 The alignment is performed by scrolling up or down the other window."
-  (let ((current-scren-line (count-screen-lines (window-start) (point)))
-	(current-paragraphs (tlon-babel-counterpart-count-paragraphs (point-min) (point))))
+  (cl-destructuring-bind
+      (current-scren-line . current-paragraphs)
+      (save-excursion
+	(goto-char (1+ (point)))
+	(markdown-backward-paragraph)
+	(cons (count-screen-lines (window-start) (point))
+	      (tlon-babel-counterpart-count-paragraphs nil (point))))
     (save-selected-window
       (other-window 1)
       (save-restriction
 	(widen)
 	(save-excursion
-	  (goto-char (point-min))
+	  (goto-char (cdr (tlon-babel-counterpart-get-delimiter-region-position
+			   tlon-babel-yaml-delimiter)))
 	  (markdown-forward-paragraph current-paragraphs)
+	  (markdown-backward-paragraph)
 	  (recenter 0)
-	  (scroll-down (1+ current-scren-line)))))))
+	  (scroll-down current-scren-line))))))
 
 (defun tlon-babel-split-autoalign-paragraphs ()
   "Automatically align the paragraphs in the current and other windows."
