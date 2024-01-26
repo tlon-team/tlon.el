@@ -51,7 +51,7 @@
   "Insert a link to an element at point.
 The element can be a tag or an author."
   (interactive)
-  (tlon-babel-check-in-markdown-mode)
+  (tlon-babel-md-check-in-markdown-mode)
   (let* ((selection (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end))))
 	 (current-link (markdown-link-at-pos (point)))
 	 (current-desc (nth 2 current-link))
@@ -126,7 +126,7 @@ If no section is found, do nothing."
   "Insert an element pair at point or around the selected region.
 OPEN is the opening element and CLOSE is the closing element."
   (interactive)
-  (tlon-babel-check-in-markdown-mode)
+  (tlon-babel-md-check-in-markdown-mode)
   (if (use-region-p)
       (let ((begin (region-beginning)))
 	(goto-char (region-end))
@@ -225,6 +225,11 @@ opposed to a footnote."
   (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
 
 ;;;;; Misc
+
+(defun tlon-babel-md-check-in-markdown-mode ()
+  "Check if the current buffer is in a Markdown-derived mode."
+  (unless (derived-mode-p 'markdown-mode)
+    (user-error "Not in a Markdown buffer")))
 
 ;;;###autoload
 (defun tlon-babel-md-end-of-buffer-dwim ()

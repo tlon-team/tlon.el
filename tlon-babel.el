@@ -327,7 +327,7 @@ If FILE is not provided, use the file visited by the current buffer."
 
 (defun tlon-babel-get-key-in-buffer ()
   "Get the BibTeX key in the current Markdown buffer."
-  (tlon-babel-check-in-markdown-mode)
+  (tlon-babel-md-check-in-markdown-mode)
   (save-buffer)
   (let ((key (tlon-babel-metadata-get-field-value-in-file "original_key")))
     (unless key
@@ -619,11 +619,6 @@ If FILE is nil, check the current buffer."
 	     ;; for articles with duplicate titles
 	     (string-match-p (concat "^" (regexp-quote slugified-title) "-[0-9]+$") base))
       (error "The file `%s' does not match its title" title))))
-
-(defun tlon-babel-check-in-markdown-mode ()
-  "Check if the current buffer is in a Markdown-derived mode."
-  (unless (derived-mode-p 'markdown-mode)
-    (user-error "Not in a Markdown buffer")))
 
 ;;;;; Search
 
