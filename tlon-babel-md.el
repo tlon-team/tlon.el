@@ -240,7 +240,7 @@ The relevant part of the buffer is the part of the buffer that excludes the
 If this function is called twice consecutively, it will move the point to the
 end of the buffer unconditionally."
   (interactive)
-  (let ((match (re-search-forward tlon-babel-counterpart-local-variables-line-start nil t)))
+  (let ((match (re-search-forward tlon-babel-md-local-variables-line-start nil t)))
     (if (or (not match) (eq this-command last-command))
 	(goto-char (point-max))
       (goto-char (- (match-beginning 0) 1)))))
