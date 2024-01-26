@@ -28,7 +28,6 @@
 ;;; Code:
 
 (require 'markdown-mode-extras)
-(require 'tlon-babel)
 (require 'tlon-babel-yaml)
 
 ;;;; Variables
