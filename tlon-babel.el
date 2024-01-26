@@ -42,6 +42,7 @@
 (require 'org-roam)
 (require 'paths)
 (require 'substitute)
+(require 'tlon-babel-dispatch)
 (require 'tlon-babel-core)
 (require 'tlon-babel-refs)
 (require 'tlon-babel-yaml)
