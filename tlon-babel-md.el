@@ -230,7 +230,6 @@ opposed to a footnote."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))
 
-;;;###autoload
 (defun tlon-babel-md-end-of-buffer-dwim ()
   "Move point to the end of the relevant part of the buffer.
 The relevant part of the buffer is the part of the buffer that excludes the
@@ -239,10 +238,55 @@ The relevant part of the buffer is the part of the buffer that excludes the
 If this function is called twice consecutively, it will move the point to the
 end of the buffer unconditionally."
   (interactive)
-  (let ((match (re-search-forward tlon-babel-md-local-variables-line-start nil t)))
-    (if (or (not match) (eq this-command last-command))
-	(goto-char (point-max))
-      (goto-char (- (match-beginning 0) 1)))))
+  (if (tlon-babel-md-get-local-variables)
+      (progn
+	(re-search-forward tlon-babel-md-local-variables-line-start nil t)
+	(goto-char (- (match-beginning 0) 1)))
+    (goto-char (point-max))))
+
+(defun tlon-babel-md-beginning-of-buffer-dwim ()
+  "Move point to the beginning of the relevant part of the buffer.
+The relevant part of the buffer is the part of the buffer that excludes the
+metadata section.
+
+If this function is called twice consecutively, it will move the point to the
+end of the buffer unconditionally."
+  (interactive)
+  (if (tlon-babel-md-get-metadata)
+      (progn
+	(re-search-backward tlon-babel-yaml-delimiter nil t)
+	(goto-char (match-end 0)))
+    (goto-char (point-min))))
+
+;;;###autoload
+(defun tlon-babel-md-get-local-variables ()
+  "Get the text in the \"local variables\" section of the current buffer."
+  (when-let ((range (tlon-babel-md-get-delimiter-region-position
+                     tlon-babel-md-local-variables-line-start
+                     tlon-babel-md-local-variables-line-end)))
+    (cl-destructuring-bind (start . end) range
+      (buffer-substring-no-properties start end))))
+
+(defun tlon-babel-md-get-metadata ()
+  "Get the text in the metadata section of the current buffer."
+  (when-let ((range (tlon-babel-md-get-delimiter-region-position
+                     tlon-babel-yaml-delimiter)))
+    (cl-destructuring-bind (start . end) range
+      (buffer-substring-no-properties start end))))
+
+(defun tlon-babel-md-get-delimiter-region-position (start-delimiter &optional end-delimiter)
+  "Get the position of the region between START-DELIMITER and END-DELIMITER.
+If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward start-delimiter nil t)
+	(let* ((start (match-beginning 0))
+	       (end (when (re-search-forward (or end-delimiter start-delimiter) nil t)
+		      (match-end 0))))
+	  (when (and start end)
+	    (cons start end)))))))
 
 ;;;;; Dispatcher
 

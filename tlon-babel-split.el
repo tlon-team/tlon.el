@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'tlon-babel-counterpart)
+(require 'tlon-babel-md)
 
 ;;;; Main variables
 
@@ -39,8 +40,9 @@
 (define-minor-mode tlon-babel-split-mode
   "Enable `tlon-babel-split-mode' locally."
   :init-value nil
-  (let ((fun (if tlon-babel-split-mode 'add-hook 'remove-hook)))
-    (funcall fun 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)))
+  (if tlon-babel-split-mode
+      (remove-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)
+    (add-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs nil 'local)))
 
 (defun tlon-babel-split-screen-line-changed-p ()
   "Return t iff the cursor in on a different screen line."
@@ -48,6 +50,23 @@
 	 (moved-p (not (eq tlon-babel-split-last-screen-line-pos current-screen-line))))
     (setq tlon-babel-split-last-screen-line-pos current-screen-line)
     moved-p))
+
+(defun tlon-babel-split-top-of-buffer-visible-p ()
+  "Return t iff the top of the buffer is visible in the current window.
+The function considers the top of the buffer visible if the first line of the
+buffer, or the first line after the metadata if any, is visible in the current
+window."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (let ((first-visible-line (progn
+				  (forward-line (* -1 (count-screen-lines (window-start) (point))))
+				  (line-number-at-pos)))
+	    (first-line (progn
+			  (goto-char (point-max))
+			  (tlon-babel-md-beginning-of-buffer-dwim))))
+	(<= first-visible-line first-line)))))
+	
 
 (defun tlon-babel-split-screen-line-offset ()
   "Return the difference between the screen lines in the current and other windows."
@@ -81,8 +100,7 @@ The alignment is performed by scrolling up or down the other window."
       (save-restriction
 	(widen)
 	(save-excursion
-	  (goto-char (cdr (tlon-babel-counterpart-get-delimiter-region-position
-			   tlon-babel-yaml-delimiter)))
+	  (tlon-babel-md-beginning-of-buffer-dwim)
 	  (markdown-forward-paragraph current-paragraphs)
 	  (markdown-backward-paragraph)
 	  (recenter 0)

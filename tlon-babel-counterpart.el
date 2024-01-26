@@ -144,7 +144,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 		      (point)))
 	 (offset (if (tlon-babel-counterpart-between-paragraphs-p) 0 1)))
     (funcall fun counterpart)
-    (goto-char (or (cdr (tlon-babel-counterpart-get-delimiter-region-position
+    (goto-char (or (cdr (tlon-babel-md-get-delimiter-region-position
 			 tlon-babel-yaml-delimiter))
 		   (point-min)))
     (markdown-forward-paragraph (- paragraphs offset))
@@ -189,31 +189,17 @@ If called with a prefix ARG, open the counterpart in the other window."
   (not (= (tlon-babel-counterpart-count-paragraphs nil (point))
 	  (tlon-babel-counterpart-count-paragraphs nil (1+ (point))))))
 
-(defun tlon-babel-counterpart-get-delimiter-region-position (start-delimiter &optional end-delimiter)
-  "Get the position of the region between START-DELIMITER and END-DELIMITER.
-If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
-  (save-restriction
-    (widen)
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward start-delimiter nil t)
-	(let* ((start (match-beginning 0))
-	       (end (when (re-search-forward (or end-delimiter start-delimiter) nil t)
-		      (match-end 0))))
-	  (when (and start end)
-	    (cons start end)))))))
-
 (defun tlon-babel-counterpart-count-paragraphs (&optional start end)
   "Count the number of paragraphs in a Markdown buffer between START and END."
   (interactive)
   (save-excursion
     (goto-char (or start
-		   (cdr (tlon-babel-counterpart-get-delimiter-region-position
+		   (cdr (tlon-babel-md-get-delimiter-region-position
 			 tlon-babel-yaml-delimiter))
 		   (point-min)))
     (let ((count 0))
       (while (< (point) (or end
-			    (cdr (tlon-babel-counterpart-get-delimiter-region-position
+			    (cdr (tlon-babel-md-get-delimiter-region-position
 				  tlon-babel-md-local-variables-line-start
 				  tlon-babel-md-local-variables-line-end))
 			    (point-max)))
@@ -254,20 +240,12 @@ default to \".md\"."
 
 ;;;;; Word count
 
-(defun tlon-babel-counterpart-get-local-variables ()
-  "Get the text in the \"local variables\" section of the current buffer."
-  (cl-destructuring-bind (start . end)
-      (tlon-babel-counterpart-get-delimiter-region-position
-       tlon-babel-md-local-variables-line-start
-       tlon-babel-md-local-variables-line-end)
-    (buffer-substring-no-properties start end)))
-
 (defun tlon-babel-counterpart-count-words-extra ()
   "Count extraneous words in current buffer."
   (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-metadata nil 'raw) " ")))
     (with-temp-buffer
       (insert metadata)
-      (when-let ((vars (tlon-babel-counterpart-get-local-variables)))
+      (when-let ((vars (tlon-babel-md-get-local-variables)))
 	(insert vars))
       (goto-char (point-min))
       (count-words-region (point-min) (point-max)))))
