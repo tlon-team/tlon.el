@@ -51,11 +51,13 @@
     (setq tlon-babel-split-last-screen-line-pos current-screen-line)
     moved-p))
 
+;; Currently this function is not used; we use
+;; `tlon-babel-split-screen-line-threshold' instead.
 (defun tlon-babel-split-top-of-buffer-visible-p ()
   "Return t iff the top of the buffer is visible in the current window.
-The function considers the top of the buffer visible if the first line of the
-buffer, or the first line after the metadata if any, is visible in the current
-window."
+The function considers the top of the buffer to be visible if the first screen
+line of the buffer, or the first screen line after the metadata if any, is
+visible in the current window."
   (save-restriction
     (widen)
     (save-excursion
