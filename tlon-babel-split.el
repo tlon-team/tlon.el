@@ -42,10 +42,7 @@
 
 (define-minor-mode tlon-babel-split-mode
   "Enable `tlon-babel-split-mode' locally."
-  :init-value nil
-  (if tlon-babel-split-mode
-      (remove-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)
-    (add-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs nil 'local)))
+  :init-value nil)
 
 (defun tlon-babel-split-screen-line-changed-p ()
   "Return t iff the cursor in on a different screen line."
