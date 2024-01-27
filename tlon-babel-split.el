@@ -35,6 +35,9 @@
 (defvar tlon-babel-split-last-screen-line-pos nil
   "Most recent point position.")
 
+(defvar tlon-babel-split-screen-line-threshold 60
+  "Number of lines below which `tlon-babel-split-autoalign-paragraphs' is disabled.")
+
 ;;;; Functions
 
 (define-minor-mode tlon-babel-split-mode
