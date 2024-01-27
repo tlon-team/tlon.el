@@ -61,14 +61,13 @@ visible in the current window."
   (save-restriction
     (widen)
     (save-excursion
-      (let ((first-visible-line (progn
-				  (forward-line (* -1 (count-screen-lines (window-start) (point))))
-				  (line-number-at-pos)))
-	    (first-line (progn
-			  (goto-char (point-max))
-			  (tlon-babel-md-beginning-of-buffer-dwim))))
+      (let ((first-visible-line (count-screen-lines (point-min) (window-start)))
+	    (first-line
+	     (progn
+	       (goto-char (point-max))
+	       (tlon-babel-md-beginning-of-buffer-dwim)
+	       (count-screen-lines (window-start) (point)))))
 	(<= first-visible-line first-line)))))
-	
 
 (defun tlon-babel-split-screen-line-offset ()
   "Return the difference between the screen lines in the current and other windows."
