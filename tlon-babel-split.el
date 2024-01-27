@@ -110,7 +110,8 @@ The alignment is performed by scrolling up or down the other window."
 (defun tlon-babel-split-autoalign-paragraphs ()
   "Automatically align the paragraphs in the current and other windows."
   (when (and tlon-babel-split-mode
-	     (tlon-babel-split-screen-line-changed-p))
+	     (tlon-babel-split-screen-line-changed-p)
+	     (>= (count-screen-lines (point-min) (point)) tlon-babel-split-screen-line-threshold))
     (tlon-babel-split-align-paragraphs)))
 
 (provide 'tlon-babel-split)
