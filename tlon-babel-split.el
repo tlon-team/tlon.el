@@ -114,6 +114,8 @@ The alignment is performed by scrolling up or down the other window."
 	     (>= (count-screen-lines (point-min) (point)) tlon-babel-split-screen-line-threshold))
     (tlon-babel-split-align-paragraphs)))
 
+(add-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)
+
 (provide 'tlon-babel-split)
 ;;; tlon-babel-split.el ends here
 
