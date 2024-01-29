@@ -276,24 +276,6 @@ The second capture group handles the `.md' extension, which we used previously."
   (interactive (list (completing-read "Language: " tlon-babel-core-languages)))
   (setq tlon-babel-core-translation-language language))
 
-;;;;;; get file paths
-
-;; Some file paths cannot be set as vars because they change dynamically
-;; depending on the value of `tlon-babel-gpt-translate-file'. We define the
-;; relevant functions here.
-
-(defun tlon-babel-get-file-glossary (&optional language)
-  "Return the file containing the glossary for LANGUAGE.
-If LANGUAGE is nil, default to the languageuage set in
-`tlon-babel-core-translation-language'."
-  (let* ((language (or language tlon-babel-core-translation-language))
-	 (repo (tlon-babel-core-repo-lookup :dir
-				       :subproject "babel"
-				       :language language)))
-    (file-name-concat repo "dict/Glossary.csv")))
-
-;;;;;; Create/visit todos
-
 ;;;;; User commits
 
 (defun tlon-babel-latest-user-commit-in-file (&optional file)

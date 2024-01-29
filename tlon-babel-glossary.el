@@ -31,6 +31,16 @@
 
 ;;;; Functions
 
+(defun tlon-babel-get-file-glossary (&optional language)
+  "Return the file containing the glossary for LANGUAGE.
+If LANGUAGE is nil, default to the languageuage set in
+`tlon-babel-core-translation-language'."
+  (let* ((language (or language tlon-babel-core-translation-language))
+	 (repo (tlon-babel-core-repo-lookup :dir
+					    :subproject "babel"
+					    :language language)))
+    (file-name-concat repo "dict/Glossary.csv")))
+
 (defun tlon-babel-glossary-alist ()
   "Read `Glossary.csv` and return it as an alist."
   (with-temp-buffer
