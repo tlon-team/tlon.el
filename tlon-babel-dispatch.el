@@ -275,6 +275,13 @@ DIR is the directory where the repo is stored."
 	  (push (cdr cons) collection))))
     collection))
 
+(dolist (repo tlon-babel-core-repos)
+  (dolist (entity (tlon-babel-get-entity-types))
+    (eval `(tlon-babel-generate-dir-commands
+	    ,(plist-get repo :abbrev)
+	    ,(plist-get repo :dir)
+	    ,entity))))
+
 (defmacro tlon-babel-generate-entity-dispatch (name)
   "Generate a dispatcher for browsing an entity named NAME in a repo."
   `(transient-define-prefix ,(intern (format "tlon-babel-browse-entity-in-%s-dispatch" name)) ()
@@ -284,7 +291,6 @@ DIR is the directory where the repo is stored."
        ("t" "tags"             ,(intern (format "tlon-babel-dired-browse-tags-dir-in-%s" name)))
        ("u" "authors"          ,(intern (format "tlon-babel-dired-browse-authors-dir-in-%s" name)))
        ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))
-       ;; ("i" "images"           ,(intern (format "tlon-babel-dired-browse-images-dir-in-%s" name)))
        ]]
      ))
 

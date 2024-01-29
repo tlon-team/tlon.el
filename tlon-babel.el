@@ -821,18 +821,6 @@ presented to the user."
 	 (file (cdr (assoc selection alist))))
     (find-file file)))
 
-(defmacro tlon-babel-generate-open-file-in-repo-commands (repo)
-  "Generate commands to open file in REPO."
-  (let* ((repo-name (tlon-babel-core-repo-lookup :abbrev :dir repo))
-	 (command-name (intern (concat "tlon-babel-open-file-in-" repo-name))))
-    `(defun ,command-name ()
-       ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
-       (interactive)
-       (tlon-babelq-open-file-in-repo ,repo))))
-
-(dolist (repo (tlon-babel-core-repo-lookup-all :dir))
-  (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
-
 ;;;;;;; Fix log errors helper functions
 
 (defun tlon-babel-collect-bibtex-keys-in-buffer ()
