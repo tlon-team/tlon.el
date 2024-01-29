@@ -74,7 +74,7 @@ If LANGUAGE is nil, default to the languageuage set in
 				      (format "translation term [%s]: "
 					      tlon-babel-core-translation-language))))
 	(explanation (tlon-babel-glossary-prompt-for-explanation)))
-    (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary translation))
+    (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary))
       (goto-char (point-max))
       (insert (tlon-babel-glossary-regexp-pattern original translation))
       (tlon-babel-glossary-finalize "add" original explanation))))
