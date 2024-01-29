@@ -97,6 +97,21 @@
    ]
   )
 
+;;;;; Browse repo in Magit
+
+(defmacro tlon-babel-generate-magit-browse-commands (name dir)
+  "Generate commands for browsing repo named NAME in Magit.
+DIR is the directory where the repo is stored."
+  `(defun ,(intern (format "tlon-babel-magit-browse-%s" name)) ()
+     ,(format "Browse the %s repository in Magit." name)
+     (interactive)
+     (magit-status ,dir)))
+
+(dolist (repo tlon-babel-core-repos)
+  (eval `(tlon-babel-generate-magit-browse-commands
+	  ,(plist-get repo :abbrev)
+	  ,(plist-get repo :dir))))
+
 (transient-define-prefix tlon-babel-magit-repo-dispatch ()
   "Browse a Tlön repo in Magit."
   [["Babel"
@@ -135,6 +150,20 @@
    ]
   )
 
+;;;;; Open repo
+
+(defmacro tlon-babel-generate-open-file-in-repo-commands (repo)
+  "Generate commands to open file in REPO."
+  (let* ((repo-name (tlon-babel-core-repo-lookup :abbrev :dir repo))
+	 (command-name (intern (concat "tlon-babel-open-file-in-" repo-name))))
+    `(defun ,command-name ()
+       ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
+       (interactive)
+       (tlon-babelq-open-file-in-repo ,repo))))
+
+(dolist (repo (tlon-babel-core-repo-lookup-all :dir))
+  (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
+
 (transient-define-prefix tlon-babel-open-repo-dispatch ()
   "Interactively open a file from a Tlön repo."
   [["Babel"
@@ -171,6 +200,21 @@
    ]
   )
 
+;;;;; Browse repo in Dired
+
+(defmacro tlon-babel-generate-dired-browse-commands (name dir)
+  "Generate commands for browsing repo named NAME.
+DIR is the directory where the repo is stored."
+  `(defun ,(intern (format "tlon-babel-dired-browse-%s" name)) ()
+     ,(format "Browse the %s repository in Dired." name)
+     (interactive)
+     (dired ,dir)))
+
+(dolist (repo tlon-babel-core-repos)
+  (eval `(tlon-babel-generate-dired-browse-commands
+	  ,(plist-get repo :abbrev)
+	  ,(plist-get repo :dir))))
+
 (transient-define-prefix tlon-babel-dired-repo-dispatch ()
   "Browse a Tlön repo in Dired."
   [["Babel"
@@ -206,6 +250,17 @@
     ]
    ]
   )
+
+;;;;; Browse repo dir in Dired
+
+(defmacro tlon-babel-generate-dir-commands (name dir entity)
+  "Generate commands for browsing ENTITY subdirectory in repo named NAME.
+DIR is the directory where the repo is stored."
+  `(progn
+     (defun ,(intern (format "tlon-babel-dired-browse-%s-dir-in-%s" entity name)) ()
+       ,(format "Browse the `%s' directory in the `%s' repository." entity name)
+       (interactive)
+       (tlon-babel-browse-entity-dir ,entity ,dir))))
 
 (defun tlon-babel-get-entity-types ()
   "Return a list of entity types."

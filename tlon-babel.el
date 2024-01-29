@@ -77,41 +77,6 @@ This variable should not be set manually.")
 
 ;;;;;; lookup
 
-
-(defmacro tlon-babel-generate-repo-commands (name dir)
-  "Generate commands for browsing repo named NAME.
-DIR is the directory where the repo is stored."
-  `(progn
-     (defun ,(intern (format "tlon-babel-dired-browse-%s" name)) ()
-       ,(format "Browse the %s repository in Dired." name)
-       (interactive)
-       (dired ,dir))
-     (defun ,(intern (format "tlon-babel-magit-browse-%s" name)) ()
-       ,(format "Browse the %s repository in Magit." name)
-       (interactive)
-       (magit-status ,dir))))
-
-(dolist (repo tlon-babel-core-repos)
-  (eval `(tlon-babel-generate-repo-commands
-	  ,(plist-get repo :abbrev)
-	  ,(plist-get repo :dir))))
-
-(defmacro tlon-babel-generate-dir-commands (name dir entity)
-  "Generate commands for browsing ENTITY subdirectory in repo named NAME.
-DIR is the directory where the repo is stored."
-  `(progn
-     (defun ,(intern (format "tlon-babel-dired-browse-%s-dir-in-%s" entity name)) ()
-       ,(format "Browse the `%s' directory in the `%s' repository." entity name)
-       (interactive)
-       (tlon-babel-browse-entity-dir ,entity ,dir))))
-
-(dolist (repo tlon-babel-core-repos)
-  (dolist (entity (tlon-babel-get-entity-types))
-    (eval `(tlon-babel-generate-dir-commands
-	    ,(plist-get repo :abbrev)
-	    ,(plist-get repo :dir)
-	    ,entity))))
-
 (defvar tlon-babel-dir-correspondences
   (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-es") "correspondences/")
   "Directory where correspondence files are stored.")
