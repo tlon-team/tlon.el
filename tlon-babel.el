@@ -77,14 +77,6 @@ This variable should not be set manually.")
 
 ;;;;;; lookup
 
-(defun tlon-babel-get-entity-types ()
-  "Return a list of entity types."
-  (let (collection)
-    (dolist (list tlon-babel-core-bare-dirs)
-      (dolist (cons list)
-	(when (string= (car cons) "en")
-	  (push (cdr cons) collection))))
-    collection))
 
 (defmacro tlon-babel-generate-repo-commands (name dir)
   "Generate commands for browsing repo named NAME.

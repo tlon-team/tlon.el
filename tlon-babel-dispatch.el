@@ -207,6 +207,14 @@
    ]
   )
 
+(defun tlon-babel-get-entity-types ()
+  "Return a list of entity types."
+  (let (collection)
+    (dolist (list tlon-babel-core-bare-dirs)
+      (dolist (cons list)
+	(when (string= (car cons) "en")
+	  (push (cdr cons) collection))))
+    collection))
 
 (defmacro tlon-babel-generate-entity-dispatch (name)
   "Generate a dispatcher for browsing an entity named NAME in a repo."
