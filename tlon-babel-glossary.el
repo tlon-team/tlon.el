@@ -69,35 +69,37 @@ If LANGUAGE is nil, default to the languageuage set in
 (defun tlon-babel-glossary-add (&optional original translation)
   "Add a new entry to the glossary for ORIGINAL and TRANSLATION terms."
   (interactive)
-  (let ((original (or original (read-string "original term: "))))
-    (cl-destructuring-bind (translation explanation) (tlon-babel-glossary-prompt translation)
-      (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary translation))
-	(goto-char (point-max))
-	(insert (tlon-babel-glossary-regexp-pattern original translation))
-	(tlon-babel-glossary-finalize "add" original explanation)))))
+  (let ((original (or original (read-string "original term: ")))
+	(translation (or translation (read-string
+				      (format "translation term [%s]: "
+					      tlon-babel-core-translation-language))))
+	(explanation (tlon-babel-glossary-prompt-for-explanation)))
+    (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary translation))
+      (goto-char (point-max))
+      (insert (tlon-babel-glossary-regexp-pattern original translation))
+      (tlon-babel-glossary-finalize "add" original explanation))))
 
 (defun tlon-babel-glossary-modify (original)
   "Modify an entry in the glossary corresponding to the ORIGINAL term."
-  (let* ((existing-translation (cdr (assoc original (tlon-babel-glossary-alist)))))
-    (cl-destructuring-bind (new-translation explanation) (tlon-babel-glossary-prompt)
-      (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary))
-	(goto-char (point-min))
-	(while (re-search-forward (tlon-babel-glossary-regexp-pattern original existing-translation) nil t)
-	  (replace-match (tlon-babel-glossary-regexp-pattern original new-translation)))
-	(tlon-babel-glossary-finalize "modify" original explanation)
-	(message "Remember to run a `ripgrep' search for the original translation (\"%s\") across all the Babel repos in the translation language (%s), making any necessary replacements."
-		 existing-translation tlon-babel-core-translation-language)))))
+  (let* ((existing-translation (cdr (assoc original (tlon-babel-glossary-alist))))
+	 (new-translation (read-string
+			   (format "new translation term [%s]: "
+				   tlon-babel-core-translation-language)
+			   existing-translation))
+	 (explanation (tlon-babel-glossary-prompt-for-explanation)))
+    (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary))
+      (goto-char (point-min))
+      (while (re-search-forward (tlon-babel-glossary-regexp-pattern original existing-translation) nil t)
+	(replace-match (tlon-babel-glossary-regexp-pattern original new-translation)))
+      (tlon-babel-glossary-finalize "modify" original explanation)
+      (message "Remember to run a `ripgrep' search for the original translation (\"%s\") across all the Babel repos in the translation language (%s), making any necessary replacements."
+	       existing-translation tlon-babel-core-translation-language))))
 
-(defun tlon-babel-glossary-prompt (&optional translation)
-  "Prompt the user for a translation and and an explanation.
-If TRANSLATION is non-nil, prompt for an explanation only."
-  (let ((translation (or translation (read-string
-				      (format "translation term [%s]: "
-					      tlon-babel-core-translation-language))))
-	(explanation (read-string (format
-				   "Explanation (optional; please write it in the translation language [%s]): "
-				   tlon-babel-core-translation-language))))
-    (list translation explanation)))
+(defun tlon-babel-glossary-prompt-for-explanation ()
+  "Prompt the user for an explanation of the translation."
+  (read-string (format
+		"Explanation (optional; please write it in the translation language [%s]): "
+		tlon-babel-core-translation-language)))
 
 (defun tlon-babel-glossary-regexp-pattern (original translation)
   "Get the regexp pattern for glossary entry.
