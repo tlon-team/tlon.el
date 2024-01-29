@@ -146,6 +146,13 @@
 	   :abbrev "bisagra"
 	   :type misc
 	   :key "b")
+    (:name "meetings-leo-pablo"
+	   :abbrev "meetings-leo-pablo"
+	   )
+    (:name "meetings-fede-pablo"
+	   :abbrev "meetings-fede-pablo")
+    (:name "meetings-fede-leo"
+	   :abbrev "meetings-fede-leo")
     (:name "tlon-docs"
 	   :project "other"
 	   :subproject "docs"
