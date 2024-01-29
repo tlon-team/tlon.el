@@ -145,7 +145,7 @@ OPEN is the opening element and CLOSE is the closing element."
 (defun tlon-babel-md-insert-html-superscript ()
   "Insert an HTML `sup' element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair "<sub>" "</sub>"))
+  (tlon-babel-md-insert-element-pair "<sup>" "</sup>"))
 
 ;;;;;;; MDX
 
