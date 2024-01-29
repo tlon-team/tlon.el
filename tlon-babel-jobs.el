@@ -287,6 +287,7 @@ substitute assignee."
 
 (defun tlon-babel-jobs-initialize-revision ()
   "Initialize stylistic revision."
+  (winum-select-window-2)
   (tlon-babel-split-mode))
 
 (defun tlon-babel-jobs-initialize-check ()
