@@ -203,6 +203,8 @@ for the process that is being initialized."
 	   (current-action (tlon-babel-get-clock-action))
 	   (next-label (tlon-babel-get-clock-next-label))
 	   (next-assignee (tlon-babel-jobs-get-next-assignee)))
+      ;; MAYBE: check that it is a repo of `translations' subtype
+      ;; thought this would have to exclude “process” stage
       (tlon-babel-check-branch "main" repo)
       (tlon-babel-ogh-check-label-and-assignee repo)
       (tlon-babel-check-file
