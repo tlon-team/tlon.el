@@ -31,6 +31,8 @@
 
 ;;;; Functions
 
+;;;;; Main dispatcher
+
 ;; TODO: add flag to set translation language, similar to Magit dispatch
 (transient-define-prefix tlon-babel-dispatch ()
   "Dispatch a `tlon-babel' command."
