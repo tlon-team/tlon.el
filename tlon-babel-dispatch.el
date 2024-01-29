@@ -100,35 +100,37 @@
 (transient-define-prefix tlon-babel-magit-repo-dispatch ()
   "Browse a Tlön repo in Magit."
   [["Babel"
-    ("b c" "babel-core"                       tlon-babel-magit-browse-babel-core)
-    ("b r" "babel-refs"                       tlon-babel-magit-browse-babel-refs)
-    ("b s" "babel-es"                         tlon-babel-magit-browse-babel-es)
+    ("b c" "babel-core"                   tlon-babel-magit-browse-babel-core)
+    ("b r" "babel-refs"                   tlon-babel-magit-browse-babel-refs)
+    ("b s" "babel-es"                     tlon-babel-magit-browse-babel-es)
     ]
    ["Uqbar"
-    ("q i" "uqbar-issues"                     tlon-babel-magit-browse-uqbar-issues)
-    ("q f" "uqbar-front"                      tlon-babel-magit-browse-uqbar-front)
-    ("q a" "uqbar-api"                        tlon-babel-magit-browse-uqbar-api)
-    ("q n" "uqbar-en"                         tlon-babel-magit-browse-uqbar-en)
-    ("q s" "uqbar-es"                         tlon-babel-magit-browse-uqbar-es)
+    ("q i" "uqbar-issues"                 tlon-babel-magit-browse-uqbar-issues)
+    ("q f" "uqbar-front"                  tlon-babel-magit-browse-uqbar-front)
+    ("q a" "uqbar-api"                    tlon-babel-magit-browse-uqbar-api)
+    ("q n" "uqbar-en"                     tlon-babel-magit-browse-uqbar-en)
+    ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)
     ]
    ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-magit-browse-utilitarismo-en)
-    ("u s" "utilitarismo-es"                     tlon-babel-magit-browse-utilitarismo-es)
+    ("u n" "utilitarismo-en"              tlon-babel-magit-browse-utilitarismo-en)
+    ("u s" "utilitarismo-es"              tlon-babel-magit-browse-utilitarismo-es)
     ]
    ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-magit-browse-ensayos-en)
-    ("e s" "ensayos-es"                     tlon-babel-magit-browse-ensayos-es)
+    ("e n" "ensayos-en"                   tlon-babel-magit-browse-ensayos-en)
+    ("e s" "ensayos-es"                   tlon-babel-magit-browse-ensayos-es)
     ]
    ["EA News"
-    ("n i" "ean-issues"                     tlon-babel-magit-browse-ean-issues)
-    ("n f" "ean-front"                     tlon-babel-magit-browse-ean-front)
-    ("n a" "ean-api"                     tlon-babel-magit-browse-ean-api)
+    ("n i" "ean-issues"                   tlon-babel-magit-browse-ean-issues)
+    ("n f" "ean-front"                    tlon-babel-magit-browse-ean-front)
+    ("n a" "ean-api"                      tlon-babel-magit-browse-ean-api)
     ]
    ["La Bisagra"
-    ("s s" "bisagra"                     tlon-babel-magit-browse-bisagra)
+    ("s s" "bisagra"                      tlon-babel-magit-browse-bisagra)
     ]
+   ["Meetings"
+    ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)]
    ["Docs"
-    ("d d" "tlon-docs"                     tlon-babel-magit-browse-docs)
+    ("d d" "tlon-docs"                    tlon-babel-magit-browse-docs)
     ]
    ]
   )
@@ -136,35 +138,35 @@
 (transient-define-prefix tlon-babel-open-repo-dispatch ()
   "Interactively open a file from a Tlön repo."
   [["Babel"
-    ("b c" "babel-core"                       tlon-babel-open-file-in-babel-core)
-    ("b r" "babel-refs"                       tlon-babel-open-file-in-babel-refs)
-    ("b s" "babel-es"                         tlon-babel-open-file-in-babel-es)
+    ("b c" "babel-core"                   tlon-babel-open-file-in-babel-core)
+    ("b r" "babel-refs"                   tlon-babel-open-file-in-babel-refs)
+    ("b s" "babel-es"                     tlon-babel-open-file-in-babel-es)
     ]
    ["Uqbar"
-    ("q i" "uqbar-issues"                     tlon-babel-open-file-in-uqbar-issues)
-    ("q f" "uqbar-front"                      tlon-babel-open-file-in-uqbar-front)
-    ("q a" "uqbar-api"                        tlon-babel-open-file-in-uqbar-api)
-    ("q n" "uqbar-en"                         tlon-babel-open-file-in-uqbar-en)
-    ("q s" "uqbar-es"                         tlon-babel-open-file-in-uqbar-es)
+    ("q i" "uqbar-issues"                 tlon-babel-open-file-in-uqbar-issues)
+    ("q f" "uqbar-front"                  tlon-babel-open-file-in-uqbar-front)
+    ("q a" "uqbar-api"                    tlon-babel-open-file-in-uqbar-api)
+    ("q n" "uqbar-en"                     tlon-babel-open-file-in-uqbar-en)
+    ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)
     ]
    ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-open-file-in-utilitarismo-en)
-    ("u s" "utilitarismo-es"                     tlon-babel-open-file-in-utilitarismo-es)
+    ("u n" "utilitarismo-en"              tlon-babel-open-file-in-utilitarismo-en)
+    ("u s" "utilitarismo-es"              tlon-babel-open-file-in-utilitarismo-es)
     ]
    ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-open-file-in-ensayos-en)
-    ("e s" "ensayos-es"                     tlon-babel-open-file-in-ensayos-es)
+    ("e n" "ensayos-en"                   tlon-babel-open-file-in-ensayos-en)
+    ("e s" "ensayos-es"                   tlon-babel-open-file-in-ensayos-es)
     ]
    ["EA News"
-    ("n i" "ean-issues"                     tlon-babel-open-file-in-ean-issues)
-    ("n f" "ean-front"                     tlon-babel-open-file-in-ean-front)
-    ("n a" "ean-api"                     tlon-babel-open-file-in-ean-api)
+    ("n i" "ean-issues"                   tlon-babel-open-file-in-ean-issues)
+    ("n f" "ean-front"                    tlon-babel-open-file-in-ean-front)
+    ("n a" "ean-api"                      tlon-babel-open-file-in-ean-api)
     ]
    ["La Bisagra"
-    ("s s" "bisagra"                     tlon-babel-open-file-in-bisagra)
+    ("s s" "bisagra"                      tlon-babel-open-file-in-bisagra)
     ]
    ["Docs"
-    ("d d" "tlon-docs"                     tlon-babel-open-file-in-docs)
+    ("d d" "tlon-docs"                    tlon-babel-open-file-in-docs)
     ]
    ]
   )
@@ -172,35 +174,35 @@
 (transient-define-prefix tlon-babel-dired-repo-dispatch ()
   "Browse a Tlön repo in Dired."
   [["Babel"
-    ("b c" "babel-core"                       tlon-babel-dired-browse-babel-core)
-    ("b r" "babel-refs"                       tlon-babel-dired-browse-babel-refs)
-    ("b s" "babel-es"                         tlon-babel-dired-browse-babel-es)
+    ("b c" "babel-core"                   tlon-babel-dired-browse-babel-core)
+    ("b r" "babel-refs"                   tlon-babel-dired-browse-babel-refs)
+    ("b s" "babel-es"                     tlon-babel-dired-browse-babel-es)
     ]
    ["Uqbar"
-    ("q i" "uqbar-issues"                     tlon-babel-dired-browse-uqbar-issues)
-    ("q f" "uqbar-front"                      tlon-babel-dired-browse-uqbar-front)
-    ("q a" "uqbar-api"                        tlon-babel-dired-browse-uqbar-api)
-    ("q n" "uqbar-en"                         tlon-babel-dired-browse-uqbar-en)
-    ("q s" "uqbar-es"                         tlon-babel-dired-browse-uqbar-es)
+    ("q i" "uqbar-issues"                 tlon-babel-dired-browse-uqbar-issues)
+    ("q f" "uqbar-front"                  tlon-babel-dired-browse-uqbar-front)
+    ("q a" "uqbar-api"                    tlon-babel-dired-browse-uqbar-api)
+    ("q n" "uqbar-en"                     tlon-babel-dired-browse-uqbar-en)
+    ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)
     ]
    ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-dired-browse-utilitarismo-en)
-    ("u s" "utilitarismo-es"                     tlon-babel-dired-browse-utilitarismo-es)
+    ("u n" "utilitarismo-en"              tlon-babel-dired-browse-utilitarismo-en)
+    ("u s" "utilitarismo-es"              tlon-babel-dired-browse-utilitarismo-es)
     ]
    ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-dired-browse-ensayos-en)
-    ("e s" "ensayos-es"                     tlon-babel-dired-browse-ensayos-es)
+    ("e n" "ensayos-en"                   tlon-babel-dired-browse-ensayos-en)
+    ("e s" "ensayos-es"                   tlon-babel-dired-browse-ensayos-es)
     ]
    ["EA News"
-    ("n i" "ean-issues"                     tlon-babel-dired-browse-ean-issues)
-    ("n f" "ean-front"                     tlon-babel-dired-browse-ean-front)
-    ("n a" "ean-api"                     tlon-babel-dired-browse-ean-api)
+    ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
+    ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
+    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)
     ]
    ["La Bisagra"
-    ("s s" "bisagra"                     tlon-babel-dired-browse-bisagra)
+    ("s s" "bisagra"                      tlon-babel-dired-browse-bisagra)
     ]
    ["Docs"
-    ("d d" "tlon-docs"                     tlon-babel-dired-browse-docs)
+    ("d d" "tlon-docs"                    tlon-babel-dired-browse-docs)
     ]
    ]
   )
