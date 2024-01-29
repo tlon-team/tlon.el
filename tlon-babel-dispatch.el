@@ -207,42 +207,6 @@
    ]
   )
 
-(transient-define-prefix tlon-babel-dired-dir-dispatch ()
-  "Browse a Tlön repo directory in Dired."
-  [
-   ;; ["Babel"
-   ;; ("b c" "babel-core"                       tlon-babel-dired-babel-core)
-   ;; ("b r" "babel-refs"                       tlon-babel-dired-babel-refs)
-   ;; ("b s" "babel-es"                         tlon-babel-dired-babel-es)
-   ;; ]
-   ["Uqbar"
-    ;; ("q i" "uqbar-issues"                     )
-    ;; ("q f" "uqbar-front"                      )
-    ;; ("q a" "uqbar-api"                        )
-    ("q n" "uqbar-en"                         tlon-babel-browse-entity-in-uqbar-en-dispatch)
-    ("q s" "uqbar-es"                         tlon-babel-browse-entity-in-uqbar-es-dispatch)
-    ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"                     tlon-babel-browse-entity-in-utilitarismo-en-dispatch)
-    ("u s" "utilitarismo-es"                     tlon-babel-browse-entity-in-utilitarismo-es-dispatch)
-    ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                     tlon-babel-browse-entity-in-ensayos-en-dispatch)
-    ("e s" "ensayos-es"                     tlon-babel-browse-entity-in-ensayos-es-dispatch)
-    ]
-   ;; ["EA News"
-   ;; ("n i" "ean-issues"                     )
-   ;; ("n f" "ean-front"                     )
-   ;; ("n a" "ean-api"                     )
-   ;; ]
-   ;; ["La Bisagra"
-   ;; ("s s" "bisagra"                     )
-   ;; ]
-   ;; ["Docs"
-   ;; ("d d" "tlon-docs"                     )
-   ;; ]
-   ]
-  )
 
 (defmacro tlon-babel-generate-entity-dispatch (name)
   "Generate a dispatcher for browsing an entity named NAME in a repo."
@@ -260,6 +224,23 @@
 (dolist (repo (tlon-babel-core-repo-lookup-all :abbrev :type 'content))
   (eval `(tlon-babel-generate-entity-dispatch ,repo)))
 
+(transient-define-prefix tlon-babel-dired-dir-dispatch ()
+  "Browse a Tlön repo directory in Dired."
+  [
+   ["Uqbar"
+    ("q n" "uqbar-en"                     tlon-babel-browse-entity-in-uqbar-en-dispatch)
+    ("q s" "uqbar-es"                     tlon-babel-browse-entity-in-uqbar-es-dispatch)
+    ]
+   ["Utilitarismo"
+    ("u n" "utilitarismo-en"              tlon-babel-browse-entity-in-utilitarismo-en-dispatch)
+    ("u s" "utilitarismo-es"              tlon-babel-browse-entity-in-utilitarismo-es-dispatch)
+    ]
+   ["Ensayos sobre largoplacismo"
+    ("e n" "ensayos-en"                   tlon-babel-browse-entity-in-ensayos-en-dispatch)
+    ("e s" "ensayos-es"                   tlon-babel-browse-entity-in-ensayos-es-dispatch)
+    ]
+   ]
+  )
 (provide 'tlon-babel-dispatch)
 ;;; tlon-babel-dispatch.el ends here
 
