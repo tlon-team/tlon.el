@@ -223,6 +223,54 @@ opposed to a footnote."
   (interactive)
   (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
 
+
+;;;;;;; Citations
+
+(defun tlon-babel-md-insert-locator ()
+  "Insert locator in citation at point."
+  (interactive)
+  (require 'citar-markdown)
+  (unless (thing-at-point-looking-at citar-markdown-citation-key-regexp)
+    (user-error "Not in a citation"))
+  (let* ((locators '(("book" . "bk.")
+		     ("chapter ". "chap.")
+		     ("column" . "col.")
+		     ("figure" . "fig.")
+		     ("folio" . "fol.")
+		     ("number" . "no.")
+		     ("line" . "l.")
+		     ("note" . "n.")
+		     ("opus" . "op.")
+		     ("page" . "p.")
+		     ("paragraph" . "para.")
+		     ("part" . "pt.")
+		     ("section" . "sec.")
+		     ("sub verbo" . "s.v")
+		     ("verse" . "v.")
+		     ("volumes" . "vol.")
+		     ("books" . "bks.")
+		     ("chapter ". "chaps.")
+		     ("columns" . "cols.")
+		     ("figures" . "figs.")
+		     ("folios" . "fols.")
+		     ("numbers" . "nos.")
+		     ("lines" . "ll.")
+		     ("notes" . "nn.")
+		     ("opera" . "opp.")
+		     ("pages" . "pp.")
+		     ("paragraphs" . "paras.")
+		     ("parts" . "pts.")
+		     ("sections" . "secs.")
+		     ("sub  verbis" . "s.vv.")
+		     ("verses" . "vv.")
+		     ("volumes" . "vols.")))
+	 (selection (completing-read "Locator: " locators nil t)))
+    (goto-char (cdr (bounds-of-thing-at-point 'symbol)))
+    (when (string= "," (thing-at-point 'char))
+      (re-search-forward ", [[:alpha:]]*?\\. " nil t)
+      (replace-match ""))
+    (insert (format ", %s " (alist-get selection locators "" "" 'string=)))))
+
 ;;;;; Misc
 
 (defun tlon-babel-md-check-in-markdown-mode ()
@@ -304,9 +352,11 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
     ("a" "aside"                tlon-babel-md-insert-mdx-aside)
     ("c" "cite"                 tlon-babel-md-insert-mdx-cite)
     ("g" "lang"                 tlon-babel-md-insert-mdx-lang)
-    ("l" "literal link"         tlon-babel-md-insert-mdx-literal-link)
+    ("k" "literal link"         tlon-babel-md-insert-mdx-literal-link)
     ("m" "small caps"           tlon-babel-md-insert-mdx-small-caps)
     ]
+   ["Citations"
+    ("l" "locator"              tlon-babel-md-insert-locator)]
    ["Math"
     ("i" "inline"               tlon-babel-md-insert-math-inline)
     ("d" "display"              tlon-babel-md-insert-math-display)
