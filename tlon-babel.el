@@ -809,7 +809,7 @@ If REPO is nil, default to the current repository."
     (tlon-babel-open-file-in-alist alist)))
 
 (defun tlon-babel-open-file-in-all-repos ()
-  "Interactively open a file froma list of all files in all repos."
+  "Interactively open a file from a list of all files in all repos."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist
 		 (tlon-babel-core-repo-lookup-all :dir)
