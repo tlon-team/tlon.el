@@ -143,7 +143,9 @@ DIR is the directory where the repo is stored."
     ("s s" "bisagra"                      tlon-babel-magit-browse-bisagra)
     ]
    ["Meetings"
-    ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)]
+    ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
+    ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
+    ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)]
    ["Docs"
     ("d d" "tlon-docs"                    tlon-babel-magit-browse-docs)
     ]
