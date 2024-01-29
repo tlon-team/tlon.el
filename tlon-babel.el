@@ -788,19 +788,6 @@ REPO is nil, default to the current repository."
 	 (path (file-name-concat repo dir)))
     (dired path)))
 
-(defmacro tlon-babel-generate-browse-entity-dir-commands (entity)
-  "Generate commands to browse ENTITY dirs."
-  (let ((command-name (intern (concat "tlon-babel-browse-dir-" entity))))
-    `(defun ,command-name (&optional repo)
-       ,(format "Browse the `%s' directory in REPO.
-If REPO is nil, default to the current repository." entity)
-       (interactive)
-       (let ((repo (or repo (tlon-babel-core-get-repo))))
-	 (tlon-babel-browse-entity-dir ,entity repo)))))
-
-(dolist (entity (tlon-babel-get-entity-types))
-  (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
-
 (defun tlon-babel-open-file-in-repo (&optional repo)
   "Interactively open a file from a list of all files in REPO.
 If REPO is nil, default to the current repository."
