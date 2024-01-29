@@ -852,7 +852,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Mark TODO in FILE as DONE."
   (let ((pos (tlon-babel-ogh-get-todo-position todo file)))
     (save-window-excursion
-      (tlon-babel-ogh-visit-todo pos)
+      (tlon-babel-ogh-visit-todo pos file)
       (org-todo "DONE")
       (save-buffer)
       (message "Marked `%s' as DONE" todo))))
