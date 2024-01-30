@@ -70,7 +70,7 @@ effects to begin with."
   "Add non-breaking space before percent sign."
   (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
 			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-		      "\\1 %\\2"))
+		      "\\1 %\\2"))
 
 ;;;###autoload
 (defun tlon-babel-autofix-all ()
