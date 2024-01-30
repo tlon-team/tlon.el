@@ -37,14 +37,6 @@
   paths-dir-babel-refs
   "Directory of the `babel-refs' repo.")
 
-(defvar tlon-babel-refs-locales-dir
-  (file-name-concat tlon-babel-refs-dir "locales/")
-  "Directory where CSL locale files are stored.")
-
-(defvar tlon-babel-refs-styles-dir
-  (file-name-concat tlon-babel-refs-dir "styles/")
-  "Directory where CSL style files are stored.")
-
 (defvar tlon-babel-refs-bibtex-dir
   (file-name-concat tlon-babel-refs-dir "bib/")
   "Directory where BibTeX files are stored.")
