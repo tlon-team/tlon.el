@@ -124,8 +124,6 @@ This variable should not be set manually.")
 (tlon-babel-create-file-opening-command "section-correspondences")
 (tlon-babel-create-file-opening-command "bibtex-correspondences")
 
-;;;;; Org-mode ids
-
 ;;;;; html import
 
 (defvar tlon-babel-pandoc-convert-from-file
