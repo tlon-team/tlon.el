@@ -150,6 +150,8 @@ CALLBACK is called with the token as its argument."
 	 (user-choice (completing-read "Please select an API route: " choices nil t)))
     (cdr (assoc user-choice choices))))
 
+;;;;; Process output buffer
+
 (defun tlon-babel-fix-source-filename-paths (&optional buffer)
   "Fix `:source_filename' paths in output log in BUFFER.
 If BUFFER is nil, default to the current buffer."
@@ -197,6 +199,8 @@ If BUFFER is nil, default to the current buffer."
 			   'action (lambda (_) (find-file path))
 			   'follow-link t))))
 	(local-set-key (kbd "<RET>") 'ffap)))))
+
+;;;;; Magit integration
 
 ;; TODO do this properly by getting request from `tlon-babel-api-get-routes'
 (defun tlon-babel-api-magit-trigger-request (&rest _)
