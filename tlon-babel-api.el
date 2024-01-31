@@ -39,7 +39,7 @@
 (defconst tlon-babel-uqbar-api-routes
   '((:route "update/babel-refs"
 	    :type "POST"
-	    :docstring "Apply CSL and regenerate BibTeX keys.")
+	    :docstring "Apply CSL and regenerate BibTeX keys. Then run `update/uqbar/es'")
     (:route "update/babel-refs/log"
 	    :type "GET"
 	    :docstring "Show log of \"update/babel-refs\" request.")
@@ -63,8 +63,10 @@
 (defun tlon-babel-api-request (route)
   "Make a request for ROUTE with the `uqbar' API."
   (interactive (list (tlon-select-api-route)))
-  (let* ((site "altruismoeficaz.net")
-         (route-url (concat "https://" site "/api/" route))
+  (let* ((site (tlon-babel-core-repo-lookup :url
+                                            :subproject "uqbar"
+                                            :language tlon-babel-core-translation-language))
+         (route-url (format "%sapi/%s" site route))
          (type (tlon-babel-lookup (tlon-babel-api-get-routes) :type :route route)))
     (tlon-babel-api-get-token
      (lambda (access-token)
@@ -78,32 +80,49 @@
            :parser 'json-read
            :success (cl-function
                      (lambda (&key data &allow-other-keys)
-                       (with-current-buffer (get-buffer-create (format "*Uqbar log for %s*" route))
-                         (erase-buffer)
-                         (insert (json-encode data))
-                         (json-pretty-print-buffer)
-                         (tlon-babel-fix-source-filename-paths)
-                         (tlon-babel-api-make-paths-clickable)
-                         (switch-to-buffer (current-buffer)))))))))))
+		       (pcase route
+			 ("update/babel-refs"
+			  (tlon-babel-api-request "update/uqbar/es"))
+			 (_ nil))
+		       (tlon-babel-api-print-response route :data data)
+		       (message
+			"`%s' request completed successfully. See the `Uqbar log' buffer for details." route)))))))))
+
+(cl-defun tlon-babel-api-print-response (route &key data &allow-other-keys)
+  "Print DATA returned from API ROUTE."
+  (with-current-buffer (get-buffer-create (format "*Uqbar log for %s*" route))
+    (erase-buffer)
+    (insert (json-encode data))
+    (json-pretty-print-buffer)
+    (tlon-babel-fix-source-filename-paths)
+    (tlon-babel-api-make-paths-clickable)))
 
 (defun tlon-babel-api-get-token (callback)
   "Get `uqbar' API token.
 CALLBACK is called with the token as its argument."
-  (let* ((username (tlon-babel-core-user-lookup :github :name user-full-name))
-         (data (concat "username=" (url-hexify-string username)
-                       "&password=" (url-hexify-string
-				     (auth-source-pass-get 'secret
-							   (concat "tlon/babel/altruismoeficaz.net/" username))))))
-    (request "https://altruismoeficaz.net/api/auth/login"
+  (let* ((data (tlon-babel-api-get-credentials))
+	 (site (tlon-babel-core-repo-lookup :url
+					    :subproject "uqbar"
+					    :language tlon-babel-core-translation-language)))
+    (request (format "%sapi/auth/login" site)
       :type "POST"
       :headers '(("Content-Type" . "application/x-www-form-urlencoded"))
       :data data
       :parser 'json-read
       :success (cl-function
                 (lambda (&key data &allow-other-keys)
+		  "Call CALLBACK with the token in DATA."
                   (when data
                     (funcall callback (alist-get "access_token" data nil nil 'string=))))))))
 
+(defun tlon-babel-api-get-credentials ()
+  "Return a list of credentials for `uqbar' API requests."
+  (let ((username (tlon-babel-core-user-lookup :github :name user-full-name))
+	(inhibit-message t))
+    (concat "username=" (url-hexify-string username)
+            "&password=" (url-hexify-string
+			  (auth-source-pass-get 'secret
+						(concat "tlon/babel/altruismoeficaz.net/" username))))))
 (defun tlon-babel-api-get-routes ()
   "Return the `uqbar' API routes reflecting the current translation language."
   (mapcar
