@@ -90,32 +90,32 @@
 	   :language "es"
 	   :key "q s"
 	   :url "https://altruismoeficaz.net/")
-    (:name "utilitarismo-en"
+    (:name "utilitarianism-en"
 	   :project "babel"
-	   :subproject "utilitarismo"
-	   :abbrev "utilitarismo-en"
+	   :subproject "utilitarianism"
+	   :abbrev "utilitarianism-en"
 	   :type content
 	   :subtype originals
 	   :key "u n")
-    (:name "utilitarismo-es"
+    (:name "utilitarianism-es"
 	   :project "babel"
-	   :subproject "utilitarismo"
-	   :abbrev "utilitarismo-es"
+	   :subproject "utilitarianism"
+	   :abbrev "utilitarianism-es"
 	   :type content
 	   :subtype translations
 	   :key "u s"
 	   :url "https://utilitarismo.net/")
-    (:name "ensayos-en"
+    (:name "essays-en"
 	   :project "babel"
-	   :subproject "ensayos"
-	   :abbrev "ensayos-en"
+	   :subproject "essays"
+	   :abbrev "essays-en"
 	   :type content
 	   :subtype originals
 	   :key "l n")
-    (:name "ensayos-es"
+    (:name "essays-es"
 	   :project "babel"
-	   :subproject "ensayos"
-	   :abbrev "ensayos-es"
+	   :subproject "essays"
+	   :abbrev "essays-es"
 	   :type content
 	   :subtype translations
 	   :key "l s")

@@ -128,13 +128,13 @@ DIR is the directory where the repo is stored."
     ("q n" "uqbar-en"                     tlon-babel-magit-browse-uqbar-en)
     ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)
     ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"              tlon-babel-magit-browse-utilitarismo-en)
-    ("u s" "utilitarismo-es"              tlon-babel-magit-browse-utilitarismo-es)
+   ["utilitarianism"
+    ("u n" "utilitarianism-en"              tlon-babel-magit-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"              tlon-babel-magit-browse-utilitarianism-es)
     ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                   tlon-babel-magit-browse-ensayos-en)
-    ("e s" "ensayos-es"                   tlon-babel-magit-browse-ensayos-es)
+   ["Essays on Longtermism"
+    ("e n" "essays-en"                   tlon-babel-magit-browse-essays-en)
+    ("e s" "essays-es"                   tlon-babel-magit-browse-essays-es)
     ]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-magit-browse-ean-issues)
@@ -182,13 +182,13 @@ DIR is the directory where the repo is stored."
     ("q n" "uqbar-en"                     tlon-babel-open-file-in-uqbar-en)
     ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)
     ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"              tlon-babel-open-file-in-utilitarismo-en)
-    ("u s" "utilitarismo-es"              tlon-babel-open-file-in-utilitarismo-es)
+   ["utilitarianism"
+    ("u n" "utilitarianism-en"              tlon-babel-open-file-in-utilitarianism-en)
+    ("u s" "utilitarianism-es"              tlon-babel-open-file-in-utilitarianism-es)
     ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                   tlon-babel-open-file-in-ensayos-en)
-    ("e s" "ensayos-es"                   tlon-babel-open-file-in-ensayos-es)
+   ["Essays on Longtermism"
+    ("e n" "essays-en"                   tlon-babel-open-file-in-essays-en)
+    ("e s" "essays-es"                   tlon-babel-open-file-in-essays-es)
     ]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-open-file-in-ean-issues)
@@ -233,13 +233,13 @@ DIR is the directory where the repo is stored."
     ("q n" "uqbar-en"                     tlon-babel-dired-browse-uqbar-en)
     ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)
     ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"              tlon-babel-dired-browse-utilitarismo-en)
-    ("u s" "utilitarismo-es"              tlon-babel-dired-browse-utilitarismo-es)
+   ["utilitarianism"
+    ("u n" "utilitarianism-en"              tlon-babel-dired-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"              tlon-babel-dired-browse-utilitarianism-es)
     ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                   tlon-babel-dired-browse-ensayos-en)
-    ("e s" "ensayos-es"                   tlon-babel-dired-browse-ensayos-es)
+   ["Essays on Longtermism"
+    ("e n" "essays-en"                   tlon-babel-dired-browse-essays-en)
+    ("e s" "essays-es"                   tlon-babel-dired-browse-essays-es)
     ]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
@@ -304,13 +304,13 @@ DIR is the directory where the repo is stored."
     ("q n" "uqbar-en"                     tlon-babel-browse-entity-in-uqbar-en-dispatch)
     ("q s" "uqbar-es"                     tlon-babel-browse-entity-in-uqbar-es-dispatch)
     ]
-   ["Utilitarismo"
-    ("u n" "utilitarismo-en"              tlon-babel-browse-entity-in-utilitarismo-en-dispatch)
-    ("u s" "utilitarismo-es"              tlon-babel-browse-entity-in-utilitarismo-es-dispatch)
+   ["utilitarianism"
+    ("u n" "utilitarianism-en"              tlon-babel-browse-entity-in-utilitarianism-en-dispatch)
+    ("u s" "utilitarianism-es"              tlon-babel-browse-entity-in-utilitarianism-es-dispatch)
     ]
-   ["Ensayos sobre largoplacismo"
-    ("e n" "ensayos-en"                   tlon-babel-browse-entity-in-ensayos-en-dispatch)
-    ("e s" "ensayos-es"                   tlon-babel-browse-entity-in-ensayos-es-dispatch)
+   ["Essays on Longtermism"
+    ("e n" "essays-en"                   tlon-babel-browse-entity-in-essays-en-dispatch)
+    ("e s" "essays-es"                   tlon-babel-browse-entity-in-essays-es-dispatch)
     ]
    ]
   )
