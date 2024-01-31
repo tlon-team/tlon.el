@@ -883,8 +883,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 ;;;;; Meetings
 
-(defun tlon-babel-create-meeting-issue (person date)
-  "Create a new issue for a meeting with PERSON on DATE."
+(defun tlon-babel-create-or-visit-meeting-issue (person date)
+  "Create or visit issue for a meeting with PERSON on DATE."
   (interactive (list (tlon-babel-prompt-for-all-other-users)
 		     (org-read-date)))
   (let* ((dir (tlon-babel-get-meeting-repo person user-full-name)))
