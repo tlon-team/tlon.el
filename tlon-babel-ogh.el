@@ -911,13 +911,16 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	(throw 'found (plist-get repo :dir))))))
 
 (defun tlon-babel-create-and-visit-issue (title dir)
-  "Create and issue with TITLE in DIR and visit it."
-  (tlon-babel-ogh-create-issue title dir)
-  (forge-pull)
-  (message (concat "Reflect on this fine proverb while you wait: " (tlon-core-proverb)))
-  (while (not (tlon-babel-ogh-issue-lookup title dir))
-    (sleep-for 0.1))
-  (forge-visit-issue (tlon-babel-ogh-issue-lookup title dir)))
+  "Create an issue with TITLE in DIR and visit it."
+  (with-temp-buffer
+    (cd dir)
+    (when (forge-current-repository 'full)
+      (tlon-babel-ogh-create-issue title dir)
+      (forge-pull)
+      (message (concat "Reflect on this fine proverb while you wait: " (tlon-core-proverb)))
+      (while (not (tlon-babel-ogh-issue-lookup title dir))
+	(sleep-for 0.1))
+      (forge-visit-issue (tlon-babel-ogh-issue-lookup title dir)))))
 
 (provide 'tlon-babel-ogh)
 ;;; tlon-babel-ogh.el ends here
