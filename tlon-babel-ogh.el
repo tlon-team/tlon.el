@@ -817,11 +817,12 @@ If KEY is not provided, the key in the Markdown buffer at point is used."
 	(key (or key (tlon-babel-get-key-in-buffer))))
     (tlon-babel-ogh-create-issue (format "Job: `%s`" key) default-directory)))
 
-(defun tlon-babel-ogh-issue-lookup (string &optional repo)
-  "Return the first issue in REPO whose title includes STRING.
-If REPO is nil, use the current repository."
+(defun tlon-babel-ogh-issue-lookup (string &optional dir)
+  "Return the first issue in DIR whose title includes STRING.
+If DIR is nil, use the current repository."
   (let* ((string (concat "%" string "%"))
-	 (repo (or repo (forge-get-repository nil)))
+	 (default-directory (or dir default-directory))
+	 (repo (forge-get-repository t))
 	 (issue-id (caar (emacsql (forge-db)
 				  [:select [number]
 					   :from 'issue
@@ -917,5 +918,6 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (while (not (tlon-babel-ogh-issue-lookup title dir))
     (sleep-for 0.1))
   (forge-visit-issue (tlon-babel-ogh-issue-lookup title dir)))
+
 (provide 'tlon-babel-ogh)
 ;;; tlon-babel-ogh.el ends here
