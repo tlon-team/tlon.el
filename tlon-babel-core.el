@@ -148,11 +148,16 @@
 	   :key "b")
     (:name "meetings-leo-pablo"
 	   :abbrev "meetings-leo-pablo"
-	   )
+	   :subtype meetings
+	   :participants ("Pablo Stafforini" "Leonardo Picón"))
     (:name "meetings-fede-pablo"
-	   :abbrev "meetings-fede-pablo")
+	   :abbrev "meetings-fede-pablo"
+	   :subtype meetings
+	   :participants ("Pablo Stafforini" "Federico Stafforini"))
     (:name "meetings-fede-leo"
-	   :abbrev "meetings-fede-leo")
+	   :abbrev "meetings-fede-leo"
+	   :subtype meetings
+	   :participants ("Federico Stafforini" "Leonardo Picón"))
     (:name "tlon-docs"
 	   :project "other"
 	   :subproject "docs"
