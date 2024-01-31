@@ -32,17 +32,19 @@
 
 ;;;; Functions
 
+(defvar tlon-babel-tts-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "H-,") 'tlon-babel-tts-read-backward)
+    (define-key map (kbd "H-.") 'tlon-babel-tts-read-forward)
+    (define-key map (kbd "H-;") 'tlon-babel-tts-read-target-start-or-stop)
+    map)
+  "Keymap for `tlon-babel-tts-mode'.")
+
 (define-minor-mode tlon-babel-tts-mode
   "Enable TTS mode locally."
   :global nil
-  :init-value nil)
-
-(defvar tlon-babel-tts-mode-map (make-sparse-keymap)
-  "Keymap for `tlon-babel-tts-mode'.")
-
-(define-key tlon-babel-tts-mode-map (kbd "H-,") 'tlon-babel-tts-read-backward)
-(define-key tlon-babel-tts-mode-map (kbd "H-.") 'tlon-babel-tts-read-forward)
-(define-key tlon-babel-tts-mode-map (kbd "H-;") 'tlon-babel-tts-read-target-start-or-stop)
+  :init-value nil
+  :keymap tlon-babel-tts-mode-map)
 
 (defun tlon-babel-tts-get-target-buffer ()
   "Return the buffer that `read-aloud' should read."
