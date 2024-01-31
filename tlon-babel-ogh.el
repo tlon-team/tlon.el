@@ -880,6 +880,35 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	    t)
 	(user-error "No issue found for %s" key)))))
 
+;;;;; Meetings
+
+(defun tlon-babel-create-meeting-issue (person date)
+  "Create a new issue for a meeting with PERSON on DATE."
+  (interactive (list (tlon-babel-prompt-for-all-other-users)
+		     (org-read-date)))
+  (let* ((dir (tlon-babel-get-meeting-repo person user-full-name)))
+    (if-let ((issue (tlon-babel-ogh-issue-lookup date dir)))
+	(forge-visit-issue issue)
+      (tlon-babel-create-and-visit-issue date dir))))
+
+(defun tlon-babel-prompt-for-all-other-users ()
+  "Ask the user to select from a list of all users except himself."
+  (completing-read "Person: "
+		   (cl-remove-if (lambda (user)
+				   (string= user user-full-name))
+				 (tlon-babel-core-user-lookup-all :name))))
+
+;; TODO: create `tlon-babel-ogh-issue-lookup-all', analogous to `tlon-babel-lookup-all'
+(defun tlon-babel-get-meeting-repo (participant1 participant2)
+  "Get directory of meeting repo for PARTICIPANT1 and PARTICIPANT2."
+  (catch 'found
+    (dolist (repo tlon-babel-core-repos)
+      (when (and
+	     (eq 'meetings (plist-get repo :subtype))
+	     (member participant1 (plist-get repo :participants))
+	     (member participant2 (plist-get repo :participants)))
+	(throw 'found (plist-get repo :dir))))))
+
 (defun tlon-babel-create-and-visit-issue (title dir)
   "Create and issue with TITLE in DIR and visit it."
   (tlon-babel-ogh-create-issue title dir)
