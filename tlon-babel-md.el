@@ -157,13 +157,14 @@ is non-nil, the opening element will be self-closing."
 
 ;;;;;;; MDX
 
-;; TODO: revise to offer the key at point as default completion candidate
 ;;;###autoload
 (defun tlon-babel-md-insert-mdx-cite (arg &optional key)
-  "Insert an MDX `Cite' element pair at point or around the selected region.
-Prompt the user to select a BibTeX KEY. When a key is enclosed in a `Cite'
-element pair, only its title will be displayed in the exported web page. If
-called with prefix ARG, insert short citation."
+  "Insert an MDX `Cite' element at point or around the selected region.
+Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
+the KEY will replace the existing key.
+
+By default, it will insert a \"long\" citation. To insert a \"short\" citation,
+call the function preceded by the universal ARG."
   (interactive "P")
   (let ((key (car (citar-select-refs))))
     (if-let ((data (tlon-babel-get-bibtex-key-in-citation)))
