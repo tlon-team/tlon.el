@@ -40,6 +40,10 @@
   "<!-- End: -->"
   "End of the line that contains file local variables.")
 
+(defconst tlon-babel-cite-pattern
+  "<Cite id={\"\\(.*?\\)\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
+  "Pattern to match a citation in a Markdown file.")
+
 ;;;; Functions
 
 ;;;;; Insertion
@@ -121,9 +125,10 @@ If no section is found, do nothing."
 ;;;;;; Insert elements
 
 ;;;###autoload
-(defun tlon-babel-md-insert-element-pair (open close)
+(defun tlon-babel-md-insert-element-pair (open close &optional self-closing-p)
   "Insert an element pair at point or around the selected region.
-OPEN is the opening element and CLOSE is the closing element."
+OPEN is the opening element and CLOSE is the closing element. If SELF-CLOSING-P
+is non-nil, the opening element will be self-closing."
   (interactive)
   (tlon-babel-md-check-in-markdown-mode)
   (if (use-region-p)
@@ -132,7 +137,10 @@ OPEN is the opening element and CLOSE is the closing element."
 	(insert close)
 	(goto-char begin)
 	(insert open))
-    (insert (concat open close))
+    (if self-closing-p
+	(let ((open (concat (s-chop-right 1 open) " />")))
+	  (insert open))
+      (insert (concat open close)))
     (backward-char (length close))))
 
 ;;;;;;; HTML
@@ -151,14 +159,35 @@ OPEN is the opening element and CLOSE is the closing element."
 
 ;; TODO: revise to offer the key at point as default completion candidate
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-cite (key)
+(defun tlon-babel-md-insert-mdx-cite (arg &optional key)
   "Insert an MDX `Cite' element pair at point or around the selected region.
 Prompt the user to select a BibTeX KEY. When a key is enclosed in a `Cite'
-element pair, only its title will be displayed in the exported web page."
-  (interactive (list (read-string "Key: ")))
-  (tlon-babel-md-insert-element-pair (format "<Cite id={\"%s\"}>"
-					     key)
-				     "</Cite>"))
+element pair, only its title will be displayed in the exported web page. If
+called with prefix ARG, insert short citation."
+  (interactive "P")
+  (let ((key (car (citar-select-refs))))
+    (if-let ((data (tlon-babel-get-bibtex-key-in-citation)))
+	(cl-destructuring-bind (_ (begin . end)) data
+	  (tlon-babel-replace-bibtex-key-in-citation key begin end))
+      (tlon-babel-md-insert-element-pair (format "<Cite id={\"%s\"}%s>"
+						 key (if arg " short" ""))
+					 "</Cite>" t))))
+
+(defun tlon-babel-get-bibtex-key-in-citation ()
+  "Return the BibTeX key and its position in `Cite' element at point."
+  (when (thing-at-point-looking-at tlon-babel-cite-pattern)
+    (let ((match (match-string-no-properties 1))
+	  (begin (match-beginning 1))
+          (end (match-end 1)))
+      (list match (cons begin end)))))
+
+(defun tlon-babel-replace-bibtex-key-in-citation (key begin end)
+  ""
+  (save-excursion
+    (set-buffer-modified-p t)
+    (goto-char begin)
+    (delete-region begin end)
+    (insert key)))
 
 ;;;###autoload
 (defun tlon-babel-md-insert-mdx-aside ()
@@ -229,7 +258,6 @@ opposed to a footnote."
 (defun tlon-babel-md-insert-locator ()
   "Insert locator in citation at point."
   (interactive)
-  (require 'citar-markdown)
   (unless (thing-at-point-looking-at citar-markdown-citation-key-regexp)
     (user-error "Not in a citation"))
   (let* ((locators '(("book" . "bk.")
