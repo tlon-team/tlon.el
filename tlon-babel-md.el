@@ -50,9 +50,9 @@
 
 ;; TODO: revise to support multiple langs, including en
 ;;;###autoload
-(defun tlon-babel-md-insert-element ()
-  "Insert a link to an element at point.
-The element can be a tag or an author."
+(defun tlon-babel-md-insert-entity ()
+  "Insert a link to an entity at point.
+The entity can be a tag or an author."
   (interactive)
   (tlon-babel-md-check-in-markdown-mode)
   (let* ((selection (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end))))
