@@ -163,7 +163,10 @@
 	   :subproject "docs"
 	   :abbrev "docs"
 	   :type docs
-	   :key "d"))
+	   :key "d")
+    (:name "sandbox"
+	   :abbrev "sandbox"
+	   :type test))
   "List of repos and associated properties.
 The `:name' property is the full name of the repo, as it appears in the URL. The
 `:abbrev' property is an abbreviated form of the name, used, for example, for
