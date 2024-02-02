@@ -892,6 +892,34 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	(forge-visit-issue issue)
       (tlon-babel-create-and-visit-issue date dir))))
 
+;; TODO: generate the next three functions with macro
+(defun tlon-babel-create-or-visit-meeting-issue-leo-pablo ()
+  "Create or visit issue for a meeting with Leo and Pablo."
+  (interactive)
+  (let ((person (pcase user-full-name
+		  ("Pablo Stafforini" "Leonardo Picón")
+		  ("Leonardo Picón" "Pablo Stafforini")
+		  (_ (user-error "This command is only for Leo and Pablo meetings")))))
+    (tlon-babel-create-or-visit-meeting-issue person (org-read-date))))
+
+(defun tlon-babel-create-or-visit-meeting-issue-fede-pablo ()
+  "Create or visit issue for a meeting with Fede and Pablo."
+  (interactive)
+  (let ((person (pcase user-full-name
+		  ("Pablo Stafforini" "Federico Stafforini")
+		  ("Federico Stafforini" "Pablo Stafforini")
+		  (_ (user-error "This command is only for Fede and Pablo meetings")))))
+    (tlon-babel-create-or-visit-meeting-issue person (org-read-date))))
+
+(defun tlon-babel-create-or-visit-meeting-issue-fede-leo ()
+  "Create or visit issue for a meeting with Fede and Leo."
+  (interactive)
+  (let ((person (pcase user-full-name
+		  ("Federico Stafforini" "Leonardo Picón")
+		  ("Leonardo Picón" "Federico Stafforini")
+		  (_ (user-error "This command is only for Leo and Fede meetings")))))
+    (tlon-babel-create-or-visit-meeting-issue person (org-read-date))))
+
 (defun tlon-babel-prompt-for-all-other-users ()
   "Ask the user to select from a list of all users except himself."
   (completing-read "Person: "
