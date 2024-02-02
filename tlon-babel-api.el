@@ -69,8 +69,9 @@
          (route-url (format "%sapi/%s" site route))
          (type (tlon-babel-lookup (tlon-babel-api-get-routes) :type :route route)))
     (tlon-babel-api-get-token
+     site
      (lambda (access-token)
-       "Make request, authenticating with ACCESS-TOKEN."
+       "Authenticate with ACCESS-TOKEN, then make request."
        (if (not access-token)
            (message "Failed to authenticate")
          (request route-url
@@ -80,6 +81,7 @@
            :parser 'json-read
            :success (cl-function
                      (lambda (&key data &allow-other-keys)
+		       "Print response, and possibly make new request depending on ROUTE."
 		       (pcase route
 			 ("update/babel-refs"
 			  (tlon-babel-api-request "update/uqbar/es"))
