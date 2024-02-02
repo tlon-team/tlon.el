@@ -170,7 +170,7 @@ call the function preceded by the universal ARG."
     (if-let ((data (tlon-babel-get-bibtex-key-in-citation)))
 	(cl-destructuring-bind (_ (begin . end)) data
 	  (tlon-babel-replace-bibtex-key-in-citation key begin end))
-      (tlon-babel-md-insert-element-pair (format "<Cite id={\"%s\"}%s>"
+      (tlon-babel-md-insert-element-pair (format "<Cite bibKey={\"%s\"}%s>"
 						 key (if arg " short" ""))
 					 "</Cite>" t))))
 
