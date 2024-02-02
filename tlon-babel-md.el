@@ -223,21 +223,29 @@ Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
   (tlon-babel-md-insert-element-pair "<SmallCaps>" "</SmallCaps>"))
 
+(defun tlon-babel-insert-note-marker (marker)
+  "Insert note MARKER in the footnote at point."
+  (when-let ((fn-data (markdown-footnote-text-positions)))
+    (cl-destructuring-bind (id start _) fn-data
+      (let ((pos (+ 4 (length id) start)))
+	(goto-char pos)
+	(insert marker)))))
+
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-footnote ()
-  "Insert an MDX `Footnote' element pair at point or around the selected region.
+(defun tlon-babel-insert-footnote-marker ()
+  "Insert a `Footnote' marker in the footnote at point.
 Text enclosed by a `Footnote' element pair will be displayed as a footnote, as
 opposed to a sidenote."
   (interactive)
-  (tlon-babel-md-insert-element-pair "<Footnote>" "</Footnote>"))
+  (tlon-babel-insert-note-marker "<Footnote /> "))
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-sidenote ()
-  "Insert an MDX `Sidenote' element pair at point or around the selected region.
-Text enclosed by a `Sidenote' element pair will be displayed as a sidenote, as
+(defun tlon-babel-insert-sidenote-marker ()
+  "Insert a `Sidenote' marker in the footnote at point.
+Text enclosed by a `Footnote' element pair will be displayed as a sidenote, as
 opposed to a footnote."
   (interactive)
-  (tlon-babel-md-insert-element-pair "<Sidenote>" "</Sidenote>"))
+  (tlon-babel-insert-note-marker "<Sidenote /> "))
 
 ;;;;;;; Math
 
@@ -367,22 +375,22 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
 
 ;;;;; Dispatcher
 
-(transient-define-prefix tlon-babel-md-insert-dispatch ()
+(transient-define-prefix tlon-babel-md-dispatch ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
   [["HTML"
     ("b" "subscript"            tlon-babel-md-insert-html-subscript)
     ("p" "superscript"          tlon-babel-md-insert-html-superscript)
     ]
-   ["MDX: notes"
-    ("f" "footnote"             tlon-babel-md-insert-mdx-footnote)
-    ("s" "sidenote"             tlon-babel-md-insert-mdx-sidenote)
-    ]
-   ["MDX: other"
+   ["MDX"
     ("a" "aside"                tlon-babel-md-insert-mdx-aside)
     ("c" "cite"                 tlon-babel-md-insert-mdx-cite)
     ("g" "lang"                 tlon-babel-md-insert-mdx-lang)
     ("k" "literal link"         tlon-babel-md-insert-mdx-literal-link)
     ("m" "small caps"           tlon-babel-md-insert-mdx-small-caps)
+    ]
+   ["Note markers"
+    ("f" "footnote"             tlon-babel-insert-footnote-marker)
+    ("s" "sidenote"             tlon-babel-insert-sidenote-marker)
     ]
    ["Citations"
     ("l" "locator"              tlon-babel-md-insert-locator)]
