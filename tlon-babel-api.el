@@ -90,6 +90,21 @@
 		       (message
 			"`%s' request completed successfully. See the `Uqbar log' buffer for details." route)))))))))
 
+(defun tlon-babel-api-get-token (site callback)
+  "Get API token for SITE.
+CALLBACK is called with the token as its argument."
+  (let* ((data (tlon-babel-api-get-credentials)))
+    (request (format "%sapi/auth/login" site)
+      :type "POST"
+      :headers '(("Content-Type" . "application/x-www-form-urlencoded"))
+      :data data
+      :parser 'json-read
+      :success (cl-function
+                (lambda (&key data &allow-other-keys)
+		  "Call CALLBACK with the access token in DATA."
+                  (when data
+                    (funcall callback (alist-get "access_token" data nil nil 'string=))))))))
+
 (cl-defun tlon-babel-api-print-response (route &key data &allow-other-keys)
   "Print DATA returned from API ROUTE."
   (with-current-buffer (get-buffer-create (format "*Uqbar log for %s*" route))
@@ -98,24 +113,6 @@
     (json-pretty-print-buffer)
     (tlon-babel-fix-source-filename-paths)
     (tlon-babel-api-make-paths-clickable)))
-
-(defun tlon-babel-api-get-token (callback)
-  "Get `uqbar' API token.
-CALLBACK is called with the token as its argument."
-  (let* ((data (tlon-babel-api-get-credentials))
-	 (site (tlon-babel-core-repo-lookup :url
-					    :subproject "uqbar"
-					    :language tlon-babel-core-translation-language)))
-    (request (format "%sapi/auth/login" site)
-      :type "POST"
-      :headers '(("Content-Type" . "application/x-www-form-urlencoded"))
-      :data data
-      :parser 'json-read
-      :success (cl-function
-                (lambda (&key data &allow-other-keys)
-		  "Call CALLBACK with the token in DATA."
-                  (when data
-                    (funcall callback (alist-get "access_token" data nil nil 'string=))))))))
 
 (defun tlon-babel-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
