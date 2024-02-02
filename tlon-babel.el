@@ -335,7 +335,7 @@ Assumes action is first word of clocked task."
 
 (defun tlon-babel-get-clock-next-label ()
   "Return label associated with the action after the one in heading at point."
-  (tlon-babel-next-value :label (tlon-babel-get-clock-label) tlon-babel-core-labels))
+  (tlon-babel-next-value :label (tlon-babel-get-clock-label) tlon-babel-core-job-labels))
 
 (defun tlon-babel-next-value (property value alist)
   "Return the \"next\" value of PROPERTY with VALUE in ALIST."

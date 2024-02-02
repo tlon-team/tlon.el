@@ -171,7 +171,7 @@ creating `org-mode' TODOs.")
 
 ;;;;; To sort
 
-(defconst tlon-babel-core-labels
+(defconst tlon-babel-core-job-labels
   '((:label "Awaiting processing"
 	    :action "Process"
 	    :assignee "worldsaround")
@@ -335,11 +335,11 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
 
 (defun tlon-babel-core-label-lookup (key &rest key-value)
   "Return the value of KEY in labels matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup tlon-babel-core-labels key key-value))
+  (apply #'tlon-babel-lookup tlon-babel-core-job-labels key key-value))
 
 (defun tlon-babel-core-label-lookup-all (key &rest key-value)
   "Return all values of KEY in labels matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all tlon-babel-core-labels key key-value))
+  (apply #'tlon-babel-lookup-all tlon-babel-core-job-labels key key-value))
 
 (defun tlon-babel-core-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
