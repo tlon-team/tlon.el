@@ -126,11 +126,11 @@ This variable should not be set manually.")
 
 ;;;;; html import
 
-(defvar tlon-babel-pandoc-convert-from-file
+(defconst tlon-babel-pandoc-convert-from-file
   "pandoc -s '%s' -t markdown -o '%s'"
   "Command to convert from HTML file to Markdown.")
 
-(defvar tlon-babel-pandoc-convert-from-url
+(defconst tlon-babel-pandoc-convert-from-url
   "pandoc -s -r html '%s' -o '%s'"
   "Command to convert from URL to Markdown.")
 ;;;;; URLs
