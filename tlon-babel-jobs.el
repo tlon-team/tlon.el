@@ -33,7 +33,7 @@
 (require 'orgit-forge)
 (require 'tlon-babel)
 (require 'tlon-babel-import)
-(require 'tlon-babel-ogh)
+(require 'tlon-babel-org-ghub)
 (require 'tlon-babel-split)
 (require 'tlon-babel-tts)
 (require 'window-extras)
@@ -61,7 +61,7 @@ Markdown buffer at point is used."
 		      ('markdown-mode (tlon-babel-get-key-in-buffer))
 		      ('ebib-entry-mode (ebib--get-key-at-point))))))
       (progn
-	(tlon-babel-ogh-create-issue-from-key key)
+	(tlon-babel-create-issue-from-key key)
 	(tlon-babel-jobs-create-heading-for-job key 'commit))
     (user-error "I wasn't able to create a record because I didn't find a key")))
 
@@ -73,8 +73,8 @@ COMMIT is non-nil, commit the change."
   (let* ((key (or key (tlon-babel-get-key-in-buffer)))
 	 (heading (format "[cite:@%s]" key))
 	 (file (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "file" "original_key" key))
-	 (repo (tlon-babel-core-get-repo-from-file file))
-	 (repo-abbrev (tlon-babel-core-repo-lookup :abbrev :dir repo)))
+	 (repo (tlon-babel-get-repo-from-file file))
+	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir repo)))
     (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
 			     (find-file-noselect tlon-babel-file-jobs))
       (widen)
@@ -136,7 +136,7 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field-value "title"))
 	   (key (ebib-extras-get-field-value "=key="))
-	   (repo (completing-read "Repo: " (tlon-babel-core-repo-lookup-all :dir :subtype 'translations))))
+	   (repo (completing-read "Repo: " (tlon-babel-repo-lookup-all :dir :subtype 'translations))))
       (progn
 	(tlon-babel-import-document id title)
 	(tlon-babel-create-translation-file repo)
@@ -175,9 +175,9 @@ for the process that is being initialized."
   (let* ((key (tlon-babel-get-clock-key))
 	 (metadata (tlon-babel-metadata-in-repos :subtype 'translations))
 	 (file (tlon-babel-metadata-lookup metadata "file" "original_key" key))
-	 (repo (tlon-babel-core-get-repo-from-file file))
+	 (repo (tlon-babel-get-repo-from-file file))
 	 (default-directory repo))
-    (tlon-babel-ogh-check-label-and-assignee repo)
+    (tlon-babel-check-label-and-assignee repo)
     (tlon-babel-check-branch "main" repo)
     (call-interactively #'magit-pull-from-upstream nil)
     (sleep-for 2)
@@ -199,14 +199,14 @@ for the process that is being initialized."
   (cl-multiple-value-bind
       (original-path translation-path original-key)
       (tlon-babel-set-paths-from-clock)
-    (let* ((repo (tlon-babel-core-get-repo))
+    (let* ((repo (tlon-babel-get-repo))
 	   (current-action (tlon-babel-get-clock-action))
 	   (next-label (tlon-babel-get-clock-next-label))
 	   (next-assignee (tlon-babel-jobs-get-next-assignee)))
       ;; MAYBE: check that it is a repo of `translations' subtype
       ;; thought this would have to exclude “process” stage
       (tlon-babel-check-branch "main" repo)
-      (tlon-babel-ogh-check-label-and-assignee repo)
+      (tlon-babel-check-label-and-assignee repo)
       (tlon-babel-check-file
        (when (string= current-action "Process")
 	 'original))
@@ -233,12 +233,12 @@ for the process that is being initialized."
   "Apply LABEL and ASSIGNEE to issue associated with ORIGINAL-KEY.
 If CLOSE is non-nil, close the issue."
   (let* ((issue-title (format "Job: `%s" original-key))
-	 (issue (tlon-babel-ogh-issue-lookup issue-title))
-	 (default-directory (tlon-babel-core-get-repo 'error 'include-all)))
-    (tlon-babel-ogh-set-label label issue)
-    (tlon-babel-ogh-set-assignee assignee issue)
+	 (issue (tlon-babel-issue-lookup issue-title))
+	 (default-directory (tlon-babel-get-repo 'error 'include-all)))
+    (tlon-babel-set-labels label issue)
+    (tlon-babel-set-assignee assignee issue)
     (when close
-      (tlon-babel-ogh-close-issue issue))))
+      (tlon-babel-close-issue issue))))
 
 (defun tlon-babel-jobs-get-next-assignee ()
   "Get the next assignee based on the current user and clock label.
@@ -246,10 +246,10 @@ This function returns the assignee designated for the next label if the current
 user is the user designated for the current label; otherwise, it returns the
 substitute assignee."
   (let*
-      ((current-user (tlon-babel-core-user-lookup :github :name user-full-name))
-       (current-assignee (tlon-babel-core-label-lookup :assignee :label (tlon-babel-get-clock-label)))
-       (designated-next-assignee (tlon-babel-core-label-lookup :assignee :label (tlon-babel-get-clock-next-label)))
-       (substitute-next-assigne (tlon-babel-core-user-lookup :substitute :github designated-next-assignee)))
+      ((current-user (tlon-babel-user-lookup :github :name user-full-name))
+       (current-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-label)))
+       (designated-next-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-next-label)))
+       (substitute-next-assigne (tlon-babel-user-lookup :substitute :github designated-next-assignee)))
     (if (string= current-user current-assignee)
 	designated-next-assignee
       substitute-next-assigne)))
@@ -259,13 +259,13 @@ substitute assignee."
   (let ((todo (tlon-babel-get-clock))
 	(key (tlon-babel-get-clock-key))
 	(current-action (tlon-babel-get-clock-action)))
-    (tlon-babel-ogh-mark-todo-done todo (tlon-babel-ogh-get-todos-jobs-file))
+    (tlon-babel-mark-todo-done todo (tlon-babel-get-todos-jobs-file))
     (when (or (string= current-action "Review") (string= current-action "Check"))
-      (let ((parent-todo (tlon-babel-ogh-get-parent-todo todo)))
-	(tlon-babel-ogh-mark-todo-done parent-todo (tlon-babel-ogh-get-todos-jobs-file))))
+      (let ((parent-todo (tlon-babel-get-parent-todo todo)))
+	(tlon-babel-mark-todo-done parent-todo (tlon-babel-get-todos-jobs-file))))
     (when (string= current-action "Review")
       (let ((job-todo (format "[cite:@%s]" key)))
-	(tlon-babel-ogh-mark-todo-done job-todo tlon-babel-file-jobs)
+	(tlon-babel-mark-todo-done job-todo tlon-babel-file-jobs)
 	(tlon-babel-jobs-sort-headings tlon-babel-file-jobs)
 	(tlon-babel-commit-and-push "Update"
 				    tlon-babel-file-jobs)))))

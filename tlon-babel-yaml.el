@@ -140,15 +140,15 @@ an error."
 (defun tlon-babel-metadata-in-repos (key value)
   "Return metadata of all repos matching KEY and VALUE."
   (let ((metadata '()))
-    (dolist (repo (tlon-babel-core-repo-lookup-all :dir key value))
+    (dolist (repo (tlon-babel-repo-lookup-all :dir key value))
       (setq metadata (append (tlon-babel-metadata-in-repo repo) metadata)))
     metadata))
 
 (defun tlon-babel-metadata-in-repo (&optional repo)
   "Return metadata of REPO.
 If REPO is nil, return metadata of current repository."
-  (let* ((repo (or repo (tlon-babel-core-get-repo))))
-    (if (eq (tlon-babel-core-repo-lookup :type :dir repo) 'content)
+  (let* ((repo (or repo (tlon-babel-get-repo))))
+    (if (eq (tlon-babel-repo-lookup :type :dir repo) 'content)
 	(tlon-babel-metadata-in-dir repo)
       (user-error "The repository `%s' is not a `content' repository" repo))))
 
@@ -214,12 +214,12 @@ If FILE is nil, return the work type of the file visited by the current buffer."
       ("temas" tlon-babel-yaml-tag-keys)
       ("authors" tlon-babel-yaml-author-keys))))
 
-(defun tlon-babel-core-get-repo-in-subproject-language (language &optional repo)
+(defun tlon-babel-get-repo-in-subproject-language (language &optional repo)
   "Return the path of the subproject in REPO corresopnding to LANGUAGE.
 If REPO is nil, use the current repository."
-  (let* ((repo (or repo (tlon-babel-core-get-repo)))
-	 (subproject (tlon-babel-core-repo-lookup :subproject :dir repo)))
-    (tlon-babel-core-repo-lookup :dir :subproject subproject :language language)))
+  (let* ((repo (or repo (tlon-babel-get-repo)))
+	 (subproject (tlon-babel-repo-lookup :subproject :dir repo)))
+    (tlon-babel-repo-lookup :dir :subproject subproject :language language)))
 
 (defun tlon-babel-yaml-get-filenames-in-dir (&optional dir extension)
   "Return a list of all filenames in DIR.
@@ -287,7 +287,7 @@ If DIR is non-nil, only search in directory within the repo. Note DIR does not
 include the `translations' directory. That is, it is the directory component of
 the repo's locator. For example, to search only in `translations/autores', use
 `autores' as DIR."
-  (let* ((repo (or repo (tlon-babel-core-get-repo)))
+  (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (metadata (tlon-babel-metadata-in-repo repo))
 	 (full-dir (when dir (file-name-concat repo "translations" dir))))
     (completing-read-multiple (format "%s: " (capitalize dir))
@@ -313,7 +313,7 @@ the repo's locator. For example, to search only in `translations/autores', use
 
 (defun tlon-babel-yaml-set-original-path ()
   "Set the value of `original_path' YAML field."
-  (let ((dir (tlon-babel-counterpart-get-dir (buffer-file-name))))
+  (let ((dir (tlon-babel-get-counterpart-dir (buffer-file-name))))
     (completing-read "Original filename: "
 		     (tlon-babel-yaml-get-filenames-in-dir dir))))
 
@@ -509,11 +509,11 @@ pre-populate the selection."
 (defun tlon-babel-metadata-get-uqbar-fields (type &optional field language)
   "Return FIELDS in files of TYPE in `uqbar' repo of LANGUAGE.
 If FIELD is nil, default to \"title\". If LANG is nil, default to
-`tlon-babel-core-translation-language'."
+`tlon-babel-translation-language'."
   (let* ((field (or field "title"))
-	 (language (or language tlon-babel-core-translation-language))
-	 (type-in-language (tlon-babel-core-get-bare-dir-translation language "en" type))
-	 (repo (tlon-babel-core-repo-lookup :dir :subproject "uqbar" :language language)))
+	 (language (or language tlon-babel-translation-language))
+	 (type-in-language (tlon-babel-get-bare-dir-translation language "en" type))
+	 (repo (tlon-babel-repo-lookup :dir :subproject "uqbar" :language language)))
     (tlon-babel-metadata-lookup-all
      (tlon-babel-metadata-in-repo repo) field "file" (file-name-concat repo type-in-language))))
 
@@ -529,7 +529,7 @@ If FIELD is nil, default to \"title\". If LANG is nil, default to
 (defun tlon-babel-create-uqbar-entity (dir)
   "Create a new file for `uqbar-es' entity in DIR."
   (let ((default-directory (file-name-concat
-			    (tlon-babel-core-repo-lookup :dir :name "uqbar-es")
+			    (tlon-babel-repo-lookup :dir :name "uqbar-es")
 			    (file-name-as-directory dir))))
     (files-extras-new-empty-buffer)
     (tlon-babel-yaml-set-metadata tlon-babel-yaml-tag-or-author-keys)
@@ -570,7 +570,7 @@ current repository followed by `originals/'."
 	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
 	 (dirname (file-name-as-directory
 		   (or dir
-		       (file-name-concat (tlon-babel-core-get-repo) "originals")))))
+		       (file-name-concat (tlon-babel-get-repo) "originals")))))
     (file-name-concat dirname filename)))
 
 ;;;;;; Get repo-agnostic elements

@@ -73,8 +73,8 @@
     ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
     ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
     """Counterpart"
-    ("f" "current win"                    tlon-babel-counterpart-open-dwim)
-    ("H-f" "other win"                    tlon-babel-counterpart-open-in-other-window-dwim)
+    ("f" "current win"                    tlon-babel-open-counterpart-dwim)
+    ("H-f" "other win"                    tlon-babel-open-counterpart-in-other-window-dwim)
     """AI"
     ("g r" "rewrite"                      tlon-babel-ai-rewrite)
     ("g s" "summarize"                    tlon-babel-ai-summarize)
@@ -88,18 +88,18 @@
     ("c f" "file"                         tlon-babel-open-clock-file )
     ("c o" "heading"                      org-clock-goto)
     """Issue"
-    ("i i" "open counterpart"             tlon-babel-ogh-open-forge-counterpart)
-    ("i I" "open file"                    tlon-babel-ogh-open-forge-file)
+    ("i i" "open counterpart"             tlon-babel-open-forge-counterpart)
+    ("i I" "open file"                    tlon-babel-open-forge-file)
     ]
    ["Sync"
-    ("y y" "visit or capture"             tlon-babel-ogh-visit-counterpart-or-capture)
-    ("y v" "visit"                        tlon-babel-ogh-visit-counterpart)
-    ("y p" "post"                         tlon-babel-ogh-create-issue-from-todo)
-    ("y c" "capture"                      tlon-babel-ogh-capture-issue)
-    ("y C" "capture all"                  tlon-babel-ogh-capture-all-issues)
-    ("y r" "reconcile"                    tlon-babel-ogh-reconcile-issue-and-todo)
-    ("y R" "reconcile all"                tlon-babel-ogh-reconcile-all-issues-and-todos)
-    ("y x" "close"                        tlon-babel-ogh-close-issue-and-todo)]
+    ("y y" "visit or capture"             tlon-babel-visit-counterpart-or-capture)
+    ("y v" "visit"                        tlon-babel-visit-counterpart)
+    ("y p" "post"                         tlon-babel-create-issue-from-todo)
+    ("y c" "capture"                      tlon-babel-capture-issue)
+    ("y C" "capture all"                  tlon-babel-capture-all-issues)
+    ("y r" "reconcile"                    tlon-babel-reconcile-issue-and-todo)
+    ("y R" "reconcile all"                tlon-babel-reconcile-all-issues-and-todos)
+    ("y x" "close"                        tlon-babel-close-issue-and-todo)]
    ]
   )
 
@@ -113,7 +113,7 @@ DIR is the directory where the repo is stored."
      (interactive)
      (magit-status ,dir)))
 
-(dolist (repo tlon-babel-core-repos)
+(dolist (repo tlon-babel-repos)
   (eval `(tlon-babel-generate-magit-browse-commands
 	  ,(plist-get repo :abbrev)
 	  ,(plist-get repo :dir))))
@@ -162,14 +162,14 @@ DIR is the directory where the repo is stored."
 
 (defmacro tlon-babel-generate-open-file-in-repo-commands (repo)
   "Generate commands to open file in REPO."
-  (let* ((repo-name (tlon-babel-core-repo-lookup :abbrev :dir repo))
+  (let* ((repo-name (tlon-babel-repo-lookup :abbrev :dir repo))
 	 (command-name (intern (concat "tlon-babel-open-file-in-" repo-name))))
     `(defun ,command-name ()
        ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
        (interactive)
        (tlon-babelq-open-file-in-repo ,repo))))
 
-(dolist (repo (tlon-babel-core-repo-lookup-all :dir))
+(dolist (repo (tlon-babel-repo-lookup-all :dir))
   (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
 
 (transient-define-prefix tlon-babel-open-repo-dispatch ()
@@ -218,7 +218,7 @@ DIR is the directory where the repo is stored."
      (interactive)
      (dired ,dir)))
 
-(dolist (repo tlon-babel-core-repos)
+(dolist (repo tlon-babel-repos)
   (eval `(tlon-babel-generate-dired-browse-commands
 	  ,(plist-get repo :abbrev)
 	  ,(plist-get repo :dir))))
@@ -279,7 +279,7 @@ DIR is the directory where the repo is stored."
 	  (push (cdr cons) collection))))
     collection))
 
-(dolist (repo tlon-babel-core-repos)
+(dolist (repo tlon-babel-repos)
   (dolist (entity (tlon-babel-get-entity-types))
     (eval `(tlon-babel-generate-dir-commands
 	    ,(plist-get repo :abbrev)
@@ -298,7 +298,7 @@ DIR is the directory where the repo is stored."
        ]]
      ))
 
-(dolist (repo (tlon-babel-core-repo-lookup-all :abbrev :type 'content))
+(dolist (repo (tlon-babel-repo-lookup-all :abbrev :type 'content))
   (eval `(tlon-babel-generate-entity-dispatch ,repo)))
 
 (transient-define-prefix tlon-babel-dired-dir-dispatch ()
@@ -328,7 +328,7 @@ DIR is the directory where the repo is stored."
 ;; ,(format "Browse the `%s' directory in REPO.
 ;; If REPO is nil, default to the current repository." entity)
 ;; (interactive)
-;; (let ((repo (or repo (tlon-babel-core-get-repo))))
+;; (let ((repo (or repo (tlon-babel-get-repo))))
 ;; (tlon-babel-browse-entity-dir ,entity repo)))))
 
 ;; (dolist (entity (tlon-babel-get-entity-types))

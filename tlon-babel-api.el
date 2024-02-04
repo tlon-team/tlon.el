@@ -63,9 +63,9 @@
 (defun tlon-babel-api-request (route)
   "Make a request for ROUTE with the `uqbar' API."
   (interactive (list (tlon-select-api-route)))
-  (let* ((site (tlon-babel-core-repo-lookup :url
-                                            :subproject "uqbar"
-                                            :language tlon-babel-core-translation-language))
+  (let* ((site (tlon-babel-repo-lookup :url
+                                       :subproject "uqbar"
+                                       :language tlon-babel-translation-language))
          (route-url (format "%sapi/%s" site route))
          (type (tlon-babel-lookup (tlon-babel-api-get-routes) :type :route route)))
     (tlon-babel-api-get-token
@@ -112,11 +112,11 @@ CALLBACK is called with the token as its argument."
     (insert (json-encode data))
     (json-pretty-print-buffer)
     (tlon-babel-fix-source-filename-paths)
-    (tlon-babel-api-make-paths-clickable)))
+    (api-ztlon-babel-make-paths-clickable)))
 
 (defun tlon-babel-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
-  (let ((username (tlon-babel-core-user-lookup :github :name user-full-name))
+  (let ((username (tlon-babel-user-lookup :github :name user-full-name))
 	(inhibit-message t))
     (concat "username=" (url-hexify-string username)
             "&password=" (url-hexify-string
@@ -131,7 +131,7 @@ CALLBACK is called with the token as its argument."
 	      (string-match "%s" (plist-get x :route)))
 	 (plist-put (copy-sequence x) :route (replace-regexp-in-string
 					      "%s"
-					      tlon-babel-core-translation-language
+					      tlon-babel-translation-language
 					      (plist-get x :route)))
        x))
    (copy-sequence tlon-babel-uqbar-api-routes)))
@@ -178,7 +178,7 @@ If BUFFER is nil, default to the current buffer."
 	(json-pretty-print-buffer)
 	(json-mode)))))
 
-(defun tlon-babel-api-make-paths-clickable (&optional buffer)
+(defun api-ztlon-babel-make-paths-clickable (&optional buffer)
   "Make file paths in the current buffer clickable.
 The paths and also be opened with RET.
 
@@ -202,10 +202,10 @@ If BUFFER is nil, default to the current buffer."
 ;;;;; Magit integration
 
 ;; TODO do this properly by getting request from `tlon-babel-api-get-routes'
-(defun tlon-babel-api-magit-trigger-request (&rest _)
+(defun tlon-babel-magit-trigger-api-request (&rest _)
   "Trigger appropriate request when a commit is pushed in Magit."
-  (let ((uqbar-es (tlon-babel-core-repo-lookup :dir :name "uqbar-es"))
-	(babel-refs (tlon-babel-core-repo-lookup :dir :name "babel-refs"))
+  (let ((uqbar-es (tlon-babel-repo-lookup :dir :name "uqbar-es"))
+	(babel-refs (tlon-babel-repo-lookup :dir :name "babel-refs"))
 	route)
     ;; can’t be done with `pcase'
     (cond
@@ -221,7 +221,7 @@ If BUFFER is nil, default to the current buffer."
 
 (dolist (fun (list 'magit-push-current-to-upstream
 		   'magit-push-current-to-pushremote))
-  (advice-add fun :after 'tlon-babel-api-magit-trigger-request))
+  (advice-add fun :after 'tlon-babel-magit-trigger-api-request))
 
 (provide 'tlon-babel-api)
 ;;; tlon-babel-api.el ends here

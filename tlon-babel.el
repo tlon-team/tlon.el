@@ -78,19 +78,19 @@ This variable should not be set manually.")
 ;;;;;; lookup
 
 (defvar tlon-babel-dir-correspondences
-  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-es") "correspondences/")
+  (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-es") "correspondences/")
   "Directory where correspondence files are stored.")
 
 (defvar tlon-babel-dir-dict
-  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-es") "dict/")
+  (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
 (defvar tlon-babel-file-babel-manual
-  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-core") "manual.org")
+  (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-core") "manual.org")
   "File containing the Babel manual.")
 
 (defvar tlon-babel-file-jobs
-  (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel-core") "jobs.org")
+  (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-core") "jobs.org")
   "File containing the jobs.")
 
 (defvar tlon-babel-file-url-correspondences
@@ -223,13 +223,13 @@ The second capture group handles the `.md' extension, which we used previously."
    ;; when in `translations'
    (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "translation_key" "file" file)
    ;; when file in `originals'
-   (let ((translation (tlon-babel-counterpart-get file)))
+   (let ((translation (tlon-babel-get-counterpart file)))
      (tlon-babel-metadata-get-field-value-in-file "original_key" translation))))
 
 (defun tlon-babel-set-translation-language (language)
   "Set the translation LANGUAGE."
-  (interactive (list (completing-read "Language: " tlon-babel-core-languages)))
-  (setq tlon-babel-core-translation-language language))
+  (interactive (list (completing-read "Language: " tlon-babel-languages)))
+  (setq tlon-babel-translation-language language))
 
 ;;;;; User commits
 
@@ -238,7 +238,7 @@ The second capture group handles the `.md' extension, which we used previously."
 If no FILE is provided, use the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (default-directory (file-name-directory file))
-	 (user (tlon-babel-core-user-lookup :git :name user-full-name))
+	 (user (tlon-babel-user-lookup :git :name user-full-name))
 	 ;; get most recent commit in FILE by USER
 	 (output (shell-command-to-string (format "git log --pretty=format:'%%h %%an %%s' --follow -- '%s' | grep -m 1 '%s' | awk '{print $1}'" file user)))
 	 (commit (car (split-string output "\n"))))
@@ -313,7 +313,7 @@ Assumes key is enclosed in backticks."
 (defun tlon-babel-open-clock-issue ()
   "Open the issue from `orgit-forge' link in heading at point."
   (interactive)
-  (let ((default-directory (tlon-babel-core-get-repo))
+  (let ((default-directory (tlon-babel-get-repo))
 	(issue (tlon-babel-get-clock-issue)))
     (forge-visit-issue issue)))
 
@@ -323,19 +323,19 @@ Assumes action is first word of clocked task."
   ;; as rough validation, we check that the clocked heading contains a file
   (tlon-babel-get-clock-key)
   (let ((action (nth 1 (split-string (tlon-babel-get-clock))))
-	(actions (tlon-babel-core-label-lookup-all :action)))
+	(actions (tlon-babel-label-lookup-all :action)))
     (if (member action actions)
 	action
       (user-error "I wasn't able to find a relevant action in clocked heading"))))
 
 (defun tlon-babel-get-clock-label ()
   "Return label associated with action in heading at point."
-  (let ((label (tlon-babel-core-label-lookup :label :action (tlon-babel-get-clock-action))))
+  (let ((label (tlon-babel-label-lookup :label :action (tlon-babel-get-clock-action))))
     label))
 
 (defun tlon-babel-get-clock-next-label ()
   "Return label associated with the action after the one in heading at point."
-  (tlon-babel-next-value :label (tlon-babel-get-clock-label) tlon-babel-core-job-labels))
+  (tlon-babel-next-value :label (tlon-babel-get-clock-label) tlon-babel-job-labels))
 
 (defun tlon-babel-next-value (property value alist)
   "Return the \"next\" value of PROPERTY with VALUE in ALIST."
@@ -379,7 +379,7 @@ open DeepL."
   (let* ((key (tlon-babel-get-clock-key))
 	 (metadata (tlon-babel-metadata-in-repos :subtype 'translations))
 	 (translation (tlon-babel-metadata-lookup metadata "file" "original_key" key))
-	 (original (tlon-babel-counterpart-get translation)))
+	 (original (tlon-babel-get-counterpart translation)))
     (cl-values original translation key)))
 
 (defun tlon-babel-set-windows (original-path translation-path)
@@ -395,21 +395,21 @@ open DeepL."
 (defun tlon-babel-magit-status ()
   "Show the status of the current repository in a buffer."
   (interactive)
-  (let ((default-directory (tlon-babel-core-get-repo nil 'include-all)))
+  (let ((default-directory (tlon-babel-get-repo nil 'include-all)))
     (magit-status-setup-buffer)))
 
 (defun tlon-babel-magit-prompt (repo)
   "Prompt the user for a REPO and show it in Magit."
   (interactive (list
 		(completing-read
-		 "Repo: " (tlon-babel-core-repo-lookup-all :name))))
-  (if-let ((default-directory (tlon-babel-core-repo-lookup :dir :name repo)))
+		 "Repo: " (tlon-babel-repo-lookup-all :name))))
+  (if-let ((default-directory (tlon-babel-repo-lookup :dir :name repo)))
       (magit-status-setup-buffer)
     (user-error "Repo `%s' not found" repo)))
 
 (defun tlon-babel-forge-update-repo (repo)
   "Update issues and notifications for REPO name."
-  (let* ((default-directory (tlon-babel-core-repo-lookup :dir :name repo))
+  (let* ((default-directory (tlon-babel-repo-lookup :dir :name repo))
 	 (repo (forge-get-repository 'full)))
     (save-window-excursion
       (with-current-buffer (dired-noselect default-directory)
@@ -418,7 +418,7 @@ open DeepL."
 (defun tlon-babel-forge-update-all-repos ()
   "Update issues and notifications for all active repos."
   (interactive)
-  (dolist (repo (tlon-babel-core-repo-lookup-all :name))
+  (dolist (repo (tlon-babel-repo-lookup-all :name))
     (tlon-babel-forge-update-repo repo)))
 
 (defun tlon-babel-get-commit-key ()
@@ -431,7 +431,7 @@ open DeepL."
   "Create a new translation file and set its front matter.
 If REPO is nil, prompt the user for one."
   (interactive)
-  (let* ((repo (or repo (tlon-babel-core-get-repo)))
+  (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (title (read-string "Translated title: "))
 	 (dir (file-name-concat repo "translations/articulos/"))
 	 (path (tlon-babel-set-file-from-title title dir)))
@@ -545,7 +545,7 @@ check that current file matches translation."
 
 (defun tlon-babel-check-staged-or-unstaged-other-than (file)
   "Check if there are staged or unstaged modifications in repo not involving FILE."
-  (let* ((default-directory (tlon-babel-core-get-repo-from-file file))
+  (let* ((default-directory (tlon-babel-get-repo-from-file file))
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file)))
     (unless (string= all-changes filtered-changes)
@@ -570,7 +570,7 @@ If FILE is nil, check the current buffer."
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-babel-core-get-repo nil 'include-all)))
+  (let* ((repo (or repo (tlon-babel-get-repo nil 'include-all)))
 	 (default-directory repo))
     (forge-search search-string)))
 
@@ -592,14 +592,14 @@ If REPO is nil, use the current repo."
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-babel-core-get-repo nil 'include-all))))
+  (let* ((repo (or repo (tlon-babel-get-repo nil 'include-all))))
     (consult-ripgrep repo search-string)))
 
 (defun tlon-babel-search-multi (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-babel-core-get-repo nil 'include-all)))
+  (let ((repo (or repo (tlon-babel-get-repo nil 'include-all)))
 	(win1 (selected-window)))
     (window-extras-split-if-unsplit)
     (tlon-babel-search-issues search-string repo)
@@ -611,7 +611,7 @@ If REPO is nil, use the current repo."
 (defun tlon-babel-commit-and-push (action file)
   "Commit and push modifications to FILE.
 The commit message is ACTION followed by the name of FILE."
-  (let* ((default-directory (tlon-babel-core-get-repo-from-file file)))
+  (let* ((default-directory (tlon-babel-get-repo-from-file file)))
     (tlon-babel-check-staged-or-unstaged-other-than file)
     (when (string= (magit-get-current-branch) "main")
       ;; TODO: Replace interactive call with programmatic way of doing this
@@ -629,8 +629,8 @@ respectively."
   ;; we check for staged or unstaged changes to FILE because
   ;; `magit-commit-create' interrupts the process if there aren't any
   (when (tlon-babel-check-staged-or-unstaged file)
-    (let* ((repo (tlon-babel-core-get-repo-from-file file))
-	   (subtype (tlon-babel-core-repo-lookup :type :dir repo))
+    (let* ((repo (tlon-babel-get-repo-from-file file))
+	   (subtype (tlon-babel-repo-lookup :type :dir repo))
 	   (file-or-key (pcase subtype
 			  ('translations (tlon-babel-get-key-from-file file))
 			  ('biblio (file-name-nondirectory file)))))
@@ -676,7 +676,7 @@ respectively."
 ;; TODO: consider adapting `tlon-babel-commit-and-push' instead
 (defun tlon-babel-url-correspondence-commit ()
   "Commit modifications in `url-correspondences.json'."
-  (let ((default-directory (tlon-babel-core-repo-lookup :dir :name "babel-es")))
+  (let ((default-directory (tlon-babel-repo-lookup :dir :name "babel-es")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
     (call-interactively #'magit-pull-from-upstream nil)
@@ -765,8 +765,8 @@ respectively."
   "Browse the current file in the tlon-babel repository."
   (interactive)
   (if-let (file (buffer-file-name))
-      (if-let ((repo (tlon-babel-core-get-repo-from-file file)))
-	  (let* ((repo-name (tlon-babel-core-repo-lookup :name :dir repo))
+      (if-let ((repo (tlon-babel-get-repo-from-file file)))
+	  (let* ((repo-name (tlon-babel-repo-lookup :name :dir repo))
 		 (repo-url (concat "https://github.com/tlon-team/" repo-name))
 		 (file-url (concat "/blob/main/" (file-relative-name (buffer-file-name) repo))))
 	    (browse-url (concat repo-url file-url)))
@@ -778,24 +778,24 @@ respectively."
 If the current buffer is visiting a file in a Babel repository, browse that;
 otherwise prompt for a repo."
   (interactive)
-  (let* ((repo-name (tlon-babel-core-repo-lookup :name :dir (tlon-babel-core-get-repo))))
+  (let* ((repo-name (tlon-babel-repo-lookup :name :dir (tlon-babel-get-repo))))
     (browse-url (concat "https://github.com/tlon-team/" repo-name))))
 
 (defun tlon-babel-browse-entity-dir (entity &optional repo source-lang)
   "Browse the directory of ENTITY in REPO.
 ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
 REPO is nil, default to the current repository."
-  (let* ((repo (or repo (tlon-babel-core-get-repo)))
+  (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (source-lang (or source-lang "en"))
-	 (target-lang (tlon-babel-core-repo-lookup :language :dir repo))
-	 (dir (tlon-babel-core-get-bare-dir-translation target-lang source-lang entity))
+	 (target-lang (tlon-babel-repo-lookup :language :dir repo))
+	 (dir (tlon-babel-get-bare-dir-translation target-lang source-lang entity))
 	 (path (file-name-concat repo dir)))
     (dired path)))
 
 (defun tlon-babel-open-file-in-repo (&optional repo)
   "Interactively open a file from a list of all files in REPO.
 If REPO is nil, default to the current repository."
-  (let* ((repo (or repo (tlon-babel-core-get-repo)))
+  (let* ((repo (or repo (tlon-babel-get-repo)))
 	 (alist (tlon-babel-files-and-display-names-alist (list repo) repo)))
     (tlon-babel-open-file-in-alist alist)))
 
@@ -803,7 +803,7 @@ If REPO is nil, default to the current repository."
   "Interactively open a file from a list of all files in all repos."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist
-		 (tlon-babel-core-repo-lookup-all :dir)
+		 (tlon-babel-repo-lookup-all :dir)
 		 tlon-core-repo-dirs)))
     (tlon-babel-open-file-in-alist alist)))
 
@@ -907,12 +907,12 @@ computed by dividing the file size by CHARS-PER-WORD."
     (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
   (let* ((repo-name (or repo-name
 			(completing-read "Repo: "
-					 (tlon-babel-core-repo-lookup-all :name :subtype 'translations))))
-	 (dir (tlon-babel-core-repo-lookup :dir :name repo-name))
+					 (tlon-babel-repo-lookup-all :name :subtype 'translations))))
+	 (dir (tlon-babel-repo-lookup :dir :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat (tlon-babel-core-repo-lookup :dir :name "babel")
+	 (script (file-name-concat (tlon-babel-repo-lookup :dir :name "babel")
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
 
@@ -922,7 +922,7 @@ computed by dividing the file size by CHARS-PER-WORD."
   "Docstring."
   (interactive)
   (let* ((tags (tlon-babel-yaml-format-value (tlon-babel-yaml-get-key "tags")))
-	 (english-file (tlon-babel-counterpart-get))
+	 (english-file (tlon-babel-get-counterpart))
 	 (field (cons "tags" tags)))
     (with-current-buffer (find-file-noselect english-file)
       (tlon-babel-yaml-insert-fields `(,field)))))
@@ -935,7 +935,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 	 (tag-file (file-name-concat
 		    "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/temas"
 		    tag-filename))
-	 (tag-file-en (tlon-babel-counterpart-get tag-file))
+	 (tag-file-en (tlon-babel-get-counterpart tag-file))
 	 (tag-name-en (tlon-babel-metadata-lookup
 		       (tlon-babel-metadata-in-repo
 			"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/")
@@ -945,7 +945,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 (defun tlon-babel-replace-footnotes ()
   "Replace footnotes in counterpart of Spanish tag in current buffer."
   (interactive)
-  (tlon-babel-counterpart-open nil)
+  (tlon-babel-open-counterpart nil)
   (widen)
   (goto-char (point-min))
   (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
@@ -955,7 +955,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 	  (let ((start (point)))
 	    (goto-char (point-max))
 	    (copy-region-as-kill start (point)))
-	  (tlon-babel-counterpart-open)
+	  (tlon-babel-open-counterpart)
 	  (goto-char (point-min))
 	  (re-search-forward fn-regexp nil t)
 	  (goto-char (match-beginning 0))
@@ -964,7 +964,7 @@ computed by dividing the file size by CHARS-PER-WORD."
 	    (delete-region start (point))
 	    (yank)
 	    (save-buffer)))
-      (tlon-babel-counterpart-open)
+      (tlon-babel-open-counterpart)
       (message "No footnotes found"))))
 
 (provide 'tlon-babel)

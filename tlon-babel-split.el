@@ -52,7 +52,7 @@
     moved-p))
 
 ;; Currently this function is not used; we use
-;; `tlon-babel-split-screen-line-threshold' instead.
+;; `tlon-babel-split-screen-line-threshold' instead, as an imperfect approximatiion.
 (defun tlon-babel-split-top-of-buffer-visible-p ()
   "Return t iff the top of the buffer is visible in the current window.
 The function considers the top of the buffer to be visible if the first screen
@@ -95,7 +95,7 @@ The alignment is performed by scrolling up or down the other window."
 	(goto-char (1+ (point)))
 	(markdown-backward-paragraph)
 	(cons (count-screen-lines (window-start) (point))
-	      (tlon-babel-counterpart-count-paragraphs nil (point))))
+	      (tlon-babel-count-paragraphs nil (point))))
     (save-selected-window
       (other-window 1)
       (save-restriction
@@ -106,6 +106,13 @@ The alignment is performed by scrolling up or down the other window."
 	  (markdown-backward-paragraph)
 	  (recenter 0)
 	  (scroll-down current-scren-line))))))
+
+(defun tlon-babel-split-align-sentences ()
+  "Align the sentences in the current and other windows.
+The alignment is performed by scrolling up or down the other window. It is
+assumed that the paragraphs are already aligned."
+  
+  )
 
 (defun tlon-babel-split-autoalign-paragraphs ()
   "Automatically align the paragraphs in the current and other windows."

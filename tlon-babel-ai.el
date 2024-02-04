@@ -37,7 +37,7 @@
   ":\n\n```\n%s\n```\n\n"
   "Wrapper for strings to be passed in prompts.")
 
-(defconst tlon-babel-ai-gptel-error-message
+(defconst tlon-babel-gptel-error-message
   "`gptel' failed with message: %s"
   "Error message to display when `gptel-quick' fails.")
 
@@ -69,13 +69,13 @@
     :callback
     (lambda (response info)
       (if (not response)
-	  (message tlon-babel-ai-gptel-error-message (plist-get info :status))
+	  (message tlon-babel-gptel-error-message (plist-get info :status))
 	(let ((translations (split-string response "|")))
 	  (kill-new (completing-read "Translation: " translations)))))))
 
 (defun tlon-babel-ai-translate-file (file)
   "Translate FILE."
-  (let* ((counterpart (tlon-babel-counterpart-get file))
+  (let* ((counterpart (tlon-babel-get-counterpart file))
 	 (filename (file-name-nondirectory counterpart))
 	 (target-path (concat
 		       (file-name-sans-extension filename)
@@ -88,7 +88,7 @@
       :callback
       (lambda (response info)
 	(if (not response)
-	    (message tlon-babel-ai-gptel-error-message (plist-get info :status))
+	    (message tlon-babel-gptel-error-message (plist-get info :status))
 	  (with-temp-buffer
 	    (insert response)
 	    (write-region (point-min) (point-max) target-path)))))))
@@ -107,7 +107,7 @@
       :callback
       (lambda (response info)
 	(if (not response)
-	    (message tlon-babel-ai-gptel-error-message (plist-get info :status))
+	    (message tlon-babel-gptel-error-message (plist-get info :status))
 	  (let* ((variants (split-string response "|"))
 		 (variant (completing-read "Variant: " variants)))
 	    (delete-region (region-beginning) (region-end))
@@ -130,8 +130,8 @@ summarize."
 	      (with-temp-buffer
 		(insert-file-contents selected-file)
 		(buffer-string)))))
-	 (repo (tlon-babel-core-get-repo-from-file current-file))
-	 (language (tlon-babel-core-repo-lookup :language :dir repo))
+	 (repo (tlon-babel-get-repo-from-file current-file))
+	 (language (tlon-babel-repo-lookup :language :dir repo))
 	 (prompt (tlon-babel-lookup tlon-babel-ai-summarize-prompts :prompt :language language)))
     (message "Generating summary. This may take 5–30 seconds, depending on length...")
     (gptel-request

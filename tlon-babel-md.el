@@ -201,7 +201,7 @@ call the function preceded by the universal ARG."
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-core-languages))))
+  (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-languages))))
   (tlon-babel-md-insert-element-pair (format "<Lang id={\"%s\"}>"
 					     language)
 				     "</Lang>"))

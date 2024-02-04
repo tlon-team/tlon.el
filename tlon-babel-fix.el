@@ -165,7 +165,7 @@ dedicated function."
 					     (interactive)
 					     (magit-status ,(plist-get repo :dir))))
 				    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
-				tlon-babel-core-repos)))
+				tlon-babel-repos)))
     (eval `(transient-define-prefix tlon-open-repo-transient ()
 	     "Transient that dispatches to Magit open repo commands."
 	     ,@transient-args))))

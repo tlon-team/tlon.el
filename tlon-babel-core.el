@@ -31,7 +31,7 @@
 
 ;;;; Variables
 
-(defconst tlon-babel-core-repos
+(defconst tlon-babel-repos
   `((:name "babel-core"
 	   :project "babel"
 	   :subproject "babel"
@@ -174,7 +174,7 @@ creating `org-mode' TODOs.")
 
 ;;;;; To sort
 
-(defconst tlon-babel-core-job-labels
+(defconst tlon-babel-job-labels
   '((:label "Awaiting processing"
 	    :action "Process"
 	    :assignee "worldsaround")
@@ -195,7 +195,7 @@ creating `org-mode' TODOs.")
 	    :assignee ""))
   "List of labels and associated properties.")
 
-(defvar tlon-babel-core-users
+(defvar tlon-babel-users
   '((:name "Pablo Stafforini"
 	   :git "Pablo Stafforini"
 	   :github "benthamite"
@@ -212,7 +212,7 @@ The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
 the actual user.")
 
-(defvar tlon-babel-core-translation-language "es"
+(defvar tlon-babel-translation-language "es"
   "The current translation language.")
 
 (defconst tlon-babel-core-bare-dirs
@@ -226,7 +226,7 @@ the actual user.")
      ("es" . "colecciones")))
   "Alist of bare directories and associated translations.")
 
-(defconst tlon-babel-core-languages
+(defconst tlon-babel-languages
   '(("en" . "english")
     ("es" . "spanish")
     ("it" . "italian")
@@ -237,43 +237,43 @@ the actual user.")
 
 ;;;; Functions
 
-(defun tlon-babel-core-set-dir (repo)
-  "Set the `:directory' property for REPO in `tlon-babel-core-repos'."
+(defun tlon-babel-set-dir (repo)
+  "Set the `:directory' property for REPO in `tlon-babel-repos'."
   (let* ((dir (file-name-as-directory
 	       (file-name-concat paths-dir-tlon-repos
 				 (plist-get repo :name)))))
     (plist-put repo :dir dir)))
 
-(mapc #'tlon-babel-core-set-dir tlon-babel-core-repos)
+(mapc #'tlon-babel-set-dir tlon-babel-repos)
 
 ;;;;; Ger repo
 
-(defun tlon-babel-core-get-repo (&optional no-prompt include-all)
+(defun tlon-babel-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
 If the current directory matches any of the directories in
-`tlon-babel-core-repos', return it. Else, prompt the user to select a repo from
+`tlon-babel-repos', return it. Else, prompt the user to select a repo from
 that list, unless NO-PROMPT is non-nil. In that case, signal an error if its
 value is `error', else return nil. If INCLUDE-ALL is non-nil, include all repos.
 In that case, matching will be made against repos with any value for the
 property `:type'."
-  (if-let ((current-repo (tlon-babel-core-get-repo-from-file)))
+  (if-let ((current-repo (tlon-babel-get-repo-from-file)))
       current-repo
     (if no-prompt
 	(when (eq no-prompt 'error)
 	  (user-error "Not in a recognized Babel repo"))
-      (let* ((content (tlon-babel-core-repo-lookup-all :name :subtype 'translations))
-	     (all (tlon-babel-core-repo-lookup-all :name)))
-	(tlon-babel-core-repo-lookup :dir :name
-				     (completing-read "Select repo: "
-						      (if include-all all content)))))))
+      (let* ((content (tlon-babel-repo-lookup-all :name :subtype 'translations))
+	     (all (tlon-babel-repo-lookup-all :name)))
+	(tlon-babel-repo-lookup :dir :name
+				(completing-read "Select repo: "
+						 (if include-all all content)))))))
 
-(defun tlon-babel-core-get-repo-from-file (&optional file)
+(defun tlon-babel-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
 If FILE is nil, use the current buffer's file name."
   (let* ((file (or file (tlon-babel-core-buffer-file-name) default-directory))
 	 (directory-path (file-name-directory file)))
     (catch 'found
-      (dolist (dir (tlon-babel-core-repo-lookup-all :dir))
+      (dolist (dir (tlon-babel-repo-lookup-all :dir))
 	(when (string-prefix-p (file-name-as-directory dir)
 			       directory-path)
 	  (throw 'found dir))))))
@@ -320,29 +320,29 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
   "Return all unique values of KEY in METADATA matching alll KEY-VALUE pairs."
   (apply #'tlon-babel-lookup-all metadata key key-value))
 
-(defun tlon-babel-core-repo-lookup (key &rest key-value)
+(defun tlon-babel-repo-lookup (key &rest key-value)
   "Return the value of KEY in repos matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup tlon-babel-core-repos key key-value))
+  (apply #'tlon-babel-lookup tlon-babel-repos key key-value))
 
-(defun tlon-babel-core-repo-lookup-all (key &rest key-value)
+(defun tlon-babel-repo-lookup-all (key &rest key-value)
   "Return all unique values of KEY in repos matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all tlon-babel-core-repos key key-value))
+  (apply #'tlon-babel-lookup-all tlon-babel-repos key key-value))
 
-(defun tlon-babel-core-user-lookup (key &rest key-value)
+(defun tlon-babel-user-lookup (key &rest key-value)
   "Return the value of KEY in users matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup tlon-babel-core-users key key-value))
+  (apply #'tlon-babel-lookup tlon-babel-users key key-value))
 
-(defun tlon-babel-core-user-lookup-all (key &rest key-value)
+(defun tlon-babel-user-lookup-all (key &rest key-value)
   "Return all unique values of KEY in users matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all tlon-babel-core-users key key-value))
+  (apply #'tlon-babel-lookup-all tlon-babel-users key key-value))
 
-(defun tlon-babel-core-label-lookup (key &rest key-value)
+(defun tlon-babel-label-lookup (key &rest key-value)
   "Return the value of KEY in labels matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup tlon-babel-core-job-labels key key-value))
+  (apply #'tlon-babel-lookup tlon-babel-job-labels key key-value))
 
-(defun tlon-babel-core-label-lookup-all (key &rest key-value)
+(defun tlon-babel-label-lookup-all (key &rest key-value)
   "Return all values of KEY in labels matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all tlon-babel-core-job-labels key key-value))
+  (apply #'tlon-babel-lookup-all tlon-babel-job-labels key key-value))
 
 (defun tlon-babel-core-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
@@ -356,7 +356,7 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
 ;;;;; Misc
 ;; this function will eventually be deleted once we migrate to a system of English-only directory names
 
-(defun tlon-babel-core-get-bare-dir-translation (target-lang source-lang bare-dir)
+(defun tlon-babel-get-bare-dir-translation (target-lang source-lang bare-dir)
   "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
   (let (result)
     (dolist (outer tlon-babel-core-bare-dirs result)
