@@ -231,11 +231,12 @@ Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
 
 (defun tlon-babel-insert-note-marker (marker)
   "Insert note MARKER in the footnote at point."
-  (when-let ((fn-data (markdown-footnote-text-positions)))
-    (cl-destructuring-bind (id start _) fn-data
-      (let ((pos (+ 4 (length id) start)))
-	(goto-char pos)
-	(insert marker)))))
+  (if-let ((fn-data (markdown-footnote-text-positions)))
+      (cl-destructuring-bind (id start _) fn-data
+	(let ((pos (+ 4 (length id) start)))
+	  (goto-char pos)
+	  (insert marker)))
+    (user-error "Not in a footnote")))
 
 ;;;###autoload
 (defun tlon-babel-insert-footnote-marker ()
