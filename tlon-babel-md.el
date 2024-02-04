@@ -189,7 +189,7 @@ call the function preceded by the universal ARG or use
       (list match (cons begin end)))))
 
 (defun tlon-babel-replace-bibtex-key-in-citation (key begin end)
-  ""
+  "Delete bibtex KEY between BEGIN and END."
   (save-excursion
     (set-buffer-modified-p t)
     (goto-char begin)
