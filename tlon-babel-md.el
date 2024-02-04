@@ -164,7 +164,8 @@ Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
 the KEY will replace the existing key.
 
 By default, it will insert a \"long\" citation. To insert a \"short\" citation,
-call the function preceded by the universal ARG."
+call the function preceded by the universal ARG or use
+`tlon-babel-md-insert-mdx-cite-short'."
   (interactive "P")
   (let ((key (car (citar-select-refs))))
     (if-let ((data (tlon-babel-get-bibtex-key-in-citation)))
@@ -173,6 +174,11 @@ call the function preceded by the universal ARG."
       (tlon-babel-md-insert-element-pair (format "<Cite bibKey={\"%s\"}%s>"
 						 key (if arg " short" ""))
 					 "</Cite>" t))))
+
+(defun tlon-babel-md-insert-mdx-cite-short ()
+  "Insert a short MDX `Cite' element at point or around the selected region."
+  (interactive)
+  (tlon-babel-md-insert-mdx-cite '(4)))
 
 (defun tlon-babel-get-bibtex-key-in-citation ()
   "Return the BibTeX key and its position in `Cite' element at point."
@@ -384,6 +390,7 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
    ["MDX"
     ("a" "aside"                tlon-babel-md-insert-mdx-aside)
     ("c" "cite"                 tlon-babel-md-insert-mdx-cite)
+    ("C" "cite short"           tlon-babel-md-insert-mdx-cite-short)
     ("g" "lang"                 tlon-babel-md-insert-mdx-lang)
     ("k" "literal link"         tlon-babel-md-insert-mdx-literal-link)
     ("m" "small caps"           tlon-babel-md-insert-mdx-small-caps)
