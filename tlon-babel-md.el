@@ -158,7 +158,7 @@ is non-nil, the opening element will be self-closing."
 ;;;;;;; MDX
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-cite (arg &optional key)
+(defun tlon-babel-md-insert-mdx-cite (arg)
   "Insert an MDX `Cite' element at point or around the selected region.
 Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
 the KEY will replace the existing key.
