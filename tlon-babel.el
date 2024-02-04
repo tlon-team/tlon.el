@@ -916,56 +916,5 @@ computed by dividing the file size by CHARS-PER-WORD."
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
 
-;;;;; Temp
-
-(defun tlon-babel-set-tags ()
-  "Docstring."
-  (interactive)
-  (let* ((tags (tlon-babel-yaml-format-value (tlon-babel-yaml-get-key "tags")))
-	 (english-file (tlon-babel-get-counterpart))
-	 (field (cons "tags" tags)))
-    (with-current-buffer (find-file-noselect english-file)
-      (tlon-babel-yaml-insert-fields `(,field)))))
-
-(defun tlon-babel-translate-tag (tag)
-  "Docstring TAG."
-  (tlon-babel-metadata-in-repo "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/")
-  (let* ((tag-slug (tlon-core-slugify tag))
-	 (tag-filename (file-name-with-extension tag-slug "md"))
-	 (tag-file (file-name-concat
-		    "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/temas"
-		    tag-filename))
-	 (tag-file-en (tlon-babel-get-counterpart tag-file))
-	 (tag-name-en (tlon-babel-metadata-lookup
-		       (tlon-babel-metadata-in-repo
-			"/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-es/")
-		       "title" "file" tag-file-en)))
-    (message tag-name-en)))
-
-(defun tlon-babel-replace-footnotes ()
-  "Replace footnotes in counterpart of Spanish tag in current buffer."
-  (interactive)
-  (tlon-babel-open-counterpart nil)
-  (widen)
-  (goto-char (point-min))
-  (let ((fn-regexp "^\\[^[[:digit:]]+\\]:"))
-    (if (re-search-forward fn-regexp nil t)
-	(progn
-	  (beginning-of-line)
-	  (let ((start (point)))
-	    (goto-char (point-max))
-	    (copy-region-as-kill start (point)))
-	  (tlon-babel-open-counterpart)
-	  (goto-char (point-min))
-	  (re-search-forward fn-regexp nil t)
-	  (goto-char (match-beginning 0))
-	  (let ((start (point)))
-	    (goto-char (point-max))
-	    (delete-region start (point))
-	    (yank)
-	    (save-buffer)))
-      (tlon-babel-open-counterpart)
-      (message "No footnotes found"))))
-
 (provide 'tlon-babel)
 ;;; tlon-babel.el ends here
