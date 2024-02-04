@@ -175,6 +175,7 @@ call the function preceded by the universal ARG or use
 						 key (if arg " short" ""))
 					 "</Cite>" t))))
 
+;;;###autoload
 (defun tlon-babel-md-insert-mdx-cite-short ()
   "Insert a short MDX `Cite' element at point or around the selected region."
   (interactive)
