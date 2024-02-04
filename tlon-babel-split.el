@@ -107,11 +107,11 @@ The alignment is performed by scrolling up or down the other window."
 	  (recenter 0)
 	  (scroll-down current-scren-line))))))
 
+;; TODO: create function
 (defun tlon-babel-split-align-sentences ()
   "Align the sentences in the current and other windows.
 The alignment is performed by scrolling up or down the other window. It is
 assumed that the paragraphs are already aligned."
-  
   )
 
 (defun tlon-babel-split-autoalign-paragraphs ()
