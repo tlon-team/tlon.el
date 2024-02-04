@@ -133,6 +133,11 @@ This variable should not be set manually.")
 (defvar tlon-babel-pandoc-convert-from-url
   "pandoc -s -r html '%s' -o '%s'"
   "Command to convert from URL to Markdown.")
+;;;;; URLs
+
+(defconst tlon-babel-tlon-github-url
+  "https://github.com/tlon-team/"
+  "URL of the Tlön account on GitHub.")
 
 ;;;;; Version
 
@@ -779,7 +784,7 @@ If the current buffer is visiting a file in a Babel repository, browse that;
 otherwise prompt for a repo."
   (interactive)
   (let* ((repo-name (tlon-babel-repo-lookup :name :dir (tlon-babel-get-repo))))
-    (browse-url (concat "https://github.com/tlon-team/" repo-name))))
+    (browse-url (concat tlon-babel-tlon-github-url repo-name))))
 
 (defun tlon-babel-browse-entity-dir (entity &optional repo source-lang)
   "Browse the directory of ENTITY in REPO.
