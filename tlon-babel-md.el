@@ -41,7 +41,7 @@
   "End of the line that contains file local variables.")
 
 (defconst tlon-babel-cite-pattern
-  "<Cite id={\"\\(.*?\\)\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
+  "<Cite bibKey={\"\\(.*?\\)\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
   "Pattern to match a citation in a Markdown file.")
 
 ;;;; Functions
