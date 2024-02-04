@@ -839,7 +839,7 @@ Display the collected keys in a new buffer."
   (save-excursion
     (goto-char (point-min))
     (let (keys)
-      (while (re-search-forward "@\\([[:alnum:]]+[[:digit:]]\\{4\\}[[:alnum:]]+\\)" nil t)
+      (while (re-search-forward tlon-babel-cite-pattern nil t)
 	(push (match-string 1) keys))
       (with-output-to-temp-buffer "*Bibtex keys*"
 	(princ (mapconcat #'identity (delete-dups keys) "\n"))))))
