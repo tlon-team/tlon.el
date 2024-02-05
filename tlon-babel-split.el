@@ -121,7 +121,13 @@ assumed that the paragraphs are already aligned."
 	     (>= (count-screen-lines (point-min) (point)) tlon-babel-split-screen-line-threshold))
     (tlon-babel-split-align-paragraphs)))
 
-(add-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)
+(defun tlon-babel-split-mode-reset ()
+  "Reset `split-mode'."
+  (interactive)
+  (remove-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs)
+  (add-hook 'post-command-hook #'tlon-babel-split-autoalign-paragraphs))
+
+(tlon-babel-split-mode-reset)
 
 (provide 'tlon-babel-split)
 ;;; tlon-babel-split.el ends here
