@@ -77,6 +77,10 @@ This variable should not be set manually.")
 
 ;;;;;; lookup
 
+;; TODO: all this should be adapted following the model of
+;; `tlon-babel-get-file-glossary' i.e. a repo-relative path stored in a variable
+;; and a function to get it for specific languages
+
 (defvar tlon-babel-dir-correspondences
   (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-es") "correspondences/")
   "Directory where correspondence files are stored.")
