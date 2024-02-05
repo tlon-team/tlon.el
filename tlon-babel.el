@@ -772,6 +772,11 @@ If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
 	(unless (y-or-n-p "The BibTeX entry you selected is not in English. In the `section-correspondences.json` file, you should use the BibTeX entry associated with the original work rather than with its translation. Are you sure you want to proceed?")
 	  (user-error "Aborted"))))))
 
+;;;;; hyphenation
+
+;; TODO: the function that adds words to the json file should also add the
+;; hyphenated variant to `jinx-local-words'
+
 ;;;;; browse commands
 
 (defun tlon-babel-browse-file ()
