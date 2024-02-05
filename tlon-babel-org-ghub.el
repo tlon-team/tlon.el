@@ -166,7 +166,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 		      (completing-read (format "Issue `%s' has no assignee. Assign to "
 					       (tlon-babel-get-issue-name issue))
 				       (tlon-babel-user-lookup-all :github)))))
-	(tlon-babel-set-assignee user issue)))))
+	(tlon-babel-set-assignee `(,user) issue)))))
 
 (defun tlon-babel-get-open-issues ()
   "Return a list of all open issues in the current repository."
@@ -305,7 +305,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	      (format "The assignee of `%s' is %s.\nSelf-assign? [y]es | no, and [c]apture | no, and do [n]ot capture"
 		      (oref issue title) assignee)
 	      '(?y ?c ?n))
-	(?y (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
+	(?y (tlon-babel-set-assignee `(,(tlon-babel-user-lookup :github :name user-full-name)))
 	    (while (not (tlon-babel-capture-issue-p issue))
 	      (sleep-for 1)))
 	(?c t)
@@ -691,7 +691,7 @@ The prompt defaults to the current user."
 (defun tlon-babel-set-initial-label-and-assignee ()
   "Set label to `Awaiting processing' and assignee to current user."
   (tlon-babel-set-labels '("Awaiting processing"))
-  (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name)))
+  (tlon-babel-set-assignee `(,(tlon-babel-user-lookup :github :name user-full-name))))
 
 (defun tlon-babel-get-element (element &optional issue)
   "Return ELEMENT of ISSUE.
@@ -867,7 +867,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	  (setq latest-issue-post (car (tlon-babel-get-latest-issue))))
 	(tlon-babel-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-visit-issue)
-	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
+	(tlon-babel-set-assignee `(,(tlon-babel-user-lookup :github :name user-full-name)))
 	(tlon-babel-set-labels (append (list status) tags)))
       (setq todo-linkified (tlon-babel-make-todo-name-from-issue nil 'no-status)))
     (org-edit-headline todo-linkified)))

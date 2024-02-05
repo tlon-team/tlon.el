@@ -235,8 +235,8 @@ If CLOSE is non-nil, close the issue."
   (let* ((issue-title (format "Job: `%s" original-key))
 	 (issue (tlon-babel-issue-lookup issue-title))
 	 (default-directory (tlon-babel-get-repo 'error 'include-all)))
-    (tlon-babel-set-labels label issue)
-    (tlon-babel-set-assignee assignee issue)
+    (tlon-babel-set-labels `(,label) issue)
+    (tlon-babel-set-assignee `(,assignee) issue)
     (when close
       (tlon-babel-close-issue issue))))
 
