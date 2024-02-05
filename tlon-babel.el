@@ -635,7 +635,7 @@ respectively."
   ;; `magit-commit-create' interrupts the process if there aren't any
   (when (tlon-babel-check-staged-or-unstaged file)
     (let* ((repo (tlon-babel-get-repo-from-file file))
-	   (subtype (tlon-babel-repo-lookup :type :dir repo))
+	   (subtype (tlon-babel-repo-lookup :subtype :dir repo))
 	   (file-or-key (pcase subtype
 			  ('translations (tlon-babel-get-key-from-file file))
 			  ('biblio (file-name-nondirectory file)))))
