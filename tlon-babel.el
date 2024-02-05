@@ -89,6 +89,10 @@ This variable should not be set manually.")
   (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
+(defvar tlon-babel-file-hyphenation
+  "hyphenation.json"
+  "File containing hyphenation rules.")
+
 (defvar tlon-babel-file-babel-manual
   (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-core") "manual.org")
   "File containing the Babel manual.")
