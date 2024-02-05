@@ -33,7 +33,7 @@
 
 (defun tlon-babel-get-file-glossary (&optional language)
   "Return the file containing the glossary for LANGUAGE.
-If LANGUAGE is nil, default to the languageuage set in
+If LANGUAGE is nil, default to the language set in
 `tlon-babel-translation-language'."
   (let* ((language (or language tlon-babel-translation-language))
 	 (repo (tlon-babel-repo-lookup :dir
