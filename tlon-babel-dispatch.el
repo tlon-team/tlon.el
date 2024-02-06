@@ -328,21 +328,6 @@ DIR is the directory where the repo is stored."
    ]
   )
 
-;;;;;; Unused?
-
-;; (defmacro tlon-babel-generate-browse-entity-dir-commands (entity)
-;; "Generate commands to browse ENTITY dirs."
-;; (let ((command-name (intern (concat "tlon-babel-browse-dir-" entity))))
-;; `(defun ,command-name (&optional repo)
-;; ,(format "Browse the `%s' directory in REPO.
-;; If REPO is nil, default to the current repository." entity)
-;; (interactive)
-;; (let ((repo (or repo (tlon-babel-get-repo))))
-;; (tlon-babel-browse-entity-dir ,entity repo)))))
-
-;; (dolist (entity (tlon-babel-get-entity-types))
-;; (eval `(tlon-babel-generate-browse-entity-dir-commands ,entity)))
-
 (provide 'tlon-babel-dispatch)
 ;;; tlon-babel-dispatch.el ends here
 
