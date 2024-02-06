@@ -32,6 +32,7 @@
 (require 'jinx)
 (require 'orgit-forge)
 (require 'tlon-babel)
+(require 'tlon-babel-core)
 (require 'tlon-babel-import)
 (require 'tlon-babel-org-ghub)
 (require 'tlon-babel-split)
