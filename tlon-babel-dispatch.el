@@ -148,6 +148,9 @@ DIR is the directory where the repo is stored."
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-magit-browse-bisagra)
     ]
+   ["Boletín"
+    ("a a" "boletin"                      tlon-babel-magit-browse-boletin)
+    ]
    ["Meetings"
     ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
     ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
@@ -202,6 +205,9 @@ DIR is the directory where the repo is stored."
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-open-file-in-bisagra)
     ]
+   ["Boletín"
+    ("a a" "boletin"                      tlon-babel-open-file-in-boletin)
+    ]
    ["Docs"
     ("d d" "tlon-docs"                    tlon-babel-open-file-in-docs)
     ]
@@ -252,6 +258,9 @@ DIR is the directory where the repo is stored."
     ]
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-dired-browse-bisagra)
+    ]
+   ["Boletín"
+    ("a a" "boletin"                      tlon-babel-dired-browse-boletin)
     ]
    ["Docs"
     ("d d" "tlon-docs"                    tlon-babel-dired-browse-docs)

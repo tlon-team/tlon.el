@@ -146,6 +146,12 @@
 	   :abbrev "bisagra"
 	   :type misc
 	   :key "b")
+    (:name "boletin"
+	   :project "other"
+	   :subproject "boletin"
+	   :abbrev "boletin"
+	   :type misc
+	   :key "a")
     (:name "meetings-leo-pablo"
 	   :abbrev "meetings-leo-pablo"
 	   :subtype meetings
