@@ -154,22 +154,6 @@ dedicated function."
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
 
-(defun tlon-babel-repos-transient ()
-  "Transient for opening projects in Magit."
-  (interactive)
-  (let ((transient-args (mapcar (lambda (repo)
-				  (let* ((abbrev (plist-get repo :abbrev))
-					 (fun-name (intern (concat "tlon-open-repo-" abbrev))))
-				    (fset fun-name
-					  `(lambda ()
-					     (interactive)
-					     (magit-status ,(plist-get repo :dir))))
-				    `[,fun-name ,(plist-get repo :key) ,(plist-get repo :name)]))
-				tlon-babel-repos)))
-    (eval `(transient-define-prefix tlon-open-repo-transient ()
-	     "Transient that dispatches to Magit open repo commands."
-	     ,@transient-args))))
-
 (provide 'tlon-babel-fix)
 ;;; tlon-babel-fix.el ends here
 
