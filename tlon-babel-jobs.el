@@ -301,8 +301,8 @@ substitute assignee."
   ;; the original file
   (window-extras-buffer-move-right)
   (window-extras-switch-to-last-window)
+  (add-hook 'eww-mode-hook #'tlon-babel-tts-mode)
   (markdown-preview)
-  (tlon-babel-tts-mode)
   (read-aloud-buf))
 
 (defun tlon-babel-jobs-initialize-review ()
