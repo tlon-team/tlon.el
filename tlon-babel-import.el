@@ -58,6 +58,16 @@
   "\\([[:alnum:]-]*\\)"
   "Regular expression for validating tag slugs.")
 
+;;;;; Pandoc
+
+(defconst tlon-babel-pandoc-convert-from-file
+  "pandoc -s '%s' -t markdown -o '%s'"
+  "Command to convert from HTML file to Markdown.")
+
+(defconst tlon-babel-pandoc-convert-from-url
+  "pandoc -s -r html '%s' -o '%s'"
+  "Command to convert from URL to Markdown.")
+
 ;;;;; Executables
 
 (defvar tlon-babel-pdf2md

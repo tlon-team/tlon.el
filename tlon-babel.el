@@ -132,15 +132,6 @@ This variable should not be set manually.")
 (tlon-babel-create-file-opening-command "section-correspondences")
 (tlon-babel-create-file-opening-command "bibtex-correspondences")
 
-;;;;; html import
-
-(defconst tlon-babel-pandoc-convert-from-file
-  "pandoc -s '%s' -t markdown -o '%s'"
-  "Command to convert from HTML file to Markdown.")
-
-(defconst tlon-babel-pandoc-convert-from-url
-  "pandoc -s -r html '%s' -o '%s'"
-  "Command to convert from URL to Markdown.")
 ;;;;; URLs
 
 (defconst tlon-babel-tlon-github-url
