@@ -46,7 +46,7 @@
 
 ;;;;; EAF validation
 
-(defconst tlon-babel-import-eaf-p
+(defconst tlon-babel-import-eaf-url-regexp
   "forum\\.effectivealtruism\\.org/"
   "Regular expression for validating EAF URLs.")
 
@@ -255,9 +255,9 @@ If ASYNC is t, run the request asynchronously."
 
 ;;;;; EAF validation
 
-(defun tlon-babel-import-eaf-p (url)
+(defun tlon-babel-import-eaf-url-regexp (url)
   "Return t if URL is an EAF URL, nil otherwise."
-  (not (not (string-match tlon-babel-import-eaf-p url))))
+  (not (not (string-match tlon-babel-import-eaf-url-regexp url))))
 
 (defun tlon-babel-import-eaf-article-id-p (identifier)
   "Return t if IDENTIFIER is a post ID, nil otherwise."
