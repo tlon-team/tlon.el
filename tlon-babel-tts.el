@@ -37,6 +37,8 @@
     (define-key map (kbd "H-,") 'tlon-babel-tts-read-backward)
     (define-key map (kbd "H-.") 'tlon-babel-tts-read-forward)
     (define-key map (kbd "H-;") 'tlon-babel-tts-read-target-start-or-stop)
+    (define-key map (kbd "H-k") 'read-aloud-extras-increase-rate)
+    (define-key map (kbd "H-l") 'read-aloud-extras-decrease-rate)
     map)
   "Keymap for `tlon-babel-tts-mode'.")
 
