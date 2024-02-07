@@ -211,11 +211,13 @@ for the process that is being initialized."
       (tlon-babel-check-file
        (when (string= current-action "Process")
 	 'original))
-      (when (string= current-action "Translate")
-	(unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-manual-fix-all'?")
-	  (user-error "Aborted")))
-      (when (string= current-action "Check")
-	(tlon-babel-tts-mode -1))
+      (pcase current-action
+	("translate"
+	 (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-manual-fix-all'?")
+	   (user-error "Aborted")))
+	("check"
+	 (tlon-babel-tts-mode -1)
+	 (remove-hook 'eww-mode-hook #'tlon-babel-tts-mode)))
       (save-buffer)
       (if (string= current-action "Process")
 	  (write-file original-path)
