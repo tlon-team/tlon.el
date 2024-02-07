@@ -58,6 +58,16 @@
   "\\([[:alnum:]-]*\\)"
   "Regular expression for validating tag slugs.")
 
+;;;;; Executables
+
+(defvar tlon-babel-pdf2md
+  (file-name-concat paths-dir-external-repos "pdf2md/lib/pdf2md-cli.js")
+  "Path to `pdf2md-cli.js' executable.")
+
+(defvar tlon-babel-pdftotext
+  (file-name-concat paths-dir-external-repos "xpdf-tools-mac-4.04/bin64/pdftotext")
+  "Path to `pdftotext' executable.")
+
 ;;;; Functions
 
 ;;;;; General import
