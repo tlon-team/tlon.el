@@ -157,11 +157,6 @@ This variable should not be set manually.")
   "Regular expression for matching bibtex keys in clocked headings.
 The second capture group handles the `.md' extension, which we used previously.")
 
-;;;;; Read aloud
-
-(defvar tlon-babel-read-aloud-next-action
-  'read-aloud-buf)
-
 ;;;;; Sentence highlighting
 
 ;; TODO: (1) highlight sentence in target window; (2) diagnose why first
