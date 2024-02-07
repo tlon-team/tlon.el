@@ -157,18 +157,6 @@ This variable should not be set manually.")
   "Regular expression for matching bibtex keys in clocked headings.
 The second capture group handles the `.md' extension, which we used previously.")
 
-;;;;; Sentence highlighting
-
-;; TODO: (1) highlight sentence in target window; (2) diagnose why first
-;; two characters in a sentence are matched to the previous sentence;
-;; (3) diagnose performance issues, or else disable `post-command-hook'
-;; and rely on other triggers; (4) use `lin-blue' as face for highlighting))))
-(defvar tlon-babel-sentence-highlight-offset 0
-  "Number of sentences to offset the sentence count in the source window.")
-
-(defvar tlon-babel-enable-automatic-highlighting nil
-  "Whether to automatically highlight corresponding sentences.")
-
 ;;;; Functions
 
 ;;;;; version
@@ -442,73 +430,6 @@ If REPO is nil, prompt the user for one."
   "Return a lit of all repositories in the `tlon-babel' GitHub account."
   (let ((list (ghub-get "/users/tlon-team/repos")))
     (mapcar (lambda (repo) (alist-get 'name repo)) list)))
-
-;;;;;; Sentence highlighting
-
-(defun tlon-babel-sentence-highlight-offset-set ()
-  "Set the sentence offset.
-This command should be run from the source window."
-  (interactive)
-  (let ((source-window-sentences (count-sentences (point-min) (point)))
-	target-window-sentences)
-    (with-selected-window (cadr (window-list))
-      (setq target-window-sentences (count-sentences (point-min) (point))))
-    (setq tlon-babel-sentence-highlight-offset
-	  (- source-window-sentences target-window-sentences))))
-
-(defun tlon-babel-remove-source-overlays ()
-  "Remove all existing overlays in the source window."
-  (remove-overlays (point-min) (point-max)))
-
-(defun tlon-babel-current-window-line ()
-  "Get the current line number in the window."
-  (save-excursion
-    (let ((end (point)))
-      (move-to-window-line 0)
-      (count-screen-lines (point) end))))
-
-(defun tlon-babel-highlight-corresponding-sentence ()
-  "Highlight the corresponding sentence in the source text and unhighlight others."
-  (interactive)
-  (let* ((source-window (cadr (window-list)))
-	 (target-window (car (window-list)))
-	 (target-sentence-index)
-	 (overlay (make-overlay (point) (point)))
-	 (target-window-line (tlon-babel-current-window-line)))
-    (with-selected-window target-window
-      (save-excursion
-	(backward-sentence)
-	(setq target-sentence-index (count-sentences (point-min) (point)))))
-    (with-selected-window source-window
-      (tlon-babel-remove-source-overlays)
-      (let ((beg)
-	    (end))
-	;; +1 because otherwise `count-sentences' throws an error
-	(goto-char (1+ (point-min)))
-	(while (< (count-sentences (point-min) (point))
-		  (+ target-sentence-index tlon-babel-sentence-highlight-offset))
-	  (forward-sentence))
-	(setq beg (point))
-	(forward-sentence)
-	(setq end (point))
-	(move-overlay overlay beg end (current-buffer))
-	(overlay-put overlay 'face 'highlight)
-	(backward-sentence)
-	(recenter target-window-line)))))
-
-(defun tlon-babel-toggle-automatic-highlighting ()
-  "Toggle automatic highlighting of corresponding sentences."
-  (interactive)
-  (if tlon-babel-enable-automatic-highlighting
-      (progn
-	(remove-hook 'post-command-hook 'tlon-babel-highlight-corresponding-sentence t)
-	(setq tlon-babel-enable-automatic-highlighting nil)
-	(with-selected-window (cadr (window-list))
-	  (tlon-babel-remove-source-overlays))
-	(message "Automatic sentence highlighting disabled."))
-    (add-hook 'post-command-hook 'tlon-babel-highlight-corresponding-sentence nil t)
-    (setq tlon-babel-enable-automatic-highlighting t)
-    (message "Automatic sentence highlighting enabled.")))
 
 ;;;;; Checks
 
