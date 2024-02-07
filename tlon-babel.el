@@ -334,16 +334,13 @@ Assumes action is first word of clocked task."
 	  (setq found t))))
     nil))
 
-(defun tlon-babel-copy-buffer (&optional file deepl)
+(defun tlon-babel-copy-buffer (&optional file)
   "Copy the contents of FILE to the kill ring.
-Defaults to the current buffer if no FILE is specified. If DEEPL is non-nil,
-open DeepL."
+Defaults to the current buffer if no FILE is specified."
   (let ((file (or file (buffer-file-name))))
     (with-current-buffer (find-file-noselect file)
       (copy-region-as-kill (point-min) (point-max)))
-    (message "Copied the contents of `%s' to kill ring" (file-name-nondirectory file)))
-  (when deepl
-    (shell-command "open '/Applications/DeepL.app/Contents/MacOS/DeepL'")))
+    (message "Copied the contents of `%s' to kill ring" (file-name-nondirectory file))))
 
 (defun tlon-babel-copy-region (beg end)
   "Copy the contents between BEG and END to the kill ring."
