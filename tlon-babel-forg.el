@@ -1,4 +1,4 @@
-;;; tlon-babel-org-ghub.el --- Org-GitHub integration -*- lexical-binding: t -*-
+;;; tlon-babel-forg.el --- Integration between forge and org-mode -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Org-GitHub integration.
+;; Integration between `forge' and `org-mode'.
 
 ;;; Code:
 
@@ -1019,5 +1019,5 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	(sleep-for 0.1))
       (forge-visit-issue (tlon-babel-issue-lookup title dir)))))
 
-(provide 'tlon-babel-org-ghub)
-;;; tlon-babel-org-ghub.el ends here
+(provide 'tlon-babel-forg)
+;;; tlon-babel-forg.el ends here
