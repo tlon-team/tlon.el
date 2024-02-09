@@ -33,14 +33,67 @@
 
 ;;;; User options
 
-(defcustom tlon-babel-warn-when-no-valid-label t
-  "Whether to warn the user when the issue has no valid label.
-If t, warn the user. If `prompt', prompt the user for a label. If nil, do
-nothing."
-  :type '(choice (const :tag "Warn" t)
-                 (const :tag "Prompt" prompt)
-                 (const :tag "Do nothing" nil))
+(defgroup tlon-babel-forg ()
+  "Integration between `forge' and `org-mode'."
   :group 'tlon-babel)
+
+(defcustom tlon-babel-when-status-is-invalid 'prompt
+  "What to do when the issue has no valid status label.
+- `prompt': prompt the user to select a status label.
+- `change': set the status label to \"todo\".
+- `warn': capture the issue as is, logging a warning in the `*Messages*' buffer.
+- `capture': capture the issue as is, without logging a warning.
+- `no-capture', or any other value: do not capture the issue.
+
+The value of this user option can also be set interactively from
+`tlon-babel-forg-menu'. When set that way, the value will only persist for the
+current session."
+  :type '(choice (const :tag "Prompt for selection" prompt)
+		 (const :tag "Change without prompt" change)
+		 (const :tag "Capture with warning" warn)
+		 (const :tag "Capture without warning" capture)
+		 (const :tag "Do not capture" t))
+  :group 'tlon-babel-forg)
+
+(defcustom tlon-babel-when-assignee-is-nil 'prompt
+  "What to do when the issue has no assignee.
+- `prompt': prompt the user to confirm that it will be assigned to them.
+- `change': assign it to the user without prompting for confirmation.
+- `warn': capture the issue as is, logging a warning in the `*Messages*' buffer.
+- `capture': capture the issue as is, without logging a warning.
+- `no-capture', or any other value: do not capture the issue.
+
+The value of this user option can also be set interactively from
+`tlon-babel-forg-menu'. When set that way, the value will only persist for the
+current session."
+  :type '(choice (const :tag "Prompt for confirmation" prompt)
+		 (const :tag "Change without prompt" change)
+		 (const :tag "Capture with warning" warn)
+		 (const :tag "Capture without warning" capture)
+		 (const :tag "Do not capture" t))
+  :group 'tlon-babel-forg)
+
+(defcustom tlon-babel-when-assignee-is-someone-else 'prompt
+  "What to do when the issue’s assignee is someone else.
+- `prompt': prompt the user to confirm that it will be assigned to them.
+- `change': assign it to the user without prompting for confirmation.
+- `warn': capture the issue as is, logging a warning in the `*Messages*' buffer.
+- `capture': capture the issue as is, without logging a warning.
+- `no-capture', or any other value: do not capture the issue.
+
+The value of this user option can also be set interactively from
+`tlon-babel-forg-menu'. When set that way, the value will only persist for the
+current session.
+
+Note that this user option has no effect when the tasks are captured via
+`tlon-babel-capture-all-issues'. That command always behaves as if the value of
+this variable is `no-capture'."
+  :type '(choice (const :tag "Prompt for confirmation" prompt)
+		 (const :tag "Change without prompt" change)
+		 (const :tag "Capture with warning" warn)
+		 (const :tag "Capture without warning" capture)
+		 (const :tag "Do not capture" t))
+  :group 'tlon-babel-forg)
 
 ;;;; Main variables
 
