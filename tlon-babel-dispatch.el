@@ -41,7 +41,6 @@
     ("r" "dwim"                           tlon-babel-jobs-dwim)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
     ("y" "Sync"                           tlon-babel-forg-menu)
-    ("." "gh-notify"                      gh-notify)
     """Request"
     ("q q" "uqbar"                        tlon-babel-api-request)
     ]
