@@ -247,6 +247,10 @@ The appropriate action is determined by the value of
   "Capture all issues in the current repo not assigned to another user."
   (interactive)
   (tlon-babel-get-repo 'error 'include-all)
+  (forge-pull nil nil nil #'tlon-babel-capture-all-issues-callback))
+
+(defun tlon-babel-capture-all-issues-callback ()
+  "Capture all issues in the current repo after `forge-pull' is finished."
   (let* ((repo (forge-get-repository nil))
 	 (tlon-babel-when-assignee-is-someone-else nil))
     (dolist (issue (tlon-babel-get-issues repo))
