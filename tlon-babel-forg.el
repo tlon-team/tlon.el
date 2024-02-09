@@ -144,13 +144,13 @@ link, else get their values from the heading title, if possible."
     (tlon-babel-visit-issue number repo)
     (current-buffer)))
 
-(defun tlon-babel-visit-todo (&optional pos file)
+(defun tlon-babel-visit-todo (&optional pos file issue)
   "Visit TODO at POS in FILE.
 If POS is nil, use the position of the TODO associated with the issue at point.
 If FILE is nil, use the file where the issue at point would be stored (depending
 on whether or not is a job)."
-  (if-let ((pos (or pos (tlon-babel-get-todo-position-from-issue)))
-	   (file (or file (tlon-babel-get-todos-file-from-issue))))
+  (if-let ((pos (or pos (tlon-babel-get-todo-position-from-issue issue)))
+	   (file (or file (tlon-babel-get-todos-file-from-issue issue))))
       (tlon-babel-open-todo file pos)
     (user-error "No TODO found")))
 
@@ -244,7 +244,9 @@ The appropriate action is determined by the value of
 
 ;;;###autoload
 (defun tlon-babel-capture-all-issues ()
-  "Capture all issues in the current repo not assigned to another user."
+  "Capture all issues in the current repo not assigned to another user.
+Before initiating the capture process, we do a full pull of the current repo, to
+ensure that it reflects its remote state."
   (interactive)
   (tlon-babel-get-repo 'error 'include-all)
   (forge-pull nil nil nil #'tlon-babel-capture-all-issues-callback))
@@ -264,7 +266,7 @@ TODO. If ISSUE is non-nil, use it instead of the issue at point."
   (let ((issue (or issue (forge-current-topic)))
 	(inhibit-message t))
     (unless (tlon-babel-get-todo-position-from-issue issue)
-      (let ((todo (tlon-babel-make-todo-name-from-issue no-action nil issue)))
+      (let ((todo (tlon-babel-make-todo-name-from-issue issue no-action nil)))
 	(kill-new todo)
 	(message "Creating %s..." todo)
 	(org-capture nil template)))))
@@ -294,7 +296,7 @@ If SET-ISSUE is non-nil, set issue label to `Awaiting processing' and assignee
 to the current user. If ISSUE is non-nil, use the issue at point or in the
 current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-	 (todo (tlon-babel-make-todo-name-from-issue 'no-action 'no-status issue)))
+	 (todo (tlon-babel-make-todo-name-from-issue issue 'no-action 'no-status)))
     (if-let ((pos (tlon-babel-get-todo-position todo (tlon-babel-get-todos-jobs-file))))
 	(tlon-babel-visit-todo pos)
       (save-window-excursion
@@ -307,7 +309,7 @@ current buffer."
 If ISSUE is nil, use the issue at point or in the current buffer."
   (if-let* ((issue (or issue (forge-current-topic)))
 	    (pos (tlon-babel-get-todo-position
-		  (tlon-babel-make-todo-name-from-issue 'no-action 'no-status issue)
+		  (tlon-babel-make-todo-name-from-issue issue 'no-action 'no-status)
 		  (tlon-babel-get-todos-jobs-file))))
       (save-window-excursion
 	(tlon-babel-store-todo "tbJ" nil issue)
@@ -354,9 +356,10 @@ rather than strictly matching the heading."
       (when (re-search-forward (concat "^\\*+.*" todo) nil t)
 	(point)))))
 
-(defun tlon-babel-get-todos-file-from-issue ()
-  "Get the file where the current issue is or would be stored."
-  (if (tlon-babel-issue-is-job-p)
+(defun tlon-babel-get-todos-file-from-issue (&optional issue)
+  "Get the file where the current issue is or would be stored.
+If ISSUE is nil, default to the issue at point."
+  (if (tlon-babel-issue-is-job-p issue)
       (tlon-babel-get-todos-jobs-file)
     (tlon-babel-get-todos-generic-file)))
 
@@ -397,7 +400,7 @@ ISSUE is nil, use the issue at point."
   (when-let ((issue (or issue (forge-current-topic))))
     (if (tlon-babel-issue-is-job-p issue)
 	(tlon-babel-get-todo-position
-	 (tlon-babel-make-todo-name-from-issue nil 'no-status issue)
+	 (tlon-babel-make-todo-name-from-issue issue nil 'no-status)
 	 (tlon-babel-get-todos-jobs-file))
       (tlon-babel-get-todo-position
        (oref issue id)
@@ -668,28 +671,36 @@ the issue at point or in the current buffer."
 
 ;;;###autoload
 (defun tlon-babel-reconcile-all-issues-and-todos ()
-  "Reconcile all TODOs under `paths-tlon-babel-todos-generic-id'."
+  "Reconcile all issues and TODOs."
   (interactive)
-  (save-window-excursion
-    (find-file-noselect (tlon-babel-get-todos-generic-file))
-    (goto-char (point-min))
-    (call-interactively 'org-next-visible-heading)
-    (while (not (eobp))
-      (if (or (not (tlon-babel-get-issue))
-	      (member org-archive-tag (org-get-tags)))
-	  (org-next-visible-heading 1)
-	(tlon-babel-reconcile-issue-and-todo)
-	(call-interactively 'org-next-visible-heading)))
-    (message "Finished reconciling.")))
+  (forge-pull nil nil nil #'tlon-babel-recincile-all-issues-and-todos-callback))
 
-(defun tlon-babel-reconcile-issue-and-todo-from-issue ()
-  "With point on issue, reconcile issue and associated TODO-NAME."
-  (let ((issue-name (tlon-babel-make-todo-name-from-issue))
-	(pos (tlon-babel-get-todo-position-from-issue)))
+(defun tlon-babel-recincile-all-issues-and-todos-callback ()
+  "Capture all issues in the current repo after `forge-pull' is finished."
+  (save-window-excursion
+    (with-current-buffer (find-file-noselect (tlon-babel-get-todos-generic-file))
+      (goto-char (point-min))
+      (call-interactively 'org-next-visible-heading)
+      (while (not (eobp))
+        (let* ((issue (tlon-babel-get-issue)))
+	  (if (or (not issue)
+		  (member org-archive-tag (org-get-tags)))
+	      (org-next-visible-heading 1)
+	    (tlon-babel-reconcile-issue-and-todo-from-issue issue)
+	    (call-interactively 'org-next-visible-heading))))
+      (message "Finished reconciling."))))
+
+(defun tlon-babel-reconcile-issue-and-todo-from-issue (&optional issue)
+  "Reconcile ISSUE and associated TODO.
+If ISSUE is nil, use the issue at point."
+  (let* ((issue (or issue (forge-current-topic)))
+	 (issue-name (tlon-babel-make-todo-name-from-issue issue))
+	 (pos (tlon-babel-get-todo-position-from-issue issue)))
     (save-window-excursion
-      (tlon-babel-visit-todo pos)
+      (tlon-babel-visit-todo pos nil issue)
       (let ((todo-name (substring-no-properties (org-get-heading nil nil t t))))
-	(unless (string= issue-name todo-name)
+	(if (string= issue-name todo-name)
+	    (message "Issue ‘%s’ and its local TODO are in sync." (oref issue title))
 	  (tlon-babel-reconcile-issue-and-todo-prompt issue-name todo-name))))))
 
 (defun tlon-babel-reconcile-issue-and-todo-prompt (issue-name todo-name)
@@ -857,7 +868,7 @@ If ISSUE is nil, get the issue at point or in current buffer."
 	 (id (oref issue id)))
     (org-link-make-string (format "orgit-topic:%s" id) name)))
 
-(defun tlon-babel-make-todo-name-from-issue (&optional no-action no-status issue)
+(defun tlon-babel-make-todo-name-from-issue (&optional issue no-action no-status)
   "Construct the name of TODO from ISSUE.
 For job TODOs, the resulting name will have a name with the form \"[REPO] ACTION
 NAME\". ACTION is optional, and used only for job TODOs. For example, if the
@@ -963,7 +974,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	(tlon-babel-visit-issue)
 	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
 	(tlon-babel-set-labels (append (list status) tags)))
-      (setq todo-linkified (tlon-babel-make-todo-name-from-issue nil 'no-status)))
+      (setq todo-linkified (tlon-babel-make-todo-name-from-issue nil nil 'no-status)))
     (org-edit-headline todo-linkified)))
 
 (defun tlon-babel-create-issue-or-todo ()
