@@ -40,6 +40,7 @@
     ("j" "job"                            tlon-babel-jobs-create-job)
     ("r" "dwim"                           tlon-babel-jobs-dwim)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
+    ("y" "Sync"                           tlon-babel-forg-menu)
     ("." "gh-notify"                      gh-notify)
     """Request"
     ("q q" "uqbar"                        tlon-babel-api-request)
@@ -91,15 +92,6 @@
     ("i i" "open counterpart"             tlon-babel-open-forge-counterpart)
     ("i I" "open file"                    tlon-babel-open-forge-file)
     ]
-   ["Sync"
-    ("y y" "visit or capture"             tlon-babel-visit-counterpart-or-capture)
-    ("y v" "visit"                        tlon-babel-visit-counterpart)
-    ("y p" "post"                         tlon-babel-create-issue-from-todo)
-    ("y c" "capture"                      tlon-babel-capture-issue)
-    ("y C" "capture all"                  tlon-babel-capture-all-issues)
-    ("y r" "reconcile"                    tlon-babel-reconcile-issue-and-todo)
-    ("y R" "reconcile all"                tlon-babel-reconcile-all-issues-and-todos)
-    ("y x" "close"                        tlon-babel-close-issue-and-todo)]
    ]
   )
 

@@ -386,6 +386,57 @@ ISSUE is nil, use the issue at point."
      (funcall issue-fun))
     (_ (user-error "This command cannot be invoked in `%s`" major-mode))))
 
+;;;;; Transient
+
+(defun tlon-babel-label-reader (prompt _ _)
+  "Return a list of choices with PROMPT to be used as an `infix' reader function."
+  (let* ((input (completing-read prompt
+				 (mapcar 'symbol-name '(prompt change warn capture no-capture)))))
+    (intern input)))
+
+(transient-define-infix tlon-babel-when-status-is-invalid-infix ()
+  "docstring."
+  :class 'transient-lisp-variable
+  :reader 'tlon-babel-label-reader
+  :transient t
+  :prompt "Set ‘tlon-babel-when-status-is-invalid’ to (see docstring for details): "
+  :variable 'tlon-babel-when-status-is-invalid)
+
+(transient-define-infix tlon-babel-when-assignee-is-nil-infix ()
+  "docstring."
+  :class 'transient-lisp-variable
+  :reader 'tlon-babel-label-reader
+  :transient t
+  :prompt "Set ‘tlon-babel-when-assignee-is-nil’ to (see docstring for details): "
+  :variable 'tlon-babel-when-assignee-is-nil)
+
+(transient-define-infix tlon-babel-when-assignee-is-someone-else-infix ()
+  "docstring."
+  :class 'transient-lisp-variable
+  :reader 'tlon-babel-label-reader
+  :transient t
+  :prompt "Set ‘tlon-babel-when-assignee-is-someone-else’ to (see docstring for details): "
+  :variable 'tlon-babel-when-assignee-is-someone-else)
+
+(transient-define-prefix tlon-babel-forg-menu ()
+  "`forg' menu."
+  [
+   ["Actions"
+    ("y" "dwim"                           tlon-babel-visit-counterpart-or-capture)
+    ("v" "visit"                          tlon-babel-visit-counterpart)
+    ("p" "post"                           tlon-babel-create-issue-from-todo)
+    ("x" "close"                          tlon-babel-close-issue-and-todo)]
+   ["Capture"
+    ("c" "capture"                        tlon-babel-capture-issue)
+    ("C" "capture all"                    tlon-babel-capture-all-issues)]
+   ["Reconcile"
+    ("r" "reconcile"                      tlon-babel-reconcile-issue-and-todo)
+    ("R" "reconcile all"                  tlon-babel-reconcile-all-issues-and-todos)]
+   ["Options"
+    ("-i" "When status is invalid"        tlon-babel-when-status-is-invalid-infix)
+    ("-n" "When assignee is nil"          tlon-babel-when-assignee-is-nil-infix)
+    ("-e" "When assignee is someone else" tlon-babel-when-assignee-is-someone-else-infix)]])
+
 ;;;;; Get heading elements
 
 (defun tlon-babel-get-element-from-heading (regexp)
