@@ -1101,7 +1101,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Create an issue with TITLE in DIR and visit it."
   (with-temp-buffer
     (cd dir)
-    (when (forge-current-repository 'full)
+    (when (forge-current-repository)
       (tlon-babel-create-issue title dir)
       (forge-pull)
       (message (concat "Reflect on this fine proverb while you wait: " (tlon-core-proverb)))
