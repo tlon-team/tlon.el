@@ -600,7 +600,7 @@ If ISSUE is nil, use the issue at point or in the current buffer.
 
 The status is returned upcased."
   (let ((issue (or issue (forge-current-topic))))
-    (if (eq (tlon-babel-get-state) 'closed)
+    (if (eq (tlon-babel-get-state) 'completed)
 	"DONE"
       (if-let ((labels (tlon-babel-get-element 'labels issue))
 	       (status (tlon-babel-get-status-in-labels labels)))
