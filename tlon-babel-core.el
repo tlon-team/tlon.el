@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'forge-core)
 (require 'paths)
 
 ;;;; Variables
@@ -358,6 +359,22 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
      "/git-dirs/"
      "/Library/CloudStorage/Dropbox/repos/"
      (buffer-file-name))))
+
+(defun tlon-babel-issue-lookup (string &optional dir)
+  "Return the first issue in DIR whose title includes STRING.
+If DIR is nil, use the current repository."
+  (let* ((string (concat "%" string "%"))
+	 (default-directory (or dir default-directory))
+	 (repo (forge-get-repository t))
+	 (issue-id (caar (emacsql (forge-db)
+				  [:select [number]
+					   :from 'issue
+					   :where (and (= repository $s1)
+						       (like title $s2))]
+				  (oref repo id)
+				  string))))
+    (when issue-id
+      (forge-get-issue repo issue-id))))
 
 ;;;;; Misc
 ;; this function will eventually be deleted once we migrate to a system of English-only directory names
