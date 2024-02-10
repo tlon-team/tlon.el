@@ -41,8 +41,9 @@
     ("j" "job"                            tlon-babel-jobs-create-job)
     ("r" "dwim"                           tlon-babel-jobs-dwim)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
-    ("y" "Sync"                           tlon-babel-forg-menu)
     ("H-m" "Meet"                         tlon-babel-meet-menu)
+    ("y" "Forg"                           tlon-babel-forg-menu)
+    ("." "Notifications"                  forge-list-notifications)
     """Request"
     ("q q" "uqbar"                        tlon-babel-api-request)
     ]
