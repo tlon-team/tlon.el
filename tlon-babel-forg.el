@@ -657,7 +657,7 @@ the issue at point or in the current buffer."
 	t)
     nil))
 
-;;;;; Re-sync
+;;;;; Reconcile
 
 ;;;###autoload
 (defun tlon-babel-reconcile-issue-and-todo ()
@@ -671,31 +671,30 @@ the issue at point or in the current buffer."
 
 ;;;###autoload
 (defun tlon-babel-reconcile-all-issues-and-todos ()
-  "Reconcile all issues and TODOs."
+  "Reconcile all TODOs with their issues."
   (interactive)
-  (forge-pull nil nil nil #'tlon-babel-recincile-all-issues-and-todos-callback))
+  (forge-pull nil nil nil #'tlon-babel-reconcile-all-issues-and-todos-callback))
 
-(defun tlon-babel-recincile-all-issues-and-todos-callback ()
-  "Capture all issues in the current repo after `forge-pull' is finished."
+(defun tlon-babel-reconcile-all-issues-and-todos-callback ()
+  "Reconcile TODOs with their issues after after `forge-pull' is finished."
   (save-window-excursion
     (with-current-buffer (find-file-noselect (tlon-babel-get-todos-generic-file))
       (goto-char (point-min))
-      (call-interactively 'org-next-visible-heading)
       (while (not (eobp))
         (let* ((issue (tlon-babel-get-issue)))
-	  (if (or (not issue)
-		  (member org-archive-tag (org-get-tags)))
-	      (org-next-visible-heading 1)
-	    (tlon-babel-reconcile-issue-and-todo-from-issue issue)
-	    (call-interactively 'org-next-visible-heading))))
+	  (when (and issue
+		     ;; consider adding a user option to include archives
+		     (not (member org-archive-tag (org-get-tags))))
+	    (tlon-babel-reconcile-issue-and-todo-from-issue issue)))
+	(call-interactively 'org-next-visible-heading))
       (message "Finished reconciling."))))
 
 (defun tlon-babel-reconcile-issue-and-todo-from-issue (&optional issue)
   "Reconcile ISSUE and associated TODO.
 If ISSUE is nil, use the issue at point."
   (let* ((issue (or issue (forge-current-topic)))
-	 (issue-name (tlon-babel-make-todo-name-from-issue issue))
-	 (pos (tlon-babel-get-todo-position-from-issue issue)))
+	 (pos (tlon-babel-get-todo-position-from-issue issue))
+	 (issue-name (tlon-babel-make-todo-name-from-issue issue)))
     (save-window-excursion
       (tlon-babel-visit-todo pos nil issue)
       (let ((todo-name (substring-no-properties (org-get-heading nil nil t t))))
@@ -885,9 +884,7 @@ buffer."
 		     (or (tlon-babel-label-lookup :action :label (tlon-babel-get-first-label issue))
 			 "")
 		   ""))
-	 (status (if (tlon-babel-issue-is-job-p issue)
-		     "TODO"
-		   (tlon-babel-get-status-in-issue issue)))
+	 (status (tlon-babel-get-status-in-issue issue))
 	 (tags (tlon-babel-get-tags-in-issue issue))
 	 (repo-name (oref (forge-get-repository issue) name))
 	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :name repo-name))
