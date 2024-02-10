@@ -318,6 +318,15 @@ DIR is the directory where the repo is stored."
    ]
   )
 
+;;;;; Meet
+
+(transient-define-prefix tlon-babel-meet-menu ()
+  "`meet' menu."
+  ["Meetings"
+   ("l" "Leo-Pablo"                  tlon-babel-create-or-visit-meeting-issue-leo-pablo)
+   ("f" "Fede-Pablo"                 tlon-babel-create-or-visit-meeting-issue-fede-pablo)
+   ("m" "Fede-Leo"                   tlon-babel-create-or-visit-meeting-issue-fede-leo)])
+
 (provide 'tlon-babel-dispatch)
 ;;; tlon-babel-dispatch.el ends here
 
