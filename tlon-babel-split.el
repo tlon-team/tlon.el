@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Minor mode for working with split windows
+;; Minor mode for working with split windows.
 
 ;;; Code:
 
