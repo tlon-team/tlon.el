@@ -42,6 +42,7 @@
       (tlon-babel-create-and-visit-issue date dir))))
 
 ;; TODO: generate the next three functions with macro
+;;;###autoload
 (defun tlon-babel-create-or-visit-meeting-issue-leo-pablo ()
   "Create or visit issue for a meeting with Leo and Pablo."
   (interactive)
@@ -51,6 +52,7 @@
 		  (_ (user-error "This command is only for Leo and Pablo meetings")))))
     (tlon-babel-create-or-visit-meeting-issue person (org-read-date))))
 
+;;;###autoload
 (defun tlon-babel-create-or-visit-meeting-issue-fede-pablo ()
   "Create or visit issue for a meeting with Fede and Pablo."
   (interactive)
@@ -60,6 +62,7 @@
 		  (_ (user-error "This command is only for Fede and Pablo meetings")))))
     (tlon-babel-create-or-visit-meeting-issue person (org-read-date))))
 
+;;;###autoload
 (defun tlon-babel-create-or-visit-meeting-issue-fede-leo ()
   "Create or visit issue for a meeting with Fede and Leo."
   (interactive)
