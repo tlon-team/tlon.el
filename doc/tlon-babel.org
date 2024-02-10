@@ -15,7 +15,7 @@
 #+texinfo: @insertcopying
 
 ~tlon-babel~ is a repository of Emacs functions for the Tlön ~babel~ projects.
-** test
+** Main menu
 ** =forg=: =forge=-=org-mode= synchronization
 :PROPERTIES:
 :ID:       D64C37A8-5A5D-49D7-819A-6FE4DFA7FE2F
