@@ -41,6 +41,7 @@
     ("r" "dwim"                           tlon-babel-jobs-dwim)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
     ("y" "Sync"                           tlon-babel-forg-menu)
+    ("H-m" "Meet"                         tlon-babel-meet-menu)
     """Request"
     ("q q" "uqbar"                        tlon-babel-api-request)
     ]
@@ -79,11 +80,7 @@
     ("g r" "rewrite"                      tlon-babel-ai-rewrite)
     ("g s" "summarize"                    tlon-babel-ai-summarize)
     ("g t" "translate"                    tlon-babel-ai-translate)]
-   ["Meetings"
-    ("H-m l" "Leo-Pablo"                  tlon-babel-create-or-visit-meeting-issue-leo-pablo)
-    ("H-m f" "Fede-Pablo"                 tlon-babel-create-or-visit-meeting-issue-fede-pablo)
-    ("H-m m" "Fede-Leo"                   tlon-babel-create-or-visit-meeting-issue-fede-leo)
-    """Clock"
+   ["""Clock"
     ("c c" "issue"                        tlon-babel-open-clock-issue)
     ("c f" "file"                         tlon-babel-open-clock-file )
     ("c o" "heading"                      org-clock-goto)

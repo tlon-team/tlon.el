@@ -102,6 +102,15 @@
 	(sleep-for 0.1))
       (forge-visit-issue (tlon-babel-issue-lookup title dir)))))
 
+;;;;; Menu
+
+(transient-define-prefix tlon-babel-meet-menu ()
+  "`meet' menu."
+  ["Meetings"
+   ("l" "Leo-Pablo"                  tlon-babel-create-or-visit-meeting-issue-leo-pablo)
+   ("f" "Fede-Pablo"                 tlon-babel-create-or-visit-meeting-issue-fede-pablo)
+   ("m" "Fede-Leo"                   tlon-babel-create-or-visit-meeting-issue-fede-leo)])
+
 (provide 'tlon-babel-meet)
 ;;; tlon-babel-meet.el ends here
 
