@@ -644,6 +644,13 @@ A status is valid iff it is a member of `tlon-babel-todo-statuses'."
   (let ((status (tlon-babel-get-status-in-issue issue)))
     (member status tlon-babel-todo-statuses)))
 
+(defun tlon-babel-todo-has-valid-status-p ()
+  "Return t iff status of TODO at point it is a valid TODO status.
+A status is valid iff it is a member of `tlon-babel-todo-statuses'."
+  (when-let ((status (org-get-todo-state)))
+    (member status tlon-babel-todo-statuses)))
+
+;; split for issue and todo
 (defun tlon-babel-is-valid-tag-p (&optional tag issue)
   "Return t iff TAG it is a valid TODO tag.
 A tag is valid iff it is a member of `tlon-babel-todo-tags'. If
