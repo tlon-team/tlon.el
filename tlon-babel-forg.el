@@ -194,7 +194,7 @@ A status label is considered valid iff it is a member of
 The appropriate action is determined by the value of
 `tlon-babel-when-status-is-invalid'."
   (let ((capture-p t))
-    (unless (tlon-babel-is-valid-status-p issue)
+    (unless (tlon-babel-issue-has-valid-status-p issue)
       (let* ((title (oref issue title))
 	     (warning (format "Warning: issue `%s' has no valid TODO label." title))
 	     (tags (tlon-babel-get-tags-in-issue issue))
@@ -206,7 +206,7 @@ The appropriate action is determined by the value of
 		   (tlon-babel-set-status-label (concat warning " What should it be? " ))))
 	   (tlon-babel-set-labels (append tags `(,status)) issue)
 	   (forge-pull-topic issue)
-	   (while (not (tlon-babel-is-valid-status-p issue))
+	   (while (not (tlon-babel-issue-has-valid-status-p issue))
 	     (sleep-for 1)))
 	  ('warn (message warning))
 	  ('capture nil)
@@ -638,7 +638,7 @@ The status is returned downcased."
 	(user (tlon-babel-user-lookup :github :name user-full-name)))
     (string= assignee user)))
 
-(defun tlon-babel-is-valid-status-p (issue)
+(defun tlon-babel-issue-has-valid-status-p (issue)
   "Return t iff status of ISSUE it is a valid TODO status.
 A status is valid iff it is a member of `tlon-babel-todo-statuses'."
   (let ((status (tlon-babel-get-status-in-issue issue)))
@@ -946,7 +946,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   (when (tlon-babel-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
   ;; TODO: we should use an org-specific function to check for this
-  ;; (unless (tlon-babel-is-valid-status-p)
+  ;; (unless (tlon-babel-issue-has-valid-status-p)
   ;; (user-error "Invalid TODO status"))
   (unless (tlon-babel-get-repo-from-heading)
     (tlon-babel-set-repo-in-heading))
