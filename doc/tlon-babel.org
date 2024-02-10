@@ -1,8 +1,25 @@
 #+title: tlon-babel
+#+author: Pablo Stafforini
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_filename: tlon-babel.info
+#+texinfo_dir_category: Emacs misc features
+#+texinfo_dir_title: Tlon Babel: (tlon-babel)
+#+texinfo_dir_desc: Companion Emacs package for the Tlön Babel projects
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon-babel,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+
+#+texinfo: @insertcopying
 
 ~tlon-babel~ is a repository of Emacs functions for the Tlön ~babel~ projects.
-
+** test
 ** =forg=: =forge=-=org-mode= synchronization
+:PROPERTIES:
+:ID:       D64C37A8-5A5D-49D7-819A-6FE4DFA7FE2F
+:END:
 
 ~tlon-babel~ includes several functions to synchronize the GitHub issues on a given repository with the corresponding ~org-mode~ TODOs in the user’s local file. The relevant GitHub sync functions are accessed from ~tlon-babel-dispatch~ (~H-r~), under the “sync” section (~y~):
 
