@@ -410,7 +410,7 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
 
 ;;;;; Menu
 
-(transient-define-prefix tlon-babel-md-dispatch ()
+(transient-define-prefix tlon-babel-md-menu ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
   :info-manual "(tlon-babel) Editing Markdown"
   [["HTML"
