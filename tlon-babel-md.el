@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Markdown functionality for the Babel project
+;; Markdown functionality for the Babel project.
 
 ;;; Code:
 
@@ -41,8 +41,43 @@
   "End of the line that contains file local variables.")
 
 (defconst tlon-babel-cite-pattern
-  "<Cite bibKey={\"\\(.*?\\)\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
+  "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
   "Pattern to match a citation in a Markdown file.")
+
+(defconst tlon-babel-locators
+  '(("book" . "bk.")
+    ("chapter ". "chap.")
+    ("column" . "col.")
+    ("figure" . "fig.")
+    ("folio" . "fol.")
+    ("number" . "no.")
+    ("line" . "l.")
+    ("note" . "n.")
+    ("opus" . "op.")
+    ("page" . "p.")
+    ("paragraph" . "para.")
+    ("part" . "pt.")
+    ("section" . "sec.")
+    ("sub verbo" . "s.v")
+    ("verse" . "v.")
+    ("volumes" . "vol.")
+    ("books" . "bks.")
+    ("chapter ". "chaps.")
+    ("columns" . "cols.")
+    ("figures" . "figs.")
+    ("folios" . "fols.")
+    ("numbers" . "nos.")
+    ("lines" . "ll.")
+    ("notes" . "nn.")
+    ("opera" . "opp.")
+    ("pages" . "pp.")
+    ("paragraphs" . "paras.")
+    ("parts" . "pts.")
+    ("sections" . "secs.")
+    ("sub  verbis" . "s.vv.")
+    ("verses" . "vv.")
+    ("volumes" . "vols."))
+  "Alist of locators and their abbreviations")
 
 ;;;; Functions
 
@@ -158,46 +193,6 @@ is non-nil, the opening element will be self-closing."
 ;;;;;;; MDX
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-cite (arg)
-  "Insert an MDX `Cite' element at point or around the selected region.
-Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
-the KEY will replace the existing key.
-
-By default, it will insert a \"long\" citation. To insert a \"short\" citation,
-call the function preceded by the universal ARG or use
-`tlon-babel-md-insert-mdx-cite-short'."
-  (interactive "P")
-  (let ((key (car (citar-select-refs))))
-    (if-let ((data (tlon-babel-get-bibtex-key-in-citation)))
-	(cl-destructuring-bind (_ (begin . end)) data
-	  (tlon-babel-replace-bibtex-key-in-citation key begin end))
-      (tlon-babel-md-insert-element-pair (format "<Cite bibKey={\"%s\"}%s>"
-						 key (if arg " short" ""))
-					 "</Cite>" t))))
-
-;;;###autoload
-(defun tlon-babel-md-insert-mdx-cite-short ()
-  "Insert a short MDX `Cite' element at point or around the selected region."
-  (interactive)
-  (tlon-babel-md-insert-mdx-cite '(4)))
-
-(defun tlon-babel-get-bibtex-key-in-citation ()
-  "Return the BibTeX key and its position in `Cite' element at point."
-  (when (thing-at-point-looking-at tlon-babel-cite-pattern)
-    (let ((match (match-string-no-properties 1))
-	  (begin (match-beginning 1))
-          (end (match-end 1)))
-      (list match (cons begin end)))))
-
-(defun tlon-babel-replace-bibtex-key-in-citation (key begin end)
-  "Delete bibtex KEY between BEGIN and END."
-  (save-excursion
-    (set-buffer-modified-p t)
-    (goto-char begin)
-    (delete-region begin end)
-    (insert key)))
-
-;;;###autoload
 (defun tlon-babel-md-insert-mdx-aside ()
   "Insert an MDX `Aside' element pair at point or around the selected region."
   (interactive)
@@ -230,6 +225,8 @@ Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
   (tlon-babel-md-insert-element-pair "<SmallCaps>" "</SmallCaps>"))
 
+;;;;;;;; Notes
+
 (defun tlon-babel-insert-note-marker (marker)
   "Insert note MARKER in the footnote at point."
   (if-let ((fn-data (markdown-footnote-text-positions)))
@@ -255,6 +252,82 @@ opposed to a footnote."
   (interactive)
   (tlon-babel-insert-note-marker "<Sidenote /> "))
 
+;;;;;;;; Citations
+
+;;;###autoload
+(defun tlon-babel-md-insert-mdx-cite (arg)
+  "Insert an MDX `Cite' element at point or around the selected region.
+Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
+the KEY will replace the existing key.
+
+By default, it will insert a \"long\" citation. To insert a \"short\" citation,
+call the function preceded by the universal ARG or use
+`tlon-babel-md-insert-mdx-cite-short'."
+  (interactive "P")
+  (let ((key (car (citar-select-refs))))
+    (if-let ((data (tlon-babel-get-key-in-citation)))
+	(cl-destructuring-bind (_ (begin . end)) data
+	  (tlon-babel-replace-bibtex-element-in-citation key begin end))
+      (tlon-babel-md-insert-element-pair (format "<Cite bibKey={\"%s\"}%s>"
+						 key (if arg " short" ""))
+					 "</Cite>" t))))
+
+;;;###autoload
+(defun tlon-babel-md-insert-mdx-cite-short ()
+  "Insert a short MDX `Cite' element at point or around the selected region."
+  (interactive)
+  (tlon-babel-md-insert-mdx-cite '(4)))
+
+(defun tlon-babel-get-bibtex-element-in-citation (type)
+  "Return the BibTeX element of TYPE and its position in `Cite' element at point.
+TYPE can be either `key' or `locators'."
+  (when (thing-at-point-looking-at tlon-babel-cite-pattern)
+    (let* ((num (pcase type ('key 1) ('locators 2)
+		       (_ (user-error "Invalid type"))))
+	   (match (match-string-no-properties num))
+	   (begin (match-beginning num))
+	   (end (match-end num)))
+      (list match (cons begin end)))))
+
+(defun tlon-babel-get-key-in-citation ()
+  "Return the BibTeX key and its position in `Cite' element at point."
+  (tlon-babel-get-bibtex-element-in-citation 'key))
+
+(defun tlon-babel-get-locators-in-citation ()
+  "Return the BibTeX locators and its position in `Cite' element at point."
+  (tlon-babel-get-bibtex-element-in-citation 'locators))
+
+(defun tlon-babel-replace-bibtex-element-in-citation (element begin end)
+  "Delete bibtex ELEMENT between BEGIN and END."
+  (save-excursion
+    (set-buffer-modified-p t)
+    (goto-char begin)
+    (delete-region begin end)
+    (insert element)))
+
+(defun tlon-babel-md-insert-locator ()
+  "Insert locator in citation at point.
+If point is on a locator, it will be replaced by the new one. Otherwise, the new
+locator will be inserted after the key, if there are no locators, or at the end
+of the existing locators."
+  (interactive)
+  (unless (thing-at-point-looking-at tlon-babel-cite-pattern)
+    (user-error "Not in a citation"))
+  (let* ((selection (completing-read "Locator: " tlon-babel-locators nil t))
+	 (locator (alist-get selection tlon-babel-locators "" "" 'string=)))
+    (if-let ((existing (tlon-babel-md-get-locator-at-point)))
+	(replace-match locator)
+      (let ((end (cdadr (or (tlon-babel-get-locators-in-citation)
+			    (tlon-babel-get-key-in-citation)))))
+	(goto-char end)
+	(insert (format ", %s " locator))))))
+
+(defun tlon-babel-md-get-locator-at-point ()
+  "Return the locator at point, if present."
+  (let ((locators (mapcar 'cdr tlon-babel-locators)))
+    (when (thing-at-point-looking-at (regexp-opt locators))
+      (match-string-no-properties 0))))
+
 ;;;;;;; Math
 
 ;;;###autoload
@@ -269,52 +342,6 @@ opposed to a footnote."
   (interactive)
   (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
 
-
-;;;;;;; Citations
-
-(defun tlon-babel-md-insert-locator ()
-  "Insert locator in citation at point."
-  (interactive)
-  (unless (thing-at-point-looking-at citar-markdown-citation-key-regexp)
-    (user-error "Not in a citation"))
-  (let* ((locators '(("book" . "bk.")
-		     ("chapter ". "chap.")
-		     ("column" . "col.")
-		     ("figure" . "fig.")
-		     ("folio" . "fol.")
-		     ("number" . "no.")
-		     ("line" . "l.")
-		     ("note" . "n.")
-		     ("opus" . "op.")
-		     ("page" . "p.")
-		     ("paragraph" . "para.")
-		     ("part" . "pt.")
-		     ("section" . "sec.")
-		     ("sub verbo" . "s.v")
-		     ("verse" . "v.")
-		     ("volumes" . "vol.")
-		     ("books" . "bks.")
-		     ("chapter ". "chaps.")
-		     ("columns" . "cols.")
-		     ("figures" . "figs.")
-		     ("folios" . "fols.")
-		     ("numbers" . "nos.")
-		     ("lines" . "ll.")
-		     ("notes" . "nn.")
-		     ("opera" . "opp.")
-		     ("pages" . "pp.")
-		     ("paragraphs" . "paras.")
-		     ("parts" . "pts.")
-		     ("sections" . "secs.")
-		     ("sub  verbis" . "s.vv.")
-		     ("verses" . "vv.")
-		     ("volumes" . "vols.")))
-	 (selection (completing-read "Locator: " locators nil t)))
-    (goto-char (cdr (bounds-of-thing-at-point 'symbol)))
-    (when (string= "," (thing-at-point 'char))
-      (re-search-forward ", [[:alpha:]]*?\\. " nil t)
-      (replace-match ""))
-    (insert (format ", %s " (alist-get selection locators "" "" 'string=)))))
 
 ;;;;; Misc
 
@@ -381,18 +408,17 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
 	  (when (and start end)
 	    (cons start end)))))))
 
-;;;;; Dispatcher
+;;;;; Menu
 
 (transient-define-prefix tlon-babel-md-dispatch ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
+  :info-manual "(tlon-babel) Editing Markdown"
   [["HTML"
     ("b" "subscript"            tlon-babel-md-insert-html-subscript)
     ("p" "superscript"          tlon-babel-md-insert-html-superscript)
     ]
    ["MDX"
     ("a" "aside"                tlon-babel-md-insert-mdx-aside)
-    ("c" "cite"                 tlon-babel-md-insert-mdx-cite)
-    ("C" "cite short"           tlon-babel-md-insert-mdx-cite-short)
     ("g" "lang"                 tlon-babel-md-insert-mdx-lang)
     ("k" "literal link"         tlon-babel-md-insert-mdx-literal-link)
     ("m" "small caps"           tlon-babel-md-insert-mdx-small-caps)
@@ -402,6 +428,8 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
     ("s" "sidenote"             tlon-babel-insert-sidenote-marker)
     ]
    ["Citations"
+    ("c" "cite"                 tlon-babel-md-insert-mdx-cite)
+    ("C" "cite short"           tlon-babel-md-insert-mdx-cite-short)
     ("l" "locator"              tlon-babel-md-insert-locator)]
    ["Math"
     ("i" "inline"               tlon-babel-md-insert-math-inline)
