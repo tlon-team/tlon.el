@@ -104,6 +104,7 @@
 
 ;;;;; Menu
 
+;;;###autoload (autoload 'tlon-babel-meet-menu "tlon-babel-meet.el" nil t)
 (transient-define-prefix tlon-babel-meet-menu ()
   "`meet' menu."
   ["Meetings"
