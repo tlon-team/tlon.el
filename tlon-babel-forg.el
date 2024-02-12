@@ -95,7 +95,7 @@ this variable is `no-capture'."
 		 (const :tag "Do not capture" t))
   :group 'tlon-babel-forg)
 
-;;;; Main variables
+;;;; Variables
 
 (defconst tlon-babel-todo-statuses
   '("TODO" "IMPORTANT" "URGENT" "SOMEDAY" "MAYBE" "WAITING")
@@ -178,40 +178,49 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	 (repo (forge-get-repository issue))
 	 (default-directory (oref repo worktree)))
     (when (and (eq (tlon-babel-get-state issue) 'open)
-	       (tlon-babel-capture-handle-status issue)
-	       (tlon-babel-capture-handle-assignee issue))
+	       (tlon-babel-capture-handle-assignee issue)
+	       (tlon-babel-capture-handle-status issue))
       (let ((message (current-message)))
 	(if (tlon-babel-issue-is-job-p issue)
 	    (tlon-babel-create-job-todo-from-issue issue)
 	  (tlon-babel-store-todo "tbG" nil issue))
 	(message message)))))
 
-(defun tlon-babel-capture-handle-status (issue)
-  "Take appropriate action when ISSUE does not have a valid status label.
-A status label is considered valid iff it is a member of
-`tlon-babel-todo-statuses'.
+;;;###autoload
+(defun tlon-babel-capture-all-issues (arg)
+  "Capture all issues in the current repo not assigned to another user.
+Before initiating the capture process, we do a full pull of the current repo, to
+ensure that it reflects its remote state.
 
-The appropriate action is determined by the value of
-`tlon-babel-when-status-is-invalid'."
-  (let ((capture-p t))
-    (unless (tlon-babel-issue-has-valid-status-p issue)
-      (let* ((title (oref issue title))
-	     (warning (format "Warning: issue `%s' has no valid TODO label." title))
-	     (tags (tlon-babel-get-tags-in-issue issue))
-	     (status "todo"))
-	(pcase tlon-babel-when-status-is-invalid
-	  ((or 'prompt 'change)
-	   (when (eq tlon-babel-when-status-is-invalid 'prompt)
-	     (setq status
-		   (tlon-babel-set-status (concat warning " What should it be? " ))))
-	   (tlon-babel-set-labels (append tags `(,status)) issue)
-	   (forge-pull-topic issue)
-	   (while (not (tlon-babel-issue-has-valid-status-p issue))
-	     (sleep-for 1)))
-	  ('warn (message warning))
-	  ('capture nil)
-	  (_ (setq capture-p nil)))))
-    capture-p))
+Pull all issues from forge before initiating the capture process. If called with
+a prefix ARG, omit this initial pull."
+  (interactive "P")
+  (tlon-babel-get-repo 'error 'include-all)
+  (if arg
+      (tlon-babel-capture-all-issues-after-pull)
+    (forge-pull nil nil nil #'tlon-babel-capture-all-issues-after-pull)))
+
+(defun tlon-babel-capture-all-issues-after-pull ()
+  "Capture all issues in the current repo after `forge-pull' is finished."
+  (let* ((repo (forge-get-repository nil))
+	 (tlon-babel-when-assignee-is-someone-else nil))
+    (dolist (issue (tlon-babel-get-issues repo))
+      (unless (tlon-babel-get-todo-position-from-issue issue)
+	(tlon-babel-capture-issue issue)))))
+
+(defun tlon-babel-store-todo (template &optional no-action issue)
+  "Store a new TODO using TEMPLATE.
+If TODO already exists, do nothing. If NO-ACTION is non-nil, store a master
+TODO. If ISSUE is non-nil, use it instead of the issue at point."
+  (let ((issue (or issue (forge-current-topic)))
+	(inhibit-message t))
+    (unless (tlon-babel-get-todo-position-from-issue issue)
+      (let ((todo (tlon-babel-make-todo-name-from-issue issue no-action nil)))
+	(kill-new todo)
+	(message "Creating %s..." todo)
+	(org-capture nil template)))))
+
+;;;;;; Handling assignee, status, phase
 
 (defun tlon-babel-capture-handle-assignee (issue)
   "Take appropriate action when the user is not the assignee of ISSUE.
@@ -242,52 +251,54 @@ The appropriate action is determined by the value of
 	  (_ (setq capture-p nil)))))
     capture-p))
 
-;;;###autoload
-(defun tlon-babel-capture-all-issues ()
-  "Capture all issues in the current repo not assigned to another user.
-Before initiating the capture process, we do a full pull of the current repo, to
-ensure that it reflects its remote state."
-  (interactive)
-  (tlon-babel-get-repo 'error 'include-all)
-  (forge-pull nil nil nil #'tlon-babel-capture-all-issues-callback))
+(defun tlon-babel-capture-handle-status (issue)
+  "Take appropriate action when ISSUE does not have a valid status label.
+A status label is considered valid iff it is a member of
+`tlon-babel-todo-statuses'.
 
-(defun tlon-babel-capture-all-issues-callback ()
-  "Capture all issues in the current repo after `forge-pull' is finished."
-  (let* ((repo (forge-get-repository nil))
-	 (tlon-babel-when-assignee-is-someone-else nil))
-    (dolist (issue (tlon-babel-get-issues repo))
-      (unless (tlon-babel-get-todo-position-from-issue issue)
-	(tlon-babel-capture-issue issue)))))
+The appropriate action is determined by the value of
+`tlon-babel-when-status-is-invalid'."
+  (let ((capture-p t))
+    (unless (tlon-babel-get-status-in-issue issue)
+      (let* ((title (oref issue title))
+	     (warning (format "Warning: issue `%s' has no valid TODO label." title))
+	     (status "todo"))
+	(pcase tlon-babel-when-status-is-invalid
+	  ((or 'prompt 'change)
+	   (when (eq tlon-babel-when-status-is-invalid 'prompt)
+	     (setq status
+		   (tlon-babel-set-status (concat warning " What should it be? " ))))
+	   (tlon-babel-set-labels `(,status) 'status issue)
+	   (forge-pull-topic issue)
+	   (while (not (tlon-babel-get-status-in-issue issue))
+	     (sleep-for 1)))
+	  ('warn (message warning))
+	  ('capture nil)
+	  (_ (setq capture-p nil)))))
+    capture-p))
 
-(defun tlon-babel-store-todo (template &optional no-action issue)
-  "Store a new TODO using TEMPLATE.
-If TODO already exists, do nothing. If NO-ACTION is non-nil, store a master
-TODO. If ISSUE is non-nil, use it instead of the issue at point."
-  (let ((issue (or issue (forge-current-topic)))
-	(inhibit-message t))
-    (unless (tlon-babel-get-todo-position-from-issue issue)
-      (let ((todo (tlon-babel-make-todo-name-from-issue issue no-action nil)))
-	(kill-new todo)
-	(message "Creating %s..." todo)
-	(org-capture nil template)))))
+(defun tlon-babel-capture-handle-phase (issue)
+  "Take appropriate action when ..."
+  (unless (tlon-babel-get-phase-in-issue issue)
+    (let* ((title (oref issue title))
+	   (prompt (format "Warning: issue `%s' has no valid job phase. What should it be?" title))
+	   (phase (completing-read prompt (tlon-babel-label-lookup-all :label))))
+      (tlon-babel-set-labels `(,phase) 'phase issue))))
 
 ;;;;;; Capture jobs
 
 (defun tlon-babel-issue-is-job-p (&optional issue)
-  "Return t if ISSUE at point is a job.
+  "Return t if ISSUE is a job.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let ((issue (or issue (forge-current-topic))))
     (when (string-match-p "^Job: " (oref issue title))
       t)))
 
-;; TODO: revise check functions; some are obsolete in light of the `handle'
-;; functions in `tlon-babel-capture-issue'
 (defun tlon-babel-create-job-todo-from-issue (&optional issue)
   "Create a new `org-mode' job TODO based on ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let ((issue (or issue (forge-current-topic))))
-    (tlon-babel-check-label-or-assignee-present issue)
-    (tlon-babel-check-label-present issue)
+    (tlon-babel-capture-handle-phase issue)
     (tlon-babel-store-or-refile-job-todo issue)))
 
 (defun tlon-babel-store-master-job-todo (&optional set-issue issue)
@@ -319,37 +330,6 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (when (y-or-n-p (format "No master TODO found for issue `%s'. Create?" (oref issue title)))
       (tlon-babel-store-master-job-todo nil issue)
       (tlon-babel-capture-issue issue))))
-
-;;;;;;; Job checks
-;; TODO: revise these functions; maybe delete
-
-(defun tlon-babel-check-label-or-assignee-present (&optional issue)
-  "Check that ISSUE has a label or an assignee.
-If not, offer to process it as a new job.
-
-If ISSUE is nil, use the issue at point or in the current buffer."
-  (let* ((issue (or issue (forge-current-topic)))
-	 (assignee (tlon-babel-user-lookup :name :github (tlon-babel-get-assignee issue)))
-	 (label (tlon-babel-get-first-label issue)))
-    (unless (and assignee label)
-      (if (y-or-n-p "Process issue as a new job (this will assign the issue to you, add the label 'Awaiting processing', and create a new master TODO in your org mode file)?")
-	  (save-window-excursion
-	    (tlon-babel-store-master-job-todo 'set-issue)
-	    (while (not (and (tlon-babel-get-assignee)
-			     (tlon-babel-get-first-label)))
-	      (sleep-for 1))
-	    (tlon-babel-capture-issue issue))
-	(user-error "Aborted")))))
-
-(defun tlon-babel-check-label-present (&optional issue)
-  "Check that ISSUE has a label.
-If ISSUE is nil, use the issue at point or in the current buffer."
-  (let* ((issue (or issue (forge-current-topic)))
-	 (label (tlon-babel-get-first-label issue)))
-    (unless label
-      (if (y-or-n-p "The issue has no label. Would you like to add one?")
-	  (tlon-babel-set-labels (list (tlon-babel-set-job-label)))
-	(user-error "Aborted")))))
 
 ;;;;; Reconcile
 
@@ -449,15 +429,15 @@ If ISSUE is nil, use the issue at point."
   (when-let ((location (org-roam-id-find id)))
     (car location)))
 
-(defun tlon-babel-get-todo-position (todo file &optional loose)
-  "Return the position of TODO exactly matching heading in FILE.
-If LOOSE is non-nil, return the position of the first TODO matching a substring
-rather than strictly matching the heading."
-  (if loose
-      (tlon-babel-find-loose-headline-in-file todo file)
-    (org-find-exact-headline-in-buffer todo (find-file-noselect file))))
+(defun tlon-babel-get-todo-position (string file &optional substring)
+  "Return the position of STRING exactly matching TODO heading in FILE.
+If SUBSTRING is non-nil, return the position of string matching a TODO heading
+substring."
+  (if substring
+      (tlon-babel-find-headline-substring-in-file string file)
+    (org-find-exact-headline-in-buffer string (find-file-noselect file))))
 
-(defun tlon-babel-find-loose-headline-in-file (todo file)
+(defun tlon-babel-find-headline-substring-in-file (todo file)
   "Move point to TODO in FILE matching TODO."
   (with-current-buffer (find-file-noselect file)
     (save-restriction
@@ -483,7 +463,7 @@ ISSUE is nil, use the issue at point."
 	 (tlon-babel-make-todo-name-from-issue issue nil 'no-status)
 	 (tlon-babel-get-todos-jobs-file))
       (tlon-babel-get-todo-position
-       (oref issue id)
+       (format "\\[orgit-topic:%s\\]" (oref issue id))
        (tlon-babel-get-todos-generic-file) 'loose))))
 
 ;;;;; Counterpart
@@ -623,68 +603,69 @@ If REPO is nil, use the current repository."
 
 ;;;;; Get tags, status, assignees
 
+(defun tlon-babel-get-labels-of-type (type &optional issue)
+  "Return the valid label(s) of TYPE in ISSUE.
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (let ((issue (or issue (forge-current-topic))))
+    (when-let* ((labels (tlon-babel-get-labels issue)))
+      (pcase type
+	('tag (tlon-babel-get-tags-in-labels labels))
+	('phase (tlon-babel-get-phase-in-labels labels))
+	(_ (user-error "Invalid type"))))))
+
 ;;;;;; tags
 
 (defun tlon-babel-get-tags-in-labels (labels)
   "Return the tag(s) in LABELS.
 A label is considered a tag if it is not a status and it exists in
 `tlon-babel-todo-tags'."
-  (let (tags)
-    (dolist (element labels tags)
-      (let ((tag (car element)))
-	(when (and (member tag tlon-babel-todo-tags)
-		   (not (member (upcase tag) tlon-babel-todo-statuses)))
-	  (push tag tags))))))
+  (when-let ((tags (cl-intersection
+		    labels tlon-babel-todo-tags :test 'string=)))
+    tags))
 
 (defun tlon-babel-get-tags-in-issue (&optional issue)
   "Return the valid tags in ISSUE.
 A tag is valid iff it is a member of `tlon-babel-todo-tags'.
 
 If ISSUE is nil, use the issue at point or in the current buffer."
-  (let ((issue (or issue (forge-current-topic))))
-    (when-let* ((labels (tlon-babel-get-element 'labels issue)))
-      (tlon-babel-get-tags-in-labels labels))))
+  (tlon-babel-get-labels-of-type 'tag issue))
 
 (defun tlon-babel-get-tags-in-todo ()
   "Return the valid tags in the `org-mode' heading at point.
 A tag is valid iff it is a member of `tlon-babel-todo-tags'."
-  (when-let ((tags (cdr (org-get-tags))))
-    (let (valid-tags)
-      (dolist (tag tags valid-tags)
-	(when (member tag tlon-babel-todo-tags)
-	  (push tag valid-tags))))))
+  (when-let ((tags (cl-intersection
+		    (cdr (org-get-tags)) tlon-babel-todo-tags :test 'string=)))
+    tags))
+
 
 ;;;;;; status
 
-(defun tlon-babel-get-status-in-labels (labels)
+(defun tlon-babel-get-status-in-labels (labels &optional upcased)
   "Return the unique valid status in LABELS.
 A label is considered a valid status if it exists in `tlon-babel-todo-statuses'.
-The status is returned in UPPERCASE. If more than one status is found, signal an
-error."
-  (let (statuses)
-    (dolist (element labels statuses)
-      (let* ((label (car element))
-	     (upcased (upcase label)))
-	(when (member upcased tlon-babel-todo-statuses)
-	  (push upcased statuses))))
-    (pcase (length statuses)
-      (1 (car statuses))
-      (0 nil)
-      (_ (user-error "Issue has more than one status")))))
+Return the status in lowercase when UPCASED is nil, else in uppercase. If more
+than one status is found, signal an error."
+  (when-let ((status (cl-intersection labels
+				      (mapcar 'downcase tlon-babel-todo-statuses)
+				      :test 'string=))
+	     (set-case (if upcased 'upcase 'downcase)))
+    (if (= (length status) 1)
+	(funcall set-case (car status))
+      (user-error "Issue has more than one status: %s" (mapconcat #'identity status " ")))))
 
-(defun tlon-babel-get-status-in-issue (&optional issue)
-  "Get remote status of ISSUE.
-If ISSUE is nil, use the issue at point or in the current buffer.
+(defun tlon-babel-get-status-in-issue (&optional issue upcased)
+  "Return the status of ISSUE.
+A label is considered a valid status if it exists in `tlon-babel-todo-statuses'.
+Return the status in lowercase when UPCASED is nil, else in uppercase. If more
+than one status is found, signal an error.
 
-The status is returned in UPPERCASE. If the issue is closed, the status returned
-is \"DONE\"."
-  (let ((issue (or issue (forge-current-topic))))
-    (if (eq (tlon-babel-get-state) 'completed)
-	"DONE"
-      (if-let* ((labels (tlon-babel-get-element 'labels issue))
-		(status (tlon-babel-get-status-in-labels labels)))
-	  status
-	""))))
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (let* ((issue (or issue (forge-current-topic)))
+	 (status (pcase (tlon-babel-get-state issue)
+		   ('completed "done")
+		   ('open (tlon-babel-get-status-in-labels (tlon-babel-get-labels issue)))))
+	 (set-case (if upcased 'upcase 'downcase)))
+    (when status (funcall set-case status))))
 
 (defun tlon-babel-get-status-in-todo ()
   "Return the status of the `org-mode' heading at point.
@@ -692,6 +673,27 @@ The status is returned downcased."
   (when-let ((status (org-get-todo-state)))
     (when (member status tlon-babel-todo-statuses)
       (downcase status))))
+
+;;;;;; job phases
+;; TODO: make nomenclature consistent: should be called `phases' throughout, not `labels'
+
+(defun tlon-babel-get-phase-in-labels (labels)
+  "Return the unique valid phase in LABELS.
+A label is considered a valid phase if it exists in `tlon-babel-todo-statuses'.
+If more than one phase is found, signal an error."
+  (when-let ((status (cl-intersection labels
+				      (tlon-babel-label-lookup-all :label)
+				      :test 'string=)))
+    (if (= (length status) 1)
+	(car status)
+      (user-error "Issue has more than one status"))))
+
+(defun tlon-babel-get-phase-in-issue (&optional issue)
+  "Return the unique valid job phase in ISSUE.
+A label is valid job phase iff it is a member of `tlon-babel-job-labels'.
+
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (tlon-babel-get-labels-of-type 'phase issue))
 
 ;;;;;; assignees
 
@@ -715,12 +717,6 @@ the issue at point or in the current buffer."
 	(user (tlon-babel-user-lookup :github :name user-full-name)))
     (string= assignee user)))
 
-(defun tlon-babel-issue-has-valid-status-p (issue)
-  "Return t iff status of ISSUE it is a valid TODO status.
-A status is valid iff it is a member of `tlon-babel-todo-statuses'."
-  (let ((status (tlon-babel-get-status-in-issue issue)))
-    (member status tlon-babel-todo-statuses)))
-
 (defun tlon-babel-todo-has-valid-status-p ()
   "Return t iff status of TODO at point it is a valid TODO status.
 A status is valid iff it is a member of `tlon-babel-todo-statuses'."
@@ -729,21 +725,26 @@ A status is valid iff it is a member of `tlon-babel-todo-statuses'."
 
 ;;;;; Set tags, status, assignees
 
-;; TODO: Cleanup the three functions below
+(defun tlon-babel-set-labels (labels &optional type issue)
+  "Set list of LABELS of TYPE in ISSUE.
+If TYPE is `phase' or `status', replace the label of that type if present, while
+keeping all other labels. If TYPE is any other value, add LABELS and keep all
+current labels.
 
-(defun tlon-babel-set-labels (&optional labels issue)
-  "Apply list of LABELS to ISSUE.
-If ISSUE is nil, use issue at point or in the current buffer.
-
-LABELS will replace any existing labels."
+If ISSUE is nil, use issue at point or in the current buffer."
   (interactive)
-  (let* ((issue (or issue (forge-get-topic (forge-current-topic))))
+  (let* ((issue (or issue (forge-current-topic)))
 	 (repo (forge-get-repository issue))
-	 (labels (or labels (if (tlon-babel-issue-is-job-p issue)
-				(list (tlon-babel-set-job-label))
-			      (list (tlon-babel-set-status))))))
-    (forge--set-topic-labels repo issue labels)))
+	 (current-labels (tlon-babel-get-labels issue))
+	 (status (tlon-babel-get-status-in-issue issue))
+	 (phase (tlon-babel-get-phase-in-issue issue))
+	 (trimmed-labels (pcase type
+			   ('status (remove status current-labels))
+			   ('phase (remove phase current-labels))
+			   (_ current-labels))))
+    (forge--set-topic-labels repo issue (append labels trimmed-labels))))
 
+;; TODO: Cleanup the two functions below
 (defun tlon-babel-set-job-label ()
   "Prompt the user to select a job label."
   (let ((label (completing-read "What should be the label? "
@@ -762,7 +763,7 @@ Use PROMPT as the prompt, defaulting to \"TODO status? \"."
 If ISSUE is nil, use issue at point or in the current buffer."
   (interactive
    (list (tlon-babel-select-assignee)))
-  (let* ((issue (or issue (forge-get-topic (forge-current-topic))))
+  (let* ((issue (or issue (forge-current-topic)))
 	 (repo (forge-get-repository issue)))
     (forge--set-topic-assignees repo issue `(,assignee))))
 
@@ -777,7 +778,7 @@ Use PROMPT as the prompt, defaulting to \"Who should be the assignee? \"."
 
 (defun tlon-babel-set-initial-label-and-assignee ()
   "Set label to `Awaiting processing' and assignee to current user."
-  (tlon-babel-set-labels '("Awaiting processing"))
+  (tlon-babel-set-labels '("Awaiting processing") 'phase)
   (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name)))
 
 
@@ -788,6 +789,13 @@ Use PROMPT as the prompt, defaulting to \"Who should be the assignee? \"."
 If ISSUE is nil, use the issue at point or in the current buffer."
   (when-let ((issue (or issue (forge-current-topic))))
     (closql--iref issue element)))
+
+(defun tlon-babel-get-labels (&optional issue)
+  "Return labels in ISSUE.
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (let* ((issue (or issue (forge-current-topic)))
+	 (raw-labels (tlon-babel-get-element 'labels issue)))
+    (mapcar #'car raw-labels)))
 
 (defun tlon-babel-get-first-element (element &optional issue)
   "Return first ELEMENT of ISSUE.
@@ -845,7 +853,7 @@ buffer."
 		     (or (tlon-babel-label-lookup :action :label (tlon-babel-get-first-label issue))
 			 "")
 		   ""))
-	 (status (tlon-babel-get-status-in-issue issue))
+	 (status (tlon-babel-get-status-in-issue issue 'upcased))
 	 (tags (tlon-babel-get-tags-in-issue issue))
 	 (repo-name (oref (forge-get-repository issue) name))
 	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :name repo-name))
@@ -853,7 +861,7 @@ buffer."
 		     "[[:space:]]\\{2,\\}"
 		     " "
 		     (concat
-		      (unless no-status (format "%s " status))
+		      (unless no-status (format "%s " (or status "")))
 		      (format "[%s] %s %s" repo-abbrev action (tlon-babel-get-issue-link issue))
 		      (when tags (format "   :%s:" (mapconcat #'identity tags ":")))))))
     todo-name))
@@ -931,7 +939,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	(tlon-babel-set-issue-number-in-heading latest-issue-post)
 	(tlon-babel-visit-issue)
 	(tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name))
-	(tlon-babel-set-labels (append (list status) tags)))
+	(tlon-babel-set-labels (append `(,status) tags)))
       (setq todo-linkified (tlon-babel-make-todo-name-from-issue nil nil 'no-status)))
     (org-edit-headline todo-linkified)))
 
