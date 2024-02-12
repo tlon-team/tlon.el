@@ -32,4 +32,57 @@
 - "reconcile all" (~tlon-babel-reconcile-all-issues-and-todos~, ~H-r y R~): like the above, but iterates over all GitHub issues in the repository. Note that issues not yet captured will be ignored, so you may want to  capture all issues (~tlon-babel-capture-all-issues~) before reconciling them, if your goal is to ensure that the your ~org-mode~ TODOs are fully in sync with the GitHub issues.
 - "close" (~tlon-babel-close-issue-and-todo~, ~H-r y x~): close the GitHub issue and mark its associated ~org-mode~ TODO as DONE.
 
-** =md=: Markdown functionality
+** Editing Markdown
+
+This section describes the custom commands we use to edit Markdown files.
+
+All the relevant commands can be called from ~tlon-babel-md-menu~, the Markdown menu, bound to ~s-d~ (“d” as in “dispatcher”).
+
+[We extend the native Markdown markup language with various custom [[https://mdxjs.com/][MDX]] tags.]
+
+[Point out that the user should insert the relevant entities using the Emacs commands whenever possible, to avoid human error.]
+
+*** Commands to insert mathematical expressions
+
+Our websites support LaTeX-formatted math. These expressions may be of two types: /inline/ and /display/. Inline expressions are embedded in a paragraph, while display expressions occupy their own paragraph.
+
+Inline expressions are delimited by ~$`~ and ~`$~, like this:
+
+#+begin_src markdown
+[T]he marginal chance of success is proportional to $`1/x`$, where $`x`$ is the total amount of resources that will be devoted to the problem before the point where we need a solution.
+#+end_src
+
+Display expressions are in turn delimited by double dollar signs, like this:
+
+#+begin_src markdown
+$$
+\frac{v(S)}{v(L)}\ =\ \frac{p(S)}{p(L)}\ \times\ \frac{n(S)}{n(L)}\ \times\ \frac{r(L)}{r(S)}
+$$
+#+end_src
+
+Note that the dollar sign delimiters occupy their own lines.
+
+Inline and display expressions can be inserted with ~tlon-babel-md-insert-math-inline~ and with ~tlon-babel-md-insert-math-display~, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point.
+
+*** Commands to insert citations
+
+To insert citations, we use the custom MDX tag ~Cite~. This self-closing tag takes the mandatory attribute ~bibKey~ and the optional attribute ~short~. The value type of ~bibKey~ is a single BibTeX key, optionally followed by one or more [[https://docs.citationstyles.org/en/stable/specification.html#locators][locators]]. The attribute ~short~ indicates that the citation is a “short” citation.
+
+(“Short” citations are defined as citations that only display the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example:
+
+#+begin_src markdown
+As Toby Ord writes in <Cite bibKey={"Ord2020PrecipiceExistentialRisk"} short />, humanity’s long-term potential may be lost this century.
+#+end_src
+
+which is rendered as
+
+#+begin_src markdown
+As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
+#+end_src
+
+*** Commands to insert note markers
+
+
+
+
+

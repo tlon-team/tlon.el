@@ -30,13 +30,24 @@
 @end ifnottex
 
 @menu
-* test::
+* Main menu::
 * @samp{forg} @samp{forge}-@samp{org-mode} synchronization::
-* @samp{md} Markdown functionality::
+* Editing Markdown::
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+Editing Markdown
+
+* Commands to insert mathematical expressions::
+* Commands to insert citations::
+* Commands to insert note markers::
+
+@end detailmenu
 @end menu
 
-@node test
-@chapter test
+@node Main menu
+@chapter Main menu
 
 @node @samp{forg} @samp{forge}-@samp{org-mode} synchronization
 @chapter @samp{forg}: @samp{forge}-@samp{org-mode} synchronization
@@ -62,7 +73,64 @@
 ``close'' (@code{tlon-babel-close-issue-and-todo}, @code{H-r y x}): close the GitHub issue and mark its associated @code{org-mode} TODO as DONE@. @*
 @end itemize
 
-@node @samp{md} Markdown functionality
-@chapter @samp{md}: Markdown functionality
+@node Editing Markdown
+@chapter Editing Markdown
+
+This section describes the custom commands we use to edit Markdown files. @*
+
+All the relevant commands can be called from @code{tlon-babel-md-menu}, the Markdown menu, bound to @code{s-d} (“d” as in “dispatcher”). @*
+
+[We extend the native Markdown markup language with various custom @uref{https://mdxjs.com/, MDX} tags.] @*
+
+[Point out that the user should insert the relevant entities using the Emacs commands whenever possible, to avoid human error.] @*
+
+@menu
+* Commands to insert mathematical expressions::
+* Commands to insert citations::
+* Commands to insert note markers::
+@end menu
+
+@node Commands to insert mathematical expressions
+@section Commands to insert mathematical expressions
+
+Our websites support @LaTeX{}-formatted math. These expressions may be of two types: @emph{inline} and @emph{display}. Inline expressions are embedded in a paragraph, while display expressions occupy their own paragraph. @*
+
+Inline expressions are delimited by @code{$`} and @code{`$}, like this: @*
+
+@example
+[T]he marginal chance of success is proportional to $`1/x`$, where $`x`$ is the total amount of resources that will be devoted to the problem before the point where we need a solution.
+@end example
+
+Display expressions are in turn delimited by double dollar signs, like this: @*
+
+@example
+$$
+\frac@{v(S)@}@{v(L)@}\ =\ \frac@{p(S)@}@{p(L)@}\ \times\ \frac@{n(S)@}@{n(L)@}\ \times\ \frac@{r(L)@}@{r(S)@}
+$$
+@end example
+
+Note that the dollar sign delimiters occupy their own lines. @*
+
+Inline and display expressions can be inserted with @code{tlon-babel-md-insert-math-inline} and inserted with @code{tlon-babel-md-insert-math-display}, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point. @*
+
+@node Commands to insert citations
+@section Commands to insert citations
+
+To insert citations, we use the custom MDX tag @code{Cite}. This self-closing tag takes the mandatory attribute @code{bibKey} and the optional attribute @code{short}. The value type of @code{bibKey} is a single Bib@TeX{} key, optionally followed by one or more @uref{https://docs.citationstyles.org/en/stable/specification.html#locators, locators} The attribute @code{short} indicates that the citation is a “short” citation. @*
+
+(A “short” citation is defined as a citation that only displays the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example: @*
+
+@example
+As Toby Ord writes in <Cite bibKey=@{"Ord2020PrecipiceExistentialRisk"@} short />, humanity’s long-term potential may be lost this century.
+@end example
+
+which is rendered as @*
+
+@example
+As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
+@end example
+
+@node Commands to insert note markers
+@section Commands to insert note markers
 
 @bye
