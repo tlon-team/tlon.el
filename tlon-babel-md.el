@@ -436,5 +436,13 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
     ("d" "display"              tlon-babel-md-insert-math-display)
     ]])
 
+;;;;; Key bindings
+
+(with-eval-after-load 'markdown-mode
+  (define-key markdown-mode-map (kbd "s-d") 'tlon-babel-md-menu))
+
+(with-eval-after-load 'gfm-mode
+  (define-key gfm-mode-map (kbd "s-d") 'tlon-babel-md-menu))
+
 (provide 'tlon-babel-md)
 ;;; tlon-babel-md.el ends here
