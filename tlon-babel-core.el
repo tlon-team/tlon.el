@@ -181,27 +181,6 @@ creating `org-mode' TODOs.")
 
 ;;;;; To sort
 
-(defconst tlon-babel-job-labels
-  '((:label "Awaiting processing"
-	    :action "Process"
-	    :assignee "worldsaround")
-    (:label "Awaiting translation"
-	    :action "Translate"
-	    :assignee "")
-    (:label "Awaiting revision"
-	    :action "Revise"
-	    :assignee "worldsaround")
-    (:label "Awaiting check"
-	    :action "Check"
-	    :assignee "worldsaround")
-    (:label "Awaiting review"
-	    :action "Review"
-	    :assignee "benthamite")
-    (:label "Published"
-	    :action "Publish"
-	    :assignee ""))
-  "List of labels and associated properties.")
-
 (defvar tlon-babel-users
   '((:name "Pablo Stafforini"
 	   :git "Pablo Stafforini"

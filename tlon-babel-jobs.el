@@ -41,6 +41,27 @@
 
 ;;;; Main variables
 
+(defconst tlon-babel-job-labels
+  '((:label "Awaiting processing"
+	    :action "Process"
+	    :assignee "worldsaround")
+    (:label "Awaiting translation"
+	    :action "Translate"
+	    :assignee "")
+    (:label "Awaiting revision"
+	    :action "Revise"
+	    :assignee "worldsaround")
+    (:label "Awaiting check"
+	    :action "Check"
+	    :assignee "worldsaround")
+    (:label "Awaiting review"
+	    :action "Review"
+	    :assignee "benthamite")
+    (:label "Published"
+	    :action "Publish"
+	    :assignee ""))
+  "List of labels and associated properties.")
+
 (defconst tlon-babel-jobs-manual-processing-id
   "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
   "Org ID of the `processing' heading in `manual.org'.")
