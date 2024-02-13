@@ -114,7 +114,7 @@ DIR is the directory where the repo is stored."
     ("b c" "babel-core"                   tlon-babel-magit-browse-babel-core)
     ("b r" "babel-refs"                   tlon-babel-magit-browse-babel-refs)
     ("b s" "babel-es"                     tlon-babel-magit-browse-babel-es)
-    ]
+    ("b i" "babel-issues"                 tlon-babel-magit-browse-babel-issues)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-magit-browse-uqbar-issues)
     ("q f" "uqbar-front"                  tlon-babel-magit-browse-uqbar-front)
@@ -171,7 +171,7 @@ DIR is the directory where the repo is stored."
     ("b c" "babel-core"                   tlon-babel-open-file-in-babel-core)
     ("b r" "babel-refs"                   tlon-babel-open-file-in-babel-refs)
     ("b s" "babel-es"                     tlon-babel-open-file-in-babel-es)
-    ]
+    ("b i" "babel-issues"                 tlon-babel-open-file-in-babel-issues)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-open-file-in-uqbar-issues)
     ("q f" "uqbar-front"                  tlon-babel-open-file-in-uqbar-front)
@@ -225,7 +225,7 @@ DIR is the directory where the repo is stored."
     ("b c" "babel-core"                   tlon-babel-dired-browse-babel-core)
     ("b r" "babel-refs"                   tlon-babel-dired-browse-babel-refs)
     ("b s" "babel-es"                     tlon-babel-dired-browse-babel-es)
-    ]
+    ("b i" "babel-issues"                 tlon-babel-dired-browse-babel-issues)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-dired-browse-uqbar-issues)
     ("q f" "uqbar-front"                  tlon-babel-dired-browse-uqbar-front)

@@ -53,6 +53,13 @@
 	   :type meta
 	   :language "es"
 	   :key "b s")
+    (:name "babel-issues"
+	   :project "babel"
+	   :subproject "babel"
+	   :abbrev "babel-issues"
+	   :type development
+	   :subtype issues
+	   :key "b i")
     (:name "uqbar-issues"
 	   :project "babel"
 	   :subproject "uqbar"
