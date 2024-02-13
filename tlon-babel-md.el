@@ -433,8 +433,7 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
     ("l" "locator"              tlon-babel-md-insert-locator)]
    ["Math"
     ("i" "inline"               tlon-babel-md-insert-math-inline)
-    ("d" "display"              tlon-babel-md-insert-math-display)
-    ]])
+    ("d" "display"              tlon-babel-md-insert-math-display)]])
 
 ;;;;; Key bindings
 

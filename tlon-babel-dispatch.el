@@ -45,8 +45,7 @@
     ("y" "Forg"                           tlon-babel-forg-menu)
     ("." "Notifications"                  forge-list-notifications)
     """Request"
-    ("q q" "uqbar"                        tlon-babel-api-request)
-    ]
+    ("q q" "uqbar"                        tlon-babel-api-request)]
    ["Add or modify"
     ("a a" "glossary"                     tlon-babel-glossary-dwim)
     ("a s" "section corresp"              tlon-babel-section-correspondence-dwim)
@@ -57,21 +56,17 @@
     ("s d" "commit-diffs"                 tlon-babel-search-commit-diffs)
     ("s f" "files"                        tlon-babel-search-files)
     ("s i" "issues"                       tlon-babel-search-issues)
-    ("s t" "translation"                  tlon-babel-search-for-translation)
-    ]
+    ("s t" "translation"                  tlon-babel-search-for-translation)]
    ["Browse in Dired"
     ("d" "dir"                            tlon-babel-dired-dir-dispatch)
     ("H-d" "repo"                         tlon-babel-dired-repo-dispatch)
-    ""
     """Browse externally"
     ("b" "current file"                   tlon-babel-browse-file)
     ("H-b" "current repo"                 tlon-babel-browse-repo)
     """Open"
     ("o" "in repo"                        tlon-babel-open-repo-dispatch)
-    ("H-o" "in all repos"                 tlon-babel-open-file-in-all-repos)
-    ]
-   [
-    "File changes"
+    ("H-o" "in all repos"                 tlon-babel-open-file-in-all-repos)]
+   ["File changes"
     ("h h" "log"                          magit-log-buffer-file)
     ("h d" "diffs since last user change" tlon-babel-log-buffer-latest-user-commit)
     ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
@@ -88,10 +83,7 @@
     ("c o" "heading"                      org-clock-goto)
     """Issue"
     ("i i" "open counterpart"             tlon-babel-open-forge-counterpart)
-    ("i I" "open file"                    tlon-babel-open-forge-file)
-    ]
-   ]
-  )
+    ("i I" "open file"                    tlon-babel-open-forge-file)]])
 
 ;;;;; Browse repo in Magit
 
@@ -120,36 +112,27 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-babel-magit-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-magit-browse-uqbar-api)
     ("q n" "uqbar-en"                     tlon-babel-magit-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)
-    ]
+    ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)]
    ["utilitarianism"
-    ("u n" "utilitarianism-en"              tlon-babel-magit-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"              tlon-babel-magit-browse-utilitarianism-es)
-    ]
+    ("u n" "utilitarianism-en"            tlon-babel-magit-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"            tlon-babel-magit-browse-utilitarianism-es)]
    ["Essays on Longtermism"
-    ("e n" "essays-en"                   tlon-babel-magit-browse-essays-en)
-    ("e s" "essays-es"                   tlon-babel-magit-browse-essays-es)
-    ]
+    ("e n" "essays-en"                    tlon-babel-magit-browse-essays-en)
+    ("e s" "essays-es"                    tlon-babel-magit-browse-essays-es)]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-magit-browse-ean-issues)
     ("n f" "ean-front"                    tlon-babel-magit-browse-ean-front)
-    ("n a" "ean-api"                      tlon-babel-magit-browse-ean-api)
-    ]
+    ("n a" "ean-api"                      tlon-babel-magit-browse-ean-api)]
    ["La Bisagra"
-    ("s s" "bisagra"                      tlon-babel-magit-browse-bisagra)
-    ]
+    ("s s" "bisagra"                      tlon-babel-magit-browse-bisagra)]
    ["Boletín"
-    ("a a" "boletin"                      tlon-babel-magit-browse-boletin)
-    ]
+    ("a a" "boletin"                      tlon-babel-magit-browse-boletin)]
    ["Meetings"
     ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
     ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
     ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)]
    ["Docs"
-    ("d d" "tlon-docs"                    tlon-babel-magit-browse-docs)
-    ]
-   ]
-  )
+    ("d d" "tlon-docs"                    tlon-babel-magit-browse-docs)]])
 
 ;;;;; Open repo
 
@@ -177,32 +160,23 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-babel-open-file-in-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-open-file-in-uqbar-api)
     ("q n" "uqbar-en"                     tlon-babel-open-file-in-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)
-    ]
+    ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)]
    ["utilitarianism"
-    ("u n" "utilitarianism-en"              tlon-babel-open-file-in-utilitarianism-en)
-    ("u s" "utilitarianism-es"              tlon-babel-open-file-in-utilitarianism-es)
-    ]
+    ("u n" "utilitarianism-en"            tlon-babel-open-file-in-utilitarianism-en)
+    ("u s" "utilitarianism-es"            tlon-babel-open-file-in-utilitarianism-es)]
    ["Essays on Longtermism"
-    ("e n" "essays-en"                   tlon-babel-open-file-in-essays-en)
-    ("e s" "essays-es"                   tlon-babel-open-file-in-essays-es)
-    ]
+    ("e n" "essays-en"                    tlon-babel-open-file-in-essays-en)
+    ("e s" "essays-es"                    tlon-babel-open-file-in-essays-es)]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-open-file-in-ean-issues)
     ("n f" "ean-front"                    tlon-babel-open-file-in-ean-front)
-    ("n a" "ean-api"                      tlon-babel-open-file-in-ean-api)
-    ]
+    ("n a" "ean-api"                      tlon-babel-open-file-in-ean-api)]
    ["La Bisagra"
-    ("s s" "bisagra"                      tlon-babel-open-file-in-bisagra)
-    ]
+    ("s s" "bisagra"                      tlon-babel-open-file-in-bisagra)]
    ["Boletín"
-    ("a a" "boletin"                      tlon-babel-open-file-in-boletin)
-    ]
+    ("a a" "boletin"                      tlon-babel-open-file-in-boletin)]
    ["Docs"
-    ("d d" "tlon-docs"                    tlon-babel-open-file-in-docs)
-    ]
-   ]
-  )
+    ("d d" "tlon-docs"                    tlon-babel-open-file-in-docs)]])
 
 ;;;;; Browse repo in Dired
 
@@ -231,32 +205,23 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-babel-dired-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-dired-browse-uqbar-api)
     ("q n" "uqbar-en"                     tlon-babel-dired-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)
-    ]
+    ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)]
    ["utilitarianism"
-    ("u n" "utilitarianism-en"              tlon-babel-dired-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"              tlon-babel-dired-browse-utilitarianism-es)
-    ]
+    ("u n" "utilitarianism-en"            tlon-babel-dired-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"            tlon-babel-dired-browse-utilitarianism-es)]
    ["Essays on Longtermism"
-    ("e n" "essays-en"                   tlon-babel-dired-browse-essays-en)
-    ("e s" "essays-es"                   tlon-babel-dired-browse-essays-es)
-    ]
+    ("e n" "essays-en"                    tlon-babel-dired-browse-essays-en)
+    ("e s" "essays-es"                    tlon-babel-dired-browse-essays-es)]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
     ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
-    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)
-    ]
+    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]
    ["La Bisagra"
-    ("s s" "bisagra"                      tlon-babel-dired-browse-bisagra)
-    ]
+    ("s s" "bisagra"                      tlon-babel-dired-browse-bisagra)]
    ["Boletín"
-    ("a a" "boletin"                      tlon-babel-dired-browse-boletin)
-    ]
+    ("a a" "boletin"                      tlon-babel-dired-browse-boletin)]
    ["Docs"
-    ("d d" "tlon-docs"                    tlon-babel-dired-browse-docs)
-    ]
-   ]
-  )
+    ("d d" "tlon-docs"                    tlon-babel-dired-browse-docs)]])
 
 ;;;;; Browse repo dir in Dired
 
@@ -302,21 +267,15 @@ DIR is the directory where the repo is stored."
 
 (transient-define-prefix tlon-babel-dired-dir-dispatch ()
   "Browse a Tlön repo directory in Dired."
-  [
-   ["Uqbar"
-    ("q n" "uqbar-en"                     tlon-babel-browse-entity-in-uqbar-en-dispatch)
-    ("q s" "uqbar-es"                     tlon-babel-browse-entity-in-uqbar-es-dispatch)
-    ]
+  [["Uqbar"
+    ("q n" "uqbar-en"                    tlon-babel-browse-entity-in-uqbar-en-dispatch)
+    ("q s" "uqbar-es"                    tlon-babel-browse-entity-in-uqbar-es-dispatch)]
    ["utilitarianism"
-    ("u n" "utilitarianism-en"              tlon-babel-browse-entity-in-utilitarianism-en-dispatch)
-    ("u s" "utilitarianism-es"              tlon-babel-browse-entity-in-utilitarianism-es-dispatch)
-    ]
+    ("u n" "utilitarianism-en"           tlon-babel-browse-entity-in-utilitarianism-en-dispatch)
+    ("u s" "utilitarianism-es"           tlon-babel-browse-entity-in-utilitarianism-es-dispatch)]
    ["Essays on Longtermism"
     ("e n" "essays-en"                   tlon-babel-browse-entity-in-essays-en-dispatch)
-    ("e s" "essays-es"                   tlon-babel-browse-entity-in-essays-es-dispatch)
-    ]
-   ]
-  )
+    ("e s" "essays-es"                   tlon-babel-browse-entity-in-essays-es-dispatch)]])
 
 (provide 'tlon-babel-dispatch)
 ;;; tlon-babel-dispatch.el ends here
