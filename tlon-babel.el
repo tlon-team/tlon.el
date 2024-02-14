@@ -413,12 +413,6 @@ If REPO is nil, prompt the user for one."
     (tlon-babel-yaml-set-metadata tlon-babel-yaml-article-keys title)
     (save-buffer)))
 
-;; Currently unused; might come handy in the future, else delete
-(defun tlon-babel-get-list-of-remote-repos ()
-  "Return a lit of all repositories in the `tlon-babel' GitHub account."
-  (let ((list (ghub-get "/users/tlon-team/repos")))
-    (mapcar (lambda (repo) (alist-get 'name repo)) list)))
-
 ;;;;; Checks
 
 (defun tlon-babel-check-branch (branch repo)
