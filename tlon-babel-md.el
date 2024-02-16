@@ -83,6 +83,7 @@
 
 ;;;;; Insertion
 
+;;;;;; entities
 ;; TODO: revise to support multiple langs, including en
 ;;;###autoload
 (defun tlon-babel-insert-link ()
