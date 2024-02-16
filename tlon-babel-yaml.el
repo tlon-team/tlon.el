@@ -175,24 +175,24 @@ an error."
 
 ;;;;; Get
 
-(defun tlon-babel-metadata-in-repos (key value)
-  "Return metadata of all repos matching KEY and VALUE."
-  (let ((metadata '()))
-    (dolist (repo (tlon-babel-repo-lookup-all :dir key value))
+(defun tlon-babel-metadata-in-repos (&rest pairs)
+  "Return metadata of all repos matching all PAIRS.
+PAIRS is an even-sized list of <key value> tuples."
+  (let (metadata)
+    (dolist (repo (tlon-babel-repo-lookup-all :dir pairs))
       (setq metadata (append (tlon-babel-metadata-in-repo repo) metadata)))
     metadata))
 
 (defun tlon-babel-metadata-in-repo (&optional repo)
   "Return metadata of REPO.
-If REPO is nil, return metadata of current repository."
+If REPO is nil, return metadata of the current repository."
   (let* ((repo (or repo (tlon-babel-get-repo))))
-    (if (eq (tlon-babel-repo-lookup :type :dir repo) 'content)
-	(tlon-babel-metadata-in-dir repo)
-      (user-error "The repository `%s' is not a `content' repository" repo))))
+    (when (eq (tlon-babel-repo-lookup :type :dir repo) 'content)
+      (tlon-babel-metadata-in-dir repo))))
 
 (defun tlon-babel-metadata-in-dir (dir)
   "Return the metadata in DIR and all its subdirectories as an association list."
-  (let ((metadata '()))
+  (let (metadata)
     (dolist (file (directory-files-recursively dir "\\.md$"))
       (when-let ((meta-in-file (tlon-babel-metadata-in-file file)))
 	(push meta-in-file metadata)))
