@@ -204,6 +204,31 @@ summarize."
 	    (message "`gptel' failed with message: %s" (plist-get info :status))
 	  (kill-new response)
 	  (message "Copied AI-generated summary to the kill ring:\n\n%s" response))))))
+;;;;;; BibLaTeX summarization
+
+(defun tlon-babel-ai-summarize-biblatex (&optional string)
+  "Summarize the work described in the BibLaTeX STRING using AI.
+If STRING is nil, use the current entry."
+  (interactive)
+  (let ((string (or string (bibtex-extras-get-entry-as-string))))
+    (unless (bibtex-extras-get-field-in-string string "abstract")
+      (when-let* ((language (bibtex-extras-get-field "langid"))
+		  (lang-short (bibtex-extras-get-two-letter-code language)))
+	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-biblatex-prompts :prompt :language lang-short)))
+	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-ai-summarize-biblatex-callback)
+	  (user-error "No prompt defined in `tlon-babel-ai-summarize-prompts' for language %s" language))))))
+
+(defun tlon-babel-ai-summarize-biblatex-callback (response info)
+  "Callback for `tlon-babel-ai-summarize-biblatex'.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (let ((key (bibtex-extras-get-field "=key=")))
+      (bibtex-set-field "abstract" response)
+      (message "Set abstract of `%s' to %s" key response)
+      (bibtex-next-entry)
+      (tlon-babel-ai-summarize-biblatex))))
+
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
