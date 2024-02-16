@@ -41,6 +41,12 @@
 (defconst tlon-babel-yaml-core-keys
   '("type" "original_path")
   "List of YAML keys necessary to initialize the translation metadata.")
+
+(defconst tlon-babel-yaml-translation-only-keys
+  '("original_path" "publication_status")
+  "List of YAML keys included in translation metadata only.
+I.e., these keys are not included in the metadata of originals.")
+
 (defconst tlon-babel-yaml-article-keys
   '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
   "List of YAML keys of fields to include in `uqbar-es' articles.
