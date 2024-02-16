@@ -229,6 +229,67 @@ RESPONSE is the response from the AI model and INFO is the response info."
       (bibtex-next-entry)
       (tlon-babel-ai-summarize-biblatex))))
 
+;;;;; Language detection
+
+(defun tlon-babel-ai-detect-language (&optional string)
+  "If the language of BibLaTeX STRING is missing, detect it.
+If STRING is nil, use the current entry."
+  (let ((string (or string (bibtex-extras-get-entry-as-string))))
+    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-prompt string)))
+
+(defun tlon-babel-ai-set-language (&optional string)
+  "Set the language of the BibLaTeX entry at point to LANGUAGE.
+If STRING is nil, use the current entry."
+  (interactive)
+  (let* ((string (or string (bibtex-extras-get-entry-as-string)))
+	 (callback (if (bibtex-extras-get-field-in-string string "langid")
+		       #'tlon-babel-ai-set-language-when-present-callback
+		     #'tlon-babel-ai-set-language-when-absent-callback)))
+    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-prompt string callback)))
+
+(defun tlon-babel-ai-set-language-when-absent-callback (response info)
+  "Callback for `tlon-babel-ai-set-language' when `langid' field is absent.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (when-let ((language (bibtex-extras-validate-language response)))
+      (tlon-babel-ai-set-language-add-langid language))))
+
+(defun tlon-babel-ai-set-language-when-present-callback (response info)
+  "Callback for `tlon-babel-ai-set-language' when `langid' field is present.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (bibtex-beginning-of-entry)
+    (if-let ((langid (bibtex-extras-get-field "langid"))
+	     (valid-langid (bibtex-extras-validate-language langid))
+	     (valid-response (bibtex-extras-validate-language response)))
+	(if (string= valid-response valid-langid)
+	    (tlon-babel-ai-set-language-when-unequal valid-langid langid)
+	  (let ((langid-2 (bibtex-extras-get-two-letter-code valid-langid))
+		(response-2 (bibtex-extras-get-two-letter-code valid-response)))
+	    (if (string= langid-2 response-2)
+		(tlon-babel-ai-set-language-when-unequal valid-langid langid)
+	      (user-error "The detected language (%s) differs from the current language (%s)" response langid))))
+      (user-error "The `langid' field of the current entry is not valid"))))
+
+(defun tlon-babel-ai-set-language-when-unequal (valid-lang lang)
+  "."
+  (if (string= valid-lang lang)
+      (tlon-babel-ai-set-language-continue)
+    (tlon-babel-ai-set-language-add-langid valid-lang)))
+
+(defun tlon-babel-ai-set-language-add-langid (lang)
+  "."
+  (let ((key (bibtex-extras-get-field "=key=")))
+    (bibtex-set-field "langid" lang)
+    (message "Set language of `%s' to %s" key lang)
+    (tlon-babel-ai-set-language-continue)))
+
+(defun tlon-babel-ai-set-language-continue ()
+  ""
+  (bibtex-next-entry)
+  (tlon-babel-ai-set-language))
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
