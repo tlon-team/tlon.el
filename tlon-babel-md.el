@@ -85,7 +85,7 @@
 
 ;; TODO: revise to support multiple langs, including en
 ;;;###autoload
-(defun tlon-babel-md-insert-entity ()
+(defun tlon-babel-insert-link ()
   "Insert a link to an entity at point.
 The entity can be a tag or an author."
   (interactive)
@@ -180,12 +180,12 @@ is non-nil, the opening element will be self-closing."
 
 ;;;;;;; HTML
 
-(defun tlon-babel-md-insert-html-subscript ()
+(defun tlon-babel-insert-html-subscript ()
   "Insert an HTML `sub' element pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "<sub>" "</sub>"))
 
-(defun tlon-babel-md-insert-html-superscript ()
+(defun tlon-babel-insert-html-superscript ()
   "Insert an HTML `sup' element pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "<sup>" "</sup>"))
@@ -193,13 +193,13 @@ is non-nil, the opening element will be self-closing."
 ;;;;;;; MDX
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-aside ()
+(defun tlon-babel-insert-mdx-aside ()
   "Insert an MDX `Aside' element pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "<Aside>" "</Aside>"))
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-lang (language)
+(defun tlon-babel-insert-mdx-lang (language)
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
@@ -210,7 +210,7 @@ written in that language."
 
 ;; TODO: revise to offer the url at point as default completion candidate
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-literal-link (url)
+(defun tlon-babel-insert-mdx-literal-link (url)
   "Insert an MDX `LiteralLink' element pair at point or around the selected region.
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
@@ -219,7 +219,7 @@ Prompt the user to select a URL."
 				     "</LiteralLink>"))
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-small-caps ()
+(defun tlon-babel-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
 Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
@@ -255,14 +255,14 @@ opposed to a footnote."
 ;;;;;;;; Citations
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-cite (arg)
+(defun tlon-babel-insert-mdx-cite (arg)
   "Insert an MDX `Cite' element at point or around the selected region.
 Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
 the KEY will replace the existing key.
 
 By default, it will insert a \"long\" citation. To insert a \"short\" citation,
 call the function preceded by the universal ARG or use
-`tlon-babel-md-insert-mdx-cite-short'."
+`tlon-babel-insert-mdx-cite-short'."
   (interactive "P")
   (let ((key (car (citar-select-refs))))
     (if-let ((data (tlon-babel-get-key-in-citation)))
@@ -273,10 +273,10 @@ call the function preceded by the universal ARG or use
 					 "</Cite>" t))))
 
 ;;;###autoload
-(defun tlon-babel-md-insert-mdx-cite-short ()
+(defun tlon-babel-insert-mdx-cite-short ()
   "Insert a short MDX `Cite' element at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-mdx-cite '(4)))
+  (tlon-babel-insert-mdx-cite '(4)))
 
 (defun tlon-babel-get-bibtex-element-in-citation (type)
   "Return the BibTeX element of TYPE and its position in `Cite' element at point.
@@ -305,7 +305,7 @@ TYPE can be either `key' or `locators'."
     (delete-region begin end)
     (insert element)))
 
-(defun tlon-babel-md-insert-locator ()
+(defun tlon-babel-insert-locator ()
   "Insert locator in citation at point.
 If point is on a locator, it will be replaced by the new one. Otherwise, the new
 locator will be inserted after the key, if there are no locators, or at the end
@@ -331,13 +331,13 @@ of the existing locators."
 ;;;;;;; Math
 
 ;;;###autoload
-(defun tlon-babel-md-insert-math-inline ()
+(defun tlon-babel-insert-math-inline ()
   "Insert an inline math element pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "$`" "`$"))
 
 ;;;###autoload
-(defun tlon-babel-md-insert-math-display ()
+(defun tlon-babel-insert-math-display ()
   "Insert a display math element pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
@@ -413,27 +413,28 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
 (transient-define-prefix tlon-babel-md-menu ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
   :info-manual "(tlon-babel) Editing Markdown"
-  [["HTML"
-    ("b" "subscript"            tlon-babel-md-insert-html-subscript)
-    ("p" "superscript"          tlon-babel-md-insert-html-superscript)
-    ]
+  [["YAML"
+    ("y" "field"                tlon-babel-edit-yaml-field)]
+   ["Link"
+    ("k" "link"                 tlon-babel-insert-link)]
+   ["HTML"
+    ("b" "subscript"            tlon-babel-insert-html-subscript)
+    ("p" "superscript"          tlon-babel-insert-html-superscript)]
    ["MDX"
-    ("a" "aside"                tlon-babel-md-insert-mdx-aside)
-    ("g" "lang"                 tlon-babel-md-insert-mdx-lang)
-    ("k" "literal link"         tlon-babel-md-insert-mdx-literal-link)
-    ("m" "small caps"           tlon-babel-md-insert-mdx-small-caps)
-    ]
+    ("a" "aside"                tlon-babel-insert-mdx-aside)
+    ("g" "lang"                 tlon-babel-insert-mdx-lang)
+    ("t" "literal link"         tlon-babel-insert-mdx-literal-link)
+    ("m" "small caps"           tlon-babel-insert-mdx-small-caps)]
    ["Note markers"
     ("f" "footnote"             tlon-babel-insert-footnote-marker)
-    ("s" "sidenote"             tlon-babel-insert-sidenote-marker)
-    ]
+    ("s" "sidenote"             tlon-babel-insert-sidenote-marker)]
    ["Citations"
-    ("c" "cite"                 tlon-babel-md-insert-mdx-cite)
-    ("C" "cite short"           tlon-babel-md-insert-mdx-cite-short)
-    ("l" "locator"              tlon-babel-md-insert-locator)]
+    ("c" "cite"                 tlon-babel-insert-mdx-cite)
+    ("C" "cite short"           tlon-babel-insert-mdx-cite-short)
+    ("l" "locator"              tlon-babel-insert-locator)]
    ["Math"
-    ("i" "inline"               tlon-babel-md-insert-math-inline)
-    ("d" "display"              tlon-babel-md-insert-math-display)]])
+    ("i" "inline"               tlon-babel-insert-math-inline)
+    ("d" "display"              tlon-babel-insert-math-display)]])
 
 ;;;;; Key bindings
 
