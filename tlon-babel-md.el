@@ -77,7 +77,7 @@
     ("sub  verbis" . "s.vv.")
     ("verses" . "vv.")
     ("volumes" . "vols."))
-  "Alist of locators and their abbreviations")
+  "Alist of locators and their abbreviations.")
 
 ;;;; Functions
 
