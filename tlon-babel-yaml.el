@@ -271,93 +271,96 @@ want to search all files, use the empty string."
 	 (files (directory-files-recursively dir extension-regex)))
     (mapcar #'file-name-nondirectory files)))
 
-;;;;; Set
+;;;;; Set fields
+;; fun2: set `translation_key' metadata field
+;; fun3: get bibtex key from `translation_key' metadata field
+;; fun4: compare existing bibtex key with bibtex key from `translation_key' metadata field
 
-(defun tlon-babel-yaml-set-metadata-fields (fields &optional title)
-  "Set the field values for the given FIELDS in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one."
-  (let* ((var-generators
-	  `(("date" . ,(lambda () (format-time-string "%FT%T%z")))
-	    ("title" . ,(lambda () (or title (read-string "Title: "))))
-	    ("authors-list" . ,(lambda () (tlon-babel-yaml-set-multi-value-field "title" "authors")))
-	    ("translators" . ,#'tlon-babel-yaml-set-translators)
-	    ("tags" . ,#'tlon-babel-yaml-set-tags)
-	    ("original_path" . ,#'tlon-babel-yaml-set-original-path)))
-	 (processed-fields (if (member "authors" fields)
-			       (cons "authors-list" fields)
-			     fields))
-	 (field-values (cl-loop for field in processed-fields
-				for generator = (cdr (assoc field var-generators))
-				if generator collect `(,field . ,(funcall generator)))))
-    ;; calculate first-author and adjust field-values
-    (let* ((first-author (cdr (or (assoc "authors" field-values) (assoc "authors-list" field-values))))
-	   (authors (when first-author
-		      (or
-		       (cdr (assoc "authors" field-values))
-		       (tlon-babel-yaml-convert-list first-author))))
-	   (cmpl-generators
-	    `(("first-author" . ,first-author)
-	      ("authors" . ,authors)
-	      ("publication_status" . "no publicado")
-	      ("original_key" . ,(when first-author (tlon-babel-yaml-set-original-key (car first-author))))
-	      ("translation_key" . ,(when first-author
-				      (tlon-babel-refs-generate-autokey
-				       (car first-author)
-				       (substring (cdr (assoc "date" field-values)) 0 4)
-				       (cdr (assoc "title" field-values))))))))
-      ;; revise field-values
-      (setq field-values (assoc-delete-all "authors-list" field-values))
-      (dolist (field fields)
-	(when (cdr (assoc field cmpl-generators))
-	  (push `(,field . ,(cdr (assoc field cmpl-generators))) field-values))))
-    field-values))
+;; document process for creating a new translation:
+;; 1. Import original article bibliographic details as bibtex entry
+;; 2. Import original article content. This function should add a `bibtex_key'
+;;    field to the metadata.
+;; 3. Populate original metadata from bibtex fields.
+;; 4. Create translation file via `tlon-babel-create-translation-file'.
+;; 5. Populate translation metadata from original metadata.
+;; 6. Create translation bibtex entry from translation metadata.
 
-(defun tlon-babel-yaml-set-metadata (keys &optional title)
-  "Insert YAML fields for KEYS for `uqbar-en' article in the current buffer.
-If TITLE is non-nil, use it instead of prompting for one. The fields will be
-inserted in the order in which KEYS are listed."
-  (let* ((fields (tlon-babel-yaml-set-metadata-fields keys title))
-	 (sorted-fields (tlon-babel-yaml-sort-fields fields keys)))
-    (tlon-babel-yaml-insert-fields sorted-fields)))
+;; originals and translations should have have a metadata section with the same
+;; structure. in both cases, some fields will overlap with the bibtex fields. we
+;; deal with this situation in the same way in both cases.
 
-;; TODO: revise `translations' now that we use separate repos
-(defun tlon-babel-yaml-set-multi-value-field (field &optional dir repo)
-  "Set the value of multivalue FIELD in metadata of REPO.
-If DIR is non-nil, only search in directory within the repo. Note DIR does not
-include the `translations' directory. That is, it is the directory component of
-the repo's locator. For example, to search only in `translations/autores', use
-`autores' as DIR."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (metadata (tlon-babel-metadata-in-repo repo))
-	 (full-dir (when dir (file-name-concat repo "translations" dir))))
-    (completing-read-multiple (format "%s: " (capitalize dir))
-			      (tlon-babel-metadata-lookup-all
-			       metadata field (when dir "file") (when dir full-dir)))))
+(defun tlon-babel-create-translation-file (&optional file language)
+  "Create a new translation file for original FILE.
+If FILE is nil, use the file visited by the current buffer. If LANGUAGE is nil,
+use the value of `tlon-babel-translation-language'."
+  (interactive)
+  ;; check that FILE has a bibtex key
+  (let* ((file (or file (buffer-file-name)))
+	 (language (or language tlon-babel-translation-language))
+	 (subproject (tlon-babel-repo-lookup :subproject :dir (tlon-babel-get-repo-from-file file)))
+	 (repo (tlon-babel-repo-lookup :dir :subproject subproject :language language))
+	 (bare-dir (tlon-babel-get-bare-dir-translation language "en" (tlon-babel-get-bare-dir file)))
+	 (title (read-string "Translated title: "))
+	 (dir (file-name-concat repo bare-dir))
+	 (path (tlon-babel-set-file-from-title title dir)))
+    (find-file path)
+    (tlon-babel-initialize-translation-metadata path file)
+    (save-buffer)))
 
-(defun tlon-babel-yaml-set-authors ()
-  "Set the value of `authors' YAML field."
-  (tlon-babel-yaml-convert-list
-   (tlon-babel-yaml-set-multi-value-field "title" "authors")))
+(defun tlon-babel-initialize-translation-metadata (file original)
+  "Set the initial metadata section for a FILE that translated ORIGINAL.
+This function creates a new metadata section in FILE, and sets the value of
+`type' and `original_path'. These values are needed for the remaining metadata
+to be set via `tlon-babel-populate-translation-metadata'."
+  (let ((type (tlon-babel-yaml-get-key "type" original)))
+    (tlon-babel-yaml-insert-metadata-section file)
+    ;; consider using a fun that sets all fields at once
+    ;; consider setting it by reference to `tlon-babel-yaml-core-keys'
+    (tlon-babel-yaml-insert-field "type" type)
+    (tlon-babel-yaml-insert-field "original_path" original)))
 
-(defun tlon-babel-yaml-set-translators ()
-  "Set the value of `translators' YAML field."
+(defun tlon-babel-populate-translation-metadata (&optional file)
+  "Populate the metadata section of translation FILE.
+If FILE is nil, use the file visited by the current buffer."
+  (let ((file (or file (buffer-file-name))))
+    (if-let ((type (tlon-babel-yaml-get-key "type" file)))
+	(dolist (key (tlon-babel-yaml-get-valid-keys file type 'no-core))
+	  (let ((fun (alist-get key tlon-babel-yaml-field-setters nil nil #'string=)))
+	    (funcall fun))
+	  ;; for each key, call its generating function and record its return
+	  ;; value, then insert it into the file
+	  ;; perhaps the insertion should be done by another fun
+	  )
+      (user-error "File `%s' is missing a `type' metadata field" file))))
+
+(defun tlon-babel-yaml-set-key (key)
+  "Set the value of the YAML field with KEY."
   (tlon-babel-yaml-convert-list
    (completing-read-multiple
-    "Translators: "
-    (tlon-babel-metadata-lookup-all (tlon-babel-metadata-in-repos :subtype 'translations) "translators"))))
+    (format "%s: " key)
+    (tlon-babel-yaml-get-completion-values key))))
 
-(defun tlon-babel-yaml-set-tags ()
-  "Set the value of `tags' YAML field."
-  (tlon-babel-yaml-convert-list
-   (tlon-babel-yaml-set-multi-value-field "title" "tags")))
+;;;;;; original setter functions
 
-(defun tlon-babel-yaml-set-original-path ()
-  "Set the value of `original_path' YAML field."
-  (let ((dir (tlon-babel-get-counterpart-dir (buffer-file-name))))
-    (completing-read "Original filename: "
-		     (tlon-babel-yaml-get-filenames-in-dir dir))))
 
-(defun tlon-babel-yaml-set-original-key (author)
+;;;;;; translation setter functions
+
+;; copy from original
+(defun tlon-babel-yaml-set-authors-in-translation (file)
+  "Set the value of the `authors' YAML field in a translation file."
+  (tlon-babel-yaml-set-key "authors"))
+
+;; set interactively
+(defun tlon-babel-yaml-set-translators-in-translation ()
+  "Set the value of the `translators' YAML field in a translation file."
+  (tlon-babel-yaml-set-key "translators"))
+
+;; set tags from original article
+(defun tlon-babel-yaml-set-tags-in-translation ()
+  "Set the value of the `tags' YAML field in a translation file."
+  (tlon-babel-yaml-set-key "tags"))
+
+(defun tlon-babel-yaml-set-bibtex-key-in-translation (author)
   "Set the value of `original_key' YAML field.
 AUTHOR is the first author of the original work."
   (let ((first-author (car (last (split-string author)))))
@@ -370,7 +373,49 @@ AUTHOR is the first author of the original work."
 	   (format "%s " first-author)
 	   'citar-history citar-presets nil)))))
 
+;; set current date
+(defun tlon-babel-yaml-set-date-in-translation ()
+  "Set the value of `date' YAML field."
+  (format-time-string "%FT%T%z"))
+
+;; offer AI-generated translation from original title
+(defun tlon-babel-yaml-set-title-in-translation (file)
+  "Set the value of `title' YAML field."
+  (or title (read-string "Title: ")))
+
+;; offer AI-translated original description
+(defun tlon-babel-yaml-set-description-in-translation ()
+  ""
+  
+  )
+
+;;;;;; translation-only
+
+;; set to appropriate value
+(defun tlon-babel-yaml-set-publication-status ()
+  ""
+  
+  )
+
+(defun tlon-babel-yaml-set-original-path ()
+  "Set the value of `original_path' YAML field."
+  (let* ((subproject (tlon-babel-repo-lookup :subproject :dir (tlon-babel-get-repo)))
+	 (dir (tlon-babel-repo-lookup :dir :subproject subproject :language "en")))
+    (completing-read "Original filename: "
+		     (tlon-babel-yaml-get-filenames-in-dir dir))))
+
 ;;;;; Edit
+
+(defun tlon-babel-yaml-insert-metadata-section (&optional file)
+  "Insert a YAML metadata section in FILE, when it does not already contain one.
+If FILE is nil, use the file visited by the current buffer."
+  (let ((file (or file (buffer-file-name))))
+    (when (tlon-babel-yaml-get-metadata file)
+      (user-error "File `%s' already contains a metadata section" file))
+    (with-current-buffer (find-file-noselect file)
+      (goto-char (point-min))
+      (insert (format "%1$s\n%1$s" tlon-babel-yaml-delimiter))
+      (save-buffer))))
 
 ;; TODO: throw error if any of fields already present
 (defun tlon-babel-yaml-insert-fields (fields)
@@ -412,12 +457,6 @@ FIELDS is an alist, typically generated via `tlon-babel-yaml-to-alist'."
 
 ;;;;; Interactive editing
 
-(defun tlon-babel-yaml-edit-field ()
-  "Edit the YAML field at point."
-  (interactive)
-  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field-at-point)
-    (tlon-babel-yaml-get-completions key value)))
-
 (defun tlon-babel-yaml-get-completions (key value)
   "Get completions based on KEY.
 If KEY already has VALUE, use it as the initial input."
@@ -429,9 +468,9 @@ If KEY already has VALUE, use it as the initial input."
 (defun tlon-babel-yaml-get-completion-values (key)
   "Get completion values for a YAML field with KEY."
   (pcase key
+    ("authors" (tlon-babel-get-metadata-values-of-type "author"))
     ("translators" (tlon-babel-metadata-get-translators))
-    ("tags" (tlon-babel-metadata-get-uqbar-fields "tags"))
-    ("authors" (tlon-babel-metadata-get-uqbar-fields "authors"))
+    ("tags" (tlon-babel-get-metadata-values-of-type "tag"))
     ("original_path" (tlon-babel-yaml-get-filenames-in-dir))
     ("original_key" (citar--completion-table (citar--format-candidates) nil))
     ("translation_key" (citar--completion-table (citar--format-candidates) nil))
@@ -490,6 +529,7 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
       (user-error "File does not appear to contain a metadata section"))))
 
 ;; TODO: Handle multiline fields, specifically `description’
+;; TODO: make it throw an error unless looking at metadata
 (defun tlon-babel-yaml-get-field-at-point ()
   "Return a list with the YAML key and value at point, or nil if there is none."
   (when-let* ((bounds (bounds-of-thing-at-point 'line))
@@ -497,9 +537,14 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
 	      (elts (split-string line ":" nil "\\s-+")))
     elts))
 
-(defun tlon-babel-yaml-get-key (key)
-  "Get value of KEY in YAML metadata."
-  (alist-get key (tlon-babel-yaml-get-metadata) nil nil #'string=))
+(defun tlon-babel-yaml-get-key (key &optional file-or-buffer)
+  "Get value of KEY in YAML metadata of FILE-OR-BUFFER.
+If FILE is nil, use the file visited by the current buffer."
+  (when-let* ((file-or-buffer (or file-or-buffer
+				  (buffer-file-name)
+				  (current-buffer)))
+	      (metadata (tlon-babel-metadata-in-file file-or-buffer)))
+    (alist-get key metadata nil nil #'string=)))
 
 (defun tlon-babel-yaml-insert-list (candidates)
   "Insert a list in YAML field at point.
@@ -546,37 +591,38 @@ pre-populate the selection."
 
 ;;;;;; Get repo-specific entities
 
-(defun tlon-babel-metadata-get-uqbar-fields (type &optional field language)
-  "Return FIELDS in files of TYPE in `uqbar' repo of LANGUAGE.
-If FIELD is nil, default to \"title\". If LANG is nil, default to
-`tlon-babel-translation-language'."
-  (let* ((field (or field "title"))
-	 (language (or language tlon-babel-translation-language))
-	 (type-in-language (tlon-babel-get-bare-dir-translation language "en" type))
-	 (repo (tlon-babel-repo-lookup :dir :subproject "uqbar" :language language)))
-    (tlon-babel-metadata-lookup-all
-     (tlon-babel-metadata-in-repo repo) field "file" (file-name-concat repo type-in-language))))
+(defun tlon-babel-get-metadata-values-of-type (type &optional language current-repo)
+  "Return all metadata values of TYPE.
+Search all repos of `translations' subtype in LANGUAGE. If LANGUAGE is nil,
+default to `tlon-babel-translation-language'. If CURRENT-REPO is non-nil,
+restrict search to the current repository."
+  (let ((repos (if current-repo
+		   (list (tlon-babel-get-repo))
+		 (tlon-babel-repo-lookup-all
+		  :dir
+		  :subtype 'translations
+		  :language (or language tlon-babel-translation-language))))
+	metadata)
+    (dolist (repo repos)
+      (setq metadata
+	    (append metadata
+		    (tlon-babel-metadata-lookup-all
+		     (tlon-babel-metadata-in-repo repo)
+		     ;; TODO: add `type' field to metadata in utilitarianism
+		     "title" "type" type))))
+    metadata))
 
-(defun tlon-babel-metadata-get-all-uqbar-entities ()
-  "Get a list of all `uqbar-en' entities."
+(defun tlon-babel-metadata-get-values-of-all-types (&optional language current-repo)
+  "Get a list of all `uqbar-en' entities.
+Search all repos of `translations' subtype in LANGUAGE. If LANGUAGE is nil,
+default to `tlon-babel-translation-language'. If CURRENT-REPO is non-nil,
+restrict search to the current repository."
   (append
-   (tlon-babel-metadata-get-uqbar-fields "articles")
-   (tlon-babel-metadata-get-uqbar-fields "authors")
-   (tlon-babel-metadata-get-uqbar-fields "tags")))
+   (tlon-babel-get-metadata-values-of-type "article" language current-repo)
+   (tlon-babel-get-metadata-values-of-type "author" language current-repo)
+   (tlon-babel-get-metadata-values-of-type "tag" language current-repo)))
 
 ;;;;;; Create repo-specific entities
-
-(defun tlon-babel-create-uqbar-entity (dir)
-  "Create a new file for `uqbar-es' entity in DIR."
-  (let ((default-directory (file-name-concat
-			    (tlon-babel-repo-lookup :dir :name "uqbar-es")
-			    (file-name-as-directory dir))))
-    (files-extras-new-empty-buffer)
-    (tlon-babel-yaml-set-metadata tlon-babel-yaml-tag-or-author-keys)
-    (goto-char (point-max))
-    (tlon-babel-name-file-from-title)
-    (insert (format "**%s** es " (tlon-babel-metadata-get-field-value-in-file "title")))
-    (save-buffer)))
 
 (defun tlon-babel-name-file-from-title (&optional title)
   "Save the current buffer to a file named after TITLE.
@@ -588,7 +634,7 @@ When buffer is already visiting a file, prompt the user for confirmation before
 renaming it."
   (interactive)
   (let* ((title (or title
-		    (tlon-babel-metadata-get-field-value-in-file "title")
+		    (tlon-babel-yaml-get-key "title")
 		    (read-string "Title: ")))
 	 (target (tlon-babel-set-file-from-title title default-directory)))
     (if-let ((buf (buffer-file-name)))
@@ -603,26 +649,14 @@ renaming it."
 (defun tlon-babel-set-file-from-title (&optional title dir)
   "Set the file path based on its title.
 The file name is the slugified version of TITLE with the extension `.md'. This
-is appended to DIR to generate the file path. If DIR is not provided, use the
-current repository followed by `originals/'."
-  (let* ((title (or title
-		    (read-string "Title: ")))
+is appended to DIR to generate the file path. If DIR is not provided, prompt the
+user for one."
+  (let* ((title (or title (read-string "Title: ")))
 	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
-	 (dirname (file-name-as-directory
-		   (or dir
-		       (file-name-concat (tlon-babel-get-repo) "originals")))))
+	 (dirname (file-name-as-directory (or dir (tlon-babel-get-repo)))))
     (file-name-concat dirname filename)))
 
 ;;;;;; Get repo-agnostic elements
-
-(defun tlon-babel-metadata-get-field-value-in-file (field &optional file-or-buffer)
-  "Return the value of FIELD in metadata of FILE-OR-BUFFER.
-If FILE is nil, use the file visited by the current buffer."
-  (when-let* ((file-or-buffer (or file-or-buffer
-				  (buffer-file-name)
-				  (current-buffer)))
-	      (metadata (tlon-babel-metadata-in-file file-or-buffer)))
-    (alist-get field metadata nil nil #'string=)))
 
 (defun tlon-babel-metadata-get-translators ()
   "Get a list of translators in all `translations' repos."
