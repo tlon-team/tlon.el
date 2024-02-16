@@ -60,8 +60,8 @@ The order of the keys determines the sort order by
 `tlon-babel-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-babel-yaml-author-keys
-  '("title" "original_path" "publication_status")
-  "List of YAML keys of fields to include in `uqbar-es' authors.
+  '("type" "title" "original_path" "publication_status")
+  "List of YAML keys of fields to include in authors.
 The order of the keys determines the sort order by
 `tlon-babel-yaml-sort-fields', unless overridden.")
 
