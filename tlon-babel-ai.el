@@ -164,16 +164,17 @@ is the file to translate."
   (let* ((string (if (region-active-p)
 		     (buffer-substring-no-properties (region-beginning) (region-end))
 		   (read-string "Text to rewrite: "))))
-    (gptel-request
-	(format tlon-babel-ai-rewrite-prompt string)
-      :callback
-      (lambda (response info)
-	(if (not response)
-	    (message tlon-babel-gptel-error-message (plist-get info :status))
-	  (let* ((variants (split-string response "|"))
-		 (variant (completing-read "Variant: " variants)))
-	    (delete-region (region-beginning) (region-end))
-	    (kill-new variant)))))))
+    (tlon-babel-make-gptel-request tlon-babel-ai-rewrite-prompt string)))
+
+(defun tlon-babel-ai-rewrite-callback (response info)
+  "Callback for `tlon-babel-ai-rewrite'.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (let* ((variants (split-string response "|"))
+	   (variant (completing-read "Variant: " variants)))
+      (delete-region (region-beginning) (region-end))
+      (kill-new variant))))
 
 ;;;;; Summarization
 
