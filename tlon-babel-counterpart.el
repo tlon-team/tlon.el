@@ -111,13 +111,13 @@ buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (repo (tlon-babel-get-repo-from-file file))
 	 (counterpart-repo (tlon-babel-get-counterpart-repo file))
-	 (bare-dir (tlon-babel-get-counterpart-bare-dir file))
+	 (bare-dir (tlon-babel-get-bare-dir file))
 	 (source-lang (tlon-babel-repo-lookup :language :dir repo))
 	 (target-lang (tlon-babel-get-counterpart-language repo))
 	 (counterpart-bare-dir (tlon-babel-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
 
-(defun tlon-babel-get-counterpart-bare-dir (&optional file)
+(defun tlon-babel-get-bare-dir (&optional file)
   "Get the bare directory of FILE.
 A file’s bare directory is its directory minus its repository. For example, the
 bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
