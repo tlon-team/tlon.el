@@ -78,6 +78,35 @@ The order of the keys determines the sort order by
   '("unpublished" "test" "production")
   "List of publication statuses.")
 
+(defconst tlon-babel-yaml-field-setters
+  '((:key "title"
+	  :original tlon-babel-yaml-set-title-in-original
+	  :translation tlon-babel-yaml-set-title-in-translation)
+    (:key "authors"
+	  :original tlon-babel-yaml-set-authors-in-original
+	  :translation tlon-babel-yaml-set-authors-in-translation)
+    (:key "translators"
+	  :original tlon-babel-yaml-set-translators-in-original
+	  :translation tlon-babel-yaml-set-translators-in-translation)
+    (:key "tags"
+	  :original tlon-babel-yaml-set-tags-in-original
+	  :translation tlon-babel-yaml-set-tags-in-translation)
+    (:key "date"
+	  :original tlon-babel-yaml-set-date-in-original
+	  :translation tlon-babel-yaml-set-date-in-translation)
+    (:key "bibtex_key"
+	  :original tlon-babel-yaml-set-bibtex-key-in-original
+	  :translation tlon-babel-yaml-set-bibtex-key-in-translation)
+    (:key "description"
+	  :original tlon-babel-yaml-set-description-in-original
+	  :translation tlon-babel-yaml-set-description-in-translation)
+    ;; translation-only
+    (:key "publication_status"
+	  :translation tlon-babel-yaml-set-publication-status-in-translation)
+    (:key "original_path"
+	  :translation tlon-babel-yaml-set-original-path-in-translation))
+  "Property list of field setters for YAML metadata.")
+
 ;;;; Functions
 
 ;;;;; Parse
