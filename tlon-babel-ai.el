@@ -177,6 +177,14 @@ is the file to translate."
 
 ;;;;; Summarization
 
+(defun tlon-babel-ai-summarize-common (prompts string language callback)
+  "Common function for summarization.
+PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is the
+language of the string, and CALLBACK is the callback function."
+  (let ((prompt (tlon-babel-lookup prompts :prompt :language language)))
+    (message "Generating output. This may take 5–30 seconds, depending on length...")
+    (tlon-babel-make-gptel-request prompt string callback)))
+
 ;;;###autoload
 (defun tlon-babel-ai-summarize (model)
   "Summarize and copy the summary to the kill ring using AI MODEL.
@@ -193,17 +201,18 @@ summarize."
 		(insert-file-contents selected-file)
 		(buffer-string)))))
 	 (repo (tlon-babel-get-repo-from-file current-file))
-	 (language (tlon-babel-repo-lookup :language :dir repo))
-	 (prompt (tlon-babel-lookup tlon-babel-ai-summarize-prompts :prompt :language language)))
-    (message "Generating summary. This may take 5–30 seconds, depending on length...")
-    (gptel-request
-	(format prompt string)
-      :callback
-      (lambda (response info)
-	(if (not response)
-	    (message "`gptel' failed with message: %s" (plist-get info :status))
-	  (kill-new response)
-	  (message "Copied AI-generated summary to the kill ring:\n\n%s" response))))))
+	 (language (tlon-babel-repo-lookup :language :dir repo)))
+    (tlon-babel-ai-summarize-common tlon-babel-ai-summarize-prompts string language
+				    #'tlon-babel-ai-summarize-callback)))
+
+(defun tlon-babel-ai-summarize-callback (response info)
+  "Callback for `tlon-babel-ai-summarize'.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (kill-new response)
+    (message "Copied AI-generated summary to the kill ring:\n\n%s" response)))
+
 ;;;;;; BibLaTeX summarization
 
 (defun tlon-babel-ai-summarize-biblatex (&optional string)
