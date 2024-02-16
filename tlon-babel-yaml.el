@@ -54,8 +54,8 @@ The order of the keys determines the sort order by
 `tlon-babel-yaml-sort-fields', unless overridden.")
 
 (defconst tlon-babel-yaml-tag-keys
-  '("title" "brief_title" "original_path" "publication_status")
-  "List of YAML keys of fields to include in `uqbar-es' tags.
+  '("type" "title" "brief_title" "original_path" "publication_status")
+  "List of YAML keys of fields to include in tags.
 The order of the keys determines the sort order by
 `tlon-babel-yaml-sort-fields', unless overridden.")
 
