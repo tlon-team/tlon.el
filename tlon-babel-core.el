@@ -276,36 +276,35 @@ If FILE is nil, use the current buffer's file name."
 ;;;;; Lookup
 
 (defun tlon-babel-lookup (list key &rest pairs)
-  "Return the value of KEY in LIST matching all PAIRS.
-PAIRS is expected to be an even-sized list of <key value> tuples.
-If multiple matches are found, return the first match."
+  "Return the first value of KEY in LIST matching all PAIRS.
+PAIRS is an even-sized list of <key value> tuples."
   (cl-loop for entry in list
-           when (cl-loop for (prop value) on pairs by #'cddr
-                         always (equal (if (stringp key)
-					   (alist-get prop entry nil nil 'string=)
-                                         (plist-get entry prop))
-				       value))
-           return (if (stringp key)
-		      (alist-get key entry nil nil 'string=)
-		    (plist-get entry key))))
+           when (tlon-babel-all-pairs-in-entry-p pairs entry)
+           return (tlon-babel-get-value-in-entry key entry)))
 
 (defun tlon-babel-lookup-all (list key &rest pairs)
   "Return all unique values of KEY in LIST matching all PAIRS.
 PAIRS is expected to be an even-sized list of <key value> tuples."
-  (let ((results '()))
+  (let (results)
     (cl-loop for entry in list
-             do (when (cl-loop for (prop value) on pairs by #'cddr
-                               always (equal (if (stringp key)
-                                                 (alist-get prop entry nil nil 'string=)
-                                               (plist-get entry prop))
-                                             value))
-		  (when-let* ((result (if (stringp key)
-					  (alist-get key entry nil nil 'string=)
-					(plist-get entry key)))
+             do (when (tlon-babel-all-pairs-in-entry-p pairs entry)
+		  (when-let* ((result (tlon-babel-get-value-in-entry key entry))
 			      (flat-result (if (listp result) result (list result))))
 		    (dolist (r flat-result)
 		      (push r results)))))
     (delete-dups (nreverse results))))
+
+(defun tlon-babel-all-pairs-in-entry-p (pairs entry)
+  "Return t iff all PAIRS are found in ENTRY.
+PAIRS is an even-sized list of <key value> tuples."
+  (cl-loop for (key val) on pairs by #'cddr
+           always (equal val (tlon-babel-get-value-in-entry key entry))))
+
+(defun tlon-babel-get-value-in-entry (key entry)
+  "Return the value of KEY in ENTRY, or nil if not found."
+  (if (stringp key)
+      (alist-get key entry nil nil 'string=)
+    (plist-get entry key)))
 
 (defun tlon-babel-metadata-lookup (metadata key &rest key-value)
   "Return the value of KEY in METADATA matching all KEY-VALUE pairs."
