@@ -82,6 +82,13 @@
 ;;;; Functions
 
 ;;;;; Insertion
+;;;;;; metadata
+;;;;###autoload
+(defun tlon-babel-edit-yaml-field ()
+  "Edit the YAML field at point."
+  (interactive)
+  (cl-destructuring-bind (key value) (tlon-babel-yaml-get-field-at-point)
+    (tlon-babel-yaml-get-completions key value)))
 
 ;;;;;; entities
 ;; TODO: revise to support multiple langs, including en
