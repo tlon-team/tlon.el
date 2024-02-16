@@ -401,18 +401,6 @@ Defaults to the current buffer if no FILE is specified."
 				(magit-extras-get-commit-file))))
     (tlon-babel-get-key-from-file path)))
 
-(defun tlon-babel-create-translation-file (&optional repo)
-  "Create a new translation file and set its front matter.
-If REPO is nil, prompt the user for one."
-  (interactive)
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (title (read-string "Translated title: "))
-	 (dir (file-name-concat repo "translations/articulos/"))
-	 (path (tlon-babel-set-file-from-title title dir)))
-    (find-file path)
-    (tlon-babel-yaml-set-metadata tlon-babel-yaml-article-keys title)
-    (save-buffer)))
-
 ;;;;; Checks
 
 (defun tlon-babel-check-branch (branch repo)
