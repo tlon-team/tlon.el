@@ -38,6 +38,9 @@
 (defconst tlon-babel-yaml-delimiter "---\n"
   "Delimiter for YAML metadata.")
 
+(defconst tlon-babel-yaml-core-keys
+  '("type" "original_path")
+  "List of YAML keys necessary to initialize the translation metadata.")
 (defconst tlon-babel-yaml-article-keys
   '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
   "List of YAML keys of fields to include in `uqbar-es' articles.
