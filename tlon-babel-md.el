@@ -102,15 +102,15 @@ The entity can be a tag or an author."
 	 (current-link (markdown-link-at-pos (point)))
 	 (current-desc (nth 2 current-link))
 	 (current-target (nth 3 current-link))
+	 (language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo)))
 	 current-element-title)
     (when current-target
       (setq current-element-title
 	    (tlon-babel-md-get-title-in-link-target
 	     current-target)))
-    (let* ((new-element-title (completing-read "Selection: " (tlon-babel-metadata-get-all-uqbar-entities)
-					       nil t
-					       (or current-element-title
-						   selection)))
+    (let* ((candidates (tlon-babel-metadata-get-values-of-all-types language 'current-repo))
+	   (new-element-title (completing-read "Selection: " candidates nil t
+					       (or current-element-title selection)))
 	   (new-target-file (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "file" "title" new-element-title))
 	   (new-target-dir (file-relative-name
 			    (file-name-directory new-target-file) (file-name-directory (buffer-file-name))))
