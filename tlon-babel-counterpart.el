@@ -63,7 +63,7 @@ buffer."
 (defun tlon-babel-get-counterpart-in-translations (file)
   "Get the counterpart of FILE, when FILE is in `translations'."
   (if-let ((dir (tlon-babel-get-counterpart-dir file))
-	   (locator (tlon-babel-metadata-get-field-value-in-file "original_path" file)))
+	   (locator (tlon-babel-yaml-get-key "original_path" file)))
       (file-name-concat dir locator)
     (user-error "Couldn’t find relevant metadata")))
 

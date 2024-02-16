@@ -201,7 +201,7 @@ The second capture group handles the `.md' extension, which we used previously."
    (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "translation_key" "file" file)
    ;; when file in `originals'
    (let ((translation (tlon-babel-get-counterpart file)))
-     (tlon-babel-metadata-get-field-value-in-file "original_key" translation))))
+     (tlon-babel-yaml-get-key "original_key" translation))))
 
 (defun tlon-babel-set-translation-language (language)
   "Set the translation LANGUAGE."
@@ -244,7 +244,7 @@ If FILE is not provided, use the file visited by the current buffer."
   "Get the BibTeX key in the current Markdown buffer."
   (tlon-babel-md-check-in-markdown-mode)
   (save-buffer)
-  (let ((key (tlon-babel-metadata-get-field-value-in-file "original_key")))
+  (let ((key (tlon-babel-yaml-get-key "original_key")))
     (unless key
       (user-error "No key found"))
     key))
@@ -445,7 +445,7 @@ check that current file matches translation."
 If FILE is nil, check the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (base (file-name-base file))
-	 (title (tlon-babel-metadata-get-field-value-in-file "title" file))
+	 (title (tlon-babel-yaml-get-key "title" file))
 	 (slugified-title (tlon-core-slugify title)))
     (unless (or
 	     (string= base slugified-title)
