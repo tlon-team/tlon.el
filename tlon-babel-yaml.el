@@ -48,8 +48,8 @@
 I.e., these keys are not included in the metadata of originals.")
 
 (defconst tlon-babel-yaml-article-keys
-  '("title" "authors" "translators" "tags" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
-  "List of YAML keys of fields to include in `uqbar-es' articles.
+  '("type" "title" "authors" "translators" "tags" "date" "original_path" "bibtex_key" "publication_status" "description")
+  "List of YAML keys of fields to include in articles.
 The order of the keys determines the sort order by
 `tlon-babel-yaml-sort-fields', unless overridden.")
 
