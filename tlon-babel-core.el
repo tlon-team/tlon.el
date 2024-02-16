@@ -111,6 +111,7 @@
 	   :abbrev "utilitarianism-es"
 	   :type content
 	   :subtype translations
+	   :language "es"
 	   :key "u s"
 	   :url "https://utilitarismo.net/")
     (:name "essays-en"
@@ -126,6 +127,7 @@
 	   :abbrev "essays-es"
 	   :type content
 	   :subtype translations
+	   :language "es"
 	   :key "l s")
     (:name "ea.news-issues"
 	   :project "other"
