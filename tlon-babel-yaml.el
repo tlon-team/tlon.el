@@ -65,9 +65,9 @@ The order of the keys determines the sort order by
 The order of the keys determines the sort order by
 `tlon-babel-yaml-sort-fields', unless overridden.")
 
-(defconst tlon-babel-yaml-author-keys
+(defconst tlon-babel-yaml-collection-keys
   '("title" "original_path" "publication_status")
-  "List of YAML keys of fields to include in `uqbar-es' authors.
+  "List of YAML keys of fields to include in collections.
 The order of the keys determines the sort order by
 `tlon-babel-yaml-sort-fields', unless overridden.")
 
