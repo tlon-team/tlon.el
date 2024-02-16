@@ -243,21 +243,23 @@ If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
 		(user-error "Key `%s' not found in file `%s'" key (buffer-file-name)))))
 	  keys))
 
-(defun tlon-babel-yaml-get-valid-keys (&optional file)
+(defun tlon-babel-yaml-get-valid-keys (&optional file type no-core)
   "Return the admissible keys for YAML metadata in FILE.
-If FILE is nil, return the work type of the file visited by the current buffer."
-  (let* ((file (or file (buffer-file-name))))
-    (pcase (file-name-nondirectory (directory-file-name (file-name-directory file)))
-      ("articulos" tlon-babel-yaml-article-keys)
-      ("temas" tlon-babel-yaml-tag-keys)
-      ("authors" tlon-babel-yaml-author-keys))))
-
-(defun tlon-babel-get-repo-in-subproject-language (language &optional repo)
-  "Return the path of the subproject in REPO corresopnding to LANGUAGE.
-If REPO is nil, use the current repository."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
-	 (subproject (tlon-babel-repo-lookup :subproject :dir repo)))
-    (tlon-babel-repo-lookup :dir :subproject subproject :language language)))
+If FILE is nil, return the work type of the file visited by the current buffer.
+If TYPE is nil, use the value of the `type' field in FILE. If NO-CORE is
+non-nil, exclude core keys, as defined in `tlon-babel-yaml-core-keys'."
+  (let* ((file (or file (buffer-file-name)))
+	 (type (or type (tlon-babel-yaml-get-key "type" file)))
+	 (keys (pcase type
+		 ("article" tlon-babel-yaml-article-keys)
+		 ("tag" tlon-babel-yaml-tag-keys)
+		 ("author" tlon-babel-yaml-author-keys)
+		 ("collection" tlon-babel-yaml-collection-keys))))
+    (if no-core
+	(cl-remove-if (lambda (key)
+			(member key tlon-babel-yaml-core-keys))
+		      keys)
+      keys)))
 
 (defun tlon-babel-yaml-get-filenames-in-dir (&optional dir extension)
   "Return a list of all filenames in DIR.
