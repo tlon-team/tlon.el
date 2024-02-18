@@ -236,8 +236,10 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (let ((key (bibtex-extras-get-field "=key=")))
       (bibtex-set-field "abstract" response)
       (message "Set abstract of `%s' to %s" key response)
+      (save-buffer)
       (bibtex-next-entry)
-      (tlon-babel-ai-summarize-biblatex))))
+      ;; (tlon-babel-ai-summarize-biblatex) ; uncomment for batch-processing
+      )))
 
 ;;;;; Language detection
 
@@ -299,7 +301,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (defun tlon-babel-ai-set-language-continue ()
   ""
   (bibtex-next-entry)
-  (tlon-babel-ai-set-language))
+  ;; (tlon-babel-ai-set-language) ; uncomment for batch-processing
+  )
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
