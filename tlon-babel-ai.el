@@ -293,7 +293,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 (defun tlon-babel-ai-set-language-add-langid (lang)
   "."
-  (let ((key (bibtex-extras-get-field "=key=")))
+  (let ((key (bibtex-extras-get-key)))
     (bibtex-set-field "langid" lang)
     (message "Set language of `%s' to %s" key lang)
     (tlon-babel-ai-set-language-continue)))
