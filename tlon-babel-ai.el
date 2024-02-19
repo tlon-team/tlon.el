@@ -220,9 +220,16 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Summarize the work described in the BibLaTeX STRING using AI.
 If STRING is nil, use the current entry."
   (interactive)
-  (let ((string (or string (bibtex-extras-get-entry-as-string))))
+  (let* ((get-string (pcase major-mode
+		       ('bibtex-mode #'bibtex-extras-get-entry-as-string)
+		       ('ebib-entry-mode #'ebib-extras-get-or-open-entry)
+		       (_ (user-error "Unsupported major mode"))))
+	 (string (or string (funcall get-string))))
     (unless (bibtex-extras-get-field-in-string string "abstract")
-      (when-let* ((language (bibtex-extras-get-field "langid"))
+      (when-let* ((get-lang (pcase major-mode
+			      ('bibtex-mode #'bibtex-extras-get-field)
+			      ('ebib-entry-mode #'ebib-extras-get-field)))
+		  (language (funcall get-lang "langid"))
 		  (lang-short (bibtex-extras-get-two-letter-code language)))
 	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-biblatex-prompts :prompt :language lang-short)))
 	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-ai-summarize-biblatex-callback)
@@ -233,11 +240,16 @@ If STRING is nil, use the current entry."
 RESPONSE is the response from the AI model and INFO is the response info."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
-    (let ((key (bibtex-extras-get-field "=key=")))
-      (bibtex-set-field "abstract" response)
+    (let* ((key (pcase major-mode
+		  ('bibtex-mode #'bibtex-extras-get-key)
+		  ('ebib-entry-mode (lambda () (ebib-extras-get-field "=key=")))))
+	   (set-field (pcase major-mode
+			('bibtex-mode #'bibtex-set-field)
+			('ebib-entry-mode #'ebib-extras-set-field))))
+      (funcall set-field "abstract" response)
       (message "Set abstract of `%s' to %s" key response)
       (save-buffer)
-      (bibtex-next-entry)
+      ;; (bibtex-next-entry)
       ;; (tlon-babel-ai-summarize-biblatex) ; uncomment for batch-processing
       )))
 
