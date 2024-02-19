@@ -304,14 +304,14 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (tlon-babel-ai-set-language-add-langid valid-lang)))
 
 (defun tlon-babel-ai-set-language-add-langid (lang)
-  "."
+  "Set the value of `langid' to LANG."
   (let ((key (bibtex-extras-get-key)))
     (bibtex-set-field "langid" lang)
     (message "Set language of `%s' to %s" key lang)
     (tlon-babel-ai-set-language-continue)))
 
 (defun tlon-babel-ai-set-language-continue ()
-  ""
+  "Move to the next entry and call `tlon-babel-ai-set-language'."
   (bibtex-next-entry)
   ;; (tlon-babel-ai-set-language) ; uncomment for batch-processing
   )
