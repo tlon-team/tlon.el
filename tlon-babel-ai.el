@@ -289,16 +289,16 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	     (valid-langid (bibtex-extras-validate-language langid))
 	     (valid-response (bibtex-extras-validate-language response)))
 	(if (string= valid-response valid-langid)
-	    (tlon-babel-ai-set-language-when-unequal valid-langid langid)
+	    (tlon-babel-ai-set-language-when-equal valid-langid langid)
 	  (let ((langid-2 (bibtex-extras-get-two-letter-code valid-langid))
 		(response-2 (bibtex-extras-get-two-letter-code valid-response)))
 	    (if (string= langid-2 response-2)
-		(tlon-babel-ai-set-language-when-unequal valid-langid langid)
+		(tlon-babel-ai-set-language-when-equal valid-langid langid)
 	      (user-error "The detected language (%s) differs from the current language (%s)" response langid))))
       (user-error "The `langid' field of the current entry is not valid"))))
 
-(defun tlon-babel-ai-set-language-when-unequal (valid-lang lang)
-  "."
+(defun tlon-babel-ai-set-language-when-equal (valid-lang lang)
+  "Set language depending on whether VALID-LANG and LANG are equal."
   (if (string= valid-lang lang)
       (tlon-babel-ai-set-language-continue)
     (tlon-babel-ai-set-language-add-langid valid-lang)))
