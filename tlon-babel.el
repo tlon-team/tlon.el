@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.0.0
+;; Version: 1.2.0
 ;; URL: https://github.com/tlon-team/tlon-babel
 ;; Keywords: convenience tools
 
