@@ -133,15 +133,6 @@
       (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
 		 bibtex-autokey-titleword-separator))))
 
-(defun tlon-babel-refs-add-lang-id-to-bib-files ()
-  "Supply missing Spanish `landid' field to all bib files."
-  (interactive)
-  (dolist (file `(,tlon-babel-refs-file-fluid ,tlon-babel-refs-file-stable))
-    (with-current-buffer (or (find-buffer-visiting file)
-			     (find-file-noselect file))
-      (goto-char (point-min))
-      (bibtex-map-entries 'tlon-babel-refs-add-lang-id-to-entry))))
-
 ;; TODO: support arbitrary langs
 (defun tlon-babel-refs-add-lang-id-to-entry (&optional _ _ _)
   "Add `langid' field to entry at point, if appropriate.
