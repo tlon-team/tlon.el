@@ -31,6 +31,17 @@
 (require 'gptel-extras)
 (require 'tlon-babel)
 
+;;;; User options
+
+(defgroup tlon-babel-ai nil
+  "AI functionality for the Babel project."
+  :group 'tlon-babel)
+
+(defcustom tlon-babel-ai-batch nil
+  "Whether to run AI functions for batch processing."
+  :type 'boolean
+  :group 'tlon-babel-ai)
+
 ;;;; Variables
 
 (defconst tlon-babel-ai-string-wrapper
@@ -109,6 +120,12 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Callback message when `gptel' fails.
 INFO is the response info."
   (message tlon-babel-gptel-error-message (plist-get info :status)))
+
+(defun tlon-babel-ai-batch-continue (fun)
+  "Move to the next entry and call FUN'."
+  (when tlon-babel-ai-batch
+    (bibtex-next-entry)
+    (funcall fun)))
 
 ;;;;; Translation
 
@@ -249,9 +266,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
       (funcall set-field "abstract" response)
       (message "Set abstract of `%s' to %s" key response)
       (save-buffer)
-      ;; (bibtex-next-entry)
-      ;; (tlon-babel-ai-summarize-biblatex) ; uncomment for batch-processing
-      )))
+      (tlon-babel-ai-batch-continue #'tlon-babel-ai-summarize-biblatex))))
 
 ;;;;; Language detection
 
@@ -300,7 +315,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (defun tlon-babel-ai-set-language-when-equal (valid-lang lang)
   "Set language depending on whether VALID-LANG and LANG are equal."
   (if (string= valid-lang lang)
-      (tlon-babel-ai-set-language-continue)
+      (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language)
     (tlon-babel-ai-set-language-add-langid valid-lang)))
 
 (defun tlon-babel-ai-set-language-add-langid (lang)
@@ -308,13 +323,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
   (let ((key (bibtex-extras-get-key)))
     (bibtex-set-field "langid" lang)
     (message "Set language of `%s' to %s" key lang)
-    (tlon-babel-ai-set-language-continue)))
-
-(defun tlon-babel-ai-set-language-continue ()
-  "Move to the next entry and call `tlon-babel-ai-set-language'."
-  (bibtex-next-entry)
-  ;; (tlon-babel-ai-set-language) ; uncomment for batch-processing
-  )
+    (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language)))
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
