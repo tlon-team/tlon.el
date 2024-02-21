@@ -31,6 +31,11 @@
 
 ;;;; Functions
 
+(defun tlon-babel-transient-reader (prompt choices)
+  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  (let* ((input (completing-read prompt (mapcar 'symbol-name choices))))
+    (intern input)))
+
 ;;;;; Main dispatcher
 
 ;; TODO: add flag to set translation language, similar to Magit dispatch
