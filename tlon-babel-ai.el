@@ -60,6 +60,11 @@
   "`gptel' failed with message: %s"
   "Error message to display when `gptel-quick' fails.")
 
+(defconst tlon-babel-ai-detect-language-common-prompts
+  (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s" tlon-babel-ai-string-wrapper
+	  (mapconcat 'identity (mapcar 'car bibtex-extras-valid-languages) ", "))
+  "Common prompts for language detection.")
+
 (defconst tlon-babel-ai-detect-language-prompt
   (format "Please guess the language of the following text%s"
 	  tlon-babel-ai-detect-language-common-prompts)
@@ -69,11 +74,6 @@
   (format "Please guess the language of the work described in following BibTeX entry%s"
 	  tlon-babel-ai-detect-language-common-prompts)
   "Prompt for language detection.")
-
-(defconst tlon-babel-ai-detect-language-common-prompts
-  (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s" tlon-babel-ai-string-wrapper
-	  (mapconcat 'identity (mapcar 'car bibtex-extras-valid-languages) ", "))
-  "Common prompts for language detection.")
 
 (defconst tlon-babel-ai-translate-prompt
   (format "Translate the following text into Spanish:%s" tlon-babel-ai-string-wrapper)
