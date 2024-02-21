@@ -151,6 +151,25 @@ INFO is the response info."
     (message "Retrying language detection (try %d of 3)..." tlon-babel-ai-retries)
     (funcall original-fun)))
 
+(defun tlon-babel-get-string-in-file-or-buffer (&optional file)
+  "Return FILE as string, else the current region if active or the current buffer."
+  (if-let ((file (or file (ebib-extras-get-file "html") (ebib-extras-get-file "pdf"))))
+      (with-temp-buffer
+	(when (string= (file-name-extension file) "pdf")
+	  (let ((markdown (make-temp-file "pdf-to-markdown-")))
+	    (tlon-babel-convert-pdf file markdown)
+	    (setq file markdown)))
+	(insert-file-contents file)
+	(when (string= (file-name-extension file) "html")
+	  (shr-render-buffer (current-buffer)))
+	(let ((result (buffer-substring-no-properties (point-min) (point-max))))
+	  (kill-buffer)
+	  result))
+    (when (derived-mode-p 'text-mode)
+      (let ((beg (if (region-active-p) (region-beginning) (point-min)))
+	    (end (if (region-active-p) (region-end) (point-max))))
+	(buffer-substring-no-properties beg end)))))
+
 ;;;;; Translation
 
 ;;;;;; Translation variants
