@@ -153,9 +153,17 @@ INFO is the response info."
     (message "Retrying language detection (try %d of 3)..." tlon-babel-ai-retries)
     (funcall original-fun)))
 
-  "Return FILE as string, else the current region if active or the current buffer."
-  (if-let ((file (or file (ebib-extras-get-file "html") (ebib-extras-get-file "pdf"))))
 (defun tlon-babel-get-string-dwim (&optional file)
+  "Return FILE, region or buffer as string, depending on major mode.
+If FILE is non-nil, return it as a string. Otherwise,
+
+- If in `bibtex-mode' or in `ebib-entry-mode', return the contents of the HTML
+  or PDF file associated with the current BibTeX entry, if either is found.
+
+- If in `text-mode', return the contents of the current region, if active;
+  otherwise, return the contents of the current buffer."
+  (if-let ((file (or file (when (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
+			    (ebib-extras-get-file "html") (ebib-extras-get-file "pdf")))))
       (with-temp-buffer
 	(when (string= (file-name-extension file) "pdf")
 	  (let ((markdown (make-temp-file "pdf-to-markdown-")))
@@ -248,10 +256,17 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (tlon-babel-ai-summarize-dwim)))
 
 ;;;###autoload
-  "Summarize FILE and copy the summary to the kill ring using AI MODEL.
-If FILE is nil, summarize the region if active, else the current buffer. If
-MODEL is nil, get it from `tlonl-babel-ai-model'."
 (defun tlon-babel-ai-summarize-dwim (&optional file model)
+  "Summarize the relevant content with AI.
+If FILE is non-nil, summarize its contents. Otherwise,
+
+- If in `bibtex-mode' or in `ebib-entry-mode', summarize the contents of the
+  HTML or PDF file associated with the current BibTeX entry, if either is found.
+
+- If in `text-mode', summarize the contents of the current region, if active;
+  otherwise, summarize the contents of the current buffer.
+
+ If MODEL is nil, get it from `tlonl-babel-ai-model'."
   (interactive)
   (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			 (unless tlon-babel-ai-batch
