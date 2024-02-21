@@ -143,11 +143,14 @@ RESPONSE is the response from the AI model and INFO is the response info."
 INFO is the response info."
   (message tlon-babel-gptel-error-message (plist-get info :status)))
 
-(defun tlon-babel-ai-batch-continue (fun)
-  "Move to the next entry and call FUN'."
-  (when tlon-babel-ai-batch
-    (bibtex-next-entry)
-    (funcall fun)))
+(defun tlon-babel-ai-batch-continue ()
+  "Move to the next entry and call `tlon-babel-ai-batch-fun''."
+  (when tlon-babel-ai-batch-fun
+    (when (y-or-n-p "Continue? ")
+      (pcase major-mode
+	('bibtex-mode (bibtex-next-entry))
+	('ebib-entry-mode (ebib-extras-next-entry)))
+      (funcall tlon-babel-ai-batch-fun))))
 
 (defun tlon-babel-ai-try-try-try-again (original-fun)
   "Call ORIGINAL-FUN up to three times if it its response is nil, then give up."
@@ -297,7 +300,7 @@ If FILE is non-nil, summarize its contents. Otherwise,
 	 (with-current-buffer original-buffer
 	   (tlon-babel-ai-summarize-callback response info)))
        model)
-    (user-error "`tlon-babel-get-string-dwim' returned nil" )))
+    (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-ai-summarize-file-from-detected-language (response info file model)
   "If RESPONSE is non-nil, initiate a summary of FILE with MODEL.
@@ -326,10 +329,11 @@ If RESPONSE is nil, return INFO."
       ('markdown-mode) ; set `description' YAML field to it
       (_ (kill-new response)
 	 (message "Copied AI-generated summary to the kill ring:\n\n%s" response))))
-  (tlon-babel-ai-batch-continue #'tlon-babel-ai-summarize-bibtex-entry))
+  (tlon-babel-ai-batch-continue))
 
 ;;;;;; BibTeX
 
+;;;###autoload
 (defun tlon-babel-ai-summarize-bibtex-entry (&optional string)
   "Summarize the work described in the BibTeX STRING using AI.
 If STRING is nil, use the current entry."
@@ -435,7 +439,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (defun tlon-babel-ai-set-language-bibtex-when-equal (valid-lang lang)
   "Set language depending on whether VALID-LANG and LANG are equal."
   (if (string= valid-lang lang)
-      (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language-bibtex)
+      (tlon-babel-ai-batch-continue)
     (tlon-babel-ai-set-language-bibtex-add-langid valid-lang)))
 
 (defun tlon-babel-ai-set-language-bibtex-when-conflict (current detected)
@@ -453,7 +457,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
   (let ((key (bibtex-extras-get-key)))
     (bibtex-set-field "langid" lang)
     (message "Set language of `%s' to %s" key lang)
-    (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language-bibtex)))
+    (tlon-babel-ai-batch-continue)))
 
 ;;;;; Menu
 
