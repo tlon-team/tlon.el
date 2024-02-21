@@ -32,6 +32,19 @@
 (require 'bibtex-extras)
 (require 'paths)
 
+;;;; User options
+
+(defgroup tlon-babel-tex ()
+  "BibTeX related functionality."
+  :group 'tlon-babel)
+
+(defcustom tlon-babel-abstract-overwrite 'prompt
+  "Whether to overwrite the abstract if already present."
+  :type '(choice
+	  (const :tag "Always overwrite" always)
+	  (const :tag "Never overwrite" never)
+	  (const :tag "Prompt" prompt)))
+
 ;;;; Variables
 
 ;; TODO: remove `refs' from var names. make sure nothing breaks in config files
@@ -161,7 +174,7 @@ The validation is case-insensitive, but the returned language is in lowercase."
 
 ;;;;; fetch
 
-(defun tlon-babel-fetch-and-set-abstract (&optional overwrite)
+(defun tlon-babel-fetch-and-set-abstract ()
   "Fetch the abstract of the entry at point and set it as the new value.
 We use CrossRef for DOIs, Google Books for ISBN and Zotero for URLs.
 
@@ -176,9 +189,9 @@ abstract will, or will not, replace the existing one, respectively."
 	(_ (error "Not in `ebib-entry-mode' or `bibtex-mode'")))
     (let ((abstract (funcall get-field  "abstract")))
       (when (or
-	     (eq overwrite 'always)
+	     (eq tlon-babel-abstract-overwrite 'always)
 	     (not abstract)
-	     (unless (eq overwrite 'never)
+	     (unless (eq tlon-babel-abstract-overwrite 'never)
 	       (y-or-n-p "Abstract already exists. Overwrite?")))
 	(if-let ((value (or
 			 (when-let ((doi (funcall get-field "doi")))
