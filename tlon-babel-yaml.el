@@ -31,7 +31,6 @@
 (require 'files-extras)
 (require 'tlon-core)
 (require 'tlon-babel-core)
-(require 'tlon-babel-refs)
 
 ;;;; Variables
 
