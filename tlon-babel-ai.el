@@ -28,7 +28,7 @@
 ;;; Code:
 
 (require 'gptel)
-(require 'gptel-extras)
+;; (require 'gptel-extras)
 (require 'tlon-babel)
 
 ;;;; User options
