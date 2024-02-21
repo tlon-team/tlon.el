@@ -153,9 +153,9 @@ INFO is the response info."
     (message "Retrying language detection (try %d of 3)..." tlon-babel-ai-retries)
     (funcall original-fun)))
 
-(defun tlon-babel-get-string-in-file-or-buffer (&optional file)
   "Return FILE as string, else the current region if active or the current buffer."
   (if-let ((file (or file (ebib-extras-get-file "html") (ebib-extras-get-file "pdf"))))
+(defun tlon-babel-get-string-dwim (&optional file)
       (with-temp-buffer
 	(when (string= (file-name-extension file) "pdf")
 	  (let ((markdown (make-temp-file "pdf-to-markdown-")))
@@ -264,7 +264,7 @@ MODEL is nil, get it from `tlonl-babel-ai-model'."
 
 (defun tlon-babel-ai-summarize-file-do (file language model)
   "Actually summarize FILE in LANGUAGE with MODEL."
-  (if-let ((string (tlon-babel-get-string-in-file-or-buffer file))
+  (if-let ((string (tlon-babel-get-string-dwim file))
 	   (lang-2 (tlon-babel-get-two-letter-code language))
 	   (original-buffer (current-buffer)))
       (tlon-babel-ai-summarize-common
@@ -274,7 +274,7 @@ MODEL is nil, get it from `tlonl-babel-ai-model'."
 	 (with-current-buffer original-buffer
 	   (tlon-babel-ai-summarize-callback response info)))
        model)
-    (user-error "`tlon-babel-get-string-in-file-or-buffer' returned nil" )))
+    (user-error "`tlon-babel-get-string-dwim' returned nil" )))
 
 (defun tlon-babel-ai-summarize-file-from-detected-language (response info file model)
   "If RESPONSE is non-nil, initiate a summary of FILE with MODEL.
@@ -355,7 +355,7 @@ the major mode."
 (defun tlon-babel-ai-detect-language-in-file (&optional file callback)
   "Detect the language in FILE and call CALLBACK.
 If FILE is nil, detect the language in the current buffer."
-  (let ((string (tlon-babel-get-string-in-file-or-buffer file)))
+  (let ((string (tlon-babel-get-string-dwim file)))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-prompt string callback)))
 
 (defun tlon-babel-ai-select-language ()
