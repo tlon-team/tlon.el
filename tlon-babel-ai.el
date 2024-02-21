@@ -49,6 +49,9 @@
 
 ;;;; Variables
 
+(defvar tlon-babel-ai-retries 0
+  "Number of retries for AI requests.")
+
 (defconst tlon-babel-ai-string-wrapper
   ":\n\n```\n%s\n```\n\n"
   "Wrapper for strings to be passed in prompts.")
