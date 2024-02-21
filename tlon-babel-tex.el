@@ -30,6 +30,7 @@
 (require 'bib)
 (require 'doi-utils)
 (require 'bibtex-extras)
+(require 'paths)
 
 ;;;; Variables
 
