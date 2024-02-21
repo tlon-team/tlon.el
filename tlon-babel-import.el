@@ -151,6 +151,7 @@ for one."
       (tlon-babel-autofix-all))
     (find-file target)))
 
+;; TODO: cleanup two functions below
 (defun tlon-babel-import-pdf (path &optional title)
   "Import the PDF in PATH to TARGET and convert it to Markdown.
 This command requires the user to supply values for the header and footer
