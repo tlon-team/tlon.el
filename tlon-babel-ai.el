@@ -463,24 +463,43 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Menu
 
-;; TODO: learn how to make an infix toggle
+(defun tlon-babel-ai-batch-fun-reader (prompt _ _)
+  "Return a list of choices with PROMPT to be used as an `infix' reader function."
+  (tlon-babel-transient-reader prompt '(tlon-babel-ai-fetch-or-create-summary
+					tlon-babel-ai-set-language-bibtex
+					nil)))
+
 (transient-define-infix tlon-babel-ai-batch-infix ()
-  "Change the local value of the `forge.remote' Git variable."
+  "Change the local value of the `'tlon-babel-ai-batch-fun' variable."
   :class 'transient-lisp-variable
-  :variable 'tlon-babel-ai-batch
-  :choices '(t nil))
+  :reader 'tlon-babel-ai-batch-fun-reader
+  :transient t
+  :prompt "Function for batch-processing: "
+  :variable 'tlon-babel-ai-batch-fun)
+
+(defun tlon-babel-abstract-overwrite-reader (prompt _ _)
+  "Return a list of choices with PROMPT to be used as an `infix' reader function."
+  (tlon-babel-transient-reader prompt '(always prompt never)))
+
+(transient-define-infix tlon-babel-fetch-and-set-abstract-infix ()
+  "Change the local value of the `tlon-babel-abstract-overwrite' variable."
+  :class 'transient-lisp-variable
+  :reader 'tlon-babel-abstract-overwrite-reader
+  :transient t
+  :prompt "Overwrite when the entry already contains an abstract? "
+  :variable 'tlon-babel-abstract-overwrite)
 
 (transient-define-prefix tlon-babel-ai-menu ()
   "Menu for `tlon-babel-ai'."
-  [
-   [("t" "translate" tlon-babel-ai-translate)]
-   [("r" "rewrite" tlon-babel-ai-rewrite)]
-   [("s s" "fetch or make summary" tlon-babel-ai-fetch-or-create-summary)
-    ("s f" "summarize file" tlon-babel-ai-summarize-dwim)
-    ("s b" "summarize bibtex" tlon-babel-ai-summarize-bibtex-entry)]
-   [("g g" "set language bibtex" tlon-babel-ai-set-language-bibtex)]
+  [[("t" "translate"                   tlon-babel-ai-translate)]
+   [("r" "rewrite"                     tlon-babel-ai-rewrite)]
+   [("s s" "fetch or create summary"   tlon-babel-ai-fetch-or-create-summary)
+    ("s f" "summarize file"            tlon-babel-ai-summarize-dwim)
+    ("s b" "summarize bibtex"          tlon-babel-ai-summarize-bibtex-entry)]
+   [("g g" "set language bibtex"       tlon-babel-ai-set-language-bibtex)]
    ["options"
-    ("-b" "batch"  tlon-babel-ai-batch-infix)]])
+    ("-b" "batch"                      tlon-babel-ai-batch-infix)
+    ("-o" "overwrite"                  tlon-babel-fetch-and-set-abstract-infix)]])
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
