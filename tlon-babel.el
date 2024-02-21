@@ -665,7 +665,7 @@ If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
   "Check that selected BibTeX KEY is associated with the original work."
   (save-window-excursion
     (ebib-extras-open-key key)
-    (let ((langid (ebib-extras-get-field-value "langid")))
+    (let ((langid (ebib-extras-get-field "langid")))
       (unless (member langid '("english" "american"))
 	(unless (y-or-n-p "The BibTeX entry you selected is not in English. In the `section-correspondences.json' file, you should use the BibTeX entry associated with the original work rather than with its translation. Are you sure you want to proceed?")
 	  (user-error "Aborted"))))))

@@ -154,10 +154,10 @@ IDENTIFIER can be a URL or a PDF file path."
   (interactive)
   (unless (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
     (user-error "This command must be run from an Ebib buffer"))
-  (if-let ((id (or (ebib-extras-get-field-value "url")
+  (if-let ((id (or (ebib-extras-get-field "url")
 		   (ebib-extras-get-file "md")))
-	   (title (ebib-extras-get-field-value "title"))
-	   (key (ebib-extras-get-field-value "=key="))
+	   (title (ebib-extras-get-field "title"))
+	   (key (ebib-extras-get-field "=key="))
 	   (repo (completing-read "Repo: " (tlon-babel-repo-lookup-all :dir :subtype 'translations))))
       (progn
 	(tlon-babel-import-document id title)
