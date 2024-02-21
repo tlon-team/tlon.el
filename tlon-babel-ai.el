@@ -376,8 +376,8 @@ the major mode."
     ('ebib-entry-mode (ebib-extras-get-field "langid"))
     ('bibtex-mode (tlon-babel-get-field "langid"))
     ('markdown-mode
-     (let ((file (or file (buffer-file-name)))
-	   (repo (tlon-babel-get-repo-from-file file)))
+     (let* ((file (or file (buffer-file-name)))
+	    (repo (tlon-babel-get-repo-from-file file)))
        (tlon-babel-repo-lookup :language :dir repo)))))
 
 (defun tlon-babel-ai-detect-language-in-file (&optional file callback)
