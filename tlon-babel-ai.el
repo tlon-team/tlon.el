@@ -249,7 +249,12 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;; Summarization
 
 (defun tlon-babel-ai-fetch-or-create-summary ()
-  "Try to fetch a summary; if unsuccessful, create one."
+  "Try to fetch a summary; if unsuccessful, create one.
+To fetch a summary, the function uses `tlon-babel-fetch-and-set-abstract'. See
+its docstring for details.
+
+To create a summary, the function uses `tlon-babel-ai-summarize-dwim'. See its
+docstring for details."
   (interactive)
   (unless (tlon-babel-fetch-and-set-abstract)
     (message "Could not fetch summary; creating one...")
