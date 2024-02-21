@@ -396,7 +396,7 @@ If FILE is nil, detect the language in the current buffer."
   "Detect language in STRING.
 If STRING is nil, use the current BibTeX entry."
   (let ((string (or string (pcase major-mode
-			     ('ebib-entry-mode ebib-extras-get-or-open-entry)
+			     ('ebib-entry-mode (ebib-extras-get-or-open-entry))
 			     ('bibtex-mode (tlon-babel-get-entry-as-string))
 			     (_ (user-error "I can’t detect language in %s" major-mode))))))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string)))
