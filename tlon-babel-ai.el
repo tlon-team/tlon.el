@@ -42,6 +42,11 @@
   :type 'boolean
   :group 'tlon-babel-ai)
 
+(defcustom tlonl-babel-ai-model "gemini-pro"
+  "AI model to use."
+  :type 'string
+  :group 'tlon-babel-ai)
+
 ;;;; Variables
 
 (defconst tlon-babel-ai-string-wrapper
