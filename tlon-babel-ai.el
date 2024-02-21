@@ -489,6 +489,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
   :prompt "Overwrite when the entry already contains an abstract? "
   :variable 'tlon-babel-abstract-overwrite)
 
+;;;###autoload (autoload 'tlon-babel-ai-menu "'tlon-babel-ai" nil t)
 (transient-define-prefix tlon-babel-ai-menu ()
   "Menu for `tlon-babel-ai'."
   [[("t" "translate"                   tlon-babel-ai-translate)]
