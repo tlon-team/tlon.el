@@ -240,135 +240,198 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Summarization
 
-(defun tlon-babel-ai-summarize-common (prompts string language callback)
-  "Common function for summarization.
-PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is the
-language of the string, and CALLBACK is the callback function."
-  (let ((prompt (tlon-babel-lookup prompts :prompt :language language)))
-    (message "Generating output. This may take 5–30 seconds, depending on length...")
-    (tlon-babel-make-gptel-request prompt string callback)))
+(defun tlon-babel-ai-fetch-or-create-summary ()
+  "Try to fetch a summary; if unsuccessful, create one."
+  (interactive)
+  (unless (tlon-babel-fetch-and-set-abstract)
+    (message "Could not fetch summary; creating one...")
+    (tlon-babel-ai-summarize-file)))
 
 ;;;###autoload
-(defun tlon-babel-ai-summarize (model)
-  "Summarize and copy the summary to the kill ring using AI MODEL.
-If region is active, summarize the region; otherwise, prompt for a file to
-summarize."
-  (interactive (list (completing-read "Model: " gptel-extras-backends)))
-  (gptel-extras-model-config model)
-  (let* ((current-file (buffer-file-name))
-	 (string
-	  (if (region-active-p)
-	      (buffer-substring-no-properties (region-beginning) (region-end))
-	    (let* ((selected-file (read-file-name "Select file to summarize (if you would like to summarize a region, run this command with an active region): " nil current-file nil (file-name-nondirectory current-file))))
-	      (with-temp-buffer
-		(insert-file-contents selected-file)
-		(buffer-string)))))
-	 (repo (tlon-babel-get-repo-from-file current-file))
-	 (language (tlon-babel-repo-lookup :language :dir repo)))
-    (tlon-babel-ai-summarize-common tlon-babel-ai-summarize-prompts string language
-				    #'tlon-babel-ai-summarize-callback)))
+(defun tlon-babel-ai-summarize-file (&optional file model)
+  "Summarize FILE and copy the summary to the kill ring using AI MODEL.
+If FILE is nil, summarize the region if active, else the current buffer. If
+MODEL is nil, get it from `tlonl-babel-ai-model'."
+  (interactive)
+  (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
+			 (unless tlon-babel-ai-batch
+			   (tlon-babel-ai-select-language)))))
+      (tlon-babel-ai-summarize-file-do file language model)
+    (tlon-babel-ai-detect-language-in-file
+     file
+     (lambda (response info)
+       (tlon-babel-ai-summarize-file-from-detected-language response info file model)))))
 
-(defun tlon-babel-ai-summarize-callback (response info)
-  "Callback for `tlon-babel-ai-summarize'.
-RESPONSE is the response from the AI model and INFO is the response info."
+(defun tlon-babel-ai-summarize-file-do (file language model)
+  "Actually summarize FILE in LANGUAGE with MODEL."
+  (if-let ((string (tlon-babel-get-string-in-file-or-buffer file))
+	   (lang-2 (tlon-babel-get-two-letter-code language))
+	   (original-buffer (current-buffer)))
+      (tlon-babel-ai-summarize-common
+       tlon-babel-ai-summarize-prompts string lang-2
+       (lambda (response info)
+	 ;; we restore the original buffer to avoid a change in `major-mode'
+	 (with-current-buffer original-buffer
+	   (tlon-babel-ai-summarize-callback response info)))
+       model)
+    (user-error "`tlon-babel-get-string-in-file-or-buffer' returned nil" )))
+
+(defun tlon-babel-ai-summarize-file-from-detected-language (response info file model)
+  "If RESPONSE is non-nil, initiate a summary of FILE with MODEL.
+Otherwise return INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
-    (kill-new response)
-    (message "Copied AI-generated summary to the kill ring:\n\n%s" response)))
+    (tlon-babel-ai-summarize-file-do file response model)))
 
-;;;;;; BibLaTeX summarization
+(defun tlon-babel-ai-summarize-common (prompts string language callback model)
+  "Common function for summarization.
+PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
+the language of the string, and CALLBACK is the callback function. MODEL is the
+language model."
+  (let ((prompt (tlon-babel-lookup prompts :prompt :language language)))
+    (message "Generating output. This may take 5–30 seconds, depending on length...")
+    (tlon-babel-make-gptel-request prompt string callback model)))
 
-(defun tlon-babel-ai-summarize-biblatex (&optional string)
-  "Summarize the work described in the BibLaTeX STRING using AI.
+(defun tlon-babel-ai-summarize-callback (response info)
+  "If RESPONSE is non-nil, take appropriate action based on major mode.
+If RESPONSE is nil, return INFO."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (pcase major-mode
+      ((or 'bibtex-mode 'ebib-entry-mode)
+       (tlon-babel-ai-summarize-set-bibtex-abstract response))
+      ('markdown-mode) ; set `description' YAML field to it
+      (_ (kill-new response)
+	 (message "Copied AI-generated summary to the kill ring:\n\n%s" response))))
+  (tlon-babel-ai-batch-continue #'tlon-babel-ai-summarize-bibtex-entry))
+
+;;;;;; BibTeX
+
+(defun tlon-babel-ai-summarize-bibtex-entry (&optional string)
+  "Summarize the work described in the BibTeX STRING using AI.
 If STRING is nil, use the current entry."
   (interactive)
   (let* ((get-string (pcase major-mode
-		       ('bibtex-mode #'bibtex-extras-get-entry-as-string)
+		       ('bibtex-mode #'tlon-babel-get-entry-as-string)
 		       ('ebib-entry-mode #'ebib-extras-get-or-open-entry)
 		       (_ (user-error "Unsupported major mode"))))
 	 (string (or string (funcall get-string))))
-    (unless (bibtex-extras-get-field-in-string string "abstract")
+    (unless (tlon-babel-get-field-in-string string "abstract")
       (when-let* ((get-lang (pcase major-mode
-			      ('bibtex-mode #'bibtex-extras-get-field)
+			      ('bibtex-mode #'tlon-babel-get-field)
 			      ('ebib-entry-mode #'ebib-extras-get-field)))
 		  (language (funcall get-lang "langid"))
-		  (lang-short (bibtex-extras-get-two-letter-code language)))
-	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-biblatex-prompts :prompt :language lang-short)))
-	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-ai-summarize-biblatex-callback)
+		  (lang-short (tlon-babel-get-two-letter-code language)))
+	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-bibtex-prompts :prompt :language lang-short)))
+	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-ai-summarize-callback)
 	  (user-error "No prompt defined in `tlon-babel-ai-summarize-prompts' for language %s" language))))))
 
-(defun tlon-babel-ai-summarize-biblatex-callback (response info)
-  "Callback for `tlon-babel-ai-summarize-biblatex'.
-RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-babel-ai-callback-fail info)
-    (let* ((key (pcase major-mode
-		  ('bibtex-mode #'bibtex-extras-get-key)
-		  ('ebib-entry-mode (lambda () (ebib-extras-get-field "=key=")))))
-	   (set-field (pcase major-mode
-			('bibtex-mode #'bibtex-set-field)
-			('ebib-entry-mode #'ebib-extras-set-field))))
-      (funcall set-field "abstract" response)
-      (message "Set abstract of `%s' to %s" key response)
-      (save-buffer)
-      (tlon-babel-ai-batch-continue #'tlon-babel-ai-summarize-biblatex))))
+(defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract)
+  "Set the `abstract' field of the current BibTeX entry to ABSTRACT."
+  (let* ((key (pcase major-mode
+		('bibtex-mode #'bibtex-extras-get-key)
+		('ebib-entry-mode (ebib-extras-get-field "=key="))))
+	 (set-field (pcase major-mode
+		      ('bibtex-mode #'bibtex-set-field)
+		      ('ebib-entry-mode #'ebib-extras-set-field))))
+    (funcall set-field "abstract" abstract)
+    (message "Set abstract of `%s' to %s" key abstract)
+    (save-buffer)))
 
 ;;;;; Language detection
 
-(defun tlon-babel-ai-detect-language (&optional string)
-  "If the language of BibLaTeX STRING is missing, detect it.
-If STRING is nil, use the current entry."
-  (let ((string (or string (bibtex-extras-get-entry-as-string))))
-    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-prompt string)))
+(defun tlon-babel-ai-get-language-in-file (&optional file)
+  "Return the language in FILE, based on the major mode.
+If FILE is nil, get the language in the current buffer or entry, depending on
+the major mode."
+  (pcase major-mode
+    ('ebib-entry-mode (ebib-extras-get-field "langid"))
+    ('bibtex-mode (tlon-babel-get-field "langid"))
+    ('markdown-mode
+     (let ((file (or file (buffer-file-name)))
+	   (repo (tlon-babel-get-repo-from-file file)))
+       (tlon-babel-repo-lookup :language :dir repo)))))
 
-(defun tlon-babel-ai-set-language (&optional string)
-  "Set the language of the BibLaTeX entry at point to LANGUAGE.
-If STRING is nil, use the current entry."
-  (interactive)
-  (let* ((string (or string (bibtex-extras-get-entry-as-string)))
-	 (callback (if (bibtex-extras-get-field-in-string string "langid")
-		       #'tlon-babel-ai-set-language-when-present-callback
-		     #'tlon-babel-ai-set-language-when-absent-callback)))
+(defun tlon-babel-ai-detect-language-in-file (&optional file callback)
+  "Detect the language in FILE and call CALLBACK.
+If FILE is nil, detect the language in the current buffer."
+  (let ((string (tlon-babel-get-string-in-file-or-buffer file)))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-prompt string callback)))
 
-(defun tlon-babel-ai-set-language-when-absent-callback (response info)
-  "Callback for `tlon-babel-ai-set-language' when `langid' field is absent.
-RESPONSE is the response from the AI model and INFO is the response info."
-  (if (not response)
-      (tlon-babel-ai-callback-fail info)
-    (when-let ((language (bibtex-extras-validate-language response)))
-      (tlon-babel-ai-set-language-add-langid language))))
+(defun tlon-babel-ai-select-language ()
+  "Prompt the user to select a LANGUAGE and return it."
+  (completing-read "Language: " bibtex-extras-valid-languages))
 
-(defun tlon-babel-ai-set-language-when-present-callback (response info)
-  "Callback for `tlon-babel-ai-set-language' when `langid' field is present.
+;;;;;; BibTeX
+
+(defun tlon-babel-ai-detect-language-in-bibtex (&optional string)
+  "Detect language in STRING.
+If STRING is nil, use the current BibTeX entry."
+  (let ((string (or string (pcase major-mode
+			     ('ebib-entry-mode ebib-extras-get-or-open-entry)
+			     ('bibtex-mode (tlon-babel-get-entry-as-string))
+			     (_ (user-error "I can’t detect language in %s" major-mode))))))
+    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string)))
+
+(defun tlon-babel-ai-set-language-bibtex ()
+  "Set the language of the BibTeX entry at point to LANGUAGE.
+If STRING is nil, use the current entry."
+  (interactive)
+  (let* ((string (tlon-babel-get-entry-as-string))
+	 (callback (if (tlon-babel-get-field-in-string string "langid")
+		       #'tlon-babel-ai-set-language-bibtex-when-present-callback
+		     #'tlon-babel-ai-set-language-bibtex-when-absent-callback)))
+    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string callback)))
+
+(defun tlon-babel-ai-set-language-bibtex-when-present-callback (response info)
+  "Callback for `tlon-babel-ai-set-language-bibtex' when `langid' field is present.
 RESPONSE is the response from the AI model and INFO is the response info."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     (bibtex-beginning-of-entry)
-    (if-let ((langid (bibtex-extras-get-field "langid"))
-	     (valid-langid (bibtex-extras-validate-language langid))
-	     (valid-response (bibtex-extras-validate-language response)))
-	(if (string= valid-response valid-langid)
-	    (tlon-babel-ai-set-language-when-equal valid-langid langid)
-	  (let ((langid-2 (bibtex-extras-get-two-letter-code valid-langid))
-		(response-2 (bibtex-extras-get-two-letter-code valid-response)))
+    (if-let ((langid (tlon-babel-get-field "langid"))
+	     (valid-langid (tlon-babel-validate-language langid))
+	     (valid-response (tlon-babel-validate-language response)))
+	(if (string= valid-langid valid-response)
+	    (tlon-babel-ai-set-language-bibtex-when-equal valid-langid langid)
+	  (let ((langid-2 (tlon-babel-get-two-letter-code valid-langid))
+		(response-2 (tlon-babel-get-two-letter-code valid-response)))
 	    (if (string= langid-2 response-2)
-		(tlon-babel-ai-set-language-when-equal valid-langid langid)
-	      (user-error "The detected language (%s) differs from the current language (%s)" response langid))))
+		(tlon-babel-ai-set-language-bibtex-when-equal valid-langid langid)
+	      (tlon-babel-ai-set-language-bibtex-when-conflict langid response))))
       (user-error "The `langid' field of the current entry is not valid"))))
 
-(defun tlon-babel-ai-set-language-when-equal (valid-lang lang)
+(defun tlon-babel-ai-set-language-bibtex-when-absent-callback (response info)
+  "Callback for `tlon-babel-ai-set-language-bibtex' when `langid' field is absent.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (when-let ((language (tlon-babel-validate-language response)))
+      (tlon-babel-ai-set-language-bibtex-add-langid language))))
+
+(defun tlon-babel-ai-set-language-bibtex-when-equal (valid-lang lang)
   "Set language depending on whether VALID-LANG and LANG are equal."
   (if (string= valid-lang lang)
-      (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language)
-    (tlon-babel-ai-set-language-add-langid valid-lang)))
+      (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language-bibtex)
+    (tlon-babel-ai-set-language-bibtex-add-langid valid-lang)))
 
-(defun tlon-babel-ai-set-language-add-langid (lang)
+(defun tlon-babel-ai-set-language-bibtex-when-conflict (current detected)
+  "Prompt the user to resolve a conflict between the CURRENT and the DETECTED languages."
+  (let ((selection
+	 (completing-read
+	  (format
+	   "The detected language (%s) differs from `langid' language (%s). Which one should we use? "
+	   detected current)
+	  (list current detected) nil t)))
+    (tlon-babel-ai-set-language-bibtex-add-langid selection)))
+
+(defun tlon-babel-ai-set-language-bibtex-add-langid (lang)
   "Set the value of `langid' to LANG."
   (let ((key (bibtex-extras-get-key)))
     (bibtex-set-field "langid" lang)
     (message "Set language of `%s' to %s" key lang)
-    (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language)))
+    (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language-bibtex)))
+
 ;;;;; Menu
 
 ;; TODO: learn how to make an infix toggle
