@@ -30,6 +30,7 @@
 (require 'forge)
 (require 'org)
 (require 'tlon-babel)
+(require 'tlon-babel-dispatch)
 
 ;;;; User options
 
