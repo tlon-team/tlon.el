@@ -40,9 +40,9 @@
   "AI functionality for the Babel project."
   :group 'tlon-babel)
 
-(defcustom tlon-babel-ai-batch nil
-  "Whether to run AI functions for batch processing."
-  :type 'boolean
+(defcustom tlon-babel-ai-batch-fun nil
+  "Function to run in batch processing."
+  :type 'symbol
   :group 'tlon-babel-ai)
 
 (defcustom tlonl-babel-ai-model "gemini-pro"
@@ -277,7 +277,7 @@ If FILE is non-nil, summarize its contents. Otherwise,
  If MODEL is nil, get it from `tlonl-babel-ai-model'."
   (interactive)
   (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
-			 (unless tlon-babel-ai-batch
+			 (unless tlon-babel-ai-batch-fun
 			   (tlon-babel-ai-select-language)))))
       (tlon-babel-ai-summarize-file-do file language model)
     (tlon-babel-ai-detect-language-in-file
