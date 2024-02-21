@@ -324,6 +324,26 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (bibtex-set-field "langid" lang)
     (message "Set language of `%s' to %s" key lang)
     (tlon-babel-ai-batch-continue #'tlon-babel-ai-set-language)))
+;;;;; Menu
+
+;; TODO: learn how to make an infix toggle
+(transient-define-infix tlon-babel-ai-batch-infix ()
+  "Change the local value of the `forge.remote' Git variable."
+  :class 'transient-lisp-variable
+  :variable 'tlon-babel-ai-batch
+  :choices '(t nil))
+
+(transient-define-prefix tlon-babel-ai-menu ()
+  "Menu for `tlon-babel-ai'."
+  [
+   [("t" "translate" tlon-babel-ai-translate)]
+   [("r" "rewrite" tlon-babel-ai-rewrite)]
+   [("s s" "fetch or make summary" tlon-babel-ai-fetch-or-create-summary)
+    ("s f" "summarize file" tlon-babel-ai-summarize-file)
+    ("s b" "summarize bibtex" tlon-babel-ai-summarize-bibtex-entry)]
+   [("g g" "set language bibtex" tlon-babel-ai-set-language-bibtex)]
+   ["options"
+    ("-b" "batch"  tlon-babel-ai-batch-infix)]])
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
