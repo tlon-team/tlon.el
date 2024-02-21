@@ -245,13 +245,13 @@ RESPONSE is the response from the AI model and INFO is the response info."
   (interactive)
   (unless (tlon-babel-fetch-and-set-abstract)
     (message "Could not fetch summary; creating one...")
-    (tlon-babel-ai-summarize-file)))
+    (tlon-babel-ai-summarize-dwim)))
 
 ;;;###autoload
-(defun tlon-babel-ai-summarize-file (&optional file model)
   "Summarize FILE and copy the summary to the kill ring using AI MODEL.
 If FILE is nil, summarize the region if active, else the current buffer. If
 MODEL is nil, get it from `tlonl-babel-ai-model'."
+(defun tlon-babel-ai-summarize-dwim (&optional file model)
   (interactive)
   (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			 (unless tlon-babel-ai-batch
@@ -447,7 +447,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
    [("t" "translate" tlon-babel-ai-translate)]
    [("r" "rewrite" tlon-babel-ai-rewrite)]
    [("s s" "fetch or make summary" tlon-babel-ai-fetch-or-create-summary)
-    ("s f" "summarize file" tlon-babel-ai-summarize-file)
+    ("s f" "summarize file" tlon-babel-ai-summarize-dwim)
     ("s b" "summarize bibtex" tlon-babel-ai-summarize-bibtex-entry)]
    [("g g" "set language bibtex" tlon-babel-ai-set-language-bibtex)]
    ["options"
