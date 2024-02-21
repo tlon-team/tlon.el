@@ -42,6 +42,7 @@
     ("r" "dwim"                           tlon-babel-jobs-dwim)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
     ("H-m" "Meet"                         tlon-babel-meet-menu)
+    ("g" "AI"                             tlon-babel-ai-menu)
     ("y" "Forg"                           tlon-babel-forg-menu)
     ("." "Notifications"                  forge-list-notifications)
     """Request"
@@ -72,11 +73,7 @@
     ("h e" "ediff with last user change"  tlon-babel-log-buffer-latest-user-commit-ediff)
     """Counterpart"
     ("f" "current win"                    tlon-babel-open-counterpart-dwim)
-    ("H-f" "other win"                    tlon-babel-open-counterpart-in-other-window-dwim)
-    """AI"
-    ("g r" "rewrite"                      tlon-babel-ai-rewrite)
-    ("g s" "summarize"                    tlon-babel-ai-summarize)
-    ("g t" "translate"                    tlon-babel-ai-translate)]
+    ("H-f" "other win"                    tlon-babel-open-counterpart-in-other-window-dwim)]
    ["""Clock"
     ("c c" "issue"                        tlon-babel-open-clock-issue)
     ("c f" "file"                         tlon-babel-open-clock-file )
