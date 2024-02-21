@@ -144,6 +144,13 @@ INFO is the response info."
     (bibtex-next-entry)
     (funcall fun)))
 
+(defun tlon-babel-ai-try-try-try-again (original-fun)
+  "Call ORIGINAL-FUN up to three times if it its response is nil, then give up."
+  (while (< tlon-babel-ai-retries 3)
+    (setq tlon-babel-ai-retries (1+ tlon-babel-ai-retries))
+    (message "Retrying language detection (try %d of 3)..." tlon-babel-ai-retries)
+    (funcall original-fun)))
+
 ;;;;; Translation
 
 ;;;;;; Translation variants
