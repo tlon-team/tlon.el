@@ -75,7 +75,7 @@
   "Path to `pdf2md-cli.js' executable.")
 
 (defvar tlon-babel-pdftotext
-  (file-name-concat paths-dir-external-repos "xpdf-tools-mac-4.04/bin64/pdftotext")
+  "pdftotext"
   "Path to `pdftotext' executable.")
 
 ;;;; Functions
