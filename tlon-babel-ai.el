@@ -445,7 +445,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (tlon-babel-ai-set-language-bibtex-add-langid valid-lang)))
 
 (defun tlon-babel-ai-set-language-bibtex-when-conflict (current detected)
-  "Prompt the user to resolve a conflict between the CURRENT and the DETECTED languages."
+  "Prompt the user to resolve a conflict between CURRENT and DETECTED languages."
   (let ((selection
 	 (completing-read
 	  (format
