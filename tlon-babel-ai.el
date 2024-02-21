@@ -254,6 +254,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Summarization
 
+;;;###autoload
 (defun tlon-babel-ai-fetch-or-create-summary ()
   "Try to fetch a summary; if unsuccessful, create one.
 To fetch a summary, the function uses `tlon-babel-fetch-and-set-abstract'. See
@@ -400,6 +401,7 @@ If STRING is nil, use the current BibTeX entry."
 			     (_ (user-error "I can’t detect language in %s" major-mode))))))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string)))
 
+;;;###autoload
 (defun tlon-babel-ai-set-language-bibtex ()
   "Set the language of the BibTeX entry at point to LANGUAGE.
 If STRING is nil, use the current entry."
