@@ -120,10 +120,12 @@
 
 ;;;;; General
 
-(defun tlon-babel-make-gptel-request (prompt string &optional callback)
+(defun tlon-babel-make-gptel-request (prompt string &optional callback model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-If CALLBACK is nil, use `tlon-babel-ai-generic-callback'."
+MODEL is the language model. If CALLBACK is nil, use
+`tlon-babel-ai-generic-callback'."
   (let ((callback (or callback #'tlon-babel-ai-generic-callback)))
+    (gptel-extras-model-config (or model tlonl-babel-ai-model))
     (gptel-request (format prompt string) :callback callback)))
 
 (defun tlon-babel-ai-generic-callback (response info)
