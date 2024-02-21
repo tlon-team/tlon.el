@@ -173,6 +173,13 @@ If TITLE is nil, prompt the user for one."
 			   tlon-babel-pdftotext header footer path target))
     (find-file target)))
 
+(defun tlon-babel-convert-pdf (source destination)
+  "Convert PDF in SOURCE to Markdown in DESTINATION."
+  (shell-command (format "%s '%s' '%s'"
+			 tlon-babel-pdftotext
+			 (expand-file-name source)
+			 (expand-file-name destination))))
+
 ;;;;; EAF API
 
 (defun tlon-babel-import-eaf-article-query (id)
