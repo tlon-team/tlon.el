@@ -302,6 +302,7 @@ and sets the value of the field for all entries to `Tlön'."
   (let ((after-save-hook nil))
     (tlon-babel-add-lang-id-to-entry)
     (tlon-babel-remove-empty-spaces)
+    (bibtex-extras-escape-dollar-signs)
     (bibtex-clean-entry)
     (save-buffer)))
 
