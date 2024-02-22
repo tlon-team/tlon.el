@@ -206,12 +206,10 @@ abstract will, or will not, replace the existing one, respectively."
   (tlon-babel-ai-batch-continue))
 
 (defun tlon-babel-fetch-field-with-zotra (field &optional id-or-url)
-"Fetch the value of FIELD from the ID-OR-URL of the entry at point.
+  "Fetch the value of FIELD from the ID-OR-URL of the entry at point.
 IF ID-OR-URL is nil, try to get it or fetch it."
-(unless (derived-mode-p 'ebib-entry-mode)
-  (error "Not in `ebib-entry-mode'"))
-(let* ((id-or-url (or id-or-url (ebib-extras-get-or-fetch-id-or-url))))
-  (zotra-extras-fetch-field field id-or-url)))
+  (let* ((id-or-url (or id-or-url (ebib-extras-get-or-fetch-id-or-url))))
+    (zotra-extras-fetch-field field id-or-url)))
 
 (defun tlon-babel-abstract-cleanup (string)
   "Clean up raw abstract consisting of STRING."
