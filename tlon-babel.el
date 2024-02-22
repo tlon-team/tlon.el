@@ -473,6 +473,8 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
 
 ;;;;; Search
 
+;; Ideally this should be repalced with `consult-gh-search-issues', but the REPO
+;; parameter does not restrict the search to that repo.
 (defun tlon-babel-search-issues (search-string &optional repo)
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
