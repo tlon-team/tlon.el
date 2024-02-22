@@ -520,6 +520,17 @@ RESPONSE is the response from the AI model and INFO is the response info."
   :prompt "Overwrite when the entry already contains an abstract? "
   :variable 'tlon-babel-abstract-overwrite)
 
+(defun tlon-babel-ai-model-reader (prompt _ _)
+  "Return a list of choices with PROMPT to be used as an `infix' reader function."
+  (tlon-babel-transient-read-string-choice prompt gptel-extras-backends))
+
+(transient-define-infix tlon-babel-ai-model-infix ()
+  "Change the local value of the `tlon-babel-ai-model' variable."
+  :class 'transient-lisp-variable
+  :reader 'tlon-babel-ai-model-reader
+  :prompt "AI model: "
+  :variable 'tlon-babel-ai-model)
+
 ;;;###autoload (autoload 'tlon-babel-ai-menu "tlon-babel-ai" nil t)
 (transient-define-prefix tlon-babel-ai-menu ()
   "Menu for `tlon-babel-ai'."
@@ -537,7 +548,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
     ("g g" "set language bibtex"                tlon-babel-ai-set-language-bibtex)]
    ["options"
     ("-b" "batch"                               tlon-babel-ai-batch-fun-infix)
-    ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)]])
+    ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)
+    ("-m" "model"                               tlon-babel-ai-model-infix)]])
 
 
 (provide 'tlon-babel-ai)
