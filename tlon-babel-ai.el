@@ -45,7 +45,7 @@
   :type 'symbol
   :group 'tlon-babel-ai)
 
-(defcustom tlonl-babel-ai-model "gemini-pro"
+(defcustom tlon-babel-ai-model "gemini-pro"
   "AI model to use."
   :type 'string
   :group 'tlon-babel-ai)
@@ -140,7 +140,7 @@
 MODEL is the language model. If CALLBACK is nil, use
 `tlon-babel-ai-generic-callback'."
   (let ((callback (or callback #'tlon-babel-ai-generic-callback)))
-    (gptel-extras-model-config (or model tlonl-babel-ai-model))
+    (gptel-extras-model-config (or model tlon-babel-ai-model))
     (gptel-request (format prompt string) :callback callback)))
 
 (defun tlon-babel-ai-generic-callback (response info)
@@ -293,7 +293,7 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
 In all the above cases, the AI will first look for an existing abstract and, if
 it finds one, use it. Otherwise it will create an abstract from scratch.
 
-If MODEL is nil, get it from `tlonl-babel-ai-model'."
+If MODEL is nil, get it from `tlon-babel-ai-model'."
   (interactive)
   (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			 (unless tlon-babel-ai-batch-fun
