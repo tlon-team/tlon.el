@@ -122,12 +122,12 @@
 (defconst tlon-babel-ai-summarize-bibtex-prompts
   `((:prompt ,(format "Please fetch an abstract of the work described by the following BibTeX entry:%s. If the work has a DOI, you should get the abstract from the web page to which the DOI points. If it is an ISBN, you should get it from Worldcat, Amazon or the Library of Congress. Otherwise, try to find it from the other bibliographic information included in the entry. It is likely that there is already an abstract or summary of the work available online: use the URL, DOI or ISBN in the entry, or other fields if those are unavailable, to locate the abstract from an official or authoritative source (such as the journal in which the work was published or the Library of Congress entry). If you do find an abstract, copy it verbatim. Otherwise, please create one yourself. %s"
 		      tlon-babel-ai-string-wrapper
-		      (tlon-babel-lookup tlon-babel-ai-summarize-common-prompts :prompt :language "en"))
+		      (tlon-babel-lookup tlon-babel-ai-how-to-write-summary-prompt :prompt :language "en"))
 	     :language "en")
     ;; TODO: update translation to match English version
     (:prompt ,(format "Por favor, genera un resumen del artículo que describe la siguiente entrada de BibTeX:%s. %s"
 		      tlon-babel-ai-string-wrapper
-		      (tlon-babel-lookup tlon-babel-ai-summarize-common-prompts :prompt :language "es"))
+		      (tlon-babel-lookup tlon-babel-ai-how-to-write-summary-prompt :prompt :language "es"))
 	     :language "es"))
   "Prompts for BibTeX summarization.")
 
