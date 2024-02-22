@@ -3,6 +3,7 @@
 #+language: en
 #+options: ':t toc:nil author:t email:t num:t
 #+startup: content
+#+export_file_name: tlon-babel.texi
 #+texinfo_filename: tlon-babel.info
 #+texinfo_dir_category: Emacs misc features
 #+texinfo_dir_title: Tlon Babel: (tlon-babel)
@@ -11,12 +12,12 @@
 #+texinfo_header: @set MAINTAINER Pablo Stafforini
 #+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
 #+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
-
 #+texinfo: @insertcopying
 
 ~tlon-babel~ is a repository of Emacs functions for the Tlön ~babel~ projects.
-** Main menu
-** GitHub and org-mode synchronization
+
+* Main menu
+* GitHub and org-mode synchronization
 :PROPERTIES:
 :ID:       D64C37A8-5A5D-49D7-819A-6FE4DFA7FE2F
 :END:
@@ -32,7 +33,7 @@
 - "reconcile all" (~tlon-babel-reconcile-all-issues-and-todos~, ~H-r y R~): like the above, but iterates over all GitHub issues in the repository. Note that issues not yet captured will be ignored, so you may want to  capture all issues (~tlon-babel-capture-all-issues~) before reconciling them, if your goal is to ensure that the your ~org-mode~ TODOs are fully in sync with the GitHub issues.
 - "close" (~tlon-babel-close-issue-and-todo~, ~H-r y x~): close the GitHub issue and mark its associated ~org-mode~ TODO as DONE.
 
-** Editing Markdown
+* Editing Markdown
 
 This section describes the custom commands we use to edit Markdown files.
 
@@ -42,7 +43,7 @@ All the relevant commands can be called from ~tlon-babel-md-menu~, the Markdown 
 
 [Point out that the user should insert the relevant entities using the Emacs commands whenever possible, to avoid human error.]
 
-*** Commands to insert mathematical expressions
+** Commands to insert mathematical expressions
 
 Our websites support LaTeX-formatted math. These expressions may be of two types: /inline/ and /display/. Inline expressions are embedded in a paragraph, while display expressions occupy their own paragraph.
 
@@ -64,7 +65,7 @@ Note that the dollar sign delimiters occupy their own lines.
 
 Inline and display expressions can be inserted with ~tlon-babel-md-insert-math-inline~ and with ~tlon-babel-md-insert-math-display~, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point.
 
-*** Commands to insert citations
+** Commands to insert citations
 
 To insert citations, we use the custom MDX tag ~Cite~. This self-closing tag takes the mandatory attribute ~bibKey~ and the optional attribute ~short~. The value type of ~bibKey~ is a single BibTeX key, optionally followed by one or more [[https://docs.citationstyles.org/en/stable/specification.html#locators][locators]]. The attribute ~short~ indicates that the citation is a “short” citation.
 
@@ -80,12 +81,16 @@ which is rendered as
 As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
 #+end_src
 
-*** Commands to insert note markers
+** Commands to insert note markers
 
 
 
-
-
-*** Other commands
+** Other commands
 
 Special characters may be inserted with ~tlon-babel-md-insert-special-character~. The list of characters offered as completion candidates may be customized with the user option, ~tlon-babel-md-special-characters~.
+
+* local variables
+# Local Variables:
+# eval: (org-texinfo-export-to-info)
+# End:
+

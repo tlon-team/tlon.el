@@ -27,12 +27,14 @@
 @insertcopying
 
 @code{tlon-babel} is a repository of Emacs functions for the Tlön @code{babel} projects. @*
+
 @end ifnottex
 
 @menu
 * Main menu::
-* @samp{forg} @samp{forge}-@samp{org-mode} synchronization::
+* GitHub and org-mode synchronization::
 * Editing Markdown::
+* local variables::
 
 @detailmenu
 --- The Detailed Node Listing ---
@@ -42,6 +44,7 @@ Editing Markdown
 * Commands to insert mathematical expressions::
 * Commands to insert citations::
 * Commands to insert note markers::
+* Other commands::
 
 @end detailmenu
 @end menu
@@ -49,8 +52,8 @@ Editing Markdown
 @node Main menu
 @chapter Main menu
 
-@node @samp{forg} @samp{forge}-@samp{org-mode} synchronization
-@chapter @samp{forg}: @samp{forge}-@samp{org-mode} synchronization
+@node GitHub and org-mode synchronization
+@chapter GitHub and org-mode synchronization
 
 @code{tlon-babel} includes several functions to synchronize the GitHub issues on a given repository with the corresponding @code{org-mode} TODOs in the user’s local file. The relevant GitHub sync functions are accessed from @code{tlon-babel-dispatch} (@code{H-r}), under the “sync” section (@code{y}): @*
 
@@ -88,6 +91,7 @@ All the relevant commands can be called from @code{tlon-babel-md-menu}, the Mark
 * Commands to insert mathematical expressions::
 * Commands to insert citations::
 * Commands to insert note markers::
+* Other commands::
 @end menu
 
 @node Commands to insert mathematical expressions
@@ -111,14 +115,14 @@ $$
 
 Note that the dollar sign delimiters occupy their own lines. @*
 
-Inline and display expressions can be inserted with @code{tlon-babel-md-insert-math-inline} and inserted with @code{tlon-babel-md-insert-math-display}, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point. @*
+Inline and display expressions can be inserted with @code{tlon-babel-md-insert-math-inline} and with @code{tlon-babel-md-insert-math-display}, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point. @*
 
 @node Commands to insert citations
 @section Commands to insert citations
 
-To insert citations, we use the custom MDX tag @code{Cite}. This self-closing tag takes the mandatory attribute @code{bibKey} and the optional attribute @code{short}. The value type of @code{bibKey} is a single Bib@TeX{} key, optionally followed by one or more @uref{https://docs.citationstyles.org/en/stable/specification.html#locators, locators} The attribute @code{short} indicates that the citation is a “short” citation. @*
+To insert citations, we use the custom MDX tag @code{Cite}. This self-closing tag takes the mandatory attribute @code{bibKey} and the optional attribute @code{short}. The value type of @code{bibKey} is a single Bib@TeX{} key, optionally followed by one or more @uref{https://docs.citationstyles.org/en/stable/specification.html#locators, locators}. The attribute @code{short} indicates that the citation is a “short” citation. @*
 
-(A “short” citation is defined as a citation that only displays the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example: @*
+(“Short” citations are defined as citations that only display the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example: @*
 
 @example
 As Toby Ord writes in <Cite bibKey=@{"Ord2020PrecipiceExistentialRisk"@} short />, humanity’s long-term potential may be lost this century.
@@ -132,5 +136,13 @@ As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be l
 
 @node Commands to insert note markers
 @section Commands to insert note markers
+
+@node Other commands
+@section Other commands
+
+Special characters may be inserted with @code{tlon-babel-md-insert-special-character}. The list of characters offered as completion candidates may be customized with the user option, @code{tlon-babel-md-special-characters}. @*
+
+@node local variables
+@chapter local variables
 
 @bye

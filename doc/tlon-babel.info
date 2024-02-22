@@ -18,8 +18,9 @@ projects.
 * Menu:
 
 * Main menu::
-* forg forge-org-mode synchronization::
+* GitHub and org-mode synchronization::
 * Editing Markdown::
+* local variables::
 
 -- The Detailed Node Listing --
 
@@ -28,19 +29,20 @@ Editing Markdown
 * Commands to insert mathematical expressions::
 * Commands to insert citations::
 * Commands to insert note markers::
+* Other commands::
 
 
 
-File: tlon-babel.info,  Node: Main menu,  Next: forg forge-org-mode synchronization,  Prev: Top,  Up: Top
+File: tlon-babel.info,  Node: Main menu,  Next: GitHub and org-mode synchronization,  Prev: Top,  Up: Top
 
 1 Main menu
 ***********
 
 
-File: tlon-babel.info,  Node: forg forge-org-mode synchronization,  Next: Editing Markdown,  Prev: Main menu,  Up: Top
+File: tlon-babel.info,  Node: GitHub and org-mode synchronization,  Next: Editing Markdown,  Prev: Main menu,  Up: Top
 
-2 ‘forg’: ‘forge’-‘org-mode’ synchronization
-********************************************
+2 GitHub and org-mode synchronization
+*************************************
 
 ‘tlon-babel’ includes several functions to synchronize the GitHub issues
 on a given repository with the corresponding ‘org-mode’ TODOs in the
@@ -85,7 +87,7 @@ user’s local file.  The relevant GitHub sync functions are accessed from
      GitHub issue and mark its associated ‘org-mode’ TODO as DONE.
 
 
-File: tlon-babel.info,  Node: Editing Markdown,  Prev: forg forge-org-mode synchronization,  Up: Top
+File: tlon-babel.info,  Node: Editing Markdown,  Next: local variables,  Prev: GitHub and org-mode synchronization,  Up: Top
 
 3 Editing Markdown
 ******************
@@ -107,6 +109,7 @@ the Emacs commands whenever possible, to avoid human error.]
 * Commands to insert mathematical expressions::
 * Commands to insert citations::
 * Commands to insert note markers::
+* Other commands::
 
 
 File: tlon-babel.info,  Node: Commands to insert mathematical expressions,  Next: Commands to insert citations,  Up: Editing Markdown
@@ -132,7 +135,7 @@ like this:
    Note that the dollar sign delimiters occupy their own lines.
 
    Inline and display expressions can be inserted with
-‘tlon-babel-md-insert-math-inline’ and inserted with
+‘tlon-babel-md-insert-math-inline’ and with
 ‘tlon-babel-md-insert-math-display’, respectively.  If called in an
 active region, the selected text will be enclosed by the appropriate
 delimiters.  Otherwise, the delimiters will be inserted at point.
@@ -147,11 +150,11 @@ To insert citations, we use the custom MDX tag ‘Cite’.  This
 self-closing tag takes the mandatory attribute ‘bibKey’ and the optional
 attribute ‘short’.  The value type of ‘bibKey’ is a single BibTeX key,
 optionally followed by one or more locators
-(https://docs.citationstyles.org/en/stable/specification.html#locators)
+(https://docs.citationstyles.org/en/stable/specification.html#locators).
 The attribute ‘short’ indicates that the citation is a “short” citation.
 
 
-   (A “short” citation is defined as a citation that only displays the
+   (“Short” citations are defined as citations that only display the
 title of the work, rather than its full bibliographic details.  Such
 citations are appropriate in contexts in which the work is being
 referred to explicitly rather than merely cited, as in this example:
@@ -163,21 +166,40 @@ referred to explicitly rather than merely cited, as in this example:
      As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
 
 
-File: tlon-babel.info,  Node: Commands to insert note markers,  Prev: Commands to insert citations,  Up: Editing Markdown
+File: tlon-babel.info,  Node: Commands to insert note markers,  Next: Other commands,  Prev: Commands to insert citations,  Up: Editing Markdown
 
 3.3 Commands to insert note markers
 ===================================
+
+
+File: tlon-babel.info,  Node: Other commands,  Prev: Commands to insert note markers,  Up: Editing Markdown
+
+3.4 Other commands
+==================
+
+Special characters may be inserted with
+‘tlon-babel-md-insert-special-character’.  The list of characters
+offered as completion candidates may be customized with the user option,
+‘tlon-babel-md-special-characters’.
+
+
+File: tlon-babel.info,  Node: local variables,  Prev: Editing Markdown,  Up: Top
+
+4 local variables
+*****************
 
 
 
 Tag Table:
 Node: Top241
-Node: Main menu675
-Node: forg forge-org-mode synchronization809
-Node: Editing Markdown3740
-Node: Commands to insert mathematical expressions4467
-Node: Commands to insert citations5759
-Node: Commands to insert note markers6977
+Node: Main menu714
+Node: GitHub and org-mode synchronization848
+Node: Editing Markdown3753
+Node: Commands to insert mathematical expressions4523
+Node: Commands to insert citations5806
+Node: Commands to insert note markers7023
+Node: Other commands7244
+Node: local variables7618
 
 End Tag Table
 
