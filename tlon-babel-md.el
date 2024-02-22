@@ -30,6 +30,18 @@
 (require 'markdown-mode-extras)
 (require 'tlon-babel-yaml)
 
+;;;; User options
+
+(defgroup tlon-babel-md ()
+  "Markdown functionality."
+  :group 'tlon-babel)
+
+(defcustom tlon-babel-md-special-characters
+  '("•" "–" "—" "‘" "’" "“" "”")
+  "List of special characters to insert in a Markdown file."
+  :type '(repeat string)
+  :group 'tlon-babel-md)
+
 ;;;; Variables
 
 (defconst tlon-babel-md-local-variables-line-start
@@ -416,6 +428,13 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
 	  (when (and start end)
 	    (cons start end)))))))
 
+(defun tlon-babel-md-insert-special-character (char)
+  "Insert a special CHAR at point.
+The list of completion candidates can be customized via the user option
+`tlon-babel-md-special-characters'."
+  (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
+  (insert char))
+
 ;;;;; Menu
 
 (transient-define-prefix tlon-babel-md-menu ()
@@ -442,7 +461,9 @@ If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
     ("l" "locator"              tlon-babel-insert-locator)]
    ["Math"
     ("i" "inline"               tlon-babel-insert-math-inline)
-    ("d" "display"              tlon-babel-insert-math-display)]])
+    ("d" "display"              tlon-babel-insert-math-display)]
+   ["Misc"
+    ("." "special character"    tlon-babel-md-insert-special-character)]])
 
 ;;;;; Key bindings
 

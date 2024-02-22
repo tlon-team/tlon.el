@@ -86,3 +86,6 @@ As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be l
 
 
 
+*** Other commands
+
+Special characters may be inserted with ~tlon-babel-md-insert-special-character~. The list of characters offered as completion candidates may be customized with the user option, ~tlon-babel-md-special-characters~.
