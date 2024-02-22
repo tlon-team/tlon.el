@@ -295,14 +295,14 @@ If FILE is non-nil, summarize its contents. Otherwise,
   (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			 (unless tlon-babel-ai-batch-fun
 			   (tlon-babel-ai-select-language)))))
-      (tlon-babel-ai-summarize-file-do file language model)
+      (tlon-babel-ai-get-abstract-in-language file language model)
     (tlon-babel-ai-detect-language-in-file
      file
      (lambda (response info)
        (tlon-babel-ai-summarize-file-from-detected-language response info file model)))))
 
-(defun tlon-babel-ai-summarize-file-do (file language model)
   "Actually summarize FILE in LANGUAGE with MODEL."
+(defun tlon-babel-get-abstract-with-ai-from-html ()
   (if-let ((string (tlon-babel-get-string-dwim file))
 	   (lang-2 (tlon-babel-get-two-letter-code language))
 	   (original-buffer (current-buffer)))
@@ -320,7 +320,7 @@ If FILE is non-nil, summarize its contents. Otherwise,
 Otherwise return INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
-    (tlon-babel-ai-summarize-file-do file response model)))
+    (tlon-babel-ai-get-abstract-in-language file response model)))
 
 (defun tlon-babel-ai-summarize-common (prompts string language callback model)
   "Common function for summarization.
