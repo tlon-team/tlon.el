@@ -523,15 +523,22 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;###autoload (autoload 'tlon-babel-ai-menu "tlon-babel-ai" nil t)
 (transient-define-prefix tlon-babel-ai-menu ()
   "Menu for `tlon-babel-ai'."
-  [[("t" "translate"                   tlon-babel-ai-translate)]
-   [("r" "rewrite"                     tlon-babel-ai-rewrite)]
-    ("s b" "summarize bibtex"          tlon-babel-ai-summarize-bibtex-entry)]
-   [("g g" "set language bibtex"       tlon-babel-ai-set-language-bibtex)]
+  [["Translate"
+    ("t" "translate"                            tlon-babel-ai-translate)]
+   ["Rewrite"
+    ("r" "rewrite"                              tlon-babel-ai-rewrite)]
+   ["Summarize"
     ("s s" "get abstract with or without AI"    tlon-babel-get-abstract-with-or-without-ai)
     ("s a" "get abstract with AI"               tlon-babel-get-abstract-with-ai)
+    ("s h" "get abstract with AI from HTML"     tlon-babel-get-abstract-with-ai-from-html)
+    ("s p" "get abstract with AI from PDF"      tlon-babel-get-abstract-with-ai-from-pdf)
+    ("s b" "summarize bibtex entry"             tlon-babel-ai-summarize-bibtex-entry)]
+   ["Detect language"
+    ("g g" "set language bibtex"                tlon-babel-ai-set-language-bibtex)]
    ["options"
     ("-b" "batch"                               tlon-babel-ai-batch-fun-infix)
     ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)]])
+
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
