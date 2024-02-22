@@ -326,7 +326,7 @@ If FILE is non-nil, summarize its contents. Otherwise,
        (lambda (response info)
 	 ;; we restore the original buffer to avoid a change in `major-mode'
 	 (with-current-buffer original-buffer
-	   (tlon-babel-ai-summarize-callback response info)))
+	   (tlon-babel-get-abstract-callback response info)))
        model)
     (tlon-babel-ai-batch-continue)))
 
@@ -346,7 +346,7 @@ language model."
     (message "Generating output. This may take 5–30 seconds, depending on length...")
     (tlon-babel-make-gptel-request prompt string callback model)))
 
-(defun tlon-babel-ai-summarize-callback (response info)
+(defun tlon-babel-get-abstract-callback (response info)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
 If RESPONSE is nil, return INFO."
   (if (not response)
@@ -378,8 +378,8 @@ If STRING is nil, use the current entry."
 		  (language (funcall get-lang "langid"))
 		  (lang-short (tlon-babel-get-two-letter-code language)))
 	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-bibtex-prompts :prompt :language lang-short)))
-	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-ai-summarize-callback)
 	  (user-error "No prompt defined in `tlon-babel-ai-summarize-prompts' for language %s" language))))))
+	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-get-abstract-callback)
 
 (defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract)
   "Set the `abstract' field of the current BibTeX entry to ABSTRACT."
