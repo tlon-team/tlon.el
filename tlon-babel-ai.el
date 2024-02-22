@@ -276,7 +276,6 @@ To get an abstract without AI, the function uses
 `tlon-babel-get-abstract-with-ai'. See its docstring for details."
   (interactive)
   (unless (tlon-babel-fetch-and-set-abstract)
-    (message "Could not fetch summary; creating one...")
     (tlon-babel-get-abstract-with-ai)))
 
 ;;;###autoload
@@ -303,6 +302,7 @@ If MODEL is nil, get it from `tlonl-babel-ai-model'."
     (tlon-babel-ai-detect-language-in-file
      file
      (lambda (response info)
+       (message "Detecting language...")
        (tlon-babel-ai-get-abstract-from-detected-language response info file model)))))
 
 (defun tlon-babel-get-abstract-with-ai-in-file (extension)
@@ -334,6 +334,7 @@ If MODEL is nil, get it from `tlonl-babel-ai-model'."
 	 (with-current-buffer original-buffer
 	   (tlon-babel-get-abstract-callback response info)))
        model)
+    (message "Could not get abstract.")
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-ai-get-abstract-from-detected-language (response info file model)
@@ -349,7 +350,7 @@ PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function. MODEL is the
 language model."
   (let ((prompt (tlon-babel-lookup prompts :prompt :language language)))
-    (message "Generating output. This may take 5–30 seconds, depending on length...")
+    (message "Getting abstract. This may take 5–30 seconds, depending on length...")
     (tlon-babel-make-gptel-request prompt string callback model)))
 
 (defun tlon-babel-get-abstract-callback (response info)
@@ -396,7 +397,6 @@ If STRING is nil, use the current entry."
 		      ('bibtex-mode #'bibtex-set-field)
 		      ('ebib-entry-mode #'ebib-extras-set-field))))
     (funcall set-field "abstract" abstract)
-    (message "Set abstract of `%s' to %s" key abstract)
     (save-buffer)))
 
 ;;;;; Language detection
