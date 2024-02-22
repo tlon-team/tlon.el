@@ -267,30 +267,34 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;; Summarization
 
 ;;;###autoload
-  "Try to fetch a summary; if unsuccessful, create one.
-To fetch a summary, the function uses `tlon-babel-fetch-and-set-abstract'. See
-its docstring for details.
 (defun tlon-babel-get-abstract-with-or-without-ai ()
+  "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
+To get an abstract with AI, the function uses
+`tlon-babel-fetch-and-set-abstract'. See its docstring for details.
 
-To create a summary, the function uses `tlon-babel-ai-summarize-dwim'. See its
-docstring for details."
+To get an abstract without AI, the function uses
+`tlon-babel-get-abstract-with-ai'. See its docstring for details."
   (interactive)
   (unless (tlon-babel-fetch-and-set-abstract)
     (message "Could not fetch summary; creating one...")
     (tlon-babel-get-abstract-with-ai)))
 
 ;;;###autoload
-  "Summarize the relevant content with AI.
-If FILE is non-nil, summarize its contents. Otherwise,
 (defun tlon-babel-get-abstract-with-ai (&optional file model)
+  "Return an abstract of the relevant content using AI.
+If FILE is non-nil, get an abstract of its contents. Otherwise,
 
-- If in `bibtex-mode' or in `ebib-entry-mode', summarize the contents of the
-  HTML or PDF file associated with the current BibTeX entry, if either is found.
+- If in `bibtex-mode' or in `ebib-entry-mode', get an abstract of the contents
+  of the HTML or PDF file associated with the current BibTeX entry, if either is
+  found.
 
-- If in `text-mode', summarize the contents of the current region, if active;
-  otherwise, summarize the contents of the current buffer.
+- If in `text-mode', get an abstract of the contents of the current region, if
+  active; otherwise, get an abstract of the contents of the current buffer.
 
- If MODEL is nil, get it from `tlonl-babel-ai-model'."
+In all the above cases, the AI will first look for an existing abstract and, if
+it finds one, use it. Otherwise it will create an abstract from scratch.
+
+If MODEL is nil, get it from `tlonl-babel-ai-model'."
   (interactive)
   (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			 (unless tlon-babel-ai-batch-fun
@@ -301,7 +305,6 @@ If FILE is non-nil, summarize its contents. Otherwise,
      (lambda (response info)
        (tlon-babel-ai-get-abstract-from-detected-language response info file model)))))
 
-  "Actually summarize FILE in LANGUAGE with MODEL."
 (defun tlon-babel-get-abstract-with-ai-in-file (extension)
   "Return an abstract of the file with EXTENSION in the BibTeX entry at point."
   (when (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
@@ -318,6 +321,9 @@ If FILE is non-nil, summarize its contents. Otherwise,
   "Return an abstract of the HTML file in the BibTeX entry at point."
   (interactive)
   (tlon-babel-get-abstract-with-ai-in-file "html"))
+
+(defun tlon-babel-ai-get-abstract-in-language (file language model)
+  "Get abstract from FILE in LANGUAGE with MODEL."
   (if-let ((string (tlon-babel-get-string-dwim file))
 	   (lang-2 (tlon-babel-get-two-letter-code language))
 	   (original-buffer (current-buffer)))
@@ -330,15 +336,15 @@ If FILE is non-nil, summarize its contents. Otherwise,
        model)
     (tlon-babel-ai-batch-continue)))
 
-  "If RESPONSE is non-nil, initiate a summary of FILE with MODEL.
 (defun tlon-babel-ai-get-abstract-from-detected-language (response info file model)
+  "If RESPONSE is non-nil, get a summary of FILE with MODEL.
 Otherwise return INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     (tlon-babel-ai-get-abstract-in-language file response model)))
 
-  "Common function for summarization.
 (defun tlon-babel-ai-get-abstract-common (prompts string language callback model)
+  "Common function for getting an abstract.
 PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function. MODEL is the
 language model."
