@@ -321,8 +321,8 @@ If FILE is non-nil, summarize its contents. Otherwise,
   (if-let ((string (tlon-babel-get-string-dwim file))
 	   (lang-2 (tlon-babel-get-two-letter-code language))
 	   (original-buffer (current-buffer)))
-      (tlon-babel-ai-summarize-common
        tlon-babel-ai-summarize-prompts string lang-2
+      (tlon-babel-ai-get-abstract-common
        (lambda (response info)
 	 ;; we restore the original buffer to avoid a change in `major-mode'
 	 (with-current-buffer original-buffer
@@ -337,8 +337,8 @@ Otherwise return INFO."
       (tlon-babel-ai-callback-fail info)
     (tlon-babel-ai-get-abstract-in-language file response model)))
 
-(defun tlon-babel-ai-summarize-common (prompts string language callback model)
   "Common function for summarization.
+(defun tlon-babel-ai-get-abstract-common (prompts string language callback model)
 PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function. MODEL is the
 language model."
