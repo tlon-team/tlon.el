@@ -50,6 +50,7 @@
   [["Main"
     ("j" "job"                            tlon-babel-jobs-create-job)
     ("r" "dwim"                           tlon-babel-jobs-dwim)
+    ("k" "Markdown"                       tlon-babel-md-menu)
     ("m" "Magit"                          tlon-babel-magit-repo-dispatch)
     ("H-m" "Meet"                         tlon-babel-meet-menu)
     ("g" "AI"                             tlon-babel-ai-menu)
