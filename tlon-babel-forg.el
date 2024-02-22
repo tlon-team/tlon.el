@@ -1040,6 +1040,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 (transient-define-prefix tlon-babel-forg-menu ()
   "`forg' menu."
+  :info-manual "(tlon-babel) GitHub and org-mode synchronization"
   [
    ["Actions"
     ("y" "dwim"                           tlon-babel-visit-counterpart-or-capture)
