@@ -321,8 +321,8 @@ If FILE is non-nil, summarize its contents. Otherwise,
   (if-let ((string (tlon-babel-get-string-dwim file))
 	   (lang-2 (tlon-babel-get-two-letter-code language))
 	   (original-buffer (current-buffer)))
-       tlon-babel-ai-summarize-prompts string lang-2
       (tlon-babel-ai-get-abstract-common
+       tlon-babel-ai-get-abstract-prompts string lang-2
        (lambda (response info)
 	 ;; we restore the original buffer to avoid a change in `major-mode'
 	 (with-current-buffer original-buffer
@@ -378,8 +378,8 @@ If STRING is nil, use the current entry."
 		  (language (funcall get-lang "langid"))
 		  (lang-short (tlon-babel-get-two-letter-code language)))
 	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-bibtex-prompts :prompt :language lang-short)))
-	  (user-error "No prompt defined in `tlon-babel-ai-summarize-prompts' for language %s" language))))))
 	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-get-abstract-callback)
+	  (user-error "No prompt defined in `tlon-babel-ai-get-abstract-prompts' for language %s" language))))))
 
 (defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract)
   "Set the `abstract' field of the current BibTeX entry to ABSTRACT."
