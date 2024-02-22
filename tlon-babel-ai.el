@@ -302,7 +302,22 @@ If FILE is non-nil, summarize its contents. Otherwise,
        (tlon-babel-ai-get-abstract-from-detected-language response info file model)))))
 
   "Actually summarize FILE in LANGUAGE with MODEL."
+(defun tlon-babel-get-abstract-with-ai-in-file (extension)
+  "Return an abstract of the file with EXTENSION in the BibTeX entry at point."
+  (when (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
+    (if-let ((file (ebib-extras-get-file extension)))
+	(tlon-babel-get-abstract-with-ai file)
+      (user-error "No unique file with extension `%s' found" extension))))
+
+(defun tlon-babel-get-abstract-with-ai-from-pdf ()
+  "Return an abstract of the PDF file in the BibTeX entry at point."
+  (interactive)
+  (tlon-babel-get-abstract-with-ai-in-file "pdf"))
+
 (defun tlon-babel-get-abstract-with-ai-from-html ()
+  "Return an abstract of the HTML file in the BibTeX entry at point."
+  (interactive)
+  (tlon-babel-get-abstract-with-ai-in-file "html"))
   (if-let ((string (tlon-babel-get-string-dwim file))
 	   (lang-2 (tlon-babel-get-two-letter-code language))
 	   (original-buffer (current-buffer)))
