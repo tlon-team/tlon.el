@@ -500,7 +500,6 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Change the local value of the `'tlon-babel-ai-batch-fun' variable."
   :class 'transient-lisp-variable
   :reader 'tlon-babel-ai-batch-fun-reader
-  :transient t
   :prompt "Function for batch-processing: "
   :variable 'tlon-babel-ai-batch-fun)
 
@@ -512,7 +511,6 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Change the local value of the `tlon-babel-abstract-overwrite' variable."
   :class 'transient-lisp-variable
   :reader 'tlon-babel-abstract-overwrite-reader
-  :transient t
   :prompt "Overwrite when the entry already contains an abstract? "
   :variable 'tlon-babel-abstract-overwrite)
 
