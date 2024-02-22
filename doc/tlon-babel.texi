@@ -34,7 +34,6 @@
 * Main menu::
 * GitHub and org-mode synchronization::
 * Editing Markdown::
-* local variables::
 
 @detailmenu
 --- The Detailed Node Listing ---
@@ -140,9 +139,6 @@ As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be l
 @node Other commands
 @section Other commands
 
-Special characters may be inserted with @code{tlon-babel-md-insert-special-character}. The list of characters offered as completion candidates may be customized with the user option, @code{tlon-babel-md-special-characters}. @*
-
-@node local variables
-@chapter local variables
+Special characters can be inserted with @code{tlon-babel-md-insert-special-character}. The user option @code{tlon-babel-md-special-characters} customizes the list of characters offered as completion candidates. @*
 
 @bye

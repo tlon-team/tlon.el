@@ -20,7 +20,6 @@ projects.
 * Main menu::
 * GitHub and org-mode synchronization::
 * Editing Markdown::
-* local variables::
 
 -- The Detailed Node Listing --
 
@@ -87,7 +86,7 @@ user’s local file.  The relevant GitHub sync functions are accessed from
      GitHub issue and mark its associated ‘org-mode’ TODO as DONE.
 
 
-File: tlon-babel.info,  Node: Editing Markdown,  Next: local variables,  Prev: GitHub and org-mode synchronization,  Up: Top
+File: tlon-babel.info,  Node: Editing Markdown,  Prev: GitHub and org-mode synchronization,  Up: Top
 
 3 Editing Markdown
 ******************
@@ -177,29 +176,22 @@ File: tlon-babel.info,  Node: Other commands,  Prev: Commands to insert note mar
 3.4 Other commands
 ==================
 
-Special characters may be inserted with
-‘tlon-babel-md-insert-special-character’.  The list of characters
-offered as completion candidates may be customized with the user option,
-‘tlon-babel-md-special-characters’.
-
-
-File: tlon-babel.info,  Node: local variables,  Prev: Editing Markdown,  Up: Top
-
-4 local variables
-*****************
+Special characters can be inserted with
+‘tlon-babel-md-insert-special-character’.  The user option
+‘tlon-babel-md-special-characters’ customizes the list of characters
+offered as completion candidates.
 
 
 
 Tag Table:
 Node: Top241
-Node: Main menu714
-Node: GitHub and org-mode synchronization848
-Node: Editing Markdown3753
-Node: Commands to insert mathematical expressions4523
-Node: Commands to insert citations5806
-Node: Commands to insert note markers7023
-Node: Other commands7244
-Node: local variables7618
+Node: Main menu694
+Node: GitHub and org-mode synchronization828
+Node: Editing Markdown3733
+Node: Commands to insert mathematical expressions4479
+Node: Commands to insert citations5762
+Node: Commands to insert note markers6979
+Node: Other commands7200
 
 End Tag Table
 

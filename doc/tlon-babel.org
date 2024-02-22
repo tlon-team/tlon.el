@@ -1,5 +1,6 @@
 #+title: tlon-babel
 #+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
 #+language: en
 #+options: ':t toc:nil author:t email:t num:t
 #+startup: content
@@ -83,14 +84,13 @@ As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be l
 
 ** Commands to insert note markers
 
-
-
 ** Other commands
 
-Special characters may be inserted with ~tlon-babel-md-insert-special-character~. The list of characters offered as completion candidates may be customized with the user option, ~tlon-babel-md-special-characters~.
+Special characters can be inserted with ~tlon-babel-md-insert-special-character~. The user option ~tlon-babel-md-special-characters~ customizes the list of characters offered as completion candidates.
 
-* local variables
+* local variables                                                  :noexport:
+(Note that the local variables below will still be exported to the ~info~ file, unfortunately. It looks like they are not considered part of this heading.)
+
 # Local Variables:
-# eval: (org-texinfo-export-to-info)
+# eval: (add-hook 'before-save-hook 'org-texinfo-export-to-info nil t)
 # End:
-
