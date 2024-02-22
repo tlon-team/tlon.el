@@ -31,7 +31,7 @@
 
 ;;;; Functions
 
-(defun tlon-babel-transient-read-choice (prompt choices)
+(defun tlon-babel-transient-read-symbol-choice (prompt choices)
   "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
   (let* ((input (completing-read prompt (mapcar 'symbol-name choices))))
     (intern input)))
