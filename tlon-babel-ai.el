@@ -465,9 +465,9 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 (defun tlon-babel-ai-batch-fun-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
-  (tlon-babel-transient-reader prompt '(tlon-babel-ai-fetch-or-create-summary
-					tlon-babel-ai-set-language-bibtex
-					nil)))
+  (tlon-babel-transient-read-choice prompt '(tlon-babel-get-abstract-with-or-without-ai
+					     tlon-babel-ai-set-language-bibtex
+					     nil)))
 
 (transient-define-infix tlon-babel-ai-batch-infix ()
   "Change the local value of the `'tlon-babel-ai-batch-fun' variable."
@@ -479,7 +479,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 (defun tlon-babel-abstract-overwrite-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
-  (tlon-babel-transient-reader prompt '(always prompt never)))
+  (tlon-babel-transient-read-choice prompt '(always prompt never)))
 
 (transient-define-infix tlon-babel-fetch-and-set-abstract-infix ()
   "Change the local value of the `tlon-babel-abstract-overwrite' variable."
