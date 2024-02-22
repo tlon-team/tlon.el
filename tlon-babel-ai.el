@@ -267,10 +267,10 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;; Summarization
 
 ;;;###autoload
-(defun tlon-babel-ai-fetch-or-create-summary ()
   "Try to fetch a summary; if unsuccessful, create one.
 To fetch a summary, the function uses `tlon-babel-fetch-and-set-abstract'. See
 its docstring for details.
+(defun tlon-babel-get-abstract-with-or-without-ai ()
 
 To create a summary, the function uses `tlon-babel-ai-summarize-dwim'. See its
 docstring for details."
@@ -506,10 +506,10 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Menu for `tlon-babel-ai'."
   [[("t" "translate"                   tlon-babel-ai-translate)]
    [("r" "rewrite"                     tlon-babel-ai-rewrite)]
-   [("s s" "fetch or create summary"   tlon-babel-ai-fetch-or-create-summary)
     ("s f" "summarize file"            tlon-babel-ai-summarize-dwim)
     ("s b" "summarize bibtex"          tlon-babel-ai-summarize-bibtex-entry)]
    [("g g" "set language bibtex"       tlon-babel-ai-set-language-bibtex)]
+    ("s s" "get abstract with or without AI"    tlon-babel-get-abstract-with-or-without-ai)
    ["options"
     ("-b" "batch"                      tlon-babel-ai-batch-infix)
     ("-o" "overwrite"                  tlon-babel-fetch-and-set-abstract-infix)]])
