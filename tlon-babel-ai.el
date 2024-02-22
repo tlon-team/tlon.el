@@ -299,7 +299,7 @@ If FILE is non-nil, summarize its contents. Otherwise,
     (tlon-babel-ai-detect-language-in-file
      file
      (lambda (response info)
-       (tlon-babel-ai-summarize-file-from-detected-language response info file model)))))
+       (tlon-babel-ai-get-abstract-from-detected-language response info file model)))))
 
   "Actually summarize FILE in LANGUAGE with MODEL."
 (defun tlon-babel-get-abstract-with-ai-from-html ()
@@ -315,8 +315,8 @@ If FILE is non-nil, summarize its contents. Otherwise,
        model)
     (tlon-babel-ai-batch-continue)))
 
-(defun tlon-babel-ai-summarize-file-from-detected-language (response info file model)
   "If RESPONSE is non-nil, initiate a summary of FILE with MODEL.
+(defun tlon-babel-ai-get-abstract-from-detected-language (response info file model)
 Otherwise return INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
