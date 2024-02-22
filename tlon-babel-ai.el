@@ -277,12 +277,12 @@ docstring for details."
   (interactive)
   (unless (tlon-babel-fetch-and-set-abstract)
     (message "Could not fetch summary; creating one...")
-    (tlon-babel-ai-summarize-dwim)))
+    (tlon-babel-get-abstract-with-ai)))
 
 ;;;###autoload
-(defun tlon-babel-ai-summarize-dwim (&optional file model)
   "Summarize the relevant content with AI.
 If FILE is non-nil, summarize its contents. Otherwise,
+(defun tlon-babel-get-abstract-with-ai (&optional file model)
 
 - If in `bibtex-mode' or in `ebib-entry-mode', summarize the contents of the
   HTML or PDF file associated with the current BibTeX entry, if either is found.
@@ -506,10 +506,10 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Menu for `tlon-babel-ai'."
   [[("t" "translate"                   tlon-babel-ai-translate)]
    [("r" "rewrite"                     tlon-babel-ai-rewrite)]
-    ("s f" "summarize file"            tlon-babel-ai-summarize-dwim)
     ("s b" "summarize bibtex"          tlon-babel-ai-summarize-bibtex-entry)]
    [("g g" "set language bibtex"       tlon-babel-ai-set-language-bibtex)]
     ("s s" "get abstract with or without AI"    tlon-babel-get-abstract-with-or-without-ai)
+    ("s a" "get abstract with AI"               tlon-babel-get-abstract-with-ai)
    ["options"
     ("-b" "batch"                      tlon-babel-ai-batch-infix)
     ("-o" "overwrite"                  tlon-babel-fetch-and-set-abstract-infix)]])
