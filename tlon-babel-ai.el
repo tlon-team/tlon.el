@@ -496,7 +496,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 					     tlon-babel-ai-set-language-bibtex
 					     nil)))
 
-(transient-define-infix tlon-babel-ai-batch-infix ()
+(transient-define-infix tlon-babel-ai-batch-fun-infix ()
   "Change the local value of the `'tlon-babel-ai-batch-fun' variable."
   :class 'transient-lisp-variable
   :reader 'tlon-babel-ai-batch-fun-reader
@@ -526,8 +526,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
     ("s s" "get abstract with or without AI"    tlon-babel-get-abstract-with-or-without-ai)
     ("s a" "get abstract with AI"               tlon-babel-get-abstract-with-ai)
    ["options"
-    ("-b" "batch"                      tlon-babel-ai-batch-infix)
     ("-o" "overwrite"                  tlon-babel-fetch-and-set-abstract-infix)]])
+    ("-b" "batch"                               tlon-babel-ai-batch-fun-infix)
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
