@@ -185,7 +185,7 @@ abstract will, or will not, replace the existing one, respectively."
   (cl-destructuring-bind (get-field set-field)
       (pcase major-mode
 	('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
-	('bibtex-mode '(tlon-babel-get-field bibtex-set-field))
+	('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
 	(_ (error "Not in `ebib-entry-mode' or `bibtex-mode'")))
     (let ((abstract (funcall get-field  "abstract")))
       (when (or
@@ -222,33 +222,6 @@ IF ID-OR-URL is nil, try to get it or fetch it."
     (setq string (replace-regexp-in-string regexp "" string)))
   ;; add a period at the end of the abstract if missing
   (replace-regexp-in-string "\\([^\\.]\\)$" "\\1." string))
-
-;;;;; getters
-
-(defun tlon-babel-get-entry-as-string ()
-  "Return the bibtex entry at point as a string."
-  (save-excursion
-    (save-restriction
-      (bibtex-narrow-to-entry)
-      (buffer-substring-no-properties (point-min) (point-max)))))
-
-(defun tlon-babel-get-field (field)
-  "Return the value of FIELD in the current BibTeX entry."
-  (save-excursion
-    (save-restriction
-      (bibtex-narrow-to-entry)
-      (bibtex-beginning-of-entry)
-      (let* ((bibtex-autokey-use-crossref nil)
-	     (value (bibtex-autokey-get-field field)))
-	(unless (string-empty-p value)
-	  value)))))
-
-(defun tlon-babel-get-field-in-string (string field)
-  "Return the value of FIELD in STRING."
-  (save-window-excursion
-    (with-temp-buffer
-      (insert string)
-      (tlon-babel-get-field field))))
 
 ;;;;; moving entries
 

@@ -374,13 +374,13 @@ If RESPONSE is nil, return INFO."
 If STRING is nil, use the current entry."
   (interactive)
   (let* ((get-string (pcase major-mode
-		       ('bibtex-mode #'tlon-babel-get-entry-as-string)
+		       ('bibtex-mode #'bibtex-extras-get-entry-as-string)
 		       ('ebib-entry-mode #'ebib-extras-get-or-open-entry)
 		       (_ (user-error "Unsupported major mode"))))
 	 (string (or string (funcall get-string))))
-    (unless (tlon-babel-get-field-in-string string "abstract")
+    (unless (bibtex-extras-get-field-in-string string "abstract")
       (when-let* ((get-lang (pcase major-mode
-			      ('bibtex-mode #'tlon-babel-get-field)
+			      ('bibtex-mode #'bibtex-extras-get-field)
 			      ('ebib-entry-mode #'ebib-extras-get-field)))
 		  (language (funcall get-lang "langid"))
 		  (lang-short (tlon-babel-get-two-letter-code language)))
@@ -407,7 +407,7 @@ If FILE is nil, get the language in the current buffer or entry, depending on
 the major mode."
   (pcase major-mode
     ('ebib-entry-mode (ebib-extras-get-field "langid"))
-    ('bibtex-mode (tlon-babel-get-field "langid"))
+    ('bibtex-mode (bibtex-extras-get-field "langid"))
     ('markdown-mode
      (let* ((file (or file (buffer-file-name)))
 	    (repo (tlon-babel-get-repo-from-file file)))
@@ -430,7 +430,7 @@ If FILE is nil, detect the language in the current buffer."
 If STRING is nil, use the current BibTeX entry."
   (let ((string (or string (pcase major-mode
 			     ('ebib-entry-mode (ebib-extras-get-or-open-entry))
-			     ('bibtex-mode (tlon-babel-get-entry-as-string))
+			     ('bibtex-mode (bibtex-extras-get-entry-as-string))
 			     (_ (user-error "I can’t detect language in %s" major-mode))))))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string)))
 
@@ -439,8 +439,8 @@ If STRING is nil, use the current BibTeX entry."
   "Set the language of the BibTeX entry at point to LANGUAGE.
 If STRING is nil, use the current entry."
   (interactive)
-  (let* ((string (tlon-babel-get-entry-as-string))
-	 (callback (if (tlon-babel-get-field-in-string string "langid")
+  (let* ((string (bibtex-extras-get-entry-as-string))
+	 (callback (if (bibtex-extras-get-field-in-string string "langid")
 		       #'tlon-babel-ai-set-language-bibtex-when-present-callback
 		     #'tlon-babel-ai-set-language-bibtex-when-absent-callback)))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string callback)))
@@ -451,7 +451,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     (bibtex-beginning-of-entry)
-    (if-let ((langid (tlon-babel-get-field "langid"))
+    (if-let ((langid (bibtex-extras-get-field "langid"))
 	     (valid-langid (tlon-babel-validate-language langid))
 	     (valid-response (tlon-babel-validate-language response)))
 	(if (string= valid-langid valid-response)
