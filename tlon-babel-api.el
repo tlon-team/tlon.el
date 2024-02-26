@@ -39,7 +39,7 @@
 (defconst tlon-babel-uqbar-api-routes
   '((:route "update/babel-refs"
 	    :type "POST"
-	    :docstring "Apply CSL and regenerate BibTeX keys. Then run `update/uqbar/es'")
+	    :docstring "Apply CSL and regenerate BibTeX keys. Then run \"update/uqbar/es\" request.")
     (:route "update/babel-refs/log"
 	    :type "GET"
 	    :docstring "Show log of \"update/babel-refs\" request.")
@@ -144,7 +144,7 @@ CALLBACK is called with the token as its argument."
   (let* ((choices (mapcar (lambda (plist)
 			    (let ((route (plist-get plist :route))
 				  (docstring (plist-get plist :docstring)))
-			      (cons (format "%s  |  %s" route (propertize docstring 'face 'italic)) route)))
+			      (cons (format "%-40.40s %-80.80s" route (propertize docstring 'face 'italic)) route)))
 			  (tlon-babel-api-get-routes)))
 	 (user-choice (completing-read "Please select an API route: " choices nil t)))
     (cdr (assoc user-choice choices))))
