@@ -312,22 +312,25 @@ it finds one, use it. Otherwise it will create an abstract from scratch.
 
 If MODEL is nil, get it from `tlon-babel-ai-model'."
   (interactive)
-  (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
-			 (unless tlon-babel-ai-batch-fun
-			   (tlon-babel-ai-select-language)))))
-      (tlon-babel-ai-get-abstract-in-language file language model)
-    (tlon-babel-ai-detect-language-in-file
-     file
-     (lambda (response info)
-       (message "Detecting language...")
-       (tlon-babel-ai-get-abstract-from-detected-language response info file model)))))
+  (if (tlon-babel-abstract-may-proceed-p)
+      (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
+			     (unless tlon-babel-ai-batch-fun
+			       (tlon-babel-ai-select-language)))))
+	  (tlon-babel-ai-get-abstract-in-language file language model)
+	(tlon-babel-ai-detect-language-in-file
+	 file
+	 (lambda (response info)
+	   (message "Detecting language...")
+	   (tlon-babel-ai-get-abstract-from-detected-language response info file model))))
+    (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-get-abstract-with-ai-in-file (extension)
   "Return an abstract of the file with EXTENSION in the BibTeX entry at point."
-  (when (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
-    (if-let ((file (ebib-extras-get-file extension)))
-	(tlon-babel-get-abstract-with-ai file)
-      (user-error "No unique file with extension `%s' found" extension))))
+  (if (tlon-babel-abstract-may-proceed-p)
+      (if-let ((file (ebib-extras-get-file extension)))
+	  (tlon-babel-get-abstract-with-ai file)
+	(user-error "No unique file with extension `%s' found" extension))
+    (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-get-abstract-with-ai-from-pdf ()
   "Return an abstract of the PDF file in the BibTeX entry at point."
