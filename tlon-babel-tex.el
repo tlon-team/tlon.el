@@ -187,29 +187,133 @@ abstract will, or will not, replace the existing one, respectively."
 	('ebib-entry-mode '(ebib-extras-get-field ebib-extras-set-field))
 	('bibtex-mode '(bibtex-extras-get-field bibtex-set-field))
 	(_ (error "Not in `ebib-entry-mode' or `bibtex-mode'")))
-    (let ((abstract (funcall get-field  "abstract")))
-      (when (or
+    (when (tlon-babel-abstract-may-proceed-p)
+      (cl-destructuring-bind (doi isbn url)
+	  (mapcar (lambda
+		    (field)
+		    (funcall get-field field))
+		  '("doi" "isbn" "url"))
+	(let ((key (pcase major-mode
+		     ('ebib-entry-mode (ebib-extras-get-field "=key="))
+		     ('bibtex-mode (bibtex-extras-get-key))))
+	      found)
+	  (if-let ((value (or
+			   (tlon-babel-fetch-abstract-from-crossref doi)
+			   (tlon-babel-fetch-abstract-from-google-books isbn)
+			   (tlon-babel-fetch-abstract-with-zotra url doi))))
+	      (progn
+		(shut-up
+		  (funcall set-field "abstract" (tlon-babel-abstract-cleanup value)))
+		(message "Set abstract of `%s'." key)
+		(setq found t))
+	    (message "Could not find abstract for `%s' using non-AI methods." key)
+	    (setq found nil))
+	  (tlon-babel-ai-batch-continue)
+	  found)))))
+
+(defun tlon-babel-fetch-abstract-with-zotra (url doi)
+  "Return the abstract of the work with URL or DOI."
+  (when-let ((id (or url doi)))
+    (message "Trying to find abstract for %s with zotra..." id)
+    (let* ((doi (when doi (tlon-babel-fetch-url-from-doi doi))))
+      (if-let ((abstract
+		(catch 'found
+		  (dolist (field (list url (unless (string= url doi) doi)))
+		    (when (and field
+			       (not (string-match-p "\\.pdf$" field)))
+		      (when-let ((abstract
+				  (shut-up (zotra-extras-fetch-field
+					    "abstract" field (when tlon-babel-ai-batch-fun 'no-error)))))
+			(throw 'found abstract)))))))
+	  abstract
+	(progn (message "No abstract found.") nil)))))
+
+;; TODO: submit as pull request to `doi-utils'?
+;; `doi-utils-get-redirect' doesn't work
+;; note that my function doesn't always return the final target of the redirect
+;; because they sometimes use JavaScript; see id:1ED71E19-1CE4-4221-8880-AFFD799E34F0
+(defun tlon-babel-fetch-url-from-doi (doi)
+  "Fetch the URL from a DOI."
+  (with-temp-buffer
+    (call-process "curl" nil t nil
+		  "-ILs" (concat doi-utils-dx-doi-org-url doi))
+    (goto-char (point-max))
+    (when-let ((final-url
+		;; with multiple redirects, we want to get the final URL
+		(when (search-backward-regexp "Location: \\(.*\\)" nil t)
+		  (match-string 1))))
+      (substring final-url 0 -1))))
+
+;; TODO: refactor two functions below
+(defun tlon-babel-fetch-abstract-from-crossref (doi)
+  "Return the abstract of the work with DOI."
+  (when doi
+    (let ((url (format "https://api.crossref.org/works/%s" doi)))
+      (message "Trying to find abstract for %s with Crossref..." doi)
+      (with-current-buffer (shut-up (url-retrieve-synchronously url))
+	(goto-char (point-min))
+	(if (search-forward-regexp "HTTP/.* 404" nil t) ; check for 404 not found
+	    (progn
+	      (kill-buffer)
+	      nil)
+	  (re-search-forward "^$")
+	  (delete-region (point) (point-min))
+	  (let* ((json-object-type 'plist)
+		 (json-array-type 'list)
+		 (json (json-read))
+		 (message-plist (plist-get json :message)))
+	    (kill-buffer)
+	    (if-let ((abstract (plist-get message-plist :abstract)))
+		abstract
+	      (progn (message "No abstract found.") nil))))))))
+
+(defun tlon-babel-fetch-abstract-from-google-books (isbn)
+  "Return the abstract of the book with ISBN."
+  (when isbn
+    (let ((url (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn))
+	  (description nil))
+      (message "Trying to find abstract for %s with Google Books..." isbn)
+      (with-current-buffer (shut-up (url-retrieve-synchronously url))
+	(goto-char (point-min))
+	(re-search-forward "^$")
+	(delete-region (point) (point-min))
+	(let* ((json-object-type 'plist)
+	       (json-array-type 'list)
+	       (json (json-read))
+	       (items (plist-get json :items))
+	       (volume-info (and items (plist-get (car items) :volumeInfo))))
+	  (setq description (and volume-info (plist-get volume-info :description)))))
+      (when (get-buffer url)
+	(kill-buffer url))
+      (if description description (progn (message "No abstract found.") nil)))))
+
+(defun tlon-babel-abstract-may-proceed-p ()
+  "Return t iff it’s okay to proceed with abstract processing."
+  (if (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
+      (let* ((get-field (pcase major-mode
+			  ('ebib-entry-mode #'ebib-extras-get-field)
+			  ('bibtex-mode #'bibtex-extras-get-field)))
+	     (abstract (funcall get-field  "abstract")))
+	(if (or
 	     (eq tlon-babel-abstract-overwrite 'always)
 	     (not abstract)
 	     (unless (eq tlon-babel-abstract-overwrite 'never)
 	       (y-or-n-p "Abstract already exists. Overwrite?")))
-	(if-let ((value (or
-			 (when-let ((doi (funcall get-field "doi")))
-			   (bib-fetch-abstract-from-crossref doi))
-			 (when-let ((isbn (funcall get-field "isbn")))
-			   (bib-fetch-abstract-from-google-books isbn))
-			 (when-let ((url (funcall get-field "url")))
-			   ;; running zotero on a URL of a PDF throws an error
-			   (unless (string-match-p "\\.pdf$" url)
-			     (tlon-babel-fetch-field-with-zotra "abstract" url))))))
-	    (funcall set-field "abstract" (tlon-babel-abstract-cleanup value))))))
-  (tlon-babel-ai-batch-continue))
+	    t
+	  (message "Skipping: `%s' already contains an abstract."
+		   (pcase major-mode
+		     ('bibtex-mode (bibtex-extras-get-key))
+		     ('ebib-entry-mode (bibtex-extras-get-key "=key="))))
+	  nil))
+    (derived-mode-p 'text-mode)))
 
-(defun tlon-babel-fetch-field-with-zotra (field &optional id-or-url)
+
+(defun tlon-babel-fetch-field-with-zotra (field &optional id-or-url no-error)
   "Fetch the value of FIELD from the ID-OR-URL of the entry at point.
-IF ID-OR-URL is nil, try to get it or fetch it."
+IF ID-OR-URL is nil, try to get it or fetch it. If NO-ERROR is non-nil, handle
+errors gracefully."
   (let* ((id-or-url (or id-or-url (ebib-extras-get-or-fetch-id-or-url))))
-    (zotra-extras-fetch-field field id-or-url)))
+    (zotra-extras-fetch-field field id-or-url no-error)))
 
 (defun tlon-babel-abstract-cleanup (string)
   "Clean up raw abstract consisting of STRING."
