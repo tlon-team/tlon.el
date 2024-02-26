@@ -197,7 +197,8 @@ If FILE is non-nil, return it as a string. Otherwise,
 - If in `text-mode', return the contents of the current region, if active;
   otherwise, return the contents of the current buffer."
   (if-let ((file (or file (when (derived-mode-p 'bibtex-mode 'ebib-entry-mode)
-			    (ebib-extras-get-file "html") (ebib-extras-get-file "pdf")))))
+			    (or (ebib-extras-get-file "html")
+				(ebib-extras-get-file "pdf"))))))
       (with-temp-buffer
 	(when (string= (file-name-extension file) "pdf")
 	  (let ((markdown (make-temp-file "pdf-to-markdown-")))
