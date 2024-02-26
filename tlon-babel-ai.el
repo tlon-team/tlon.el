@@ -154,7 +154,11 @@ MODEL is the language model. If CALLBACK is nil, use
 `tlon-babel-ai-generic-callback'."
   (let ((callback (or callback #'tlon-babel-ai-generic-callback)))
     (gptel-extras-model-config (or model tlon-babel-ai-model))
-    (gptel-request (format prompt string) :callback callback)))
+    (if tlon-babel-ai-batch-fun
+	(condition-case nil
+	    (gptel-request (format prompt string) :callback callback)
+	  (error nil))
+      (gptel-request (format prompt string) :callback callback))))
 
 (defun tlon-babel-ai-generic-callback (response info)
   "Generic callback function for AI requests.
