@@ -410,13 +410,14 @@ If STRING is nil, use the current entry."
 
 (defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract)
   "Set the `abstract' field of the current BibTeX entry to ABSTRACT."
-  (let* ((key (pcase major-mode
-		('bibtex-mode #'bibtex-extras-get-key)
-		('ebib-entry-mode (ebib-extras-get-field "=key="))))
-	 (set-field (pcase major-mode
+  (let* ((set-field (pcase major-mode
 		      ('bibtex-mode #'bibtex-set-field)
 		      ('ebib-entry-mode #'ebib-extras-set-field))))
-    (funcall set-field "abstract" abstract)
+    (shut-up
+      (funcall set-field "abstract" abstract))
+    (message "Set abstract of `%s'" (pcase major-mode
+				      ('bibtex-mode (bibtex-extras-get-key))
+				      ('ebib-entry-mode (ebib-extras-get-field "=key="))))
     (save-buffer)))
 
 ;;;;; Language detection
