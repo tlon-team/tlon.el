@@ -519,6 +519,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (defun tlon-babel-ai-batch-fun-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
   (tlon-babel-transient-read-symbol-choice prompt '(tlon-babel-get-abstract-with-or-without-ai
+						    tlon-babel-get-abstract-with-ai
+						    tlon-babel-fetch-and-set-abstract
 						    tlon-babel-ai-set-language-bibtex
 						    nil)))
 
