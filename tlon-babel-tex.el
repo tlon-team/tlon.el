@@ -334,7 +334,7 @@ errors gracefully."
 Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point."
   (interactive)
   (let ((key (or key (bibtex-extras-get-key)))
-        (target tlon-babel-refs-file-fluid))
+	(target tlon-babel-refs-file-fluid))
     (bibtex-extras-move-entry key target)
     (with-current-buffer (find-file-noselect target)
       (widen)
@@ -358,9 +358,9 @@ and sets the value of the field for all entries to `Tlön'."
     (save-excursion
       (bibtex-map-entries
        (lambda (_key start _end)
-         (save-excursion
-           (goto-char start)
-           (tlon-babel-add-or-update-tlon-field)))))
+	 (save-excursion
+	   (goto-char start)
+	   (tlon-babel-add-or-update-tlon-field)))))
     ;; Save the updated entries to the file
     (save-buffer)))
 
