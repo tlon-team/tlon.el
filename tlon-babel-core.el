@@ -178,8 +178,12 @@
 	   :project "other"
 	   :subproject "docs"
 	   :abbrev "docs"
-	   :type docs
-	   :key "d")
+	   :type docs)
+    (:name "tlon-site"
+	   :project "tlon"
+	   :subproject "docs"
+	   :abbrev "tlon-site"
+	   :type development)
     (:name "sandbox"
 	   :abbrev "sandbox"
 	   :type test))

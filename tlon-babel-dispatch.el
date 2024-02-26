@@ -110,7 +110,10 @@ DIR is the directory where the repo is stored."
 
 (transient-define-prefix tlon-babel-magit-repo-dispatch ()
   "Browse a Tlön repo in Magit."
-  [["Babel"
+  [["Tlon"
+    ("t s" "tlon-site"                    tlon-babel-magit-browse-tlon-site)
+    ("t d" "tlon-docs"                    tlon-babel-magit-browse-docs)]
+   ["Babel"
     ("b c" "babel-core"                   tlon-babel-magit-browse-babel-core)
     ("b r" "babel-refs"                   tlon-babel-magit-browse-babel-refs)
     ("b s" "babel-es"                     tlon-babel-magit-browse-babel-es)
@@ -138,9 +141,7 @@ DIR is the directory where the repo is stored."
    ["Meetings"
     ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
     ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)]
-   ["Docs"
-    ("d d" "tlon-docs"                    tlon-babel-magit-browse-docs)]])
+    ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)]])
 
 ;;;;; Open repo
 
@@ -158,7 +159,10 @@ DIR is the directory where the repo is stored."
 
 (transient-define-prefix tlon-babel-open-repo-dispatch ()
   "Interactively open a file from a Tlön repo."
-  [["Babel"
+  [["Tlon"
+    ("t s" "tlon-site"                    tlon-babel-open-file-in-tlon-site)
+    ("t d" "tlon-docs"                    tlon-babel-open-file-in-docs)]
+   ["Babel"
     ("b c" "babel-core"                   tlon-babel-open-file-in-babel-core)
     ("b r" "babel-refs"                   tlon-babel-open-file-in-babel-refs)
     ("b s" "babel-es"                     tlon-babel-open-file-in-babel-es)
@@ -182,9 +186,7 @@ DIR is the directory where the repo is stored."
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-open-file-in-bisagra)]
    ["Boletín"
-    ("a a" "boletin"                      tlon-babel-open-file-in-boletin)]
-   ["Docs"
-    ("d d" "tlon-docs"                    tlon-babel-open-file-in-docs)]])
+    ("a a" "boletin"                      tlon-babel-open-file-in-boletin)]])
 
 ;;;;; Browse repo in Dired
 
@@ -203,7 +205,10 @@ DIR is the directory where the repo is stored."
 
 (transient-define-prefix tlon-babel-dired-repo-dispatch ()
   "Browse a Tlön repo in Dired."
-  [["Babel"
+  [["Tlon"
+    ("t s" "tlon-site"                    tlon-babel-dired-browse-tlon-site)
+    ("t d" "tlon-docs"                    tlon-babel-dired-browse-docs)]
+   ["Babel"
     ("b c" "babel-core"                   tlon-babel-dired-browse-babel-core)
     ("b r" "babel-refs"                   tlon-babel-dired-browse-babel-refs)
     ("b s" "babel-es"                     tlon-babel-dired-browse-babel-es)
@@ -227,9 +232,7 @@ DIR is the directory where the repo is stored."
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-dired-browse-bisagra)]
    ["Boletín"
-    ("a a" "boletin"                      tlon-babel-dired-browse-boletin)]
-   ["Docs"
-    ("d d" "tlon-docs"                    tlon-babel-dired-browse-docs)]])
+    ("a a" "boletin"                      tlon-babel-dired-browse-boletin)]])
 
 ;;;;; Browse repo dir in Dired
 
@@ -266,9 +269,7 @@ DIR is the directory where the repo is stored."
        ("a" "articles"         ,(intern (format "tlon-babel-dired-browse-articles-dir-in-%s" name)))
        ("t" "tags"             ,(intern (format "tlon-babel-dired-browse-tags-dir-in-%s" name)))
        ("u" "authors"          ,(intern (format "tlon-babel-dired-browse-authors-dir-in-%s" name)))
-       ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))
-       ]]
-     ))
+       ("c" "collections"      ,(intern (format "tlon-babel-dired-browse-collections-dir-in-%s" name)))]]))
 
 (dolist (repo (tlon-babel-repo-lookup-all :abbrev :type 'content))
   (eval `(tlon-babel-generate-entity-dispatch ,repo)))
