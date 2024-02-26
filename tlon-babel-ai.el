@@ -41,7 +41,7 @@
   :group 'tlon-babel)
 
 (defcustom tlon-babel-ai-batch-fun nil
-  "Function to run in batch processing."
+  "Function to run in batch mode."
   :type 'symbol
   :group 'tlon-babel-ai)
 
