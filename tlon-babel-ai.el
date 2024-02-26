@@ -551,6 +551,18 @@ RESPONSE is the response from the AI model and INFO is the response info."
   :prompt "AI model: "
   :variable 'tlon-babel-ai-model)
 
+(defun tlon-babel-mullvad-connection-duration-reader (prompt _ _)
+  "Return a list of choices with PROMPT to be used as an `infix' reader function."
+  (tlon-babel-transient-read-number-choice prompt mullvad-durations))
+
+(transient-define-infix tlon-babel-mullvad-connection-duration-infix ()
+  "Change the local value of the `gptel-extras-gemini-mullvad-disconnect-after'
+variable."
+  :class 'transient-lisp-variable
+  :reader 'tlon-babel-mullvad-connection-duration-reader
+  :prompt "Disconnect after: "
+  :variable 'gptel-extras-gemini-mullvad-disconnect-after)
+
 ;;;###autoload (autoload 'tlon-babel-ai-menu "tlon-babel-ai" nil t)
 (transient-define-prefix tlon-babel-ai-menu ()
   "Menu for `tlon-babel-ai'."
