@@ -175,11 +175,10 @@ INFO is the response info."
 (defun tlon-babel-ai-batch-continue ()
   "Move to the next entry and call `tlon-babel-ai-batch-fun''."
   (when tlon-babel-ai-batch-fun
-    (when (y-or-n-p "Continue? ")
-      (pcase major-mode
-	('bibtex-mode (bibtex-next-entry))
-	('ebib-entry-mode (ebib-extras-next-entry)))
-      (funcall tlon-babel-ai-batch-fun))))
+    (pcase major-mode
+      ('bibtex-mode (bibtex-next-entry))
+      ('ebib-entry-mode (ebib-extras-next-entry)))
+    (funcall tlon-babel-ai-batch-fun)))
 
 (defun tlon-babel-ai-try-try-try-again (original-fun)
   "Call ORIGINAL-FUN up to three times if it its response is nil, then give up."
