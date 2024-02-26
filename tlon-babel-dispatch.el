@@ -31,10 +31,16 @@
 
 ;;;; Functions
 
+;; maybe move this to `simple-extras', since they are universal functions for reading symbols, numbers
 (defun tlon-babel-transient-read-symbol-choice (prompt choices)
   "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
   (let* ((input (completing-read prompt (mapcar 'symbol-name choices))))
     (intern input)))
+
+(defun tlon-babel-transient-read-number-choice (prompt choices)
+  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  (let* ((input (completing-read prompt (mapcar 'number-to-string choices))))
+    (string-to-number input)))
 
 (defun tlon-babel-transient-read-string-choice (prompt choices)
   "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
