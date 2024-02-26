@@ -558,19 +558,21 @@ RESPONSE is the response from the AI model and INFO is the response info."
     ("t" "translate"                            tlon-babel-ai-translate)]
    ["Rewrite"
     ("r" "rewrite"                              tlon-babel-ai-rewrite)]
+   ["Detect language"
+    ("g g" "set language bibtex"                tlon-babel-ai-set-language-bibtex)]
    ["Summarize"
     ("s s" "get abstract with or without AI"    tlon-babel-get-abstract-with-or-without-ai)
+    ("s n" "get abstract without AI"            tlon-babel-fetch-and-set-abstract)
     ("s a" "get abstract with AI"               tlon-babel-get-abstract-with-ai)
     ("s h" "get abstract with AI from HTML"     tlon-babel-get-abstract-with-ai-from-html)
     ("s p" "get abstract with AI from PDF"      tlon-babel-get-abstract-with-ai-from-pdf)
     ("s b" "summarize bibtex entry"             tlon-babel-ai-summarize-bibtex-entry)]
-   ["Detect language"
-    ("g g" "set language bibtex"                tlon-babel-ai-set-language-bibtex)]
-   ["options"
+   [
+    """parameters"
     ("-b" "batch"                               tlon-babel-ai-batch-fun-infix)
-    ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)
-    ("-m" "model"                               tlon-babel-ai-model-infix)]])
-
+    ("-d" "mullvad connection duration"         tlon-babel-mullvad-connection-duration-infix)
+    ("-m" "model"                               tlon-babel-ai-model-infix)
+    ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)]])
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
