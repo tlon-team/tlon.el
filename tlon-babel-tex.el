@@ -377,7 +377,7 @@ and sets the value of the field for all entries to `Tlön'."
   (let ((after-save-hook nil))
     (tlon-babel-add-lang-id-to-entry)
     (tlon-babel-remove-empty-spaces)
-    (bibtex-extras-escape-dollar-signs)
+    (bibtex-extras-escape-special-characters)
     (bibtex-clean-entry)
     (save-buffer)))
 
@@ -400,13 +400,15 @@ If the field `landig' is present, the function does nothing; else, it sets the
     (while (re-search-forward " \\}" nil t)
       (replace-match "}" t t))))
 
-(defun bibtex-extras-escape-dollar-signs ()
-  "Escape all dollar signs in the current BibTeX file."
+(defun bibtex-extras-escape-special-characters ()
+  "Escape special characters in the current BibTeX file."
   (interactive)
   (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward "\\(\\(?:[^\\]\\|^\\)\\)\\(\\$\\)" nil t)
-      (replace-match "\\1\\\\$" nil nil))))
+    (dolist (char '("$" "%" "#" "&"))
+      (goto-char (point-min))
+      (while (re-search-forward (format "\\(\\(?:[^\\]\\|^\\)\\)\\(\\%s\\)" char) nil t)
+	(unless (member (bibtex-extras-get-field-name) '("url" "file"))
+	  (replace-match (format "\\1\\\\%s" char) nil nil))))))
 
 
 ;;;;; autokey
