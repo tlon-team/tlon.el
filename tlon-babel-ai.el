@@ -383,7 +383,7 @@ If RESPONSE is nil, return INFO."
        (tlon-babel-ai-summarize-set-bibtex-abstract response))
       ('markdown-mode) ; set `description' YAML field to it
       (_ (kill-new response)
-	 (message "Copied AI-generated summary to the kill ring:\n\n%s" response))))
+	 (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))
   (tlon-babel-ai-batch-continue))
 
 ;;;;;; BibTeX
