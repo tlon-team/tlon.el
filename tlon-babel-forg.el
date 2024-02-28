@@ -963,7 +963,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (repo (forge-get-repository issue)))
     (when (eq 'open (oref issue state))
-      (forge--set-topic-state repo issue 'closed))))
+      (forge--set-topic-state repo issue 'completed))))
 
 (defun tlon-babel-get-parent-todo (todo)
   "Get parent of TODO in `tlon-babel-todos-jobs-file'."
