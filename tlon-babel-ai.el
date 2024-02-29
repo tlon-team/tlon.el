@@ -209,6 +209,20 @@ If FILE is non-nil, return it as a string. Otherwise,
 	    (end (if (region-active-p) (region-end) (point-max))))
 	(buffer-substring-no-properties beg end)))))
 
+(defun tlon-babel-get-file-as-string (file)
+  "Get the contents of FILE as a string."
+  (with-temp-buffer
+    (when (string= (file-name-extension file) "pdf")
+      (let ((markdown (make-temp-file "pdf-to-markdown-")))
+	(tlon-babel-convert-pdf file markdown)
+	(setq file markdown)))
+    (insert-file-contents file)
+    (when (string= (file-name-extension file) "html")
+      (shr-render-buffer (current-buffer)))
+    (let ((result (buffer-substring-no-properties (point-min) (point-max))))
+      (kill-buffer)
+      result)))
+
 ;;;;; Translation
 
 ;;;;;; Translation variants
