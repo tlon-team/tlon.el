@@ -380,8 +380,8 @@ PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function. MODEL is the
 language model."
   (let ((prompt (tlon-babel-lookup prompts :prompt :language language)))
-    (message "Getting abstract. This may take 5–30 seconds, depending on length...")
-    (tlon-babel-make-gptel-request prompt string callback model)))
+    (tlon-babel-make-gptel-request prompt string callback model)
+    (message "Getting abstract. This may take 5–30 seconds, depending on length...")))
 
 (defun tlon-babel-get-abstract-callback (response info)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
