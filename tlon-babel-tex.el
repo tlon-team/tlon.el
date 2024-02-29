@@ -329,19 +329,37 @@ errors gracefully."
 
 ;;;;; moving entries
 
-(defun tlon-babel-move-entry-to-tlon (&optional key)
-  "Move entry with KEY to `tlon-babel-refs-file-fluid'.
-Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point."
+(defun tlon-babel-move-entry (&optional key file)
+  "Move entry with KEY to FILE.
+Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
+If FILE is non-nil, use `tlon-babel-refs-file-fluid'."
   (interactive)
   (let ((key (or key (bibtex-extras-get-key)))
-	(target tlon-babel-refs-file-fluid))
-    (bibtex-extras-move-entry key target)
-    (with-current-buffer (find-file-noselect target)
+	(file (or file tlon-babel-refs-file-fluid)))
+    (bibtex-extras-move-entry key file)
+    (with-current-buffer (find-file-noselect file)
       (widen)
       (bibtex-search-entry key)
       (tlon-babel-add-or-update-tlon-field)
       (save-buffer))
     (kill-new key)))
+
+(defun tlon-babel-move-entry-without-abstract ()
+  "Move entry to `tlon-babel-refs-file-fluid' if it doesn't have an abstract."
+  (message "Moving `%s'..." (bibtex-extras-get-key))
+  (unless (bibtex-extras-get-field "abstract")
+    (tlon-babel-move-entry))
+  (bibtex-next-entry)
+  (tlon-babel-move-entry-without-abstract))
+
+(defun tlon-babel-move-lesswrong-entries ()
+  "Move LessWrong entry to \"temp.bib\"."
+  (message "Moving `%s'..." (bibtex-extras-get-key))
+  (when (string= (bibtex-extras-get-field "journaltitle") "{LessWrong}")
+    (tlon-babel-move-entry nil "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/babel-refs/bib/temp.bib"))
+  (bibtex-next-entry)
+  (tlon-babel-move-lesswrong-entries)
+  )
 
 ;;;;; adding fields
 
