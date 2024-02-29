@@ -305,7 +305,7 @@ abstract will, or will not, replace the existing one, respectively."
 		     ('bibtex-mode (bibtex-extras-get-key))
 		     ('ebib-entry-mode (bibtex-extras-get-key "=key="))))
 	  nil))
-    (derived-mode-p 'text-mode)))
+    (derived-mode-p 'text-mode 'pdf-view-mode)))
 
 
 (defun tlon-babel-fetch-field-with-zotra (field &optional id-or-url no-error)
