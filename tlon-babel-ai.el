@@ -381,7 +381,7 @@ the language of the string, and CALLBACK is the callback function. MODEL is the
 language model."
   (let ((prompt (tlon-babel-lookup prompts :prompt :language language)))
     (tlon-babel-make-gptel-request prompt string callback model)
-    (message "Getting abstract. This may take 5–30 seconds, depending on length...")))
+    (message "Getting AI abstract...")))
 
 (defun tlon-babel-get-abstract-callback (response info)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
