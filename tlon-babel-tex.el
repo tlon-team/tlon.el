@@ -352,6 +352,16 @@ If FILE is non-nil, use `tlon-babel-refs-file-fluid'."
   (bibtex-next-entry)
   (tlon-babel-move-entry-without-abstract))
 
+(defun tlon-babel-move-entry-without-file ()
+  "Move entry to `tlon-babel-refs-file-fluid' if it doesn't have an abstract."
+  (let ((key (bibtex-extras-get-key)))
+    (unless (or (bibtex-extras-get-field "file")
+		(bibtex-extras-get-field "crossref"))
+      (message "Moving `%s'..." key)
+      (tlon-babel-move-entry key "temp.bib"))
+    (bibtex-next-entry)
+    (tlon-babel-move-entry-without-file)))
+
 (defun tlon-babel-move-lesswrong-entries ()
   "Move LessWrong entry to \"temp.bib\"."
   (message "Moving `%s'..." (bibtex-extras-get-key))
