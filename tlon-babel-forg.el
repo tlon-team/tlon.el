@@ -537,7 +537,7 @@ ISSUE is nil, use the issue at point."
   "Return a list of all open issues in REPO.
 If REPO is nil, use the current repository."
   (let* ((repo (or repo (forge-get-repository t)))
-	 (issues (forge-ls-issues repo)))
+	 (issues (forge--ls-topics repo)))
     issues))
 
 (defun tlon-babel-get-latest-issue (&optional repo)
