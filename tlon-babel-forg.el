@@ -465,7 +465,7 @@ ISSUE is nil, use the issue at point."
 	 (tlon-babel-get-todos-jobs-file))
       (tlon-babel-get-todo-position
        (format "\\[orgit-topic:%s\\]" (oref issue id))
-       (tlon-babel-get-todos-generic-file) 'loose))))
+       (tlon-babel-get-todos-generic-file) 'substring))))
 
 ;;;;; Counterpart
 
