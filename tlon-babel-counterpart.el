@@ -238,44 +238,5 @@ default to \".md\"."
     (cl-loop for file in files
 	     do (tlon-babel-check-counterpart-paragraph-number-match file))))
 
-;;;;; Word count
-
-(defun tlon-babel-count-extraneous-words ()
-  "Count extraneous words in current buffer."
-  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-metadata nil 'raw) " ")))
-    (with-temp-buffer
-      (insert metadata)
-      (when-let ((vars (tlon-babel-md-get-local-variables)))
-	(insert vars))
-      (goto-char (point-min))
-      (count-words-region (point-min) (point-max)))))
-
-(defun tlon-babel-count-substantive-words ()
-  "Count substantive words in current buffer."
-  (save-restriction
-    (widen)
-    (let ((raw (count-words (point-min) (point-max))))
-      (- raw (tlon-babel-count-extraneous-words)))))
-
-(defun tlon-babel-count-words-in-repo (&optional repo)
-  "Count words in Markdown files in REPO.
-If REPO is nil, prompt the user for one."
-  (interactive)
-  (let* ((repo (or repo
-		   (intern (completing-read
-			    "Repo: "
-			    (tlon-babel-repo-lookup-all :abbrev :subtype 'translations)))))
-	 (initial-buffers (buffer-list))
-	 (files (directory-files-recursively
-		 (tlon-babel-repo-lookup :dir :name repo) "\\.md$"))
-	 (total-words 0))
-    (dolist (file files)
-      (with-current-buffer (find-file-noselect file)
-	(let ((words-in-file (tlon-babel-count-substantive-words)))
-	  (setq total-words (+ total-words words-in-file)))
-	(unless (member (current-buffer) initial-buffers)
-	  (kill-buffer (current-buffer)))))
-    (message (number-to-string total-words))))
-
 (provide 'tlon-babel-counterpart)
 ;;; tlon-babel-counterpart.el ends here
