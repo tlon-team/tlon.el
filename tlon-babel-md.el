@@ -38,7 +38,7 @@
   :group 'tlon-babel)
 
 (defcustom tlon-babel-md-special-characters
-  '("•" "–" "—" "‘" "’" "“" "”" " " "­")
+  '("•" "–" "—" "‘" "’" "“" "”" " " "­" "…")
   "List of special characters to insert in a Markdown file."
   :type '(repeat string)
   :group 'tlon-babel-md)
