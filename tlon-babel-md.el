@@ -45,12 +45,12 @@
 ;;;; Variables
 
 (defconst tlon-babel-md-local-variables-line-start
-  "<!-- Local Variables: -->"
-  "Start of the line that contains file local variables.")
+  "<!-- Local Variables:"
+  "Start of the first line that contains file local variables.")
 
 (defconst tlon-babel-md-local-variables-line-end
-  "<!-- End: -->"
-  "End of the line that contains file local variables.")
+  "End: -->"
+  "End of the last line that contains file local variables.")
 
 (defconst tlon-babel-cite-pattern
   "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
