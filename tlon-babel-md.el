@@ -412,7 +412,7 @@ end of the buffer unconditionally."
 ;;;###autoload
 (defun tlon-babel-md-get-local-variables ()
   "Get the text in the \"local variables\" section of the current buffer."
-  (when-let ((range (tlon-babel-md-get-delimiter-region-position
+  (when-let ((range (tlon-babel-get-delimited-region-pos
                      tlon-babel-md-local-variables-line-start
                      tlon-babel-md-local-variables-line-end)))
     (cl-destructuring-bind (start . end) range
@@ -420,24 +420,24 @@ end of the buffer unconditionally."
 
 (defun tlon-babel-md-get-metadata ()
   "Get the text in the metadata section of the current buffer."
-  (when-let ((range (tlon-babel-md-get-delimiter-region-position
+  (when-let ((range (tlon-babel-get-delimited-region-pos
                      tlon-babel-yaml-delimiter)))
     (cl-destructuring-bind (start . end) range
       (buffer-substring-no-properties start end))))
 
-(defun tlon-babel-md-get-delimiter-region-position (start-delimiter &optional end-delimiter)
-  "Get the position of the region between START-DELIMITER and END-DELIMITER.
-If END-DELIMITER is nil, use START-DELIMITER as the end delimiter."
+(defun tlon-babel-get-delimited-region-pos (begin &optional end)
+  "Get the position of the region delimited by BEGIN and END.
+If END is nil, use BEGIN also as the end delimiter."
   (save-restriction
     (widen)
     (save-excursion
       (goto-char (point-min))
-      (when (re-search-forward start-delimiter nil t)
-	(let* ((start (match-beginning 0))
-	       (end (when (re-search-forward (or end-delimiter start-delimiter) nil t)
-		      (match-end 0))))
-	  (when (and start end)
-	    (cons start end)))))))
+      (when (re-search-forward begin nil t)
+	(let* ((begin-pos (match-beginning 0))
+	       (end-pos (when (re-search-forward (or end begin) nil t)
+			  (match-end 0))))
+	  (when (and begin-pos end-pos)
+	    (cons begin-pos end-pos)))))))
 
 (defun tlon-babel-md-insert-special-character (char)
   "Insert a special CHAR at point.
