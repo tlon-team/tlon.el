@@ -812,27 +812,5 @@ Return the path of the temporary file created."
       (browse-url (format url (url-hexify-string string)) 'new-buffer)))
   (goldendict-ng-search-string string))
 
-;;;;; Misc
-
-(defun tlon-babel-historic-word-count (&optional repo-name days chars-per-word)
-  "Compute the historic word count of REPO-NAME for past DAYS.
-CHARS-PER-WORD is the average number of characters per word. The word count is
-computed by dividing the file size by CHARS-PER-WORD."
-  (interactive)
-  (unless (executable-find "gdu")
-    (user-error "Please install `gdu' (e.g. `brew install gdu')"))
-  (unless (executable-find "gnuplot")
-    (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
-  (let* ((repo-name (or repo-name
-			(completing-read "Repo: "
-					 (tlon-babel-repo-lookup-all :name :subtype 'translations))))
-	 (dir (tlon-babel-repo-lookup :dir :name repo-name))
-	 (days (or days (read-number "How many days into the past? ")))
-	 (chars-per-word (or chars-per-word 5.5))
-	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat (tlon-babel-repo-lookup :dir :name "babel")
-				   "count/historic-word-count")))
-    (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
-
 (provide 'tlon-babel)
 ;;; tlon-babel.el ends here
