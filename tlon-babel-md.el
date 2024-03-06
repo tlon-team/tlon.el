@@ -379,6 +379,7 @@ of the existing locators."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))
 
+;; TODO: make it work twice consecutively
 (defun tlon-babel-md-end-of-buffer-dwim ()
   "Move point to the end of the relevant part of the buffer.
 The relevant part of the buffer is the part of the buffer that excludes the
@@ -393,6 +394,7 @@ end of the buffer unconditionally."
 	(goto-char (- (match-beginning 0) 1)))
     (goto-char (point-max))))
 
+;; TODO: make it work twice consecutively
 (defun tlon-babel-md-beginning-of-buffer-dwim ()
   "Move point to the beginning of the relevant part of the buffer.
 The relevant part of the buffer is the part of the buffer that excludes the
