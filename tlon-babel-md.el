@@ -425,20 +425,6 @@ end of the buffer unconditionally."
     (cl-destructuring-bind (start . end) range
       (buffer-substring-no-properties start end))))
 
-(defun tlon-babel-get-delimited-region-pos (begin &optional end)
-  "Get the position of the region delimited by BEGIN and END.
-If END is nil, use BEGIN also as the end delimiter."
-  (save-restriction
-    (widen)
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward begin nil t)
-	(let* ((begin-pos (match-beginning 0))
-	       (end-pos (when (re-search-forward (or end begin) nil t)
-			  (match-end 0))))
-	  (when (and begin-pos end-pos)
-	    (cons begin-pos end-pos)))))))
-
 (defun tlon-babel-md-insert-special-character (char)
   "Insert a special CHAR at point.
 The list of completion candidates can be customized via the user option

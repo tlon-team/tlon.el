@@ -367,6 +367,22 @@ If DIR is nil, use the current repository."
     (when issue-id
       (forge-get-issue repo issue-id))))
 
+;;;;; Get region pos
+
+(defun tlon-babel-get-delimited-region-pos (begin &optional end)
+  "Get the position of the region delimited by BEGIN and END.
+If END is nil, use BEGIN also as the end delimiter."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward begin nil t)
+	(let* ((begin-pos (match-beginning 0))
+	       (end-pos (when (re-search-forward (or end begin) nil t)
+			  (match-end 0))))
+	  (when (and begin-pos end-pos)
+	    (cons begin-pos end-pos)))))))
+
 ;;;;; Misc
 ;; this function will eventually be deleted once we migrate to a system of English-only directory names
 

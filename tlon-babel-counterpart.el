@@ -144,7 +144,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 		      (point)))
 	 (offset (if (tlon-babel-is-between-paragraphs-p) 0 1)))
     (funcall fun counterpart)
-    (goto-char (or (cdr (tlon-babel-md-get-delimiter-region-position
+    (goto-char (or (cdr (tlon-babel-get-delimited-region-pos
 			 tlon-babel-yaml-delimiter))
 		   (point-min)))
     (markdown-forward-paragraph (- paragraphs offset))
@@ -194,12 +194,12 @@ If called with a prefix ARG, open the counterpart in the other window."
   (interactive)
   (save-excursion
     (goto-char (or start
-		   (cdr (tlon-babel-md-get-delimiter-region-position
+		   (cdr (tlon-babel-get-delimited-region-pos
 			 tlon-babel-yaml-delimiter))
 		   (point-min)))
     (let ((count 0))
       (while (< (point) (or end
-			    (cdr (tlon-babel-md-get-delimiter-region-position
+			    (cdr (tlon-babel-get-delimited-region-pos
 				  tlon-babel-md-local-variables-line-start
 				  tlon-babel-md-local-variables-line-end))
 			    (point-max)))
