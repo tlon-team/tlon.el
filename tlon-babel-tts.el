@@ -32,64 +32,6 @@
 
 ;;;; Functions
 
-(defvar tlon-babel-tts-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "H-,") 'tlon-babel-tts-read-backward)
-    (define-key map (kbd "H-.") 'tlon-babel-tts-read-forward)
-    (define-key map (kbd "H-;") 'tlon-babel-tts-read-target-start-or-stop)
-    (define-key map (kbd "H-k") 'read-aloud-extras-increase-rate)
-    (define-key map (kbd "H-l") 'read-aloud-extras-decrease-rate)
-    map)
-  "Keymap for `tlon-babel-tts-mode'.")
-
-(define-minor-mode tlon-babel-tts-mode
-  "Enable TTS mode locally."
-  :global nil
-  :init-value nil
-  :keymap tlon-babel-tts-mode-map)
-
-(defun tlon-babel-tts-get-target-buffer ()
-  "Return the buffer that `read-aloud' should read."
-  (let ((buffer-list (cl-remove-if-not
-		      (lambda (buffer)
-			(string-match-p (regexp-quote "**markdown-output* # eww*") (buffer-name buffer)))
-		      (buffer-list)))
-	buffer)
-    (cond ((= (length buffer-list) 1)
-	   (setq buffer (car buffer-list)))
-	  ((< (length buffer-list) 1)
-	   (user-error "No buffer found"))
-	  ((> (length buffer-list) 1)
-	   (user-error "More than one buffer found")))
-    buffer))
-
-(defun tlon-babel-tts-read-target-start-or-stop ()
-  "Start or stop reading the target buffer."
-  (interactive)
-  (let ((buffer (tlon-babel-tts-get-target-buffer))
-	(current-buffer (current-buffer)))
-    (pop-to-buffer buffer)
-    (when read-aloud--c-bufpos
-      (goto-char read-aloud--c-bufpos))
-    (read-aloud-buf)
-    ;; we move point to the previous chunk, using the chunk divider
-    ;; defined in `read-aloud--grab-text'
-    (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
-    (pop-to-buffer current-buffer)))
-
-(defun tlon-babel-tts-read-backward-or-forward (direction)
-  "Move in DIRECTION in the target buffer."
-  (interactive)
-  (let ((buffer (tlon-babel-tts-get-target-buffer))
-	(current-buffer (current-buffer))
-	(fun (if (eq direction 'backward)
-		 're-search-backward
-	       're-search-forward)))
-    (when read-aloud--c-bufpos
-      (read-aloud-buf))
-    (pop-to-buffer buffer)
-    (funcall fun "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t 1)
-    (pop-to-buffer current-buffer)))
 
 (defun tlon-babel-tts-read-backward ()
   "Move backward in the target buffer."
