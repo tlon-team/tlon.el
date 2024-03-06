@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'markdown-mode-extras)
+(require 'tlon-babel-core)
 (require 'tlon-babel-yaml)
 
 ;;;; User options
