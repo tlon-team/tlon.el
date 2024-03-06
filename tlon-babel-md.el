@@ -54,7 +54,9 @@
 
 (defconst tlon-babel-cite-pattern
   "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
-  "Pattern to match a citation in a Markdown file.")
+  "Pattern to match a citation in a Markdown file.
+The first group captures the bibTeX key, the second group captures the locators,
+and the third group captures the short citation flag.")
 
 (defconst tlon-babel-locators
   '(("book" . "bk.")
