@@ -161,6 +161,8 @@ not alter it unless you know what you are doing."
     (while (re-search-forward string nil t)
       (replace-match ""))))
 
+;;;;;; Footnotes
+
 (defun tlon-babel-cleanup-split-footnotes-into-paragraphs ()
   "Split footnotes into separate paragraphs."
   (interactive)
