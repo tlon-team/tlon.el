@@ -93,9 +93,16 @@ and the third group captures the short citation flag.")
     ("volumes" . "vols."))
   "Alist of locators and their abbreviations.")
 
+(defconst tlon-babel-footnote-marker "<Footnote /> "
+  "Marker for a footnote in a `Cite' MDX element.")
+
+(defconst tlon-babel-sidenote-marker "<Sidenote /> "
+  "Marker for a sidenote in a `Cite' MDX element.")
+
 ;;;; Functions
 
 ;;;;; Insertion
+
 ;;;;;; metadata
 ;;;;###autoload
 (defun tlon-babel-edit-yaml-field ()
@@ -264,7 +271,7 @@ Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
 Text enclosed by a `Footnote' element pair will be displayed as a footnote, as
 opposed to a sidenote."
   (interactive)
-  (tlon-babel-insert-note-marker "<Footnote /> "))
+  (tlon-babel-insert-note-marker tlon-babel-footnote-marker))
 
 ;;;###autoload
 (defun tlon-babel-insert-sidenote-marker ()
@@ -272,7 +279,7 @@ opposed to a sidenote."
 Text enclosed by a `Footnote' element pair will be displayed as a sidenote, as
 opposed to a footnote."
   (interactive)
-  (tlon-babel-insert-note-marker "<Sidenote /> "))
+  (tlon-babel-insert-note-marker tlon-babel-sidenote-marker))
 
 ;;;;;;;; Citations
 
