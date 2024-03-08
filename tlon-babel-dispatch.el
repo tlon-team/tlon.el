@@ -140,6 +140,8 @@ DIR is the directory where the repo is stored."
     ("n i" "ean-issues"                   tlon-babel-magit-browse-ean-issues)
     ("n f" "ean-front"                    tlon-babel-magit-browse-ean-front)
     ("n a" "ean-api"                      tlon-babel-magit-browse-ean-api)]
+   ["EA International"
+    ("i i" "ea.international"             tlon-babel-magit-browse-ea-international)]
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-magit-browse-bisagra)]
    ["Boletín"
@@ -189,6 +191,8 @@ DIR is the directory where the repo is stored."
     ("n i" "ean-issues"                   tlon-babel-open-file-in-ean-issues)
     ("n f" "ean-front"                    tlon-babel-open-file-in-ean-front)
     ("n a" "ean-api"                      tlon-babel-open-file-in-ean-api)]
+   ["EA International"
+    ("i " "ea-international"              tlon-babel-open-file-in-ea-international)]
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-open-file-in-bisagra)]
    ["Boletín"
@@ -235,6 +239,8 @@ DIR is the directory where the repo is stored."
     ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
     ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
     ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]
+   ["EA International"
+    ("i i" "ea-international"             tlon-babel-dired-browse-ea-international)]
    ["La Bisagra"
     ("s s" "bisagra"                      tlon-babel-dired-browse-bisagra)]
    ["Boletín"

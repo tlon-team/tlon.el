@@ -150,6 +150,12 @@
 	   :type development
 	   :subtype api
 	   :key "a")
+    (:name "ea.international"
+	   :project "other"
+	   :subproject "ea.international"
+	   :abbrev "ea-international"
+	   :type meta
+	   :key "i")
     (:name "bisagra"
 	   :project "other"
 	   :subproject "bisagra"
