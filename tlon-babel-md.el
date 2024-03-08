@@ -536,15 +536,15 @@ end of the buffer unconditionally."
 (defun tlon-babel-md-get-local-variables ()
   "Get the text in the \"local variables\" section of the current buffer."
   (when-let ((range (tlon-babel-get-delimited-region-pos
-                     tlon-babel-md-local-variables-line-start
-                     tlon-babel-md-local-variables-line-end)))
+		     tlon-babel-md-local-variables-line-start
+		     tlon-babel-md-local-variables-line-end)))
     (cl-destructuring-bind (start . end) range
       (buffer-substring-no-properties start end))))
 
 (defun tlon-babel-md-get-metadata ()
   "Get the text in the metadata section of the current buffer."
   (when-let ((range (tlon-babel-get-delimited-region-pos
-                     tlon-babel-yaml-delimiter)))
+		     tlon-babel-yaml-delimiter)))
     (cl-destructuring-bind (start . end) range
       (buffer-substring-no-properties start end))))
 
