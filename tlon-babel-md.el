@@ -94,10 +94,10 @@ and the third group captures the short citation flag.")
     ("volumes" . "vols."))
   "Alist of locators and their abbreviations.")
 
-(defconst tlon-babel-footnote-marker "<Footnote /> "
+(defconst tlon-babel-footnote-marker "<Footnote />"
   "Marker for a footnote in a `Cite' MDX element.")
 
-(defconst tlon-babel-sidenote-marker "<Sidenote /> "
+(defconst tlon-babel-sidenote-marker "<Sidenote />"
   "Marker for a sidenote in a `Cite' MDX element.")
 
 ;;;; Functions
