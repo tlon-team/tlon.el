@@ -389,6 +389,112 @@ of the existing locators."
   (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
 
 
+;;;;; Note classification
+
+(defun tlon-babel-auto-classify-note-at-point ()
+  "Automatically classify note at point as a note of TYPE."
+  (interactive)
+  (let* ((note (tlon-babel-get-note-at-point))
+	 (type (tlon-babel-get-note-automatic-type note)))
+    (tlon-babel-classify-note-at-point type)))
+
+(defun tlon-babel-note-content-bounds ()
+  "Return the start and end positions of the content of the note at point.
+The content of a note is its substantive part of the note, i.e. the note minus
+the marker that precedes it."
+  (when-let* ((fn-pos (markdown-footnote-text-positions))
+	      (id (nth 0 fn-pos))
+	      (begin (nth 1 fn-pos))
+	      (end (nth 2 fn-pos))
+	      (fn (buffer-substring-no-properties begin end)))
+    ;; regexp pattern copied from `markdown-footnote-kill-text'
+    (string-match (concat "\\[\\" id "\\]:[[:space:]]") fn)
+    (cons (+ begin (match-end 0)) end)))
+
+(defun tlon-babel-get-note-at-point ()
+  "Get the note at point, if any."
+  (let* ((bounds (tlon-babel-note-content-bounds))
+	 (begin (car bounds))
+	 (end (cdr bounds)))
+    (string-trim (buffer-substring-no-properties begin end))))
+
+(defun tlon-babel-auto-classify-notes-in-file (&optional file)
+  "Automatically classify all notes in FILE.
+If FILE is nil, use the current buffer."
+  (interactive)
+  (let ((file (or file (buffer-file-name))))
+    (with-current-buffer (find-file-noselect file)
+      (save-excursion
+	(goto-char (point-min))
+	(while (re-search-forward markdown-regex-footnote-definition nil t)
+	  (tlon-babel-auto-classify-note-at-point))))))
+
+(defun tlon-babel-auto-classify-notes-in-directory (&optional dir)
+  "Automatically classify all notes in DIR.
+If REPO is nil, use the current directory."
+  (interactive)
+  (let ((dir (or dir (file-name-directory default-directory))))
+    (dolist (file (directory-files dir t "^[^.][^/]*$"))
+      (when (string-match-p "\\.md$" file)
+	(message "Classifying notes in %s" file)
+	(tlon-babel-auto-classify-notes-in-file file)))))
+
+(defun tlon-babel-get-note-automatic-type (note)
+  "Return the type into which NOTE is automatically classified.
+The function implements the following classification criterion: if the note
+contains at least one citation and no more than four words excluding citations,
+it is classified as a footnote; otherwise, it is classified as a sidenote."
+  (with-temp-buffer
+    (let ((is-footnote-p)
+	  (has-citation-p))
+      (insert note)
+      (goto-char (point-min))
+      (while (re-search-forward tlon-babel-cite-pattern nil t)
+	(replace-match "")
+	(setq has-citation-p t))
+      (when has-citation-p
+	(let ((words (count-words-region (point-min) (point-max))))
+	  (when (<= words 4)
+	    (setq is-footnote-p t))))
+      (if is-footnote-p 'footnote 'sidenote))))
+
+(defun tlon-babel-classify-note-at-point (&optional type)
+  "Classify note at point as a note of TYPE.
+TYPE can be either `footnote' o `sidenote'. If TYPE is nil, prompt the user for
+a type."
+  (interactive)
+  (let ((type (or type (completing-read "Type: " '("footnote" "sidenote") nil t))))
+    (pcase type
+      ('footnote (tlon-babel-insert-footnote-marker))
+      ('sidenote (tlon-babel-insert-sidenote-marker))
+      (_ (user-error "Invalid type")))))
+
+;;;;; Abbreviations
+
+(defvar-local tlon-babel-in-text-abbreviations '()
+  "Abbreviations introduced in the text and their spoken equivalent.")
+
+(defun tlon-babel-add-in-text-abbreviation (abbrev)
+  "Add an in-text ABBREV to the file-local list."
+  (interactive
+   (let* ((key (substring-no-properties
+		(completing-read "Abbrev: " tlon-babel-in-text-abbreviations)))
+	  (default-expansion (alist-get key tlon-babel-in-text-abbreviations nil nil #'string=))
+	  (value (substring-no-properties
+		  (completing-read "Expanded abbrev: " (mapcar #'cdr tlon-babel-in-text-abbreviations)
+				   nil nil default-expansion))))
+     (list (cons key value))))
+  (setq tlon-babel-in-text-abbreviations
+	(cl-remove-if (lambda (existing-abbrev)
+			"If a new expansion was set for an existing-abbrev, remove it."
+			(string= (car existing-abbrev) (car abbrev)))
+		      tlon-babel-in-text-abbreviations))
+  (modify-file-local-variable
+   'tlon-babel-in-text-abbreviations
+   (push abbrev tlon-babel-in-text-abbreviations)
+   'add-or-replace)
+  (hack-local-variables))
+
 ;;;;; Misc
 
 (defun tlon-babel-md-check-in-markdown-mode ()
