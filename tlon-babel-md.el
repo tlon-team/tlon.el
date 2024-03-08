@@ -257,30 +257,46 @@ Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
 
 ;;;;;;;; Notes
 
-(defun tlon-babel-insert-note-marker (marker)
-  "Insert note MARKER in the footnote at point."
-  (if-let ((fn-data (markdown-footnote-text-positions)))
-      (cl-destructuring-bind (id start _) fn-data
-	(let ((pos (+ 4 (length id) start)))
-	  (goto-char pos)
-	  (insert marker)))
+(defun tlon-babel-insert-note-marker (marker &optional overwrite)
+  "Insert note MARKER in the footnote at point.
+If OVERWRITE is non-nil, replace the existing marker when present."
+  (if-let ((fn-data (tlon-babel-note-content-bounds)))
+      (let ((start (car fn-data)))
+	(goto-char start)
+	(let ((other-marker (car (remove marker (list tlon-babel-footnote-marker
+						      tlon-babel-sidenote-marker)))))
+	  (cond ((thing-at-point-looking-at (regexp-quote marker))
+		 nil)
+		((thing-at-point-looking-at (regexp-quote other-marker))
+		 (when overwrite
+		   (replace-match marker)))
+		(t
+		 (insert marker)))))
     (user-error "Not in a footnote")))
 
 ;;;###autoload
-(defun tlon-babel-insert-footnote-marker ()
+(defun tlon-babel-insert-footnote-marker (&optional overwrite)
   "Insert a `Footnote' marker in the footnote at point.
 Text enclosed by a `Footnote' element pair will be displayed as a footnote, as
-opposed to a sidenote."
+opposed to a sidenote.
+
+If OVERWRITE is non-nil, or called interactively, replace the existing marker
+when present."
   (interactive)
-  (tlon-babel-insert-note-marker tlon-babel-footnote-marker))
+  (let ((overwrite (or overwrite (called-interactively-p 'any))))
+    transient-current-command
+    (tlon-babel-insert-note-marker tlon-babel-footnote-marker overwrite)))
 
 ;;;###autoload
-(defun tlon-babel-insert-sidenote-marker ()
+(defun tlon-babel-insert-sidenote-marker (&optional overwrite)
   "Insert a `Sidenote' marker in the footnote at point.
-Text enclosed by a `Footnote' element pair will be displayed as a sidenote, as
-opposed to a footnote."
+Text enclosed by a `Sidenote' element pair will be displayed as a sidenote, as
+opposed to a footnote.
+
+If OVERWRITE is non-nil, or called interactively, replace the existing marker
+when present."
   (interactive)
-  (tlon-babel-insert-note-marker tlon-babel-sidenote-marker))
+  (tlon-babel-insert-note-marker tlon-babel-sidenote-marker overwrite))
 
 ;;;;;;;; Citations
 
@@ -451,8 +467,8 @@ The list of completion candidates can be customized via the user option
     ("t" "literal link"         tlon-babel-insert-mdx-literal-link)
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)]
    ["Note markers"
-    ("f" "footnote"             tlon-babel-insert-footnote-marker)
-    ("s" "sidenote"             tlon-babel-insert-sidenote-marker)]
+    ("f" "footnote"             (lambda () (interactive) (tlon-babel-insert-footnote-marker 'overwrite)))
+    ("s" "sidenote"             (lambda () (interactive) (tlon-babel-insert-sidenote-marker 'overwrite)))]
    ["Citations"
     ("c" "cite"                 tlon-babel-insert-mdx-cite)
     ("C" "cite short"           tlon-babel-insert-mdx-cite-short)
