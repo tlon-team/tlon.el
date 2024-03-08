@@ -582,6 +582,8 @@ The list of completion candidates can be customized via the user option
    ["Math"
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
+   ["File-local variables"
+    ("v" "abbreviation"         tlon-babel-add-in-text-abbreviation)]
    ["Misc"
     ("." "special character"    tlon-babel-md-insert-special-character)]])
 

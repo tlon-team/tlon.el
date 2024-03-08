@@ -96,9 +96,6 @@ characters per second, and uses nine minutes.")
     ("vs\\." . "versus"))
   "Standard Spanish abbreviations and their spoken equivalent.")
 
-(defvar-local tlon-babel-tts-in-text-abbreviations '()
-  "Abbreviations introduced in the text and their spoken equivalent.")
-
 ;;;;; Currencies
 
 (defconst tlon-babel-tts-currencies
@@ -133,13 +130,13 @@ characters per second, and uses nine minutes.")
 (defun tlon-babel-read-file (file)
   ""
   (let ((file-name (file-name-sans-extension file))
-	(tlon-babel-tts-in-text-abbreviations)
+	(tlon-babel-in-text-abbreviations)
 	article chunks)
     (with-current-buffer (find-file-noselect file)
       ;; to make `tlon-babel-tts-process-in-text-abbreviations' work, we
       ;; let-bound the variable above and now set its value to that of its
       ;; file-local counterpart
-      (setq tlon-babel-tts-in-text-abbreviations tlon-babel-tts-in-text-abbreviations)
+      (setq tlon-babel-in-text-abbreviations tlon-babel-in-text-abbreviations)
       (let ((begin (or (cdr (tlon-babel-get-delimited-region-pos
 			     tlon-babel-yaml-delimiter))
 		       (point-min)))
@@ -273,9 +270,9 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 In-text abbreviations are those that are introduced in the text itself,
 typically in parenthesis after the first occurrence of the phrase they
 abbreviate. We store these abbreviations on a per file basis, in the file-local
-variable `tlon-babel-tts-in-text-abbreviations'"
+variable `tlon-babel-in-text-abbreviations'"
   (let ((case-fold-search nil))
-    (dolist (partial tlon-babel-tts-in-text-abbreviations)
+    (dolist (partial tlon-babel-in-text-abbreviations)
       (dolist (full (list (cons
 			   (format "%s (%s)" (cdr partial) (car partial))
 			   (cdr partial))
