@@ -307,7 +307,7 @@ abstract will, or will not, replace the existing one, respectively."
 	  (message "Skipping: `%s' already contains an abstract."
 		   (pcase major-mode
 		     ('bibtex-mode (bibtex-extras-get-key))
-		     ('ebib-entry-mode (bibtex-extras-get-key "=key="))))
+		     ('ebib-entry-mode (ebib-extras-get-field "=key="))))
 	  nil))
     (derived-mode-p 'text-mode 'pdf-view-mode)))
 
