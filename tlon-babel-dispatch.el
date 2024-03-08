@@ -160,7 +160,7 @@ DIR is the directory where the repo is stored."
     `(defun ,command-name ()
        ,(format "Interactively open a file from a list of all files in `%s'" repo-name)
        (interactive)
-       (tlon-babelq-open-file-in-repo ,repo))))
+       (tlon-babel-open-file-in-repo ,repo))))
 
 (dolist (repo (tlon-babel-repo-lookup-all :dir))
   (eval `(tlon-babel-generate-open-file-in-repo-commands ,repo)))
