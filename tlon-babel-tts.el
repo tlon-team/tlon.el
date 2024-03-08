@@ -164,6 +164,9 @@ characters per second, and uses nine minutes.")
   (tlon-babel-tts-remove-sidenote-marker)
   (tlon-babel-tts-process-currencies)
   ;; handle text formatting: replace e.g. italics with SSML
+  ;; replace small caps
+  ;; check all other elements in markdown-menu
+  ;; quotes
   (tlon-babel-tts-process-standard-abbreviations)
   (tlon-babel-tts-process-in-text-abbreviations)
   ;; images
