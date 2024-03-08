@@ -30,7 +30,11 @@
 (require 'bib)
 (require 'doi-utils)
 (require 'bibtex-extras)
+(require 'ebib-extras)
 (require 'paths)
+(require 'shut-up)
+(require 'tlon-babel-ai)
+(require 'zotra-extras)
 
 ;;;; User options
 
