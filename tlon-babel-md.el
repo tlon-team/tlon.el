@@ -474,7 +474,7 @@ a type."
 (defvar-local tlon-babel-in-text-abbreviations '()
   "Abbreviations introduced in the text and their spoken equivalent.")
 
-(defun tlon-babel-add-in-text-abbreviation (abbrev)
+(defun tlon-babel-insert-in-text-abbreviation (abbrev)
   "Add an in-text ABBREV to the file-local list."
   (interactive
    (let* ((key (substring-no-properties
@@ -582,8 +582,6 @@ The list of completion candidates can be customized via the user option
    ["Math"
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
-   ["File-local variables"
-    ("v" "abbreviation"         tlon-babel-add-in-text-abbreviation)]
    ["Misc"
     ("." "special character"    tlon-babel-md-insert-special-character)]])
 
@@ -594,6 +592,7 @@ The list of completion candidates can be customized via the user option
 
 (with-eval-after-load 'gfm-mode
   (define-key gfm-mode-map (kbd "s-d") 'tlon-babel-md-menu))
+    ("v" "abbreviation"         tlon-babel-insert-in-text-abbreviation)
 
 (provide 'tlon-babel-md)
 ;;; tlon-babel-md.el ends here
