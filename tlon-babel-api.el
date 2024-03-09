@@ -29,7 +29,6 @@
 
 (require 'json-mode)
 (require 'request)
-(require 'tlon-babel)
 (require 'tlon-babel-core)
 
 ;;;; Variables
@@ -222,6 +221,14 @@ If BUFFER is nil, default to the current buffer."
 (dolist (fun (list 'magit-push-current-to-upstream
 		   'magit-push-current-to-pushremote))
   (advice-add fun :after 'tlon-babel-magit-trigger-api-request))
+
+;;;;; Transient
+
+;;;###autoload (autoload 'tlon-babel-api-menu "tlon-babel-api" nil t)
+(transient-define-prefix tlon-babel-api-menu ()
+  "`api' menu."
+  ["Requests"
+   ("q" "uqbar"                        tlon-babel-api-request)])
 
 (provide 'tlon-babel-api)
 ;;; tlon-babel-api.el ends here

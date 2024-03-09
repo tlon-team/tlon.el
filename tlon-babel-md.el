@@ -567,6 +567,7 @@ The list of completion candidates can be customized via the user option
 
 ;;;;; Menu
 
+;;;###autoload (autoload 'tlon-babel-md-menu "tlon-babel-md" nil t)
 (transient-define-prefix tlon-babel-md-menu ()
   "Dispatch a `tlon-babel' command for Markdown insertion."
   :info-manual "(tlon-babel) Editing Markdown"

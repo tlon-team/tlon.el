@@ -690,14 +690,6 @@ If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
 	(user-error "File is not in a recognized repository"))
     (user-error "Buffer is not visiting a file")))
 
-(defun tlon-babel-browse-repo ()
-  "Browse a Babel repository.
-If the current buffer is visiting a file in a Babel repository, browse that;
-otherwise prompt for a repo."
-  (interactive)
-  (let* ((repo-name (tlon-babel-repo-lookup :name :dir (tlon-babel-get-repo))))
-    (browse-url (concat tlon-babel-tlon-github-url repo-name))))
-
 (defun tlon-babel-browse-entity-dir (entity &optional repo source-lang)
   "Browse the directory of ENTITY in REPO.
 ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
@@ -709,14 +701,15 @@ REPO is nil, default to the current repository."
 	 (path (file-name-concat repo dir)))
     (dired path)))
 
-(defun tlon-babel-open-file-in-repo (&optional repo)
+(defun tlon-babel-find-file-in-repo (&optional repo)
   "Interactively open a file from a list of all files in REPO.
 If REPO is nil, default to the current repository."
-  (let* ((repo (or repo (tlon-babel-get-repo)))
+  (interactive)
+  (let* ((repo (or repo (tlon-babel-get-repo 'error)))
 	 (alist (tlon-babel-files-and-display-names-alist (list repo) repo)))
     (tlon-babel-open-file-in-alist alist)))
 
-(defun tlon-babel-open-file-in-all-repos ()
+(defun tlon-babel-open-file-across-repos ()
   "Interactively open a file from a list of all files in all repos."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist

@@ -1038,6 +1038,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   :prompt "Set ‘tlon-babel-when-assignee-is-someone-else’ to (see docstring for details): "
   :variable 'tlon-babel-when-assignee-is-someone-else)
 
+;;;###autoload (autoload 'tlon-babel-forg-menu "tlon-babel-forg" nil t)
 (transient-define-prefix tlon-babel-forg-menu ()
   "`forg' menu."
   :info-manual "(tlon-babel) GitHub and org-mode synchronization"

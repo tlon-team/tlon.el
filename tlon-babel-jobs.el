@@ -342,6 +342,25 @@ substitute assignee."
     (save-buffer)
     (files-extras-switch-to-alternate-buffer)))
 
+;;;;; Transient
+
+;;;###autoload (autoload 'tlon-babel-jobs-menu "tlon-babel-jobs" nil t)
+(transient-define-prefix tlon-babel-jobs-menu ()
+  "`jobs' menu."
+  :info-manual "(tlon-babel) Jobs"
+  [
+   ["Actions"
+    ("j" "dwim"                     tlon-babel-jobs-dwim)
+    ("c" "create job"               tlon-babel-create-job)]
+   ["Add or modify"
+    ("g" "glossary"                 tlon-babel-glossary-dwim)
+    ("s" "section corresp"          tlon-babel-section-correspondence-dwim)
+    ("u" "URL corresp"              tlon-babel-url-correspondence-dwim)]
+   ["jobs.org"
+    ("r" "create record"            tlon-babel-create-record-for-job)
+    ("h" "create heading"           tlon-babel-create-heading-for-job)
+    ("t" "sort headings"            tlon-babel-jobs-sort-headings)]])
+
 (provide 'tlon-babel-jobs)
 ;;; tlon-babel-jobs.el ends here
 
