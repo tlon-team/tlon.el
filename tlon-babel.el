@@ -30,7 +30,6 @@
 (require 'citar)
 (require 'consult)
 (require 'doi-utils)
-(require 'ebib-extras)
 (require 'files-extras)
 (require 'forge)
 (require 'forge-search)

@@ -27,11 +27,8 @@
 
 ;;; Code:
 
-(require 'ebib-extras)
 (require 'gptel)
 (require 'gptel-extras)
-(require 'tlon-babel)
-(require 'tlon-babel-import)
 (require 'tlon-babel-dispatch)
 
 ;;;; User options
