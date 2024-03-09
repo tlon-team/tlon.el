@@ -179,11 +179,10 @@ characters per second, and uses nine minutes.")
 ;; italics to also prompt the user if they want to insert emphasis.
 ;; Retrospectively, we should revise all existing MD files and add emphasis tags
 ;; where appropriate.
-(defun tlon-babel-add-ssml-emphasis ()
+(defun tlon-babel-handle-italics ()
   "Search for text in italics and prompt user to add enclosing `emphasis' tag."
   (interactive)
-  
-  (query-replace-regexp markdown-regex-italic "<emphasis>*\\1*</emphasis>" nil))
+  (query-replace-regexp markdown-regex-italic " <emphasis>\\3</emphasis>" nil))
 
 
 ;;;;;; Notes
