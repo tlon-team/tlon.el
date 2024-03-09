@@ -413,9 +413,9 @@ the marker that precedes it."
 
 (defun tlon-babel-get-note-at-point ()
   "Get the note at point, if any."
-  (let* ((bounds (tlon-babel-note-content-bounds))
-	 (begin (car bounds))
-	 (end (cdr bounds)))
+  (when-let* ((bounds (tlon-babel-note-content-bounds))
+	      (begin (car bounds))
+	      (end (cdr bounds)))
     (string-trim (buffer-substring-no-properties begin end))))
 
 (defun tlon-babel-auto-classify-notes-in-file (&optional file)
