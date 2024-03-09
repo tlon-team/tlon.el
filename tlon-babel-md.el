@@ -395,7 +395,7 @@ of the existing locators."
   "Automatically classify note at point as a note of TYPE."
   (interactive)
   (let* ((note (tlon-babel-get-note-at-point))
-	 (type (tlon-babel-get-note-automatic-type note)))
+	 (type (tlon-babel-note-automatic-type note)))
     (tlon-babel-classify-note-at-point type)))
 
 (defun tlon-babel-note-content-bounds ()
@@ -439,7 +439,7 @@ If REPO is nil, use the current directory."
 	(message "Classifying notes in %s" file)
 	(tlon-babel-auto-classify-notes-in-file file)))))
 
-(defun tlon-babel-get-note-automatic-type (note)
+(defun tlon-babel-note-automatic-type (note)
   "Return the type into which NOTE is automatically classified.
 The function implements the following classification criterion: if the note
 contains at least one citation and no more than four words excluding citations,
