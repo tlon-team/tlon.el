@@ -72,100 +72,7 @@
 
 ;;;; Functions
 
-(defun tlon-babel-jobs-create-record-for-job (&optional key)
-  "Create a record based on KEY.
-Creates a new record in the repository (with the format `Job: KEY') and a new
-heading in the file `jobs.org'. If KEY is not provided, the key in the current
-Markdown buffer at point is used."
-  (interactive)
-  (if-let ((key (or key
-		    (pcase major-mode
-		      ('markdown-mode (tlon-babel-get-key-in-buffer))
-		      ('ebib-entry-mode (ebib--get-key-at-point))))))
-      (progn
-	(tlon-babel-create-issue-from-key key)
-	(tlon-babel-jobs-create-heading-for-job key 'commit))
-    (user-error "I wasn't able to create a record because I didn't find a key")))
-
-(defun tlon-babel-jobs-create-heading-for-job (&optional key commit)
-  "Create a heading based on BibTeX KEY in `jobs.org'.
-If KEY is not provided, the key in the Markdown buffer at point is used. If
-COMMIT is non-nil, commit the change."
-  (interactive)
-  (let* ((key (or key (tlon-babel-get-key-in-buffer)))
-	 (heading (format "[cite:@%s]" key))
-	 (file (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "file" "original_key" key))
-	 (repo (tlon-babel-get-repo-from-file file))
-	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir repo)))
-    (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
-			     (find-file-noselect tlon-babel-file-jobs))
-      (widen)
-      (goto-char (point-min))
-      (unless (search-forward heading nil t)
-	(re-search-forward tlon-babel-jobs-id nil t)
-	(while (and (not (org-at-heading-p)) (not (eobp)))
-	  (forward-line))
-	(org-insert-heading)
-	(insert heading)
-	(org-todo 'todo)
-	(org-set-tags repo-abbrev)
-	(tlon-babel-jobs-sort-headings tlon-babel-file-jobs)
-	(save-buffer)))
-    (when commit
-      (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
-
-(defun tlon-babel-jobs-sort-headings (&optional file)
-  "Sort all headings under parent in FILE alphabetically and by TODO order."
-  (interactive)
-  (with-current-buffer (or (find-buffer-visiting file)
-			   (find-file-noselect file))
-    (widen)
-    (org-up-heading-safe)
-    (org-sort-entries nil ?a)
-    (org-sort-entries nil ?o)
-    (save-buffer)))
-
-(defun tlon-babel-jobs-get-key-in-heading ()
-  "Get the key of the currently clocked task."
-  (unless (org-at-heading-p)
-    (user-error "Not in an org-mode heading"))
-  (let ((heading (substring-no-properties (org-get-heading t t t t))))
-    (if (string-match "\\[cite:@\\(.+?\\)\\]\\|Job: `\\(.+?\\)\\.md`" heading)
-	(or (match-string 1 heading)
-	    (match-string 2 heading))
-      (user-error "I wasn't able to find a key in clocked heading"))))
-
-(defun tlon-babel-jobs-goto-heading (key)
-  "Move point to the heading in `jobs.org' with KEY."
-  (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
-			   (find-file-noselect tlon-babel-file-jobs))
-    (org-element-map (org-element-parse-buffer) 'headline
-      (lambda (headline)
-	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
-	  (goto-char (org-element-property :begin headline)))))))
-
-;;;###autoload
-(defun tlon-babel-jobs-create-job ()
-  "Create a new job for IDENTIFIER based on Ebib entry at point.
-Creating a new job means (1) importing a document and (2) creating a record for
-it. A record is (a) an issue in GitHub and (b) a heading in `jobs.org'.
-
-IDENTIFIER can be a URL or a PDF file path."
-  (interactive)
-  (unless (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
-    (user-error "This command must be run from an Ebib buffer"))
-  (if-let ((id (or (ebib-extras-get-field "url")
-		   (ebib-extras-get-file "md")))
-	   (title (ebib-extras-get-field "title"))
-	   (key (ebib-extras-get-field "=key="))
-	   (repo (completing-read "Repo: " (tlon-babel-repo-lookup-all :dir :subtype 'translations))))
-      (progn
-	(tlon-babel-import-document id title)
-	(tlon-babel-create-translation-file repo)
-	(tlon-babel-jobs-create-record-for-job key))
-    (user-error "The current Ebib entry seems to be missing one of the following
-fields, which are needed to create a new job: `url' or `file',
-`title' and `key'")))
+;;;;; Job phases
 
 ;;;###autoload
 (defun tlon-babel-jobs-dwim ()
@@ -341,6 +248,105 @@ substitute assignee."
     (goto-char (point-min))
     (save-buffer)
     (files-extras-switch-to-alternate-buffer)))
+
+;;;;; Job creation
+
+;;;###autoload
+(defun tlon-babel-create-job ()
+  "Create a new job for IDENTIFIER based on Ebib entry at point.
+Creating a new job means (1) importing a document and (2) creating a record for
+it. A record is (a) an issue in GitHub and (b) a heading in `jobs.org'.
+
+IDENTIFIER can be a URL or a PDF file path."
+  (interactive)
+  (unless (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
+    (user-error "This command must be run from an Ebib buffer"))
+  (if-let ((id (or (ebib-extras-get-field "url")
+		   (ebib-extras-get-file "md")))
+	   (title (ebib-extras-get-field "title"))
+	   (key (ebib-extras-get-field "=key="))
+	   (repo (completing-read "Repo: " (tlon-babel-repo-lookup-all :dir :subtype 'translations))))
+      (progn
+	(tlon-babel-import-document id title)
+	(tlon-babel-create-translation-file repo)
+	(tlon-babel-create-record-for-job key))
+    (user-error "The current Ebib entry seems to be missing one of the following
+fields, which are needed to create a new job: `url' or `file',
+`title' and `key'")))
+
+(defun tlon-babel-create-record-for-job (&optional key)
+  "Create a record based on KEY.
+Creates a new record in the repository (with the format `Job: KEY') and a new
+heading in the file `jobs.org'. If KEY is not provided, the key in the current
+Markdown buffer at point is used."
+  (interactive)
+  (if-let ((key (or key
+		    (pcase major-mode
+		      ('markdown-mode (tlon-babel-get-key-in-buffer))
+		      ('ebib-entry-mode (ebib--get-key-at-point))))))
+      (progn
+	(tlon-babel-create-issue-from-key key)
+	(tlon-babel-create-heading-for-job key 'commit))
+    (user-error "I wasn't able to create a record because I didn't find a key")))
+
+;;;;; `jobs.org'
+
+(defun tlon-babel-create-heading-for-job (&optional key commit)
+  "Create a heading based on BibTeX KEY in `jobs.org'.
+If KEY is not provided, the key in the Markdown buffer at point is used. If
+COMMIT is non-nil, commit the change."
+  (interactive)
+  (let* ((key (or key (tlon-babel-get-key-in-buffer)))
+	 (heading (format "[cite:@%s]" key))
+	 (file (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "file" "original_key" key))
+	 (repo (tlon-babel-get-repo-from-file file))
+	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir repo)))
+    (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
+			     (find-file-noselect tlon-babel-file-jobs))
+      (widen)
+      (goto-char (point-min))
+      (unless (search-forward heading nil t)
+	(re-search-forward tlon-babel-jobs-id nil t)
+	(while (and (not (org-at-heading-p)) (not (eobp)))
+	  (forward-line))
+	(org-insert-heading)
+	(insert heading)
+	(org-todo 'todo)
+	(org-set-tags repo-abbrev)
+	(tlon-babel-jobs-sort-headings tlon-babel-file-jobs)
+	(save-buffer)))
+    (when commit
+      (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
+
+(defun tlon-babel-jobs-sort-headings (&optional file)
+  "Sort all headings under parent in FILE alphabetically and by TODO order."
+  (interactive)
+  (with-current-buffer (or (find-buffer-visiting file)
+			   (find-file-noselect file))
+    (widen)
+    (org-up-heading-safe)
+    (org-sort-entries nil ?a)
+    (org-sort-entries nil ?o)
+    (save-buffer)))
+
+(defun tlon-babel-jobs-get-key-in-heading ()
+  "Get the key of the currently clocked task."
+  (unless (org-at-heading-p)
+    (user-error "Not in an org-mode heading"))
+  (let ((heading (substring-no-properties (org-get-heading t t t t))))
+    (if (string-match "\\[cite:@\\(.+?\\)\\]\\|Job: `\\(.+?\\)\\.md`" heading)
+	(or (match-string 1 heading)
+	    (match-string 2 heading))
+      (user-error "I wasn't able to find a key in clocked heading"))))
+
+(defun tlon-babel-jobs-goto-heading (key)
+  "Move point to the heading in `jobs.org' with KEY."
+  (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
+			   (find-file-noselect tlon-babel-file-jobs))
+    (org-element-map (org-element-parse-buffer) 'headline
+      (lambda (headline)
+	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
+	  (goto-char (org-element-property :begin headline)))))))
 
 ;;;;; Transient
 
