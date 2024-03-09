@@ -84,6 +84,11 @@ As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be l
 
 ** Commands to insert note markers
 
+A note may be of two types: a /footnote/, shown at the end of the web page, and a /sidenote/, shown on the side of the page. We indicate that a note is a footnote or a sidenote with the self-enclosing tags ~<Footnote />~ and ~<Sidenote />~, respectively. These tags may, and should, be inserted with the corresponding commands, ~tlon-babel-insert-footnote-marker~ and ~tlon-babel-insert-sidenote-marker~, bound to the letters ~f~ and ~s~ in the Markdown transient menu.
+
+We use a system of automatic classification of notes into either footnotes or sidenotes that seeks to capture the intuitive idea that some notes are merely bibliographic while others are substantive. Currently, the criterion classifies a note as a footnote if it contains at least one citation and four words or less, excluding citations. To auto-classify the note at point, call ~tlon-babel-auto-classify-note-at-point~ (~n~). To auto-classify all notes in the file, call ~tlon-babel-auto-classify-notes-in-file~ (~N~).
+
+Note that, while the two commands in the first paragraph of this section will replace an existing note tag, if present (e.g. a ~<Sidenote />~ tag in a note will be replaced by a ~<Footnote />~ tag if ~tlon-babel-insert-footnote-marker~ is invoked with point on it), the two commands in the second paragraph will instead keep the existing tags. This behavior is intended to reflect the fact that a manual classification should take precedence over an automatic classification.
 ** Other commands
 
 Special characters can be inserted with ~tlon-babel-md-insert-special-character~. The user option ~tlon-babel-md-special-characters~ customizes the list of characters offered as completion candidates.
