@@ -54,7 +54,7 @@ Inline expressions are delimited by ~$`~ and ~`$~, like this:
 [T]he marginal chance of success is proportional to $`1/x`$, where $`x`$ is the total amount of resources that will be devoted to the problem before the point where we need a solution.
 #+end_src
 
-Display expressions are in turn delimited by double dollar signs, like this:
+Display expressions, in turn, are delimited by double dollar signs, like this:
 
 #+begin_src markdown
 $$
@@ -64,13 +64,13 @@ $$
 
 Note that the dollar sign delimiters occupy their own lines.
 
-Inline and display expressions can be inserted with ~tlon-babel-md-insert-math-inline~ and with ~tlon-babel-md-insert-math-display~, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point.
+Inline and display expressions can be inserted with ~tlon-babel-md-insert-math-inline~ and with ~tlon-babel-md-insert-math-display~, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point. These commands can also be inserted from ~tlon-babel-md-menu~ (~H-;~).
 
 ** Commands to insert citations
 
 To insert citations, we use the custom MDX tag ~Cite~. This self-closing tag takes the mandatory attribute ~bibKey~ and the optional attribute ~short~. The value type of ~bibKey~ is a single BibTeX key, optionally followed by one or more [[https://docs.citationstyles.org/en/stable/specification.html#locators][locators]]. The attribute ~short~ indicates that the citation is a “short” citation.
 
-(“Short” citations are defined as citations that only display the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example:
+“Short” citations are defined as citations that only display the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example:
 
 #+begin_src markdown
 As Toby Ord writes in <Cite bibKey={"Ord2020PrecipiceExistentialRisk"} short />, humanity’s long-term potential may be lost this century.
