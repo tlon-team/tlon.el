@@ -115,7 +115,7 @@ and the third group captures the short citation flag.")
 ;;;;;; entities
 ;; TODO: revise to support multiple langs, including en
 ;;;###autoload
-(defun tlon-babel-insert-link ()
+(defun tlon-babel-insert-internal-link ()
   "Insert a link to an entity at point.
 The entity can be a tag or an author."
   (interactive)
@@ -563,7 +563,6 @@ The list of completion candidates can be customized via the user option
   [["YAML"
     ("y" "field"                tlon-babel-edit-yaml-field)]
    ["Link"
-    ("k" "link"                 tlon-babel-insert-link)]
    ["HTML"
     ("b" "subscript"            tlon-babel-insert-html-subscript)
     ("p" "superscript"          tlon-babel-insert-html-superscript)]
@@ -572,6 +571,7 @@ The list of completion candidates can be customized via the user option
     ("g" "lang"                 tlon-babel-insert-mdx-lang)
     ("t" "literal link"         tlon-babel-insert-mdx-literal-link)
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)]
+    ("k" "internal"             tlon-babel-insert-internal-link)
    ["Note markers"
     ("f" "footnote"             (lambda () (interactive) (tlon-babel-insert-footnote-marker 'overwrite)))
     ("s" "sidenote"             (lambda () (interactive) (tlon-babel-insert-sidenote-marker 'overwrite)))]
