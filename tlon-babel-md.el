@@ -548,7 +548,7 @@ end of the buffer unconditionally."
     (cl-destructuring-bind (start . end) range
       (buffer-substring-no-properties start end))))
 
-(defun tlon-babel-md-insert-special-character (char)
+(defun tlon-babel-insert-special-character (char)
   "Insert a special CHAR at point.
 The list of completion candidates can be customized via the user option
 `tlon-babel-md-special-characters'."
@@ -583,7 +583,6 @@ The list of completion candidates can be customized via the user option
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
    ["Misc"
-    ("." "special character"    tlon-babel-md-insert-special-character)]])
 
 ;;;;; Key bindings
 
@@ -593,6 +592,7 @@ The list of completion candidates can be customized via the user option
 (with-eval-after-load 'gfm-mode
   (define-key gfm-mode-map (kbd "s-d") 'tlon-babel-md-menu))
     ("v" "abbreviation"         tlon-babel-insert-in-text-abbreviation)
+    ("." "special character"    tlon-babel-insert-special-character)]])
 
 (provide 'tlon-babel-md)
 ;;; tlon-babel-md.el ends here
