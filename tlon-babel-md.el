@@ -578,14 +578,6 @@ The list of completion candidates can be customized via the user option
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
    ["Misc"
-
-;;;;; Key bindings
-
-(with-eval-after-load 'markdown-mode
-  (define-key markdown-mode-map (kbd "s-d") 'tlon-babel-md-menu))
-
-(with-eval-after-load 'gfm-mode
-  (define-key gfm-mode-map (kbd "s-d") 'tlon-babel-md-menu))
     ("b" "subscript"            tlon-babel-insert-html-subscript)
     ("p" "superscript"          tlon-babel-insert-html-superscript)
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)
