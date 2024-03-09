@@ -210,29 +210,6 @@ citation key, format. Hence, it must be run *before*
       (insert (alist-get language tlon-babel-tts-note-ends nil nil #'string=))
       (buffer-string))))
 
-(defun tlon-babel-tts-is-sidenote-p (string)
-  "Return t iff STRING is a sidenote.
-A STRING is a sidenote either if it has been marked as such with an MDX tag or
-if it is a substantive note."
-  (not (null (or (string-match tlon-babel-sidenote-marker string)
-		 (tlon-babel-tts-is-substantive-note-p string)))))
-
-(defun tlon-babel-tts-is-substantive-note-p (string)
-  "Return t iff STRING is a substantive note.
-A STRING is a substantive note if it contains more than four words in addition
-to any citations.
-
-Note that this criterion should mirror the one implemented on the website <add
-link to the code>."
-  (with-temp-buffer
-    (insert string)
-    (goto-char (point-min))
-    (let* ((citations (tlon-babel-count-regexp-occurrences
-		       tlon-babel-cite-pattern))
-	   (words (count-words-region (point-min) (point-max)))
-	   (real-words (- words citations)))
-      (> real-words 4))))
-
 (defun tlon-babel-count-regexp-occurrences (regexp &optional start end)
   "Count the number of occurrences of REGEXP between START and END.
 If START and END are nil, the whole buffer is searched."
