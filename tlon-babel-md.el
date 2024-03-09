@@ -439,6 +439,16 @@ If REPO is nil, use the current directory."
 	(message "Classifying notes in %s" file)
 	(tlon-babel-auto-classify-notes-in-file file)))))
 
+(defun tlon-babel-get-note-type (&optional note)
+  "Return the type of NOTE.
+If NOTE is nil, use the note at point. A note type may be either `footnote' or
+`sidenote'."
+  (when-let ((note (or note (tlon-babel-get-note-at-point))))
+    (cond ((string-match tlon-babel-footnote-marker note)
+	   'footnote)
+	  ((string-match tlon-babel-sidenote-marker note)
+	   'sidenote))))
+
 (defun tlon-babel-note-automatic-type (note)
   "Return the type into which NOTE is automatically classified.
 The function implements the following classification criterion: if the note
