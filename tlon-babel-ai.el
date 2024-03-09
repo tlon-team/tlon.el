@@ -42,11 +42,6 @@
   :type 'symbol
   :group 'tlon-babel-ai)
 
-(defcustom tlon-babel-ai-model "gemini-pro"
-  "AI model to use."
-  :type 'string
-  :group 'tlon-babel-ai)
-
 ;;;; Variables
 
 (defvar tlon-babel-ai-retries 0
