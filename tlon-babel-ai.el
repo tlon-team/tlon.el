@@ -297,7 +297,7 @@ To get an abstract without AI, the function uses
     (tlon-babel-get-abstract-with-ai)))
 
 ;;;###autoload
-(defun tlon-babel-get-abstract-with-ai (&optional file model)
+(defun tlon-babel-get-abstract-with-ai (&optional file)
   "Return an abstract of the relevant content using AI.
 If FILE is non-nil, get an abstract of its contents. Otherwise,
 
@@ -311,20 +311,18 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
   active; otherwise, get an abstract of the contents of the current buffer.
 
 In all the above cases, the AI will first look for an existing abstract and, if
-it finds one, use it. Otherwise it will create an abstract from scratch.
-
-If MODEL is nil, get it from `tlon-babel-ai-model'."
+it finds one, use it. Otherwise it will create an abstract from scratch.."
   (interactive)
   (if (tlon-babel-abstract-may-proceed-p)
       (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			     (unless tlon-babel-ai-batch-fun
 			       (tlon-babel-ai-select-language)))))
-	  (tlon-babel-ai-get-abstract-in-language file language model)
+	  (tlon-babel-ai-get-abstract-in-language file language)
 	(tlon-babel-ai-detect-language-in-file
 	 file
 	 (lambda (response info)
 	   (message "Detecting language...")
-	   (tlon-babel-ai-get-abstract-from-detected-language response info file model))))
+	   (tlon-babel-ai-get-abstract-from-detected-language response info file))))
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-get-abstract-with-ai-in-file (extension)
@@ -345,8 +343,8 @@ If MODEL is nil, get it from `tlon-babel-ai-model'."
   (interactive)
   (tlon-babel-get-abstract-with-ai-in-file "html"))
 
-(defun tlon-babel-ai-get-abstract-in-language (file language model)
-  "Get abstract from FILE in LANGUAGE with MODEL."
+(defun tlon-babel-ai-get-abstract-in-language (file language)
+  "Get abstract from FILE in LANGUAGE."
   (if-let ((string (tlon-babel-get-string-dwim file))
 	   (lang-2 (tlon-babel-get-two-letter-code language))
 	   (original-buffer (current-buffer)))
@@ -355,25 +353,23 @@ If MODEL is nil, get it from `tlon-babel-ai-model'."
        (lambda (response info)
 	 ;; we restore the original buffer to avoid a change in `major-mode'
 	 (with-current-buffer original-buffer
-	   (tlon-babel-get-abstract-callback response info)))
-       model)
+	   (tlon-babel-get-abstract-callback response info))))
     (message "Could not get abstract.")
     (tlon-babel-ai-batch-continue)))
 
-(defun tlon-babel-ai-get-abstract-from-detected-language (response info file model)
-  "If RESPONSE is non-nil, get a summary of FILE with MODEL.
+(defun tlon-babel-ai-get-abstract-from-detected-language (response info file)
+  "If RESPONSE is non-nil, get a summary of FILEl.
 Otherwise return INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
-    (tlon-babel-ai-get-abstract-in-language file response model)))
+    (tlon-babel-ai-get-abstract-in-language file response)))
 
-(defun tlon-babel-ai-get-abstract-common (prompts string language callback model)
+(defun tlon-babel-ai-get-abstract-common (prompts string language callback)
   "Common function for getting an abstract.
 PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
-the language of the string, and CALLBACK is the callback function. MODEL is the
-language model."
+the language of the string, and CALLBACK is the callback function."
   (let ((prompt (tlon-babel-lookup prompts :prompt :language language)))
-    (tlon-babel-make-gptel-request prompt string callback model)
+    (tlon-babel-make-gptel-request prompt string callback)
     (message "Getting AI abstract...")))
 
 (defun tlon-babel-get-abstract-callback (response info)
@@ -546,17 +542,6 @@ RESPONSE is the response from the AI model and INFO is the response info."
   :prompt "Overwrite when the entry already contains an abstract? "
   :variable 'tlon-babel-abstract-overwrite)
 
-(defun tlon-babel-ai-model-reader (prompt _ _)
-  "Return a list of choices with PROMPT to be used as an `infix' reader function."
-  (tlon-babel-transient-read-string-choice prompt gptel-extras-backends))
-
-(transient-define-infix tlon-babel-ai-model-infix ()
-  "Change the local value of the `tlon-babel-ai-model' variable."
-  :class 'transient-lisp-variable
-  :reader 'tlon-babel-ai-model-reader
-  :prompt "AI model: "
-  :variable 'tlon-babel-ai-model)
-
 (defun tlon-babel-mullvad-connection-duration-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
   (tlon-babel-transient-read-number-choice prompt mullvad-durations))
@@ -589,8 +574,8 @@ variable."
    ["Parameters"
     ("-b" "batch"                               tlon-babel-ai-batch-fun-infix)
     ("-d" "mullvad connection duration"         tlon-babel-mullvad-connection-duration-infix)
-    ("-m" "model"                               tlon-babel-ai-model-infix)
-    ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)]])
+    ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)
+    ("c" "configure model"                      gptel-extras-model-config)]])
 
 (provide 'tlon-babel-ai)
 ;;; tlon-babel-ai.el ends here
