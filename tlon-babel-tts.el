@@ -189,15 +189,22 @@ characters per second, and uses nine minutes.")
 ;;;;;; Notes
 
 (defun tlon-babel-tts-position-notes ()
-  "Replace citation with its note if side note, else delete it.
+  "Replace citation with its note if sidenote, else delete it.
+Move sidenote to the end of the sentence if necessary.
+
 Note: the function assumes that the citation is in MDX, rather than Pandoc
 citation key, format. Hence, it must be run *before*
 `tlon-babel-tts-process-bibtex-keys'."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-footnote nil t)
-    (markdown-footnote-kill)
-    (when (tlon-babel-tts-is-sidenote-p (current-kill 0))
-      (insert (tlon-babel-tts-handle-note (string-trim (current-kill 0)))))))
+    (let (reposition)
+      (markdown-footnote-kill)
+      (unless (looking-back (concat "\\.\\|" markdown-regex-footnote) (line-beginning-position))
+	(setq reposition t))
+      (when (eq (tlon-babel-get-note-type (current-kill 0)) 'sidenote)
+	(when reposition
+	  (forward-sentence))
+	(insert (tlon-babel-tts-handle-note (string-trim (current-kill 0))))))))
 
 (defun tlon-babel-tts-handle-note (note)
   "Handle NOTE for audio narration."
