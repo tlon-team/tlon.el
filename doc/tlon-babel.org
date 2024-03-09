@@ -93,7 +93,12 @@ We use a system of automatic classification of notes into either footnotes or si
 Note that, while the two commands in the first paragraph of this section will replace an existing note tag, if present (e.g. a ~<Sidenote />~ tag in a note will be replaced by a ~<Footnote />~ tag if ~tlon-babel-insert-footnote-marker~ is invoked with point on it), the two commands in the second paragraph will instead keep the existing tags. This behavior is intended to reflect the fact that a manual classification should take precedence over an automatic classification.
 ** Other commands
 
-Special characters can be inserted with ~tlon-babel-md-insert-special-character~. The user option ~tlon-babel-md-special-characters~ customizes the list of characters offered as completion candidates.
+~tlon-babel-edit-yaml-field~
+
+~tlon-babel-insert-internal-link~
+
+
+Special characters—such as em and en dashes, thin and non-breaking spaces, ellipsis and dots, and most other characters we may want to insert not accessible in a normal keyboard—can be inserted with ~tlon-babel-insert-special-character~. The user option ~tlon-babel-md-special-characters~ customizes the list of characters offered as completion candidates.
 
 * local variables                                                  :noexport:
 (Note that the local variables below will still be exported to the ~info~ file, unfortunately. It looks like they are not considered part of this heading.)
