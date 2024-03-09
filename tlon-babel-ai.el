@@ -514,6 +514,23 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (message "Set language of `%s' to %s" key lang)
     (tlon-babel-ai-batch-continue)))
 
+;;;;; Docs
+
+(defun tlon-babel-ai-docs ()
+  ""
+  (interactive)
+  (let ((prompt "Included below is an Emacs configuration file of the organization I work for. Please inspect it and tell me how can I search for a yasnippet snippet. Please be brief.\n\n%s")
+	(string (tlon-babel-get-file-as-string
+		 "/Users/pablostafforini/Downloads/ai-docs.org")))
+    (tlon-babel-make-gptel-request prompt string #'tlon-babel-docs-callback "Claude" "claude-3-sonnet-20240229")))
+
+(defun tlon-babel-docs-callback (response info)
+  "If RESPONSE is non-nil, take appropriate action based on major mode.
+If RESPONSE is nil, return INFO."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (message response)))
+
 ;;;;; Menu
 
 (defun tlon-babel-ai-batch-fun-reader (prompt _ _)
