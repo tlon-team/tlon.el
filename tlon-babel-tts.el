@@ -163,7 +163,6 @@ characters per second, and uses nine minutes.")
   "Prepare the current buffer for audio narration."
   (tlon-babel-tts-position-notes)
   (tlon-babel-tts-process-bibtex-keys)
-  (tlon-babel-tts-remove-sidenote-marker)
   (tlon-babel-tts-process-currencies)
   ;; handle text formatting: replace e.g. italics with SSML
   ;; replace small caps
@@ -214,6 +213,8 @@ citation key, format. Hence, it must be run *before*
       (insert note)
       (goto-char (point-min))
       (insert (alist-get language tlon-babel-tts-note-begins nil nil #'string=))
+      (while (re-search-forward tlon-babel-sidenote-marker nil t)
+	(replace-match ""))
       (goto-char (point-max))
       (insert (alist-get language tlon-babel-tts-note-ends nil nil #'string=))
       (buffer-string))))
@@ -237,12 +238,6 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
   (goto-char (point-min))
   (while (re-search-forward tlon-babel-cite-pattern nil t)
     (replace-match (format "[@%s]"(match-string 1)) nil nil)))
-
-(defun tlon-babel-tts-remove-sidenote-marker ()
-  "Remove the `Sidenote' marker from the buffer."
-  (goto-char (point-min))
-  (while (re-search-forward tlon-babel-sidenote-marker nil t)
-    (replace-match "" nil nil)))
 
 ;;;;;; Abbreviations
 
