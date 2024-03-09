@@ -563,18 +563,13 @@ The list of completion candidates can be customized via the user option
   [["YAML"
     ("y" "field"                tlon-babel-edit-yaml-field)]
    ["Link"
-   ["HTML"
-    ("b" "subscript"            tlon-babel-insert-html-subscript)
-    ("p" "superscript"          tlon-babel-insert-html-superscript)]
-   ["MDX"
-    ("a" "aside"                tlon-babel-insert-mdx-aside)
-    ("g" "lang"                 tlon-babel-insert-mdx-lang)
-    ("t" "literal link"         tlon-babel-insert-mdx-literal-link)
-    ("m" "small caps"           tlon-babel-insert-mdx-small-caps)]
     ("k" "internal"             tlon-babel-insert-internal-link)
+    ("t" "literal"              tlon-babel-insert-mdx-literal-link)]
    ["Note markers"
     ("f" "footnote"             (lambda () (interactive) (tlon-babel-insert-footnote-marker 'overwrite)))
-    ("s" "sidenote"             (lambda () (interactive) (tlon-babel-insert-sidenote-marker 'overwrite)))]
+    ("s" "sidenote"             (lambda () (interactive) (tlon-babel-insert-sidenote-marker 'overwrite)))
+    ("n" "auto: at point"       tlon-babel-auto-classify-note-at-point)
+    ("N" "auto: in file"        tlon-babel-auto-classify-notes-in-file)]
    ["Citations"
     ("c" "cite"                 tlon-babel-insert-mdx-cite)
     ("C" "cite short"           tlon-babel-insert-mdx-cite-short)
@@ -591,6 +586,11 @@ The list of completion candidates can be customized via the user option
 
 (with-eval-after-load 'gfm-mode
   (define-key gfm-mode-map (kbd "s-d") 'tlon-babel-md-menu))
+    ("b" "subscript"            tlon-babel-insert-html-subscript)
+    ("p" "superscript"          tlon-babel-insert-html-superscript)
+    ("m" "small caps"           tlon-babel-insert-mdx-small-caps)
+    ("a" "aside"                tlon-babel-insert-mdx-aside)
+    ("g" "lang"                 tlon-babel-insert-mdx-lang)
     ("v" "abbreviation"         tlon-babel-insert-in-text-abbreviation)
     ("." "special character"    tlon-babel-insert-special-character)]])
 
