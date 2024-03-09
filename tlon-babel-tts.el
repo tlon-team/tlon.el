@@ -112,11 +112,13 @@ characters per second, and uses nine minutes.")
 ;;;;; Listener cues
 
 (defconst tlon-babel-tts-note-begins
-  '(("es" . "\n\nAquí empieza una nota. "))
+  '(("en" . "\n\nA note starts here. ")
+    ("es" . "\n\nAquí empieza una nota. "))
   "Text to insert at the beginning of a note.")
 
 (defconst tlon-babel-tts-note-ends
-  '(("es" . " Aquí termina la nota.\n\n"))
+  '(("en" . " The note ends here.\n\n")
+    ("es" . " Aquí termina la nota.\n\n"))
   "Text to insert at the end of a note.")
 
 ;;;; Functions
