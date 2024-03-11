@@ -38,9 +38,17 @@
   :group 'tlon-babel)
 
 (defcustom tlon-babel-md-special-characters
-  '("•" "–" "—" "‘" "’" "“" "”" " " "­" "…")
-  "List of special characters to insert in a Markdown file."
-  :type '(repeat string)
+  '(("bullet" . "•")
+    ("en dash" . "–")
+    ("em dash" . "—")
+    ("opening single quote" . "‘")
+    ("closing single quote" . "’")
+    ("opening double quote" . "“")
+    ("closing double quote" . "”")
+    ("narrow non-break space" . " ")
+    ("soft hyphen" . "­")
+    ("ellipsis" . "…"))
+  "Alist of special characters to insert in a Markdown file."
   :group 'tlon-babel-md)
 
 ;;;; Variables
@@ -563,7 +571,7 @@ end of the buffer unconditionally."
 The list of completion candidates can be customized via the user option
 `tlon-babel-md-special-characters'."
   (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
-  (insert char))
+  (insert (alist-get char tlon-babel-md-special-characters nil nil #'string= )))
 
 ;;;;; Menu
 
