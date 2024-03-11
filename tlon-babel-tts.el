@@ -76,7 +76,7 @@ Here's a description of the main options:
 
 (defconst tlon-babel-azure-char-limit (* 9 60 14)
   "Maximum number of characters that Azure can process per request.
-Azue can process up to 10 minutes of audio at a time. This estiamte assumes 14
+Azure can process up to 10 minutes of audio at a time. This estimate assumes 14
 characters per second, and uses nine minutes.")
 
 ;;;;; Citations
