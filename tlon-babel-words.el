@@ -34,6 +34,7 @@
 
 ;;;;; Commands
 
+;;;###autoload
 (defun tlon-babel-count-words-in-repo (&optional repo-name regexp)
   "Return the number of words in REPO-NAME whose file names match REGEXP.
 If REPO is nil, prompt the user for one. If REGEXP is nil, restrict return the
@@ -45,6 +46,7 @@ number of words in Markdown files."
 	 (dir (tlon-babel-repo-lookup :dir :name repo-name)))
     (tlon-babel-count-words-in-dir dir regexp)))
 
+;;;###autoload
 (defun tlon-babel-count-words-in-dir (&optional dir regexp)
   "Return the number of words files in DIR whose file names match REGEXP.
 If DIR is nil, use the directory at point, else prompt the user for one. If
@@ -59,6 +61,7 @@ REGEXP is nil, restrict return the number of words in Markdown files."
 	(tlon-babel-count-words-in-files files))
     (user-error "No directory found")))
 
+;;;###autoload
 (defun tlon-babel-count-words-in-files (&optional files)
   "Return the number of words in the list of FILES.
 If FILES is nil, use the selected files in Dired, if possible."
@@ -102,7 +105,7 @@ defined in `tlon-babel-count-extraneous-words'."
 ;;;;; Misc
 
 ;; this may be obsolete; revise
-
+    ;;;###autoload
 (defun tlon-babel-historic-word-count (&optional repo-name days chars-per-word)
   "Compute the historic word count of REPO-NAME for past DAYS.
 CHARS-PER-WORD is the average number of characters per word. The word count is
