@@ -598,5 +598,5 @@ variable."
 ;;; tlon-babel-ai.el ends here
 
 ;; Local Variables:
-;; jinx-languages: "es en"
+;; jinx-languages: "es en it fr de"
 ;; End:
