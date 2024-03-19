@@ -98,6 +98,22 @@
 	   :language "es"
 	   :key "q s"
 	   :url "https://altruismoeficaz.net/")
+    (:name "uqbar-it"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-it"
+	   :type content
+	   :subtype translations
+	   :language "it"
+	   :key "q t")
+    (:name "uqbar-fr"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-fr"
+	   :type content
+	   :subtype translations
+	   :language "fr"
+	   :key "q f")
     (:name "utilitarianism-en"
 	   :project "babel"
 	   :subproject "utilitarianism"

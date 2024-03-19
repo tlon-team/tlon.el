@@ -101,7 +101,9 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-babel-magit-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-magit-browse-uqbar-api)
     ("q n" "uqbar-en"                     tlon-babel-magit-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)]
+    ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)
+    ("q i" "uqbar-it"                     tlon-babel-magit-browse-uqbar-it)
+    ("q f" "uqbar-fr"                     tlon-babel-magit-browse-uqbar-fr)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-magit-browse-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-babel-magit-browse-utilitarianism-es)]
@@ -154,7 +156,9 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-babel-dired-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-dired-browse-uqbar-api)
     ("q n" "uqbar-en"                     tlon-babel-dired-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)]
+    ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)
+    ("q i" "uqbar-it"                     tlon-babel-dired-browse-uqbar-it)
+    ("q f" "uqbar-fr"                     tlon-babel-dired-browse-uqbar-fr)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-dired-browse-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-babel-dired-browse-utilitarianism-es)]
@@ -202,7 +206,9 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-babel-open-file-in-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-open-file-in-uqbar-api)
     ("q n" "uqbar-en"                     tlon-babel-open-file-in-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)]
+    ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)
+    ("q i" "uqbar-it"                     tlon-babel-open-file-in-uqbar-it)
+    ("q f" "uqbar-fr"                     tlon-babel-open-file-in-uqbar-fr)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-open-file-in-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-babel-open-file-in-utilitarianism-es)]
