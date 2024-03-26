@@ -136,6 +136,13 @@
 	     :language "es"))
   "Prompts for BibTeX summarization.")
 
+;;;;; Math
+
+(defconst tlon-babel-ai-translate-math-prompt
+  `((:prompt "Please translate this math expression to natural language, i.e. as a human would read it. For example, if the expression is `\frac{1}{2} \times 2^5 \= 16`, you should translate \"one half times two to the fifth power equals sixteen\". Return only the translated expression, without adding any comments or clarifications. If for some reason you are unable to do what I ask, just return an empty string. %s"
+	     :language "en")
+    (:prompt "Por favor traduce esta expresión matemática a lenguaje natural, es decir, a la manera en que un humano la leería en voz alta. Por ejemplo, si la expresión es `\frac{1}{2} \times 2^5 \= 16`, debes traducir \"un medio por dos a la quinta potencia es igual a dieciseis\". Por favor, devuelve solamente la expresión traducida, sin comentarios ni clarificaciones. Si por alguna razón no puedes hacer lo que te pido, simplemente devuelve un texto vacío. %s"
+	     :language "es")))
 ;;;; Functions
 
 ;;;;; General
@@ -513,6 +520,27 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (bibtex-set-field "langid" lang)
     (message "Set language of `%s' to %s" key lang)
     (tlon-babel-ai-batch-continue)))
+
+;;;;; Math
+
+(defun tlon-babel-ai-translate-math (expression language)
+  "Translate mathematical EXPRESSION into natural LANGUAGE.
+LANGUAGE is a two-letter ISO 639-1 code."
+  (let ((marker (point-marker))
+	(prompt (tlon-babel-lookup tlon-babel-ai-translate-math-prompt :prompt :language language)))
+    (tlon-babel-make-gptel-request
+     prompt expression
+     (lambda (response info)
+       (tlon-babel-ai-translate-math-callback response info marker)))))
+
+(defvar tlon-babel-tts-replacements)
+(defun tlon-babel-ai-translate-math-callback (response info marker)
+  "Generic callback function for AI requests.
+RESPONSE is the response from the AI model and INFO is the response info. MARKER
+is a marker where the response should be inserted."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (push (cons marker response) tlon-babel-tts-replacements)))
 
 ;;;;; Docs
 
