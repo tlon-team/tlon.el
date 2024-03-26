@@ -108,6 +108,27 @@ and the third group captures the short citation flag.")
 (defconst tlon-babel-sidenote-marker "<Sidenote />"
   "Marker for a sidenote in a `Cite' MDX element.")
 
+;;;;;; Math
+
+(defconst tlon-babel-math-inline-open "$`"
+  "Open delimiter for an inline math expression.")
+
+(defconst tlon-babel-math-inline-close "`$"
+  "Close delimiter for an inline math expression.")
+
+(defconst tlon-babel-math-display-open "$$\n"
+  "Open delimiter for an display math expression.")
+
+(defconst tlon-babel-math-display-close "\n$$"
+  "Close delimiter for an display math expression.")
+
+(defconst tlon-babel-math-inline-expression
+  (format "\\(?1:%s\\(?2:.*?\\)%s\\)"
+	  (regexp-quote tlon-babel-math-inline-open)
+	  (regexp-quote tlon-babel-math-inline-close))
+  "Regexp pattern for an inline mathematical expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the delimiters.")
 ;;;; Functions
 
 ;;;;; Insertion
