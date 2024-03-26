@@ -232,7 +232,7 @@ citation key, format. Hence, it must be run *before*
 
 (defun tlon-babel-count-regexp-occurrences (regexp &optional start end)
   "Count the number of occurrences of REGEXP between START and END.
-If START and END are nil, the whole buffer is searched."
+If START and/or END are nil, search from the beginning and/or until the end of the buffer."
   (save-excursion
     (goto-char (or start (point-min)))
     (let ((count 0))
