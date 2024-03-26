@@ -126,7 +126,7 @@ characters per second, and uses nine minutes.")
 
 ;;;; Functions
 
-(defun tlon-babel-get-or-set-azure-key ()
+(defun tlon-babel-get-azure-key ()
   "Get or set the Azure key."
   (or tlon-babel-azure-key
       (setq tlon-babel-azure-key
@@ -363,7 +363,7 @@ Each chunk will be at most `tlon-babel-azure-char-limit' words."
 --header 'Content-Type: application/ssml+xml' \
 --header 'X-Microsoft-OutputFormat: %s' \
 --header 'User-Agent: curl' \
---data-raw %s > '%s'" (tlon-babel-get-or-set-azure-key) tlon-babel-azure-audio-settings ssml output)))
+--data-raw %s > '%s'" (tlon-babel-get-azure-key) tlon-babel-azure-audio-settings ssml output)))
     (async-shell-command command)))
 
 (provide 'tlon-babel-tts)
