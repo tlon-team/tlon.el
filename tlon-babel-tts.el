@@ -200,8 +200,8 @@ characters per second, and uses nine minutes.")
 ;;;;;; Notes
 
 (defun tlon-babel-tts-position-notes ()
-  "Replace citation with its note if sidenote, else delete it.
-Move sidenote to the end of the sentence if necessary.
+  "Replace note reference with its content, if it is a sidenote, else delete it.
+Move the note to the end of the sentence if necessary.
 
 Note: the function assumes that the citation is in MDX, rather than Pandoc
 citation key, format. Hence, it must be run *before*
