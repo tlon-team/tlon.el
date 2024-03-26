@@ -129,6 +129,7 @@ and the third group captures the short citation flag.")
   "Regexp pattern for an inline mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
+
 ;;;; Functions
 
 ;;;;; Insertion
@@ -409,14 +410,13 @@ of the existing locators."
 (defun tlon-babel-insert-math-inline ()
   "Insert an inline math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair "$`" "`$"))
+  (tlon-babel-md-insert-element-pair tlon-babel-math-inline-open tlon-babel-math-inline-close))
 
 ;;;###autoload
 (defun tlon-babel-insert-math-display ()
   "Insert a display math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
-
+  (tlon-babel-md-insert-element-pair tlon-babel-math-display-open tlon-babel-math-display-close))
 
 ;;;;; Note classification
 
