@@ -83,20 +83,21 @@ characters per second, and uses nine minutes.")
 
 ;;;;; Citations
 
-;; Develop multilanguage support
 (defconst tlon-babel-tts-standard-abbreviations
-  '(("a\\. de C\\." . "antes de Cristo")
-    ("ca\\." . "alrededor de")
-    ("d\\. de C\\." . "después de Cristo")
-    ("e\\. g\\." . "por ejemplo")
-    ("EE\\. UU\\." . "Estados Unidos")
-    ("et al\\." . "y otros")
-    ("etc\\." . "etcétera")
-    ("i\\.e\\." . "esto es")
-    ("N\\.B\\." . "obsérvese bien")
-    ("p\\. ej\\." . "por ejemplo")
-    ("vs\\." . "versus"))
-  "Standard Spanish abbreviations and their spoken equivalent.")
+  '(("es" . (("a\\. de C\\." . "antes de Cristo")
+	     ("ca\\." . "alrededor de")
+	     ("d\\. de C\\." . "después de Cristo")
+	     ("e\\.[[:space:] ]?g\\." . "por ejemplo")
+	     ("EE\\.[[:space:] ]UU\\." . "Estados Unidos")
+	     ("et al\\." . "y otros")
+	     ("etc\\." . "etcétera")
+	     ("i\\.[[:space:] ]e\\." . "esto es")
+	     ("N\\.[[:space:] ]B\\." . "obsérvese bien")
+	     ("p\\.[[:space:] ]ej\\." . "por ejemplo")
+	     ("vs\\." . "versus")))
+    ("it" . (()))
+    ("fr" . (())))
+  "Standard abbreviations and their spoken equivalent in each language.")
 
 ;;;;; Currencies
 
