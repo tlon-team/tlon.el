@@ -281,15 +281,50 @@ variable `tlon-babel-in-text-abbreviations'"
 ;; - year numbers
 ;; - https://docs.google.com/document/d/1m1k57PbKkkVy0eLwrHKjZiu9XOcOD74WhX4jKKQbwRU/
 ;; math expressions
+;; metadata (title, author)
 
-;;;;;; Currencies
+;;;;;; Currency symbols
 
 (defun tlon-babel-tts-process-currency-symbols ()
   "Replace currency symbols with their spoken equivalent."
-  (dolist (currency tlon-babel-tts-currencies)
+  (let* ((language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo))))
+    (dolist (cons tlon-babel-tts-currencies)
+      (let ((symbol (car cons))
+	    (equivalent (alist-get language (cdr cons) nil nil #'string=)))
+	(goto-char (point-min))
+	(while (re-search-forward (format "%s\\([0-9,.]+\\)\\b" (regexp-quote symbol)) nil t)
+	  (replace-match (format  "\\1 %s" equivalent) nil nil))))))
+
+;;;;;; Math expressions
+
+(defun tlon-babel-tts-process-math-expressions ()
+  "Replace math expressions with their spoken equivalent."
+  (let ((language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo))))
+    (setq tlon-babel-tts-replacements nil
+	  tlon-babel-tts-replacements-count 0)
     (goto-char (point-min))
-    (while (re-search-forward (format "%s\\([0-9,.]+\\)\\b" (regexp-quote (car currency))) nil t)
-      (replace-match (format  "\\1 %s" (cdr currency)) nil nil))))
+    (while (re-search-forward tlon-babel-cite-pattern nil t)
+      (setq tlon-babel-tts-replacements-count (1+ tlon-babel-tts-replacements-count))
+      (replace-match "" nil nil)
+      (tlon-babel-ai-translate-math (match-string 2) language))
+    (when (tlon-babel-tts-math-expressions-complete-p)
+      (tlon-babel-tts-replace-math-expressions))))
+
+(defun tlon-babel-tts-math-expressions-complete-p ()
+  "Return t iff all math expressions have  been translated."
+  ;; here goes a process for checking the size of
+  ;; `tlon-babel-tts-replacements' and calling
+  ;; `tlon-babel-tts-replace-math-expressions' when that size equals
+  ;; `tlon-babel-tts-replacements-count'
+  )
+
+(defun tlon-babel-tts-replace-math-expressions ()
+  "Insert the accumulated replacements for math expressions in buffer markers."
+  (dolist (cons tlon-babel-tts-replacements)
+    (let ((marker (car cons))
+	  (replacement (cdr cons)))
+      (goto-char (marker-position marker))
+      (insert replacement))))
 
 ;;;;; Chunk processing
 
