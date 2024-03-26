@@ -166,7 +166,7 @@ characters per second, and uses nine minutes.")
   "Prepare the current buffer for audio narration."
   (tlon-babel-tts-position-notes)
   (tlon-babel-tts-process-bibtex-keys)
-  (tlon-babel-tts-process-currencies)
+  (tlon-babel-tts-process-currency-symbols)
   ;; handle text formatting: replace e.g. italics with SSML
   ;; replace small caps
   ;; check all other elements in markdown-menu
@@ -274,7 +274,7 @@ variable `tlon-babel-in-text-abbreviations'"
 
 ;;;;;; Currencies
 
-(defun tlon-babel-tts-process-currencies ()
+(defun tlon-babel-tts-process-currency-symbols ()
   "Replace currency symbols with their spoken equivalent."
   (dolist (currency tlon-babel-tts-currencies)
     (goto-char (point-min))
