@@ -254,10 +254,12 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 
 (defun tlon-babel-tts-process-standard-abbreviations ()
   "Replace standard abbreviations with their spoken equivalent."
-  (dolist (abbreviation tlon-babel-tts-standard-abbreviations)
-    (goto-char (point-min))
-    (while (re-search-forward (car abbreviation) nil t)
-      (replace-match (cdr abbreviation) t nil))))
+  (let* ((language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo)))
+	 (abbreviations (alist-get language tlon-babel-tts-standard-abbreviations nil nil #'string=)))
+    (dolist (abbreviation abbreviations)
+      (goto-char (point-min))
+      (while (re-search-forward (car abbreviation) nil t)
+	(replace-match (cdr abbreviation) t nil)))))
 
 (defun tlon-babel-tts-process-in-text-abbreviations ()
   "Replace in-text abbreviations with their spoken equivalent.
