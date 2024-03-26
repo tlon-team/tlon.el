@@ -124,6 +124,14 @@ characters per second, and uses nine minutes.")
     ("es" . " Aquí termina la nota.\n\n"))
   "Text to insert at the end of a note.")
 
+;;;;; Internal variables
+
+(defvar tlon-babel-tts-replacements '()
+  "Alist of markers and text replacements.")
+
+(defvar tlon-babel-tts-replacements-count 0
+  "Count of the number of replacements to be preformed.")
+
 ;;;; Functions
 
 (defun tlon-babel-get-azure-key ()
