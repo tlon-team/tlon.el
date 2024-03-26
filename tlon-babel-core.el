@@ -366,12 +366,10 @@ PAIRS is an even-sized list of <key value> tuples."
 
 (defun tlon-babel-core-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
-  ;; check that current buffer is visiting a file
   (when-let ((file (buffer-file-name)))
-    (replace-regexp-in-string
-     "/git-dirs/"
-     "/Library/CloudStorage/Dropbox/repos/"
-     (buffer-file-name))))
+    (replace-regexp-in-string "/git-dirs/"
+			      paths-dir-tlon-repos
+			      (buffer-file-name))))
 
 (defun tlon-babel-issue-lookup (string &optional dir)
   "Return the first issue in DIR whose title includes STRING.
