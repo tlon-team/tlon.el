@@ -102,14 +102,14 @@ characters per second, and uses nine minutes.")
 ;;;;; Currencies
 
 (defconst tlon-babel-tts-currencies
-  '(("$" . "dólar")
-    ("₿" . "bitcoin")
-    ("¢" . "centavo")
-    ("Ξ" . "éter")
-    ("£" . "libra esterlina")
-    ("₹" . "rupia")
-    ("₹" . "₪ shekel")
-    ("¥" . "yen"))
+  '(("$" . (("es" . "dólar")))
+    ("₿" . (("es". "bitcoin")))
+    ("¢" . (("es". "centavo")))
+    ("Ξ" . (("es". "éter")))
+    ("£" . (("es" . "libra esterlina")))
+    ("₹" . (("es". "rupia")))
+    ("₹" . (("es". "₪ shekel")))
+    ("¥" . (("es". "yen"))))
   "Currencies and their spoken equivalent.")
 
 ;;;;; Listener cues
