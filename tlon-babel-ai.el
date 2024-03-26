@@ -143,6 +143,15 @@
 	     :language "en")
     (:prompt "Por favor traduce esta expresión matemática a lenguaje natural, es decir, a la manera en que un humano la leería en voz alta. Por ejemplo, si la expresión es `\frac{1}{2} \times 2^5 \= 16`, debes traducir \"un medio por dos a la quinta potencia es igual a dieciseis\". Por favor, devuelve solamente la expresión traducida, sin comentarios ni clarificaciones. Si por alguna razón no puedes hacer lo que te pido, simplemente devuelve un texto vacío. %s"
 	     :language "es")))
+
+;;;;; Images
+
+(defconst tlon-babel-ai-describe-image-prompt
+  `((:prompt "Please describe the following image. <complete>"
+	     :language "en")
+    (:prompt "Por favor, describe la siguiente imagen. <completar>"
+	     :language "es")))
+
 ;;;; Functions
 
 ;;;;; General
@@ -541,6 +550,9 @@ is a marker where the response should be inserted."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     (push (cons marker response) tlon-babel-tts-replacements)))
+
+;;;;; Images
+
 
 ;;;;; Docs
 
