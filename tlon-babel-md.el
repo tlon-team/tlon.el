@@ -53,6 +53,8 @@
 
 ;;;; Variables
 
+;;;;; Local variables
+
 (defconst tlon-babel-md-local-variables-line-start
   "<!-- Local Variables:"
   "Start of the first line that contains file local variables.")
@@ -60,6 +62,7 @@
 (defconst tlon-babel-md-local-variables-line-end
   "End: -->"
   "End of the last line that contains file local variables.")
+
 
 (defconst tlon-babel-cite-pattern
   "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
@@ -101,6 +104,8 @@ and the third group captures the short citation flag.")
     ("verses" . "vv.")
     ("volumes" . "vols."))
   "Alist of locators and their abbreviations.")
+
+;;;;; Note markers
 
 (defconst tlon-babel-footnote-marker "<Footnote />"
   "Marker for a footnote in a `Cite' MDX element.")
