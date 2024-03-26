@@ -156,12 +156,12 @@
 	   :abbrev "ea-international"
 	   :type meta
 	   :key "i")
-    (:name "bisagra"
+    (:name "bisagra-dev"
 	   :project "other"
 	   :subproject "bisagra"
-	   :abbrev "bisagra"
+	   :abbrev "bisagra-dev"
 	   :type development
-	   :key "s")
+	   :key "d")
     (:name "bisagra-content"
 	   :project "other"
 	   :subproject "bisagra"
