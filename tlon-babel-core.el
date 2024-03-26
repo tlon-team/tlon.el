@@ -176,8 +176,14 @@
 	   :project "other"
 	   :subproject "bisagra"
 	   :abbrev "bisagra"
-	   :type misc
-	   :key "b")
+	   :type development
+	   :key "s")
+    (:name "bisagra-content"
+	   :project "other"
+	   :subproject "bisagra"
+	   :abbrev "bisagra-content"
+	   :type content
+	   :key "c")
     (:name "boletin"
 	   :project "other"
 	   :subproject "boletin"
