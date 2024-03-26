@@ -69,7 +69,9 @@ Here's a description of the main options:
 (defvar tlon-babel-azure-voices
   '((:voice "es-US-AlonsoNeural" :language "es" :gender "male")
     (:voice "es-US-PalomaNeural" :language "es" :gender "female"))
-  "Preferred Azure voices for different languages.")
+  "Preferred Azure voices for different languages.
+All the voices in this property list are neural and multilingual, and are the
+best male and female voices we were able to identify in each language.")
 
 (defvar tlon-babel-azure-key nil
   "Azure subscription key for the text-to-speech service.")
