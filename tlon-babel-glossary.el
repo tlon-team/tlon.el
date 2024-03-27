@@ -138,6 +138,30 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 						 action term explanation))))))
   (call-interactively #'magit-push-current-to-pushremote))
 
+;; TODO: support extraction of terms of specific type
+(defun tlon-babel-glossary-extract (language)
+  "Extract a glossary."
+  (interactive (list (completing-read "Language: " tlon-babel-languages)))
+  (let* ((multi (file-name-concat paths-dir-tlon-repos
+				  "babel-core/glossary.json"))
+	 (mono (file-name-concat paths-dir-tlon-repos
+				 (format "babel-%s" language)
+				 "dict"
+				 "Glossary.csv"))
+	 json)
+    (with-current-buffer (find-file-noselect multi)
+      (goto-char (point-min))
+      (let ((json-array-type 'list))
+	(setq json (json-read))))
+    (with-current-buffer (find-file-noselect mono)
+      (goto-char (point-min))
+      (dolist (item json)
+	(let* ((source (alist-get "en" item nil nil #'string=))
+	       (target (alist-get language item nil nil #'string=)))
+          (insert (format "\"%s\",\"%s\",\"EN\",\"%s\"\n" source target (upcase language)))))
+      (save-buffer))
+    (message "Glossary extracted to `%s'" mono)))
+
 (provide 'tlon-babel-glossary)
 ;;; tlon-babel-glossary.el ends here
 
