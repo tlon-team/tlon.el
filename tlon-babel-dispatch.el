@@ -94,31 +94,41 @@ DIR is the directory where the repo is stored."
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-magit-browse-babel-core)
     ("b r" "babel-refs"                   tlon-babel-magit-browse-babel-refs)
+    ("b i" "babel-issues"                 tlon-babel-magit-browse-babel-issues)
+    ""
+    ("b d" "babel-de"                     tlon-babel-magit-browse-babel-de)
     ("b s" "babel-es"                     tlon-babel-magit-browse-babel-es)
-    ("b i" "babel-issues"                 tlon-babel-magit-browse-babel-issues)]
+    ("b f" "babel-fr"                     tlon-babel-magit-browse-babel-fr)
+    ("b t" "babel-it"                     tlon-babel-magit-browse-babel-it)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-magit-browse-uqbar-issues)
     ("q f" "uqbar-front"                  tlon-babel-magit-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-magit-browse-uqbar-api)
+    ""
     ("q n" "uqbar-en"                     tlon-babel-magit-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)]
+    ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)
+    ("q f" "uqbar-fr"                     tlon-babel-magit-browse-uqbar-fr)
+    ("q t" "uqbar-it"                     tlon-babel-magit-browse-uqbar-it)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-magit-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-babel-magit-browse-utilitarianism-es)]
-   ["Essays on Longtermism"
+    ("u s" "utilitarianism-es"            tlon-babel-magit-browse-utilitarianism-es)
+    ""
+    "Essays on Longtermism"
     ("e n" "essays-en"                    tlon-babel-magit-browse-essays-en)
-    ("e s" "essays-es"                    tlon-babel-magit-browse-essays-es)]
+    ("e s" "essays-es"                    tlon-babel-magit-browse-essays-es)
+    ""
+    "EA International"
+    ("i i" "ea.international"             tlon-babel-magit-browse-ea-international)]
+   ["La Bisagra"
+    ("s d" "bisagra-dev"                  tlon-babel-magit-browse-bisagra-dev)
+    ("s c" "bisagra-content"              tlon-babel-magit-browse-bisagra-content)
+    ""
+    "Boletín"
+    ("a a" "boletin"                      tlon-babel-magit-browse-boletin)]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-magit-browse-ean-issues)
     ("n f" "ean-front"                    tlon-babel-magit-browse-ean-front)
     ("n a" "ean-api"                      tlon-babel-magit-browse-ean-api)]
-   ["EA International"
-    ("i i" "ea.international"             tlon-babel-magit-browse-ea-international)]
-   ["La Bisagra"
-    ("s d" "bisagra-dev"                  tlon-babel-magit-browse-bisagra-dev)
-    ("s c" "bisagra-content"              tlon-babel-magit-browse-bisagra-content)]
-   ["Boletín"
-    ("a a" "boletin"                      tlon-babel-magit-browse-boletin)]
    ["Meetings"
     ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
     ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
@@ -147,32 +157,42 @@ DIR is the directory where the repo is stored."
     ("t d" "tlon-docs"                    tlon-babel-dired-browse-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-dired-browse-babel-core)
+    ("b i" "babel-issues"                 tlon-babel-dired-browse-babel-issues)
     ("b r" "babel-refs"                   tlon-babel-dired-browse-babel-refs)
+    ""
+    ("b d" "babel-de"                     tlon-babel-dired-browse-babel-de)
     ("b s" "babel-es"                     tlon-babel-dired-browse-babel-es)
-    ("b i" "babel-issues"                 tlon-babel-dired-browse-babel-issues)]
+    ("b f" "babel-fr"                     tlon-babel-dired-browse-babel-fr)
+    ("b t" "babel-it"                     tlon-babel-dired-browse-babel-it)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-dired-browse-uqbar-issues)
     ("q f" "uqbar-front"                  tlon-babel-dired-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-dired-browse-uqbar-api)
+    ""
     ("q n" "uqbar-en"                     tlon-babel-dired-browse-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)]
+    ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)
+    ("q f" "uqbar-fr"                     tlon-babel-dired-browse-uqbar-fr)
+    ("q t" "uqbar-it"                     tlon-babel-dired-browse-uqbar-it)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-dired-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-babel-dired-browse-utilitarianism-es)]
-   ["Essays on Longtermism"
+    ("u s" "utilitarianism-es"            tlon-babel-dired-browse-utilitarianism-es)
+    ""
+    "Essays on Longtermism"
     ("e n" "essays-en"                    tlon-babel-dired-browse-essays-en)
-    ("e s" "essays-es"                    tlon-babel-dired-browse-essays-es)]
-   ["EA News"
-    ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
-    ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
-    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]
-   ["EA International"
+    ("e s" "essays-es"                    tlon-babel-dired-browse-essays-es)
+    ""
+    "EA International"
     ("i i" "ea-international"             tlon-babel-dired-browse-ea-international)]
    ["La Bisagra"
     ("s d" "bisagra-dev"                  tlon-babel-dired-browse-bisagra-dev)
-    ("s c" "bisagra-content"              tlon-babel-dired-browse-bisagra-content)]
-   ["Boletín"
-    ("a a" "boletin"                      tlon-babel-dired-browse-boletin)]])
+    ("s c" "bisagra-content"              tlon-babel-dired-browse-bisagra-content)
+    ""
+    "Boletín"
+    ("a a" "boletin"                      tlon-babel-dired-browse-boletin)]
+   ["EA News"
+    ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
+    ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
+    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]])
 
 ;;;;; Open file in repo
 
@@ -197,31 +217,41 @@ DIR is the directory where the repo is stored."
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-open-file-in-babel-core)
     ("b r" "babel-refs"                   tlon-babel-open-file-in-babel-refs)
+    ("b i" "babel-issues"                 tlon-babel-open-file-in-babel-issues)
+    ""
+    ("b d" "babel-de"                     tlon-babel-open-file-in-babel-de)
     ("b s" "babel-es"                     tlon-babel-open-file-in-babel-es)
-    ("b i" "babel-issues"                 tlon-babel-open-file-in-babel-issues)]
+    ("b f" "babel-fr"                     tlon-babel-open-file-in-babel-fr)
+    ("b t" "babel-it"                     tlon-babel-open-file-in-babel-it)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-open-file-in-uqbar-issues)
     ("q f" "uqbar-front"                  tlon-babel-open-file-in-uqbar-front)
     ("q a" "uqbar-api"                    tlon-babel-open-file-in-uqbar-api)
+    ""
     ("q n" "uqbar-en"                     tlon-babel-open-file-in-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)]
+    ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)
+    ("q f" "uqbar-fr"                     tlon-babel-open-file-in-uqbar-fr)
+    ("q t" "uqbar-it"                     tlon-babel-open-file-in-uqbar-it)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-open-file-in-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-babel-open-file-in-utilitarianism-es)]
-   ["Essays on Longtermism"
+    ("u s" "utilitarianism-es"            tlon-babel-open-file-in-utilitarianism-es)
+    ""
+    "Essays on Longtermism"
     ("e n" "essays-en"                    tlon-babel-open-file-in-essays-en)
-    ("e s" "essays-es"                    tlon-babel-open-file-in-essays-es)]
+    ("e s" "essays-es"                    tlon-babel-open-file-in-essays-es)
+    ""
+    "EA International"
+    ("i " "ea-international"              tlon-babel-open-file-in-ea-international)]
+   ["La Bisagra"
+    ("s s" "bisagra-dev"                  tlon-babel-open-file-in-bisagra-dev)
+    ("s c" "bisagra-content"              tlon-babel-open-file-in-bisagra-content)
+    ""
+    "Boletín"
+    ("a a" "boletin"                      tlon-babel-open-file-in-boletin)]
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-open-file-in-ean-issues)
     ("n f" "ean-front"                    tlon-babel-open-file-in-ean-front)
     ("n a" "ean-api"                      tlon-babel-open-file-in-ean-api)]
-   ["EA International"
-    ("i " "ea-international"              tlon-babel-open-file-in-ea-international)]
-   ["La Bisagra"
-    ("s s" "bisagra-dev"                  tlon-babel-open-file-in-bisagra-dev)
-    ("s c" "bisagra-content"              tlon-babel-open-file-in-bisagra-content)]
-   ["Boletín"
-    ("a a" "boletin"                      tlon-babel-open-file-in-boletin)]
    ["Meetings"
     ("m l" "Leo-Pablo"                    tlon-babel-open-file-in-meetings-leo-pablo)
     ("m f" "Fede-Pablo"                   tlon-babel-open-file-in-meetings-fede-pablo)

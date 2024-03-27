@@ -53,6 +53,27 @@
 	   :type meta
 	   :language "es"
 	   :key "b s")
+    (:name "babel-fr"
+	   :project "babel"
+	   :subproject "babel"
+	   :abbrev "babel-fr"
+	   :type meta
+	   :language "fr"
+	   :key "b f")
+    (:name "babel-it"
+	   :project "babel"
+	   :subproject "babel"
+	   :abbrev "babel-it"
+	   :type meta
+	   :language "it"
+	   :key "b t")
+    (:name "babel-de"
+	   :project "babel"
+	   :subproject "babel"
+	   :abbrev "babel-de"
+	   :type meta
+	   :language "de"
+	   :key "b d")
     (:name "babel-issues"
 	   :project "babel"
 	   :subproject "babel"
