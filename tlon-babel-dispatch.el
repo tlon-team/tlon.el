@@ -62,6 +62,7 @@
     ("j" "jobs"                           tlon-babel-jobs-menu)
     ("k" "markdown"                       tlon-babel-md-menu)
     ("H-m" "meet"                         tlon-babel-meet-menu)
+    ("r" "repos"                          tlon-babel-repos-menu)
     ("s" "search"                         tlon-babel-search-menu)
     ("y" "forg"                           tlon-babel-forg-menu)]
    ["""Browse repo"
