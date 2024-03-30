@@ -40,6 +40,7 @@
 (require 'org-clock)
 (require 'org-roam)
 (require 'paths)
+(require 'simple-extras)
 (require 'substitute)
 (require 'tlon-babel-dispatch)
 (require 'tlon-babel-core)
@@ -446,7 +447,7 @@ If FILE is nil, check the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (base (file-name-base file))
 	 (title (tlon-babel-yaml-get-key "title" file))
-	 (slugified-title (tlon-core-slugify title)))
+	 (slugified-title (simple-extras-slugify title)))
     (unless (or
 	     (string= base slugified-title)
 	     ;; for articles with duplicate titles
