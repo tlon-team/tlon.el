@@ -126,7 +126,7 @@
 	   :type content
 	   :subtype translations
 	   :language "fr"
-	   :key "q f")
+	   :key "q f"
 	   :url "")
     (:name "uqbar-it"
 	   :project "babel"
