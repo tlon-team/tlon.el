@@ -187,7 +187,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 (defun tlon-babel-is-between-paragraphs-p ()
   "Return t iff point is right between to paragraphs."
   (not (= (tlon-babel-count-paragraphs nil (point))
-	  (tlon-babel-count-paragraphs nil (1+ (point))))))
+	  (tlon-babel-count-paragraphs nil (min (point-max) (1+ (point)))))))
 
 (defun tlon-babel-count-paragraphs (&optional start end)
   "Count the number of paragraphs in a Markdown buffer between START and END."
