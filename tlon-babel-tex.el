@@ -118,7 +118,7 @@ abstract will, or will not, replace the existing one, respectively."
 	  (if-let ((value (or
 			   (tlon-babel-fetch-abstract-from-crossref doi)
 			   (tlon-babel-fetch-abstract-from-google-books isbn)
-			   (tlon-babel-fetch-abstract-with-zotra url doi))))
+			   (tlon-babel-fetch-abstract-with-zotra url url))))
 	      (progn
 		(shut-up
 		  (funcall set-field "abstract" (tlon-babel-abstract-cleanup value)))
