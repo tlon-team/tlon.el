@@ -31,6 +31,7 @@
 (require 'simple-extras)
 (require 'tlon-babel)
 (require 'tlon-babel-cleanup)
+(require 'tlon-babel-fix)
 
 ;;;; Variables
 
