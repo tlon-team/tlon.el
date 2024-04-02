@@ -32,7 +32,6 @@
 (require 'bibtex-extras)
 (require 'paths)
 (require 'shut-up)
-(require 'tlon-babel-ai)
 
 ;;;; User options
 
