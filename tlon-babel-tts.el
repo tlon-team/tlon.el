@@ -421,6 +421,18 @@ Each chunk will be at most `tlon-babel-azure-char-limit' words."
        chunk voice (tlon-babel-name-chunk output nth))
       (setq nth (1+ nth)))))
 
+;;;;;; Math expressions
+
+(defun tlon-babel-tts-process-math-expressions ()
+  "Replace math expressions with their spoken equivalent."
+  (let ((language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo))))
+    (dolist (pattern (list tlon-babel-math-inline-expression
+			   tlon-babel-math-display-expression))
+      (goto-char (point-min))
+      (while (re-search-forward pattern nil t)
+	(let ((math (match-string-no-properties 2)))
+	  (replace-match "" nil nil)
+	  (tlon-babel-ai-translate-math math language))))))
 
 (provide 'tlon-babel-tts)
 ;;; tlon-babel-tts.el ends here
