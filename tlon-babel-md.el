@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'files-x)
 (require 'markdown-mode-extras)
 (require 'tlon-babel-core)
 (require 'tlon-babel-yaml)
