@@ -147,6 +147,14 @@ and the third group captures the short citation flag.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
+(defconst tlon-babel-math-display-expression
+  (format "\\(?1:%s\\(?2:.*?\\)%s\\)"
+	  (regexp-quote tlon-babel-math-display-open)
+	  (regexp-quote tlon-babel-math-display-close))
+  "Regexp pattern for a display mathematical expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the delimiters.")
+
 ;;;; Functions
 
 ;;;;; Insertion
