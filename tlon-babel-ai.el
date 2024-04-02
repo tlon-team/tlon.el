@@ -192,6 +192,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 INFO is the response info."
   (message tlon-babel-gptel-error-message (plist-get info :status)))
 
+(declare-function ebib-extras-next-entry "ebib-extras")
+(declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-babel-ai-batch-continue ()
   "Move to the next entry and call `tlon-babel-ai-batch-fun''."
   (when tlon-babel-ai-batch-fun
@@ -207,6 +209,7 @@ INFO is the response info."
     (message "Retrying language detection (try %d of 3)..." tlon-babel-ai-retries)
     (funcall original-fun)))
 
+(declare-function ebib-extras-get-file "ebib-extras")
 (defun tlon-babel-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
 If FILE is non-nil, return it as a string. Otherwise,
@@ -448,6 +451,7 @@ If RESPONSE is nil, return INFO."
 
 ;;;;;; BibTeX
 
+(declare-function ebib-extras-get-or-open-entry "ebib-extras")
 ;;;###autoload
 (defun tlon-babel-ai-summarize-bibtex-entry (&optional string)
   "Summarize the work described in the BibTeX STRING using AI.
@@ -470,6 +474,8 @@ If STRING is nil, use the current entry."
 
 (defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract)
   "Set the `abstract' field of the current BibTeX entry to ABSTRACT."
+(declare-function ebib-extras-set-field "ebib-extras")
+(declare-function ebib-extras-get-file-of-key "ebib-extras")
   (let* ((set-field (pcase major-mode
 		      ('bibtex-mode #'bibtex-set-field)
 		      ('ebib-entry-mode #'ebib-extras-set-field))))
