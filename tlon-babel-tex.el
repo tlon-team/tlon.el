@@ -90,6 +90,8 @@ The validation is case-insensitive, but the returned language is in lowercase."
 
 ;;;;; fetch
 
+(declare-function ebib-extras-get-field "ebib-extras")
+(declare-function tlon-babel-ai-batch-continue "tlon-babel-ai")
 (defun tlon-babel-fetch-and-set-abstract ()
   "Fetch the abstract of the entry at point and set it as the new value.
 We use CrossRef for DOIs, Google Books for ISBN and Zotero for URLs.
@@ -127,6 +129,8 @@ abstract will, or will not, replace the existing one, respectively."
 	  (tlon-babel-ai-batch-continue)
 	  found)))))
 
+(defvar tlon-babel-ai-batch-fun "tlon-babel-ai")
+(declare-function zotra-extras-fetch-field "zotra-extras")
 (defun tlon-babel-fetch-abstract-with-zotra (url doi)
   "Return the abstract of the work with URL or DOI."
   (when-let ((id (or url doi)))
@@ -224,6 +228,7 @@ abstract will, or will not, replace the existing one, respectively."
     (derived-mode-p 'text-mode 'pdf-view-mode)))
 
 
+(declare-function ebib-extras-get-or-fetch-id-or-url "ebib-extras")
 (defun tlon-babel-fetch-field-with-zotra (field &optional id-or-url no-error)
   "Fetch the value of FIELD from the ID-OR-URL of the entry at point.
 IF ID-OR-URL is nil, try to get it or fetch it. If NO-ERROR is non-nil, handle
