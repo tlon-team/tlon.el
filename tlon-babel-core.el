@@ -396,8 +396,8 @@ PAIRS is an even-sized list of <key value> tuples."
 (defun tlon-babel-core-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
   (when-let ((file (buffer-file-name)))
-    (replace-regexp-in-string "/git-dirs/"
-			      paths-dir-tlon-repos
+    (replace-regexp-in-string "git-dirs/"
+			      (file-relative-name paths-dir-tlon-repos "~/")
 			      (buffer-file-name))))
 
 (defun tlon-babel-issue-lookup (string &optional dir)
