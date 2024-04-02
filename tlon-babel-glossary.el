@@ -138,29 +138,44 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 						 action term explanation))))))
   (call-interactively #'magit-push-current-to-pushremote))
 
-;; TODO: support extraction of terms of specific type
-(defun tlon-babel-glossary-extract (language)
-  "Extract a glossary."
-  (interactive (list (completing-read "Language: " tlon-babel-languages)))
-  (let* ((multi (file-name-concat paths-dir-tlon-repos
-				  "babel-core/glossary.json"))
-	 (mono (file-name-concat paths-dir-tlon-repos
-				 (format "babel-%s" language)
-				 "dict"
-				 "Glossary.csv"))
+(defun tlon-babel-glossary-extract (language deepl)
+  "Extract a LANGUAGE glossary from our multilingual glossary.
+If DEEPL is non-nil, include all entries, format them with the standard DeepL
+glossary format, and extract this glossary to the `dict' subdirectory within the
+relevant `babel' repository. Otherwise, include only entries of type \"CN\",
+format them in a human-readable format, and prompt the user to select the file
+location."
+  (interactive (list (completing-read "Language: " tlon-babel-languages)
+		     (y-or-n-p "Extract for DeepL? ")))
+  (let* ((file-name "Glossary.csv")
+	 (source-path (file-name-concat paths-dir-tlon-repos
+					"babel-core/glossary.json"))
+	 (target-path (if deepl
+			  (file-name-concat paths-dir-tlon-repos
+					    (format "babel-%s" language)
+					    "dict"
+					    file-name)
+			(read-file-name "Target glossary destination: "
+					paths-dir-downloads nil nil file-name)))
 	 json)
-    (with-current-buffer (find-file-noselect multi)
+    (with-current-buffer (find-file-noselect source-path)
       (goto-char (point-min))
       (let ((json-array-type 'list))
 	(setq json (json-read))))
-    (with-current-buffer (find-file-noselect mono)
-      (goto-char (point-min))
+    (with-current-buffer (find-file-noselect target-path)
+      (erase-buffer)
       (dolist (item json)
-	(let* ((source (alist-get "en" item nil nil #'string=))
-	       (target (alist-get language item nil nil #'string=)))
-          (insert (format "\"%s\",\"%s\",\"EN\",\"%s\"\n" source target (upcase language)))))
+	(let* ((source-term (alist-get 'en item))
+	       (target-term (alist-get (intern language) item))
+	       (entry (if deepl
+			  (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
+				  source-term target-term (upcase language))
+			(format "\"%s\",\"%s\"\n"
+				source-term target-term))))
+	  (when (or deepl (string= (alist-get 'type item) "CN"))
+	    (insert entry))))
       (save-buffer))
-    (message "Glossary extracted to `%s'" mono)))
+    (message "Glossary extracted to `%s'" target-path)))
 
 (provide 'tlon-babel-glossary)
 ;;; tlon-babel-glossary.el ends here
