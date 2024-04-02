@@ -155,6 +155,19 @@ captures the expression without the delimiters.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
+;;;;; Images
+
+(defconst tlon-babel-md-image-with-alt
+  "!\\[\\(.+?\\)\\](\\(.*?\\))"
+  "Pattern to match an image with alt text in a Markdown file.
+The first group captures the alt text. The second group captures the image URL.")
+
+(defconst tlon-babel-md-image-sans-alt
+  "!\\[\\(\\)\\](\\(.*?\\))"
+  "Pattern to match an image without alt text in a Markdown file.
+The first group captures the empty alt text. The second group captures the image
+URL.")
+
 ;;;; Functions
 
 ;;;;; Insertion
