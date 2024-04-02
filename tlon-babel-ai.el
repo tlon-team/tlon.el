@@ -92,6 +92,14 @@
   (format "Por favor, genera las mejores diez variantes del siguiente texto castellano:%s. Por favor, devuelve todas las variantes en una única linea, separadas por '|'. No insertes un espacio ni antes ni después de '|'. No agregues ningún comentario aclaratorio: solo necesito la lista de variantes. A modo de ejemplo, para la expresión 'búsqueda de poder' el texto a devolver sería: 'ansia de poder|ambición de poder|búsqueda de autoridad|sed de poder|afán de poder|aspiración de poder|anhelo de poder|deseo de control|búsqueda de dominio|búsqueda de control' (esta lista solo pretende ilustrar el formato en que debes presentar tu respuesta). Gracias!" tlon-babel-ai-string-wrapper)
   "Prompt for rewriting.")
 
+;;;;; Image description
+
+(defconst tlon-babel-ai-describe-image-prompt
+  `((:prompt "Please provide a concise description of the following image:\n\n[[file:%s]]\n\nThe description should consist of only one paragraph and must never exceed 80 words."
+	     :language "en")
+    (:prompt "Por favor, describe brevemente la siguiente imagen:\n\n[[file:%s]]\n\nLa descripción debe consistir de un solo párrafo y en ningún caso debe exceder las 80 palabras."
+	     :language "es")))
+
 ;;;;; Summarization
 
 (defconst tlon-babel-ai-how-to-write-summary-prompt
@@ -300,6 +308,40 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	   (variant (completing-read "Variant: " variants)))
       (delete-region (region-beginning) (region-end))
       (kill-new variant))))
+
+;;;;; Image description
+
+(defun tlon-babel-ai-describe-image-content (file callback)
+  "Describe the contents of the image in FILE.
+When the description is obtained, pass it to CALLBACK as its first argument."
+  (interactive (list (read-file-name "Image file: " )))
+  (let* ((file (expand-file-name file))
+	 (repo (tlon-babel-get-repo))
+	 (language (tlon-babel-repo-lookup :language :dir repo))
+	 (prompt (format
+		  (tlon-babel-lookup tlon-babel-ai-describe-image-prompt :prompt :language language)
+		  file))
+	 (buffer (generate-new-buffer "*Image Description*")))
+    (with-current-buffer buffer
+      (insert prompt)
+      (org-mode)
+      (gptel-extras-model-config nil "ChatGPT" "gpt-4-vision-preview")
+      (gptel-send)
+      (message "Generating image description. This will take around 20 seconds...")
+      (run-with-timer 20 nil (lambda ()
+			       (tlon-babel-return-image-description buffer callback))))))
+
+(defun tlon-babel-return-image-description (buffer callback)
+  "Get the image description from BUFFER and pass it to CALLBACK."
+  (let ((description
+	 (with-current-buffer buffer
+	   (redisplay)
+	   (goto-char (point-min))
+	   (forward-line 6)
+	   (redisplay)
+	   (buffer-substring-no-properties (point) (point-max)))))
+    (kill-buffer buffer)
+    (funcall callback (replace-regexp-in-string "\n" " " description))))
 
 ;;;;; Summarization
 
