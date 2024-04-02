@@ -29,7 +29,10 @@
 
 (require 'gptel)
 (require 'gptel-extras)
+(require 'tlon-babel-counterpart)
 (require 'tlon-babel-dispatch)
+(require 'tlon-babel-import)
+(require 'tlon-babel-tex)
 
 ;;;; User options
 
