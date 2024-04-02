@@ -546,6 +546,26 @@ a type."
       ('sidenote (tlon-babel-insert-sidenote-marker))
       (_ (user-error "Invalid type")))))
 
+;;;;; Images
+
+;; Maybe move to AI
+
+;;;###autoload
+(defun tlon-babel-add-alt-text ()
+  "Add alt text to the image at point."
+  (interactive)
+  (if (thing-at-point-looking-at tlon-babel-md-image-sans-alt)
+      (let* ((alt-text-marker (make-marker))
+	     (image-file (expand-file-name (match-string-no-properties 2))))
+	(set-marker alt-text-marker (match-beginning 1))
+	(tlon-babel-ai-describe-image-content image-file
+					      (lambda (description)
+						(goto-char (marker-position alt-text-marker))
+						(insert description))))
+    (message "Not on an image link with missing alt text")))
+
+;; TODO: create function to add alt text to all images in a file
+
 ;;;;; Abbreviations
 
 (defvar-local tlon-babel-in-text-abbreviations '()
