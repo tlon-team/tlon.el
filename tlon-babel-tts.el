@@ -67,7 +67,22 @@ Here's a description of the main options:
 
 ;;;; Variables
 
-(defvar tlon-babel-azure-voices
+;;;;; Azure
+
+(defconst tlon-babel-azure-ssml
+  "<speak version='1.0' xml:lang='%s'><voice name='%s'>%s</voice></speak>"
+  "SSML template for Azure TTS.")
+
+(defconst tlon-babel-azure-request
+  "curl --location --request POST 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1' \
+--header 'Ocp-Apim-Subscription-Key: %s' \
+--header 'Content-Type: application/ssml+xml' \
+--header 'X-Microsoft-OutputFormat: %s' \
+--header 'User-Agent: curl' \
+--data-raw %s > '%s'"
+  "Curl command to send a request to the Azure text-to-speech.")
+
+(defconst tlon-babel-azure-voices
   '((:voice "es-US-AlonsoNeural" :language "es" :gender "male")
     (:voice "es-US-PalomaNeural" :language "es" :gender "female"))
   "Preferred Azure voices for different languages.
@@ -399,18 +414,6 @@ Each chunk will be at most `tlon-babel-azure-char-limit' words."
        chunk voice (tlon-babel-name-chunk output nth))
       (setq nth (1+ nth)))))
 
-(defun tlon-babel-azure-generate-audio (text voice output)
-  "Generate an audio file from TEXT using VOICE and save it to OUTPUT."
-  (let* ((ssml (shell-quote-argument
-		(format "<speak version='1.0' xml:lang='en-US'><voice name='%s'>%s</voice></speak>"
-			voice text)))
-	 (command (format "curl --location --request POST 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1' \
---header 'Ocp-Apim-Subscription-Key: %s' \
---header 'Content-Type: application/ssml+xml' \
---header 'X-Microsoft-OutputFormat: %s' \
---header 'User-Agent: curl' \
---data-raw %s > '%s'" (tlon-babel-get-azure-key) tlon-babel-azure-audio-settings ssml output)))
-    (async-shell-command command)))
 
 (provide 'tlon-babel-tts)
 ;;; tlon-babel-tts.el ends here
