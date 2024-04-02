@@ -34,6 +34,7 @@
 
 ;;;; Functions
 
+;;;###autoload
 (defun tlon-babel-create-repo (name description private)
   "Create a new Tlön repo.
 NAME and DESCRIPTION are the name and description of the repo. If PRIVATE is
@@ -46,6 +47,7 @@ non-nil, make it private."
       (tlon-babel-clone-repo name)
     (message "Cloned repo `%s'" name)))
 
+;;;###autoload
 (defun tlon-babel-clone-repo (&optional name)
   "Clone an existing Tlön repo and add it to the Forge database.
 The repo will be cloned in the directory specified by `paths-dir-tlon-repos'. If
@@ -67,6 +69,7 @@ NAME is nil, prompt the user for a repo name."
 	(tlon-babel-forge-add-repository dir)
       (dired dir))))
 
+;;;###autoload
 (defun tlon-babel-split-repo (dir)
   "Move the `.git' in DIR to a separate dir and set the `.git' file accordingly.
 Normally, this command is run for repos managed by Dropbox, to protect the Git
@@ -97,6 +100,7 @@ files from possible corruption."
 
 ;;;; Menu
 
+;;;###autoload (autoload 'tlon-babel-repos-menu "tlon-babel-repos" nil t)
 (transient-define-prefix tlon-babel-repos-menu ()
   "Repos menu."
   [["Repo"
@@ -105,7 +109,7 @@ files from possible corruption."
     ("s" "Split local"       tlon-babel-split-repo)]
    ["Forge"
     ("a" "Add"               forge-add-repository)
-    ("r" "Remove"           forge-remove-repository)]])
+    ("r" "Remove"            forge-remove-repository)]])
 
 (provide 'tlon-babel-repos)
 ;;; tlon-babel-repos.el ends here
