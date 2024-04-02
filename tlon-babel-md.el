@@ -113,6 +113,17 @@ and the third group captures the short citation flag.")
 (defconst tlon-babel-sidenote-marker "<Sidenote />"
   "Marker for a sidenote in a `Cite' MDX element.")
 
+;;;;;; Numbers
+
+(defconst tlon-babel-md-number-separators
+  '(("en" . ",")
+    ("es" . " "))
+  "Number separators for different languages.")
+
+(defconst tlon-babel-md-number-separator-pattern
+  "\\([[:digit:]]+\\)\\(%s\\)\\([[:digit:]]\\{1,3\\}\\)"
+  "Pattern to match numbers separated by language-specific separator.")
+
 ;;;;;; Math
 
 (defconst tlon-babel-math-inline-open "$`"
