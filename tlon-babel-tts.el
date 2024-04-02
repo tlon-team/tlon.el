@@ -118,15 +118,22 @@ characters per second, and uses nine minutes.")
 ;;;;; Currencies
 
 (defconst tlon-babel-tts-currencies
-  '(("$" . (("es" . "dólar")))
-    ("₿" . (("es". "bitcoin")))
-    ("¢" . (("es". "centavo")))
-    ("Ξ" . (("es". "éter")))
-    ("£" . (("es" . "libra esterlina")))
-    ("₹" . (("es". "rupia")))
-    ("₹" . (("es". "₪ shekel")))
-    ("¥" . (("es". "yen"))))
-  "Currencies and their spoken equivalent.")
+  '(("₿" . "BTC")
+    ("Ξ" . "ETH")
+    ("£" . "GBP")
+    ("₪" . "ILS")
+    ("₹" . "INR")
+    ("¥" . "JPY")
+    ("$" . "USD"))
+  "Currency symbols and their associated three-letter codes.")
+
+(defconst tlon-babel-tts-currency-ssml
+  "<say-as interpret-as=\"currency\">%s %s</say-as>"
+  "SSML pattern for currency symbols.
+The first placeholder is the currency amount, and the second is the currency
+code.
+
+For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation#say-as-element>.")
 
 ;;;;; Listener cues
 
