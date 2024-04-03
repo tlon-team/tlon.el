@@ -87,8 +87,9 @@ Here's a description of the main options:
 
 ;;;;; Azure
 
-(defconst tlon-babel-azure-ssml
-  "<speak version='1.0' xml:lang='%s'><voice name='%s'>%s</voice></speak>"
+(defconst tlon-babel-azure-ssml-template
+  (format "<speak version='1.0' xml:lang='%%s'>%s</speak>"
+	  tlon-babel-tts-voice-tag)
   "SSML template for Azure TTS.")
 
 (defconst tlon-babel-azure-request
