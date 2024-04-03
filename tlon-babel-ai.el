@@ -441,7 +441,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-ai-get-abstract-from-detected-language (response info file)
-  "If RESPONSE is non-nil, get a summary of FILEl.
+  "If RESPONSE is non-nil, get a summary of FILE.
 Otherwise return INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
@@ -494,10 +494,11 @@ If STRING is nil, use the current entry."
 	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-get-abstract-callback)
 	  (user-error "No prompt defined in `tlon-babel-ai-get-abstract-prompts' for language %s" language))))))
 
-(defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract)
-  "Set the `abstract' field of the current BibTeX entry to ABSTRACT."
 (declare-function ebib-extras-set-field "ebib-extras")
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
+(defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract key)
+  "Set the `abstract' field of entry with KEY entry to ABSTRACT."
+  ;; This assumes KEY is in the current buffer. Maybe relax this assumption.
   (let* ((set-field (pcase major-mode
 		      ('bibtex-mode #'bibtex-set-field)
 		      ('ebib-entry-mode #'ebib-extras-set-field))))
