@@ -423,16 +423,20 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 (defun tlon-babel-ai-get-abstract-in-language (file language)
   "Get abstract from FILE in LANGUAGE."
   (if-let ((string (tlon-babel-get-string-dwim file))
-	   (lang-2 (tlon-babel-get-two-letter-code language))
-	   (original-buffer (current-buffer)))
-      (tlon-babel-ai-get-abstract-common
-       tlon-babel-ai-get-abstract-prompts string lang-2
-       (lambda (response info)
-	 ;; we restore the original buffer to avoid a change in `major-mode'
-	 (with-current-buffer original-buffer
-	   (tlon-babel-get-abstract-callback response info))))
+	   (lang-2 (tlon-babel-get-two-letter-code language)))
+      (let ((original-buffer (current-buffer))
+	    (key (pcase major-mode
+		   ('bibtex-mode (bibtex-extras-get-key))
+		   ('ebib-entry-mode (ebib-extras-get-field "=key="))
+		   (_ nil))))
+	(tlon-babel-ai-get-abstract-common
+	 tlon-babel-ai-get-abstract-prompts string lang-2
+	 (lambda (response info)
+	   ;; we restore the original buffer to avoid a change in `major-mode'
+	   (with-current-buffer original-buffer
 	     (message "Generating abstract for `%s'; starts with `%s'" key
 		      (when response (substring response 0 (min (length string) 100))))
+	     (tlon-babel-get-abstract-callback response info key)))))
     (message "Could not get abstract.")
     (tlon-babel-ai-batch-continue)))
 
@@ -451,15 +455,17 @@ the language of the string, and CALLBACK is the callback function."
     (tlon-babel-make-gptel-request prompt string callback)
     (message "Getting AI abstract...")))
 
-(defun tlon-babel-get-abstract-callback (response info)
+(defun tlon-babel-get-abstract-callback (response info &optional key)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
-If RESPONSE is nil, return INFO."
+If RESPONSE is nil, return INFO. KEY is the BibTeX key."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     (pcase major-mode
       ((or 'bibtex-mode 'ebib-entry-mode)
-       (tlon-babel-ai-summarize-set-bibtex-abstract response))
-      ('markdown-mode) ; set `description' YAML field to it
+       (message "`tlon-babel-get-abstract-callback' is setting `%s' to `%s'"
+		key (when response (substring response 0 (min (length response) 100))))
+       (tlon-babel-ai-summarize-set-bibtex-abstract response key))
+      ('markdown-mode) ; TODO: set `description' YAML field to it
       (_ (kill-new response)
 	 (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))
   (message "`%s' now calls `tlon-babel-ai-batch-continue'" "tlon-babel-get-abstract-callback")
@@ -495,11 +501,12 @@ If STRING is nil, use the current entry."
   (let* ((set-field (pcase major-mode
 		      ('bibtex-mode #'bibtex-set-field)
 		      ('ebib-entry-mode #'ebib-extras-set-field))))
-    (shut-up
-      (funcall set-field "abstract" abstract))
-    (message "Set abstract of `%s'" (pcase major-mode
-				      ('bibtex-mode (bibtex-extras-get-key))
-				      ('ebib-entry-mode (ebib-extras-get-field "=key="))))
+    (with-current-buffer (find-file-noselect (ebib-extras-get-file-of-key key))
+      (save-excursion
+	(bibtex-search-entry key)
+	(shut-up
+	  (funcall set-field "abstract" abstract))))
+    (message "Set abstract of `%s'" key)
     (save-buffer)))
 
 ;;;;; Language detection
