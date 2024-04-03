@@ -215,8 +215,9 @@ INFO is the response info."
 (declare-function ebib-extras-get-file "ebib-extras")
 (defun tlon-babel-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
-If FILE is non-nil, return it as a string or, if in `markdown-mode', its
-substantive contents. Otherwise,
+If FILE is non-nil, return it as a string or, if in `markdown-mode', return a
+substring of its substantive contents, excluding metadata and local variables.
+Otherwise,
 
 - If the region is active, return its contents.
 
