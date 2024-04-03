@@ -612,7 +612,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
   "Insert the natural LANGUAGE translation of the mathematical EXPRESSION.
 LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
 request was sent."
-  (let ((prompt (tlon-babel-lookup tlon-babel-ai-translate-math-prompt :prompt :language "es")))
+  (let ((prompt (tlon-babel-lookup tlon-babel-ai-translate-math-prompt :prompt :language language)))
     (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-insert)))
 
 ;;;;; Images
