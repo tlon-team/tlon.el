@@ -586,7 +586,6 @@ pre-populate the selection."
       (delete-region (car bounds) (cdr bounds))
       (insert (format "%s:  %s\n" key choice)))))
 
-
 ;;;;; Get metadata
 
 ;;;;;; Get repo-specific entities
