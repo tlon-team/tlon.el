@@ -589,22 +589,10 @@ The list of completion candidates can be customized via the user option
   (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
   (insert (alist-get char tlon-babel-md-special-characters nil nil #'string= )))
 
-;; TODO: make it work twice consecutively
-(defun tlon-babel-md-end-of-buffer-dwim ()
-  "Move point to the end of the relevant part of the buffer.
-The relevant part of the buffer is the part of the buffer that excludes the
-\"local variables\" section.
-
-If this function is called twice consecutively, it will move the point to the
-end of the buffer unconditionally."
-  (interactive)
-  (if (tlon-babel-md-get-local-variables)
-      (progn
-	(re-search-forward tlon-babel-md-local-variables-line-start nil t)
-	(goto-char (- (match-beginning 0) 1)))
-    (goto-char (point-max))))
+;;;;; Actual content
 
 ;; TODO: make it work twice consecutively
+;;;###autoload
 (defun tlon-babel-md-beginning-of-buffer-dwim ()
   "Move point to the beginning of the relevant part of the buffer.
 The relevant part of the buffer is the part of the buffer that excludes the
@@ -613,34 +601,61 @@ metadata section.
 If this function is called twice consecutively, it will move the point to the
 end of the buffer unconditionally."
   (interactive)
-  (if (tlon-babel-md-get-metadata)
-      (progn
-	(re-search-backward tlon-babel-yaml-delimiter nil t)
-	(goto-char (match-end 0)))
-    (goto-char (point-min))))
+  (goto-char (tlon-babel-md-beginning-of-content)))
 
+;; TODO: make it work twice consecutively
 ;;;###autoload
+(defun tlon-babel-md-end-of-buffer-dwim ()
+  "Move point to the end of the relevant part of the buffer.
+The relevant part of the buffer is the part of the buffer that excludes the
+\"local variables\" section.
+
+If this function is called twice consecutively, it will move the point to the
+end of the buffer unconditionally."
+  (interactive)
+  (goto-char (tlon-babel-md-end-of-content)))
+
+(defun tlon-babel-md-beginning-of-content ()
+  "Return the position of the beginning of the content in the current buffer."
+  (or (tlon-babel-md-end-of-metadata) (point-min)))
+
+(defun tlon-babel-md-end-of-content ()
+  "Return the position of the end of the content in the current buffer."
+  (or (tlon-babel-md-beginning-of-local-variables) (point-max)))
+
+(defun tlon-babel-md-beginning-of-local-variables ()
+  "Return the position of the beginning of the local variables section."
+  (when-let ((cons (tlon-babel-get-delimited-region-pos
+		    tlon-babel-md-local-variables-line-start
+		    tlon-babel-md-local-variables-line-end)))
+    (car cons)))
+
+(defun tlon-babel-md-end-of-metadata ()
+  "Return the position of the end of the metadata section."
+  (when-let ((cons (tlon-babel-get-delimited-region-pos
+		    tlon-babel-yaml-delimiter)))
+    (cdr cons)))
+
 (defun tlon-babel-md-get-local-variables ()
   "Get the text in the \"local variables\" section of the current buffer."
-  (when-let ((range (tlon-babel-get-delimited-region-pos
-		     tlon-babel-md-local-variables-line-start
-		     tlon-babel-md-local-variables-line-end)))
-    (cl-destructuring-bind (start . end) range
-      (buffer-substring-no-properties start end))))
+  (when-let ((beg (tlon-babel-md-beginning-of-local-variables)))
+    (string-trim (buffer-substring-no-properties beg (point-max)))))
 
 (defun tlon-babel-md-get-metadata ()
   "Get the text in the metadata section of the current buffer."
-  (when-let ((range (tlon-babel-get-delimited-region-pos
-		     tlon-babel-yaml-delimiter)))
-    (cl-destructuring-bind (start . end) range
-      (buffer-substring-no-properties start end))))
+  (when-let ((end (tlon-babel-md-end-of-metadata)))
+    (string-trim (buffer-substring-no-properties (point-min) end))))
 
-(defun tlon-babel-insert-special-character (char)
-  "Insert a special CHAR at point.
-The list of completion candidates can be customized via the user option
-`tlon-babel-md-special-characters'."
-  (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
-  (insert (alist-get char tlon-babel-md-special-characters nil nil #'string= )))
+(defun tlon-babel-md-read-content (&optional file)
+  "Read the substantive content of FILE.
+The substantive content of a file is the file minus the metadata and the local
+variables section. If FILE is nil, read the file visited by the current buffer."
+  (let ((file (or file (buffer-file-name)))
+	(begin (tlon-babel-md-beginning-of-content))
+	(end (tlon-babel-md-end-of-content)))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (buffer-substring-no-properties begin end))))
 
 ;;;;; Menu
 
