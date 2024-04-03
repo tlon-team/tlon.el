@@ -64,6 +64,7 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
+;;;;; Cite
 
 (defconst tlon-babel-cite-pattern
   "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
@@ -79,7 +80,7 @@ and the third group captures the short citation flag.")
 (defconst tlon-babel-sidenote-marker "<Sidenote />"
   "Marker for a sidenote in a `Cite' MDX element.")
 
-;;;;;; Numbers
+;;;;; Numbers
 
 (defconst tlon-babel-md-number-separators
   '(("en" . ",")
@@ -90,7 +91,7 @@ and the third group captures the short citation flag.")
   "\\([[:digit:]]+\\)\\(%s\\)\\([[:digit:]]\\{1,3\\}\\)"
   "Pattern to match numbers separated by language-specific separator.")
 
-;;;;;; Math
+;;;;; Math
 
 (defconst tlon-babel-math-inline-open "$`"
   "Open delimiter for an inline math expression.")
@@ -154,6 +155,7 @@ URL.")
 ;;;;; Insertion
 
 ;;;;;; metadata
+
 ;;;;###autoload
 (defun tlon-babel-edit-yaml-field ()
   "Edit the YAML field at point."
