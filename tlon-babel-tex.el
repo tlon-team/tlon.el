@@ -48,6 +48,41 @@
 
 ;;;; Variables
 
+(defconst tlon-babel-locators
+  '(("book" . "bk.")
+    ("chapter ". "chap.")
+    ("column" . "col.")
+    ("figure" . "fig.")
+    ("folio" . "fol.")
+    ("number" . "no.")
+    ("line" . "l.")
+    ("note" . "n.")
+    ("opus" . "op.")
+    ("page" . "p.")
+    ("paragraph" . "para.")
+    ("part" . "pt.")
+    ("section" . "sec.")
+    ("sub verbo" . "s.v")
+    ("verse" . "v.")
+    ("volumes" . "vol.")
+    ("books" . "bks.")
+    ("chapter ". "chaps.")
+    ("columns" . "cols.")
+    ("figures" . "figs.")
+    ("folios" . "fols.")
+    ("numbers" . "nos.")
+    ("lines" . "ll.")
+    ("notes" . "nn.")
+    ("opera" . "opp.")
+    ("pages" . "pp.")
+    ("paragraphs" . "paras.")
+    ("parts" . "pts.")
+    ("sections" . "secs.")
+    ("sub  verbis" . "s.vv.")
+    ("verses" . "vv.")
+    ("volumes" . "vols."))
+  "Alist of locators and their abbreviations.")
+
 ;; TODO: remove `refs' from var names. make sure nothing breaks in config files
 (defvar tlon-babel-refs-dir
   paths-dir-babel-refs

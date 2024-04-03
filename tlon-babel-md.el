@@ -71,41 +71,6 @@
 The first group captures the bibTeX key, the second group captures the locators,
 and the third group captures the short citation flag.")
 
-(defconst tlon-babel-locators
-  '(("book" . "bk.")
-    ("chapter ". "chap.")
-    ("column" . "col.")
-    ("figure" . "fig.")
-    ("folio" . "fol.")
-    ("number" . "no.")
-    ("line" . "l.")
-    ("note" . "n.")
-    ("opus" . "op.")
-    ("page" . "p.")
-    ("paragraph" . "para.")
-    ("part" . "pt.")
-    ("section" . "sec.")
-    ("sub verbo" . "s.v")
-    ("verse" . "v.")
-    ("volumes" . "vol.")
-    ("books" . "bks.")
-    ("chapter ". "chaps.")
-    ("columns" . "cols.")
-    ("figures" . "figs.")
-    ("folios" . "fols.")
-    ("numbers" . "nos.")
-    ("lines" . "ll.")
-    ("notes" . "nn.")
-    ("opera" . "opp.")
-    ("pages" . "pp.")
-    ("paragraphs" . "paras.")
-    ("parts" . "pts.")
-    ("sections" . "secs.")
-    ("sub  verbis" . "s.vv.")
-    ("verses" . "vv.")
-    ("volumes" . "vols."))
-  "Alist of locators and their abbreviations.")
-
 ;;;;; Note markers
 
 (defconst tlon-babel-footnote-marker "<Footnote />"
