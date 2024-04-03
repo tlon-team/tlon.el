@@ -120,6 +120,22 @@ captures the expression without the delimiters.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
+;;;;; Aside
+
+(defconst tlon-babel-aside-open "<Aside>"
+  "Opening `Aside' tag.")
+
+(defconst tlon-babel-aside-close "</Aside>"
+  "Closing `Aside' tag.")
+
+(defconst tlon-babel-aside-pattern
+  (format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)"
+	  (regexp-quote tlon-babel-aside-open)
+	  (regexp-quote tlon-babel-aside-close))
+  "Regexp pattern for an `Aside' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
 ;;;;; Images
 
 (defconst tlon-babel-md-image-with-alt
@@ -259,7 +275,7 @@ is non-nil, the opening element will be self-closing."
 (defun tlon-babel-insert-mdx-aside ()
   "Insert an MDX `Aside' element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair "<Aside>" "</Aside>"))
+  (tlon-babel-md-insert-element-pair tlon-babel-aside-open tlon-babel-aside-close))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-lang (language)
