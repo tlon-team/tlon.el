@@ -582,6 +582,13 @@ a type."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))
 
+(defun tlon-babel-insert-special-character (char)
+  "Insert a special CHAR at point.
+The list of completion candidates can be customized via the user option
+`tlon-babel-md-special-characters'."
+  (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
+  (insert (alist-get char tlon-babel-md-special-characters nil nil #'string= )))
+
 ;; TODO: make it work twice consecutively
 (defun tlon-babel-md-end-of-buffer-dwim ()
   "Move point to the end of the relevant part of the buffer.
