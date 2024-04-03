@@ -444,5 +444,13 @@ If END is nil, use BEGIN also as the end delimiter."
 		   (equal (car inner) source-lang))
 	  (setq result (cdr (assoc target-lang outer))))))))
 
+(defun tlon-babel-concatenate-list (list)
+  "Concatenate LIST into a string with commas and 'and' as appropriate."
+  (if (cdr list)
+      (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
+	    (last (car (last list))))
+	(format "%s and %s" all-but-last last))
+    (car list)))
+
 (provide 'tlon-babel-core)
 ;;; tlon-babel-core.el ends here
