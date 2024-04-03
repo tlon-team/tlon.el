@@ -161,23 +161,31 @@
 
 (defun tlon-babel-make-gptel-request (prompt string &optional callback backend model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-BACKEND and MODEL are the language backend and model names, respectively. If
-CALLBACK is nil, use `tlon-babel-ai-generic-callback'."
-  (let ((callback (or callback #'tlon-babel-ai-generic-callback)))
-    (when (and backend model)
-      (gptel-extras-model-config nil backend model))
-    (if tlon-babel-ai-batch-fun
-	(condition-case nil
-	    (gptel-request (format prompt string) :callback callback)
-	  (error nil))
-      (gptel-request (format prompt string) :callback callback))))
+BACKEND and MODEL are the language backend and model names, respectively."
+  (when (and backend model)
+    (gptel-extras-model-config nil backend model))
+  (if tlon-babel-ai-batch-fun
+      (condition-case nil
+	  (gptel-request (format prompt string) :callback callback)
+	(error nil))
+    (gptel-request (format prompt string) :callback callback)))
 
-(defun tlon-babel-ai-generic-callback (response info)
-  "Generic callback function for AI requests.
-RESPONSE is the response from the AI model and INFO is the response info."
+(defun tlon-babel-ai-callback-return (response info)
+  "If the request succeeds, return the RESPONSE string.
+Otherwise emit a message with the status provided by INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     response))
+
+(defun tlon-babel-ai-callback-insert (response info)
+  "If the request succeeds, insert the RESPONSE string.
+Otherwise emit a message with the status provided by INFO. The RESPONSE is
+inserted at the point the request was sent."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (let ((pos (marker-position (plist-get info :position))))
+      (goto-char pos)
+      (insert response))))
 
 (defun tlon-babel-ai-callback-fail (info)
   "Callback message when `gptel' fails.
@@ -292,7 +300,8 @@ is the file to translate."
   (let* ((string (if (region-active-p)
 		     (buffer-substring-no-properties (region-beginning) (region-end))
 		   (read-string "Text to rewrite: "))))
-    (tlon-babel-make-gptel-request tlon-babel-ai-rewrite-prompt string)))
+    (tlon-babel-make-gptel-request tlon-babel-ai-rewrite-prompt string
+				   #'tlon-babel-ai-callback-return)))
 
 (defun tlon-babel-ai-rewrite-callback (response info)
   "Callback for `tlon-babel-ai-rewrite'.
@@ -511,7 +520,8 @@ If STRING is nil, use the current BibTeX entry."
 			     ('ebib-entry-mode (ebib-extras-get-or-open-entry))
 			     ('bibtex-mode (bibtex-extras-get-entry-as-string))
 			     (_ (user-error "I can’t detect language in %s" major-mode))))))
-    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string)))
+    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string
+				   #'tlon-babel-ai-callback-return)))
 
 ;;;###autoload
 (defun tlon-babel-ai-set-language-bibtex ()
