@@ -197,9 +197,12 @@ INFO is the response info."
 (defun tlon-babel-ai-batch-continue ()
   "Move to the next entry and call `tlon-babel-ai-batch-fun''."
   (when tlon-babel-ai-batch-fun
-    (pcase major-mode
-      ('bibtex-mode (bibtex-next-entry))
-      ('ebib-entry-mode (ebib-extras-next-entry)))
+    (message "Moving point to `%s'."
+	     (pcase major-mode
+	       ('bibtex-mode (bibtex-next-entry)
+			     (bibtex-extras-get-key))
+	       ('ebib-entry-mode (ebib-extras-next-entry)
+				 (ebib-extras-get-field "=key="))))
     (funcall tlon-babel-ai-batch-fun)))
 
 (defun tlon-babel-ai-try-try-try-again (original-fun)
@@ -376,7 +379,8 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
   of the HTML or PDF file associated with the current BibTeX entry, if either is
   found.
 
-- If in `pdf-view-mode', get an abstract of the contents of the current PDF file.
+- If in `pdf-view-mode', get an abstract of the contents of the current PDF
+  file.
 
 - If in `text-mode', get an abstract of the contents of the current region, if
   active; otherwise, get an abstract of the contents of the current buffer.
@@ -394,6 +398,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 	 (lambda (response info)
 	   (message "Detecting language...")
 	   (tlon-babel-ai-get-abstract-from-detected-language response info file))))
+    (message "`%s' now calls `tlon-babel-ai-batch-continue'." "tlon-babel-get-abstract-with-ai")
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-get-abstract-with-ai-in-file (extension)
@@ -402,6 +407,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
       (if-let ((file (ebib-extras-get-file extension)))
 	  (tlon-babel-get-abstract-with-ai file)
 	(user-error "No unique file with extension `%s' found" extension))
+    (message "`%s' now calls `tlon-babel-ai-batch-continue'" "tlon-babel-get-abstract-with-ai-in-file")
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-get-abstract-with-ai-from-pdf ()
@@ -425,6 +431,8 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 	 ;; we restore the original buffer to avoid a change in `major-mode'
 	 (with-current-buffer original-buffer
 	   (tlon-babel-get-abstract-callback response info))))
+	     (message "Generating abstract for `%s'; starts with `%s'" key
+		      (when response (substring response 0 (min (length string) 100))))
     (message "Could not get abstract.")
     (tlon-babel-ai-batch-continue)))
 
@@ -454,6 +462,7 @@ If RESPONSE is nil, return INFO."
       ('markdown-mode) ; set `description' YAML field to it
       (_ (kill-new response)
 	 (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))
+  (message "`%s' now calls `tlon-babel-ai-batch-continue'" "tlon-babel-get-abstract-callback")
   (tlon-babel-ai-batch-continue))
 
 ;;;;;; BibTeX
