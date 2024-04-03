@@ -472,6 +472,17 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
     (unless (string-match type dir-lang) ; we use `string-match' instead of `string=' to handle plurals
       (user-error "The file `%s' does not match its type" file))))
 
+(defun tlon-babel-check-image-alt-text ()
+  "Check if all images have alt text, else signal an error."
+  (let (pos)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward tlon-babel-md-image-sans-alt nil t)
+	(setq pos (match-beginning 0))))
+    (when pos
+      (goto-char pos)
+      (user-error "There are images without alt text. Use `tlon-babel-md-insert-alt-text' to fix them"))))
+
 ;;;;; Search
 
 ;; Ideally this should be repalced with `consult-gh-search-issues', but the REPO
