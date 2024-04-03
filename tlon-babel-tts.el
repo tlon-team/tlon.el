@@ -155,23 +155,37 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 
 ;;;;; Listener cues
 
-(defconst tlon-babel-tts-note-begins
-  '(("en" . "\n\nA note starts here. ")
-    ("es" . "\n\nAquí empieza una nota. "))
-  "Text to insert at the beginning of a note.")
+(defconst tlon-babel-tts-cue-delimiter
+  "\n"
+  "Delimiter for listener cues.")
 
-(defconst tlon-babel-tts-note-ends
-  '(("en" . " The note ends here.\n\n")
-    ("es" . " Aquí termina la nota.\n\n"))
-  "Text to insert at the end of a note.")
+;;;;;; Notes
 
-;;;;; Internal variables
+(defconst tlon-babel-tts-note-cues
+  '(("en" . ("A note starts here." . "The note ends here."))
+    ("es" . ("Aquí empieza una nota." "Aquí termina la nota.")))
+  "Listener cues for notes.")
 
-(defvar tlon-babel-tts-replacements '()
-  "Alist of markers and text replacements.")
+;;;;;; Quotes
 
-(defvar tlon-babel-tts-replacements-count 0
-  "Count of the number of replacements to be preformed.")
+(defconst tlon-babel-tts-quote-cues
+  '(("en" . ("A aside starts here." . "The aside ends here."))
+    ("es" . ("Aquí empieza un inciso." . "Aquí termina el inciso.")))
+  "Listener cues for asides.")
+
+;;;;;; Asides
+
+(defconst tlon-babel-tts-aside-cues
+  '(("en" . ("An aside starts here." . "The aside ends here."))
+    ("es" . ("Aquí empieza un inciso." . "Aquí termina el inciso.")))
+  "Listener cues for asides.")
+
+;;;;;; Images
+
+(defconst tlon-babel-tts-image-cues
+  '(("en" . ("Here’s an image." . "The image ends here."))
+    ("es" . ("Aquí hay una imagen." ."Aquí termina la imagen.")))
+  "Listener cues for images.")
 
 ;;;; Functions
 
