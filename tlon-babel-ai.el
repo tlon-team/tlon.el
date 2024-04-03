@@ -601,31 +601,20 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;; Math
 
 (defun tlon-babel-ai-translate-math (expression language)
-  "Translate mathematical EXPRESSION into natural LANGUAGE.
-LANGUAGE is a two-letter ISO 639-1 code."
-  (let ((marker (point-marker))
-	(prompt (tlon-babel-lookup tlon-babel-ai-translate-math-prompt :prompt :language language)))
-    (tlon-babel-make-gptel-request
-     prompt expression
-     (lambda (response info)
-       (tlon-babel-ai-translate-math-callback response info marker)))))
-
-(defvar tlon-babel-tts-replacements)
-(defun tlon-babel-ai-translate-math-callback (response info marker)
-  "Generic callback function for AI requests.
-RESPONSE is the response from the AI model and INFO is the response info. MARKER
-is a marker where the response should be inserted."
-  (if (not response)
-      (tlon-babel-ai-callback-fail info)
-    (push (cons marker response) tlon-babel-tts-replacements)))
+  "Insert the natural LANGUAGE translation of the mathematical EXPRESSION.
+LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
+request was sent."
+  (let ((prompt (tlon-babel-lookup tlon-babel-ai-translate-math-prompt :prompt :language "es")))
+    (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-insert)))
 
 ;;;;; Images
 
 
 ;;;;; Docs
 
+;; TODO: develop this
 (defun tlon-babel-ai-docs ()
-  ""
+  "Docstring."
   (interactive)
   (let ((prompt "Included below is an Emacs configuration file of the organization I work for. Please inspect it and tell me how can I search for a yasnippet snippet. Please be brief.\n\n%s")
 	(string (tlon-babel-get-file-as-string
