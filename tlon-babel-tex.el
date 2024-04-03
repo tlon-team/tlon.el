@@ -118,9 +118,11 @@ The validation is case-insensitive, but the returned language is in lowercase."
 
 (defun tlon-babel-get-two-letter-code (language)
   "Return the two-letter code for LANGUAGE."
-  (when-let* ((downcased (downcase language))
-	      (code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
-    (string-limit code-raw 2)))
+  (if (= (length language) 2)
+      language
+    (when-let* ((downcased (downcase language))
+		(code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
+      (string-limit code-raw 2))))
 
 ;;;;; fetch
 
