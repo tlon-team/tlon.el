@@ -212,26 +212,32 @@ INFO is the response info."
 (declare-function ebib-extras-get-file "ebib-extras")
 (defun tlon-babel-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
-If FILE is non-nil, return it as a string. Otherwise,
+If FILE is non-nil, return it as a string or, if in `markdown-mode', its
+substantive contents. Otherwise,
+
+- If the region is active, return its contents.
 
 - If in `bibtex-mode' or in `ebib-entry-mode', return the contents of the HTML
   or PDF file associated with the current BibTeX entry, if either is found.
 
 - If in `pdf-view-mode', return the contents of the current PDF file.
 
-- If in `text-mode', return the contents of the current region, if active;
-  otherwise, return the contents of the current buffer."
-  (if-let ((file (or file (pcase major-mode
-			    ((or 'bibtex-mode 'ebib-entry-mode)
-			     (or (ebib-extras-get-file "html")
-				 (ebib-extras-get-file "pdf")))
-			    ('pdf-view-mode (buffer-file-name))))))
-      (tlon-babel-get-file-as-string file)
-    (when (derived-mode-p 'text-mode)
-      (let ((beg (if (region-active-p) (region-beginning) (point-min)))
-	    (end (if (region-active-p) (region-end) (point-max))))
-	(buffer-substring-no-properties beg end)))))
+- If in `markdown-mode', return the substantive contents of the current buffer.
 
+- If otherwise in `text-mode', return the contents of the current buffer."
+  (if (region-active-p)
+      (buffer-substring-no-properties (region-beginning) (region-end))
+    (if-let ((file (or file (pcase major-mode
+			      ((or 'bibtex-mode 'ebib-entry-mode)
+			       (or (ebib-extras-get-file "html")
+				   (ebib-extras-get-file "pdf")))
+			      ('pdf-view-mode (buffer-file-name))))))
+	(tlon-babel-get-file-as-string file)
+      (cond ((derived-mode-p 'markdown-mode)
+	     (tlon-babel-md-read-content file))
+	    ((derived-mode-p 'text-mode)
+	     (buffer-substring-no-properties (point-min) (point-max)))))))
+    
 (defun tlon-babel-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
