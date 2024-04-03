@@ -67,6 +67,24 @@ Here's a description of the main options:
 
 ;;;; Variables
 
+;;;;; Current values
+
+(defvar tlon-babel-tts-current-voice ""
+  "The voice used in the current text-to-speech process.")
+
+(defvar tlon-babel-tts-current-language ""
+  "The language used in the current text-to-speech process.")
+
+;;;;; SSML patterns
+
+(defconst tlon-babel-tts-ssml-lang
+  "<lang xml:lang=\"%s\"></lang>"
+  "SSML pattern for language tag, with locale code placeholder.")
+
+(defconst tlon-babel-tts-voice-tag
+  "<voice name='%s'>%s</voice>"
+  "SSML pattern for voice tag, with voice name and text placeholders.")
+
 ;;;;; Azure
 
 (defconst tlon-babel-azure-ssml
