@@ -478,7 +478,6 @@ variable `tlon-babel-in-text-abbreviations'"
 	      (replace-match (cdr cons) t nil))))))))
 
 ;; Things to fix:
-;; - year numbers
 ;; - https://docs.google.com/document/d/1m1k57PbKkkVy0eLwrHKjZiu9XOcOD74WhX4jKKQbwRU/
 
 ;;;;;; Terms
