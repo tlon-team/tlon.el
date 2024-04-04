@@ -444,9 +444,10 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 
 (defun tlon-babel-tts-process-headings ()
   "Remove heading markers from headings."
-  (goto-char (point-min))
-  (while (re-search-forward markdown-regex-header nil t)
-    (replace-match (match-string 5))))
+  (let ((insert-pause (format tlon-babel-tts-ssml-break "1s")))
+    (goto-char (point-min))
+    (while (re-search-forward markdown-regex-header nil t)
+      (replace-match (format "%s %s" insert-pause (match-string 5))))))
 
 ;;;;;; Abbreviations
 
