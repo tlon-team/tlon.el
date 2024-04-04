@@ -133,6 +133,24 @@ captures the expression without the delimiters.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
+;;;;;; Lang
+
+(defconst tlon-babel-mdx-lang
+  '("<Lang id={\"%s\"}>" . "</Lang>")
+  "Pair of MDX `Lang' tags.")
+
+;;;;;; LiteralLink
+
+(defconst tlon-babel-mdx-literal-link
+  '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
+  "Pair of MDX `LiteralLink' tags.")
+
+;;;;;; SmallCaps
+
+(defconst tlon-babel-mdx-small-caps
+  '("<SmallCaps>" . "</SmallCaps>")
+  "Pair of MDX `SmallCaps' tags.")
+
 ;;;;; Images
 
 (defconst tlon-babel-md-image-with-alt
