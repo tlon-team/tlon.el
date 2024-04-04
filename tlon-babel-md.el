@@ -444,6 +444,16 @@ of the existing locators."
     (when (thing-at-point-looking-at (regexp-opt locators))
       (match-string-no-properties 0))))
 
+;;;;;;; SSML
+
+(defun tlon-babel-insert-ssml-lang (language)
+  "Insert an SSML `lang' element pair at point or around the selected region.
+Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
+written in that language."
+  (interactive (tlon-babel-select-language))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-mdx-element-with-attribute tlon-babel-tts-ssml-lang language)))
+
 ;;;;;;; Math
 
 ;;;###autoload
