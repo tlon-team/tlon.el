@@ -381,7 +381,8 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-images) ; should be after links
     (tlon-babel-tts-process-numbers)
     (tlon-babel-tts-process-currencies)
-    (tlon-babel-tts-process-math-expressions)))
+    (tlon-babel-tts-process-math-expressions))
+  (goto-char (point-min)))
 
 ;;;;;; Notes
 
