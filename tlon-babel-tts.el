@@ -85,6 +85,22 @@ Here's a description of the main options:
   "<voice name=\"%s\">%s</voice>"
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
+(defconst tlon-babel-tts-ssml-break
+  "<break time=\"%s\" />"
+  "SSML pattern for break tag, with time placeholder.
+<https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>")
+
+(defconst tlon-babel-tts-ssml-phoneme
+  "<phoneme alphabet=\"%s\" ph=\"%s\">%s</phoneme>"
+  "SSML pattern for phoneme tag, with phoneme and text placeholders.
+<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation>")
+
+(defconst tlon-babel-tts-ssml-emphasis
+  "<emphasis level=\"%s\">%s</emphasis>"
+  "SSML pattern for emphasis tag, with level and text placeholders.
+Note that this tag is not supported by Azure TTS except for a handful of voices:
+<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-emphasis>")
+
 ;;;;; Azure
 
 (defconst tlon-babel-azure-ssml-template
