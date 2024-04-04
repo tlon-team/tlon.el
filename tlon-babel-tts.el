@@ -154,6 +154,14 @@ code.
 
 For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation#say-as-element>.")
 
+;;;;; Terms
+
+(defconst tlon-babel-tts-terms
+  `((,(mapcar 'cdr tlon-babel-languages) (("Nate Soares" . "neɪt soˈa.ɾis")
+					  ("GiveWell" . "ˈɡɪv.wɛl")))
+    (("es") (("transhumanos" . "tɾansumanos"))))
+  "Terms and their pronunciations.")
+
 ;;;;; Listener cues
 
 (defconst tlon-babel-tts-cue-delimiter
@@ -349,6 +357,7 @@ if region is active, save it to the downloads directory."
     ;; check all other elements in markdown-menu
     (tlon-babel-tts-process-standard-abbreviations)
     (tlon-babel-tts-process-in-text-abbreviations)
+    (tlon-babel-tts-process-terms)
     (tlon-babel-tts-process-asides)
     (tlon-babel-tts-process-quotes)
     (tlon-babel-tts-process-links)
@@ -452,6 +461,29 @@ variable `tlon-babel-in-text-abbreviations'"
 ;; Things to fix:
 ;; - year numbers
 ;; - https://docs.google.com/document/d/1m1k57PbKkkVy0eLwrHKjZiu9XOcOD74WhX4jKKQbwRU/
+
+;;;;;; Terms
+
+(defun tlon-babel-tts-process-terms ()
+  "Replace terms with their pronunciations."
+  (let* ((case-fold-search nil)
+	 (language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo)))
+	 (terms (tlon-babel-get-terms-for-language language)))
+    (dolist (term terms)
+      (let ((find (format "\\b%s\\b" (car term)))
+	    (replace (cdr term)))
+	(goto-char (point-min))
+	(while (re-search-forward find nil t)
+	  (replace-match (format tlon-babel-tts-ssml-phoneme
+				 "ipa" replace (match-string-no-properties 0)) t))))))
+
+(defun tlon-babel-get-terms-for-language (language)
+  "Get the terms associated with LANGUAGE."
+  (let ((result '()))
+    (dolist (item tlon-babel-tts-terms result)
+      (when (member language (car item))
+        (setq result (append result (cadr item)))))
+    result))
 
 ;;;;;; Listener cues
 
