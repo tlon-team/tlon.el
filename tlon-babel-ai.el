@@ -147,6 +147,14 @@
 	     :language "es"))
   "Prompts for BibTeX summarization.")
 
+;;;;; Phonetic transcription
+
+(defconst tlon-babel-ai-transcribe-phonetically-prompt
+  `((:prompt ,(format "Please transcribe the following text phonetically, i.e. using the International Phonetic Alphabet (IPA).%sJust return the phonetic transcription, without any commentary. Do not enclose the transcription in slashes." tlon-babel-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "Por favor, transcribe fonéticamente el siguiente texto, es decir, utilizando el Alfabeto Fonético Internacional (AFI).%sLimítate a devolver la transcripción fonética, sin comentarios de ningún tipo. No encierres la transcripción entre barras." tlon-babel-ai-string-wrapper)
+	     :language "es")))
+
 ;;;;; Math
 
 (defconst tlon-babel-ai-translate-math-prompt
@@ -607,17 +615,47 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (message "Set language of `%s' to %s" key lang)
     (tlon-babel-ai-batch-continue)))
 
+;;;;; Phonetic transcription
+
+(defun tlon-babel-ai-phonetically-transcribe (expression language)
+  "Insert the phonetic transcription of the EXPRESSION in LANGUAGE.
+LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
+request was sent."
+  (interactive (list (read-string "Text to transcribe: "
+				  (if (region-active-p)
+				      (buffer-substring-no-properties (region-beginning) (region-end))
+				    (word-at-point)))
+		     (or (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo 'no-prompt))
+			 (tlon-babel-select-language 'two-letter))))
+  (let ((prompt (tlon-babel-lookup tlon-babel-ai-transcribe-phonetically-prompt
+				   :prompt :language language)))
+    (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-insert)))
+
+(defun tlon-babel-phonetically-transcribe-in-buffer ()
+  "Insert a phonetic transcription of each line in buffer immediately after it.
+Separate the original line and the transcription with a comma."
+  (interactive)
+  (let ((language (tlon-babel-select-language 'two-letter)))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+	(let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+	  (goto-char (line-end-position))
+	  (insert ",")
+	  (tlon-babel-ai-phonetically-transcribe line language)
+	  (forward-line))))))
+
 ;;;;; Math
 
 (defun tlon-babel-ai-translate-math (expression language)
   "Insert the natural LANGUAGE translation of the mathematical EXPRESSION.
 LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
 request was sent."
+  (interactive (list (read-string "Math expression: "
+				  (buffer-substring-no-properties (region-beginning) (region-end)))
+		     (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo))))
   (let ((prompt (tlon-babel-lookup tlon-babel-ai-translate-math-prompt :prompt :language language)))
     (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-insert)))
-
-;;;;; Images
-
 
 ;;;;; Docs
 
