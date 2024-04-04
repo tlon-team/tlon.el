@@ -594,6 +594,7 @@ image links are handled differently."
 
 ;;;;;; Math expressions
 
+(declare-function tlon-babel-ai-translate-math "tlon-babel-ai")
 (defun tlon-babel-tts-process-math-expressions ()
   "Replace math expressions with their spoken equivalent."
   (dolist (pattern (list tlon-babel-math-inline-pattern
