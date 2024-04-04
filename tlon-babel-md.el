@@ -554,7 +554,7 @@ a type."
 (defvar-local tlon-babel-in-text-abbreviations '()
   "Abbreviations introduced in the text and their spoken equivalent.")
 
-(defun tlon-babel-insert-in-text-abbreviation (abbrev)
+(defun tlon-babel-add-in-text-abbreviation (abbrev)
   "Add an in-text ABBREV to the file-local list."
   (interactive
    (let* ((key (substring-no-properties
@@ -686,7 +686,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)
     ("a" "aside"                tlon-babel-insert-mdx-aside)
     ("g" "lang"                 tlon-babel-insert-mdx-lang)
-    ("v" "abbreviation"         tlon-babel-insert-in-text-abbreviation)
+    ("v" "abbreviation"         tlon-babel-add-in-text-abbreviation)
     ("." "special character"    tlon-babel-insert-special-character)]])
 
 (provide 'tlon-babel-md)
