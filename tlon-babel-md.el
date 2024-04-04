@@ -394,6 +394,8 @@ call the function preceded by the universal ARG or use
   (interactive)
   (tlon-babel-insert-mdx-cite '(4)))
 
+;;;;;;;;; Citation elements
+
 (defun tlon-babel-get-bibtex-element-in-citation (type)
   "Return the BibTeX element of TYPE and its position in `Cite' element at point.
 TYPE can be either `key' or `locators'."
@@ -405,14 +407,6 @@ TYPE can be either `key' or `locators'."
 	   (end (match-end num)))
       (list match (cons begin end)))))
 
-(defun tlon-babel-get-key-in-citation ()
-  "Return the BibTeX key and its position in `Cite' element at point."
-  (tlon-babel-get-bibtex-element-in-citation 'key))
-
-(defun tlon-babel-get-locators-in-citation ()
-  "Return the BibTeX locators and its position in `Cite' element at point."
-  (tlon-babel-get-bibtex-element-in-citation 'locators))
-
 (defun tlon-babel-replace-bibtex-element-in-citation (element begin end)
   "Delete bibtex ELEMENT between BEGIN and END."
   (save-excursion
@@ -420,6 +414,17 @@ TYPE can be either `key' or `locators'."
     (goto-char begin)
     (delete-region begin end)
     (insert element)))
+
+;;;;;;;;; Locators
+
+;; TODO: make it work in org-mode
+(defun tlon-babel-get-key-in-citation ()
+  "Return the BibTeX key and its position in `Cite' element at point."
+  (tlon-babel-get-bibtex-element-in-citation 'key))
+
+(defun tlon-babel-get-locators-in-citation ()
+  "Return the BibTeX locators and its position in `Cite' element at point."
+  (tlon-babel-get-bibtex-element-in-citation 'locators))
 
 (defun tlon-babel-insert-locator ()
   "Insert locator in citation at point.
