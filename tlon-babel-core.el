@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'bibtex-extras)
 (require 'forge-core)
 (require 'paths)
 
