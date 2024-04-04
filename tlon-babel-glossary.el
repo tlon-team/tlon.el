@@ -145,7 +145,7 @@ glossary format, and extract this glossary to the `dict' subdirectory within the
 relevant `babel' repository. Otherwise, include only entries of type \"CN\",
 format them in a human-readable format, and prompt the user to select the file
 location."
-  (interactive (list (completing-read "Language: " tlon-babel-languages)
+  (interactive (list (tlon-babel-select-language 'two-letter 'babel)
 		     (y-or-n-p "Extract for DeepL? ")))
   (let* ((file-name "Glossary.csv")
 	 (source-path (file-name-concat paths-dir-tlon-repos

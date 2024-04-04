@@ -278,13 +278,22 @@ the actual user.")
   "Alist of bare directories and associated translations.")
 
 (defconst tlon-babel-languages
-  '(("en" . "english")
-    ("es" . "spanish")
-    ("it" . "italian")
-    ("fr" . "french")
-    ("de" . "german")
-    ("pt" . "portuguese"))
+  '(("english" . "en")
+    ("spanish" . "es")
+    ("italian" . "it")
+    ("french" . "fr")
+    ("german" . "de")
+    ("portuguese" . "pt"))
   "Alist of languages and associated names.")
+
+(defconst tlon-babel-locales
+  '(("english" . "en-US")
+    ("spanish" . "es-ES")
+    ("italian" . "it-IT")
+    ("french" . "fr-FR")
+    ("german" . "de-DE")
+    ("portuguese" . "pt-PT"))
+  "Alist of languages and associated locales.")
 
 ;;;; Functions
 

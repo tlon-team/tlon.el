@@ -97,7 +97,9 @@ buffer."
 	 (language (tlon-babel-repo-lookup :language :dir repo)))
     (pcase language
       ("en" tlon-babel-translation-language)
-      ((pred (lambda (lang) (member lang (mapcar #'car tlon-babel-languages)))) "en")
+      ((pred (lambda (lang)
+	       (member lang (mapcar #'cdr tlon-babel-languages))))
+       "en")
       (_ (user-error "Language not recognized")))))
 
 (defun tlon-babel-get-counterpart-dir (&optional file)
