@@ -107,23 +107,6 @@
 
 ;;;; Functions
 
-;;;;; language
-
-(defun tlon-babel-validate-language (language)
-  "If LANGUAGE is a valid language, return it.
-The validation is case-insensitive, but the returned language is in lowercase."
-  (let ((language (downcase language)))
-    (when (member language (mapcar #'car bibtex-extras-valid-languages))
-      language)))
-
-(defun tlon-babel-get-two-letter-code (language)
-  "Return the two-letter code for LANGUAGE."
-  (if (= (length language) 2)
-      language
-    (when-let* ((downcased (downcase language))
-		(code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
-      (string-limit code-raw 2))))
-
 ;;;;; fetch
 
 (declare-function ebib-extras-get-field "ebib-extras")

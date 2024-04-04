@@ -400,7 +400,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
   (if (tlon-babel-abstract-may-proceed-p)
       (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			     (unless tlon-babel-ai-batch-fun
-			       (tlon-babel-ai-select-language)))))
+			       (tlon-babel-select-language)))))
 	  (tlon-babel-ai-get-abstract-in-language file language)
 	(tlon-babel-ai-detect-language-in-file
 	 file
@@ -538,10 +538,6 @@ the major mode."
 If FILE is nil, detect the language in the current buffer."
   (let ((string (tlon-babel-get-string-dwim file)))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-prompt string callback)))
-
-(defun tlon-babel-ai-select-language ()
-  "Prompt the user to select a LANGUAGE and return it."
-  (completing-read "Language: " bibtex-extras-valid-languages))
 
 ;;;;;; BibTeX
 
