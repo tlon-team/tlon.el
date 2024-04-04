@@ -135,20 +135,23 @@ characters per second, and uses nine minutes.")
 ;;;;; Citations
 
 (defconst tlon-babel-tts-standard-abbreviations
-  '(("es" . ((" a\\. de C\\." . " antes de Cristo")
-	     (" ca\\." . " alrededor de")
-	     (" d\\. de C\\." . " después de Cristo")
-	     (" e\\.[[:space:] ]?g\\." . " por ejemplo")
-	     (" EE\\.[[:space:] ]UU\\." . " Estados Unidos")
-	     (" et al\\." . " y otros")
-	     (" etc\\." . " etcétera")
-	     (" i\\.[[:space:] ]e\\." . " esto es")
-	     ("N\\.[[:space:] ]B\\." . " obsérvese bien")
-	     (" p\\.[[:space:] ]ej\\." . " por ejemplo")
-	     (" vs\\." . " versus")
-	     ("y/o" . "y o")))
-    ("it" . (()))
-    ("fr" . (())))
+  '(("es"
+     (" a\\. de C\\." . " antes de Cristo")
+     (" ca\\." . " alrededor de")
+     (" d\\. de C\\." . " después de Cristo")
+     (" e\\.[[:space:] ]?g\\." . " por ejemplo")
+     (" EE\\.[[:space:] ]UU\\." . " Estados Unidos")
+     (" et al\\." . " y otros")
+     (" etc\\." . " etcétera")
+     (" i\\.[[:space:] ]e\\." . " esto es")
+     ("N\\.[[:space:] ]B\\." . " obsérvese bien")
+     (" p\\.[[:space:] ]ej\\." . " por ejemplo")
+     (" vs\\." . " versus")
+     ("y/o" . "y o"))
+    ("it"
+     (()))
+    ("fr"
+     (())))
   "Standard abbreviations and their spoken equivalent in each language.")
 
 ;;;;; Currencies
@@ -174,9 +177,11 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 ;;;;; Terms
 
 (defconst tlon-babel-tts-terms
-  `((,(mapcar 'cdr tlon-babel-languages) (("Nate Soares" . "neɪt soˈa.ɾis")
-					  ("GiveWell" . "ˈɡɪv.wɛl")))
-    (("es") (("transhumanos" . "tɾansumanos"))))
+  `((,(mapcar 'cdr tlon-babel-languages)
+     (("Nate Soares" . "neɪt soˈa.ɾis")
+      ("GiveWell" . "ˈɡɪv.wɛl")))
+    (("es")
+     (("transhumanos" . "tɾansumanos"))))
   "Terms and their pronunciations.")
 
 ;;;;; Listener cues
@@ -188,29 +193,29 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 ;;;;;; Notes
 
 (defconst tlon-babel-tts-note-cues
-  '(("en" . ("A note starts here." . "The note ends here."))
-    ("es" . ("Aquí empieza una nota." "Aquí termina la nota.")))
+  '(("en" "A note starts here." . "The note ends here.")
+    ("es" "Aquí empieza una nota." . "Aquí termina la nota."))
   "Listener cues for notes.")
 
 ;;;;;; Quotes
 
 (defconst tlon-babel-tts-quote-cues
-  '(("en" . ("A quote starts here." . "The quote ends here."))
-    ("es" . ("Aquí empieza una cita." . "Aquí termina la cita.")))
+  '(("en" "A quote starts here." . "The quote ends here.")
+    ("es" "Aquí empieza una cita." . "Aquí termina la cita."))
   "Listener cues for asides.")
 
 ;;;;;; Asides
 
 (defconst tlon-babel-tts-aside-cues
-  '(("en" . ("An aside starts here." . "The aside ends here."))
-    ("es" . ("Aquí empieza un inciso." . "Aquí termina el inciso.")))
+  '(("en" "An aside starts here." . "The aside ends here.")
+    ("es" "Aquí empieza un inciso." . "Aquí termina el inciso."))
   "Listener cues for asides.")
 
 ;;;;;; Images
 
 (defconst tlon-babel-tts-image-cues
-  '(("en" . ("Here’s an image." . "The image ends here."))
-    ("es" . ("Aquí hay una imagen." ."Aquí termina la imagen.")))
+  '(("en" "Here’s an image." . "The image ends here.")
+    ("es" "Aquí hay una imagen." ."Aquí termina la imagen."))
   "Listener cues for images.")
 
 ;;;; Functions
