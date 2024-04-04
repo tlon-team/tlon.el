@@ -89,7 +89,7 @@ and the third group captures the short citation flag.")
   "Number separators for different languages.")
 
 (defconst tlon-babel-md-number-separator-pattern
-  "\\([[:digit:]]+\\)\\(%s\\)\\([[:digit:]]\\{1,3\\}\\)"
+  "\\([[:digit:]]+?\\)%s\\([[:digit:]]+?\\)"
   "Pattern to match numbers separated by language-specific separator.")
 
 ;;;;; Math
