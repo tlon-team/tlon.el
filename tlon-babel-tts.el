@@ -39,7 +39,7 @@
   :group 'tlon-babel)
 
 (defcustom tlon-babel-azure-audio-settings
-  "audio-24khz-160kbitrate-mono-mp3"
+  "audio-16khz-64kbitrate-mono-mp3"
   "Settings for the Azure text-to-speech service.
 Here's a description of the main options:
 
