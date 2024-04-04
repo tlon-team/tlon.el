@@ -81,15 +81,15 @@ Here's a description of the main options:
   '("<lang xml:lang=\"%s\">" . "</lang>")
   "SSML pattern for language tag, with locale code placeholder.")
 
-(defconst tlon-babel-tts-voice-tag
-  "<voice name='%s'>%s</voice>"
+(defconst tlon-babel-tts-ssml-voice
+  "<voice name=\"%s\">%s</voice>"
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
 ;;;;; Azure
 
 (defconst tlon-babel-azure-ssml-template
   (format "<speak version='1.0' xml:lang='%%s'>%s</speak>"
-	  tlon-babel-tts-voice-tag)
+	  tlon-babel-tts-ssml-voice)
   "SSML template for Azure TTS.")
 
 (defconst tlon-babel-azure-request
@@ -497,7 +497,7 @@ variable `tlon-babel-in-text-abbreviations'"
 
 (defun tlon-babel-tts-enclose-in-voice-tag (string)
   "Enclose STRING in `voice' SSML tags."
-  (format tlon-babel-tts-voice-tag (tlon-babel-tts-get-alternative-voice) string))
+  (format tlon-babel-tts-ssml-voice (tlon-babel-tts-get-alternative-voice) string))
 
 (defun tlon-babel-tts-enclose-in-cue-delimiter (string)
   "Enclose STRING in listener cue delimiter."
