@@ -406,7 +406,7 @@ citation key, format. Hence, it must be run *before*
 (defun tlon-babel-tts-handle-note (note)
   "Handle NOTE for audio narration."
   (let ((clean-note (replace-regexp-in-string tlon-babel-sidenote-marker "" note)))
-    (tlon-babel-tts-enclose-in-listener-cues tlon-babel-tts-note-cues clean-note)))
+    (tlon-babel-tts-listener-cue-full-enclose tlon-babel-tts-note-cues clean-note)))
 
 ;;;;;; Citations
 
@@ -540,7 +540,7 @@ variable `tlon-babel-in-text-abbreviations'"
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
       (replace-match
-       (tlon-babel-tts-enclose-in-listener-cues cues (match-string-no-properties group))))))
+       (tlon-babel-tts-listener-cue-full-enclose cues (match-string-no-properties group))))))
 
 ;;;;;;; Specific elements
 
