@@ -50,7 +50,8 @@
     ("soft hyphen" . "­")
     ("ellipsis" . "…"))
   "Alist of special characters to insert in a Markdown file."
-  :group 'tlon-babel-md)
+  :group 'tlon-babel-md
+  :type '(alist :key-type string :value-type string))
 
 ;;;; Variables
 
