@@ -170,8 +170,8 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 ;;;;;; Quotes
 
 (defconst tlon-babel-tts-quote-cues
-  '(("en" . ("A aside starts here." . "The aside ends here."))
-    ("es" . ("Aquí empieza un inciso." . "Aquí termina el inciso.")))
+  '(("en" . ("A quote starts here." . "The quote ends here."))
+    ("es" . ("Aquí empieza una cita." . "Aquí termina la cita.")))
   "Listener cues for asides.")
 
 ;;;;;; Asides
