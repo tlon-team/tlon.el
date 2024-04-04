@@ -30,7 +30,6 @@
 (require 'markdown-mode)
 (require 'tlon-babel-core)
 (require 'tlon-babel-md)
-(require 'unfill)
 
 ;;;; User options
 
