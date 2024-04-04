@@ -78,7 +78,7 @@ Here's a description of the main options:
 ;;;;; SSML patterns
 
 (defconst tlon-babel-tts-ssml-lang
-  "<lang xml:lang=\"%s\"></lang>"
+  '("<lang xml:lang=\"%s\">" . "</lang>")
   "SSML pattern for language tag, with locale code placeholder.")
 
 (defconst tlon-babel-tts-voice-tag
@@ -546,8 +546,8 @@ image links are handled differently."
 
 (defun tlon-babel-tts-process-math-expressions ()
   "Replace math expressions with their spoken equivalent."
-  (dolist (pattern (list tlon-babel-math-inline-expression
-			 tlon-babel-math-display-expression))
+  (dolist (pattern (list tlon-babel-math-inline-pattern
+			 tlon-babel-math-display-pattern))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
       (let ((math (match-string-no-properties 2)))

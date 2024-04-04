@@ -94,47 +94,42 @@ and the third group captures the short citation flag.")
 
 ;;;;; Math
 
-(defconst tlon-babel-math-inline-open "$`"
-  "Open delimiter for an inline math expression.")
+(defconst tlon-babel-math-inline
+  '("$`" . "`$")
+  "Delimiter pair for an inline math expression.")
 
-(defconst tlon-babel-math-inline-close "`$"
-  "Close delimiter for an inline math expression.")
+(defconst tlon-babel-math-display
+  '("$$\n" . "\n$$")
+  "Delimiter pair for a display math expression.")
 
-(defconst tlon-babel-math-display-open "$$\n"
-  "Open delimiter for an display math expression.")
-
-(defconst tlon-babel-math-display-close "\n$$"
-  "Close delimiter for an display math expression.")
-
-(defconst tlon-babel-math-inline-expression
+(defconst tlon-babel-math-inline-pattern
   (format "\\(?1:%s\\(?2:.*?\\)%s\\)"
-	  (regexp-quote tlon-babel-math-inline-open)
-	  (regexp-quote tlon-babel-math-inline-close))
+	  (regexp-quote (car tlon-babel-math-inline))
+	  (regexp-quote (cdr tlon-babel-math-inline)))
   "Regexp pattern for an inline mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
-(defconst tlon-babel-math-display-expression
+(defconst tlon-babel-math-display-pattern
   (format "\\(?1:%s\\(?2:.*?\\)%s\\)"
-	  (regexp-quote tlon-babel-math-display-open)
-	  (regexp-quote tlon-babel-math-display-close))
+	  (regexp-quote (car tlon-babel-math-display))
+	  (regexp-quote (cdr tlon-babel-math-display)))
   "Regexp pattern for a display mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
-;;;;; Aside
+;;;;; MDX
+;;;;;; Aside
 
-(defconst tlon-babel-aside-open "<Aside>"
-  "Opening `Aside' tag.")
-
-(defconst tlon-babel-aside-close "</Aside>"
-  "Closing `Aside' tag.")
+(defconst tlon-babel-mdx-aside
+  '("<Aside>" . "</Aside>")
+  "Pair of MDX `Aside' tags.")
 
 (defconst tlon-babel-aside-pattern
   (format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)"
-	  (regexp-quote tlon-babel-aside-open)
-	  (regexp-quote tlon-babel-aside-close))
-  "Regexp pattern for an `Aside' expression.
+	  (regexp-quote (car tlon-babel-mdx-aside))
+	  (regexp-quote (cdr tlon-babel-mdx-aside)))
+  "Regexp pattern for an MDX `Aside' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
@@ -242,23 +237,25 @@ If no section is found, do nothing."
 ;;;;;; Insert elements
 
 ;;;###autoload
-(defun tlon-babel-md-insert-element-pair (open close &optional self-closing-p)
-  "Insert an element pair at point or around the selected region.
-OPEN is the opening element and CLOSE is the closing element. If SELF-CLOSING-P
-is non-nil, the opening element will be self-closing."
+(defun tlon-babel-md-insert-element-pair (pair &optional self-closing-p)
+  "Insert an element PAIR at point or around the selected region.
+PAIR is a cons cell whose car is the opening element and whose cdr is the
+closing element. If SELF-CLOSING-P is non-nil, the opening element will be
+self-closing."
   (interactive)
   (tlon-babel-md-check-in-markdown-mode)
-  (if (use-region-p)
-      (let ((begin (region-beginning)))
-	(goto-char (region-end))
-	(insert close)
-	(goto-char begin)
-	(insert open))
-    (if self-closing-p
-	(let ((open (concat (s-chop-right 1 open) " />")))
+  (cl-destructuring-bind (open . close) pair
+    (if (use-region-p)
+	(let ((begin (region-beginning)))
+	  (goto-char (region-end))
+	  (insert close)
+	  (goto-char begin)
 	  (insert open))
-      (insert (concat open close)))
-    (backward-char (length close))))
+      (if self-closing-p
+	  (let ((open (concat (s-chop-right 1 open) " />")))
+	    (insert open))
+	(insert (concat open close)))
+      (backward-char (length close)))))
 
 ;;;;;;; HTML
 
@@ -278,17 +275,16 @@ is non-nil, the opening element will be self-closing."
 (defun tlon-babel-insert-mdx-aside ()
   "Insert an MDX `Aside' element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair tlon-babel-aside-open tlon-babel-aside-close))
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-aside))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-lang (language)
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-languages))))
-  (tlon-babel-md-insert-element-pair (format "<Lang id={\"%s\"}>"
-					     language)
-				     "</Lang>"))
+  (interactive (list (tlon-babel-select-language 'two-letter)))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-mdx-element-with-attribute tlon-babel-mdx-lang language)))
 
 ;; TODO: revise to offer the url at point as default completion candidate
 ;;;###autoload
@@ -296,16 +292,20 @@ written in that language."
   "Insert an MDX `LiteralLink' element pair at point or around the selected region.
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
-  (tlon-babel-md-insert-element-pair (format "<LiteralLink src={\"%s\"}>"
-					     url)
-				     "</LiteralLink>"))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-mdx-element-with-attribute tlon-babel-mdx-literal-link url)))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
 Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
-  (tlon-babel-md-insert-element-pair "<SmallCaps>" "</SmallCaps>"))
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-small-caps))
+
+(defun tlon-babel-mdx-element-with-attribute (element attribute)
+  "Construct an MDX ELEMENT with an ATTRIBUTE."
+  (cons (format (car element) attribute)
+	(cdr element)))
 
 ;;;;;;;; Notes
 
