@@ -181,7 +181,7 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 ;;;;; Listener cues
 
 (defconst tlon-babel-tts-cue-delimiter
-  "\n"
+  (concat "\n" (format tlon-babel-tts-ssml-break "0.5s"))
   "Delimiter for listener cues.")
 
 ;;;;;; Notes
