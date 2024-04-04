@@ -535,7 +535,6 @@ variable `tlon-babel-in-text-abbreviations'"
 	('aside (list tlon-babel-aside-pattern tlon-babel-tts-aside-cues 2))
 	('quote (list markdown-regex-blockquote tlon-babel-tts-quote-cues 3))
 	('image (list markdown-regex-link-inline tlon-babel-tts-image-cues 3))
-	('note (list tlon-babel-sidenote-marker tlon-babel-tts-note-cues 1))
 	;; TODO: determine if other types should be added
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
