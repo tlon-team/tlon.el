@@ -498,10 +498,6 @@ variable `tlon-babel-in-text-abbreviations'"
   "Add listener cues for blockquotes."
   (tlon-babel-tts-process-element 'quote))
 
-(defun tlon-babel-tts-process-sidenote ()
-  "Add listener cues for sidenotes."
-  (tlon-babel-tts-process-element 'sidenote))
-
 (defun tlon-babel-tts-process-asides ()
   "Add listener cues for asides."
   (tlon-babel-tts-process-element 'aside))
