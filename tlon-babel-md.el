@@ -436,14 +436,14 @@ of the existing locators."
     (user-error "Not in a citation"))
   (let* ((selection (completing-read "Locator: " tlon-babel-locators nil t))
 	 (locator (alist-get selection tlon-babel-locators "" "" 'string=)))
-    (if-let ((existing (tlon-babel-md-get-locator-at-point)))
+    (if-let ((existing (tlon-babel-get-locator-at-point)))
 	(replace-match locator)
       (let ((end (cdadr (or (tlon-babel-get-locators-in-citation)
 			    (tlon-babel-get-key-in-citation)))))
 	(goto-char end)
 	(insert (format ", %s " locator))))))
 
-(defun tlon-babel-md-get-locator-at-point ()
+(defun tlon-babel-get-locator-at-point ()
   "Return the locator at point, if present."
   (let ((locators (mapcar 'cdr tlon-babel-locators)))
     (when (thing-at-point-looking-at (regexp-opt locators))
