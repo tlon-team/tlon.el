@@ -553,5 +553,14 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (maphash (lambda (k _v) (push k keys)) data)
     keys))
 
+;;;;; tags
+
+(defun tlon-babel-make-tag-pattern (pair &optional format)
+  "Construct a regexp pattern with FORMAT for PAIR of tags."
+  (let ((format (or format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)")))
+    (format format
+	    (regexp-quote (car pair))
+	    (regexp-quote (cdr pair)))))
+
 (provide 'tlon-babel-core)
 ;;; tlon-babel-core.el ends here
