@@ -498,5 +498,35 @@ case, the return value will be a list of strings rather than a string."
       ('locale (tlon-babel-get-formatted-languages selection format))
       (_ selection))))
 
+(defun tlon-babel-get-formatted-languages (selection format)
+  "Return the language SELECTION in appropriate FORMAT.
+FORMAT must be either `two-letter' or `locale'. SELECTION is either a string or
+a list of strings representing languages in English."
+  (let ((languages (pcase format
+		     ('locale tlon-babel-locales)
+		     ('two-letter bibtex-extras-valid-languages))))
+    (if (listp selection)
+	(mapcar (lambda (language)
+		  "Return the two-letter code or the locale for LANGUAGE."
+		  (alist-get language languages nil nil #'string=))
+		selection)
+      (alist-get selection languages nil nil #'string=))))
+
+(defun tlon-babel-read-language (&optional babel)
+  "Read a language from a list of languages.
+By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
+candidates to languages in the Babel project."
+  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages)))
+    (completing-read "Language: " language-candidates nil t)))
+
+(defun tlon-babel-read-multiple-languages (&optional babel)
+  "Read a list of languages from a list of languages.
+By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
+candidates to languages in the Babel project."
+  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages))
+	 (language-selection (completing-read-multiple "Languages (comma-separated): "
+						       (append '("*all*") language-candidates))))
+    (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
+
 (provide 'tlon-babel-core)
 ;;; tlon-babel-core.el ends here
