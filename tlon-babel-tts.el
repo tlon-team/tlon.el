@@ -604,5 +604,120 @@ image links are handled differently."
 	(replace-match "" nil nil)
 	(tlon-babel-ai-translate-math math tlon-babel-tts-current-language)))))
 
+;;;;; Project-wide
+
+;;;;;; Common
+
+(defun tlon-babel-tts-edit-entry (data file)
+  "Add or revise an entry in DATA and write it to FILE."
+  (interactive)
+  (let* ((names (mapcan (lambda (group)
+			  (mapcar #'car (cadr group)))
+			data))
+	 (term (completing-read "Term: " names nil nil))
+	 (current-entry (catch 'current-entry
+			  (dolist (group data)
+			    (dolist (pair (cadr group))
+			      (when (string= (car pair) term)
+				(throw 'current-entry (cdr pair)))))
+			  nil)))
+    (if current-entry
+	(let ((cdr (read-string (format "Updated entry for %s: " term) current-entry)))
+	  (tlon-babel-tts-revise-entry data term cdr))
+      (tlon-babel-tts-add-new-entry data term))
+    (tlon-babel-write-data file data)))
+
+(defun tlon-babel-tts-revise-entry (data term cdr)
+  "Update the CDR for an existing TERM in DATA."
+  (dolist (group data)
+    (dolist (pair (cadr group))
+      (when (string= (car pair) term)
+	(setcdr pair cdr)))))
+
+(defun tlon-babel-tts-add-new-entry (data term)
+  "Add a new TERM to DATA."
+  (let* ((languages (tlon-babel-select-language 'two-letter 'babel 'multiple))
+         (dict-entry (read-string "Term: "))
+         (new-entry (cons term dict-entry))
+         (added nil))
+    (dolist (group data)
+      (when (and (not added)
+                 (equal (car group) languages))
+        (setf (cadr group) (cons new-entry (cadr group)))
+        (setq added t)))
+    (unless added
+      (nconc data (list (list languages (list new-entry)))))))
+
+;;;;;; Abbreviations
+
+;;;###autoload
+(defun tlon-babel-edit-abbreviations ()
+  "Edit abbreviations."
+  (interactive)
+  (tlon-babel-tts-edit-entry
+   tlon-babel-tts-abbreviations
+   tlon-babel-file-abbreviations))
+
+;;;;;; Phonetic replacements
+
+;;;###autoload
+(defun tlon-babel-edit-phonetic-replacements ()
+  "Edit phonetic replacements."
+  (interactive)
+  (tlon-babel-tts-edit-entry
+   tlon-babel-tts-phonetic-replacements
+   tlon-babel-file-phonetic-replacements))
+
+;;;;;; Phonetic transcriptions
+
+;;;###autoload
+(defun tlon-babel-edit-phonetic-transcriptions ()
+  "Edit phonetic transcriptions."
+  (interactive)
+  (tlon-babel-tts-edit-entry
+   tlon-babel-tts-phonetic-transcriptions
+   tlon-babel-file-phonetic-transcriptions))
+
+;;;;; File-local
+
+;;;;;; Common
+
+(defun tlon-babel-add-in-text-cons-cell (prompts var)
+  "Add an in-text cons-cell to the file-local named VAR.
+PROMPTS is a cons cell with the corresponding prompts."
+  (let* ((var-value (symbol-value var))
+	 (key (substring-no-properties
+	       (completing-read (car prompts) var-value)))
+	 (default-expansion (alist-get key var-value nil nil #'string=))
+	 (value (substring-no-properties
+		 (completing-read (cdr prompts) (mapcar #'cdr var-value)
+				  nil nil default-expansion)))
+	 (cons-cell (cons key value)))
+    (set var
+	 (cl-remove-if (lambda (existing-cell)
+			 "If a new element was set for an existing cell, remove it."
+			 (string= (car existing-cell) (car cons-cell)))
+		       var-value))
+    (modify-file-local-variable var (push cons-cell var-value) 'add-or-replace)
+    (hack-local-variables)))
+
+;;;;;; Abbreviations
+
+;;;###autoload
+(defun tlon-babel-add-file-local-abbreviation ()
+  "Add an in-text abbreviation to the file-local list."
+  (interactive)
+  (tlon-babel-add-in-text-cons-cell '("Abbrev: " . "Expanded abbrev: ")
+				    'tlon-babel-file-local-abbreviations))
+
+;;;;;; Replacements
+
+;;;###autoload
+(defun tlon-babel-add-file-local-replacement ()
+  "Add an in-text replacement to the file-local list."
+  (interactive)
+  (tlon-babel-add-in-text-cons-cell '("Text to replace: " . "Replacement: ")
+				    'tlon-babel-file-local-replacements))
+
 (provide 'tlon-babel-tts)
 ;;; tlon-babel-tts.el ends here
