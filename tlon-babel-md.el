@@ -414,16 +414,17 @@ Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
 the KEY will replace the existing key.
 
 By default, it will insert a \"long\" citation. To insert a \"short\" citation,
-call the function preceded by the universal ARG or use
+call the function preceded by the universal ARG or invoke
 `tlon-babel-insert-mdx-cite-short'."
   (interactive "P")
   (let ((key (car (citar-select-refs))))
     (if-let ((data (tlon-babel-get-key-in-citation)))
 	(cl-destructuring-bind (_ (begin . end)) data
 	  (tlon-babel-replace-bibtex-element-in-citation key begin end))
-      (tlon-babel-md-insert-element-pair (format "<Cite bibKey={\"%s\"}%s>"
-						 key (if arg " short" ""))
-					 "</Cite>" t))))
+      (tlon-babel-md-insert-element-pair
+       (cons (format "<Cite bibKey={\"%s\"}%s>" key (if arg " short" ""))
+	     "</Cite>")
+       t))))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-cite-short ()
