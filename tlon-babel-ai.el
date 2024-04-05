@@ -187,6 +187,16 @@ Otherwise emit a message with the status provided by INFO."
       (tlon-babel-ai-callback-fail info)
     response))
 
+(defun tlon-babel-ai-callback-copy (response info)
+  "If the request succeeds, copy the RESPONSE to the kill ring.
+Otherwise emit a message with the status provided by INFO."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (kill-new response)
+    (message "Copied `%s'" response)))
+
+;; Is this necessary; I think `gptel-request' already does this
+;; if no callback is passed to it
 (defun tlon-babel-ai-callback-insert (response info)
   "If the request succeeds, insert the RESPONSE string.
 Otherwise emit a message with the status provided by INFO. The RESPONSE is
@@ -629,7 +639,7 @@ request was sent."
 			 (tlon-babel-select-language 'two-letter))))
   (let ((prompt (tlon-babel-lookup tlon-babel-ai-transcribe-phonetically-prompt
 				   :prompt :language language)))
-    (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-insert)))
+    (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-copy)))
 
 (defun tlon-babel-phonetically-transcribe-in-buffer ()
   "Insert a phonetic transcription of each line in buffer immediately after it.
