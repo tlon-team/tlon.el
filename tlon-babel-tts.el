@@ -507,6 +507,55 @@ variable `tlon-babel-in-text-abbreviations'"
         (setq result (append result (cadr item)))))
     result))
 
+;;;;;;; Abbreviations
+
+(defun tlon-babel-tts-process-abbreviations ()
+  "Replace terms with their pronunciations."
+  (tlon-babel-tts-process-terms
+   (tlon-babel-get-abbreviations)
+   'tlon-babel-replace-abbreviations))
+
+(defun tlon-babel-replace-abbreviations (replacement)
+  "When processsing abbreviations, replace match with REPLACEMENT."
+  (replace-match replacement t))
+
+(defun tlon-babel-get-abbreviations ()
+  "Get abbreviations."
+  (tlon-babel-tts-get-associated-terms tlon-babel-tts-abbreviations))
+
+;;;;;;; Phonetic replacements
+
+(defun tlon-babel-tts-process-phonetic-replacements ()
+  "Replace terms with their counterparts."
+  (tlon-babel-tts-process-terms
+   (tlon-babel-get-phonetic-replacements)
+   'tlon-babel-replace-phonetic-replacements))
+
+(defun tlon-babel-replace-phonetic-replacements (replacement)
+  "When processsing simple replacements, replace match with REPLACEMENT."
+  (replace-match replacement t))
+
+(defun tlon-babel-get-phonetic-replacements ()
+  "Get simple replacements."
+  (tlon-babel-tts-get-associated-terms tlon-babel-tts-phonetic-replacements))
+
+;;;;;;; Phonetic transcriptions
+
+(defun tlon-babel-tts-process-phonetic-transcriptions ()
+  "Replace terms with their pronunciations."
+  (tlon-babel-tts-process-terms
+   (tlon-babel-get-phonetic-transcriptions)
+   'tlon-babel-replace-phonetic-transcriptions))
+
+(defun tlon-babel-replace-phonetic-transcriptions (replacement)
+  "When processsing phonetic transcriptions, replace match with pattern.
+REPLACEMENT is the cdr of the cons cell for the term being replaced."
+  (replace-match (format tlon-babel-tts-ssml-phoneme
+			 "ipa" replacement (match-string-no-properties 0)) t))
+
+(defun tlon-babel-get-phonetic-transcriptions ()
+  "Get the phonetic transcriptions."
+  (tlon-babel-tts-get-associated-terms tlon-babel-tts-phonetic-transcriptions))
 ;;;;;; Listener cues
 
 ;;;;;;; General functions
