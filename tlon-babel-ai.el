@@ -347,6 +347,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Image description
 
+;;;###autoload
+(defun tlon-babel-ai-describe-image (file callback)
   "Describe the contents of the image in FILE.
 When the description is obtained, pass it to CALLBACK as its first argument."
   (interactive (list (read-file-name "Image file: " )))
@@ -626,6 +628,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Phonetic transcription
 
+;;;###autoload
 (defun tlon-babel-ai-phonetically-transcribe (expression language)
   "Insert the phonetic transcription of the EXPRESSION in LANGUAGE.
 LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
