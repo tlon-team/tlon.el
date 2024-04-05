@@ -575,10 +575,10 @@ a type."
       (let* ((alt-text-marker (make-marker))
 	     (image-file (expand-file-name (match-string-no-properties 2))))
 	(set-marker alt-text-marker (match-beginning 1))
-	(tlon-babel-ai-describe-image-content image-file
-					      (lambda (description)
-						(goto-char (marker-position alt-text-marker))
-						(insert description))))
+	(tlon-babel-ai-describe-image image-file
+				      (lambda (description)
+					(goto-char (marker-position alt-text-marker))
+					(insert description))))
     (message "Not on an image link with missing alt text")))
 
 ;; TODO: create function to add alt text to all images in a file

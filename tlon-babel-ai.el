@@ -347,7 +347,6 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Image description
 
-(defun tlon-babel-ai-describe-image-content (file callback)
   "Describe the contents of the image in FILE.
 When the description is obtained, pass it to CALLBACK as its first argument."
   (interactive (list (read-file-name "Image file: " )))
