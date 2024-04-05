@@ -720,7 +720,6 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)
     ("a" "aside"                tlon-babel-insert-mdx-aside)
     ("g" "lang"                 tlon-babel-insert-mdx-lang)
-    ("v" "abbreviation"         tlon-babel-add-in-text-abbreviation)
     ("." "special character"    tlon-babel-insert-special-character)]])
 
 (provide 'tlon-babel-md)
