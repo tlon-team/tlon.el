@@ -497,6 +497,16 @@ written in that language."
   (tlon-babel-md-insert-element-pair
    (tlon-babel-mdx-element-with-attribute tlon-babel-tts-ssml-lang language)))
 
+;;;###autoload
+(defun tlon-babel-insert-ssml-emphasis (level)
+  "Insert an SSML `emphasis' element pair at point or around the selected region.
+Prompt the user to select a LEVEL."
+  (interactive (list (completing-read "Emphasis: "
+				      tlon-babel-tts-ssml-emphasis-levels nil t
+				      tlon-babel-tts-ssml-emphasis-default-level)))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-mdx-element-with-attribute tlon-babel-tts-ssml-emphasis level)))
+
 ;;;;;;; Math
 
 ;;;###autoload
@@ -752,6 +762,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
    ["Math"
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
+    ("e" "emphasis"             tlon-babel-insert-ssml-emphasis)]
    ["Misc"
     ("b" "subscript"            tlon-babel-insert-html-subscript)
     ("p" "superscript"          tlon-babel-insert-html-superscript)
