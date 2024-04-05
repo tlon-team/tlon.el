@@ -762,6 +762,8 @@ variables section. If FILE is nil, read the file visited by the current buffer."
    ["Math"
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
+   ["SSML"
+    ("L" "lang"                 tlon-babel-insert-ssml-lang)
     ("e" "emphasis"             tlon-babel-insert-ssml-emphasis)]
    ["Misc"
     ("b" "subscript"            tlon-babel-insert-html-subscript)
