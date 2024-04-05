@@ -349,6 +349,14 @@ Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-small-caps))
 
+;;;###autoload
+(defun tlon-babel-insert-mdx-visually-hidden ()
+  "Insert an MDX `VisuallyHidden' element pair at point or around selected region.
+Text enclosed by an ``VisuallyHidden'' element pair will be displayed in small
+caps."
+  (interactive)
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-hidden))
+
 (defun tlon-babel-mdx-element-with-attribute (element attribute)
   "Construct an MDX ELEMENT with an ATTRIBUTE."
   (cons (format (car element) attribute)
@@ -747,6 +755,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("b" "subscript"            tlon-babel-insert-html-subscript)
     ("p" "superscript"          tlon-babel-insert-html-superscript)
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)
+    ("h" "visually hidden"      tlon-babel-insert-mdx-visually-hidden)
     ("a" "aside"                tlon-babel-insert-mdx-aside)
     ("g" "lang"                 tlon-babel-insert-mdx-lang)
     ("." "special character"    tlon-babel-insert-special-character)]])
