@@ -94,41 +94,40 @@ and the third group captures the short citation flag.")
 
 ;;;;; Math
 
+;;;;;; inline
+
 (defconst tlon-babel-math-inline
   '("$`" . "`$")
   "Delimiter pair for an inline math expression.")
+
+(defconst tlon-babel-math-inline-pattern
+  (tlon-babel-make-tag-pattern tlon-babel-math-inline)
+  "Regexp pattern for an inline mathematical expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the delimiters.")
+
+;;;;;; display
 
 (defconst tlon-babel-math-display
   '("$$\n" . "\n$$")
   "Delimiter pair for a display math expression.")
 
-(defconst tlon-babel-math-inline-pattern
-  (format "\\(?1:%s\\(?2:.*?\\)%s\\)"
-	  (regexp-quote (car tlon-babel-math-inline))
-	  (regexp-quote (cdr tlon-babel-math-inline)))
-  "Regexp pattern for an inline mathematical expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the delimiters.")
-
 (defconst tlon-babel-math-display-pattern
-  (format "\\(?1:%s\\(?2:.*?\\)%s\\)"
-	  (regexp-quote (car tlon-babel-math-display))
-	  (regexp-quote (cdr tlon-babel-math-display)))
+  (tlon-babel-make-tag-pattern tlon-babel-math-display)
   "Regexp pattern for a display mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
 ;;;;; MDX
+
 ;;;;;; Aside
 
 (defconst tlon-babel-mdx-aside
   '("<Aside>" . "</Aside>")
   "Pair of MDX `Aside' tags.")
 
-(defconst tlon-babel-aside-pattern
-  (format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)"
-	  (regexp-quote (car tlon-babel-mdx-aside))
-	  (regexp-quote (cdr tlon-babel-mdx-aside)))
+(defconst tlon-babel-mdx-aside-pattern
+  (tlon-babel-make-tag-pattern tlon-babel-mdx-aside)
   "Regexp pattern for an MDX `Aside' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
@@ -139,17 +138,47 @@ captures the expression without the tags.")
   '("<Lang id={\"%s\"}>" . "</Lang>")
   "Pair of MDX `Lang' tags.")
 
+(defconst tlon-babel-mdx-lang-pattern
+  (tlon-babel-make-tag-pattern tlon-babel-mdx-lang)
+  "Regexp pattern for an MDX `Lang' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
 ;;;;;; LiteralLink
 
 (defconst tlon-babel-mdx-literal-link
   '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
   "Pair of MDX `LiteralLink' tags.")
 
+(defconst tlon-babel-mdx-literal-link-pattern
+  (tlon-babel-make-tag-pattern tlon-babel-mdx-literal-link)
+  "Regexp pattern for an MDX `LiteralLink' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
 ;;;;;; SmallCaps
 
 (defconst tlon-babel-mdx-small-caps
   '("<SmallCaps>" . "</SmallCaps>")
   "Pair of MDX `SmallCaps' tags.")
+
+(defconst tlon-babel-mdx-small-caps-pattern
+  (tlon-babel-make-tag-pattern tlon-babel-mdx-small-caps)
+  "Regexp pattern for an MDX `SmallCaps' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
+;;;;;; VisuallyHidden
+
+(defconst tlon-babel-mdx-visually-hidden
+  '("<VisuallyHidden>" . "</VisuallyHidden>")
+  "Pair of MDX `VisuallyHidden' tags.")
+
+(defconst tlon-babel-mdx-visually-hidden-pattern
+  (tlon-babel-make-tag-pattern tlon-babel-mdx-visually-hidden)
+  "Regexp pattern for an MDX `VisuallyHidden' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
 
 ;;;;; Images
 

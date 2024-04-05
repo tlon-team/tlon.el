@@ -535,7 +535,7 @@ variable `tlon-babel-in-text-abbreviations'"
   "Add listener cues for text enclosed in tags of TYPE."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
-	('aside (list tlon-babel-aside-pattern tlon-babel-tts-aside-cues 2))
+	('aside (list tlon-babel-mdx-aside-pattern tlon-babel-tts-aside-cues 2))
 	('quote (list markdown-regex-blockquote tlon-babel-tts-quote-cues 3))
 	('image (list markdown-regex-link-inline tlon-babel-tts-image-cues 3))
 	;; TODO: determine if other types should be added
