@@ -178,6 +178,8 @@ BACKEND and MODEL are the language backend and model names, respectively."
 	(error nil))
     (gptel-request (format prompt string) :callback callback)))
 
+;;;;;; Generic callback functions
+
 (defun tlon-babel-ai-callback-return (response info)
   "If the request succeeds, return the RESPONSE string.
 Otherwise emit a message with the status provided by INFO."
@@ -199,6 +201,8 @@ inserted at the point the request was sent."
   "Callback message when `gptel' fails.
 INFO is the response info."
   (message tlon-babel-gptel-error-message (plist-get info :status)))
+
+;;;;;; Other functions
 
 (declare-function ebib-extras-next-entry "ebib-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
