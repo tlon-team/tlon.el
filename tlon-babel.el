@@ -557,30 +557,12 @@ respectively."
 			  ('biblio (file-name-nondirectory file)))))
       (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
 
-;;;;; json
-
-(defun tlon-babel-parse-json (file &optional object-type array-type)
-  "Parse JSON FILE using array TYPE.
-If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
-`vector'."
-  (let ((json-object-type object-type)
-	(json-array-type array-type)
-	(json-key-type 'string)
-	(json-false :json-false))
-    (json-read-file file)))
-
-(defun tlon-babel-get-keys (data)
-  "Get keys from hash table DATA."
-  (let ((keys '()))
-    (maphash (lambda (k _v) (push k keys)) data)
-    keys))
-
 ;;;;; URL correspondences
 
 (defun tlon-babel-url-correspondence-dwim ()
   "Add a new URL correspondence or modify an existing one."
   (interactive)
-  (let* ((data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector))
+  (let* ((data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector 'symbol))
 	 (keys (tlon-babel-get-keys data))
 	 (selected-key (completing-read "Select existing URL or enter a new one: " keys))
 	 (default-value (gethash selected-key data))
@@ -616,7 +598,7 @@ If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
   "Highlight source URLs in URL correspondences file."
   (interactive)
   ;; Load JSON file
-  (let* ((json-data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector))
+  (let* ((json-data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector 'symbol))
 	 (key-urls (tlon-babel-get-keys json-data))
 	 ;; Remove URL prefixes from keys
 	 (search-keywords (mapcar (lambda (url)
@@ -643,7 +625,7 @@ If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
 (defun tlon-babel-section-correspondence-dwim ()
   "Add a new section correspondence or modify an existing one."
   (interactive)
-  (let* ((data (tlon-babel-parse-json tlon-babel-file-section-correspondences 'hash-table 'list))
+  (let* ((data (tlon-babel-parse-json tlon-babel-file-section-correspondences 'hash-table 'list 'symbol))
 	 (selected-key (citar-select-refs)))
     (tlon-babel-section-correspondence-check selected-key)
     (let ((default-value (gethash selected-key data))

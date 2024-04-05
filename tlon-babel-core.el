@@ -528,5 +528,30 @@ candidates to languages in the Babel project."
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
 
+;;;;; json
+
+(defun tlon-babel-parse-json (file &optional object-type array-type key-type)
+  "Parse JSON FILE using array TYPE.
+OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
+ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
+`string' (default), `symbol' or `keyword'."
+  (let ((json-object-type (or object-type 'alist))
+	(json-array-type (or array-type 'list))
+	(json-key-type (or key-type 'string))
+	(json-false :json-false))
+    (json-read-file file)))
+
+(defun tlon-babel-write-data (file data)
+  "Write DATA to a JSON FILE."
+  (with-temp-file file
+    (insert (json-encode data))
+    (json-pretty-print-buffer)))
+
+(defun tlon-babel-get-keys (data)
+  "Get keys from hash table DATA."
+  (let ((keys '()))
+    (maphash (lambda (k _v) (push k keys)) data)
+    keys))
+
 (provide 'tlon-babel-core)
 ;;; tlon-babel-core.el ends here
