@@ -29,71 +29,52 @@
 
 (require 'tlon-babel)
 
+;;;; Variables
+
+(defconst tlon-babel-file-glossary
+  (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-core") "glossary.json")
+  "The JSON file containing the glossary.")
+
+(defvar tlon-babel-glossary
+  (tlon-babel-parse-json tlon-babel-file-glossary)
+  "The glossary values.")
+
 ;;;; Functions
 
-(defun tlon-babel-get-file-glossary (&optional language)
-  "Return the file containing the glossary for LANGUAGE.
-If LANGUAGE is nil, default to the language set in
-`tlon-babel-translation-language'."
-  (let* ((language (or language tlon-babel-translation-language))
-	 (repo (tlon-babel-repo-lookup :dir
-				       :subproject "babel"
-				       :language language)))
-    (file-name-concat repo "dict/Glossary.csv")))
-
-(defun tlon-babel-glossary-alist ()
-  "Read `Glossary.csv` and return it as an alist."
-  (with-temp-buffer
-    (insert-file-contents (tlon-babel-get-file-glossary))
-    (let ((lines (split-string (buffer-string) "\n" t))
-	  (result '()))
-      (dolist (line lines result)
-	(let* ((elements (split-string line "\",\""))
-	       (key (substring (nth 0 elements) 1)) ; removing leading quote
-	       (value (if (string-suffix-p "\"" (nth 1 elements))
-			  (substring (nth 1 elements) 0 -1)   ; if trailing quote exists, remove it
-			(nth 1 elements)))) ; otherwise, use as-is
-	  (push (cons key value) result))))))
-
-;;;###autoload
-(defun tlon-babel-glossary-dwim ()
-  "Add a new entry to the glossary or modify an existing entry."
+(defun tlon-babel-edit-glossary ()
+  "Add, delete or update a glossary entry."
   (interactive)
-  (let* ((terms (mapcar 'car (tlon-babel-glossary-alist)))
-	 (term (completing-read "Term: " terms)))
-    (if (member term terms)
-	(tlon-babel-glossary-modify term)
-      (tlon-babel-glossary-add term))))
-
-;;;###autoload
-(defun tlon-babel-glossary-add (&optional original translation)
-  "Add a new entry to the glossary for ORIGINAL and TRANSLATION terms."
-  (interactive)
-  (let ((original (or original (read-string "original term: ")))
-	(translation (or translation (read-string
-				      (format "translation term [%s]: "
-					      tlon-babel-translation-language))))
-	(explanation (tlon-babel-glossary-prompt-for-explanation)))
-    (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary))
-      (goto-char (point-max))
-      (insert (tlon-babel-glossary-regexp-pattern original translation))
-      (tlon-babel-glossary-finalize "add" original explanation))))
-
-(defun tlon-babel-glossary-modify (original)
-  "Modify an entry in the glossary corresponding to the ORIGINAL term."
-  (let* ((existing-translation (cdr (assoc original (tlon-babel-glossary-alist))))
-	 (new-translation (read-string
-			   (format "new translation term [%s]: "
-				   tlon-babel-translation-language)
-			   existing-translation))
-	 (explanation (tlon-babel-glossary-prompt-for-explanation)))
-    (with-current-buffer (find-file-noselect (tlon-babel-get-file-glossary))
-      (goto-char (point-min))
-      (while (re-search-forward (tlon-babel-glossary-regexp-pattern original existing-translation) nil t)
-	(replace-match (tlon-babel-glossary-regexp-pattern original new-translation)))
-      (tlon-babel-glossary-finalize "modify" original explanation)
-      (message "Remember to run a `ripgrep' search for the original translation (\"%s\") across all the Babel repos in the translation language (%s), making any necessary replacements."
-	       existing-translation tlon-babel-translation-language))))
+  (let* ((english-terms (mapcar (lambda (entry)
+                                  (cdr (assoc "en" entry)))
+                                tlon-babel-glossary))
+         (selected-term (completing-read "Choose or add a term (type to add new): " english-terms nil nil))
+         (existing-entry (seq-find (lambda (entry) (equal (cdr (assoc "en" entry)) selected-term))
+                                   tlon-babel-glossary))
+         (language (tlon-babel-select-language 'two-letter 'babel))
+         updated-translation lang-pair)
+    ;; If entry doesn't exist, create a new one
+    (unless existing-entry
+      (setq existing-entry (list (cons "en" selected-term)))
+      (setq tlon-babel-glossary (append tlon-babel-glossary (list existing-entry))))
+    (setq lang-pair (assoc language existing-entry))
+    (setq updated-translation (read-string (format "Translation for \"%s\" (%s) [Empty to remove]: "
+                                                   selected-term language)
+                                           (cdr lang-pair)))
+    ;; If updated translation is empty, remove the language entry if it exists
+    (if (string-empty-p updated-translation)
+        (when lang-pair
+          ;; Remove language pair from the entry
+          (setq existing-entry (remove lang-pair existing-entry))
+          ;; If only "en" left, ask if the user wants to remove the whole entry
+          (when (= (length existing-entry) 1)
+            (when (yes-or-no-p "Removed the only translation. Delete the entire entry? ")
+              (setq tlon-babel-glossary (remove existing-entry tlon-babel-glossary)))))
+      ;; Otherwise, update or add the translation
+      (if lang-pair
+          (setcdr lang-pair updated-translation)  ; Update existing language pair
+        ;; Add new language pair
+        (push (cons language updated-translation) existing-entry)))
+    (tlon-babel-write-data tlon-babel-file-glossary tlon-babel-glossary)))
 
 (defun tlon-babel-glossary-prompt-for-explanation ()
   "Prompt the user for an explanation of the translation."
