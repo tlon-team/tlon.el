@@ -455,7 +455,7 @@ of the existing locators."
   "Insert an SSML `lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (tlon-babel-select-language))
+  (interactive (list (tlon-babel-select-language 'locale)))
   (tlon-babel-md-insert-element-pair
    (tlon-babel-mdx-element-with-attribute tlon-babel-tts-ssml-lang language)))
 

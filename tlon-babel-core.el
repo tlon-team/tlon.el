@@ -479,19 +479,23 @@ The validation is case-insensitive, but the returned language is in lowercase."
 		(code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
       (string-limit code-raw 2))))
 
-(defun tlon-babel-select-language (&optional format babel)
+(defun tlon-babel-select-language (&optional format babel multiple)
   "Prompt the user to select a LANGUAGE and return it in FORMAT.
 If FORMAT is `two-letter', return the two-letter code of the language (e.g.
 \"es\"). If it is `locale', return the predefined locale for that language (e.g.
 \"en-US\"). Otherwise, return the original selection (e.g. \"english\").
 
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
-candidates to languages in the Babel project."
-  (let* ((languages (if babel tlon-babel-languages bibtex-extras-valid-languages))
-	 (selection (completing-read "Language: " languages nil t)))
+candidates to languages in the Babel project.
+
+If MULTIPLE is non-nil, allow the user to select multiple languages. In that
+case, the return value will be a list of strings rather than a string."
+  (let* ((selection (if multiple
+			(tlon-babel-read-multiple-languages babel)
+		      (tlon-babel-read-language babel))))
     (pcase format
-      ('two-letter (alist-get selection languages nil nil #'string=))
-      ('locale (alist-get selection tlon-babel-locales nil nil #'string=))
+      ('two-letter (tlon-babel-get-formatted-languages selection format))
+      ('locale (tlon-babel-get-formatted-languages selection format))
       (_ selection))))
 
 (provide 'tlon-babel-core)
