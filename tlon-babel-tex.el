@@ -107,7 +107,7 @@
 
 ;;;; Functions
 
-;;;;; fetch
+;;;;; Fetch fields
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function tlon-babel-ai-batch-continue "tlon-babel-ai")
@@ -269,7 +269,7 @@ errors gracefully."
   ;; add a period at the end of the abstract if missing
   (replace-regexp-in-string "\\([^\\.]\\)$" "\\1." string))
 
-;;;;; moving entries
+;;;;; Move entries
 
 (defun tlon-babel-move-entry (&optional key file)
   "Move entry with KEY to FILE.
@@ -313,7 +313,7 @@ If FILE is non-nil, use `tlon-babel-refs-file-fluid'."
   (tlon-babel-move-lesswrong-entries)
   )
 
-;;;;; adding fields
+;;;;; Add fields
 
 (defun tlon-babel-add-or-update-tlon-field ()
   "Add or update \"database\" field with \"Tlön\" value in the current BibTeX entry."
@@ -340,7 +340,7 @@ and sets the value of the field for all entries to `Tlön'."
     (when (string= (buffer-file-name) file)
       (tlon-babel-add-database-field file))))
 
-;;;;; cleanup
+;;;;; Cleanup
 
 (defun tlon-babel-auto-clean-entry ()
   "Clean up bibtex entry at point upon saving."
@@ -381,7 +381,7 @@ If the field `landig' is present, the function does nothing; else, it sets the
 	  (replace-match (format "\\1\\\\%s" char) nil nil))))))
 
 
-;;;;; autokey
+;;;;; Autokey
 
 (defun tlon-babel-generate-autokey (author year title)
   "Generate a BibTeX key based on AUTHOR, YEAR, and TITLE."
