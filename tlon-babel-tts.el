@@ -195,25 +195,31 @@ code.
 
 For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation#say-as-element>.")
 
-;;;;; Terms
 ;;;;; File-local variables
 
 (defvar-local tlon-babel-file-local-abbreviations '()
   "In-text abbreviations and their spoken equivalent.")
 
-(defconst tlon-babel-tts-terms
-  `((,(mapcar 'cdr tlon-babel-languages)
-     (("Nate Soares" . "neɪt soˈa.ɾis")
-      ("GiveWell" . "ˈɡɪv.wɛl")))
-    (("es")
-     (("transhumanos" . "tɾansumanos"))))
-  "Terms and their pronunciations.")
+(defvar-local tlon-babel-file-local-replacements '()
+  "File local replacements.")
+
 ;;;;; Abbreviations
 
 (defvar tlon-babel-tts-abbreviations
   (tlon-babel-parse-json tlon-babel-file-abbreviations)
   "Standard abbreviations and their spoken equivalent in each language.")
 
+;;;;; Phonetic replacements
+
+(defvar tlon-babel-tts-phonetic-replacements
+  (tlon-babel-parse-json tlon-babel-file-phonetic-replacements)
+  "Phonetic replacements for terms.")
+
+;;;;; Phonetic transcriptions
+
+(defvar tlon-babel-tts-phonetic-transcriptions
+  (tlon-babel-parse-json tlon-babel-file-phonetic-transcriptions)
+  "Phonetic transcriptions for terms.")
 
 ;;;;; Listener cues
 
