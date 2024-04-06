@@ -498,30 +498,38 @@ variable `tlon-babel-file-local-abbreviations'"
 	    (while (re-search-forward (car cons) nil t)
 	      (replace-match (cdr cons) t nil))))))))
 
-;; Things to fix:
-;; - https://docs.google.com/document/d/1m1k57PbKkkVy0eLwrHKjZiu9XOcOD74WhX4jKKQbwRU/
+;;;;;; File-local replacements
 
-;;;;;; Terms
+(defun tlon-babel-tts-process-file-local-replacements ()
+  "Perform replacements indicated in `tlon-babel-file-local-replacements'."
+  (dolist (pair tlon-babel-file-local-replacements)
+    (let ((find (car pair)))
+      (goto-char (point-min))
+      (while (re-search-forward find nil t)
+	(replace-match (cdr pair) t)))))
 
-(defun tlon-babel-tts-process-terms ()
-  "Replace terms with their pronunciations."
-  (let* ((case-fold-search nil)
-	 (language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo)))
-	 (terms (tlon-babel-get-terms-for-language language)))
+;;;;;; Project-wide replacements
+
+;;;;;;; Common
+
+(defun tlon-babel-tts-process-terms (terms replacement-fun)
+  "Replace TERMS using REPLACEMENT-FUN."
+  (let ((case-fold-search nil))
     (dolist (term terms)
       (let ((find (format "\\b%s\\b" (car term)))
-	    (replace (cdr term)))
+	    (replacement (cdr term)))
 	(goto-char (point-min))
 	(while (re-search-forward find nil t)
-	  (replace-match (format tlon-babel-tts-ssml-phoneme
-				 "ipa" replace (match-string-no-properties 0)) t))))))
+	  (funcall replacement-fun replacement))))))
 
-(defun tlon-babel-get-terms-for-language (language)
-  "Get the terms associated with LANGUAGE."
+(defun tlon-babel-tts-get-associated-terms (var)
+  "Get associated terms for the current language in VAR.
+For each cons cell in VAR for the language in the current text-to-speech
+process, return its cdr."
   (let ((result '()))
-    (dolist (item tlon-babel-tts-terms result)
-      (when (member language (car item))
-        (setq result (append result (cadr item)))))
+    (dolist (term var result)
+      (when (member tlon-babel-tts-current-language (car term))
+	(setq result (append result (cadr term)))))
     result))
 
 ;;;;;;; Abbreviations
