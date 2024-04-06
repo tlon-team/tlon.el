@@ -132,6 +132,14 @@ Note that this tag is not supported by Azure TTS except for a handful of voices:
 As with the `phoneme' tag, we should for the time being remove it when
 generating the audio.")
 
+(defconst tlon-babel-tts-ssml-emphasis-levels
+  '("none" "reduced" "moderate" "strong")
+  "Admissible emphasis strengths for the `emphasis' SSML tag.")
+
+(defconst tlon-babel-tts-ssml-emphasis-default-level
+  "moderate"
+  "Default emphasis level for the `emphasis' SSML tag.")
+
 ;;;;; Azure
 
 (defconst tlon-babel-azure-ssml-template
