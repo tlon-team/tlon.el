@@ -403,15 +403,16 @@ if region is active, save it to the downloads directory."
   (save-excursion
     (tlon-babel-tts-process-notes)
     (tlon-babel-tts-process-citations)
-    (tlon-babel-tts-process-boldface)
-    (tlon-babel-tts-process-italics)
+    (tlon-babel-tts-process-tag-removal)
     (tlon-babel-tts-process-formatting)
     (tlon-babel-tts-process-headings)
     ;; replace small caps
     ;; check all other elements in markdown-menu
-    (tlon-babel-tts-process-terms)
     (tlon-babel-tts-process-file-local-abbreviations)
+    (tlon-babel-tts-process-file-local-replacements)
     (tlon-babel-tts-process-abbreviations)
+    (tlon-babel-tts-process-phonetic-replacements)
+    (tlon-babel-tts-process-phonetic-transcriptions)
     (tlon-babel-tts-process-asides)
     (tlon-babel-tts-process-quotes)
     (tlon-babel-tts-process-links)
