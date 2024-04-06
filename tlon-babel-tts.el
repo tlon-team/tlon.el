@@ -99,25 +99,38 @@ Here's a description of the main options:
   "SSML pattern for break tag, with time placeholder.
 <https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>")
 
+;;;;;; lang
+
 (defconst tlon-babel-tts-ssml-lang
   '("<lang xml:lang=\"%s\">" . "</lang>")
   "SSML pattern for language tag, with locale code placeholder.")
 
+;;;;;; voice
+
 (defconst tlon-babel-tts-ssml-voice
-  "<voice name=\"%s\">%s</voice>"
+  '("<voice name=\"%s\">" . "</voice>")
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
+;;;;;; phoneme
 
 (defconst tlon-babel-tts-ssml-phoneme
-  "<phoneme alphabet=\"%s\" ph=\"%s\">%s</phoneme>"
+  '("<phoneme alphabet=\"%s\" ph=\"%s\">" . "</phoneme>")
   "SSML pattern for phoneme tag, with phoneme and text placeholders.
-<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation>")
+Note that, as of 2024-04-05, none of the Spanish Azure TTS voices support the
+`phoneme' tag:
+<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts>.
+So for the time being we should remove it from the files when generating the
+audio, to avoid errors.")
+
+;;;;;; emphasis
 
 (defconst tlon-babel-tts-ssml-emphasis
-  "<emphasis level=\"%s\">%s</emphasis>"
+  '("<emphasis level=\"%s\">" . "</emphasis>")
   "SSML pattern for emphasis tag, with level and text placeholders.
 Note that this tag is not supported by Azure TTS except for a handful of voices:
-<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-emphasis>")
+<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-emphasis>.
+As with the `phoneme' tag, we should for the time being remove it when
+generating the audio.")
 
 ;;;;; Azure
 
