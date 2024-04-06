@@ -92,7 +92,12 @@ Here's a description of the main options:
 (defvar tlon-babel-tts-current-language ""
   "The language used in the current text-to-speech process.")
 
-;;;;; SSML patterns
+;;;;; SSML tag pairs & patterns
+
+(defconst tlon-babel-tts-ssml-break
+  "<break time=\"%s\" />"
+  "SSML pattern for break tag, with time placeholder.
+<https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>")
 
 (defconst tlon-babel-tts-ssml-lang
   '("<lang xml:lang=\"%s\">" . "</lang>")
@@ -102,10 +107,6 @@ Here's a description of the main options:
   "<voice name=\"%s\">%s</voice>"
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
-(defconst tlon-babel-tts-ssml-break
-  "<break time=\"%s\" />"
-  "SSML pattern for break tag, with time placeholder.
-<https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>")
 
 (defconst tlon-babel-tts-ssml-phoneme
   "<phoneme alphabet=\"%s\" ph=\"%s\">%s</phoneme>"
