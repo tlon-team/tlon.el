@@ -379,6 +379,7 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-citations)
     (tlon-babel-tts-process-boldface)
     (tlon-babel-tts-process-italics)
+    (tlon-babel-tts-process-formatting)
     (tlon-babel-tts-process-headings)
     ;; replace small caps
     ;; check all other elements in markdown-menu
@@ -431,7 +432,12 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 
 ;;;;;; Formatting
 
-(defun tlon-babel-tts-process-formatting (type)
+(defun tlon-babel-tts-process-formatting ()
+  "Remove formatting from text."
+  (tlon-babel-tts-process-boldface)
+  (tlon-babel-tts-process-boldface))
+
+(defun tlon-babel-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
   (cl-destructuring-bind (pattern . group)
       (pcase type
@@ -445,11 +451,11 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 
 (defun tlon-babel-tts-process-boldface ()
   "Remove boldface from text."
-  (tlon-babel-tts-process-formatting 'boldface))
+  (tlon-babel-tts-remove-formatting 'boldface))
 
 (defun tlon-babel-tts-process-italics ()
   "Remove italics from text."
-  (tlon-babel-tts-process-formatting 'italics))
+  (tlon-babel-tts-remove-formatting 'italics))
 
 ;;;;;; Headings
 
