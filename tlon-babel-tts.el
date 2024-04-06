@@ -333,8 +333,14 @@ if region is active, save it to the downloads directory."
 		(format tlon-babel-azure-ssml-template locale voice text)))
 	 (command (format tlon-babel-azure-request
 			  (tlon-babel-get-or-set-azure-key)
-			  tlon-babel-azure-audio-settings ssml destination)))
-    (async-shell-command command)))
+			  tlon-babel-azure-audio-settings ssml destination))
+	 (process (start-process-shell-command "generate audio" nil command)))
+    (set-process-sentinel process
+			  (lambda (process event)
+			    (when (string= event "finished\n")
+			      (if (region-active-p)
+				  (shell-command (format "open %s" destination))
+				(message "Audio file saved to %s" destination)))))))
 
 (defun tlon-babel-get-or-set-azure-key ()
   "Get or set the Azure key."
