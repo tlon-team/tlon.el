@@ -489,6 +489,7 @@ of the existing locators."
 
 ;;;;;;; SSML
 
+;;;###autoload
 (defun tlon-babel-insert-ssml-lang (language)
   "Insert an SSML `lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
