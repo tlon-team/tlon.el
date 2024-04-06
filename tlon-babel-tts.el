@@ -66,6 +66,10 @@ Here's a description of the main options:
 
 ;;;; Variables
 
+(defconst tlon-babel-file-abbreviations
+  (file-name-concat tlon-babel-dir-tts "abbreviations.json")
+  "File with abbreviations.")
+
 ;;;;; Current values
 
 (defvar tlon-babel-tts-current-voice ""
@@ -131,28 +135,6 @@ best male and female voices we were able to identify in each language.")
 Azure can process up to 10 minutes of audio at a time. This estimate assumes 14
 characters per second, and uses nine minutes.")
 
-;;;;; Citations
-
-(defconst tlon-babel-tts-standard-abbreviations
-  '(("es"
-     (" a\\. de C\\." . " antes de Cristo")
-     (" ca\\." . " alrededor de")
-     (" d\\. de C\\." . " después de Cristo")
-     (" e\\.[[:space:] ]?g\\." . " por ejemplo")
-     (" EE\\.[[:space:] ]UU\\." . " Estados Unidos")
-     (" et al\\." . " y otros")
-     (" etc\\." . " etcétera")
-     (" i\\.[[:space:] ]e\\." . " esto es")
-     ("N\\.[[:space:] ]B\\." . " obsérvese bien")
-     (" p\\.[[:space:] ]ej\\." . " por ejemplo")
-     (" vs\\." . " versus")
-     ("y/o" . "y o"))
-    ("it"
-     (()))
-    ("fr"
-     (())))
-  "Standard abbreviations and their spoken equivalent in each language.")
-
 ;;;;; Currencies
 
 (defconst tlon-babel-tts-currencies
@@ -174,6 +156,10 @@ code.
 For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation#say-as-element>.")
 
 ;;;;; Terms
+;;;;; File-local variables
+
+(defvar-local tlon-babel-file-local-abbreviations '()
+  "In-text abbreviations and their spoken equivalent.")
 
 (defconst tlon-babel-tts-terms
   `((,(mapcar 'cdr tlon-babel-languages)
@@ -182,6 +168,12 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
     (("es")
      (("transhumanos" . "tɾansumanos"))))
   "Terms and their pronunciations.")
+;;;;; Abbreviations
+
+(defvar tlon-babel-tts-abbreviations
+  (tlon-babel-parse-json tlon-babel-file-abbreviations)
+  "Standard abbreviations and their spoken equivalent in each language.")
+
 
 ;;;;; Listener cues
 
@@ -245,12 +237,12 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   "Return substantive content of FILE, handling in-text abbreviations."
   (unless (string= (file-name-extension file) "md")
     (user-error "File `%s' is not a Markdown file" file))
-  (let ((tlon-babel-in-text-abbreviations))
+  (let ((tlon-babel-file-local-abbreviations))
     (with-current-buffer (find-file-noselect file)
-      ;; to make `tlon-babel-tts-process-in-text-abbreviations' work, we
+      ;; to make `tlon-babel-tts-process-file-local-abbreviations' work, we
       ;; let-bound the variable above and now set its value to that of its
       ;; file-local counterpart
-      (setq tlon-babel-in-text-abbreviations tlon-babel-in-text-abbreviations)
+      (setq tlon-babel-file-local-abbreviations tlon-babel-file-local-abbreviations)
       (concat (tlon-babel-tts-get-metadata) (tlon-babel-md-read-content file)))))
 
 ;;;;; Azure
@@ -376,9 +368,9 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-headings)
     ;; replace small caps
     ;; check all other elements in markdown-menu
-    (tlon-babel-tts-process-standard-abbreviations)
-    (tlon-babel-tts-process-in-text-abbreviations)
     (tlon-babel-tts-process-terms)
+    (tlon-babel-tts-process-file-local-abbreviations)
+    (tlon-babel-tts-process-abbreviations)
     (tlon-babel-tts-process-asides)
     (tlon-babel-tts-process-quotes)
     (tlon-babel-tts-process-links)
@@ -454,25 +446,16 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
     (while (re-search-forward markdown-regex-header nil t)
       (replace-match (format "%s %s" insert-pause (match-string 5))))))
 
-;;;;;; Abbreviations
+;;;;;; File-local abbreviations
 
-(defun tlon-babel-tts-process-standard-abbreviations ()
-  "Replace standard abbreviations with their spoken equivalent."
-  (let* ((abbreviations (alist-get tlon-babel-tts-current-language
-				   tlon-babel-tts-standard-abbreviations nil nil #'string=)))
-    (dolist (abbreviation abbreviations)
-      (goto-char (point-min))
-      (while (re-search-forward (car abbreviation) nil t)
-	(replace-match (cdr abbreviation) t nil)))))
-
-(defun tlon-babel-tts-process-in-text-abbreviations ()
-  "Replace in-text abbreviations with their spoken equivalent.
+(defun tlon-babel-tts-process-file-local-abbreviations ()
+  "Replace file-local abbreviations with their spoken equivalent.
 In-text abbreviations are those that are introduced in the text itself,
 typically in parenthesis after the first occurrence of the phrase they
 abbreviate. We store these abbreviations on a per file basis, in the file-local
-variable `tlon-babel-in-text-abbreviations'"
+variable `tlon-babel-file-local-abbreviations'"
   (let ((case-fold-search nil))
-    (dolist (entry tlon-babel-in-text-abbreviations)
+    (dolist (entry tlon-babel-file-local-abbreviations)
       (cl-destructuring-bind (abbrev . expansion) entry
 	(let ((abbrev-introduced (format "%s (%s)" expansion abbrev)))
 	  ;; we first replace the full abbrev introduction, then the abbrev itself

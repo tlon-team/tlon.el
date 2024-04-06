@@ -631,32 +631,6 @@ a type."
 
 ;; TODO: create function to add alt text to all images in a file
 
-;;;;; Abbreviations
-
-(defvar-local tlon-babel-in-text-abbreviations '()
-  "Abbreviations introduced in the text and their spoken equivalent.")
-
-(defun tlon-babel-add-in-text-abbreviation (abbrev)
-  "Add an in-text ABBREV to the file-local list."
-  (interactive
-   (let* ((key (substring-no-properties
-		(completing-read "Abbrev: " tlon-babel-in-text-abbreviations)))
-	  (default-expansion (alist-get key tlon-babel-in-text-abbreviations nil nil #'string=))
-	  (value (substring-no-properties
-		  (completing-read "Expanded abbrev: " (mapcar #'cdr tlon-babel-in-text-abbreviations)
-				   nil nil default-expansion))))
-     (list (cons key value))))
-  (setq tlon-babel-in-text-abbreviations
-	(cl-remove-if (lambda (existing-abbrev)
-			"If a new expansion was set for an existing-abbrev, remove it."
-			(string= (car existing-abbrev) (car abbrev)))
-		      tlon-babel-in-text-abbreviations))
-  (modify-file-local-variable
-   'tlon-babel-in-text-abbreviations
-   (push abbrev tlon-babel-in-text-abbreviations)
-   'add-or-replace)
-  (hack-local-variables))
-
 ;;;;; Misc
 
 (defun tlon-babel-md-check-in-markdown-mode ()
