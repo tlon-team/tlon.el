@@ -161,7 +161,11 @@ generating the audio.")
     (:voice "es-US-PalomaNeural" :language "es" :gender "female"))
   "Preferred Azure voices for different languages.
 All the voices in this property list are neural and multilingual, and are the
-best male and female voices we were able to identify in each language.")
+best male and female voices we were able to identify in each language.
+
+A list of available voices may be found here:
+<https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/ai-services/speech-service/includes/language-support/tts.md>")
+
 
 (defvar tlon-babel-azure-key nil
   "Azure subscription key for the text-to-speech service.")
