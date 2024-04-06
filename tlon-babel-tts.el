@@ -66,6 +66,20 @@ Here's a description of the main options:
 
 ;;;; Variables
 
+;;;;; Paths
+
+(defconst tlon-babel-dir-tts
+  (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-core") "tts/")
+  "Directory for files related to text-to-speech functionality.")
+
+(defconst tlon-babel-file-phonetic-transcriptions
+  (file-name-concat tlon-babel-dir-tts "phonetic-transcriptions.json")
+  "File with phonetic transcriptions.")
+
+(defconst tlon-babel-file-phonetic-replacements
+  (file-name-concat tlon-babel-dir-tts "phonetic-replacements.json")
+  "File with replacements.")
+
 (defconst tlon-babel-file-abbreviations
   (file-name-concat tlon-babel-dir-tts "abbreviations.json")
   "File with abbreviations.")
