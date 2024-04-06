@@ -458,5 +458,72 @@ If the field `landig' is present, the function does nothing; else, it sets the
       (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
 		 bibtex-autokey-titleword-separator))))
 
+;;;;; Misc
+
+(defvar citar-bibliography)
+;; TODO: Maybe I should use `query-replace-regexp', to deal with the `save-match-data' issue?
+(defun tlon-babel-replace-titles (&optional file)
+  "Replace titles in FILE with proper citations."
+  (interactive)
+  (let ((file (or file (buffer-file-name)))
+	(titles (tlon-babel-get-field-in-bibliography "title"))
+	(citar-bibliography tlon-babel-refs-bibliography-files)
+	(open-delim "[\"'“‘\\[\\*")
+	(close-delim "[\"'”’\\]\\*]")
+	always-long always-short)
+    (find-file file)
+    (save-excursion
+      (dolist (title titles)
+	(catch 'skip
+	  (let (replacement)
+	    (goto-char (point-min))
+	    (when (re-search-forward (concat open-delim title close-delim) nil t)
+	      (save-match-data
+		(let ((choice (cond (always-long ?l)
+				    (always-short ?s)
+				    ((read-key "long (l) | short (s) | skip (n) | all long (L) | all short (S)")))))
+		  (if (eq choice ?n)
+		      (throw 'skip (message (format "Skipping `%s'." title)))
+		    (when-let* ((key (tlon-babel-bibliography-lookup "=key=" "title" title))
+				;; TODO: replace with constants
+				(cite-long (format "<Cite bibKey={\"%s\"} />" key))
+				(cite-short (format "<Cite bibKey={\"%s\"} short />" key)))
+		      (setq replacement (pcase choice
+					  ((or ?l ?L)
+					   (when (eq choice ?L)
+					     (setq always-long t))
+					   cite-long)
+					  ((or ?s ?S)
+					   (when (eq choice ?S)
+					     (setq always-short t))
+					   cite-short)))))))
+	      (replace-match replacement t t))))))))
+
+(defvar citar-cache--bibliographies)
+(declare-function citar-cache--bibliography-entries "citar-cache")
+(defun tlon-babel-get-field-in-bibliography (field)
+  "Extract all values for FIELD entries in the Tlön bibliography."
+  (let (fields)
+    (maphash (lambda (_key bibliography)
+	       (when-let ((entries (citar-cache--bibliography-entries bibliography)))
+		 (maphash (lambda (_ entry)
+			    (when-let ((value (cdr (assoc field entry))))
+			      (push value fields)))
+			  entries)))
+	     citar-cache--bibliographies)
+    fields))
+
+(defun tlon-babel-bibliography-lookup (assoc-field field value)
+  "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
+  (catch 'found
+    (maphash (lambda (_key bibliography)
+               (let ((entries (citar-cache--bibliography-entries bibliography)))
+                 (maphash (lambda (_ entry)
+                            (when (string= (cdr (assoc field entry)) value)
+                              (throw 'found (cdr (assoc assoc-field entry)))))
+                          entries)))
+             citar-cache--bibliographies)
+    nil))
+
 (provide 'tlon-babel-tex)
 ;;; tlon-babel-tex.el ends here
