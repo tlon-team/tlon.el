@@ -40,6 +40,7 @@
 (require 'org-clock)
 (require 'org-roam)
 (require 'paths)
+(require 'simple-extras)
 (require 'substitute)
 (require 'tlon-babel-dispatch)
 (require 'tlon-babel-core)
@@ -204,7 +205,7 @@ The second capture group handles the `.md' extension, which we used previously."
 
 (defun tlon-babel-set-translation-language (language)
   "Set the translation LANGUAGE."
-  (interactive (list (completing-read "Language: " tlon-babel-languages)))
+  (interactive (list (tlon-babel-select-language 'two-letter 'babel)))
   (setq tlon-babel-translation-language language))
 
 ;;;;; User commits
@@ -446,7 +447,7 @@ If FILE is nil, check the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (base (file-name-base file))
 	 (title (tlon-babel-yaml-get-key "title" file))
-	 (slugified-title (tlon-core-slugify title)))
+	 (slugified-title (simple-extras-slugify title)))
     (unless (or
 	     (string= base slugified-title)
 	     ;; for articles with duplicate titles
@@ -470,6 +471,17 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
 	 (type (tlon-babel-yaml-get-key "type" file)))
     (unless (string-match type dir-lang) ; we use `string-match' instead of `string=' to handle plurals
       (user-error "The file `%s' does not match its type" file))))
+
+(defun tlon-babel-check-image-alt-text ()
+  "Check if all images have alt text, else signal an error."
+  (let (pos)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward tlon-babel-md-image-sans-alt nil t)
+	(setq pos (match-beginning 0))))
+    (when pos
+      (goto-char pos)
+      (user-error "There are images without alt text. Use `tlon-babel-md-insert-alt-text' to fix them"))))
 
 ;;;;; Search
 
@@ -545,30 +557,12 @@ respectively."
 			  ('biblio (file-name-nondirectory file)))))
       (magit-commit-create (list "-m" (format "%s %s" action file-or-key))))))
 
-;;;;; json
-
-(defun tlon-babel-parse-json (file &optional object-type array-type)
-  "Parse JSON FILE using array TYPE.
-If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
-`vector'."
-  (let ((json-object-type object-type)
-	(json-array-type array-type)
-	(json-key-type 'string)
-	(json-false :json-false))
-    (json-read-file file)))
-
-(defun tlon-babel-get-keys (data)
-  "Get keys from hash table DATA."
-  (let ((keys '()))
-    (maphash (lambda (k _v) (push k keys)) data)
-    keys))
-
 ;;;;; URL correspondences
 
 (defun tlon-babel-url-correspondence-dwim ()
   "Add a new URL correspondence or modify an existing one."
   (interactive)
-  (let* ((data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector))
+  (let* ((data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector 'symbol))
 	 (keys (tlon-babel-get-keys data))
 	 (selected-key (completing-read "Select existing URL or enter a new one: " keys))
 	 (default-value (gethash selected-key data))
@@ -604,7 +598,7 @@ If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
   "Highlight source URLs in URL correspondences file."
   (interactive)
   ;; Load JSON file
-  (let* ((json-data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector))
+  (let* ((json-data (tlon-babel-parse-json tlon-babel-file-url-correspondences 'hash-table 'vector 'symbol))
 	 (key-urls (tlon-babel-get-keys json-data))
 	 ;; Remove URL prefixes from keys
 	 (search-keywords (mapcar (lambda (url)
@@ -631,7 +625,7 @@ If OBJECT-TYPE is nil, default to `alist'. If ARRAY-TYPE is nil, default to
 (defun tlon-babel-section-correspondence-dwim ()
   "Add a new section correspondence or modify an existing one."
   (interactive)
-  (let* ((data (tlon-babel-parse-json tlon-babel-file-section-correspondences 'hash-table 'list))
+  (let* ((data (tlon-babel-parse-json tlon-babel-file-section-correspondences 'hash-table 'list 'symbol))
 	 (selected-key (citar-select-refs)))
     (tlon-babel-section-correspondence-check selected-key)
     (let ((default-value (gethash selected-key data))

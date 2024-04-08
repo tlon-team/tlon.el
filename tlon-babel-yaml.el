@@ -29,6 +29,7 @@
 
 (require 'citar)
 (require 'files-extras)
+(require 'simple-extras)
 (require 'tlon-core)
 (require 'tlon-babel-core)
 
@@ -585,7 +586,6 @@ pre-populate the selection."
       (delete-region (car bounds) (cdr bounds))
       (insert (format "%s:  %s\n" key choice)))))
 
-
 ;;;;; Get metadata
 
 ;;;;;; Get repo-specific entities
@@ -651,7 +651,7 @@ The file name is the slugified version of TITLE with the extension `.md'. This
 is appended to DIR to generate the file path. If DIR is not provided, prompt the
 user for one."
   (let* ((title (or title (read-string "Title: ")))
-	 (filename (file-name-with-extension (tlon-core-slugify title) "md"))
+	 (filename (file-name-with-extension (simple-extras-slugify title) "md"))
 	 (dirname (file-name-as-directory (or dir (tlon-babel-get-repo)))))
     (file-name-concat dirname filename)))
 

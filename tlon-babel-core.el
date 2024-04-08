@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'bibtex-extras)
 (require 'forge-core)
 (require 'paths)
 
@@ -277,13 +278,22 @@ the actual user.")
   "Alist of bare directories and associated translations.")
 
 (defconst tlon-babel-languages
-  '(("en" . "english")
-    ("es" . "spanish")
-    ("it" . "italian")
-    ("fr" . "french")
-    ("de" . "german")
-    ("pt" . "portuguese"))
+  '(("english" . "en")
+    ("spanish" . "es")
+    ("italian" . "it")
+    ("french" . "fr")
+    ("german" . "de")
+    ("portuguese" . "pt"))
   "Alist of languages and associated names.")
+
+(defconst tlon-babel-locales
+  '(("english" . "en-US")
+    ("spanish" . "es-ES")
+    ("italian" . "it-IT")
+    ("french" . "fr-FR")
+    ("german" . "de-DE")
+    ("portuguese" . "pt-PT"))
+  "Alist of languages and associated locales.")
 
 ;;;; Functions
 
@@ -395,12 +405,10 @@ PAIRS is an even-sized list of <key value> tuples."
 
 (defun tlon-babel-core-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
-  ;; check that current buffer is visiting a file
   (when-let ((file (buffer-file-name)))
-    (replace-regexp-in-string
-     "/git-dirs/"
-     "/Library/CloudStorage/Dropbox/repos/"
-     (buffer-file-name))))
+    (replace-regexp-in-string "git-dirs/"
+			      (file-relative-name paths-dir-tlon-repos "~/")
+			      (buffer-file-name))))
 
 (defun tlon-babel-issue-lookup (string &optional dir)
   "Return the first issue in DIR whose title includes STRING.
@@ -445,6 +453,121 @@ If END is nil, use BEGIN also as the end delimiter."
 	(when (and (equal (cdr inner) bare-dir)
 		   (equal (car inner) source-lang))
 	  (setq result (cdr (assoc target-lang outer))))))))
+
+(defun tlon-babel-concatenate-list (list)
+  "Concatenate LIST into a string with commas and 'and' as appropriate."
+  (if (cdr list)
+      (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
+	    (last (car (last list))))
+	(format "%s and %s" all-but-last last))
+    (car list)))
+
+;;;;; language
+
+(defun tlon-babel-validate-language (language)
+  "If LANGUAGE is a valid language, return it.
+The validation is case-insensitive, but the returned language is in lowercase."
+  (let ((language (downcase language)))
+    (when (member language (mapcar #'car bibtex-extras-valid-languages))
+      language)))
+
+(defun tlon-babel-get-two-letter-code (language)
+  "Return the two-letter code for LANGUAGE."
+  (if (= (length language) 2)
+      language
+    (when-let* ((downcased (downcase language))
+		(code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
+      (string-limit code-raw 2))))
+
+(defun tlon-babel-select-language (&optional format babel multiple)
+  "Prompt the user to select a LANGUAGE and return it in FORMAT.
+If FORMAT is `two-letter', return the two-letter code of the language (e.g.
+\"es\"). If it is `locale', return the predefined locale for that language (e.g.
+\"en-US\"). Otherwise, return the original selection (e.g. \"english\").
+
+By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
+candidates to languages in the Babel project.
+
+If MULTIPLE is non-nil, allow the user to select multiple languages. In that
+case, the return value will be a list of strings rather than a string."
+  (let* ((selection (if multiple
+			(tlon-babel-read-multiple-languages babel)
+		      (tlon-babel-read-language babel))))
+    (pcase format
+      ('two-letter (tlon-babel-get-formatted-languages selection format))
+      ('locale (tlon-babel-get-formatted-languages selection format))
+      (_ selection))))
+
+(defun tlon-babel-get-formatted-languages (selection format)
+  "Return the language SELECTION in appropriate FORMAT.
+FORMAT must be either `two-letter' or `locale'. SELECTION is either a string or
+a list of strings representing languages in English."
+  (let ((languages (pcase format
+		     ('locale tlon-babel-locales)
+		     ('two-letter bibtex-extras-valid-languages))))
+    (if (listp selection)
+	(mapcar (lambda (language)
+		  "Return the two-letter code or the locale for LANGUAGE."
+		  (alist-get language languages nil nil #'string=))
+		selection)
+      (alist-get selection languages nil nil #'string=))))
+
+(defun tlon-babel-read-language (&optional babel)
+  "Read a language from a list of languages.
+By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
+candidates to languages in the Babel project."
+  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages)))
+    (completing-read "Language: " language-candidates nil t)))
+
+(defun tlon-babel-read-multiple-languages (&optional babel)
+  "Read a list of languages from a list of languages.
+By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
+candidates to languages in the Babel project."
+  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages))
+	 (language-selection (completing-read-multiple "Languages (comma-separated): "
+						       (append '("*all*") language-candidates))))
+    (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
+
+;;;;; json
+
+(defun tlon-babel-parse-json (file &optional object-type array-type key-type)
+  "Parse JSON FILE using array TYPE.
+OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
+ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
+`string' (default), `symbol' or `keyword'."
+  (let ((json-object-type (or object-type 'alist))
+	(json-array-type (or array-type 'list))
+	(json-key-type (or key-type 'string))
+	(json-false :json-false))
+    (json-read-file file)))
+
+(defun tlon-babel-write-data (file data)
+  "Write DATA to a JSON FILE."
+  (with-temp-file file
+    (insert (json-encode data))
+    (json-pretty-print-buffer)))
+
+(defun tlon-babel-get-keys (data)
+  "Get keys from hash table DATA."
+  (let ((keys '()))
+    (maphash (lambda (k _v) (push k keys)) data)
+    keys))
+
+;;;;; tags
+
+(defun tlon-babel-make-tag-search-pattern (pair &optional format)
+  "Construct a regexp match pattern with FORMAT for PAIR of tags."
+  (let ((format (or format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)")))
+    (format format
+	    (regexp-quote (car pair))
+	    (regexp-quote (cdr pair)))))
+
+(defun tlon-babel-make-tag-replace-pattern (pair &optional format)
+  "Construct a replace with FORMAT for PAIR of tags."
+  (let ((format (or format "%s%%s%s")))
+    (format format
+	    (car pair)
+	    (cdr pair))))
 
 (provide 'tlon-babel-core)
 ;;; tlon-babel-core.el ends here

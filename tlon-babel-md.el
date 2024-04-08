@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'files-x)
 (require 'markdown-mode-extras)
 (require 'tlon-babel-core)
 (require 'tlon-babel-yaml)
@@ -38,12 +39,23 @@
   :group 'tlon-babel)
 
 (defcustom tlon-babel-md-special-characters
-  '("•" "–" "—" "‘" "’" "“" "”" " " "­" "…")
-  "List of special characters to insert in a Markdown file."
-  :type '(repeat string)
-  :group 'tlon-babel-md)
+  '(("bullet" . "•")
+    ("en dash" . "–")
+    ("em dash" . "—")
+    ("opening single quote" . "‘")
+    ("closing single quote" . "’")
+    ("opening double quote" . "“")
+    ("closing double quote" . "”")
+    ("narrow non-break space" . " ")
+    ("soft hyphen" . "­")
+    ("ellipsis" . "…"))
+  "Alist of special characters to insert in a Markdown file."
+  :group 'tlon-babel-md
+  :type '(alist :key-type string :value-type string))
 
 ;;;; Variables
+
+;;;;; Local variables
 
 (defconst tlon-babel-md-local-variables-line-start
   "<!-- Local Variables:"
@@ -53,46 +65,15 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
+;;;;; Cite
+
 (defconst tlon-babel-cite-pattern
   "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
   "Pattern to match a citation in a Markdown file.
 The first group captures the bibTeX key, the second group captures the locators,
 and the third group captures the short citation flag.")
 
-(defconst tlon-babel-locators
-  '(("book" . "bk.")
-    ("chapter ". "chap.")
-    ("column" . "col.")
-    ("figure" . "fig.")
-    ("folio" . "fol.")
-    ("number" . "no.")
-    ("line" . "l.")
-    ("note" . "n.")
-    ("opus" . "op.")
-    ("page" . "p.")
-    ("paragraph" . "para.")
-    ("part" . "pt.")
-    ("section" . "sec.")
-    ("sub verbo" . "s.v")
-    ("verse" . "v.")
-    ("volumes" . "vol.")
-    ("books" . "bks.")
-    ("chapter ". "chaps.")
-    ("columns" . "cols.")
-    ("figures" . "figs.")
-    ("folios" . "fols.")
-    ("numbers" . "nos.")
-    ("lines" . "ll.")
-    ("notes" . "nn.")
-    ("opera" . "opp.")
-    ("pages" . "pp.")
-    ("paragraphs" . "paras.")
-    ("parts" . "pts.")
-    ("sections" . "secs.")
-    ("sub  verbis" . "s.vv.")
-    ("verses" . "vv.")
-    ("volumes" . "vols."))
-  "Alist of locators and their abbreviations.")
+;;;;; Note markers
 
 (defconst tlon-babel-footnote-marker "<Footnote />"
   "Marker for a footnote in a `Cite' MDX element.")
@@ -100,11 +81,124 @@ and the third group captures the short citation flag.")
 (defconst tlon-babel-sidenote-marker "<Sidenote />"
   "Marker for a sidenote in a `Cite' MDX element.")
 
+;;;;; Numbers
+
+(defconst tlon-babel-md-number-separators
+  '(("en" . ",")
+    ("es" . " "))
+  "Number separators for different languages.")
+
+(defconst tlon-babel-md-number-separator-pattern
+  "\\([[:digit:]]+?\\)%s\\([[:digit:]]+?\\)"
+  "Pattern to match numbers separated by language-specific separator.")
+
+;;;;; Math
+
+;;;;;; inline
+
+(defconst tlon-babel-math-inline
+  '("$`" . "`$")
+  "Delimiter pair for an inline math expression.")
+
+(defconst tlon-babel-math-inline-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-math-inline)
+  "Regexp pattern for matching inline mathematical expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the delimiters.")
+
+;;;;;; display
+
+(defconst tlon-babel-math-display
+  '("$$\n" . "\n$$")
+  "Delimiter pair for a display math expression.")
+
+(defconst tlon-babel-math-display-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-math-display)
+  "Regexp pattern for matching display mathematical expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the delimiters.")
+
+;;;;; MDX
+
+;;;;;; Aside
+
+(defconst tlon-babel-mdx-aside
+  '("<Aside>" . "</Aside>")
+  "Pair of MDX `Aside' tags.")
+
+(defconst tlon-babel-mdx-aside-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-aside)
+  "Regexp pattern for matching an MDX `Aside' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
+;;;;;; Lang
+
+(defconst tlon-babel-mdx-lang
+  '("<Lang id={\"%s\"}>" . "</Lang>")
+  "Pair of MDX `Lang' tags.")
+
+(defconst tlon-babel-mdx-lang-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-lang)
+  "Regexp pattern for matching an MDX `Lang' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
+;;;;;; LiteralLink
+
+(defconst tlon-babel-mdx-literal-link
+  '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
+  "Pair of MDX `LiteralLink' tags.")
+
+(defconst tlon-babel-mdx-literal-link-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-literal-link)
+  "Regexp pattern for matching an MDX `LiteralLink' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
+;;;;;; SmallCaps
+
+(defconst tlon-babel-mdx-small-caps
+  '("<SmallCaps>" . "</SmallCaps>")
+  "Pair of MDX `SmallCaps' tags.")
+
+(defconst tlon-babel-mdx-small-caps-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-small-caps)
+  "Regexp pattern for matching an MDX `SmallCaps' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
+;;;;;; VisuallyHidden
+
+(defconst tlon-babel-mdx-visually-hidden
+  '("<VisuallyHidden>" . "</VisuallyHidden>")
+  "Pair of MDX `VisuallyHidden' tags.")
+
+(defconst tlon-babel-mdx-visually-hidden-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-visually-hidden)
+  "Regexp pattern for matching an MDX `VisuallyHidden' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
+;;;;; Images
+
+(defconst tlon-babel-md-image-with-alt
+  "!\\[\\(.+?\\)\\](\\(.*?\\))"
+  "Pattern to match an image with alt text in a Markdown file.
+The first group captures the alt text. The second group captures the image URL.")
+
+(defconst tlon-babel-md-image-sans-alt
+  "!\\[\\(\\)\\](\\(.*?\\))"
+  "Pattern to match an image without alt text in a Markdown file.
+The first group captures the empty alt text. The second group captures the image
+URL.")
+
 ;;;; Functions
 
 ;;;;; Insertion
 
 ;;;;;; metadata
+
 ;;;;###autoload
 (defun tlon-babel-edit-yaml-field ()
   "Edit the YAML field at point."
@@ -190,23 +284,25 @@ If no section is found, do nothing."
 ;;;;;; Insert elements
 
 ;;;###autoload
-(defun tlon-babel-md-insert-element-pair (open close &optional self-closing-p)
-  "Insert an element pair at point or around the selected region.
-OPEN is the opening element and CLOSE is the closing element. If SELF-CLOSING-P
-is non-nil, the opening element will be self-closing."
+(defun tlon-babel-md-insert-element-pair (pair &optional self-closing-p)
+  "Insert an element PAIR at point or around the selected region.
+PAIR is a cons cell whose car is the opening element and whose cdr is the
+closing element. If SELF-CLOSING-P is non-nil, the opening element will be
+self-closing."
   (interactive)
   (tlon-babel-md-check-in-markdown-mode)
-  (if (use-region-p)
-      (let ((begin (region-beginning)))
-	(goto-char (region-end))
-	(insert close)
-	(goto-char begin)
-	(insert open))
-    (if self-closing-p
-	(let ((open (concat (s-chop-right 1 open) " />")))
+  (cl-destructuring-bind (open . close) pair
+    (if (use-region-p)
+	(let ((begin (region-beginning)))
+	  (goto-char (region-end))
+	  (insert close)
+	  (goto-char begin)
 	  (insert open))
-      (insert (concat open close)))
-    (backward-char (length close))))
+      (if self-closing-p
+	  (let ((open (concat (s-chop-right 1 open) " />")))
+	    (insert open))
+	(insert (concat open close)))
+      (backward-char (length close)))))
 
 ;;;;;;; HTML
 
@@ -226,17 +322,16 @@ is non-nil, the opening element will be self-closing."
 (defun tlon-babel-insert-mdx-aside ()
   "Insert an MDX `Aside' element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair "<Aside>" "</Aside>"))
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-aside))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-lang (language)
   "Insert an MDX `Lang' element pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (list (completing-read "Language: " (mapcar #'car tlon-babel-languages))))
-  (tlon-babel-md-insert-element-pair (format "<Lang id={\"%s\"}>"
-					     language)
-				     "</Lang>"))
+  (interactive (list (tlon-babel-select-language 'two-letter)))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-tag-element-with-attribute tlon-babel-mdx-lang language)))
 
 ;; TODO: revise to offer the url at point as default completion candidate
 ;;;###autoload
@@ -244,16 +339,28 @@ written in that language."
   "Insert an MDX `LiteralLink' element pair at point or around the selected region.
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
-  (tlon-babel-md-insert-element-pair (format "<LiteralLink src={\"%s\"}>"
-					     url)
-				     "</LiteralLink>"))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-tag-element-with-attribute tlon-babel-mdx-literal-link url)))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-small-caps ()
   "Insert an MDX `SmallCaps' element pair at point or around the selected region.
 Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
   (interactive)
-  (tlon-babel-md-insert-element-pair "<SmallCaps>" "</SmallCaps>"))
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-small-caps))
+
+;;;###autoload
+(defun tlon-babel-insert-mdx-visually-hidden ()
+  "Insert an MDX `VisuallyHidden' element pair at point or around selected region.
+Text enclosed by an ``VisuallyHidden'' element pair will be displayed in small
+caps."
+  (interactive)
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-hidden))
+
+(defun tlon-babel-tag-element-with-attribute (element attribute)
+  "Construct an tag ELEMENT with an ATTRIBUTE."
+  (cons (format (car element) attribute)
+	(cdr element)))
 
 ;;;;;;;; Notes
 
@@ -307,22 +414,25 @@ Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
 the KEY will replace the existing key.
 
 By default, it will insert a \"long\" citation. To insert a \"short\" citation,
-call the function preceded by the universal ARG or use
+call the function preceded by the universal ARG or invoke
 `tlon-babel-insert-mdx-cite-short'."
   (interactive "P")
   (let ((key (car (citar-select-refs))))
     (if-let ((data (tlon-babel-get-key-in-citation)))
 	(cl-destructuring-bind (_ (begin . end)) data
 	  (tlon-babel-replace-bibtex-element-in-citation key begin end))
-      (tlon-babel-md-insert-element-pair (format "<Cite bibKey={\"%s\"}%s>"
-						 key (if arg " short" ""))
-					 "</Cite>" t))))
+      (tlon-babel-md-insert-element-pair
+       (cons (format "<Cite bibKey={\"%s\"}%s>" key (if arg " short" ""))
+	     "</Cite>")
+       t))))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-cite-short ()
   "Insert a short MDX `Cite' element at point or around the selected region."
   (interactive)
   (tlon-babel-insert-mdx-cite '(4)))
+
+;;;;;;;;; Citation elements
 
 (defun tlon-babel-get-bibtex-element-in-citation (type)
   "Return the BibTeX element of TYPE and its position in `Cite' element at point.
@@ -335,14 +445,6 @@ TYPE can be either `key' or `locators'."
 	   (end (match-end num)))
       (list match (cons begin end)))))
 
-(defun tlon-babel-get-key-in-citation ()
-  "Return the BibTeX key and its position in `Cite' element at point."
-  (tlon-babel-get-bibtex-element-in-citation 'key))
-
-(defun tlon-babel-get-locators-in-citation ()
-  "Return the BibTeX locators and its position in `Cite' element at point."
-  (tlon-babel-get-bibtex-element-in-citation 'locators))
-
 (defun tlon-babel-replace-bibtex-element-in-citation (element begin end)
   "Delete bibtex ELEMENT between BEGIN and END."
   (save-excursion
@@ -350,6 +452,17 @@ TYPE can be either `key' or `locators'."
     (goto-char begin)
     (delete-region begin end)
     (insert element)))
+
+;;;;;;;;; Locators
+
+;; TODO: make it work in org-mode
+(defun tlon-babel-get-key-in-citation ()
+  "Return the BibTeX key and its position in `Cite' element at point."
+  (tlon-babel-get-bibtex-element-in-citation 'key))
+
+(defun tlon-babel-get-locators-in-citation ()
+  "Return the BibTeX locators and its position in `Cite' element at point."
+  (tlon-babel-get-bibtex-element-in-citation 'locators))
 
 (defun tlon-babel-insert-locator ()
   "Insert locator in citation at point.
@@ -361,18 +474,46 @@ of the existing locators."
     (user-error "Not in a citation"))
   (let* ((selection (completing-read "Locator: " tlon-babel-locators nil t))
 	 (locator (alist-get selection tlon-babel-locators "" "" 'string=)))
-    (if-let ((existing (tlon-babel-md-get-locator-at-point)))
+    (if-let ((existing (tlon-babel-get-locator-at-point)))
 	(replace-match locator)
       (let ((end (cdadr (or (tlon-babel-get-locators-in-citation)
 			    (tlon-babel-get-key-in-citation)))))
 	(goto-char end)
 	(insert (format ", %s " locator))))))
 
-(defun tlon-babel-md-get-locator-at-point ()
+(defun tlon-babel-get-locator-at-point ()
   "Return the locator at point, if present."
   (let ((locators (mapcar 'cdr tlon-babel-locators)))
     (when (thing-at-point-looking-at (regexp-opt locators))
       (match-string-no-properties 0))))
+
+;;;;;;; SSML
+
+;;;###autoload
+(defun tlon-babel-insert-ssml-lang (language)
+  "Insert an SSML `lang' element pair at point or around the selected region.
+Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
+written in that language."
+  (interactive (list (tlon-babel-select-language 'locale)))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-tag-element-with-attribute tlon-babel-tts-ssml-lang language)))
+
+;;;###autoload
+(defun tlon-babel-insert-ssml-emphasis (level)
+  "Insert an SSML `emphasis' element pair at point or around the selected region.
+Prompt the user to select a LEVEL."
+  (interactive (list (completing-read "Emphasis: "
+				      tlon-babel-tts-ssml-emphasis-levels nil t
+				      tlon-babel-tts-ssml-emphasis-default-level)))
+  (tlon-babel-md-insert-element-pair
+   (tlon-babel-tag-element-with-attribute tlon-babel-tts-ssml-emphasis level)))
+
+;;;###autoload
+(defun tlon-babel-insert-ssml-break (time)
+  "Insert an SSML `break' element pair at point or around the selected region.
+TIME is the duration of the break n seconds."
+  (interactive (list (concat (read-string "sTime (seconds): ") "s")))
+  (insert (format tlon-babel-tts-ssml-break time)))
 
 ;;;;;;; Math
 
@@ -380,14 +521,13 @@ of the existing locators."
 (defun tlon-babel-insert-math-inline ()
   "Insert an inline math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair "$`" "`$"))
+  (tlon-babel-md-insert-element-pair tlon-babel-math-inline))
 
 ;;;###autoload
 (defun tlon-babel-insert-math-display ()
   "Insert a display math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair "$$\n" "\n$$"))
-
+  (tlon-babel-md-insert-element-pair tlon-babel-math-display))
 
 ;;;;; Note classification
 
@@ -479,31 +619,25 @@ a type."
       ('sidenote (tlon-babel-insert-sidenote-marker))
       (_ (user-error "Invalid type")))))
 
-;;;;; Abbreviations
+;;;;; Images
 
-(defvar-local tlon-babel-in-text-abbreviations '()
-  "Abbreviations introduced in the text and their spoken equivalent.")
+;; Maybe move to AI
 
-(defun tlon-babel-insert-in-text-abbreviation (abbrev)
-  "Add an in-text ABBREV to the file-local list."
-  (interactive
-   (let* ((key (substring-no-properties
-		(completing-read "Abbrev: " tlon-babel-in-text-abbreviations)))
-	  (default-expansion (alist-get key tlon-babel-in-text-abbreviations nil nil #'string=))
-	  (value (substring-no-properties
-		  (completing-read "Expanded abbrev: " (mapcar #'cdr tlon-babel-in-text-abbreviations)
-				   nil nil default-expansion))))
-     (list (cons key value))))
-  (setq tlon-babel-in-text-abbreviations
-	(cl-remove-if (lambda (existing-abbrev)
-			"If a new expansion was set for an existing-abbrev, remove it."
-			(string= (car existing-abbrev) (car abbrev)))
-		      tlon-babel-in-text-abbreviations))
-  (modify-file-local-variable
-   'tlon-babel-in-text-abbreviations
-   (push abbrev tlon-babel-in-text-abbreviations)
-   'add-or-replace)
-  (hack-local-variables))
+;;;###autoload
+(defun tlon-babel-add-alt-text ()
+  "Add alt text to the image at point."
+  (interactive)
+  (if (thing-at-point-looking-at tlon-babel-md-image-sans-alt)
+      (let* ((alt-text-marker (make-marker))
+	     (image-file (expand-file-name (match-string-no-properties 2))))
+	(set-marker alt-text-marker (match-beginning 1))
+	(tlon-babel-ai-describe-image image-file
+				      (lambda (description)
+					(goto-char (marker-position alt-text-marker))
+					(insert description))))
+    (message "Not on an image link with missing alt text")))
+
+;; TODO: create function to add alt text to all images in a file
 
 ;;;;; Misc
 
@@ -512,22 +646,17 @@ a type."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))
 
-;; TODO: make it work twice consecutively
-(defun tlon-babel-md-end-of-buffer-dwim ()
-  "Move point to the end of the relevant part of the buffer.
-The relevant part of the buffer is the part of the buffer that excludes the
-\"local variables\" section.
+(defun tlon-babel-insert-special-character (char)
+  "Insert a special CHAR at point.
+The list of completion candidates can be customized via the user option
+`tlon-babel-md-special-characters'."
+  (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
+  (insert (alist-get char tlon-babel-md-special-characters nil nil #'string= )))
 
-If this function is called twice consecutively, it will move the point to the
-end of the buffer unconditionally."
-  (interactive)
-  (if (tlon-babel-md-get-local-variables)
-      (progn
-	(re-search-forward tlon-babel-md-local-variables-line-start nil t)
-	(goto-char (- (match-beginning 0) 1)))
-    (goto-char (point-max))))
+;;;;; Actual content
 
 ;; TODO: make it work twice consecutively
+;;;###autoload
 (defun tlon-babel-md-beginning-of-buffer-dwim ()
   "Move point to the beginning of the relevant part of the buffer.
 The relevant part of the buffer is the part of the buffer that excludes the
@@ -536,34 +665,61 @@ metadata section.
 If this function is called twice consecutively, it will move the point to the
 end of the buffer unconditionally."
   (interactive)
-  (if (tlon-babel-md-get-metadata)
-      (progn
-	(re-search-backward tlon-babel-yaml-delimiter nil t)
-	(goto-char (match-end 0)))
-    (goto-char (point-min))))
+  (goto-char (tlon-babel-md-beginning-of-content)))
 
+;; TODO: make it work twice consecutively
 ;;;###autoload
+(defun tlon-babel-md-end-of-buffer-dwim ()
+  "Move point to the end of the relevant part of the buffer.
+The relevant part of the buffer is the part of the buffer that excludes the
+\"local variables\" section.
+
+If this function is called twice consecutively, it will move the point to the
+end of the buffer unconditionally."
+  (interactive)
+  (goto-char (tlon-babel-md-end-of-content)))
+
+(defun tlon-babel-md-beginning-of-content ()
+  "Return the position of the beginning of the content in the current buffer."
+  (or (tlon-babel-md-end-of-metadata) (point-min)))
+
+(defun tlon-babel-md-end-of-content ()
+  "Return the position of the end of the content in the current buffer."
+  (or (tlon-babel-md-beginning-of-local-variables) (point-max)))
+
+(defun tlon-babel-md-beginning-of-local-variables ()
+  "Return the position of the beginning of the local variables section."
+  (when-let ((cons (tlon-babel-get-delimited-region-pos
+		    tlon-babel-md-local-variables-line-start
+		    tlon-babel-md-local-variables-line-end)))
+    (car cons)))
+
+(defun tlon-babel-md-end-of-metadata ()
+  "Return the position of the end of the metadata section."
+  (when-let ((cons (tlon-babel-get-delimited-region-pos
+		    tlon-babel-yaml-delimiter)))
+    (cdr cons)))
+
 (defun tlon-babel-md-get-local-variables ()
   "Get the text in the \"local variables\" section of the current buffer."
-  (when-let ((range (tlon-babel-get-delimited-region-pos
-		     tlon-babel-md-local-variables-line-start
-		     tlon-babel-md-local-variables-line-end)))
-    (cl-destructuring-bind (start . end) range
-      (buffer-substring-no-properties start end))))
+  (when-let ((beg (tlon-babel-md-beginning-of-local-variables)))
+    (string-trim (buffer-substring-no-properties beg (point-max)))))
 
 (defun tlon-babel-md-get-metadata ()
   "Get the text in the metadata section of the current buffer."
-  (when-let ((range (tlon-babel-get-delimited-region-pos
-		     tlon-babel-yaml-delimiter)))
-    (cl-destructuring-bind (start . end) range
-      (buffer-substring-no-properties start end))))
+  (when-let ((end (tlon-babel-md-end-of-metadata)))
+    (string-trim (buffer-substring-no-properties (point-min) end))))
 
-(defun tlon-babel-insert-special-character (char)
-  "Insert a special CHAR at point.
-The list of completion candidates can be customized via the user option
-`tlon-babel-md-special-characters'."
-  (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
-  (insert char))
+(defun tlon-babel-md-read-content (&optional file)
+  "Read the substantive content of FILE.
+The substantive content of a file is the file minus the metadata and the local
+variables section. If FILE is nil, read the file visited by the current buffer."
+  (let ((file (or file (buffer-file-name)))
+	(begin (tlon-babel-md-beginning-of-content))
+	(end (tlon-babel-md-end-of-content)))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (buffer-substring-no-properties begin end))))
 
 ;;;;; Menu
 
@@ -588,13 +744,16 @@ The list of completion candidates can be customized via the user option
    ["Math"
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
+   ["SSML"
+    ("L" "lang"                 tlon-babel-insert-ssml-lang)
+    ("e" "emphasis"             tlon-babel-insert-ssml-emphasis)]
    ["Misc"
     ("b" "subscript"            tlon-babel-insert-html-subscript)
     ("p" "superscript"          tlon-babel-insert-html-superscript)
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)
+    ("h" "visually hidden"      tlon-babel-insert-mdx-visually-hidden)
     ("a" "aside"                tlon-babel-insert-mdx-aside)
     ("g" "lang"                 tlon-babel-insert-mdx-lang)
-    ("v" "abbreviation"         tlon-babel-insert-in-text-abbreviation)
     ("." "special character"    tlon-babel-insert-special-character)]])
 
 (provide 'tlon-babel-md)

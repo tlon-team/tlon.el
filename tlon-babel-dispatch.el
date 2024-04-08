@@ -57,11 +57,13 @@
   [["Main menu"
     "Submenus"
     ("a" "AI"                             tlon-babel-ai-menu)
+    ("e" "edit data"                      tlon-babel-edit-data-menu)
     ("f" "files"                          tlon-babel-files-menu)
     ("i" "api"                            tlon-babel-api-menu)
     ("j" "jobs"                           tlon-babel-jobs-menu)
     ("k" "markdown"                       tlon-babel-md-menu)
     ("H-m" "meet"                         tlon-babel-meet-menu)
+    ("r" "repos"                          tlon-babel-repos-menu)
     ("s" "search"                         tlon-babel-search-menu)
     ("y" "forg"                           tlon-babel-forg-menu)]
    ["""Browse repo"
@@ -292,6 +294,22 @@ DIR is the directory where the repo is stored."
    ("f" "files"                        tlon-babel-search-files)
    ("i" "issues"                       tlon-babel-search-issues)
    ("t" "translation"                  tlon-babel-search-for-translation)])
+
+;;;;; Data files menu
+
+;;;###autoload (autoload 'tlon-babel-edit-data-menu "tlon-babel-dispatch" nil t)
+(transient-define-prefix tlon-babel-edit-data-menu ()
+  "Data files menu."
+  ["Edit data files"
+   "Glossary"
+   ("g" "edit glossary"              tlon-babel-edit-glossary)
+   ("G" "extract glossary"           tlon-babel-extract-glossary)
+   "TTS"
+   ("a" "abbreviations"              tlon-babel-edit-abbreviations)
+   ("r" "phonetic replacements"      tlon-babel-edit-phonetic-replacements)
+   ("t" "phonetic transcriptions"    tlon-babel-edit-phonetic-transcriptions)
+   ("A" "file-local abbreviations"   tlon-babel-add-file-local-abbreviation)
+   ("R" "file-local replacements"    tlon-babel-add-file-local-replacement)])
 
 (provide 'tlon-babel-dispatch)
 ;;; tlon-babel-dispatch.el ends here

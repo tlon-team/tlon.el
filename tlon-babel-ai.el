@@ -29,7 +29,10 @@
 
 (require 'gptel)
 (require 'gptel-extras)
+(require 'tlon-babel-counterpart)
 (require 'tlon-babel-dispatch)
+(require 'tlon-babel-import)
+(require 'tlon-babel-tex)
 
 ;;;; User options
 
@@ -55,7 +58,7 @@
   "`gptel' failed with message: %s"
   "Error message to display when `gptel-quick' fails.")
 
-;;;;; language detection
+;;;;; Language detection
 
 (defconst tlon-babel-ai-detect-language-common-prompts
   (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s" tlon-babel-ai-string-wrapper
@@ -72,7 +75,7 @@
 	  tlon-babel-ai-detect-language-common-prompts)
   "Prompt for language detection.")
 
-;;;;; translation
+;;;;; Translation
 
 (defconst tlon-babel-ai-translate-prompt
   (format "Translate the following text into Spanish:%s" tlon-babel-ai-string-wrapper)
@@ -83,13 +86,21 @@
   (format "Please generate the best ten Spanish translations of the following English text:%s. Please return each translation on the same line, separated by '|'. Do not add a space either before or after the '|'. Do not precede your answer by 'Here are ten Spanish translations' or any comments of that sort: just return the translations. An example return string for the word 'very beautiful' would be: 'muy bello|muy bonito|muy hermoso|muy atractivo' (etc). Thanks!" tlon-babel-ai-string-wrapper)
   "Prompt for translation variants.")
 
-;;;;; rewriting
+;;;;; Rewriting
 
 (defconst tlon-babel-ai-rewrite-prompt
   (format "Por favor, genera las mejores diez variantes del siguiente texto castellano:%s. Por favor, devuelve todas las variantes en una única linea, separadas por '|'. No insertes un espacio ni antes ni después de '|'. No agregues ningún comentario aclaratorio: solo necesito la lista de variantes. A modo de ejemplo, para la expresión 'búsqueda de poder' el texto a devolver sería: 'ansia de poder|ambición de poder|búsqueda de autoridad|sed de poder|afán de poder|aspiración de poder|anhelo de poder|deseo de control|búsqueda de dominio|búsqueda de control' (esta lista solo pretende ilustrar el formato en que debes presentar tu respuesta). Gracias!" tlon-babel-ai-string-wrapper)
   "Prompt for rewriting.")
 
-;;;;; summarization
+;;;;; Image description
+
+(defconst tlon-babel-ai-describe-image-prompt
+  `((:prompt "Please provide a concise description of the following image:\n\n[[file:%s]]\n\nThe description should consist of only one paragraph and must never exceed 80 words."
+	     :language "en")
+    (:prompt "Por favor, describe brevemente la siguiente imagen:\n\n[[file:%s]]\n\nLa descripción debe consistir de un solo párrafo y en ningún caso debe exceder las 80 palabras."
+	     :language "es")))
+
+;;;;; Summarization
 
 (defconst tlon-babel-ai-how-to-write-summary-prompt
   `((:prompt "Write the abstract in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing the abstract of a scientific paper. The abstract should be only one paragraph long and have a rough length of 100 to 250 words (feel free to exceed it if you really need to, but never go over 350 words). It should not mention bibliographic data of the work (such as title or author). Write the abstract directly stating what the article argues, rather than using phrases such as 'The article argues that...'. For example, instead of writing 'The article ‘The eradication of smallpox’ by William D. Tierney tells that mankind fought smallpox for centuries...', write 'Mankind fought smallpox for centuries...'. Also, please omit any disclaimers of the form 'As an AI language model, I'm unable to browse the internet in real-time.' Finally, end your abstract with the phrase ' – AI-generated abstract.'"
@@ -136,41 +147,84 @@
 	     :language "es"))
   "Prompts for BibTeX summarization.")
 
+;;;;; Phonetic transcription
+
+(defconst tlon-babel-ai-transcribe-phonetically-prompt
+  `((:prompt ,(format "Please transcribe the following text phonetically, i.e. using the International Phonetic Alphabet (IPA).%sJust return the phonetic transcription, without any commentary. Do not enclose the transcription in slashes." tlon-babel-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "Por favor, transcribe fonéticamente el siguiente texto, es decir, utilizando el Alfabeto Fonético Internacional (AFI).%sLimítate a devolver la transcripción fonética, sin comentarios de ningún tipo. No encierres la transcripción entre barras." tlon-babel-ai-string-wrapper)
+	     :language "es")))
+
+;;;;; Math
+
+(defconst tlon-babel-ai-translate-math-prompt
+  `((:prompt ,(format "Please translate this math expression to natural language, i.e. as a human would read it:%s For example, if the expression is `\\frac{1}{2} \\times 2^5 \\= 16`, you should translate \"one half times two to the fifth power equals sixteen\". The expression may not require any sophisticated treatment. For example, if I ask you to translate a letter (such as `S`), your “translation” should be that same letter. Please return only the translated expression, without comments or clarifications. If for some reason you cannot do what I ask, simply do not respond at all; in no case should you return messages such as 'I could not translate the expression' or 'Please include the mathematical expression you need me to translate.'" tlon-babel-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "Por favor traduce esta expresión matemática a lenguaje natural, es decir, a la manera en que un humano la leería en voz alta:%sPor ejemplo, si la expresión es `\\frac{1}{2} \\times 2^5 \\= 16`, debes traducir \"un medio por dos a la quinta potencia es igual a dieciseis\". Es posible que la expresión no requiera ningún tratamiento sofisticado. Por ejemplo, si te pido que traduzcas una letra (como `S`), tu “traducción” debería ser esa misma letra (`ese`). Por favor, devuelve solamente la expresión traducida, sin comentarios ni clarificaciones. Si por alguna razón no puedes hacer lo que te pido, simplemente no respondas nada; en ningún caso debes devolver mensajes como ‘No he podido traducir la expresión’ o ‘Por favor, incluye la expresión matemática que necesitas que traduzca.’" tlon-babel-ai-string-wrapper)
+	     :language "es")))
+
 ;;;; Functions
 
 ;;;;; General
 
 (defun tlon-babel-make-gptel-request (prompt string &optional callback backend model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-BACKEND and MODEL are the language backend and model names, respectively. If
-CALLBACK is nil, use `tlon-babel-ai-generic-callback'."
-  (let ((callback (or callback #'tlon-babel-ai-generic-callback)))
-    (when (and backend model)
-      (gptel-extras-model-config nil backend model))
-    (if tlon-babel-ai-batch-fun
-	(condition-case nil
-	    (gptel-request (format prompt string) :callback callback)
-	  (error nil))
-      (gptel-request (format prompt string) :callback callback))))
+BACKEND and MODEL are the language backend and model names, respectively."
+  (when (and backend model)
+    (gptel-extras-model-config nil backend model))
+  (if tlon-babel-ai-batch-fun
+      (condition-case nil
+	  (gptel-request (format prompt string) :callback callback)
+	(error nil))
+    (gptel-request (format prompt string) :callback callback)))
 
-(defun tlon-babel-ai-generic-callback (response info)
-  "Generic callback function for AI requests.
-RESPONSE is the response from the AI model and INFO is the response info."
+;;;;;; Generic callback functions
+
+(defun tlon-babel-ai-callback-return (response info)
+  "If the request succeeds, return the RESPONSE string.
+Otherwise emit a message with the status provided by INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     response))
+
+(defun tlon-babel-ai-callback-copy (response info)
+  "If the request succeeds, copy the RESPONSE to the kill ring.
+Otherwise emit a message with the status provided by INFO."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (kill-new response)
+    (message "Copied `%s'" response)))
+
+;; Is this necessary; I think `gptel-request' already does this
+;; if no callback is passed to it
+(defun tlon-babel-ai-callback-insert (response info)
+  "If the request succeeds, insert the RESPONSE string.
+Otherwise emit a message with the status provided by INFO. The RESPONSE is
+inserted at the point the request was sent."
+  (if (not response)
+      (tlon-babel-ai-callback-fail info)
+    (let ((pos (marker-position (plist-get info :position))))
+      (goto-char pos)
+      (insert response))))
 
 (defun tlon-babel-ai-callback-fail (info)
   "Callback message when `gptel' fails.
 INFO is the response info."
   (message tlon-babel-gptel-error-message (plist-get info :status)))
 
+;;;;;; Other functions
+
+(declare-function ebib-extras-next-entry "ebib-extras")
+(declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-babel-ai-batch-continue ()
   "Move to the next entry and call `tlon-babel-ai-batch-fun''."
   (when tlon-babel-ai-batch-fun
-    (pcase major-mode
-      ('bibtex-mode (bibtex-next-entry))
-      ('ebib-entry-mode (ebib-extras-next-entry)))
+    (message "Moving point to `%s'."
+	     (pcase major-mode
+	       ('bibtex-mode (bibtex-next-entry)
+			     (bibtex-extras-get-key))
+	       ('ebib-entry-mode (ebib-extras-next-entry)
+				 (ebib-extras-get-field "=key="))))
     (funcall tlon-babel-ai-batch-fun)))
 
 (defun tlon-babel-ai-try-try-try-again (original-fun)
@@ -180,28 +234,36 @@ INFO is the response info."
     (message "Retrying language detection (try %d of 3)..." tlon-babel-ai-retries)
     (funcall original-fun)))
 
+(declare-function ebib-extras-get-file "ebib-extras")
 (defun tlon-babel-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
-If FILE is non-nil, return it as a string. Otherwise,
+If FILE is non-nil, return it as a string or, if in `markdown-mode', return a
+substring of its substantive contents, excluding metadata and local variables.
+Otherwise,
+
+- If the region is active, return its contents.
 
 - If in `bibtex-mode' or in `ebib-entry-mode', return the contents of the HTML
   or PDF file associated with the current BibTeX entry, if either is found.
 
 - If in `pdf-view-mode', return the contents of the current PDF file.
 
-- If in `text-mode', return the contents of the current region, if active;
-  otherwise, return the contents of the current buffer."
-  (if-let ((file (or file (pcase major-mode
-			    ((or 'bibtex-mode 'ebib-entry-mode)
-			     (or (ebib-extras-get-file "html")
-				 (ebib-extras-get-file "pdf")))
-			    ('pdf-view-mode (buffer-file-name))))))
-      (tlon-babel-get-file-as-string file)
-    (when (derived-mode-p 'text-mode)
-      (let ((beg (if (region-active-p) (region-beginning) (point-min)))
-	    (end (if (region-active-p) (region-end) (point-max))))
-	(buffer-substring-no-properties beg end)))))
+- If in `markdown-mode', return the substantive contents of the current buffer.
 
+- If otherwise in `text-mode', return the contents of the current buffer."
+  (if (region-active-p)
+      (buffer-substring-no-properties (region-beginning) (region-end))
+    (if-let ((file (or file (pcase major-mode
+			      ((or 'bibtex-mode 'ebib-entry-mode)
+			       (or (ebib-extras-get-file "html")
+				   (ebib-extras-get-file "pdf")))
+			      ('pdf-view-mode (buffer-file-name))))))
+	(tlon-babel-get-file-as-string file)
+      (cond ((derived-mode-p 'markdown-mode)
+	     (tlon-babel-md-read-content file))
+	    ((derived-mode-p 'text-mode)
+	     (buffer-substring-no-properties (point-min) (point-max)))))))
+    
 (defun tlon-babel-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
@@ -270,7 +332,8 @@ is the file to translate."
   (let* ((string (if (region-active-p)
 		     (buffer-substring-no-properties (region-beginning) (region-end))
 		   (read-string "Text to rewrite: "))))
-    (tlon-babel-make-gptel-request tlon-babel-ai-rewrite-prompt string)))
+    (tlon-babel-make-gptel-request tlon-babel-ai-rewrite-prompt string
+				   #'tlon-babel-ai-callback-return)))
 
 (defun tlon-babel-ai-rewrite-callback (response info)
   "Callback for `tlon-babel-ai-rewrite'.
@@ -281,6 +344,41 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	   (variant (completing-read "Variant: " variants)))
       (delete-region (region-beginning) (region-end))
       (kill-new variant))))
+
+;;;;; Image description
+
+;;;###autoload
+(defun tlon-babel-ai-describe-image (file callback)
+  "Describe the contents of the image in FILE.
+When the description is obtained, pass it to CALLBACK as its first argument."
+  (interactive (list (read-file-name "Image file: " )))
+  (let* ((file (expand-file-name file))
+	 (repo (tlon-babel-get-repo))
+	 (language (tlon-babel-repo-lookup :language :dir repo))
+	 (prompt (format
+		  (tlon-babel-lookup tlon-babel-ai-describe-image-prompt :prompt :language language)
+		  file))
+	 (buffer (generate-new-buffer "*Image Description*")))
+    (with-current-buffer buffer
+      (insert prompt)
+      (org-mode)
+      (gptel-extras-model-config nil "ChatGPT" "gpt-4-vision-preview")
+      (gptel-send)
+      (message "Generating image description. This will take around 20 seconds...")
+      (run-with-timer 20 nil (lambda ()
+			       (tlon-babel-return-image-description buffer callback))))))
+
+(defun tlon-babel-return-image-description (buffer callback)
+  "Get the image description from BUFFER and pass it to CALLBACK."
+  (let ((description
+	 (with-current-buffer buffer
+	   (redisplay)
+	   (goto-char (point-min))
+	   (forward-line 6)
+	   (redisplay)
+	   (buffer-substring-no-properties (point) (point-max)))))
+    (kill-buffer buffer)
+    (funcall callback (replace-regexp-in-string "\n" " " description))))
 
 ;;;;; Summarization
 
@@ -305,7 +403,8 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
   of the HTML or PDF file associated with the current BibTeX entry, if either is
   found.
 
-- If in `pdf-view-mode', get an abstract of the contents of the current PDF file.
+- If in `pdf-view-mode', get an abstract of the contents of the current PDF
+  file.
 
 - If in `text-mode', get an abstract of the contents of the current region, if
   active; otherwise, get an abstract of the contents of the current buffer.
@@ -316,13 +415,14 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
   (if (tlon-babel-abstract-may-proceed-p)
       (if-let ((language (or (tlon-babel-ai-get-language-in-file file)
 			     (unless tlon-babel-ai-batch-fun
-			       (tlon-babel-ai-select-language)))))
+			       (tlon-babel-select-language)))))
 	  (tlon-babel-ai-get-abstract-in-language file language)
 	(tlon-babel-ai-detect-language-in-file
 	 file
 	 (lambda (response info)
 	   (message "Detecting language...")
 	   (tlon-babel-ai-get-abstract-from-detected-language response info file))))
+    (message "`%s' now calls `tlon-babel-ai-batch-continue'." "tlon-babel-get-abstract-with-ai")
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-get-abstract-with-ai-in-file (extension)
@@ -331,6 +431,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
       (if-let ((file (ebib-extras-get-file extension)))
 	  (tlon-babel-get-abstract-with-ai file)
 	(user-error "No unique file with extension `%s' found" extension))
+    (message "`%s' now calls `tlon-babel-ai-batch-continue'" "tlon-babel-get-abstract-with-ai-in-file")
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-get-abstract-with-ai-from-pdf ()
@@ -346,19 +447,25 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 (defun tlon-babel-ai-get-abstract-in-language (file language)
   "Get abstract from FILE in LANGUAGE."
   (if-let ((string (tlon-babel-get-string-dwim file))
-	   (lang-2 (tlon-babel-get-two-letter-code language))
-	   (original-buffer (current-buffer)))
-      (tlon-babel-ai-get-abstract-common
-       tlon-babel-ai-get-abstract-prompts string lang-2
-       (lambda (response info)
-	 ;; we restore the original buffer to avoid a change in `major-mode'
-	 (with-current-buffer original-buffer
-	   (tlon-babel-get-abstract-callback response info))))
+	   (lang-2 (tlon-babel-get-two-letter-code language)))
+      (let ((original-buffer (current-buffer))
+	    (key (pcase major-mode
+		   ('bibtex-mode (bibtex-extras-get-key))
+		   ('ebib-entry-mode (ebib-extras-get-field "=key="))
+		   (_ nil))))
+	(tlon-babel-ai-get-abstract-common
+	 tlon-babel-ai-get-abstract-prompts string lang-2
+	 (lambda (response info)
+	   ;; we restore the original buffer to avoid a change in `major-mode'
+	   (with-current-buffer original-buffer
+	     (message "Generating abstract for `%s'; starts with `%s'" key
+		      (when response (substring response 0 (min (length string) 100))))
+	     (tlon-babel-get-abstract-callback response info key)))))
     (message "Could not get abstract.")
     (tlon-babel-ai-batch-continue)))
 
 (defun tlon-babel-ai-get-abstract-from-detected-language (response info file)
-  "If RESPONSE is non-nil, get a summary of FILEl.
+  "If RESPONSE is non-nil, get a summary of FILE.
 Otherwise return INFO."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
@@ -372,21 +479,25 @@ the language of the string, and CALLBACK is the callback function."
     (tlon-babel-make-gptel-request prompt string callback)
     (message "Getting AI abstract...")))
 
-(defun tlon-babel-get-abstract-callback (response info)
+(defun tlon-babel-get-abstract-callback (response info &optional key)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
-If RESPONSE is nil, return INFO."
+If RESPONSE is nil, return INFO. KEY is the BibTeX key."
   (if (not response)
       (tlon-babel-ai-callback-fail info)
     (pcase major-mode
       ((or 'bibtex-mode 'ebib-entry-mode)
-       (tlon-babel-ai-summarize-set-bibtex-abstract response))
-      ('markdown-mode) ; set `description' YAML field to it
+       (message "`tlon-babel-get-abstract-callback' is setting `%s' to `%s'"
+		key (when response (substring response 0 (min (length response) 100))))
+       (tlon-babel-ai-summarize-set-bibtex-abstract response key))
+      ('markdown-mode) ; TODO: set `description' YAML field to it
       (_ (kill-new response)
 	 (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))
+  (message "`%s' now calls `tlon-babel-ai-batch-continue'" "tlon-babel-get-abstract-callback")
   (tlon-babel-ai-batch-continue))
 
 ;;;;;; BibTeX
 
+(declare-function ebib-extras-get-or-open-entry "ebib-extras")
 ;;;###autoload
 (defun tlon-babel-ai-summarize-bibtex-entry (&optional string)
   "Summarize the work described in the BibTeX STRING using AI.
@@ -407,16 +518,20 @@ If STRING is nil, use the current entry."
 	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-get-abstract-callback)
 	  (user-error "No prompt defined in `tlon-babel-ai-get-abstract-prompts' for language %s" language))))))
 
-(defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract)
-  "Set the `abstract' field of the current BibTeX entry to ABSTRACT."
+(declare-function ebib-extras-set-field "ebib-extras")
+(declare-function ebib-extras-get-file-of-key "ebib-extras")
+(defun tlon-babel-ai-summarize-set-bibtex-abstract (abstract key)
+  "Set the `abstract' field of entry with KEY entry to ABSTRACT."
+  ;; This assumes KEY is in the current buffer. Maybe relax this assumption.
   (let* ((set-field (pcase major-mode
 		      ('bibtex-mode #'bibtex-set-field)
 		      ('ebib-entry-mode #'ebib-extras-set-field))))
-    (shut-up
-      (funcall set-field "abstract" abstract))
-    (message "Set abstract of `%s'" (pcase major-mode
-				      ('bibtex-mode (bibtex-extras-get-key))
-				      ('ebib-entry-mode (ebib-extras-get-field "=key="))))
+    (with-current-buffer (find-file-noselect (ebib-extras-get-file-of-key key))
+      (save-excursion
+	(bibtex-search-entry key)
+	(shut-up
+	  (funcall set-field "abstract" abstract))))
+    (message "Set abstract of `%s'" key)
     (save-buffer)))
 
 ;;;;; Language detection
@@ -439,10 +554,6 @@ If FILE is nil, detect the language in the current buffer."
   (let ((string (tlon-babel-get-string-dwim file)))
     (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-prompt string callback)))
 
-(defun tlon-babel-ai-select-language ()
-  "Prompt the user to select a LANGUAGE and return it."
-  (completing-read "Language: " bibtex-extras-valid-languages))
-
 ;;;;;; BibTeX
 
 (defun tlon-babel-ai-detect-language-in-bibtex (&optional string)
@@ -452,7 +563,8 @@ If STRING is nil, use the current BibTeX entry."
 			     ('ebib-entry-mode (ebib-extras-get-or-open-entry))
 			     ('bibtex-mode (bibtex-extras-get-entry-as-string))
 			     (_ (user-error "I can’t detect language in %s" major-mode))))))
-    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string)))
+    (tlon-babel-make-gptel-request tlon-babel-ai-detect-language-bibtex-prompt string
+				   #'tlon-babel-ai-callback-return)))
 
 ;;;###autoload
 (defun tlon-babel-ai-set-language-bibtex ()
@@ -514,10 +626,54 @@ RESPONSE is the response from the AI model and INFO is the response info."
     (message "Set language of `%s' to %s" key lang)
     (tlon-babel-ai-batch-continue)))
 
+;;;;; Phonetic transcription
+
+;;;###autoload
+(defun tlon-babel-ai-phonetically-transcribe (expression language)
+  "Insert the phonetic transcription of the EXPRESSION in LANGUAGE.
+LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
+request was sent."
+  (interactive (list (read-string "Text to transcribe: "
+				  (if (region-active-p)
+				      (buffer-substring-no-properties (region-beginning) (region-end))
+				    (word-at-point)))
+		     (or (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo 'no-prompt))
+			 (tlon-babel-select-language 'two-letter))))
+  (let ((prompt (tlon-babel-lookup tlon-babel-ai-transcribe-phonetically-prompt
+				   :prompt :language language)))
+    (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-copy)))
+
+(defun tlon-babel-phonetically-transcribe-in-buffer ()
+  "Insert a phonetic transcription of each line in buffer immediately after it.
+Separate the original line and the transcription with a comma."
+  (interactive)
+  (let ((language (tlon-babel-select-language 'two-letter)))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+	(let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+	  (goto-char (line-end-position))
+	  (insert ",")
+	  (tlon-babel-ai-phonetically-transcribe line language)
+	  (forward-line))))))
+
+;;;;; Math
+
+(defun tlon-babel-ai-translate-math (expression language)
+  "Insert the natural LANGUAGE translation of the mathematical EXPRESSION.
+LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
+request was sent."
+  (interactive (list (read-string "Math expression: "
+				  (buffer-substring-no-properties (region-beginning) (region-end)))
+		     (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo))))
+  (let ((prompt (tlon-babel-lookup tlon-babel-ai-translate-math-prompt :prompt :language language)))
+    (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-insert)))
+
 ;;;;; Docs
 
+;; TODO: develop this
 (defun tlon-babel-ai-docs ()
-  ""
+  "Docstring."
   (interactive)
   (let ((prompt "Included below is an Emacs configuration file of the organization I work for. Please inspect it and tell me how can I search for a yasnippet snippet. Please be brief.\n\n%s")
 	(string (tlon-babel-get-file-as-string
@@ -575,11 +731,11 @@ variable."
 (transient-define-prefix tlon-babel-ai-menu ()
   "Menu for `tlon-babel-ai'."
   :info-manual "(tlon-babel) AI"
-  [["Translate"
-    ("t" "translate"                            tlon-babel-ai-translate)]
-   ["Rewrite"
-    ("r" "rewrite"                              tlon-babel-ai-rewrite)]
-   ["Detect language"
+  [[""
+    ("t" "translate"                            tlon-babel-ai-translate)
+    ("r" "rewrite"                              tlon-babel-ai-rewrite)
+    ("p" "phonetically transcribe"              tlon-babel-ai-phonetically-transcribe)
+    ("i" "describe image"                       tlon-babel-ai-describe-image)
     ("b" "set language bibtex"                  tlon-babel-ai-set-language-bibtex)]
    ["Summarize"
     ("s s" "get abstract with or without AI"    tlon-babel-get-abstract-with-or-without-ai)
@@ -588,7 +744,7 @@ variable."
     ("s h" "get abstract with AI from HTML"     tlon-babel-get-abstract-with-ai-from-html)
     ("s p" "get abstract with AI from PDF"      tlon-babel-get-abstract-with-ai-from-pdf)
     ("s b" "summarize bibtex entry"             tlon-babel-ai-summarize-bibtex-entry)]
-   ["Parameters"
+   ["Summarize parameters"
     ("-b" "batch"                               tlon-babel-ai-batch-fun-infix)
     ("-d" "mullvad connection duration"         tlon-babel-mullvad-connection-duration-infix)
     ("-o" "overwrite"                           tlon-babel-abstract-overwrite-infix)
@@ -598,5 +754,5 @@ variable."
 ;;; tlon-babel-ai.el ends here
 
 ;; Local Variables:
-;; jinx-languages: "es en"
+;; jinx-languages: "es en it fr de"
 ;; End:

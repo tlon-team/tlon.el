@@ -32,7 +32,6 @@
 (require 'bibtex-extras)
 (require 'paths)
 (require 'shut-up)
-(require 'tlon-babel-ai)
 
 ;;;; User options
 
@@ -48,6 +47,41 @@
 	  (const :tag "Prompt" prompt)))
 
 ;;;; Variables
+
+(defconst tlon-babel-locators
+  '(("book" . "bk.")
+    ("chapter ". "chap.")
+    ("column" . "col.")
+    ("figure" . "fig.")
+    ("folio" . "fol.")
+    ("number" . "no.")
+    ("line" . "l.")
+    ("note" . "n.")
+    ("opus" . "op.")
+    ("page" . "p.")
+    ("paragraph" . "para.")
+    ("part" . "pt.")
+    ("section" . "sec.")
+    ("sub verbo" . "s.v")
+    ("verse" . "v.")
+    ("volumes" . "vol.")
+    ("books" . "bks.")
+    ("chapter ". "chaps.")
+    ("columns" . "cols.")
+    ("figures" . "figs.")
+    ("folios" . "fols.")
+    ("numbers" . "nos.")
+    ("lines" . "ll.")
+    ("notes" . "nn.")
+    ("opera" . "opp.")
+    ("pages" . "pp.")
+    ("paragraphs" . "paras.")
+    ("parts" . "pts.")
+    ("sections" . "secs.")
+    ("sub  verbis" . "s.vv.")
+    ("verses" . "vv.")
+    ("volumes" . "vols."))
+  "Alist of locators and their abbreviations.")
 
 ;; TODO: remove `refs' from var names. make sure nothing breaks in config files
 (defvar tlon-babel-refs-dir
@@ -73,23 +107,10 @@
 
 ;;;; Functions
 
-;;;;; language
+;;;;; Fetch fields
 
-(defun tlon-babel-validate-language (language)
-  "If LANGUAGE is a valid language, return it.
-The validation is case-insensitive, but the returned language is in lowercase."
-  (let ((language (downcase language)))
-    (when (member language (mapcar #'car bibtex-extras-valid-languages))
-      language)))
-
-(defun tlon-babel-get-two-letter-code (language)
-  "Return the two-letter code for LANGUAGE."
-  (when-let* ((downcased (downcase language))
-	      (code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
-    (string-limit code-raw 2)))
-
-;;;;; fetch
-
+(declare-function ebib-extras-get-field "ebib-extras")
+(declare-function tlon-babel-ai-batch-continue "tlon-babel-ai")
 (defun tlon-babel-fetch-and-set-abstract ()
   "Fetch the abstract of the entry at point and set it as the new value.
 We use CrossRef for DOIs, Google Books for ISBN and Zotero for URLs.
@@ -116,7 +137,7 @@ abstract will, or will not, replace the existing one, respectively."
 	  (if-let ((value (or
 			   (tlon-babel-fetch-abstract-from-crossref doi)
 			   (tlon-babel-fetch-abstract-from-google-books isbn)
-			   (tlon-babel-fetch-abstract-with-zotra url doi))))
+			   (tlon-babel-fetch-abstract-with-zotra url url))))
 	      (progn
 		(shut-up
 		  (funcall set-field "abstract" (tlon-babel-abstract-cleanup value)))
@@ -127,6 +148,8 @@ abstract will, or will not, replace the existing one, respectively."
 	  (tlon-babel-ai-batch-continue)
 	  found)))))
 
+(defvar tlon-babel-ai-batch-fun "tlon-babel-ai")
+(declare-function zotra-extras-fetch-field "zotra-extras")
 (defun tlon-babel-fetch-abstract-with-zotra (url doi)
   "Return the abstract of the work with URL or DOI."
   (when-let ((id (or url doi)))
@@ -189,16 +212,18 @@ abstract will, or will not, replace the existing one, respectively."
     (let ((url (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn))
 	  (description nil))
       (message "Trying to find abstract for %s with Google Books..." isbn)
-      (with-current-buffer (shut-up (url-retrieve-synchronously url))
-	(goto-char (point-min))
-	(re-search-forward "^$")
-	(delete-region (point) (point-min))
-	(let* ((json-object-type 'plist)
-	       (json-array-type 'list)
-	       (json (json-read))
-	       (items (plist-get json :items))
-	       (volume-info (and items (plist-get (car items) :volumeInfo))))
-	  (setq description (and volume-info (plist-get volume-info :description)))))
+      (with-current-buffer (url-retrieve-synchronously url)
+        (set-buffer-multibyte t) ;; Ensure buffer is treated as multibyte
+        (set-buffer-file-coding-system 'utf-8) ;; Set coding system to UTF-8
+        (goto-char (point-min))
+        (re-search-forward "^$")
+        (delete-region (point) (point-min))
+        (let* ((json-object-type 'plist)
+               (json-array-type 'list)
+               (json (json-read))
+               (items (plist-get json :items))
+               (volume-info (and items (plist-get (car items) :volumeInfo))))
+          (setq description (and volume-info (plist-get volume-info :description)))))
       (when (get-buffer url)
 	(kill-buffer url))
       (if description description (progn (message "No abstract found.") nil)))))
@@ -224,6 +249,7 @@ abstract will, or will not, replace the existing one, respectively."
     (derived-mode-p 'text-mode 'pdf-view-mode)))
 
 
+(declare-function ebib-extras-get-or-fetch-id-or-url "ebib-extras")
 (defun tlon-babel-fetch-field-with-zotra (field &optional id-or-url no-error)
   "Fetch the value of FIELD from the ID-OR-URL of the entry at point.
 IF ID-OR-URL is nil, try to get it or fetch it. If NO-ERROR is non-nil, handle
@@ -243,7 +269,7 @@ errors gracefully."
   ;; add a period at the end of the abstract if missing
   (replace-regexp-in-string "\\([^\\.]\\)$" "\\1." string))
 
-;;;;; moving entries
+;;;;; Move entries
 
 (defun tlon-babel-move-entry (&optional key file)
   "Move entry with KEY to FILE.
@@ -287,7 +313,7 @@ If FILE is non-nil, use `tlon-babel-refs-file-fluid'."
   (tlon-babel-move-lesswrong-entries)
   )
 
-;;;;; adding fields
+;;;;; Add fields
 
 (defun tlon-babel-add-or-update-tlon-field ()
   "Add or update \"database\" field with \"Tlön\" value in the current BibTeX entry."
@@ -314,7 +340,7 @@ and sets the value of the field for all entries to `Tlön'."
     (when (string= (buffer-file-name) file)
       (tlon-babel-add-database-field file))))
 
-;;;;; cleanup
+;;;;; Cleanup
 
 (defun tlon-babel-auto-clean-entry ()
   "Clean up bibtex entry at point upon saving."
@@ -355,7 +381,7 @@ If the field `landig' is present, the function does nothing; else, it sets the
 	  (replace-match (format "\\1\\\\%s" char) nil nil))))))
 
 
-;;;;; autokey
+;;;;; Autokey
 
 (defun tlon-babel-generate-autokey (author year title)
   "Generate a BibTeX key based on AUTHOR, YEAR, and TITLE."
@@ -431,6 +457,73 @@ If the field `landig' is present, the function does nothing; else, it sets the
 	(setq titlewords (append titlewords-extra titlewords)))
       (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
 		 bibtex-autokey-titleword-separator))))
+
+;;;;; Misc
+
+(defvar citar-bibliography)
+;; TODO: Maybe I should use `query-replace-regexp', to deal with the `save-match-data' issue?
+(defun tlon-babel-replace-titles (&optional file)
+  "Replace titles in FILE with proper citations."
+  (interactive)
+  (let ((file (or file (buffer-file-name)))
+	(titles (tlon-babel-get-field-in-bibliography "title"))
+	(citar-bibliography tlon-babel-refs-bibliography-files)
+	(open-delim "[\"'“‘\\[\\*")
+	(close-delim "[\"'”’\\]\\*]")
+	always-long always-short)
+    (find-file file)
+    (save-excursion
+      (dolist (title titles)
+	(catch 'skip
+	  (let (replacement)
+	    (goto-char (point-min))
+	    (when (re-search-forward (concat open-delim title close-delim) nil t)
+	      (save-match-data
+		(let ((choice (cond (always-long ?l)
+				    (always-short ?s)
+				    ((read-key "long (l) | short (s) | skip (n) | all long (L) | all short (S)")))))
+		  (if (eq choice ?n)
+		      (throw 'skip (message (format "Skipping `%s'." title)))
+		    (when-let* ((key (tlon-babel-bibliography-lookup "=key=" "title" title))
+				;; TODO: replace with constants
+				(cite-long (format "<Cite bibKey={\"%s\"} />" key))
+				(cite-short (format "<Cite bibKey={\"%s\"} short />" key)))
+		      (setq replacement (pcase choice
+					  ((or ?l ?L)
+					   (when (eq choice ?L)
+					     (setq always-long t))
+					   cite-long)
+					  ((or ?s ?S)
+					   (when (eq choice ?S)
+					     (setq always-short t))
+					   cite-short)))))))
+	      (replace-match replacement t t))))))))
+
+(defvar citar-cache--bibliographies)
+(declare-function citar-cache--bibliography-entries "citar-cache")
+(defun tlon-babel-get-field-in-bibliography (field)
+  "Extract all values for FIELD entries in the Tlön bibliography."
+  (let (fields)
+    (maphash (lambda (_key bibliography)
+	       (when-let ((entries (citar-cache--bibliography-entries bibliography)))
+		 (maphash (lambda (_ entry)
+			    (when-let ((value (cdr (assoc field entry))))
+			      (push value fields)))
+			  entries)))
+	     citar-cache--bibliographies)
+    fields))
+
+(defun tlon-babel-bibliography-lookup (assoc-field field value)
+  "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
+  (catch 'found
+    (maphash (lambda (_key bibliography)
+               (let ((entries (citar-cache--bibliography-entries bibliography)))
+                 (maphash (lambda (_ entry)
+                            (when (string= (cdr (assoc field entry)) value)
+                              (throw 'found (cdr (assoc assoc-field entry)))))
+                          entries)))
+             citar-cache--bibliographies)
+    nil))
 
 (provide 'tlon-babel-tex)
 ;;; tlon-babel-tex.el ends here

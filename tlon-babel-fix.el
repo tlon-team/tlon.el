@@ -154,6 +154,18 @@ dedicated function."
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
 
+;;;;;; TTS
+
+;; we can have this here or in `tts'. The reason for having it here, despite
+;; being TTS-specific functionality, is that we run it at the processing stage.
+
+(defun tlon-babel-fix-tts ())
+
+(defun tlon-babel-fix-tts-emphasis ()
+  "Prompt the user to replace Italics with SSML emphasis tags."
+  ()
+  )
+
 (provide 'tlon-babel-fix)
 ;;; tlon-babel-fix.el ends here
 
