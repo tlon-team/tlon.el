@@ -508,6 +508,12 @@ Prompt the user to select a LEVEL."
   (tlon-babel-md-insert-element-pair
    (tlon-babel-tag-element-with-attribute tlon-babel-tts-ssml-emphasis level)))
 
+;;;###autoload
+(defun tlon-babel-insert-ssml-break (time)
+  "Insert an SSML `break' element pair at point or around the selected region.
+TIME is the duration of the break n seconds."
+  (interactive (list (concat (read-string "sTime (seconds): ") "s")))
+  (insert (format tlon-babel-tts-ssml-break time)))
 
 ;;;;;;; Math
 
