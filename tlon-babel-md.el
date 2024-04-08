@@ -521,13 +521,13 @@ TIME is the duration of the break n seconds."
 (defun tlon-babel-insert-math-inline ()
   "Insert an inline math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair tlon-babel-math-inline-open tlon-babel-math-inline-close))
+  (tlon-babel-md-insert-element-pair tlon-babel-math-inline))
 
 ;;;###autoload
 (defun tlon-babel-insert-math-display ()
   "Insert a display math element pair at point or around the selected region."
   (interactive)
-  (tlon-babel-md-insert-element-pair tlon-babel-math-display-open tlon-babel-math-display-close))
+  (tlon-babel-md-insert-element-pair tlon-babel-math-display))
 
 ;;;;; Note classification
 
