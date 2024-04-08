@@ -562,5 +562,12 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 	    (regexp-quote (car pair))
 	    (regexp-quote (cdr pair)))))
 
+(defun tlon-babel-make-tag-replace-pattern (pair &optional format)
+  "Construct a replace with FORMAT for PAIR of tags."
+  (let ((format (or format "%s%%s%s")))
+    (format format
+	    (car pair)
+	    (cdr pair))))
+
 (provide 'tlon-babel-core)
 ;;; tlon-babel-core.el ends here

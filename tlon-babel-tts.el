@@ -122,6 +122,10 @@ Note that, as of 2024-04-05, none of the Spanish Azure TTS voices support the
 So for the time being we should remove it from the files when generating the
 audio, to avoid errors.")
 
+(defconst tlon-babel-tts-ssml-phoneme-replace-pattern
+  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-phoneme)
+  "Pattern to replace `phoneme' tags.")
+
 ;;;;;; emphasis
 
 (defconst tlon-babel-tts-ssml-emphasis
