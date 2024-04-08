@@ -475,6 +475,26 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
   (while (re-search-forward tlon-babel-cite-pattern nil t)
     (replace-match (format "[@%s]"(match-string 1)) nil nil)))
 
+;;;;;; Tag removal
+
+;; TODO: I think we should just use `tlon-babel-tts-remove-formatting' for this,
+;; together with the patterns defined in `tlon-babel-md'
+
+(defun tlon-babel-tts-process-tag-removal ()
+  "Remove tags from text."
+  (tlon-babel-tts-process-visually-hidden))
+
+(defun tlon-babel-tts-remove-tag-pair (pair)
+  "Remove tag PAIR from text."
+  (dolist (tag (list (car pair) (cdr pair)))
+    (goto-char (point-min))
+    (while (re-search-forward tag nil t)
+      (replace-match "" t))))
+
+(defun tlon-babel-tts-process-visually-hidden ()
+  "Remove `VisuallyHidden' MDX tag."
+  (tlon-babel-tts-remove-tag-pair tlon-babel-mdx-visually-hidden))
+
 ;;;;;; Formatting
 
 (defun tlon-babel-tts-process-formatting ()
