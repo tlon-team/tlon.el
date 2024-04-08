@@ -331,7 +331,7 @@ Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (tlon-babel-select-language 'two-letter)))
   (tlon-babel-md-insert-element-pair
-   (tlon-babel-mdx-element-with-attribute tlon-babel-mdx-lang language)))
+   (tlon-babel-tag-element-with-attribute tlon-babel-mdx-lang language)))
 
 ;; TODO: revise to offer the url at point as default completion candidate
 ;;;###autoload
@@ -340,7 +340,7 @@ written in that language."
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
   (tlon-babel-md-insert-element-pair
-   (tlon-babel-mdx-element-with-attribute tlon-babel-mdx-literal-link url)))
+   (tlon-babel-tag-element-with-attribute tlon-babel-mdx-literal-link url)))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-small-caps ()
@@ -357,8 +357,8 @@ caps."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-hidden))
 
-(defun tlon-babel-mdx-element-with-attribute (element attribute)
-  "Construct an MDX ELEMENT with an ATTRIBUTE."
+(defun tlon-babel-tag-element-with-attribute (element attribute)
+  "Construct an tag ELEMENT with an ATTRIBUTE."
   (cons (format (car element) attribute)
 	(cdr element)))
 
@@ -496,7 +496,7 @@ Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (tlon-babel-select-language 'locale)))
   (tlon-babel-md-insert-element-pair
-   (tlon-babel-mdx-element-with-attribute tlon-babel-tts-ssml-lang language)))
+   (tlon-babel-tag-element-with-attribute tlon-babel-tts-ssml-lang language)))
 
 ;;;###autoload
 (defun tlon-babel-insert-ssml-emphasis (level)
@@ -506,7 +506,8 @@ Prompt the user to select a LEVEL."
 				      tlon-babel-tts-ssml-emphasis-levels nil t
 				      tlon-babel-tts-ssml-emphasis-default-level)))
   (tlon-babel-md-insert-element-pair
-   (tlon-babel-mdx-element-with-attribute tlon-babel-tts-ssml-emphasis level)))
+   (tlon-babel-tag-element-with-attribute tlon-babel-tts-ssml-emphasis level)))
+
 
 ;;;;;;; Math
 
