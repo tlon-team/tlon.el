@@ -626,12 +626,13 @@ process, return its cdr."
 (defun tlon-babel-replace-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
-  (replace-match (format tlon-babel-tts-ssml-phoneme
+  (replace-match (format tlon-babel-tts-ssml-phoneme-replace-pattern
 			 "ipa" replacement (match-string-no-properties 0)) t))
 
 (defun tlon-babel-get-phonetic-transcriptions ()
   "Get the phonetic transcriptions."
   (tlon-babel-tts-get-associated-terms tlon-babel-tts-phonetic-transcriptions))
+
 ;;;;;; Listener cues
 
 ;;;;;;; General functions
@@ -660,7 +661,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   "Add listener cues for text enclosed in tags of TYPE."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
-	('aside (list tlon-babel-mdx-aside-pattern tlon-babel-tts-aside-cues 2))
+	('aside (list tlon-babel-mdx-aside-search-pattern tlon-babel-tts-aside-cues 2))
 	('quote (list markdown-regex-blockquote tlon-babel-tts-quote-cues 3))
 	('image (list markdown-regex-link-inline tlon-babel-tts-image-cues 3))
 	;; TODO: determine if other types should be added
