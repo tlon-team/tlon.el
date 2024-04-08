@@ -82,21 +82,6 @@
 		"Explanation (optional; please write it in the translation language [%s]): "
 		tlon-babel-translation-language)))
 
-(defun tlon-babel-glossary-regexp-pattern (original translation)
-  "Get the regexp pattern for glossary entry.
-The glossary entry is that corresponding to ORIGINAL and TRANSLATION."
-  (format "\"%s\",\"%s\",\"EN\",\"%s\"" original translation
-	  (upcase tlon-babel-translation-language)))
-
-(defun tlon-babel-glossary-finalize (action original explanation)
-  "Finalize the addition of a word to the glossary or its modification.
-ACTION is either \"add\" or \"modify\". ORIGINAL is the term in the original
-language. EXPLANATION is the explanation of the translation."
-  (goto-char (point-min))
-  (flush-lines "^$")
-  (save-buffer)
-  (tlon-babel-glossary-commit action original explanation))
-
 ;; TODO: fix this
 (defun tlon-babel-glossary-commit (action term &optional explanation)
   "Commit glossary modifications.
