@@ -438,6 +438,8 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-math-expressions))
   (goto-char (point-min)))
 
+;; TODO: it seems Azure is not making an extra pause between paragraphs; decide whether to add some extra silence
+
 ;;;;;; Notes
 
 (defun tlon-babel-tts-process-notes ()
