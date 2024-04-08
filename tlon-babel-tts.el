@@ -592,7 +592,7 @@ process, return its cdr."
    'tlon-babel-replace-abbreviations))
 
 (defun tlon-babel-replace-abbreviations (replacement)
-  "When processsing abbreviations, replace match with REPLACEMENT."
+  "When processing abbreviations, replace match with REPLACEMENT."
   (replace-match replacement t))
 
 (defun tlon-babel-get-abbreviations ()
@@ -608,7 +608,7 @@ process, return its cdr."
    'tlon-babel-replace-phonetic-replacements))
 
 (defun tlon-babel-replace-phonetic-replacements (replacement)
-  "When processsing simple replacements, replace match with REPLACEMENT."
+  "When processing simple replacements, replace match with REPLACEMENT."
   (replace-match replacement t))
 
 (defun tlon-babel-get-phonetic-replacements ()
@@ -624,7 +624,7 @@ process, return its cdr."
    'tlon-babel-replace-phonetic-transcriptions))
 
 (defun tlon-babel-replace-phonetic-transcriptions (replacement)
-  "When processsing phonetic transcriptions, replace match with pattern.
+  "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (replace-match (format tlon-babel-tts-ssml-phoneme
 			 "ipa" replacement (match-string-no-properties 0)) t))
