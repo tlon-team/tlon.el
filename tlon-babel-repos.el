@@ -104,7 +104,7 @@ files from possible corruption."
 (transient-define-prefix tlon-babel-repos-menu ()
   "Repos menu."
   [["Repo"
-    ("c" "Create repote"     tlon-babel-create-repo)
+    ("c" "Create remote"     tlon-babel-create-repo)
     ("l" "Clone remote"      tlon-babel-clone-repo)
     ("s" "Split local"       tlon-babel-split-repo)]
    ["Forge"
