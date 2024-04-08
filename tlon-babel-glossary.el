@@ -41,6 +41,7 @@
 
 ;;;; Functions
 
+;;;###autoload
 (defun tlon-babel-edit-glossary ()
   "Add, delete or update a glossary entry."
   (interactive)
