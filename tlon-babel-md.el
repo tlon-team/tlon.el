@@ -100,9 +100,9 @@ and the third group captures the short citation flag.")
   '("$`" . "`$")
   "Delimiter pair for an inline math expression.")
 
-(defconst tlon-babel-math-inline-pattern
-  (tlon-babel-make-tag-pattern tlon-babel-math-inline)
-  "Regexp pattern for an inline mathematical expression.
+(defconst tlon-babel-math-inline-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-math-inline)
+  "Regexp pattern for matching inline mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
@@ -112,9 +112,9 @@ captures the expression without the delimiters.")
   '("$$\n" . "\n$$")
   "Delimiter pair for a display math expression.")
 
-(defconst tlon-babel-math-display-pattern
-  (tlon-babel-make-tag-pattern tlon-babel-math-display)
-  "Regexp pattern for a display mathematical expression.
+(defconst tlon-babel-math-display-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-math-display)
+  "Regexp pattern for matching display mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
@@ -126,9 +126,9 @@ captures the expression without the delimiters.")
   '("<Aside>" . "</Aside>")
   "Pair of MDX `Aside' tags.")
 
-(defconst tlon-babel-mdx-aside-pattern
-  (tlon-babel-make-tag-pattern tlon-babel-mdx-aside)
-  "Regexp pattern for an MDX `Aside' expression.
+(defconst tlon-babel-mdx-aside-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-aside)
+  "Regexp pattern for matching an MDX `Aside' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
@@ -138,9 +138,9 @@ captures the expression without the tags.")
   '("<Lang id={\"%s\"}>" . "</Lang>")
   "Pair of MDX `Lang' tags.")
 
-(defconst tlon-babel-mdx-lang-pattern
-  (tlon-babel-make-tag-pattern tlon-babel-mdx-lang)
-  "Regexp pattern for an MDX `Lang' expression.
+(defconst tlon-babel-mdx-lang-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-lang)
+  "Regexp pattern for matching an MDX `Lang' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
@@ -150,9 +150,9 @@ captures the expression without the tags.")
   '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
   "Pair of MDX `LiteralLink' tags.")
 
-(defconst tlon-babel-mdx-literal-link-pattern
-  (tlon-babel-make-tag-pattern tlon-babel-mdx-literal-link)
-  "Regexp pattern for an MDX `LiteralLink' expression.
+(defconst tlon-babel-mdx-literal-link-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-literal-link)
+  "Regexp pattern for matching an MDX `LiteralLink' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
@@ -162,9 +162,9 @@ captures the expression without the tags.")
   '("<SmallCaps>" . "</SmallCaps>")
   "Pair of MDX `SmallCaps' tags.")
 
-(defconst tlon-babel-mdx-small-caps-pattern
-  (tlon-babel-make-tag-pattern tlon-babel-mdx-small-caps)
-  "Regexp pattern for an MDX `SmallCaps' expression.
+(defconst tlon-babel-mdx-small-caps-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-small-caps)
+  "Regexp pattern for matching an MDX `SmallCaps' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
@@ -174,9 +174,9 @@ captures the expression without the tags.")
   '("<VisuallyHidden>" . "</VisuallyHidden>")
   "Pair of MDX `VisuallyHidden' tags.")
 
-(defconst tlon-babel-mdx-visually-hidden-pattern
-  (tlon-babel-make-tag-pattern tlon-babel-mdx-visually-hidden)
-  "Regexp pattern for an MDX `VisuallyHidden' expression.
+(defconst tlon-babel-mdx-visually-hidden-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-visually-hidden)
+  "Regexp pattern for matching an MDX `VisuallyHidden' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
