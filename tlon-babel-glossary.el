@@ -104,7 +104,8 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 						 action term explanation))))))
   (call-interactively #'magit-push-current-to-pushremote))
 
-(defun tlon-babel-glossary-extract (language deepl)
+;;;###autoload
+(defun tlon-babel-extract-glossary (language deepl)
   "Extract a LANGUAGE glossary from our multilingual glossary.
 If DEEPL is non-nil, include all entries, format them with the standard DeepL
 glossary format, and extract this glossary to the `dict' subdirectory within the
