@@ -301,7 +301,10 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-edit-data-menu ()
   "Data files menu."
   ["Edit data files"
-   ("g" "glossary"                  tlon-babel-edit-glossary)
+   "Glossary"
+   ("g" "edit glossary"              tlon-babel-edit-glossary)
+   ("G" "extract glossary"           tlon-babel-extract-glossary)
+   "TTS"
    ("a" "abbreviations"              tlon-babel-edit-abbreviations)
    ("r" "phonetic replacements"      tlon-babel-edit-phonetic-replacements)
    ("t" "phonetic transcriptions"    tlon-babel-edit-phonetic-transcriptions)
