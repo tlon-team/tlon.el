@@ -353,7 +353,7 @@ if region is active, save it to the downloads directory."
 	 (nth 1))
     (dolist (chunk chunks)
       (tlon-babel-azure-generate-audio
-       chunk voice (tlon-babel-name-chunk destination nth))
+       chunk voice (tlon-babel-get-chunk-name destination nth))
       (setq nth (1+ nth)))))
 
 (defun tlon-babel-azure-generate-audio (text voice destination)
@@ -408,7 +408,7 @@ if region is active, save it to the downloads directory."
   (let ((nth 1)
 	file-chunk
 	files)
-    (while (file-exists-p (setq file-chunk (tlon-babel-name-chunk file nth)))
+    (while (file-exists-p (setq file-chunk (tlon-babel-get-chunk-name file nth)))
       (push file-chunk files)
       (setq nth (1+ nth)))
     (nreverse files)))
@@ -421,7 +421,7 @@ if region is active, save it to the downloads directory."
 	(insert (format "file '%s'\n" (expand-file-name file)))))
     temp-file-list))
 
-(defun tlon-babel-name-chunk (file nth)
+(defun tlon-babel-get-chunk-name (file nth)
   "Return the name of the NTH chunk of FILE."
   (let ((extension (file-name-extension file))
 	(file-name-sans-extension (file-name-sans-extension file)))
