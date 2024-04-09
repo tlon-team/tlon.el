@@ -115,6 +115,10 @@ Here's a description of the main options:
 
 (defconst tlon-babel-tts-ssml-voice
   '("<voice name=\"%s\">" . "</voice>")
+  "SSML pair for voice tag, with voice name placeholder.")
+
+(defconst tlon-babel-tts-ssml-voice-pattern
+  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
 ;;;;;; phoneme
@@ -154,7 +158,7 @@ generating the audio.")
 
 (defconst tlon-babel-azure-ssml-template
   (format "<speak version='1.0' xml:lang='%%s'>%s</speak>"
-	  tlon-babel-tts-ssml-voice)
+	  tlon-babel-tts-ssml-voice-pattern)
   "SSML template for Azure TTS.")
 
 (defconst tlon-babel-azure-tts-request
