@@ -180,7 +180,6 @@ best male and female voices we were able to identify in each language.
 A list of available voices may be found here:
 <https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/ai-services/speech-service/includes/language-support/tts.md>")
 
-
 (defvar tlon-babel-azure-key nil
   "Azure subscription key for the text-to-speech service.")
 
@@ -188,6 +187,23 @@ A list of available voices may be found here:
   "Maximum number of characters that Azure can process per request.
 Azure can process up to 10 minutes of audio at a time. This estimate assumes 14
 characters per second, and uses nine minutes.")
+
+;;;;; OpenAI
+
+;; TODO: complete this; as of 2024-04-08, OpenAI offers no SSML support
+;; (https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5)
+;; so not a priority
+(defconst tlon-babel-openai-tts-request
+  "curl https://api.openai.com/v1/audio/speech \
+  -H \"Authorization: Bearer %s\" \
+  -H \"Content-Type: application/json\" \
+  -d '{
+    \"model\": \"tts-1\",
+    \"input\": \"%s\",
+    \"voice\": \"alloy\"
+  }' \
+  --output '%s'"
+  "Curl command to send a request to the OpenAI text-to-speech engine.")
 
 ;;;;; Currencies
 
