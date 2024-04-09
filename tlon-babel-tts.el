@@ -351,10 +351,15 @@ if region is active, save it to the downloads directory."
 			  (file-name-concat paths-dir-downloads file-name)
 			(file-name-concat repo "audio" file-name)))
 	 (nth 1))
+    (setq tlon-babel-unprocessed-chunks
+	  (tlon-babel-get-chunk-names destination (length chunks)))
     (dolist (chunk chunks)
       (tlon-babel-azure-generate-audio
        chunk voice (tlon-babel-get-chunk-name destination nth))
       (setq nth (1+ nth)))))
+
+(defvar tlon-babel-unprocessed-chunks nil
+  "The chunks to process in the current TTS session.")
 
 (defun tlon-babel-azure-generate-audio (text voice destination)
   "Generate an audio file from TEXT using VOICE and save it to DESTINATION."
@@ -370,7 +375,11 @@ if region is active, save it to the downloads directory."
 			    (when (string= event "finished\n")
 			      (if (region-active-p)
 				  (shell-command (format "open %s" destination))
-				(message "Audio file saved to %s" destination)))))))
+				(setq tlon-babel-unprocessed-chunks
+				      (remove destination tlon-babel-unprocessed-chunks))
+				(unless tlon-babel-unprocessed-chunks
+				  (tlon-babel-join-audio-files
+				   (tlon-babel-get-original-name destination)))))))))
 
 (defun tlon-babel-get-or-set-azure-key ()
   "Get or set the Azure key."
@@ -426,6 +435,19 @@ if region is active, save it to the downloads directory."
   (let ((extension (file-name-extension file))
 	(file-name-sans-extension (file-name-sans-extension file)))
     (format "%s-%03d.%s" file-name-sans-extension nth extension)))
+
+(defun tlon-babel-get-chunk-names (file n)
+  "Return a list of the first N chunk names of FILE."
+  (let ((names '()))
+    (dotimes (i n names)
+      (push (tlon-babel-get-chunk-name file (1+ i)) names))))
+
+(defun tlon-babel-get-original-name (chunk-name)
+  "Return the original file name before it was chunked, given CHUNK-NAME."
+  (let* ((base-name (file-name-sans-extension chunk-name))
+         (extension (file-name-extension chunk-name))
+         (original-base-name (replace-regexp-in-string "-[0-9]+\\'" "" base-name)))
+    (format "%s.%s" original-base-name extension)))
 
 ;;;;; Metadata
 
