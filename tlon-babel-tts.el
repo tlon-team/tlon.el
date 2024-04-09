@@ -64,6 +64,12 @@ Here's a description of the main options:
   :type 'string
   :group 'tlon-babel-tts)
 
+;; TODO: add OpenAI settings
+(defcustom tlon-babel-openai-tts-settings nil
+  "Settings for the OpenAI text-to-speech service."
+  :type 'string
+  :group 'tlon-babel-tts)
+
 ;;;; Variables
 
 ;;;;; Paths
