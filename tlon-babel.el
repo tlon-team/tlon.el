@@ -381,20 +381,6 @@ Defaults to the current buffer if no FILE is specified."
       (magit-status-setup-buffer)
     (user-error "Repo `%s' not found" repo)))
 
-(defun tlon-babel-forge-update-repo (repo)
-  "Update issues and notifications for REPO name."
-  (let* ((default-directory (tlon-babel-repo-lookup :dir :name repo))
-	 (repo (forge-get-repository 'full)))
-    (save-window-excursion
-      (with-current-buffer (dired-noselect default-directory)
-	(forge-pull repo)))))
-
-(defun tlon-babel-forge-update-all-repos ()
-  "Update issues and notifications for all active repos."
-  (interactive)
-  (dolist (repo (tlon-babel-repo-lookup-all :name))
-    (tlon-babel-forge-update-repo repo)))
-
 (defun tlon-babel-get-commit-key ()
   "Get key of commit file."
   (let* ((dir (file-name-directory (tlon-babel-core-buffer-file-name)))
