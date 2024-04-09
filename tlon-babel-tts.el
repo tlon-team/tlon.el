@@ -37,7 +37,7 @@
   "Text-to-speech functionality."
   :group 'tlon-babel)
 
-(defcustom tlon-babel-azure-audio-settings
+(defcustom tlon-babel-azure-tts-settings
   "audio-16khz-64kbitrate-mono-mp3"
   "Settings for the Azure text-to-speech service.
 Here's a description of the main options:
@@ -319,7 +319,7 @@ if region is active, save it to the downloads directory."
 	 (chunks (tlon-babel-tts-read-content content tlon-babel-azure-char-limit))
 	 (file-name-sans-extension (file-name-sans-extension
 				    (file-name-nondirectory file)))
-	 ;; FIXME: extension should be set based on `tlon-babel-azure-audio-settings'
+	 ;; FIXME: extension should be set based on `tlon-babel-azure-tts-settings'
 	 (file-name (file-name-with-extension file-name-sans-extension "mp3"))
 	 (destination (if (region-active-p)
 			  (file-name-concat paths-dir-downloads file-name)
@@ -337,7 +337,7 @@ if region is active, save it to the downloads directory."
 		(format tlon-babel-azure-ssml-template locale voice text)))
 	 (command (format tlon-babel-azure-request
 			  (tlon-babel-get-or-set-azure-key)
-			  tlon-babel-azure-audio-settings ssml destination))
+			  tlon-babel-azure-tts-settings ssml destination))
 	 (process (start-process-shell-command "generate audio" nil command)))
     (set-process-sentinel process
 			  (lambda (process event)
