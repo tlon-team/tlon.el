@@ -378,8 +378,9 @@ if region is active, save it to the downloads directory."
 				(setq tlon-babel-unprocessed-chunks
 				      (remove destination tlon-babel-unprocessed-chunks))
 				(unless tlon-babel-unprocessed-chunks
-				  (tlon-babel-join-audio-files
-				   (tlon-babel-get-original-name destination)))))))))
+				  (let ((file (tlon-babel-get-original-name destination)))
+				    (tlon-babel-join-chunks file)
+				    (tlon-babel-delete-chunks file)))))))))
 
 (defun tlon-babel-get-or-set-azure-key ()
   "Get or set the Azure key."
@@ -405,14 +406,14 @@ if region is active, save it to the downloads directory."
       (setq begin end))
     (nreverse chunks)))
 
-(defun tlon-babel-join-audio-files (file)
+(defun tlon-babel-join-chunks (file)
   "Join chunks of FILE back into a single file."
-  (let* ((files (tlon-babel-get-file-chunks file))
-	 (list-of-files (tlon-babel-create-ffmpeg-list-of-audio-files files)))
+  (let* ((files (tlon-babel-get-list-of-chunks file))
+	 (list-of-files (tlon-babel-create-list-of-chunks files)))
     (shell-command (format "ffmpeg -f concat -safe 0 -i %s -c copy %s"
 			   list-of-files file))))
 
-(defun tlon-babel-get-file-chunks (file)
+(defun tlon-babel-get-list-of-chunks (file)
   "Return a list of the file chunks for FILE."
   (let ((nth 1)
 	file-chunk
@@ -422,7 +423,12 @@ if region is active, save it to the downloads directory."
       (setq nth (1+ nth)))
     (nreverse files)))
 
-(defun tlon-babel-create-ffmpeg-list-of-audio-files (files)
+(defun tlon-babel-delete-chunks (file)
+  "Delete the chunks of FILE."
+  (dolist (file (tlon-babel-get-list-of-chunks file))
+    (delete-file file)))
+
+(defun tlon-babel-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
   (let ((temp-file-list (make-temp-file "files" nil ".txt")))
     (with-temp-file temp-file-list
