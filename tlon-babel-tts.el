@@ -157,14 +157,14 @@ generating the audio.")
 	  tlon-babel-tts-ssml-voice)
   "SSML template for Azure TTS.")
 
-(defconst tlon-babel-azure-request
+(defconst tlon-babel-azure-tts-request
   "curl --location --request POST 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1' \
 --header 'Ocp-Apim-Subscription-Key: %s' \
 --header 'Content-Type: application/ssml+xml' \
 --header 'X-Microsoft-OutputFormat: %s' \
 --header 'User-Agent: curl' \
 --data-raw %s > '%s'"
-  "Curl command to send a request to the Azure text-to-speech.")
+  "Curl command to send a request to the Azure text-to-speech engine.")
 
 (defconst tlon-babel-azure-voices
   '((:voice "es-US-AlonsoNeural" :language "es" :gender "male")
@@ -341,7 +341,7 @@ if region is active, save it to the downloads directory."
   (let* ((locale (tlon-babel-tts-get-voice-locale))
 	 (ssml (shell-quote-argument
 		(format tlon-babel-azure-ssml-template locale voice text)))
-	 (command (format tlon-babel-azure-request
+	 (command (format tlon-babel-azure-tts-request
 			  (tlon-babel-get-or-set-azure-key)
 			  tlon-babel-azure-tts-settings ssml destination))
 	 (process (start-process-shell-command "generate audio" nil command)))
