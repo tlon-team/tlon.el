@@ -770,8 +770,8 @@ image links are handled differently."
 (declare-function tlon-babel-ai-translate-math "tlon-babel-ai")
 (defun tlon-babel-tts-process-math-expressions ()
   "Replace math expressions with their spoken equivalent."
-  (dolist (pattern (list tlon-babel-math-inline-pattern
-			 tlon-babel-math-display-pattern))
+  (dolist (pattern (list tlon-babel-math-inline-search-pattern
+			 tlon-babel-math-display-search-pattern))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
       (let ((math (match-string-no-properties 2)))
