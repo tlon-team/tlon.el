@@ -92,8 +92,9 @@ Here's a description of the main options:
 
 ;;;;; Current values
 
-(defvar tlon-babel-tts-current-voice ""
-  "The voice used in the current text-to-speech process.")
+(defvar tlon-babel-tts-main-voice ""
+  "The main TTS voice.")
+
 (defvar tlon-babel-tts-alternative-voice ""
   "The alternative TTS voice.")
 
@@ -293,11 +294,11 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
   "Return the voice in the current language that is not the current voice."
   (let ((voices (tlon-babel-lookup-all tlon-babel-azure-voices
 				       :voice :language tlon-babel-tts-current-language)))
-    (car (delete tlon-babel-tts-current-voice voices))))
+    (car (delete tlon-babel-tts-main-voice voices))))
 
 (defun tlon-babel-tts-get-voice-locale ()
   "Return the locale of the current voice."
-  (substring tlon-babel-tts-current-voice 0 5))
+  (substring tlon-babel-tts-main-voice 0 5))
 
 ;;;;; Reading
 
@@ -337,7 +338,7 @@ if region is active, save it to the downloads directory."
 	 (repo (tlon-babel-get-repo-from-file file))
 	 (language (setq tlon-babel-tts-current-language
 			 (tlon-babel-repo-lookup :language :dir repo)))
-	 (voice (setq tlon-babel-tts-current-voice
+	 (voice (setq tlon-babel-tts-main-voice
 		      (or voice (completing-read "Voice: " (tlon-babel-lookup-all
 							    tlon-babel-azure-voices :voice
 							    :language language)))))
