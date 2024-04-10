@@ -549,7 +549,7 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 (defun tlon-babel-tts-process-formatting ()
   "Remove formatting from text."
   (tlon-babel-tts-process-boldface)
-  (tlon-babel-tts-process-boldface))
+  (tlon-babel-tts-process-italics)
   (tlon-babel-tts-process-visually-hidden)
   (tlon-babel-tts-process-visually-shown))
 
