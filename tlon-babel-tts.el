@@ -124,6 +124,12 @@ Here's a description of the main options:
   (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
+(defconst tlon-babel-tts-ssml-double-voice-pattern
+  (concat (cdr tlon-babel-tts-ssml-voice)
+	  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
+	  (car tlon-babel-tts-ssml-voice))
+  "SSML pattern for voice tag, with two voice name placeholders and a text placeholder.")
+
 ;;;;;; phoneme
 
 (defconst tlon-babel-tts-ssml-phoneme
@@ -707,9 +713,18 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
       (alist-get tlon-babel-tts-current-language type nil nil #'string=)
     (format "%s %s %s" cue-begins text cue-ends)))
 
-(defun tlon-babel-tts-enclose-in-voice-tag (string)
-  "Enclose STRING in `voice' SSML tags."
-  (format tlon-babel-tts-ssml-voice (tlon-babel-tts-get-alternative-voice) string))
+(defun tlon-babel-tts-enclose-in-voice-tag (string &optional voice)
+  "Enclose STRING in `voice' SSML tags.
+If VOICE is nil, default to the alternative voice.
+
+Note that this function actually inserts two pairs of `voice' tags: the inner
+pair to set the voice for the string that it encloses, and an outer pair of tags
+in reverse order, to close the opening `voice' tag that wraps the entire
+document, and then reopen it."
+  (let ((voice (or voice (tlon-babel-tts-get-alternative-voice))))
+    (format tlon-babel-tts-ssml-double-voice-pattern
+	    (tlon-babel-tts-get-alternative-voice) string
+	    tlon-babel-tts-main-voice)))
 
 (defun tlon-babel-tts-enclose-in-cue-delimiter (string)
   "Enclose STRING in listener cue delimiter."
