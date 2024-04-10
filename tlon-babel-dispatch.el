@@ -306,10 +306,10 @@ DIR is the directory where the repo is stored."
    ("G" "extract glossary"           tlon-babel-extract-glossary)
    "TTS"
    ("a" "abbreviations"              tlon-babel-edit-abbreviations)
-   ("r" "phonetic replacements"      tlon-babel-edit-phonetic-replacements)
-   ("t" "phonetic transcriptions"    tlon-babel-edit-phonetic-transcriptions)
    ("A" "file-local abbreviations"   tlon-babel-add-file-local-abbreviation)
-   ("R" "file-local replacements"    tlon-babel-add-file-local-replacement)])
+   ("r" "replacements"               tlon-babel-edit-phonetic-replacements)
+   ("R" "file-local replacements"    tlon-babel-add-file-local-replacement)
+   ("t" "phonetic transcriptions"    tlon-babel-edit-phonetic-transcriptions)])
 
 (provide 'tlon-babel-dispatch)
 ;;; tlon-babel-dispatch.el ends here
