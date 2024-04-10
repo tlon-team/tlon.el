@@ -389,7 +389,8 @@ if region is active, save it to the downloads directory."
 				(unless tlon-babel-unprocessed-chunks
 				  (let ((file (tlon-babel-get-original-name destination)))
 				    (tlon-babel-join-chunks file)
-				    (tlon-babel-delete-chunks file)))))))))
+				    ;; (tlon-babel-delete-chunks file)
+				    ))))))))
 
 (defun tlon-babel-get-or-set-azure-key ()
   "Get or set the Azure key."
