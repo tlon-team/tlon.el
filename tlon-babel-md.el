@@ -793,16 +793,16 @@ variables section. If FILE is nil, read the file visited by the current buffer."
    ["Math"
     ("i" "inline"               tlon-babel-insert-math-inline)
     ("d" "display"              tlon-babel-insert-math-display)]
-   ["SSML"
+   ["TTS"
     ("L" "lang"                 tlon-babel-insert-ssml-lang)
-    ("e" "emphasis"             tlon-babel-insert-ssml-emphasis)]
+    ("e" "emphasis"             tlon-babel-insert-ssml-emphasis)
     ("v" "alternative voice"    tlon-babel-insert-mdx-alternative-voice)
+    ("H" "visually hidden"      tlon-babel-insert-mdx-visually-hidden)
     ("S" "visually shown"       tlon-babel-insert-mdx-visually-shown)]
    ["Misc"
     ("b" "subscript"            tlon-babel-insert-html-subscript)
     ("p" "superscript"          tlon-babel-insert-html-superscript)
     ("m" "small caps"           tlon-babel-insert-mdx-small-caps)
-    ("h" "visually hidden"      tlon-babel-insert-mdx-visually-hidden)
     ("a" "aside"                tlon-babel-insert-mdx-aside)
     ("g" "lang"                 tlon-babel-insert-mdx-lang)
     ("." "special character"    tlon-babel-insert-special-character)]])
