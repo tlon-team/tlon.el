@@ -103,6 +103,8 @@ Here's a description of the main options:
 
 ;;;;; SSML tag pairs & patterns
 
+;;;;;; break
+
 (defconst tlon-babel-tts-ssml-break
   "<break time=\"%s\" />"
   "SSML pattern for break tag, with time placeholder.
@@ -162,6 +164,7 @@ generating the audio.")
 (defconst tlon-babel-tts-ssml-emphasis-default-level
   "moderate"
   "Default emphasis level for the `emphasis' SSML tag.")
+
 
 ;;;;; Azure
 
@@ -468,6 +471,7 @@ if region is active, save it to the downloads directory."
 ;;;;; Metadata
 
 ;; Should also include summary?
+;; Perhaps should be narrated by alternative voice?
 (defun tlon-babel-tts-get-metadata ()
   "Add title and author."
   (let* ((metadata (tlon-babel-yaml-format-values-of-alist (tlon-babel-yaml-get-metadata)))
@@ -539,11 +543,10 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
   (while (re-search-forward tlon-babel-cite-pattern nil t)
     (replace-match (format "[@%s]"(match-string 1)) nil nil)))
 
-;;;;;; Tag removal
+;;;;;; Showing and hiding
 
 ;; TODO: I think we should just use `tlon-babel-tts-remove-formatting' for this,
 ;; together with the patterns defined in `tlon-babel-md'
-
 
 ;;;;;; Formatting
 
