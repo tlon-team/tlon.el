@@ -482,7 +482,6 @@ if region is active, save it to the downloads directory."
   (save-excursion
     (tlon-babel-tts-process-notes)
     (tlon-babel-tts-process-citations)
-    (tlon-babel-tts-process-tag-removal)
     (tlon-babel-tts-process-formatting)
     (tlon-babel-tts-process-headings)
     ;; replace small caps
@@ -495,8 +494,8 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-alternative-voice)
     (tlon-babel-tts-process-asides)
     (tlon-babel-tts-process-quotes)
+    (tlon-babel-tts-process-images) ; should be before links
     (tlon-babel-tts-process-links)
-    (tlon-babel-tts-process-images) ; should be after links
     (tlon-babel-tts-process-numbers)
     (tlon-babel-tts-process-currencies)
     (tlon-babel-tts-process-math-expressions))
@@ -544,20 +543,6 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 ;; TODO: I think we should just use `tlon-babel-tts-remove-formatting' for this,
 ;; together with the patterns defined in `tlon-babel-md'
 
-(defun tlon-babel-tts-process-tag-removal ()
-  "Remove tags from text."
-  (tlon-babel-tts-process-visually-hidden))
-
-(defun tlon-babel-tts-remove-tag-pair (pair)
-  "Remove tag PAIR from text."
-  (dolist (tag (list (car pair) (cdr pair)))
-    (goto-char (point-min))
-    (while (re-search-forward tag nil t)
-      (replace-match "" t))))
-
-(defun tlon-babel-tts-process-visually-hidden ()
-  "Remove `VisuallyHidden' MDX tag."
-  (tlon-babel-tts-remove-tag-pair tlon-babel-mdx-visually-hidden))
 
 ;;;;;; Formatting
 
@@ -587,6 +572,10 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 (defun tlon-babel-tts-process-italics ()
   "Remove italics from text."
   (tlon-babel-tts-remove-formatting 'italics))
+
+(defun tlon-babel-tts-process-visually-hidden ()
+  "Remove `VisuallyHidden' MDX tag."
+  (tlon-babel-tts-remove-formatting 'visually-hidden))
 
 (defun tlon-babel-tts-process-visually-shown ()
   "Remove `VisuallyShown' MDX tag."
