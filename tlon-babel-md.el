@@ -124,7 +124,8 @@ captures the expression without the delimiters.")
 
 (defconst tlon-babel-mdx-aside
   '("<Aside>" . "</Aside>")
-  "Pair of MDX `Aside' tags.")
+  "Pair of MDX `Aside' tags.
+Text enclosed in an `Aside' tag pair will be treated like an aside section.")
 
 (defconst tlon-babel-mdx-aside-search-pattern
   (tlon-babel-make-tag-search-pattern tlon-babel-mdx-aside)
@@ -136,7 +137,9 @@ captures the expression without the tags.")
 
 (defconst tlon-babel-mdx-lang
   '("<Lang id={\"%s\"}>" . "</Lang>")
-  "Pair of MDX `Lang' tags.")
+  "Pair of MDX `Lang' tags.
+Text enclosed by a `Lang' tag pair will be treated as belonging to that
+language (e.g. for the purposed of hyphenating it).")
 
 (defconst tlon-babel-mdx-lang-search-pattern
   (tlon-babel-make-tag-search-pattern tlon-babel-mdx-lang)
@@ -148,7 +151,8 @@ captures the expression without the tags.")
 
 (defconst tlon-babel-mdx-literal-link
   '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
-  "Pair of MDX `LiteralLink' tags.")
+  "Pair of MDX `LiteralLink' tags.
+Links enclosed by a `LiteralLink' tag pair will be treated as literal links.")
 
 (defconst tlon-babel-mdx-literal-link-search-pattern
   (tlon-babel-make-tag-search-pattern tlon-babel-mdx-literal-link)
@@ -160,7 +164,8 @@ captures the expression without the tags.")
 
 (defconst tlon-babel-mdx-small-caps
   '("<SmallCaps>" . "</SmallCaps>")
-  "Pair of MDX `SmallCaps' tags.")
+  "Pair of MDX `SmallCaps' tags.
+Text enclosed by a `SmallCaps' tag pair will be displayed in small caps.")
 
 (defconst tlon-babel-mdx-small-caps-search-pattern
   (tlon-babel-make-tag-search-pattern tlon-babel-mdx-small-caps)
@@ -172,7 +177,9 @@ captures the expression without the tags.")
 
 (defconst tlon-babel-mdx-visually-hidden
   '("<VisuallyHidden>" . "</VisuallyHidden>")
-  "Pair of MDX `VisuallyHidden' tags.")
+  "Pair of MDX `VisuallyHidden' tags.
+Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
+displayed.")
 
 (defconst tlon-babel-mdx-visually-hidden-search-pattern
   (tlon-babel-make-tag-search-pattern tlon-babel-mdx-visually-hidden)
@@ -307,12 +314,12 @@ self-closing."
 ;;;;;;; HTML
 
 (defun tlon-babel-insert-html-subscript ()
-  "Insert an HTML `sub' element pair at point or around the selected region."
+  "Insert an HTML `sub' tag pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "<sub>" "</sub>"))
 
 (defun tlon-babel-insert-html-superscript ()
-  "Insert an HTML `sup' element pair at point or around the selected region."
+  "Insert an HTML `sup' tag pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair "<sup>" "</sup>"))
 
@@ -320,13 +327,13 @@ self-closing."
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-aside ()
-  "Insert an MDX `Aside' element pair at point or around the selected region."
+  "Insert an MDX `Aside' tag pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-aside))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-lang (language)
-  "Insert an MDX `Lang' element pair at point or around the selected region.
+  "Insert an MDX `Lang' tag pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (tlon-babel-select-language 'two-letter)))
@@ -336,7 +343,7 @@ written in that language."
 ;; TODO: revise to offer the url at point as default completion candidate
 ;;;###autoload
 (defun tlon-babel-insert-mdx-literal-link (url)
-  "Insert an MDX `LiteralLink' element pair at point or around the selected region.
+  "Insert an MDX `LiteralLink' tag pair at point or around the selected region.
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
   (tlon-babel-md-insert-element-pair
@@ -344,16 +351,16 @@ Prompt the user to select a URL."
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-small-caps ()
-  "Insert an MDX `SmallCaps' element pair at point or around the selected region.
-Text enclosed by an `SmallCaps' element pair will be displayed in small caps."
+  "Insert an MDX `SmallCaps' tag pair at point or around the selected region.
+Text enclosed by an `SmallCaps' tag pair will be displayed in small caps."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-small-caps))
 
 ;;;###autoload
 (defun tlon-babel-insert-mdx-visually-hidden ()
-  "Insert an MDX `VisuallyHidden' element pair at point or around selected region.
-Text enclosed by an ``VisuallyHidden'' element pair will be displayed in small
-caps."
+  "Insert an MDX `VisuallyHidden' tag pair at point or around selected region.
+Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
+displayed."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-hidden))
 
@@ -384,7 +391,7 @@ If OVERWRITE is non-nil, replace the existing marker when present."
 ;;;###autoload
 (defun tlon-babel-insert-footnote-marker (&optional overwrite)
   "Insert a `Footnote' marker in the footnote at point.
-Text enclosed by a `Footnote' element pair will be displayed as a footnote, as
+Text enclosed by a `Footnote' tag pair will be displayed as a footnote, as
 opposed to a sidenote.
 
 If OVERWRITE is non-nil, or called interactively, replace the existing marker
@@ -397,7 +404,7 @@ when present."
 ;;;###autoload
 (defun tlon-babel-insert-sidenote-marker (&optional overwrite)
   "Insert a `Sidenote' marker in the footnote at point.
-Text enclosed by a `Sidenote' element pair will be displayed as a sidenote, as
+Text enclosed by a `Sidenote' tag pair will be displayed as a sidenote, as
 opposed to a footnote.
 
 If OVERWRITE is non-nil, or called interactively, replace the existing marker
@@ -491,7 +498,7 @@ of the existing locators."
 
 ;;;###autoload
 (defun tlon-babel-insert-ssml-lang (language)
-  "Insert an SSML `lang' element pair at point or around the selected region.
+  "Insert an SSML `lang' tag pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (tlon-babel-select-language 'locale)))
@@ -500,7 +507,7 @@ written in that language."
 
 ;;;###autoload
 (defun tlon-babel-insert-ssml-emphasis (level)
-  "Insert an SSML `emphasis' element pair at point or around the selected region.
+  "Insert an SSML `emphasis' tag pair at point or around the selected region.
 Prompt the user to select a LEVEL."
   (interactive (list (completing-read "Emphasis: "
 				      tlon-babel-tts-ssml-emphasis-levels nil t
@@ -510,7 +517,7 @@ Prompt the user to select a LEVEL."
 
 ;;;###autoload
 (defun tlon-babel-insert-ssml-break (time)
-  "Insert an SSML `break' element pair at point or around the selected region.
+  "Insert an SSML `break' tag pair at point or around the selected region.
 TIME is the duration of the break n seconds."
   (interactive (list (concat (read-string "sTime (seconds): ") "s")))
   (insert (format tlon-babel-tts-ssml-break time)))
@@ -519,13 +526,13 @@ TIME is the duration of the break n seconds."
 
 ;;;###autoload
 (defun tlon-babel-insert-math-inline ()
-  "Insert an inline math element pair at point or around the selected region."
+  "Insert an inline math tag pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-math-inline))
 
 ;;;###autoload
 (defun tlon-babel-insert-math-display ()
-  "Insert a display math element pair at point or around the selected region."
+  "Insert a display math tag pair at point or around the selected region."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-math-display))
 
