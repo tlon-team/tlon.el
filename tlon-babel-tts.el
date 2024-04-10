@@ -564,7 +564,8 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (replace-match (format " %s" (match-string group)) t nil))))
+      (let ((replacement (if group (format " %s" (match-string group)) "")))
+	(replace-match replacement t nil)))))
 
 (defun tlon-babel-tts-process-boldface ()
   "Remove boldface from text."
