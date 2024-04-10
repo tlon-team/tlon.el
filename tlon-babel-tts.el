@@ -490,7 +490,7 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-file-local-replacements)
     (tlon-babel-tts-process-abbreviations)
     (tlon-babel-tts-process-phonetic-replacements)
-    (tlon-babel-tts-process-phonetic-transcriptions)
+    ;; (tlon-babel-tts-process-phonetic-transcriptions) ; not currently supported
     (tlon-babel-tts-process-alternative-voice)
     (tlon-babel-tts-process-asides)
     (tlon-babel-tts-process-quotes)
