@@ -200,6 +200,20 @@ Text enclosed by a `VisuallyShown' tag pair will be displayed, but not narrated.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
+;;;;;; AlternativeVoice
+
+(defconst tlon-babel-mdx-alternative-voice
+  '("<AlternativeVoice>" . "</AlternativeVoice>")
+  "Pair of MDX `AlternativeVoice' tags.
+Text enclosed by a `AlternativeVoice' tag pair will be narrated in the
+alternative voice, as opposed to the main voice.")
+
+(defconst tlon-babel-mdx-alternative-voice-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-alternative-voice)
+  "Regexp pattern for matching an MDX `AlternativeVoice' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
 ;;;;; Images
 
 (defconst tlon-babel-md-image-with-alt
@@ -383,6 +397,14 @@ displayed."
 Text enclosed by an `VisuallyShown' tag pair will be displayed, but not narrated."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-shown))
+
+;;;###autoload
+(defun tlon-babel-insert-mdx-alternative-voice ()
+  "Insert an MDX `AlternativeVoice' tag pair at point or around region.
+Text enclosed by a `AlternativeVoice' tag pair will be narrated in the
+alternative voice, as opposed to the main voice."
+  (interactive)
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-alternative-voice))
 
 (defun tlon-babel-tag-element-with-attribute (element attribute)
   "Construct an tag ELEMENT with an ATTRIBUTE."
@@ -774,6 +796,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
    ["SSML"
     ("L" "lang"                 tlon-babel-insert-ssml-lang)
     ("e" "emphasis"             tlon-babel-insert-ssml-emphasis)]
+    ("v" "alternative voice"    tlon-babel-insert-mdx-alternative-voice)
     ("S" "visually shown"       tlon-babel-insert-mdx-visually-shown)]
    ["Misc"
     ("b" "subscript"            tlon-babel-insert-html-subscript)

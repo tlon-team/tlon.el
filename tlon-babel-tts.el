@@ -94,6 +94,8 @@ Here's a description of the main options:
 
 (defvar tlon-babel-tts-current-voice ""
   "The voice used in the current text-to-speech process.")
+(defvar tlon-babel-tts-alternative-voice ""
+  "The alternative TTS voice.")
 
 (defvar tlon-babel-tts-current-language ""
   "The language used in the current text-to-speech process.")
@@ -483,6 +485,7 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-abbreviations)
     (tlon-babel-tts-process-phonetic-replacements)
     (tlon-babel-tts-process-phonetic-transcriptions)
+    (tlon-babel-tts-process-alternative-voice)
     (tlon-babel-tts-process-asides)
     (tlon-babel-tts-process-quotes)
     (tlon-babel-tts-process-links)
@@ -789,6 +792,15 @@ image links are handled differently."
       (let ((math (match-string-no-properties 2)))
 	(replace-match "" nil nil)
 	(tlon-babel-ai-translate-math math tlon-babel-tts-current-language)))))
+
+;;;;; Alternative voice
+
+(defun tlon-babel-tts-process-alternative-voice ()
+  "Replace the `AlternativeVoice' tag with an SSML `voice' tag.
+The `voice' tag is set to the alternative voice for the current language."
+  (goto-char (point-min))
+  (while (re-search-forward tlon-babel-mdx-alternative-voice-search-pattern nil t)
+    (replace-match (tlon-babel-tts-enclose-in-voice-tag (match-string 2)) t)))
 
 ;;;;; Project-wide
 
