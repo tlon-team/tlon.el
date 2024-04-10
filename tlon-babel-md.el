@@ -187,6 +187,19 @@ displayed.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
+;;;;;; VisuallyShown
+
+(defconst tlon-babel-mdx-visually-shown
+  '("<VisuallyShown>" . "</VisuallyShown>")
+  "Pair of MDX `VisuallyShown' tags.
+Text enclosed by a `VisuallyShown' tag pair will be displayed, but not narrated.")
+
+(defconst tlon-babel-mdx-visually-shown-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-mdx-visually-shown)
+  "Regexp pattern for matching an MDX `VisuallyShown' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
 ;;;;; Images
 
 (defconst tlon-babel-md-image-with-alt
@@ -363,6 +376,13 @@ Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
 displayed."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-hidden))
+
+;;;###autoload
+(defun tlon-babel-insert-mdx-visually-shown ()
+  "Insert an MDX `VisuallyShown' tag pair at point or around selected region.
+Text enclosed by an `VisuallyShown' tag pair will be displayed, but not narrated."
+  (interactive)
+  (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-shown))
 
 (defun tlon-babel-tag-element-with-attribute (element attribute)
   "Construct an tag ELEMENT with an ATTRIBUTE."
@@ -754,6 +774,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
    ["SSML"
     ("L" "lang"                 tlon-babel-insert-ssml-lang)
     ("e" "emphasis"             tlon-babel-insert-ssml-emphasis)]
+    ("S" "visually shown"       tlon-babel-insert-mdx-visually-shown)]
    ["Misc"
     ("b" "subscript"            tlon-babel-insert-html-subscript)
     ("p" "superscript"          tlon-babel-insert-html-superscript)

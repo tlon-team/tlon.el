@@ -555,6 +555,7 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
   "Remove formatting from text."
   (tlon-babel-tts-process-boldface)
   (tlon-babel-tts-process-boldface))
+  (tlon-babel-tts-process-visually-shown))
 
 (defun tlon-babel-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
@@ -563,6 +564,7 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 	('boldface (cons markdown-regex-bold 4))
 	('italics (cons markdown-regex-italic 3))
 	;; TODO: determine if other types should be added
+	('visually-shown (cons tlon-babel-mdx-visually-shown-search-pattern nil))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
@@ -575,6 +577,10 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 (defun tlon-babel-tts-process-italics ()
   "Remove italics from text."
   (tlon-babel-tts-remove-formatting 'italics))
+
+(defun tlon-babel-tts-process-visually-shown ()
+  "Remove `VisuallyShown' MDX tag."
+  (tlon-babel-tts-remove-formatting 'visually-shown))
 
 ;;;;;; Headings
 
