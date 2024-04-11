@@ -817,24 +817,25 @@ The `voice' tag is set to the alternative voice for the current language."
 
 ;;;;;; Common
 
-(defun tlon-babel-tts-edit-entry (data file)
-  "Add or revise an entry in DATA and write it to FILE."
+(defun tlon-babel-tts-edit-entry (variable file)
+  "Add or revise an entry in VARIABLE and write it to FILE."
   (interactive)
+  (set variable (tlon-babel-parse-json file))
   (let* ((names (mapcan (lambda (group)
 			  (mapcar #'car (cadr group)))
-			data))
+			(symbol-value variable)))
 	 (term (completing-read "Term: " names nil nil))
 	 (current-entry (catch 'current-entry
-			  (dolist (group data)
+			  (dolist (group (symbol-value variable))
 			    (dolist (pair (cadr group))
 			      (when (string= (car pair) term)
 				(throw 'current-entry (cdr pair)))))
 			  nil)))
     (if current-entry
 	(let ((cdr (read-string (format "Updated entry for %s: " term) current-entry)))
-	  (tlon-babel-tts-revise-entry data term cdr))
-      (tlon-babel-tts-add-new-entry data term))
-    (tlon-babel-write-data file data)))
+	  (tlon-babel-tts-revise-entry (symbol-value variable) term cdr))
+      (tlon-babel-tts-add-new-entry (symbol-value variable) term))
+    (tlon-babel-write-data file (symbol-value variable))))
 
 (defun tlon-babel-tts-revise-entry (data term cdr)
   "Update the CDR for an existing TERM in DATA."
@@ -864,7 +865,7 @@ The `voice' tag is set to the alternative voice for the current language."
   "Edit abbreviations."
   (interactive)
   (tlon-babel-tts-edit-entry
-   tlon-babel-tts-abbreviations
+   'tlon-babel-tts-abbreviations
    tlon-babel-file-abbreviations))
 
 ;;;;;; Phonetic replacements
@@ -874,7 +875,7 @@ The `voice' tag is set to the alternative voice for the current language."
   "Edit phonetic replacements."
   (interactive)
   (tlon-babel-tts-edit-entry
-   tlon-babel-tts-phonetic-replacements
+   'tlon-babel-tts-phonetic-replacements
    tlon-babel-file-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
@@ -884,7 +885,7 @@ The `voice' tag is set to the alternative voice for the current language."
   "Edit phonetic transcriptions."
   (interactive)
   (tlon-babel-tts-edit-entry
-   tlon-babel-tts-phonetic-transcriptions
+   'tlon-babel-tts-phonetic-transcriptions
    tlon-babel-file-phonetic-transcriptions))
 
 ;;;;; File-local
