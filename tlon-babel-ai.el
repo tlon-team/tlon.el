@@ -348,13 +348,13 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;; Image description
 
 ;;;###autoload
-(defun tlon-babel-ai-describe-image (file callback)
+(defun tlon-babel-ai-describe-image (file callback &optional language)
   "Describe the contents of the image in FILE.
-When the description is obtained, pass it to CALLBACK as its first argument."
+When the description is obtained, pass it to CALLBACK as its first argument. Use
+LANGUAGE for the description; if nil, obtain the language from the current repo."
   (interactive (list (read-file-name "Image file: " )))
   (let* ((file (expand-file-name file))
-	 (repo (tlon-babel-get-repo))
-	 (language (tlon-babel-repo-lookup :language :dir repo))
+	 (language (or language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo))))
 	 (prompt (format
 		  (tlon-babel-lookup tlon-babel-ai-describe-image-prompt :prompt :language language)
 		  file))
