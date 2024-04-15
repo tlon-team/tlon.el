@@ -283,7 +283,8 @@ the actual user.")
     ("italian" . "it")
     ("french" . "fr")
     ("german" . "de")
-    ("portuguese" . "pt"))
+    ("portuguese" . "pt")
+    ("arabic" . "ar"))
   "Alist of languages and associated names.")
 
 (defconst tlon-babel-locales
@@ -292,7 +293,8 @@ the actual user.")
     ("italian" . "it-IT")
     ("french" . "fr-FR")
     ("german" . "de-DE")
-    ("portuguese" . "pt-PT"))
+    ("portuguese" . "pt-PT")
+    ("arabic"  "ar-AR"))
   "Alist of languages and associated locales.")
 
 ;;;; Functions
