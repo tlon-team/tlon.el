@@ -45,6 +45,7 @@
 (defun tlon-babel-edit-glossary ()
   "Add, delete or update a glossary entry."
   (interactive)
+  (setq tlon-babel-glossary (tlon-babel-parse-json tlon-babel-file-glossary))
   (let* ((english-terms (mapcar (lambda (entry)
                                   (cdr (assoc "en" entry)))
                                 tlon-babel-glossary))
