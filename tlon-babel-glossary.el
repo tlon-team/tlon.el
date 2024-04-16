@@ -52,7 +52,7 @@
          (selected-term (completing-read "Choose or add a term (type to add new): " english-terms nil nil))
          (existing-entry (seq-find (lambda (entry) (equal (cdr (assoc "en" entry)) selected-term))
                                    tlon-babel-glossary))
-         (language (tlon-babel-select-language 'two-letter 'babel))
+         (language (tlon-babel-select-language 'two-letter 'babel 'multiple))
          updated-translation lang-pair)
     ;; If entry doesn't exist, create a new one
     (unless existing-entry
