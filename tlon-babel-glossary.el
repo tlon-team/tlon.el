@@ -43,39 +43,40 @@
 
 ;;;###autoload
 (defun tlon-babel-edit-glossary ()
-  "Add, delete or update a glossary entry."
+  "Create or update a glossary entry."
   (interactive)
   (setq tlon-babel-glossary (tlon-babel-parse-json tlon-babel-file-glossary))
   (let* ((english-terms (mapcar (lambda (entry)
                                   (cdr (assoc "en" entry)))
                                 tlon-babel-glossary))
          (selected-term (completing-read "Choose or add a term (type to add new): " english-terms nil nil))
-         (existing-entry (seq-find (lambda (entry) (equal (cdr (assoc "en" entry)) selected-term))
-                                   tlon-babel-glossary))
-         (language (tlon-babel-select-language 'two-letter 'babel 'multiple))
-         updated-translation lang-pair)
-    ;; If entry doesn't exist, create a new one
+         (existing-entry (seq-find (lambda (entry) (string= (cdr (assoc "en" entry)) selected-term))
+                                   tlon-babel-glossary)))
+    ;; If entry doesn't exist, create a new one.
     (unless existing-entry
       (setq existing-entry (list (cons "en" selected-term)))
+      ;; Prompt for selecting type only when adding a new entry.
+      (let ((type (completing-read "Select type (variable/invariant): " '("variable" "invariant") nil t)))
+        (setq existing-entry (append existing-entry (list (cons "type" type))))
+        (when (equal type "invariant")
+          ;; Add the chosen term as the value for each of the glossary languages
+          (let ((languages (remove "en" (mapcar 'cdr tlon-babel-languages))))
+	    (dolist (lang languages)
+	      (setq existing-entry (append existing-entry (list (cons lang selected-term)))))))))
+    ;; Update or add the translation if type is not invariant
+    (let* ((type (assoc "type" existing-entry)))
+      (unless (and type (string= (cdr type) "invariant"))
+        (let* ((language (tlon-babel-select-language 'two-letter 'babel))
+	       (translation (assoc language existing-entry)))
+          (if translation
+              (setcdr translation (read-string (format "Translation for \"%s\" (%s): " selected-term language) (cdr translation)))
+	    (setq existing-entry (append existing-entry (list (cons language (read-string (format "Translation for \"%s\" (%s): " selected-term language))))))))))
+    ;; Update glossary by appending at the end
+    (if (seq-find (lambda (entry) (equal (assoc "en" entry) (cons "en" selected-term))) tlon-babel-glossary)
+	;; Update the existing entry
+	(setf (car (seq-filter (lambda (entry) (equal (assoc "en" entry) (cons "en" selected-term))) tlon-babel-glossary)) existing-entry)
+      ;; Append new entry at the end
       (setq tlon-babel-glossary (append tlon-babel-glossary (list existing-entry))))
-    (setq lang-pair (assoc language existing-entry))
-    (setq updated-translation (read-string (format "Translation for \"%s\" (%s) [Empty to remove]: "
-                                                   selected-term language)
-                                           (cdr lang-pair)))
-    ;; If updated translation is empty, remove the language entry if it exists
-    (if (string-empty-p updated-translation)
-        (when lang-pair
-          ;; Remove language pair from the entry
-          (setq existing-entry (remove lang-pair existing-entry))
-          ;; If only "en" left, ask if the user wants to remove the whole entry
-          (when (= (length existing-entry) 1)
-            (when (yes-or-no-p "Removed the only translation. Delete the entire entry? ")
-              (setq tlon-babel-glossary (remove existing-entry tlon-babel-glossary)))))
-      ;; Otherwise, update or add the translation
-      (if lang-pair
-          (setcdr lang-pair updated-translation)  ; Update existing language pair
-        ;; Add new language pair
-        (push (cons language updated-translation) existing-entry)))
     (tlon-babel-write-data tlon-babel-file-glossary tlon-babel-glossary)))
 
 (defun tlon-babel-glossary-prompt-for-explanation ()
