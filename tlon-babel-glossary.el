@@ -137,7 +137,7 @@ location."
 				       source-term target-term (upcase language))
 			     (format "\"%s\",\"%s\"\n"
 				     source-term target-term))))
-	  (when (or deepl (string= (alist-get 'type item) "CN"))
+	  (when (or deepl (string= (alist-get 'type item) "variable"))
 	    (insert entry))))
       (save-buffer))
     (message "Glossary extracted to `%s'" target-path)))
