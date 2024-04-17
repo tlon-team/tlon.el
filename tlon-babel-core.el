@@ -250,14 +250,18 @@ creating `org-mode' TODOs.")
   '((:name "Pablo Stafforini"
 	   :git "Pablo Stafforini"
 	   :github "benthamite"
-	   :substitute "worldsaround")
+	   :substitute "worldsaround"
+	   :nickname "Pablo")
+
     (:name "Federico Stafforini"
 	   :git "Federico Stafforini"
-	   :github "fstafforini")
+	   :github "fstafforini"
+	   :nickname "Fede")
     (:name "Leonardo Picón"
 	   :git "cartago"
 	   :github "worldsaround"
-	   :substitute "benthamite"))
+	   :substitute "benthamite"
+	   :nickname "Leo"))
   "Property list of users and associated properties.
 The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
