@@ -128,18 +128,26 @@ location."
 	(setq json (json-read))))
     (with-current-buffer (find-file-noselect target-path)
       (erase-buffer)
-      (dolist (item json)
-	(when-let* ((source-term (alist-get 'en item))
-		    (target-term (alist-get (intern language) item))
-		    (entry (if deepl
-			       (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
-				       source-term target-term (upcase language))
-			     (format "\"%s\",\"%s\"\n"
-				     source-term target-term))))
-	  (when (or deepl (string= (alist-get 'type item) "variable"))
-	    (insert entry))))
+      (tlon-babel-insert-formatted-glossary json language deepl)
       (save-buffer))
     (message "Glossary extracted to `%s'" target-path)))
+
+(defun tlon-babel-insert-formatted-glossary (json language deepl)
+  "Insert a properly formatted glossary in LANGUAGE from JSON data.
+Format the glossary for a human reader, unless DEEPL is non-nil, in which case
+format it for DeepL. When formatting it for a human reader, exclude invariant
+terms (these are terms included for the sole purpose of forcing DeepL to leave
+them untranslated)."
+  (dolist (item json)
+    (when-let* ((source-term (alist-get 'en item))
+		(target-term (alist-get (intern language) item))
+		(entry (if deepl
+			   (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
+				   source-term target-term (upcase language))
+			 (format "\"%s\",\"%s\"\n"
+				 source-term target-term))))
+      (when (or deepl (string= (alist-get 'type item) "variable"))
+	(insert entry)))))
 
 (provide 'tlon-babel-glossary)
 ;;; tlon-babel-glossary.el ends here
