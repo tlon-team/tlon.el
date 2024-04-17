@@ -61,7 +61,7 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
   (let ((default-directory (file-name-directory file)))
     (when (not (file-exists-p file))
       (user-error "File `%s' does not exist" file))
-    (magit-call-git "add" (expand-file-name file))
+    (magit-call-git "add" (expand-file-name file)) ; track file if untracked
     (magit-extras-stage-commit-and-push (format "Add clock entry: %s"
 						(file-name-nondirectory file)))))
 
