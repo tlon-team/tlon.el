@@ -120,13 +120,8 @@ location."
   (let* ((file-name "Glossary.csv")
 	 (source-path (file-name-concat paths-dir-tlon-repos
 					"babel-core/glossary.json"))
-	 (target-path (if deepl
-			  (file-name-concat paths-dir-tlon-repos
-					    (format "babel-%s" language)
-					    "dict"
-					    file-name)
-			(read-file-name "Target glossary destination: "
-					paths-dir-downloads nil nil file-name)))
+	 (target-path (read-file-name "Target glossary destination: "
+				      paths-dir-downloads nil nil file-name))
 	 json)
     (with-current-buffer (find-file-noselect source-path)
       (goto-char (point-min))
