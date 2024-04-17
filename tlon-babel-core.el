@@ -425,7 +425,7 @@ PAIRS is an even-sized list of <key value> tuples."
 If DIR is nil, use the current repository."
   (let* ((string (concat "%" string "%"))
 	 (default-directory (or dir default-directory))
-	 (repo (forge-get-repository t))
+	 (repo (forge-get-repository :tracked))
 	 (issue-id (caar (emacsql (forge-db)
 				  [:select [number]
 					   :from 'issue
