@@ -196,12 +196,18 @@
 	   :abbrev "ea-international"
 	   :type meta
 	   :key "i")
-    (:name "bisagra-dev"
+    (:name "bisagra-api"
 	   :project "other"
 	   :subproject "bisagra"
-	   :abbrev "bisagra-dev"
+	   :abbrev "bisagra-api"
 	   :type development
-	   :key "d")
+	   :key "a")
+    (:name "bisagra-front"
+	   :project "other"
+	   :subproject "bisagra"
+	   :abbrev "bisagra-front"
+	   :type development
+	   :key "f")
     (:name "bisagra-content"
 	   :project "other"
 	   :subproject "bisagra"
