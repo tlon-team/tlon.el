@@ -199,7 +199,7 @@ a prefix ARG, omit this initial pull."
   (tlon-babel-get-repo 'error 'include-all)
   (if arg
       (tlon-babel-capture-all-issues-after-pull)
-    (forge-pull nil nil nil #'tlon-babel-capture-all-issues-after-pull)))
+    (forge--pull (forge-get-repository :tracked) #'tlon-babel-capture-all-issues-after-pull)))
 
 (defun tlon-babel-capture-all-issues-after-pull ()
   "Capture all issues in the current repo after `forge-pull' is finished."
