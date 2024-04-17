@@ -82,5 +82,14 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
   (interactive (list (org-read-date)))
   (find-file (tlon-babel-clock-get-file-for-date date)))
 
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-babel-clock-menu "tlon-babel-clock" nil t)
+(transient-define-prefix tlon-babel-clock-menu ()
+  "`clock' menu."
+  [("e" "Create entry" tlon-babel-clock-entry-create)
+   ("o" "Open entry" tlon-babel-clock-open-entry)
+   ("s" "Submit entry" tlon-babel-clock-entry-submit)])
+
 (provide 'tlon-babel-clock)
 ;;; tlon-babel-clock.el ends here

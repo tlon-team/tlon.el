@@ -57,6 +57,7 @@
   [["Main menu"
     "Submenus"
     ("a" "AI"                             tlon-babel-ai-menu)
+    ("c" "clock"                          tlon-babel-clock-menu)
     ("e" "edit data"                      tlon-babel-edit-data-menu)
     ("f" "files"                          tlon-babel-files-menu)
     ("i" "api"                            tlon-babel-api-menu)
