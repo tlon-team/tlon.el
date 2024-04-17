@@ -87,7 +87,7 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
 ;;;###autoload (autoload 'tlon-babel-clock-menu "tlon-babel-clock" nil t)
 (transient-define-prefix tlon-babel-clock-menu ()
   "`clock' menu."
-  [("e" "Create entry" tlon-babel-clock-entry-create)
+  [("c" "Create entry" tlon-babel-clock-entry-create)
    ("o" "Open entry" tlon-babel-clock-open-entry)
    ("s" "Submit entry" tlon-babel-clock-entry-submit)])
 
