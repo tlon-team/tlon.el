@@ -130,13 +130,13 @@ location."
     (with-current-buffer (find-file-noselect target-path)
       (erase-buffer)
       (dolist (item json)
-	(let* ((source-term (alist-get 'en item))
-	       (target-term (alist-get (intern language) item))
-	       (entry (if deepl
-			  (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
-				  source-term target-term (upcase language))
-			(format "\"%s\",\"%s\"\n"
-				source-term target-term))))
+	(when-let* ((source-term (alist-get 'en item))
+		    (target-term (alist-get (intern language) item))
+		    (entry (if deepl
+			       (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
+				       source-term target-term (upcase language))
+			     (format "\"%s\",\"%s\"\n"
+				     source-term target-term))))
 	  (when (or deepl (string= (alist-get 'type item) "CN"))
 	    (insert entry))))
       (save-buffer))
