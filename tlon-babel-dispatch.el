@@ -123,7 +123,8 @@ DIR is the directory where the repo is stored."
     "EA International"
     ("i i" "ea.international"             tlon-babel-magit-browse-ea-international)]
    ["La Bisagra"
-    ("s d" "bisagra-dev"                  tlon-babel-magit-browse-bisagra-dev)
+    ("s a" "bisagra-api"                  tlon-babel-magit-browse-bisagra-api)
+    ("s f" "bisagra-front"                tlon-babel-magit-browse-bisagra-front)
     ("s c" "bisagra-content"              tlon-babel-magit-browse-bisagra-content)
     ""
     "Boletín"
@@ -187,7 +188,8 @@ DIR is the directory where the repo is stored."
     "EA International"
     ("i i" "ea-international"             tlon-babel-dired-browse-ea-international)]
    ["La Bisagra"
-    ("s d" "bisagra-dev"                  tlon-babel-dired-browse-bisagra-dev)
+    ("s a" "bisagra-api"                  tlon-babel-dired-browse-bisagra-api)
+    ("s f" "bisagra-front"                tlon-babel-dired-browse-bisagra-front)
     ("s c" "bisagra-content"              tlon-babel-dired-browse-bisagra-content)
     ""
     "Boletín"
@@ -246,7 +248,8 @@ DIR is the directory where the repo is stored."
     "EA International"
     ("i " "ea-international"              tlon-babel-open-file-in-ea-international)]
    ["La Bisagra"
-    ("s s" "bisagra-dev"                  tlon-babel-open-file-in-bisagra-dev)
+    ("s a" "bisagra-dev"                  tlon-babel-open-file-in-bisagra-api)
+    ("s f" "bisagra-front"                tlon-babel-open-file-in-bisagra-front)
     ("s c" "bisagra-content"              tlon-babel-open-file-in-bisagra-content)
     ""
     "Boletín"
