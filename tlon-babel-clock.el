@@ -77,5 +77,10 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
 			   (downcase (tlon-babel-user-lookup :nickname :name user-full-name)))))
     (file-name-concat paths-dir-tlon-repos (file-name-as-directory repo-name))))
 
+(defun tlon-babel-clock-open-entry (date)
+  "Open the clock entry for DATE."
+  (interactive (list (org-read-date)))
+  (find-file (tlon-babel-clock-get-file-for-date date)))
+
 (provide 'tlon-babel-clock)
 ;;; tlon-babel-clock.el ends here
