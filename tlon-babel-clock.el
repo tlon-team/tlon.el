@@ -50,7 +50,7 @@ If DATE is nil, prompt the user for one, defaulting to today."
     (save-buffer)
     (if (y-or-n-p "Submit? ")
 	(tlon-babel-clock-entry-submit file)
-      (message "Remember to submit today’s entry with `tlon-babel-clock-entry-submit'."))))
+      (message "You can submit the entry later by calling `tlon-babel-clock-entry-submit'."))))
 
 (defun tlon-babel-clock-entry-submit (file)
   "Submit the clock entry in FILE.
