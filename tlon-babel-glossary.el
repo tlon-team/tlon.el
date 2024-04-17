@@ -118,8 +118,7 @@ location."
   (interactive (list (tlon-babel-select-language 'two-letter 'babel)
 		     (y-or-n-p "Extract for DeepL? ")))
   (let* ((file-name "Glossary.csv")
-	 (source-path (file-name-concat paths-dir-tlon-repos
-					"babel-core/glossary.json"))
+	 (source-path tlon-babel-file-glossary)
 	 (target-path (read-file-name "Target glossary destination: "
 				      paths-dir-downloads nil nil file-name))
 	 json)
