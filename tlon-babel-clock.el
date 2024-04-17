@@ -36,6 +36,7 @@
 
 ;;;;; Clock reports
 
+;;;###autoload
 (defun tlon-babel-clock-entry-create (date)
   "Create a new clock entry for DATE in the user’s clock repo.
 If DATE is nil, prompt the user for one, defaulting to today."
