@@ -110,11 +110,9 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 ;;;###autoload
 (defun tlon-babel-extract-glossary (language deepl)
   "Extract a LANGUAGE glossary from our multilingual glossary.
-If DEEPL is non-nil, include all entries, format them with the standard DeepL
-glossary format, and extract this glossary to the `dict' subdirectory within the
-relevant `babel' repository. Otherwise, include only entries of type \"CN\",
-format them in a human-readable format, and prompt the user to select the file
-location."
+If DEEPL is non-nil, include all entries and format them with the standard DeepL
+glossary format. Otherwise, include only entries of type \"variable\",
+and format them in a human-readable format."
   (interactive (list (tlon-babel-select-language 'two-letter 'babel)
 		     (y-or-n-p "Extract for DeepL? ")))
   (let* ((file-name "Glossary.csv")
