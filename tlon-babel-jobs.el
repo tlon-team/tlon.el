@@ -29,7 +29,6 @@
 
 (require 'ebib)
 (require 'ebib-extras)
-(require 'jinx)
 (require 'orgit-forge)
 (require 'tlon-babel)
 (require 'tlon-babel-core)
