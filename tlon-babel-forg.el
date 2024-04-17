@@ -536,7 +536,7 @@ ISSUE is nil, use the issue at point."
 (defun tlon-babel-get-issues (&optional repo)
   "Return a list of all open issues in REPO.
 If REPO is nil, use the current repository."
-  (let* ((repo (or repo (forge-get-repository t)))
+  (let* ((repo (or repo (forge-get-repository :tracked)))
 	 (issues (forge--ls-topics repo)))
     issues))
 
@@ -895,7 +895,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   (let* ((repo (or repo (tlon-babel-get-repo 'error 'include-all)))
 	 (body (or body ""))
 	 (default-directory repo)
-	 (repo (forge-get-repository t))
+	 (repo (forge-get-repository :tracked))
 	 (owner (oref repo owner))
 	 (reponame (oref repo name))
 	 (resource (format "/repos/%s/%s/issues" owner reponame))
