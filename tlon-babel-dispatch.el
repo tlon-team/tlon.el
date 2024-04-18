@@ -136,7 +136,12 @@ DIR is the directory where the repo is stored."
    ["Meetings"
     ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
     ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)]])
+    ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)
+    ""
+    "Clock"
+    ("c l" "Leo"                          tlon-babel-magit-browse-clock-leo)
+    ("c f" "Fede"                         tlon-babel-magit-browse-clock-fede)
+    ("c p" "Pablo"                        tlon-babel-magit-browse-clock-pablo)]])
 
 ;;;;; Browse repo in Dired
 
@@ -197,7 +202,16 @@ DIR is the directory where the repo is stored."
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
     ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
-    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]])
+    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]
+   ["Meetings"
+    ("m l" "Leo-Pablo"                    tlon-babel-dired-browse-meetings-leo-pablo)
+    ("m f" "Fede-Pablo"                   tlon-babel-dired-browse-meetings-fede-pablo)
+    ("m m" "Fede-Leo"                     tlon-babel-dired-browse-meetings-fede-leo)
+    ""
+    "Clock"
+    ("c l" "Leo"                          tlon-babel-dired-browse-clock-leo)
+    ("c f" "Fede"                         tlon-babel-dired-browse-clock-fede)
+    ("c p" "Pablo"                        tlon-babel-dired-browse-clock-pablo)]])
 
 ;;;;; Open file in repo
 
@@ -261,7 +275,12 @@ DIR is the directory where the repo is stored."
    ["Meetings"
     ("m l" "Leo-Pablo"                    tlon-babel-open-file-in-meetings-leo-pablo)
     ("m f" "Fede-Pablo"                   tlon-babel-open-file-in-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-open-file-in-meetings-fede-leo)]])
+    ("m m" "Fede-Leo"                     tlon-babel-open-file-in-meetings-fede-leo)
+    ""
+    "Clock"
+    ("c l" "Leo"                          tlon-babel-open-file-in-clock-leo)
+    ("c f" "Fede"                         tlon-babel-open-file-in-clock-fede)
+    ("c p" "Pablo"                        tlon-babel-open-file-in-clock-pablo)]])
 
 ;;;;; Files menu
 
