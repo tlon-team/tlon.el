@@ -250,6 +250,12 @@ The `:name' property is the full name of the repo, as it appears in the URL. The
 `:abbrev' property is an abbreviated form of the name, used, for example, for
 creating `org-mode' TODOs.")
 
+(defcustom tlon-babel-email-shared
+  "tlon.shared@gmail.com"
+  "Tlön shared gmail address."
+  :type 'string
+  :group 'tlon-core)
+
 ;;;;; To sort
 
 (defvar tlon-babel-users
