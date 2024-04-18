@@ -695,7 +695,7 @@ If REPO is nil, default to the current repository."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist
 		 (tlon-babel-repo-lookup-all :dir)
-		 tlon-core-repo-dirs)))
+		 paths-dir-tlon-repos)))
     (tlon-babel-open-file-in-alist alist)))
 
 (defun tlon-babel-files-and-display-names-alist (dirs relative-path)
