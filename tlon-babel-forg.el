@@ -244,7 +244,7 @@ The appropriate action is determined by the value of
 	     (unless (y-or-n-p (concat warning " Assign to you? "))
 	       (user-error "Aborted")))
 	   (tlon-babel-set-assignee (tlon-babel-user-lookup :github :name user-full-name) issue)
-	   (forge-pull-topic issue)
+	   (forge--pull-topic (forge-get-repository :tracked) (oref issue number))
 	   (while (not (tlon-babel-assignee-is-current-user-p issue))
 	     (sleep-for 0.1)))
 	  ('warn (message warning))
@@ -270,7 +270,7 @@ The appropriate action is determined by the value of
 	     (setq status
 		   (tlon-babel-set-status (concat warning " What should it be? " ))))
 	   (tlon-babel-set-labels `(,status) 'status issue)
-	   (forge-pull-topic issue)
+	   (forge--pull-topic (forge-get-repository :tracked) (oref issue number))
 	   (while (not (tlon-babel-get-status-in-issue issue))
 	     (sleep-for 1)))
 	  ('warn (message warning))
@@ -348,7 +348,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 (defun tlon-babel-reconcile-all-issues-and-todos ()
   "Reconcile all TODOs with their issues."
   (interactive)
-  (forge-pull nil nil nil #'tlon-babel-reconcile-all-issues-and-todos-callback))
+  (forge--pull (forge-get-repository :tracked)
+	       #'tlon-babel-reconcile-all-issues-and-todos-callback))
 
 (defun tlon-babel-reconcile-all-issues-and-todos-callback ()
   "Reconcile TODOs with their issues after after `forge-pull' is finished."
