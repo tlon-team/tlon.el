@@ -232,6 +232,15 @@
 	   :abbrev "meetings-fede-leo"
 	   :subtype meetings
 	   :participants ("Federico Stafforini" "Leonardo Picón"))
+    (:name "clock-pablo"
+	   :abbrev "clock-pablo"
+	   :subtype clock)
+    (:name "clock-fede"
+	   :abbrev "clock-fede"
+	   :subtype clock)
+    (:name "clock-leo"
+	   :abbrev "clock-leo"
+	   :subtype clock)
     (:name "tlon-docs"
 	   :project "other"
 	   :subproject "docs"
