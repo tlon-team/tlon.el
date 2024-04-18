@@ -149,7 +149,7 @@ link, else get their values from the heading title, if possible."
   "Visit TODO at POS in FILE.
 If POS is nil, use the position of the TODO associated with the issue at point.
 If FILE is nil, use the file where the issue at point would be stored (depending
-on whether or not is a job)."
+on whether or not is a job). ISSUE is needed if either POS or FILE is nil."
   (if-let ((pos (or pos (tlon-babel-get-todo-position-from-issue issue)))
 	   (file (or file (tlon-babel-get-todos-file-from-issue issue))))
       (tlon-babel-open-todo file pos)
