@@ -1,9 +1,9 @@
-;;; tlon-babel-clock.el --- Team clock reports -*- lexical-binding: t -*-
+;;; tlon-babel-clock.el --- Team clock data and reports -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; URL:
+;; URL: https://github.com/tlon-team/tlon-babel/blob/main/tlon-babel-clock.el
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Team clock reports.
+;; Team clock data and reports.
 
 ;;; Code:
 
@@ -34,12 +34,15 @@
 
 ;;;; Functions
 
-;;;;; Clock reports
+;;;;; Create
 
 ;;;###autoload
-(defun tlon-babel-clock-entry-create (date)
-  "Create a new clock entry for DATE in the user’s clock repo.
-If DATE is nil, prompt the user for one, defaulting to today."
+(defun tlon-babel-clock-entry-create (date &optional submit)
+  "Create a clock entry for DATE in the user’s clock repo.
+If DATE is nil, prompt the user for one, defaulting to today. If SUBMIT is nil,
+ask the user if they want to submit the entry. If SUBMIT is `never', do not
+submit the entry. Otherwise, submit the entry without prompting the user for
+confirmation."
   (interactive (list (org-read-date)))
   (let* ((default-directory (tlon-babel-clock-get-repo))
 	 (file (tlon-babel-clock-get-file-for-date date)))
@@ -48,22 +51,58 @@ If DATE is nil, prompt the user for one, defaulting to today."
     (insert (format "#+TITLE: %s\n\n" date))
     (org-extras-clock-report-insert date date 'agenda)
     (save-buffer)
-    (if (y-or-n-p "Submit? ")
-	(tlon-babel-clock-entry-submit file)
-      (message "You can submit the entry later by calling `tlon-babel-clock-entry-submit'."))))
+    (pcase submit
+      ('never nil)
+      ('nil (tlon-babel-clock-entry-submit-prompt file))
+      (_ (tlon-babel-clock-entry-submit file)))))
 
+;;;###autoload
+(defun tlon-babel-clock-entry-create-multiple (start end)
+  "Create clock entries for dates between START to END in the user’s clock repo."
+  (interactive (list (org-read-date) (org-read-date)))
+  (let ((dates (calendar-extras-get-date-range start end)))
+    (dolist (date dates)
+      (tlon-babel-clock-entry-create date 'never))
+    (if (y-or-n-p "Submit all entries? ")
+	(tlon-babel-clock-entry-submit-all)
+      (message "You can submit the entries later by calling `tlon-babel-clock-entry-submit-all'."))))
+
+;;;;; Submit
+
+(defun tlon-babel-clock-entry-submit-prompt (file)
+  "Prompt the user to submit FILE."
+  (if (y-or-n-p "Submit? ")
+      (tlon-babel-clock-entry-submit file)
+    (message "You can submit the entry later by calling `tlon-babel-clock-entry-submit'.")))
+
+;;;###autoload
 (defun tlon-babel-clock-entry-submit (file)
-  "Submit the clock entry in FILE.
+  "Submit the clock entry FILE.
 If FILE is nil, prompt the user for a file, defaulting to the one for today."
   (interactive (list (read-file-name "File: "
 				     (tlon-babel-clock-get-repo) nil nil
 				     (format-time-string "%Y-%m-%d"))))
-  (let ((default-directory (file-name-directory file)))
+  (let ((default-directory (tlon-babel-clock-get-repo)))
     (when (not (file-exists-p file))
       (user-error "File `%s' does not exist" file))
-    (magit-call-git "add" (expand-file-name file)) ; track file if untracked
-    (magit-extras-stage-commit-and-push (format "Add clock entry: %s"
-						(file-name-nondirectory file)))))
+    (magit-extras-track-file file)
+    (magit-extras-stage-commit-and-push (format "Add clock entry: %s" (file-name-nondirectory file)) file)))
+
+;;;###autoload
+(defun tlon-babel-clock-entry-submit-all ()
+  "Submit all clock files not yet submitted."
+  (interactive)
+  (let* ((default-directory (tlon-babel-clock-get-repo))
+	 (unstaged (magit-extras-get-unstaged-files))
+	 (untracked (magit-untracked-files)))
+    (dolist (file (append unstaged untracked))
+      (tlon-babel-clock-entry-submit file))))
+
+;;;;; Report
+
+;; TODO
+
+;;;;; Misc
 
 (defun tlon-babel-clock-get-file-for-date (date)
   "Return the path to the file of the clock entry for DATE."
@@ -87,9 +126,15 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
 ;;;###autoload (autoload 'tlon-babel-clock-menu "tlon-babel-clock" nil t)
 (transient-define-prefix tlon-babel-clock-menu ()
   "`clock' menu."
-  [("c" "Create entry" tlon-babel-clock-entry-create)
-   ("o" "Open entry" tlon-babel-clock-open-entry)
-   ("s" "Submit entry" tlon-babel-clock-entry-submit)])
+  [["Create"
+    ("c" "Create entry"               tlon-babel-clock-entry-create)
+    ("C" "Create multiple entries"    tlon-babel-clock-entry-create-multiple)]
+   ["Submit"
+    ("s" "Submit entry"               tlon-babel-clock-entry-submit)
+    ("S" "Submit all entries"         tlon-babel-clock-entry-submit-all)]
+   ["Report"] ; TODO
+   ["Misc"
+    ("o" "Open entry"                 tlon-babel-clock-open-entry)]])
 
 (provide 'tlon-babel-clock)
 ;;; tlon-babel-clock.el ends here
