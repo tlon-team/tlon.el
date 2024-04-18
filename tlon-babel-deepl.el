@@ -32,7 +32,7 @@
 ;;;; Variables
 
 (defconst tlon-babel-deepl-key
-  (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" tlon-core-email-shared))
+  (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" tlon-babel-email-shared))
   "The DeepL API key.")
 
 ;;;; Functions
