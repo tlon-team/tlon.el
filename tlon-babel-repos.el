@@ -108,7 +108,7 @@ files from possible corruption."
   "Add DIR to the Forge database."
   (let* ((default-directory dir)
 	 (url (and-let*
-		  ((repo (forge-get-repository 'stub))
+		  ((repo (forge-get-repository :stub))
 		   (remote (oref repo remote)))
 		(magit-git-string "remote" "get-url" remote))))
     (forge-add-repository url)
