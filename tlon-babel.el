@@ -48,6 +48,7 @@
 (require 'tlon-babel-counterpart)
 (require 'tlon-babel-tex)
 (require 'tlon-core)
+(require 'tlon-init)
 (require 'unfill)
 (require 'window-extras)
 (require 'winum)
