@@ -97,7 +97,6 @@
     (when (forge-current-repository)
       (tlon-babel-create-issue title dir)
       (forge-pull)
-      (message (concat "Reflect on this fine proverb while you wait: " (tlon-core-proverb)))
       (while (not (tlon-babel-issue-lookup title dir))
 	(sleep-for 0.1))
       (forge-visit-issue (tlon-babel-issue-lookup title dir)))))

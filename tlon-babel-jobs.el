@@ -215,7 +215,7 @@ substitute assignee."
 
 (defun tlon-babel-jobs-initialize-translation ()
   "Initialize translation."
-  (tlon-core-macos-open-app "deepl"))
+  (macos-open-app "deepl"))
 
 (defun tlon-babel-jobs-initialize-revision ()
   "Initialize stylistic revision."

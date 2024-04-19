@@ -30,7 +30,6 @@
 (require 'citar)
 (require 'files-extras)
 (require 'simple-extras)
-(require 'tlon-core)
 (require 'tlon-babel-core)
 
 ;;;; Variables
