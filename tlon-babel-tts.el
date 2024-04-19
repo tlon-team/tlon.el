@@ -203,7 +203,10 @@ assumes 14 characters per second, and uses nine minutes.")
 ;;;;;; Google Cloud
 
 (defconst tlon-babel-google-cloud-request
-  "curl -H 'Authorization: Bearer %s' -H 'x-goog-user-project: api-project-781899662791' -H 'Content-Type: application/json; charset=utf-8' --data '%s' 'https://texttospeech.googleapis.com/v1/text:synthesize'  | jq -r .audioContent | base64 --decode > '%s'"
+  "curl -H 'Authorization: Bearer %s' \
+-H 'x-goog-user-project: api-project-781899662791' \
+-H 'Content-Type: application/json; charset=utf-8' \
+--data '%s' 'https://texttospeech.googleapis.com/v1/text:synthesize' | jq -r .audioContent | base64 --decode > '%s'"
   "Curl command to send a request to the Google Cloud text-to-speech engine.
 The placeholders are: token, JSON payload and destination.")
 
