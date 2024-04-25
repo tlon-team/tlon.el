@@ -487,11 +487,11 @@ call the function preceded by the universal ARG or invoke
   "Return the BibTeX element of TYPE and its position in `Cite' element at point.
 TYPE can be either `key' or `locators'."
   (when (thing-at-point-looking-at tlon-babel-cite-pattern)
-    (let* ((num (pcase type ('key 1) ('locators 2)
-		       (_ (user-error "Invalid type"))))
-	   (match (match-string-no-properties num))
-	   (begin (match-beginning num))
-	   (end (match-end num)))
+    (when-let* ((num (pcase type ('key 1) ('locators 2)
+			    (_ (user-error "Invalid type"))))
+		(match (match-string-no-properties num))
+		(begin (match-beginning num))
+		(end (match-end num)))
       (list match (cons begin end)))))
 
 (defun tlon-babel-replace-bibtex-element-in-citation (element begin end)
