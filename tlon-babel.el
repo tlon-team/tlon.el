@@ -346,6 +346,9 @@ Defaults to the current buffer if no FILE is specified."
 	 (original (tlon-babel-get-counterpart translation)))
     (cl-values original translation key)))
 
+(declare-function window-extras-split-if-unsplit "window-extras")
+(declare-function winum-select-window-1 "winum")
+(declare-function winum-select-window-2 "winum")
 (defun tlon-babel-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
   (window-extras-split-if-unsplit)
@@ -485,11 +488,12 @@ If REPO is nil, use the current repo."
   (let ((default-directory (or repo default-directory)))
     (magit-log-all `("-S" ,search-string))))
 
+(declare-function consult-ripgrep "consult")
 (defun tlon-babel-search-files (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-babel-get-repo nil 'include-all))))
+  (let ((repo (or repo (tlon-babel-get-repo nil 'include-all))))
     (consult-ripgrep repo search-string)))
 
 (defun tlon-babel-search-multi (search-string &optional repo)
@@ -633,6 +637,8 @@ respectively."
 	;; (tlon-babel-url-correspondence-commit)
 	))))
 
+(declare-function ebib-extras-open-key "ebib-extras")
+(declare-function ebib-extras-get-field "ebib-get-field")
 (defun tlon-babel-section-correspondence-check (key)
   "Check that selected BibTeX KEY is associated with the original work."
   (save-window-excursion
@@ -762,6 +768,7 @@ Return the path of the temporary file created."
     (message "File created: %s" new-file)
     new-file))
 
+(declare-function goldendict-ng-search-string "goldendict-ng")
 ;; TODO: move to relevant section
 (defun tlon-babel-search-for-translation (string)
   "Search for a Spanish translation of English STRING."
