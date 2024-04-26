@@ -27,29 +27,19 @@
 
 ;;; Code:
 
-(require 'citar)
-(require 'consult)
-(require 'doi-utils)
-(require 'files-extras)
 (require 'forge)
 (require 'forge-search)
-(require 'goldendict-ng)
 (require 'magit)
 (require 'magit-extra)
 (require 'org)
 (require 'org-clock)
-(require 'org-roam)
 (require 'paths)
 (require 'simple-extras)
-(require 'substitute)
 (require 'tlon-babel-dispatch)
 (require 'tlon-babel-core)
 (require 'tlon-babel-yaml)
 (require 'tlon-babel-counterpart)
 (require 'tlon-babel-tex)
-(require 'unfill)
-(require 'window-extras)
-(require 'winum)
 
 ;;;; Customization:
 
