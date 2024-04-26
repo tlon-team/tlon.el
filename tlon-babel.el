@@ -37,6 +37,7 @@
 (require 'simple-extras)
 (require 'tlon-babel-dispatch)
 (require 'tlon-babel-core)
+(require 'tlon-babel-jobs)
 (require 'tlon-babel-yaml)
 (require 'tlon-babel-counterpart)
 (require 'tlon-babel-tex)
