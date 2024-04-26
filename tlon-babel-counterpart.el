@@ -27,8 +27,6 @@
 
 ;;; Code:
 
-(require 'dired)
-(require 'markdown-mode)
 (require 'tlon-babel-core)
 (require 'tlon-babel-md)
 (require 'tlon-babel-yaml)
