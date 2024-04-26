@@ -27,14 +27,11 @@
 
 ;;; Code:
 
-(require 'markdown-mode)
-(require 'substitute)
-(require 'unfill)
-
 ;;;; Functions
 
 ;;;;; Common
 
+(declare-function unfill-region "unfill")
 (defun tlon-babel-cleanup-common ()
   "Cleanup a buffer visiting an imported document.
 These functions are to be called for all imported documents: both EAF and
@@ -91,6 +88,8 @@ non-EAF."
     (while (re-search-forward (car cons) nil t)
       (replace-match (cdr cons)))))
 
+(declare-function markdown-next-heading "markdown-mode")
+(declare-function substitute-target-in-buffer "substitute")
 (defun tlon-babel-cleanup-set-heading-levels ()
   "Promote or demote headings in the current buffer when appropriate.
 Specifically, when the buffer contains at least one heading, demote all headings
@@ -180,6 +179,7 @@ not alter it unless you know what you are doing."
       (tlon-babel-cleanup-consolidate-footnotes)
       (save-buffer))))
 
+(declare-function markdown-insert-footnote "markdown-mode")
 (defun tlon-babel-cleanup-consolidate-footnotes ()
   "Consolidate consecutive footnotes."
   (interactive)
