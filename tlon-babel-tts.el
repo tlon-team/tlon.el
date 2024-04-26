@@ -150,7 +150,8 @@ should for the time being remove it when generating the audio.")
 --header 'Content-Type: application/ssml+xml' \
 --header 'X-Microsoft-OutputFormat: %s' \
 --header 'User-Agent: curl' \
---data-raw %s > '%s'"
+--data-raw '%s' \
+> '%s'"
   "Curl command to send a request to the Microsoft Azure text-to-speech engine.
 The placeholders are: API key, settings, SSML, and destination.")
 
@@ -231,9 +232,6 @@ Here's a description of the main options:
   :type 'string
   :group 'tlon-babel-tts)
 
-(defvar tlon-babel-google-cloud-token nil
-  "Google Cloud authentication token for the text-to-speech service.")
-
 (defvar tlon-babel-google-cloud-key nil
   "Google Cloud subscription key for the text-to-speech service.")
 
@@ -294,8 +292,10 @@ lower number for safety.
 	   :request-fun tlon-babel-openai-make-request
 	   :char-limit ,tlon-babel-openai-char-limit)))
 
+;; needs to use double quotes for Azure, but maybe single quotes for Google Cloud?
+;; cannot be in single quotes because the entire string is itself enclosed in single quotes
 (defconst tlon-babel-ssml-template
-  (format "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis\' xml:lang='%%s'>%s</speak>"
+  (format "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"%%s\">%s</speak>"
 	  tlon-babel-tts-ssml-voice-pattern)
   "SSML template for TTS request.")
 
@@ -491,7 +491,7 @@ to."
   "Get or set the Microsoft Azure key."
   (or tlon-babel-microsoft-azure-key
       (setq tlon-babel-microsoft-azure-key
-	    (auth-source-pass-get "key1" "tlon/core/live.com/tlon.shared@gmail.com [Azure]"))))
+	    (auth-source-pass-get "key1" "tlon/core/azure.com/tlon.shared@gmail.com"))))
 
 ;;;;;; Google Cloud
 
@@ -1014,6 +1014,7 @@ The `voice' tag is set to the alternative voice for the current language."
 
 ;;;;;; Common
 
+(declare-function modify-file-local-variable "files-x")
 (defun tlon-babel-add-in-text-cons-cell (prompts var)
   "Add an in-text cons-cell to the file-local named VAR.
 PROMPTS is a cons cell with the corresponding prompts."
