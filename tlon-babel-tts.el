@@ -27,7 +27,6 @@
 
 ;;; Code:
 
-(require 'markdown-mode)
 (require 'tlon-babel-core)
 (require 'tlon-babel-md)
 
@@ -108,7 +107,7 @@
   (concat (cdr tlon-babel-tts-ssml-voice)
 	  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
 	  (car tlon-babel-tts-ssml-voice))
-  "SSML pattern for voice tag, with 2 voice name placeholders and a text placeholder.")
+  "SSML pattern for voice tag, with 2 voice name placeholders and text placeholder.")
 
 ;;;;;; phoneme
 
