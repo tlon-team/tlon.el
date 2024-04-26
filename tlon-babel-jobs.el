@@ -28,15 +28,11 @@
 ;;; Code:
 
 (require 'ebib)
-(require 'ebib-extras)
-(require 'orgit-forge)
-(require 'tlon-babel)
 (require 'tlon-babel-core)
 (require 'tlon-babel-import)
 (require 'tlon-babel-forg)
 (require 'tlon-babel-split)
 (require 'tlon-babel-tts)
-(require 'window-extras)
 
 ;;;; Main variables
 
@@ -96,6 +92,7 @@
   (let ((action (cadr (split-string label))))
     action))
 
+(declare-function orgit-topic-open "orgit-forge")
 (defun tlon-babel-jobs-initialize (fun)
   "Initialize process associated with FUN.
 Runs all the general initialization functions, followed by the specific function
@@ -143,8 +140,10 @@ for the process that is being initialized."
 	 (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-manual-fix-all'?")
 	   (user-error "Aborted")))
 	("check"
-	 (tlon-babel-tts-mode -1)
-	 (remove-hook 'eww-mode-hook #'tlon-babel-tts-mode)))
+	 ;; used to call the two functions below but they are obsolete; revise
+	 ;; (tlon-babel-tts-mode -1)
+	 ;; (remove-hook 'eww-mode-hook #'tlon-babel-tts-mode))
+	)
       (save-buffer)
       (if (string= current-action "Process")
 	  (write-file original-path)
@@ -200,6 +199,7 @@ substitute assignee."
 	(tlon-babel-commit-and-push "Update"
 				    tlon-babel-file-jobs)))))
 
+(declare-function org-extras-show-subtree-hide-drawers "org-extras")
 (defun tlon-babel-jobs-initialize-processing ()
   "Initialize processing."
   (cl-multiple-value-bind
@@ -213,6 +213,7 @@ substitute assignee."
     (let ((issue (tlon-babel-get-clock-issue)))
       (orgit-topic-open issue))))
 
+(declare-function macos-open-app "macos")
 (defun tlon-babel-jobs-initialize-translation ()
   "Initialize translation."
   (macos-open-app "deepl"))
@@ -222,6 +223,7 @@ substitute assignee."
   (winum-select-window-2)
   (tlon-babel-split-mode))
 
+(declare-function read-aloud-buf "read-aloud")
 (defun tlon-babel-jobs-initialize-check ()
   "Initialize accuracy check."
   ;; we move the buffer displaying the issue to the right, to uncover
@@ -232,6 +234,8 @@ substitute assignee."
   (markdown-preview)
   (read-aloud-buf))
 
+(declare-function jinx--load-dicts "jinx")
+(declare-function jinx--cleanup "jinx")
 (defun tlon-babel-jobs-initialize-review ()
   "Initialize review."
   (cl-multiple-value-bind
@@ -250,6 +254,8 @@ substitute assignee."
 
 ;;;;; Job creation
 
+(declare-function ebib-extras-get-field "ebib-extras")
+(declare-function ebib-extras-get-file "ebib-extras")
 ;;;###autoload
 (defun tlon-babel-create-job ()
   "Create a new job for IDENTIFIER based on Ebib entry at point.
