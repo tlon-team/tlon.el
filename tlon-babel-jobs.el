@@ -30,7 +30,6 @@
 (require 'ebib)
 (require 'tlon-babel-core)
 (require 'tlon-babel-import)
-(require 'tlon-babel-forg)
 (require 'tlon-babel-split)
 (require 'tlon-babel-tts)
 
@@ -142,8 +141,8 @@ for the process that is being initialized."
 	("check"
 	 ;; used to call the two functions below but they are obsolete; revise
 	 ;; (tlon-babel-tts-mode -1)
-	 ;; (remove-hook 'eww-mode-hook #'tlon-babel-tts-mode))
-	)
+	 ;; (remove-hook 'eww-mode-hook #'tlon-babel-tts-mode)
+	 ))
       (save-buffer)
       (if (string= current-action "Process")
 	  (write-file original-path)
