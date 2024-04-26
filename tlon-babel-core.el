@@ -27,8 +27,6 @@
 
 ;;; Code:
 
-(require 'bibtex-extras)
-(require 'forge-core)
 (require 'paths)
 
 ;;;; Variables
@@ -430,6 +428,7 @@ PAIRS is an even-sized list of <key value> tuples."
   "Return all unique values of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-babel-lookup-all tlon-babel-users key key-value))
 
+(defvar tlon-babel-job-labels)
 (defun tlon-babel-label-lookup (key &rest key-value)
   "Return the value of KEY in labels matching all KEY-VALUE pairs."
   (apply #'tlon-babel-lookup tlon-babel-job-labels key key-value))
@@ -445,6 +444,10 @@ PAIRS is an even-sized list of <key value> tuples."
 			      (file-relative-name paths-dir-tlon-repos "~/")
 			      (buffer-file-name))))
 
+(declare-function emacsql "emacsql")
+(declare-function forge-db "forge-db")
+(declare-function forge-get-repository "forge-core")
+(declare-function forge-get-issue "forge-core")
 (defun tlon-babel-issue-lookup (string &optional dir)
   "Return the first issue in DIR whose title includes STRING.
 If DIR is nil, use the current repository."
@@ -499,6 +502,7 @@ If END is nil, use BEGIN also as the end delimiter."
 
 ;;;;; language
 
+(defvar bibtex-extras-valid-languages)
 (defun tlon-babel-validate-language (language)
   "If LANGUAGE is a valid language, return it.
 The validation is case-insensitive, but the returned language is in lowercase."
