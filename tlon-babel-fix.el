@@ -29,6 +29,22 @@
 
 (require 'tlon-babel-core)
 
+;;;; Variables
+
+(defconst tlon-babel-fix-french-translation
+  '((" - " . " • ")
+    ("## Pour savoir plus" . "## Pour en savoir plus")
+    ("type :" . "type:")
+    ("title :" . "title:")
+    ("\\*\\*L’" . "L’\\*\\*")
+    ("\\*\\*La " . "La \\*\\*")
+    ("\\*\\*Le " . "Le \\*\\*")
+    ("\\*\\*Les " . "Les \\*\\*")
+    ("## Entrées associées ." . "## Entrées associées")
+    ("## Entrées associées." . "## Entrées associées")
+    ("}. />." . "} />."))
+  "A list search and replace pairs for fixing common issues in French translations.")
+
 ;;;; Functions
 
 ;;;;; autofix
@@ -153,6 +169,18 @@ dedicated function."
 	(replace-match "")
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
+
+;;;;;; Language-specific
+
+;;;;;;; French
+
+(defun tlon-babel-fix-french-translation ()
+  "Fix common issues in French translations."
+  (interactive)
+  (dolist (cons tlon-babel-fix-french-translation)
+    (let ((search (car cons))
+	  (replace (cdr cons)))
+      (tlon-babel-autofix (list search) replace))))
 
 ;;;;;; TTS
 
