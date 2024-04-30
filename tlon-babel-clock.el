@@ -60,7 +60,7 @@ confirmation."
 (defun tlon-babel-clock-entry-create-multiple (start end)
   "Create clock entries for dates between START to END in the user’s clock repo."
   (interactive (list (org-read-date) (org-read-date)))
-  (let ((dates (calendar-extras-get-date-range start end)))
+  (let ((dates (calendar-extras-get-dates-in-range start end)))
     (dolist (date dates)
       (tlon-babel-clock-entry-create date 'never))
     (if (y-or-n-p "Submit all entries? ")
