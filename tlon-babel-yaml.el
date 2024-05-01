@@ -496,11 +496,12 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
 	(file (or file (buffer-file-name))))
     (if-let ((metadata (tlon-babel-yaml-get-metadata file)))
 	(if-let ((key-exists-p (assoc key metadata)))
-	    (cond ((eq field-exists 'overwrite)
-		   (tlon-babel-yaml-delete-field key file)
-		   (tlon-babel-yaml-write-field key value file))
-		  ((eq field-exists 'throw-error)
-		   (user-error "Field `%s' already exists in `%s'" key file)))
+	    (pcase field-exists
+	      ('overwrite
+	       (tlon-babel-yaml-delete-field key file)
+	       (tlon-babel-yaml-write-field key value file))
+	      ('throw-error
+	       (user-error "Field `%s' already exists in `%s'" key file)))
 	  (tlon-babel-yaml-write-field key value file))
       (user-error "File `%s' does not appear to contain a metadata section" file))))
 
