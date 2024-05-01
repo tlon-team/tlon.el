@@ -642,7 +642,7 @@ request was sent."
 				      (buffer-substring-no-properties (region-beginning) (region-end))
 				    (word-at-point)))
 		     (or (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo 'no-prompt))
-			 (tlon-babel-select-language 'two-letter))))
+			 (tlon-babel-select-language 'code))))
   (let ((prompt (tlon-babel-lookup tlon-babel-ai-transcribe-phonetically-prompt
 				   :prompt :language language)))
     (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-copy)))
@@ -651,7 +651,7 @@ request was sent."
   "Insert a phonetic transcription of each line in buffer immediately after it.
 Separate the original line and the transcription with a comma."
   (interactive)
-  (let ((language (tlon-babel-select-language 'two-letter)))
+  (let ((language (tlon-babel-select-language 'code)))
     (save-excursion
       (goto-char (point-min))
       (while (not (eobp))

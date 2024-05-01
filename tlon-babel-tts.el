@@ -427,7 +427,7 @@ if region is active, save it to the downloads directory."
 	 (repo (tlon-babel-get-repo-from-file file-or-buffer))
 	 (language (setq tlon-babel-tts-current-language
 			 (or (tlon-babel-repo-lookup :language :dir repo)
-			     (tlon-babel-select-language 'two-letter 'babel))))
+			     (tlon-babel-select-language 'code 'babel))))
 	 (voice (setq tlon-babel-tts-main-voice
 		      (or voice (tlon-babel-get-voices engine language))))
 	 (content (if (region-active-p)
@@ -968,7 +968,7 @@ The `voice' tag is set to the alternative voice for the current language."
 
 (defun tlon-babel-tts-add-entry (data term)
   "Add a new TERM to DATA."
-  (let* ((languages (tlon-babel-select-language 'two-letter 'babel 'multiple))
+  (let* ((languages (tlon-babel-select-language 'code 'babel 'multiple))
 	 (dict-entry (read-string "Term: "))
 	 (new-entry (cons term dict-entry))
 	 (added nil))

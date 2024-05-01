@@ -195,7 +195,7 @@ The second capture group handles the `.md' extension, which we used previously."
 
 (defun tlon-babel-set-translation-language (language)
   "Set the translation LANGUAGE."
-  (interactive (list (tlon-babel-select-language 'two-letter 'babel)))
+  (interactive (list (tlon-babel-select-language 'code 'babel)))
   (setq tlon-babel-translation-language language))
 
 ;;;;; User commits

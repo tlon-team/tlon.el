@@ -363,7 +363,7 @@ self-closing."
   "Insert an MDX `Lang' tag pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (list (tlon-babel-select-language 'two-letter)))
+  (interactive (list (tlon-babel-select-language 'code)))
   (tlon-babel-md-insert-element-pair
    (tlon-babel-tag-element-with-attribute tlon-babel-mdx-lang language)))
 

@@ -88,7 +88,7 @@
 
 (defun tlon-babel-edit-translation-in-entry (entry term)
   "Create or update a translation in an ENTRY for a TERM."
-  (let* ((language (tlon-babel-select-language 'two-letter 'babel))
+  (let* ((language (tlon-babel-select-language 'code 'babel))
          (translation (assoc language entry))
 	 (initial-input (when translation (cdr translation)))
 	 (read-translation (lambda ()
@@ -142,7 +142,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 If DEEPL is non-nil, include all entries and format them with the standard DeepL
 glossary format. Otherwise, include only entries of type \"variable\",
 and format them in a human-readable format."
-  (interactive (list (tlon-babel-select-language 'two-letter 'babel)
+  (interactive (list (tlon-babel-select-language 'code 'babel)
 		     (y-or-n-p "Extract for DeepL? ")))
   (let* ((file-name "Glossary.csv")
 	 (source-path tlon-babel-file-glossary)
