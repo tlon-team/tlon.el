@@ -451,7 +451,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 (defun tlon-babel-ai-get-abstract-in-language (file language)
   "Get abstract from FILE in LANGUAGE."
   (if-let ((string (tlon-babel-get-string-dwim file))
-	   (lang-2 (tlon-babel-get-two-letter-code language)))
+	   (lang-2 (tlon-babel-get-iso-code language)))
       (let ((original-buffer (current-buffer))
 	    (key (pcase major-mode
 		   ('bibtex-mode (bibtex-extras-get-key))
@@ -517,7 +517,7 @@ If STRING is nil, use the current entry."
 			      ('bibtex-mode #'bibtex-extras-get-field)
 			      ('ebib-entry-mode #'ebib-extras-get-field)))
 		  (language (funcall get-lang "langid"))
-		  (lang-short (tlon-babel-get-two-letter-code language)))
+		  (lang-short (tlon-babel-get-iso-code language)))
 	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-bibtex-prompts :prompt :language lang-short)))
 	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-get-abstract-callback)
 	  (user-error "No prompt defined in `tlon-babel-ai-get-abstract-prompts' for language %s" language))))))
@@ -592,8 +592,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	     (valid-response (tlon-babel-validate-language response)))
 	(if (string= valid-langid valid-response)
 	    (tlon-babel-ai-set-language-bibtex-when-equal valid-langid langid)
-	  (let ((langid-2 (tlon-babel-get-two-letter-code valid-langid))
-		(response-2 (tlon-babel-get-two-letter-code valid-response)))
+	  (let ((langid-2 (tlon-babel-get-iso-code valid-langid))
+		(response-2 (tlon-babel-get-iso-code valid-response)))
 	    (if (string= langid-2 response-2)
 		(tlon-babel-ai-set-language-bibtex-when-equal valid-langid langid)
 	      (tlon-babel-ai-set-language-bibtex-when-conflict langid response))))

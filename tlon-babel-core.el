@@ -579,8 +579,8 @@ The validation is case-insensitive, but the returned language is in lowercase."
     (when (member language (mapcar #'car tlon-babel-languages))
       language)))
 
-(defun tlon-babel-get-two-letter-code (language)
-  "Return the two-letter code for LANGUAGE."
+(defun tlon-babel-get-iso-code (language)
+  "Return the two-letter ISO 639-1 code for LANGUAGE."
   (if (= (length language) 2)
       language
     (when-let* ((downcased (downcase language))
