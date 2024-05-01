@@ -346,7 +346,7 @@ If FILE is nil, use the file visited by the current buffer."
 ;;;;;; translation setter functions
 
 ;; copy from original
-(defun tlon-babel-yaml-set-authors-in-translation (file)
+(defun tlon-babel-yaml-set-authors-in-translation ()
   "Set the value of the `authors' YAML field in a translation file."
   (tlon-babel-yaml-set-key "authors"))
 
@@ -379,7 +379,7 @@ AUTHOR is the first author of the original work."
   (format-time-string "%FT%T%z"))
 
 ;; offer AI-generated translation from original title
-(defun tlon-babel-yaml-set-title-in-translation (file)
+(defun tlon-babel-yaml-set-title-in-translation ()
   "Set the value of `title' YAML field."
   (or title (read-string "Title: ")))
 
