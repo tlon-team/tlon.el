@@ -61,8 +61,12 @@
 ;;;;; Language detection
 
 (defconst tlon-babel-ai-detect-language-common-prompts
-  (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s" tlon-babel-ai-string-wrapper
-	  (mapconcat 'identity (mapcar 'car tlon-babel-languages) ", "))
+  (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s"
+	  tlon-babel-ai-string-wrapper
+	  (mapconcat 'identity (mapcar (lambda (language)
+					 (plist-get language :name))
+				       tlon-babel-languages-properties)
+		     ", "))
   "Common prompts for language detection.")
 
 (defconst tlon-babel-ai-detect-language-prompt
@@ -263,7 +267,7 @@ Otherwise,
 	     (tlon-babel-md-read-content file))
 	    ((derived-mode-p 'text-mode)
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
-    
+
 (defun tlon-babel-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
