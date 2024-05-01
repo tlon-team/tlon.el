@@ -113,6 +113,7 @@ value of that option is reset.")
 
 ;;;;; Visit
 
+;; FIXME: this returns nil when called in an issue with no args
 (defun tlon-babel-visit-issue (&optional number repo)
   "Visit Github issue.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
