@@ -502,12 +502,11 @@ If END is nil, use BEGIN also as the end delimiter."
 
 ;;;;; language
 
-(defvar bibtex-extras-valid-languages)
 (defun tlon-babel-validate-language (language)
   "If LANGUAGE is a valid language, return it.
 The validation is case-insensitive, but the returned language is in lowercase."
   (let ((language (downcase language)))
-    (when (member language (mapcar #'car bibtex-extras-valid-languages))
+    (when (member language (mapcar #'car tlon-babel-languages))
       language)))
 
 (defun tlon-babel-get-two-letter-code (language)
@@ -515,7 +514,7 @@ The validation is case-insensitive, but the returned language is in lowercase."
   (if (= (length language) 2)
       language
     (when-let* ((downcased (downcase language))
-		(code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
+		(code-raw (alist-get downcased tlon-babel-languages nil nil #'string=)))
       (string-limit code-raw 2))))
 
 (defun tlon-babel-select-language (&optional format babel multiple)
@@ -543,7 +542,7 @@ FORMAT must be either `two-letter' or `locale'. SELECTION is either a string or
 a list of strings representing languages in English."
   (let ((languages (pcase format
 		     ('locale tlon-babel-locales)
-		     ('two-letter bibtex-extras-valid-languages))))
+		     ('two-letter tlon-babel-languages))))
     (if (listp selection)
 	(mapcar (lambda (language)
 		  "Return the two-letter code or the locale for LANGUAGE."
@@ -555,14 +554,14 @@ a list of strings representing languages in English."
   "Read a language from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages)))
+  (let* ((language-candidates (if babel tlon-babel-languages tlon-babel-languages)))
     (completing-read "Language: " language-candidates nil t)))
 
 (defun tlon-babel-read-multiple-languages (&optional babel)
   "Read a list of languages from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages))
+  (let* ((language-candidates (if babel tlon-babel-languages tlon-babel-languages))
 	 (language-selection (completing-read-multiple "Languages (comma-separated): "
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))

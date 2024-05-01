@@ -62,7 +62,7 @@
 
 (defconst tlon-babel-ai-detect-language-common-prompts
   (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s" tlon-babel-ai-string-wrapper
-	  (mapconcat 'identity (mapcar 'car bibtex-extras-valid-languages) ", "))
+	  (mapconcat 'identity (mapcar 'car tlon-babel-languages) ", "))
   "Common prompts for language detection.")
 
 (defconst tlon-babel-ai-detect-language-prompt
