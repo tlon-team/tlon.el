@@ -235,12 +235,13 @@ alist, unless RAW is non-nil."
 (defun tlon-babel-yaml-sort-fields (fields &optional keys no-error)
   "Sort alist of YAML FIELDS by order of KEYS.
 If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
-  (mapcar (lambda (key)
-	    (if-let ((match (assoc key fields)))
-		match
-	      (unless no-error
-		(user-error "Key `%s' not found in file `%s'" key (buffer-file-name)))))
-	  keys))
+  (cl-remove-if #'null
+		(mapcar (lambda (key)
+			  (if-let ((match (assoc key fields)))
+			      match
+			    (unless no-error
+			      (user-error "Key `%s' not found in file `%s'" key (buffer-file-name)))))
+			keys)))
 
 (defun tlon-babel-yaml-get-valid-keys (&optional file type no-core)
   "Return the admissible keys for YAML metadata in FILE.
