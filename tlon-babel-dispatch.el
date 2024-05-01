@@ -134,9 +134,10 @@ DIR is the directory where the repo is stored."
     ("n f" "ean-front"                    tlon-babel-magit-browse-ean-front)
     ("n a" "ean-api"                      tlon-babel-magit-browse-ean-api)]
    ["Meetings"
-    ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
-    ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)
+    ("m l p" "Leo-Pablo"                  tlon-babel-magit-browse-meetings-leo-pablo)
+    ("m f p" "Fede-Pablo"                 tlon-babel-magit-browse-meetings-fede-pablo)
+    ("m f l" "Fede-Leo"                   tlon-babel-magit-browse-meetings-fede-leo)
+    ("m g" "group"                        tlon-babel-magit-browse-meetings-group)
     ""
     "Clock"
     ("c l" "Leo"                          tlon-babel-magit-browse-clock-leo)
@@ -204,9 +205,10 @@ DIR is the directory where the repo is stored."
     ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
     ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]
    ["Meetings"
-    ("m l" "Leo-Pablo"                    tlon-babel-dired-browse-meetings-leo-pablo)
-    ("m f" "Fede-Pablo"                   tlon-babel-dired-browse-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-dired-browse-meetings-fede-leo)
+    ("m l p" "Leo-Pablo"                  tlon-babel-dired-browse-meetings-leo-pablo)
+    ("m f p" "Fede-Pablo"                 tlon-babel-dired-browse-meetings-fede-pablo)
+    ("m f l" "Fede-Leo"                   tlon-babel-dired-browse-meetings-fede-leo)
+    ("m g" "group"                        tlon-babel-dired-browse-meetings-group)
     ""
     "Clock"
     ("c l" "Leo"                          tlon-babel-dired-browse-clock-leo)
@@ -273,9 +275,10 @@ DIR is the directory where the repo is stored."
     ("n f" "ean-front"                    tlon-babel-open-file-in-ean-front)
     ("n a" "ean-api"                      tlon-babel-open-file-in-ean-api)]
    ["Meetings"
-    ("m l" "Leo-Pablo"                    tlon-babel-open-file-in-meetings-leo-pablo)
-    ("m f" "Fede-Pablo"                   tlon-babel-open-file-in-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-open-file-in-meetings-fede-leo)
+    ("m l p" "Leo-Pablo"                  tlon-babel-open-file-in-meetings-leo-pablo)
+    ("m f p" "Fede-Pablo"                 tlon-babel-open-file-in-meetings-fede-pablo)
+    ("m f l" "Fede-Leo"                   tlon-babel-open-file-in-meetings-fede-leo)
+    ("m g" "group"                        tlon-babel-open-file-in-meetings-group)
     ""
     "Clock"
     ("c l" "Leo"                          tlon-babel-open-file-in-clock-leo)

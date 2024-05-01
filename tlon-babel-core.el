@@ -230,6 +230,10 @@
 	   :abbrev "meetings-fede-leo"
 	   :subtype meetings
 	   :participants ("Federico Stafforini" "Leonardo Picón"))
+    (:name "meetings-group"
+	   :abbrev "meetings-group"
+	   :subtype meetings
+	   :participants ("Pablo Stafforini" "Leonardo Picón" "Federico Stafforini"))
     (:name "clock-pablo"
 	   :abbrev "clock-pablo"
 	   :subtype clock)
