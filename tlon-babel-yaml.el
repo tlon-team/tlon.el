@@ -507,10 +507,11 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
   "Set KEY to VALUE in FILE."
   (with-current-buffer (find-file-noselect file)
     (goto-char (point-min))
-    (forward-line)
-    (insert (format "%s:  %s\n" key value))
-    (save-buffer)
-    (tlon-babel-yaml-reorder-metadata)))
+    (when (looking-at-p tlon-babel-yaml-delimiter)
+      (forward-line)
+      (insert (format "%s:  %s\n" key value))
+      (save-buffer)
+      (tlon-babel-yaml-reorder-metadata))))
 
 ;; TODO: refactor with above
 (defun tlon-babel-yaml-delete-field (&optional key file)
