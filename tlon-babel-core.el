@@ -644,6 +644,14 @@ candidates to languages in the Babel project."
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
 
+(defun tlon-babel-get-language-candidates (babel)
+  "Return a list of language candidates.
+If BABEL is nil, return all valid BibTeX languages; otherwise, return candidates
+languages in the Babel project only."
+  (if babel
+      tlon-babel-project-languages
+    (tlon-babel-lookup-all tlon-babel-languages-properties :name)))
+
 ;;;;; json
 
 (defun tlon-babel-parse-json (file &optional object-type array-type key-type)
