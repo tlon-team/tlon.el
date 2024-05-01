@@ -826,8 +826,8 @@ An issue name is its number followed by its title.
 
 If ISSUE is nil, get the issue at point or in current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-	 (title (oref issue title))
-	 (number (oref issue number)))
+	 (number (oref issue number))
+	 (title (oref issue title)))
     (format "#%s %s" number title)))
 
 (defun tlon-babel-get-issue-link (&optional issue)
