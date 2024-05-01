@@ -582,11 +582,18 @@ If END is nil, use BEGIN also as the end delimiter."
 
 ;;;;; language
 
-(defun tlon-babel-validate-language (language)
+(defun tlon-babel-validate-language (language &optional format)
   "If LANGUAGE is a valid language, return it.
-The validation is case-insensitive, but the returned language is in lowercase."
-  (let ((language (downcase language)))
-    (when (member language (mapcar #'car tlon-babel-languages))
+The validation is case-insensitive, but the returned language is in lowercase.
+If FORMAT is `code', validate against the ISO 639-1 code. Otherwise,
+validate a list of natural languages."
+  (let ((language (downcase language))
+	(format (pcase format
+		  ('code :code)
+		  (_ :name))))
+    (when (member language (mapcar (lambda (language)
+				     (plist-get language format))
+				   tlon-babel-languages-properties))
       language)))
 
 (defun tlon-babel-get-iso-code (language)
