@@ -413,6 +413,12 @@ the actual user.")
 
 (mapc #'tlon-babel-set-dir tlon-babel-repos)
 
+(defun tlon-babel-get-valid-language-codes ()
+  "Return a list of valid ISO 639-1 code codes for the babel project."
+  (let (codes)
+    (dolist (name tlon-babel-project-languages codes)
+      (push (tlon-babel-lookup tlon-babel-languages-properties :code :name name) codes))))
+
 ;;;;; Ger repo
 
 (defun tlon-babel-get-repo (&optional no-prompt include-all)

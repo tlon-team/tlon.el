@@ -96,7 +96,7 @@ buffer."
     (pcase language
       ("en" tlon-babel-translation-language)
       ((pred (lambda (lang)
-	       (member lang (mapcar #'cdr tlon-babel-languages))))
+	       (member lang (tlon-babel-get-valid-language-codes))))
        "en")
       (_ (user-error "Language not recognized")))))
 
