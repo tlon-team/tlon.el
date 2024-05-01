@@ -114,20 +114,20 @@
 (defun tlon-babel-autofix-percent-signs ()
   "Add non-breaking space before percent sign."
   (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
-						   "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-						  "\\1 %\\2"))
+			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
+		      "\\1 %\\2"))
 
 ;;;###autoload
-		      (defun tlon-babel-autofix-all ()
-			"Run all the `tlon-babel-autofix' commands."
-			(interactive)
-			(tlon-babel-autofix-curly-quotes)
-			(tlon-babel-autofix-footnote-punctuation)
-			(tlon-babel-autofix-periods-in-headings)
-			(tlon-babel-autofix-percent-signs)
-			(let ((after-save-hook (remove #'tlon-babel-autofix-all after-save-hook)))
-			  (save-buffer)
-			  (add-hook 'after-save-hook #'tlon-babel-autofix-all nil t)))
+(defun tlon-babel-autofix-all ()
+  "Run all the `tlon-babel-autofix' commands."
+  (interactive)
+  (tlon-babel-autofix-curly-quotes)
+  (tlon-babel-autofix-footnote-punctuation)
+  (tlon-babel-autofix-periods-in-headings)
+  (tlon-babel-autofix-percent-signs)
+  (let ((after-save-hook (remove #'tlon-babel-autofix-all after-save-hook)))
+    (save-buffer)
+    (add-hook 'after-save-hook #'tlon-babel-autofix-all nil t)))
 
 ;;;;; manual-fix
 
@@ -225,4 +225,3 @@ dedicated function."
 
 (provide 'tlon-babel-fix)
 ;;; tlon-babel-fix.el ends here
-
