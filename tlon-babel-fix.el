@@ -29,31 +29,49 @@
 
 (require 'tlon-babel-core)
 
-;;;; Variables
+;;;;;; Variables
 
 (defconst tlon-babel-fix-french-translation
-  '((" - " . " • ")
+  '((") - \\[" . ") • [")
+    (" - " . " — ")
     ("## Pour savoir plus" . "## Pour en savoir plus")
     ("type :" . "type:")
     ("title :" . "title:")
-    ("\\*\\*L’" . "L’\\*\\*")
-    ("\\*\\*L'" . "L’\\*\\*")
-    ("\\*\\*La " . "La \\*\\*")
-    ("\\*\\*Le " . "Le \\*\\*")
-    ("\\*\\*Les " . "Les \\*\\*")
+    ("\ntitre :" . "\ntitle:")
+    ("\ntitre:" . "\ntitle:")
+    ("\\*\\*L’" . "L’**")
+    ("\\*\\*L'" . "L’**")
+    ("\\*\\*La " . "La **")
+    ("\\*\\*Le " . "Le **")
+    ("\\*\\*Les " . "Les **")
+    ("\\*\\*Un " . "Un **")
+    ("\\*\\*Une " . "Une **")
     ("## Entrées associées \\." . "## Entrées associées")
     ("## Entrées associées\\." . "## Entrées associées")
     (" \"" . " « ")
     ("\" " . " » ")
     ("\"\\." . " ».")
     ("\"\\?" . " »?")
-    ("\"\\!" . " »!")
-    ("\"\\:" . " »:")
-    ("\"\\;" . " »;")
-    ("\"\\," . " »,")
-    ("\"\\)" . " »)")
-    ("\\(\"" . "(« ")
-    ("}\. />" . "} />"))
+    ("\"!" . " »!")
+    ("\":" . " »:")
+    ("\";" . " »;")
+    ("\"," . " »,")
+    ("\")" . " »)")
+    ("(\"" . "(« ")
+    ("(\"" . "(« ")
+    ("] : <Footnote />" . "]: <Footnote />")
+    ("] : <Sidenote />" . "]: <Sidenote />")
+    ("] (\\." . "](.")
+    ("] (htt" . "](htt")
+    ("(. /" . "(./")
+    ("(.. /" . "(../")
+    (" :" . " :")
+    (" ;" . " ;")
+    (" \\?" . " ?")
+    (" !" . " !")
+    (" %" . " %")
+    ("\"}\\. />". "\"} />")
+    ("\"\\[\\^" . " »[^"))
   "A list search and replace pairs for fixing common issues in French translations.")
 
 ;;;; Functions
@@ -82,8 +100,8 @@
 
 (defun tlon-babel-autofix-footnote-punctuation-amend ()
   "Reverse undesired effects of `tlon-babel-autofix-footnote-punctuation'.
-Ideally the function should be amended so that it doesn’t introduce these
-effects to begin with."
+  Ideally the function should be amended so that it doesn’t introduce these
+  effects to begin with."
   (tlon-babel-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]"  ; fixes `[[^1]^2]'
 			"\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
 		      "[^\\1][^\\2]"))
@@ -96,20 +114,20 @@ effects to begin with."
 (defun tlon-babel-autofix-percent-signs ()
   "Add non-breaking space before percent sign."
   (tlon-babel-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
-			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-		      "\\1 %\\2"))
+						   "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
+						  "\\1 %\\2"))
 
 ;;;###autoload
-(defun tlon-babel-autofix-all ()
-  "Run all the `tlon-babel-autofix' commands."
-  (interactive)
-  (tlon-babel-autofix-curly-quotes)
-  (tlon-babel-autofix-footnote-punctuation)
-  (tlon-babel-autofix-periods-in-headings)
-  (tlon-babel-autofix-percent-signs)
-  (let ((after-save-hook (remove #'tlon-babel-autofix-all after-save-hook)))
-    (save-buffer)
-    (add-hook 'after-save-hook #'tlon-babel-autofix-all nil t)))
+		      (defun tlon-babel-autofix-all ()
+			"Run all the `tlon-babel-autofix' commands."
+			(interactive)
+			(tlon-babel-autofix-curly-quotes)
+			(tlon-babel-autofix-footnote-punctuation)
+			(tlon-babel-autofix-periods-in-headings)
+			(tlon-babel-autofix-percent-signs)
+			(let ((after-save-hook (remove #'tlon-babel-autofix-all after-save-hook)))
+			  (save-buffer)
+			  (add-hook 'after-save-hook #'tlon-babel-autofix-all nil t)))
 
 ;;;;; manual-fix
 
