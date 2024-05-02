@@ -57,7 +57,7 @@ confirmation."
       (_ (tlon-babel-clock-entry-submit file)))))
 
 ;;;###autoload
-(defun tlon-babel-clock-entry-create-multiple (start end)
+(defun tlon-babel-clock-entry-create-in-range (start end)
   "Create clock entries for dates between START to END in the user’s clock repo."
   (interactive (list (org-read-date) (org-read-date)))
   (let ((dates (calendar-extras-get-dates-in-range start end)))
@@ -128,7 +128,7 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
   "`clock' menu."
   [["Create"
     ("c" "Create entry"               tlon-babel-clock-entry-create)
-    ("C" "Create multiple entries"    tlon-babel-clock-entry-create-multiple)]
+    ("C" "Create entries in range"    tlon-babel-clock-entry-create-in-range)]
    ["Submit"
     ("s" "Submit entry"               tlon-babel-clock-entry-submit)
     ("S" "Submit all entries"         tlon-babel-clock-entry-submit-all)]
