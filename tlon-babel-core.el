@@ -248,10 +248,13 @@
 	   :subproject "docs"
 	   :abbrev "docs"
 	   :type docs)
-    (:name "tlon-site"
+    (:name "tlon-front"
 	   :project "tlon"
-	   :subproject "docs"
-	   :abbrev "tlon-site"
+	   :abbrev "tlon-front"
+	   :type development)
+    (:name "tlon-content"
+	   :project "tlon"
+	   :abbrev "tlon-content"
 	   :type development)
     (:name "sandbox"
 	   :abbrev "sandbox"

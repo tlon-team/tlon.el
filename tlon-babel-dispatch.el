@@ -92,7 +92,8 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-magit-repo-menu ()
   "Browse a Tlön repo in Magit."
   [["Tlon"
-    ("t s" "tlon-site"                    tlon-babel-magit-browse-tlon-site)
+    ("t c" "tlon-content"                 tlon-babel-magit-browse-tlon-content)
+    ("t f" "tlon-front"                   tlon-babel-magit-browse-tlon-front)
     ("t d" "tlon-docs"                    tlon-babel-magit-browse-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-magit-browse-babel-core)
@@ -163,7 +164,8 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-dired-repo-menu ()
   "Browse a Tlön repo in Dired."
   [["Tlon"
-    ("t s" "tlon-site"                    tlon-babel-dired-browse-tlon-site)
+    ("t f" "tlon-content"                 tlon-babel-dired-browse-tlon-content)
+    ("t f" "tlon-front"                   tlon-babel-dired-browse-tlon-front)
     ("t d" "tlon-docs"                    tlon-babel-dired-browse-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-dired-browse-babel-core)
@@ -233,7 +235,8 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-find-file-in-repo-menu ()
   "Interactively open a file from a Tlön repo."
   [["Tlon"
-    ("t s" "tlon-site"                    tlon-babel-open-file-in-tlon-site)
+    ("t c" "tlon-content"                   tlon-babel-open-file-in-tlon-content)
+    ("t f" "tlon-front"                   tlon-babel-open-file-in-tlon-front)
     ("t d" "tlon-docs"                    tlon-babel-open-file-in-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-open-file-in-babel-core)
