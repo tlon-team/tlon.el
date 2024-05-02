@@ -27,8 +27,6 @@
 
 ;;; Code:
 
-(require 'dired)
-(require 'markdown-mode)
 (require 'tlon-babel-core)
 (require 'tlon-babel-md)
 (require 'tlon-babel-yaml)
@@ -98,7 +96,7 @@ buffer."
     (pcase language
       ("en" tlon-babel-translation-language)
       ((pred (lambda (lang)
-	       (member lang (mapcar #'cdr tlon-babel-languages))))
+	       (member lang (tlon-babel-get-valid-language-codes))))
        "en")
       (_ (user-error "Language not recognized")))))
 
@@ -138,13 +136,13 @@ If called with a prefix ARG, open the counterpart in the other window."
   (interactive "P")
   (unless file
     (save-buffer))
-  (let* ((fun (if arg #'find-file-other-window #'find-file))
-	 (counterpart (tlon-babel-get-counterpart
-		       (or file (buffer-file-name))))
-	 (paragraphs (tlon-babel-count-paragraphs
-		      (point-min)
-		      (point)))
-	 (offset (if (tlon-babel-is-between-paragraphs-p) 0 1)))
+  (when-let* ((fun (if arg #'find-file-other-window #'find-file))
+	      (counterpart (tlon-babel-get-counterpart
+			    (or file (buffer-file-name))))
+	      (paragraphs (tlon-babel-count-paragraphs
+			   (point-min)
+			   (point)))
+	      (offset (if (tlon-babel-is-between-paragraphs-p) 0 1)))
     (funcall fun counterpart)
     (goto-char (or (cdr (tlon-babel-get-delimited-region-pos
 			 tlon-babel-yaml-delimiter))

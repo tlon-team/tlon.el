@@ -92,7 +92,8 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-magit-repo-menu ()
   "Browse a Tlön repo in Magit."
   [["Tlon"
-    ("t s" "tlon-site"                    tlon-babel-magit-browse-tlon-site)
+    ("t c" "tlon-content"                 tlon-babel-magit-browse-tlon-content)
+    ("t f" "tlon-front"                   tlon-babel-magit-browse-tlon-front)
     ("t d" "tlon-docs"                    tlon-babel-magit-browse-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-magit-browse-babel-core)
@@ -134,9 +135,15 @@ DIR is the directory where the repo is stored."
     ("n f" "ean-front"                    tlon-babel-magit-browse-ean-front)
     ("n a" "ean-api"                      tlon-babel-magit-browse-ean-api)]
    ["Meetings"
-    ("m l" "Leo-Pablo"                    tlon-babel-magit-browse-meetings-leo-pablo)
-    ("m f" "Fede-Pablo"                   tlon-babel-magit-browse-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-magit-browse-meetings-fede-leo)]])
+    ("m l p" "Leo-Pablo"                  tlon-babel-magit-browse-meetings-leo-pablo)
+    ("m f p" "Fede-Pablo"                 tlon-babel-magit-browse-meetings-fede-pablo)
+    ("m f l" "Fede-Leo"                   tlon-babel-magit-browse-meetings-fede-leo)
+    ("m g" "group"                        tlon-babel-magit-browse-meetings-group)
+    ""
+    "Clock"
+    ("c l" "Leo"                          tlon-babel-magit-browse-clock-leo)
+    ("c f" "Fede"                         tlon-babel-magit-browse-clock-fede)
+    ("c p" "Pablo"                        tlon-babel-magit-browse-clock-pablo)]])
 
 ;;;;; Browse repo in Dired
 
@@ -157,7 +164,8 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-dired-repo-menu ()
   "Browse a Tlön repo in Dired."
   [["Tlon"
-    ("t s" "tlon-site"                    tlon-babel-dired-browse-tlon-site)
+    ("t c" "tlon-content"                 tlon-babel-dired-browse-tlon-content)
+    ("t f" "tlon-front"                   tlon-babel-dired-browse-tlon-front)
     ("t d" "tlon-docs"                    tlon-babel-dired-browse-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-dired-browse-babel-core)
@@ -197,7 +205,17 @@ DIR is the directory where the repo is stored."
    ["EA News"
     ("n i" "ean-issues"                   tlon-babel-dired-browse-ean-issues)
     ("n f" "ean-front"                    tlon-babel-dired-browse-ean-front)
-    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]])
+    ("n a" "ean-api"                      tlon-babel-dired-browse-ean-api)]
+   ["Meetings"
+    ("m l p" "Leo-Pablo"                  tlon-babel-dired-browse-meetings-leo-pablo)
+    ("m f p" "Fede-Pablo"                 tlon-babel-dired-browse-meetings-fede-pablo)
+    ("m f l" "Fede-Leo"                   tlon-babel-dired-browse-meetings-fede-leo)
+    ("m g" "group"                        tlon-babel-dired-browse-meetings-group)
+    ""
+    "Clock"
+    ("c l" "Leo"                          tlon-babel-dired-browse-clock-leo)
+    ("c f" "Fede"                         tlon-babel-dired-browse-clock-fede)
+    ("c p" "Pablo"                        tlon-babel-dired-browse-clock-pablo)]])
 
 ;;;;; Open file in repo
 
@@ -217,7 +235,8 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-find-file-in-repo-menu ()
   "Interactively open a file from a Tlön repo."
   [["Tlon"
-    ("t s" "tlon-site"                    tlon-babel-open-file-in-tlon-site)
+    ("t c" "tlon-content"                   tlon-babel-open-file-in-tlon-content)
+    ("t f" "tlon-front"                   tlon-babel-open-file-in-tlon-front)
     ("t d" "tlon-docs"                    tlon-babel-open-file-in-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-babel-open-file-in-babel-core)
@@ -259,9 +278,15 @@ DIR is the directory where the repo is stored."
     ("n f" "ean-front"                    tlon-babel-open-file-in-ean-front)
     ("n a" "ean-api"                      tlon-babel-open-file-in-ean-api)]
    ["Meetings"
-    ("m l" "Leo-Pablo"                    tlon-babel-open-file-in-meetings-leo-pablo)
-    ("m f" "Fede-Pablo"                   tlon-babel-open-file-in-meetings-fede-pablo)
-    ("m m" "Fede-Leo"                     tlon-babel-open-file-in-meetings-fede-leo)]])
+    ("m l p" "Leo-Pablo"                  tlon-babel-open-file-in-meetings-leo-pablo)
+    ("m f p" "Fede-Pablo"                 tlon-babel-open-file-in-meetings-fede-pablo)
+    ("m f l" "Fede-Leo"                   tlon-babel-open-file-in-meetings-fede-leo)
+    ("m g" "group"                        tlon-babel-open-file-in-meetings-group)
+    ""
+    "Clock"
+    ("c l" "Leo"                          tlon-babel-open-file-in-clock-leo)
+    ("c f" "Fede"                         tlon-babel-open-file-in-clock-fede)
+    ("c p" "Pablo"                        tlon-babel-open-file-in-clock-pablo)]])
 
 ;;;;; Files menu
 

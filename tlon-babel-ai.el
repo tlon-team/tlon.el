@@ -61,8 +61,12 @@
 ;;;;; Language detection
 
 (defconst tlon-babel-ai-detect-language-common-prompts
-  (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s" tlon-babel-ai-string-wrapper
-	  (mapconcat 'identity (mapcar 'car bibtex-extras-valid-languages) ", "))
+  (format ":%s. Your answer should just be the language of the entry. For example, if you conclude that the language is English, your answer should be just 'english'. Moreover, your answer can be only one of the following languages: %s"
+	  tlon-babel-ai-string-wrapper
+	  (mapconcat 'identity (mapcar (lambda (language)
+					 (plist-get language :name))
+				       tlon-babel-languages-properties)
+		     ", "))
   "Common prompts for language detection.")
 
 (defconst tlon-babel-ai-detect-language-prompt
@@ -263,7 +267,7 @@ Otherwise,
 	     (tlon-babel-md-read-content file))
 	    ((derived-mode-p 'text-mode)
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
-    
+
 (defun tlon-babel-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
@@ -348,13 +352,13 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;; Image description
 
 ;;;###autoload
-(defun tlon-babel-ai-describe-image (file callback)
+(defun tlon-babel-ai-describe-image (file callback &optional language)
   "Describe the contents of the image in FILE.
-When the description is obtained, pass it to CALLBACK as its first argument."
+When the description is obtained, pass it to CALLBACK as its first argument. Use
+LANGUAGE for the description; if nil, obtain the language from the current repo."
   (interactive (list (read-file-name "Image file: " )))
   (let* ((file (expand-file-name file))
-	 (repo (tlon-babel-get-repo))
-	 (language (tlon-babel-repo-lookup :language :dir repo))
+	 (language (or language (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo))))
 	 (prompt (format
 		  (tlon-babel-lookup tlon-babel-ai-describe-image-prompt :prompt :language language)
 		  file))
@@ -447,7 +451,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 (defun tlon-babel-ai-get-abstract-in-language (file language)
   "Get abstract from FILE in LANGUAGE."
   (if-let ((string (tlon-babel-get-string-dwim file))
-	   (lang-2 (tlon-babel-get-two-letter-code language)))
+	   (lang-2 (tlon-babel-get-iso-code language)))
       (let ((original-buffer (current-buffer))
 	    (key (pcase major-mode
 		   ('bibtex-mode (bibtex-extras-get-key))
@@ -513,7 +517,7 @@ If STRING is nil, use the current entry."
 			      ('bibtex-mode #'bibtex-extras-get-field)
 			      ('ebib-entry-mode #'ebib-extras-get-field)))
 		  (language (funcall get-lang "langid"))
-		  (lang-short (tlon-babel-get-two-letter-code language)))
+		  (lang-short (tlon-babel-get-iso-code language)))
 	(if-let ((prompt (tlon-babel-lookup tlon-babel-ai-summarize-bibtex-prompts :prompt :language lang-short)))
 	    (tlon-babel-make-gptel-request prompt string #'tlon-babel-get-abstract-callback)
 	  (user-error "No prompt defined in `tlon-babel-ai-get-abstract-prompts' for language %s" language))))))
@@ -588,8 +592,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	     (valid-response (tlon-babel-validate-language response)))
 	(if (string= valid-langid valid-response)
 	    (tlon-babel-ai-set-language-bibtex-when-equal valid-langid langid)
-	  (let ((langid-2 (tlon-babel-get-two-letter-code valid-langid))
-		(response-2 (tlon-babel-get-two-letter-code valid-response)))
+	  (let ((langid-2 (tlon-babel-get-iso-code valid-langid))
+		(response-2 (tlon-babel-get-iso-code valid-response)))
 	    (if (string= langid-2 response-2)
 		(tlon-babel-ai-set-language-bibtex-when-equal valid-langid langid)
 	      (tlon-babel-ai-set-language-bibtex-when-conflict langid response))))
@@ -638,7 +642,7 @@ request was sent."
 				      (buffer-substring-no-properties (region-beginning) (region-end))
 				    (word-at-point)))
 		     (or (tlon-babel-repo-lookup :language :dir (tlon-babel-get-repo 'no-prompt))
-			 (tlon-babel-select-language 'two-letter))))
+			 (tlon-babel-select-language 'code))))
   (let ((prompt (tlon-babel-lookup tlon-babel-ai-transcribe-phonetically-prompt
 				   :prompt :language language)))
     (tlon-babel-make-gptel-request prompt expression #'tlon-babel-ai-callback-copy)))
@@ -647,7 +651,7 @@ request was sent."
   "Insert a phonetic transcription of each line in buffer immediately after it.
 Separate the original line and the transcription with a comma."
   (interactive)
-  (let ((language (tlon-babel-select-language 'two-letter)))
+  (let ((language (tlon-babel-select-language 'code)))
     (save-excursion
       (goto-char (point-min))
       (while (not (eobp))

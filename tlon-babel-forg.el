@@ -113,6 +113,7 @@ value of that option is reset.")
 
 ;;;;; Visit
 
+;; FIXME: this returns nil when called in an issue with no args
 (defun tlon-babel-visit-issue (&optional number repo)
   "Visit Github issue.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
@@ -149,7 +150,7 @@ link, else get their values from the heading title, if possible."
   "Visit TODO at POS in FILE.
 If POS is nil, use the position of the TODO associated with the issue at point.
 If FILE is nil, use the file where the issue at point would be stored (depending
-on whether or not is a job)."
+on whether or not is a job). ISSUE is needed if either POS or FILE is nil."
   (if-let ((pos (or pos (tlon-babel-get-todo-position-from-issue issue)))
 	   (file (or file (tlon-babel-get-todos-file-from-issue issue))))
       (tlon-babel-open-todo file pos)
@@ -826,8 +827,8 @@ An issue name is its number followed by its title.
 
 If ISSUE is nil, get the issue at point or in current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-	 (title (oref issue title))
-	 (number (oref issue number)))
+	 (number (oref issue number))
+	 (title (oref issue title)))
     (format "#%s %s" number title)))
 
 (defun tlon-babel-get-issue-link (&optional issue)

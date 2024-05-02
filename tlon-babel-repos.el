@@ -32,6 +32,22 @@
 (require 'vc)
 (require 'vc-extras)
 
+;;;; Variables
+
+(defgroup tlon-babel-repos ()
+  "`tlon-babel-repos' functionality."
+  :group 'tlon-babel)
+
+(defcustom tlon-babel-split-repo 'prompt
+  "Whether to split the `.git' directory in a separate directory.
+If nil, never split the `.git' directory. If `prompt', ask the user whether to
+split the `.git' directory. If t or any other non-nil value, always split the
+`.git' directory."
+  :type '(choice (const :tag "Never" nil)
+		 (const :tag "Prompt" prompt)
+		 (boolean :tag "Always"))
+  :group 'tlon-babel-repos)
+
 ;;;; Functions
 
 ;;;###autoload
@@ -59,7 +75,7 @@ NAME is nil, prompt the user for a repo name."
     (when (file-exists-p dir)
       (user-error "Directory `%s' already exists" dir))
     (vc-clone remote 'Git dir)
-    (pcase (tlon-babel-split-repo dir)
+    (pcase tlon-babel-split-repo
       ('nil)
       ('prompt (if (y-or-n-p "Move `.git' directory to separate directory?")
 		   (tlon-babel-split-repo dir)
@@ -92,7 +108,7 @@ files from possible corruption."
   "Add DIR to the Forge database."
   (let* ((default-directory dir)
 	 (url (and-let*
-		  ((repo (forge-get-repository 'stub))
+		  ((repo (forge-get-repository :stub))
 		   (remote (oref repo remote)))
 		(magit-git-string "remote" "get-url" remote))))
     (forge-add-repository url)

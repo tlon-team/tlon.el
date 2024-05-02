@@ -28,8 +28,6 @@
 ;;; Code:
 
 (require 'request)
-(require 'simple-extras)
-(require 'tlon-babel)
 (require 'tlon-babel-cleanup)
 (require 'tlon-babel-fix)
 
@@ -83,6 +81,7 @@
 
 ;;;;; General import
 
+(declare-function simple-extras-string-is-url-p "simple-extras")
 (defun tlon-babel-import-document (&optional identifier title)
   "Import a document with IDENTIFIER.
 IDENTIFIER can be a URL or a PDF file path.
@@ -103,6 +102,7 @@ TITLE optionally specifies the title of the file to be imported."
     (tlon-babel-import-convert-html-to-markdown url title)))
 
 ;; TODO: make it also work with LessWrong
+(declare-function tlon-babel-set-file-from-title "tlon-babel")
 (defun tlon-babel-import-eaf-html (id-or-slug &optional title)
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
 TITLE optionally specifies the title of the entity to be imported."

@@ -27,8 +27,6 @@
 
 ;;; Code:
 
-(require 'bibtex-extras)
-(require 'forge-core)
 (require 'paths)
 
 ;;;; Variables
@@ -232,15 +230,31 @@
 	   :abbrev "meetings-fede-leo"
 	   :subtype meetings
 	   :participants ("Federico Stafforini" "Leonardo Picón"))
+    (:name "meetings-group"
+	   :abbrev "meetings-group"
+	   :subtype meetings
+	   :participants ("Pablo Stafforini" "Leonardo Picón" "Federico Stafforini"))
+    (:name "clock-pablo"
+	   :abbrev "clock-pablo"
+	   :subtype clock)
+    (:name "clock-fede"
+	   :abbrev "clock-fede"
+	   :subtype clock)
+    (:name "clock-leo"
+	   :abbrev "clock-leo"
+	   :subtype clock)
     (:name "tlon-docs"
 	   :project "other"
 	   :subproject "docs"
 	   :abbrev "docs"
 	   :type docs)
-    (:name "tlon-site"
+    (:name "tlon-front"
 	   :project "tlon"
-	   :subproject "docs"
-	   :abbrev "tlon-site"
+	   :abbrev "tlon-front"
+	   :type development)
+    (:name "tlon-content"
+	   :project "tlon"
+	   :abbrev "tlon-content"
 	   :type development)
     (:name "sandbox"
 	   :abbrev "sandbox"
@@ -249,6 +263,12 @@
 The `:name' property is the full name of the repo, as it appears in the URL. The
 `:abbrev' property is an abbreviated form of the name, used, for example, for
 creating `org-mode' TODOs.")
+
+(defcustom tlon-babel-email-shared
+  "tlon.shared@gmail.com"
+  "Tlön shared gmail address."
+  :type 'string
+  :group 'tlon-core)
 
 ;;;;; To sort
 
@@ -278,32 +298,112 @@ the actual user.")
 
 (defconst tlon-babel-core-bare-dirs
   '((("en" . "articles")
-     ("es" . "articulos"))
+     ("es" . "articulos")
+     ("fr" . "articles")
+     ("it" . "articoli"))
     (("en" . "tags")
-     ("es" . "temas"))
+     ("es" . "temas")
+     ("fr" . "sujets")
+     ("it" . "temi"))
     (("en". "authors")
-     ("es" . "autores"))
+     ("es" . "autores")
+     ("fr" . "auteurs")
+     ("it" . "autori"))
     (("en" . "collections")
-     ("es" . "colecciones")))
+     ("es" . "colecciones")
+     ("fr" . "collections")
+     ("it" . "collezioni")))
   "Alist of bare directories and associated translations.")
 
-(defconst tlon-babel-languages
-  '(("english" . "en")
-    ("spanish" . "es")
-    ("italian" . "it")
-    ("french" . "fr")
-    ("german" . "de")
-    ("portuguese" . "pt"))
-  "Alist of languages and associated names.")
+(defconst tlon-babel-project-languages
+  '("english" "spanish" "italian" "french" "german" "portuguese" "arabic")
+  "A list of languages all languages in the Babel project.")
 
-(defconst tlon-babel-locales
-  '(("english" . "en-US")
-    ("spanish" . "es-ES")
-    ("italian" . "it-IT")
-    ("french" . "fr-FR")
-    ("german" . "de-DE")
-    ("portuguese" . "pt-PT"))
-  "Alist of languages and associated locales.")
+(defconst tlon-babel-languages-properties
+  '((:name "albanian" :code "sq" :locale "sq_AL")
+    (:name "american" :code "en-US" :locale "en_US")
+    (:name "amharic" :code "am" :locale "am_ET")
+    (:name "arabic" :code "ar" :locale "ar_SA")
+    (:name "argentinian" :code "es-AR" :locale "es_AR")
+    (:name "armenian" :code "hy" :locale "hy_AM")
+    (:name "assamese" :code "as" :locale "as_IN")
+    (:name "asturian" :code "ast" :locale "ast_ES")
+    (:name "austrian" :code "de-AT" :locale "de_AT")
+    (:name "australian" :code "en-AU" :locale "en_AU")
+    (:name "basque" :code "eu" :locale "eu_ES")
+    (:name "belarusian" :code "be" :locale "be_BY")
+    (:name "bengali" :code "bn" :locale "bn_BD")
+    (:name "bosnian" :code "bs" :locale "bs_BA")
+    (:name "breton" :code "br" :locale "br_FR")
+    (:name "british" :code "en-GB" :locale "en_GB")
+    (:name "bulgarian" :code "bg" :locale "bg_BG")
+    (:name "canadian" :code "en-CA" :locale "en_CA")
+    (:name "catalan" :code "ca" :locale "ca_ES")
+    (:name "chinese" :code "zh" :locale "zh_CN")
+    (:name "coptic" :code "cop" :locale "cop_EG")
+    (:name "croatian" :code "hr" :locale "hr_HR")
+    (:name "czech" :code "cs" :locale "cs_CZ")
+    (:name "danish" :code "da" :locale "da_DK")
+    (:name "dutch" :code "nl" :locale "nl_NL")
+    (:name "english" :code "en" :locale "en_GB")
+    (:name "esperanto" :code "eo" :locale "eo_EO")
+    (:name "estonian" :code "et" :locale "et_EE")
+    (:name "finnish" :code "fi" :locale "fi_FI")
+    (:name "french" :code "fr" :locale "fr_FR")
+    (:name "galician" :code "gl" :locale "gl_ES")
+    (:name "georgian" :code "ka" :locale "ka_GE")
+    (:name "german" :code "de" :locale "de_DE")
+    (:name "greek" :code "el" :locale "el_GR")
+    (:name "hebrew" :code "he" :locale "he_IL")
+    (:name "hindi" :code "hi" :locale "hi_IN")
+    (:name "hungarian" :code "hu" :locale "hu_HU")
+    (:name "icelandic" :code "is" :locale "is_IS")
+    (:name "interlingua" :code "ia" :locale "ia_IA")
+    (:name "irish" :code "ga" :locale "ga_IE")
+    (:name "italian" :code "it" :locale "it_IT")
+    (:name "japanese" :code "ja" :locale "ja_JP")
+    (:name "kannada" :code "kn" :locale "kn_IN")
+    (:name "korean" :code "ko" :locale "ko_KR")
+    (:name "lao" :code "lo" :locale "lo_LA")
+    (:name "latin" :code "la" :locale "la_VA")
+    (:name "latvian" :code "lv" :locale "lv_LV")
+    (:name "lithuanian" :code "lt" :locale "lt_LT")
+    (:name "macedonian" :code "mk" :locale "mk_MK")
+    (:name "malayalam" :code "ml" :locale "ml_IN")
+    (:name "marathi" :code "mr" :locale "mr_IN")
+    (:name "mexican" :code "es-MX" :locale "es_MX")
+    (:name "mongolian" :code "mn" :locale "mn_MN")
+    (:name "naustrian" :code "de-AT" :locale "de_AT")
+    (:name "newzealand" :code "en-NZ" :locale "en_NZ")
+    (:name "ngerman" :code "de-DE" :locale "de_DE")
+    (:name "nko" :code "nqo" :locale "nqo_GN")
+    (:name "norwegian" :code "no" :locale "no_NO")
+    (:name "oriya" :code "or" :locale "or_IN")
+    (:name "persian" :code "fa" :locale "fa_IR")
+    (:name "polish" :code "pl" :locale "pl_PL")
+    (:name "portuguese" :code "pt" :locale "pt_PT")
+    (:name "romanian" :code "ro" :locale "ro_RO")
+    (:name "russian" :code "ru" :locale "ru_RU")
+    (:name "sanskrit" :code "sa" :locale "sa_IN")
+    (:name "serbian" :code "sr" :locale "sr_RS")
+    (:name "slovak" :code "sk" :locale "sk_SK")
+    (:name "slovenian" :code "sl" :locale "sl_SI")
+    (:name "spanish" :code "es" :locale "es_ES")
+    (:name "spanish" :code "es" :locale "es_ES")
+    (:name "swedish" :code "sv" :locale "sv_SE")
+    (:name "swissgerman" :code "de-CH" :locale "de_CH")
+    (:name "tamil" :code "ta" :locale "ta_IN")
+    (:name "telugu" :code "te" :locale "te_IN")
+    (:name "thai" :code "th" :locale "th_TH")
+    (:name "turkish" :code "tr" :locale "tr_TR")
+    (:name "turkmen" :code "tk" :locale "tk_TM")
+    (:name "ukenglish" :code "en-GB" :locale "en_GB")
+    (:name "ukrainian" :code "uk" :locale "uk_UA")
+    (:name "urdu" :code "ur" :locale "ur_PK")
+    (:name "vietnamese" :code "vi" :locale "vi_VN")
+    (:name "welsh" :code "cy" :locale "cy_GB")
+    (:name "afrikaans" :code "af" :locale "af_ZA"))
+  "Plist of valid `langid' names, locales and ISO 639-1 codes.")
 
 ;;;; Functions
 
@@ -315,6 +415,12 @@ the actual user.")
     (plist-put repo :dir dir)))
 
 (mapc #'tlon-babel-set-dir tlon-babel-repos)
+
+(defun tlon-babel-get-valid-language-codes ()
+  "Return a list of valid ISO 639-1 code codes for the babel project."
+  (let (codes)
+    (dolist (name tlon-babel-project-languages codes)
+      (push (tlon-babel-lookup tlon-babel-languages-properties :code :name name) codes))))
 
 ;;;;; Ger repo
 
@@ -405,6 +511,7 @@ PAIRS is an even-sized list of <key value> tuples."
   "Return all unique values of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-babel-lookup-all tlon-babel-users key key-value))
 
+(defvar tlon-babel-job-labels)
 (defun tlon-babel-label-lookup (key &rest key-value)
   "Return the value of KEY in labels matching all KEY-VALUE pairs."
   (apply #'tlon-babel-lookup tlon-babel-job-labels key key-value))
@@ -420,6 +527,10 @@ PAIRS is an even-sized list of <key value> tuples."
 			      (file-relative-name paths-dir-tlon-repos "~/")
 			      (buffer-file-name))))
 
+(declare-function emacsql "emacsql")
+(declare-function forge-db "forge-db")
+(declare-function forge-get-repository "forge-core")
+(declare-function forge-get-issue "forge-core")
 (defun tlon-babel-issue-lookup (string &optional dir)
   "Return the first issue in DIR whose title includes STRING.
 If DIR is nil, use the current repository."
@@ -474,24 +585,31 @@ If END is nil, use BEGIN also as the end delimiter."
 
 ;;;;; language
 
-(defun tlon-babel-validate-language (language)
+(defun tlon-babel-validate-language (language &optional format)
   "If LANGUAGE is a valid language, return it.
-The validation is case-insensitive, but the returned language is in lowercase."
-  (let ((language (downcase language)))
-    (when (member language (mapcar #'car bibtex-extras-valid-languages))
+The validation is case-insensitive, but the returned language is in lowercase.
+If FORMAT is `code', validate against the ISO 639-1 code. Otherwise,
+validate a list of natural languages."
+  (let ((language (downcase language))
+	(format (pcase format
+		  ('code :code)
+		  (_ :name))))
+    (when (member language (mapcar (lambda (language)
+				     (plist-get language format))
+				   tlon-babel-languages-properties))
       language)))
 
-(defun tlon-babel-get-two-letter-code (language)
-  "Return the two-letter code for LANGUAGE."
+(defun tlon-babel-get-iso-code (language)
+  "Return the two-letter ISO 639-1 code for LANGUAGE."
   (if (= (length language) 2)
       language
     (when-let* ((downcased (downcase language))
-		(code-raw (alist-get downcased bibtex-extras-valid-languages nil nil #'string=)))
+		(code-raw (tlon-babel-lookup tlon-babel-languages-properties :code :name downcased)))
       (string-limit code-raw 2))))
 
 (defun tlon-babel-select-language (&optional format babel multiple)
   "Prompt the user to select a LANGUAGE and return it in FORMAT.
-If FORMAT is `two-letter', return the two-letter code of the language (e.g.
+If FORMAT is `code', return the two-letter code of the language (e.g.
 \"es\"). If it is `locale', return the predefined locale for that language (e.g.
 \"en-US\"). Otherwise, return the original selection (e.g. \"english\").
 
@@ -504,39 +622,45 @@ case, the return value will be a list of strings rather than a string."
 			(tlon-babel-read-multiple-languages babel)
 		      (tlon-babel-read-language babel))))
     (pcase format
-      ('two-letter (tlon-babel-get-formatted-languages selection format))
-      ('locale (tlon-babel-get-formatted-languages selection format))
+      ((or 'code 'locale) (tlon-babel-get-formatted-languages selection format))
       (_ selection))))
 
 (defun tlon-babel-get-formatted-languages (selection format)
   "Return the language SELECTION in appropriate FORMAT.
-FORMAT must be either `two-letter' or `locale'. SELECTION is either a string or
-a list of strings representing languages in English."
-  (let ((languages (pcase format
-		     ('locale tlon-babel-locales)
-		     ('two-letter bibtex-extras-valid-languages))))
+SELECTION is either a string or a list of strings representing languages in
+English. FORMAT must be either `code' or `locale'."
+  (let* ((property (pcase format ('locale :locale) ('code :code)))
+	 (fun (lambda (language)
+		(tlon-babel-lookup tlon-babel-languages-properties property :name language))))
     (if (listp selection)
 	(mapcar (lambda (language)
-		  "Return the two-letter code or the locale for LANGUAGE."
-		  (alist-get language languages nil nil #'string=))
+		  (funcall fun language))
 		selection)
-      (alist-get selection languages nil nil #'string=))))
+      (funcall fun selection))))
 
 (defun tlon-babel-read-language (&optional babel)
   "Read a language from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages)))
+  (let* ((language-candidates (if babel tlon-babel-languages tlon-babel-languages)))
     (completing-read "Language: " language-candidates nil t)))
 
 (defun tlon-babel-read-multiple-languages (&optional babel)
   "Read a list of languages from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-babel-languages bibtex-extras-valid-languages))
+  (let* ((language-candidates (if babel tlon-babel-languages tlon-babel-languages))
 	 (language-selection (completing-read-multiple "Languages (comma-separated): "
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
+
+(defun tlon-babel-get-language-candidates (babel)
+  "Return a list of language candidates.
+If BABEL is nil, return all valid BibTeX languages; otherwise, return candidates
+languages in the Babel project only."
+  (if babel
+      tlon-babel-project-languages
+    (tlon-babel-lookup-all tlon-babel-languages-properties :name)))
 
 ;;;;; json
 

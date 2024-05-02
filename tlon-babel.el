@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.2.0
+;; Version: 1.3.0
 ;; URL: https://github.com/tlon-team/tlon-babel
 ;; Keywords: convenience tools
 
@@ -27,30 +27,20 @@
 
 ;;; Code:
 
-(require 'citar)
-(require 'consult)
-(require 'doi-utils)
-(require 'files-extras)
 (require 'forge)
 (require 'forge-search)
-(require 'goldendict-ng)
 (require 'magit)
 (require 'magit-extra)
 (require 'org)
 (require 'org-clock)
-(require 'org-roam)
 (require 'paths)
 (require 'simple-extras)
-(require 'substitute)
 (require 'tlon-babel-dispatch)
 (require 'tlon-babel-core)
+(require 'tlon-babel-jobs)
 (require 'tlon-babel-yaml)
 (require 'tlon-babel-counterpart)
 (require 'tlon-babel-tex)
-(require 'tlon-core)
-(require 'unfill)
-(require 'window-extras)
-(require 'winum)
 
 ;;;; Customization:
 
@@ -205,7 +195,7 @@ The second capture group handles the `.md' extension, which we used previously."
 
 (defun tlon-babel-set-translation-language (language)
   "Set the translation LANGUAGE."
-  (interactive (list (tlon-babel-select-language 'two-letter 'babel)))
+  (interactive (list (tlon-babel-select-language 'code 'babel)))
   (setq tlon-babel-translation-language language))
 
 ;;;;; User commits
@@ -356,6 +346,9 @@ Defaults to the current buffer if no FILE is specified."
 	 (original (tlon-babel-get-counterpart translation)))
     (cl-values original translation key)))
 
+(declare-function window-extras-split-if-unsplit "window-extras")
+(declare-function winum-select-window-1 "winum")
+(declare-function winum-select-window-2 "winum")
 (defun tlon-babel-set-windows (original-path translation-path)
   "Open ORIGINAL-PATH and TRANSLATION-PATH in windows 1 and 2."
   (window-extras-split-if-unsplit)
@@ -495,11 +488,12 @@ If REPO is nil, use the current repo."
   (let ((default-directory (or repo default-directory)))
     (magit-log-all `("-S" ,search-string))))
 
+(declare-function consult-ripgrep "consult")
 (defun tlon-babel-search-files (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
   (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-babel-get-repo nil 'include-all))))
+  (let ((repo (or repo (tlon-babel-get-repo nil 'include-all))))
     (consult-ripgrep repo search-string)))
 
 (defun tlon-babel-search-multi (search-string &optional repo)
@@ -643,6 +637,8 @@ respectively."
 	;; (tlon-babel-url-correspondence-commit)
 	))))
 
+(declare-function ebib-extras-open-key "ebib-extras")
+(declare-function ebib-extras-get-field "ebib-get-field")
 (defun tlon-babel-section-correspondence-check (key)
   "Check that selected BibTeX KEY is associated with the original work."
   (save-window-excursion
@@ -695,7 +691,7 @@ If REPO is nil, default to the current repository."
   (interactive)
   (let* ((alist (tlon-babel-files-and-display-names-alist
 		 (tlon-babel-repo-lookup-all :dir)
-		 tlon-core-repo-dirs)))
+		 paths-dir-tlon-repos)))
     (tlon-babel-open-file-in-alist alist)))
 
 (defun tlon-babel-files-and-display-names-alist (dirs relative-path)
@@ -772,6 +768,7 @@ Return the path of the temporary file created."
     (message "File created: %s" new-file)
     new-file))
 
+(declare-function goldendict-ng-search-string "goldendict-ng")
 ;; TODO: move to relevant section
 (defun tlon-babel-search-for-translation (string)
   "Search for a Spanish translation of English STRING."

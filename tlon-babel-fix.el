@@ -29,6 +29,51 @@
 
 (require 'tlon-babel-core)
 
+;;;;;; Variables
+
+(defconst tlon-babel-fix-french-translation
+  '((") - \\[" . ") • [")
+    (" - " . " — ")
+    ("## Pour savoir plus" . "## Pour en savoir plus")
+    ("type :" . "type:")
+    ("title :" . "title:")
+    ("\ntitre :" . "\ntitle:")
+    ("\ntitre:" . "\ntitle:")
+    ("\\*\\*L’" . "L’**")
+    ("\\*\\*L'" . "L’**")
+    ("\\*\\*La " . "La **")
+    ("\\*\\*Le " . "Le **")
+    ("\\*\\*Les " . "Les **")
+    ("\\*\\*Un " . "Un **")
+    ("\\*\\*Une " . "Une **")
+    ("## Entrées associées \\." . "## Entrées associées")
+    ("## Entrées associées\\." . "## Entrées associées")
+    (" \"" . " « ")
+    ("\" " . " » ")
+    ("\"\\." . " ».")
+    ("\"\\?" . " »?")
+    ("\"!" . " »!")
+    ("\":" . " »:")
+    ("\";" . " »;")
+    ("\"," . " »,")
+    ("\")" . " »)")
+    ("(\"" . "(« ")
+    ("(\"" . "(« ")
+    ("] : <Footnote />" . "]: <Footnote />")
+    ("] : <Sidenote />" . "]: <Sidenote />")
+    ("] (\\." . "](.")
+    ("] (htt" . "](htt")
+    ("(. /" . "(./")
+    ("(.. /" . "(../")
+    (" :" . " :")
+    (" ;" . " ;")
+    (" \\?" . " ?")
+    (" !" . " !")
+    (" %" . " %")
+    ("\"}\\. />". "\"} />")
+    ("\"\\[\\^" . " »[^"))
+  "A list search and replace pairs for fixing common issues in French translations.")
+
 ;;;; Functions
 
 ;;;;; autofix
@@ -55,8 +100,8 @@
 
 (defun tlon-babel-autofix-footnote-punctuation-amend ()
   "Reverse undesired effects of `tlon-babel-autofix-footnote-punctuation'.
-Ideally the function should be amended so that it doesn’t introduce these
-effects to begin with."
+  Ideally the function should be amended so that it doesn’t introduce these
+  effects to begin with."
   (tlon-babel-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]"  ; fixes `[[^1]^2]'
 			"\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
 		      "[^\\1][^\\2]"))
@@ -154,6 +199,18 @@ dedicated function."
 	(setq cnt (1+ cnt)))
       (message "Done. %d URLs were fixed." cnt))))
 
+;;;;;; Language-specific
+
+;;;;;;; French
+
+(defun tlon-babel-fix-french-translation ()
+  "Fix common issues in French translations."
+  (interactive)
+  (dolist (cons tlon-babel-fix-french-translation)
+    (let ((search (car cons))
+	  (replace (cdr cons)))
+      (tlon-babel-autofix (list search) replace))))
+
 ;;;;;; TTS
 
 ;; we can have this here or in `tts'. The reason for having it here, despite
@@ -168,4 +225,3 @@ dedicated function."
 
 (provide 'tlon-babel-fix)
 ;;; tlon-babel-fix.el ends here
-

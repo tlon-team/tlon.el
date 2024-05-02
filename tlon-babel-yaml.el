@@ -30,7 +30,6 @@
 (require 'citar)
 (require 'files-extras)
 (require 'simple-extras)
-(require 'tlon-core)
 (require 'tlon-babel-core)
 
 ;;;; Variables
@@ -236,12 +235,13 @@ alist, unless RAW is non-nil."
 (defun tlon-babel-yaml-sort-fields (fields &optional keys no-error)
   "Sort alist of YAML FIELDS by order of KEYS.
 If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
-  (mapcar (lambda (key)
-	    (if-let ((match (assoc key fields)))
-		match
-	      (unless no-error
-		(user-error "Key `%s' not found in file `%s'" key (buffer-file-name)))))
-	  keys))
+  (cl-remove-if #'null
+		(mapcar (lambda (key)
+			  (if-let ((match (assoc key fields)))
+			      match
+			    (unless no-error
+			      (user-error "Key `%s' not found in file `%s'" key (buffer-file-name)))))
+			keys)))
 
 (defun tlon-babel-yaml-get-valid-keys (&optional file type no-core)
   "Return the admissible keys for YAML metadata in FILE.
@@ -346,7 +346,7 @@ If FILE is nil, use the file visited by the current buffer."
 ;;;;;; translation setter functions
 
 ;; copy from original
-(defun tlon-babel-yaml-set-authors-in-translation (file)
+(defun tlon-babel-yaml-set-authors-in-translation ()
   "Set the value of the `authors' YAML field in a translation file."
   (tlon-babel-yaml-set-key "authors"))
 
@@ -379,7 +379,7 @@ AUTHOR is the first author of the original work."
   (format-time-string "%FT%T%z"))
 
 ;; offer AI-generated translation from original title
-(defun tlon-babel-yaml-set-title-in-translation (file)
+(defun tlon-babel-yaml-set-title-in-translation ()
   "Set the value of `title' YAML field."
   (or title (read-string "Title: ")))
 
@@ -496,11 +496,12 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
 	(file (or file (buffer-file-name))))
     (if-let ((metadata (tlon-babel-yaml-get-metadata file)))
 	(if-let ((key-exists-p (assoc key metadata)))
-	    (cond ((eq field-exists 'overwrite)
-		   (tlon-babel-yaml-delete-field key file)
-		   (tlon-babel-yaml-write-field key value file))
-		  ((eq field-exists 'throw-error)
-		   (user-error "Field `%s' already exists in `%s'" key file)))
+	    (pcase field-exists
+	      ('overwrite
+	       (tlon-babel-yaml-delete-field key file)
+	       (tlon-babel-yaml-write-field key value file))
+	      ('throw-error
+	       (user-error "Field `%s' already exists in `%s'" key file)))
 	  (tlon-babel-yaml-write-field key value file))
       (user-error "File `%s' does not appear to contain a metadata section" file))))
 
@@ -508,10 +509,11 @@ nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
   "Set KEY to VALUE in FILE."
   (with-current-buffer (find-file-noselect file)
     (goto-char (point-min))
-    (forward-line)
-    (insert (format "%s:  %s\n" key value))
-    (save-buffer)
-    (tlon-babel-yaml-reorder-metadata)))
+    (when (looking-at-p tlon-babel-yaml-delimiter)
+      (forward-line)
+      (insert (format "%s:  %s\n" key value))
+      (save-buffer)
+      (tlon-babel-yaml-reorder-metadata))))
 
 ;; TODO: refactor with above
 (defun tlon-babel-yaml-delete-field (&optional key file)

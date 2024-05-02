@@ -27,7 +27,6 @@
 
 ;;; Code:
 
-(require 'markdown-mode)
 (require 'tlon-babel-core)
 (require 'tlon-babel-md)
 
@@ -36,39 +35,6 @@
 (defgroup tlon-babel-tts ()
   "Text-to-speech functionality."
   :group 'tlon-babel)
-
-(defcustom tlon-babel-azure-tts-settings
-  "audio-16khz-64kbitrate-mono-mp3"
-  "Settings for the Azure text-to-speech service.
-Here's a description of the main options:
-
-- `audio-24khz-160kbitrate-mono-mp3': Offers higher quality due to a higher
-  bitrate and sample rate. This means the audio will sound clearer, especially
-  for more complex sounds or music. However, the file size will also be larger.
-
-- `audio-16khz-64kbitrate-mono-mp3': Reduces the bitrate, which will result in a
-  smaller file at the cost of lower audio quality. Useful when network bandwidth
-  or storage is limited.
-
-- `raw-16khz-16bit-mono-pcm': Provides raw audio data without compression. This
-  is useful if you plan to further process the audio yourself or need lossless
-  quality. Note that the files will be significantly larger.
-
-- `riff-16khz-16bit-mono-pcm': Similar to the RAW format but wrapped in the
-  Waveform Audio File Format, which includes headers making it compatible with
-  more playback devices and software.
-
-- `riff-24khz-16bit-mono-pcm': Offers a higher sample rate compared to the 16kHz
-  versions, which can provide better audio quality at the expense of larger file
-  sizes."
-  :type 'string
-  :group 'tlon-babel-tts)
-
-;; TODO: add OpenAI settings
-(defcustom tlon-babel-openai-tts-settings nil
-  "Settings for the OpenAI text-to-speech service."
-  :type 'string
-  :group 'tlon-babel-tts)
 
 ;;;; Variables
 
@@ -101,61 +67,30 @@ Here's a description of the main options:
 (defvar tlon-babel-tts-current-language ""
   "The language used in the current text-to-speech process.")
 
+;;;;; Chunk processing
+
+(defvar tlon-babel-unprocessed-chunks nil
+  "The chunks to process in the current TTS session.")
+
 ;;;;; SSML tag pairs & patterns
 
-;;;;;; break
+;;;;;; `break'
 
 (defconst tlon-babel-tts-ssml-break
   "<break time=\"%s\" />"
   "SSML pattern for break tag, with time placeholder.
-<https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>")
+<https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>.")
 
-;;;;;; lang
+;; (defconst tlon-babel-tts-ssml-break-search-pattern
+;; FIXME: this is not working; `tlon-babel-make-tag-search-pattern' needs to be adjusted to support self-closing tags
+;; (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-break)
+;; "Pattern to search for `break' tags.")
 
-(defconst tlon-babel-tts-ssml-lang
-  '("<lang xml:lang=\"%s\">" . "</lang>")
-  "SSML pattern for language tag, with locale code placeholder.")
-
-;;;;;; voice
-
-(defconst tlon-babel-tts-ssml-voice
-  '("<voice name=\"%s\">" . "</voice>")
-  "SSML pair for voice tag, with voice name placeholder.")
-
-(defconst tlon-babel-tts-ssml-voice-pattern
-  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
-  "SSML pattern for voice tag, with voice name and text placeholders.")
-
-(defconst tlon-babel-tts-ssml-double-voice-pattern
-  (concat (cdr tlon-babel-tts-ssml-voice)
-	  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
-	  (car tlon-babel-tts-ssml-voice))
-  "SSML pattern for voice tag, with two voice name placeholders and a text placeholder.")
-
-;;;;;; phoneme
-
-(defconst tlon-babel-tts-ssml-phoneme
-  '("<phoneme alphabet=\"%s\" ph=\"%s\">" . "</phoneme>")
-  "SSML pattern for phoneme tag, with phoneme and text placeholders.
-Note that, as of 2024-04-05, none of the Spanish Azure TTS voices support the
-`phoneme' tag:
-<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts>.
-So for the time being we should remove it from the files when generating the
-audio, to avoid errors.")
-
-(defconst tlon-babel-tts-ssml-phoneme-replace-pattern
-  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-phoneme)
-  "Pattern to replace `phoneme' tags.")
-
-;;;;;; emphasis
+;;;;;; `emphasis'
 
 (defconst tlon-babel-tts-ssml-emphasis
   '("<emphasis level=\"%s\">" . "</emphasis>")
-  "SSML pattern for emphasis tag, with level and text placeholders.
-Note that this tag is not supported by Azure TTS except for a handful of voices:
-<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-emphasis>.
-As with the `phoneme' tag, we should for the time being remove it when
-generating the audio.")
+  "SSML pattern for emphasis tag, with level and text placeholders.")
 
 (defconst tlon-babel-tts-ssml-emphasis-levels
   '("none" "reduced" "moderate" "strong")
@@ -165,46 +100,295 @@ generating the audio.")
   "moderate"
   "Default emphasis level for the `emphasis' SSML tag.")
 
+(defconst tlon-babel-tts-ssml-emphasis-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-emphasis)
+  "Pattern to search for `emphasis' tags.")
 
-;;;;; Azure
+;;;;;; `lang'
 
-(defconst tlon-babel-azure-ssml-template
-  (format "<speak version='1.0' xml:lang='%%s'>%s</speak>"
-	  tlon-babel-tts-ssml-voice-pattern)
-  "SSML template for Azure TTS.")
+(defconst tlon-babel-tts-ssml-lang
+  '("<lang xml:lang=\"%s\">" . "</lang>")
+  "SSML pattern for language tag, with locale code placeholder.")
 
-(defconst tlon-babel-azure-tts-request
+(defconst tlon-babel-tts-ssml-lang-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-lang)
+  "Pattern to search for `lang' tags.")
+
+;;;;;; `phoneme'
+
+(defconst tlon-babel-tts-ssml-phoneme
+  '("<phoneme alphabet=\"%s\" ph=\"%s\">" . "</phoneme>")
+  "SSML pattern for phoneme tag, with phoneme and text placeholders.")
+
+(defconst tlon-babel-tts-ssml-phoneme-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-phoneme)
+  "Pattern to search for `phoneme' tags.")
+
+(defconst tlon-babel-tts-ssml-phoneme-replace-pattern
+  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-phoneme)
+  "Pattern to replace `phoneme' tags.")
+
+;;;;;; `voice'
+
+(defconst tlon-babel-tts-ssml-voice
+  '("<voice name=\"%s\">" . "</voice>")
+  "SSML pair for voice tag, with voice name placeholder.")
+
+(defconst tlon-babel-tts-ssml-voice-search-pattern
+  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-voice)
+  "Pattern to search for voice tags.")
+
+(defconst tlon-babel-tts-ssml-voice-replace-pattern
+  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
+  "SSML pattern for voice tag, with voice name and text placeholders.")
+
+(defconst tlon-babel-tts-ssml-double-voice-replace-pattern
+  (concat (cdr tlon-babel-tts-ssml-voice)
+	  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
+	  (car tlon-babel-tts-ssml-voice))
+  "SSML pattern for voice tag, with 2 voice name placeholders and text placeholder.")
+
+;;;;;; Common
+
+(defconst tlon-babel-tts-supported-tags
+  `((:tag break
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag emphasis
+	  :polly nil
+	  :azure nil ; https://bit.ly/azure-ssml-emphasis
+	  :google t
+	  :openai nil
+	  :pattern ,tlon-babel-tts-ssml-emphasis-search-pattern)
+    (:tag lang
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil
+	  :pattern ,tlon-babel-tts-ssml-lang-search-pattern)
+    (:tag mark
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag p
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag phoneme
+	  :polly t
+	  :azure nil ; https://bit.ly/azure-ssml-phoneme
+	  :google t
+	  :openai nil
+	  :pattern ,tlon-babel-tts-ssml-phoneme-search-pattern)
+    (:tag prosody
+	  :polly t ; partial support
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag s
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag say-as
+	  :polly t ; partial support
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag speak
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag sub
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag voice
+	  :polly nil
+	  :azure t
+	  :google t
+	  :openai nil
+	  :pattern tlon-babel-tts-ssml-voice-search-pattern)
+    (:tag w
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil))
+  "SSML tags supported by different TTS engines.
+- Amazon Polly:
+  <https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html>.
+
+- Microsoft Azure:
+
+- Google Cloud <https://cloud.google.com/text-to-speech/docs/ssml>.:
+
+- OpenAI:
+  <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.")
+
+;;;;; Engine settings
+
+;;;;;; Microsoft Azure
+
+(defconst tlon-babel-microsoft-azure-request
   "curl --location --request POST 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1' \
 --header 'Ocp-Apim-Subscription-Key: %s' \
 --header 'Content-Type: application/ssml+xml' \
 --header 'X-Microsoft-OutputFormat: %s' \
 --header 'User-Agent: curl' \
---data-raw %s > '%s'"
-  "Curl command to send a request to the Azure text-to-speech engine.")
+--data-raw '%s' \
+> '%s'"
+  "Curl command to send a request to the Microsoft Azure text-to-speech engine.
+The placeholders are: API key, settings, SSML, and destination.")
 
-(defconst tlon-babel-azure-voices
+(defconst tlon-babel-microsoft-azure-voices
   '((:voice "es-US-AlonsoNeural" :language "es" :gender "male")
     (:voice "es-US-PalomaNeural" :language "es" :gender "female"))
-  "Preferred Azure voices for different languages.
+  "Preferred Microsoft Azure voices for different languages.
 All the voices in this property list are neural and multilingual, and are the
 best male and female voices we were able to identify in each language.
 
 A list of available voices may be found here:
-<https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/ai-services/speech-service/includes/language-support/tts.md>")
+<https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/ai-services/speech-service/includes/language-support/tts.md>.")
 
-(defvar tlon-babel-azure-key nil
-  "Azure subscription key for the text-to-speech service.")
+(defcustom tlon-babel-microsoft-azure-audio-settings
+  "audio-16khz-64kbitrate-mono-mp3"
+  "Audio settings for the Microsoft Azure text-to-speech service.
+Here's a description of the main options:
 
-(defconst tlon-babel-azure-char-limit (* 9 60 14)
-  "Maximum number of characters that Azure can process per request.
-Azure can process up to 10 minutes of audio at a time. This estimate assumes 14
-characters per second, and uses nine minutes.")
+- `\"audio-24khz-160kbitrate-mono-mp3\"': Offers higher quality due to a higher
+  bitrate and sample rate. This means the audio will sound clearer, especially
+  for more complex sounds or music. However, the file size will also be larger.
 
-;;;;; OpenAI
+- `\"audio-16khz-64kbitrate-mono-mp3\"': Reduces the bitrate, which will result
+  in a smaller file at the cost of lower audio quality. Useful when network
+  bandwidth or storage is limited.
 
-;; TODO: complete this; as of 2024-04-08, OpenAI offers no SSML support
-;; (https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5)
-;; so not a priority
+- `\"raw-16khz-16bit-mono-pcm\":' Provides raw audio data without compression.
+  This is useful if you plan to further process the audio yourself or need
+  lossless quality. Note that the files will be significantly larger.
+
+- `\"riff-16khz-16bit-mono-pcm\"': Similar to the RAW format but wrapped in the
+  Waveform Audio File Format, which includes headers making it compatible with
+  more playback devices and software.
+
+- `\"riff-24khz-16bit-mono-pcm\"': Offers a higher sample rate compared to the
+  16kHz versions, which can provide better audio quality at the expense of
+  larger file sizes.
+
+For details, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
+  :type 'string
+  :group 'tlon-babel-tts)
+
+(defvar tlon-babel-microsoft-azure-key nil
+  "Microsoft Azure subscription key for the text-to-speech service.")
+
+(defconst tlon-babel-microsoft-azure-char-limit (* 9 60 14)
+  "Maximum number of characters that Microsoft Azure can process per request.
+Microsoft Azure can process up to 10 minutes of audio at a time. This estimate
+assumes 14 characters per second, and uses nine minutes.")
+
+;;;;;; Google Cloud
+
+(defconst tlon-babel-google-cloud-request
+  "curl -H 'Authorization: Bearer %s' \
+-H 'x-goog-user-project: api-project-781899662791' \
+-H 'Content-Type: application/json; charset=utf-8' \
+--data '%s' 'https://texttospeech.googleapis.com/v1/text:synthesize' | jq -r .audioContent | base64 --decode > '%s'"
+  "Curl command to send a request to the Google Cloud text-to-speech engine.
+The placeholders are: token, JSON payload and destination.")
+
+(defconst tlon-babel-google-cloud-voices
+  '((:voice "en-US-Studio-Q" :language "en" :gender "male")
+    (:voice "en-US-Studio-O" :language "en" :gender "female")
+    (:voice "es-US-Studio-B" :language "es" :gender "male")
+    (:voice "es-US-Neural2-A" :language "es" :gender "female"))
+  "Preferred Google Cloud voices for different languages.
+The male voice is a \"studio\" voice, the highest quality voice type currently
+offered by Google Cloud. Unfortunately, as of 2024-04-12, Google Cloud does not
+offer a female studio voice for Spanish, so we use a \"neural\" voice.
+
+A list of available voices may be found here:
+<https://cloud.google.com/text-to-speech/docs/voices>.")
+
+(defcustom tlon-babel-google-cloud-audio-settings
+  "MP3"
+  "Audio settings for the Google Cloud text-to-speech service.
+The options are:
+
+- `\"MP3\"': MPEG Audio Layer III (lossy). MP3 encoding is a Beta feature and
+  only available in v1p1beta1. See the RecognitionConfig reference documentation
+  for details.
+
+- `\"FLAC\"': Free Lossless Audio Codec (lossless) 16-bit or 24-bit required
+  for streams LINEAR16 Linear PCM Yes 16-bit linear pulse-code modulation (PCM)
+  encoding. The header must contain the sample rate.
+
+- `\"MULAW\"': μ-law (lossy). 8-bit PCM encoding.
+
+- `\"AMR\"': Adaptive Multi-Rate Narrowband (lossy). Sample rate must be 8000 Hz.
+
+- `\"AMR_WB\"': Adaptive Multi-Rate Wideband (lossy). Sample rate must be 16000
+  Hz.
+
+- `\"OGG_OPUS\"': Opus encoded audio frames in an Ogg container (lossy). Sample
+  rate must be one of 8000 Hz, 12000 Hz, 16000 Hz, 24000 Hz, or 48000 Hz.
+
+- `\"SPEEX_WITH_HEADER_BYTE\"': Speex wideband (lossy). Sample rate must be
+  16000 Hz.
+
+- `\"WEBM_OPUS\"': WebM Opus (lossy). Sample rate must be one of 8000 Hz, 12000
+  Hz, 16000 Hz, 24000 Hz, or 48000 Hz.
+
+For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
+  :type 'string
+  :group 'tlon-babel-tts)
+
+(defvar tlon-babel-google-cloud-key nil
+  "Google Cloud subscription key for the text-to-speech service.")
+
+(defconst tlon-babel-google-cloud-char-limit (* 5000 0.9)
+  "Maximum number of characters that Google Cloud can process per request.
+Google Cloud TTS can process up to 5000 bytes per request. We use a slightly
+lower number for safety.
+
+See <https://cloud.google.com/text-to-speech/quotas>.")
+
+;;;;;; Amazon Polly
+
+(defconst tlon-babel-amazon-polly-request
+  "aws polly synthesize-speech --output-format %s --voice-id %s --engine neural --text-type ssml --text '%s' --region %s '%s'"
+  "AWS command to synthesize speech using Amazon Polly.
+The placeholders are: output format, voice ID, SSML, region, and destination
+file.")
+
+(defconst tlon-babel-amazon-polly-voices
+  '((:voice "Joanna" :language "en" :gender "female")
+    (:voice "Matthew" :language "en" :gender "male")
+    (:voice "Lupe" :language "es" :gender "female")
+    (:voice "Pedro" :language "es" :gender "male"))
+  "Preferred Amazon Polly voices for different languages.
+Joanna and Matthew are some of the available Polly voices for English.")
+
+(defvar tlon-babel-amazon-polly-region "us-east-1"
+  "Default AWS region for Amazon Polly requests.")
+
+(defvar tlon-babel-amazon-polly-output-format "mp3"
+  "Default output format for synthesized audio from Amazon Polly.
+Asmissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\"pcm\"'.")
+
+(defconst tlon-babel-amazon-polly-char-limit (* 1500 0.9)
+  "Maximum number of characters that Amazon Polly can process per request.
+The limit for Amazon Polly is 1500 characters but using a slightly lower number
+for safety.")
+
+;;;;;; OpenAI
+
 (defconst tlon-babel-openai-tts-request
   "curl https://api.openai.com/v1/audio/speech \
   -H \"Authorization: Bearer %s\" \
@@ -212,10 +396,64 @@ characters per second, and uses nine minutes.")
   -d '{
     \"model\": \"tts-1\",
     \"input\": \"%s\",
-    \"voice\": \"alloy\"
+    \"voice\": \"%s\"
   }' \
-  --output '%s'"
-  "Curl command to send a request to the OpenAI text-to-speech engine.")
+  --output %s"
+  "Curl command to send a request to the OpenAI text-to-speech engine.
+The placeholders are the API key, the text to be synthesized, the voice, and the
+file destination.")
+
+(defconst tlon-babel-openai-voices
+  '((:voice "echo" :language "es" :gender "male")
+    (:voice "nova" :language "es" :gender "female"))
+  "Preferred OpenAI voices for different languages.
+All the voices in this property list are neural and multilingual, and are the
+best male and female voices we were able to identify in each language.
+
+A list of available voices may be found here:
+<https://platform.openai.com/docs/guides/text-to-speech>.")
+
+(defvar tlon-babel-openai-key nil
+  "OpenAI API key for the text-to-speech service.")
+
+(defconst tlon-babel-openai-char-limit (* 4096 0.9)
+  "Maximum number of characters that OpenAI can process per request.
+OpenAI can process up to 4096 bytes per request. We use a slightly
+lower number for safety.
+
+See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
+
+;;;;; Engines
+
+(defconst tlon-babel-tts-engines
+  `((:name "Microsoft Azure"
+	   :voices-var tlon-babel-microsoft-azure-voices
+	   :request-fun tlon-babel-microsoft-azure-make-request
+	   :char-limit ,tlon-babel-microsoft-azure-char-limit)
+    (:name "Google Cloud"
+	   :voices-var tlon-babel-google-cloud-voices
+	   :request-fun tlon-babel-google-cloud-make-request
+	   :char-limit ,tlon-babel-google-cloud-char-limit)
+    (:name "Amazon Polly"
+           :voices-var tlon-babel-amazon-polly-voices
+           :request-fun tlon-babel-generate-audio-polly
+           :char-limit ,tlon-babel-amazon-polly-char-limit)
+    (:name "OpenAI"
+	   :voices-var tlon-babel-openai-voices
+	   :request-fun tlon-babel-openai-make-request
+	   :char-limit ,tlon-babel-openai-char-limit)))
+
+;; needs to use double quotes for Azure, but maybe single quotes for Google Cloud?
+;; cannot be in single quotes because the entire string is itself enclosed in single quotes
+(defconst tlon-babel-ssml-wrapper
+  (append
+   (mapcar (lambda (service)
+             (cons service
+                   (format "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"%%s\">%s</speak>"
+                           tlon-babel-tts-ssml-voice-replace-pattern)))
+           '("Microsoft Azure" "Google Cloud" "Amazon Polly"))
+   '(("OpenAI" . "%3$s")))
+  "SSML wrapper for the TTS request.")
 
 ;;;;; Currencies
 
@@ -301,15 +539,11 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 
 (defun tlon-babel-tts-get-alternative-voice ()
   "Return the voice in the current language that is not the current voice."
-  (let ((voices (tlon-babel-lookup-all tlon-babel-azure-voices
+  (let ((voices (tlon-babel-lookup-all tlon-babel-microsoft-azure-voices
 				       :voice :language tlon-babel-tts-current-language)))
     (car (delete tlon-babel-tts-main-voice voices))))
 
-(defun tlon-babel-tts-get-voice-locale ()
-  "Return the locale of the current voice."
-  (substring tlon-babel-tts-main-voice 0 5))
-
-;;;;; Reading
+;;;;; Narration
 
 (defun tlon-babel-tts-read-content (content &optional chunk-size)
   "Read CONTENT and return it as a string ready for TTS processing.
@@ -333,55 +567,61 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
       (setq tlon-babel-file-local-abbreviations tlon-babel-file-local-abbreviations)
       (concat (tlon-babel-tts-get-metadata) (tlon-babel-md-read-content file)))))
 
-;;;;; Azure
-
 ;;;###autoload
-(defun tlon-babel-azure-narrate-content (&optional voice file)
-  "Narrate content with VOICE using Azure's text-to-speech service.
+(defun tlon-babel-narrate-content (engine &optional voice file)
+  "Narrate content with VOICE using text-to-speech ENGINE.
 If region is active, read the region. Otherwise, read FILE.
 
 Save the narration to the `audio' directory in the same repository as FILE or,
 if region is active, save it to the downloads directory."
-  (interactive)
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-babel-get-repo-from-file file))
+  (interactive (list (completing-read "Engine: " (tlon-babel-lookup-all tlon-babel-tts-engines :name))))
+  (let* ((file-or-buffer (or file (buffer-file-name) (buffer-name)))
+	 (repo (tlon-babel-get-repo-from-file file-or-buffer))
 	 (language (setq tlon-babel-tts-current-language
-			 (tlon-babel-repo-lookup :language :dir repo)))
+			 (or (tlon-babel-repo-lookup :language :dir repo)
+			     (tlon-babel-select-language 'code 'babel))))
 	 (voice (setq tlon-babel-tts-main-voice
-		      (or voice (completing-read "Voice: " (tlon-babel-lookup-all
-							    tlon-babel-azure-voices :voice
-							    :language language)))))
+		      (or voice (tlon-babel-get-voices engine language))))
 	 (content (if (region-active-p)
 		      (buffer-substring-no-properties (region-beginning) (region-end))
-		    (tlon-babel-tts-read-file file)))
-	 (chunks (tlon-babel-tts-read-content content tlon-babel-azure-char-limit))
+		    (tlon-babel-tts-read-file file-or-buffer)))
 	 (file-name-sans-extension (file-name-sans-extension
-				    (file-name-nondirectory file)))
-	 ;; FIXME: extension should be set based on `tlon-babel-azure-tts-settings'
+				    (file-name-nondirectory file-or-buffer)))
+	 ;; FIXME: extension should be set based on audio settings (e.g. `tlon-babel-microsoft-azure-audio-settings')
 	 (file-name (file-name-with-extension file-name-sans-extension "mp3"))
 	 (destination (if (region-active-p)
 			  (file-name-concat paths-dir-downloads file-name)
 			(file-name-concat repo "audio" file-name)))
+	 (char-limit (tlon-babel-lookup tlon-babel-tts-engines :char-limit :name engine))
+	 (chunks (tlon-babel-tts-read-content content char-limit))
 	 (nth 1))
     (setq tlon-babel-unprocessed-chunks
 	  (tlon-babel-get-chunk-names destination (length chunks)))
     (dolist (chunk chunks)
-      (tlon-babel-azure-generate-audio
-       chunk voice (tlon-babel-get-chunk-name destination nth))
+      (tlon-babel-generate-audio engine chunk voice (tlon-babel-get-chunk-name destination nth))
       (setq nth (1+ nth)))))
 
-(defvar tlon-babel-unprocessed-chunks nil
-  "The chunks to process in the current TTS session.")
+(defun tlon-babel-get-voices (engine language)
+  "Get available voices in LANGUAGE for TTS ENGINE."
+  (let ((voices (tlon-babel-lookup tlon-babel-tts-engines :voices-var :name engine)))
+    (completing-read "Voice: " (tlon-babel-lookup-all (symbol-value voices) :voice :language language))))
 
-(defun tlon-babel-azure-generate-audio (text voice destination)
-  "Generate an audio file from TEXT using VOICE and save it to DESTINATION."
+(defun tlon-babel-tts-get-voice-locale ()
+  "Return the locale of the current voice."
+  (catch 'found
+    (dolist (var (tlon-babel-lookup-all tlon-babel-tts-engines :voices-var))
+      (when-let* ((code (tlon-babel-lookup (symbol-value var) :language :voice tlon-babel-tts-main-voice))
+		  (locale (tlon-babel-lookup tlon-babel-languages-properties :locale :code code)))
+	(throw 'found locale)))))
+
+(defun tlon-babel-generate-audio (engine text voice destination)
+  "Generate an audio file from TEXT using ENGINE VOICE and save it to DESTINATION."
   (let* ((locale (tlon-babel-tts-get-voice-locale))
-	 (ssml (shell-quote-argument
-		(format tlon-babel-azure-ssml-template locale voice text)))
-	 (command (format tlon-babel-azure-tts-request
-			  (tlon-babel-get-or-set-azure-key)
-			  tlon-babel-azure-tts-settings ssml destination))
-	 (process (start-process-shell-command "generate audio" nil command)))
+	 (ssml-wrapper (alist-get engine tlon-babel-ssml-wrapper nil nil #'string=))
+	 (content (format ssml-wrapper locale voice text))
+	 (fun (tlon-babel-lookup tlon-babel-tts-engines :request-fun :name engine))
+	 (request (funcall fun content voice locale destination))
+	 (process (start-process-shell-command "generate audio" nil request)))
     (set-process-sentinel process
 			  (lambda (process event)
 			    (when (string= event "finished\n")
@@ -395,13 +635,89 @@ if region is active, save it to the downloads directory."
 				    ;; (tlon-babel-delete-chunks file)
 				    ))))))))
 
-(defun tlon-babel-get-or-set-azure-key ()
-  "Get or set the Azure key."
-  (or tlon-babel-azure-key
-      (setq tlon-babel-azure-key
-	    (auth-source-pass-get "key1" "tlon/core/live.com/tlon.shared@gmail.com [Azure]"))))
+;;;;;; Microsoft Azure
 
-;;;;; Chunk processing
+(defun tlon-babel-microsoft-azure-make-request (content _voice _locale destination)
+  "Make a request to the Microsoft Azure text-to-speech service.
+CONTENT is the content of the request. DESTINATION is the output file path."
+  (format tlon-babel-microsoft-azure-request
+	  (tlon-babel-microsoft-azure-get-or-set-key) tlon-babel-microsoft-azure-audio-settings
+	  content destination))
+
+(defun tlon-babel-microsoft-azure-get-or-set-key ()
+  "Get or set the Microsoft Azure key."
+  (or tlon-babel-microsoft-azure-key
+      (setq tlon-babel-microsoft-azure-key
+	    (auth-source-pass-get "key1" "tlon/core/azure.com/tlon.shared@gmail.com"))))
+
+;;;;;; Google Cloud
+
+(defun tlon-babel-google-cloud-make-request (content voice locale destination)
+  "Make a request to the Google Cloud text-to-speech service.
+CONTENT is the content of the request. VOICE is voice ID. LOCALE is the
+locate. DESTINATION is the output file path"
+  (format tlon-babel-google-cloud-request
+	  (tlon-babel-google-cloud-get-token)
+	  (tlon-babel-google-cloud-format-ssml content voice locale)
+	  destination))
+
+(defun tlon-babel-google-cloud-format-ssml (ssml voice locale)
+  "Convert SSML string to JSON object for Google Cloud TTS.
+VOICE and LOCALE are used to construct the JSON object."
+  (let* ((gender (tlon-babel-lookup tlon-babel-google-cloud-voices :gender :voice voice))
+	 (payload (json-encode
+		   `((input (ssml . ,ssml))
+		     (voice (languageCode . ,locale)
+			    (name . ,voice)
+			    (ssmlGender . ,(upcase gender)))
+		     (audioConfig (audioEncoding . ,tlon-babel-google-cloud-audio-settings))))))
+    payload))
+
+(defun tlon-babel-google-cloud-get-token ()
+  "Get or set the Google Cloud token key."
+  (string-trim (shell-command-to-string "gcloud auth print-access-token")))
+
+(defun tlon-babel-google-cloud-get-or-set-key ()
+  "Get or set the Google Cloud key."
+  (or tlon-babel-google-cloud-key
+      (setq tlon-babel-google-cloud-key
+	    (auth-source-pass-get "key" "tlon/babel/cloud.google.com/pablo.stafforini@gmail.com"))))
+
+;;;;;; Amazon Polly
+
+(defun tlon-babel-amazon-polly-make-request (content voice _locale destination)
+  "Construct the AWS CLI command to call Amazon Polly.
+CONTENT is the content of the request. VOICE is the voice ID. DESTINATION is
+the output file path."
+  (format tlon-babel-amazon-polly-request
+          tlon-babel-amazon-polly-output-format voice content tlon-babel-amazon-polly-region destination))
+
+(defun tlon-babel-generate-audio-polly (text voice locale destination)
+"Generate audio file for TEXT with Amazon Polly VOICE and save it to DESTINATION."
+(let* ((ssml (format tlon-babel-ssml-wrapper locale voice text)) ; revise
+       (request (tlon-babel-amazon-polly-make-request ssml voice locale destination))
+       (process (start-process-shell-command "generate audio" nil request)))
+  (set-process-sentinel process
+			(lambda (process event)
+			  (when (string= event "finished\n")
+			    (message "Audio generated at: %s" destination))))))
+
+;;;;;; OpenAI
+
+(defun tlon-babel-openai-make-request (ssml voice _locale destination)
+  "Make a request to the OpenAI text-to-speech service.
+SSML is the content of the request. VOICE is the TTS voice. DESTINATION is the
+file to save the audio to."
+  (format tlon-babel-openai-tts-request
+	  (tlon-babel-openai-get-or-set-key) ssml voice destination))
+
+(defun tlon-babel-openai-get-or-set-key ()
+  "Get or set the Microsoft Azure key."
+  (or tlon-babel-openai-key
+      (setq tlon-babel-openai-key
+	    (auth-source-pass-get "key" (concat "tlon/core/openai.com/" tlon-babel-email-shared)))))
+
+;;;;;; Chunk processing
 
 (defun tlon-babel-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks no larger than CHUNK-SIZE."
@@ -423,7 +739,7 @@ if region is active, save it to the downloads directory."
   "Join chunks of FILE back into a single file."
   (let* ((files (tlon-babel-get-list-of-chunks file))
 	 (list-of-files (tlon-babel-create-list-of-chunks files)))
-    (shell-command (format "ffmpeg -f concat -safe 0 -i %s -c copy %s"
+    (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
 			   list-of-files file))))
 
 (defun tlon-babel-get-list-of-chunks (file)
@@ -464,8 +780,8 @@ if region is active, save it to the downloads directory."
 (defun tlon-babel-get-original-name (chunk-name)
   "Return the original file name before it was chunked, given CHUNK-NAME."
   (let* ((base-name (file-name-sans-extension chunk-name))
-         (extension (file-name-extension chunk-name))
-         (original-base-name (replace-regexp-in-string "-[0-9]+\\'" "" base-name)))
+	 (extension (file-name-extension chunk-name))
+	 (original-base-name (replace-regexp-in-string "-[0-9]+\\'" "" base-name)))
     (format "%s.%s" original-base-name extension)))
 
 ;;;;; Metadata
@@ -506,7 +822,7 @@ if region is active, save it to the downloads directory."
     (tlon-babel-tts-process-math-expressions))
   (goto-char (point-min)))
 
-;; TODO: it seems Azure is not making an extra pause between paragraphs; decide whether to add some extra silence
+;; TODO: it seems Microsoft Azure is not making an extra pause between paragraphs; decide whether to add some extra silence
 
 ;;;;;; Notes
 
@@ -712,14 +1028,12 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   "Enclose STRING in `voice' SSML tags.
 If VOICE is nil, default to the alternative voice.
 
-Note that this function actually inserts two pairs of `voice' tags: the inner
-pair to set the voice for the string that it encloses, and an outer pair of tags
-in reverse order, to close the opening `voice' tag that wraps the entire
-document, and then reopen it."
+Note that this function inserts two pairs of `voice' tags: the inner pair to set
+the voice for the string that it encloses, and an outer pair of tags in reverse
+order, to close the opening `voice' tag that wraps the entire document, and to
+then reopen it."
   (let ((voice (or voice (tlon-babel-tts-get-alternative-voice))))
-    (format tlon-babel-tts-ssml-double-voice-pattern
-	    (tlon-babel-tts-get-alternative-voice) string
-	    tlon-babel-tts-main-voice)))
+    (format tlon-babel-tts-ssml-double-voice-replace-pattern voice string tlon-babel-tts-main-voice)))
 
 (defun tlon-babel-tts-enclose-in-cue-delimiter (string)
   "Enclose STRING in listener cue delimiter."
@@ -817,24 +1131,25 @@ The `voice' tag is set to the alternative voice for the current language."
 
 ;;;;;; Common
 
-(defun tlon-babel-tts-edit-entry (data file)
-  "Add or revise an entry in DATA and write it to FILE."
+(defun tlon-babel-tts-edit-entry (variable file)
+  "Add or revise an entry in VARIABLE and write it to FILE."
   (interactive)
+  (set variable (tlon-babel-parse-json file))
   (let* ((names (mapcan (lambda (group)
 			  (mapcar #'car (cadr group)))
-			data))
+			(symbol-value variable)))
 	 (term (completing-read "Term: " names nil nil))
 	 (current-entry (catch 'current-entry
-			  (dolist (group data)
+			  (dolist (group (symbol-value variable))
 			    (dolist (pair (cadr group))
 			      (when (string= (car pair) term)
 				(throw 'current-entry (cdr pair)))))
 			  nil)))
     (if current-entry
 	(let ((cdr (read-string (format "Updated entry for %s: " term) current-entry)))
-	  (tlon-babel-tts-revise-entry data term cdr))
-      (tlon-babel-tts-add-new-entry data term))
-    (tlon-babel-write-data file data)))
+	  (tlon-babel-tts-revise-entry (symbol-value variable) term cdr))
+      (tlon-babel-tts-add-entry (symbol-value variable) term))
+    (tlon-babel-write-data file (symbol-value variable))))
 
 (defun tlon-babel-tts-revise-entry (data term cdr)
   "Update the CDR for an existing TERM in DATA."
@@ -843,17 +1158,17 @@ The `voice' tag is set to the alternative voice for the current language."
       (when (string= (car pair) term)
 	(setcdr pair cdr)))))
 
-(defun tlon-babel-tts-add-new-entry (data term)
+(defun tlon-babel-tts-add-entry (data term)
   "Add a new TERM to DATA."
-  (let* ((languages (tlon-babel-select-language 'two-letter 'babel 'multiple))
-         (dict-entry (read-string "Term: "))
-         (new-entry (cons term dict-entry))
-         (added nil))
+  (let* ((languages (tlon-babel-select-language 'code 'babel 'multiple))
+	 (dict-entry (read-string "Term: "))
+	 (new-entry (cons term dict-entry))
+	 (added nil))
     (dolist (group data)
       (when (and (not added)
-                 (equal (car group) languages))
-        (setf (cadr group) (cons new-entry (cadr group)))
-        (setq added t)))
+		 (equal (car group) languages))
+	(setf (cadr group) (cons new-entry (cadr group)))
+	(setq added t)))
     (unless added
       (nconc data (list (list languages (list new-entry)))))))
 
@@ -864,7 +1179,7 @@ The `voice' tag is set to the alternative voice for the current language."
   "Edit abbreviations."
   (interactive)
   (tlon-babel-tts-edit-entry
-   tlon-babel-tts-abbreviations
+   'tlon-babel-tts-abbreviations
    tlon-babel-file-abbreviations))
 
 ;;;;;; Phonetic replacements
@@ -874,7 +1189,7 @@ The `voice' tag is set to the alternative voice for the current language."
   "Edit phonetic replacements."
   (interactive)
   (tlon-babel-tts-edit-entry
-   tlon-babel-tts-phonetic-replacements
+   'tlon-babel-tts-phonetic-replacements
    tlon-babel-file-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
@@ -884,13 +1199,14 @@ The `voice' tag is set to the alternative voice for the current language."
   "Edit phonetic transcriptions."
   (interactive)
   (tlon-babel-tts-edit-entry
-   tlon-babel-tts-phonetic-transcriptions
+   'tlon-babel-tts-phonetic-transcriptions
    tlon-babel-file-phonetic-transcriptions))
 
 ;;;;; File-local
 
 ;;;;;; Common
 
+(declare-function modify-file-local-variable "files-x")
 (defun tlon-babel-add-in-text-cons-cell (prompts var)
   "Add an in-text cons-cell to the file-local named VAR.
 PROMPTS is a cons cell with the corresponding prompts."

@@ -43,47 +43,78 @@
 
 ;;;###autoload
 (defun tlon-babel-edit-glossary ()
-  "Add, delete or update a glossary entry."
+  "Create or update a glossary entry."
   (interactive)
-  (let* ((english-terms (mapcar (lambda (entry)
-                                  (cdr (assoc "en" entry)))
-                                tlon-babel-glossary))
-         (selected-term (completing-read "Choose or add a term (type to add new): " english-terms nil nil))
-         (existing-entry (seq-find (lambda (entry) (equal (cdr (assoc "en" entry)) selected-term))
-                                   tlon-babel-glossary))
-         (language (tlon-babel-select-language 'two-letter 'babel))
-         updated-translation lang-pair)
-    ;; If entry doesn't exist, create a new one
+  (let* ((glossary (tlon-babel-parse-glossary))
+         (english-terms (tlon-babel-get-english-terms glossary))
+         (selected-term (completing-read "Choose or add a term: " english-terms nil nil))
+         (existing-entry (tlon-babel-find-entry-by-term glossary selected-term)))
     (unless existing-entry
-      (setq existing-entry (list (cons "en" selected-term)))
-      (setq tlon-babel-glossary (append tlon-babel-glossary (list existing-entry))))
-    (setq lang-pair (assoc language existing-entry))
-    (setq updated-translation (read-string (format "Translation for \"%s\" (%s) [Empty to remove]: "
-                                                   selected-term language)
-                                           (cdr lang-pair)))
-    ;; If updated translation is empty, remove the language entry if it exists
-    (if (string-empty-p updated-translation)
-        (when lang-pair
-          ;; Remove language pair from the entry
-          (setq existing-entry (remove lang-pair existing-entry))
-          ;; If only "en" left, ask if the user wants to remove the whole entry
-          (when (= (length existing-entry) 1)
-            (when (yes-or-no-p "Removed the only translation. Delete the entire entry? ")
-              (setq tlon-babel-glossary (remove existing-entry tlon-babel-glossary)))))
-      ;; Otherwise, update or add the translation
-      (if lang-pair
-          (setcdr lang-pair updated-translation)  ; Update existing language pair
-        ;; Add new language pair
-        (push (cons language updated-translation) existing-entry)))
-    (tlon-babel-write-data tlon-babel-file-glossary tlon-babel-glossary)))
+      (let ((type (tlon-babel-select-term-type)))
+        (setq existing-entry (tlon-babel-create-entry selected-term type))))
+    (unless (and (assoc "type" existing-entry)
+		 (string= (cdr (assoc "type" existing-entry)) "invariant"))
+      (setq existing-entry (tlon-babel-edit-translation-in-entry existing-entry selected-term)))
+    (setq glossary (tlon-babel-update-glossary glossary existing-entry selected-term))
+    (tlon-babel-write-data tlon-babel-file-glossary glossary)))
 
+(defun tlon-babel-parse-glossary ()
+  "Parse the glossary file into Lisp."
+  (tlon-babel-parse-json tlon-babel-file-glossary))
+
+(defun tlon-babel-get-english-terms (glossary)
+  "Extract all English terms from GLOSSARY."
+  (mapcar (lambda (entry)
+            (cdr (assoc "en" entry)))
+          glossary))
+
+(defun tlon-babel-find-entry-by-term (glossary term)
+  "Find an entry in GLOSSARY by its English TERM."
+  (seq-find (lambda (entry) (string= (cdr (assoc "en" entry)) term))
+            glossary))
+
+(defun tlon-babel-select-term-type ()
+  "Prompt the user to select a type for a new term and return the selection."
+  (completing-read "Select type (variable/invariant): " '("variable" "invariant") nil t))
+
+(defun tlon-babel-create-entry (term type)
+  "Create a new entry for a TERM of a given TYPE."
+  (let ((entry (list (cons "en" term) (cons "type" type))))
+    (when (string= type "invariant")
+      (let ((languages (remove "en" (mapcar 'cdr tlon-babel-project-languages))))
+        (dolist (lang languages)
+          (setq entry (append entry (list (cons lang term)))))))
+    entry))
+
+(defun tlon-babel-edit-translation-in-entry (entry term)
+  "Create or update a translation in an ENTRY for a TERM."
+  (let* ((language (tlon-babel-select-language 'code 'babel))
+         (translation (assoc language entry))
+	 (initial-input (when translation (cdr translation)))
+	 (read-translation (lambda ()
+			     (read-string (format "Translation for \"%s\" (%s): " term language) initial-input))))
+    (if translation
+	(setcdr translation (funcall read-translation))
+      (setq entry (append entry (list (cons language (funcall read-translation))))))
+    entry))
+
+(defun tlon-babel-update-glossary (glossary entry term)
+  "Update GLOSSARY with a new or modified ENTRY for a TERM."
+  (if (tlon-babel-find-entry-by-term glossary term)
+      ;; Update existing entry
+      (setf (car (seq-filter (lambda (e) (equal (assoc "en" e) (cons "en" term))) glossary)) entry)
+    ;; Append new entry
+    (setq glossary (append glossary (list entry))))
+  glossary)
+
+;; TODO: this is currently not used; fix it
 (defun tlon-babel-glossary-prompt-for-explanation ()
   "Prompt the user for an explanation of the translation."
   (read-string (format
 		"Explanation (optional; please write it in the translation language [%s]): "
 		tlon-babel-translation-language)))
 
-;; TODO: fix this
+;; TODO: this is currently not used; fix it
 (defun tlon-babel-glossary-commit (action term &optional explanation)
   "Commit glossary modifications.
 ACTION describes the action (\"add\" or \"modify\") performed on the glossary.
@@ -99,7 +130,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
       (tlon-babel-check-branch "main" default-directory)
-      (magit-run-git "add" (tlon-babel-get-file-glossary))
+      (magit-run-git "add" tlon-babel-file-glossary)
       (let ((magit-commit-ask-to-stage nil))
 	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
 						 action term explanation))))))
@@ -108,23 +139,15 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 ;;;###autoload
 (defun tlon-babel-extract-glossary (language deepl)
   "Extract a LANGUAGE glossary from our multilingual glossary.
-If DEEPL is non-nil, include all entries, format them with the standard DeepL
-glossary format, and extract this glossary to the `dict' subdirectory within the
-relevant `babel' repository. Otherwise, include only entries of type \"CN\",
-format them in a human-readable format, and prompt the user to select the file
-location."
-  (interactive (list (tlon-babel-select-language 'two-letter 'babel)
+If DEEPL is non-nil, include all entries and format them with the standard DeepL
+glossary format. Otherwise, include only entries of type \"variable\",
+and format them in a human-readable format."
+  (interactive (list (tlon-babel-select-language 'code 'babel)
 		     (y-or-n-p "Extract for DeepL? ")))
   (let* ((file-name "Glossary.csv")
-	 (source-path (file-name-concat paths-dir-tlon-repos
-					"babel-core/glossary.json"))
-	 (target-path (if deepl
-			  (file-name-concat paths-dir-tlon-repos
-					    (format "babel-%s" language)
-					    "dict"
-					    file-name)
-			(read-file-name "Target glossary destination: "
-					paths-dir-downloads nil nil file-name)))
+	 (source-path tlon-babel-file-glossary)
+	 (target-path (read-file-name "Target glossary destination: "
+				      paths-dir-downloads nil nil file-name))
 	 json)
     (with-current-buffer (find-file-noselect source-path)
       (goto-char (point-min))
@@ -132,18 +155,26 @@ location."
 	(setq json (json-read))))
     (with-current-buffer (find-file-noselect target-path)
       (erase-buffer)
-      (dolist (item json)
-	(let* ((source-term (alist-get 'en item))
-	       (target-term (alist-get (intern language) item))
-	       (entry (if deepl
-			  (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
-				  source-term target-term (upcase language))
-			(format "\"%s\",\"%s\"\n"
-				source-term target-term))))
-	  (when (or deepl (string= (alist-get 'type item) "CN"))
-	    (insert entry))))
+      (tlon-babel-insert-formatted-glossary json language deepl)
       (save-buffer))
     (message "Glossary extracted to `%s'" target-path)))
+
+(defun tlon-babel-insert-formatted-glossary (json language deepl)
+  "Insert a properly formatted glossary in LANGUAGE from JSON data.
+Format the glossary for a human reader, unless DEEPL is non-nil, in which case
+format it for DeepL. When formatting it for a human reader, exclude invariant
+terms (these are terms included for the sole purpose of forcing DeepL to leave
+them untranslated)."
+  (dolist (item json)
+    (when-let* ((source-term (alist-get 'en item))
+		(target-term (alist-get (intern language) item))
+		(entry (if deepl
+			   (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
+				   source-term target-term (upcase language))
+			 (format "\"%s\",\"%s\"\n"
+				 source-term target-term))))
+      (when (or deepl (string= (alist-get 'type item) "variable"))
+	(insert entry)))))
 
 (provide 'tlon-babel-glossary)
 ;;; tlon-babel-glossary.el ends here

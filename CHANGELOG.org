@@ -1,0 +1,90 @@
+#+title: tlon-babel change log
+#+author: Pablo Stafforini
+#+langauge: en
+
+This document summarizes the changes pertaining to the ~tlon-babel~ package.
+
+* Version 1.3.0 on 2024-05-02
+** tlon-babel-ai
+  - Added functions for handling language detection and translations.
+  - Integrated AI functionality more deeply with Emacs event hooks.
+
+** tlon-babel-api
+  - Adjusted API request functionalities to align with new backend changes.
+  - Enhanced error handling and added user feedback for failed API calls.
+
+** tlon-babel-cleanup
+  - Improved automatic cleanup operations during file save.
+  - Added functions for specific cleanup tasks to improve modularity.
+
+** tlon-babel-core
+  - Reorganized code to separate concerns more clearly.
+  - Enhanced repository management functions, improving support for multi-repository setups.
+
+** tlon-babel-counterpart
+  - Added error handling for counterpart file operations.
+  - Refactored file comparison functionalities for clarity and performance.
+
+** tlon-babel-deepl
+  - Introduced robust translation features using the DeepL API.
+  - Implemented new interactive commands for accessing DeepL services directly from Emacs.
+
+** tlon-babel-dispatch
+  - Reorganized dispatch menu for better navigation.
+  - Added new dispatch commands for recently introduced features.
+
+** tlon-babel-docs
+  - Updated documentation generation processes to include new functionalities.
+  - Improved automated generation of info nodes and online documentation.
+
+** tlon-babel-glossary
+  - Enhanced glossary management with new interactive functions.
+  - Implemented a more robust storage mechanism for glossary items.
+
+** tlon-babel-import
+  - Improved import functions for new file formats.
+  - Added automation features to streamline the importing process.
+
+** tlon-babel-jobs
+  - Added detailed job tracking and management functionalities.
+  - Enhanced interaction with external job management tools.
+
+** tlon-babel-md
+  - Extended Markdown support with new editing and preview features.
+  - Enhanced performance and usability of Markdown operations.
+
+** tlon-babel-meet
+  - Introduced new functionalities for managing meetings directly from Emacs.
+  - Enhanced integration with calendar and scheduling tools.
+
+** tlon-babel-read
+  - Implemented new features for reading text directly in Emacs using TTS.
+  - Enhanced customization options for voice and reading speed.
+
+** tlon-babel-refs
+  - Improved reference management with new linking and tracking features.
+  - Added support for new citation formats and external databases.
+
+** tlon-babel-repos
+  - Added functions for managing multiple repositories more effectively.
+  - Enhanced repository setup and teardown processes.
+
+** tlon-babel-tex
+  - Improved LaTeX integration with new tools for managing TeX projects.
+  - Enhanced compilation and preview features for LaTeX documents.
+
+** tlon-babel-tts
+  - Added comprehensive Text-to-Speech (TTS) support.
+  - Implemented new TTS functionalities integrated with Emacs audio facilities.
+
+** tlon-babel-words
+  - Enhanced word count functionalities with new interactive features.
+  - Improved performance and accuracy of word counting.
+
+** tlon-babel-yaml
+  - Improved YAML handling with new parsing and editing features.
+  - Added support for new YAML standards and external tools.
+
+** tlon-babel
+  - Major refactoring to improve performance and modularity.
+  - Added new top-level commands and enhanced existing functionalities.

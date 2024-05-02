@@ -27,7 +27,6 @@
 
 ;;; Code:
 
-(require 'files-x)
 (require 'markdown-mode-extras)
 (require 'tlon-babel-core)
 (require 'tlon-babel-yaml)
@@ -317,6 +316,7 @@ If no section is found, do nothing."
 
 ;;;;;; Insert elements
 
+(declare-function s-chop-right "s")
 ;;;###autoload
 (defun tlon-babel-md-insert-element-pair (pair &optional self-closing-p)
   "Insert an element PAIR at point or around the selected region.
@@ -363,7 +363,7 @@ self-closing."
   "Insert an MDX `Lang' tag pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
-  (interactive (list (tlon-babel-select-language 'two-letter)))
+  (interactive (list (tlon-babel-select-language 'code)))
   (tlon-babel-md-insert-element-pair
    (tlon-babel-tag-element-with-attribute tlon-babel-mdx-lang language)))
 
@@ -394,7 +394,8 @@ displayed."
 ;;;###autoload
 (defun tlon-babel-insert-mdx-visually-shown ()
   "Insert an MDX `VisuallyShown' tag pair at point or around selected region.
-Text enclosed by an `VisuallyShown' tag pair will be displayed, but not narrated."
+Text enclosed by an `VisuallyShown' tag pair will be displayed, but not
+narrated."
   (interactive)
   (tlon-babel-md-insert-element-pair tlon-babel-mdx-visually-shown))
 
@@ -487,11 +488,11 @@ call the function preceded by the universal ARG or invoke
   "Return the BibTeX element of TYPE and its position in `Cite' element at point.
 TYPE can be either `key' or `locators'."
   (when (thing-at-point-looking-at tlon-babel-cite-pattern)
-    (let* ((num (pcase type ('key 1) ('locators 2)
-		       (_ (user-error "Invalid type"))))
-	   (match (match-string-no-properties num))
-	   (begin (match-beginning num))
-	   (end (match-end num)))
+    (when-let* ((num (pcase type ('key 1) ('locators 2)
+			    (_ (user-error "Invalid type"))))
+		(match (match-string-no-properties num))
+		(begin (match-beginning num))
+		(end (match-end num)))
       (list match (cons begin end)))))
 
 (defun tlon-babel-replace-bibtex-element-in-citation (element begin end)
@@ -513,6 +514,7 @@ TYPE can be either `key' or `locators'."
   "Return the BibTeX locators and its position in `Cite' element at point."
   (tlon-babel-get-bibtex-element-in-citation 'locators))
 
+(defvar tlon-babel-locators)
 (defun tlon-babel-insert-locator ()
   "Insert locator in citation at point.
 If point is on a locator, it will be replaced by the new one. Otherwise, the new
@@ -538,6 +540,7 @@ of the existing locators."
 
 ;;;;;;; SSML
 
+(defvar tlon-babel-tts-ssml-lang)
 ;;;###autoload
 (defun tlon-babel-insert-ssml-lang (language)
   "Insert an SSML `lang' tag pair at point or around the selected region.
@@ -547,6 +550,9 @@ written in that language."
   (tlon-babel-md-insert-element-pair
    (tlon-babel-tag-element-with-attribute tlon-babel-tts-ssml-lang language)))
 
+(defvar tlon-babel-tts-ssml-emphasis-levels)
+(defvar tlon-babel-tts-ssml-emphasis-default-level)
+(defvar tlon-babel-tts-ssml-emphasis)
 ;;;###autoload
 (defun tlon-babel-insert-ssml-emphasis (level)
   "Insert an SSML `emphasis' tag pair at point or around the selected region.
@@ -557,6 +563,7 @@ Prompt the user to select a LEVEL."
   (tlon-babel-md-insert-element-pair
    (tlon-babel-tag-element-with-attribute tlon-babel-tts-ssml-emphasis level)))
 
+(defvar tlon-babel-tts-ssml-break)
 ;;;###autoload
 (defun tlon-babel-insert-ssml-break (time)
   "Insert an SSML `break' tag pair at point or around the selected region.
@@ -672,6 +679,7 @@ a type."
 
 ;; Maybe move to AI
 
+(declare-function tlon-babel-ai-describe-image "tlon-babel-ai")
 ;;;###autoload
 (defun tlon-babel-add-alt-text ()
   "Add alt text to the image at point."
