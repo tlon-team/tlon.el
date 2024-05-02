@@ -164,7 +164,7 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-babel-dired-repo-menu ()
   "Browse a Tlön repo in Dired."
   [["Tlon"
-    ("t f" "tlon-content"                 tlon-babel-dired-browse-tlon-content)
+    ("t c" "tlon-content"                 tlon-babel-dired-browse-tlon-content)
     ("t f" "tlon-front"                   tlon-babel-dired-browse-tlon-front)
     ("t d" "tlon-docs"                    tlon-babel-dired-browse-docs)]
    ["Babel"
