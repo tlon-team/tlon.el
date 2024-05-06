@@ -102,7 +102,7 @@ DIR is the directory where the repo is stored."
     ""
     ("b d" "babel-de"                     tlon-babel-magit-browse-babel-de)
     ("b s" "babel-es"                     tlon-babel-magit-browse-babel-es)
-    ("b f" "babel-fr"                     tlon-babel-magit-browse-babel-fr)
+    ("b r" "babel-fr"                     tlon-babel-magit-browse-babel-fr)
     ("b t" "babel-it"                     tlon-babel-magit-browse-babel-it)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-magit-browse-uqbar-issues)
@@ -111,7 +111,7 @@ DIR is the directory where the repo is stored."
     ""
     ("q n" "uqbar-en"                     tlon-babel-magit-browse-uqbar-en)
     ("q s" "uqbar-es"                     tlon-babel-magit-browse-uqbar-es)
-    ("q f" "uqbar-fr"                     tlon-babel-magit-browse-uqbar-fr)
+    ("q r" "uqbar-fr"                     tlon-babel-magit-browse-uqbar-fr)
     ("q t" "uqbar-it"                     tlon-babel-magit-browse-uqbar-it)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-magit-browse-utilitarianism-en)
@@ -174,7 +174,7 @@ DIR is the directory where the repo is stored."
     ""
     ("b d" "babel-de"                     tlon-babel-dired-browse-babel-de)
     ("b s" "babel-es"                     tlon-babel-dired-browse-babel-es)
-    ("b f" "babel-fr"                     tlon-babel-dired-browse-babel-fr)
+    ("b r" "babel-fr"                     tlon-babel-dired-browse-babel-fr)
     ("b t" "babel-it"                     tlon-babel-dired-browse-babel-it)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-dired-browse-uqbar-issues)
@@ -183,7 +183,7 @@ DIR is the directory where the repo is stored."
     ""
     ("q n" "uqbar-en"                     tlon-babel-dired-browse-uqbar-en)
     ("q s" "uqbar-es"                     tlon-babel-dired-browse-uqbar-es)
-    ("q f" "uqbar-fr"                     tlon-babel-dired-browse-uqbar-fr)
+    ("q r" "uqbar-fr"                     tlon-babel-dired-browse-uqbar-fr)
     ("q t" "uqbar-it"                     tlon-babel-dired-browse-uqbar-it)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-dired-browse-utilitarianism-en)
@@ -245,7 +245,7 @@ DIR is the directory where the repo is stored."
     ""
     ("b d" "babel-de"                     tlon-babel-open-file-in-babel-de)
     ("b s" "babel-es"                     tlon-babel-open-file-in-babel-es)
-    ("b f" "babel-fr"                     tlon-babel-open-file-in-babel-fr)
+    ("b r" "babel-fr"                     tlon-babel-open-file-in-babel-fr)
     ("b t" "babel-it"                     tlon-babel-open-file-in-babel-it)]
    ["Uqbar"
     ("q i" "uqbar-issues"                 tlon-babel-open-file-in-uqbar-issues)
@@ -254,7 +254,7 @@ DIR is the directory where the repo is stored."
     ""
     ("q n" "uqbar-en"                     tlon-babel-open-file-in-uqbar-en)
     ("q s" "uqbar-es"                     tlon-babel-open-file-in-uqbar-es)
-    ("q f" "uqbar-fr"                     tlon-babel-open-file-in-uqbar-fr)
+    ("q r" "uqbar-fr"                     tlon-babel-open-file-in-uqbar-fr)
     ("q t" "uqbar-it"                     tlon-babel-open-file-in-uqbar-it)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-babel-open-file-in-utilitarianism-en)
