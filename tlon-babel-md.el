@@ -710,6 +710,18 @@ The list of completion candidates can be customized via the user option
   (interactive (list (completing-read "Character: " tlon-babel-md-special-characters nil t)))
   (insert (alist-get char tlon-babel-md-special-characters nil nil #'string= )))
 
+(defun tlon-babel-get-md-links-in-file (&optional file)
+  "Return a list of all the URLs in the Markdown links present in FILE.
+If FILE is nil, use the file visited by the current buffer."
+  (let ((file (or file (buffer-file-name))))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (goto-char (point-min))
+      (let ((links))
+	(while (re-search-forward markdown-regex-link-inline nil t)
+	  (push (match-string-no-properties 6) links))
+	(reverse links)))))
+
 ;;;;; Actual content
 
 ;; TODO: make it work twice consecutively
