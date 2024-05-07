@@ -696,6 +696,23 @@ a type."
 
 ;; TODO: create function to add alt text to all images in a file
 
+(defun tlon-babel-offset-timestamps (offset)
+  "Increase all MM:SS timestamps in the current buffer by OFFSET, formatted as MM:SS."
+  (interactive "sEnter time offset (MM:SS): ")
+  (save-excursion
+    (goto-char (point-min))
+    (let ((minutes (string-to-number (substring offset 0 2)))
+          (seconds (string-to-number (substring offset 3 5))))
+      (while (re-search-forward "\\[\\([0-9]+\\):\\([0-9]+\\)\\]" nil t)
+        (let* ((original-minutes (string-to-number (match-string 1)))
+               (original-seconds (string-to-number (match-string 2)))
+               (total-seconds (+ (* original-minutes 60) original-seconds
+                                 (* minutes 60) seconds))
+               (final-minutes (floor (/ total-seconds 60)))
+               (final-seconds (% total-seconds 60))
+               (new-timestamp (format "[%02d:%02d]" final-minutes final-seconds)))
+          (replace-match new-timestamp t nil))))))
+
 ;;;;; Misc
 
 (defun tlon-babel-md-check-in-markdown-mode ()
