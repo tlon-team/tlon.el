@@ -513,6 +513,38 @@ If the field `landig' is present, the function does nothing; else, it sets the
 	     citar-cache--bibliographies)
     fields))
 
+;; TODO: maybe generalize to other fields, e.g. isbn, doi
+(declare-function tlon-babel-get-md-links-in-file "tlon-babl-md")
+(declare-function simple-extras-simplify-url "simple-extras")
+(defun tlon-babel-get-missing-urls (&optional file)
+  "Return all URLs present in FILE but missing in the Tlön bibliography.
+If FILE is nil, use the file visited by the current buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (urls-in-biblio (tlon-babel-get-field-in-bibliography "url"))
+	 (urls-in-file (tlon-babel-get-md-links-in-file file))
+	 (urls-in-biblio-simple (mapcar #'simple-extras-simplify-url urls-in-biblio))
+	 (urls-in-file-simple (mapcar #'simple-extras-simplify-url urls-in-file))
+	 (missing-urls-simple (cl-set-difference urls-in-file-simple urls-in-biblio-simple :test #'string=)))
+    (mapcar (lambda (url)
+	      (concat "https://" url))
+	    missing-urls-simple)))
+
+(defvar zotra-extras-add-multiple-urls-filename)
+(declare-function files-extras-list-to-lines "files-extras")
+;;;###autoload
+(defun tlon-babel-prompt-to-add-missing-urls ()
+  "Prompt to add missing URLs in the current buffer to the Tlön bibliography."
+  (interactive)
+  (save-excursion
+    (let ((urls (tlon-babel-get-missing-urls))
+	  urls-to-add)
+      (dolist (url urls urls-to-add)
+	(goto-char (point-min))
+	(re-search-forward url nil t)
+	(when (y-or-n-p (format "Add `%s' to bibliography?" url))
+	  (push url urls-to-add)))
+      (files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-filename))))
+
 (defun tlon-babel-bibliography-lookup (assoc-field field value)
   "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
   (catch 'found
