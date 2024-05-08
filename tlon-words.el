@@ -1,9 +1,9 @@
-;;; tlon-babel-words.el --- Functionality for counting words -*- lexical-binding: t -*-
+;;; tlon-words.el --- Functionality for counting words -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; Homepage: https://github.com/tlon-team/tlon-babel
+;; Homepage: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -27,27 +27,27 @@
 
 ;;; Code:
 
-(require 'tlon-babel-md)
-(require 'tlon-babel-yaml)
+(require 'tlon-md)
+(require 'tlon-yaml)
 
 ;;;; Functions
 
 ;;;;; Commands
 
 ;;;###autoload
-(defun tlon-babel-count-words-in-repo (&optional repo-name regexp)
+(defun tlon-count-words-in-repo (&optional repo-name regexp)
   "Return the number of words in REPO-NAME whose file names match REGEXP.
 If REPO is nil, prompt the user for one. If REGEXP is nil, restrict return the
 number of words in Markdown files."
   (interactive)
   (let* ((repo-name (or repo-name
 			(completing-read "Repo: "
-					 (tlon-babel-repo-lookup-all :abbrev :subtype 'translations))))
-	 (dir (tlon-babel-repo-lookup :dir :name repo-name)))
-    (tlon-babel-count-words-in-dir dir regexp)))
+					 (tlon-repo-lookup-all :abbrev :subtype 'translations))))
+	 (dir (tlon-repo-lookup :dir :name repo-name)))
+    (tlon-count-words-in-dir dir regexp)))
 
 ;;;###autoload
-(defun tlon-babel-count-words-in-dir (&optional dir regexp)
+(defun tlon-count-words-in-dir (&optional dir regexp)
   "Return the number of words files in DIR whose file names match REGEXP.
 If DIR is nil, use the directory at point, else prompt the user for one. If
 REGEXP is nil, restrict return the number of words in Markdown files."
@@ -58,11 +58,11 @@ REGEXP is nil, restrict return the number of words in Markdown files."
 			file-at-point)))))
       (let* ((regexp (or regexp "\\.md$"))
 	     (files (directory-files-recursively dir regexp)))
-	(tlon-babel-count-words-in-files files))
+	(tlon-count-words-in-files files))
     (user-error "No directory found")))
 
 ;;;###autoload
-(defun tlon-babel-count-words-in-files (&optional files)
+(defun tlon-count-words-in-files (&optional files)
   "Return the number of words in the list of FILES.
 If FILES is nil, use the selected files in Dired, if possible."
   (interactive)
@@ -72,7 +72,7 @@ If FILES is nil, use the selected files in Dired, if possible."
       (dolist (file files in-total)
 	(with-temp-buffer
 	  (insert-file-contents file)
-	  (let ((in-file (tlon-babel-count-substantive-words)))
+	  (let ((in-file (tlon-count-substantive-words)))
 	    (setq in-total (+ in-total in-file)))
 	  (unless (member (current-buffer) initial-buffers)
 	    (kill-buffer (current-buffer)))))
@@ -80,33 +80,33 @@ If FILES is nil, use the selected files in Dired, if possible."
 
 ;;;;; Filter count
 
-(defun tlon-babel-count-extraneous-words ()
+(defun tlon-count-extraneous-words ()
   "Return the number of extraneous words in the current buffer.
 Extraneous words are words in the front matter section and words in the local
 variables section."
-  (let ((metadata (mapconcat 'identity (tlon-babel-yaml-get-metadata nil 'raw) " ")))
+  (let ((metadata (mapconcat 'identity (tlon-yaml-get-metadata nil 'raw) " ")))
     (with-temp-buffer
       (insert metadata)
-      (when-let ((vars (tlon-babel-md-get-local-variables)))
+      (when-let ((vars (tlon-md-get-local-variables)))
 	(insert vars))
       (goto-char (point-min))
       (count-words-region (point-min) (point-max)))))
 
-(defun tlon-babel-count-substantive-words ()
+(defun tlon-count-substantive-words ()
   "Return the number of substantive words in the current buffer.
 Substantive words are all words minus extraneous words, as that expression is
-defined in `tlon-babel-count-extraneous-words'."
+defined in `tlon-count-extraneous-words'."
   (save-restriction
     (widen)
     (let ((raw (count-words (point-min) (point-max))))
-      (- raw (tlon-babel-count-extraneous-words)))))
+      (- raw (tlon-count-extraneous-words)))))
 
 
 ;;;;; Misc
 
 ;; this may be obsolete; revise
     ;;;###autoload
-(defun tlon-babel-historic-word-count (&optional repo-name days chars-per-word)
+(defun tlon-historic-word-count (&optional repo-name days chars-per-word)
   "Compute the historic word count of REPO-NAME for past DAYS.
 CHARS-PER-WORD is the average number of characters per word. The word count is
 computed by dividing the file size by CHARS-PER-WORD."
@@ -117,14 +117,14 @@ computed by dividing the file size by CHARS-PER-WORD."
     (user-error "Please install `gnuplot' (e.g. `brew install gnuplot')"))
   (let* ((repo-name (or repo-name
 			(completing-read "Repo: "
-					 (tlon-babel-repo-lookup-all :name :subtype 'translations))))
-	 (dir (tlon-babel-repo-lookup :dir :name repo-name))
+					 (tlon-repo-lookup-all :name :subtype 'translations))))
+	 (dir (tlon-repo-lookup :dir :name repo-name))
 	 (days (or days (read-number "How many days into the past? ")))
 	 (chars-per-word (or chars-per-word 5.5))
 	 (buffer (get-buffer-create "*Directory Size*"))
-	 (script (file-name-concat (tlon-babel-repo-lookup :dir :name "babel")
+	 (script (file-name-concat (tlon-repo-lookup :dir :name "babel")
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
-(provide 'tlon-babel-words)
-;;; tlon-babel-words.el ends here
+(provide 'tlon-words)
+;;; tlon-words.el ends here
 

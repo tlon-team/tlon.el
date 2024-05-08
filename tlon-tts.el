@@ -1,9 +1,9 @@
-;;; tlon-babel-tts.el --- Text-to-speech functionality -*- lexical-binding: t -*-
+;;; tlon-tts.el --- Text-to-speech functionality -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; Homepage: https://github.com/tlon-team/tlon-babel
+;; Homepage: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -27,130 +27,130 @@
 
 ;;; Code:
 
-(require 'tlon-babel-core)
-(require 'tlon-babel-md)
+(require 'tlon-core)
+(require 'tlon-md)
 
 ;;;; User options
 
-(defgroup tlon-babel-tts ()
+(defgroup tlon-tts ()
   "Text-to-speech functionality."
-  :group 'tlon-babel)
+  :group 'tlon)
 
 ;;;; Variables
 
 ;;;;; Paths
 
-(defconst tlon-babel-dir-tts
-  (file-name-concat (tlon-babel-repo-lookup :dir :name "babel-core") "tts/")
+(defconst tlon-dir-tts
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "tts/")
   "Directory for files related to text-to-speech functionality.")
 
-(defconst tlon-babel-file-phonetic-transcriptions
-  (file-name-concat tlon-babel-dir-tts "phonetic-transcriptions.json")
+(defconst tlon-file-phonetic-transcriptions
+  (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
   "File with phonetic transcriptions.")
 
-(defconst tlon-babel-file-phonetic-replacements
-  (file-name-concat tlon-babel-dir-tts "phonetic-replacements.json")
+(defconst tlon-file-phonetic-replacements
+  (file-name-concat tlon-dir-tts "phonetic-replacements.json")
   "File with replacements.")
 
-(defconst tlon-babel-file-abbreviations
-  (file-name-concat tlon-babel-dir-tts "abbreviations.json")
+(defconst tlon-file-abbreviations
+  (file-name-concat tlon-dir-tts "abbreviations.json")
   "File with abbreviations.")
 
 ;;;;; Current values
 
-(defvar tlon-babel-tts-main-voice ""
+(defvar tlon-tts-main-voice ""
   "The main TTS voice.")
 
-(defvar tlon-babel-tts-alternative-voice ""
+(defvar tlon-tts-alternative-voice ""
   "The alternative TTS voice.")
 
-(defvar tlon-babel-tts-current-language ""
+(defvar tlon-tts-current-language ""
   "The language used in the current text-to-speech process.")
 
 ;;;;; Chunk processing
 
-(defvar tlon-babel-unprocessed-chunks nil
+(defvar tlon-unprocessed-chunks nil
   "The chunks to process in the current TTS session.")
 
 ;;;;; SSML tag pairs & patterns
 
 ;;;;;; `break'
 
-(defconst tlon-babel-tts-ssml-break
+(defconst tlon-tts-ssml-break
   "<break time=\"%s\" />"
   "SSML pattern for break tag, with time placeholder.
 <https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>.")
 
-;; (defconst tlon-babel-tts-ssml-break-search-pattern
-;; FIXME: this is not working; `tlon-babel-make-tag-search-pattern' needs to be adjusted to support self-closing tags
-;; (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-break)
+;; (defconst tlon-tts-ssml-break-search-pattern
+;; FIXME: this is not working; `tlon-make-tag-search-pattern' needs to be adjusted to support self-closing tags
+;; (tlon-make-tag-search-pattern tlon-tts-ssml-break)
 ;; "Pattern to search for `break' tags.")
 
 ;;;;;; `emphasis'
 
-(defconst tlon-babel-tts-ssml-emphasis
+(defconst tlon-tts-ssml-emphasis
   '("<emphasis level=\"%s\">" . "</emphasis>")
   "SSML pattern for emphasis tag, with level and text placeholders.")
 
-(defconst tlon-babel-tts-ssml-emphasis-levels
+(defconst tlon-tts-ssml-emphasis-levels
   '("none" "reduced" "moderate" "strong")
   "Admissible emphasis strengths for the `emphasis' SSML tag.")
 
-(defconst tlon-babel-tts-ssml-emphasis-default-level
+(defconst tlon-tts-ssml-emphasis-default-level
   "moderate"
   "Default emphasis level for the `emphasis' SSML tag.")
 
-(defconst tlon-babel-tts-ssml-emphasis-search-pattern
-  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-emphasis)
+(defconst tlon-tts-ssml-emphasis-search-pattern
+  (tlon-make-tag-search-pattern tlon-tts-ssml-emphasis)
   "Pattern to search for `emphasis' tags.")
 
 ;;;;;; `lang'
 
-(defconst tlon-babel-tts-ssml-lang
+(defconst tlon-tts-ssml-lang
   '("<lang xml:lang=\"%s\">" . "</lang>")
   "SSML pattern for language tag, with locale code placeholder.")
 
-(defconst tlon-babel-tts-ssml-lang-search-pattern
-  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-lang)
+(defconst tlon-tts-ssml-lang-search-pattern
+  (tlon-make-tag-search-pattern tlon-tts-ssml-lang)
   "Pattern to search for `lang' tags.")
 
 ;;;;;; `phoneme'
 
-(defconst tlon-babel-tts-ssml-phoneme
+(defconst tlon-tts-ssml-phoneme
   '("<phoneme alphabet=\"%s\" ph=\"%s\">" . "</phoneme>")
   "SSML pattern for phoneme tag, with phoneme and text placeholders.")
 
-(defconst tlon-babel-tts-ssml-phoneme-search-pattern
-  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-phoneme)
+(defconst tlon-tts-ssml-phoneme-search-pattern
+  (tlon-make-tag-search-pattern tlon-tts-ssml-phoneme)
   "Pattern to search for `phoneme' tags.")
 
-(defconst tlon-babel-tts-ssml-phoneme-replace-pattern
-  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-phoneme)
+(defconst tlon-tts-ssml-phoneme-replace-pattern
+  (tlon-make-tag-replace-pattern tlon-tts-ssml-phoneme)
   "Pattern to replace `phoneme' tags.")
 
 ;;;;;; `voice'
 
-(defconst tlon-babel-tts-ssml-voice
+(defconst tlon-tts-ssml-voice
   '("<voice name=\"%s\">" . "</voice>")
   "SSML pair for voice tag, with voice name placeholder.")
 
-(defconst tlon-babel-tts-ssml-voice-search-pattern
-  (tlon-babel-make-tag-search-pattern tlon-babel-tts-ssml-voice)
+(defconst tlon-tts-ssml-voice-search-pattern
+  (tlon-make-tag-search-pattern tlon-tts-ssml-voice)
   "Pattern to search for voice tags.")
 
-(defconst tlon-babel-tts-ssml-voice-replace-pattern
-  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
+(defconst tlon-tts-ssml-voice-replace-pattern
+  (tlon-make-tag-replace-pattern tlon-tts-ssml-voice)
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
-(defconst tlon-babel-tts-ssml-double-voice-replace-pattern
-  (concat (cdr tlon-babel-tts-ssml-voice)
-	  (tlon-babel-make-tag-replace-pattern tlon-babel-tts-ssml-voice)
-	  (car tlon-babel-tts-ssml-voice))
+(defconst tlon-tts-ssml-double-voice-replace-pattern
+  (concat (cdr tlon-tts-ssml-voice)
+	  (tlon-make-tag-replace-pattern tlon-tts-ssml-voice)
+	  (car tlon-tts-ssml-voice))
   "SSML pattern for voice tag, with 2 voice name placeholders and text placeholder.")
 
 ;;;;;; Common
 
-(defconst tlon-babel-tts-supported-tags
+(defconst tlon-tts-supported-tags
   `((:tag break
 	  :polly t
 	  :azure t
@@ -161,13 +161,13 @@
 	  :azure nil ; https://bit.ly/azure-ssml-emphasis
 	  :google t
 	  :openai nil
-	  :pattern ,tlon-babel-tts-ssml-emphasis-search-pattern)
+	  :pattern ,tlon-tts-ssml-emphasis-search-pattern)
     (:tag lang
 	  :polly t
 	  :azure t
 	  :google t
 	  :openai nil
-	  :pattern ,tlon-babel-tts-ssml-lang-search-pattern)
+	  :pattern ,tlon-tts-ssml-lang-search-pattern)
     (:tag mark
 	  :polly t
 	  :azure t
@@ -183,7 +183,7 @@
 	  :azure nil ; https://bit.ly/azure-ssml-phoneme
 	  :google t
 	  :openai nil
-	  :pattern ,tlon-babel-tts-ssml-phoneme-search-pattern)
+	  :pattern ,tlon-tts-ssml-phoneme-search-pattern)
     (:tag prosody
 	  :polly t ; partial support
 	  :azure t
@@ -214,7 +214,7 @@
 	  :azure t
 	  :google t
 	  :openai nil
-	  :pattern tlon-babel-tts-ssml-voice-search-pattern)
+	  :pattern tlon-tts-ssml-voice-search-pattern)
     (:tag w
 	  :polly t
 	  :azure t
@@ -235,7 +235,7 @@
 
 ;;;;;; Microsoft Azure
 
-(defconst tlon-babel-microsoft-azure-request
+(defconst tlon-microsoft-azure-request
   "curl --location --request POST 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1' \
 --header 'Ocp-Apim-Subscription-Key: %s' \
 --header 'Content-Type: application/ssml+xml' \
@@ -246,7 +246,7 @@
   "Curl command to send a request to the Microsoft Azure text-to-speech engine.
 The placeholders are: API key, settings, SSML, and destination.")
 
-(defconst tlon-babel-microsoft-azure-voices
+(defconst tlon-microsoft-azure-voices
   '((:voice "es-US-AlonsoNeural" :language "es" :gender "male")
     (:voice "es-US-PalomaNeural" :language "es" :gender "female"))
   "Preferred Microsoft Azure voices for different languages.
@@ -256,7 +256,7 @@ best male and female voices we were able to identify in each language.
 A list of available voices may be found here:
 <https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/ai-services/speech-service/includes/language-support/tts.md>.")
 
-(defcustom tlon-babel-microsoft-azure-audio-settings
+(defcustom tlon-microsoft-azure-audio-settings
   "audio-16khz-64kbitrate-mono-mp3"
   "Audio settings for the Microsoft Azure text-to-speech service.
 Here's a description of the main options:
@@ -283,19 +283,19 @@ Here's a description of the main options:
 
 For details, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
   :type 'string
-  :group 'tlon-babel-tts)
+  :group 'tlon-tts)
 
-(defvar tlon-babel-microsoft-azure-key nil
+(defvar tlon-microsoft-azure-key nil
   "Microsoft Azure subscription key for the text-to-speech service.")
 
-(defconst tlon-babel-microsoft-azure-char-limit (* 9 60 14)
+(defconst tlon-microsoft-azure-char-limit (* 9 60 14)
   "Maximum number of characters that Microsoft Azure can process per request.
 Microsoft Azure can process up to 10 minutes of audio at a time. This estimate
 assumes 14 characters per second, and uses nine minutes.")
 
 ;;;;;; Google Cloud
 
-(defconst tlon-babel-google-cloud-request
+(defconst tlon-google-cloud-request
   "curl -H 'Authorization: Bearer %s' \
 -H 'x-goog-user-project: api-project-781899662791' \
 -H 'Content-Type: application/json; charset=utf-8' \
@@ -303,7 +303,7 @@ assumes 14 characters per second, and uses nine minutes.")
   "Curl command to send a request to the Google Cloud text-to-speech engine.
 The placeholders are: token, JSON payload and destination.")
 
-(defconst tlon-babel-google-cloud-voices
+(defconst tlon-google-cloud-voices
   '((:voice "en-US-Studio-Q" :language "en" :gender "male")
     (:voice "en-US-Studio-O" :language "en" :gender "female")
     (:voice "es-US-Studio-B" :language "es" :gender "male")
@@ -316,7 +316,7 @@ offer a female studio voice for Spanish, so we use a \"neural\" voice.
 A list of available voices may be found here:
 <https://cloud.google.com/text-to-speech/docs/voices>.")
 
-(defcustom tlon-babel-google-cloud-audio-settings
+(defcustom tlon-google-cloud-audio-settings
   "MP3"
   "Audio settings for the Google Cloud text-to-speech service.
 The options are:
@@ -347,12 +347,12 @@ The options are:
 
 For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
   :type 'string
-  :group 'tlon-babel-tts)
+  :group 'tlon-tts)
 
-(defvar tlon-babel-google-cloud-key nil
+(defvar tlon-google-cloud-key nil
   "Google Cloud subscription key for the text-to-speech service.")
 
-(defconst tlon-babel-google-cloud-char-limit (* 5000 0.9)
+(defconst tlon-google-cloud-char-limit (* 5000 0.9)
   "Maximum number of characters that Google Cloud can process per request.
 Google Cloud TTS can process up to 5000 bytes per request. We use a slightly
 lower number for safety.
@@ -361,13 +361,13 @@ See <https://cloud.google.com/text-to-speech/quotas>.")
 
 ;;;;;; Amazon Polly
 
-(defconst tlon-babel-amazon-polly-request
+(defconst tlon-amazon-polly-request
   "aws polly synthesize-speech --output-format %s --voice-id %s --engine neural --text-type ssml --text '%s' --region %s '%s'"
   "AWS command to synthesize speech using Amazon Polly.
 The placeholders are: output format, voice ID, SSML, region, and destination
 file.")
 
-(defconst tlon-babel-amazon-polly-voices
+(defconst tlon-amazon-polly-voices
   '((:voice "Joanna" :language "en" :gender "female")
     (:voice "Matthew" :language "en" :gender "male")
     (:voice "Lupe" :language "es" :gender "female")
@@ -375,21 +375,21 @@ file.")
   "Preferred Amazon Polly voices for different languages.
 Joanna and Matthew are some of the available Polly voices for English.")
 
-(defvar tlon-babel-amazon-polly-region "us-east-1"
+(defvar tlon-amazon-polly-region "us-east-1"
   "Default AWS region for Amazon Polly requests.")
 
-(defvar tlon-babel-amazon-polly-output-format "mp3"
+(defvar tlon-amazon-polly-output-format "mp3"
   "Default output format for synthesized audio from Amazon Polly.
 Asmissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\"pcm\"'.")
 
-(defconst tlon-babel-amazon-polly-char-limit (* 1500 0.9)
+(defconst tlon-amazon-polly-char-limit (* 1500 0.9)
   "Maximum number of characters that Amazon Polly can process per request.
 The limit for Amazon Polly is 1500 characters but using a slightly lower number
 for safety.")
 
 ;;;;;; OpenAI
 
-(defconst tlon-babel-openai-tts-request
+(defconst tlon-openai-tts-request
   "curl https://api.openai.com/v1/audio/speech \
   -H \"Authorization: Bearer %s\" \
   -H \"Content-Type: application/json\" \
@@ -403,7 +403,7 @@ for safety.")
 The placeholders are the API key, the text to be synthesized, the voice, and the
 file destination.")
 
-(defconst tlon-babel-openai-voices
+(defconst tlon-openai-voices
   '((:voice "echo" :language "es" :gender "male")
     (:voice "nova" :language "es" :gender "female"))
   "Preferred OpenAI voices for different languages.
@@ -413,10 +413,10 @@ best male and female voices we were able to identify in each language.
 A list of available voices may be found here:
 <https://platform.openai.com/docs/guides/text-to-speech>.")
 
-(defvar tlon-babel-openai-key nil
+(defvar tlon-openai-key nil
   "OpenAI API key for the text-to-speech service.")
 
-(defconst tlon-babel-openai-char-limit (* 4096 0.9)
+(defconst tlon-openai-char-limit (* 4096 0.9)
   "Maximum number of characters that OpenAI can process per request.
 OpenAI can process up to 4096 bytes per request. We use a slightly
 lower number for safety.
@@ -425,39 +425,39 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 
 ;;;;; Engines
 
-(defconst tlon-babel-tts-engines
+(defconst tlon-tts-engines
   `((:name "Microsoft Azure"
-	   :voices-var tlon-babel-microsoft-azure-voices
-	   :request-fun tlon-babel-microsoft-azure-make-request
-	   :char-limit ,tlon-babel-microsoft-azure-char-limit)
+	   :voices-var tlon-microsoft-azure-voices
+	   :request-fun tlon-microsoft-azure-make-request
+	   :char-limit ,tlon-microsoft-azure-char-limit)
     (:name "Google Cloud"
-	   :voices-var tlon-babel-google-cloud-voices
-	   :request-fun tlon-babel-google-cloud-make-request
-	   :char-limit ,tlon-babel-google-cloud-char-limit)
+	   :voices-var tlon-google-cloud-voices
+	   :request-fun tlon-google-cloud-make-request
+	   :char-limit ,tlon-google-cloud-char-limit)
     (:name "Amazon Polly"
-           :voices-var tlon-babel-amazon-polly-voices
-           :request-fun tlon-babel-generate-audio-polly
-           :char-limit ,tlon-babel-amazon-polly-char-limit)
+           :voices-var tlon-amazon-polly-voices
+           :request-fun tlon-generate-audio-polly
+           :char-limit ,tlon-amazon-polly-char-limit)
     (:name "OpenAI"
-	   :voices-var tlon-babel-openai-voices
-	   :request-fun tlon-babel-openai-make-request
-	   :char-limit ,tlon-babel-openai-char-limit)))
+	   :voices-var tlon-openai-voices
+	   :request-fun tlon-openai-make-request
+	   :char-limit ,tlon-openai-char-limit)))
 
 ;; needs to use double quotes for Azure, but maybe single quotes for Google Cloud?
 ;; cannot be in single quotes because the entire string is itself enclosed in single quotes
-(defconst tlon-babel-ssml-wrapper
+(defconst tlon-ssml-wrapper
   (append
    (mapcar (lambda (service)
              (cons service
                    (format "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"%%s\">%s</speak>"
-                           tlon-babel-tts-ssml-voice-replace-pattern)))
+                           tlon-tts-ssml-voice-replace-pattern)))
            '("Microsoft Azure" "Google Cloud" "Amazon Polly"))
    '(("OpenAI" . "%3$s")))
   "SSML wrapper for the TTS request.")
 
 ;;;;; Currencies
 
-(defconst tlon-babel-tts-currencies
+(defconst tlon-tts-currencies
   '(("₿" . "BTC")
     ("Ξ" . "ETH")
     ("£" . "GBP")
@@ -467,7 +467,7 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
     ("$" . "USD"))
   "Currency symbols and their associated three-letter codes.")
 
-(defconst tlon-babel-tts-currency-ssml
+(defconst tlon-tts-currency-ssml
   "<say-as interpret-as=\"currency\">%s %s</say-as>"
   "SSML pattern for currency symbols.
 The first placeholder is the currency amount, and the second is the currency
@@ -477,149 +477,149 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 
 ;;;;; File-local variables
 
-(defvar-local tlon-babel-file-local-abbreviations '()
+(defvar-local tlon-file-local-abbreviations '()
   "In-text abbreviations and their spoken equivalent.")
 
-(defvar-local tlon-babel-file-local-replacements '()
+(defvar-local tlon-file-local-replacements '()
   "File local replacements.")
 
 ;;;;; Abbreviations
 
-(defvar tlon-babel-tts-abbreviations
-  (tlon-babel-parse-json tlon-babel-file-abbreviations)
+(defvar tlon-tts-abbreviations
+  (tlon-parse-json tlon-file-abbreviations)
   "Standard abbreviations and their spoken equivalent in each language.")
 
 ;;;;; Phonetic replacements
 
-(defvar tlon-babel-tts-phonetic-replacements
-  (tlon-babel-parse-json tlon-babel-file-phonetic-replacements)
+(defvar tlon-tts-phonetic-replacements
+  (tlon-parse-json tlon-file-phonetic-replacements)
   "Phonetic replacements for terms.")
 
 ;;;;; Phonetic transcriptions
 
-(defvar tlon-babel-tts-phonetic-transcriptions
-  (tlon-babel-parse-json tlon-babel-file-phonetic-transcriptions)
+(defvar tlon-tts-phonetic-transcriptions
+  (tlon-parse-json tlon-file-phonetic-transcriptions)
   "Phonetic transcriptions for terms.")
 
 ;;;;; Listener cues
 
-(defconst tlon-babel-tts-cue-delimiter
-  (concat "\n" (format tlon-babel-tts-ssml-break "0.5s"))
+(defconst tlon-tts-cue-delimiter
+  (concat "\n" (format tlon-tts-ssml-break "0.5s"))
   "Delimiter for listener cues.")
 
 ;;;;;; Notes
 
-(defconst tlon-babel-tts-note-cues
+(defconst tlon-tts-note-cues
   '(("en" "A note starts here." . "The note ends here.")
     ("es" "Aquí empieza una nota." . "Aquí termina la nota."))
   "Listener cues for notes.")
 
 ;;;;;; Quotes
 
-(defconst tlon-babel-tts-quote-cues
+(defconst tlon-tts-quote-cues
   '(("en" "A quote starts here." . "The quote ends here.")
     ("es" "Aquí empieza una cita." . "Aquí termina la cita."))
   "Listener cues for asides.")
 
 ;;;;;; Asides
 
-(defconst tlon-babel-tts-aside-cues
+(defconst tlon-tts-aside-cues
   '(("en" "An aside starts here." . "The aside ends here.")
     ("es" "Aquí empieza un inciso." . "Aquí termina el inciso."))
   "Listener cues for asides.")
 
 ;;;;;; Images
 
-(defconst tlon-babel-tts-image-cues
+(defconst tlon-tts-image-cues
   '(("en" "Here’s an image." . "The image ends here.")
     ("es" "Aquí hay una imagen." ."Aquí termina la imagen."))
   "Listener cues for images.")
 
 ;;;; Functions
 
-(defun tlon-babel-tts-get-alternative-voice ()
+(defun tlon-tts-get-alternative-voice ()
   "Return the voice in the current language that is not the current voice."
-  (let ((voices (tlon-babel-lookup-all tlon-babel-microsoft-azure-voices
-				       :voice :language tlon-babel-tts-current-language)))
-    (car (delete tlon-babel-tts-main-voice voices))))
+  (let ((voices (tlon-lookup-all tlon-microsoft-azure-voices
+				       :voice :language tlon-tts-current-language)))
+    (car (delete tlon-tts-main-voice voices))))
 
 ;;;;; Narration
 
-(defun tlon-babel-tts-read-content (content &optional chunk-size)
+(defun tlon-tts-read-content (content &optional chunk-size)
   "Read CONTENT and return it as a string ready for TTS processing.
 If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   (with-temp-buffer
     (insert content)
-    (tlon-babel-tts-prepare-buffer)
+    (tlon-tts-prepare-buffer)
     (if chunk-size
-	(tlon-babel-break-into-chunks chunk-size)
+	(tlon-break-into-chunks chunk-size)
       (buffer-string))))
 
-(defun tlon-babel-tts-read-file (file)
+(defun tlon-tts-read-file (file)
   "Return substantive content of FILE, handling in-text abbreviations."
   (unless (string= (file-name-extension file) "md")
     (user-error "File `%s' is not a Markdown file" file))
-  (let ((tlon-babel-file-local-abbreviations))
+  (let ((tlon-file-local-abbreviations))
     (with-current-buffer (find-file-noselect file)
-      ;; to make `tlon-babel-tts-process-file-local-abbreviations' work, we
+      ;; to make `tlon-tts-process-file-local-abbreviations' work, we
       ;; let-bound the variable above and now set its value to that of its
       ;; file-local counterpart
-      (setq tlon-babel-file-local-abbreviations tlon-babel-file-local-abbreviations)
-      (concat (tlon-babel-tts-get-metadata) (tlon-babel-md-read-content file)))))
+      (setq tlon-file-local-abbreviations tlon-file-local-abbreviations)
+      (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
 
 ;;;###autoload
-(defun tlon-babel-narrate-content (engine &optional voice file)
+(defun tlon-narrate-content (engine &optional voice file)
   "Narrate content with VOICE using text-to-speech ENGINE.
 If region is active, read the region. Otherwise, read FILE.
 
 Save the narration to the `audio' directory in the same repository as FILE or,
 if region is active, save it to the downloads directory."
-  (interactive (list (completing-read "Engine: " (tlon-babel-lookup-all tlon-babel-tts-engines :name))))
+  (interactive (list (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name))))
   (let* ((file-or-buffer (or file (buffer-file-name) (buffer-name)))
-	 (repo (tlon-babel-get-repo-from-file file-or-buffer))
-	 (language (setq tlon-babel-tts-current-language
-			 (or (tlon-babel-repo-lookup :language :dir repo)
-			     (tlon-babel-select-language 'code 'babel))))
-	 (voice (setq tlon-babel-tts-main-voice
-		      (or voice (tlon-babel-get-voices engine language))))
+	 (repo (tlon-get-repo-from-file file-or-buffer))
+	 (language (setq tlon-tts-current-language
+			 (or (tlon-repo-lookup :language :dir repo)
+			     (tlon-select-language 'code 'babel))))
+	 (voice (setq tlon-tts-main-voice
+		      (or voice (tlon-get-voices engine language))))
 	 (content (if (region-active-p)
 		      (buffer-substring-no-properties (region-beginning) (region-end))
-		    (tlon-babel-tts-read-file file-or-buffer)))
+		    (tlon-tts-read-file file-or-buffer)))
 	 (file-name-sans-extension (file-name-sans-extension
 				    (file-name-nondirectory file-or-buffer)))
-	 ;; FIXME: extension should be set based on audio settings (e.g. `tlon-babel-microsoft-azure-audio-settings')
+	 ;; FIXME: extension should be set based on audio settings (e.g. `tlon-microsoft-azure-audio-settings')
 	 (file-name (file-name-with-extension file-name-sans-extension "mp3"))
 	 (destination (if (region-active-p)
 			  (file-name-concat paths-dir-downloads file-name)
 			(file-name-concat repo "audio" file-name)))
-	 (char-limit (tlon-babel-lookup tlon-babel-tts-engines :char-limit :name engine))
-	 (chunks (tlon-babel-tts-read-content content char-limit))
+	 (char-limit (tlon-lookup tlon-tts-engines :char-limit :name engine))
+	 (chunks (tlon-tts-read-content content char-limit))
 	 (nth 1))
-    (setq tlon-babel-unprocessed-chunks
-	  (tlon-babel-get-chunk-names destination (length chunks)))
+    (setq tlon-unprocessed-chunks
+	  (tlon-get-chunk-names destination (length chunks)))
     (dolist (chunk chunks)
-      (tlon-babel-generate-audio engine chunk voice (tlon-babel-get-chunk-name destination nth))
+      (tlon-generate-audio engine chunk voice (tlon-get-chunk-name destination nth))
       (setq nth (1+ nth)))))
 
-(defun tlon-babel-get-voices (engine language)
+(defun tlon-get-voices (engine language)
   "Get available voices in LANGUAGE for TTS ENGINE."
-  (let ((voices (tlon-babel-lookup tlon-babel-tts-engines :voices-var :name engine)))
-    (completing-read "Voice: " (tlon-babel-lookup-all (symbol-value voices) :voice :language language))))
+  (let ((voices (tlon-lookup tlon-tts-engines :voices-var :name engine)))
+    (completing-read "Voice: " (tlon-lookup-all (symbol-value voices) :voice :language language))))
 
-(defun tlon-babel-tts-get-voice-locale ()
+(defun tlon-tts-get-voice-locale ()
   "Return the locale of the current voice."
   (catch 'found
-    (dolist (var (tlon-babel-lookup-all tlon-babel-tts-engines :voices-var))
-      (when-let* ((code (tlon-babel-lookup (symbol-value var) :language :voice tlon-babel-tts-main-voice))
-		  (locale (tlon-babel-lookup tlon-babel-languages-properties :locale :code code)))
+    (dolist (var (tlon-lookup-all tlon-tts-engines :voices-var))
+      (when-let* ((code (tlon-lookup (symbol-value var) :language :voice tlon-tts-main-voice))
+		  (locale (tlon-lookup tlon-languages-properties :locale :code code)))
 	(throw 'found locale)))))
 
-(defun tlon-babel-generate-audio (engine text voice destination)
+(defun tlon-generate-audio (engine text voice destination)
   "Generate an audio file from TEXT using ENGINE VOICE and save it to DESTINATION."
-  (let* ((locale (tlon-babel-tts-get-voice-locale))
-	 (ssml-wrapper (alist-get engine tlon-babel-ssml-wrapper nil nil #'string=))
+  (let* ((locale (tlon-tts-get-voice-locale))
+	 (ssml-wrapper (alist-get engine tlon-ssml-wrapper nil nil #'string=))
 	 (content (format ssml-wrapper locale voice text))
-	 (fun (tlon-babel-lookup tlon-babel-tts-engines :request-fun :name engine))
+	 (fun (tlon-lookup tlon-tts-engines :request-fun :name engine))
 	 (request (funcall fun content voice locale destination))
 	 (process (start-process-shell-command "generate audio" nil request)))
     (set-process-sentinel process
@@ -627,75 +627,75 @@ if region is active, save it to the downloads directory."
 			    (when (string= event "finished\n")
 			      (if (region-active-p)
 				  (shell-command (format "open %s" destination))
-				(setq tlon-babel-unprocessed-chunks
-				      (remove destination tlon-babel-unprocessed-chunks))
-				(unless tlon-babel-unprocessed-chunks
-				  (let ((file (tlon-babel-get-original-name destination)))
-				    (tlon-babel-join-chunks file)
-				    ;; (tlon-babel-delete-chunks file)
+				(setq tlon-unprocessed-chunks
+				      (remove destination tlon-unprocessed-chunks))
+				(unless tlon-unprocessed-chunks
+				  (let ((file (tlon-get-original-name destination)))
+				    (tlon-join-chunks file)
+				    ;; (tlon-delete-chunks file)
 				    ))))))))
 
 ;;;;;; Microsoft Azure
 
-(defun tlon-babel-microsoft-azure-make-request (content _voice _locale destination)
+(defun tlon-microsoft-azure-make-request (content _voice _locale destination)
   "Make a request to the Microsoft Azure text-to-speech service.
 CONTENT is the content of the request. DESTINATION is the output file path."
-  (format tlon-babel-microsoft-azure-request
-	  (tlon-babel-microsoft-azure-get-or-set-key) tlon-babel-microsoft-azure-audio-settings
+  (format tlon-microsoft-azure-request
+	  (tlon-microsoft-azure-get-or-set-key) tlon-microsoft-azure-audio-settings
 	  content destination))
 
-(defun tlon-babel-microsoft-azure-get-or-set-key ()
+(defun tlon-microsoft-azure-get-or-set-key ()
   "Get or set the Microsoft Azure key."
-  (or tlon-babel-microsoft-azure-key
-      (setq tlon-babel-microsoft-azure-key
+  (or tlon-microsoft-azure-key
+      (setq tlon-microsoft-azure-key
 	    (auth-source-pass-get "key1" "tlon/core/azure.com/tlon.shared@gmail.com"))))
 
 ;;;;;; Google Cloud
 
-(defun tlon-babel-google-cloud-make-request (content voice locale destination)
+(defun tlon-google-cloud-make-request (content voice locale destination)
   "Make a request to the Google Cloud text-to-speech service.
 CONTENT is the content of the request. VOICE is voice ID. LOCALE is the
 locate. DESTINATION is the output file path"
-  (format tlon-babel-google-cloud-request
-	  (tlon-babel-google-cloud-get-token)
-	  (tlon-babel-google-cloud-format-ssml content voice locale)
+  (format tlon-google-cloud-request
+	  (tlon-google-cloud-get-token)
+	  (tlon-google-cloud-format-ssml content voice locale)
 	  destination))
 
-(defun tlon-babel-google-cloud-format-ssml (ssml voice locale)
+(defun tlon-google-cloud-format-ssml (ssml voice locale)
   "Convert SSML string to JSON object for Google Cloud TTS.
 VOICE and LOCALE are used to construct the JSON object."
-  (let* ((gender (tlon-babel-lookup tlon-babel-google-cloud-voices :gender :voice voice))
+  (let* ((gender (tlon-lookup tlon-google-cloud-voices :gender :voice voice))
 	 (payload (json-encode
 		   `((input (ssml . ,ssml))
 		     (voice (languageCode . ,locale)
 			    (name . ,voice)
 			    (ssmlGender . ,(upcase gender)))
-		     (audioConfig (audioEncoding . ,tlon-babel-google-cloud-audio-settings))))))
+		     (audioConfig (audioEncoding . ,tlon-google-cloud-audio-settings))))))
     payload))
 
-(defun tlon-babel-google-cloud-get-token ()
+(defun tlon-google-cloud-get-token ()
   "Get or set the Google Cloud token key."
   (string-trim (shell-command-to-string "gcloud auth print-access-token")))
 
-(defun tlon-babel-google-cloud-get-or-set-key ()
+(defun tlon-google-cloud-get-or-set-key ()
   "Get or set the Google Cloud key."
-  (or tlon-babel-google-cloud-key
-      (setq tlon-babel-google-cloud-key
+  (or tlon-google-cloud-key
+      (setq tlon-google-cloud-key
 	    (auth-source-pass-get "key" "tlon/babel/cloud.google.com/pablo.stafforini@gmail.com"))))
 
 ;;;;;; Amazon Polly
 
-(defun tlon-babel-amazon-polly-make-request (content voice _locale destination)
+(defun tlon-amazon-polly-make-request (content voice _locale destination)
   "Construct the AWS CLI command to call Amazon Polly.
 CONTENT is the content of the request. VOICE is the voice ID. DESTINATION is
 the output file path."
-  (format tlon-babel-amazon-polly-request
-          tlon-babel-amazon-polly-output-format voice content tlon-babel-amazon-polly-region destination))
+  (format tlon-amazon-polly-request
+          tlon-amazon-polly-output-format voice content tlon-amazon-polly-region destination))
 
-(defun tlon-babel-generate-audio-polly (text voice locale destination)
+(defun tlon-generate-audio-polly (text voice locale destination)
 "Generate audio file for TEXT with Amazon Polly VOICE and save it to DESTINATION."
-(let* ((ssml (format tlon-babel-ssml-wrapper locale voice text)) ; revise
-       (request (tlon-babel-amazon-polly-make-request ssml voice locale destination))
+(let* ((ssml (format tlon-ssml-wrapper locale voice text)) ; revise
+       (request (tlon-amazon-polly-make-request ssml voice locale destination))
        (process (start-process-shell-command "generate audio" nil request)))
   (set-process-sentinel process
 			(lambda (process event)
@@ -704,22 +704,22 @@ the output file path."
 
 ;;;;;; OpenAI
 
-(defun tlon-babel-openai-make-request (ssml voice _locale destination)
+(defun tlon-openai-make-request (ssml voice _locale destination)
   "Make a request to the OpenAI text-to-speech service.
 SSML is the content of the request. VOICE is the TTS voice. DESTINATION is the
 file to save the audio to."
-  (format tlon-babel-openai-tts-request
-	  (tlon-babel-openai-get-or-set-key) ssml voice destination))
+  (format tlon-openai-tts-request
+	  (tlon-openai-get-or-set-key) ssml voice destination))
 
-(defun tlon-babel-openai-get-or-set-key ()
+(defun tlon-openai-get-or-set-key ()
   "Get or set the Microsoft Azure key."
-  (or tlon-babel-openai-key
-      (setq tlon-babel-openai-key
-	    (auth-source-pass-get "key" (concat "tlon/core/openai.com/" tlon-babel-email-shared)))))
+  (or tlon-openai-key
+      (setq tlon-openai-key
+	    (auth-source-pass-get "key" (concat "tlon/core/openai.com/" tlon-email-shared)))))
 
 ;;;;;; Chunk processing
 
-(defun tlon-babel-break-into-chunks (chunk-size)
+(defun tlon-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks no larger than CHUNK-SIZE."
   (let ((chunks '())
 	(begin 1)
@@ -735,29 +735,29 @@ file to save the audio to."
       (setq begin end))
     (nreverse chunks)))
 
-(defun tlon-babel-join-chunks (file)
+(defun tlon-join-chunks (file)
   "Join chunks of FILE back into a single file."
-  (let* ((files (tlon-babel-get-list-of-chunks file))
-	 (list-of-files (tlon-babel-create-list-of-chunks files)))
+  (let* ((files (tlon-get-list-of-chunks file))
+	 (list-of-files (tlon-create-list-of-chunks files)))
     (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
 			   list-of-files file))))
 
-(defun tlon-babel-get-list-of-chunks (file)
+(defun tlon-get-list-of-chunks (file)
   "Return a list of the file chunks for FILE."
   (let ((nth 1)
 	file-chunk
 	files)
-    (while (file-exists-p (setq file-chunk (tlon-babel-get-chunk-name file nth)))
+    (while (file-exists-p (setq file-chunk (tlon-get-chunk-name file nth)))
       (push file-chunk files)
       (setq nth (1+ nth)))
     (nreverse files)))
 
-(defun tlon-babel-delete-chunks (file)
+(defun tlon-delete-chunks (file)
   "Delete the chunks of FILE."
-  (dolist (file (tlon-babel-get-list-of-chunks file))
+  (dolist (file (tlon-get-list-of-chunks file))
     (delete-file file)))
 
-(defun tlon-babel-create-list-of-chunks (files)
+(defun tlon-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
   (let ((temp-file-list (make-temp-file "files" nil ".txt")))
     (with-temp-file temp-file-list
@@ -765,19 +765,19 @@ file to save the audio to."
 	(insert (format "file '%s'\n" (expand-file-name file)))))
     temp-file-list))
 
-(defun tlon-babel-get-chunk-name (file nth)
+(defun tlon-get-chunk-name (file nth)
   "Return the name of the NTH chunk of FILE."
   (let ((extension (file-name-extension file))
 	(file-name-sans-extension (file-name-sans-extension file)))
     (format "%s-%03d.%s" file-name-sans-extension nth extension)))
 
-(defun tlon-babel-get-chunk-names (file n)
+(defun tlon-get-chunk-names (file n)
   "Return a list of the first N chunk names of FILE."
   (let ((names '()))
     (dotimes (i n names)
-      (push (tlon-babel-get-chunk-name file (1+ i)) names))))
+      (push (tlon-get-chunk-name file (1+ i)) names))))
 
-(defun tlon-babel-get-original-name (chunk-name)
+(defun tlon-get-original-name (chunk-name)
   "Return the original file name before it was chunked, given CHUNK-NAME."
   (let* ((base-name (file-name-sans-extension chunk-name))
 	 (extension (file-name-extension chunk-name))
@@ -788,140 +788,140 @@ file to save the audio to."
 
 ;; Should also include summary?
 ;; Perhaps should be narrated by alternative voice?
-(defun tlon-babel-tts-get-metadata ()
+(defun tlon-tts-get-metadata ()
   "Add title and author."
-  (let* ((metadata (tlon-babel-yaml-format-values-of-alist (tlon-babel-yaml-get-metadata)))
+  (let* ((metadata (tlon-yaml-format-values-of-alist (tlon-yaml-get-metadata)))
 	 (title (alist-get "title" metadata nil nil #'string=))
 	 (authors (alist-get "authors" metadata nil nil #'string=))
-	 (author-string (tlon-babel-concatenate-list authors)))
+	 (author-string (tlon-concatenate-list authors)))
     (format "%s.\n\nPor %s.\n\n" title author-string)))
 
 ;;;;; Cleanup
 
-(defun tlon-babel-tts-prepare-buffer ()
+(defun tlon-tts-prepare-buffer ()
   "Prepare the current buffer for audio narration."
   (save-excursion
-    (tlon-babel-tts-process-notes)
-    (tlon-babel-tts-process-citations)
-    (tlon-babel-tts-process-formatting)
-    (tlon-babel-tts-process-headings)
+    (tlon-tts-process-notes)
+    (tlon-tts-process-citations)
+    (tlon-tts-process-formatting)
+    (tlon-tts-process-headings)
     ;; replace small caps
     ;; check all other elements in markdown-menu
-    (tlon-babel-tts-process-file-local-abbreviations)
-    (tlon-babel-tts-process-file-local-replacements)
-    (tlon-babel-tts-process-abbreviations)
-    (tlon-babel-tts-process-phonetic-replacements)
-    ;; (tlon-babel-tts-process-phonetic-transcriptions) ; not currently supported
-    (tlon-babel-tts-process-alternative-voice)
-    (tlon-babel-tts-process-asides)
-    (tlon-babel-tts-process-quotes)
-    (tlon-babel-tts-process-images) ; should be before links
-    (tlon-babel-tts-process-links)
-    (tlon-babel-tts-process-numbers)
-    (tlon-babel-tts-process-currencies)
-    (tlon-babel-tts-process-math-expressions))
+    (tlon-tts-process-file-local-abbreviations)
+    (tlon-tts-process-file-local-replacements)
+    (tlon-tts-process-abbreviations)
+    (tlon-tts-process-phonetic-replacements)
+    ;; (tlon-tts-process-phonetic-transcriptions) ; not currently supported
+    (tlon-tts-process-alternative-voice)
+    (tlon-tts-process-asides)
+    (tlon-tts-process-quotes)
+    (tlon-tts-process-images) ; should be before links
+    (tlon-tts-process-links)
+    (tlon-tts-process-numbers)
+    (tlon-tts-process-currencies)
+    (tlon-tts-process-math-expressions))
   (goto-char (point-min)))
 
 ;; TODO: it seems Microsoft Azure is not making an extra pause between paragraphs; decide whether to add some extra silence
 
 ;;;;;; Notes
 
-(defun tlon-babel-tts-process-notes ()
+(defun tlon-tts-process-notes ()
   "Replace note reference with its content, if it is a sidenote, else delete it.
 Move the note to the end of the sentence if necessary.
 
 Note: the function assumes that the citation is in MDX, rather than Pandoc
 citation key, format. Hence, it must be run *before*
-`tlon-babel-tts-process-citations'."
+`tlon-tts-process-citations'."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-footnote nil t)
     (let (reposition)
       (markdown-footnote-kill)
       (unless (looking-back (concat "\\.\\|" markdown-regex-footnote) (line-beginning-position))
 	(setq reposition t))
-      (when (eq (tlon-babel-get-note-type (current-kill 0)) 'sidenote)
+      (when (eq (tlon-get-note-type (current-kill 0)) 'sidenote)
 	(when reposition
 	  (forward-sentence))
-	(insert (tlon-babel-tts-handle-note (string-trim (current-kill 0))))))))
+	(insert (tlon-tts-handle-note (string-trim (current-kill 0))))))))
 
-(defun tlon-babel-tts-handle-note (note)
+(defun tlon-tts-handle-note (note)
   "Handle NOTE for audio narration."
-  (let ((clean-note (replace-regexp-in-string tlon-babel-sidenote-marker "" note)))
-    (tlon-babel-tts-listener-cue-full-enclose tlon-babel-tts-note-cues clean-note)))
+  (let ((clean-note (replace-regexp-in-string tlon-sidenote-marker "" note)))
+    (tlon-tts-listener-cue-full-enclose tlon-tts-note-cues clean-note)))
 
 ;;;;;; Citations
 
-(defun tlon-babel-tts-process-citations ()
+(defun tlon-tts-process-citations ()
   "Replace our custom MDX cite tags with a pandoc-style citation.
 For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 `[@Clark2015SonAlsoRises]'."
   (goto-char (point-min))
-  (while (re-search-forward tlon-babel-cite-pattern nil t)
+  (while (re-search-forward tlon-cite-pattern nil t)
     (replace-match (format "[@%s]"(match-string 1)) nil nil)))
 
 ;;;;;; Showing and hiding
 
-;; TODO: I think we should just use `tlon-babel-tts-remove-formatting' for this,
-;; together with the patterns defined in `tlon-babel-md'
+;; TODO: I think we should just use `tlon-tts-remove-formatting' for this,
+;; together with the patterns defined in `tlon-md'
 
 ;;;;;; Formatting
 
-(defun tlon-babel-tts-process-formatting ()
+(defun tlon-tts-process-formatting ()
   "Remove formatting from text."
-  (tlon-babel-tts-process-boldface)
-  (tlon-babel-tts-process-italics)
-  (tlon-babel-tts-process-visually-hidden)
-  (tlon-babel-tts-process-visually-shown))
+  (tlon-tts-process-boldface)
+  (tlon-tts-process-italics)
+  (tlon-tts-process-visually-hidden)
+  (tlon-tts-process-visually-shown))
 
-(defun tlon-babel-tts-remove-formatting (type)
+(defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
   (cl-destructuring-bind (pattern . group)
       (pcase type
 	('boldface (cons markdown-regex-bold 4))
 	('italics (cons markdown-regex-italic 3))
-	('visually-hidden (cons tlon-babel-mdx-visually-hidden-search-pattern 2))
-	('visually-shown (cons tlon-babel-mdx-visually-shown-search-pattern nil))
+	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern 2))
+	('visually-shown (cons tlon-mdx-visually-shown-search-pattern nil))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
       (let ((replacement (if group (format " %s" (match-string group)) "")))
 	(replace-match replacement t nil)))))
 
-(defun tlon-babel-tts-process-boldface ()
+(defun tlon-tts-process-boldface ()
   "Remove boldface from text."
-  (tlon-babel-tts-remove-formatting 'boldface))
+  (tlon-tts-remove-formatting 'boldface))
 
-(defun tlon-babel-tts-process-italics ()
+(defun tlon-tts-process-italics ()
   "Remove italics from text."
-  (tlon-babel-tts-remove-formatting 'italics))
+  (tlon-tts-remove-formatting 'italics))
 
-(defun tlon-babel-tts-process-visually-hidden ()
+(defun tlon-tts-process-visually-hidden ()
   "Remove `VisuallyHidden' MDX tag."
-  (tlon-babel-tts-remove-formatting 'visually-hidden))
+  (tlon-tts-remove-formatting 'visually-hidden))
 
-(defun tlon-babel-tts-process-visually-shown ()
+(defun tlon-tts-process-visually-shown ()
   "Remove `VisuallyShown' MDX tag."
-  (tlon-babel-tts-remove-formatting 'visually-shown))
+  (tlon-tts-remove-formatting 'visually-shown))
 
 ;;;;;; Headings
 
-(defun tlon-babel-tts-process-headings ()
+(defun tlon-tts-process-headings ()
   "Remove heading markers from headings."
-  (let ((insert-pause (format tlon-babel-tts-ssml-break "1s")))
+  (let ((insert-pause (format tlon-tts-ssml-break "1s")))
     (goto-char (point-min))
     (while (re-search-forward markdown-regex-header nil t)
       (replace-match (format "%s %s" insert-pause (match-string 5))))))
 
 ;;;;;; File-local abbreviations
 
-(defun tlon-babel-tts-process-file-local-abbreviations ()
+(defun tlon-tts-process-file-local-abbreviations ()
   "Replace file-local abbreviations with their spoken equivalent.
 In-text abbreviations are those that are introduced in the text itself,
 typically in parenthesis after the first occurrence of the phrase they
 abbreviate. We store these abbreviations on a per file basis, in the file-local
-variable `tlon-babel-file-local-abbreviations'"
+variable `tlon-file-local-abbreviations'"
   (let ((case-fold-search nil))
-    (dolist (entry tlon-babel-file-local-abbreviations)
+    (dolist (entry tlon-file-local-abbreviations)
       (cl-destructuring-bind (abbrev . expansion) entry
 	(let ((abbrev-introduced (format "%s (%s)" expansion abbrev)))
 	  ;; we first replace the full abbrev introduction, then the abbrev itself
@@ -932,9 +932,9 @@ variable `tlon-babel-file-local-abbreviations'"
 
 ;;;;;; File-local replacements
 
-(defun tlon-babel-tts-process-file-local-replacements ()
-  "Perform replacements indicated in `tlon-babel-file-local-replacements'."
-  (dolist (pair tlon-babel-file-local-replacements)
+(defun tlon-tts-process-file-local-replacements ()
+  "Perform replacements indicated in `tlon-file-local-replacements'."
+  (dolist (pair tlon-file-local-replacements)
     (let ((find (car pair)))
       (goto-char (point-min))
       (while (re-search-forward find nil t)
@@ -944,7 +944,7 @@ variable `tlon-babel-file-local-abbreviations'"
 
 ;;;;;;; Common
 
-(defun tlon-babel-tts-process-terms (terms replacement-fun)
+(defun tlon-tts-process-terms (terms replacement-fun)
   "Replace TERMS using REPLACEMENT-FUN."
   (let ((case-fold-search nil))
     (dolist (term terms)
@@ -954,77 +954,77 @@ variable `tlon-babel-file-local-abbreviations'"
 	(while (re-search-forward find nil t)
 	  (funcall replacement-fun replacement))))))
 
-(defun tlon-babel-tts-get-associated-terms (var)
+(defun tlon-tts-get-associated-terms (var)
   "Get associated terms for the current language in VAR.
 For each cons cell in VAR for the language in the current text-to-speech
 process, return its cdr."
   (let ((result '()))
     (dolist (term var result)
-      (when (member tlon-babel-tts-current-language (car term))
+      (when (member tlon-tts-current-language (car term))
 	(setq result (append result (cadr term)))))
     result))
 
 ;;;;;;; Abbreviations
 
-(defun tlon-babel-tts-process-abbreviations ()
+(defun tlon-tts-process-abbreviations ()
   "Replace terms with their pronunciations."
-  (tlon-babel-tts-process-terms
-   (tlon-babel-get-abbreviations)
-   'tlon-babel-replace-abbreviations))
+  (tlon-tts-process-terms
+   (tlon-get-abbreviations)
+   'tlon-replace-abbreviations))
 
-(defun tlon-babel-replace-abbreviations (replacement)
+(defun tlon-replace-abbreviations (replacement)
   "When processing abbreviations, replace match with REPLACEMENT."
   (replace-match replacement t))
 
-(defun tlon-babel-get-abbreviations ()
+(defun tlon-get-abbreviations ()
   "Get abbreviations."
-  (tlon-babel-tts-get-associated-terms tlon-babel-tts-abbreviations))
+  (tlon-tts-get-associated-terms tlon-tts-abbreviations))
 
 ;;;;;;; Phonetic replacements
 
-(defun tlon-babel-tts-process-phonetic-replacements ()
+(defun tlon-tts-process-phonetic-replacements ()
   "Replace terms with their counterparts."
-  (tlon-babel-tts-process-terms
-   (tlon-babel-get-phonetic-replacements)
-   'tlon-babel-replace-phonetic-replacements))
+  (tlon-tts-process-terms
+   (tlon-get-phonetic-replacements)
+   'tlon-replace-phonetic-replacements))
 
-(defun tlon-babel-replace-phonetic-replacements (replacement)
+(defun tlon-replace-phonetic-replacements (replacement)
   "When processing simple replacements, replace match with REPLACEMENT."
   (replace-match replacement t))
 
-(defun tlon-babel-get-phonetic-replacements ()
+(defun tlon-get-phonetic-replacements ()
   "Get simple replacements."
-  (tlon-babel-tts-get-associated-terms tlon-babel-tts-phonetic-replacements))
+  (tlon-tts-get-associated-terms tlon-tts-phonetic-replacements))
 
 ;;;;;;; Phonetic transcriptions
 
-(defun tlon-babel-tts-process-phonetic-transcriptions ()
+(defun tlon-tts-process-phonetic-transcriptions ()
   "Replace terms with their pronunciations."
-  (tlon-babel-tts-process-terms
-   (tlon-babel-get-phonetic-transcriptions)
-   'tlon-babel-replace-phonetic-transcriptions))
+  (tlon-tts-process-terms
+   (tlon-get-phonetic-transcriptions)
+   'tlon-replace-phonetic-transcriptions))
 
-(defun tlon-babel-replace-phonetic-transcriptions (replacement)
+(defun tlon-replace-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
-  (replace-match (format tlon-babel-tts-ssml-phoneme-replace-pattern
+  (replace-match (format tlon-tts-ssml-phoneme-replace-pattern
 			 "ipa" replacement (match-string-no-properties 0)) t))
 
-(defun tlon-babel-get-phonetic-transcriptions ()
+(defun tlon-get-phonetic-transcriptions ()
   "Get the phonetic transcriptions."
-  (tlon-babel-tts-get-associated-terms tlon-babel-tts-phonetic-transcriptions))
+  (tlon-tts-get-associated-terms tlon-tts-phonetic-transcriptions))
 
 ;;;;;; Listener cues
 
 ;;;;;;; General functions
 
-(defun tlon-babel-tts-enclose-in-listener-cues (type text)
+(defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
   (cl-destructuring-bind (cue-begins . cue-ends)
-      (alist-get tlon-babel-tts-current-language type nil nil #'string=)
+      (alist-get tlon-tts-current-language type nil nil #'string=)
     (format "%s %s %s" cue-begins text cue-ends)))
 
-(defun tlon-babel-tts-enclose-in-voice-tag (string &optional voice)
+(defun tlon-tts-enclose-in-voice-tag (string &optional voice)
   "Enclose STRING in `voice' SSML tags.
 If VOICE is nil, default to the alternative voice.
 
@@ -1032,52 +1032,52 @@ Note that this function inserts two pairs of `voice' tags: the inner pair to set
 the voice for the string that it encloses, and an outer pair of tags in reverse
 order, to close the opening `voice' tag that wraps the entire document, and to
 then reopen it."
-  (let ((voice (or voice (tlon-babel-tts-get-alternative-voice))))
-    (format tlon-babel-tts-ssml-double-voice-replace-pattern voice string tlon-babel-tts-main-voice)))
+  (let ((voice (or voice (tlon-tts-get-alternative-voice))))
+    (format tlon-tts-ssml-double-voice-replace-pattern voice string tlon-tts-main-voice)))
 
-(defun tlon-babel-tts-enclose-in-cue-delimiter (string)
+(defun tlon-tts-enclose-in-cue-delimiter (string)
   "Enclose STRING in listener cue delimiter."
-  (format "%1$s%s%1$s" tlon-babel-tts-cue-delimiter string))
+  (format "%1$s%s%1$s" tlon-tts-cue-delimiter string))
 
-(defun tlon-babel-tts-listener-cue-full-enclose (type text)
+(defun tlon-tts-listener-cue-full-enclose (type text)
   "Enclose TEXT in listener cue of TYPE, and in turn in `voice' SSML tags."
-  (tlon-babel-tts-enclose-in-cue-delimiter
-   (tlon-babel-tts-enclose-in-voice-tag
-    (tlon-babel-tts-enclose-in-listener-cues type text))))
+  (tlon-tts-enclose-in-cue-delimiter
+   (tlon-tts-enclose-in-voice-tag
+    (tlon-tts-enclose-in-listener-cues type text))))
 
-(defun tlon-babel-tts-process-element (type)
+(defun tlon-tts-process-element (type)
   "Add listener cues for text enclosed in tags of TYPE."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
-	('aside (list tlon-babel-mdx-aside-search-pattern tlon-babel-tts-aside-cues 2))
-	('quote (list markdown-regex-blockquote tlon-babel-tts-quote-cues 3))
-	('image (list markdown-regex-link-inline tlon-babel-tts-image-cues 3))
+	('aside (list tlon-mdx-aside-search-pattern tlon-tts-aside-cues 2))
+	('quote (list markdown-regex-blockquote tlon-tts-quote-cues 3))
+	('image (list markdown-regex-link-inline tlon-tts-image-cues 3))
 	;; TODO: determine if other types should be added
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
       (replace-match
-       (tlon-babel-tts-listener-cue-full-enclose cues (match-string-no-properties group))))))
+       (tlon-tts-listener-cue-full-enclose cues (match-string-no-properties group))))))
 
 ;;;;;;; Specific elements
 
-(defun tlon-babel-tts-process-quotes ()
+(defun tlon-tts-process-quotes ()
   "Add listener cues for blockquotes."
-  (tlon-babel-tts-process-element 'quote))
+  (tlon-tts-process-element 'quote))
 
-(defun tlon-babel-tts-process-asides ()
+(defun tlon-tts-process-asides ()
   "Add listener cues for asides."
-  (tlon-babel-tts-process-element 'aside))
+  (tlon-tts-process-element 'aside))
 
-(defun tlon-babel-tts-process-images ()
+(defun tlon-tts-process-images ()
   "Add listener cues for images."
-  (tlon-babel-tts-process-element 'image))
+  (tlon-tts-process-element 'image))
 
 ;;;;;; Links
 
-(defun tlon-babel-tts-process-links ()
+(defun tlon-tts-process-links ()
   "Replace links with their text.
-Note: this function should be run after `tlon-babel-tts-process-images' because
+Note: this function should be run after `tlon-tts-process-images' because
 image links are handled differently."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-link-inline nil t)
@@ -1085,56 +1085,56 @@ image links are handled differently."
 
 ;;;;;; Numbers
 
-(defun tlon-babel-tts-process-numbers ()
+(defun tlon-tts-process-numbers ()
   "Remove number separators."
-  (let* ((separator (alist-get tlon-babel-tts-current-language
-			       tlon-babel-md-number-separators nil nil #'string=)))
+  (let* ((separator (alist-get tlon-tts-current-language
+			       tlon-md-number-separators nil nil #'string=)))
     (goto-char (point-min))
-    (while (re-search-forward (format tlon-babel-md-number-separator-pattern separator) nil t)
+    (while (re-search-forward (format tlon-md-number-separator-pattern separator) nil t)
       (replace-match "\\1\\3"))))
 
 ;;;;;; Currencies
 
-(defun tlon-babel-tts-process-currencies ()
+(defun tlon-tts-process-currencies ()
   "Format currency with appropriate SSML tags."
-  (dolist (cons tlon-babel-tts-currencies)
+  (dolist (cons tlon-tts-currencies)
     (let ((symbol (car cons))
 	  (code (cdr cons)))
       (goto-char (point-min))
       (while (re-search-forward (format "%s.?\\([0-9,.]+\\)\\b" (regexp-quote symbol)) nil t)
-	(replace-match (format tlon-babel-tts-currency-ssml
+	(replace-match (format tlon-tts-currency-ssml
 			       (match-string-no-properties 1) code))))))
 
 ;;;;;; Math expressions
 
-(declare-function tlon-babel-ai-translate-math "tlon-babel-ai")
-(defun tlon-babel-tts-process-math-expressions ()
+(declare-function tlon-ai-translate-math "tlon-ai")
+(defun tlon-tts-process-math-expressions ()
   "Replace math expressions with their spoken equivalent."
-  (dolist (pattern (list tlon-babel-math-inline-search-pattern
-			 tlon-babel-math-display-search-pattern))
+  (dolist (pattern (list tlon-math-inline-search-pattern
+			 tlon-math-display-search-pattern))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
       (let ((math (match-string-no-properties 2)))
 	(replace-match "" nil nil)
-	(tlon-babel-ai-translate-math math tlon-babel-tts-current-language)))))
+	(tlon-ai-translate-math math tlon-tts-current-language)))))
 
 ;;;;; Alternative voice
 
-(defun tlon-babel-tts-process-alternative-voice ()
+(defun tlon-tts-process-alternative-voice ()
   "Replace the `AlternativeVoice' tag with an SSML `voice' tag.
 The `voice' tag is set to the alternative voice for the current language."
   (goto-char (point-min))
-  (while (re-search-forward tlon-babel-mdx-alternative-voice-search-pattern nil t)
-    (replace-match (tlon-babel-tts-enclose-in-voice-tag (match-string 2)) t)))
+  (while (re-search-forward tlon-mdx-alternative-voice-search-pattern nil t)
+    (replace-match (tlon-tts-enclose-in-voice-tag (match-string 2)) t)))
 
 ;;;;; Project-wide
 
 ;;;;;; Common
 
-(defun tlon-babel-tts-edit-entry (variable file)
+(defun tlon-tts-edit-entry (variable file)
   "Add or revise an entry in VARIABLE and write it to FILE."
   (interactive)
-  (set variable (tlon-babel-parse-json file))
+  (set variable (tlon-parse-json file))
   (let* ((names (mapcan (lambda (group)
 			  (mapcar #'car (cadr group)))
 			(symbol-value variable)))
@@ -1147,20 +1147,20 @@ The `voice' tag is set to the alternative voice for the current language."
 			  nil)))
     (if current-entry
 	(let ((cdr (read-string (format "Updated entry for %s: " term) current-entry)))
-	  (tlon-babel-tts-revise-entry (symbol-value variable) term cdr))
-      (tlon-babel-tts-add-entry (symbol-value variable) term))
-    (tlon-babel-write-data file (symbol-value variable))))
+	  (tlon-tts-revise-entry (symbol-value variable) term cdr))
+      (tlon-tts-add-entry (symbol-value variable) term))
+    (tlon-write-data file (symbol-value variable))))
 
-(defun tlon-babel-tts-revise-entry (data term cdr)
+(defun tlon-tts-revise-entry (data term cdr)
   "Update the CDR for an existing TERM in DATA."
   (dolist (group data)
     (dolist (pair (cadr group))
       (when (string= (car pair) term)
 	(setcdr pair cdr)))))
 
-(defun tlon-babel-tts-add-entry (data term)
+(defun tlon-tts-add-entry (data term)
   "Add a new TERM to DATA."
-  (let* ((languages (tlon-babel-select-language 'code 'babel 'multiple))
+  (let* ((languages (tlon-select-language 'code 'babel 'multiple))
 	 (dict-entry (read-string "Term: "))
 	 (new-entry (cons term dict-entry))
 	 (added nil))
@@ -1175,39 +1175,39 @@ The `voice' tag is set to the alternative voice for the current language."
 ;;;;;; Abbreviations
 
 ;;;###autoload
-(defun tlon-babel-edit-abbreviations ()
+(defun tlon-edit-abbreviations ()
   "Edit abbreviations."
   (interactive)
-  (tlon-babel-tts-edit-entry
-   'tlon-babel-tts-abbreviations
-   tlon-babel-file-abbreviations))
+  (tlon-tts-edit-entry
+   'tlon-tts-abbreviations
+   tlon-file-abbreviations))
 
 ;;;;;; Phonetic replacements
 
 ;;;###autoload
-(defun tlon-babel-edit-phonetic-replacements ()
+(defun tlon-edit-phonetic-replacements ()
   "Edit phonetic replacements."
   (interactive)
-  (tlon-babel-tts-edit-entry
-   'tlon-babel-tts-phonetic-replacements
-   tlon-babel-file-phonetic-replacements))
+  (tlon-tts-edit-entry
+   'tlon-tts-phonetic-replacements
+   tlon-file-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
 
 ;;;###autoload
-(defun tlon-babel-edit-phonetic-transcriptions ()
+(defun tlon-edit-phonetic-transcriptions ()
   "Edit phonetic transcriptions."
   (interactive)
-  (tlon-babel-tts-edit-entry
-   'tlon-babel-tts-phonetic-transcriptions
-   tlon-babel-file-phonetic-transcriptions))
+  (tlon-tts-edit-entry
+   'tlon-tts-phonetic-transcriptions
+   tlon-file-phonetic-transcriptions))
 
 ;;;;; File-local
 
 ;;;;;; Common
 
 (declare-function modify-file-local-variable "files-x")
-(defun tlon-babel-add-in-text-cons-cell (prompts var)
+(defun tlon-add-in-text-cons-cell (prompts var)
   "Add an in-text cons-cell to the file-local named VAR.
 PROMPTS is a cons cell with the corresponding prompts."
   (let* ((var-value (symbol-value var))
@@ -1229,20 +1229,20 @@ PROMPTS is a cons cell with the corresponding prompts."
 ;;;;;; Abbreviations
 
 ;;;###autoload
-(defun tlon-babel-add-file-local-abbreviation ()
+(defun tlon-add-file-local-abbreviation ()
   "Add an in-text abbreviation to the file-local list."
   (interactive)
-  (tlon-babel-add-in-text-cons-cell '("Abbrev: " . "Expanded abbrev: ")
-				    'tlon-babel-file-local-abbreviations))
+  (tlon-add-in-text-cons-cell '("Abbrev: " . "Expanded abbrev: ")
+				    'tlon-file-local-abbreviations))
 
 ;;;;;; Replacements
 
 ;;;###autoload
-(defun tlon-babel-add-file-local-replacement ()
+(defun tlon-add-file-local-replacement ()
   "Add an in-text replacement to the file-local list."
   (interactive)
-  (tlon-babel-add-in-text-cons-cell '("Text to replace: " . "Replacement: ")
-				    'tlon-babel-file-local-replacements))
+  (tlon-add-in-text-cons-cell '("Text to replace: " . "Replacement: ")
+				    'tlon-file-local-replacements))
 
-(provide 'tlon-babel-tts)
-;;; tlon-babel-tts.el ends here
+(provide 'tlon-tts)
+;;; tlon-tts.el ends here

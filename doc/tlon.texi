@@ -1,0 +1,157 @@
+\input texinfo    @c -*- texinfo -*-
+@c %**start of header
+@setfilename tlon.info
+@settitle tlon
+@documentencoding UTF-8
+@documentlanguage en
+@set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+@set MAINTAINER Pablo Stafforini
+@set MAINTAINEREMAIL @email{pablo@tlon.team}
+@set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+@c %**end of header
+
+@dircategory Emacs misc features
+@direntry
+* Tlon Babel: (tlon).   Companion Emacs package for the Tlön Babel projects.
+@end direntry
+
+@finalout
+@titlepage
+@author Pablo Stafforini (@email{pablo@@tlon.team})
+@end titlepage
+
+@ifnottex
+@node Top
+@top tlon
+
+@insertcopying
+
+@code{tlon} is a repository of Emacs functions for the Tlön @code{babel} projects. @*
+
+@end ifnottex
+
+@menu
+* Main menu::
+* GitHub and org-mode synchronization::
+* Editing Markdown::
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+Editing Markdown
+
+* Commands to insert mathematical expressions::
+* Commands to insert citations::
+* Commands to insert note markers::
+* Other commands::
+
+@end detailmenu
+@end menu
+
+@node Main menu
+@chapter Main menu
+
+@node GitHub and org-mode synchronization
+@chapter GitHub and org-mode synchronization
+
+@code{tlon} includes several functions to synchronize the GitHub issues on a given repository with the corresponding @code{org-mode} TODOs in the user’s local file. The relevant GitHub sync functions are accessed from @code{tlon-dispatch} (@code{H-r}), under the “sync” section (@code{y}): @*
+
+@itemize
+@item
+``visit or capture'' (@code{tlon-visit-counterpart-or-capture}, @code{H-r y y}): visits the “counterpart” (the associated @code{org-mode} TODO if point is on a GitHub issue, and vice versa) or, if point is on an issue that has not yet been captured, creates an associated @code{org-mode} TODO@. This command can also be invoked directly by pressing @code{,} with point on an issue or visiting an issue buffer. It may be regarded as a “dwim” (“do-what-I-mean”) command, in the sense that it is meant to guess the action that the user will normally want to perform in the relevant context. @*
+@item
+``visit'' (@code{tlon-visit-counterpart}, @code{H-r y v}): visits the “counterpart”. If point is on an issue that has not yet been captured, no action will be taken. @*
+@item
+``post'' (@code{tlon-create-issue-from-todo}, @code{H-r y p}): posts the @code{org-mode} TODO at point to GitHub, i.e. creates an associated GitHub issue. @*
+@item
+``capture'' (@code{tlon-capture-issue}, @code{H-r y c}): captures the GitHub issue at point, i.e. creates an associated @code{org-mode} TODO@. @*
+@item
+``capture all'' (@code{tlon-capture-all-issues}, @code{H-r y C}): like the above, but iterates over all GitHub issues in the repository. @*
+@item
+``reconcile'' (@code{tlon-reconcile-issue-and-todo} , @code{H-r y r}): reconcile any differences between a GitHub issue and its associated @code{org-mode} TODO@. If differences are found, the user will be prompted to indicate whether they want to keep the GitHub issue and modify the @code{org-mode} TODO to match it (@code{i}), or vice versa (@code{t}). (Note: usually you want to keep the issue, so you will normally press @code{i} when prompted). @*
+@item
+``reconcile all'' (@code{tlon-reconcile-all-issues-and-todos}, @code{H-r y R}): like the above, but iterates over all GitHub issues in the repository. Note that issues not yet captured will be ignored, so you may want to  capture all issues (@code{tlon-capture-all-issues}) before reconciling them, if your goal is to ensure that the your @code{org-mode} TODOs are fully in sync with the GitHub issues. @*
+@item
+``close'' (@code{tlon-close-issue-and-todo}, @code{H-r y x}): close the GitHub issue and mark its associated @code{org-mode} TODO as DONE@. @*
+@end itemize
+
+@node Editing Markdown
+@chapter Editing Markdown
+
+This section describes the custom commands we use to edit Markdown files. @*
+
+All the relevant commands can be called from @code{tlon-md-menu}, the Markdown menu, bound to @code{s-d} (“d” as in “dispatcher”). @*
+
+[We extend the native Markdown markup language with various custom @uref{https://mdxjs.com/, MDX} tags.] @*
+
+[Point out that the user should insert the relevant entities using the Emacs commands whenever possible, to avoid human error.] @*
+
+@menu
+* Commands to insert mathematical expressions::
+* Commands to insert citations::
+* Commands to insert note markers::
+* Other commands::
+@end menu
+
+@node Commands to insert mathematical expressions
+@section Commands to insert mathematical expressions
+
+Our websites support @LaTeX{}-formatted math. These expressions may be of two types: @emph{inline} and @emph{display}. Inline expressions are embedded in a paragraph, while display expressions occupy their own paragraph. @*
+
+Inline expressions are delimited by @code{$`} and @code{`$}, like this: @*
+
+@example
+[T]he marginal chance of success is proportional to $`1/x`$, where $`x`$ is the total amount of resources that will be devoted to the problem before the point where we need a solution.
+@end example
+
+Display expressions, in turn, are delimited by double dollar signs, like this: @*
+
+@example
+$$
+\frac@{v(S)@}@{v(L)@}\ =\ \frac@{p(S)@}@{p(L)@}\ \times\ \frac@{n(S)@}@{n(L)@}\ \times\ \frac@{r(L)@}@{r(S)@}
+$$
+@end example
+
+Note that the dollar sign delimiters occupy their own lines. @*
+
+Inline and display expressions can be inserted with @code{tlon-md-insert-math-inline} and with @code{tlon-md-insert-math-display}, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point. These commands can also be inserted from @code{tlon-md-menu} (@code{H-;}). @*
+
+@node Commands to insert citations
+@section Commands to insert citations
+
+To insert citations, we use the custom MDX tag @code{Cite}. This self-closing tag takes the mandatory attribute @code{bibKey} and the optional attribute @code{short}. The value type of @code{bibKey} is a single Bib@TeX{} key, optionally followed by one or more @uref{https://docs.citationstyles.org/en/stable/specification.html#locators, locators}. The attribute @code{short} indicates that the citation is a “short” citation. @*
+
+“Short” citations are defined as citations that only display the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example: @*
+
+@example
+As Toby Ord writes in <Cite bibKey=@{"Ord2020PrecipiceExistentialRisk"@} short />, humanity’s long-term potential may be lost this century.
+@end example
+
+which is rendered as @*
+
+@example
+As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
+@end example
+
+To insert a normal citation, use @code{tlon-insert-mdx-cite}. To insert a short citation, use @code{tlon-insert-mdx-cite-short}. To insert a locator, invoke @code{tlon-insert-locator} with point on a citation. These three commands may also be called from @code{tlon-md-menu} (@code{H-;}), with the keys @code{c}, @code{C} and @code{l}, respectively. @*
+
+@node Commands to insert note markers
+@section Commands to insert note markers
+
+A note may be of two types: a @emph{footnote}, shown at the end of the web page, and a @emph{sidenote}, shown on the side of the page. We indicate that a note is a footnote or a sidenote with the self-enclosing tags @code{<Footnote />} and @code{<Sidenote />}, respectively. These tags may, and should, be inserted with the corresponding commands, @code{tlon-insert-footnote-marker} and @code{tlon-insert-sidenote-marker}, bound to the letters @code{f} and @code{s} in the Markdown transient menu. @*
+
+We use a system of automatic classification of notes into either footnotes or sidenotes that seeks to capture the intuitive idea that some notes are merely bibliographic while others are substantive. Currently, the criterion classifies a note as a footnote if it contains at least one citation and four words or less, excluding citations. To auto-classify the note at point, call @code{tlon-auto-classify-note-at-point} (@code{n}). To auto-classify all notes in the file, call @code{tlon-auto-classify-notes-in-file} (@code{N}). @*
+
+Note that, while the two commands in the first paragraph of this section will replace an existing note tag, if present (e.g. a @code{<Sidenote />} tag in a note will be replaced by a @code{<Footnote />} tag if @code{tlon-insert-footnote-marker} is invoked with point on it), the two commands in the second paragraph will instead keep the existing tags. This behavior is intended to reflect the fact that a manual classification should take precedence over an automatic classification. @*
+
+@node Other commands
+@section Other commands
+
+@code{tlon-edit-yaml-field} @*
+
+@code{tlon-insert-internal-link} @*
+
+
+Special characters—such as em and en dashes, thin and non-breaking spaces, ellipsis and dots, and most other characters we may want to insert not accessible in a normal keyboard—can be inserted with @code{tlon-insert-special-character}. The user option @code{tlon-md-special-characters} customizes the list of characters offered as completion candidates. @*
+
+@bye

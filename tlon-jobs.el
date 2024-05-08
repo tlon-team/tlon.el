@@ -1,9 +1,9 @@
-;;; tlon-babel-jobs.el --- Functions for processing Babel jobs -*- lexical-binding: t -*-
+;;; tlon-jobs.el --- Functions for processing Babel jobs -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; Homepage: https://github.com/tlon-team/tlon-babel
+;; Homepage: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -28,14 +28,14 @@
 ;;; Code:
 
 (require 'ebib)
-(require 'tlon-babel-core)
-(require 'tlon-babel-import)
-(require 'tlon-babel-split)
-(require 'tlon-babel-tts)
+(require 'tlon-core)
+(require 'tlon-import)
+(require 'tlon-split)
+(require 'tlon-tts)
 
 ;;;; Main variables
 
-(defconst tlon-babel-job-labels
+(defconst tlon-job-labels
   '((:label "Awaiting processing"
 	    :action "Process"
 	    :assignee "worldsaround")
@@ -56,11 +56,11 @@
 	    :assignee ""))
   "List of labels and associated properties.")
 
-(defconst tlon-babel-jobs-manual-processing-id
+(defconst tlon-jobs-manual-processing-id
   "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
   "Org ID of the `processing' heading in `manual.org'.")
 
-(defconst tlon-babel-jobs-id
+(defconst tlon-jobs-id
   "820BEDE2-F982-466F-A391-100235D4C596"
   "Org ID of the `jobs' heading in `jobs.org'.")
 
@@ -69,178 +69,178 @@
 ;;;;; Job phases
 
 ;;;###autoload
-(defun tlon-babel-jobs-dwim ()
+(defun tlon-jobs-dwim ()
   "Initialize or finalize process based on clocked task."
   (interactive)
   (when (derived-mode-p 'org-mode)
     (org-clock-in))
   (save-buffer)
-  (let* ((action (tlon-babel-jobs-get-action-in-label (tlon-babel-get-clock-label)))
+  (let* ((action (tlon-jobs-get-action-in-label (tlon-get-clock-label)))
 	 (stage (pcase major-mode
 		  ('org-mode 'initialize)
 		  ('markdown-mode 'finalize)
 		  (_ (user-error "I don't know what to do in `%s`" major-mode))))
-	 (fun (intern (format "tlon-babel-jobs-%s" stage)))
-	 (arg (intern (format "tlon-babel-jobs-%s-%s" stage action))))
+	 (fun (intern (format "tlon-jobs-%s" stage)))
+	 (arg (intern (format "tlon-jobs-%s-%s" stage action))))
     (if (eq stage 'initialize)
 	(funcall fun arg)
       (funcall fun))))
 
-(defun tlon-babel-jobs-get-action-in-label (label)
+(defun tlon-jobs-get-action-in-label (label)
   "Return action associated with LABEL."
   (let ((action (cadr (split-string label))))
     action))
 
 (declare-function orgit-topic-open "orgit-forge")
-(defun tlon-babel-jobs-initialize (fun)
+(defun tlon-jobs-initialize (fun)
   "Initialize process associated with FUN.
 Runs all the general initialization functions, followed by the specific function
 for the process that is being initialized."
-  (let* ((key (tlon-babel-get-clock-key))
-	 (metadata (tlon-babel-metadata-in-repos :subtype 'translations))
-	 (file (tlon-babel-metadata-lookup metadata "file" "original_key" key))
-	 (repo (tlon-babel-get-repo-from-file file))
+  (let* ((key (tlon-get-clock-key))
+	 (metadata (tlon-metadata-in-repos :subtype 'translations))
+	 (file (tlon-metadata-lookup metadata "file" "original_key" key))
+	 (repo (tlon-get-repo-from-file file))
 	 (default-directory repo))
-    (tlon-babel-check-label-and-assignee repo)
-    (tlon-babel-check-branch "main" repo)
+    (tlon-check-label-and-assignee repo)
+    (tlon-check-branch "main" repo)
     (call-interactively #'magit-pull-from-upstream nil)
     (sleep-for 2)
     (cl-multiple-value-bind
 	(original-path translation-path)
-	(tlon-babel-set-paths-from-clock)
-      (let ((issue (tlon-babel-get-clock-issue)))
-	(tlon-babel-set-windows original-path translation-path)
+	(tlon-set-paths-from-clock)
+      (let ((issue (tlon-get-clock-issue)))
+	(tlon-set-windows original-path translation-path)
 	(write-file translation-path)
 	(winum-select-window-2)
 	(orgit-topic-open issue)
-	(tlon-babel-copy-buffer original-path)
+	(tlon-copy-buffer original-path)
 	(funcall fun)))))
 
-(defun tlon-babel-jobs-finalize ()
+(defun tlon-jobs-finalize ()
   "Finalize current stage of translation process."
-  (tlon-babel-split-mode -1)
+  (tlon-split-mode -1)
   (save-buffer)
   (cl-multiple-value-bind
       (original-path translation-path original-key)
-      (tlon-babel-set-paths-from-clock)
-    (let* ((repo (tlon-babel-get-repo))
-	   (current-action (tlon-babel-get-clock-action))
-	   (next-label (tlon-babel-get-clock-next-label))
-	   (next-assignee (tlon-babel-jobs-get-next-assignee)))
+      (tlon-set-paths-from-clock)
+    (let* ((repo (tlon-get-repo))
+	   (current-action (tlon-get-clock-action))
+	   (next-label (tlon-get-clock-next-label))
+	   (next-assignee (tlon-jobs-get-next-assignee)))
       ;; MAYBE: check that it is a repo of `translations' subtype
       ;; thought this would have to exclude “process” stage
-      (tlon-babel-check-branch "main" repo)
-      (tlon-babel-check-label-and-assignee repo)
-      (tlon-babel-check-file
+      (tlon-check-branch "main" repo)
+      (tlon-check-label-and-assignee repo)
+      (tlon-check-file
        (when (string= current-action "Process")
 	 'original))
       (pcase current-action
 	("translate"
-	 (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-babel-manual-fix-all'?")
+	 (unless (y-or-n-p "Have you processed all Jinx and Flycheck warnings, and ran `tlon-manual-fix-all'?")
 	   (user-error "Aborted")))
 	("check"
 	 ;; used to call the two functions below but they are obsolete; revise
-	 ;; (tlon-babel-tts-mode -1)
-	 ;; (remove-hook 'eww-mode-hook #'tlon-babel-tts-mode)
+	 ;; (tlon-tts-mode -1)
+	 ;; (remove-hook 'eww-mode-hook #'tlon-tts-mode)
 	 ))
       (save-buffer)
       (if (string= current-action "Process")
 	  (write-file original-path)
 	(write-file translation-path))
       (when (string= current-action "Process")
-	(tlon-babel-commit-and-push current-action original-path))
-      (tlon-babel-commit-and-push current-action translation-path)
-      (tlon-babel-jobs-act-on-issue original-key next-label next-assignee
+	(tlon-commit-and-push current-action original-path))
+      (tlon-commit-and-push current-action translation-path)
+      (tlon-jobs-act-on-issue original-key next-label next-assignee
 				    (when (string= current-action "Review")
 				      'close))
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 	       next-label next-assignee))
-    (tlon-babel-jobs-finalize-set-todos)))
+    (tlon-jobs-finalize-set-todos)))
 
-(defun tlon-babel-jobs-act-on-issue (original-key label assignee &optional close)
+(defun tlon-jobs-act-on-issue (original-key label assignee &optional close)
   "Apply LABEL and ASSIGNEE to issue associated with ORIGINAL-KEY.
 If CLOSE is non-nil, close the issue."
   (let* ((issue-title (format "Job: `%s" original-key))
-	 (issue (tlon-babel-issue-lookup issue-title))
-	 (default-directory (tlon-babel-get-repo 'error 'include-all)))
-    (tlon-babel-set-labels `(,label) issue)
-    (tlon-babel-set-assignee assignee issue)
+	 (issue (tlon-issue-lookup issue-title))
+	 (default-directory (tlon-get-repo 'error 'include-all)))
+    (tlon-set-labels `(,label) issue)
+    (tlon-set-assignee assignee issue)
     (when close
-      (tlon-babel-close-issue issue))))
+      (tlon-close-issue issue))))
 
-(defun tlon-babel-jobs-get-next-assignee ()
+(defun tlon-jobs-get-next-assignee ()
   "Get the next assignee based on the current user and clock label.
 This function returns the assignee designated for the next label if the current
 user is the user designated for the current label; otherwise, it returns the
 substitute assignee."
   (let*
-      ((current-user (tlon-babel-user-lookup :github :name user-full-name))
-       (current-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-label)))
-       (designated-next-assignee (tlon-babel-label-lookup :assignee :label (tlon-babel-get-clock-next-label)))
-       (substitute-next-assigne (tlon-babel-user-lookup :substitute :github designated-next-assignee)))
+      ((current-user (tlon-user-lookup :github :name user-full-name))
+       (current-assignee (tlon-label-lookup :assignee :label (tlon-get-clock-label)))
+       (designated-next-assignee (tlon-label-lookup :assignee :label (tlon-get-clock-next-label)))
+       (substitute-next-assigne (tlon-user-lookup :substitute :github designated-next-assignee)))
     (if (string= current-user current-assignee)
 	designated-next-assignee
       substitute-next-assigne)))
 
-(defun tlon-babel-jobs-finalize-set-todos ()
+(defun tlon-jobs-finalize-set-todos ()
   "Set relevant TODO statuses during the finalize process."
-  (let ((todo (tlon-babel-get-clock))
-	(key (tlon-babel-get-clock-key))
-	(current-action (tlon-babel-get-clock-action)))
-    (tlon-babel-mark-todo-done todo (tlon-babel-get-todos-jobs-file))
+  (let ((todo (tlon-get-clock))
+	(key (tlon-get-clock-key))
+	(current-action (tlon-get-clock-action)))
+    (tlon-mark-todo-done todo (tlon-get-todos-jobs-file))
     (when (or (string= current-action "Review") (string= current-action "Check"))
-      (let ((parent-todo (tlon-babel-get-parent-todo todo)))
-	(tlon-babel-mark-todo-done parent-todo (tlon-babel-get-todos-jobs-file))))
+      (let ((parent-todo (tlon-get-parent-todo todo)))
+	(tlon-mark-todo-done parent-todo (tlon-get-todos-jobs-file))))
     (when (string= current-action "Review")
       (let ((job-todo (format "[cite:@%s]" key)))
-	(tlon-babel-mark-todo-done job-todo tlon-babel-file-jobs)
-	(tlon-babel-jobs-sort-headings tlon-babel-file-jobs)
-	(tlon-babel-commit-and-push "Update"
-				    tlon-babel-file-jobs)))))
+	(tlon-mark-todo-done job-todo tlon-file-jobs)
+	(tlon-jobs-sort-headings tlon-file-jobs)
+	(tlon-commit-and-push "Update"
+				    tlon-file-jobs)))))
 
 (declare-function org-extras-show-subtree-hide-drawers "org-extras")
-(defun tlon-babel-jobs-initialize-processing ()
+(defun tlon-jobs-initialize-processing ()
   "Initialize processing."
   (cl-multiple-value-bind
       (original-path)
-      (tlon-babel-set-paths-from-clock)
-    (tlon-babel-set-windows original-path tlon-babel-file-babel-manual)
-    (org-id-goto tlon-babel-jobs-manual-processing-id)
+      (tlon-set-paths-from-clock)
+    (tlon-set-windows original-path tlon-file-babel-manual)
+    (org-id-goto tlon-jobs-manual-processing-id)
     (org-narrow-to-subtree)
     (org-extras-show-subtree-hide-drawers)
     (winum-select-window-2)
-    (let ((issue (tlon-babel-get-clock-issue)))
+    (let ((issue (tlon-get-clock-issue)))
       (orgit-topic-open issue))))
 
 (declare-function macos-open-app "macos")
-(defun tlon-babel-jobs-initialize-translation ()
+(defun tlon-jobs-initialize-translation ()
   "Initialize translation."
   (macos-open-app "deepl"))
 
-(defun tlon-babel-jobs-initialize-revision ()
+(defun tlon-jobs-initialize-revision ()
   "Initialize stylistic revision."
   (winum-select-window-2)
-  (tlon-babel-split-mode))
+  (tlon-split-mode))
 
 (declare-function read-aloud-buf "read-aloud")
-(defun tlon-babel-jobs-initialize-check ()
+(defun tlon-jobs-initialize-check ()
   "Initialize accuracy check."
   ;; we move the buffer displaying the issue to the right, to uncover
   ;; the original file
   (window-extras-buffer-move-right)
   (window-extras-switch-to-last-window)
-  (add-hook 'eww-mode-hook #'tlon-babel-tts-mode)
+  (add-hook 'eww-mode-hook #'tlon-tts-mode)
   (markdown-preview)
   (read-aloud-buf))
 
 (declare-function jinx--load-dicts "jinx")
 (declare-function jinx--cleanup "jinx")
-(defun tlon-babel-jobs-initialize-review ()
+(defun tlon-jobs-initialize-review ()
   "Initialize review."
   (cl-multiple-value-bind
       (_ translation-path)
-      (tlon-babel-set-paths-from-clock)
-    (tlon-babel-log-buffer-latest-user-commit-ediff translation-path)
+      (tlon-set-paths-from-clock)
+    (tlon-log-buffer-latest-user-commit-ediff translation-path)
     (winum-select-window-1)
     (setq-local jinx-languages "es")
     (add-file-local-variable 'jinx-languages jinx-languages)
@@ -256,7 +256,7 @@ substitute assignee."
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
 ;;;###autoload
-(defun tlon-babel-create-job ()
+(defun tlon-create-job ()
   "Create a new job for IDENTIFIER based on Ebib entry at point.
 Creating a new job means (1) importing a document and (2) creating a record for
 it. A record is (a) an issue in GitHub and (b) a heading in `jobs.org'.
@@ -269,16 +269,16 @@ IDENTIFIER can be a URL or a PDF file path."
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field "title"))
 	   (key (ebib-extras-get-field "=key="))
-	   (repo (completing-read "Repo: " (tlon-babel-repo-lookup-all :dir :subtype 'translations))))
+	   (repo (completing-read "Repo: " (tlon-repo-lookup-all :dir :subtype 'translations))))
       (progn
-	(tlon-babel-import-document id title)
-	(tlon-babel-create-translation-file repo)
-	(tlon-babel-create-record-for-job key))
+	(tlon-import-document id title)
+	(tlon-create-translation-file repo)
+	(tlon-create-record-for-job key))
     (user-error "The current Ebib entry seems to be missing one of the following
 fields, which are needed to create a new job: `url' or `file',
 `title' and `key'")))
 
-(defun tlon-babel-create-record-for-job (&optional key)
+(defun tlon-create-record-for-job (&optional key)
   "Create a record based on KEY.
 Creates a new record in the repository (with the format `Job: KEY') and a new
 heading in the file `jobs.org'. If KEY is not provided, the key in the current
@@ -286,43 +286,43 @@ Markdown buffer at point is used."
   (interactive)
   (if-let ((key (or key
 		    (pcase major-mode
-		      ('markdown-mode (tlon-babel-get-key-in-buffer))
+		      ('markdown-mode (tlon-get-key-in-buffer))
 		      ('ebib-entry-mode (ebib--get-key-at-point))))))
       (progn
-	(tlon-babel-create-issue-from-key key)
-	(tlon-babel-create-heading-for-job key 'commit))
+	(tlon-create-issue-from-key key)
+	(tlon-create-heading-for-job key 'commit))
     (user-error "I wasn't able to create a record because I didn't find a key")))
 
 ;;;;; `jobs.org'
 
-(defun tlon-babel-create-heading-for-job (&optional key commit)
+(defun tlon-create-heading-for-job (&optional key commit)
   "Create a heading based on BibTeX KEY in `jobs.org'.
 If KEY is not provided, the key in the Markdown buffer at point is used. If
 COMMIT is non-nil, commit the change."
   (interactive)
-  (let* ((key (or key (tlon-babel-get-key-in-buffer)))
+  (let* ((key (or key (tlon-get-key-in-buffer)))
 	 (heading (format "[cite:@%s]" key))
-	 (file (tlon-babel-metadata-lookup (tlon-babel-metadata-in-repo) "file" "original_key" key))
-	 (repo (tlon-babel-get-repo-from-file file))
-	 (repo-abbrev (tlon-babel-repo-lookup :abbrev :dir repo)))
-    (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
-			     (find-file-noselect tlon-babel-file-jobs))
+	 (file (tlon-metadata-lookup (tlon-metadata-in-repo) "file" "original_key" key))
+	 (repo (tlon-get-repo-from-file file))
+	 (repo-abbrev (tlon-repo-lookup :abbrev :dir repo)))
+    (with-current-buffer (or (find-buffer-visiting tlon-file-jobs)
+			     (find-file-noselect tlon-file-jobs))
       (widen)
       (goto-char (point-min))
       (unless (search-forward heading nil t)
-	(re-search-forward tlon-babel-jobs-id nil t)
+	(re-search-forward tlon-jobs-id nil t)
 	(while (and (not (org-at-heading-p)) (not (eobp)))
 	  (forward-line))
 	(org-insert-heading)
 	(insert heading)
 	(org-todo 'todo)
 	(org-set-tags repo-abbrev)
-	(tlon-babel-jobs-sort-headings tlon-babel-file-jobs)
+	(tlon-jobs-sort-headings tlon-file-jobs)
 	(save-buffer)))
     (when commit
-      (tlon-babel-commit-and-push "Update" tlon-babel-file-jobs))))
+      (tlon-commit-and-push "Update" tlon-file-jobs))))
 
-(defun tlon-babel-jobs-sort-headings (&optional file)
+(defun tlon-jobs-sort-headings (&optional file)
   "Sort all headings under parent in FILE alphabetically and by TODO order."
   (interactive)
   (with-current-buffer (or (find-buffer-visiting file)
@@ -333,7 +333,7 @@ COMMIT is non-nil, commit the change."
     (org-sort-entries nil ?o)
     (save-buffer)))
 
-(defun tlon-babel-jobs-get-key-in-heading ()
+(defun tlon-jobs-get-key-in-heading ()
   "Get the key of the currently clocked task."
   (unless (org-at-heading-p)
     (user-error "Not in an org-mode heading"))
@@ -343,10 +343,10 @@ COMMIT is non-nil, commit the change."
 	    (match-string 2 heading))
       (user-error "I wasn't able to find a key in clocked heading"))))
 
-(defun tlon-babel-jobs-goto-heading (key)
+(defun tlon-jobs-goto-heading (key)
   "Move point to the heading in `jobs.org' with KEY."
-  (with-current-buffer (or (find-buffer-visiting tlon-babel-file-jobs)
-			   (find-file-noselect tlon-babel-file-jobs))
+  (with-current-buffer (or (find-buffer-visiting tlon-file-jobs)
+			   (find-file-noselect tlon-file-jobs))
     (org-element-map (org-element-parse-buffer) 'headline
       (lambda (headline)
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
@@ -354,23 +354,23 @@ COMMIT is non-nil, commit the change."
 
 ;;;;; Transient
 
-;;;###autoload (autoload 'tlon-babel-jobs-menu "tlon-babel-jobs" nil t)
-(transient-define-prefix tlon-babel-jobs-menu ()
+;;;###autoload (autoload 'tlon-jobs-menu "tlon-jobs" nil t)
+(transient-define-prefix tlon-jobs-menu ()
   "`jobs' menu."
-  :info-manual "(tlon-babel) Jobs"
+  :info-manual "(tlon) Jobs"
   [
    ["Actions"
-    ("j" "dwim"                     tlon-babel-jobs-dwim)
-    ("c" "create job"               tlon-babel-create-job)]
+    ("j" "dwim"                     tlon-jobs-dwim)
+    ("c" "create job"               tlon-create-job)]
    ["Add or modify"
-    ("g" "glossary"                 tlon-babel-glossary-dwim)
-    ("s" "section corresp"          tlon-babel-section-correspondence-dwim)
-    ("u" "URL corresp"              tlon-babel-url-correspondence-dwim)]
+    ("g" "glossary"                 tlon-glossary-dwim)
+    ("s" "section corresp"          tlon-section-correspondence-dwim)
+    ("u" "URL corresp"              tlon-url-correspondence-dwim)]
    ["jobs.org"
-    ("r" "create record"            tlon-babel-create-record-for-job)
-    ("h" "create heading"           tlon-babel-create-heading-for-job)
-    ("t" "sort headings"            tlon-babel-jobs-sort-headings)]])
+    ("r" "create record"            tlon-create-record-for-job)
+    ("h" "create heading"           tlon-create-heading-for-job)
+    ("t" "sort headings"            tlon-jobs-sort-headings)]])
 
-(provide 'tlon-babel-jobs)
-;;; tlon-babel-jobs.el ends here
+(provide 'tlon-jobs)
+;;; tlon-jobs.el ends here
 

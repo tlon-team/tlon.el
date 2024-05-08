@@ -1,9 +1,9 @@
-;;; tlon-babel-core.el --- Core Babel functionality  -*- lexical-binding: t -*-
+;;; tlon-core.el --- Core Babel functionality  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; Homepage: https://github.com/tlon-team/tlon-babel
+;; Homepage: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -31,7 +31,7 @@
 
 ;;;; Variables
 
-(defconst tlon-babel-repos
+(defconst tlon-repos
   `((:name "babel-core"
 	   :project "babel"
 	   :subproject "babel"
@@ -264,7 +264,7 @@ The `:name' property is the full name of the repo, as it appears in the URL. The
 `:abbrev' property is an abbreviated form of the name, used, for example, for
 creating `org-mode' TODOs.")
 
-(defcustom tlon-babel-email-shared
+(defcustom tlon-email-shared
   "tlon.shared@gmail.com"
   "Tlön shared gmail address."
   :type 'string
@@ -272,7 +272,7 @@ creating `org-mode' TODOs.")
 
 ;;;;; To sort
 
-(defvar tlon-babel-users
+(defvar tlon-users
   '((:name "Pablo Stafforini"
 	   :git "Pablo Stafforini"
 	   :github "benthamite"
@@ -293,10 +293,10 @@ The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
 the actual user.")
 
-(defvar tlon-babel-translation-language "es"
+(defvar tlon-translation-language "es"
   "The current translation language.")
 
-(defconst tlon-babel-core-bare-dirs
+(defconst tlon-core-bare-dirs
   '((("en" . "articles")
      ("es" . "articulos")
      ("fr" . "articles")
@@ -315,11 +315,11 @@ the actual user.")
      ("it" . "collezioni")))
   "Alist of bare directories and associated translations.")
 
-(defconst tlon-babel-project-languages
+(defconst tlon-project-languages
   '("english" "spanish" "italian" "french" "german" "portuguese" "arabic")
   "A list of languages all languages in the Babel project.")
 
-(defconst tlon-babel-languages-properties
+(defconst tlon-languages-properties
   '((:name "albanian" :code "sq" :locale "sq_AL")
     (:name "american" :code "en-US" :locale "en_US")
     (:name "amharic" :code "am" :locale "am_ET")
@@ -407,120 +407,120 @@ the actual user.")
 
 ;;;; Functions
 
-(defun tlon-babel-set-dir (repo)
-  "Set the `:directory' property for REPO in `tlon-babel-repos'."
+(defun tlon-set-dir (repo)
+  "Set the `:directory' property for REPO in `tlon-repos'."
   (let* ((dir (file-name-as-directory
 	       (file-name-concat paths-dir-tlon-repos
 				 (plist-get repo :name)))))
     (plist-put repo :dir dir)))
 
-(mapc #'tlon-babel-set-dir tlon-babel-repos)
+(mapc #'tlon-set-dir tlon-repos)
 
-(defun tlon-babel-get-valid-language-codes ()
+(defun tlon-get-valid-language-codes ()
   "Return a list of valid ISO 639-1 code codes for the babel project."
   (let (codes)
-    (dolist (name tlon-babel-project-languages codes)
-      (push (tlon-babel-lookup tlon-babel-languages-properties :code :name name) codes))))
+    (dolist (name tlon-project-languages codes)
+      (push (tlon-lookup tlon-languages-properties :code :name name) codes))))
 
 ;;;;; Ger repo
 
-(defun tlon-babel-get-repo (&optional no-prompt include-all)
+(defun tlon-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
 If the current directory matches any of the directories in
-`tlon-babel-repos', return it. Else, prompt the user to select a repo from
+`tlon-repos', return it. Else, prompt the user to select a repo from
 that list, unless NO-PROMPT is non-nil. In that case, signal an error if its
 value is `error', else return nil. If INCLUDE-ALL is non-nil, include all repos.
 In that case, matching will be made against repos with any value for the
 property `:type'."
-  (if-let ((current-repo (tlon-babel-get-repo-from-file)))
+  (if-let ((current-repo (tlon-get-repo-from-file)))
       current-repo
     (if no-prompt
 	(when (eq no-prompt 'error)
 	  (user-error "Not in a recognized Babel repo"))
-      (let* ((content (tlon-babel-repo-lookup-all :name :subtype 'translations))
-	     (all (tlon-babel-repo-lookup-all :name)))
-	(tlon-babel-repo-lookup :dir :name
+      (let* ((content (tlon-repo-lookup-all :name :subtype 'translations))
+	     (all (tlon-repo-lookup-all :name)))
+	(tlon-repo-lookup :dir :name
 				(completing-read "Select repo: "
 						 (if include-all all content)))))))
 
-(defun tlon-babel-get-repo-from-file (&optional file)
+(defun tlon-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
 If FILE is nil, use the current buffer's file name."
-  (let* ((file (or file (tlon-babel-core-buffer-file-name) default-directory))
+  (let* ((file (or file (tlon-core-buffer-file-name) default-directory))
 	 (directory-path (file-name-directory file)))
     (catch 'found
-      (dolist (dir (tlon-babel-repo-lookup-all :dir))
+      (dolist (dir (tlon-repo-lookup-all :dir))
 	(when (string-prefix-p (file-name-as-directory dir)
 			       directory-path)
 	  (throw 'found dir))))))
 
 ;;;;; Lookup
 
-(defun tlon-babel-lookup (list key &rest pairs)
+(defun tlon-lookup (list key &rest pairs)
   "Return the first value of KEY in LIST matching all PAIRS.
 PAIRS is an even-sized list of <key value> tuples."
   (cl-loop for entry in list
-           when (tlon-babel-all-pairs-in-entry-p pairs entry)
-           return (tlon-babel-get-value-in-entry key entry)))
+           when (tlon-all-pairs-in-entry-p pairs entry)
+           return (tlon-get-value-in-entry key entry)))
 
-(defun tlon-babel-lookup-all (list key &rest pairs)
+(defun tlon-lookup-all (list key &rest pairs)
   "Return all unique values of KEY in LIST matching all PAIRS.
 PAIRS is expected to be an even-sized list of <key value> tuples."
   (let (results)
     (cl-loop for entry in list
-             do (when (tlon-babel-all-pairs-in-entry-p pairs entry)
-		  (when-let* ((result (tlon-babel-get-value-in-entry key entry))
+             do (when (tlon-all-pairs-in-entry-p pairs entry)
+		  (when-let* ((result (tlon-get-value-in-entry key entry))
 			      (flat-result (if (listp result) result (list result))))
 		    (dolist (r flat-result)
 		      (push r results)))))
     (delete-dups (nreverse results))))
 
-(defun tlon-babel-all-pairs-in-entry-p (pairs entry)
+(defun tlon-all-pairs-in-entry-p (pairs entry)
   "Return t iff all PAIRS are found in ENTRY.
 PAIRS is an even-sized list of <key value> tuples."
   (cl-loop for (key val) on pairs by #'cddr
-           always (equal val (tlon-babel-get-value-in-entry key entry))))
+           always (equal val (tlon-get-value-in-entry key entry))))
 
-(defun tlon-babel-get-value-in-entry (key entry)
+(defun tlon-get-value-in-entry (key entry)
   "Return the value of KEY in ENTRY, or nil if not found."
   (if (stringp key)
       (alist-get key entry nil nil 'string=)
     (plist-get entry key)))
 
-(defun tlon-babel-metadata-lookup (metadata key &rest key-value)
+(defun tlon-metadata-lookup (metadata key &rest key-value)
   "Return the value of KEY in METADATA matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup metadata key key-value))
+  (apply #'tlon-lookup metadata key key-value))
 
-(defun tlon-babel-metadata-lookup-all (metadata key &rest key-value)
+(defun tlon-metadata-lookup-all (metadata key &rest key-value)
   "Return all unique values of KEY in METADATA matching alll KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all metadata key key-value))
+  (apply #'tlon-lookup-all metadata key key-value))
 
-(defun tlon-babel-repo-lookup (key &rest key-value)
+(defun tlon-repo-lookup (key &rest key-value)
   "Return the value of KEY in repos matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup tlon-babel-repos key key-value))
+  (apply #'tlon-lookup tlon-repos key key-value))
 
-(defun tlon-babel-repo-lookup-all (key &rest key-value)
+(defun tlon-repo-lookup-all (key &rest key-value)
   "Return all unique values of KEY in repos matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all tlon-babel-repos key key-value))
+  (apply #'tlon-lookup-all tlon-repos key key-value))
 
-(defun tlon-babel-user-lookup (key &rest key-value)
+(defun tlon-user-lookup (key &rest key-value)
   "Return the value of KEY in users matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup tlon-babel-users key key-value))
+  (apply #'tlon-lookup tlon-users key key-value))
 
-(defun tlon-babel-user-lookup-all (key &rest key-value)
+(defun tlon-user-lookup-all (key &rest key-value)
   "Return all unique values of KEY in users matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all tlon-babel-users key key-value))
+  (apply #'tlon-lookup-all tlon-users key key-value))
 
-(defvar tlon-babel-job-labels)
-(defun tlon-babel-label-lookup (key &rest key-value)
+(defvar tlon-job-labels)
+(defun tlon-label-lookup (key &rest key-value)
   "Return the value of KEY in labels matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup tlon-babel-job-labels key key-value))
+  (apply #'tlon-lookup tlon-job-labels key key-value))
 
-(defun tlon-babel-label-lookup-all (key &rest key-value)
+(defun tlon-label-lookup-all (key &rest key-value)
   "Return all values of KEY in labels matching all KEY-VALUE pairs."
-  (apply #'tlon-babel-lookup-all tlon-babel-job-labels key key-value))
+  (apply #'tlon-lookup-all tlon-job-labels key key-value))
 
-(defun tlon-babel-core-buffer-file-name ()
+(defun tlon-core-buffer-file-name ()
   "Return name of file BUFFER is visiting, handling `git-dirs' path."
   (when-let ((file (buffer-file-name)))
     (replace-regexp-in-string "git-dirs/"
@@ -531,7 +531,7 @@ PAIRS is an even-sized list of <key value> tuples."
 (declare-function forge-db "forge-db")
 (declare-function forge-get-repository "forge-core")
 (declare-function forge-get-issue "forge-core")
-(defun tlon-babel-issue-lookup (string &optional dir)
+(defun tlon-issue-lookup (string &optional dir)
   "Return the first issue in DIR whose title includes STRING.
 If DIR is nil, use the current repository."
   (let* ((string (concat "%" string "%"))
@@ -549,7 +549,7 @@ If DIR is nil, use the current repository."
 
 ;;;;; Get region pos
 
-(defun tlon-babel-get-delimited-region-pos (begin &optional end)
+(defun tlon-get-delimited-region-pos (begin &optional end)
   "Get the position of the region delimited by BEGIN and END.
 If END is nil, use BEGIN also as the end delimiter."
   (save-restriction
@@ -566,16 +566,16 @@ If END is nil, use BEGIN also as the end delimiter."
 ;;;;; Misc
 ;; this function will eventually be deleted once we migrate to a system of English-only directory names
 
-(defun tlon-babel-get-bare-dir-translation (target-lang source-lang bare-dir)
+(defun tlon-get-bare-dir-translation (target-lang source-lang bare-dir)
   "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
   (let (result)
-    (dolist (outer tlon-babel-core-bare-dirs result)
+    (dolist (outer tlon-core-bare-dirs result)
       (dolist (inner outer)
 	(when (and (equal (cdr inner) bare-dir)
 		   (equal (car inner) source-lang))
 	  (setq result (cdr (assoc target-lang outer))))))))
 
-(defun tlon-babel-concatenate-list (list)
+(defun tlon-concatenate-list (list)
   "Concatenate LIST into a string with commas and `and' as appropriate."
   (if (cdr list)
       (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
@@ -585,7 +585,7 @@ If END is nil, use BEGIN also as the end delimiter."
 
 ;;;;; language
 
-(defun tlon-babel-validate-language (language &optional format)
+(defun tlon-validate-language (language &optional format)
   "If LANGUAGE is a valid language, return it.
 The validation is case-insensitive, but the returned language is in lowercase.
 If FORMAT is `code', validate against the ISO 639-1 code. Otherwise,
@@ -596,18 +596,18 @@ validate a list of natural languages."
 		  (_ :name))))
     (when (member language (mapcar (lambda (language)
 				     (plist-get language format))
-				   tlon-babel-languages-properties))
+				   tlon-languages-properties))
       language)))
 
-(defun tlon-babel-get-iso-code (language)
+(defun tlon-get-iso-code (language)
   "Return the two-letter ISO 639-1 code for LANGUAGE."
   (if (= (length language) 2)
       language
     (when-let* ((downcased (downcase language))
-		(code-raw (tlon-babel-lookup tlon-babel-languages-properties :code :name downcased)))
+		(code-raw (tlon-lookup tlon-languages-properties :code :name downcased)))
       (string-limit code-raw 2))))
 
-(defun tlon-babel-select-language (&optional format babel multiple)
+(defun tlon-select-language (&optional format babel multiple)
   "Prompt the user to select a LANGUAGE and return it in FORMAT.
 If FORMAT is `code', return the two-letter code of the language (e.g.
 \"es\"). If it is `locale', return the predefined locale for that language (e.g.
@@ -619,52 +619,52 @@ candidates to languages in the Babel project.
 If MULTIPLE is non-nil, allow the user to select multiple languages. In that
 case, the return value will be a list of strings rather than a string."
   (let* ((selection (if multiple
-			(tlon-babel-read-multiple-languages babel)
-		      (tlon-babel-read-language babel))))
+			(tlon-read-multiple-languages babel)
+		      (tlon-read-language babel))))
     (pcase format
-      ((or 'code 'locale) (tlon-babel-get-formatted-languages selection format))
+      ((or 'code 'locale) (tlon-get-formatted-languages selection format))
       (_ selection))))
 
-(defun tlon-babel-get-formatted-languages (selection format)
+(defun tlon-get-formatted-languages (selection format)
   "Return the language SELECTION in appropriate FORMAT.
 SELECTION is either a string or a list of strings representing languages in
 English. FORMAT must be either `code' or `locale'."
   (let* ((property (pcase format ('locale :locale) ('code :code)))
 	 (fun (lambda (language)
-		(tlon-babel-lookup tlon-babel-languages-properties property :name language))))
+		(tlon-lookup tlon-languages-properties property :name language))))
     (if (listp selection)
 	(mapcar (lambda (language)
 		  (funcall fun language))
 		selection)
       (funcall fun selection))))
 
-(defun tlon-babel-read-language (&optional babel)
+(defun tlon-read-language (&optional babel)
   "Read a language from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-babel-languages tlon-babel-languages)))
+  (let* ((language-candidates (if babel tlon-languages tlon-languages)))
     (completing-read "Language: " language-candidates nil t)))
 
-(defun tlon-babel-read-multiple-languages (&optional babel)
+(defun tlon-read-multiple-languages (&optional babel)
   "Read a list of languages from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-babel-languages tlon-babel-languages))
+  (let* ((language-candidates (if babel tlon-languages tlon-languages))
 	 (language-selection (completing-read-multiple "Languages (comma-separated): "
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
 
-(defun tlon-babel-get-language-candidates (babel)
+(defun tlon-get-language-candidates (babel)
   "Return a list of language candidates.
 If BABEL is nil, return all valid BibTeX languages; otherwise, return candidates
 languages in the Babel project only."
   (if babel
-      tlon-babel-project-languages
-    (tlon-babel-lookup-all tlon-babel-languages-properties :name)))
+      tlon-project-languages
+    (tlon-lookup-all tlon-languages-properties :name)))
 
 ;;;;; json
 
-(defun tlon-babel-parse-json (file &optional object-type array-type key-type)
+(defun tlon-parse-json (file &optional object-type array-type key-type)
   "Parse JSON FILE using array TYPE.
 OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
 ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
@@ -675,13 +675,13 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 	(json-false :json-false))
     (json-read-file file)))
 
-(defun tlon-babel-write-data (file data)
+(defun tlon-write-data (file data)
   "Write DATA to a JSON FILE."
   (with-temp-file file
     (insert (json-encode data))
     (json-pretty-print-buffer)))
 
-(defun tlon-babel-get-keys (data)
+(defun tlon-get-keys (data)
   "Get keys from hash table DATA."
   (let ((keys '()))
     (maphash (lambda (k _v) (push k keys)) data)
@@ -689,19 +689,19 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 
 ;;;;; tags
 
-(defun tlon-babel-make-tag-search-pattern (pair &optional format)
+(defun tlon-make-tag-search-pattern (pair &optional format)
   "Construct a regexp match pattern with FORMAT for PAIR of tags."
   (let ((format (or format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)")))
     (format format
 	    (regexp-quote (car pair))
 	    (regexp-quote (cdr pair)))))
 
-(defun tlon-babel-make-tag-replace-pattern (pair &optional format)
+(defun tlon-make-tag-replace-pattern (pair &optional format)
   "Construct a replace with FORMAT for PAIR of tags."
   (let ((format (or format "%s%%s%s")))
     (format format
 	    (car pair)
 	    (cdr pair))))
 
-(provide 'tlon-babel-core)
-;;; tlon-babel-core.el ends here
+(provide 'tlon-core)
+;;; tlon-core.el ends here

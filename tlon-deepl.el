@@ -1,9 +1,9 @@
-;;; tlon-babel-deepl.el --- Support for DeepL API calls -*- lexical-binding: t -*-
+;;; tlon-deepl.el --- Support for DeepL API calls -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; URL: https://github.com/tlon-team/tlon-babel
+;; URL: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -27,18 +27,18 @@
 
 ;;; Code:
 
-(require 'tlon-babel-core)
+(require 'tlon-core)
 
 ;;;; Variables
 
-(defconst tlon-babel-deepl-key
-  (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" tlon-babel-email-shared))
+(defconst tlon-deepl-key
+  (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" tlon-email-shared))
   "The DeepL API key.")
 
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-babel-deepl-diff (&optional translation deepl)
+(defun tlon-deepl-diff (&optional translation deepl)
   "Run an `ediff' session for a TRANSLATION and the DEEPL translation of it.
 If TRANSLATION is nil, use the current buffer. If DEEPL is nil, prompt the user
 for a file."
@@ -50,6 +50,6 @@ for a file."
 	(deepl (or deepl (read-file-name "DeepL translation: "))))
     (ediff-files deepl translation)))
 
-(provide 'tlon-babel-deepl)
-;;; tlon-babel-deepl.el ends here
+(provide 'tlon-deepl)
+;;; tlon-deepl.el ends here
 

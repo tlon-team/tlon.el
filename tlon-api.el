@@ -1,9 +1,9 @@
-;;; tlon-babel-api.el --- Make requests with the Babel APIs -*- lexical-binding: t -*-
+;;; tlon-api.el --- Make requests with the Babel APIs -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; Homepage: https://github.com/tlon-team/tlon-babel
+;; Homepage: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -29,13 +29,13 @@
 
 (require 'json-mode)
 (require 'request)
-(require 'tlon-babel-core)
+(require 'tlon-core)
 
 ;;;; Variables
 
 ;; TODO: add `:repo-name' property, then constract `:route' dynamically with
-;; `tlon-babel-api-get-routes'
-(defconst tlon-babel-uqbar-api-routes
+;; `tlon-api-get-routes'
+(defconst tlon-uqbar-api-routes
   '((:route "update/babel-refs"
 	    :type "POST"
 	    :docstring "Apply CSL and regenerate BibTeX keys. Then run \"update/uqbar/es\" request.")
@@ -59,15 +59,15 @@
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-babel-api-request (route)
+(defun tlon-api-request (route)
   "Make a request for ROUTE with the `uqbar' API."
   (interactive (list (tlon-select-api-route)))
-  (let* ((site (tlon-babel-repo-lookup :url
+  (let* ((site (tlon-repo-lookup :url
                                        :subproject "uqbar"
-                                       :language tlon-babel-translation-language))
+                                       :language tlon-translation-language))
          (route-url (format "%sapi/%s" site route))
-         (type (tlon-babel-lookup (tlon-babel-api-get-routes) :type :route route)))
-    (tlon-babel-api-get-token
+         (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
+    (tlon-api-get-token
      site
      (lambda (access-token)
        "Authenticate with ACCESS-TOKEN, then make request."
@@ -83,16 +83,16 @@
 		       "Print response, and possibly make new request depending on ROUTE."
 		       (pcase route
 			 ("update/babel-refs"
-			  (tlon-babel-api-request "update/uqbar/es"))
+			  (tlon-api-request "update/uqbar/es"))
 			 (_ nil))
-		       (tlon-babel-api-print-response route :data data)
+		       (tlon-api-print-response route :data data)
 		       (message
 			"`%s' request completed successfully. See the `Uqbar log' buffer for details." route)))))))))
 
-(defun tlon-babel-api-get-token (site callback)
+(defun tlon-api-get-token (site callback)
   "Get API token for SITE.
 CALLBACK is called with the token as its argument."
-  (let* ((data (tlon-babel-api-get-credentials)))
+  (let* ((data (tlon-api-get-credentials)))
     (request (format "%sapi/auth/login" site)
       :type "POST"
       :headers '(("Content-Type" . "application/x-www-form-urlencoded"))
@@ -104,24 +104,24 @@ CALLBACK is called with the token as its argument."
                   (when data
                     (funcall callback (alist-get "access_token" data nil nil 'string=))))))))
 
-(cl-defun tlon-babel-api-print-response (route &key data &allow-other-keys)
+(cl-defun tlon-api-print-response (route &key data &allow-other-keys)
   "Print DATA returned from API ROUTE."
   (with-current-buffer (get-buffer-create (format "*Uqbar log for %s*" route))
     (erase-buffer)
     (insert (json-encode data))
     (json-pretty-print-buffer)
-    (tlon-babel-fix-source-filename-paths)
-    (api-ztlon-babel-make-paths-clickable)))
+    (tlon-fix-source-filename-paths)
+    (api-ztlon-make-paths-clickable)))
 
-(defun tlon-babel-api-get-credentials ()
+(defun tlon-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
-  (let ((username (tlon-babel-user-lookup :github :name user-full-name))
+  (let ((username (tlon-user-lookup :github :name user-full-name))
 	(inhibit-message t))
     (concat "username=" (url-hexify-string username)
             "&password=" (url-hexify-string
 			  (auth-source-pass-get 'secret
 						(concat "tlon/babel/altruismoeficaz.net/" username))))))
-(defun tlon-babel-api-get-routes ()
+(defun tlon-api-get-routes ()
   "Return the `uqbar' API routes reflecting the current translation language."
   (mapcar
    (lambda (x)
@@ -130,27 +130,27 @@ CALLBACK is called with the token as its argument."
 	      (string-match "%s" (plist-get x :route)))
 	 (plist-put (copy-sequence x) :route (replace-regexp-in-string
 					      "%s"
-					      tlon-babel-translation-language
+					      tlon-translation-language
 					      (plist-get x :route)))
        x))
-   (copy-sequence tlon-babel-uqbar-api-routes)))
+   (copy-sequence tlon-uqbar-api-routes)))
 
 ;; TODO: consider using `marginalia' for this
 ;; see my questions to GPT-4 on what to implement it:
 ;; [[id:625AC8A3-F330-4DD2-B8F6-8FF432158057][pass text to marginalia]]
 (defun tlon-select-api-route ()
-  "Prompt the user to select an API route from `tlon-babel-uqbar-api-routes'."
+  "Prompt the user to select an API route from `tlon-uqbar-api-routes'."
   (let* ((choices (mapcar (lambda (plist)
 			    (let ((route (plist-get plist :route))
 				  (docstring (plist-get plist :docstring)))
 			      (cons (format "%-40.40s %-80.80s" route (propertize docstring 'face 'italic)) route)))
-			  (tlon-babel-api-get-routes)))
+			  (tlon-api-get-routes)))
 	 (user-choice (completing-read "Please select an API route: " choices nil t)))
     (cdr (assoc user-choice choices))))
 
 ;;;;; Process output buffer
 
-(defun tlon-babel-fix-source-filename-paths (&optional buffer)
+(defun tlon-fix-source-filename-paths (&optional buffer)
   "Fix `:source_filename' paths in output log in BUFFER.
 If BUFFER is nil, default to the current buffer."
   (let ((buffer (or buffer (current-buffer))))
@@ -177,7 +177,7 @@ If BUFFER is nil, default to the current buffer."
 	(json-pretty-print-buffer)
 	(json-mode)))))
 
-(defun api-ztlon-babel-make-paths-clickable (&optional buffer)
+(defun api-ztlon-make-paths-clickable (&optional buffer)
   "Make file paths in the current buffer clickable.
 The paths and also be opened with RET.
 
@@ -200,11 +200,11 @@ If BUFFER is nil, default to the current buffer."
 
 ;;;;; Magit integration
 
-;; TODO do this properly by getting request from `tlon-babel-api-get-routes'
-(defun tlon-babel-magit-trigger-api-request (&rest _)
+;; TODO do this properly by getting request from `tlon-api-get-routes'
+(defun tlon-magit-trigger-api-request (&rest _)
   "Trigger appropriate request when a commit is pushed in Magit."
-  (let ((uqbar-es (tlon-babel-repo-lookup :dir :name "uqbar-es"))
-	(babel-refs (tlon-babel-repo-lookup :dir :name "babel-refs"))
+  (let ((uqbar-es (tlon-repo-lookup :dir :name "uqbar-es"))
+	(babel-refs (tlon-repo-lookup :dir :name "babel-refs"))
 	route)
     ;; can’t be done with `pcase'
     (cond
@@ -215,21 +215,21 @@ If BUFFER is nil, default to the current buffer."
     (when route
       (run-with-timer
        3 nil (lambda ()
-	       "Run `tlon-babel-api-request' once the push is expected to complete."
-	       (tlon-babel-api-request route))))))
+	       "Run `tlon-api-request' once the push is expected to complete."
+	       (tlon-api-request route))))))
 
 (dolist (fun (list 'magit-push-current-to-upstream
 		   'magit-push-current-to-pushremote))
-  (advice-add fun :after 'tlon-babel-magit-trigger-api-request))
+  (advice-add fun :after 'tlon-magit-trigger-api-request))
 
 ;;;;; Transient
 
-;;;###autoload (autoload 'tlon-babel-api-menu "tlon-babel-api" nil t)
-(transient-define-prefix tlon-babel-api-menu ()
+;;;###autoload (autoload 'tlon-api-menu "tlon-api" nil t)
+(transient-define-prefix tlon-api-menu ()
   "`api' menu."
   ["Requests"
-   ("q" "uqbar"                        tlon-babel-api-request)])
+   ("q" "uqbar"                        tlon-api-request)])
 
-(provide 'tlon-babel-api)
-;;; tlon-babel-api.el ends here
+(provide 'tlon-api)
+;;; tlon-api.el ends here
 

@@ -1,9 +1,9 @@
-;;; tlon-babel-repos.el --- Functionality for manipulating repositories -*- lexical-binding: t -*-
+;;; tlon-repos.el --- Functionality for manipulating repositories -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; URL: https://github.com/tlon-team/tlon-babel
+;; URL: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -34,11 +34,11 @@
 
 ;;;; Variables
 
-(defgroup tlon-babel-repos ()
-  "`tlon-babel-repos' functionality."
-  :group 'tlon-babel)
+(defgroup tlon-repos ()
+  "`tlon-repos' functionality."
+  :group 'tlon)
 
-(defcustom tlon-babel-split-repo 'prompt
+(defcustom tlon-split-repo 'prompt
   "Whether to split the `.git' directory in a separate directory.
 If nil, never split the `.git' directory. If `prompt', ask the user whether to
 split the `.git' directory. If t or any other non-nil value, always split the
@@ -46,12 +46,12 @@ split the `.git' directory. If t or any other non-nil value, always split the
   :type '(choice (const :tag "Never" nil)
 		 (const :tag "Prompt" prompt)
 		 (boolean :tag "Always"))
-  :group 'tlon-babel-repos)
+  :group 'tlon-repos)
 
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-babel-create-repo (name description private)
+(defun tlon-create-repo (name description private)
   "Create a new Tlön repo.
 NAME and DESCRIPTION are the name and description of the repo. If PRIVATE is
 non-nil, make it private."
@@ -60,11 +60,11 @@ non-nil, make it private."
 		     (y-or-n-p "Private? ")))
   (vc-extras-gh-create-repo name description vc-extras-github-account-work private)
   (if (y-or-n-p "Clone? ")
-      (tlon-babel-clone-repo name)
+      (tlon-clone-repo name)
     (message "Cloned repo `%s'" name)))
 
 ;;;###autoload
-(defun tlon-babel-clone-repo (&optional name)
+(defun tlon-clone-repo (&optional name)
   "Clone an existing Tlön repo and add it to the Forge database.
 The repo will be cloned in the directory specified by `paths-dir-tlon-repos'. If
 NAME is nil, prompt the user for a repo name."
@@ -75,18 +75,18 @@ NAME is nil, prompt the user for a repo name."
     (when (file-exists-p dir)
       (user-error "Directory `%s' already exists" dir))
     (vc-clone remote 'Git dir)
-    (pcase tlon-babel-split-repo
+    (pcase tlon-split-repo
       ('nil)
       ('prompt (if (y-or-n-p "Move `.git' directory to separate directory?")
-		   (tlon-babel-split-repo dir)
-		 (message "You can customize the `tlon-babel-split-repo' user option to avoid this prompt.")))
-      (_ (tlon-babel-split-repo dir)))
+		   (tlon-split-repo dir)
+		 (message "You can customize the `tlon-split-repo' user option to avoid this prompt.")))
+      (_ (tlon-split-repo dir)))
     (if (y-or-n-p "Add to Forge? ")
-	(tlon-babel-forge-add-repository dir)
+	(tlon-forge-add-repository dir)
       (dired dir))))
 
 ;;;###autoload
-(defun tlon-babel-split-repo (dir)
+(defun tlon-split-repo (dir)
   "Move the `.git' in DIR to a separate dir and set the `.git' file accordingly.
 Normally, this command is run for repos managed by Dropbox, to protect the Git
 files from possible corruption."
@@ -104,7 +104,7 @@ files from possible corruption."
       (write-file git-file))))
 
 (declare-function magit-status "magit-status")
-(defun tlon-babel-forge-add-repository (dir)
+(defun tlon-forge-add-repository (dir)
   "Add DIR to the Forge database."
   (let* ((default-directory dir)
 	 (url (and-let*
@@ -116,17 +116,17 @@ files from possible corruption."
 
 ;;;; Menu
 
-;;;###autoload (autoload 'tlon-babel-repos-menu "tlon-babel-repos" nil t)
-(transient-define-prefix tlon-babel-repos-menu ()
+;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
+(transient-define-prefix tlon-repos-menu ()
   "Repos menu."
   [["Repo"
-    ("c" "Create remote"     tlon-babel-create-repo)
-    ("l" "Clone remote"      tlon-babel-clone-repo)
-    ("s" "Split local"       tlon-babel-split-repo)]
+    ("c" "Create remote"     tlon-create-repo)
+    ("l" "Clone remote"      tlon-clone-repo)
+    ("s" "Split local"       tlon-split-repo)]
    ["Forge"
     ("a" "Add"               forge-add-repository)
     ("r" "Remove"            forge-remove-repository)]])
 
-(provide 'tlon-babel-repos)
-;;; tlon-babel-repos.el ends here
+(provide 'tlon-repos)
+;;; tlon-repos.el ends here
 

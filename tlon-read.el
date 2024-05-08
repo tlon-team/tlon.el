@@ -1,9 +1,9 @@
-;;; tlon-babel-read.el --- Functions for reading the current buffer aloud -*- lexical-binding: t -*-
+;;; tlon-read.el --- Functions for reading the current buffer aloud -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; Homepage: https://github.com/tlon-team/tlon-babel
+;; Homepage: https://github.com/tlon-team/tlon
 ;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
@@ -28,27 +28,27 @@
 ;;; Code:
 
 (require 'read-aloud)
-(require 'tlon-babel)
+(require 'tlon)
 
 ;;;; Functions
 
-(defvar tlon-babel-read-mode-map
+(defvar tlon-read-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "H-,") 'tlon-babel-read-backward)
-    (define-key map (kbd "H-.") 'tlon-babel-read-forward)
-    (define-key map (kbd "H-;") 'tlon-babel-read-target-start-or-stop)
+    (define-key map (kbd "H-,") 'tlon-read-backward)
+    (define-key map (kbd "H-.") 'tlon-read-forward)
+    (define-key map (kbd "H-;") 'tlon-read-target-start-or-stop)
     (define-key map (kbd "H-k") 'read-aloud-extras-increase-rate)
     (define-key map (kbd "H-l") 'read-aloud-extras-decrease-rate)
     map)
-  "Keymap for `tlon-babel-read-mode'.")
+  "Keymap for `tlon-read-mode'.")
 
-(define-minor-mode tlon-babel-read-mode
+(define-minor-mode tlon-read-mode
   "Enable TTS mode locally."
   :global nil
   :init-value nil
-  :keymap tlon-babel-read-mode-map)
+  :keymap tlon-read-mode-map)
 
-(defun tlon-babel-get-target-buffer ()
+(defun tlon-get-target-buffer ()
   "Return the buffer that `read-aloud' should read."
   (let ((buffer-list (cl-remove-if-not
 		      (lambda (buffer)
@@ -63,10 +63,10 @@
 	   (user-error "More than one buffer found")))
     buffer))
 
-(defun tlon-babel-read-target-start-or-stop ()
+(defun tlon-read-target-start-or-stop ()
   "Start or stop reading the target buffer."
   (interactive)
-  (let ((buffer (tlon-babel-get-target-buffer))
+  (let ((buffer (tlon-get-target-buffer))
 	(current-buffer (current-buffer)))
     (pop-to-buffer buffer)
     (when read-aloud--c-bufpos
@@ -77,10 +77,10 @@
     (re-search-backward "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t)
     (pop-to-buffer current-buffer)))
 
-(defun tlon-babel-read-backward-or-forward (direction)
+(defun tlon-read-backward-or-forward (direction)
   "Move in DIRECTION in the target buffer."
   (interactive)
-  (let ((buffer (tlon-babel-get-target-buffer))
+  (let ((buffer (tlon-get-target-buffer))
 	(current-buffer (current-buffer))
 	(fun (if (eq direction 'backward)
 		 're-search-backward
@@ -91,16 +91,16 @@
     (funcall fun "[,.:!;]\\|\\(-\\|\n\\|\r\n\\)\\{2,\\}" nil t 1)
     (pop-to-buffer current-buffer)))
 
-(defun tlon-babel-read-backward ()
+(defun tlon-read-backward ()
   "Move backward in the target buffer."
   (interactive)
-  (tlon-babel-read-backward-or-forward 'backward))
+  (tlon-read-backward-or-forward 'backward))
 
-(defun tlon-babel-read-forward ()
+(defun tlon-read-forward ()
   "Move forward in the target buffer."
   (interactive)
-  (tlon-babel-read-backward-or-forward 'forward))
+  (tlon-read-backward-or-forward 'forward))
 
-(provide 'tlon-babel-read)
-;;; tlon-babel-read.el ends here
+(provide 'tlon-read)
+;;; tlon-read.el ends here
 
