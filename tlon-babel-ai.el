@@ -98,6 +98,7 @@
 
 ;;;;; Image description
 
+;; consider using `chatgpt-shell-describe-image'
 (defconst tlon-babel-ai-describe-image-prompt
   `((:prompt "Please provide a concise description of the following image:\n\n[[file:%s]]\n\nThe description should consist of only one paragraph and must never exceed 80 words."
 	     :language "en")
