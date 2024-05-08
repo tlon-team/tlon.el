@@ -736,7 +736,9 @@ If FILE is nil, use the file visited by the current buffer."
       (goto-char (point-min))
       (let ((links))
 	(while (re-search-forward markdown-regex-link-inline nil t)
-	  (push (match-string-no-properties 6) links))
+	  (when-let ((url (ffap-url-p (match-string-no-properties 6))))
+	    (unless (member url links)
+	      (push url links))))
 	(reverse links)))))
 
 ;;;;; Actual content
