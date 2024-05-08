@@ -502,7 +502,7 @@ If the field `landig' is present, the function does nothing; else, it sets the
 (defvar citar-cache--bibliographies)
 (declare-function citar-cache--bibliography-entries "citar-cache")
 (defun tlon-babel-get-field-in-bibliography (field)
-  "Extract all values for FIELD entries in the Tlön bibliography."
+  "Return all FIELD values in BibTeX entries in the Tlön bibliography."
   (let (fields)
     (maphash (lambda (_key bibliography)
 	       (when-let ((entries (citar-cache--bibliography-entries bibliography)))
