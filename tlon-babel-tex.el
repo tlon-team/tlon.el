@@ -28,8 +28,8 @@
 ;;; Code:
 
 (require 'bib)
-(require 'doi-utils)
 (require 'bibtex-extras)
+(require 'doi-utils)
 (require 'paths)
 (require 'shut-up)
 
