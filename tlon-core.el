@@ -642,14 +642,14 @@ English. FORMAT must be either `code' or `locale'."
   "Read a language from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-languages tlon-languages)))
+  (let* ((language-candidates (tlon-get-language-candidates babel)))
     (completing-read "Language: " language-candidates nil t)))
 
 (defun tlon-read-multiple-languages (&optional babel)
   "Read a list of languages from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (if babel tlon-languages tlon-languages))
+  (let* ((language-candidates (tlon-get-language-candidates babel))
 	 (language-selection (completing-read-multiple "Languages (comma-separated): "
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
