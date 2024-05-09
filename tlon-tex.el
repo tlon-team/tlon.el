@@ -83,26 +83,25 @@
     ("volumes" . "vols."))
   "Alist of locators and their abbreviations.")
 
-;; TODO: remove `refs' from var names. make sure nothing breaks in config files
 (defvar tlon-refs-dir
   paths-dir-babel-refs
   "Directory of the `babel-refs' repo.")
 
-(defvar tlon-refs-bibtex-dir
+(defvar tlon-bibtex-dir
   (file-name-concat tlon-refs-dir "bib/")
   "Directory where BibTeX files are stored.")
 
-(defvar tlon-refs-file-fluid
-  (file-name-concat tlon-refs-bibtex-dir "fluid.bib")
+(defvar tlon-file-fluid
+  (file-name-concat tlon-bibtex-dir "fluid.bib")
   "File containing the fluid bibliography.")
 
-(defvar tlon-refs-file-stable
-  (file-name-concat tlon-refs-bibtex-dir "stable.bib")
+(defvar tlon-file-stable
+  (file-name-concat tlon-bibtex-dir "stable.bib")
   "File containing the stable bibliography.")
 
-(defvar tlon-refs-bibliography-files
-  `(,tlon-refs-file-fluid
-    ,tlon-refs-file-stable)
+(defvar tlon-bibliography-files
+  `(,tlon-file-fluid
+    ,tlon-file-stable)
   "List of bibliography files.")
 
 ;;;; Functions
@@ -274,10 +273,10 @@ errors gracefully."
 (defun tlon-move-entry (&optional key file)
   "Move entry with KEY to FILE.
 Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
-If FILE is non-nil, use `tlon-refs-file-fluid'."
+If FILE is non-nil, use `tlon-file-fluid'."
   (interactive)
   (let ((key (or key (bibtex-extras-get-key)))
-	(file (or file tlon-refs-file-fluid)))
+	(file (or file tlon-file-fluid)))
     (bibtex-extras-move-entry key file)
     (with-current-buffer (find-file-noselect file)
       (widen)
@@ -287,7 +286,7 @@ If FILE is non-nil, use `tlon-refs-file-fluid'."
     (kill-new key)))
 
 (defun tlon-move-entry-without-abstract ()
-  "Move entry to `tlon-refs-file-fluid' if it doesn't have an abstract."
+  "Move entry to `tlon-file-fluid' if it doesn't have an abstract."
   (message "Moving `%s'..." (bibtex-extras-get-key))
   (unless (bibtex-extras-get-field "abstract")
     (tlon-move-entry))
@@ -295,7 +294,7 @@ If FILE is non-nil, use `tlon-refs-file-fluid'."
   (tlon-move-entry-without-abstract))
 
 (defun tlon-move-entry-without-file ()
-  "Move entry to `tlon-refs-file-fluid' if it doesn't have an abstract."
+  "Move entry to `tlon-file-fluid' if it doesn't have an abstract."
   (let ((key (bibtex-extras-get-key)))
     (unless (or (bibtex-extras-get-field "file")
 		(bibtex-extras-get-field "crossref"))
@@ -308,10 +307,9 @@ If FILE is non-nil, use `tlon-refs-file-fluid'."
   "Move LessWrong entry to \"temp.bib\"."
   (message "Moving `%s'..." (bibtex-extras-get-key))
   (when (string= (bibtex-extras-get-field "journaltitle") "{LessWrong}")
-    (tlon-move-entry nil "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/babel-refs/bib/temp.bib"))
+    (tlon-move-entry nil (file-name-concat tlon-bibtex-dir "temp.bib")))
   (bibtex-next-entry)
-  (tlon-move-lesswrong-entries)
-  )
+  (tlon-move-lesswrong-entries))
 
 ;;;;; Add fields
 
@@ -336,7 +334,7 @@ and sets the value of the field for all entries to `Tlön'."
 
 (defun tlon-auto-add-database-field ()
   "Run `bibtex-extras-add-database-field' every time `new.bib' is saved."
-  (let ((file tlon-refs-file-fluid))
+  (let ((file tlon-file-fluid))
     (when (string= (buffer-file-name) file)
       (tlon-add-database-field file))))
 
@@ -467,7 +465,7 @@ If the field `landig' is present, the function does nothing; else, it sets the
   (interactive)
   (let ((file (or file (buffer-file-name)))
 	(titles (tlon-get-field-in-bibliography "title"))
-	(citar-bibliography tlon-refs-bibliography-files)
+	(citar-bibliography tlon-bibliography-files)
 	(open-delim "[\"'“‘\\[\\*")
 	(close-delim "[\"'”’\\]\\*]")
 	always-long always-short)

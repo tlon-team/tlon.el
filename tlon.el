@@ -150,7 +150,7 @@ The second capture group handles the `.md' extension, which we used previously."
 ;;;;; init
 
 (defvar org-capture-templates)
-(defvar tlon-refs-bibliography-files)
+(defvar tlon-bibliography-files)
 (defun tlon-init ()
   "Initialize `tlon'."
   (interactive)
@@ -158,7 +158,7 @@ The second capture group handles the `.md' extension, which we used previously."
   (tlon-warn-if-unbound 'paths-tlon-todos-generic-id)
   (setq paths-files-bibliography-all
 	`(,@paths-files-bibliography-personal
-	  ,@tlon-refs-bibliography-files))
+	  ,@tlon-bibliography-files))
   (run-hooks 'tlon-post-init-hook)
   (message "Initialized `tlon'"))
 
