@@ -35,7 +35,7 @@
 (require 'tlon-split)
 (require 'tlon-tts)
 
-;;;; Main variables
+;;;; Variables
 
 (defconst tlon-job-labels
   '((:label "Awaiting processing"
@@ -207,8 +207,9 @@ substitute assignee."
 	(tlon-mark-todo-done job-todo tlon-file-jobs)
 	(tlon-jobs-sort-headings tlon-file-jobs)
 	(tlon-commit-and-push "Update"
-				    tlon-file-jobs)))))
+			      tlon-file-jobs)))))
 
+(defvar tlon-file-babel-manual)
 (declare-function org-extras-show-subtree-hide-drawers "org-extras")
 (defun tlon-jobs-initialize-processing ()
   "Initialize processing."
@@ -234,18 +235,22 @@ substitute assignee."
   (tlon-split-mode))
 
 (declare-function read-aloud-buf "read-aloud")
+(declare-function window-extras-buffer-move-right "window-extras")
+(declare-function window-extras-switch-to-last-window "window-extras")
 (defun tlon-jobs-initialize-check ()
   "Initialize accuracy check."
   ;; we move the buffer displaying the issue to the right, to uncover
   ;; the original file
   (window-extras-buffer-move-right)
   (window-extras-switch-to-last-window)
-  (add-hook 'eww-mode-hook #'tlon-tts-mode)
+  ;; (add-hook 'eww-mode-hook #'tlon-tts-mode)
   (markdown-preview)
   (read-aloud-buf))
 
 (declare-function jinx--load-dicts "jinx")
 (declare-function jinx--cleanup "jinx")
+(declare-function tlon-log-buffer-latest-user-commit-ediff "tlon")
+(declare-function winum-select-window-1 "winum")
 (defun tlon-jobs-initialize-review ()
   "Initialize review."
   (cl-multiple-value-bind
@@ -289,6 +294,7 @@ IDENTIFIER can be a URL or a PDF file path."
 fields, which are needed to create a new job: `url' or `file',
 `title' and `key'")))
 
+(declare-function tlon-get-key-in-buffer "tlon")
 (defun tlon-create-record-for-job (&optional key)
   "Create a record based on KEY.
 Creates a new record in the repository (with the format `Job: KEY') and a new
