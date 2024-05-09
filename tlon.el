@@ -129,18 +129,7 @@ This variable should not be set manually.")
   "https://github.com/tlon-team/"
   "URL of the Tlön account on GitHub.")
 
-;;;;; Version
-
-(defvar tlon-version "0.1.13")
-
 ;;;; Functions
-
-;;;;; version
-
-(defun tlon-version ()
-  "Return the version of the `tlon' package."
-  (interactive)
-  (message "`tlon' version %s" tlon-version))
 
 ;;;;; init
 
