@@ -108,16 +108,10 @@ TITLE optionally specifies the title of the file to be imported."
 TITLE optionally specifies the title of the entity to be imported."
   (let* ((response (tlon-import-eaf-request id-or-slug))
 	 (object (tlon-import-eaf-get-object id-or-slug))
-	 (dir (tlon-repo-lookup :dir :name "uqbar-en"))
-	 (subdir (pcase object
-		   ('article "articles")
-		   ('tag "tags")))
 	 (title (or title (pcase object
 			    ('article (tlon-import-eaf-get-article-title response))
 			    ('tag (tlon-import-eaf-get-tag-title response)))))
-	 (target (read-string "Save file in: "
-			      (tlon-set-file-from-title title
-							      (file-name-concat dir subdir))))
+	 (target (tlon-import-set-target title object))
 	 (html (pcase object
 		 ('article (tlon-import-eaf-get-article-html response))
 		 ('tag (tlon-import-eaf-get-tag-html response))))
@@ -141,7 +135,7 @@ TITLE optionally specifies the title of the entity to be imported."
   "Convert HTML text in SOURCE to Markdown.
 SOURCE can be a URL or a file path. If TITLE is not provided, prompt the user
 for one."
-  (let* ((target (read-string "Save file in: " (tlon-set-file-from-title title)))
+  (let* ((target (tlon-import-set-target title))
 	 (pandoc (if (simple-extras-string-is-url-p source)
 		     tlon-pandoc-convert-from-url
 		   tlon-pandoc-convert-from-file)))
@@ -151,6 +145,17 @@ for one."
       (tlon-cleanup-common)
       (tlon-autofix-all))
     (find-file target)))
+
+(defun tlon-import-set-target (&optional title object)
+  "Set the target file path for the imported document.
+If TITLE is nil, prompt the user for one. OBJECT specifies the type of entity
+being imported (e.g., article or tag)."
+  (let ((dir (tlon-repo-lookup :dir :name "uqbar-en"))
+	(subdir (pcase object
+		  ('tag "tags")
+		  (_ "articles"))))
+    (read-string "Save file in: "
+		 (tlon-set-file-from-title title (file-name-concat dir subdir)))))
 
 ;; TODO: cleanup two functions below
 (defun tlon-import-pdf (path &optional title)
