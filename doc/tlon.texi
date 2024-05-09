@@ -26,7 +26,7 @@
 
 @insertcopying
 
-@code{tlon} is a repository of Emacs functions for the Tlön @code{babel} projects. @*
+@code{tlon} provides all the Emacs functionality used by the Tlön team. @*
 
 @end ifnottex
 

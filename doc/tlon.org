@@ -15,7 +15,7 @@
 #+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
 #+texinfo: @insertcopying
 
-~tlon~ is a repository of Emacs functions for the Tlön ~babel~ projects.
+~tlon~ provides all the Emacs functionality used by the Tlön team.
 
 * Main menu
 * Jobs

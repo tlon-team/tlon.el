@@ -11,8 +11,7 @@ File: tlon.info,  Node: Top,  Next: Main menu,  Up: (dir)
 tlon
 ****
 
-‘tlon’ is a repository of Emacs functions for the Tlön ‘babel’ projects.
-
+‘tlon’ provides all the Emacs functionality used by the Tlön team.
 
 * Menu:
 
@@ -348,21 +347,21 @@ as completion candidates.
 
 Tag Table:
 Node: Top225
-Node: Main menu864
-Node: Jobs961
-Node: 0 New job1283
-Node: 1 Processing3548
-Node: 2 Translation3965
-Node: 3 Revision4096
-Node: 4 Check4293
-Node: 5 Review4469
-Node: 6 Publication4665
-Node: GitHub and org-mode synchronization4773
-Node: Editing Markdown7595
-Node: Commands to insert mathematical expressions8329
-Node: Commands to insert citations9670
-Node: Commands to insert note markers11229
-Node: Other commands12948
+Node: Main menu853
+Node: Jobs950
+Node: 0 New job1272
+Node: 1 Processing3537
+Node: 2 Translation3954
+Node: 3 Revision4085
+Node: 4 Check4282
+Node: 5 Review4458
+Node: 6 Publication4654
+Node: GitHub and org-mode synchronization4762
+Node: Editing Markdown7584
+Node: Commands to insert mathematical expressions8318
+Node: Commands to insert citations9659
+Node: Commands to insert note markers11218
+Node: Other commands12937
 
 End Tag Table
 
