@@ -62,6 +62,10 @@
   "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
   "Org ID of the `processing' heading in `manual.org'.")
 
+(defvar tlon-file-jobs
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "jobs.org")
+  "File containing the jobs.")
+
 (defconst tlon-jobs-id
   "820BEDE2-F982-466F-A391-100235D4C596"
   "Org ID of the `jobs' heading in `jobs.org'.")

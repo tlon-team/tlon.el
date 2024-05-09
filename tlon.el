@@ -89,10 +89,6 @@ This variable should not be set manually.")
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "manual.org")
   "File containing the Babel manual.")
 
-(defvar tlon-file-jobs
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "jobs.org")
-  "File containing the jobs.")
-
 (defvar tlon-file-url-correspondences
   (file-name-concat tlon-dir-correspondences "url-correspondences.json")
   "File containing the URL correspondences.")
