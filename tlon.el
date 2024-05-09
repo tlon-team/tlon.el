@@ -376,7 +376,7 @@ Defaults to the current buffer if no FILE is specified."
 
 (defun tlon-get-commit-key ()
   "Get key of commit file."
-  (let* ((dir (file-name-directory (tlon-core-buffer-file-name)))
+  (let* ((dir (file-name-directory (files-extras-buffer-file-name)))
 	 (file (magit-extras-get-commit-file))
 	 (path (file-name-concat (replace-regexp-in-string "\\.git/" "" dir) file)))
     (tlon-get-key-from-file path)))

@@ -446,7 +446,7 @@ property `:type'."
 (defun tlon-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
 If FILE is nil, use the current buffer's file name."
-  (let* ((file (or file (tlon-core-buffer-file-name) default-directory))
+  (let* ((file (or file (files-extras-buffer-file-name) default-directory))
 	 (directory-path (file-name-directory file)))
     (catch 'found
       (dolist (dir (tlon-repo-lookup-all :dir))
@@ -519,13 +519,6 @@ PAIRS is an even-sized list of <key value> tuples."
 (defun tlon-label-lookup-all (key &rest key-value)
   "Return all values of KEY in labels matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-job-labels key key-value))
-
-(defun tlon-core-buffer-file-name ()
-  "Return name of file BUFFER is visiting, handling `git-dirs' path."
-  (when-let ((file (buffer-file-name)))
-    (replace-regexp-in-string "git-dirs/"
-			      (file-relative-name paths-dir-tlon-repos "~/")
-			      (buffer-file-name))))
 
 (declare-function emacsql "emacsql")
 (declare-function forge-db "forge-db")

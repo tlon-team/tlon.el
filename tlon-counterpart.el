@@ -51,7 +51,7 @@ The translation language is defined by `tlon-translation-language'.
 
 If FILE is nil, return the counterpart of the file visited by the current
 buffer."
-  (let* ((file (or file (tlon-core-buffer-file-name)))
+  (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file)))
     (pcase (tlon-repo-lookup :subtype :dir repo)
       ('translations (tlon-get-counterpart-in-translations file))
@@ -79,14 +79,14 @@ A file's counterpart repo is the repo of that file's counterpart.
 
 If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
-  (let* ((file (or file (tlon-core-buffer-file-name)))
+  (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file))
 	 (subproject (tlon-repo-lookup :subproject :dir repo))
 	 (language (tlon-get-counterpart-language repo))
 	 (counterpart-repo
 	  (tlon-repo-lookup :dir
-				  :subproject subproject
-				  :language language)))
+			    :subproject subproject
+			    :language language)))
     counterpart-repo))
 
 (defun tlon-get-counterpart-language (&optional repo)
