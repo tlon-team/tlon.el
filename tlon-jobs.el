@@ -375,8 +375,7 @@ COMMIT is non-nil, commit the change."
 (transient-define-prefix tlon-jobs-menu ()
   "`jobs' menu."
   :info-manual "(tlon) Jobs"
-  [
-   ["Actions"
+  [["Actions"
     ("j" "dwim"                     tlon-jobs-dwim)
     ("c" "create job"               tlon-create-job)]
    ["Add or modify"

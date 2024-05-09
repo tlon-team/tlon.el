@@ -32,11 +32,22 @@
 
 @menu
 * Main menu::
+* Jobs::
 * GitHub and org-mode synchronization::
 * Editing Markdown::
 
 @detailmenu
 --- The Detailed Node Listing ---
+
+Jobs
+
+* 0. New job: 0 New job. 
+* 1. Processing: 1 Processing. 
+* 2. Translation: 2 Translation. 
+* 3. Revision: 3 Revision. 
+* 4. Check: 4 Check. 
+* 5. Review: 5 Review. 
+* 6. Publication: 6 Publication. 
 
 Editing Markdown
 
@@ -50,6 +61,89 @@ Editing Markdown
 
 @node Main menu
 @chapter Main menu
+
+@node Jobs
+@chapter Jobs
+
+@menu
+* 0. New job: 0 New job. 
+* 1. Processing: 1 Processing. 
+* 2. Translation: 2 Translation. 
+* 3. Revision: 3 Revision. 
+* 4. Check: 4 Check. 
+* 5. Review: 5 Review. 
+* 6. Publication: 6 Publication. 
+@end menu
+
+@node 0 New job
+@section 0. New job
+
+This is a phase prior to the actual process, and that is why we call it ``phase 0''. It consists of (a) creating an entry in Ebib of the job to be translated and then (b) running, with the cursor on that entry, the @code{tlon-create-job} command. @*
+
+This command does three things: @*
+
+@enumerate
+@item
+It imports the content of the job in Markdown format and saves it as a file in a directory specified by the user (by default, the @code{articles} folder). @*
+@item
+It creates a file in the appropriate translations repository, with the relevant metadata. @*
+@item
+It creates a ``record'' associated with this work, consisting of (a) a @emph{issue} on GitHub and (b) a @emph{heading} on @code{jobs.org}. @*
+@itemize
+@item
+While the @emph{issue} on GitHub is used to discuss translation-related issues and coordinate the different phases of the process, the @emph{heading} allows us to prioritize the different jobs and leave non-translation-related comments, such as author permissions issues. @*
+@end itemize
+@end enumerate
+
+In special cases, one or two of these three steps may need to be omitted. For example, there may already be an entry for the translation of the work, or we may already have the document in Markdown format and do not need to import it. In these cases, @code{tlon-create-job} should not be run and instead the commands corresponding to the relevant steps should be run manually: @*
+
+@enumerate
+@item
+To import a document: @code{tlon-import-document}. @*
+@item
+To create the translation file : @code{tlon-create-translation-file}. @*
+@item
+To create a record: @code{tlon-create-record-for-job}. @*
+@end enumerate
+
+If the commands fail to import a URL, this may be due to a @emph{bug} or a problem with Pandoc. To determine what happened, examine the message buffer. For example, if we see that the buffer says @code{pandoc: Cannot decode byte '\xf9': Data.Text.Internal.Encoding: Invalid UTF-8 stream}, this tells us that the problem is with Pandoc. In such a case, you can import the file manually using the @uref{https://chrome.google.com/webstore/detail/markdownload-markdown-web/pcmpcfapbekmbjjkdalcgopdkipoggdi, MarkDownload} extension. @*
+
+If the problem is not with Pandoc, alert Pablo to fix the @emph{bug}. @*
+
+@node 1 Processing
+@section 1. Processing
+
+:PROPERTIES: :ID: 60251C8E-6A6F-430A-9DB3-15158CC82EAE :END: @*
+@emph{This phases consists of processing the imported file.} @*
+
+It involves: @*
+@enumerate
+@item
+Insuring that the Markdown has imported correctly, cleaning up stuff if necessary. @*
+@item
+Replace the citations by the corresopnding Bib@TeX{} keys. @*
+@end enumerate
+
+@node 2 Translation
+@section 2. Translation
+
+@node 3 Revision
+@section 3. Revision
+
+@emph{This phase consists in revising style and readability of the translation.} @*
+
+@node 4 Check
+@section 4. Check
+
+@emph{This phase consits in checking the accuracy of the translation.} @*
+
+@node 5 Review
+@section 5. Review
+
+@emph{This phase consists in reviewing the changes introduced in phases (3) and (4).} @*
+
+@node 6 Publication
+@section 6. Publication
 
 @node GitHub and org-mode synchronization
 @chapter GitHub and org-mode synchronization

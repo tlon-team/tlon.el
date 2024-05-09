@@ -17,10 +17,21 @@ tlon
 * Menu:
 
 * Main menu::
+* Jobs::
 * GitHub and org-mode synchronization::
 * Editing Markdown::
 
 -- The Detailed Node Listing --
+
+Jobs
+
+* 0. New job: 0 New job.
+* 1. Processing: 1 Processing.
+* 2. Translation: 2 Translation.
+* 3. Revision: 3 Revision.
+* 4. Check: 4 Check.
+* 5. Review: 5 Review.
+* 6. Publication: 6 Publication.
 
 Editing Markdown
 
@@ -31,15 +42,131 @@ Editing Markdown
 
 
 
-File: tlon.info,  Node: Main menu,  Next: GitHub and org-mode synchronization,  Prev: Top,  Up: Top
+File: tlon.info,  Node: Main menu,  Next: Jobs,  Prev: Top,  Up: Top
 
 1 Main menu
 ***********
 
 
-File: tlon.info,  Node: GitHub and org-mode synchronization,  Next: Editing Markdown,  Prev: Main menu,  Up: Top
+File: tlon.info,  Node: Jobs,  Next: GitHub and org-mode synchronization,  Prev: Main menu,  Up: Top
 
-2 GitHub and org-mode synchronization
+2 Jobs
+******
+
+* Menu:
+
+* 0. New job: 0 New job.
+* 1. Processing: 1 Processing.
+* 2. Translation: 2 Translation.
+* 3. Revision: 3 Revision.
+* 4. Check: 4 Check.
+* 5. Review: 5 Review.
+* 6. Publication: 6 Publication.
+
+
+File: tlon.info,  Node: 0 New job,  Next: 1 Processing,  Up: Jobs
+
+2.1 0. New job
+==============
+
+This is a phase prior to the actual process, and that is why we call it
+"phase 0".  It consists of (a) creating an entry in Ebib of the job to
+be translated and then (b) running, with the cursor on that entry, the
+‘tlon-create-job’ command.
+
+   This command does three things:
+
+  1. It imports the content of the job in Markdown format and saves it
+     as a file in a directory specified by the user (by default, the
+     ‘articles’ folder).
+  2. It creates a file in the appropriate translations repository, with
+     the relevant metadata.
+  3. It creates a "record" associated with this work, consisting of (a)
+     a _issue_ on GitHub and (b) a _heading_ on ‘jobs.org’.
+        • While the _issue_ on GitHub is used to discuss
+          translation-related issues and coordinate the different phases
+          of the process, the _heading_ allows us to prioritize the
+          different jobs and leave non-translation-related comments,
+          such as author permissions issues.
+
+   In special cases, one or two of these three steps may need to be
+omitted.  For example, there may already be an entry for the translation
+of the work, or we may already have the document in Markdown format and
+do not need to import it.  In these cases, ‘tlon-create-job’ should not
+be run and instead the commands corresponding to the relevant steps
+should be run manually:
+
+  1. To import a document: ‘tlon-import-document’.
+  2. To create the translation file : ‘tlon-create-translation-file’.
+  3. To create a record: ‘tlon-create-record-for-job’.
+
+   If the commands fail to import a URL, this may be due to a _bug_ or a
+problem with Pandoc.  To determine what happened, examine the message
+buffer.  For example, if we see that the buffer says ‘pandoc: Cannot
+decode byte '\xf9': Data.Text.Internal.Encoding: Invalid UTF-8 stream’,
+this tells us that the problem is with Pandoc.  In such a case, you can
+import the file manually using the MarkDownload
+(https://chrome.google.com/webstore/detail/markdownload-markdown-web/pcmpcfapbekmbjjkdalcgopdkipoggdi)
+extension.
+
+   If the problem is not with Pandoc, alert Pablo to fix the _bug_.
+
+
+File: tlon.info,  Node: 1 Processing,  Next: 2 Translation,  Prev: 0 New job,  Up: Jobs
+
+2.2 1. Processing
+=================
+
+:PROPERTIES: :ID: 60251C8E-6A6F-430A-9DB3-15158CC82EAE :END:
+_This phases consists of processing the imported file._
+
+   It involves:
+  1. Insuring that the Markdown has imported correctly, cleaning up
+     stuff if necessary.
+  2. Replace the citations by the corresopnding BibTeX keys.
+
+
+File: tlon.info,  Node: 2 Translation,  Next: 3 Revision,  Prev: 1 Processing,  Up: Jobs
+
+2.3 2. Translation
+==================
+
+
+File: tlon.info,  Node: 3 Revision,  Next: 4 Check,  Prev: 2 Translation,  Up: Jobs
+
+2.4 3. Revision
+===============
+
+_This phase consists in revising style and readability of the
+translation._
+
+
+File: tlon.info,  Node: 4 Check,  Next: 5 Review,  Prev: 3 Revision,  Up: Jobs
+
+2.5 4. Check
+============
+
+_This phase consits in checking the accuracy of the translation._
+
+
+File: tlon.info,  Node: 5 Review,  Next: 6 Publication,  Prev: 4 Check,  Up: Jobs
+
+2.6 5. Review
+=============
+
+_This phase consists in reviewing the changes introduced in phases (3)
+and (4)._
+
+
+File: tlon.info,  Node: 6 Publication,  Prev: 5 Review,  Up: Jobs
+
+2.7 6. Publication
+==================
+
+
+File: tlon.info,  Node: GitHub and org-mode synchronization,  Next: Editing Markdown,  Prev: Jobs,  Up: Top
+
+3 GitHub and org-mode synchronization
 *************************************
 
 ‘tlon’ includes several functions to synchronize the GitHub issues on a
@@ -85,7 +212,7 @@ local file.  The relevant GitHub sync functions are accessed from
 
 File: tlon.info,  Node: Editing Markdown,  Prev: GitHub and org-mode synchronization,  Up: Top
 
-3 Editing Markdown
+4 Editing Markdown
 ******************
 
 This section describes the custom commands we use to edit Markdown
@@ -110,7 +237,7 @@ the Emacs commands whenever possible, to avoid human error.]
 
 File: tlon.info,  Node: Commands to insert mathematical expressions,  Next: Commands to insert citations,  Up: Editing Markdown
 
-3.1 Commands to insert mathematical expressions
+4.1 Commands to insert mathematical expressions
 ===============================================
 
 Our websites support LaTeX-formatted math.  These expressions may be of
@@ -140,7 +267,7 @@ be inserted at point.  These commands can also be inserted from
 
 File: tlon.info,  Node: Commands to insert citations,  Next: Commands to insert note markers,  Prev: Commands to insert mathematical expressions,  Up: Editing Markdown
 
-3.2 Commands to insert citations
+4.2 Commands to insert citations
 ================================
 
 To insert citations, we use the custom MDX tag ‘Cite’.  This
@@ -171,7 +298,7 @@ commands may also be called from ‘tlon-md-menu’ (‘H-;’), with the keys
 
 File: tlon.info,  Node: Commands to insert note markers,  Next: Other commands,  Prev: Commands to insert citations,  Up: Editing Markdown
 
-3.3 Commands to insert note markers
+4.3 Commands to insert note markers
 ===================================
 
 A note may be of two types: a _footnote_, shown at the end of the web
@@ -203,7 +330,7 @@ classification should take precedence over an automatic classification.
 
 File: tlon.info,  Node: Other commands,  Prev: Commands to insert note markers,  Up: Editing Markdown
 
-3.4 Other commands
+4.4 Other commands
 ==================
 
 ‘tlon-edit-yaml-field’
@@ -221,13 +348,21 @@ as completion candidates.
 
 Tag Table:
 Node: Top225
-Node: Main menu655
-Node: GitHub and org-mode synchronization783
-Node: Editing Markdown3610
-Node: Commands to insert mathematical expressions4344
-Node: Commands to insert citations5685
-Node: Commands to insert note markers7244
-Node: Other commands8963
+Node: Main menu864
+Node: Jobs961
+Node: 0 New job1283
+Node: 1 Processing3548
+Node: 2 Translation3965
+Node: 3 Revision4096
+Node: 4 Check4293
+Node: 5 Review4469
+Node: 6 Publication4665
+Node: GitHub and org-mode synchronization4773
+Node: Editing Markdown7595
+Node: Commands to insert mathematical expressions8329
+Node: Commands to insert citations9670
+Node: Commands to insert note markers11229
+Node: Other commands12948
 
 End Tag Table
 
