@@ -456,6 +456,42 @@ If the field `landig' is present, the function does nothing; else, it sets the
       (mapconcat #'bibtex-autokey-demangle-title (nreverse titlewords)
 		 bibtex-autokey-titleword-separator))))
 
+;;;;; Add missing URLs
+
+(defvar zotra-extras-add-multiple-urls-filename)
+(declare-function files-extras-list-to-lines "files-extras")
+;;;###autoload
+(defun tlon-prompt-to-add-missing-urls ()
+  "Prompt to add missing URLs in the current buffer to the Tlön bibliography."
+  (interactive)
+  (save-excursion
+    (let ((urls (tlon-get-missing-urls))
+	  urls-to-add)
+      (dolist (url urls urls-to-add)
+	(goto-char (point-min))
+	(re-search-forward url nil t)
+	(when (y-or-n-p (format "Add `%s' to bibliography?" url))
+	  (push url urls-to-add)))
+      (if (null urls-to-add)
+	  (message "No URLs to add.")
+	(files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-filename)))))
+
+;; TODO: maybe generalize to other fields, e.g. isbn, doi
+(declare-function tlon-get-md-links-in-file "tlon-babl-md")
+(declare-function simple-extras-simplify-url "simple-extras")
+(defun tlon-get-missing-urls (&optional file)
+  "Return all URLs present in FILE but missing in the Tlön bibliography.
+If FILE is nil, use the file visited by the current buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (urls-in-biblio (tlon-get-field-in-bibliography "url"))
+	 (urls-in-file (tlon-get-md-links-in-file file))
+	 (urls-in-biblio-simple (mapcar #'simple-extras-simplify-url urls-in-biblio))
+	 (urls-in-file-simple (mapcar #'simple-extras-simplify-url urls-in-file))
+	 (missing-urls-simple (cl-set-difference urls-in-file-simple urls-in-biblio-simple :test #'string=)))
+    (mapcar (lambda (url)
+	      (concat "https://" url))
+	    missing-urls-simple)))
+
 ;;;;; Misc
 
 (defvar citar-bibliography)
@@ -497,6 +533,18 @@ If the field `landig' is present, the function does nothing; else, it sets the
 					   cite-short)))))))
 	      (replace-match replacement t t))))))))
 
+(defun tlon-bibliography-lookup (assoc-field field value)
+  "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
+  (catch 'found
+    (maphash (lambda (_key bibliography)
+               (let ((entries (citar-cache--bibliography-entries bibliography)))
+                 (maphash (lambda (_ entry)
+                            (when (string= (cdr (assoc field entry)) value)
+                              (throw 'found (cdr (assoc assoc-field entry)))))
+                          entries)))
+             citar-cache--bibliographies)
+    nil))
+
 (defvar citar-cache--bibliographies)
 (declare-function citar-cache--bibliography-entries "citar-cache")
 (defun tlon-get-field-in-bibliography (field)
@@ -510,50 +558,6 @@ If the field `landig' is present, the function does nothing; else, it sets the
 			  entries)))
 	     citar-cache--bibliographies)
     fields))
-
-;; TODO: maybe generalize to other fields, e.g. isbn, doi
-(declare-function tlon-get-md-links-in-file "tlon-babl-md")
-(declare-function simple-extras-simplify-url "simple-extras")
-(defun tlon-get-missing-urls (&optional file)
-  "Return all URLs present in FILE but missing in the Tlön bibliography.
-If FILE is nil, use the file visited by the current buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (urls-in-biblio (tlon-get-field-in-bibliography "url"))
-	 (urls-in-file (tlon-get-md-links-in-file file))
-	 (urls-in-biblio-simple (mapcar #'simple-extras-simplify-url urls-in-biblio))
-	 (urls-in-file-simple (mapcar #'simple-extras-simplify-url urls-in-file))
-	 (missing-urls-simple (cl-set-difference urls-in-file-simple urls-in-biblio-simple :test #'string=)))
-    (mapcar (lambda (url)
-	      (concat "https://" url))
-	    missing-urls-simple)))
-
-(defvar zotra-extras-add-multiple-urls-filename)
-(declare-function files-extras-list-to-lines "files-extras")
-;;;###autoload
-(defun tlon-prompt-to-add-missing-urls ()
-  "Prompt to add missing URLs in the current buffer to the Tlön bibliography."
-  (interactive)
-  (save-excursion
-    (let ((urls (tlon-get-missing-urls))
-	  urls-to-add)
-      (dolist (url urls urls-to-add)
-	(goto-char (point-min))
-	(re-search-forward url nil t)
-	(when (y-or-n-p (format "Add `%s' to bibliography?" url))
-	  (push url urls-to-add)))
-      (files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-filename))))
-
-(defun tlon-bibliography-lookup (assoc-field field value)
-  "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
-  (catch 'found
-    (maphash (lambda (_key bibliography)
-               (let ((entries (citar-cache--bibliography-entries bibliography)))
-                 (maphash (lambda (_ entry)
-                            (when (string= (cdr (assoc field entry)) value)
-                              (throw 'found (cdr (assoc assoc-field entry)))))
-                          entries)))
-             citar-cache--bibliographies)
-    nil))
 
 (provide 'tlon-tex)
 ;;; tlon-tex.el ends here
