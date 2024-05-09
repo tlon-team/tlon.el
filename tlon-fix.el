@@ -100,11 +100,11 @@
 
 (defun tlon-autofix-footnote-punctuation-amend ()
   "Reverse undesired effects of `tlon-autofix-footnote-punctuation'.
-  Ideally the function should be amended so that it doesn’t introduce these
-  effects to begin with."
+Ideally the function should be amended so that it doesn’t introduce these
+effects to begin with."
   (tlon-autofix '("\\[\\[\\^\\([0-9]+\\)\\]\\^\\([0-9]+\\)\\]"  ; fixes `[[^1]^2]'
-			"\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
-		      "[^\\1][^\\2]"))
+		  "\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
+		"[^\\1][^\\2]"))
 
 (defun tlon-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
