@@ -440,9 +440,10 @@ property `:type'."
       (let* ((content (tlon-repo-lookup-all :name :subtype 'translations))
 	     (all (tlon-repo-lookup-all :name)))
 	(tlon-repo-lookup :dir :name
-				(completing-read "Select repo: "
-						 (if include-all all content)))))))
+			  (completing-read "Select repo: "
+					   (if include-all all content)))))))
 
+(declare-function files-extras-buffer-file-name "files-extras")
 (defun tlon-get-repo-from-file (&optional file)
   "Return the repo to which FILE belongs.
 If FILE is nil, use the current buffer's file name."
