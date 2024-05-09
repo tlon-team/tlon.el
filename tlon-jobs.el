@@ -363,7 +363,7 @@ COMMIT is non-nil, commit the change."
     ("j" "dwim"                     tlon-jobs-dwim)
     ("c" "create job"               tlon-create-job)]
    ["Add or modify"
-    ("g" "glossary"                 tlon-glossary-dwim)
+    ("g" "glossary"                 tlon-edit-glossary)
     ("s" "section corresp"          tlon-section-correspondence-dwim)
     ("u" "URL corresp"              tlon-url-correspondence-dwim)]
    ["jobs.org"
