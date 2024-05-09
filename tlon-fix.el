@@ -211,17 +211,5 @@ dedicated function."
 	  (replace (cdr cons)))
       (tlon-autofix (list search) replace))))
 
-;;;;;; TTS
-
-;; we can have this here or in `tts'. The reason for having it here, despite
-;; being TTS-specific functionality, is that we run it at the processing stage.
-
-(defun tlon-fix-tts ())
-
-(defun tlon-fix-tts-emphasis ()
-  "Prompt the user to replace Italics with SSML emphasis tags."
-  ()
-  )
-
 (provide 'tlon-fix)
 ;;; tlon-fix.el ends here
