@@ -29,7 +29,7 @@
 
 (require 'forge)
 (require 'org)
-(require 'tlon)
+(require 'org-extras)
 (require 'tlon-dispatch)
 
 ;;;; User options
@@ -415,18 +415,21 @@ If ISSUE is nil, use the issue at point."
 
 ;;;;; Files
 
+(defvar tlon-todos-jobs-file)
 (defun tlon-get-todos-jobs-file ()
   "Get the file containing the jobs `org-mode' ID."
   (or tlon-todos-jobs-file
       (setq tlon-todos-jobs-file
 	    (tlon-get-file-with-id paths-tlon-todos-jobs-id))))
 
+(defvar tlon-todos-generic-file)
 (defun tlon-get-todos-generic-file ()
   "Get the file containing the generic `org-mode' ID."
   (or tlon-todos-generic-file
       (setq tlon-todos-generic-file
 	    (tlon-get-file-with-id paths-tlon-todos-generic-id))))
 
+(declare-function org-roam-id-find "org-roam-id")
 (defun tlon-get-file-with-id (id)
   "Return the file containing the heading with the given `org-mode' ID."
   (when-let ((location (org-roam-id-find id)))
@@ -869,6 +872,8 @@ buffer."
 		      (when tags (format "   :%s:" (mapconcat #'identity tags ":")))))))
     todo-name))
 
+(defvar tlon-key-regexp)
+(declare-function tlon-get-file-from-key "tlon")
 (defun tlon-get-file-from-issue (&optional issue)
   "Get the file path of ISSUE.
 If ISSUE is nil, use the issue at point or in current buffer."
@@ -884,6 +889,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   (interactive)
   (find-file (tlon-get-file-from-issue)))
 
+(declare-function tlon-open-counterpart "tlon-counterpart")
 ;;;###autoload
 (defun tlon-open-forge-counterpart ()
   "Open the file counterpart of the issue at point or in the current buffer."
@@ -935,7 +941,6 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	(tlon-create-issue issue-title default-directory)
 	;; TODO: consider replacing this with `tlon-create-and-visit-issue'
 	(forge-pull)
-	(message (concat "Reflect on this fine proverb while you wait: " (tlon-core-proverb)))
 	(while (eq latest-issue-pre latest-issue-post)
 	  (sleep-for 0.1)
 	  (setq latest-issue-post (car (tlon-get-latest-issue))))
@@ -950,8 +955,9 @@ If ISSUE is nil, use the issue at point or in current buffer."
   "Create issue from TODO or vice versa."
   (interactive)
   (tlon-todo-issue-funcall #'tlon-create-issue-from-todo
-				 #'tlon-capture-issue))
+			   #'tlon-capture-issue))
 
+(declare-function tlon-get-key-in-buffer "tlon")
 (defun tlon-create-issue-from-key (&optional key)
   "Create an issue based on KEY.
 If KEY is not provided, the key in the Markdown buffer at point is used."
@@ -985,6 +991,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (save-buffer)
       (message "Marked `%s' as DONE" todo))))
 
+(declare-function tlon-get-clock-key "tlon-clock")
+(declare-function tlon-get-clock-label "tlon-clock")
 ;; MAYBE: move to jobs?
 (defun tlon-check-label-and-assignee (repo)
   "Check that clocked action, user match label, assignee of issue in REPO."

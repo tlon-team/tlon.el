@@ -289,6 +289,7 @@ want to search all files, use the empty string."
 ;; structure. in both cases, some fields will overlap with the bibtex fields. we
 ;; deal with this situation in the same way in both cases.
 
+(declare-function tlon-get-bare-dir "tlon-counterpart")
 (defun tlon-create-translation-file (&optional file language)
   "Create a new translation file for original FILE.
 If FILE is nil, use the file visited by the current buffer. If LANGUAGE is nil,

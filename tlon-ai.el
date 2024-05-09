@@ -269,6 +269,7 @@ Otherwise,
 	    ((derived-mode-p 'text-mode)
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
+(declare-function shr-render-buffer "shr")
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
@@ -720,6 +721,7 @@ If RESPONSE is nil, return INFO."
   :prompt "Overwrite when the entry already contains an abstract? "
   :variable 'tlon-abstract-overwrite)
 
+(defvar mullvad-durations)
 (defun tlon-mullvad-connection-duration-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
   (tlon-transient-read-number-choice prompt mullvad-durations))

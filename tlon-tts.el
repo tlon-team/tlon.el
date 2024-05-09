@@ -693,14 +693,15 @@ the output file path."
           tlon-amazon-polly-output-format voice content tlon-amazon-polly-region destination))
 
 (defun tlon-generate-audio-polly (text voice locale destination)
-"Generate audio file for TEXT with Amazon Polly VOICE and save it to DESTINATION."
-(let* ((ssml (format tlon-ssml-wrapper locale voice text)) ; revise
-       (request (tlon-amazon-polly-make-request ssml voice locale destination))
-       (process (start-process-shell-command "generate audio" nil request)))
-  (set-process-sentinel process
-			(lambda (process event)
-			  (when (string= event "finished\n")
-			    (message "Audio generated at: %s" destination))))))
+  "Generate audio file for TEXT with Amazon Polly VOICE and save it to DESTINATION.
+LOCALE is the locale of the voice."
+  (let* ((ssml (format tlon-ssml-wrapper locale voice text)) ; revise
+	 (request (tlon-amazon-polly-make-request ssml voice locale destination))
+	 (process (start-process-shell-command "generate audio" nil request)))
+    (set-process-sentinel process
+			  (lambda (process event)
+			    (when (string= event "finished\n")
+			      (message "Audio generated at: %s" destination))))))
 
 ;;;;;; OpenAI
 

@@ -533,6 +533,7 @@ If FILE is nil, use the file visited by the current buffer."
 					   cite-short)))))))
 	      (replace-match replacement t t))))))))
 
+(defvar citar-cache--bibliographies)
 (defun tlon-bibliography-lookup (assoc-field field value)
   "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
   (catch 'found

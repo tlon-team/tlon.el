@@ -56,6 +56,7 @@ confirmation."
       ('nil (tlon-clock-entry-submit-prompt file))
       (_ (tlon-clock-entry-submit file)))))
 
+(declare-function calendar-extras-get-dates-in-range "calendar-extras")
 ;;;###autoload
 (defun tlon-clock-entry-create-in-range (start end)
   "Create clock entries for dates between START to END in the user’s clock repo."

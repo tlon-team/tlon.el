@@ -33,6 +33,7 @@
 (require 'magit-extra)
 (require 'org)
 (require 'org-clock)
+(require 'org-capture)
 (require 'paths)
 (require 'simple-extras)
 (require 'tlon-dispatch)
@@ -133,7 +134,6 @@ This variable should not be set manually.")
 
 ;;;;; init
 
-(defvar org-capture-templates)
 (defvar tlon-bibliography-files)
 (defun tlon-init ()
   "Initialize `tlon'."
@@ -362,6 +362,7 @@ If REPO is nil, use the current repo."
   (let ((repo (or repo (tlon-get-repo nil 'include-all))))
     (consult-ripgrep repo search-string)))
 
+(declare-function window-extras-split-if-unsplit "windows-extras")
 (defun tlon-search-multi (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
 If REPO is nil, use the current repo."

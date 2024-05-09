@@ -697,7 +697,7 @@ a type."
 ;; TODO: create function to add alt text to all images in a file
 
 (defun tlon-offset-timestamps (offset)
-  "Increase all MM:SS timestamps in the current buffer by OFFSET, formatted as MM:SS."
+  "Increase all MM:SS timestamps in the current buffer by OFFSET."
   (interactive "sEnter time offset (MM:SS): ")
   (save-excursion
     (goto-char (point-min))
@@ -727,6 +727,7 @@ The list of completion candidates can be customized via the user option
   (interactive (list (completing-read "Character: " tlon-md-special-characters nil t)))
   (insert (alist-get char tlon-md-special-characters nil nil #'string= )))
 
+(declare-function ffap-url-p "ffap")
 (defun tlon-get-md-links-in-file (&optional file)
   "Return a list of all the URLs in the Markdown links present in FILE.
 If FILE is nil, use the file visited by the current buffer."

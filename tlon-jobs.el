@@ -28,7 +28,9 @@
 ;;; Code:
 
 (require 'ebib)
+(require 'tlon-clock)
 (require 'tlon-core)
+(require 'tlon-forg)
 (require 'tlon-import)
 (require 'tlon-split)
 (require 'tlon-tts)
@@ -92,6 +94,9 @@
     action))
 
 (declare-function orgit-topic-open "orgit-forge")
+(declare-function magit-pull-from-upstream "magit-pull")
+(declare-function tlon-check-branch "tlon")
+(declare-function winum-select-window-2 "winum")
 (defun tlon-jobs-initialize (fun)
   "Initialize process associated with FUN.
 Runs all the general initialization functions, followed by the specific function
@@ -116,6 +121,8 @@ for the process that is being initialized."
 	(tlon-copy-buffer original-path)
 	(funcall fun)))))
 
+(declare-function tlon-check-file "tlon")
+(declare-function tlon-commit-and-push "tlon")
 (defun tlon-jobs-finalize ()
   "Finalize current stage of translation process."
   (tlon-split-mode -1)
@@ -151,8 +158,8 @@ for the process that is being initialized."
 	(tlon-commit-and-push current-action original-path))
       (tlon-commit-and-push current-action translation-path)
       (tlon-jobs-act-on-issue original-key next-label next-assignee
-				    (when (string= current-action "Review")
-				      'close))
+			      (when (string= current-action "Review")
+				'close))
       (message "Marked as DONE. Set label to `%s' and assignee to `%s'"
 	       next-label next-assignee))
     (tlon-jobs-finalize-set-todos)))
