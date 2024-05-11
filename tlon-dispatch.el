@@ -67,6 +67,7 @@
     ("H-m" "meet"                         tlon-meet-menu)
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
+    ("t" "contacts"                       tlon-contacts-menu)
     ("y" "forg"                           tlon-forg-menu)]
    ["""Browse repo"
     ("d" "in Dired"                       tlon-dired-repo-menu)
