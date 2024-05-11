@@ -285,10 +285,10 @@ check that current file matches translation."
 (defun tlon-check-file-title-match  (&optional file)
   "Check that FILE matches its title.
 If FILE is nil, check the current buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (base (file-name-base file))
-	 (title (tlon-yaml-get-key "title" file))
-	 (slugified-title (simple-extras-slugify title)))
+  (when-let* ((file (or file (buffer-file-name)))
+	      (base (file-name-base file))
+	      (title (tlon-yaml-get-key "title" file))
+	      (slugified-title (simple-extras-slugify title)))
     (unless (or
 	     (string= base slugified-title)
 	     ;; for articles with duplicate titles
