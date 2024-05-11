@@ -911,8 +911,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 (defun tlon-create-issue-from-todo ()
   "Create a new GitHub issue based on the current `org-mode' heading."
   (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "You need to be in `org-mode' to use this function"))
+  (tlon-ensure-org-mode)
   (when (tlon-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
   ;; TODO: we should use an org-specific function to check for this

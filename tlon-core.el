@@ -709,5 +709,12 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
   (when-let ((location (org-roam-id-find id)))
     (car location)))
 
+;;;;; org-mode
+
+(defun tlon-ensure-org-mode ()
+  "Throw an error if the current buffer is not in `org-mode'."
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an `org-mode' buffer")))
+
 (provide 'tlon-core)
 ;;; tlon-core.el ends here
