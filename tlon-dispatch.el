@@ -60,6 +60,7 @@
     ("c" "clock"                          tlon-clock-menu)
     ("e" "edit data"                      tlon-edit-data-menu)
     ("f" "files"                          tlon-files-menu)
+    ("g" "glossary"                       tlon-glossary-menu)
     ("i" "api"                            tlon-api-menu)
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)

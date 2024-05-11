@@ -212,6 +212,15 @@ them untranslated)."
       (message-send-and-exit))
     (kill-buffer mailbuf)))
 
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-glossary-menu "tlon-glossary" nil t)
+(transient-define-prefix tlon-glossary-menu ()
+  "Menu for glossary functions."
+  [("e" "edit"              tlon-edit-glossary)
+   ("x" "extract"           tlon-extract-glossary)
+   ("s" "share"             tlon-share-glossary)])
+
 (provide 'tlon-glossary)
 ;;; tlon-glossary.el ends here
 
