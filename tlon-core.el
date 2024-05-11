@@ -716,5 +716,18 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an `org-mode' buffer")))
 
+(declare-function org-up-heading-safe "org")
+(declare-function org-sort-entries "org")
+(defun tlon-sort-headings (&optional file)
+  "Sort all headings under parent in FILE alphabetically and by TODO order."
+  (interactive)
+  (with-current-buffer (or (find-buffer-visiting file)
+			   (find-file-noselect file))
+    (widen)
+    (org-up-heading-safe)
+    (org-sort-entries nil ?a)
+    (org-sort-entries nil ?o)
+    (save-buffer)))
+
 (provide 'tlon-core)
 ;;; tlon-core.el ends here

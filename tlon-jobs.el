@@ -338,16 +338,7 @@ COMMIT is non-nil, commit the change."
     (when commit
       (tlon-commit-and-push "Update" tlon-file-jobs))))
 
-(defun tlon-jobs-sort-headings (&optional file)
-  "Sort all headings under parent in FILE alphabetically and by TODO order."
-  (interactive)
-  (with-current-buffer (or (find-buffer-visiting file)
-			   (find-file-noselect file))
-    (widen)
-    (org-up-heading-safe)
-    (org-sort-entries nil ?a)
-    (org-sort-entries nil ?o)
-    (save-buffer)))
+      (tlon-commit-and-push "Update" (tlon-jobs-get-file)))))
 
 (defun tlon-jobs-get-key-in-heading ()
   "Get the key of the currently clocked task."
