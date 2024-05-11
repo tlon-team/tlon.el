@@ -62,17 +62,21 @@
   "60251C8E-6A6F-430A-9DB3-15158CC82EAE"
   "Org ID of the `processing' heading in `manual.org'.")
 
-(defvar tlon-file-jobs
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "jobs.org")
-  "File containing the jobs.")
-
 (defconst tlon-jobs-id
   "820BEDE2-F982-466F-A391-100235D4C596"
   "Org ID of the `jobs' heading in `jobs.org'.")
 
+(defvar tlon-jobs-file nil
+  "File containing the jobs.
+This variable should not be set manually.")
+
 ;;;; Functions
 
 ;;;;; Job phases
+
+(defun tlon-jobs-get-file ()
+  "Get the file containing the jobs `org-mode' ID."
+  (tlon-get-or-set-org-var 'tlon-jobs-file tlon-jobs-id))
 
 ;;;###autoload
 (defun tlon-jobs-dwim ()
@@ -204,10 +208,10 @@ substitute assignee."
 	(tlon-mark-todo-done parent-todo (tlon-get-todos-jobs-file))))
     (when (string= current-action "Review")
       (let ((job-todo (format "[cite:@%s]" key)))
-	(tlon-mark-todo-done job-todo tlon-file-jobs)
-	(tlon-jobs-sort-headings tlon-file-jobs)
+	(tlon-mark-todo-done job-todo (tlon-jobs-get-file))
+	(tlon-sort-headings (tlon-jobs-get-file))
 	(tlon-commit-and-push "Update"
-			      tlon-file-jobs)))))
+			      (tlon-jobs-get-file))))))
 
 (defvar tlon-file-babel-manual)
 (declare-function org-extras-show-subtree-hide-drawers "org-extras")
@@ -321,8 +325,8 @@ COMMIT is non-nil, commit the change."
 	 (file (tlon-metadata-lookup (tlon-metadata-in-repo) "file" "original_key" key))
 	 (repo (tlon-get-repo-from-file file))
 	 (repo-abbrev (tlon-repo-lookup :abbrev :dir repo)))
-    (with-current-buffer (or (find-buffer-visiting tlon-file-jobs)
-			     (find-file-noselect tlon-file-jobs))
+    (with-current-buffer (or (find-buffer-visiting (tlon-jobs-get-file))
+			     (find-file-noselect (tlon-jobs-get-file)))
       (widen)
       (goto-char (point-min))
       (unless (search-forward heading nil t)
@@ -333,11 +337,9 @@ COMMIT is non-nil, commit the change."
 	(insert heading)
 	(org-todo 'todo)
 	(org-set-tags repo-abbrev)
-	(tlon-jobs-sort-headings tlon-file-jobs)
+	(tlon-sort-headings (tlon-jobs-get-file))
 	(save-buffer)))
     (when commit
-      (tlon-commit-and-push "Update" tlon-file-jobs))))
-
       (tlon-commit-and-push "Update" (tlon-jobs-get-file)))))
 
 (defun tlon-jobs-get-key-in-heading ()
@@ -352,8 +354,8 @@ COMMIT is non-nil, commit the change."
 
 (defun tlon-jobs-goto-heading (key)
   "Move point to the heading in `jobs.org' with KEY."
-  (with-current-buffer (or (find-buffer-visiting tlon-file-jobs)
-			   (find-file-noselect tlon-file-jobs))
+  (with-current-buffer (or (find-buffer-visiting (tlon-jobs-get-file))
+			   (find-file-noselect (tlon-jobs-get-file)))
     (org-element-map (org-element-parse-buffer) 'headline
       (lambda (headline)
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
@@ -375,7 +377,7 @@ COMMIT is non-nil, commit the change."
    ["jobs.org"
     ("r" "create record"            tlon-create-record-for-job)
     ("h" "create heading"           tlon-create-heading-for-job)
-    ("t" "sort headings"            tlon-jobs-sort-headings)]])
+    ("t" "sort headings"            tlon-sort-headings)]])
 
 (provide 'tlon-jobs)
 ;;; tlon-jobs.el ends here
