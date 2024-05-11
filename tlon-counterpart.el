@@ -128,6 +128,11 @@ buffer."
 	 (repo (tlon-get-repo-from-file file)))
     (directory-file-name (file-name-directory (file-relative-name file repo)))))
 
+(defun tlon-set-bare-dir ()
+  "Set the bare dir."
+  (let* ((bare-dirs (tlon-lookup-all tlon-core-bare-dirs "en")))
+    (completing-read "Type: " bare-dirs)))
+
 (defun tlon-open-counterpart (&optional arg file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
