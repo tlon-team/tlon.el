@@ -31,13 +31,30 @@
 
 ;;;; Variables
 
-(defconst tlon-file-glossary
+(defconst tlon-file-glossary-source
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "glossary.json")
-  "The JSON file containing the glossary.")
+  "The JSON file containing the source glossary.")
 
-(defvar tlon-glossary
-  (tlon-parse-json tlon-file-glossary)
+(defconst tlon-file-glossary-target
+  (file-name-concat paths-dir-downloads "Glossary.csv")
+  "The CSV file containing the target glossary.")
+
+(defvar tlon-glossary-values
+  (tlon-parse-json tlon-file-glossary-source)
   "The glossary values.")
+
+(defconst tlon-glossary-email-subject
+  "New version of the glossary"
+  "The subject of the email to send to translators when sharing the glossary.")
+
+(defconst tlon-glossary-email-body
+  (format "Dear translators,\n\nAttached is a new version of the glossary. Please upload it to DeepL.\n\nBest regards,\n\n%s" (tlon-user-lookup :nickname :name user-full-name))
+  "The body of the email to send to translators when sharing the glossary.")
+
+(defconst tlon-glossary-email-recipients
+  '(("fr" . "tlon-french@googlegroups.com")
+    ("it" . "tlon-italian@googlegroups.com"))
+  "Association list of languages and Google Group addresses.")
 
 ;;;; Functions
 
@@ -56,11 +73,11 @@
 		 (string= (cdr (assoc "type" existing-entry)) "invariant"))
       (setq existing-entry (tlon-edit-translation-in-entry existing-entry selected-term)))
     (setq glossary (tlon-update-glossary glossary existing-entry selected-term))
-    (tlon-write-data tlon-file-glossary glossary)))
+    (tlon-write-data tlon-file-glossary-source glossary)))
 
 (defun tlon-parse-glossary ()
   "Parse the glossary file into Lisp."
-  (tlon-parse-json tlon-file-glossary))
+  (tlon-parse-json tlon-file-glossary-source))
 
 (defun tlon-get-english-terms (glossary)
   "Extract all English terms from GLOSSARY."
@@ -130,7 +147,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
     ;; if there are staged files, we do not commit or push the changes
     (unless (magit-staged-files)
       (tlon-check-branch "main" default-directory)
-      (magit-run-git "add" tlon-file-glossary)
+      (magit-run-git "add" tlon-file-glossary-source)
       (let ((magit-commit-ask-to-stage nil))
 	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
 						 action term explanation))))))
@@ -144,20 +161,19 @@ glossary format. Otherwise, include only entries of type \"variable\",
 and format them in a human-readable format."
   (interactive (list (tlon-select-language 'code 'babel)
 		     (y-or-n-p "Extract for DeepL? ")))
-  (let* ((file-name "Glossary.csv")
-	 (source-path tlon-file-glossary)
-	 (target-path (read-file-name "Target glossary destination: "
-				      paths-dir-downloads nil nil file-name))
-	 json)
+  (let ((source-path tlon-file-glossary-source)
+	json)
     (with-current-buffer (find-file-noselect source-path)
       (goto-char (point-min))
       (let ((json-array-type 'list))
 	(setq json (json-read))))
-    (with-current-buffer (find-file-noselect target-path)
+    (with-current-buffer (find-file-noselect tlon-file-glossary-target)
       (erase-buffer)
       (tlon-insert-formatted-glossary json language deepl)
       (save-buffer))
-    (message "Glossary extracted to `%s'" target-path)))
+    (if (and deepl (y-or-n-p "Share glossary with translators? "))
+	(tlon-share-glossary tlon-file-glossary-target language)
+      (message "Glossary extracted to `%s'" tlon-file-glossary-target))))
 
 (defun tlon-insert-formatted-glossary (json language deepl)
   "Insert a properly formatted glossary in LANGUAGE from JSON data.
@@ -175,6 +191,26 @@ them untranslated)."
 				 source-term target-term))))
       (when (or deepl (string= (alist-get 'type item) "variable"))
 	(insert entry)))))
+
+;;;;; Share glossary
+
+(defun tlon-share-glossary (attachment &optional language)
+  "Share glossary as ATTACHMENT with translators in selected LANGUAGE."
+  (interactive (list (read-file-name "Attachment: "
+				     (file-name-directory tlon-file-glossary-target) nil nil
+				     (file-name-nondirectory tlon-file-glossary-target))))
+  (let ((language (or language (tlon-select-language 'code 'babel)))
+	(user-mail-address (concat (downcase (tlon-user-lookup :nickname :name user-full-name))
+				   "@tlon.team"))
+	(mailbuf (generate-new-buffer "*mail*")))
+    (with-current-buffer mailbuf
+      (message-mail (alist-get language tlon-glossary-email-recipients nil nil #'string=)
+		    tlon-glossary-email-subject)
+      (message-goto-body)
+      (insert tlon-glossary-email-body)
+      (mml-attach-file attachment)
+      (message-send-and-exit))
+    (kill-buffer mailbuf)))
 
 (provide 'tlon-glossary)
 ;;; tlon-glossary.el ends here
