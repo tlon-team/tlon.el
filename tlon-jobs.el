@@ -284,11 +284,10 @@ IDENTIFIER can be a URL or a PDF file path."
   (if-let ((id (or (ebib-extras-get-field "url")
 		   (ebib-extras-get-file "md")))
 	   (title (ebib-extras-get-field "title"))
-	   (key (ebib-extras-get-field "=key="))
-	   (repo (completing-read "Repo: " (tlon-repo-lookup-all :dir :subtype 'translations))))
+	   (key (ebib-extras-get-field "=key=")))
       (progn
 	(tlon-import-document id title)
-	(tlon-create-translation-file repo)
+	(tlon-create-translation-file)
 	(tlon-create-record-for-job key))
     (user-error "The current Ebib entry seems to be missing one of the following
 fields, which are needed to create a new job: `url' or `file',
