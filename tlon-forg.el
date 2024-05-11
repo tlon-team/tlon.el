@@ -418,17 +418,14 @@ If ISSUE is nil, use the issue at point."
 (defvar tlon-todos-jobs-file)
 (defun tlon-get-todos-jobs-file ()
   "Get the file containing the jobs `org-mode' ID."
-  (or tlon-todos-jobs-file
-      (setq tlon-todos-jobs-file
-	    (tlon-get-file-with-id paths-tlon-todos-jobs-id))))
+  (tlon-get-or-set-org-var 'tlon-todos-jobs-file
+			   paths-tlon-todos-jobs-id))
 
 (defvar tlon-todos-generic-file)
 (defun tlon-get-todos-generic-file ()
   "Get the file containing the generic `org-mode' ID."
-  (or tlon-todos-generic-file
-      (setq tlon-todos-generic-file
-	    (tlon-get-file-with-id paths-tlon-todos-generic-id))))
-
+  (tlon-get-or-set-org-var 'tlon-todos-generic-file
+			   paths-tlon-todos-generic-id))
 
 (defun tlon-get-todo-position (string file &optional substring)
   "Return the position of STRING exactly matching TODO heading in FILE.

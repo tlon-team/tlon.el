@@ -697,6 +697,12 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 	    (car pair)
 	    (cdr pair))))
 
+;;;;; vars
+
+(defun tlon-get-or-set-org-var (var id)
+  "Get the value of VAR if set, else set it to the file containing `org-mode' ID."
+  (or (symbol-value var) (set var (tlon-get-file-with-org-id id))))
+
 (declare-function org-roam-id-find "org-roam-id")
 (defun tlon-get-file-with-org-id (id)
   "Return the file containing the heading with the given `org-mode' ID."
