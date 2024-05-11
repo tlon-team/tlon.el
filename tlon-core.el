@@ -697,5 +697,11 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 	    (car pair)
 	    (cdr pair))))
 
+(declare-function org-roam-id-find "org-roam-id")
+(defun tlon-get-file-with-org-id (id)
+  "Return the file containing the heading with the given `org-mode' ID."
+  (when-let ((location (org-roam-id-find id)))
+    (car location)))
+
 (provide 'tlon-core)
 ;;; tlon-core.el ends here

@@ -429,11 +429,6 @@ If ISSUE is nil, use the issue at point."
       (setq tlon-todos-generic-file
 	    (tlon-get-file-with-id paths-tlon-todos-generic-id))))
 
-(declare-function org-roam-id-find "org-roam-id")
-(defun tlon-get-file-with-id (id)
-  "Return the file containing the heading with the given `org-mode' ID."
-  (when-let ((location (org-roam-id-find id)))
-    (car location)))
 
 (defun tlon-get-todo-position (string file &optional substring)
   "Return the position of STRING exactly matching TODO heading in FILE.
