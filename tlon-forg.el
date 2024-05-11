@@ -478,7 +478,7 @@ ISSUE is nil, use the issue at point."
   "Visit the issue associated with TODO, or vice versa, creating TODO if necessary."
   (interactive)
   (tlon-todo-issue-funcall #'tlon-visit-issue
-				 #'tlon-visit-todo-or-capture))
+			   #'tlon-visit-todo-or-capture))
 
 (defun tlon-todo-issue-funcall (todo-fun issue-fun)
   "Call TODO-FUN or ISSUE-FUN depending on the current major mode."
