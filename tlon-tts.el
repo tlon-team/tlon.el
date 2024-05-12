@@ -155,7 +155,8 @@
 	  :polly t
 	  :azure t
 	  :google t
-	  :openai nil)
+	  :openai nil
+	  :elevenlabs t)
     (:tag emphasis
 	  :polly nil
 	  :azure nil ; https://bit.ly/azure-ssml-emphasis
@@ -183,6 +184,7 @@
 	  :azure nil ; https://bit.ly/azure-ssml-phoneme
 	  :google t
 	  :openai nil
+	  :elevenlabs t ; only some models: https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation
 	  :pattern ,tlon-tts-ssml-phoneme-search-pattern)
     (:tag prosody
 	  :polly t ; partial support
@@ -221,15 +223,19 @@
 	  :google t
 	  :openai nil))
   "SSML tags supported by different TTS engines.
+
 - Amazon Polly:
   <https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html>.
 
 - Microsoft Azure:
 
-- Google Cloud <https://cloud.google.com/text-to-speech/docs/ssml>.:
+- Google Cloud: <https://cloud.google.com/text-to-speech/docs/ssml>.
 
 - OpenAI:
-  <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.")
+  <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.
+
+- ElevenLabs: <https://elevenlabs.io/docs/speech-synthesis/prompting>. Only two
+  tags are explicitly mentioned, so maybe none of the others are supported?")
 
 ;;;;; Engine settings
 
@@ -316,7 +322,7 @@ offer a female studio voice for Spanish, so we use a \"neural\" voice.
 A list of available voices may be found here:
 <https://cloud.google.com/text-to-speech/docs/voices>.")
 
-(defcustom tlon-google-cloud-audio-settings
+(defcustom tlon-google-cloud-output-format
   "MP3"
   "Audio settings for the Google Cloud text-to-speech service.
 The options are:
@@ -362,7 +368,14 @@ See <https://cloud.google.com/text-to-speech/quotas>.")
 ;;;;;; Amazon Polly
 
 (defconst tlon-amazon-polly-request
-  "aws polly synthesize-speech --output-format %s --voice-id %s --engine neural --text-type ssml --text '%s' --region %s '%s'"
+  "aws polly synthesize-speech \
+    --output-format %s \
+    --voice-id %s \
+    --engine neural \
+    --text-type ssml \
+    --text '<speak>%s</speak>' \
+    --region %s \
+    '%s'"
   "AWS command to synthesize speech using Amazon Polly.
 The placeholders are: output format, voice ID, SSML, region, and destination
 file.")
@@ -398,7 +411,7 @@ for safety.")
     \"input\": \"%s\",
     \"voice\": \"%s\"
   }' \
-  --output %s"
+  --output '%s'"
   "Curl command to send a request to the OpenAI text-to-speech engine.
 The placeholders are the API key, the text to be synthesized, the voice, and the
 file destination.")
@@ -423,6 +436,60 @@ lower number for safety.
 
 See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 
+;;;;;; ElevenLabs
+
+(defconst tlon-elevenlabs-voices
+  '((:voice "Oculusgreen" :id "UfCRQShYrGoa6BYs8jnn" :language "es" :gender "male")
+    (:voice "Eleguar" :id "q2XMPZ6icuVDBj7rgCxQ" :language "es" :gender "male")
+    (:voice "Mady" :id "4v7HtLWqY9rpQ7Cg2GT4" :language "es" :gender "female"))
+  "Preferred ElevenLabs voices for different languages.
+A list of available voices may be found here:
+<https://elevenlabs.io/app/voice-library>. To get information about the voices,
+including the voice ID, run `tlon-elevenlabs-get-voices'.")
+
+(defconst tlon-elevenlabs-output-format "mp3_44100_128"
+  "Default output format for synthesized audio from ElevenLabs.
+The options are:
+
+- `\"mp3_44100_32\"': mp3 with 44.1kHz sample rate at 32kbps.
+
+- `\"mp3_44100_64\"': mp3 with 44.1kHz sample rate at 64kbps.
+
+- `\"mp3_44100_96\"': mp3 with 44.1kHz sample rate at 96kbps.
+
+- `\"mp3_44100_128\"': mp3 with 44.1kHz sample rate at 128kbps.
+
+- `\"mp3_44100_192\"': mp3 with 44.1kHz sample rate at 192kbps. Requires you to
+  be subscribed to Creator tier or above.
+ 
+- `\"pcm_16000\"': PCM format (S16LE) with 16kHz sample rate.
+
+- `\"pcm_22050\"': PCM format (S16LE) with 22.05kHz sample rate.
+
+- `\"pcm_24000\"': PCM format (S16LE) with 24kHz sample rate.
+
+- `\"pcm_44100\"': PCM format (S16LE) with 44.1kHz sample rate. Requires you to
+  be subscribed to Pro tier or above.
+
+- `\"ulaw_8000\"': μ-law format (sometimes written mu-law, often approximated as
+  u-law) with 8kHz sample rate. Note that this format is commonly used for
+  Twilio audio inputs.")
+
+(defconst tlon-elevenlabs-tts-url
+  "https://api.elevenlabs.io/v1/text-to-speech/%s/stream?output_format=%s"
+  "Base URL for the ElevenLabs TTS API.")
+
+(defvar tlon-elevenlabs-key nil
+  "ElevenLabs API key for the text-to-speech service.")
+
+(defconst tlon-elevenlabs-char-limit (* 5000 0.9)
+  "Maximum number of characters that OpenAI can process per request.
+OpenAI can process up to 4096 bytes per request. We use a slightly
+lower number for safety.
+
+See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
+questions\").")
+
 ;;;;; Engines
 
 (defconst tlon-tts-engines
@@ -436,12 +503,16 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 	   :char-limit ,tlon-google-cloud-char-limit)
     (:name "Amazon Polly"
            :voices-var tlon-amazon-polly-voices
-           :request-fun tlon-generate-audio-polly
+           :request-fun tlon-amazon-polly-make-request
            :char-limit ,tlon-amazon-polly-char-limit)
     (:name "OpenAI"
 	   :voices-var tlon-openai-voices
 	   :request-fun tlon-openai-make-request
-	   :char-limit ,tlon-openai-char-limit)))
+	   :char-limit ,tlon-openai-char-limit)
+    (:name "ElevenLabs"
+	   :voices-var tlon-elevenlabs-voices
+	   :request-fun tlon-elevenlabs-make-request
+	   :char-limit ,tlon-elevenlabs-char-limit)))
 
 ;; needs to use double quotes for Azure, but maybe single quotes for Google Cloud?
 ;; cannot be in single quotes because the entire string is itself enclosed in single quotes
@@ -603,8 +674,11 @@ if region is active, save it to the downloads directory."
 
 (defun tlon-get-voices (engine language)
   "Get available voices in LANGUAGE for TTS ENGINE."
-  (let ((voices (tlon-lookup tlon-tts-engines :voices-var :name engine)))
-    (completing-read "Voice: " (tlon-lookup-all (symbol-value voices) :voice :language language))))
+  (let* ((voices (symbol-value (tlon-lookup tlon-tts-engines :voices-var :name engine)))
+	 (voice (completing-read "Voice: "
+				 (tlon-lookup-all voices :voice :language language))))
+    ;; some engines use a special voice ID
+    (if-let ((id (tlon-lookup voices :id :voice voice))) id voice)))
 
 (defun tlon-tts-get-voice-locale ()
   "Return the locale of the current voice."
@@ -614,11 +688,9 @@ if region is active, save it to the downloads directory."
 		  (locale (tlon-lookup tlon-languages-properties :locale :code code)))
 	(throw 'found locale)))))
 
-(defun tlon-generate-audio (engine text voice destination)
-  "Generate an audio file from TEXT using ENGINE VOICE and save it to DESTINATION."
+(defun tlon-generate-audio (engine content voice destination)
+  "Generate audio CONTENT using ENGINE VOICE and save the file to DESTINATION."
   (let* ((locale (tlon-tts-get-voice-locale))
-	 (ssml-wrapper (alist-get engine tlon-ssml-wrapper nil nil #'string=))
-	 (content (format ssml-wrapper locale voice text))
 	 (fun (tlon-lookup tlon-tts-engines :request-fun :name engine))
 	 (request (funcall fun content voice locale destination))
 	 (process (start-process-shell-command "generate audio" nil request)))
@@ -637,12 +709,15 @@ if region is active, save it to the downloads directory."
 
 ;;;;;; Microsoft Azure
 
-(defun tlon-microsoft-azure-make-request (content _voice _locale destination)
+(defun tlon-microsoft-azure-make-request (content voice locale destination)
   "Make a request to the Microsoft Azure text-to-speech service.
-CONTENT is the content of the request. DESTINATION is the output file path."
-  (format tlon-microsoft-azure-request
-	  (tlon-microsoft-azure-get-or-set-key) tlon-microsoft-azure-audio-settings
-	  content destination))
+VOICE is the voice ID. LOCALE is the locale. CONTENT is the content of the
+request. DESTINATION is the output file path."
+  (let* ((ssml-wrapper (alist-get "Microsoft Azure" tlon-ssml-wrapper nil nil #'string=))
+	 (wrapped-content (format ssml-wrapper locale voice content)))
+    (format tlon-microsoft-azure-request
+	    (tlon-microsoft-azure-get-or-set-key) tlon-microsoft-azure-audio-settings
+	    wrapped-content destination)))
 
 (defun tlon-microsoft-azure-get-or-set-key ()
   "Get or set the Microsoft Azure key."
@@ -656,11 +731,14 @@ CONTENT is the content of the request. DESTINATION is the output file path."
   "Make a request to the Google Cloud text-to-speech service.
 CONTENT is the content of the request. VOICE is voice ID. LOCALE is the
 locate. DESTINATION is the output file path"
-  (format tlon-google-cloud-request
-	  (tlon-google-cloud-get-token)
-	  (tlon-google-cloud-format-ssml content voice locale)
-	  destination))
+  (let* ((ssml-wrapper (alist-get "Google Cloud" tlon-ssml-wrapper nil nil #'string=))
+	 (wrapped-content (format ssml-wrapper locale voice content)))
+    (format tlon-google-cloud-request
+	    (tlon-google-cloud-get-token)
+	    (tlon-google-cloud-format-ssml wrapped-content voice locale)
+	    destination)))
 
+;; If this keeps failing, consider using the approach in `tlon-elevenlabs-make-request'
 (defun tlon-google-cloud-format-ssml (ssml voice locale)
   "Convert SSML string to JSON object for Google Cloud TTS.
 VOICE and LOCALE are used to construct the JSON object."
@@ -670,7 +748,7 @@ VOICE and LOCALE are used to construct the JSON object."
 		     (voice (languageCode . ,locale)
 			    (name . ,voice)
 			    (ssmlGender . ,(upcase gender)))
-		     (audioConfig (audioEncoding . ,tlon-google-cloud-audio-settings))))))
+		     (audioConfig (audioEncoding . ,tlon-google-cloud-output-format))))))
     payload))
 
 (defun tlon-google-cloud-get-token ()
@@ -692,31 +770,60 @@ the output file path."
   (format tlon-amazon-polly-request
           tlon-amazon-polly-output-format voice content tlon-amazon-polly-region destination))
 
-(defun tlon-generate-audio-polly (text voice locale destination)
-  "Generate audio file for TEXT with Amazon Polly VOICE and save it to DESTINATION.
-LOCALE is the locale of the voice."
-  (let* ((ssml (format tlon-ssml-wrapper locale voice text)) ; revise
-	 (request (tlon-amazon-polly-make-request ssml voice locale destination))
-	 (process (start-process-shell-command "generate audio" nil request)))
-    (set-process-sentinel process
-			  (lambda (process event)
-			    (when (string= event "finished\n")
-			      (message "Audio generated at: %s" destination))))))
-
 ;;;;;; OpenAI
 
-(defun tlon-openai-make-request (ssml voice _locale destination)
+(defun tlon-openai-make-request (content voice _locale destination)
   "Make a request to the OpenAI text-to-speech service.
-SSML is the content of the request. VOICE is the TTS voice. DESTINATION is the
-file to save the audio to."
+CONTENT is the content of the request. VOICE is the TTS voice. DESTINATION is
+the file to save the audio to."
   (format tlon-openai-tts-request
-	  (tlon-openai-get-or-set-key) ssml voice destination))
+	  (tlon-openai-get-or-set-key) content voice destination))
 
 (defun tlon-openai-get-or-set-key ()
-  "Get or set the Microsoft Azure key."
+  "Get or set the Microsoft Azure API key."
   (or tlon-openai-key
       (setq tlon-openai-key
 	    (auth-source-pass-get "key" (concat "tlon/core/openai.com/" tlon-email-shared)))))
+
+;;;;;; ElevenLabs
+
+(defun tlon-elevenlabs-make-request (content voice _locale destination)
+  "Make a request to the ElevenLabs text-to-speech service.
+CONTENT is the content of the request. VOICE is the TTS voice. LOCALE is
+ignored. DESTINATION is the destination filename."
+  (let ((url (format tlon-elevenlabs-tts-url voice tlon-elevenlabs-output-format))
+        (api-key (tlon-elevenlabs-get-or-set-key))
+        (data (json-encode `(("text" . ,content)
+			     ("model_id" . "eleven_multilingual_v2")))))
+    (with-temp-buffer
+      (call-process "curl" nil t nil
+                    "--request" "POST"
+                    "--url" url
+                    "--header" (format "Content-Type: application/json")
+                    "--header" (format "xi-api-key: %s" api-key)
+                    "--data" data
+                    "--output" destination)
+      (buffer-string))))
+
+(declare-function json-mode "json-mode")
+(defun tlon-elevenlabs-get-voices ()
+  "Get a list of all ElevenLabs available voices."
+  (interactive)
+  (let ((response (shell-command-to-string "curl -s --request GET \
+  --url https://api.elevenlabs.io/v1/voices")))
+    (with-current-buffer (get-buffer-create "*ElevenLabs Voices*")
+      (erase-buffer) 
+      (insert response)
+      (json-mode)
+      (json-pretty-print (point-min) (point-max))
+      (switch-to-buffer (current-buffer))
+      (goto-char (point-min)))))
+
+(defun tlon-elevenlabs-get-or-set-key ()
+  "Get or set the ElevenLabs API key."
+  (or tlon-elevenlabs-key
+      (setq tlon-elevenlabs-key
+	    (auth-source-pass-get "key" (concat "tlon/core/elevenlabs.io/" tlon-email-shared)))))
 
 ;;;;;; Chunk processing
 
