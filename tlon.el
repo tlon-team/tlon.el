@@ -122,7 +122,7 @@ This variable should not be set manually.")
 
 ;;;;; URLs
 
-(defconst tlon-tlon-github-url
+(defconst tlon-github-url
   "https://github.com/tlon-team/"
   "URL of the Tlön account on GitHub.")
 
