@@ -246,7 +246,7 @@ URL.")
   "Insert a link to an entity at point.
 The entity can be a tag or an author."
   (interactive)
-  (tlon-md-check-in-markdown-mode)
+  (tlon-ensure-markdown-mode)
   (let* ((selection (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end))))
 	 (current-link (markdown-link-at-pos (point)))
 	 (current-desc (nth 2 current-link))
@@ -324,7 +324,7 @@ PAIR is a cons cell whose car is the opening element and whose cdr is the
 closing element. If SELF-CLOSING-P is non-nil, the opening element will be
 self-closing."
   (interactive)
-  (tlon-md-check-in-markdown-mode)
+  (tlon-ensure-markdown-mode)
   (cl-destructuring-bind (open . close) pair
     (if (use-region-p)
 	(let ((begin (region-beginning)))
@@ -715,7 +715,7 @@ a type."
 
 ;;;;; Misc
 
-(defun tlon-md-check-in-markdown-mode ()
+(defun tlon-ensure-markdown-mode ()
   "Check if the current buffer is in a Markdown-derived mode."
   (unless (derived-mode-p 'markdown-mode)
     (user-error "Not in a Markdown buffer")))

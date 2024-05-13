@@ -212,7 +212,7 @@ If FILE is not provided, use the file visited by the current buffer."
 
 (defun tlon-get-key-in-buffer ()
   "Get the BibTeX key in the current Markdown buffer."
-  (tlon-md-check-in-markdown-mode)
+  (tlon-ensure-markdown-mode)
   (save-buffer)
   (let ((key (tlon-yaml-get-key "original_key")))
     (unless key
