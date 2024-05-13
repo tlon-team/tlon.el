@@ -538,39 +538,6 @@ of the existing locators."
     (when (thing-at-point-looking-at (regexp-opt locators))
       (match-string-no-properties 0))))
 
-;;;;;;; SSML
-
-(defvar tlon-tts-ssml-lang)
-;;;###autoload
-(defun tlon-insert-ssml-lang (language)
-  "Insert an SSML `lang' tag pair at point or around the selected region.
-Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
-written in that language."
-  (interactive (list (tlon-select-language 'locale)))
-  (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attribute tlon-tts-ssml-lang language)))
-
-(defvar tlon-tts-ssml-emphasis-levels)
-(defvar tlon-tts-ssml-emphasis-default-level)
-(defvar tlon-tts-ssml-emphasis)
-;;;###autoload
-(defun tlon-insert-ssml-emphasis (level)
-  "Insert an SSML `emphasis' tag pair at point or around the selected region.
-Prompt the user to select a LEVEL."
-  (interactive (list (completing-read "Emphasis: "
-				      tlon-tts-ssml-emphasis-levels nil t
-				      tlon-tts-ssml-emphasis-default-level)))
-  (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attribute tlon-tts-ssml-emphasis level)))
-
-(defvar tlon-tts-ssml-break)
-;;;###autoload
-(defun tlon-insert-ssml-break (time)
-  "Insert an SSML `break' tag pair at point or around the selected region.
-TIME is the duration of the break n seconds."
-  (interactive (list (concat (read-string "sTime (seconds): ") "s")))
-  (insert (format tlon-tts-ssml-break time)))
-
 ;;;;;;; Math
 
 ;;;###autoload
