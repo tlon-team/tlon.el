@@ -36,6 +36,128 @@
   "Text-to-speech functionality."
   :group 'tlon)
 
+(defcustom tlon-tts-alternate-voices nil
+  "Whether to use an alternative voice for reading notes, asides, etc."
+  :group 'tlon-tts
+  :type 'boolean)
+
+;;;;; Microsoft Azure
+
+(defcustom tlon-microsoft-azure-output-format
+  '("audio-16khz-64kbitrate-mono-mp3" . "mp3")
+  "Audio settings for the Microsoft Azure text-to-speech service.
+Here's a description of the main options:
+
+- `\"audio-24khz-160kbitrate-mono-mp3\"': Offers higher quality due to a higher
+  bitrate and sample rate. This means the audio will sound clearer, especially
+  for more complex sounds or music. However, the file size will also be larger.
+
+- `\"audio-16khz-64kbitrate-mono-mp3\"': Reduces the bitrate, which will result
+  in a smaller file at the cost of lower audio quality. Useful when network
+  bandwidth or storage is limited.
+
+- `\"raw-16khz-16bit-mono-pcm\":' Provides raw audio data without compression.
+  This is useful if you plan to further process the audio yourself or need
+  lossless quality. Note that the files will be significantly larger.
+
+- `\"riff-16khz-16bit-mono-pcm\"': Similar to the RAW format but wrapped in the
+  Waveform Audio File Format, which includes headers making it compatible with
+  more playback devices and software.
+
+- `\"riff-24khz-16bit-mono-pcm\"': Offers a higher sample rate compared to the
+  16kHz versions, which can provide better audio quality at the expense of
+  larger file sizes.
+
+For details, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
+  :group 'tlon-tts
+  :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+;;;;; Google Cloud
+
+(defcustom tlon-google-cloud-output-format
+  '("MP3" . "mp3")
+  "Audio settings for the Google Cloud text-to-speech service.
+The options are:
+
+- `\"MP3\"': MPEG Audio Layer III (lossy). MP3 encoding is a Beta feature and
+  only available in v1p1beta1. See the RecognitionConfig reference documentation
+  for details.
+
+- `\"FLAC\"': Free Lossless Audio Codec (lossless) 16-bit or 24-bit required
+  for streams LINEAR16 Linear PCM Yes 16-bit linear pulse-code modulation (PCM)
+  encoding. The header must contain the sample rate.
+
+- `\"MULAW\"': μ-law (lossy). 8-bit PCM encoding.
+
+- `\"AMR\"': Adaptive Multi-Rate Narrowband (lossy). Sample rate must be 8000 Hz.
+
+- `\"AMR_WB\"': Adaptive Multi-Rate Wideband (lossy). Sample rate must be 16000
+  Hz.
+
+- `\"OGG_OPUS\"': Opus encoded audio frames in an Ogg container (lossy). Sample
+  rate must be one of 8000 Hz, 12000 Hz, 16000 Hz, 24000 Hz, or 48000 Hz.
+
+- `\"SPEEX_WITH_HEADER_BYTE\"': Speex wideband (lossy). Sample rate must be
+  16000 Hz.
+
+- `\"WEBM_OPUS\"': WebM Opus (lossy). Sample rate must be one of 8000 Hz, 12000
+  Hz, 16000 Hz, 24000 Hz, or 48000 Hz.
+
+For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
+  :group 'tlon-tts
+  :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+;;;;; Amazon Polly
+
+(defcustom tlon-amazon-polly-output-format
+  '("mp3" . "mp3")
+  "Output format for synthesized audio from Amazon Polly.
+Admissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\""
+  :group 'tlon-tts
+  :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+;;;;; OpenAI
+
+;; TODO: check if the OpenAI API allows for different output formats
+(defcustom tlon-openai-output-format
+  '("mp3" . "mp3")
+  "Output format for synthesized audio from OpenAI."
+  :group 'tlon-tts
+  :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+;;;;; ElevenLabs
+
+(defcustom tlon-elevenlabs-output-format
+  '("mp3_44100_192" . "mp3")
+  "Output format for synthesized audio from ElevenLabs.
+The options are:
+
+- `\"mp3_44100_32\"': mp3 with 44.1kHz sample rate at 32kbps.
+
+- `\"mp3_44100_64\"': mp3 with 44.1kHz sample rate at 64kbps.
+
+- `\"mp3_44100_96\"': mp3 with 44.1kHz sample rate at 96kbps.
+
+- `\"mp3_44100_128\"': mp3 with 44.1kHz sample rate at 128kbps.
+
+- `\"mp3_44100_192\"': mp3 with 44.1kHz sample rate at 192kbps. Requires you to
+  be subscribed to Creator tier or above.
+
+- `\"pcm_16000\"': PCM format (S16LE) with 16kHz sample rate.
+
+- `\"pcm_22050\"': PCM format (S16LE) with 22.05kHz sample rate.
+
+- `\"pcm_24000\"': PCM format (S16LE) with 24kHz sample rate.
+
+- `\"pcm_44100\"': PCM format (S16LE) with 44.1kHz sample rate. Requires you to
+  be subscribed to Pro tier or above.
+
+- `\"ulaw_8000\"': μ-law format (sometimes written mu-law, often approximated as
+  u-law) with 8kHz sample rate. Note that this format is commonly used for
+  Twilio audio inputs."
+  :group 'tlon-tts
+  :type '(cons (string :tag "Name") (string :tag "Extension")))
+
 ;;;; Variables
 
 ;;;;; Paths
@@ -79,17 +201,121 @@
 (defvar tlon-tts-current-voice-locale ""
   "The locale of the main voice used in the current TTS process.")
 
-(defcustom tlon-tts-alternate-voices nil
-  "Whether to use an alternative voice for reading notes, asides, etc."
-  :group 'tlon-tts
-  :type 'boolean)
-
 ;;;;; Chunk processing
 
 (defvar tlon-unprocessed-chunks nil
   "The chunks to process in the current TTS session.")
 
 ;;;;; SSML tag pairs & patterns
+
+(defconst tlon-tts-supported-tags
+  `((:tag break
+	  :tlon t
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs t
+	  ;; :pattern ,tlon-tts-ssml-break-pattern ; not working; see const
+	  )
+    (:tag emphasis
+	  :tlon t
+	  :polly nil
+	  :azure nil ; https://bit.ly/azure-ssml-emphasis
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; content is read, but tag is ignored
+	  :pattern ,tlon-tts-ssml-emphasis-pattern)
+    (:tag lang
+	  :tlon t
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; content is read, but tag is ignored
+	  :pattern ,tlon-tts-ssml-lang-pattern)
+    (:tag mark
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag p
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag phoneme
+	  :tlon t
+	  :polly t
+	  :azure nil ; https://bit.ly/azure-ssml-phoneme
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; only some models, otherwise not read (https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation)
+	  :pattern ,tlon-tts-ssml-phoneme-pattern)
+    (:tag prosody
+	  :tlon nil
+	  :polly t ; partial support
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag s
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag say-as
+	  :tlon t
+	  :polly t ; partial support
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; content is sometimes read, sometimes not read
+	  :pattern ,tlon-tts-ssml-say-as-pattern)
+    (:tag speak
+	  :tlon t
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs t ; I assume so?
+	  ;; :pattern ; Do we need a pattern for this tag, given it's only used in the wrapper?
+	  )
+    (:tag sub
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag voice
+	  :tlon t
+	  :polly nil
+	  :azure t
+	  :google t
+	  :openai nil
+	  :pattern ,tlon-tts-ssml-voice-pattern)
+    (:tag w
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil))
+  "SSML tags supported by this package and by various TTS engines.
+
+- Amazon Polly:
+  <https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html>.
+
+- Microsoft Azure:
+
+- Google Cloud: <https://cloud.google.com/text-to-speech/docs/ssml>.
+
+- OpenAI:
+  <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.
+
+- ElevenLabs: <https://elevenlabs.io/docs/speech-synthesis/prompting>. Only two
+  tags are explicitly mentioned, so maybe none of the others are supported?")
 
 ;;;;;; `break'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#break-tag
@@ -203,149 +429,9 @@ It has one placeholder for the `interpret-as' attribute.")
 	  (car tlon-tts-ssml-voice))
   "SSML pattern for voice tag, with 2 voice name placeholders and text placeholder.")
 
-;;;;;; Common
-
-(defconst tlon-tts-supported-tags
-  `((:tag break
-	  :tlon t
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs t
-	  ;; :pattern ,tlon-tts-ssml-break-pattern ; not working; see const
-	  )
-    (:tag emphasis
-	  :tlon t
-	  :polly nil
-	  :azure nil ; https://bit.ly/azure-ssml-emphasis
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; content is read, but tag is ignored
-	  :pattern ,tlon-tts-ssml-emphasis-pattern)
-    (:tag lang
-	  :tlon t
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; content is read, but tag is ignored
-	  :pattern ,tlon-tts-ssml-lang-pattern)
-    (:tag mark
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag p
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag phoneme
-	  :tlon t
-	  :polly t
-	  :azure nil ; https://bit.ly/azure-ssml-phoneme
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; only some models, otherwise not read (https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation)
-	  :pattern ,tlon-tts-ssml-phoneme-pattern)
-    (:tag prosody
-	  :tlon nil
-	  :polly t ; partial support
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag s
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag say-as
-	  :tlon t
-	  :polly t ; partial support
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; content is sometimes read, sometimes not read
-	  :pattern ,tlon-tts-ssml-say-as-pattern)
-    (:tag speak
-	  :tlon t
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs t ; I assume so?
-	  ;; :pattern ; Do we need a pattern for this tag, given it's only used in the wrapper?
-	  )
-    (:tag sub
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag voice
-	  :tlon t
-	  :polly nil
-	  :azure t
-	  :google t
-	  :openai nil
-	  :pattern ,tlon-tts-ssml-voice-pattern)
-    (:tag w
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil))
-  "SSML tags supported by this package and by various TTS engines.
-
-- Amazon Polly:
-  <https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html>.
-
-- Microsoft Azure:
-
-- Google Cloud: <https://cloud.google.com/text-to-speech/docs/ssml>.
-
-- OpenAI:
-  <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.
-
-- ElevenLabs: <https://elevenlabs.io/docs/speech-synthesis/prompting>. Only two
-  tags are explicitly mentioned, so maybe none of the others are supported?")
-
 ;;;;; Engine settings
 
 ;;;;;; Microsoft Azure
-
-(defcustom tlon-microsoft-azure-output-format
-  '("audio-16khz-64kbitrate-mono-mp3" . "mp3")
-  "Audio settings for the Microsoft Azure text-to-speech service.
-Here's a description of the main options:
-
-- `\"audio-24khz-160kbitrate-mono-mp3\"': Offers higher quality due to a higher
-  bitrate and sample rate. This means the audio will sound clearer, especially
-  for more complex sounds or music. However, the file size will also be larger.
-
-- `\"audio-16khz-64kbitrate-mono-mp3\"': Reduces the bitrate, which will result
-  in a smaller file at the cost of lower audio quality. Useful when network
-  bandwidth or storage is limited.
-
-- `\"raw-16khz-16bit-mono-pcm\":' Provides raw audio data without compression.
-  This is useful if you plan to further process the audio yourself or need
-  lossless quality. Note that the files will be significantly larger.
-
-- `\"riff-16khz-16bit-mono-pcm\"': Similar to the RAW format but wrapped in the
-  Waveform Audio File Format, which includes headers making it compatible with
-  more playback devices and software.
-
-- `\"riff-24khz-16bit-mono-pcm\"': Offers a higher sample rate compared to the
-  16kHz versions, which can provide better audio quality at the expense of
-  larger file sizes.
-
-For details, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
-  :group 'tlon-tts
-  :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 (defconst tlon-microsoft-azure-request
   "curl -v --location --request POST 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1' \
@@ -372,45 +458,12 @@ A list of available voices may be found here:
 (defconst tlon-microsoft-azure-char-limit (* 9 60 14)
   "Maximum number of characters that Microsoft Azure can process per request.
 Microsoft Azure can process up to 10 minutes of audio at a time. This estimate
-assumes 14 characters per second, and uses nine minutes.")
+assumes 14 characters per second, and uses nine minutes for safety.")
 
 (defvar tlon-microsoft-azure-key nil
   "Microsoft Azure subscription key for the text-to-speech service.")
 
 ;;;;;; Google Cloud
-
-(defcustom tlon-google-cloud-output-format
-  '("MP3" . "mp3")
-  "Audio settings for the Google Cloud text-to-speech service.
-The options are:
-
-- `\"MP3\"': MPEG Audio Layer III (lossy). MP3 encoding is a Beta feature and
-  only available in v1p1beta1. See the RecognitionConfig reference documentation
-  for details.
-
-- `\"FLAC\"': Free Lossless Audio Codec (lossless) 16-bit or 24-bit required
-  for streams LINEAR16 Linear PCM Yes 16-bit linear pulse-code modulation (PCM)
-  encoding. The header must contain the sample rate.
-
-- `\"MULAW\"': μ-law (lossy). 8-bit PCM encoding.
-
-- `\"AMR\"': Adaptive Multi-Rate Narrowband (lossy). Sample rate must be 8000 Hz.
-
-- `\"AMR_WB\"': Adaptive Multi-Rate Wideband (lossy). Sample rate must be 16000
-  Hz.
-
-- `\"OGG_OPUS\"': Opus encoded audio frames in an Ogg container (lossy). Sample
-  rate must be one of 8000 Hz, 12000 Hz, 16000 Hz, 24000 Hz, or 48000 Hz.
-
-- `\"SPEEX_WITH_HEADER_BYTE\"': Speex wideband (lossy). Sample rate must be
-  16000 Hz.
-
-- `\"WEBM_OPUS\"': WebM Opus (lossy). Sample rate must be one of 8000 Hz, 12000
-  Hz, 16000 Hz, 24000 Hz, or 48000 Hz.
-
-For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
-  :group 'tlon-tts
-  :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 (defconst tlon-google-cloud-request
   "curl -H 'Authorization: Bearer %s' \
@@ -445,13 +498,6 @@ See <https://cloud.google.com/text-to-speech/quotas>.")
 
 ;;;;;; Amazon Polly
 
-(defcustom tlon-amazon-polly-output-format
-  '("mp3" . "mp3")
-  "Output format for synthesized audio from Amazon Polly.
-Admissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\""
-  :group 'tlon-tts
-  :type '(cons (string :tag "Name") (string :tag "Extension")))
-
 (defconst tlon-amazon-polly-request
   "aws polly synthesize-speech \
     --output-format %s \
@@ -482,13 +528,6 @@ for safety.")
   "Default AWS region for Amazon Polly requests.")
 
 ;;;;;; OpenAI
-
-;; TODO: check if the OpenAI API allows for different output formats
-(defcustom tlon-openai-output-format
-  '("mp3" . "mp3")
-  "Output format for synthesized audio from OpenAI."
-  :group 'tlon-tts
-  :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 (defconst tlon-openai-tts-request
   "curl https://api.openai.com/v1/audio/speech \
@@ -525,37 +564,6 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
   "OpenAI API key for the text-to-speech service.")
 
 ;;;;;; ElevenLabs
-
-(defcustom tlon-elevenlabs-output-format
-  '("mp3_44100_192" . "mp3")
-  "Output format for synthesized audio from ElevenLabs.
-The options are:
-
-- `\"mp3_44100_32\"': mp3 with 44.1kHz sample rate at 32kbps.
-
-- `\"mp3_44100_64\"': mp3 with 44.1kHz sample rate at 64kbps.
-
-- `\"mp3_44100_96\"': mp3 with 44.1kHz sample rate at 96kbps.
-
-- `\"mp3_44100_128\"': mp3 with 44.1kHz sample rate at 128kbps.
-
-- `\"mp3_44100_192\"': mp3 with 44.1kHz sample rate at 192kbps. Requires you to
-  be subscribed to Creator tier or above.
-
-- `\"pcm_16000\"': PCM format (S16LE) with 16kHz sample rate.
-
-- `\"pcm_22050\"': PCM format (S16LE) with 22.05kHz sample rate.
-
-- `\"pcm_24000\"': PCM format (S16LE) with 24kHz sample rate.
-
-- `\"pcm_44100\"': PCM format (S16LE) with 44.1kHz sample rate. Requires you to
-  be subscribed to Pro tier or above.
-
-- `\"ulaw_8000\"': μ-law format (sometimes written mu-law, often approximated as
-  u-law) with 8kHz sample rate. Note that this format is commonly used for
-  Twilio audio inputs."
-  :group 'tlon-tts
-  :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 (defconst tlon-elevenlabs-voices
   '((:voice "Oculusgreen" :id "UfCRQShYrGoa6BYs8jnn" :language "es" :gender "male")
