@@ -700,29 +700,29 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
 ;;;;;; Notes
 
 (defconst tlon-tts-note-cues
-  '(("en" "A note starts here." . "The note ends here.")
-    ("es" "Aquí empieza una nota." . "Aquí termina la nota."))
+  '(("en" "A note starts here." . "End of the note.")
+    ("es" "Aquí empieza una nota." . "Fin de la nota."))
   "Listener cues for notes.")
 
 ;;;;;; Quotes
 
 (defconst tlon-tts-quote-cues
-  '(("en" "A quote starts here." . "The quote ends here.")
-    ("es" "Aquí empieza una cita." . "Aquí termina la cita."))
-  "Listener cues for asides.")
+  '(("en" "A quote starts here." . "End of the quote.")
+    ("es" "Aquí empieza una cita." . "Fin de la cita."))
+  "Listener cues for quotes.")
 
 ;;;;;; Asides
 
 (defconst tlon-tts-aside-cues
-  '(("en" "An aside starts here." . "The aside ends here.")
-    ("es" "Aquí empieza un inciso." . "Aquí termina el inciso."))
+  '(("en" "An aside starts here." . "End of the aside.")
+    ("es" "Aquí empieza un inciso." . "Fin del inciso."))
   "Listener cues for asides.")
 
 ;;;;;; Images
 
 (defconst tlon-tts-image-cues
-  '(("en" "Here’s an image." . "The image ends here.")
-    ("es" "Aquí hay una imagen." ."Aquí termina la imagen."))
+  '(("en" "Here’s an image." . "")
+    ("es" "Aquí hay una imagen." .""))
   "Listener cues for images.")
 
 ;;;; Functions
