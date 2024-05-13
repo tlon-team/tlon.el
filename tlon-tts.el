@@ -844,32 +844,39 @@ The output format is a cons cell with the format name and extension."
 ;;;;;; Set current values
 
 (defun tlon-tts-set-current-file-or-buffer (&optional file)
-  ""
+  "Set the file or buffer name with the content for the current TTS process.
+If FILE is nil, use the name of the file visited by the current buffer, or the
+buffer name if the buffer is not visiting a file."
   (setq tlon-tts-current-file-or-buffer
 	(or file (buffer-file-name) (buffer-name))))
 
 (defun tlon-tts-set-current-content (&optional content)
-  ""
+  "Set the current value of the content to be read.
+If CONTENT is nil, read the region if selected or the current file or buffer
+otherwise."
   (setq tlon-tts-current-content
 	(or content (if (region-active-p)
 			(buffer-substring-no-properties (region-beginning) (region-end))
 		      (tlon-tts-read-file tlon-tts-current-file-or-buffer)))))
 
 (defun tlon-tts-set-current-engine (&optional engine)
-  ""
+  "Set the current value of the TTS engine.
+If ENGINE is nile, prompt the user to select an engine."
   (setq tlon-tts-current-engine
 	(or engine
 	    (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name)))))
 
-(defun tlon-tts-set-current-language (&optional language js)
-  ""
+(defun tlon-tts-set-current-language (&optional language)
+  "Set the value of the language of the current process.
+If LANGUAGE is nil, look up the language of the current file."
   (setq tlon-tts-current-language
 	(or language
 	    (tlon-repo-lookup :language :dir (tlon-get-repo-from-file tlon-tts-current-file-or-buffer))
 	    (tlon-select-language 'code 'babel))))
 
 (defun tlon-tts-set-current-main-voice (&optional voice)
-  ""
+  "Set the main voice for the current process.
+If VOICE is nil, prompt the user to select a voice."
   (setq tlon-tts-current-main-voice (or voice (tlon-get-voices)))
   (tlon-tts-set-voice-locale))
 
@@ -883,7 +890,7 @@ The output format is a cons cell with the format name and extension."
 	      (throw 'found locale))))))
 
 (defun tlon-tts-unset-all-current-values ()
-  ""
+  "Unset all current values."
   (setq tlon-tts-current-file-or-buffer nil
 	tlon-tts-current-content nil
 	tlon-tts-current-engine nil
@@ -1480,7 +1487,7 @@ image links are handled differently."
 ;;;;;; Remove unsupported SSML tags
 
 (defun tlon-tts-remove-unsupported-ssml-tags ()
-  ""
+  "Remove SSML tags not supported by the current TTS engine."
   (let* ((tlon-tts-current-engine "ElevenLabs")
 	 (property (tlon-lookup tlon-tts-engines :property :name tlon-tts-current-engine))
 	 (unsupported-by-them (tlon-lookup-all tlon-tts-supported-tags :tag property nil))
@@ -1512,7 +1519,8 @@ image links are handled differently."
     (apply 'format format (reverse args))))
 
 (defun tlon-make-pattern-searchable (pattern &optional greedy)
-  ""
+  "Make an SSML tag PATTERN searchable.
+The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
   (let ((format (if greedy ".**" ".*?")))
     (tlon-fill-format-string pattern format)))
 
