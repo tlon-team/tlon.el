@@ -36,7 +36,7 @@
   "Text-to-speech functionality."
   :group 'tlon)
 
-(defcustom tlon-tts-alternate-voices nil
+(defcustom tlon-tts-use-alternate-voice nil
   "Whether to use an alternative voice for reading notes, asides, etc."
   :group 'tlon-tts
   :type 'boolean)
@@ -1531,7 +1531,7 @@ The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
 (defun tlon-tts-process-alternative-voice ()
   "Replace the `AlternativeVoice' tag with an SSML `voice' tag.
 The `voice' tag is set to the alternative voice for the current language."
-  (when tlon-tts-alternate-voices
+  (when tlon-tts-use-alternate-voice
     (goto-char (point-min))
     (while (re-search-forward tlon-mdx-alternative-voice-search-pattern nil t)
       (replace-match (tlon-tts-enclose-in-voice-tag (match-string 2)) t))))
