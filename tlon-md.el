@@ -100,8 +100,8 @@ and the third group captures the short citation flag.")
   "Delimiter pair for an inline math expression.")
 
 (defconst tlon-math-inline-search-pattern
-  (tlon-make-tag-search-pattern tlon-math-inline)
-  "Regexp pattern for matching inline mathematical expression.
+  (tlon-make-tag-pattern tlon-math-inline)
+  "Regexp pattern for matching an inline mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
@@ -112,8 +112,8 @@ captures the expression without the delimiters.")
   "Delimiter pair for a display math expression.")
 
 (defconst tlon-math-display-search-pattern
-  (tlon-make-tag-search-pattern tlon-math-display)
-  "Regexp pattern for matching display mathematical expression.
+  (tlon-make-tag-pattern tlon-math-display)
+  "Regexp pattern for matching a display mathematical expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the delimiters.")
 
@@ -127,7 +127,7 @@ captures the expression without the delimiters.")
 Text enclosed in an `Aside' tag pair will be treated like an aside section.")
 
 (defconst tlon-mdx-aside-search-pattern
-  (tlon-make-tag-search-pattern tlon-mdx-aside)
+  (tlon-make-tag-pattern tlon-mdx-aside)
   "Regexp pattern for matching an MDX `Aside' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
@@ -141,7 +141,7 @@ Text enclosed by a `Lang' tag pair will be treated as belonging to that
 language (e.g. for the purposed of hyphenating it).")
 
 (defconst tlon-mdx-lang-search-pattern
-  (tlon-make-tag-search-pattern tlon-mdx-lang)
+  (tlon-make-tag-pattern tlon-mdx-lang)
   "Regexp pattern for matching an MDX `Lang' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
@@ -154,7 +154,7 @@ captures the expression without the tags.")
 Links enclosed by a `LiteralLink' tag pair will be treated as literal links.")
 
 (defconst tlon-mdx-literal-link-search-pattern
-  (tlon-make-tag-search-pattern tlon-mdx-literal-link)
+  (tlon-make-tag-pattern tlon-mdx-literal-link)
   "Regexp pattern for matching an MDX `LiteralLink' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
@@ -167,7 +167,7 @@ captures the expression without the tags.")
 Text enclosed by a `SmallCaps' tag pair will be displayed in small caps.")
 
 (defconst tlon-mdx-small-caps-search-pattern
-  (tlon-make-tag-search-pattern tlon-mdx-small-caps)
+  (tlon-make-tag-pattern tlon-mdx-small-caps)
   "Regexp pattern for matching an MDX `SmallCaps' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
@@ -181,7 +181,7 @@ Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
 displayed.")
 
 (defconst tlon-mdx-visually-hidden-search-pattern
-  (tlon-make-tag-search-pattern tlon-mdx-visually-hidden)
+  (tlon-make-tag-pattern tlon-mdx-visually-hidden)
   "Regexp pattern for matching an MDX `VisuallyHidden' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
@@ -194,7 +194,7 @@ captures the expression without the tags.")
 Text enclosed by a `VisuallyShown' tag pair will be displayed, but not narrated.")
 
 (defconst tlon-mdx-visually-shown-search-pattern
-  (tlon-make-tag-search-pattern tlon-mdx-visually-shown)
+  (tlon-make-tag-pattern tlon-mdx-visually-shown)
   "Regexp pattern for matching an MDX `VisuallyShown' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
@@ -208,7 +208,7 @@ Text enclosed by a `AlternativeVoice' tag pair will be narrated in the
 alternative voice, as opposed to the main voice.")
 
 (defconst tlon-mdx-alternative-voice-search-pattern
-  (tlon-make-tag-search-pattern tlon-mdx-alternative-voice)
+  (tlon-make-tag-pattern tlon-mdx-alternative-voice)
   "Regexp pattern for matching an MDX `AlternativeVoice' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
