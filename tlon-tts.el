@@ -208,115 +208,6 @@ The options are:
 
 ;;;;; SSML tag pairs & patterns
 
-(defconst tlon-tts-supported-tags
-  `((:tag break
-	  :tlon t
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs t
-	  ;; :pattern ,tlon-tts-ssml-break-pattern ; not working; see const
-	  )
-    (:tag emphasis
-	  :tlon t
-	  :polly nil
-	  :azure nil ; https://bit.ly/azure-ssml-emphasis
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; content is read, but tag is ignored
-	  :pattern ,tlon-tts-ssml-emphasis-pattern)
-    (:tag lang
-	  :tlon t
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; content is read, but tag is ignored
-	  :pattern ,tlon-tts-ssml-lang-pattern)
-    (:tag mark
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag p
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag phoneme
-	  :tlon t
-	  :polly t
-	  :azure nil ; https://bit.ly/azure-ssml-phoneme
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; only some models, otherwise not read (https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation)
-	  :pattern ,tlon-tts-ssml-phoneme-pattern)
-    (:tag prosody
-	  :tlon nil
-	  :polly t ; partial support
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag s
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag say-as
-	  :tlon t
-	  :polly t ; partial support
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs nil ; content is sometimes read, sometimes not read
-	  :pattern ,tlon-tts-ssml-say-as-pattern)
-    (:tag speak
-	  :tlon t
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil
-	  :elevenlabs t ; I assume so?
-	  ;; :pattern ; Do we need a pattern for this tag, given it's only used in the wrapper?
-	  )
-    (:tag sub
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil)
-    (:tag voice
-	  :tlon t
-	  :polly nil
-	  :azure t
-	  :google t
-	  :openai nil
-	  :pattern ,tlon-tts-ssml-voice-pattern)
-    (:tag w
-	  :tlon nil
-	  :polly t
-	  :azure t
-	  :google t
-	  :openai nil))
-  "SSML tags supported by this package and by various TTS engines.
-
-- Amazon Polly:
-  <https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html>.
-
-- Microsoft Azure:
-
-- Google Cloud: <https://cloud.google.com/text-to-speech/docs/ssml>.
-
-- OpenAI:
-  <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.
-
-- ElevenLabs: <https://elevenlabs.io/docs/speech-synthesis/prompting>. Only two
-  tags are explicitly mentioned, so maybe none of the others are supported?")
-
 ;;;;;; `break'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#break-tag
 
@@ -428,6 +319,117 @@ It has one placeholder for the `interpret-as' attribute.")
 	  (tlon-make-tag-replace-pattern tlon-tts-ssml-voice)
 	  (car tlon-tts-ssml-voice))
   "SSML pattern for voice tag, with 2 voice name placeholders and text placeholder.")
+
+;;;;;; common
+
+(defconst tlon-tts-supported-tags
+  `((:tag break
+	  :tlon t
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs t
+	  ;; :pattern ,tlon-tts-ssml-break-pattern ; not working; see const
+	  )
+    (:tag emphasis
+	  :tlon t
+	  :polly nil
+	  :azure nil ; https://bit.ly/azure-ssml-emphasis
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; content is read, but tag is ignored
+	  :pattern ,tlon-tts-ssml-emphasis-pattern)
+    (:tag lang
+	  :tlon t
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; content is read, but tag is ignored
+	  :pattern ,tlon-tts-ssml-lang-pattern)
+    (:tag mark
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag p
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag phoneme
+	  :tlon t
+	  :polly t
+	  :azure nil ; https://bit.ly/azure-ssml-phoneme
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; only some models, otherwise not read (https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation)
+	  :pattern ,tlon-tts-ssml-phoneme-pattern)
+    (:tag prosody
+	  :tlon nil
+	  :polly t ; partial support
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag s
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag say-as
+	  :tlon t
+	  :polly t ; partial support
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs nil ; content is sometimes read, sometimes not read
+	  :pattern ,tlon-tts-ssml-say-as-pattern)
+    (:tag speak
+	  :tlon t
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil
+	  :elevenlabs t ; I assume so?
+	  ;; :pattern ; Do we need a pattern for this tag, given it's only used in the wrapper?
+	  )
+    (:tag sub
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil)
+    (:tag voice
+	  :tlon t
+	  :polly nil
+	  :azure t
+	  :google t
+	  :openai nil
+	  :pattern ,tlon-tts-ssml-voice-pattern)
+    (:tag w
+	  :tlon nil
+	  :polly t
+	  :azure t
+	  :google t
+	  :openai nil))
+  "SSML tags supported by this package and by various TTS engines.
+
+- Amazon Polly:
+  <https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html>.
+
+- Microsoft Azure:
+
+- Google Cloud: <https://cloud.google.com/text-to-speech/docs/ssml>.
+
+- OpenAI:
+  <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.
+
+- ElevenLabs: <https://elevenlabs.io/docs/speech-synthesis/prompting>. Only two
+  tags are explicitly mentioned, so maybe none of the others are supported?")
 
 ;;;;; Engine settings
 
