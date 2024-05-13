@@ -365,7 +365,7 @@ Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive (list (tlon-select-language 'code)))
   (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attribute tlon-mdx-lang language)))
+   (tlon-tag-element-with-attributes tlon-mdx-lang language)))
 
 ;; TODO: revise to offer the url at point as default completion candidate
 ;;;###autoload
@@ -374,7 +374,7 @@ written in that language."
 Prompt the user to select a URL."
   (interactive (list (read-string "URL: ")))
   (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attribute tlon-mdx-literal-link url)))
+   (tlon-tag-element-with-attributes tlon-mdx-literal-link url)))
 
 ;;;###autoload
 (defun tlon-insert-mdx-small-caps ()
@@ -407,9 +407,9 @@ alternative voice, as opposed to the main voice."
   (interactive)
   (tlon-md-insert-element-pair tlon-mdx-alternative-voice))
 
-(defun tlon-tag-element-with-attribute (element attribute)
-  "Construct an tag ELEMENT with an ATTRIBUTE."
-  (cons (format (car element) attribute)
+(defun tlon-tag-element-with-attributes (element &rest attributes)
+  "Construct an tag ELEMENT with one or more ATTRIBUTES."
+  (cons (apply 'format (car element) attributes)
 	(cdr element)))
 
 ;;;;;;;; Notes
