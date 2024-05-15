@@ -283,19 +283,11 @@ it. A record is (a) an issue in GitHub and (b) a heading in `jobs.org'.
 
 IDENTIFIER can be a URL or a PDF file path."
   (interactive)
-  (unless (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
-    (user-error "This command must be run from an Ebib buffer"))
-  (if-let ((id (or (ebib-extras-get-field "url")
-		   (ebib-extras-get-file "md")))
-	   (title (ebib-extras-get-field "title"))
-	   (key (ebib-extras-get-field "=key=")))
-      (progn
-	(tlon-import-document id title)
-	(tlon-create-translation-file)
-	(tlon-create-record-for-job key))
-    (user-error "The current Ebib entry seems to be missing one of the following
-fields, which are needed to create a new job: `url' or `file',
-`title' and `key'")))
+  ;; check if it is really necessary to pass the key to `tlon-create-record-for-job'
+  ;; if not, revise `tlon-import-document' so that it doesn't return it
+  (let ((key (tlon-import-document)))
+    (tlon-create-translation-file)
+    (tlon-create-record-for-job key)))
 
 (declare-function tlon-get-key-in-buffer "tlon")
 (defun tlon-create-record-for-job (&optional key)
