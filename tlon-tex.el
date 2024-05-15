@@ -213,17 +213,17 @@ abstract will, or will not, replace the existing one, respectively."
 	  (description nil))
       (message "Trying to find abstract for %s with Google Books..." isbn)
       (with-current-buffer (url-retrieve-synchronously url)
-        (set-buffer-multibyte t) ;; Ensure buffer is treated as multibyte
-        (set-buffer-file-coding-system 'utf-8) ;; Set coding system to UTF-8
-        (goto-char (point-min))
-        (re-search-forward "^$")
-        (delete-region (point) (point-min))
-        (let* ((json-object-type 'plist)
-               (json-array-type 'list)
-               (json (json-read))
-               (items (plist-get json :items))
-               (volume-info (and items (plist-get (car items) :volumeInfo))))
-          (setq description (and volume-info (plist-get volume-info :description)))))
+	(set-buffer-multibyte t) ;; Ensure buffer is treated as multibyte
+	(set-buffer-file-coding-system 'utf-8) ;; Set coding system to UTF-8
+	(goto-char (point-min))
+	(re-search-forward "^$")
+	(delete-region (point) (point-min))
+	(let* ((json-object-type 'plist)
+	       (json-array-type 'list)
+	       (json (json-read))
+	       (items (plist-get json :items))
+	       (volume-info (and items (plist-get (car items) :volumeInfo))))
+	  (setq description (and volume-info (plist-get volume-info :description)))))
       (when (get-buffer url)
 	(kill-buffer url))
       (if description description (progn (message "No abstract found.") nil)))))
@@ -564,12 +564,12 @@ If FILE is nil, use the file visited by the current buffer."
   "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
   (catch 'found
     (maphash (lambda (_key bibliography)
-               (let ((entries (citar-cache--bibliography-entries bibliography)))
-                 (maphash (lambda (_ entry)
-                            (when (string= (cdr (assoc field entry)) value)
-                              (throw 'found (cdr (assoc assoc-field entry)))))
-                          entries)))
-             citar-cache--bibliographies)
+	       (let ((entries (citar-cache--bibliography-entries bibliography)))
+		 (maphash (lambda (_ entry)
+			    (when (string= (cdr (assoc field entry)) value)
+			      (throw 'found (cdr (assoc assoc-field entry)))))
+			  entries)))
+	     citar-cache--bibliographies)
     nil))
 
 (defvar citar-cache--bibliographies)
