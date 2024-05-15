@@ -309,8 +309,6 @@ If FILE is nil, use the file visited by the current buffer."
   (tlon-yaml-convert-list
    (completing-read-multiple
     (format "%s: " key)
-    (tlon-yaml-get-completion-values key))))
-
     (tlon-yaml-get-key-values key))))
 
 (defun tlon-yaml-set-original-path ()
