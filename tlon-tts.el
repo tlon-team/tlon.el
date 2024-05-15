@@ -463,7 +463,7 @@ Microsoft Azure can process up to 10 minutes of audio at a time. This estimate
 assumes 14 characters per second, and uses nine minutes for safety.")
 
 (defvar tlon-microsoft-azure-key nil
-  "Microsoft Azure subscription key for the text-to-speech service.")
+  "API key for the Microsoft Azure TTS service.")
 
 ;;;;;; Google Cloud
 
@@ -496,7 +496,7 @@ lower number for safety.
 See <https://cloud.google.com/text-to-speech/quotas>.")
 
 (defvar tlon-google-cloud-key nil
-  "Google Cloud subscription key for the text-to-speech service.")
+  "API key for the Google Cloud TTS service.")
 
 ;;;;;; Amazon Polly
 
@@ -563,7 +563,7 @@ lower number for safety.
 See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 
 (defvar tlon-openai-key nil
-  "OpenAI API key for the text-to-speech service.")
+  "API key for OpenAI TTS service.")
 
 ;;;;;; ElevenLabs
 
@@ -600,7 +600,7 @@ questions\").")
   "Base URL for the ElevenLabs TTS API.")
 
 (defvar tlon-elevenlabs-key nil
-  "ElevenLabs API key for the text-to-speech service.")
+  "API key for the ElevelLabs TTS service.")
 
 ;;;;; Engines
 
