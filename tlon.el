@@ -266,6 +266,9 @@ check that current file matches translation."
 	t
       (user-error "Current file does not match file in clock"))))
 
+;; TODO: the two functions below appear to check for the same thing, except that
+;; one ignores changes to the file itself. They should be merged into a single
+;; function.
 (defun tlon-check-staged-or-unstaged (file)
   "Check if there are staged or unstaged modifications in repo involving FILE."
   (catch 'found
