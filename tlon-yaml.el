@@ -458,8 +458,8 @@ FIELDS is an alist, typically generated via `tlon-yaml-to-alist'."
 
 ;;;;; Interactive editing
 
-(defun tlon-yaml-get-completions (key value)
-  "Get completions based on KEY.
+(defun tlon-yaml-insert-field (key &optional value)
+  "Insert field for KEY.
 If KEY already has VALUE, use it as the initial input."
   (if-let ((fun (tlon-yaml-get-completion-functions key))
 	   (val (tlon-yaml-get-completion-values key)))

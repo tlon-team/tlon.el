@@ -237,7 +237,7 @@ URL.")
   "Edit the YAML field at point."
   (interactive)
   (cl-destructuring-bind (key value) (tlon-yaml-get-field-at-point)
-    (tlon-yaml-get-completions key value)))
+    (tlon-yaml-insert-field key value)))
 
 ;;;;;; entities
 ;; TODO: revise to support multiple langs, including en
