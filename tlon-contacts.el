@@ -106,14 +106,14 @@ select one."
 						  nil nil (org-entry-get (point) prop)))))
       (save-buffer))))
 
-(defun tlon-contacts-copy-property (prop)
-  "Copy the value of the property PROP of the contact at point to the kill ring."
-  (interactive (list
-		(tlon-ensure-org-mode)
-		(let ((props (tlon-contacts-get-nonempty-properties)))
-		  (alist-get (completing-read "Property: " props) props nil nil 'string=))))
-  (kill-new prop)
-  (message "Copied %s to the kill ring." prop))
+(defun tlon-contacts-get-property-value (&optional prop)
+  "Return the value of the property PROP of the contact at point.
+If PROP is nil, prompt the user to select a property."
+  (let* ((props (tlon-contacts-get-nonempty-properties))
+	 (prop (or prop (completing-read "Property: " props))))
+    (tlon-ensure-org-mode)
+    (alist-get prop props nil nil 'string=)))
+
 
 (defun tlon-contacts-get-nonempty-properties ()
   "Return an association list of the nonempty properties of the contact at point."
@@ -139,7 +139,7 @@ select one."
   [("s" "search"               org-contacts)
    ("c" "create"               tlon-contacts-create)
    ("e" "edit properties"      tlon-contacts-edit-properties)
-   ("y" "copy property"        tlon-contacts-copy-property)])
+   ("y" "copy property"        tlon-contacts-copy-property-value)])
 
 (provide 'tlon-contacts)
 ;;; tlon-contacts.el ends here
