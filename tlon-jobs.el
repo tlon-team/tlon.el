@@ -359,18 +359,21 @@ COMMIT is non-nil, commit the change."
 (transient-define-prefix tlon-jobs-menu ()
   "`jobs' menu."
   :info-manual "(tlon) Jobs"
-  [["Actions"
-    ("c" "create job"               tlon-create-job)]
+  [["Job phases"
     ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)]
+   ["Job creation"
+    ("c" "create job"                   tlon-create-job)
+    ("C 1" "import document"            tlon-import-document)
+    ("C 2" "create translation file"    tlon-create-translation-file)
+    ("C 3" "create record for job"      tlon-create-record-for-job)]
    ["Add or modify"
     ("g" "glossary"                     tlon-edit-glossary)
     ("s" "section correspondence"       tlon-section-correspondence-dwim)
     ("u" "URL correspondence"           tlon-url-correspondence-dwim)]
    ["jobs.org"
-    ("r" "create record"            tlon-create-record-for-job)
-    ("h" "create heading"           tlon-create-heading-for-job)
-    ("t" "sort headings"            tlon-sort-headings)]])
+    ("r" "create record"                tlon-create-record-for-job)
+    ("h" "create heading"               tlon-create-heading-for-job)
+    ("t" "sort headings"                tlon-sort-headings)]])
 
 (provide 'tlon-jobs)
 ;;; tlon-jobs.el ends here
-
