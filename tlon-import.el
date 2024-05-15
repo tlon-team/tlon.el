@@ -116,7 +116,7 @@ TITLE optionally specifies the title of the file to be imported."
 
 ;; TODO: make it also work with LessWrong
 (declare-function tlon-set-file-from-title "tlon")
-(declare-function delete-tlon-yaml-insert-field "tlon-yaml")
+;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
 (defun tlon-import-eaf-html (id-or-slug &optional title)
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
 TITLE optionally specifies the title of the entity to be imported."
@@ -138,7 +138,7 @@ TITLE optionally specifies the title of the entity to be imported."
       (tlon-cleanup-common)
       (tlon-cleanup-eaf)
       (tlon-autofix-all)
-      (delete-tlon-yaml-insert-field "type" (symbol-name type))
+      ;; (delete-tlon-yaml-insert-field "type" (symbol-name type))
       (save-buffer))
     (find-file target)))
 
@@ -164,7 +164,8 @@ for one."
     (with-current-buffer (find-file-noselect target)
       (tlon-cleanup-common)
       (tlon-autofix-all)
-      (delete-tlon-yaml-insert-field "type" (substring bare-dir 0 -1)))
+      ;; (delete-tlon-yaml-insert-field "type" (substring bare-dir 0 -1))
+      )
     (find-file target)))
 
 (defun tlon-import-set-target (&optional title bare-dir)
