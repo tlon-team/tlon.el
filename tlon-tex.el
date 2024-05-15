@@ -492,6 +492,31 @@ If FILE is nil, use the file visited by the current buffer."
 	      (concat "https://" url))
 	    missing-urls-simple)))
 
+;;;;; Translation
+
+(declare-function ebib-extras-set-field "ebib-extras")
+(defun tlon-tex-create-translation-entry ()
+  "Create a translation entry from the entry at point."
+  (interactive)
+  (unless (derived-mode-p 'ebib-entry-mode)
+    (user-error "Not in `ebib-entry-mode'"))
+  (let* ((language (tlon-select-language 'code 'babel))
+	 (fields `(("translation" . ,(ebib-extras-get-field "=key="))
+		   ("=type=" . ,(ebib-extras-get-field "=type="))
+		   ("author" . ,(ebib-extras-get-field "author"))
+		   ("database" . ,(ebib-extras-get-field "database"))
+		   ("langid" . ,(tlon-lookup tlon-languages-properties :name :code language))
+		   ("title" . ,(read-string "Title: "))
+		   ("translator" . ,(when-let ((field "translator"))
+				      (ebib--edit-list-field field (list field) (ebib-unbrace nil))))
+		   ("date" .  ,(format-time-string "%Y")))))
+    (ebib-add-entry)
+    (sleep-for 0.1)
+    (dolist (field fields)
+      (cl-destructuring-bind (key . value) field
+	(ebib-extras-set-field key value)))
+    (ebib-generate-autokey)))
+
 ;;;;; Misc
 
 (defvar citar-bibliography)
