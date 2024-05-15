@@ -176,7 +176,6 @@ additional metadata such as the file name and the file type."
 	 (metadata (tlon-yaml-format-values-of-alist
 		    (tlon-yaml-get-metadata file-or-buffer)))
 	 (extras `(("file" . ,file-or-buffer)
-		   ("type" . "online")
 		   ("database" . "Tlön")
 		   ("landid" . "es"))))
     (append metadata extras)))
