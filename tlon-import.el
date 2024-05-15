@@ -152,7 +152,8 @@ TITLE optionally specifies the title of the entity to be imported."
   "Convert HTML text in SOURCE to Markdown.
 SOURCE can be a URL or a file path. If TITLE is not provided, prompt the user
 for one."
-  (let* ((target (tlon-import-set-target title))
+  (let* ((bare-dir (tlon-set-bare-dir))
+	 (target (tlon-import-set-target title bare-dir))
 	 (pandoc (if (simple-extras-string-is-url-p source)
 		     tlon-pandoc-convert-from-url
 		   tlon-pandoc-convert-from-file)))
