@@ -363,9 +363,9 @@ COMMIT is non-nil, commit the change."
     ("c" "create job"               tlon-create-job)]
     ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)]
    ["Add or modify"
-    ("g" "glossary"                 tlon-edit-glossary)
-    ("s" "section corresp"          tlon-section-correspondence-dwim)
-    ("u" "URL corresp"              tlon-url-correspondence-dwim)]
+    ("g" "glossary"                     tlon-edit-glossary)
+    ("s" "section correspondence"       tlon-section-correspondence-dwim)
+    ("u" "URL correspondence"           tlon-url-correspondence-dwim)]
    ["jobs.org"
     ("r" "create record"            tlon-create-record-for-job)
     ("h" "create heading"           tlon-create-heading-for-job)
