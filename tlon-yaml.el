@@ -168,11 +168,12 @@ If REPO is nil, return metadata of the current repository."
 	(push meta-in-file metadata)))
     metadata))
 
-(defun tlon-metadata-in-file (file-or-buffer)
+(defun tlon-metadata-in-file (&optional file-or-buffer)
   "Return the metadata in FILE-OR-BUFFER as an association list.
 This includes the YAML metadata at the beginning of the file, as well as
 additional metadata such as the file name and the file type."
-  (let* ((metadata (tlon-yaml-format-values-of-alist
+  (let* ((file-or-buffer (or file-or-buffer (buffer-file-name)))
+	 (metadata (tlon-yaml-format-values-of-alist
 		    (tlon-yaml-get-metadata file-or-buffer)))
 	 (extras `(("file" . ,file-or-buffer)
 		   ("type" . "online")
