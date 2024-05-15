@@ -122,20 +122,5 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
   (interactive (list (org-read-date)))
   (find-file (tlon-clock-get-file-for-date date)))
 
-;;;;; Menu
-
-;;;###autoload (autoload 'tlon-clock-menu "tlon-clock" nil t)
-(transient-define-prefix tlon-clock-menu ()
-  "`clock' menu."
-  [["Create"
-    ("c" "Create entry"               tlon-clock-entry-create)
-    ("C" "Create entries in range"    tlon-clock-entry-create-in-range)]
-   ["Submit"
-    ("s" "Submit entry"               tlon-clock-entry-submit)
-    ("S" "Submit all entries"         tlon-clock-entry-submit-all)]
-   ["Report"] ; TODO
-   ["Misc"
-    ("o" "Open entry"                 tlon-clock-open-entry)]])
-
 (provide 'tlon-report)
 ;;; tlon-report.el ends here
