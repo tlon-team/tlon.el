@@ -137,7 +137,9 @@ TITLE optionally specifies the title of the entity to be imported."
     (with-current-buffer (find-file-noselect target)
       (tlon-cleanup-common)
       (tlon-cleanup-eaf)
-      (tlon-autofix-all))
+      (tlon-autofix-all)
+      (delete-tlon-yaml-insert-field "type" (symbol-name type))
+      (save-buffer))
     (find-file target)))
 
 (defun tlon-import-save-html-to-file (html)
@@ -161,7 +163,8 @@ for one."
      (format pandoc source target))
     (with-current-buffer (find-file-noselect target)
       (tlon-cleanup-common)
-      (tlon-autofix-all))
+      (tlon-autofix-all)
+      (delete-tlon-yaml-insert-field "type" (substring bare-dir 0 -1)))
     (find-file target)))
 
 (defun tlon-import-set-target (&optional title bare-dir)
