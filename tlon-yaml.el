@@ -462,15 +462,20 @@ by the current buffer."
        (funcall fun key))
       (_ nil))))
 
+;; TODO: integrate `tlon-yaml-get-key-values'
+(declare-function tlon-get-content-subtype "tlon-counterpart")
 (defun tlon-yaml-insert-field (&optional key value file field-exists)
   "Insert a new field in the YAML metadata of FILE.
-If FILE is nil, use the file visited by the current buffer. If KEY or VALUE are
-nil, prompt for one. If field exists, throw an error if FIELD-EXISTS is
-`throw-error', overwrite if it is `overwrite', and do nothing otherwise."
+If KEY or VALUE are nil, prompt for one. If FILE is nil, use the file visited by
+the current buffer. If field exists, throw an error if FIELD-EXISTS is
+`throw-error', overwrite if it is `overwrite', and do nothing otherwise.
+
+If the file does not contain a metadata section, insert one before inserting the
+field."
   (interactive)
-  (let ((key (or key (completing-read "Key: " (tlon-yaml-get-valid-keys))))
-	(value (or value (read-string "Value: ")))
-	(file (or file (buffer-file-name))))
+  (let* ((key (or key (completing-read "Key: " (tlon-yaml-get-valid-keys))))
+	 (file (or file (buffer-file-name)))
+	 (value (or value (tlon-yaml-get-completion-values key file))))
     (if-let ((metadata (tlon-yaml-get-metadata file)))
 	(if-let ((key-exists-p (assoc key metadata)))
 	    (pcase field-exists
