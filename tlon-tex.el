@@ -32,6 +32,7 @@
 (require 'doi-utils)
 (require 'paths)
 (require 'shut-up)
+(require 'tlon-core)
 
 ;;;; User options
 
