@@ -86,35 +86,6 @@ The order of the keys determines the sort order by
   '("unpublished" "test" "production")
   "List of publication statuses.")
 
-(defconst tlon-yaml-field-setters
-  '((:key "title"
-	  :original tlon-yaml-set-title-in-original
-	  :translation tlon-yaml-set-title-in-translation)
-    (:key "authors"
-	  :original tlon-yaml-set-authors-in-original
-	  :translation tlon-yaml-set-authors-in-translation)
-    (:key "translators"
-	  :original tlon-yaml-set-translators-in-original
-	  :translation tlon-yaml-set-translators-in-translation)
-    (:key "tags"
-	  :original tlon-yaml-set-tags-in-original
-	  :translation tlon-yaml-set-tags-in-translation)
-    (:key "date"
-	  :original tlon-yaml-set-date-in-original
-	  :translation tlon-yaml-set-date-in-translation)
-    (:key "bibtex_key"
-	  :original tlon-yaml-set-bibtex-key-in-original
-	  :translation tlon-yaml-set-bibtex-key-in-translation)
-    (:key "description"
-	  :original tlon-yaml-set-description-in-original
-	  :translation tlon-yaml-set-description-in-translation)
-    ;; translation-only
-    (:key "publication_status"
-	  :translation tlon-yaml-set-publication-status-in-translation)
-    (:key "original_path"
-	  :translation tlon-yaml-set-original-path-in-translation))
-  "Property list of field setters for YAML metadata.")
-
 ;;;; Functions
 
 ;;;;; Parse
@@ -341,62 +312,7 @@ If FILE is nil, use the file visited by the current buffer."
     (format "%s: " key)
     (tlon-yaml-get-completion-values key))))
 
-;;;;;; original setter functions
-
-
-;;;;;; translation setter functions
-
-;; copy from original
-(defun tlon-yaml-set-authors-in-translation ()
-  "Set the value of the `authors' YAML field in a translation file."
-  (tlon-yaml-set-key "authors"))
-
-;; set interactively
-(defun tlon-yaml-set-translators-in-translation ()
-  "Set the value of the `translators' YAML field in a translation file."
-  (tlon-yaml-set-key "translators"))
-
-;; set tags from original article
-(defun tlon-yaml-set-tags-in-translation ()
-  "Set the value of the `tags' YAML field in a translation file."
-  (tlon-yaml-set-key "tags"))
-
-(defun tlon-yaml-set-bibtex-key-in-translation (author)
-  "Set the value of `original_key' YAML field.
-AUTHOR is the first author of the original work."
-  (let ((first-author (car (last (split-string author)))))
-    (car (split-string
-	  (completing-read
-	   "English original: "
-	   (citar--completion-table (citar--format-candidates) nil)
-	   nil
-	   nil
-	   (format "%s " first-author)
-	   'citar-history citar-presets nil)))))
-
-;; set current date
-(defun tlon-yaml-set-date-in-translation ()
-  "Set the value of `date' YAML field."
-  (format-time-string "%FT%T%z"))
-
-;; offer AI-generated translation from original title
-(defun tlon-yaml-set-title-in-translation ()
-  "Set the value of `title' YAML field."
-  (or title (read-string "Title: ")))
-
-;; offer AI-translated original description
-(defun tlon-yaml-set-description-in-translation ()
-  ""
-  
-  )
-
-;;;;;; translation-only
-
-;; set to appropriate value
-(defun tlon-yaml-set-publication-status ()
-  ""
-  
-  )
+    (tlon-yaml-get-key-values key))))
 
 (defun tlon-yaml-set-original-path ()
   "Set the value of `original_path' YAML field."
