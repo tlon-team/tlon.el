@@ -384,15 +384,16 @@ If KEY already has VALUE, use it as the initial input."
 
 (defun tlon-yaml-get-completion-values (key)
   "Get completion values for a YAML field with KEY."
+(defun tlon-yaml-get-key-values (key)
+  "Return the admissible values for a YAML field with KEY."
   (pcase key
+    ;; ("type" )
     ("authors" (tlon-get-metadata-values-of-type "author"))
     ("translators" (tlon-metadata-get-translators))
-    ("tags" (tlon-get-metadata-values-of-type "tag"))
+    ("tags" (tlon-get-metadata-values-of-type "tag")) ; make it language-specific
+    ("date" (format-time-string "%FT%T%z"))
     ("original_path" (tlon-yaml-get-filenames-in-dir))
-    ("original_key" (citar--completion-table (citar--format-candidates) nil))
-    ("translation_key" (citar--completion-table (citar--format-candidates) nil))
-    ("publication_status" tlon-yaml-publication-statuses)
-    (_ nil)))
+    ("publication_status" tlon-yaml-publication-statuses)))
 
 (defun tlon-yaml-get-completion-functions (key)
   "Get completion functions for a YAML field with KEY."
