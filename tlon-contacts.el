@@ -78,7 +78,6 @@ This variable should not be set manually.")
 
 (defun tlon-contacts-insert-name ()
   "Prompt the user for a name and insert it at point."
-  (interactive)
   (let ((first-name (read-string "First name: "))
 	(last-name (read-string "Last name: ")))
     (insert (format "%s, %s" last-name first-name))
