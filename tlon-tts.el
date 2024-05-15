@@ -43,9 +43,9 @@
 
 ;;;;; Microsoft Azure
 
-(defcustom tlon-microsoft-azure-output-format
+(defcustom tlon-microsoft-azure-audio-settings
   '("audio-16khz-64kbitrate-mono-mp3" . "mp3")
-  "Audio settings for the Microsoft Azure text-to-speech service.
+  "Output format and associated extension for the Microsoft Azure TTS service.
 Here's a description of the main options:
 
 - `\"audio-24khz-160kbitrate-mono-mp3\"': Offers higher quality due to a higher
@@ -74,9 +74,9 @@ For details, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-ser
 
 ;;;;; Google Cloud
 
-(defcustom tlon-google-cloud-output-format
+(defcustom tlon-google-cloud-audio-settings
   '("MP3" . "mp3")
-  "Audio settings for the Google Cloud text-to-speech service.
+  "Output format and associated extension the Google Cloud TTS service.
 The options are:
 
 - `\"MP3\"': MPEG Audio Layer III (lossy). MP3 encoding is a Beta feature and
@@ -109,9 +109,9 @@ For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
 
 ;;;;; Amazon Polly
 
-(defcustom tlon-amazon-polly-output-format
+(defcustom tlon-amazon-polly-audio-settings
   '("mp3" . "mp3")
-  "Output format for synthesized audio from Amazon Polly.
+  "Output format and associated extension for the Amazon Polly TTS service.
 Admissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\""
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
@@ -119,17 +119,17 @@ Admissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\""
 ;;;;; OpenAI
 
 ;; TODO: check if the OpenAI API allows for different output formats
-(defcustom tlon-openai-output-format
+(defcustom tlon-openai-audio-settings
   '("mp3" . "mp3")
-  "Output format for synthesized audio from OpenAI."
+  "Output format and associated extension for the OpenAI TTS service."
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 ;;;;; ElevenLabs
 
-(defcustom tlon-elevenlabs-output-format
+(defcustom tlon-elevenlabs-audio-settings
   '("mp3_44100_192" . "mp3")
-  "Output format for synthesized audio from ElevenLabs.
+  "Output format and associated extension for the ElevenLabs TTS service.
 The options are:
 
 - `\"mp3_44100_32\"': mp3 with 44.1kHz sample rate at 32kbps.
@@ -607,31 +607,31 @@ questions\").")
 (defconst tlon-tts-engines
   `((:name "Microsoft Azure"
 	   :voices-var tlon-microsoft-azure-voices
-	   :output-var tlon-microsoft-azure-output-format
+	   :output-var tlon-microsoft-azure-audio-settings
 	   :request-fun tlon-microsoft-azure-make-request
 	   :char-limit ,tlon-microsoft-azure-char-limit
 	   :property :azure)
     (:name "Google Cloud"
 	   :voices-var tlon-google-cloud-voices
-	   :output-var tlon-google-cloud-output-format
+	   :output-var tlon-google-cloud-audio-settings
 	   :request-fun tlon-google-cloud-make-request
 	   :char-limit ,tlon-google-cloud-char-limit
 	   :property :google)
     (:name "Amazon Polly"
 	   :voices-var tlon-amazon-polly-voices
-	   :output-var tlon-amazon-polly-output-format
+	   :output-var tlon-amazon-polly-audio-settings
 	   :request-fun tlon-amazon-polly-make-request
 	   :char-limit ,tlon-amazon-polly-char-limit
 	   :property :polly)
     (:name "OpenAI"
 	   :voices-var tlon-openai-voices
-	   :output-var tlon-openai-output-format
+	   :output-var tlon-openai-audio-settings
 	   :request-fun tlon-openai-make-request
 	   :char-limit ,tlon-openai-char-limit
 	   :property :openai)
     (:name "ElevenLabs"
 	   :voices-var tlon-elevenlabs-voices
-	   :output-var tlon-elevenlabs-output-format
+	   :output-var tlon-elevenlabs-audio-settings
 	   :request-fun tlon-elevenlabs-make-request
 	   :char-limit ,tlon-elevenlabs-char-limit
 	   :property :elevenlabs))
@@ -990,7 +990,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 				 tlon-tts-current-main-voice
 				 string)))
     (format tlon-microsoft-azure-request
-	    (tlon-microsoft-azure-get-or-set-key) (car tlon-microsoft-azure-output-format)
+	    (tlon-microsoft-azure-get-or-set-key) (car tlon-microsoft-azure-audio-settings)
 	    wrapped-string destination)))
 
 (defun tlon-microsoft-azure-get-or-set-key ()
@@ -1026,7 +1026,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 		     (voice (languageCode . ,tlon-tts-current-voice-locale)
 			    (name . ,tlon-tts-current-main-voice)
 			    (ssmlGender . ,(upcase gender)))
-		     (audioConfig (audioEncoding . ,(car tlon-google-cloud-output-format)))))))
+		     (audioConfig (audioEncoding . ,(car tlon-google-cloud-audio-settings)))))))
     payload))
 
 (defun tlon-google-cloud-get-token ()
@@ -1045,7 +1045,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Construct the AWS CLI command to call Amazon Polly.
 STRING is the string of the request. DESTINATION is the output file path."
   (format tlon-amazon-polly-request
-	  (car tlon-amazon-polly-output-format) tlon-tts-current-main-voice
+	  (car tlon-amazon-polly-audio-settings) tlon-tts-current-main-voice
 	  string tlon-amazon-polly-region destination))
 
 ;;;;;;; OpenAI
@@ -1068,7 +1068,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path."
   (let ((url (format tlon-elevenlabs-tts-url tlon-tts-current-main-voice
-		     (car tlon-elevenlabs-output-format)))
+		     (car tlon-elevenlabs-audio-settings)))
 	(api-key (tlon-elevenlabs-get-or-set-key))
 	(data (json-encode `(("text" . ,string)
 			     ("model_id" . "eleven_multilingual_v2")))))
