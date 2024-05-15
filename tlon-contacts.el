@@ -149,6 +149,7 @@ Return a cons cell with the name and email address."
 
 ;;;;; Roles
 
+(declare-function org-narrow-to-subtree "org")
 (defun tlon-contacts-get-role ()
   "Return the \"ROLE\" property of the contact at point."
   (org-entry-get (point) "ROLE"))
