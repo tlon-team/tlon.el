@@ -79,7 +79,7 @@ This variable should not be set manually.")
   (tlon-get-or-set-org-var 'tlon-jobs-file tlon-jobs-id))
 
 ;;;###autoload
-(defun tlon-jobs-dwim ()
+(defun tlon-jobs-start-or-finish-phase ()
   "Initialize or finalize process based on clocked task."
   (interactive)
   (when (derived-mode-p 'org-mode)
@@ -360,8 +360,8 @@ COMMIT is non-nil, commit the change."
   "`jobs' menu."
   :info-manual "(tlon) Jobs"
   [["Actions"
-    ("j" "dwim"                     tlon-jobs-dwim)
     ("c" "create job"               tlon-create-job)]
+    ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)]
    ["Add or modify"
     ("g" "glossary"                 tlon-edit-glossary)
     ("s" "section corresp"          tlon-section-correspondence-dwim)
