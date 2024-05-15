@@ -84,7 +84,7 @@ This variable should not be set manually.")
     (insert (format "%s, %s" last-name first-name))
     (save-buffer)))
 
-;;;;; properties
+;;;;; Properties
 
 (declare-function org-set-property "org")
 (declare-function org-entry-get "org")
@@ -146,6 +146,8 @@ Return a cons cell with the name and email address."
     (cl-destructuring-bind (last first)
 	(split-string (substring-no-properties (org-get-heading t t t t)) ", ")
       (cons first last))))
+
+;;;;; Roles
 
 (defun tlon-contacts-get-role ()
   "Return the \"ROLE\" property of the contact at point."
