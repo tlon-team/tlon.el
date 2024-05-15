@@ -192,25 +192,17 @@ them untranslated)."
       (when (or deepl (string= (alist-get 'type item) "variable"))
 	(insert entry)))))
 
-;;;;; Share glossary
-
+(declare-function tlon-email-send "tlon-email")
+;;;###autoload
 (defun tlon-share-glossary (attachment &optional language)
-  "Share glossary as ATTACHMENT with translators in selected LANGUAGE."
-  (interactive (list (read-file-name "Attachment: "
+  "Share LANGUAGE glossary with translators as ATTACHMENT."
+  (interactive (list (read-file-name "Glossary file: "
 				     (file-name-directory tlon-file-glossary-target) nil nil
 				     (file-name-nondirectory tlon-file-glossary-target))))
-  (let ((language (or language (tlon-select-language 'code 'babel)))
-	(user-mail-address (concat (downcase (tlon-user-lookup :nickname :name user-full-name))
-				   "@tlon.team"))
-	(mailbuf (generate-new-buffer "*mail*")))
-    (with-current-buffer mailbuf
-      (message-mail (alist-get language tlon-glossary-email-recipients nil nil #'string=)
-		    tlon-glossary-email-subject)
-      (message-goto-body)
-      (insert tlon-glossary-email-body)
-      (mml-attach-file attachment)
-      (message-send-and-exit))
-    (kill-buffer mailbuf)))
+  (let* ((language (or language (tlon-select-language 'code 'babel)))
+	 (recipient (tlon-lookup tlon-glossary-recipients :email :language language)))
+    (setq tlon-email-language (tlon-lookup tlon-languages-properties :name :code language))
+    (tlon-email-send "share-glossary.org" recipient attachment)))
 
 ;;;;; Menu
 
