@@ -284,7 +284,8 @@ FILE is excluded from the check."
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file)))
     (unless (string= all-changes filtered-changes)
-      (user-error "There are staged or unstaged changes in repo. Please commit or stash them before continuing"))))
+      (let ((repo-name (tlon-repo-lookup :name :dir (tlon-get-repo-from-file file))))
+	(user-error "There are uncommitted changes in repo `%s'" repo-name)))))
 
 (defun tlon-check-file-title-match  (&optional file)
   "Check that FILE matches its title.
