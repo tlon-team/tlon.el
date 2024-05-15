@@ -267,17 +267,17 @@ If FILE is nil, use the file visited by the current buffer. If LANGUAGE is nil,
 use the value of `tlon-translation-language'."
   (interactive)
   ;; check that FILE has a bibtex key
-  (let* ((file (or file (buffer-file-name)))
-	 (language (or language tlon-translation-language))
-	 (subproject (tlon-repo-lookup :subproject :dir (tlon-get-repo-from-file file)))
-	 (repo (tlon-repo-lookup :dir :subproject subproject :language language))
-	 (bare-dir (tlon-get-bare-dir-translation language "en" (tlon-get-bare-dir file)))
-	 (title (read-string "Translated title: "))
-	 (dir (file-name-concat repo bare-dir))
-	 (path (tlon-set-file-from-title title dir)))
-    (find-file path)
-    (tlon-initialize-translation-metadata path file)
-    (save-buffer)))
+  (when-let* ((file (or file (buffer-file-name)))
+	      (language (or language (tlon-select-language 'code 'babel)))
+	      (subproject (tlon-repo-lookup :subproject :dir (tlon-get-repo-from-file file)))
+	      (repo (tlon-repo-lookup :dir :subproject subproject :language language))
+	      (bare-dir (tlon-get-bare-dir-translation language "en" (tlon-get-bare-dir file)))
+	      (title (read-string "Translated title: "))
+	      (dir (file-name-concat repo bare-dir))
+	      (path (tlon-set-file-from-title title dir)))
+    (with-current-buffer (find-file-noselect path)
+      (save-buffer)
+      (tlon-initialize-translation-metadata path file))))
 
 (defun tlon-initialize-translation-metadata (file original)
   "Set the initial metadata section for a FILE that translated ORIGINAL.
