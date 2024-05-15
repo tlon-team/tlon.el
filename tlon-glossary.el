@@ -43,10 +43,9 @@
   (tlon-parse-json tlon-file-glossary-source)
   "The glossary values.")
 
-(defconst tlon-glossary-email-recipients
-  '(("fr" . "tlon-french@googlegroups.com")
-    ("it" . "tlon-italian@googlegroups.com"))
-  "Association list of languages and Google Group addresses.")
+(defconst tlon-glossary-recipients
+  '((:language "fr" :email "tlon-french@googlegroups.com")
+    (:language "it" :email "tlon-italian@googlegroups.com")))
 
 ;;;; Functions
 
