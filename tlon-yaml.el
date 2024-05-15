@@ -382,8 +382,6 @@ If KEY already has VALUE, use it as the initial input."
       (funcall fun val)
     (tlon-yaml-insert-string (list value))))
 
-(defun tlon-yaml-get-completion-values (key)
-  "Get completion values for a YAML field with KEY."
 (defun tlon-yaml-get-key-values (key)
   "Return the admissible values for a YAML field with KEY."
   (pcase key
@@ -395,8 +393,6 @@ If KEY already has VALUE, use it as the initial input."
     ("original_path" (tlon-yaml-get-filenames-in-dir))
     ("publication_status" tlon-yaml-publication-statuses)))
 
-(defun tlon-yaml-get-completion-functions (key)
-  "Get completion functions for a YAML field with KEY."
 (defun tlon-yaml-select-key-values (key values)
   ""
   (let ((prompt (format "%s: " key)))
