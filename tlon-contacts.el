@@ -51,7 +51,7 @@ This variable should not be set manually.")
     ("ENTITY" . ("living person" "deceased person" "non-person"))
     ("UNIVERSAL-CONSENT" . ("yes" "no" "waiting" "unknown"))
     ("LANGUAGE" . ,(tlon-get-language-candidates 'babel)))
-  "Association list of properties and possible values.")
+  "Association list of properties and completion values.")
 
 ;;;; Functions
 
