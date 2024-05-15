@@ -43,14 +43,6 @@
   (tlon-parse-json tlon-file-glossary-source)
   "The glossary values.")
 
-(defconst tlon-glossary-email-subject
-  "New version of the glossary"
-  "The subject of the email to send to translators when sharing the glossary.")
-
-(defconst tlon-glossary-email-body
-  (format "Dear translators,\n\nAttached is a new version of the glossary. Please upload it to DeepL.\n\nBest regards,\n\n%s" (tlon-user-lookup :nickname :name user-full-name))
-  "The body of the email to send to translators when sharing the glossary.")
-
 (defconst tlon-glossary-email-recipients
   '(("fr" . "tlon-french@googlegroups.com")
     ("it" . "tlon-italian@googlegroups.com"))
