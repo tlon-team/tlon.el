@@ -396,12 +396,50 @@ If KEY already has VALUE, use it as the initial input."
 
 (defun tlon-yaml-get-completion-functions (key)
   "Get completion functions for a YAML field with KEY."
-  (pcase key
-    ((or "authors" "translators" "tags") #'tlon-yaml-insert-list)
-    ((or "original_path" "original_key" "translation_key" "publication_status") #'tlon-yaml-insert-string)
-    (_ nil)))
+(defun tlon-yaml-select-key-values (key values)
+  ""
+  (let ((prompt (format "%s: " key)))
+    (pcase key
+      ((or "type" "authors" "translators" "tags" "original_path" "publication_status")
+       (completing-read prompt values))
+      ((or "title" "date" "description")
+       (read-string prompt values))
+      ((or "original_key" "translation_key")
+       (tlon-yaml-get-bibtex-key-values key)))))
 
-;; TODO: integrate `tlon-yaml-get-completion-values'
+(defun tlon-yaml-insert-key-value (key value)
+  "."
+  (pcase key
+    ((or "authors" "translators" "tags")
+     (tlon-yaml-insert-list value))
+    ((or "type" "type" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
+     (tlon-yaml-insert-string value))))
+
+(defun tlon-get-bibtex-key (&optional initial-input)
+  "Get the BibTeX key of the selected work.
+INITIAL-INPUT is used as the initial input for the completion."
+  (car (split-string
+	(completing-read
+	 "English original: "
+	 (citar--completion-table (citar--format-candidates) nil)
+	 nil
+	 nil
+	 (when initial-input (concat initial-input " "))
+	 'citar-history citar-presets nil))))
+
+(defun tlon-yaml-get-bibtex-key-values (field)
+  "Return the BibTeX key of the work at point apprporiate for FIELD.
+If FIELD is `original_key', return the BibTeX key of the original work. If FIELD
+is `translation_key', return the BibTeX key of the translation"
+  (let* ((first-author (car (tlon-yaml-get-key "authors")))
+	 (initial-input (car (last (split-string first-author))))
+	 (original-key (tlon-get-bibtex-key initial-input))
+	 (subtype (tlon-get-content-subtype)))
+    (cond ((or (eq subtype 'originals) (string= field "translation_key"))
+	   original-key)
+	  ((and (eq subtype 'translations) (string= field "original_key"))
+	   (citar-get-value "translation" original-key)))))
+
 (defun tlon-yaml-insert-field (&optional key value file field-exists)
   "Insert a new field in the YAML metadata of FILE.
 If FILE is nil, use the file visited by the current buffer. If KEY or VALUE are
