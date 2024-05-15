@@ -120,12 +120,14 @@ TITLE optionally specifies the title of the file to be imported."
   "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
 TITLE optionally specifies the title of the entity to be imported."
   (let* ((response (tlon-import-eaf-request id-or-slug))
-	 (object (tlon-import-eaf-get-object id-or-slug))
-	 (title (or title (pcase object
+	 (type (tlon-import-eaf-get-type id-or-slug))
+	 (title (or title (pcase type
 			    ('article (tlon-import-eaf-get-article-title response))
 			    ('tag (tlon-import-eaf-get-tag-title response)))))
-	 (target (tlon-import-set-target title object))
-	 (html (pcase object
+	 (target (tlon-import-set-target title (pcase type
+						 ('article "articles")
+						 ('tag "tags"))))
+	 (html (pcase type
 		 ('article (tlon-import-eaf-get-article-html response))
 		 ('tag (tlon-import-eaf-get-tag-html response))))
 	 (html-file (tlon-import-save-html-to-file html)))
@@ -159,16 +161,13 @@ for one."
       (tlon-autofix-all))
     (find-file target)))
 
-(defun tlon-import-set-target (&optional title object)
+(defun tlon-import-set-target (&optional title bare-dir)
   "Set the target file path for the imported document.
-If TITLE is nil, prompt the user for one. OBJECT specifies the type of entity
-being imported (e.g., article or tag)."
-  (let ((dir (tlon-repo-lookup :dir :name "uqbar-en"))
-	(subdir (pcase object
-		  ('tag "tags")
-		  (_ "articles"))))
+If TITLE is nil, prompt the user for one. BARE-DIR specifies the bare-dir of
+entity being imported (e.g., article or tag)."
+  (let* ((dir (tlon-repo-lookup :dir :name "uqbar-en")))
     (read-string "Save file in: "
-		 (tlon-set-file-from-title title (file-name-concat dir subdir)))))
+		 (tlon-set-file-from-title title (file-name-concat dir bare-dir)))))
 
 ;; TODO: cleanup two functions below
 (defun tlon-import-pdf (path &optional title)
@@ -216,11 +215,11 @@ If TITLE is nil, prompt the user for one."
 (defun tlon-import-eaf-request (id-or-slug &optional async)
   "Run an EAF request for ID-OR-SLUG.
 If ASYNC is t, run the request asynchronously."
-  (let* ((object (tlon-import-eaf-get-object id-or-slug))
-	 (fun (pcase object
+  (let* ((type (tlon-import-eaf-get-type id-or-slug))
+	 (fun (pcase type
 		('article 'tlon-import-eaf-article-query)
 		('tag 'tlon-import-eaf-tag-query)
-		(_ (error "Invalid object: %S" object))))
+		(_ (error "Invalid type: %S" type))))
 	 (query (funcall fun id-or-slug))
 	 response)
     (request
@@ -325,14 +324,14 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 		      identifier)
     (match-string-no-properties 1 identifier)))
 
-(defun tlon-import-eaf-get-object (id-or-slug)
-  "Return the EAF object in ID-OR-SLUG."
-  (let ((object (cond ((tlon-import-eaf-article-id-p id-or-slug)
-		       'article)
-		      ((tlon-import-eaf-tag-slug-p id-or-slug)
-		       'tag)
-		      (t (user-error "Not an ID or slug: %S" id-or-slug)))))
-    object))
+(defun tlon-import-eaf-get-type (id-or-slug)
+  "Return the EAF type in ID-OR-SLUG."
+  (let ((type (cond ((tlon-import-eaf-article-id-p id-or-slug)
+		     'article)
+		    ((tlon-import-eaf-tag-slug-p id-or-slug)
+		     'tag)
+		    (t (user-error "Not an ID or slug: %S" id-or-slug)))))
+    type))
 
 (provide 'tlon-import)
 ;;; tlon-import.el ends here
