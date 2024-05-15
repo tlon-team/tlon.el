@@ -489,7 +489,8 @@ field."
 	      ('throw-error
 	       (user-error "Field `%s' already exists in `%s'" key file)))
 	  (tlon-yaml-write-field key value file))
-      (user-error "File `%s' does not appear to contain a metadata section" file))))
+      (tlon-yaml-insert-metadata-section file)
+      (tlon-yaml-write-field key value file))))
 
 (defun tlon-yaml-write-field (key value file)
   "Set KEY to VALUE in FILE."
