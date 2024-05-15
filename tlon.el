@@ -277,8 +277,9 @@ check that current file matches translation."
 	(when (not (string-empty-p (shell-command-to-string git-command)))
 	  (throw 'found t))))))
 
-(defun tlon-check-staged-or-unstaged-other-than (file)
-  "Check if there are staged or unstaged modifications in repo not involving FILE."
+(defun tlon-ensure-no-uncommitted-changes (file)
+  "Throw an error if there are uncommitted modifications in repo of FILE.
+FILE is excluded from the check."
   (let* ((default-directory (tlon-get-repo-from-file file))
 	 (all-changes (magit-git-str "diff" "HEAD" "--" "."))
 	 (filtered-changes (magit-git-str "diff" "HEAD" "--" file)))
@@ -379,7 +380,7 @@ If REPO is nil, use the current repo."
   "Commit and push modifications to FILE.
 The commit message is ACTION followed by the name of FILE."
   (let* ((default-directory (tlon-get-repo-from-file file)))
-    (tlon-check-staged-or-unstaged-other-than file)
+    (tlon-ensure-no-uncommitted-changes file)
     (when (string= (magit-get-current-branch) "main")
       ;; TODO: Replace interactive call with programmatic way of doing this
       (call-interactively #'magit-pull-from-upstream nil)
