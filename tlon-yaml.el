@@ -381,6 +381,10 @@ If KEY already has VALUE, use it as the initial input."
 	   (val (tlon-yaml-get-completion-values key)))
       (funcall fun val)
     (tlon-yaml-insert-string (list value))))
+(defun tlon-yaml-set-key-value (key)
+  ""
+  (let ((values (tlon-yaml-get-key-values key)))
+    (tlon-yaml-select-key-values key values)))
 
 (defun tlon-yaml-get-key-values (key)
   "Return the admissible values for a YAML field with KEY."
