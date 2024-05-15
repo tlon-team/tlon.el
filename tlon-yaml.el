@@ -297,8 +297,7 @@ If FILE is nil, use the file visited by the current buffer."
   (let ((file (or file (buffer-file-name))))
     (if-let ((type (tlon-yaml-get-key "type" file)))
 	(dolist (key (tlon-yaml-get-valid-keys file type 'no-core))
-	  (let ((fun (alist-get key tlon-yaml-field-setters nil nil #'string=)))
-	    (funcall fun))
+	  (tlon-yaml-get-completion-values key 'translations)
 	  ;; for each key, call its generating function and record its return
 	  ;; value, then insert it into the file
 	  ;; perhaps the insertion should be done by another fun
