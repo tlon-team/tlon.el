@@ -437,6 +437,27 @@ is `translation_key', return the BibTeX key of the translation"
 	  ((and (eq subtype 'translations) (string= field "original_key"))
 	   (citar-get-value "translation" original-key)))))
 
+;; TODO: delete
+(defun tlon-yaml-get-field-setter (key subtype)
+  "Get field setter function for KEY in repo of SUBTYPE."
+  (alist-get subtype
+	     (alist-get key tlon-yaml-field-setters nil nil #'string=)))
+
+;; TODO: delete
+(defun tlon-yaml-get-completion-values (key &optional subtype file)
+  "Get completion values for a YAML field with KEY in repo of SUBTYPE.
+If SUBTYPE is nil, use the subtype of FILE. If FILE is nil, use the file visited
+by the current buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (subtype (or subtype (tlon-get-content-subtype file)))
+	 (fun (tlon-yaml-get-field-setter key subtype)))
+    (pcase key
+      ((or "translators" "original_path" "original_key" "translation_key" "publication_status")
+       (funcall fun))
+      ((or "authors" "tags")
+       (funcall fun key))
+      (_ nil))))
+
 (defun tlon-yaml-insert-field (&optional key value file field-exists)
   "Insert a new field in the YAML metadata of FILE.
 If FILE is nil, use the file visited by the current buffer. If KEY or VALUE are
