@@ -38,13 +38,14 @@
   "File where contacts are stored.
 This variable should not be set manually.")
 
+(defvar org-contacts-email-property)
 (defconst tlon-contacts-properties
-  '(("creator" . ("EMAIL" "URL" "GENDER" "ENTITY" "UNIVERSAL-CONSENT"))
-    ("translator" . ("EMAIL" "GENDER" "LANGUAGE")))
+  `(("creator" . (,org-contacts-email-property "URL" "GENDER" "ENTITY" "UNIVERSAL-CONSENT"))
+    ("translator" . (,org-contacts-email-property "GENDER" "LANGUAGE")))
   "Association list of roles and `org-mode' properties.")
 
 (defconst tlon-contacts-property-values
-  `(("EMAIL" . nil)
+  `((,org-contacts-email-property . nil)
     ("URL" . nil)
     ("GENDER" . ("male" "female" "other" "not applicable"))
     ("ENTITY" . ("living person" "deceased person" "non-person"))
