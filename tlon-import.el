@@ -94,6 +94,18 @@
 	  (tlon-import-pdf (expand-file-name identifier)))
 	key))))
 
+(declare-function ebib-extras-get-field "ebib-extras")
+(declare-function ebib-extras-get-file "ebib-extras")
+(defun tlon-get-import-details-from-ebib ()
+  "Get the relevant details for importing a document from the current BibTeX entry."
+  (if-let ((identifier (or (ebib-extras-get-field "url")
+			   (ebib-extras-get-file "md")))
+	   (title (ebib-extras-get-field "title"))
+	   (key (ebib-extras-get-field "=key=")))
+      (list identifier title key)
+    (user-error "The current Ebib entry seems to be missing one of the following
+fields, which are needed to create a new job: `url' or `file',
+`title' and `key'")))
 
 (defun tlon-import-html (url &optional title)
   "Import the HTML in URL and convert it to Markdown.
