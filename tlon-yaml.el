@@ -280,16 +280,16 @@ use the value of `tlon-translation-language'."
       (tlon-initialize-translation-metadata path file))))
 
 (defun tlon-initialize-translation-metadata (file original)
-  "Set the initial metadata section for a FILE that translated ORIGINAL.
+  "Set the initial metadata section for a FILE that translates ORIGINAL.
 This function creates a new metadata section in FILE, and sets the value of
 `type' and `original_path'. These values are needed for the remaining metadata
 to be set via `tlon-populate-translation-metadata'."
-  (let ((type (tlon-yaml-get-key "type" original)))
-    (tlon-yaml-insert-metadata-section file)
-    ;; consider using a fun that sets all fields at once
-    ;; consider setting it by reference to `tlon-yaml-core-keys'
-    (tlon-yaml-insert-field "type" type)
-    (tlon-yaml-insert-field "original_path" original)))
+  (with-current-buffer (find-file-noselect file)
+    (let ((type (tlon-yaml-get-key "type" original)))
+      ;; consider using a fun that sets all fields at once
+      ;; consider setting it by reference to `tlon-yaml-core-keys'
+      (tlon-yaml-insert-field "type" type)
+      (tlon-yaml-insert-field "original_path" (file-name-nondirectory original)))))
 
 (defun tlon-populate-translation-metadata (&optional file)
   "Populate the metadata section of translation FILE.
