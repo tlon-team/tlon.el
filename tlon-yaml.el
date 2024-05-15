@@ -376,10 +376,15 @@ FIELDS is an alist, typically generated via `tlon-yaml-to-alist'."
 (defun tlon-yaml-insert-field (key &optional value)
   "Insert field for KEY.
 If KEY already has VALUE, use it as the initial input."
-  (if-let ((fun (tlon-yaml-get-completion-functions key))
-	   (val (tlon-yaml-get-completion-values key)))
-      (funcall fun val)
-    (tlon-yaml-insert-string (list value))))
+  (interactive)
+  (when (tlon-yaml-get-key key)
+    (user-error "Field `%s' already exists" key))
+  (let ((value (or value (tlon-yaml-set-key-value key))))
+    (tlon-yaml-insert-key-value key value)))
+
+;; create an edit field command
+;; then an insert or edit command
+
 (defun tlon-yaml-set-key-value (key)
   ""
   (let ((values (tlon-yaml-get-key-values key)))
