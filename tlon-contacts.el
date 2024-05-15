@@ -114,6 +114,22 @@ If PROP is nil, prompt the user to select a property."
     (tlon-ensure-org-mode)
     (alist-get prop props nil nil 'string=)))
 
+;;;###autoload
+(defun tlon-contacts-copy-property-value (&optional prop)
+  "Copy the value of the property PROP of the contact at point to the kill ring.
+If PROP is nil, prompt the user to select a property."
+  (interactive)
+  (let ((value (tlon-contacts-get-property-value prop)))
+    (kill-new value)
+    (message "Copied %s to the kill ring." value)))
+
+(declare-function org-contacts "org-contacts")
+(defun tlon-contacts-get-property-value-of-contact (&optional prop)
+  "Prompt the user to select a contact and get value of PROP.
+If PROP is nil, prompt the user to select a property."
+  (org-contacts)
+  (with-current-buffer (find-buffer-visiting tlon-contacts-file)
+    (tlon-contacts-get-property-value prop)))
 
 (defun tlon-contacts-get-nonempty-properties ()
   "Return an association list of the nonempty properties of the contact at point."
@@ -122,7 +138,13 @@ If PROP is nil, prompt the user to select a property."
 	      (cons prop (org-entry-get (point) prop)))
 	    (cdr (assoc role tlon-contacts-properties)))))
 
-;;;;; roles
+(defun tlon-contacts-get-contact-name ()
+  "Get the first and last name contact at point.
+Return a cons cell with the name and email address."
+  (with-current-buffer (find-buffer-visiting tlon-contacts-file)
+    (cl-destructuring-bind (last first)
+	(split-string (substring-no-properties (org-get-heading t t t t)) ", ")
+      (cons first last))))
 
 (defun tlon-contacts-get-role ()
   "Return the \"ROLE\" property of the contact at point."
