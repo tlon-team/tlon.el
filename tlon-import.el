@@ -82,17 +82,18 @@
 ;;;;; General import
 
 (declare-function simple-extras-string-is-url-p "simple-extras")
-(defun tlon-import-document (&optional identifier title)
-  "Import a document with IDENTIFIER.
-IDENTIFIER can be a URL or a PDF file path.
-
-This command also imports EA Forum posts and tags. TITLE optionally specifies
-the title of the document to be imported."
+(defun tlon-import-document ()
+  "Import a new document from a URL or a PDF file."
   (interactive)
-  (let ((identifier (or identifier (read-string "Identifier (URL or PDF path): "))))
-    (if (simple-extras-string-is-url-p identifier)
-	(tlon-import-html identifier title)
-      (tlon-import-pdf (expand-file-name identifier)))))
+  (when (or (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
+	    (y-or-n-p "Ideally, this command should be run from an Ebib buffer. Continue and enter details manually? "))
+    (cl-destructuring-bind (identifier title key) (tlon-get-import-details-from-ebib)
+      (let ((identifier (or identifier (read-string "Identifier (URL or PDF path): "))))
+	(if (simple-extras-string-is-url-p identifier)
+	    (tlon-import-html identifier title)
+	  (tlon-import-pdf (expand-file-name identifier)))
+	key))))
+
 
 (defun tlon-import-html (url &optional title)
   "Import the HTML in URL and convert it to Markdown.
