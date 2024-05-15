@@ -58,6 +58,7 @@ This variable should not be set manually.")
 (declare-function org-id-goto "org-id")
 (declare-function org-end-of-subtree "org")
 (declare-function org-insert-heading "org")
+;;;###autoload
 (defun tlon-contacts-create ()
   "Create a new contact entry."
   (interactive)
@@ -87,6 +88,7 @@ This variable should not be set manually.")
 
 (declare-function org-set-property "org")
 (declare-function org-entry-get "org")
+;;;###autoload
 (defun tlon-contacts-edit-properties (&optional role)
   "Set properties for the contact at point.
 If ROLE is nil and the entry lacks a \"ROLE\" property, prompt the user to
@@ -155,6 +157,7 @@ Return a cons cell with the name and email address."
 
 ;;;;; Menu
 
+;;;###autoload (autoload 'tlon-contacts-menu "tlon-contacts" nil t)
 (transient-define-prefix tlon-contacts-menu ()
   "Menu for Tlön contacts management."
   [("s" "search"               org-contacts)
