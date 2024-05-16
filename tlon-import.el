@@ -59,12 +59,16 @@
 
 ;;;;; Pandoc
 
+(defconst tlon-pandoc-to-markdown
+  "-t markdown-raw_html-native_divs-native_spans-fenced_divs-bracketed_spans-header_attributes-fenced_code_blocks --wrap=none --strip-comments '%s' -o '%s'"
+  "Pandoc command to convert HTML to Markdown.")
+
 (defconst tlon-pandoc-convert-from-file
-  "pandoc -s '%s' -t markdown -o '%s'"
+  (format "pandoc %s" tlon-pandoc-to-markdown)
   "Command to convert from HTML file to Markdown.")
 
 (defconst tlon-pandoc-convert-from-url
-  "pandoc -s -r html '%s' -o '%s'"
+  (format "pandoc -r html %s" tlon-pandoc-to-markdown)
   "Command to convert from URL to Markdown.")
 
 ;;;;; Executables
