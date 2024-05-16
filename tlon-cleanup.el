@@ -45,6 +45,7 @@ non-EAF."
   (tlon-cleanup-set-heading-levels)
   (tlon-cleanup-remove-double-brackets)
   (tlon-cleanup-remove-nonbreaking-spaces)
+  (tlon-cleanup-remove-span-elements)
   (unfill-region (point-min) (point-max)))
 
 (defun tlon-cleanup-unescape-chars ()
@@ -119,6 +120,12 @@ are no level 2 headings and some headings level 3 or higher."
   (while (re-search-forward "\\. \\([ \\[]\\)" nil t)
     (replace-match ".\\1")))
 
+(defun tlon-cleanup-remove-span-elements ()
+  "Remove span elements spaces."
+  (goto-char (point-min))
+  (while (re-search-forward "{.*?}" nil t)
+    (replace-match "")))
+
 ;;;;; EA Forum
 
 (defun tlon-cleanup-eaf ()
@@ -154,7 +161,6 @@ not alter it unless you know what you are doing."
 		    "————————————————————————
 
   ::: {.section .footnotes}"
-		    "{.underline}"
 		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License.\\](https://creativecommons.org/licenses/by/4.0/)\\*\n\n"))
     (goto-char (point-min))
     (while (re-search-forward string nil t)
