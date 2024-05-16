@@ -303,7 +303,7 @@ Markdown buffer at point is used."
       (progn
 	(tlon-create-issue-from-key key)
 	(tlon-create-heading-for-job key 'commit))
-    (user-error "I wasn't able to create a record because I didn't find a key")))
+    (user-error "I wasn't able to create a job record because I couldn't find the relevant BibTeX key")))
 
 ;;;;; `jobs.org'
 
