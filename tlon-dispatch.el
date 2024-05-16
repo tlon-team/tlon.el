@@ -99,7 +99,7 @@ DIR is the directory where the repo is stored."
     ("t d" "tlon-docs"                    tlon-magit-browse-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-magit-browse-babel-core)
-    ("b r" "babel-refs"                   tlon-magit-browse-babel-refs)
+    ("b f" "babel-refs"                   tlon-magit-browse-babel-refs)
     ("b i" "babel-issues"                 tlon-magit-browse-babel-issues)
     ""
     ("b d" "babel-de"                     tlon-magit-browse-babel-de)
@@ -172,7 +172,7 @@ DIR is the directory where the repo is stored."
    ["Babel"
     ("b c" "babel-core"                   tlon-dired-browse-babel-core)
     ("b i" "babel-issues"                 tlon-dired-browse-babel-issues)
-    ("b r" "babel-refs"                   tlon-dired-browse-babel-refs)
+    ("b f" "babel-refs"                   tlon-dired-browse-babel-refs)
     ""
     ("b d" "babel-de"                     tlon-dired-browse-babel-de)
     ("b s" "babel-es"                     tlon-dired-browse-babel-es)
@@ -242,7 +242,7 @@ DIR is the directory where the repo is stored."
     ("t d" "tlon-docs"                    tlon-open-file-in-docs)]
    ["Babel"
     ("b c" "babel-core"                   tlon-open-file-in-babel-core)
-    ("b r" "babel-refs"                   tlon-open-file-in-babel-refs)
+    ("b f" "babel-refs"                   tlon-open-file-in-babel-refs)
     ("b i" "babel-issues"                 tlon-open-file-in-babel-issues)
     ""
     ("b d" "babel-de"                     tlon-open-file-in-babel-de)
