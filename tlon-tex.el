@@ -511,6 +511,7 @@ If FILE is nil, use the file visited by the current buffer."
 		   ("translator" . ,(when-let ((field "translator"))
 				      (ebib--edit-list-field field (list field) (ebib-unbrace nil))))
 		   ("date" .  ,(format-time-string "%Y")))))
+    (ebib-switch-to-database-nth 3)
     (ebib-add-entry)
     (sleep-for 0.1)
     (dolist (field fields)
