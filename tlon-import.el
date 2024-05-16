@@ -91,25 +91,28 @@
   (interactive)
   (when (or (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
 	    (y-or-n-p "Ideally, this command should be run from an Ebib buffer. Continue and enter details manually? "))
-    (cl-destructuring-bind (identifier title key) (tlon-get-import-details-from-ebib)
-      (let ((identifier (or identifier (read-string "Identifier (URL or PDF path): "))))
-	(if (simple-extras-string-is-url-p identifier)
-	    (tlon-import-html identifier title)
-	  (tlon-import-pdf (expand-file-name identifier)))
-	key))))
+    (let* ((ebib-data (tlon-get-import-details-from-ebib))
+	   (identifier (or (nth 0 ebib-data) (read-string "Identifier (URL or PDF path): ")))
+	   (title (or (nth 1 ebib-data) (read-string "Title: ")))
+	   (key (nth 2 ebib-data)))
+      (if (simple-extras-string-is-url-p identifier)
+	  (tlon-import-html identifier title)
+	(tlon-import-pdf (expand-file-name identifier)))
+      key)))
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
 (defun tlon-get-import-details-from-ebib ()
   "Get the relevant details for importing a document from the current BibTeX entry."
-  (if-let ((identifier (or (ebib-extras-get-field "url")
-			   (ebib-extras-get-file "md")))
-	   (title (ebib-extras-get-field "title"))
-	   (key (ebib-extras-get-field "=key=")))
-      (list identifier title key)
-    (user-error "The current Ebib entry seems to be missing one of the following
+  (when (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)
+    (if-let ((identifier (or (ebib-extras-get-field "url")
+			     (ebib-extras-get-file "md")))
+	     (title (ebib-extras-get-field "title"))
+	     (key (ebib-extras-get-field "=key=")))
+	(list identifier title key)
+      (user-error "The current Ebib entry seems to be missing one of the following
 fields, which are needed to create a new job: `url' or `file',
-`title' and `key'")))
+`title' and `key'"))))
 
 (defun tlon-import-html (url &optional title)
   "Import the HTML in URL and convert it to Markdown.
