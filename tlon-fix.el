@@ -74,6 +74,28 @@
     ("\"\\[\\^" . " »[^"))
   "A list search and replace pairs for fixing common issues in French translations.")
 
+(defconst tlon-fix-italian-translation
+  '((") - \\[" . ") • [")
+    (" - " . " — ")
+    ("tipo:" . "type:")
+    ("titolo:" . "title:")
+    ("\ntitre:" . "\ntitle:")
+    ("\\*\\*L’" . "L’**")
+    ("\\*\\*L'" . "L’**")
+    ("\\*\\*La " . "La **")
+    ("\\*\\*Le " . "Le **")
+    ("\\*\\*Gli " . "Gli **")
+    ("\\*\\*Un " . "Un **")
+    ("\\*\\*Una " . "Una **")
+    ("## Voci correlate \\." . "## Voci correlate")
+    ("## Voci correlate\\." . "## Voci correlate")
+    ("] (\\." . "](.")
+    ("] (htt" . "](htt")
+    ("(. /" . "(./")
+    ("(.. /" . "(../")
+    ("\"}\\. />". "\"} />"))
+  "A list search and replace pairs for fixing common issues in Italian translations.")
+
 ;;;; Functions
 
 ;;;;; autofix
@@ -207,6 +229,17 @@ dedicated function."
   "Fix common issues in French translations."
   (interactive)
   (dolist (cons tlon-fix-french-translation)
+    (let ((search (car cons))
+	  (replace (cdr cons)))
+      (tlon-autofix (list search) replace))))
+
+(provide 'tlon-fix)
+;;;;;;; Italian
+
+(defun tlon-fix-italian-translation ()
+  "Fix common issues in French translations."
+  (interactive)
+  (dolist (cons tlon-fix-italian-translation)
     (let ((search (car cons))
 	  (replace (cdr cons)))
       (tlon-autofix (list search) replace))))
