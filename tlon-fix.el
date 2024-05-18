@@ -90,12 +90,12 @@
 (defun tlon-autofix-curly-quotes ()
   "Replace straight quotes with curly quotes when appropriate."
   (tlon-autofix '("\\([^\\.\\?]\"\\)\\[")
-		      "\\1["))
+		"\\1["))
 
 (defun tlon-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
   (tlon-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		      "\\1\\3\\2")
+		"\\1\\3\\2")
   (tlon-autofix-footnote-punctuation-amend))
 
 (defun tlon-autofix-footnote-punctuation-amend ()
@@ -109,13 +109,14 @@ effects to begin with."
 (defun tlon-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
   (tlon-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
-		      "\\1"))
+		"\\1"))
 
 (defun tlon-autofix-percent-signs ()
   "Add non-breaking space before percent sign."
   (tlon-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
-			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-		      "\\1 %\\2"))
+		  "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
+		"\\1 %\\2"))
+
 
 ;;;###autoload
 (defun tlon-autofix-all ()
@@ -145,38 +146,38 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
 (defun tlon-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (tlon-manual-fix '("\\([^ ][ ,)]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
-			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
-			   "\\([^ >)] \\)-\\( \\)")
-			 "\\1—\\2"))
+		     "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
+		     "\\([^ >)] \\)-\\( \\)")
+		   "\\1—\\2"))
 
 (defun tlon-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (tlon-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
-			 "\\1\\2–\\3\\4"))
+		   "\\1\\2–\\3\\4"))
 
 (defun tlon-manual-fix-roman-numerals ()
   "Prompt the user to add small caps tags to roman numerals."
   (tlon-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
-			 " <abbr>\\1</abbr>"))
+		   " <abbr>\\1</abbr>"))
 
 (defun tlon-manual-fix-thin-spaces ()
   "Prompt the user to add a thin space between abbreviations followed by a period."
   (tlon-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
-			 "\\1 \\2"))
+		   "\\1 \\2"))
 
 (defun tlon-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
   (tlon-manual-fix '("sólo")
-			 "solo"
-			 'keep-case))
+		   "solo"
+		   'keep-case))
 
 (defun tlon-manual-fix-podcast ()
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
   (tlon-manual-fix '(" podcast")
-			 " pódcast"
-			 'keep-case))
+		   " pódcast"
+		   'keep-case))
 
 (defun tlon-manual-fix-all ()
   "Run all the `tlon-manual-fix' commands."
