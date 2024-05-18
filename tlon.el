@@ -65,7 +65,7 @@ This variable should not be set manually.")
 This variable should not be set manually.")
 
 (defvar tlon-post-init-hook nil
-  "Hook run at the end of `tlon-init'.")
+  "Hook run at the end of `tlon-initialize'.")
 
 ;;;;;; lookup
 
@@ -131,7 +131,7 @@ This variable should not be set manually.")
 ;;;;; init
 
 (defvar tlon-bibliography-files)
-(defun tlon-init ()
+(defun tlon-initialize ()
   "Initialize `tlon'."
   (interactive)
   (tlon-warn-if-unbound 'paths-tlon-todos-jobs-id)
