@@ -117,6 +117,42 @@ effects to begin with."
 		  "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
 		"\\1 %\\2"))
 
+(defvar tlon-math-inline-search-pattern)
+(defvar tlon-math-display-search-pattern)
+(defvar markdown-regex-link-inline)
+(defvar ffap-url-regexp)
+(defun tlon-autofix-number-separators ()
+  "Replace commas and periods used as number separators with thin spaces.
+Do not perform these replacements if the terms occur in math formulae, links, or
+match certain words that should not be altered, such as \"80,000 Hours\"."
+  (interactive)
+  (let* ((exclusions `(,tlon-math-inline-search-pattern
+		       ,tlon-math-display-search-pattern
+		       ,markdown-regex-link-inline
+		       ,ffap-url-regexp
+		       "\\0[,\\.][[:digit:]]+"
+		       "80,000 Hours"))
+	 (exclusion-patterns (mapconcat #'identity exclusions "\\|"))
+	 protected-ranges)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward exclusion-patterns nil t)
+	(push (cons (match-beginning 0) (match-end 0)) protected-ranges))
+      (tlon-number-separators-perform-replacements protected-ranges))))
+
+(defun tlon-number-separators-perform-replacements (protected-ranges)
+  "Replace separators in numbers except in PROTECTED-RANGES."
+  (dolist (separator '("," "\\."))
+    (goto-char (point-min))
+    (let ((digit-pattern (format tlon-number-separated-by-separator separator)))
+      (while (re-search-forward digit-pattern nil t)
+	(unless (tlon-is-in-protected-range-p (match-beginning 0) (match-end 0) protected-ranges)
+	  (replace-match (replace-regexp-in-string separator " " (match-string-no-properties 0))))))))
+
+(defun tlon-is-in-protected-range-p (start end protected-ranges)
+  "Check if range from START to END overlaps with any PROTECTED-RANGES."
+  (cl-loop for (pstart . pend) in protected-ranges
+	   thereis (not (or (< end pstart) (> start pend)))))
 
 ;;;###autoload
 (defun tlon-autofix-all ()
@@ -126,6 +162,7 @@ effects to begin with."
   (tlon-autofix-footnote-punctuation)
   (tlon-autofix-periods-in-headings)
   (tlon-autofix-percent-signs)
+  (tlon-autofix-number-separators)
   (let ((after-save-hook (remove #'tlon-autofix-all after-save-hook)))
     (save-buffer)
     (add-hook 'after-save-hook #'tlon-autofix-all nil t)))
