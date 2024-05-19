@@ -892,11 +892,12 @@ If LANGUAGE is nil, look up the language of the current file or prompt the user
 to select it."
   (setq tlon-tts-current-language (tlon-tts-get-current-language language)))
 
+;;;;;;; Voice
 
 (defun tlon-tts-set-current-main-voice (&optional voice)
   "Set the main voice for the current process.
 If VOICE is nil, prompt the user to select a voice."
-  (setq tlon-tts-current-main-voice (or voice (tlon-get-voices)))
+  (setq tlon-tts-current-main-voice (or voice (tlon-tts-get-voices)))
   (tlon-tts-set-voice-locale))
 
 (defun tlon-tts-set-voice-locale ()
@@ -907,6 +908,18 @@ If VOICE is nil, prompt the user to select a voice."
 	    (when-let* ((code (tlon-lookup (symbol-value var) :language :voice tlon-tts-current-main-voice))
 			(locale (tlon-lookup tlon-languages-properties :locale :code code)))
 	      (throw 'found locale))))))
+
+(defun tlon-tts-get-voices ()
+  "Get available voices in the current language for the current TTS engine."
+  (let* ((voices (symbol-value (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-current-engine)))
+	 (voice (completing-read "Voice: "
+				 (apply #'append
+					(mapcar (lambda (language)
+						  "Return lists of monolingual and multilingual voices."
+						  (tlon-lookup-all voices :voice :language language))
+						`(,(tlon-tts-get-current-language) "multilingual"))))))
+    ;; we use voice ID if available, for those engines that require it
+    (if-let ((id (tlon-lookup voices :id :voice voice))) id voice)))
 
 ;;;;;;; Set/unset all values
 
