@@ -270,6 +270,25 @@ creating `org-mode' TODOs.")
   :type 'string
   :group 'tlon-core)
 
+;;;;; Numbers
+
+(defconst tlon-number-separated-by-separator
+  "\\([[:digit:]]\\{1,3\\}\\(?:%s[[:digit:]]\\{3\\}\\b\\)+\\)"
+  "Pattern to match numbers separated by separator.
+The placeholder `%s' is used to insert the separator.")
+
+(defconst tlon-number-separated-by-comma
+  (format tlon-number-separated-by-separator ",")
+  "Pattern to match numbers separated by a comma.")
+
+(defconst tlon-number-separated-by-period
+  (format tlon-number-separated-by-separator "\\.")
+  "Pattern to match numbers separated by a period.")
+
+(defconst tlon-number-separated-by-thin-space
+  (format tlon-number-separated-by-separator " ")
+  "Pattern to match numbers separated by a thin space.")
+
 ;;;;; To sort
 
 (defvar tlon-users
