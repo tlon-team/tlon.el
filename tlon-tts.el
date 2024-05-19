@@ -873,13 +873,25 @@ If ENGINE is nile, prompt the user to select an engine."
 	(or engine
 	    (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name)))))
 
+;;;;;;; Language
+
+;; TODO: decide if this getter function should also be used for the othe values (engine, voice, etc)
+(defun tlon-tts-get-current-language (&optional language)
+  "Return the value of the language of the current process.
+If LANGUAGE is return it. Otherwise, get the value of
+`tlon-tts-set-current-language', look up the language of the current file or
+prompt the user to select it, in that order."
+  (let ((language (or language tlon-tts-current-language)))
+    (or language
+	(tlon-repo-lookup :language :dir (tlon-get-repo-from-file tlon-tts-current-file-or-buffer))
+	(tlon-select-language 'code 'babel))))
+  
 (defun tlon-tts-set-current-language (&optional language)
   "Set the value of the language of the current process.
-If LANGUAGE is nil, look up the language of the current file."
-  (setq tlon-tts-current-language
-	(or language
-	    (tlon-repo-lookup :language :dir (tlon-get-repo-from-file tlon-tts-current-file-or-buffer))
-	    (tlon-select-language 'code 'babel))))
+If LANGUAGE is nil, look up the language of the current file or prompt the user
+to select it."
+  (setq tlon-tts-current-language (tlon-tts-get-current-language language)))
+
 
 (defun tlon-tts-set-current-main-voice (&optional voice)
   "Set the main voice for the current process.
@@ -1343,7 +1355,7 @@ For each cons cell in VAR for the language in the current text-to-speech
 process, return its cdr."
   (let ((result '()))
     (dolist (term var result)
-      (when (member tlon-tts-current-language (car term))
+      (when (member (tlon-tts-get-current-language) (car term))
 	(setq result (append result (cadr term)))))
     result))
 
@@ -1406,7 +1418,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
   (cl-destructuring-bind (cue-begins . cue-ends)
-      (alist-get tlon-tts-current-language type nil nil #'string=)
+      (alist-get (tlon-tts-get-current-language) type nil nil #'string=)
     (format "%s %s %s" cue-begins text cue-ends)))
 
 (defun tlon-tts-enclose-in-voice-tag (string &optional voice)
@@ -1501,7 +1513,7 @@ image links are handled differently."
     (while (re-search-forward pattern nil t)
       (let ((math (match-string-no-properties 2)))
 	(replace-match "" nil nil)
-	(tlon-ai-translate-math math tlon-tts-current-language)))))
+	(tlon-ai-translate-math math (tlon-tts-get-current-language))))))
 
 ;;;;;; Remove unsupported SSML tags
 
