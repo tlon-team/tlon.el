@@ -1156,44 +1156,60 @@ STRING is the string of the request. DESTINATION is the output file path."
     (format "%s.\n\nPor %s.\n\n" title author-string)))
 
 ;;;;; SSML insertion
+;;;;; Get SSML
+
+(defun tlon-tts-get-ssml-break (time)
+  "Return an SSML `break' tag with `time' attribute of TIME."
+  (format tlon-tts-ssml-break time))
+
+(defun tlon-tts-get-ssml-emphasis (level)
+  "Return an SSML `emphasis' tag with `level' attribute of LEVEL."
+  (tlon-tag-element-with-attributes tlon-tts-ssml-emphasis level))
+
+(defun tlon-tts-get-ssml-lang (language)
+  "Return an SSML `lang' tag with `language' attribute of LANGUAGE."
+  (tlon-tag-element-with-attributes tlon-tts-ssml-lang language))
+
+(defun tlon-tts-get-ssml-phoneme (alphabet ph)
+  "Return an SSML `phoneme' tag  with `alphabet' and `ph' set to ALPHABET and PH."
+  (tlon-tag-element-with-attributes tlon-tts-ssml-phoneme alphabet ph))
+
 
 ;;;###autoload
 (defun tlon-tts-insert-ssml-break (time)
   "Insert a `break' SSML tag pair at point or around the selected region.
-Prompt the user to enter a value for the TIME attribute."
+If TIME is nil, prompt the user to enter a value for the `time' attribute."
   (interactive (list (concat (read-string "s`time' (seconds): ") "s")))
-  (insert (format tlon-tts-ssml-break time)))
+  (insert (tlon-tts-get-ssml-break time)))
 
 ;;;###autoload
-(defun tlon-insert-ssml-emphasis (level)
+(defun tlon-tts-insert-ssml-emphasis (level)
   "Insert a `emphasis' SSML tag pair at point or around the selected region.
-Prompt the user to select a value for the LEVEL attribute."
+If LEVEL is nil, prompt the user to select a value for the `level' attribute."
   (interactive (list (completing-read "`emphasis': "
 				      tlon-tts-ssml-emphasis-levels nil t nil nil
 				      tlon-tts-ssml-default-emphasis-level)))
-  (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attributes tlon-tts-ssml-emphasis level)))
+  (tlon-md-insert-element-pair (tlon-tts-get-ssml-emphasis level)))
 
 ;;;###autoload
 (defun tlon-tts-insert-ssml-lang (language)
   "Insert a `lang' SSML tag pair at point or around the selected region.
-Prompt the user to select a value for the LANGUAGE attribute. The enclosed text
-will be interpreted as written in that language."
+If LANGUAGE is nil. prompt the user to select a value for the `language'
+attribute."
   (interactive (list (tlon-select-language 'locale)))
   (tlon-md-insert-element-pair
    (tlon-tag-element-with-attributes tlon-tts-ssml-lang language)))
 
 ;;;###autoload
-(defun tlon-insert-ssml-phoneme (alphabet ph)
+(defun tlon-tts-insert-ssml-phoneme (alphabet ph)
   "Insert a `phoneme' SSML tag pair at point or around the selected region.
-Prompt the user to select a value for the ALPHABET attribute and to enter a
-value for the PH attribute."
+If ALPHABET or PH are nil, prompt the user to select a value for the `alphabet'
+and `ph' attributes."
   (interactive (list (completing-read "`alphabet': "
 				      tlon-tts-ssml-phoneme-alphabets nil t nil nil
 				      tlon-tts-ssml-phoneme-default-alphabet)
 		     (read-string "PH: "))) ; integrate with AI
-  (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attributes tlon-tts-ssml-phoneme alphabet ph)))
+  (tlon-md-insert-element-pair (tlon-tts-get-ssml-phoneme alphabet ph)))
 
 ;;;###autoload
 (defun tlon-tts-insert-ssml-say-as (interpret-as)
