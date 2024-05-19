@@ -1073,12 +1073,6 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Get or set the Google Cloud token key."
   (string-trim (shell-command-to-string "gcloud auth print-access-token")))
 
-(defun tlon-google-cloud-get-or-set-key ()
-  "Get or set the Google Cloud key."
-  (or tlon-google-cloud-key
-      (setq tlon-google-cloud-key
-	    (auth-source-pass-get "key" "tlon/babel/cloud.google.com/pablo.stafforini@gmail.com"))))
-
 ;;;;;;; Amazon Polly
 
 (defun tlon-tts-amazon-polly-make-request (string destination)
