@@ -1521,12 +1521,10 @@ image links are handled differently."
 ;;;;;; Numbers
 
 (defun tlon-tts-process-numbers ()
-  "Remove number separators."
-  (let* ((separator (alist-get tlon-tts-current-language
-			       tlon-md-number-separators nil nil #'string=)))
-    (goto-char (point-min))
-    (while (re-search-forward (format tlon-md-number-separator-pattern separator) nil t)
-      (replace-match "\\1\\3"))))
+  "Remove thin space separators in numbers."
+  (goto-char (point-min))
+  (while (re-search-forward tlon-number-separated-by-thin-space nil t)
+    (replace-match (replace-regexp-in-string " " "" (match-string 1)))))
 
 ;;;;;; Currencies
 
