@@ -746,14 +746,9 @@ For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/s
   "Narrate CONTENT in LANGUAGE with VOICE using text-to-speech ENGINE.
 If region is active, read the region. Otherwise, read FILE.
 
-Save the narration to the `audio' directory in the same repository as FILE or,
-if region is active, save it to the downloads directory."
+Save the audio file in the downloads folder."
   (interactive)
-  (tlon-tts-set-current-file-or-buffer file)
-  (tlon-tts-set-current-content content)
-  (tlon-tts-set-current-engine engine)
-  (tlon-tts-set-current-language language)
-  (tlon-tts-set-current-main-voice voice)
+  (tlon-tts-set-all-current-values file content engine language voice)
   (tlon-tts-process-chunks)
   (tlon-tts-unset-all-current-values))
 
@@ -900,6 +895,17 @@ If VOICE is nil, prompt the user to select a voice."
 	    (when-let* ((code (tlon-lookup (symbol-value var) :language :voice tlon-tts-current-main-voice))
 			(locale (tlon-lookup tlon-languages-properties :locale :code code)))
 	      (throw 'found locale))))))
+
+;;;;;;; Set/unset all values
+
+(defun tlon-tts-set-all-current-values (file content engine language voice)
+  "Set all current values.
+FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
+  (tlon-tts-set-current-file-or-buffer file)
+  (tlon-tts-set-current-content content)
+  (tlon-tts-set-current-engine engine)
+  (tlon-tts-set-current-language language)
+  (tlon-tts-set-current-main-voice voice))
 
 (defun tlon-tts-unset-all-current-values ()
   "Unset all current values."
