@@ -587,5 +587,18 @@ If FILE is nil, use the file visited by the current buffer."
 	     citar-cache--bibliographies)
     fields))
 
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
+(transient-define-prefix tlon-tex-menu ()
+  "Menu for `tex' functions."
+  [["Missing URLs"
+    ("f" "Find in file"                 tlon-prompt-to-add-missing-urls)
+    ("z" "Add with Zotra"               zotra-extras-add-multiple-urls)]
+   ["Ebib"
+    ("a" "Fetch abstract"               tlon-fetch-and-set-abstract)
+    ("c" "Create entry"                 tlon-tex-create-translation-entry)
+    ("t" "Move to Tlön database"        ebib-extras-move-entry-to-tlon)]])
+
 (provide 'tlon-tex)
 ;;; tlon-tex.el ends here

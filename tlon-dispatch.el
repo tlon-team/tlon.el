@@ -68,7 +68,8 @@
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
     ("t" "contacts"                       tlon-contacts-menu)
-    ("y" "forg"                           tlon-forg-menu)]
+    ("y" "forg"                           tlon-forg-menu)
+    ("x" "tex"                            tlon-tex-menu)]
    ["""Browse repo"
     ("d" "in Dired"                       tlon-dired-repo-menu)
     ("m" "in Magit"                       tlon-magit-repo-menu)]
