@@ -138,16 +138,15 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
       (goto-char (point-min))
       (while (re-search-forward exclusion-patterns nil t)
 	(push (cons (match-beginning 0) (match-end 0)) protected-ranges))
-      (tlon-number-separators-perform-replacements protected-ranges))))
+      (tlon-number-separators-perform-replacements separator protected-ranges))))
 
-(defun tlon-number-separators-perform-replacements (protected-ranges)
-  "Replace separators in numbers except in PROTECTED-RANGES."
-  (dolist (separator '("," "\\."))
-    (goto-char (point-min))
-    (let ((digit-pattern (format tlon-number-separated-by-separator separator)))
-      (while (re-search-forward digit-pattern nil t)
-	(unless (tlon-is-in-protected-range-p (match-beginning 0) (match-end 0) protected-ranges)
-	  (replace-match (replace-regexp-in-string separator " " (match-string-no-properties 0))))))))
+(defun tlon-number-separators-perform-replacements (separator protected-ranges)
+  "Replace thousands SEPARATOR with thin spaces, except in PROTECTED-RANGES."
+  (goto-char (point-min))
+  (let ((digit-pattern (format tlon-number-separated-by-separator separator)))
+    (while (re-search-forward digit-pattern nil t)
+      (unless (tlon-is-in-protected-range-p (match-beginning 0) (match-end 0) protected-ranges)
+	(replace-match (replace-regexp-in-string separator " " (match-string-no-properties 0)))))))
 
 (defun tlon-is-in-protected-range-p (start end protected-ranges)
   "Check if range from START to END overlaps with any PROTECTED-RANGES."
