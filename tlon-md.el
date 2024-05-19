@@ -64,25 +64,7 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
-;;;;; Cite
-
-(defconst tlon-cite-pattern
-  "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
-  "Pattern to match a citation in a Markdown file.
-The first group captures the bibTeX key, the second group captures the locators,
-and the third group captures the short citation flag.")
-
-;;;;; Note markers
-
-(defconst tlon-footnote-marker "<Footnote />"
-  "Marker for a footnote in a `Cite' MDX element.")
-
-(defconst tlon-sidenote-marker "<Sidenote />"
-  "Marker for a sidenote in a `Cite' MDX element.")
-
 ;;;;; Numbers
-
-;;;;; Math
 
 ;;;;;; inline
 
@@ -123,7 +105,20 @@ Text enclosed in an `Aside' tag pair will be treated like an aside section.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; Lang
+;;;;;; `Cite'
+
+(defconst tlon-cite-pattern
+  "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
+  "Pattern to match a citation in a Markdown file.
+The first group captures the bibTeX key, the second group captures the locators,
+and the third group captures the short citation flag.")
+
+;;;;;; `Footnote'
+
+(defconst tlon-footnote-marker "<Footnote />"
+  "Marker for a footnote in a `Cite' MDX element.")
+
+;;;;;; `Lang'
 
 (defconst tlon-mdx-lang
   '("<Lang id={\"%s\"}>" . "</Lang>")
@@ -151,6 +146,11 @@ The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
 ;;;;;; `Sidenote'
+
+(defconst tlon-sidenote-marker "<Sidenote />"
+  "Marker for a sidenote in a `Cite' MDX element.")
+
+;;;;;; `SmallCaps'
 
 (defconst tlon-mdx-small-caps
   '("<SmallCaps>" . "</SmallCaps>")
