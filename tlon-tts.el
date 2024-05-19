@@ -1205,7 +1205,8 @@ and `ph' attributes."
 ;;;###autoload
 (defun tlon-tts-insert-ssml-say-as (interpret-as)
   "Insert a `say-as' SSML tag pair at point or around the selected region.
-Prompt the user to select a VALUE for the INTERPRET-AS attribute."
+If INTERPRET-AS is nil, prompt the user to select a value for the `interpret-as'
+attribute."
   (interactive (list (completing-read "`interpret-as': "
 				      tlon-tts-ssml-interpret-as-values)))
   (tlon-md-insert-element-pair (tlon-tag-element-with-attributes tlon-tts-ssml-say-as interpret-as)))
