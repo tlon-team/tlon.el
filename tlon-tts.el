@@ -812,12 +812,6 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
     ;; we use voice ID if available, for those engines that require it
     (if-let ((id (tlon-lookup voices :id :voice voice))) id voice)))
 
-(defun tlon-tts-get-alternative-voice ()
-  "Return the voice in the current language that is not the current voice."
-  (let ((voices (tlon-lookup-all tlon-microsoft-azure-voices
-				 :voice :language tlon-tts-current-language)))
-    (car (delete tlon-tts-current-main-voice voices))))
-
 (defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-current-engine))
@@ -1469,6 +1463,12 @@ order, to close the opening `voice' tag that wraps the entire document, and to
 then reopen it."
   (let ((voice (or voice (tlon-tts-get-alternative-voice))))
     (format tlon-tts-ssml-double-voice-replace-pattern voice string tlon-tts-current-main-voice)))
+
+(defun tlon-tts-get-alternative-voice ()
+  "Return the voice in the current language that is not the current voice."
+  (let ((voices (tlon-lookup-all tlon-microsoft-azure-voices
+				 :voice :language (tlon-tts-get-current-language))))
+    (car (delete tlon-tts-current-main-voice voices))))
 
 (defun tlon-tts-enclose-in-cue-delimiter (string)
   "Enclose STRING in listener cue delimiter."
