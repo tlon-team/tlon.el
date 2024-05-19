@@ -1155,7 +1155,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 	 (author-string (tlon-concatenate-list authors)))
     (format "%s.\n\nPor %s.\n\n" title author-string)))
 
-;;;;; SSML insertion
+
 ;;;;; Get SSML
 
 (defun tlon-tts-get-ssml-break (time)
@@ -1174,6 +1174,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Return an SSML `phoneme' tag  with `alphabet' and `ph' set to ALPHABET and PH."
   (tlon-tag-element-with-attributes tlon-tts-ssml-phoneme alphabet ph))
 
+;;;;; Insert SSML
 
 ;;;###autoload
 (defun tlon-tts-insert-ssml-break (time)
