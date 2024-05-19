@@ -194,6 +194,7 @@ Text enclosed by a `VisuallyShown' tag pair will be displayed, but not narrated.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
+;; TODO: remove?
 ;;;;;; AlternativeVoice
 
 (defconst tlon-mdx-alternative-voice
