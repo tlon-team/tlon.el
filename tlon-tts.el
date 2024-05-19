@@ -830,6 +830,8 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 
 ;;;;;; Set current values
 
+;;;;;;; File or buffer
+
 (defun tlon-tts-set-current-file-or-buffer (&optional file)
   "Set the file or buffer name with the content for the current TTS process.
 If FILE is nil, use the name of the file visited by the current buffer, or the
@@ -857,6 +859,8 @@ otherwise."
       ;; file-local counterpart
       (setq tlon-file-local-abbreviations tlon-file-local-abbreviations)
       (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
+
+;;;;;;; Engine
 
 (defun tlon-tts-set-current-engine (&optional engine)
   "Set the current value of the TTS engine.
