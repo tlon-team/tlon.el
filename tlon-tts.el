@@ -766,14 +766,13 @@ Save the audio file in the downloads folder."
 
 (defun tlon-tts-set-audio-path ()
   "Set the audio file path."
-  (let* ((repo (tlon-get-repo-from-file tlon-tts-current-file-or-buffer))
-	 (file-name-sans-extension (file-name-sans-extension
+  ;; TODO: decide if files should always be saved in the downloads directory
+  (let* ((file-name-sans-extension (file-name-sans-extension
 				    (file-name-nondirectory tlon-tts-current-file-or-buffer)))
 	 (extension (cdr (tlon-tts-get-output-format)))
 	 (file-name (file-name-with-extension file-name-sans-extension extension)))
-    (if (region-active-p)
-	(file-name-concat paths-dir-downloads file-name)
-      (file-name-concat repo "audio" file-name))))
+    (file-name-concat paths-dir-downloads file-name)))
+
 (defun tlon-tts-get-output-format ()
   "Return the output format for the current TTS engine.
 The output format is a cons cell with the format name and extension."
