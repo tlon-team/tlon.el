@@ -753,7 +753,7 @@ Save the audio file in the downloads folder."
   (tlon-tts-unset-all-current-values))
 
 (defun tlon-tts-process-chunks ()
-  ""
+  "Process unprocessed chunks."
   (let* ((destination (tlon-tts-set-audio-path))
 	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-current-engine)))
 	 (chunks (tlon-tts-read-content char-limit))
