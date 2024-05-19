@@ -774,6 +774,10 @@ Save the audio file in the downloads folder."
     (if (region-active-p)
 	(file-name-concat paths-dir-downloads file-name)
       (file-name-concat repo "audio" file-name))))
+(defun tlon-tts-get-output-format ()
+  "Return the output format for the current TTS engine.
+The output format is a cons cell with the format name and extension."
+  (symbol-value (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-current-engine)))
 
 (defun tlon-tts-read-content (&optional chunk-size)
   "Read content and return it as a string ready for TTS processing.
@@ -825,11 +829,6 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   (let ((voices (tlon-lookup-all tlon-microsoft-azure-voices
 				 :voice :language tlon-tts-current-language)))
     (car (delete tlon-tts-current-main-voice voices))))
-
-(defun tlon-tts-get-output-format ()
-  "Return the output format for the current TTS engine.
-The output format is a cons cell with the format name and extension."
-  (symbol-value (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-current-engine)))
 
 (defun tlon-generate-audio (string file)
   "Generate audio FILE of STRING."
