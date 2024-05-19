@@ -799,18 +799,6 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   "Return the name of the temporary buffer for the current TTS process."
   (format "*Tlon-TTS %s*" (file-name-nondirectory tlon-tts-current-file-or-buffer)))
 
-(defun tlon-get-voices ()
-  "Get available voices in the current language for the current TTS engine."
-  (let* ((voices (symbol-value (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-current-engine)))
-	 (voice (completing-read "Voice: "
-				 (apply #'append
-					(mapcar (lambda (language)
-						  "Return lists of monolingual and multilingual voices."
-						  (tlon-lookup-all voices :voice :language language))
-						`(,tlon-tts-current-language "multilingual"))))))
-    ;; we use voice ID if available, for those engines that require it
-    (if-let ((id (tlon-lookup voices :id :voice voice))) id voice)))
-
 (defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-current-engine))
