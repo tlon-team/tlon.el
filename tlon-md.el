@@ -82,11 +82,6 @@ and the third group captures the short citation flag.")
 
 ;;;;; Numbers
 
-(defconst tlon-md-number-separators
-  '(("en" . ",")
-    ("es" . " "))
-  "Number separators for different languages.")
-
 (defconst tlon-md-number-separator-pattern
   "\\([[:digit:]]+?\\)%s\\([[:digit:]]+?\\)"
   "Pattern to match numbers separated by language-specific separator.")
