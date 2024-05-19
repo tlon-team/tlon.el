@@ -818,7 +818,7 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 				 :voice :language tlon-tts-current-language)))
     (car (delete tlon-tts-current-main-voice voices))))
 
-(defun tlon-generate-audio (string file)
+(defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-current-engine))
          (request (funcall fun string file))
