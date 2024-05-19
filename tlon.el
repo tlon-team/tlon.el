@@ -134,13 +134,13 @@ This variable should not be set manually.")
 (defun tlon-initialize ()
   "Initialize `tlon'."
   (interactive)
-  (tlon-warn-if-unbound 'paths-tlon-todos-jobs-id)
-  (tlon-warn-if-unbound 'paths-tlon-todos-generic-id)
+  (dolist (var '(paths-tlon-todos-jobs-id paths-tlon-todos-generic-id))
+    (tlon-warn-if-unbound var))
   (setq paths-files-bibliography-all
 	`(,@paths-files-bibliography-personal
 	  ,@tlon-bibliography-files))
   (run-hooks 'tlon-post-init-hook)
-  (message "Initialized `tlon'"))
+  (message "Initialized `tlon'."))
 
 (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
 		     (id ,paths-tlon-todos-jobs-id)
