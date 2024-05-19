@@ -780,19 +780,16 @@ The output format is a cons cell with the format name and extension."
 
 (defun tlon-tts-read-content (&optional chunk-size)
   "Read content and return it as a string ready for TTS processing.
-If the process fails, show temporary buffer for inspection.
 If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   (with-current-buffer (get-buffer-create (tlon-tts-get-temp-buffer-name))
     (erase-buffer)
     (insert tlon-tts-current-content)
     (tlon-tts-prepare-buffer)
     (let ((content (if chunk-size
-		       (tlon-break-into-chunks chunk-size)
-                     (buffer-string))))
-      ;; this should be moved to later in the code
-      ;; when we know whether the process was successful
-      (unless (tts-process-successful-p) ; TODO: define this function
-        (display-buffer (current-buffer)))
+		       (tlon-tts-break-into-chunks chunk-size)
+		     (buffer-string))))
+      ;; TODO: display buffer only if process failed
+      (display-buffer (current-buffer))
       content)))
 
 (defun tlon-tts-get-temp-buffer-name ()
