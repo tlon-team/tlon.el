@@ -815,15 +815,14 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 (defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-current-engine))
-         (request (funcall fun string file))
-         (process (start-process-shell-command "generate audio" nil request)))
+	 (request (funcall fun string file))
+	 (process (start-process-shell-command "generate audio" nil request)))
     (set-process-sentinel process
-                          (lambda (process event)
-                            (if (string= event "finished\n")
-                                (if (region-active-p)
-                                    (tlon-tts-open-file file)
-                                  (tlon-tts-process-chunk file))
-                              (message "Process %s: Event occurred - %s" (process-name process) event))))))
+			  (lambda (process event)
+			    (if (string= event "finished\n")
+				(if (region-active-p)
+				    (tlon-tts-open-file file)
+				  (tlon-tts-process-chunk file))
 
 (defun tlon-tts-open-file (file)
   "Open generated TTS FILE."
@@ -1205,8 +1204,7 @@ and `ph' attributes."
 Prompt the user to select a VALUE for the INTERPRET-AS attribute."
   (interactive (list (completing-read "`interpret-as': "
 				      tlon-tts-ssml-interpret-as-values)))
-  (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attributes tlon-tts-ssml-say-as interpret-as)))
+  (tlon-md-insert-element-pair (tlon-tag-element-with-attributes tlon-tts-ssml-say-as interpret-as)))
 
 ;;;;; Cleanup
 
@@ -1571,10 +1569,10 @@ image links are handled differently."
 (defun tlon-tts-count-format-placeholders (format)
   "Count the number of format placeholders in the format string FORMAT."
   (let ((count 0)
-        (pos 0))
+	(pos 0))
     (while (string-match "%\\([^%]\\)" format pos)
       (setq count (1+ count)
-            pos (match-end 0)))
+	    pos (match-end 0)))
     count))
 
 (defun tlon-tts-fill-format-string (format string)
