@@ -363,9 +363,9 @@ COMMIT is non-nil, commit the change."
     ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)]
    ["Job creation"
     ("c c" "create job"                 tlon-create-job)
-    ("c 1" "import document"            tlon-import-document)
-    ("c 2" "create translation file"    tlon-create-translation-file)
-    ("c 3" "create record for job"      tlon-create-record-for-job)]
+    ("c d" "1 import document"            tlon-import-document)
+    ("c f" "2 create translation file"    tlon-create-translation-file)
+    ("c r" "3 create record for job"      tlon-create-record-for-job)]
    ["Add or modify"
     ("g" "glossary"                     tlon-edit-glossary)
     ("s" "section correspondence"       tlon-section-correspondence-dwim)
