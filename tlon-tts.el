@@ -810,6 +810,7 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 				(if (region-active-p)
 				    (tlon-tts-open-file file)
 				  (tlon-tts-process-chunk file))
+			      (message "Process %s: Event occurred - %s" (process-name process) event))))))
 
 (defun tlon-tts-open-file (file)
   "Open generated TTS FILE."
