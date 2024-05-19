@@ -1230,6 +1230,7 @@ Prompt the user to select a VALUE for the INTERPRET-AS attribute."
     (tlon-tts-process-citations)
     (tlon-tts-process-formatting)
     (tlon-tts-process-headings)
+    (tlon-tts-process-paragraphs)
     ;; replace small caps
     ;; check all other elements in markdown-menu
     (tlon-tts-process-file-local-abbreviations)
@@ -1323,6 +1324,20 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 (defun tlon-tts-process-visually-shown ()
   "Remove `VisuallyShown' MDX tag."
   (tlon-tts-remove-formatting 'visually-shown))
+
+;;;;;; Paragraphs
+
+(defun tlon-tts-process-paragraphs ()
+  "Add a pause at the end of a paragraph.
+The time length of the pause is determined by
+`tlon-tts-paragraph-break-duration'."
+  (goto-char (point-min))
+  (while (not (eobp))
+    (forward-paragraph)
+    (backward-char)
+    (unless (looking-back "^\\s-*$" (line-beginning-position))
+      (insert (concat " " (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration))))
+    (forward-char)))
 
 ;;;;;; Headings
 
