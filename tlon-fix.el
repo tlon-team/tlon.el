@@ -130,7 +130,6 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
 		       ,tlon-math-display-search-pattern
 		       ,markdown-regex-link-inline
 		       ,ffap-url-regexp
-		       "\\0[,\\.][[:digit:]]+"
 		       "80,000 Hours"))
 	 (exclusion-patterns (mapconcat #'identity exclusions "\\|"))
 	 protected-ranges)
