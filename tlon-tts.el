@@ -800,18 +800,6 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   "Return the name of the temporary buffer for the current TTS process."
   (format "*Tlon-TTS %s*" (file-name-nondirectory tlon-tts-current-file-or-buffer)))
 
-(defun tlon-tts-read-file (file)
-  "Return substantive content of FILE, handling in-text abbreviations."
-  (unless (string= (file-name-extension file) "md")
-    (user-error "File `%s' is not a Markdown file" file))
-  (let ((tlon-file-local-abbreviations))
-    (with-current-buffer (find-file-noselect file)
-      ;; to make `tlon-tts-process-file-local-abbreviations' work, we
-      ;; let-bound the variable above and now set its value to that of its
-      ;; file-local counterpart
-      (setq tlon-file-local-abbreviations tlon-file-local-abbreviations)
-      (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
-
 (defun tlon-get-voices ()
   "Get available voices in the current language for the current TTS engine."
   (let* ((voices (symbol-value (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-current-engine)))
@@ -864,6 +852,18 @@ otherwise."
 	(or content (if (region-active-p)
 			(buffer-substring-no-properties (region-beginning) (region-end))
 		      (tlon-tts-read-file tlon-tts-current-file-or-buffer)))))
+
+(defun tlon-tts-read-file (file)
+  "Return the substantive content of FILE, handling in-text abbreviations."
+  (unless (string= (file-name-extension file) "md")
+    (user-error "File `%s' is not a Markdown file" file))
+  (let ((tlon-file-local-abbreviations))
+    (with-current-buffer (find-file-noselect file)
+      ;; to make `tlon-tts-process-file-local-abbreviations' work, we
+      ;; let-bound the variable above and now set its value to that of its
+      ;; file-local counterpart
+      (setq tlon-file-local-abbreviations tlon-file-local-abbreviations)
+      (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
 
 (defun tlon-tts-set-current-engine (&optional engine)
   "Set the current value of the TTS engine.
