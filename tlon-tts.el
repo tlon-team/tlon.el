@@ -36,10 +36,24 @@
   "Text-to-speech functionality."
   :group 'tlon)
 
+;;;;; Common
+
 (defcustom tlon-tts-use-alternate-voice nil
   "Whether to use an alternative voice for reading notes, asides, etc."
   :group 'tlon-tts
   :type 'boolean)
+
+;;;;;; `break'
+
+(defcustom tlon-tts-heading-break-duration "1s"
+  "Duration of the break after a heading."
+  :group 'tlon-tts
+  :type 'string)
+
+(defcustom tlon-tts-paragraph-break-duration "0.3s"
+  "Duration of the break after a paragraph."
+  :group 'tlon-tts
+  :type 'string)
 
 ;;;;; Microsoft Azure
 
@@ -1265,8 +1279,9 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 ;;;;;; Headings
 
 (defun tlon-tts-process-headings ()
-  "Remove heading markers from headings."
-  (let ((insert-pause (format tlon-tts-ssml-break "1s")))
+  "Remove heading markers from headings and add an optional pause.
+The time length of the pause is determined by `tlon-tts-heading-break-duration'."
+  (let ((insert-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
     (goto-char (point-min))
     (while (re-search-forward markdown-regex-header nil t)
       (replace-match (format "%s %s" insert-pause (match-string 5))))))
