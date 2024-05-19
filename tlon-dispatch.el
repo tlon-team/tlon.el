@@ -337,11 +337,11 @@ DIR is the directory where the repo is stored."
    ("g" "edit glossary"              tlon-edit-glossary)
    ("G" "extract glossary"           tlon-extract-glossary)
    "TTS"
-   ("a" "abbreviations"              tlon-edit-abbreviations)
+   ("a" "abbreviations"              tlon-tts-edit-abbreviations)
    ("A" "file-local abbreviations"   tlon-add-file-local-abbreviation)
-   ("r" "replacements"               tlon-edit-phonetic-replacements)
+   ("r" "replacements"               tlon-tts-edit-phonetic-replacements)
    ("R" "file-local replacements"    tlon-add-file-local-replacement)
-   ("t" "phonetic transcriptions"    tlon-edit-phonetic-transcriptions)])
+   ("t" "phonetic transcriptions"    tlon-tts-edit-phonetic-transcriptions)])
 
 (provide 'tlon-dispatch)
 ;;; tlon-dispatch.el ends here
