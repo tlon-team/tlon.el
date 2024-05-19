@@ -110,7 +110,7 @@ captures the expression without the delimiters.")
 
 ;;;;; MDX
 
-;;;;;; Aside
+;;;;;; `Aside'
 
 (defconst tlon-mdx-aside
   '("<Aside>" . "</Aside>")
@@ -137,7 +137,7 @@ language (e.g. for the purposed of hyphenating it).")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; LiteralLink
+;;;;;; `LiteralLink'
 
 (defconst tlon-mdx-literal-link
   '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
@@ -150,7 +150,7 @@ Links enclosed by a `LiteralLink' tag pair will be treated as literal links.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; SmallCaps
+;;;;;; `Sidenote'
 
 (defconst tlon-mdx-small-caps
   '("<SmallCaps>" . "</SmallCaps>")
@@ -163,7 +163,7 @@ Text enclosed by a `SmallCaps' tag pair will be displayed in small caps.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; VisuallyHidden
+;;;;;; `VisuallyHidden'
 
 (defconst tlon-mdx-visually-hidden
   '("<VisuallyHidden>" . "</VisuallyHidden>")
@@ -177,7 +177,7 @@ displayed.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; VisuallyShown
+;;;;;; `VisuallyShown'
 
 (defconst tlon-mdx-visually-shown
   '("<VisuallyShown>" . "</VisuallyShown>")
