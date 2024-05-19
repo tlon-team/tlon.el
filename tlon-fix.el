@@ -121,8 +121,8 @@ effects to begin with."
 (defvar tlon-math-display-search-pattern)
 (defvar markdown-regex-link-inline)
 (defvar ffap-url-regexp)
-(defun tlon-autofix-number-separators ()
-  "Replace commas and periods used as number separators with thin spaces.
+(defun tlon-autofix-thousands-separators (separator)
+  "Replace thousands SEPARATOR (typically, a comma or a period) with thin spaces.
 Do not perform these replacements if the terms occur in math formulae, links, or
 match certain words that should not be altered, such as \"80,000 Hours\"."
   (interactive)
