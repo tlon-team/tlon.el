@@ -1218,7 +1218,7 @@ attribute."
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-asides)
     (tlon-tts-process-quotes)
-    (tlon-tts-process-images) ; should be before links
+    ;; (tlon-tts-process-images) ; should be before `tlon-tts-process-links'
     (tlon-tts-process-links)
     (tlon-tts-process-numbers)
     ;; process superscripts and subscripts
