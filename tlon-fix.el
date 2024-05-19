@@ -162,7 +162,6 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
   (tlon-autofix-footnote-punctuation)
   (tlon-autofix-periods-in-headings)
   (tlon-autofix-percent-signs)
-  (tlon-autofix-number-separators)
   (let ((after-save-hook (remove #'tlon-autofix-all after-save-hook)))
     (save-buffer)
     (add-hook 'after-save-hook #'tlon-autofix-all nil t)))
