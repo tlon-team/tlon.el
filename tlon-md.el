@@ -68,6 +68,10 @@
 
 ;;;;;; inline
 
+;; TODO; create new `Math' MDX tag after agreeing syntax with Fede, then update
+;; math variables and functions below to reflect new syntax and replace tags in
+;; sources (in all languages)
+
 (defconst tlon-math-inline
   '("$`" . "`$")
   "Delimiter pair for an inline math expression.")
