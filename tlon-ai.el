@@ -742,8 +742,15 @@ variable."
     ("t" "translate"                            tlon-ai-translate)
     ("r" "rewrite"                              tlon-ai-rewrite)
     ("p" "phonetically transcribe"              tlon-ai-phonetically-transcribe)
+    ""
+    "Bibtex"
+    ("b" "set language bibtex"                  tlon-ai-set-language-bibtex)
+    ""
+    "Markdown"
     ("i" "describe image"                       tlon-ai-describe-image)
-    ("b" "set language bibtex"                  tlon-ai-set-language-bibtex)]
+    ;; Create command to translate all images
+    ("m" "translate math"                       tlon-ai-translate-math)
+    ("M" "translate all math"                   tlon-ai-translate-math-in-buffer)]
    ["Summarize"
     ("s s" "get abstract with or without AI"    tlon-get-abstract-with-or-without-ai)
     ("s n" "get abstract without AI"            tlon-fetch-and-set-abstract)

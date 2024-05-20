@@ -1201,12 +1201,11 @@ attribute."
 (defun tlon-tts-prepare-buffer ()
   "Prepare the current buffer for audio narration."
   (save-excursion
-    (tlon-tts-process-notes)
+    (tlon-tts-process-notes) ; either this or the next fun are making changes to the original buffer
     (tlon-tts-process-citations)
     (tlon-tts-process-formatting)
     (tlon-tts-process-headings)
     (tlon-tts-process-paragraphs)
-    ;; replace small caps
     ;; check all other elements in markdown-menu
     (tlon-tts-process-file-local-abbreviations)
     (tlon-tts-process-file-local-replacements)
@@ -1220,7 +1219,7 @@ attribute."
     (tlon-tts-process-numbers)
     ;; process superscripts and subscripts
     (tlon-tts-process-currencies)
-    (tlon-tts-process-math-expressions)
+    ;; (tlon-tts-process-math-expressions)
     (tlon-tts-remove-unsupported-ssml-tags))
   (goto-char (point-min)))
 
@@ -1263,6 +1262,7 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 
 ;;;;;; Formatting
 
+;; TODO: should have more descriptive name
 (defun tlon-tts-process-formatting ()
   "Remove formatting from text."
   (tlon-tts-process-boldface)
@@ -1278,6 +1278,7 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 	('italics (cons markdown-regex-italic 3))
 	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern 2))
 	('visually-shown (cons tlon-mdx-visually-shown-search-pattern nil))
+	('small-caps (cons tlon-mdx-small-caps-search-pattern 2))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
@@ -1299,6 +1300,10 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
 (defun tlon-tts-process-visually-shown ()
   "Remove `VisuallyShown' MDX tag."
   (tlon-tts-remove-formatting 'visually-shown))
+
+(defun tlon-tts-process-small-caps ()
+  "Replace small caps with their full form."
+  (tlon-tts-remove-formatting 'small-caps))
 
 ;;;;;; Paragraphs
 
@@ -1435,6 +1440,20 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 
 ;;;;;;; General functions
 
+(defun tlon-tts-add-listener-cues (type)
+  "Add listener cues for text enclosed in tags of TYPE."
+  (cl-destructuring-bind (pattern cues group)
+      (pcase type
+	('aside (list tlon-mdx-aside-search-pattern tlon-tts-aside-cues 2))
+	('quote (list markdown-regex-blockquote tlon-tts-quote-cues 3))
+	('image (list markdown-regex-link-inline tlon-tts-image-cues 3))
+	;; TODO: determine if other types should be added
+	(_ (user-error "Invalid formatting type: %s" type)))
+    (goto-char (point-min))
+    (while (re-search-forward pattern nil t)
+      (replace-match
+       (tlon-tts-listener-cue-full-enclose cues (match-string-no-properties group))))))
+
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
   (cl-destructuring-bind (cue-begins . cue-ends)
@@ -1468,33 +1487,19 @@ then reopen it."
    (tlon-tts-enclose-in-voice-tag
     (tlon-tts-enclose-in-listener-cues type text))))
 
-(defun tlon-tts-process-element (type)
-  "Add listener cues for text enclosed in tags of TYPE."
-  (cl-destructuring-bind (pattern cues group)
-      (pcase type
-	('aside (list tlon-mdx-aside-search-pattern tlon-tts-aside-cues 2))
-	('quote (list markdown-regex-blockquote tlon-tts-quote-cues 3))
-	('image (list markdown-regex-link-inline tlon-tts-image-cues 3))
-	;; TODO: determine if other types should be added
-	(_ (user-error "Invalid formatting type: %s" type)))
-    (goto-char (point-min))
-    (while (re-search-forward pattern nil t)
-      (replace-match
-       (tlon-tts-listener-cue-full-enclose cues (match-string-no-properties group))))))
-
 ;;;;;;; Specific elements
 
 (defun tlon-tts-process-quotes ()
   "Add listener cues for blockquotes."
-  (tlon-tts-process-element 'quote))
+  (tlon-tts-add-listener-cues 'quote))
 
 (defun tlon-tts-process-asides ()
   "Add listener cues for asides."
-  (tlon-tts-process-element 'aside))
+  (tlon-tts-add-listener-cues 'aside))
 
 (defun tlon-tts-process-images ()
   "Add listener cues for images."
-  (tlon-tts-process-element 'image))
+  (tlon-tts-add-listener-cues 'image))
 
 ;;;;;; Links
 
