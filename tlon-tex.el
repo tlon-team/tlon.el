@@ -601,27 +601,53 @@ If FILE is nil, use the file visited by the current buffer."
 	     citar-cache--bibliographies)
     fields))
 
-(defvar citar-markdown-citation-key-regexp)
+(defvar tlon-cite-pattern-short)
+(defvar tlon-cite-pattern-long)
 (declare-function tlon-api-get-citation "tlon-api")
-(defun tlon-tex-replace-keys-with-citations (&optional file)
-  "Replace all BibTeX keys in FILE with CSL-defined citations."
+(defun tlon-tex-replace-keys-with-citations (&optional file syntax)
+  "Replace all BibTeX keys in FILE with CSL-defined citations.
+SYNTAX is the citation syntax: it can be either `mdx' or `pandoc'. It is set to
+`mdx' if called interactively, and to `pandoc' if called with a universal
+argument.
+
+ If FILE is nil, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
-	 ;; TODO: support both “old” and “new” citation syntax
-	 (long citar-markdown-citation-key-regexp)
-	 (short "<cite>\\[@\\(.*?\\)\\]</cite>")
-	 (list (list (cons 'short short) (cons 'long long))))
+         (syntax (or syntax (if current-prefix-arg 'pandoc 'mdx)))
+         (short (pcase syntax
+                  ('mdx tlon-cite-pattern-short)
+                  ('pandoc tlon-tex-pandoc-cite-pattern-short)))
+         (long (pcase syntax
+                 ('mdx tlon-cite-pattern-long)
+                 ('pandoc tlon-tex-pandoc-cite-pattern-long)))
+         (list (list (cons 'short short) (cons 'long long))))
     (with-current-buffer (find-file-noselect file)
       (save-excursion
-	(dolist (cons list)
-	  (let ((csl (car cons))
-		(pattern (cdr cons)))
-	    (goto-char (point-min))
-	    (while (re-search-forward pattern nil t)
-	      (let ((match (match-string-no-properties 1)))
-		(message "Processing `%s'..." match)
-		(let ((citation (tlon-api-get-citation match csl)))
-		  (replace-match citation t))))))))))
+        (dolist (cons list)
+          (let ((csl (car cons))
+                (pattern (cdr cons)))
+            (goto-char (point-min))
+            (while (re-search-forward pattern nil t)
+              (let ((match (match-string-no-properties 1))
+                    (locator (match-string-no-properties 2)))
+                (message "Processing `%s'..." match)
+                (if-let ((citation (tlon-api-get-citation match csl))
+                         (replacement (if locator
+                                          (format "%s, %s" citation locator)
+                                        (format "%s" citation))))
+                    (replace-match replacement t)
+                  (message "Could not find `%s'" match))))))))))
+
+(defun tlon-tex-replace-keys-with-citations-in-dir (&optional syntax)
+  "Recursively replace all BibTeX keys with CSL-defined citations in current dir.
+SYNTAX is the citation syntax: it can be either `mdx' or `pandoc'. It is set to
+`mdx' if called interactively, and to `pandoc' if called with a universal
+argument."
+  (interactive)
+  (let ((files (directory-files-recursively default-directory "\\.md$"))
+	(syntax (or syntax (if current-prefix-arg 'pandoc 'mdx))))
+    (dolist (file files)
+      (tlon-tex-replace-keys-with-citations file syntax))))
 
 ;;;;; Menu
 
