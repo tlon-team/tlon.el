@@ -587,6 +587,28 @@ If FILE is nil, use the file visited by the current buffer."
 	     citar-cache--bibliographies)
     fields))
 
+(defvar citar-markdown-citation-key-regexp)
+(declare-function tlon-api-get-citation "tlon-api")
+(defun tlon-tex-replace-keys-with-citations (&optional file)
+  "Replace all BibTeX keys in FILE with CSL-defined citations."
+  (interactive)
+  (let* ((file (or file (buffer-file-name)))
+	 ;; TODO: support both “old” and “new” citation syntax
+	 (long citar-markdown-citation-key-regexp)
+	 (short "<cite>\\[@\\(.*?\\)\\]</cite>")
+	 (list (list (cons 'short short) (cons 'long long))))
+    (with-current-buffer (find-file-noselect file)
+      (save-excursion
+	(dolist (cons list)
+	  (let ((csl (car cons))
+		(pattern (cdr cons)))
+	    (goto-char (point-min))
+	    (while (re-search-forward pattern nil t)
+	      (let ((match (match-string-no-properties 1)))
+		(message "Processing `%s'..." match)
+		(let ((citation (tlon-api-get-citation match csl)))
+		  (replace-match citation t))))))))))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
