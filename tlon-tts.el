@@ -1704,5 +1704,28 @@ PROMPTS is a cons cell with the corresponding prompts."
   (tlon-tts-add-in-text-cons-cell '("Text to replace: " . "Replacement: ")
 				  'tlon-file-local-replacements))
 
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
+(transient-define-prefix tlon-tts-menu ()
+  "`tts' menu."
+  [[("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
+    ""
+    "Options"]
+   ["SSML"
+    ("b" "break"                            tlon-tts-insert-ssml-break)
+    ("e" "emphasis"                         tlon-tts-insert-ssml-emphasis)
+    ("l" "lang"                             tlon-tts-insert-ssml-lang)
+    ("p" "phoneme"                          tlon-tts-insert-ssml-phoneme)
+    ("s" "say-as"                           tlon-tts-insert-ssml-say-as)]
+   ["Global"
+    ("a" "Abbreviation"                     tlon-tts-edit-abbreviations)
+    ("t" "Transcription"                    tlon-tts-edit-phonetic-transcriptions)
+    ("r" "Replacement"                      tlon-tts-edit-phonetic-replacements)
+    ""
+    "File-local"
+    ("R" "Replacement"                      tlon-add-file-local-replacement)
+    ("A" "Abbreviation"                     tlon-add-file-local-abbreviation)]])
+
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
