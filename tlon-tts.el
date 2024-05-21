@@ -194,25 +194,25 @@ The options are:
 
 ;;;;; Current values
 
-(defvar tlon-tts-current-file-or-buffer ""
+(defvar tlon-tts-current-file-or-buffer nil
   "The file or buffer name with the content for the current TTS process.")
 
-(defvar tlon-tts-current-content ""
+(defvar tlon-tts-current-content nil
   "The content to narrate in the current TTS process.")
 
-(defvar tlon-tts-current-engine ""
+(defvar tlon-tts-current-engine nil
   "The engine used in the current TTS process.")
 
-(defvar tlon-tts-current-language ""
+(defvar tlon-tts-current-language nil
   "The language used in the current TTS process.")
 
-(defvar tlon-tts-current-main-voice ""
+(defvar tlon-tts-current-main-voice nil
   "The main voice used in the current TTS process.")
 
-(defvar tlon-tts-current-alternative-voice ""
+(defvar tlon-tts-current-alternative-voice nil
   "The alternative voice used in the current TTS process.")
 
-(defvar tlon-tts-current-voice-locale ""
+(defvar tlon-tts-current-voice-locale nil
   "The locale of the main voice used in the current TTS process.")
 
 ;;;;; Chunk processing
