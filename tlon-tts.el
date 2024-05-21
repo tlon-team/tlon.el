@@ -1645,9 +1645,7 @@ The `voice' tag is set to the alternative voice for the current language."
 (defun tlon-tts-edit-abbreviations ()
   "Edit abbreviations."
   (interactive)
-  (tlon-tts-edit-entry
-   'tlon-tts-abbreviations
-   tlon-file-abbreviations))
+  (tlon-tts-edit-entry 'tlon-tts-abbreviations tlon-file-abbreviations))
 
 ;;;;;; Phonetic replacements
 
@@ -1655,9 +1653,7 @@ The `voice' tag is set to the alternative voice for the current language."
 (defun tlon-tts-edit-phonetic-replacements ()
   "Edit phonetic replacements."
   (interactive)
-  (tlon-tts-edit-entry
-   'tlon-tts-phonetic-replacements
-   tlon-file-phonetic-replacements))
+  (tlon-tts-edit-entry 'tlon-tts-phonetic-replacements tlon-file-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
 
@@ -1665,9 +1661,7 @@ The `voice' tag is set to the alternative voice for the current language."
 (defun tlon-tts-edit-phonetic-transcriptions ()
   "Edit phonetic transcriptions."
   (interactive)
-  (tlon-tts-edit-entry
-   'tlon-tts-phonetic-transcriptions
-   tlon-file-phonetic-transcriptions))
+  (tlon-tts-edit-entry 'tlon-tts-phonetic-transcriptions tlon-file-phonetic-transcriptions))
 
 ;;;;; File-local
 
