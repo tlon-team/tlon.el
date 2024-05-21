@@ -111,7 +111,7 @@ CALLBACK is called with the token as its argument."
     (insert (json-encode data))
     (json-pretty-print-buffer)
     (tlon-fix-source-filename-paths)
-    (api-ztlon-make-paths-clickable)))
+    (tlon-make-paths-clickable)))
 
 (defun tlon-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
@@ -177,7 +177,7 @@ If BUFFER is nil, default to the current buffer."
 	(json-pretty-print-buffer)
 	(json-mode)))))
 
-(defun api-ztlon-make-paths-clickable (&optional buffer)
+(defun tlon-make-paths-clickable (&optional buffer)
   "Make file paths in the current buffer clickable.
 The paths and also be opened with RET.
 
