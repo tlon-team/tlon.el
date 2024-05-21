@@ -1610,8 +1610,7 @@ The `voice' tag is set to the alternative voice for the current language."
 			  (dolist (group (symbol-value variable))
 			    (dolist (pair (cadr group))
 			      (when (string= (car pair) term)
-				(throw 'current-entry (cdr pair)))))
-			  nil)))
+				(throw 'current-entry (cdr pair))))))))
     (if current-entry
 	(let ((cdr (read-string (format "Updated entry for %s: " term) current-entry)))
 	  (tlon-tts-revise-entry (symbol-value variable) term cdr))
