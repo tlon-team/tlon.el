@@ -84,6 +84,20 @@
     ("volumes" . "vols."))
   "Alist of locators and their abbreviations.")
 
+(defconst tlon-tex-pandoc-cite-pattern-long
+  "\\[-?@\\(?:{\\(?1:.*?\\)}\\|\\(?1:[[:alnum:]_][[:alnum:]]*\\(?:[:.#$%&+?<>~/-][[:alnum:]]+\\)*\\)\\(?:, \\(?2:.*?\\)\\)?\\)\\]"
+  "Regular expression for a Pandoc citation key.
+
+Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
+`citar-markdown-citation-key-regexp'.")
+
+(defconst tlon-tex-pandoc-cite-pattern-short
+  "<cite>\\[@\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\\]</cite>"
+  "Regular expression for a Pandoc citation key.
+
+Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
+`citar-markdown-citation-key-regexp'.")
+
 (defvar tlon-refs-dir
   paths-dir-babel-refs
   "Directory of the `babel-refs' repo.")
