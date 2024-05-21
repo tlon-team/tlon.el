@@ -202,14 +202,16 @@ If BUFFER is nil, default to the current buffer."
 
 (defun tlon-api-get-citation (key &optional csl)
   "Get citation for KEY from the Babel API.
-CSL is the citation style: it can be `long' (default), `short' or `audio'."
-  (let* ((csl (or csl 'long))
-	 (url (format "https://altruismoeficaz.net/api/citations/%s/text" key))
-	 (json (with-temp-buffer
-		 (insert (shell-command-to-string
-			  (format "curl -sS -X 'GET' \ '%s' \ -H 'accept: application/json'" url)))
-		 (goto-char (point-min))
-		 (json-read))))
+CSL is the citation style: it can be `long' (default), `short' or `audio'.
+
+If citation is not found, return nil."
+  (when-let* ((csl (or csl 'long))
+	      (url (format "https://altruismoeficaz.net/api/citations/%s/text" key))
+	      (json (with-temp-buffer
+		      (insert (shell-command-to-string
+			       (format "curl -sS -X 'GET' \ '%s' \ -H 'accept: application/json'" url)))
+		      (goto-char (point-min))
+		      (json-read))))
     (alist-get csl json)))
 
 ;;;;; Magit integration
