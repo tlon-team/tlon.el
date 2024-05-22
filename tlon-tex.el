@@ -125,6 +125,7 @@ Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function tlon-ai-batch-continue "tlon-ai")
+;;;###autoload
 (defun tlon-fetch-and-set-abstract ()
   "Fetch the abstract of the entry at point and set it as the new value.
 We use CrossRef for DOIs, Google Books for ISBN and Zotero for URLs.
@@ -511,6 +512,7 @@ If FILE is nil, use the file visited by the current buffer."
 ;;;;; Translation
 
 (declare-function ebib-extras-set-field "ebib-extras")
+;;;###autoload
 (defun tlon-tex-create-translation-entry ()
   "Create a translation entry from the entry at point."
   (interactive)
