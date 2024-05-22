@@ -1440,13 +1440,28 @@ process, return its cdr."
    (tlon-tts-get-abbreviations)
    'tlon-tts-replace-abbreviations))
 
-(defun tlon-tts-replace-abbreviations (replacement)
-  "When processing abbreviations, replace match with REPLACEMENT."
-  (replace-match replacement t))
-
 (defun tlon-tts-get-abbreviations ()
   "Get abbreviations."
   (tlon-tts-get-associated-terms tlon-tts-abbreviations))
+
+(defun tlon-tts-replace-abbreviations (replacement)
+  "When processing abbreviations, replace match with REPLACEMENT.
+If the abbreviation occurs at the end of a sentence, do not remove the period."
+  (let ((replacement (if nil
+			 ;; FIXME: this throws an error when `tlon-tts-abbrev-ends-sentence-p' returns t
+			 ;; (tlon-tts-abbrev-ends-sentence-p)
+			 (concat replacement ".")
+		       replacement)))
+    (replace-match replacement t)))
+
+(defun tlon-tts-abbrev-ends-sentence-p ()
+  "Return t iff the abbreviation at point ends the sentence."
+  (save-excursion
+    (let* ((case-fold-search nil)
+	   (start (max (point-min) (- (point) 1)))
+	   (end (min (point-max) (+ (point) 2)))
+	   (substring (buffer-substring-no-properties start end)))
+      (numberp (string-match "\\. [A-Z][[:alpha:]]*?" substring)))))
 
 ;;;;;;; Phonetic replacements
 
