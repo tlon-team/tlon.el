@@ -1496,7 +1496,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
       (pcase type
 	('aside (list tlon-mdx-aside-search-pattern tlon-tts-aside-cues 2))
 	('quote (list markdown-regex-blockquote tlon-tts-quote-cues 3))
-	('image (list markdown-regex-link-inline tlon-tts-image-cues 3))
+	('image (list tlon-md-image tlon-tts-image-cues 1))
 	;; TODO: determine if other types should be added
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
