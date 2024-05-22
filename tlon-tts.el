@@ -837,20 +837,21 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 
 (defun tlon-tts-get-temp-buffer-name ()
   "Return the name of the temporary buffer for the current TTS process."
-  (format "*Tlon-TTS %s*" (file-name-nondirectory tlon-tts-current-file-or-buffer)))
+  (format "*TTS process: %s*" (file-name-nondirectory tlon-tts-current-file-or-buffer)))
 
 (defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-current-engine))
-	 (request (funcall fun string file))
-	 (process (start-process-shell-command "generate audio" nil request)))
-    (set-process-sentinel process
-			  (lambda (process event)
-			    (if (string= event "finished\n")
-				(if (region-active-p)
-				    (tlon-tts-open-file file)
-				  (tlon-tts-process-chunk file))
-			      (message "Process %s: Event occurred - %s" (process-name process) event))))))
+	 (request (funcall fun string file)))
+    (message "Debug: Running command: %s" request) ; Debug line
+    (let ((process (start-process-shell-command "generate audio" nil request)))
+      (set-process-sentinel process
+			    (lambda (process event)
+			      (if (string= event "finished\n")
+				  (if (region-active-p)
+				      (tlon-tts-open-file file)
+				    (tlon-tts-process-chunk file))
+				(message "Process %s: Event occurred - %s" (process-name process) event)))))))
 
 (defun tlon-tts-open-file (file)
   "Open generated TTS FILE."
