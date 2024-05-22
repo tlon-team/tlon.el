@@ -964,9 +964,9 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
 
 (defun tlon-tts-process-chunk (file)
   "Process FILE chunk."
-  (setq tlon-unprocessed-chunks
-	(remove file tlon-unprocessed-chunks))
-  (unless tlon-unprocessed-chunks
+  (setq tlon-tts-unprocessed-chunk-files
+	(remove file tlon-tts-unprocessed-chunk-files))
+  (unless tlon-tts-unprocessed-chunk-files
     (let ((file (tlon-tts-get-original-name file)))
       (tlon-tts-join-chunks file)
       ;; make conditional to no errors
