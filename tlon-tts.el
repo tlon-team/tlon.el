@@ -1251,9 +1251,7 @@ attribute."
     (tlon-tts-process-abbreviations)
     (tlon-tts-process-phonetic-replacements)
     (tlon-tts-process-alternative-voice)
-    (tlon-tts-process-asides)
-    (tlon-tts-process-quotes)
-    ;; (tlon-tts-process-images) ; should be before `tlon-tts-process-links'
+    (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links'
     (tlon-tts-process-links)
     (tlon-tts-process-numbers)
     ;; process superscripts and subscripts
@@ -1484,7 +1482,13 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 
 ;;;;;; Listener cues
 
-;;;;;;; General functions
+;;;;;;; General
+
+(defun tlon-tts-process-listener-cues ()
+  "Add listener cues to relevant elements."
+  (tlon-tts-process-quotes)
+  (tlon-tts-process-asides)
+  (tlon-tts-process-images))
 
 (defun tlon-tts-add-listener-cues (type)
   "Add listener cues for text enclosed in tags of TYPE."
@@ -1528,10 +1532,13 @@ then reopen it."
   (format "%1$s%s%1$s" tlon-tts-cue-delimiter string))
 
 (defun tlon-tts-listener-cue-full-enclose (type text)
-  "Enclose TEXT in listener cue of TYPE, and in turn in `voice' SSML tags."
+  "Enclose TEXT in listener cue of TYPE and, if appropriate, in `voice' SSML tags.
+Whether TEXT is enclosed in `voice' tags is determined by the value of
+`tlon-tts-use-alternate-voice'."
   (tlon-tts-enclose-in-cue-delimiter
-   (tlon-tts-enclose-in-voice-tag
-    (tlon-tts-enclose-in-listener-cues type text))))
+   (if tlon-tts-use-alternate-voice
+       (tlon-tts-enclose-in-voice-tag (tlon-tts-enclose-in-listener-cues type text))
+     (tlon-tts-enclose-in-listener-cues type text))))
 
 ;;;;;;; Specific elements
 
