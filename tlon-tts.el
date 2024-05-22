@@ -1666,7 +1666,6 @@ The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
 
 (defun tlon-tts-edit-entry (variable file)
   "Add or revise an entry in VARIABLE and write it to FILE."
-  (interactive)
   (set variable (tlon-parse-json file))
   (let* ((names (mapcan (lambda (group)
 			  (mapcar #'car (cadr group)))
