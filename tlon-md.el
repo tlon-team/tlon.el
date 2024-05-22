@@ -247,16 +247,15 @@ captures the expression without the tags.")
 
 ;;;;; Images
 
-(defconst tlon-md-image-with-alt
-  "!\\[\\(.+?\\)\\](\\(.*?\\))"
-  "Pattern to match an image with alt text in a Markdown file.
-The first group captures the alt text. The second group captures the image URL.")
+(defconst tlon-md-image
+  "!\\[\\(?1:.*?\\)\\](\\(?2:.*?\\)\\(?:\\s-*\"\\(?3:.*?\\)\"\\)?)"
+  "Pattern to match an image in a Markdown file.
+The first group captures the alt text. The second group captures the image URL.
+The third group captures the title.")
 
 (defconst tlon-md-image-sans-alt
-  "!\\[\\(\\)\\](\\(.*?\\))"
-  "Pattern to match an image without alt text in a Markdown file.
-The first group captures the empty alt text. The second group captures the image
-URL.")
+  "!\\[\\](.*?\\(?:\\s-*\".*?\"\\)?)"
+  "Pattern to match an image without alt text in a Markdown file.")
 
 ;;;; Functions
 
