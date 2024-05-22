@@ -64,36 +64,19 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
-;;;;; Cite
-
-(defconst tlon-cite-pattern
-  "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
-  "Pattern to match a citation in a Markdown file.
-The first group captures the bibTeX key, the second group captures the locators,
-and the third group captures the short citation flag.")
-
-;;;;; Note markers
-
-(defconst tlon-footnote-marker "<Footnote />"
-  "Marker for a footnote in a `Cite' MDX element.")
-
-(defconst tlon-sidenote-marker "<Sidenote />"
-  "Marker for a sidenote in a `Cite' MDX element.")
-
-;;;;; Numbers
-
-(defconst tlon-md-number-separators
-  '(("en" . ",")
-    ("es" . " "))
-  "Number separators for different languages.")
-
-(defconst tlon-md-number-separator-pattern
-  "\\([[:digit:]]+?\\)%s\\([[:digit:]]+?\\)"
-  "Pattern to match numbers separated by language-specific separator.")
-
 ;;;;; Math
 
+(defconst tlon-md-math-power
+  "\\(?1:[[:digit:]]+\\)\\^\\(?2:[[:digit:]]+\\)\\^"
+  "Regexp pattern for matching a number raised to a power.
+The first capture group captures the base, and the second capture group captures
+the exponent.")
+
 ;;;;;; inline
+
+;; TODO; create new `Math' MDX tag after agreeing syntax with Fede, then update
+;; math variables and functions below to reflect new syntax and replace tags in
+;; sources (in all languages)
 
 (defconst tlon-math-inline
   '("$`" . "`$")
@@ -119,7 +102,7 @@ captures the expression without the delimiters.")
 
 ;;;;; MDX
 
-;;;;;; Aside
+;;;;;; `Aside'
 
 (defconst tlon-mdx-aside
   '("<Aside>" . "</Aside>")
@@ -132,7 +115,42 @@ Text enclosed in an `Aside' tag pair will be treated like an aside section.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; Lang
+;;;;;; `Cite'
+
+(defconst tlon-cite-pattern-builder
+  "<Cite bibKey={\"\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\"}\\(?:%s />\\|>.*?</Cite>\\)"
+  "Generator for building cite patterns.")
+
+(defconst tlon-cite-pattern-short-element
+  "\\(?3: short\\)"
+  "Pattern that matches a short citation flag in the third capture group.
+To use in conjunction with `tlon-cite-pattern-builder'.")
+
+(defconst tlon-cite-pattern
+  (format tlon-cite-pattern-builder (concat tlon-cite-pattern-short-element "?"))
+  "Pattern to match a citation in a Markdown file.
+The first group captures the BibTeX key, the second group captures the
+locator(s), if present, and the third group captures the short citation flag, if
+present.")
+
+(defconst tlon-cite-pattern-long
+  (format tlon-cite-pattern-builder "")
+  "Pattern to match a long citation in a Markdown file.
+The first group captures the BibTeX key, the second group captures the
+locator(s), if present.")
+
+(defconst tlon-cite-pattern-short
+  (format tlon-cite-pattern-builder tlon-cite-pattern-short-element)
+  "Pattern to match a short citation in a Markdown file.
+The first group captures the BibTeX key, the second group captures the
+locator(s), if present, and the third group captures the short citation flag.")
+
+;;;;;; `Footnote'
+
+(defconst tlon-footnote-marker "<Footnote />"
+  "Marker for a footnote in a `Cite' MDX element.")
+
+;;;;;; `Lang'
 
 (defconst tlon-mdx-lang
   '("<Lang id={\"%s\"}>" . "</Lang>")
@@ -146,7 +164,7 @@ language (e.g. for the purposed of hyphenating it).")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; LiteralLink
+;;;;;; `LiteralLink'
 
 (defconst tlon-mdx-literal-link
   '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
@@ -159,7 +177,12 @@ Links enclosed by a `LiteralLink' tag pair will be treated as literal links.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; SmallCaps
+;;;;;; `Sidenote'
+
+(defconst tlon-sidenote-marker "<Sidenote />"
+  "Marker for a sidenote in a `Cite' MDX element.")
+
+;;;;;; `SmallCaps'
 
 (defconst tlon-mdx-small-caps
   '("<SmallCaps>" . "</SmallCaps>")
@@ -172,7 +195,21 @@ Text enclosed by a `SmallCaps' tag pair will be displayed in small caps.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; VisuallyHidden
+;;;;;; `Roman'
+
+(defconst tlon-mdx-roman
+  '("<Roman>" . "</Roman>")
+  "Pair of MDX `Roman' tags.
+Text enclosed by a `Roman' tag pair will be displayed in small caps. It will
+also be read correctly in TTS narration.")
+
+(defconst tlon-mdx-roman-search-pattern
+  (tlon-make-tag-pattern tlon-mdx-roman)
+  "Regexp pattern for matching an MDX `Roman' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
+;;;;;; `VisuallyHidden'
 
 (defconst tlon-mdx-visually-hidden
   '("<VisuallyHidden>" . "</VisuallyHidden>")
@@ -186,7 +223,7 @@ displayed.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
-;;;;;; VisuallyShown
+;;;;;; `VisuallyShown'
 
 (defconst tlon-mdx-visually-shown
   '("<VisuallyShown>" . "</VisuallyShown>")
@@ -199,6 +236,7 @@ Text enclosed by a `VisuallyShown' tag pair will be displayed, but not narrated.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
+;; TODO: remove?
 ;;;;;; AlternativeVoice
 
 (defconst tlon-mdx-alternative-voice
@@ -215,16 +253,15 @@ captures the expression without the tags.")
 
 ;;;;; Images
 
-(defconst tlon-md-image-with-alt
-  "!\\[\\(.+?\\)\\](\\(.*?\\))"
-  "Pattern to match an image with alt text in a Markdown file.
-The first group captures the alt text. The second group captures the image URL.")
+(defconst tlon-md-image
+  "!\\[\\(?1:.*?\\)\\](\\(?2:.*?\\)\\(?:\\s-*\"\\(?3:.*?\\)\"\\)?)"
+  "Pattern to match an image in a Markdown file.
+The first group captures the alt text. The second group captures the image URL.
+The third group captures the title.")
 
 (defconst tlon-md-image-sans-alt
-  "!\\[\\(\\)\\](\\(.*?\\))"
-  "Pattern to match an image without alt text in a Markdown file.
-The first group captures the empty alt text. The second group captures the image
-URL.")
+  "!\\[\\](.*?\\(?:\\s-*\".*?\"\\)?)"
+  "Pattern to match an image without alt text in a Markdown file.")
 
 ;;;; Functions
 
@@ -382,6 +419,13 @@ Prompt the user to select a URL."
 Text enclosed by an `SmallCaps' tag pair will be displayed in small caps."
   (interactive)
   (tlon-md-insert-element-pair tlon-mdx-small-caps))
+
+;;;###autoload
+(defun tlon-insert-mdx-roman ()
+  "Insert an MDX `Roman' tag pair at point or around the selected region.
+Text enclosed by an `Roman' tag pair will be displayed in small caps."
+  (interactive)
+  (tlon-md-insert-element-pair tlon-mdx-roman))
 
 ;;;###autoload
 (defun tlon-insert-mdx-visually-hidden ()
@@ -801,8 +845,8 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("i" "inline"               tlon-insert-math-inline)
     ("d" "display"              tlon-insert-math-display)]
    ["TTS"
-    ("L" "lang"                 tlon-insert-ssml-lang)
-    ("e" "emphasis"             tlon-insert-ssml-emphasis)
+    ("L" "lang"                 tlon-tts-insert-ssml-lang)
+    ("e" "emphasis"             tlon-tts-insert-ssml-emphasis)
     ("v" "alternative voice"    tlon-insert-mdx-alternative-voice)
     ("H" "visually hidden"      tlon-insert-mdx-visually-hidden)
     ("S" "visually shown"       tlon-insert-mdx-visually-shown)]

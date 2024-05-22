@@ -29,10 +29,8 @@
 
 (require 'gptel)
 (require 'gptel-extras)
-(require 'tlon-counterpart)
-(require 'tlon-dispatch)
-(require 'tlon-import)
-(require 'tlon-tex)
+(require 'shut-up)
+(require 'tlon-core)
 
 ;;;; User options
 
@@ -219,6 +217,8 @@ INFO is the response info."
 
 ;;;;;; Other functions
 
+(declare-function bibtex-next-entry "bibtex")
+(declare-function bibtex-extras-get-key "bibtex-extras")
 (declare-function ebib-extras-next-entry "ebib-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-ai-batch-continue ()
@@ -240,6 +240,7 @@ INFO is the response info."
     (funcall original-fun)))
 
 (declare-function ebib-extras-get-file "ebib-extras")
+(declare-function tlon-md-read-content "tlon-md")
 (defun tlon-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
 If FILE is non-nil, return it as a string or, if in `markdown-mode', return a
@@ -270,6 +271,7 @@ Otherwise,
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
 (declare-function shr-render-buffer "shr")
+(declare-function tlon-convert-pdf "tlon-import")
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
@@ -311,9 +313,10 @@ RESPONSE is the response from the AI model and INFO is the response info."
 		   (insert-file-contents file)
 		   (buffer-string))))
     (tlon-make-gptel-request tlon-ai-translate-prompt string
-				   (lambda (response info)
-				     (tlon-ai-translate-file-callback response info file)))))
+			     (lambda (response info)
+			       (tlon-ai-translate-file-callback response info file)))))
 
+(declare-function tlon-get-counterpart "tlon-counterpart")
 (defun tlon-ai-translate-file-callback (response info file)
   "Callback for `tlon-ai-translate-file'.
 RESPONSE is the response from the AI model and INFO is the response info. FILE
@@ -388,6 +391,7 @@ LANGUAGE for the description; if nil, obtain the language from the current repo.
 
 ;;;;; Summarization
 
+(declare-function tlon-fetch-and-set-abstract "tlon-tex")
 ;;;###autoload
 (defun tlon-get-abstract-with-or-without-ai ()
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
@@ -400,6 +404,7 @@ To get an abstract without AI, the function uses
   (unless (tlon-fetch-and-set-abstract)
     (tlon-get-abstract-with-ai)))
 
+(declare-function tlon-abstract-may-proceed-p "tlon-tex")
 ;;;###autoload
 (defun tlon-get-abstract-with-ai (&optional file)
   "Return an abstract of the relevant content using AI.
@@ -503,6 +508,10 @@ If RESPONSE is nil, return INFO. KEY is the BibTeX key."
 
 ;;;;;; BibTeX
 
+(declare-function bibtex-set-field "bibtex-extras")
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
+(declare-function bibtex-extras-get-field-in-string "bibtex-extras")
 (declare-function ebib-extras-get-or-open-entry "ebib-extras")
 ;;;###autoload
 (defun tlon-ai-summarize-bibtex-entry (&optional string)
@@ -570,8 +579,9 @@ If STRING is nil, use the current BibTeX entry."
 			     ('bibtex-mode (bibtex-extras-get-entry-as-string))
 			     (_ (user-error "I can’t detect language in %s" major-mode))))))
     (tlon-make-gptel-request tlon-ai-detect-language-bibtex-prompt string
-				   #'tlon-ai-callback-return)))
+			     #'tlon-ai-callback-return)))
 
+(declare-function bibtex-beginning-of-entry "bibtex")
 ;;;###autoload
 (defun tlon-ai-set-language-bibtex ()
   "Set the language of the BibTeX entry at point to LANGUAGE.
@@ -634,6 +644,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Phonetic transcription
 
+(declare-function word-at-point "thingatpt")
 ;;;###autoload
 (defun tlon-ai-phonetically-transcribe (expression language)
   "Insert the phonetic transcription of the EXPRESSION in LANGUAGE.
@@ -646,7 +657,7 @@ request was sent."
 		     (or (tlon-repo-lookup :language :dir (tlon-get-repo 'no-prompt))
 			 (tlon-select-language 'code))))
   (let ((prompt (tlon-lookup tlon-ai-transcribe-phonetically-prompt
-				   :prompt :language language)))
+			     :prompt :language language)))
     (tlon-make-gptel-request prompt expression #'tlon-ai-callback-copy)))
 
 (defun tlon-phonetically-transcribe-in-buffer ()
@@ -698,17 +709,18 @@ If RESPONSE is nil, return INFO."
 (defun tlon-ai-batch-fun-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
   (tlon-transient-read-symbol-choice prompt '(tlon-get-abstract-with-or-without-ai
-						    tlon-get-abstract-with-ai
-						    tlon-fetch-and-set-abstract
-						    tlon-ai-set-language-bibtex
-						    nil)))
+					      tlon-get-abstract-with-ai
+					      tlon-fetch-and-set-abstract
+					      tlon-ai-set-language-bibtex
+					      nil)))
 
+(declare-function transient-define-infix "transient")
 (transient-define-infix tlon-ai-batch-fun-infix ()
   "Change the local value of the `'tlon-ai-batch-fun' variable."
   :class 'transient-lisp-variable
+  :variable 'tlon-ai-batch-fun
   :reader 'tlon-ai-batch-fun-reader
-  :prompt "Function for batch-processing: "
-  :variable 'tlon-ai-batch-fun)
+  :prompt "Function for batch-processing: ")
 
 (defun tlon-abstract-overwrite-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
@@ -717,9 +729,9 @@ If RESPONSE is nil, return INFO."
 (transient-define-infix tlon-abstract-overwrite-infix ()
   "Change the local value of the `tlon-abstract-overwrite' variable."
   :class 'transient-lisp-variable
+  :variable 'tlon-abstract-overwrite
   :reader 'tlon-abstract-overwrite-reader
-  :prompt "Overwrite when the entry already contains an abstract? "
-  :variable 'tlon-abstract-overwrite)
+  :prompt "Overwrite when the entry already contains an abstract? ")
 
 (defvar mullvad-durations)
 (defun tlon-mullvad-connection-duration-reader (prompt _ _)
@@ -730,32 +742,43 @@ If RESPONSE is nil, return INFO."
   "Change the local value of the `gptel-extras-gemini-mullvad-disconnect-after'
 variable."
   :class 'transient-lisp-variable
+  :variable 'gptel-extras-gemini-mullvad-disconnect-after
   :reader 'tlon-mullvad-connection-duration-reader
-  :prompt "Disconnect after: "
-  :variable 'gptel-extras-gemini-mullvad-disconnect-after)
+  :prompt "Disconnect after: ")
 
 ;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
 (transient-define-prefix tlon-ai-menu ()
   "Menu for `tlon-ai'."
   :info-manual "(tlon) AI"
   [[""
+    ("c" "configure model"                      gptel-extras-model-config)
+    ""
     ("t" "translate"                            tlon-ai-translate)
     ("r" "rewrite"                              tlon-ai-rewrite)
     ("p" "phonetically transcribe"              tlon-ai-phonetically-transcribe)
+    ""
+    "Bibtex"
+    ("b" "set language of bibtex"               tlon-ai-set-language-bibtex)
+    ""
+    "Markdown"
     ("i" "describe image"                       tlon-ai-describe-image)
-    ("b" "set language bibtex"                  tlon-ai-set-language-bibtex)]
+    ;; Create command to translate all images
+    ("m" "translate math"                       tlon-ai-translate-math)
+    ;; TODO: develop this
+    ;; ("M" "translate all math"                   tlon-ai-translate-math-in-buffer)
+    ]
    ["Summarize"
     ("s s" "get abstract with or without AI"    tlon-get-abstract-with-or-without-ai)
     ("s n" "get abstract without AI"            tlon-fetch-and-set-abstract)
     ("s a" "get abstract with AI"               tlon-get-abstract-with-ai)
     ("s h" "get abstract with AI from HTML"     tlon-get-abstract-with-ai-from-html)
     ("s p" "get abstract with AI from PDF"      tlon-get-abstract-with-ai-from-pdf)
-    ("s b" "summarize bibtex entry"             tlon-ai-summarize-bibtex-entry)]
-   ["Summarize parameters"
+    ("s b" "summarize bibtex entry"             tlon-ai-summarize-bibtex-entry)
+    ""
+    "Summarize parameters"
     ("-b" "batch"                               tlon-ai-batch-fun-infix)
     ("-d" "mullvad connection duration"         tlon-mullvad-connection-duration-infix)
-    ("-o" "overwrite"                           tlon-abstract-overwrite-infix)
-    ("c" "configure model"                      gptel-extras-model-config)]])
+    ("-o" "overwrite"                           tlon-abstract-overwrite-infix)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here

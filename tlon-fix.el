@@ -112,12 +112,12 @@
 (defun tlon-autofix-curly-quotes ()
   "Replace straight quotes with curly quotes when appropriate."
   (tlon-autofix '("\\([^\\.\\?]\"\\)\\[")
-		      "\\1["))
+		"\\1["))
 
 (defun tlon-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
   (tlon-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		      "\\1\\3\\2")
+		"\\1\\3\\2")
   (tlon-autofix-footnote-punctuation-amend))
 
 (defun tlon-autofix-footnote-punctuation-amend ()
@@ -131,13 +131,48 @@ effects to begin with."
 (defun tlon-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
   (tlon-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
-		      "\\1"))
+		"\\1"))
 
 (defun tlon-autofix-percent-signs ()
   "Add non-breaking space before percent sign."
   (tlon-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
-			"\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
-		      "\\1 %\\2"))
+		  "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
+		"\\1 %\\2"))
+
+(defvar tlon-math-inline-search-pattern)
+(defvar tlon-math-display-search-pattern)
+(defvar markdown-regex-link-inline)
+(defvar ffap-url-regexp)
+(defun tlon-autofix-thousands-separators (separator)
+  "Replace thousands SEPARATOR (typically, a comma or a period) with thin spaces.
+Do not perform these replacements if the terms occur in math formulae, links, or
+match certain words that should not be altered, such as \"80,000 Hours\"."
+  (interactive)
+  (let* ((exclusions `(,tlon-math-inline-search-pattern
+		       ,tlon-math-display-search-pattern
+		       ,markdown-regex-link-inline
+		       ,ffap-url-regexp
+		       "80,000 Hours"))
+	 (exclusion-patterns (mapconcat #'identity exclusions "\\|"))
+	 protected-ranges)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward exclusion-patterns nil t)
+	(push (cons (match-beginning 0) (match-end 0)) protected-ranges))
+      (tlon-number-separators-perform-replacements separator protected-ranges))))
+
+(defun tlon-number-separators-perform-replacements (separator protected-ranges)
+  "Replace thousands SEPARATOR with thin spaces, except in PROTECTED-RANGES."
+  (goto-char (point-min))
+  (let ((digit-pattern (format tlon-number-separated-by-separator separator)))
+    (while (re-search-forward digit-pattern nil t)
+      (unless (tlon-is-in-protected-range-p (match-beginning 0) (match-end 0) protected-ranges)
+	(replace-match (replace-regexp-in-string separator " " (match-string-no-properties 0)))))))
+
+(defun tlon-is-in-protected-range-p (start end protected-ranges)
+  "Check if range from START to END overlaps with any PROTECTED-RANGES."
+  (cl-loop for (pstart . pend) in protected-ranges
+	   thereis (not (or (< end pstart) (> start pend)))))
 
 ;;;###autoload
 (defun tlon-autofix-all ()
@@ -167,38 +202,38 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
 (defun tlon-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (tlon-manual-fix '("\\([^ ][ ,)]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
-			   "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
-			   "\\([^ >)] \\)-\\( \\)")
-			 "\\1—\\2"))
+		     "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
+		     "\\([^ >)] \\)-\\( \\)")
+		   "\\1—\\2"))
 
 (defun tlon-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
   (tlon-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
-			 "\\1\\2–\\3\\4"))
+		   "\\1\\2–\\3\\4"))
 
 (defun tlon-manual-fix-roman-numerals ()
   "Prompt the user to add small caps tags to roman numerals."
   (tlon-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
-			 " <abbr>\\1</abbr>"))
+		   " <abbr>\\1</abbr>"))
 
 (defun tlon-manual-fix-thin-spaces ()
   "Prompt the user to add a thin space between abbreviations followed by a period."
   (tlon-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
-			 "\\1 \\2"))
+		   "\\1 \\2"))
 
 (defun tlon-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
   (tlon-manual-fix '("sólo")
-			 "solo"
-			 'keep-case))
+		   "solo"
+		   'keep-case))
 
 (defun tlon-manual-fix-podcast ()
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
   (tlon-manual-fix '(" podcast")
-			 " pódcast"
-			 'keep-case))
+		   " pódcast"
+		   'keep-case))
 
 (defun tlon-manual-fix-all ()
   "Run all the `tlon-manual-fix' commands."

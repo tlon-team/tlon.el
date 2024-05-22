@@ -111,7 +111,7 @@ CALLBACK is called with the token as its argument."
     (insert (json-encode data))
     (json-pretty-print-buffer)
     (tlon-fix-source-filename-paths)
-    (api-ztlon-make-paths-clickable)))
+    (tlon-make-paths-clickable)))
 
 (defun tlon-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
@@ -177,7 +177,7 @@ If BUFFER is nil, default to the current buffer."
 	(json-pretty-print-buffer)
 	(json-mode)))))
 
-(defun api-ztlon-make-paths-clickable (&optional buffer)
+(defun tlon-make-paths-clickable (&optional buffer)
   "Make file paths in the current buffer clickable.
 The paths and also be opened with RET.
 
@@ -197,6 +197,33 @@ If BUFFER is nil, default to the current buffer."
 			   'action (lambda (_) (find-file path))
 			   'follow-link t))))
 	(local-set-key (kbd "<RET>") 'ffap)))))
+
+;;;;; BibTeX data
+
+(defun tlon-api-get-citation (key &optional csl)
+  "Get citation for KEY in CSL style from the Babel API.
+CSL is the citation style: it can be `long' (default), `short' or `audio'.
+
+If citation is not found, return nil."
+  (when-let* ((csl (or csl 'long))
+	      (url (tlon-api-get-citation-url key csl))
+	      (json (tlon-api-get-citation-json url)))
+    (alist-get csl json)))
+
+(defun tlon-api-get-citation-url (key csl)
+  "Return the URL for the citation with KEY in CSL style."
+  (let* ((string-formatter "https://altruismoeficaz.net/api/citations/%s/%s")
+	 (type (pcase csl ((or 'long 'short) "text") ('audio "audio"))))
+    (format string-formatter key type)))
+
+(defun tlon-api-get-citation-json (url)
+  "Return the JSON response from URL."
+  (let* ((command (format "curl -sS -X 'GET' \ '%s' \ -H 'accept: application/json'" url))
+	 (output (shell-command-to-string command)))
+    (with-temp-buffer
+      (insert output)
+      (goto-char (point-min))
+      (json-read))))
 
 ;;;;; Magit integration
 

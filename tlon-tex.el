@@ -84,6 +84,27 @@
     ("volumes" . "vols."))
   "Alist of locators and their abbreviations.")
 
+(defconst tlon-tex-pandoc-cite-pattern-long
+  "\\[-?@\\(?:{\\(?1:.*?\\)}\\|\\(?1:[[:alnum:]_][[:alnum:]]*\\(?:[:.#$%&+?<>~/-][[:alnum:]]+\\)*\\)\\(?:, \\(?2:.*?\\)\\)?\\)\\]"
+  "Regular expression for a \"long\" Pandoc citation key.
+
+Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
+`citar-markdown-citation-key-regexp'.")
+
+(defconst tlon-tex-pandoc-cite-pattern-short
+  (concat "<cite>" tlon-tex-pandoc-cite-pattern-long "</cite>")
+  "Regular expression for a \"short\" Pandoc citation key.
+
+Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
+`citar-markdown-citation-key-regexp'.")
+
+(defconst tlon-tex-pandoc-cite-pattern
+  (concat "\\(?:<cite>\\)?" tlon-tex-pandoc-cite-pattern-long "\\(?:</cite>\\)?")
+  "Regular expression for a Pandoc citation key.
+
+Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
+`citar-markdown-citation-key-regexp'.")
+
 (defvar tlon-refs-dir
   paths-dir-babel-refs
   "Directory of the `babel-refs' repo.")
@@ -111,6 +132,7 @@
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function tlon-ai-batch-continue "tlon-ai")
+;;;###autoload
 (defun tlon-fetch-and-set-abstract ()
   "Fetch the abstract of the entry at point and set it as the new value.
 We use CrossRef for DOIs, Google Books for ISBN and Zotero for URLs.
@@ -271,52 +293,53 @@ errors gracefully."
 
 ;;;;; Move entries
 
-(defun tlon-move-entry (&optional key file)
+;;;###autoload
+(defun tlon-move-entry-to-fluid (&optional key)
   "Move entry with KEY to FILE.
-Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
-If FILE is non-nil, use `tlon-file-fluid'."
+Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point."
   (interactive)
-  (let ((key (or key (bibtex-extras-get-key)))
-	(file (or file tlon-file-fluid)))
-    (bibtex-extras-move-entry key file)
-    (with-current-buffer (find-file-noselect file)
+  ;; TODO: add ensure in tex modes check
+  (let ((key (or key (pcase major-mode
+		       ('bibtex-mode (bibtex-extras-get-key))
+		       ((or 'ebib-entry-mode 'ebib-index-mode) (ebib-extras-get-field "=key="))))))
+    (bibtex-extras-move-entry key tlon-file-fluid)
+    (tlon-add-or-update-tlon-field-in-file key tlon-file-fluid)
+    (kill-new key)
+    (message "Moved entry `%1$s' to `%s' and copied `%1$s' to kill ring." key tlon-file-fluid)))
+
+;;;###autoload
+(defun tlon-move-all-fluid-entries-to-stable ()
+  "Move all entries in `fluid.bib' to `stable.bib'."
+  (interactive)
+  (when (or (buffer-modified-p (find-file-noselect tlon-file-fluid))
+	    (buffer-modified-p (find-file-noselect tlon-file-stable)))
+    (user-error "Save `fluid.bib' and `stable.bib' before proceeding"))
+  (let (entries)
+    (with-current-buffer (find-file-noselect tlon-file-fluid)
       (widen)
-      (bibtex-search-entry key)
-      (tlon-add-or-update-tlon-field)
+      (setq entries (buffer-string))
+      (erase-buffer)
       (save-buffer))
-    (kill-new key)))
-
-(defun tlon-move-entry-without-abstract ()
-  "Move entry to `tlon-file-fluid' if it doesn't have an abstract."
-  (message "Moving `%s'..." (bibtex-extras-get-key))
-  (unless (bibtex-extras-get-field "abstract")
-    (tlon-move-entry))
-  (bibtex-next-entry)
-  (tlon-move-entry-without-abstract))
-
-(defun tlon-move-entry-without-file ()
-  "Move entry to `tlon-file-fluid' if it doesn't have an abstract."
-  (let ((key (bibtex-extras-get-key)))
-    (unless (or (bibtex-extras-get-field "file")
-		(bibtex-extras-get-field "crossref"))
-      (message "Moving `%s'..." key)
-      (tlon-move-entry key "temp.bib"))
-    (bibtex-next-entry)
-    (tlon-move-entry-without-file)))
-
-(defun tlon-move-lesswrong-entries ()
-  "Move LessWrong entry to \"temp.bib\"."
-  (message "Moving `%s'..." (bibtex-extras-get-key))
-  (when (string= (bibtex-extras-get-field "journaltitle") "{LessWrong}")
-    (tlon-move-entry nil (file-name-concat tlon-bibtex-dir "temp.bib")))
-  (bibtex-next-entry)
-  (tlon-move-lesswrong-entries))
+    (with-current-buffer (find-file-noselect tlon-file-stable)
+      (widen)
+      (goto-char (point-max))
+      (insert entries)
+      (save-buffer))
+    (message "Moved all entries from `fluid.bib' to `stable.bib'. You may want to commit these changes.")))
 
 ;;;;; Add fields
 
 (defun tlon-add-or-update-tlon-field ()
   "Add or update \"database\" field with \"Tlön\" value in the current BibTeX entry."
   (bibtex-extras-add-or-update-field "database" "Tlön"))
+
+(defun tlon-add-or-update-tlon-field-in-file (key file)
+  "Add or update \"database\" field with \"Tlön\" value in KEY of FILE."
+  (with-current-buffer (find-file-noselect file)
+    (widen)
+    (bibtex-search-entry key)
+    (tlon-add-or-update-tlon-field)
+    (save-buffer)))
 
 (defun tlon-add-database-field (file)
   "Iterate over each entry in FILE and add/update the `database' field.
@@ -496,6 +519,7 @@ If FILE is nil, use the file visited by the current buffer."
 ;;;;; Translation
 
 (declare-function ebib-extras-set-field "ebib-extras")
+;;;###autoload
 (defun tlon-tex-create-translation-entry ()
   "Create a translation entry from the entry at point."
   (interactive)
@@ -586,6 +610,88 @@ If FILE is nil, use the file visited by the current buffer."
 			  entries)))
 	     citar-cache--bibliographies)
     fields))
+
+(defvar tlon-cite-pattern)
+(defvar tlon-cite-pattern-short)
+(defvar tlon-cite-pattern-long)
+(declare-function tlon-api-get-citation "tlon-api")
+(defun tlon-tex-replace-keys-with-citations (&optional file syntax audio)
+  "Replace all BibTeX keys in FILE with CSL-defined citations.
+If FILE is nil, use the current buffer.
+
+SYNTAX is the citation syntax: it can be either `mdx' or `pandoc'. It is set to
+`mdx' if called interactively, and to `pandoc' if called with a universal
+argument.
+
+By default, export citations in \"short\" or \"long\" format depending on what
+the tag specified. If AUDIO is non-nil, export all citations in \"audio\" format
+instead."
+  (interactive)
+  (let* ((file (or file (buffer-file-name)))
+	 (syntax (or syntax (if current-prefix-arg 'pandoc 'mdx)))
+	 (audio (when audio
+		  (pcase syntax
+		    ('mdx tlon-cite-pattern)
+		    ('pandc tlon-tex-pandoc-cite-pattern))))
+	 (short (pcase syntax
+		  ('mdx tlon-cite-pattern-short)
+		  ('pandoc tlon-tex-pandoc-cite-pattern-short)))
+	 (long (pcase syntax
+		 ('mdx tlon-cite-pattern-long)
+		 ('pandoc tlon-tex-pandoc-cite-pattern-long)))
+	 (list (if audio
+		   (list (cons 'audio audio))
+		 (list (cons 'short short) (cons 'long long)))))
+    (if file
+	(with-current-buffer (find-file-noselect file)
+	  (tlon-tex-do-replace-keys-with-citations list))
+      (tlon-tex-do-replace-keys-with-citations list))))
+
+(defun tlon-tex-do-replace-keys-with-citations (list)
+  "Perform the actual replacement of BibTeX keys with CSL-defined citations.
+LIST is a list of cons cells, where the car is the citation style and the cdr is
+the regular expression pattern to match the key."
+  (save-excursion
+    (dolist (cons list)
+      (let ((csl (car cons))
+	    (pattern (cdr cons)))
+	(goto-char (point-min))
+	(while (re-search-forward pattern nil t)
+	  (let ((match (match-string-no-properties 1))
+		(locator (match-string-no-properties 2)))
+	    (message "Processing `%s'..." match)
+	    (if-let ((citation (tlon-api-get-citation match csl))
+		     (replacement (if locator
+				      (format "%s, %s" citation locator)
+				    (format "%s" citation))))
+		(replace-match replacement t)
+	      (message "Could not find `%s'" match))))))))
+
+(defun tlon-tex-replace-keys-with-citations-in-dir (&optional syntax)
+  "Recursively replace all BibTeX keys with CSL-defined citations in current dir.
+SYNTAX is the citation syntax: it can be either `mdx' or `pandoc'. It is set to
+`mdx' if called interactively, and to `pandoc' if called with a universal
+argument."
+  (interactive)
+  (let ((files (directory-files-recursively default-directory "\\.md$"))
+	(syntax (or syntax (if current-prefix-arg 'pandoc 'mdx))))
+    (dolist (file files)
+      (tlon-tex-replace-keys-with-citations file syntax))))
+
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
+(transient-define-prefix tlon-tex-menu ()
+  "Menu for `tex' functions."
+  [["Missing URLs"
+    ("f" "Find in file"                      tlon-prompt-to-add-missing-urls)
+    ("z" "Add with Zotra"                    zotra-extras-add-multiple-urls)]
+   ["Ebib"
+    ("a" "Fetch abstract"                    tlon-fetch-and-set-abstract)
+    ("c" "Create translation entry"          tlon-tex-create-translation-entry)]
+   ["BibTeX entries"
+    ("t" "Move this entry to Tlön database"  tlon-move-entry-to-fluid)
+    ("s" "Move all entries to stable"        tlon-move-all-fluid-entries-to-stable)]])
 
 (provide 'tlon-tex)
 ;;; tlon-tex.el ends here

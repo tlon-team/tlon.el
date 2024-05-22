@@ -31,22 +31,6 @@
 
 ;;;; Functions
 
-;; maybe move this to `simple-extras', since they are universal functions for reading symbols, numbers
-(defun tlon-transient-read-symbol-choice (prompt choices)
-  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
-  (let* ((input (completing-read prompt (mapcar 'symbol-name choices))))
-    (intern input)))
-
-(defun tlon-transient-read-number-choice (prompt choices)
-  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
-  (let* ((input (completing-read prompt (mapcar 'number-to-string choices))))
-    (string-to-number input)))
-
-(defun tlon-transient-read-string-choice (prompt choices)
-  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
-  (let* ((input (completing-read prompt choices)))
-    (substring-no-properties input)))
-
 ;;;;; Main menu
 
 ;; TODO: add flag to set translation language, similar to Magit dispatch
@@ -68,7 +52,9 @@
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
     ("t" "contacts"                       tlon-contacts-menu)
-    ("y" "forg"                           tlon-forg-menu)]
+    ("y" "forg"                           tlon-forg-menu)
+    ("x" "tex"                            tlon-tex-menu)
+    ("z" "tts"                            tlon-tts-menu)]
    ["""Browse repo"
     ("d" "in Dired"                       tlon-dired-repo-menu)
     ("m" "in Magit"                       tlon-magit-repo-menu)]
@@ -336,11 +322,11 @@ DIR is the directory where the repo is stored."
    ("g" "edit glossary"              tlon-edit-glossary)
    ("G" "extract glossary"           tlon-extract-glossary)
    "TTS"
-   ("a" "abbreviations"              tlon-edit-abbreviations)
+   ("a" "abbreviations"              tlon-tts-edit-abbreviations)
    ("A" "file-local abbreviations"   tlon-add-file-local-abbreviation)
-   ("r" "replacements"               tlon-edit-phonetic-replacements)
+   ("r" "replacements"               tlon-tts-edit-phonetic-replacements)
    ("R" "file-local replacements"    tlon-add-file-local-replacement)
-   ("t" "phonetic transcriptions"    tlon-edit-phonetic-transcriptions)])
+   ("t" "phonetic transcriptions"    tlon-tts-edit-phonetic-transcriptions)])
 
 (provide 'tlon-dispatch)
 ;;; tlon-dispatch.el ends here

@@ -65,7 +65,7 @@ This variable should not be set manually.")
 This variable should not be set manually.")
 
 (defvar tlon-post-init-hook nil
-  "Hook run at the end of `tlon-init'.")
+  "Hook run at the end of `tlon-initialize'.")
 
 ;;;;;; lookup
 
@@ -131,16 +131,16 @@ This variable should not be set manually.")
 ;;;;; init
 
 (defvar tlon-bibliography-files)
-(defun tlon-init ()
+(defun tlon-initialize ()
   "Initialize `tlon'."
   (interactive)
-  (tlon-warn-if-unbound 'paths-tlon-todos-jobs-id)
-  (tlon-warn-if-unbound 'paths-tlon-todos-generic-id)
+  (dolist (var '(paths-tlon-todos-jobs-id paths-tlon-todos-generic-id))
+    (tlon-warn-if-unbound var))
   (setq paths-files-bibliography-all
 	`(,@paths-files-bibliography-personal
 	  ,@tlon-bibliography-files))
   (run-hooks 'tlon-post-init-hook)
-  (message "Initialized `tlon'"))
+  (message "Initialized `tlon'."))
 
 (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
 		     (id ,paths-tlon-todos-jobs-id)
