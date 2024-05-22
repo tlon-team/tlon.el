@@ -782,6 +782,14 @@ Save the audio file in the downloads folder."
   (tlon-tts-process-chunks)
   (tlon-tts-unset-all-current-values))
 
+(defun tlon-tts-generate-tts-buffer ()
+  "Generate the TTS buffer without narrating its contents.
+This command is used for debugging purposes."
+  (interactive)
+  (tlon-tts-set-all-current-values nil nil nil nil nil)
+  (tlon-tts-read-content)
+  (tlon-tts-unset-all-current-values))
+
 (defun tlon-tts-process-chunks ()
   "Process unprocessed chunks."
   (let* ((destination (tlon-tts-set-audio-path))
