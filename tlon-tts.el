@@ -1236,11 +1236,12 @@ attribute."
 
 ;;;;; Cleanup
 
+(declare-function tlon-tex-replace-keys-with-citations "tlon-tex")
 (defun tlon-tts-prepare-buffer ()
   "Prepare the current buffer for audio narration."
   (save-excursion
-    (tlon-tts-process-notes) ; either this or the next fun are making changes to the original buffer
-    (tlon-tts-process-citations)
+    (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
+    (tlon-tex-replace-keys-with-citations nil 'mdx 'audio)
     (tlon-tts-process-formatting)
     (tlon-tts-process-headings)
     (tlon-tts-process-paragraphs)
@@ -1288,17 +1289,9 @@ citation key, format. Hence, it must be run *before*
   (let ((clean-note (replace-regexp-in-string tlon-sidenote-marker "" note)))
     (tlon-tts-listener-cue-full-enclose tlon-tts-note-cues clean-note)))
 
-;;;;;; Citations
+;;;;;;;; Formatting
 
-(defun tlon-tts-process-citations ()
-  "Replace our custom MDX cite tags with a pandoc-style citation.
-For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
-`[@Clark2015SonAlsoRises]'."
-  (goto-char (point-min))
-  (while (re-search-forward tlon-cite-pattern nil t)
-    (replace-match (format "[@%s]"(match-string 1)) nil nil)))
-
-;;;;;; Formatting
+;;;;;;; General
 
 ;; TODO: should have more descriptive name
 (defun tlon-tts-process-formatting ()
