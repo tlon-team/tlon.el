@@ -1317,6 +1317,8 @@ citation key, format. Hence, it must be run *before*
       (let ((replacement (if group (format " %s" (match-string group)) "")))
 	(replace-match replacement t nil)))))
 
+;;;;;;; Specific
+
 (defun tlon-tts-process-boldface ()
   "Remove boldface from text."
   (tlon-tts-remove-formatting 'boldface))
@@ -1542,7 +1544,7 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
        (tlon-tts-enclose-in-voice-tag (tlon-tts-enclose-in-listener-cues type text))
      (tlon-tts-enclose-in-listener-cues type text))))
 
-;;;;;;; Specific elements
+;;;;;;; Specific
 
 (defun tlon-tts-process-quotes ()
   "Add listener cues for blockquotes."
