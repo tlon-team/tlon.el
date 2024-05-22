@@ -748,5 +748,28 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (org-sort-entries nil ?o)
     (save-buffer)))
 
+;;;;; transient
+
+(defun tlon-transient-read-symbol-choice (prompt choices)
+  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  (let* ((input (completing-read prompt (mapcar 'symbol-name choices))))
+    (intern input)))
+
+(defun tlon-transient-read-number-choice (prompt choices)
+  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  (let* ((input (completing-read prompt (mapcar 'number-to-string choices))))
+    (string-to-number input)))
+
+(defun tlon-transient-read-string-choice (prompt choices)
+  "Return a list of CHOICES with PROMPT to be used as an `infix' reader function."
+  (let* ((input (completing-read prompt choices)))
+    (substring-no-properties input)))
+
+(defun tlon-transient-toggle-variable-value (var-name)
+  "Toggle the value of the VAR-NAME."
+  (if (symbol-value var-name)
+      (set var-name nil)
+    (set var-name t)))
+
 (provide 'tlon-core)
 ;;; tlon-core.el ends here
