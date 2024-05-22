@@ -298,6 +298,7 @@ Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
     (tlon-add-or-update-tlon-field-in-file key tlon-file-fluid)
     (kill-new key)
     (message "Moved entry `%1$s' to `%s' and copied `%1$s' to kill ring." key tlon-file-fluid)))
+
 ;;;###autoload
 (defun tlon-move-all-fluid-entries-to-stable ()
   "Move all entries in `fluid.bib' to `stable.bib'."
