@@ -313,8 +313,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 		   (insert-file-contents file)
 		   (buffer-string))))
     (tlon-make-gptel-request tlon-ai-translate-prompt string
-				   (lambda (response info)
-				     (tlon-ai-translate-file-callback response info file)))))
+			     (lambda (response info)
+			       (tlon-ai-translate-file-callback response info file)))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
 (defun tlon-ai-translate-file-callback (response info file)
@@ -579,7 +579,7 @@ If STRING is nil, use the current BibTeX entry."
 			     ('bibtex-mode (bibtex-extras-get-entry-as-string))
 			     (_ (user-error "I can’t detect language in %s" major-mode))))))
     (tlon-make-gptel-request tlon-ai-detect-language-bibtex-prompt string
-				   #'tlon-ai-callback-return)))
+			     #'tlon-ai-callback-return)))
 
 (declare-function bibtex-beginning-of-entry "bibtex")
 ;;;###autoload
@@ -657,7 +657,7 @@ request was sent."
 		     (or (tlon-repo-lookup :language :dir (tlon-get-repo 'no-prompt))
 			 (tlon-select-language 'code))))
   (let ((prompt (tlon-lookup tlon-ai-transcribe-phonetically-prompt
-				   :prompt :language language)))
+			     :prompt :language language)))
     (tlon-make-gptel-request prompt expression #'tlon-ai-callback-copy)))
 
 (defun tlon-phonetically-transcribe-in-buffer ()
@@ -709,10 +709,10 @@ If RESPONSE is nil, return INFO."
 (defun tlon-ai-batch-fun-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
   (tlon-transient-read-symbol-choice prompt '(tlon-get-abstract-with-or-without-ai
-						    tlon-get-abstract-with-ai
-						    tlon-fetch-and-set-abstract
-						    tlon-ai-set-language-bibtex
-						    nil)))
+					      tlon-get-abstract-with-ai
+					      tlon-fetch-and-set-abstract
+					      tlon-ai-set-language-bibtex
+					      nil)))
 
 (transient-define-infix tlon-ai-batch-fun-infix ()
   "Change the local value of the `'tlon-ai-batch-fun' variable."
