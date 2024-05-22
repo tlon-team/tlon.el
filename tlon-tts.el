@@ -222,7 +222,12 @@ The options are:
 
 ;;;;; Chunk processing
 
-(defvar tlon-unprocessed-chunks nil
+(defvar tlon-tts-chunks nil
+  "Chunks of text to be narrated.
+The value of this variable is used for debugging purposes. Hence it is not unset
+at the end of the TTS process.")
+
+(defvar tlon-tts-unprocessed-chunk-files nil
   "The chunks to process in the current TTS session.")
 
 ;;;;; SSML tag pairs & patterns
@@ -794,10 +799,10 @@ This command is used for debugging purposes."
   "Process unprocessed chunks."
   (let* ((destination (tlon-tts-set-audio-path))
 	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-current-engine)))
-	 (chunks (tlon-tts-read-content char-limit))
 	 (nth 1))
-    (setq tlon-unprocessed-chunks (tlon-tts-get-chunk-names destination (length chunks)))
-    (dolist (chunk chunks)
+    (setq tlon-tts-chunks (tlon-tts-read-content char-limit))
+    (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-names destination (length tlon-tts-chunks)))
+    (dolist (chunk tlon-tts-chunks)
       ;; TODO: see if this can be done in parallel
       (tlon-tts-generate-audio chunk (tlon-tts-get-chunk-name destination nth))
       (setq nth (1+ nth)))))
@@ -970,7 +975,8 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
     (let ((file (tlon-tts-get-original-name file)))
       (tlon-tts-join-chunks file)
       ;; make conditional to no errors
-      (tlon-tts-delete-chunks file))))
+      ;; (tlon-tts-delete-chunks file)
+      )))
 
 (defun tlon-tts-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks no larger than CHUNK-SIZE."
