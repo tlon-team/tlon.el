@@ -1267,8 +1267,6 @@ attribute."
     (tlon-tts-remove-unsupported-ssml-tags))
   (goto-char (point-min)))
 
-;; TODO: it seems Microsoft Azure is not making an extra pause between paragraphs; decide whether to add some extra silence
-
 ;;;;;; Notes
 
 (defun tlon-tts-process-notes ()
