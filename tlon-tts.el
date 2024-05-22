@@ -1260,10 +1260,8 @@ attribute."
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links'
     (tlon-tts-process-links)
-    (tlon-tts-process-numbers)
-    ;; process superscripts and subscripts
+    (tlon-tts-process-numerals)
     (tlon-tts-process-currencies)
-    ;; (tlon-tts-process-math-expressions)
     (tlon-tts-remove-unsupported-ssml-tags))
   (goto-char (point-min)))
 
@@ -1571,8 +1569,41 @@ image links are handled differently."
 
 ;;;;;; Numbers
 
-(defun tlon-tts-process-numbers ()
-  "Remove thin space separators in numbers."
+;;;;;;; General
+
+(defun tlon-tts-process-numerals ()
+  "Process numbers as appropriate."
+  (tlon-tts-process-numerals-replace-powers)
+  (tlon-tts-process-numerals-replace-roman)
+  (tlon-tts-process-numerals-remove-thin-spaces))
+
+;;;;;;; Specific
+
+(defun tlon-tts-process-numerals-replace-powers ()
+  "Replace numbers raised to a power with their verbal equivalents."
+  (let ((language (tlon-tts-get-current-language)))
+    (goto-char (point-min))
+    (while (re-search-forward tlon-md-math-power nil t)
+      (let* ((base (match-string-no-properties 1))
+	     (exponent (match-string-no-properties 2))
+	     (exponent-number (string-to-number exponent))
+	     (exponent-bounded (if (> exponent-number 10) 10 exponent-number))
+	     (inner-list (alist-get exponent-bounded tlon-tts-number-exponents))
+	     (string (alist-get language inner-list nil nil #'string=))
+	     (verbal-exponent (apply 'format string (list exponent))))
+	(replace-match (format "%s %s" base verbal-exponent))))))
+
+(declare-function rst-roman-to-arabic "rst")
+(defun tlon-tts-process-numerals-replace-roman ()
+  "Replace Roman numerals with their Arabic equivalents."
+  (goto-char (point-min))
+  (while (re-search-forward tlon-mdx-roman-search-pattern nil t)
+    (let* ((roman (match-string-no-properties 2))
+	   (arabic (rst-roman-to-arabic roman)))
+      (replace-match (number-to-string arabic)))))
+
+(defun tlon-tts-process-numerals-remove-thin-spaces ()
+  "Remove thin space separators in numerals."
   (goto-char (point-min))
   (while (re-search-forward tlon-number-separated-by-thin-space nil t)
     (replace-match (replace-regexp-in-string " " "" (match-string 1)))))
@@ -1588,19 +1619,6 @@ image links are handled differently."
       (while (re-search-forward (format "%s.?\\([0-9,.]+\\)\\b" (regexp-quote symbol)) nil t)
 	(replace-match (format tlon-tts-currency-ssml
 			       (match-string-no-properties 1) code))))))
-
-;;;;;; Math expressions
-
-(declare-function tlon-ai-translate-math "tlon-ai")
-(defun tlon-tts-process-math-expressions ()
-  "Replace math expressions with their spoken equivalent."
-  (dolist (pattern (list tlon-math-inline-search-pattern
-			 tlon-math-display-search-pattern))
-    (goto-char (point-min))
-    (while (re-search-forward pattern nil t)
-      (let ((math (match-string-no-properties 2)))
-	(replace-match "" nil nil)
-	(tlon-ai-translate-math math (tlon-tts-get-current-language))))))
 
 ;;;;;; Remove unsupported SSML tags
 
