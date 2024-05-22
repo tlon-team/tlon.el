@@ -910,7 +910,7 @@ prompt the user to select it, in that order."
     (or language
 	(tlon-repo-lookup :language :dir (tlon-get-repo-from-file tlon-tts-current-file-or-buffer))
 	(tlon-select-language 'code 'babel))))
-  
+
 (defun tlon-tts-set-current-language (&optional language)
   "Set the value of the language of the current process.
 If LANGUAGE is nil, look up the language of the current file or prompt the user
@@ -1310,7 +1310,9 @@ citation key, format. Hence, it must be run *before*
 	('italics (cons markdown-regex-italic 3))
 	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern 2))
 	('visually-shown (cons tlon-mdx-visually-shown-search-pattern nil))
+	('alternative-voice (cons tlon-mdx-alternative-voice-search-pattern 2))
 	('small-caps (cons tlon-mdx-small-caps-search-pattern 2))
+	;; add 'math type; should use the value of `alt' attribute
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
