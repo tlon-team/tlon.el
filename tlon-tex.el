@@ -672,12 +672,11 @@ argument."
 (transient-define-prefix tlon-tex-menu ()
   "Menu for `tex' functions."
   [["Missing URLs"
-    ("f" "Find in file"                 tlon-prompt-to-add-missing-urls)
-    ("z" "Add with Zotra"               zotra-extras-add-multiple-urls)]
+    ("f" "Find in file"                      tlon-prompt-to-add-missing-urls)
+    ("z" "Add with Zotra"                    zotra-extras-add-multiple-urls)]
    ["Ebib"
-    ("a" "Fetch abstract"               tlon-fetch-and-set-abstract)
-    ("c" "Create entry"                 tlon-tex-create-translation-entry)
-    ("t" "Move to Tlön database"        ebib-extras-move-entry-to-tlon)]])
+    ("a" "Fetch abstract"                    tlon-fetch-and-set-abstract)
+    ("c" "Create translation entry"          tlon-tex-create-translation-entry)]
    ["BibTeX entries"
     ("t" "Move this entry to Tlön database"  tlon-move-entry-to-fluid)
     ("s" "Move all entries to stable"        tlon-move-all-fluid-entries-to-stable)]])
