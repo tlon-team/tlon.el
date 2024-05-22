@@ -298,12 +298,24 @@ Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
     (tlon-add-or-update-tlon-field-in-file key tlon-file-fluid)
     (kill-new key)
     (message "Moved entry `%1$s' to `%s' and copied `%1$s' to kill ring." key tlon-file-fluid)))
+;;;###autoload
+(defun tlon-move-all-fluid-entries-to-stable ()
+  "Move all entries in `fluid.bib' to `stable.bib'."
+  (interactive)
+  (when (or (buffer-modified-p (find-file-noselect tlon-file-fluid))
+	    (buffer-modified-p (find-file-noselect tlon-file-stable)))
+    (user-error "Save `fluid.bib' and `stable.bib' before proceeding"))
+  (let (entries)
+    (with-current-buffer (find-file-noselect tlon-file-fluid)
       (widen)
-      (bibtex-search-entry key)
-      (tlon-add-or-update-tlon-field)
+      (setq entries (buffer-string))
+      (erase-buffer)
       (save-buffer))
-    (kill-new key)))
-
+    (with-current-buffer (find-file-noselect tlon-file-stable)
+      (widen)
+      (goto-char (point-max))
+      (insert entries)
+      (save-buffer))
 (defun tlon-move-entry-without-abstract ()
   "Move entry to `tlon-file-fluid' if it doesn't have an abstract."
   (message "Moving `%s'..." (bibtex-extras-get-key))
@@ -329,6 +341,7 @@ Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
     (tlon-move-entry nil (file-name-concat tlon-bibtex-dir "temp.bib")))
   (bibtex-next-entry)
   (tlon-move-lesswrong-entries))
+    (message "Moved all entries from `fluid.bib' to `stable.bib'. You may want to commit these changes.")))
 
 ;;;;; Add fields
 
@@ -665,7 +678,9 @@ argument."
     ("a" "Fetch abstract"               tlon-fetch-and-set-abstract)
     ("c" "Create entry"                 tlon-tex-create-translation-entry)
     ("t" "Move to Tlön database"        ebib-extras-move-entry-to-tlon)]])
+   ["BibTeX entries"
     ("t" "Move this entry to Tlön database"  tlon-move-entry-to-fluid)
+    ("s" "Move all entries to stable"        tlon-move-all-fluid-entries-to-stable)]])
 
 (provide 'tlon-tex)
 ;;; tlon-tex.el ends here
