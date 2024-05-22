@@ -29,10 +29,8 @@
 
 (require 'gptel)
 (require 'gptel-extras)
-(require 'tlon-counterpart)
-(require 'tlon-dispatch)
-(require 'tlon-import)
-(require 'tlon-tex)
+(require 'shut-up)
+(require 'tlon-core)
 
 ;;;; User options
 
@@ -219,6 +217,8 @@ INFO is the response info."
 
 ;;;;;; Other functions
 
+(declare-function bibtex-next-entry "bibtex")
+(declare-function bibtex-extras-get-key "bibtex-extras")
 (declare-function ebib-extras-next-entry "ebib-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-ai-batch-continue ()
@@ -240,6 +240,7 @@ INFO is the response info."
     (funcall original-fun)))
 
 (declare-function ebib-extras-get-file "ebib-extras")
+(declare-function tlon-md-read-content "tlon-md")
 (defun tlon-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
 If FILE is non-nil, return it as a string or, if in `markdown-mode', return a
@@ -270,6 +271,7 @@ Otherwise,
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
 (declare-function shr-render-buffer "shr")
+(declare-function tlon-convert-pdf "tlon-import")
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
@@ -314,6 +316,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 				   (lambda (response info)
 				     (tlon-ai-translate-file-callback response info file)))))
 
+(declare-function tlon-get-counterpart "tlon-counterpart")
 (defun tlon-ai-translate-file-callback (response info file)
   "Callback for `tlon-ai-translate-file'.
 RESPONSE is the response from the AI model and INFO is the response info. FILE
@@ -388,6 +391,7 @@ LANGUAGE for the description; if nil, obtain the language from the current repo.
 
 ;;;;; Summarization
 
+(declare-function tlon-fetch-and-set-abstract "tlon-tex")
 ;;;###autoload
 (defun tlon-get-abstract-with-or-without-ai ()
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
@@ -400,6 +404,7 @@ To get an abstract without AI, the function uses
   (unless (tlon-fetch-and-set-abstract)
     (tlon-get-abstract-with-ai)))
 
+(declare-function tlon-abstract-may-proceed-p "tlon-tex")
 ;;;###autoload
 (defun tlon-get-abstract-with-ai (&optional file)
   "Return an abstract of the relevant content using AI.
@@ -503,6 +508,10 @@ If RESPONSE is nil, return INFO. KEY is the BibTeX key."
 
 ;;;;;; BibTeX
 
+(declare-function bibtex-set-field "bibtex-extras")
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
+(declare-function bibtex-extras-get-field-in-string "bibtex-extras")
 (declare-function ebib-extras-get-or-open-entry "ebib-extras")
 ;;;###autoload
 (defun tlon-ai-summarize-bibtex-entry (&optional string)
@@ -572,6 +581,7 @@ If STRING is nil, use the current BibTeX entry."
     (tlon-make-gptel-request tlon-ai-detect-language-bibtex-prompt string
 				   #'tlon-ai-callback-return)))
 
+(declare-function bibtex-beginning-of-entry "bibtex")
 ;;;###autoload
 (defun tlon-ai-set-language-bibtex ()
   "Set the language of the BibTeX entry at point to LANGUAGE.
@@ -634,6 +644,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Phonetic transcription
 
+(declare-function word-at-point "thingatpt")
 ;;;###autoload
 (defun tlon-ai-phonetically-transcribe (expression language)
   "Insert the phonetic transcription of the EXPRESSION in LANGUAGE.
