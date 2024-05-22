@@ -1651,7 +1651,9 @@ image links are handled differently."
     (dolist (pattern patterns)
       (goto-char (point-min))
       (while (re-search-forward (tlon-make-pattern-searchable pattern) nil t)
-	(replace-match (match-string 2) t)))))
+	;; handle double backslashes
+	(let ((replacement (replace-regexp-in-string "\\\\" "\\\\\\\\" (match-string 2))))
+	  (replace-match replacement t))))))
 
 (defun tlon-tts-count-format-placeholders (format)
   "Count the number of format placeholders in the format string FORMAT."
