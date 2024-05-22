@@ -1420,7 +1420,7 @@ the terms will match only if they are adjacent by non-word characters."
 	    (replacement (cdr term)))
 	(goto-char (point-min))
 	(while (re-search-forward find nil t)
-	  (funcall replacement-fun replacement))))))
+	  (save-match-data (funcall replacement-fun replacement)))))))
 
 (defun tlon-tts-get-associated-terms (var)
   "Get associated terms for the current language in VAR.
