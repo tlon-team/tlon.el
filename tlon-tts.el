@@ -1064,7 +1064,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Get or set the Microsoft Azure key."
   (or tlon-microsoft-azure-key
       (setq tlon-microsoft-azure-key
-	    (auth-source-pass-get "key1" (concat "tlon/core/azure.com/" tlon-email-shared)))))
+	    (auth-source-pass-get "tts1" (concat "tlon/core/azure.com/" tlon-email-shared)))))
 
 ;;;;;;; Google Cloud
 
