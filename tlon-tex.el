@@ -285,15 +285,19 @@ errors gracefully."
 
 ;;;;; Move entries
 
-(defun tlon-move-entry (&optional key file)
+;;;###autoload
+(defun tlon-move-entry-to-fluid (&optional key)
   "Move entry with KEY to FILE.
-Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
-If FILE is non-nil, use `tlon-file-fluid'."
+Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point."
   (interactive)
-  (let ((key (or key (bibtex-extras-get-key)))
-	(file (or file tlon-file-fluid)))
-    (bibtex-extras-move-entry key file)
-    (with-current-buffer (find-file-noselect file)
+  ;; TODO: add ensure in tex modes check
+  (let ((key (or key (pcase major-mode
+		       ('bibtex-mode (bibtex-extras-get-key))
+		       ((or 'ebib-entry-mode 'ebib-index-mode) (ebib-extras-get-field "=key="))))))
+    (bibtex-extras-move-entry key tlon-file-fluid)
+    (tlon-add-or-update-tlon-field-in-file key tlon-file-fluid)
+    (kill-new key)
+    (message "Moved entry `%1$s' to `%s' and copied `%1$s' to kill ring." key tlon-file-fluid)))
       (widen)
       (bibtex-search-entry key)
       (tlon-add-or-update-tlon-field)
@@ -661,6 +665,7 @@ argument."
     ("a" "Fetch abstract"               tlon-fetch-and-set-abstract)
     ("c" "Create entry"                 tlon-tex-create-translation-entry)
     ("t" "Move to Tlön database"        ebib-extras-move-entry-to-tlon)]])
+    ("t" "Move this entry to Tlön database"  tlon-move-entry-to-fluid)
 
 (provide 'tlon-tex)
 ;;; tlon-tex.el ends here
