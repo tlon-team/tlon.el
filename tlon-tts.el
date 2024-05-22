@@ -1339,6 +1339,18 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
   "Remove `VisuallyShown' MDX tag."
   (tlon-tts-remove-formatting 'visually-shown))
 
+(defun tlon-tts-process-alternative-voice ()
+  "Remove `AlternativeVoice' tag, or replace it with an SSML `voice' tag.
+Whether the tag is removed or replaced depends on the value of
+`tlon-tts-use-alternate-voice'. When the tag is replaced, the `voice' tag is set
+to the alternative voice for the current language."
+  (if tlon-tts-use-alternate-voice
+      (progn
+	(goto-char (point-min))
+	(while (re-search-forward tlon-mdx-alternative-voice-search-pattern nil t)
+	  (replace-match (tlon-tts-enclose-in-voice-tag (match-string 2)) t)))
+    (tlon-tts-remove-formatting 'alternative-voice)))
+
 (defun tlon-tts-process-small-caps ()
   "Replace small caps with their full form."
   (tlon-tts-remove-formatting 'small-caps))
@@ -1623,16 +1635,6 @@ image links are handled differently."
 The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
   (let ((format (if greedy ".**" ".*?")))
     (tlon-tts-fill-format-string pattern format)))
-
-;;;;; Alternative voice
-
-(defun tlon-tts-process-alternative-voice ()
-  "Replace the `AlternativeVoice' tag with an SSML `voice' tag.
-The `voice' tag is set to the alternative voice for the current language."
-  (when tlon-tts-use-alternate-voice
-    (goto-char (point-min))
-    (while (re-search-forward tlon-mdx-alternative-voice-search-pattern nil t)
-      (replace-match (tlon-tts-enclose-in-voice-tag (match-string 2)) t))))
 
 ;;;;; Project-wide
 
