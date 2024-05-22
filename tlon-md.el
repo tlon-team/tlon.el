@@ -839,8 +839,8 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("i" "inline"               tlon-insert-math-inline)
     ("d" "display"              tlon-insert-math-display)]
    ["TTS"
-    ("L" "lang"                 tlon-insert-ssml-lang)
-    ("e" "emphasis"             tlon-insert-ssml-emphasis)
+    ("L" "lang"                 tlon-tts-insert-ssml-lang)
+    ("e" "emphasis"             tlon-tts-insert-ssml-emphasis)
     ("v" "alternative voice"    tlon-insert-mdx-alternative-voice)
     ("H" "visually hidden"      tlon-insert-mdx-visually-hidden)
     ("S" "visually shown"       tlon-insert-mdx-visually-shown)]
