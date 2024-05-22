@@ -1446,13 +1446,13 @@ process, return its cdr."
    (tlon-tts-get-phonetic-replacements)
    'tlon-tts-replace-phonetic-replacements 'word-boundary))
 
-(defun tlon-tts-replace-phonetic-replacements (replacement)
-  "When processing simple replacements, replace match with REPLACEMENT."
-  (replace-match replacement t))
-
 (defun tlon-tts-get-phonetic-replacements ()
   "Get simple replacements."
   (tlon-tts-get-associated-terms tlon-tts-phonetic-replacements))
+
+(defun tlon-tts-replace-phonetic-replacements (replacement)
+  "When processing simple replacements, replace match with REPLACEMENT."
+  (replace-match replacement t))
 
 ;;;;;;; Phonetic transcriptions
 
@@ -1464,15 +1464,15 @@ process, return its cdr."
    (tlon-tts-get-phonetic-transcriptions)
    'tlon-tts-replace-phonetic-transcriptions 'word-boundary))
 
+(defun tlon-tts-get-phonetic-transcriptions ()
+  "Get the phonetic transcriptions."
+  (tlon-tts-get-associated-terms tlon-tts-phonetic-transcriptions))
+
 (defun tlon-tts-replace-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (replace-match (format tlon-tts-ssml-phoneme-replace-pattern
 			 "ipa" replacement (match-string-no-properties 0)) t))
-
-(defun tlon-tts-get-phonetic-transcriptions ()
-  "Get the phonetic transcriptions."
-  (tlon-tts-get-associated-terms tlon-tts-phonetic-transcriptions))
 
 ;;;;;; Listener cues
 
