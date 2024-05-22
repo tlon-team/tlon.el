@@ -1306,7 +1306,8 @@ For example `<Cite bibKey={\"Clark2015SonAlsoRises\"} />' will be replaced with
   (tlon-tts-process-boldface)
   (tlon-tts-process-italics)
   (tlon-tts-process-visually-hidden)
-  (tlon-tts-process-visually-shown))
+  (tlon-tts-process-visually-shown)
+  (tlon-tts-process-small-caps))
 
 (defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
