@@ -751,30 +751,34 @@ variable."
   "Menu for `tlon-ai'."
   :info-manual "(tlon) AI"
   [[""
+    ("c" "configure model"                      gptel-extras-model-config)
+    ""
     ("t" "translate"                            tlon-ai-translate)
     ("r" "rewrite"                              tlon-ai-rewrite)
     ("p" "phonetically transcribe"              tlon-ai-phonetically-transcribe)
     ""
     "Bibtex"
-    ("b" "set language bibtex"                  tlon-ai-set-language-bibtex)
+    ("b" "set language of bibtex"               tlon-ai-set-language-bibtex)
     ""
     "Markdown"
     ("i" "describe image"                       tlon-ai-describe-image)
     ;; Create command to translate all images
     ("m" "translate math"                       tlon-ai-translate-math)
-    ("M" "translate all math"                   tlon-ai-translate-math-in-buffer)]
+    ;; TODO: develop this
+    ;; ("M" "translate all math"                   tlon-ai-translate-math-in-buffer)
+    ]
    ["Summarize"
     ("s s" "get abstract with or without AI"    tlon-get-abstract-with-or-without-ai)
     ("s n" "get abstract without AI"            tlon-fetch-and-set-abstract)
     ("s a" "get abstract with AI"               tlon-get-abstract-with-ai)
     ("s h" "get abstract with AI from HTML"     tlon-get-abstract-with-ai-from-html)
     ("s p" "get abstract with AI from PDF"      tlon-get-abstract-with-ai-from-pdf)
-    ("s b" "summarize bibtex entry"             tlon-ai-summarize-bibtex-entry)]
-   ["Summarize parameters"
+    ("s b" "summarize bibtex entry"             tlon-ai-summarize-bibtex-entry)
+    ""
+    "Summarize parameters"
     ("-b" "batch"                               tlon-ai-batch-fun-infix)
     ("-d" "mullvad connection duration"         tlon-mullvad-connection-duration-infix)
-    ("-o" "overwrite"                           tlon-abstract-overwrite-infix)
-    ("c" "configure model"                      gptel-extras-model-config)]])
+    ("-o" "overwrite"                           tlon-abstract-overwrite-infix)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
