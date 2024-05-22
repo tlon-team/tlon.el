@@ -1706,26 +1706,61 @@ PROMPTS is a cons cell with the corresponding prompts."
 
 ;;;;; Menu
 
+;; TODO: extract common function to define the below more concisely
+
+(transient-define-infix tlon-tts-heading-break-duration-infix ()
+  "Set the duration of `tlon-tts-heading-break-duration'."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-heading-break-duration
+  :reader (lambda (_ _ _) (read-string "Duration (seconds):" tlon-tts-heading-break-duration))
+  :key "-h")
+
+(transient-define-infix tlon-tts-paragraph-break-duration-infix ()
+  "Set the duration of `tlon-tts-paragraph-break-duration'."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-paragraph-break-duration
+  :reader (lambda (_ _ _) (read-string "Duration (seconds):" tlon-tts-paragraph-break-duration))
+  :key "-p")
+
+(transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
+  "Toggle the value of `'tlon-tts-use-alternate-voice' in `tts' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-use-alternate-voice
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice))
+  :key "-v")
+
+;; TODO: define infixes to set audio settings
+;; tlon-microsoft-azure-audio-settings
+;; tlon-google-cloud-audio-settings
+;; tlon-amazon-polly-audio-settings
+;; tlon-openai-audio-settings
+;; tlon-elevenlabs-audio-settings
+
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
-  [[("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
-    ""
-    "Options"]
-   ["SSML"
+  [["Insert SSML tag"
     ("b" "break"                            tlon-tts-insert-ssml-break)
     ("e" "emphasis"                         tlon-tts-insert-ssml-emphasis)
     ("l" "lang"                             tlon-tts-insert-ssml-lang)
     ("p" "phoneme"                          tlon-tts-insert-ssml-phoneme)
     ("s" "say-as"                           tlon-tts-insert-ssml-say-as)]
-   ["Global"
+   ["Edit"
+    "global"
     ("a" "Abbreviation"                     tlon-tts-edit-abbreviations)
-    ("t" "Transcription"                    tlon-tts-edit-phonetic-transcriptions)
     ("r" "Replacement"                      tlon-tts-edit-phonetic-replacements)
+    ("t" "Transcription"                    tlon-tts-edit-phonetic-transcriptions)
     ""
-    "File-local"
-    ("R" "Replacement"                      tlon-add-file-local-replacement)
-    ("A" "Abbreviation"                     tlon-add-file-local-abbreviation)]])
+    "file-local"
+    ("A" "Abbreviation"                     tlon-add-file-local-abbreviation)
+    ("R" "Replacement"                      tlon-add-file-local-replacement)]
+   ["Create narration"
+    ("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
+    ""
+    "Narration options"
+    (tlon-tts-heading-break-duration-infix)
+    (tlon-tts-paragraph-break-duration-infix)
+    (tlon-tts-menu-infix-toggle-alternate-voice)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
