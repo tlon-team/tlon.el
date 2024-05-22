@@ -27,22 +27,8 @@
 
 ;;; Code:
 
-(require 'forge)
-(require 'forge-search)
-(require 'magit)
-(require 'magit-extra)
-(require 'org)
-(require 'org-clock)
-(require 'org-capture)
 (require 'paths)
-(require 'simple-extras)
-(require 'tlon-dispatch)
-(require 'tlon-clock)
 (require 'tlon-core)
-(require 'tlon-jobs)
-(require 'tlon-yaml)
-(require 'tlon-counterpart)
-(require 'tlon-tex)
 
 ;;;; Customization:
 
@@ -142,6 +128,7 @@ This variable should not be set manually.")
   (run-hooks 'tlon-post-init-hook)
   (message "Initialized `tlon'."))
 
+(defvar org-capture-templates)
 (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
 		     (id ,paths-tlon-todos-jobs-id)
 		     "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
@@ -157,6 +144,7 @@ This variable should not be set manually.")
 
 ;;;;; [name]
 
+(declare-function tlon-metadata-in-repos "tlon-yaml")
 (defun tlon-get-file-from-key (key)
   "Return the file path of KEY."
   (if-let ((file (tlon-metadata-lookup
@@ -164,6 +152,9 @@ This variable should not be set manually.")
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
 
+(declare-function tlon-metadata-in-repo "tlon-yaml")
+(declare-function tlon-get-counterpart "tlon-counterpart")
+(declare-function tlon-yaml-get-key "tlon-yaml")
 (defun tlon-get-key-from-file (file)
   "Return the bibtex key of FILE."
   (or
@@ -191,6 +182,7 @@ If no FILE is provided, use the file visited by the current buffer."
 	 (commit (car (split-string output "\n"))))
     commit))
 
+(declare-function magit-diff-range "magit-diff")
 (defun tlon-log-buffer-latest-user-commit (&optional file)
   "Show modifications to FILE since the latest commit by the current user.
 If no FILE is provided, use the file visited by the current buffer."
@@ -210,6 +202,7 @@ If FILE is not provided, use the file visited by the current buffer."
 
 ;;;;;; Metadata
 
+(declare-function tlon-ensure-markdown-mode "tlon-md")
 (defun tlon-get-key-in-buffer ()
   "Get the BibTeX key in the current Markdown buffer."
   (tlon-ensure-markdown-mode)
@@ -221,6 +214,7 @@ If FILE is not provided, use the file visited by the current buffer."
 
 ;;;;; Magit/Forge
 
+(declare-function magit-status-setup-buffer "magit-status")
 (defun tlon-magit-status ()
   "Show the status of the current repository in a buffer."
   (interactive)
@@ -236,6 +230,8 @@ If FILE is not provided, use the file visited by the current buffer."
       (magit-status-setup-buffer)
     (user-error "Repo `%s' not found" repo)))
 
+(declare-function files-extras-buffer-file-name "file-extras")
+(declare-function magit-extras-get-commit-file "magit-extra")
 (defun tlon-get-commit-key ()
   "Get key of commit file."
   (let* ((dir (file-name-directory (files-extras-buffer-file-name)))
@@ -245,6 +241,7 @@ If FILE is not provided, use the file visited by the current buffer."
 
 ;;;;; Checks
 
+(declare-function magit-get-current-branch "magit-git")
 (defun tlon-check-branch (branch repo)
   "Throw an error unless current buffer is in REPO branch BRANCH."
   (let ((default-directory repo))
@@ -252,6 +249,7 @@ If FILE is not provided, use the file visited by the current buffer."
       (user-error "Please switch to the branch `%s' before proceeding" branch)
       t)))
 
+(declare-function tlon-get-clock-key "tlon-clock")
 (defun tlon-check-file (&optional original)
   "Throw an error unless current file matches file in clock.
 If ORIGINAL is non-nil, check that current file matches original; otherwise,
@@ -277,6 +275,7 @@ check that current file matches translation."
 	(when (not (string-empty-p (shell-command-to-string git-command)))
 	  (throw 'found t))))))
 
+(declare-function magit-git-str "magit-git")
 (defun tlon-ensure-no-uncommitted-changes (file)
   "Throw an error if there are uncommitted modifications in repo of FILE.
 FILE is excluded from the check."
@@ -287,6 +286,7 @@ FILE is excluded from the check."
       (let ((repo-name (tlon-repo-lookup :name :dir (tlon-get-repo-from-file file))))
 	(user-error "There are uncommitted changes in repo `%s'" repo-name)))))
 
+(declare-function simple-extras-slugify "simple-extras")
 (defun tlon-check-file-title-match  (&optional file)
   "Check that FILE matches its title.
 If FILE is nil, check the current buffer."
@@ -318,6 +318,7 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
     (unless (string-match type dir-lang) ; we use `string-match' instead of `string=' to handle plurals
       (user-error "The file `%s' does not match its type" file))))
 
+(defvar tlon-md-image-sans-alt)
 (defun tlon-check-image-alt-text ()
   "Check if all images have alt text, else signal an error."
   (let (pos)
@@ -333,6 +334,7 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
 
 ;; Ideally this should be repalced with `consult-gh-search-issues', but the REPO
 ;; parameter does not restrict the search to that repo.
+(declare-function forge-search "forge-search")
 (defun tlon-search-issues (search-string &optional repo)
   "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
 If REPO is nil, use the current repo."
@@ -341,6 +343,7 @@ If REPO is nil, use the current repo."
 	 (default-directory repo))
     (forge-search search-string)))
 
+(declare-function magit-log-all "magit-log")
 (defun tlon-search-commits (search-string &optional repo)
   "Search for SEARCH-STRING in REPO's commit history.
 If REPO is nil, use the current repo."
@@ -377,6 +380,9 @@ If REPO is nil, use the current repo."
     (select-window win1)
     (tlon-search-files search-string repo)))
 
+(declare-function magit-stage-file "magit")
+(declare-function magit-pull-from-upstream "magit-pull")
+(declare-function magit-push-current-to-pushremote "magit-push")
 (defun tlon-commit-and-push (action file)
   "Commit and push modifications to FILE.
 The commit message is ACTION followed by the name of FILE."
@@ -390,6 +396,7 @@ The commit message is ACTION followed by the name of FILE."
     (tlon-create-commit action file)
     (call-interactively #'magit-push-current-to-pushremote)))
 
+(declare-function magit-commit-create "magit-commit")
 (defun tlon-create-commit (action file)
   "Create a commit modifications to FILE.
 The commit message is ACTION followed by either FILE or its BibTeX key,
@@ -428,6 +435,10 @@ respectively."
       (write-file tlon-file-url-correspondences)
       (tlon-url-correspondence-commit))))
 
+(declare-function magit-staged-files "magit-git")
+(declare-function magit-save-repository-buffers "magit-mode")
+(declare-function magit-run-git "magit-process")
+(defvar magit-commit-ask-to-stage)
 ;; TODO: consider adapting `tlon-commit-and-push' instead
 (defun tlon-url-correspondence-commit ()
   "Commit modifications in `url-correspondences.json'."
@@ -470,6 +481,7 @@ respectively."
 
 ;;;;; section correspondences
 
+(declare-function citar-select-refs "citar")
 (defun tlon-section-correspondence-dwim ()
   "Add a new section correspondence or modify an existing one."
   (interactive)
@@ -582,6 +594,7 @@ presented to the user."
 
 ;;;;;;; Fix log errors helper functions
 
+(defvar tlon-cite-pattern)
 (defun tlon-collect-bibtex-keys-in-buffer ()
   "Collect all the bibtex keys in the current buffer.
 Display the collected keys in a new buffer."
