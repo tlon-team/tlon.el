@@ -50,7 +50,7 @@
   :group 'tlon-tts
   :type 'string)
 
-(defcustom tlon-tts-paragraph-break-duration "0.3s"
+(defcustom tlon-tts-paragraph-break-duration "0.7s"
   "Duration of the break after a paragraph."
   :group 'tlon-tts
   :type 'string)
