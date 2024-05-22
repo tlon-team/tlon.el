@@ -325,6 +325,14 @@ Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
   "Add or update \"database\" field with \"Tlön\" value in the current BibTeX entry."
   (bibtex-extras-add-or-update-field "database" "Tlön"))
 
+(defun tlon-add-or-update-tlon-field-in-file (key file)
+  "Add or update \"database\" field with \"Tlön\" value in KEY of FILE."
+  (with-current-buffer (find-file-noselect file)
+    (widen)
+    (bibtex-search-entry key)
+    (tlon-add-or-update-tlon-field)
+    (save-buffer)))
+
 (defun tlon-add-database-field (file)
   "Iterate over each entry in FILE and add/update the `database' field.
 Adds the field `database' to every entry if it doesn't have it
