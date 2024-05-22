@@ -189,6 +189,20 @@ Text enclosed by a `SmallCaps' tag pair will be displayed in small caps.")
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
 
+;;;;;; `Roman'
+
+(defconst tlon-mdx-roman
+  '("<Roman>" . "</Roman>")
+  "Pair of MDX `Roman' tags.
+Text enclosed by a `Roman' tag pair will be displayed in small caps. It will
+also be read correctly in TTS narration.")
+
+(defconst tlon-mdx-roman-search-pattern
+  (tlon-make-tag-pattern tlon-mdx-roman)
+  "Regexp pattern for matching an MDX `Roman' expression.
+The first capture group captures the entire expression. The second capture group
+captures the expression without the tags.")
+
 ;;;;;; `VisuallyHidden'
 
 (defconst tlon-mdx-visually-hidden
