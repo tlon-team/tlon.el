@@ -45,6 +45,11 @@
 
 ;;;;;; `break'
 
+;; Note that, apparently, ElevenLabs *replaces* the pause that the narrator
+;; would make without an explicit `break' tag with the duration specified in the
+;; tag. This is different from the behavior of other engines, which *add* the
+;; duration specified in the tag to the default pause duration.
+
 (defcustom tlon-tts-heading-break-duration "1s"
   "Duration of the break after a heading."
   :group 'tlon-tts
