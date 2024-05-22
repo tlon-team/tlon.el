@@ -714,12 +714,13 @@ If RESPONSE is nil, return INFO."
 					      tlon-ai-set-language-bibtex
 					      nil)))
 
+(declare-function transient-define-infix "transient")
 (transient-define-infix tlon-ai-batch-fun-infix ()
   "Change the local value of the `'tlon-ai-batch-fun' variable."
   :class 'transient-lisp-variable
+  :variable 'tlon-ai-batch-fun
   :reader 'tlon-ai-batch-fun-reader
-  :prompt "Function for batch-processing: "
-  :variable 'tlon-ai-batch-fun)
+  :prompt "Function for batch-processing: ")
 
 (defun tlon-abstract-overwrite-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
@@ -728,9 +729,9 @@ If RESPONSE is nil, return INFO."
 (transient-define-infix tlon-abstract-overwrite-infix ()
   "Change the local value of the `tlon-abstract-overwrite' variable."
   :class 'transient-lisp-variable
+  :variable 'tlon-abstract-overwrite
   :reader 'tlon-abstract-overwrite-reader
-  :prompt "Overwrite when the entry already contains an abstract? "
-  :variable 'tlon-abstract-overwrite)
+  :prompt "Overwrite when the entry already contains an abstract? ")
 
 (defvar mullvad-durations)
 (defun tlon-mullvad-connection-duration-reader (prompt _ _)
@@ -741,9 +742,9 @@ If RESPONSE is nil, return INFO."
   "Change the local value of the `gptel-extras-gemini-mullvad-disconnect-after'
 variable."
   :class 'transient-lisp-variable
+  :variable 'gptel-extras-gemini-mullvad-disconnect-after
   :reader 'tlon-mullvad-connection-duration-reader
-  :prompt "Disconnect after: "
-  :variable 'gptel-extras-gemini-mullvad-disconnect-after)
+  :prompt "Disconnect after: ")
 
 ;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
 (transient-define-prefix tlon-ai-menu ()
