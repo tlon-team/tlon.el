@@ -64,7 +64,13 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
-;;;;; Numbers
+;;;;; Math
+
+(defconst tlon-md-math-power
+  "\\(?1:[[:digit:]]+\\)\\^\\(?2:[[:digit:]]+\\)\\^"
+  "Regexp pattern for matching a number raised to a power.
+The first capture group captures the base, and the second capture group captures
+the exponent.")
 
 ;;;;;; inline
 
