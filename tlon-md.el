@@ -415,6 +415,13 @@ Text enclosed by an `SmallCaps' tag pair will be displayed in small caps."
   (tlon-md-insert-element-pair tlon-mdx-small-caps))
 
 ;;;###autoload
+(defun tlon-insert-mdx-roman ()
+  "Insert an MDX `Roman' tag pair at point or around the selected region.
+Text enclosed by an `Roman' tag pair will be displayed in small caps."
+  (interactive)
+  (tlon-md-insert-element-pair tlon-mdx-roman))
+
+;;;###autoload
 (defun tlon-insert-mdx-visually-hidden ()
   "Insert an MDX `VisuallyHidden' tag pair at point or around selected region.
 Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
@@ -843,6 +850,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("m" "small caps"           tlon-insert-mdx-small-caps)
     ("a" "aside"                tlon-insert-mdx-aside)
     ("g" "lang"                 tlon-insert-mdx-lang)
+    ("r" "roman"                tlon-insert-mdx-roman)
     ("." "special character"    tlon-insert-special-character)]])
 
 (provide 'tlon-md)
