@@ -86,13 +86,20 @@
 
 (defconst tlon-tex-pandoc-cite-pattern-long
   "\\[-?@\\(?:{\\(?1:.*?\\)}\\|\\(?1:[[:alnum:]_][[:alnum:]]*\\(?:[:.#$%&+?<>~/-][[:alnum:]]+\\)*\\)\\(?:, \\(?2:.*?\\)\\)?\\)\\]"
-  "Regular expression for a Pandoc citation key.
+  "Regular expression for a \"long\" Pandoc citation key.
 
 Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
 `citar-markdown-citation-key-regexp'.")
 
 (defconst tlon-tex-pandoc-cite-pattern-short
-  "<cite>\\[@\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\\]</cite>"
+  (concat "<cite>" tlon-tex-pandoc-cite-pattern-long "</cite>")
+  "Regular expression for a \"short\" Pandoc citation key.
+
+Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
+`citar-markdown-citation-key-regexp'.")
+
+(defconst tlon-tex-pandoc-cite-pattern
+  (concat "\\(?:<cite>\\)?" tlon-tex-pandoc-cite-pattern-long "\\(?:</cite>\\)?")
   "Regular expression for a Pandoc citation key.
 
 Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
