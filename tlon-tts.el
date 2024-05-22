@@ -1352,10 +1352,12 @@ The time length of the pause is determined by
   (goto-char (point-min))
   (while (not (eobp))
     (forward-paragraph)
-    (backward-char)
+    (unless (eobp)
+      (backward-char))
     (unless (looking-back "^\\s-*$" (line-beginning-position))
       (insert (concat " " (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration))))
-    (forward-char)))
+    (unless (eobp)
+      (forward-char))))
 
 ;;;;;; Headings
 
