@@ -662,6 +662,31 @@ questions\").")
 	  '("Microsoft Azure" "Google Cloud"))
   "SSML wrapper for the TTS request.")
 
+;;;;; Numbers
+
+(defconst tlon-tts-number-exponents
+  '((1 . (("es" . "a la uno")
+	  ("en" . "to the power of %s")))
+    (2 . (("es" . "al cuadrado")
+	  ("en" . "squared")))
+    (3 . (("es" . "al cubo")
+	  ("en" . "cubed")))
+    (4 . (("es" . "a la cuarta")
+	  ("en" . "to the power of %s")))
+    (5 . (("es" . "a la quinta")
+	  ("en" . "to the power of %s")))
+    (6 . (("es" . "a la sexta")
+	  ("en" . "to the power of %s")))
+    (7 . (("es" . "a la séptima")
+	  ("en" . "to the power of %s")))
+    (8 . (("es" . "a la octava")
+	  ("en" . "to the power of %s")))
+    (9 . (("es" . "a la novena")
+	  ("en" . "to the power of %s")))
+    (10 . (("es" . "a la %s")
+	   ("en" . "to the power of %s"))))
+  "List of number exponents.")
+
 ;;;;; Currencies
 
 (defconst tlon-tts-currencies
