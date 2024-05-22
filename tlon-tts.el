@@ -1252,7 +1252,6 @@ attribute."
     (tlon-tts-process-formatting)
     (tlon-tts-process-headings)
     (tlon-tts-process-paragraphs)
-    ;; check all other elements in markdown-menu
     (tlon-tts-process-file-local-abbreviations)
     (tlon-tts-process-file-local-replacements)
     (tlon-tts-process-abbreviations)
