@@ -111,11 +111,33 @@ captures the expression without the tags.")
 
 ;;;;;; `Cite'
 
+(defconst tlon-cite-pattern-builder
+  "<Cite bibKey={\"\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\"}\\(?:%s />\\|>.*?</Cite>\\)"
+  "Generator for building cite patterns.")
+
+(defconst tlon-cite-pattern-short-element
+  "\\(?3: short\\)"
+  "Pattern that matches a short citation flag in the third capture group.
+To use in conjunction with `tlon-cite-pattern-builder'.")
+
 (defconst tlon-cite-pattern
-  "<Cite bibKey={\"\\(.*?\\)\\(, .*?\\)?\"}\\(\\( short\\)? />\\|>.*?</Cite>\\)"
+  (format tlon-cite-pattern-builder (concat tlon-cite-pattern-short-element "?"))
   "Pattern to match a citation in a Markdown file.
-The first group captures the bibTeX key, the second group captures the locators,
-and the third group captures the short citation flag.")
+The first group captures the BibTeX key, the second group captures the
+locator(s), if present, and the third group captures the short citation flag, if
+present.")
+
+(defconst tlon-cite-pattern-long
+  (format tlon-cite-pattern-builder "")
+  "Pattern to match a long citation in a Markdown file.
+The first group captures the BibTeX key, the second group captures the
+locator(s), if present.")
+
+(defconst tlon-cite-pattern-short
+  (format tlon-cite-pattern-builder tlon-cite-pattern-short-element)
+  "Pattern to match a short citation in a Markdown file.
+The first group captures the BibTeX key, the second group captures the
+locator(s), if present, and the third group captures the short citation flag.")
 
 ;;;;;; `Footnote'
 
