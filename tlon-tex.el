@@ -317,31 +317,6 @@ Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
       (goto-char (point-max))
       (insert entries)
       (save-buffer))
-(defun tlon-move-entry-without-abstract ()
-  "Move entry to `tlon-file-fluid' if it doesn't have an abstract."
-  (message "Moving `%s'..." (bibtex-extras-get-key))
-  (unless (bibtex-extras-get-field "abstract")
-    (tlon-move-entry))
-  (bibtex-next-entry)
-  (tlon-move-entry-without-abstract))
-
-(defun tlon-move-entry-without-file ()
-  "Move entry to `tlon-file-fluid' if it doesn't have an abstract."
-  (let ((key (bibtex-extras-get-key)))
-    (unless (or (bibtex-extras-get-field "file")
-		(bibtex-extras-get-field "crossref"))
-      (message "Moving `%s'..." key)
-      (tlon-move-entry key "temp.bib"))
-    (bibtex-next-entry)
-    (tlon-move-entry-without-file)))
-
-(defun tlon-move-lesswrong-entries ()
-  "Move LessWrong entry to \"temp.bib\"."
-  (message "Moving `%s'..." (bibtex-extras-get-key))
-  (when (string= (bibtex-extras-get-field "journaltitle") "{LessWrong}")
-    (tlon-move-entry nil (file-name-concat tlon-bibtex-dir "temp.bib")))
-  (bibtex-next-entry)
-  (tlon-move-lesswrong-entries))
     (message "Moved all entries from `fluid.bib' to `stable.bib'. You may want to commit these changes.")))
 
 ;;;;; Add fields
