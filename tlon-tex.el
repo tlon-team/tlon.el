@@ -105,27 +105,6 @@ Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
 Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
 `citar-markdown-citation-key-regexp'.")
 
-(defvar tlon-refs-dir
-  paths-dir-babel-refs
-  "Directory of the `babel-refs' repo.")
-
-(defvar tlon-bibtex-dir
-  (file-name-concat tlon-refs-dir "bib/")
-  "Directory where BibTeX files are stored.")
-
-(defvar tlon-file-fluid
-  (file-name-concat tlon-bibtex-dir "fluid.bib")
-  "File containing the fluid bibliography.")
-
-(defvar tlon-file-stable
-  (file-name-concat tlon-bibtex-dir "stable.bib")
-  "File containing the stable bibliography.")
-
-(defvar tlon-bibliography-files
-  `(,tlon-file-fluid
-    ,tlon-file-stable)
-  "List of bibliography files.")
-
 ;;;; Functions
 
 ;;;;; Fetch fields
