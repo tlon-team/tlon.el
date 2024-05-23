@@ -92,7 +92,12 @@
     ("] (\\." . "](.")
     ("] (htt" . "](htt")
     ("(. /" . "(./")
-    ("(.. /" . "(../")
+    ("\\[\\[" . "[")
+    ("\\]\\]" . "]")
+    ("{“" . "{\"")
+    ("\”}" . "\"}")
+    (">. />" . " />")
+    ("<Nota />" . "<Footnote />")
     ("\"}\\. />". "\"} />"))
   "A list search and replace pairs for fixing common issues in Italian translations.")
 
@@ -272,7 +277,7 @@ dedicated function."
 ;;;;;;; Italian
 
 (defun tlon-fix-italian-translation ()
-  "Fix common issues in French translations."
+  "Fix common issues in Italian translations."
   (interactive)
   (dolist (cons tlon-fix-italian-translation)
     (let ((search (car cons))
