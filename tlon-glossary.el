@@ -123,6 +123,13 @@
 		tlon-translation-language)))
 
 ;; TODO: this is currently not used; fix it
+(defvar magit-commit-ask-to-stage)
+(declare-function magit-save-repository-buffers "magit-mode")
+(declare-function magit-pull-from-upstream "magit-pull")
+(declare-function magit-push-current-to-pushremote "magit-push")
+(declare-function magit-staged-files "magit-git")
+(declare-function magit-run-git "magit-process")
+(declare-function magit-commit-create "magit-commit")
 (defun tlon-glossary-commit (action term &optional explanation)
   "Commit glossary modifications.
 ACTION describes the action (\"add\" or \"modify\") performed on the glossary.
@@ -183,6 +190,7 @@ them untranslated)."
       (when (or deepl (string= (alist-get 'type item) "variable"))
 	(insert entry)))))
 
+(defvar tlon-email-language)
 (declare-function tlon-email-send "tlon-email")
 ;;;###autoload
 (defun tlon-share-glossary (attachment &optional language)
