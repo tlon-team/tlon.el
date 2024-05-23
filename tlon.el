@@ -116,7 +116,6 @@ This variable should not be set manually.")
 
 ;;;;; init
 
-(defvar tlon-bibliography-files)
 (defun tlon-initialize ()
   "Initialize `tlon'."
   (interactive)
