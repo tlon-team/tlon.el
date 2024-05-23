@@ -273,6 +273,16 @@ dedicated function."
 	  (replace (cdr cons)))
       (tlon-autofix (list search) replace))))
 
+;;;;;;; Italian
+
+(defun tlon-fix-italian-translation ()
+  "Fix common issues in Italian translations."
+  (interactive)
+  (dolist (cons tlon-fix-italian-translation)
+    (let ((search (car cons))
+	  (replace (cdr cons)))
+      (tlon-autofix (list search) replace))))
+
 (provide 'tlon-fix)
 ;;;;;;; Italian
 
