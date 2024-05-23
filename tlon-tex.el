@@ -49,6 +49,8 @@
 
 ;;;; Variables
 
+;;;;; Locators
+
 (defconst tlon-locators
   '(("book" . "bk.")
     ("chapter ". "chap.")
@@ -83,6 +85,8 @@
     ("verses" . "vv.")
     ("volumes" . "vols."))
   "Alist of locators and their abbreviations.")
+
+;;;;; Citation styles
 
 (defconst tlon-tex-pandoc-cite-pattern-long
   "\\[-?@\\(?:{\\(?1:.*?\\)}\\|\\(?1:[[:alnum:]_][[:alnum:]]*\\(?:[:.#$%&+?<>~/-][[:alnum:]]+\\)*\\)\\(?:, \\(?2:.*?\\)\\)?\\)\\]"
