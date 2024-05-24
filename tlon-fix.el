@@ -302,14 +302,6 @@ dedicated function."
 (defun tlon-fix-italian-translation ()
   "Fix common issues in Italian translations."
   (interactive)
-  (tlon-fix-translation "it"))
-
-(provide 'tlon-fix)
-;;;;;;; Italian
-
-(defun tlon-fix-italian-translation ()
-  "Fix common issues in Italian translations."
-  (interactive)
   (dolist (cons tlon-fix-italian-translation)
     (let ((search (car cons))
 	  (replace (cdr cons)))
