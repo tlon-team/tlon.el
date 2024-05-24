@@ -302,10 +302,7 @@ dedicated function."
 (defun tlon-fix-italian-translation ()
   "Fix common issues in Italian translations."
   (interactive)
-  (dolist (cons tlon-fix-italian-translation)
-    (let ((search (car cons))
-	  (replace (cdr cons)))
-      (tlon-autofix (list search) replace))))
+  (tlon-fix-translation "it"))
 
 (provide 'tlon-fix)
 ;;; tlon-fix.el ends here
