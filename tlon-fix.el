@@ -72,7 +72,7 @@
     (" %" . " %")
     ("\"}\\. />". "\"} />")
     ("\"\\[\\^" . " »[^"))
-  "A list search and replace pairs for fixing common issues in French translations.")
+  "Search and replace pairs for fixing common issues in French translations.")
 
 (defconst tlon-fix-italian-translation
   '((") - \\[" . ") • [")
@@ -99,7 +99,15 @@
     (">. />" . " />")
     ("<Nota />" . "<Footnote />")
     ("\"}\\. />". "\"} />"))
-  "A list search and replace pairs for fixing common issues in Italian translations.")
+  "Search and replace pairs for fixing common issues in Italian translations.")
+
+(defconst tlon-fix-translations
+  `(("fr" . ,tlon-fix-french-translation)
+    ("it" . ,tlon-fix-italian-translation)
+    ;; ("es" . ,tlon-fix-spanish-translation)
+    ;; ("de" . ,tlon-fix-german-translation)
+    )
+  "Alist of language codes and their corresponding fix variable.")
 
 ;;;; Functions
 
@@ -169,7 +177,8 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
 (defun tlon-number-separators-perform-replacements (separator protected-ranges)
   "Replace thousands SEPARATOR with thin spaces, except in PROTECTED-RANGES."
   (goto-char (point-min))
-  (let ((digit-pattern (format tlon-number-separated-by-separator separator)))
+  (let* ((separator (regexp-quote separator))
+	 (digit-pattern (format tlon-number-separated-by-separator separator)))
     (while (re-search-forward digit-pattern nil t)
       (unless (tlon-is-in-protected-range-p (match-beginning 0) (match-end 0) protected-ranges)
 	(replace-match (replace-regexp-in-string separator " " (match-string-no-properties 0)))))))
@@ -263,25 +272,37 @@ dedicated function."
 
 ;;;;;; Language-specific
 
+(declare-function dired-get-marked-files "dired")
+(defun tlon-fix-translation (lang)
+  "Fix common issues in translations in LANG."
+  (if-let ((files (or (dired-get-marked-files) (list (buffer-file-name)))))
+      (dolist (file files)
+	(with-current-buffer (find-file-noselect file)
+	  (tlon-fix-translation-in-file lang)
+	  (message "Fixed translation in %s" file)))
+    (user-error "Buffer is not visiting a file")))
+
+(defun tlon-fix-translation-in-file (lang)
+  "Fix common issues in translations in LANG."
+  (let ((var (alist-get lang tlon-fix-translations nil nil #'string=)))
+    (dolist (cons var)
+      (let ((search (car cons))
+	    (replace (cdr cons)))
+	(tlon-autofix (list search) replace)))))
+
 ;;;;;;; French
 
 (defun tlon-fix-french-translation ()
   "Fix common issues in French translations."
   (interactive)
-  (dolist (cons tlon-fix-french-translation)
-    (let ((search (car cons))
-	  (replace (cdr cons)))
-      (tlon-autofix (list search) replace))))
+  (tlon-fix-translation "fr"))
 
 ;;;;;;; Italian
 
 (defun tlon-fix-italian-translation ()
   "Fix common issues in Italian translations."
   (interactive)
-  (dolist (cons tlon-fix-italian-translation)
-    (let ((search (car cons))
-	  (replace (cdr cons)))
-      (tlon-autofix (list search) replace))))
+  (tlon-fix-translation "it"))
 
 (provide 'tlon-fix)
 ;;; tlon-fix.el ends here
