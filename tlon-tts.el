@@ -994,9 +994,22 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
       (setq begin end))
     (nreverse chunks)))
 
-(defun tlon-tts-join-chunks (file)
-  "Join chunks of FILE back into a single file."
-  (let* ((files (tlon-tts-get-list-of-chunks file))
+(defun tlon-tts-set-chunk-file (file)
+  "Set chunk file based on FILE.
+If FILE is nil, use the file visited by the current buffer, the file at point in
+Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
+  (or file
+      (buffer-file-name)
+      (tlon-tts-get-original-name (dired-get-filename))
+      (tlon-tts-get-original-name (read-file-name "File: "))))
+
+(defun tlon-tts-join-chunks (&optional file)
+  "Join chunks of FILE back into a single file.
+If FILE is nil, use the file visited by the current buffer, the file at point in
+Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
+  (interactive)
+  (let* ((file (tlon-tts-set-chunk-file file))
+	 (files (tlon-tts-get-list-of-chunks file))
 	 (list-of-files (tlon-tts-create-list-of-chunks files)))
     (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
 			   list-of-files file))))
@@ -1011,10 +1024,12 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
       (setq nth (1+ nth)))
     (nreverse files)))
 
-(defun tlon-tts-delete-chunks (file)
+(defun tlon-tts-delete-chunks (&optional file)
   "Delete the chunks of FILE."
-  (dolist (file (tlon-tts-get-list-of-chunks file))
-    (delete-file file)))
+  (interactive)
+  (let ((file (tlon-tts-set-chunk-file file)))
+    (dolist (file (tlon-tts-get-list-of-chunks file))
+      (delete-file file))))
 
 (defun tlon-tts-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
@@ -1850,6 +1865,8 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("R" "Replacement"                      tlon-add-file-local-replacement)]
    ["Create narration"
     ("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
+    ("j" "Join file chunks"                 tlon-tts-join-chunks)
+    ("d" "Delete file chunks"               tlon-tts-delete-chunks)
     ""
     "Narration options"
     (tlon-tts-heading-break-duration-infix)
