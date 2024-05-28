@@ -1273,8 +1273,8 @@ attribute."
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links'
     (tlon-tts-process-links)
+    (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
-    (tlon-tts-process-currencies)
     (tlon-tts-remove-unsupported-ssml-tags))
   (goto-char (point-min)))
 
