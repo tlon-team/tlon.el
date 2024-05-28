@@ -35,10 +35,6 @@
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "glossary.json")
   "The JSON file containing the source glossary.")
 
-(defconst tlon-file-glossary-target
-  (file-name-concat paths-dir-downloads "Glossary.csv")
-  "The CSV file containing the target glossary.")
-
 (defvar tlon-glossary-values
   (tlon-parse-json tlon-file-glossary-source)
   "The glossary values.")
@@ -123,6 +119,13 @@
 		tlon-translation-language)))
 
 ;; TODO: this is currently not used; fix it
+(defvar magit-commit-ask-to-stage)
+(declare-function magit-save-repository-buffers "magit-mode")
+(declare-function magit-pull-from-upstream "magit-pull")
+(declare-function magit-push-current-to-pushremote "magit-push")
+(declare-function magit-staged-files "magit-git")
+(declare-function magit-run-git "magit-process")
+(declare-function magit-commit-create "magit-commit")
 (defun tlon-glossary-commit (action term &optional explanation)
   "Commit glossary modifications.
 ACTION describes the action (\"add\" or \"modify\") performed on the glossary.
@@ -153,18 +156,19 @@ and format them in a human-readable format."
   (interactive (list (tlon-select-language 'code 'babel)
 		     (y-or-n-p "Extract for DeepL? ")))
   (let ((source-path tlon-file-glossary-source)
+	(target-path (file-name-concat paths-dir-downloads (format "EN-%s.csv" (upcase language))))
 	json)
     (with-current-buffer (find-file-noselect source-path)
       (goto-char (point-min))
       (let ((json-array-type 'list))
 	(setq json (json-read))))
-    (with-current-buffer (find-file-noselect tlon-file-glossary-target)
+    (with-current-buffer (find-file-noselect target-path)
       (erase-buffer)
       (tlon-insert-formatted-glossary json language deepl)
       (save-buffer))
     (if (and deepl (y-or-n-p "Share glossary with translators? "))
-	(tlon-share-glossary tlon-file-glossary-target language)
-      (message "Glossary extracted to `%s'" tlon-file-glossary-target))))
+	(tlon-share-glossary target-path language)
+      (message "Glossary extracted to `%s'" target-path))))
 
 (defun tlon-insert-formatted-glossary (json language deepl)
   "Insert a properly formatted glossary in LANGUAGE from JSON data.
@@ -183,6 +187,7 @@ them untranslated)."
       (when (or deepl (string= (alist-get 'type item) "variable"))
 	(insert entry)))))
 
+(defvar tlon-email-language)
 (declare-function tlon-email-send "tlon-email")
 ;;;###autoload
 (defun tlon-share-glossary (attachment &optional language)

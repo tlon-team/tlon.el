@@ -311,13 +311,6 @@ If FILE is nil, use the file visited by the current buffer."
     (format "%s: " key)
     (tlon-yaml-get-key-values key))))
 
-(defun tlon-yaml-set-original-path ()
-  "Set the value of `original_path' YAML field."
-  (let* ((subproject (tlon-repo-lookup :subproject :dir (tlon-get-repo)))
-	 (dir (tlon-repo-lookup :dir :subproject subproject :language "en")))
-    (completing-read "Original filename: "
-		     (tlon-yaml-get-filenames-in-dir dir))))
-
 ;;;;; Edit
 
 (defun tlon-yaml-insert-metadata-section (&optional file)
@@ -398,7 +391,7 @@ If KEY already has VALUE, use it as the initial input."
     ("translators" (tlon-metadata-get-translators))
     ("tags" (tlon-get-metadata-values-of-type "tag")) ; make it language-specific
     ("date" (format-time-string "%FT%T%z"))
-    ("original_path" (tlon-yaml-get-filenames-in-dir))
+    ("original_path" (tlon-yaml-get-original-path))
     ("publication_status" tlon-yaml-publication-statuses)))
 
 (defun tlon-yaml-select-key-values (key values)
@@ -633,6 +626,12 @@ renaming it."
 	  (set-visited-file-name target)
 	  (save-buffer))
       (write-file target))))
+
+(defun tlon-yaml-get-original-path ()
+  "Set the value of `original_path' YAML field."
+  (let* ((subproject (tlon-repo-lookup :subproject :dir (tlon-get-repo)))
+	 (dir (tlon-repo-lookup :dir :subproject subproject :language "en")))
+    (tlon-yaml-get-filenames-in-dir dir)))
 
 (defun tlon-set-file-from-title (&optional title dir)
   "Set the file path based on its title.

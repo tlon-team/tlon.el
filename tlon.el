@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.4.0
+;; Version: 1.4.1
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
 
@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'org-capture)
 (require 'paths)
 (require 'tlon-core)
 

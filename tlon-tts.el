@@ -695,22 +695,21 @@ questions\").")
 ;;;;; Currencies
 
 (defconst tlon-tts-currencies
-  '(("₿" . "BTC")
-    ("Ξ" . "ETH")
-    ("£" . "GBP")
-    ("₪" . "ILS")
-    ("₹" . "INR")
-    ("¥" . "JPY")
-    ("$" . "USD"))
+  '(("₿" . (("en" . ("bitcoin" . "bitcoins"))
+	    ("es" . ("bitcoin" . "bitcoins"))))
+    ("Ξ" . (("en" . ("ether" . "ether"))
+	    ("es" . ("éter" . "éter"))))
+    ("£" . (("en" . ("pound" . "pounds"))
+	    ("es" . ("libra" . "libras"))))
+    ("₪" . (("en" . ("shekel" . "shekels"))
+	    ("es" . ("séquel" . "séqueles")))) ; https://www.fundeu.es/recomendacion/shekel-shequel-sekel-sequel/
+    ("₹" . (("en" . ("rupee" . "rupees"))
+	    ("es" . ("rupia" . "rupias"))))
+    ("¥" . (("en" . ("yen" . "yens"))
+	    ("es" . ("yen" . "yenes"))))
+    ("$" . (("en" . ("dollar" . "dollars"))
+	    ("es" . ("dólar" . "dólares")))))
   "Currency symbols and their associated three-letter codes.")
-
-(defconst tlon-tts-currency-ssml
-  "<say-as interpret-as=\"currency\">%s %s</say-as>"
-  "SSML pattern for currency symbols.
-The first placeholder is the currency amount, and the second is the currency
-code.
-
-For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation#say-as-element>.")
 
 ;;;;; File-local variables
 
@@ -995,9 +994,22 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
       (setq begin end))
     (nreverse chunks)))
 
-(defun tlon-tts-join-chunks (file)
-  "Join chunks of FILE back into a single file."
-  (let* ((files (tlon-tts-get-list-of-chunks file))
+(defun tlon-tts-set-chunk-file (file)
+  "Set chunk file based on FILE.
+If FILE is nil, use the file visited by the current buffer, the file at point in
+Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
+  (or file
+      (buffer-file-name)
+      (tlon-tts-get-original-name (dired-get-filename))
+      (tlon-tts-get-original-name (read-file-name "File: "))))
+
+(defun tlon-tts-join-chunks (&optional file)
+  "Join chunks of FILE back into a single file.
+If FILE is nil, use the file visited by the current buffer, the file at point in
+Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
+  (interactive)
+  (let* ((file (tlon-tts-set-chunk-file file))
+	 (files (tlon-tts-get-list-of-chunks file))
 	 (list-of-files (tlon-tts-create-list-of-chunks files)))
     (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
 			   list-of-files file))))
@@ -1012,10 +1024,12 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
       (setq nth (1+ nth)))
     (nreverse files)))
 
-(defun tlon-tts-delete-chunks (file)
+(defun tlon-tts-delete-chunks (&optional file)
   "Delete the chunks of FILE."
-  (dolist (file (tlon-tts-get-list-of-chunks file))
-    (delete-file file)))
+  (interactive)
+  (let ((file (tlon-tts-set-chunk-file file)))
+    (dolist (file (tlon-tts-get-list-of-chunks file))
+      (delete-file file))))
 
 (defun tlon-tts-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
@@ -1259,8 +1273,8 @@ attribute."
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links'
     (tlon-tts-process-links)
+    (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
-    (tlon-tts-process-currencies)
     (tlon-tts-remove-unsupported-ssml-tags))
   (goto-char (point-min)))
 
@@ -1304,19 +1318,23 @@ citation key, format. Hence, it must be run *before*
 
 (defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
-  (cl-destructuring-bind (pattern . group)
+  (cl-destructuring-bind (pattern . groups)
       (pcase type
-	('boldface (cons markdown-regex-bold 4))
-	('italics (cons markdown-regex-italic 3))
-	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern 2))
+	('boldface (cons markdown-regex-bold '(1 4)))
+	('italics (cons markdown-regex-italic '(1 4)))
+	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern '(2)))
 	('visually-shown (cons tlon-mdx-visually-shown-search-pattern nil))
-	('alternative-voice (cons tlon-mdx-alternative-voice-search-pattern 2))
-	('small-caps (cons tlon-mdx-small-caps-search-pattern 2))
+	('alternative-voice (cons tlon-mdx-alternative-voice-search-pattern '(2)))
+	('small-caps (cons tlon-mdx-small-caps-search-pattern '(2)))
 	;; add 'math type; should use the value of `alt' attribute
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (let ((replacement (if group (format " %s" (match-string group)) "")))
+      (let ((replacement (if groups
+			     (mapconcat (lambda (group)
+					  (match-string group))
+					groups)
+			   "")))
 	(replace-match replacement t nil)))))
 
 ;;;;;;; Specific
@@ -1374,10 +1392,12 @@ The time length of the pause is determined by
 (defun tlon-tts-process-headings ()
   "Remove heading markers from headings and add an optional pause.
 The time length of the pause is determined by `tlon-tts-heading-break-duration'."
-  (let ((insert-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
+  (let ((initial-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
     (goto-char (point-min))
     (while (re-search-forward markdown-regex-header nil t)
-      (replace-match (format "%s %s" insert-pause (match-string 5))))))
+      ;; add final period if missing
+      (let ((heading (replace-regexp-in-string "\\.\\.$" "." (concat (match-string 5) "."))))
+	(replace-match (format "%s %s" initial-pause heading))))))
 
 ;;;;;; File-local abbreviations
 
@@ -1516,14 +1536,18 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
 	('aside (list tlon-mdx-aside-search-pattern tlon-tts-aside-cues 2))
-	('quote (list markdown-regex-blockquote tlon-tts-quote-cues 3))
+	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
 	('image (list tlon-md-image tlon-tts-image-cues 1))
 	;; TODO: determine if other types should be added
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (replace-match
-       (tlon-tts-listener-cue-full-enclose cues (match-string-no-properties group))))))
+      (let* ((match (match-string-no-properties group))
+	     (text (pcase type
+		     ('quote (replace-regexp-in-string "^> ?" "" match))
+		     (_ match))))
+	(replace-match
+	 (tlon-tts-listener-cue-full-enclose cues text))))))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
@@ -1593,7 +1617,7 @@ image links are handled differently."
   "Process numbers as appropriate."
   (tlon-tts-process-numerals-replace-powers)
   (tlon-tts-process-numerals-replace-roman)
-  (tlon-tts-process-numerals-remove-thin-spaces))
+  (tlon-tts-process-numerals-remove-thousands-separators))
 
 ;;;;;;; Specific
 
@@ -1620,23 +1644,29 @@ image links are handled differently."
 	   (arabic (rst-roman-to-arabic roman)))
       (replace-match (number-to-string arabic)))))
 
-(defun tlon-tts-process-numerals-remove-thin-spaces ()
-  "Remove thin space separators in numerals."
+(defun tlon-tts-process-numerals-remove-thousands-separators ()
+  "Remove default thousands separators in numerals."
   (goto-char (point-min))
-  (while (re-search-forward tlon-number-separated-by-thin-space nil t)
-    (replace-match (replace-regexp-in-string " " "" (match-string 1)))))
+  (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
+    (replace-match (replace-regexp-in-string tlon-default-thousands-separator "" (match-string 1)))))
 
 ;;;;;; Currencies
 
 (defun tlon-tts-process-currencies ()
   "Format currency with appropriate SSML tags."
-  (dolist (cons tlon-tts-currencies)
-    (let ((symbol (car cons))
-	  (code (cdr cons)))
-      (goto-char (point-min))
-      (while (re-search-forward (format "%s.?\\([0-9,.]+\\)\\b" (regexp-quote symbol)) nil t)
-	(replace-match (format tlon-tts-currency-ssml
-			       (match-string-no-properties 1) code))))))
+  (let ((language (tlon-tts-get-current-language)))
+    (dolist (cons tlon-tts-currencies)
+      (let* ((pair (alist-get language (cdr cons) nil nil #'string=))
+	     (symbol (regexp-quote (car cons)))
+	     (pattern (format "\\(?4:%s\\)%s" symbol
+			      (tlon-get-number-separator-pattern tlon-default-thousands-separator))))
+	(goto-char (point-min))
+	(while (re-search-forward pattern nil t)
+	  (let* ((amount (match-string-no-properties 1))
+		 (number (tlon-string-to-number amount tlon-default-thousands-separator))
+		 (words (if (= number 1) (car pair) (cdr pair)))
+		 (replacement (format "%s %s" amount words)))
+	    (replace-match replacement)))))))
 
 ;;;;;; Remove unsupported SSML tags
 
@@ -1841,6 +1871,8 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("R" "Replacement"                      tlon-add-file-local-replacement)]
    ["Create narration"
     ("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
+    ("j" "Join file chunks"                 tlon-tts-join-chunks)
+    ("d" "Delete file chunks"               tlon-tts-delete-chunks)
     ""
     "Narration options"
     (tlon-tts-heading-break-duration-infix)

@@ -296,21 +296,17 @@ creating `org-mode' TODOs.")
 ;;;;; Numbers
 
 (defconst tlon-number-separated-by-separator
-  "\\([[:digit:]]\\{1,3\\}\\(?:%s[[:digit:]]\\{3\\}\\b\\)+\\)"
+  "\\(?1:[[:digit:]]\\{1,4\\}\\(?:\\(?2:%s\\)[[:digit:]]\\{3\\}\\)*\\(?:\\(?3:%s\\)[[:digit:]]+\\)?\\)"
   "Pattern to match numbers separated by separator.
-The placeholder `%s' is used to insert the separator.")
+The first placeholder is for the thousands separator, the second one for the
+decimal separator.
 
-(defconst tlon-number-separated-by-comma
-  (format tlon-number-separated-by-separator ",")
-  "Pattern to match numbers separated by a comma.")
+We allow for up to four (rather than three) digits before the first separator to
+accommodate cases when the thousands separator is not used, such as years or
+amounts between 1000 and 9999.")
 
-(defconst tlon-number-separated-by-period
-  (format tlon-number-separated-by-separator "\\.")
-  "Pattern to match numbers separated by a period.")
-
-(defconst tlon-number-separated-by-thin-space
-  (format tlon-number-separated-by-separator " ")
-  "Pattern to match numbers separated by a thin space.")
+(defconst tlon-default-thousands-separator " "
+  "The default thousands separator.")
 
 ;;;;; To sort
 
@@ -499,36 +495,66 @@ If FILE is nil, use the current buffer's file name."
 
 ;;;;; Lookup
 
-(defun tlon-lookup (list key &rest pairs)
-  "Return the first value of KEY in LIST matching all PAIRS.
-PAIRS is an even-sized list of <key value> tuples."
-  (cl-loop for entry in list
-           when (tlon-all-pairs-in-entry-p pairs entry)
-           return (tlon-get-value-in-entry key entry)))
+;;;;;; Common
 
-(defun tlon-lookup-all (list key &rest pairs)
-  "Return all unique values of KEY in LIST matching all PAIRS.
-PAIRS is expected to be an even-sized list of <key value> tuples."
-  (let (results)
-    (cl-loop for entry in list
-             do (when (tlon-all-pairs-in-entry-p pairs entry)
-		  (when-let* ((result (tlon-get-value-in-entry key entry))
-			      (flat-result (if (listp result) result (list result))))
-		    (dolist (r flat-result)
-		      (push r results)))))
-    (delete-dups (nreverse results))))
-
-(defun tlon-all-pairs-in-entry-p (pairs entry)
+(defun tlon-all-pairs-in-entry-p (pairs entry case-insensitive)
   "Return t iff all PAIRS are found in ENTRY.
-PAIRS is an even-sized list of <key value> tuples."
-  (cl-loop for (key val) on pairs by #'cddr
-           always (equal val (tlon-get-value-in-entry key entry))))
+PAIRS is an even-sized list of <key value> tuples. If CASE-INSENSITIVE is
+non-nil, match regardless of case."
+  (let ((fun (if case-insensitive 'cl-equalp 'equal)))
+    (cl-loop for (key val) on pairs by #'cddr
+             always (funcall fun val (tlon-get-value-in-entry key entry)))))
 
 (defun tlon-get-value-in-entry (key entry)
   "Return the value of KEY in ENTRY, or nil if not found."
   (if (stringp key)
       (alist-get key entry nil nil 'string=)
     (plist-get entry key)))
+
+;;;;;; Lookup one
+
+(defun tlon-lookup-builder (list key case-insensitive &rest pairs)
+  "Return the first value of KEY in LIST matching all PAIRS.
+PAIRS is an even-sized list of <key value> tuples."
+  (cl-loop for entry in list
+           when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
+           return (tlon-get-value-in-entry key entry)))
+
+(defun tlon-lookup (list key &rest pairs)
+  "Return the first value of KEY in LIST matching all PAIRS.
+PAIRS is an even-sized list of <key value> tuples."
+  (apply 'tlon-lookup-builder list key nil pairs))
+
+(defun tlon-lookup-case-insensitive (list key &rest pairs)
+  "Return the first value of KEY in LIST matching all PAIRS, regardless of case.
+PAIRS is an even-sized list of <key value> tuples."
+  (apply 'tlon-lookup-builder list key t pairs))
+
+;;;;;; Lookup all
+
+(defun tlon-lookup-all-builder (list key case-insensitive &rest pairs)
+  "Return all unique values of KEY in LIST matching all PAIRS.
+PAIRS is expected to be an even-sized list of <key value> tuples."
+  (let (results)
+    (cl-loop for entry in list
+             do (when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
+		  (when-let* ((result (tlon-get-value-in-entry key entry))
+			      (flat-result (if (listp result) result (list result))))
+		    (dolist (r flat-result)
+		      (push r results)))))
+    (delete-dups (nreverse results))))
+
+(defun tlon-lookup-all (list key &rest pairs)
+  "Return all unique values of KEY in LIST matching all PAIRS.
+PAIRS is expected to be an even-sized list of <key value> tuples."
+  (apply #'tlon-lookup-all-builder list key nil pairs))
+
+(defun tlon-lookup-all-case-insensitive (list key &rest pairs)
+  "Return all unique values of KEY in LIST matching all PAIRS, regardless of case.
+PAIRS is expected to be an even-sized list of <key value> tuples."
+  (apply #'tlon-lookup-all-builder list key t pairs))
+
+;;;;;; Metadata lookup
 
 (defun tlon-metadata-lookup (metadata key &rest key-value)
   "Return the value of KEY in METADATA matching all KEY-VALUE pairs."
@@ -538,6 +564,8 @@ PAIRS is an even-sized list of <key value> tuples."
   "Return all unique values of KEY in METADATA matching alll KEY-VALUE pairs."
   (apply #'tlon-lookup-all metadata key key-value))
 
+;;;;;; Repo lookup
+
 (defun tlon-repo-lookup (key &rest key-value)
   "Return the value of KEY in repos matching all KEY-VALUE pairs."
   (apply #'tlon-lookup tlon-repos key key-value))
@@ -546,6 +574,8 @@ PAIRS is an even-sized list of <key value> tuples."
   "Return all unique values of KEY in repos matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-repos key key-value))
 
+;;;;;; User lookup
+
 (defun tlon-user-lookup (key &rest key-value)
   "Return the value of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-lookup tlon-users key key-value))
@@ -553,6 +583,8 @@ PAIRS is an even-sized list of <key value> tuples."
 (defun tlon-user-lookup-all (key &rest key-value)
   "Return all unique values of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-users key key-value))
+
+;;;;;; Label lookup
 
 (defvar tlon-job-labels)
 (defun tlon-label-lookup (key &rest key-value)
@@ -795,4 +827,49 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (set var-name t)))
 
 (provide 'tlon-core)
+;;;;; numbers
+
+(defun tlon-get-separator (type &optional language)
+  "Return the decimal separator for LANGUAGE.
+TYPE is either `thousands' or `decimal'. If LANGUAGE is nil, use the language of
+the current repository."
+  (when-let* ((language (or language
+			    (tlon-repo-lookup :language :dir (tlon-get-repo 'no-prompt))))
+	      (separators '("," "."))
+	      (en (pcase type ('thousands ",") ('decimal ".")))
+	      (rest (lambda () (car (remove en separators)))))
+    (pcase language
+      ("en" en)
+      ((or "es" "fr" "it" "pt") (funcall rest)))))
+
+(defun tlon-get-decimal-separator (&optional language)
+  "Return the decimal separator for LANGUAGE.
+If LANGUAGE is nil, use the language of the current repository."
+  (tlon-get-separator 'decimal language))
+
+(defun tlon-get-thousands-separator (&optional language)
+  "Return the thousands separator for LANGUAGE.
+If LANGUAGE is nil, use the language of the current repository."
+  (tlon-get-separator 'thousands language))
+
+(defun tlon-get-number-separator-pattern (&optional thousands decimal bounded)
+  "Return the pattern that matches a number with THOUSANDS and DECIMAL separators.
+If THOUSANDS or DECIMAL are nil, infer them from the language of the current
+repository. If BOUNDED is non-nil, match only text at the beginning or end of a
+word."
+  (when-let* ((thousands (or thousands (tlon-get-thousands-separator)))
+	      (decimal (or decimal (tlon-get-decimal-separator)))
+	      (pattern (format tlon-number-separated-by-separator (regexp-quote thousands) (regexp-quote decimal))))
+    (if bounded (format "\\b%s\\b" pattern) pattern)))
+
+(defun tlon-string-to-number (string &optional thousands decimal)
+  "Convert STRING with THOUSANDS and DECIMAL separators into a number.
+If THOUSANDS or DECIMAL are nil, infer them from the language of the current
+repository."
+  (let* ((thousands (or thousands (tlon-get-thousands-separator)))
+	 (decimal (or decimal (tlon-get-decimal-separator)))
+	 (fixed-thousands (replace-regexp-in-string (regexp-quote thousands) "" string))
+	 (fixed-decimals (replace-regexp-in-string (regexp-quote decimal) "." fixed-thousands)))
+    (string-to-number fixed-decimals)))
+
 ;;; tlon-core.el ends here

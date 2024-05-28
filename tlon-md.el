@@ -64,6 +64,35 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
+;;;;; Markdown
+
+;; We tweak the default value of `markdown-regex-italic' to make it analogoues
+;; to `markdown-regex-bold': the group that captures the leading character is a
+;; proper capturing group, allowing us to prepend this character to the
+;; replacement.
+(setq markdown-regex-italic
+      "\\(?1:^\\|[^\\]\\)\\(?2:\\(?3:[*_]\\)\\(?4:[^ \n	\\]\\|[^ \n	*]\\(?:.\\|\n[^\n]\\)*?[^\\ ]\\)\\(?5:\\3\\)\\)")
+;;;;;; Images
+
+(defconst tlon-md-image
+  "!\\[\\(?1:.*?\\)\\](\\(?2:.*?\\)\\(?:\\s-*\"\\(?3:.*?\\)\"\\)?)"
+  "Pattern to match an image in a Markdown file.
+The first group captures the alt text. The second group captures the image URL.
+The third group captures the title.")
+
+(defconst tlon-md-image-sans-alt
+  "!\\[\\](.*?\\(?:\\s-*\".*?\"\\)?)"
+  "Pattern to match an image without alt text in a Markdown file.")
+
+;;;;;; Blockquote
+
+(defconst tlon-md-blockquote
+  "\\(?1:\\(?:^>.*\n\\)+\\)"
+  "Pattern to match a blockquote in a Markdown file.
+The pattern captures the entire blockquote, including the quote markers. This is
+to allow for capturing multi-line quotes. To get the actual quote only, remove
+them from the captured string as part of the post-processing.")
+
 ;;;;; Math
 
 (defconst tlon-md-math-power
@@ -250,18 +279,6 @@ alternative voice, as opposed to the main voice.")
   "Regexp pattern for matching an MDX `AlternativeVoice' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
-
-;;;;; Images
-
-(defconst tlon-md-image
-  "!\\[\\(?1:.*?\\)\\](\\(?2:.*?\\)\\(?:\\s-*\"\\(?3:.*?\\)\"\\)?)"
-  "Pattern to match an image in a Markdown file.
-The first group captures the alt text. The second group captures the image URL.
-The third group captures the title.")
-
-(defconst tlon-md-image-sans-alt
-  "!\\[\\](.*?\\(?:\\s-*\".*?\"\\)?)"
-  "Pattern to match an image without alt text in a Markdown file.")
 
 ;;;; Functions
 
@@ -856,6 +873,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("m" "small caps"           tlon-insert-mdx-small-caps)
     ("a" "aside"                tlon-insert-mdx-aside)
     ("g" "lang"                 tlon-insert-mdx-lang)
+    ("r" "roman"                tlon-insert-mdx-roman)
     ("." "special character"    tlon-insert-special-character)]])
 
 (provide 'tlon-md)

@@ -56,9 +56,20 @@
 
 (defun tlon-create-or-visit-meeting-issue-date (date dir)
   "Create or visit issue in DIR for a meeting on DATE."
+  (tlon-wait-until-forge-updates)
   (if-let ((issue (tlon-issue-lookup date dir)))
       (forge-visit-issue issue)
     (tlon-create-and-visit-issue date dir)))
+
+(defun tlon-wait-until-forge-updates ()
+  "Wait until Forge is finished updating the repo."
+  (let* ((get-last-updated (lambda () (oref (forge-current-repository) updated)))
+	 (last-updated (funcall get-last-updated))
+	 (count 0))
+    (forge-pull)
+    (while (and (< count 25) (string= last-updated (funcall get-last-updated)))
+      (sleep-for 0.1)
+      (setq count (1+ count)))))
 
 ;; TODO: generate the next three functions with function
 ;;;###autoload

@@ -612,10 +612,6 @@ instead."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
 	 (syntax (or syntax (if current-prefix-arg 'pandoc 'mdx)))
-	 (audio (when audio
-		  (pcase syntax
-		    ('mdx tlon-cite-pattern)
-		    ('pandc tlon-tex-pandoc-cite-pattern))))
 	 (short (pcase syntax
 		  ('mdx tlon-cite-pattern-short)
 		  ('pandoc tlon-tex-pandoc-cite-pattern-short)))
@@ -623,7 +619,7 @@ instead."
 		 ('mdx tlon-cite-pattern-long)
 		 ('pandoc tlon-tex-pandoc-cite-pattern-long)))
 	 (list (if audio
-		   (list (cons 'audio audio))
+		   (list (cons 'short-audio short) (cons 'long-audio long))
 		 (list (cons 'short short) (cons 'long long)))))
     (if file
 	(with-current-buffer (find-file-noselect file)
