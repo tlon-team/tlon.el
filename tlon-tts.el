@@ -1303,19 +1303,23 @@ citation key, format. Hence, it must be run *before*
 
 (defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
-  (cl-destructuring-bind (pattern . group)
+  (cl-destructuring-bind (pattern . groups)
       (pcase type
-	('boldface (cons markdown-regex-bold 4))
-	('italics (cons markdown-regex-italic 3))
-	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern 2))
+	('boldface (cons markdown-regex-bold '(1 4)))
+	('italics (cons markdown-regex-italic '(1 4)))
+	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern '(2)))
 	('visually-shown (cons tlon-mdx-visually-shown-search-pattern nil))
-	('alternative-voice (cons tlon-mdx-alternative-voice-search-pattern 2))
-	('small-caps (cons tlon-mdx-small-caps-search-pattern 2))
+	('alternative-voice (cons tlon-mdx-alternative-voice-search-pattern '(2)))
+	('small-caps (cons tlon-mdx-small-caps-search-pattern '(2)))
 	;; add 'math type; should use the value of `alt' attribute
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (let ((replacement (if group (format " %s" (match-string group)) "")))
+      (let ((replacement (if groups
+			     (mapconcat (lambda (group)
+					  (match-string group))
+					groups)
+			   "")))
 	(replace-match replacement t nil)))))
 
 ;;;;;;; Specific
