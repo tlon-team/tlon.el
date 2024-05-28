@@ -301,17 +301,7 @@ creating `org-mode' TODOs.")
 The first placeholder is for the thousands separator, the second one for the
 decimal separator.")
 
-(defconst tlon-number-separated-by-comma
-  (format tlon-number-separated-by-separator ",")
-  "Pattern to match numbers separated by a comma.")
 
-(defconst tlon-number-separated-by-period
-  (format tlon-number-separated-by-separator "\\.")
-  "Pattern to match numbers separated by a period.")
-
-(defconst tlon-number-separated-by-thin-space
-  (format tlon-number-separated-by-separator " ")
-  "Pattern to match numbers separated by a thin space.")
 (defconst tlon-default-thousands-separator " "
   "The default thousands separator.")
 
