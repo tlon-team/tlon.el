@@ -296,9 +296,10 @@ creating `org-mode' TODOs.")
 ;;;;; Numbers
 
 (defconst tlon-number-separated-by-separator
-  "\\([[:digit:]]\\{1,3\\}\\(?:%s[[:digit:]]\\{3\\}\\b\\)+\\)"
+  "\\b\\(?1:[[:digit:]]\\{1,3\\}\\(?:\\(?2:%s\\)[[:digit:]]\\{3\\}\\)*\\(?:\\(?3:%s\\)[[:digit:]]+\\)?\\)\\b"
   "Pattern to match numbers separated by separator.
-The placeholder `%s' is used to insert the separator.")
+The first placeholder is for the thousands separator, the second one for the
+decimal separator.")
 
 (defconst tlon-number-separated-by-comma
   (format tlon-number-separated-by-separator ",")
@@ -795,4 +796,37 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (set var-name t)))
 
 (provide 'tlon-core)
+;;;;; numbers
+
+(defun tlon-get-separator (type &optional language)
+  "Return the decimal separator for LANGUAGE.
+TYPE is either `thousands' or `decimal'. If LANGUAGE is nil, use the language of
+the current repository."
+  (when-let* ((language (or language
+			    (tlon-repo-lookup :language :dir (tlon-get-repo 'no-prompt))))
+	      (separators '("," "."))
+	      (en (pcase type ('thousands ",") ('decimal ".")))
+	      (rest (lambda () (car (remove en separators)))))
+    (pcase language
+      ("en" en)
+      ((or "es" "fr" "it" "pt") (funcall rest)))))
+
+(defun tlon-get-decimal-separator (&optional language)
+  "Return the decimal separator for LANGUAGE.
+If LANGUAGE is nil, use the language of the current repository."
+  (tlon-get-separator 'decimal language))
+
+(defun tlon-get-thousands-separator (&optional language)
+  "Return the thousands separator for LANGUAGE.
+If LANGUAGE is nil, use the language of the current repository."
+  (tlon-get-separator 'thousands language))
+
+(defun tlon-get-number-separator-pattern (&optional thousands decimal)
+  "Return the pattern that matches a number with THOUSANDS and DECIMAL separators.
+If THOUSANDS or DECIMAL are nil, infer them from the language of the current
+ repository."
+  (when-let* ((decimal (or decimal (tlon-get-decimal-separator)))
+	      (thousands (or thousands (tlon-get-thousands-separator))))
+    (format tlon-number-separated-by-separator (regexp-quote thousands) (regexp-quote decimal))))
+
 ;;; tlon-core.el ends here
