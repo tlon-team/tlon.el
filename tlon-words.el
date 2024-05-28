@@ -126,5 +126,20 @@ computed by dividing the file size by CHARS-PER-WORD."
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
 (provide 'tlon-words)
+
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-words-menu "tlon-words" nil t)
+(transient-define-prefix tlon-words-menu ()
+  "`words' menu."
+  ["Count words"
+   ("f" "in file(s)"           tlon-count-words-in-files)
+   ("d" "in dir"               tlon-count-words-in-dir)
+   ("r" "in repo"              tlon-count-words-in-repo)
+   ""
+   "Create table"
+   ("t" "for dir"              tlon-words-create-table-for-dir)])
+
+(provide 'tlon-words)
 ;;; tlon-words.el ends here
 
