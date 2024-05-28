@@ -64,6 +64,18 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
+;;;;;; Images
+
+(defconst tlon-md-image
+  "!\\[\\(?1:.*?\\)\\](\\(?2:.*?\\)\\(?:\\s-*\"\\(?3:.*?\\)\"\\)?)"
+  "Pattern to match an image in a Markdown file.
+The first group captures the alt text. The second group captures the image URL.
+The third group captures the title.")
+
+(defconst tlon-md-image-sans-alt
+  "!\\[\\](.*?\\(?:\\s-*\".*?\"\\)?)"
+  "Pattern to match an image without alt text in a Markdown file.")
+
 ;;;;;; Blockquote
 
 (defconst tlon-md-blockquote
@@ -259,18 +271,6 @@ alternative voice, as opposed to the main voice.")
   "Regexp pattern for matching an MDX `AlternativeVoice' expression.
 The first capture group captures the entire expression. The second capture group
 captures the expression without the tags.")
-
-;;;;; Images
-
-(defconst tlon-md-image
-  "!\\[\\(?1:.*?\\)\\](\\(?2:.*?\\)\\(?:\\s-*\"\\(?3:.*?\\)\"\\)?)"
-  "Pattern to match an image in a Markdown file.
-The first group captures the alt text. The second group captures the image URL.
-The third group captures the title.")
-
-(defconst tlon-md-image-sans-alt
-  "!\\[\\](.*?\\(?:\\s-*\".*?\"\\)?)"
-  "Pattern to match an image without alt text in a Markdown file.")
 
 ;;;; Functions
 
