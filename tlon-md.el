@@ -64,6 +64,14 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
+;;;;; Markdown
+
+;; We tweak the default value of `markdown-regex-italic' to make it analogoues
+;; to `markdown-regex-bold': the group that captures the leading character is a
+;; proper capturing group, allowing us to prepend this character to the
+;; replacement.
+(setq markdown-regex-italic
+      "\\(?1:^\\|[^\\]\\)\\(?2:\\(?3:[*_]\\)\\(?4:[^ \n	\\]\\|[^ \n	*]\\(?:.\\|\n[^\n]\\)*?[^\\ ]\\)\\(?5:\\3\\)\\)")
 ;;;;;; Images
 
 (defconst tlon-md-image
