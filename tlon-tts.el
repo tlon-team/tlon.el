@@ -711,14 +711,6 @@ questions\").")
 	    ("es" . ("dólar" . "dólares")))))
   "Currency symbols and their associated three-letter codes.")
 
-(defconst tlon-tts-currency-ssml
-  "<say-as interpret-as=\"currency\">%s %s</say-as>"
-  "SSML pattern for currency symbols.
-The first placeholder is the currency amount, and the second is the currency
-code.
-
-For more information, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation#say-as-element>.")
-
 ;;;;; File-local variables
 
 (defvar-local tlon-file-local-abbreviations '()
