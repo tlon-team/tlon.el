@@ -64,6 +64,15 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
+;;;;;; Blockquote
+
+(defconst tlon-md-blockquote
+  "\\(?1:\\(?:^>.*\n\\)+\\)"
+  "Pattern to match a blockquote in a Markdown file.
+The pattern captures the entire blockquote, including the quote markers. This is
+to allow for capturing multi-line quotes. To get the actual quote only, remove
+them from the captured string as part of the post-processing.")
+
 ;;;;; Math
 
 (defconst tlon-md-math-power

@@ -1373,10 +1373,12 @@ The time length of the pause is determined by
 (defun tlon-tts-process-headings ()
   "Remove heading markers from headings and add an optional pause.
 The time length of the pause is determined by `tlon-tts-heading-break-duration'."
-  (let ((insert-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
+  (let ((initial-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
     (goto-char (point-min))
     (while (re-search-forward markdown-regex-header nil t)
-      (replace-match (format "%s %s" insert-pause (match-string 5))))))
+      ;; add final period if missing
+      (let ((heading (replace-regexp-in-string "\\.\\.$" "." (concat (match-string 5) "."))))
+	(replace-match (format "%s %s" initial-pause heading))))))
 
 ;;;;;; File-local abbreviations
 
@@ -1515,14 +1517,18 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
 	('aside (list tlon-mdx-aside-search-pattern tlon-tts-aside-cues 2))
-	('quote (list markdown-regex-blockquote tlon-tts-quote-cues 3))
+	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
 	('image (list tlon-md-image tlon-tts-image-cues 1))
 	;; TODO: determine if other types should be added
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (replace-match
-       (tlon-tts-listener-cue-full-enclose cues (match-string-no-properties group))))))
+      (let* ((match (match-string-no-properties group))
+	     (text (pcase type
+		     ('quote (replace-regexp-in-string "^> ?" "" match))
+		     (_ match))))
+	(replace-match
+	 (tlon-tts-listener-cue-full-enclose cues text))))))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
