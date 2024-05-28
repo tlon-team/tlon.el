@@ -183,7 +183,9 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
   (let* ((digit-pattern (tlon-get-number-separator-pattern separator)))
     (while (re-search-forward digit-pattern nil t)
       (unless (tlon-is-in-protected-range-p (match-beginning 0) (match-end 0) protected-ranges)
-	(replace-match (replace-regexp-in-string (regexp-quote separator) " " (match-string-no-properties 1)))))))
+	(replace-match (replace-regexp-in-string (regexp-quote separator)
+						 tlon-default-thousands-separator
+						 (match-string-no-properties 1)))))))
 
 (defun tlon-is-in-protected-range-p (start end protected-ranges)
   "Check if range from START to END overlaps with any PROTECTED-RANGES."

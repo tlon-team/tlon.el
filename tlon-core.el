@@ -312,6 +312,8 @@ decimal separator.")
 (defconst tlon-number-separated-by-thin-space
   (format tlon-number-separated-by-separator " ")
   "Pattern to match numbers separated by a thin space.")
+(defconst tlon-default-thousands-separator " "
+  "The default thousands separator.")
 
 ;;;;; To sort
 
