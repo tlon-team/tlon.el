@@ -696,7 +696,7 @@ questions\").")
 
 (defconst tlon-tts-currencies
   '(("₿" . (("en" . ("bitcoin" . "bitcoins"))
-	    ("en" . ("bitcoin" . "bitcoins"))))
+	    ("es" . ("bitcoin" . "bitcoins"))))
     ("Ξ" . (("en" . ("ether" . "ether"))
 	    ("es" . ("éter" . "éter"))))
     ("£" . (("en" . ("pound" . "pounds"))
