@@ -695,13 +695,20 @@ questions\").")
 ;;;;; Currencies
 
 (defconst tlon-tts-currencies
-  '(("₿" . "BTC")
-    ("Ξ" . "ETH")
-    ("£" . "GBP")
-    ("₪" . "ILS")
-    ("₹" . "INR")
-    ("¥" . "JPY")
-    ("$" . "USD"))
+  '(("₿" . (("en" . ("bitcoin" . "bitcoins"))
+	    ("en" . ("bitcoin" . "bitcoins"))))
+    ("Ξ" . (("en" . ("ether" . "ether"))
+	    ("es" . ("éter" . "éter"))))
+    ("£" . (("en" . ("pound" . "pounds"))
+	    ("es" . ("libra" . "libras"))))
+    ("₪" . (("en" . ("shekel" . "shekels"))
+	    ("es" . ("séquel" . "séqueles")))) ; https://www.fundeu.es/recomendacion/shekel-shequel-sekel-sequel/
+    ("₹" . (("en" . ("rupee" . "rupees"))
+	    ("es" . ("rupia" . "rupias"))))
+    ("¥" . (("en" . ("yen" . "yens"))
+	    ("es" . ("yen" . "yenes"))))
+    ("$" . (("en" . ("dollar" . "dollars"))
+	    ("es" . ("dólar" . "dólares")))))
   "Currency symbols and their associated three-letter codes.")
 
 (defconst tlon-tts-currency-ssml
