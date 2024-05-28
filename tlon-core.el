@@ -296,11 +296,14 @@ creating `org-mode' TODOs.")
 ;;;;; Numbers
 
 (defconst tlon-number-separated-by-separator
-  "\\b\\(?1:[[:digit:]]\\{1,3\\}\\(?:\\(?2:%s\\)[[:digit:]]\\{3\\}\\)*\\(?:\\(?3:%s\\)[[:digit:]]+\\)?\\)\\b"
+  "\\(?1:[[:digit:]]\\{1,4\\}\\(?:\\(?2:%s\\)[[:digit:]]\\{3\\}\\)*\\(?:\\(?3:%s\\)[[:digit:]]+\\)?\\)"
   "Pattern to match numbers separated by separator.
 The first placeholder is for the thousands separator, the second one for the
-decimal separator.")
+decimal separator.
 
+We allow for up to four (rather than three) digits before the first separator to
+accommodate cases when the thousands separator is not used, such as years or
+amounts between 1000 and 9999.")
 
 (defconst tlon-default-thousands-separator " "
   "The default thousands separator.")
@@ -813,12 +816,24 @@ If LANGUAGE is nil, use the language of the current repository."
 If LANGUAGE is nil, use the language of the current repository."
   (tlon-get-separator 'thousands language))
 
-(defun tlon-get-number-separator-pattern (&optional thousands decimal)
+(defun tlon-get-number-separator-pattern (&optional thousands decimal bounded)
   "Return the pattern that matches a number with THOUSANDS and DECIMAL separators.
 If THOUSANDS or DECIMAL are nil, infer them from the language of the current
- repository."
-  (when-let* ((decimal (or decimal (tlon-get-decimal-separator)))
-	      (thousands (or thousands (tlon-get-thousands-separator))))
-    (format tlon-number-separated-by-separator (regexp-quote thousands) (regexp-quote decimal))))
+repository. If BOUNDED is non-nil, match only text at the beginning or end of a
+word."
+  (when-let* ((thousands (or thousands (tlon-get-thousands-separator)))
+	      (decimal (or decimal (tlon-get-decimal-separator)))
+	      (pattern (format tlon-number-separated-by-separator (regexp-quote thousands) (regexp-quote decimal))))
+    (if bounded (format "\\b%s\\b" pattern) pattern)))
+
+(defun tlon-string-to-number (string &optional thousands decimal)
+  "Convert STRING with THOUSANDS and DECIMAL separators into a number.
+If THOUSANDS or DECIMAL are nil, infer them from the language of the current
+repository."
+  (let* ((thousands (or thousands (tlon-get-thousands-separator)))
+	 (decimal (or decimal (tlon-get-decimal-separator)))
+	 (fixed-thousands (replace-regexp-in-string (regexp-quote thousands) "" string))
+	 (fixed-decimals (replace-regexp-in-string (regexp-quote decimal) "." fixed-thousands)))
+    (string-to-number fixed-decimals)))
 
 ;;; tlon-core.el ends here

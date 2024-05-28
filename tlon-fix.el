@@ -178,9 +178,9 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
 	(tlon-number-separators-perform-replacements separator protected-ranges)))))
 
 (defun tlon-number-separators-perform-replacements (separator protected-ranges)
-  "Replace thousands SEPARATOR with thin spaces, except in PROTECTED-RANGES."
+  "Replace thousands SEPARATOR with default separator, except in PROTECTED-RANGES."
   (goto-char (point-min))
-  (let* ((digit-pattern (tlon-get-number-separator-pattern separator)))
+  (let* ((digit-pattern (tlon-get-number-separator-pattern separator nil 'bounded)))
     (while (re-search-forward digit-pattern nil t)
       (unless (tlon-is-in-protected-range-p (match-beginning 0) (match-end 0) protected-ranges)
 	(replace-match (replace-regexp-in-string (regexp-quote separator)

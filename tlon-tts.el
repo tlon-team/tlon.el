@@ -1617,7 +1617,7 @@ image links are handled differently."
   "Process numbers as appropriate."
   (tlon-tts-process-numerals-replace-powers)
   (tlon-tts-process-numerals-replace-roman)
-  (tlon-tts-process-numerals-remove-thin-spaces))
+  (tlon-tts-process-numerals-remove-thousands-separators))
 
 ;;;;;;; Specific
 
@@ -1644,23 +1644,29 @@ image links are handled differently."
 	   (arabic (rst-roman-to-arabic roman)))
       (replace-match (number-to-string arabic)))))
 
-(defun tlon-tts-process-numerals-remove-thin-spaces ()
-  "Remove thin space separators in numerals."
+(defun tlon-tts-process-numerals-remove-thousands-separators ()
+  "Remove default thousands separators in numerals."
   (goto-char (point-min))
-  (while (re-search-forward tlon-number-separated-by-thin-space nil t)
-    (replace-match (replace-regexp-in-string " " "" (match-string 1)))))
+  (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
+    (replace-match (replace-regexp-in-string tlon-default-thousands-separator "" (match-string 1)))))
 
 ;;;;;; Currencies
 
 (defun tlon-tts-process-currencies ()
   "Format currency with appropriate SSML tags."
-  (dolist (cons tlon-tts-currencies)
-    (let ((symbol (car cons))
-	  (code (cdr cons)))
-      (goto-char (point-min))
-      (while (re-search-forward (format "%s.?\\([0-9,.]+\\)\\b" (regexp-quote symbol)) nil t)
-	(replace-match (format tlon-tts-currency-ssml
-			       (match-string-no-properties 1) code))))))
+  (let ((language (tlon-tts-get-current-language)))
+    (dolist (cons tlon-tts-currencies)
+      (let* ((pair (alist-get language (cdr cons) nil nil #'string=))
+	     (symbol (regexp-quote (car cons)))
+	     (pattern (format "\\(?4:%s\\)%s" symbol
+			      (tlon-get-number-separator-pattern tlon-default-thousands-separator))))
+	(goto-char (point-min))
+	(while (re-search-forward pattern nil t)
+	  (let* ((amount (match-string-no-properties 1))
+		 (number (tlon-string-to-number amount tlon-default-thousands-separator))
+		 (words (if (= number 1) (car pair) (cdr pair)))
+		 (replacement (format "%s %s" amount words)))
+	    (replace-match replacement)))))))
 
 ;;;;;; Remove unsupported SSML tags
 
