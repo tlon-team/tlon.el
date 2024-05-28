@@ -129,9 +129,11 @@
 
 (defun tlon-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
-  (tlon-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
-		"\\1\\3\\2")
-  (tlon-autofix-footnote-punctuation-amend))
+  (let ((language (tlon-repo-lookup :language :dir (tlon-get-repo 'no-prompt))))
+    (when (member language '("en" "es")) ; usage varies across languages
+      (tlon-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([[:punct:]]\\)")
+		    "\\1\\3\\2")
+      (tlon-autofix-footnote-punctuation-amend))))
 
 (defun tlon-autofix-footnote-punctuation-amend ()
   "Reverse undesired effects of `tlon-autofix-footnote-punctuation'.
