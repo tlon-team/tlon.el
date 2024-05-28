@@ -525,6 +525,7 @@ PAIRS is an even-sized list of <key value> tuples."
   (if (stringp key)
       (alist-get key entry nil nil 'string=)
     (plist-get entry key)))
+;;;;;; Metadata lookup
 
 (defun tlon-metadata-lookup (metadata key &rest key-value)
   "Return the value of KEY in METADATA matching all KEY-VALUE pairs."
@@ -534,6 +535,8 @@ PAIRS is an even-sized list of <key value> tuples."
   "Return all unique values of KEY in METADATA matching alll KEY-VALUE pairs."
   (apply #'tlon-lookup-all metadata key key-value))
 
+;;;;;; Repo lookup
+
 (defun tlon-repo-lookup (key &rest key-value)
   "Return the value of KEY in repos matching all KEY-VALUE pairs."
   (apply #'tlon-lookup tlon-repos key key-value))
@@ -542,6 +545,8 @@ PAIRS is an even-sized list of <key value> tuples."
   "Return all unique values of KEY in repos matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-repos key key-value))
 
+;;;;;; User lookup
+
 (defun tlon-user-lookup (key &rest key-value)
   "Return the value of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-lookup tlon-users key key-value))
@@ -549,6 +554,8 @@ PAIRS is an even-sized list of <key value> tuples."
 (defun tlon-user-lookup-all (key &rest key-value)
   "Return all unique values of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-users key key-value))
+
+;;;;;; Label lookup
 
 (defvar tlon-job-labels)
 (defun tlon-label-lookup (key &rest key-value)
