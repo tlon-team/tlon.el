@@ -495,36 +495,65 @@ If FILE is nil, use the current buffer's file name."
 
 ;;;;; Lookup
 
-(defun tlon-lookup (list key &rest pairs)
-  "Return the first value of KEY in LIST matching all PAIRS.
-PAIRS is an even-sized list of <key value> tuples."
-  (cl-loop for entry in list
-           when (tlon-all-pairs-in-entry-p pairs entry)
-           return (tlon-get-value-in-entry key entry)))
+;;;;;; Common
 
-(defun tlon-lookup-all (list key &rest pairs)
-  "Return all unique values of KEY in LIST matching all PAIRS.
-PAIRS is expected to be an even-sized list of <key value> tuples."
-  (let (results)
-    (cl-loop for entry in list
-             do (when (tlon-all-pairs-in-entry-p pairs entry)
-		  (when-let* ((result (tlon-get-value-in-entry key entry))
-			      (flat-result (if (listp result) result (list result))))
-		    (dolist (r flat-result)
-		      (push r results)))))
-    (delete-dups (nreverse results))))
-
-(defun tlon-all-pairs-in-entry-p (pairs entry)
+(defun tlon-all-pairs-in-entry-p (pairs entry case-insensitive)
   "Return t iff all PAIRS are found in ENTRY.
-PAIRS is an even-sized list of <key value> tuples."
-  (cl-loop for (key val) on pairs by #'cddr
-           always (equal val (tlon-get-value-in-entry key entry))))
+PAIRS is an even-sized list of <key value> tuples. If CASE-INSENSITIVE is
+non-nil, match regardless of case."
+  (let ((fun (if case-insensitive 'cl-equalp 'equal)))
+    (cl-loop for (key val) on pairs by #'cddr
+             always (funcall fun val (tlon-get-value-in-entry key entry)))))
 
 (defun tlon-get-value-in-entry (key entry)
   "Return the value of KEY in ENTRY, or nil if not found."
   (if (stringp key)
       (alist-get key entry nil nil 'string=)
     (plist-get entry key)))
+
+;;;;;; Lookup one
+
+(defun tlon-lookup-builder (list key case-insensitive &rest pairs)
+  "Return the first value of KEY in LIST matching all PAIRS.
+PAIRS is an even-sized list of <key value> tuples."
+  (cl-loop for entry in list
+           when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
+           return (tlon-get-value-in-entry key entry)))
+
+(defun tlon-lookup (list key &rest pairs)
+  "Return the first value of KEY in LIST matching all PAIRS.
+PAIRS is an even-sized list of <key value> tuples."
+  (apply 'tlon-lookup-builder list key nil pairs))
+
+(defun tlon-lookup-case-insensitive (list key &rest pairs)
+  "Return the first value of KEY in LIST matching all PAIRS, regardless of case.
+PAIRS is an even-sized list of <key value> tuples."
+  (apply 'tlon-lookup-builder list key t pairs))
+
+;;;;;; Lookup all
+
+(defun tlon-lookup-all-builder (list key case-insensitive &rest pairs)
+  "Return all unique values of KEY in LIST matching all PAIRS.
+PAIRS is expected to be an even-sized list of <key value> tuples."
+  (let (results)
+    (cl-loop for entry in list
+             do (when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
+		  (when-let* ((result (tlon-get-value-in-entry key entry))
+			      (flat-result (if (listp result) result (list result))))
+		    (dolist (r flat-result)
+		      (push r results)))))
+    (delete-dups (nreverse results))))
+
+(defun tlon-lookup-all (list key &rest pairs)
+  "Return all unique values of KEY in LIST matching all PAIRS.
+PAIRS is expected to be an even-sized list of <key value> tuples."
+  (apply #'tlon-lookup-all-builder list key nil pairs))
+
+(defun tlon-lookup-all-case-insensitive (list key &rest pairs)
+  "Return all unique values of KEY in LIST matching all PAIRS, regardless of case.
+PAIRS is expected to be an even-sized list of <key value> tuples."
+  (apply #'tlon-lookup-all-builder list key t pairs))
+
 ;;;;;; Metadata lookup
 
 (defun tlon-metadata-lookup (metadata key &rest key-value)
