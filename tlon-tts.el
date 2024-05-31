@@ -177,6 +177,43 @@ The options are:
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
+(defcustom tlon-elevenlabs-model
+  "eleven_multilingual_v2"
+  "Model to use for the ElevenLabs TTS.
+Options are
+
+- `\"eleven_monolingual_v1\"': \"Our very first model, English v1, set the
+  foundation for what's to come. This model was created specifically for English
+  and is the smallest and fastest model we offer. Trained on a focused,
+  English-only dataset, it quickly became the go-to choice for English-based
+  tasks. As our oldest model, it has undergone extensive optimization to ensure
+  reliable performance but it is also the most limited and generally the least
+  accurate.\"
+
+- `\"eleven_multilingual_v1\"': \"Taking a step towards global access and usage,
+  we introduced Multilingual v1 as our second offering. Has been an experimental
+  model ever since release. To this day, it still remains in the experimental
+  phase. However, it paved the way for the future as we took what we learned to
+  improve the next iteration. Multilingual v1 currently supports a range of
+  languages.\"
+
+- `\"eleven_multilingual_v2\"': \"Introducing our latest model, Multilingual v2,
+  which stands as a testament to our dedication to progress. This model is a
+  powerhouse, excelling in stability, language diversity, and accuracy in
+  replicating accents and voices. Its speed and agility are remarkable
+  considering its size.\"
+
+- `\"eleven_turbo_v2\"': \"Using cutting-edge technology, this is a highly
+  optimized model for real-time applications that require very low latency, but
+  it still retains the fantastic quality offered in our other models. Even if
+  optimized for real-time and more conversational applications, we still
+  recommend testing it out for other applications as it is very versatile and
+  stable.\"
+
+<https://help.elevenlabs.io/hc/en-us/articles/17883183930129-What-models-do-you-offer-and-what-is-the-difference-between-them>"
+  :group 'tlon-tts
+  :type 'string)
+
 ;;;; Variables
 
 ;;;;; Paths
@@ -1146,7 +1183,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 		     (car tlon-elevenlabs-audio-settings)))
 	(api-key (tlon-tts-elevenlabs-get-or-set-key))
 	(data (json-encode `(("text" . ,string)
-			     ("model_id" . "eleven_multilingual_v2")))))
+			     ("model_id" . ,tlon-elevenlabs-model)))))
     (with-temp-buffer
       (call-process "curl" nil t nil
 		    "--request" "POST"
