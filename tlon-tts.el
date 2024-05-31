@@ -1859,21 +1859,23 @@ PROMPTS is a cons cell with the corresponding prompts."
 
 ;;;;; Menu
 
-;; TODO: extract common function to define the below more concisely
+(defun tlon-tts-define-duration-infix (name variable key)
+  "Helper to define duration-setting commands for tts settings.
+NAME is the name of the infix command, VARIABLE is the variable to set, and KEY
+is the key to trigger the infix."
+  (transient-define-infix name ()
+    :class 'transient-lisp-variable
+    :variable variable
+    :reader (lambda (_ _ _) (read-string "Duration (seconds): " (symbol-value variable)))
+    :key key))
 
-(transient-define-infix tlon-tts-heading-break-duration-infix ()
-  "Set the duration of `tlon-tts-heading-break-duration'."
-  :class 'transient-lisp-variable
-  :variable 'tlon-tts-heading-break-duration
-  :reader (lambda (_ _ _) (read-string "Duration (seconds):" tlon-tts-heading-break-duration))
-  :key "-h")
+(tlon-tts-define-duration-infix 'tlon-tts-heading-break-duration-infix
+				'tlon-tts-heading-break-duration
+				"-h")
 
-(transient-define-infix tlon-tts-paragraph-break-duration-infix ()
-  "Set the duration of `tlon-tts-paragraph-break-duration'."
-  :class 'transient-lisp-variable
-  :variable 'tlon-tts-paragraph-break-duration
-  :reader (lambda (_ _ _) (read-string "Duration (seconds):" tlon-tts-paragraph-break-duration))
-  :key "-p")
+(tlon-tts-define-duration-infix 'tlon-tts-paragraph-break-duration-infix
+				'tlon-tts-paragraph-break-duration
+				"-p")
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
   "Toggle the value of `'tlon-tts-use-alternate-voice' in `tts' menu."
