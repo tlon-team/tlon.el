@@ -1878,7 +1878,7 @@ is the key to trigger the infix."
 				"-p")
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
-  "Toggle the value of `'tlon-tts-use-alternate-voice' in `tts' menu."
+  "Toggle the value of `tlon-tts-use-alternate-voice' in `tts' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-use-alternate-voice
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice))
