@@ -1388,6 +1388,7 @@ citation key, format. Hence, it must be run *before*
   "Remove `VisuallyHidden' MDX tag."
   (tlon-tts-remove-formatting 'visually-hidden))
 
+;; TODO: replace with `ReplaceAudio'
 (defun tlon-tts-process-visually-shown ()
   "Remove `VisuallyShown' MDX tag."
   (tlon-tts-remove-formatting 'visually-shown))
