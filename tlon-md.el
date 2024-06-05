@@ -66,7 +66,7 @@
 
 ;;;;; Markdown
 
-;; We tweak the default value of `markdown-regex-italic' to make it analogoues
+;; We tweak the default value of `markdown-regex-italic' to make it analogous
 ;; to `markdown-regex-bold': the group that captures the leading character is a
 ;; proper capturing group, allowing us to prepend this character to the
 ;; replacement.
