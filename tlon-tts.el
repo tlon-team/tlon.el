@@ -782,29 +782,29 @@ questions\").")
 ;;;;;; Notes
 
 (defconst tlon-tts-note-cues
-  '(("en" "A note starts here." . "End of the note.")
-    ("es" "Aquí empieza una nota." . "Fin de la nota."))
+  '(("en" "Note." . "End of the note.")
+    ("es" "Nota." . "Fin de la nota."))
   "Listener cues for notes.")
 
 ;;;;;; Quotes
 
 (defconst tlon-tts-quote-cues
-  '(("en" "A quote starts here." . "End of the quote.")
-    ("es" "Aquí empieza una cita." . "Fin de la cita."))
+  '(("en" "Quote." . "End of quote.")
+    ("es" "Cita." . "Fin de la cita."))
   "Listener cues for quotes.")
 
 ;;;;;; Asides
 
 (defconst tlon-tts-aside-cues
-  '(("en" "An aside starts here." . "End of the aside.")
-    ("es" "Aquí empieza un inciso." . "Fin del inciso."))
+  '(("en" "Aside." . "End of the aside.")
+    ("es" "Inciso." . "Fin del inciso."))
   "Listener cues for asides.")
 
 ;;;;;; Images
 
 (defconst tlon-tts-image-cues
-  '(("en" "Here’s an image." . "")
-    ("es" "Aquí hay una imagen." .""))
+  '(("en" "Image." . "")
+    ("es" "Imagen." .""))
   "Listener cues for images.")
 
 ;;;; Functions
