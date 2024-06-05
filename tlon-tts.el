@@ -518,7 +518,7 @@ A list of available voices may be found here:
 (defconst tlon-microsoft-azure-char-limit (* 9 60 14)
   "Maximum number of characters that Microsoft Azure can process per request.
 Microsoft Azure can process up to 10 minutes of audio at a time. This estimate
-assumes 14 characters per second, and uses nine minutes for safety.")
+assumes 14 characters per second, and uses nine minutes to err on the safe side.")
 
 (defvar tlon-microsoft-azure-key nil
   "API key for the Microsoft Azure TTS service.")
@@ -549,7 +549,7 @@ A list of available voices may be found here:
 (defconst tlon-google-cloud-char-limit (* 5000 0.9)
   "Maximum number of characters that Google Cloud can process per request.
 Google Cloud TTS can process up to 5000 bytes per request. We use a slightly
-lower number for safety.
+lower number to err on the safe side.
 
 See <https://cloud.google.com/text-to-speech/quotas>.")
 
@@ -582,7 +582,7 @@ Joanna and Matthew are some of the available Polly voices for English.")
 (defconst tlon-amazon-polly-char-limit (* 1500 0.9)
   "Maximum number of characters that Amazon Polly can process per request.
 The limit for Amazon Polly is 1500 characters but using a slightly lower number
-for safety.")
+to err on the safe side.")
 
 (defvar tlon-amazon-polly-region "us-east-1"
   "Default AWS region for Amazon Polly requests.")
@@ -616,7 +616,7 @@ A list of available voices may be found here:
 (defconst tlon-openai-char-limit (* 4096 0.9)
   "Maximum number of characters that OpenAI can process per request.
 OpenAI can process up to 4096 bytes per request. We use a slightly
-lower number for safety.
+lower number to err on the safe side.
 
 See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 
@@ -644,7 +644,7 @@ including the voice ID, run `tlon-tts-elevenlabs-get-voices'.")
 (defconst tlon-elevenlabs-char-limit (* 5000 0.9)
   "Maximum number of characters that OpenAI can process per request.
 OpenAI can process up to 4096 bytes per request. We use a slightly
-lower number for safety.
+lower number to err on the safe side.
 
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
 questions\").")
