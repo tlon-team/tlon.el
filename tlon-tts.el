@@ -388,8 +388,7 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 	  :google t
 	  :openai nil
 	  :elevenlabs t
-	  ;; :pattern ,tlon-tts-ssml-break-pattern ; not working; see const
-	  )
+	  :replacement ,(tlon-md-get-tag-pattern "break"))
     (:tag emphasis
 	  :tlon t
 	  :polly nil
@@ -397,7 +396,7 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 	  :google t
 	  :openai nil
 	  :elevenlabs nil ; content is read, but tag is ignored
-	  :pattern ,tlon-tts-ssml-emphasis-pattern)
+	  :replacement ,(tlon-md-get-tag-pattern "emphasis"))
     (:tag lang
 	  :tlon t
 	  :polly t
@@ -405,7 +404,7 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 	  :google t
 	  :openai nil
 	  :elevenlabs nil ; content is read, but tag is ignored
-	  :pattern ,tlon-tts-ssml-lang-pattern)
+	  :replacement ,(tlon-md-get-tag-pattern "lang"))
     (:tag mark
 	  :tlon nil
 	  :polly t
@@ -425,7 +424,7 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 	  :google t
 	  :openai nil
 	  :elevenlabs nil ; only some models, otherwise not read (https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation)
-	  :pattern ,tlon-tts-ssml-phoneme-pattern)
+	  :replacement ,(tlon-md-get-tag-pattern "phoneme"))
     (:tag prosody
 	  :tlon nil
 	  :polly t ; partial support
@@ -445,7 +444,7 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 	  :google t
 	  :openai nil
 	  :elevenlabs nil ; content is sometimes read, sometimes not read
-	  :pattern ,tlon-tts-ssml-say-as-pattern)
+	  :replacement ,(tlon-md-get-tag-pattern "say-as"))
     (:tag speak
 	  :tlon t
 	  :polly t
@@ -453,7 +452,7 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 	  :google t
 	  :openai nil
 	  :elevenlabs t ; I assume so?
-	  ;; :pattern ; Do we need a pattern for this tag, given it's only used in the wrapper?
+	  ;; :replacement ; Do we need a pattern for this tag, given it's only used in the wrapper?
 	  )
     (:tag sub
 	  :tlon nil
@@ -467,7 +466,7 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 	  :azure t
 	  :google t
 	  :openai nil
-	  :pattern ,tlon-tts-ssml-voice-pattern)
+	  :replacement ,(tlon-md-get-tag-pattern "voice"))
     (:tag w
 	  :tlon nil
 	  :polly t
