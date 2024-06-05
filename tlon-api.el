@@ -209,12 +209,16 @@ If citation is not found, return nil."
   (when-let* ((csl (or csl 'long))
 	      (url (tlon-api-get-citation-url key csl))
 	      (json (tlon-api-get-citation-json url)))
-    (alist-get csl json)))
+    (let ((json-key (pcase csl
+		      ('long-audio 'long)
+		      ('short-audio 'short)
+		      (_ csl))))
+      (alist-get json-key json))))
 
 (defun tlon-api-get-citation-url (key csl)
   "Return the URL for the citation with KEY in CSL style."
   (let* ((string-formatter "https://altruismoeficaz.net/api/citations/%s/%s")
-	 (type (pcase csl ((or 'long 'short) "text") ('audio "audio"))))
+	 (type (pcase csl ((or 'long 'short) "text") ((or 'long-audio 'short-audio) "audio"))))
     (format string-formatter key type)))
 
 (defun tlon-api-get-citation-json (url)
