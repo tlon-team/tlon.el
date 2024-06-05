@@ -570,6 +570,10 @@ TYPE can be either `key' or `locators'."
 (defun tlon-get-key-in-citation ()
   "Return the BibTeX key and its position in `Cite' element at point."
   (tlon-get-bibtex-element-in-citation 'key))
+(defun tlon-insert-mdx-cite-long ()
+  "Insert a long `Cite' element at point or around the selected region."
+  (interactive)
+  (tlon-insert-mdx-cite 'long))
 
 (defun tlon-get-locators-in-citation ()
   "Return the BibTeX locators and its position in `Cite' element at point."
@@ -856,6 +860,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("N" "auto: in file"        tlon-auto-classify-notes-in-file)]
    ["Citations"
     ("c" "cite"                 tlon-insert-mdx-cite)
+    ("c" "cite long"            tlon-insert-mdx-cite-long)
     ("C" "cite short"           tlon-insert-mdx-cite-short)
     ("l" "locator"              tlon-insert-locator)]
    ["Math"
