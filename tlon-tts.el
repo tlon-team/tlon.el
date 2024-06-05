@@ -1876,12 +1876,6 @@ PROMPTS is a cons cell with the corresponding prompts."
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
-  [["Insert SSML tag"
-    ("b" "break"                            tlon-tts-insert-ssml-break)
-    ("e" "emphasis"                         tlon-tts-insert-ssml-emphasis)
-    ("l" "lang"                             tlon-tts-insert-ssml-lang)
-    ("p" "phoneme"                          tlon-tts-insert-ssml-phoneme)
-    ("s" "say-as"                           tlon-tts-insert-ssml-say-as)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                     tlon-tts-edit-abbreviations)
