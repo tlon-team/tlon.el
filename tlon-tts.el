@@ -1229,6 +1229,7 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tex-replace-keys-with-citations nil 'mdx 'audio)
     (tlon-tts-process-formatting)
+    (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)
     (tlon-tts-process-paragraphs)
     (tlon-tts-process-local-abbreviations)
@@ -1236,7 +1237,6 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-process-local-phonetic-replacements)
     (tlon-tts-process-globa-phonetic-replacements)
     (tlon-tts-process-alternative-voice)
-    (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links'
     (tlon-tts-process-links)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
