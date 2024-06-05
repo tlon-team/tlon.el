@@ -317,7 +317,7 @@ DIR is the directory where the repo is stored."
    ("c" "commits"                      tlon-search-commits)
    ("d" "commit-diffs"                 tlon-search-commit-diffs)
    ("f" "files"                        tlon-search-files)
-   ("i" "issues"                       tlon-search-issues)
+   ("i" "issues"                       consult-gh-search-issues)
    ("t" "translation"                  tlon-search-for-translation)])
 
 ;;;;; Data files menu

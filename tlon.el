@@ -337,17 +337,6 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
 
 ;;;;; Search
 
-;; Ideally this should be repalced with `consult-gh-search-issues', but the REPO
-;; parameter does not restrict the search to that repo.
-(declare-function forge-search "forge-search")
-(defun tlon-search-issues (search-string &optional repo)
-  "Search for SEARCH-STRING in GitHub REPO's issues and pull requests.
-If REPO is nil, use the current repo."
-  (interactive "sSearch string: ")
-  (let* ((repo (or repo (tlon-get-repo nil 'include-all)))
-	 (default-directory repo))
-    (forge-search search-string)))
-
 (declare-function magit-log-all "magit-log")
 (defun tlon-search-commits (search-string &optional repo)
   "Search for SEARCH-STRING in REPO's commit history.
