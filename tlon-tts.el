@@ -1588,40 +1588,57 @@ image links are handled differently."
 
 (defun tlon-tts-process-numerals ()
   "Process numbers as appropriate."
-  (tlon-tts-process-numerals-replace-powers)
-  (tlon-tts-process-numerals-replace-roman)
+  (tlon-tts-process-numerals-convert-powers)
+  (tlon-tts-process-numerals-convert-roman)
   (tlon-tts-process-numerals-remove-thousands-separators))
 
 ;;;;;;; Specific
 
-(defun tlon-tts-process-numerals-replace-powers ()
-  "Replace numbers raised to a power with their verbal equivalents."
+;;;;;;;; Convert powers
+
+(defun tlon-tts-process-numerals-convert-powers ()
+  "Replace powers with their verbal equivalents."
   (let ((language (tlon-tts-get-current-language)))
     (goto-char (point-min))
     (while (re-search-forward tlon-md-math-power nil t)
       (let* ((base (match-string-no-properties 1))
-	     (exponent (match-string-no-properties 2))
-	     (exponent-number (string-to-number exponent))
-	     (exponent-bounded (if (> exponent-number 10) 10 exponent-number))
-	     (inner-list (alist-get exponent-bounded tlon-tts-number-exponents))
-	     (string (alist-get language inner-list nil nil #'string=))
-	     (verbal-exponent (apply 'format string (list exponent))))
-	(replace-match (format "%s %s" base verbal-exponent))))))
+	     (exponent (string-to-number (match-string-no-properties 2)))
+	     (verbal-exponent (tlon-tts-get-verbal-exponent exponent language)))
+	(replace-match (format "%s %s" base verbal-exponent) t t)))))
+
+(defun tlon-tts-get-verbal-exponent (exponent language)
+  "Return the verbal equivalent of EXPONENT in LANGUAGE."
+  (or (tlon-tts-get-irregular-verbal-exponent exponent language)
+      (tlon-tts-get-regular-verbal-exponent exponent language)))
+
+(defun tlon-tts-get-regular-verbal-exponent (exponent language)
+  "Return the irregular verbal equivalent of EXPONENT in LANGUAGE."
+  (let ((pattern (alist-get language tlon-tts-regular-exponent-pattern nil nil #'string=)))
+    (format pattern exponent)))
+
+(defun tlon-tts-get-irregular-verbal-exponent (exponent language)
+  "Return the irregular verbal equivalent of EXPONENT in LANGUAGE."
+  (when-let* ((inner-list (alist-get exponent tlon-tts-irregular-exponents)))
+    (alist-get language inner-list nil nil #'string=)))
+
+;;;;;;;; Convert Roman numerals
 
 (declare-function rst-roman-to-arabic "rst")
-(defun tlon-tts-process-numerals-replace-roman ()
+(defun tlon-tts-process-numerals-convert-roman ()
   "Replace Roman numerals with their Arabic equivalents."
   (goto-char (point-min))
-  (while (re-search-forward tlon-mdx-roman-search-pattern nil t)
+  (while (re-search-forward tlon-mdx-roman-pattern nil t)
     (let* ((roman (match-string-no-properties 2))
 	   (arabic (rst-roman-to-arabic roman)))
-      (replace-match (number-to-string arabic)))))
+      (replace-match (number-to-string arabic) t t))))
+
+;;;;;;;; Remove thousands separators
 
 (defun tlon-tts-process-numerals-remove-thousands-separators ()
   "Remove default thousands separators in numerals."
   (goto-char (point-min))
   (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
-    (replace-match (replace-regexp-in-string tlon-default-thousands-separator "" (match-string 1)))))
+    (replace-match (replace-regexp-in-string tlon-default-thousands-separator "" (match-string 1)) t t)))
 
 ;;;;;; Currencies
 
