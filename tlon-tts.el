@@ -1300,7 +1300,7 @@ citation key, format. Hence, it must be run *before*
 					  (match-string group))
 					groups)
 			   "")))
-	(replace-match replacement t nil)))))
+	(replace-match replacement t t)))))
 
 ;;;;;;; Specific
 
@@ -1328,8 +1328,8 @@ to the alternative voice for the current language."
   (if tlon-tts-use-alternate-voice
       (progn
 	(goto-char (point-min))
-	(while (re-search-forward tlon-mdx-alternative-voice-search-pattern nil t)
-	  (replace-match (tlon-tts-enclose-in-voice-tag (match-string 2)) t)))
+	(while (re-search-forward (tlon-md-get-tag-pattern "AlternativeVoice") nil t)
+	  (replace-match (tlon-tts-enclose-in-voice-tag (match-string 2)) t t)))
     (tlon-tts-remove-formatting 'alternative-voice)))
 
 (defun tlon-tts-process-small-caps ()
@@ -1500,7 +1500,7 @@ process, return its cdr."
   "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (replace-match (format tlon-tts-ssml-phoneme-replace-pattern
-			 "ipa" replacement (match-string-no-properties 0)) t))
+			 "ipa" replacement (match-string-no-properties 0)) t t))
 
 ;;;;;; Listener cues
 
@@ -1528,7 +1528,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 		     ('quote (replace-regexp-in-string "^> ?" "" match))
 		     (_ match))))
 	(replace-match
-	 (tlon-tts-listener-cue-full-enclose cues text))))))
+	 (tlon-tts-listener-cue-full-enclose cues (string-chop-newline text)) t t)))))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
@@ -1588,7 +1588,7 @@ Note: this function should be run after `tlon-tts-process-images' because
 image links are handled differently."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-link-inline nil t)
-    (replace-match (match-string 3))))
+    (replace-match (match-string-no-properties 3) t t)))
 
 ;;;;;; Numbers
 
@@ -1664,7 +1664,7 @@ image links are handled differently."
 		 (number (tlon-string-to-number amount tlon-default-thousands-separator))
 		 (words (if (= number 1) (car pair) (cdr pair)))
 		 (replacement (format "%s %s" amount words)))
-	    (replace-match replacement)))))))
+	    (replace-match replacement t t)))))))
 
 ;;;;;; Remove unsupported SSML tags
 
