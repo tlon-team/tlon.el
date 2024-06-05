@@ -574,7 +574,7 @@ presented to the user."
 
 ;;;;;;; Fix log errors helper functions
 
-(defvar tlon-cite-pattern)
+(defvar tlon-mdx-cite-pattern)
 (defun tlon-collect-bibtex-keys-in-buffer ()
   "Collect all the bibtex keys in the current buffer.
 Display the collected keys in a new buffer."
@@ -582,7 +582,7 @@ Display the collected keys in a new buffer."
   (save-excursion
     (goto-char (point-min))
     (let (keys)
-      (while (re-search-forward tlon-cite-pattern nil t)
+      (while (re-search-forward tlon-mdx-cite-pattern nil t)
 	(push (match-string 1) keys))
       (with-output-to-temp-buffer "*Bibtex keys*"
 	(princ (mapconcat #'identity (delete-dups keys) "\n"))))))
