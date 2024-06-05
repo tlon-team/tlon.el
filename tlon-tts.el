@@ -1278,8 +1278,9 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-boldface)
   (tlon-tts-process-italics)
   (tlon-tts-process-visually-hidden)
-  (tlon-tts-process-visually-shown)
+  (tlon-tts-process-replace-audio)
   (tlon-tts-process-small-caps))
+
 
 (defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
@@ -1288,10 +1289,10 @@ citation key, format. Hence, it must be run *before*
 	('boldface (cons markdown-regex-bold '(1 4)))
 	('italics (cons markdown-regex-italic '(1 4)))
 	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern '(2)))
-	('visually-shown (cons tlon-mdx-visually-shown-search-pattern nil))
 	('alternative-voice (cons tlon-mdx-alternative-voice-search-pattern '(2)))
 	('small-caps (cons tlon-mdx-small-caps-search-pattern '(2)))
 	;; add 'math type; should use the value of `alt' attribute
+	('replace-audio (cons (tlon-md-get-tag-pattern "ReplaceAudio") '(4)))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
@@ -1316,10 +1317,9 @@ citation key, format. Hence, it must be run *before*
   "Remove `VisuallyHidden' MDX tag."
   (tlon-tts-remove-formatting 'visually-hidden))
 
-;; TODO: replace with `ReplaceAudio'
-(defun tlon-tts-process-visually-shown ()
-  "Remove `VisuallyShown' MDX tag."
-  (tlon-tts-remove-formatting 'visually-shown))
+(defun tlon-tts-process-replace-audio ()
+  "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
+  (tlon-tts-remove-formatting 'replace-audio))
 
 (defun tlon-tts-process-alternative-voice ()
   "Remove `AlternativeVoice' tag, or replace it with an SSML `voice' tag.
