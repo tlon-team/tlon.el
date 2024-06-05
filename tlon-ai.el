@@ -719,7 +719,7 @@ If RESPONSE is nil, return INFO."
 
 (declare-function transient-define-infix "transient")
 (transient-define-infix tlon-ai-batch-fun-infix ()
-  "Change the local value of the `'tlon-ai-batch-fun' variable."
+  "Change the local value of the `tlon-ai-batch-fun' variable."
   :class 'transient-lisp-variable
   :variable 'tlon-ai-batch-fun
   :reader 'tlon-ai-batch-fun-reader
