@@ -865,7 +865,6 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
     (let ((content (if chunk-size
 		       (tlon-tts-break-into-chunks chunk-size)
 		     (buffer-string))))
-      ;; TODO: display buffer only if process failed
       (display-buffer (current-buffer))
       content)))
 
