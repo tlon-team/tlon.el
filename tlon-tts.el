@@ -1553,7 +1553,7 @@ then reopen it."
 
 (defun tlon-tts-enclose-in-cue-delimiter (string)
   "Enclose STRING in listener cue delimiter."
-  (format "%1$s%s%1$s" tlon-tts-cue-delimiter string))
+  (format "%1$s%s%1$s\n" tlon-tts-cue-delimiter string))
 
 (defun tlon-tts-listener-cue-full-enclose (type text)
   "Enclose TEXT in listener cue of TYPE and, if appropriate, in `voice' SSML tags.
