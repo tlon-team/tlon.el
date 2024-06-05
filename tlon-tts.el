@@ -1936,6 +1936,7 @@ PROMPTS is a cons cell with the corresponding prompts."
     ""
     "Narration options"
     (tlon-tts-menu-infix-toggle-alternate-voice)]])
+    ("-e" "Engine"                           tlon-tts-menu-infix-set-engine)
     ("-p" "Prompt"                           tlon-tts-menu-infix-set-prompt)
     ("-h" "Heading break duration"           tlon-tts-heading-break-duration-infix)
     ("-a" "Paragraph break duration"         tlon-tts-paragraph-break-duration-infix)
