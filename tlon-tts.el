@@ -1287,11 +1287,10 @@ citation key, format. Hence, it must be run *before*
       (pcase type
 	('boldface (cons markdown-regex-bold '(1 4)))
 	('italics (cons markdown-regex-italic '(1 4)))
-	('visually-hidden (cons tlon-mdx-visually-hidden-search-pattern '(2)))
-	('alternative-voice (cons tlon-mdx-alternative-voice-search-pattern '(2)))
-	('small-caps (cons tlon-mdx-small-caps-search-pattern '(2)))
-	;; add 'math type; should use the value of `alt' attribute
+	('visually-hidden (cons (tlon-md-get-tag-pattern "VisuallyHidden") '(2)))
 	('replace-audio (cons (tlon-md-get-tag-pattern "ReplaceAudio") '(4)))
+	('alternative-voice (cons (tlon-md-get-tag-pattern "AlternativeVoice") '(2)))
+	('small-caps (cons (tlon-md-get-tag-pattern "SmallCaps") '(2)))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
