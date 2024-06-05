@@ -72,6 +72,7 @@
 ;; replacement.
 (setq markdown-regex-italic
       "\\(?1:^\\|[^\\]\\)\\(?2:\\(?3:[*_]\\)\\(?4:[^ \n	\\]\\|[^ \n	*]\\(?:.\\|\n[^\n]\\)*?[^\\ ]\\)\\(?5:\\3\\)\\)")
+
 ;;;;;; Images
 
 (defconst tlon-md-image
@@ -86,6 +87,7 @@ The third group captures the title.")
 
 ;;;;;; Blockquote
 
+;; TODO: make sure it works even when the blockquote does *not* span more than one line
 (defconst tlon-md-blockquote
   "\\(?1:\\(?:^>.*\n\\)+\\)"
   "Pattern to match a blockquote in a Markdown file.
@@ -93,192 +95,163 @@ The pattern captures the entire blockquote, including the quote markers. This is
 to allow for capturing multi-line quotes. To get the actual quote only, remove
 them from the captured string as part of the post-processing.")
 
-;;;;; Math
+;;;;;; Math
 
 (defconst tlon-md-math-power
-  "\\(?1:[[:digit:]]+\\)\\^\\(?2:[[:digit:]]+\\)\\^"
+  "\\b\\(?1:[[:digit:]]+\\)\\^\\(?2:[[:digit:]]+\\)\\b"
   "Regexp pattern for matching a number raised to a power.
-The first capture group captures the base, and the second capture group captures
+The first group captures the base, and the second group captures
 the exponent.")
-
-;;;;;; inline
-
-;; TODO; create new `Math' MDX tag after agreeing syntax with Fede, then update
-;; math variables and functions below to reflect new syntax and replace tags in
-;; sources (in all languages)
-
-(defconst tlon-math-inline
-  '("$`" . "`$")
-  "Delimiter pair for an inline math expression.")
-
-(defconst tlon-math-inline-search-pattern
-  (tlon-make-tag-pattern tlon-math-inline)
-  "Regexp pattern for matching an inline mathematical expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the delimiters.")
-
-;;;;;; display
-
-(defconst tlon-math-display
-  '("$$\n" . "\n$$")
-  "Delimiter pair for a display math expression.")
-
-(defconst tlon-math-display-search-pattern
-  (tlon-make-tag-pattern tlon-math-display)
-  "Regexp pattern for matching a display mathematical expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the delimiters.")
-
-;;;;; MDX
-
-;;;;;; `Aside'
-
-(defconst tlon-mdx-aside
-  '("<Aside>" . "</Aside>")
-  "Pair of MDX `Aside' tags.
-Text enclosed in an `Aside' tag pair will be treated like an aside section.")
-
-(defconst tlon-mdx-aside-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-aside)
-  "Regexp pattern for matching an MDX `Aside' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
 
 ;;;;;; `Cite'
 
-(defconst tlon-cite-pattern-builder
-  "<Cite bibKey={\"\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\"}\\(?:%s />\\|>.*?</Cite>\\)"
-  "Generator for building cite patterns.")
+(defconst tlon-mdx-cite-pattern-formatter
+  "<Cite bibKey=\"\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\"\\(?:%s />\\|>.*?</Cite>\\)"
+  "Formatter for `Cite' patterns.")
 
-(defconst tlon-cite-pattern-short-element
+(defconst tlon-mdx-cite-pattern-short-element
   "\\(?3: short\\)"
   "Pattern that matches a short citation flag in the third capture group.
-To use in conjunction with `tlon-cite-pattern-builder'.")
+To use in conjunction with `tlon-mdx-cite-pattern-formatter'.")
 
-(defconst tlon-cite-pattern
-  (format tlon-cite-pattern-builder (concat tlon-cite-pattern-short-element "?"))
+(defconst tlon-mdx-cite-pattern
+  (format tlon-mdx-cite-pattern-formatter (concat tlon-mdx-cite-pattern-short-element "?"))
   "Pattern to match a citation in a Markdown file.
 The first group captures the BibTeX key, the second group captures the
 locator(s), if present, and the third group captures the short citation flag, if
 present.")
 
-(defconst tlon-cite-pattern-long
-  (format tlon-cite-pattern-builder "")
+(defconst tlon-mdx-cite-pattern-long
+  (format tlon-mdx-cite-pattern-formatter "")
   "Pattern to match a long citation in a Markdown file.
 The first group captures the BibTeX key, the second group captures the
 locator(s), if present.")
 
-(defconst tlon-cite-pattern-short
-  (format tlon-cite-pattern-builder tlon-cite-pattern-short-element)
+(defconst tlon-mdx-cite-pattern-short
+  (format tlon-mdx-cite-pattern-formatter tlon-mdx-cite-pattern-short-element)
   "Pattern to match a short citation in a Markdown file.
 The first group captures the BibTeX key, the second group captures the
 locator(s), if present, and the third group captures the short citation flag.")
 
-;;;;;; `Footnote'
+;;;;;; `Table'
 
-(defconst tlon-footnote-marker "<Footnote />"
-  "Marker for a footnote in a `Cite' MDX element.")
+;; TODO: develop
+;; https://github.com/tlon-team/uqbar-issues#mdx-tag-syntax
 
-;;;;;; `Lang'
+;;;;;; Common constants
 
-(defconst tlon-mdx-lang
-  '("<Lang id={\"%s\"}>" . "</Lang>")
-  "Pair of MDX `Lang' tags.
-Text enclosed by a `Lang' tag pair will be treated as belonging to that
-language (e.g. for the purposed of hyphenating it).")
-
-(defconst tlon-mdx-lang-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-lang)
-  "Regexp pattern for matching an MDX `Lang' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
-
-;;;;;; `LiteralLink'
-
-(defconst tlon-mdx-literal-link
-  '("<LiteralLink src={\"%s\"}>" . "</LiteralLink>")
-  "Pair of MDX `LiteralLink' tags.
-Links enclosed by a `LiteralLink' tag pair will be treated as literal links.")
-
-(defconst tlon-mdx-literal-link-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-literal-link)
-  "Regexp pattern for matching an MDX `LiteralLink' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
-
-;;;;;; `Sidenote'
-
-(defconst tlon-sidenote-marker "<Sidenote />"
-  "Marker for a sidenote in a `Cite' MDX element.")
-
-;;;;;; `SmallCaps'
-
-(defconst tlon-mdx-small-caps
-  '("<SmallCaps>" . "</SmallCaps>")
-  "Pair of MDX `SmallCaps' tags.
-Text enclosed by a `SmallCaps' tag pair will be displayed in small caps.")
-
-(defconst tlon-mdx-small-caps-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-small-caps)
-  "Regexp pattern for matching an MDX `SmallCaps' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
-
-;;;;;; `Roman'
-
-(defconst tlon-mdx-roman
-  '("<Roman>" . "</Roman>")
-  "Pair of MDX `Roman' tags.
-Text enclosed by a `Roman' tag pair will be displayed in small caps. It will
-also be read correctly in TTS narration.")
-
-(defconst tlon-mdx-roman-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-roman)
-  "Regexp pattern for matching an MDX `Roman' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
-
-;;;;;; `VisuallyHidden'
-
-(defconst tlon-mdx-visually-hidden
-  '("<VisuallyHidden>" . "</VisuallyHidden>")
-  "Pair of MDX `VisuallyHidden' tags.
-Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
-displayed.")
-
-(defconst tlon-mdx-visually-hidden-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-visually-hidden)
-  "Regexp pattern for matching an MDX `VisuallyHidden' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
-
-;;;;;; `VisuallyShown'
-
-(defconst tlon-mdx-visually-shown
-  '("<VisuallyShown>" . "</VisuallyShown>")
-  "Pair of MDX `VisuallyShown' tags.
-Text enclosed by a `VisuallyShown' tag pair will be displayed, but not narrated.")
-
-(defconst tlon-mdx-visually-shown-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-visually-shown)
-  "Regexp pattern for matching an MDX `VisuallyShown' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
-
-;; TODO: remove?
-;;;;;; AlternativeVoice
-
-(defconst tlon-mdx-alternative-voice
-  '("<AlternativeVoice>" . "</AlternativeVoice>")
-  "Pair of MDX `AlternativeVoice' tags.
-Text enclosed by a `AlternativeVoice' tag pair will be narrated in the
-alternative voice, as opposed to the main voice.")
-
-(defconst tlon-mdx-alternative-voice-search-pattern
-  (tlon-make-tag-pattern tlon-mdx-alternative-voice)
-  "Regexp pattern for matching an MDX `AlternativeVoice' expression.
-The first capture group captures the entire expression. The second capture group
-captures the expression without the tags.")
+(defconst tlon-tag-specs
+  `((:tag "AlternativeVoice"
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses text to be narrated in the alternative voice, as opposed to the main voice.")
+    (:tag "Aside"
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses text in an aside section.")
+    ;; (:tag "Cite"
+    ;; :attributes ((:name "bibKey" :required t :valued t :group 1 :prompt "BibTeX key: ")
+    ;; TODO: currently, the locator attribute is not
+    ;; introduced explicitly as the value of a named
+    ;; attribute. Fix this.
+    ;; (:name "locator" :required nil :valued t :group 2 :prompt "Locator(s): "))
+    ;; :type mdx
+    ;; :self-closing nil)
+    (:tag "break"
+	  :attributes ((:name "time" :required t :valued t :group 2 :prompt "Time (e.g. \"1s\"): "))
+	  :type ssml
+	  :self-closing t
+	  :doc "")
+    (:tag "emphasis"
+	  :attributes ((:name "level" :required t :valued t :group 3 :reader tlon-md-emphasis-level-reader))
+	  :type ssml
+	  :self-closing nil
+	  :doc "")
+    (:tag "Figure"
+	  :attributes ((:name "src" :required t :valued t  :group 3 :prompt "Image URL: ")
+		       (:name "alt" :required nil :valued t :group 5 :prompt "Alt text: "))
+	  :type mdx
+	  :self-closing nil)
+    (:tag "Footnote"
+	  :type mdx
+	  :self-closing t
+	  :doc "")
+    (:tag "lang"
+	  :attributes ((:name "xml:lang" :required t :valued t :group 3 :reader tlon-md-lang-reader))
+	  :type ssml
+	  :self-closing nil
+	  :doc "")
+    (:tag "Language"
+	  :attributes ((:name "id" :required t :valued t :group 3 :prompt "Language: "))
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses text treated as belonging to that language (e.g. for the purposed of hyphenating it).")
+    (:tag "LiteralLink"
+	  :attributes ((:name "src" :required t :valued t :group 3 :prompt "Link: "))
+	  :type mdx
+	  :self-closing nil
+	  :doc "The URL of a regular link may be replaced by our scripts according to various
+rules. To prevent these replacements with a particular link, enclose its texts
+in this tag and pass the URL as the value of the `src' attribute.")
+    (:tag "Math"
+	  :attributes ((:name "alt" :required nil :valued t :group 3 :prompt "Alt text: ")
+		       (:name "display" :required nil :valued nil :group 5 :reader tlon-md-math-display-reader))
+	  :type mdx
+	  :self-closing nil)
+    (:tag "OurWorldInData"
+	  :attributes ((:name "src" :required t :valued t :group 2 :prompt "URL: "))
+	  :type mdx
+	  :self-closing t
+	  :doc "")
+    (:tag "phoneme"
+	  :attributes ((:name "alphabet" :required t :valued t :group 3 :reader tlon-md-phoneme-alphabet-reader)
+		       ;; TODO: integrate with AI
+		       (:name "ph" :required t :valued t :group 5 :prompt "Phonetic symbols: "))
+	  :type ssml
+	  :self-closing nil
+	  :doc "")
+    (:tag "ReplaceAudio"
+	  :attributes ((:name "text" :required t :valued t :group 3 :prompt "Audio text: "))
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses text be read based on the value of `text'.")
+    (:tag "Roman"
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses text to be displayed in small caps. It will also be read correctly in TTS narration.")
+    (:tag "say-as"
+	  :attributes ((:name "interpret-as" :required t :valued t :group 3 :reader tlon-md-say-as-interpret-as-reader))
+	  :type ssml
+	  :self-closing nil
+	  :doc "")
+    (:tag "Sidenote"
+	  :type mdx
+	  :self-closing t
+	  :doc "")
+    (:tag "SmallCaps"
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses text to be displayed in small caps.")
+    (:tag "sub"
+	  :type html
+	  :self-closing nil)
+    (:tag "sup"
+	  :type html
+	  :self-closing nil)
+    (:tag "VisuallyHidden"
+	  :type mdx
+	  :self-closing nil
+	  :doc "Text to be narrated, but not displayed.")
+    (:tag "voice"
+	  :attributes ((:name "name" :required t :valued t :group 3 :prompt "Voice name: "))
+	  :type ssml
+	  :self-closing nil
+	  :doc ""))
+  "Property list of MDX tag attributes and patterns.
+- `:group': the group number that captures the attribute. The value of the
+  attribute is captured in a separate group, numbered `:group' + 1. The entire
+  tag expression is captured in group number 1, and the text enclosed by the
+  tags, when the tag is not self-closing, is captured in group number 2.")
 
 ;;;; Functions
 
@@ -293,7 +266,7 @@ captures the expression without the tags.")
   (cl-destructuring-bind (key value) (tlon-yaml-get-field-at-point)
     (tlon-yaml-insert-field key value)))
 
-;;;;;; entities
+;;;;;; Tags
 ;; TODO: revise to support multiple langs, including en
 ;;;###autoload
 (defun tlon-insert-internal-link ()
@@ -368,97 +341,182 @@ If no section is found, do nothing."
       (forward-paragraph)
       (tlon-md-sort-elements-in-paragraph " • "))))
 
-;;;;;; Insert elements
+;;;;;; Tag insertion
 
-(declare-function s-chop-right "s")
-;;;###autoload
-(defun tlon-md-insert-element-pair (pair &optional self-closing-p)
-  "Insert an element PAIR at point or around the selected region.
-PAIR is a cons cell whose car is the opening element and whose cdr is the
-closing element. If SELF-CLOSING-P is non-nil, the opening element will be
-self-closing."
-  (interactive)
-  (tlon-ensure-markdown-mode)
-  (cl-destructuring-bind (open . close) pair
-    (if (use-region-p)
-	(let ((begin (region-beginning)))
-	  (goto-char (region-end))
-	  (insert close)
-	  (goto-char begin)
-	  (insert open))
-      (if self-closing-p
-	  (let ((open (concat (s-chop-right 1 open) " />")))
-	    (insert open))
-	(insert (concat open close)))
-      (backward-char (length close)))))
+(defun tlon-md-insert-or-edit-tag (tag)
+  "Insert or edit an MDX TAG pair at point or around the selected region."
+  (if (tlon-looking-at-tag-p tag)
+      (tlon-md-edit-tag)
+    (tlon-md-insert-tag tag)))
+
+(defun tlon-md-edit-tag ()
+  "Edit the tag at point."
+  (when-let* ((tag (tlon-get-tag-at-point))
+	      (values (tlon-get-tag-attribute-values tag))
+	      (content (match-string 2)))
+    (replace-match "")
+    (tlon-md-insert-tag tag values content)))
+
+(defun tlon-md-insert-tag (tag &optional values content)
+  "Insert a TAG pair at point or around the selected region.
+VALUES is a list of attribute values. When non-nil, offer each value as the
+initial input when prompting the user for the attribute value. CONTENT is the
+text to enclose in the tag. When non-nil, insert CONTENT enclosed by the tag
+pair."
+  (cl-destructuring-bind (open . close) (tlon-md-get-formatted-tags tag values)
+    (if close
+	(if (use-region-p)
+	    (let ((begin (region-beginning)))
+	      (goto-char (region-end))
+	      (insert close)
+	      (goto-char begin)
+	      (insert open))
+	  (insert (concat open (or content "") close)))
+      (insert open))))
+
+(defun tlon-get-tag-at-point ()
+  "Return the name of the tag at point."
+  (let ((tags (mapcar (lambda (plist)
+			(plist-get plist :tag))
+		      tlon-tag-specs)))
+    (catch 'found
+      (dolist (tag tags)
+	(when (tlon-looking-at-tag-p tag)
+	  (throw 'found tag))))))
+
+(defun tlon-get-tag-groups (tag &optional values)
+  "Return the attribute capture group numbers for TAG.
+If VALUES is non-nil, return instead the capture group numbers for the attribute
+values."
+  (let* ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag))
+	 (groups (mapcar (lambda (attribute)
+			   (plist-get attribute :group))
+			 attributes)))
+    (if values (mapcar #'1+ groups) groups)))
+
+(defun tlon-get-tag-attribute-names (tag)
+  "Return a list of all attribute names of TAG."
+  (let* ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag))
+	 names)
+    (dolist (attribute attributes (reverse names))
+      (push (plist-get attribute :name) names))))
+
+(defun tlon-get-tag-attribute-values (tag)
+  "Return a list of all attribute values of TAG at point."
+  (when (tlon-looking-at-tag-p tag)
+    (mapcar (lambda (group)
+	      (match-string-no-properties group))
+	    (tlon-get-tag-groups tag 'values))))
+
+(defun tlon-md-lookup-tag-attribute-property (tag name property)
+  "For the attribute named NAME in TAG, return the value of the PROPERTY."
+  (let ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag)))
+    (tlon-lookup attributes property :name name)))
+
+(defun tlon-looking-at-tag-p (tag)
+  "Return t iff point is looking at TAG."
+  (let ((pattern (tlon-md-get-formatted-tags tag nil 'regexp)))
+    (thing-at-point-looking-at pattern)))
+
+(defun tlon-tag-pair-with-attributes (element &rest attributes)
+  "Construct a tag ELEMENT with one or more ATTRIBUTES."
+  (cons (apply 'format (car element) attributes)
+	(cdr element)))
+
+(defun tlon-md-format-attributes (tag &optional values regexp)
+  "Format TAG attributes.
+If VALUES is non-nil, use the values in VALUES. If REGEXP is non-nil, return a
+regexp pattern to match the tag. Otherwise, return a tag pair."
+  (let* ((attribute-names (tlon-get-tag-attribute-names tag))
+	 (list (if values
+		   (cl-mapcar #'cons attribute-names values)
+		 (mapcar #'list attribute-names)))
+	 formatted)
+    (dolist (cons list formatted)
+      (let* ((name (car cons))
+	     (value (cdr cons))
+	     (format-string (tlon-md-format-attribute-with-placeholder tag name regexp))
+	     (required-p (tlon-md-lookup-tag-attribute-property tag name :required))
+	     (reader (tlon-md-lookup-tag-attribute-property tag name :reader))
+	     (group (tlon-md-lookup-tag-attribute-property tag name :group))
+	     (fun (or reader (lambda ()
+			       (read-string (tlon-md-lookup-tag-attribute-property tag name :prompt) value))))
+	     (string (unless regexp (tlon-md-format-attributes-from-user required-p fun))))
+	(setq formatted (concat formatted
+				(if regexp
+				    (let ((pattern (tlon-make-attribute-pattern-searchable format-string group)))
+				      (if required-p pattern (concat pattern "?")))
+				  (format format-string string))))))))
+
+(defun tlon-md-format-attribute-with-placeholder (tag name &optional capture)
+  "Get a formatted string for the attribute NAME of TAG.
+Include a placeholder for the attribute value, when it is a valued attribute. If
+CAPTURE is non-nil, enclose the placeholder in a named capture group."
+  (let* ((valued-p (tlon-md-lookup-tag-attribute-property tag name :valued))
+	 (group (tlon-md-lookup-tag-attribute-property tag name :group))
+	 (attribute-template (format " %s" name))
+	 (value-template (if capture
+			     (format "=\"\\(?%s:%%s\\)\"" (1+ group))
+			   "=\"%s\"")))
+    (concat attribute-template (when valued-p value-template))))
+
+(defun tlon-make-attribute-pattern-searchable (pattern group &optional greedy)
+  "Make attribute PATTERN with placeholders searchable.
+Enclose the PATTERN in a capture group numbered GROUP. Replace the placeholders
+with a greedy pattern if GREEDY is non-nil, and a lazy pattern otherwise.
+Enclose each pattern in a capture group numbered consecutively starting after
+the highest numbered group in the pattern."
+  (let* ((string (if greedy ".**" ".*?"))
+	 (group-content (format pattern string)))
+    (format "\\(?%s:%s\\)" group group-content)))
+
+(defun tlon-md-format-attributes-from-user (required-p fun)
+  "Prompt the user to set the value of TAG attributes.
+FUN is the function to read the attribute value. If REQUIRED-P is non-nil, keep
+prompting the user until a non-empty string is entered."
+  (let ((string (funcall fun)))
+    (while (and required-p (string-empty-p string))
+      (setq string (funcall fun)))
+    string))
+
+(defun tlon-md-get-formatted-tags (tag &optional values regexp)
+  "Return TAG with attribute VALUES in the appropriate format.
+If REGEXP is non-nil, return a pattern to match the tag. Otherwise, return a
+list with the tag (if self-closing) or tags formatted for insertion."
+  (let* ((attributes (tlon-md-format-attributes tag values regexp))
+	 (self-closing-p (tlon-lookup tlon-tag-specs :self-closing :tag tag))
+	 (open-ending (if self-closing-p " />" ">"))
+	 (open (concat "<" tag attributes open-ending))
+	 (close (unless self-closing-p (concat "</" tag ">"))))
+    (cond
+     ((and regexp self-closing-p)
+      (format "\\(?1:%s\\)" open))
+     (regexp
+      (format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)" open close))
+     ((and (not regexp) self-closing-p)
+      open)
+     ((not self-closing-p)
+      (cons open close)))))
+
+(defun tlon-md-get-tag-pattern (tag)
+  "Return a regexp pattern that matches a TAG expression."
+  (tlon-md-get-formatted-tags tag nil t))
 
 ;;;;;;; HTML
 
+;;;###autoload
 (defun tlon-insert-html-subscript ()
   "Insert an HTML `sub' tag pair at point or around the selected region."
   (interactive)
-  (tlon-md-insert-element-pair "<sub>" "</sub>"))
+  (tlon-md-insert-or-edit-tag "sub"))
 
+;;;###autoload
 (defun tlon-insert-html-superscript ()
   "Insert an HTML `sup' tag pair at point or around the selected region."
   (interactive)
-  (tlon-md-insert-element-pair "<sup>" "</sup>"))
+  (tlon-md-insert-or-edit-tag "sup"))
 
 ;;;;;;; MDX
-
-;;;###autoload
-(defun tlon-insert-mdx-aside ()
-  "Insert an MDX `Aside' tag pair at point or around the selected region."
-  (interactive)
-  (tlon-md-insert-element-pair tlon-mdx-aside))
-
-;;;###autoload
-(defun tlon-insert-mdx-lang (language)
-  "Insert an MDX `Lang' tag pair at point or around the selected region.
-Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
-written in that language."
-  (interactive (list (tlon-select-language 'code)))
-  (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attributes tlon-mdx-lang language)))
-
-;; TODO: revise to offer the url at point as default completion candidate
-;;;###autoload
-(defun tlon-insert-mdx-literal-link (url)
-  "Insert an MDX `LiteralLink' tag pair at point or around the selected region.
-Prompt the user to select a URL."
-  (interactive (list (read-string "URL: ")))
-  (tlon-md-insert-element-pair
-   (tlon-tag-element-with-attributes tlon-mdx-literal-link url)))
-
-;;;###autoload
-(defun tlon-insert-mdx-small-caps ()
-  "Insert an MDX `SmallCaps' tag pair at point or around the selected region.
-Text enclosed by an `SmallCaps' tag pair will be displayed in small caps."
-  (interactive)
-  (tlon-md-insert-element-pair tlon-mdx-small-caps))
-
-;;;###autoload
-(defun tlon-insert-mdx-roman ()
-  "Insert an MDX `Roman' tag pair at point or around the selected region.
-Text enclosed by an `Roman' tag pair will be displayed in small caps."
-  (interactive)
-  (tlon-md-insert-element-pair tlon-mdx-roman))
-
-;;;###autoload
-(defun tlon-insert-mdx-visually-hidden ()
-  "Insert an MDX `VisuallyHidden' tag pair at point or around selected region.
-Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
-displayed."
-  (interactive)
-  (tlon-md-insert-element-pair tlon-mdx-visually-hidden))
-
-;;;###autoload
-(defun tlon-insert-mdx-visually-shown ()
-  "Insert an MDX `VisuallyShown' tag pair at point or around selected region.
-Text enclosed by an `VisuallyShown' tag pair will be displayed, but not
-narrated."
-  (interactive)
-  (tlon-md-insert-element-pair tlon-mdx-visually-shown))
 
 ;;;###autoload
 (defun tlon-insert-mdx-alternative-voice ()
@@ -466,33 +524,229 @@ narrated."
 Text enclosed by a `AlternativeVoice' tag pair will be narrated in the
 alternative voice, as opposed to the main voice."
   (interactive)
-  (tlon-md-insert-element-pair tlon-mdx-alternative-voice))
-
-(defun tlon-tag-element-with-attributes (element &rest attributes)
-  "Construct an tag ELEMENT with one or more ATTRIBUTES."
-  (cons (apply 'format (car element) attributes)
-	(cdr element)))
-
-;;;;;;;; Notes
-
-(defun tlon-insert-note-marker (marker &optional overwrite)
-  "Insert note MARKER in the footnote at point.
-If OVERWRITE is non-nil, replace the existing marker when present."
-  (if-let ((fn-data (tlon-note-content-bounds)))
-      (let ((start (car fn-data)))
-	(goto-char start)
-	(let ((other-marker (car (remove marker (list tlon-footnote-marker
-						      tlon-sidenote-marker)))))
-	  (cond ((thing-at-point-looking-at (regexp-quote marker))
-		 nil)
-		((thing-at-point-looking-at (regexp-quote other-marker))
-		 (when overwrite
-		   (replace-match marker)))
-		(t
-		 (insert marker)))))
-    (user-error "Not in a footnote")))
+  (tlon-md-insert-or-edit-tag "AlternativeVoice"))
 
 ;;;###autoload
+(defun tlon-insert-mdx-aside ()
+  "Insert an MDX `Aside' tag pair at point or around the selected region."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "Aside"))
+
+;;;###autoload
+(defun tlon-insert-mdx-figure ()
+  "Insert a `Figure' tag pair at point or around the selected region.
+Prompt the user to enter values for SRC and ALT. SRC is the image URL, and ALT
+is the alt text."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "Figure"))
+
+;; TODO: offer language candidates
+;;;###autoload
+(defun tlon-insert-mdx-language ()
+  "Insert an MDX `Language' tag pair at point or around the selected region.
+Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
+written in that language."
+  (interactive)
+  (tlon-md-insert-tag "Language"))
+
+;;;###autoload
+(defun tlon-insert-mdx-literal-link ()
+  "Insert an MDX `LiteralLink' tag pair at point or around the selected region.
+Prompt the user to select a URL."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "LiteralLink"))
+
+;; TODO: create command to set alt text; integrate with AI
+(defun tlon-insert-mdx-math ()
+  "Insert an `Math' tag pair of TYPE at point or around the selected region."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "Math"))
+
+(defun tlon-md-math-display-reader ()
+  "Prompt the user to set the display attribute for a `Math' tag."
+  (let ((display (completing-read "Type? " '("inline" "display"))))
+    (if (string= display "display") " display" "")))
+
+;;;###autoload
+(defun tlon-insert-mdx-our-world-in-data ()
+  "Insert an `OurWorldInData' tag pair at point or around the selected region.
+Prompt the user to enter a SRC value."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "OurWorldInData"))
+
+;;;###autoload
+(defun tlon-insert-mdx-replace-audio ()
+  "Insert an MDX `ReplaceAudio' tag pair at point or around selected region.
+Text enclosed by an `ReplaceAudio' tag pair will be displayed, but when narrated
+the value of TEXT will be used instead."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "ReplaceAudio"))
+
+;;;###autoload
+(defun tlon-insert-mdx-roman ()
+  "Insert an MDX `Roman' tag pair at point or around the selected region.
+Text enclosed by an `Roman' tag pair will be displayed in small caps."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "Roman"))
+
+;;;###autoload
+(defun tlon-insert-mdx-small-caps ()
+  "Insert an MDX `SmallCaps' tag pair at point or around the selected region.
+Text enclosed by an `SmallCaps' tag pair will be displayed in small caps.
+
+Note: for Roman numerals, use `tlon-insert-mdx-roman': `Roman' has exactly the
+same visual effects as `SmallCaps', but it also makes the TTS engine read the
+numbers correctly."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "SmallCaps"))
+
+;;;###autoload
+(defun tlon-insert-mdx-visually-hidden ()
+  "Insert an MDX `VisuallyHidden' tag pair at point or around selected region.
+Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
+displayed."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "VisuallyHidden"))
+
+;;;;;;; SSML
+
+;;;###autoload
+(defun tlon-tts-insert-ssml-break ()
+  "Insert a `break' SSML tag pair at point or around the selected region.
+If TIME is nil, prompt the user to enter a value for the `time' attribute."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "break"))
+
+;;;###autoload
+(defun tlon-tts-insert-ssml-emphasis ()
+  "Insert a `emphasis' SSML tag pair at point or around the selected region.
+If LEVEL is nil, prompt the user to select a value for the `level' attribute."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "emphasis"))
+
+(defun tlon-md-emphasis-level-reader ()
+  "Prompt the user to set the `level' attribute value for a `emphasis' tag."
+  (completing-read "`emphasis': "
+		   tlon-tts-ssml-emphasis-levels nil t nil nil
+		   tlon-tts-ssml-default-emphasis-level))
+
+;;;###autoload
+(defun tlon-tts-insert-ssml-lang ()
+  "Insert a `lang' SSML tag pair at point or around the selected region.
+If LANGUAGE is nil. prompt the user to select a value for the `language'
+attribute."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "lang"))
+
+;; TODO: check whether the two-letter code pairs should be separated by a hyphen or an underscore
+(defun tlon-md-lang-reader ()
+  "Prompt the user to select the `lang' attribute value of the `lang' tag."
+  (tlon-select-language 'locale))
+
+;;;###autoload
+(defun tlon-tts-insert-ssml-phoneme ()
+  "Insert a `phoneme' SSML tag pair at point or around the selected region.
+If ALPHABET or PH are nil, prompt the user to select a value for the `alphabet'
+and `ph' attributes."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "phoneme"))
+
+(defun tlon-md-phoneme-alphabet-reader ()
+  "Prompt the user to select the `alphabet' attribute value for a `phoneme' tag."
+  (completing-read "`alphabet': "
+		   tlon-tts-ssml-phoneme-alphabets nil t nil nil
+		   tlon-tts-ssml-phoneme-default-alphabet))
+
+;;;###autoload
+(defun tlon-tts-insert-ssml-say-as ()
+  "Insert a `say-as' SSML tag pair at point or around the selected region.
+If INTERPRET-AS is nil, prompt the user to select a value for the `interpret-as'
+attribute."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "say-as"))
+
+(defun tlon-md-say-as-interpret-as-reader ()
+  "Prompt the user to select the `interpret-as' attribute value for a `say-as' tag."
+  (completing-read "`interpret-as': " tlon-tts-ssml-interpret-as-values))
+
+;;;;;;;; To revise
+;;;;;;;;; `Cite'
+
+(defun tlon-insert-mdx-cite (type)
+  "Insert an MDX `Cite' element at point or around the selected region.
+Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
+the KEY will replace the existing key.
+
+TYPE is the citation type: it can be either `short' or `long'."
+  (let ((key (car (citar-select-refs)))
+	(length (pcase type ('long "") ('short " short"))))
+    (if-let ((data (tlon-mdx-get-tag-attribute-value 'cite 'key)))
+	(cl-destructuring-bind (_ (begin . end)) data
+	  (tlon-mdx-replace-attribute-value key begin end))
+      (tlon-md-insert-tag
+       (cons (format "<Cite bibKey=\"%s\"%s>" key length)
+	     "</Cite>")
+       t))))
+
+(defun tlon-mdx-replace-attribute-value (value begin end)
+  "Replace existing attribute value between BEGIN and END with VALUE."
+  (save-excursion
+    (set-buffer-modified-p t)
+    (goto-char begin)
+    (delete-region begin end)
+    (insert value)))
+
+;; TODO: use for `Cite' only; delete
+(defun tlon-mdx-get-tag-attribute-value (tag attribute)
+  "Return the value of ATTRIBUTE in the TAG at point and its position."
+  (let* ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag))
+	 (group (tlon-lookup attributes :group :name attribute))
+	 (prompt (tlon-lookup attributes :prompt :name attribute)))
+    (tlon-looking-at-tag-p tag)
+    (when-let* ((value (match-string-no-properties group))
+		(begin (match-beginning group))
+		(end (match-end group)))
+      (list value prompt (cons begin end)))))
+
+;;;###autoload
+(defun tlon-insert-mdx-cite-short ()
+  "Insert a short `Cite' element at point or around the selected region."
+  (interactive)
+  (tlon-insert-mdx-cite 'short))
+
+(defun tlon-insert-mdx-cite-long ()
+  "Insert a long `Cite' element at point or around the selected region."
+  (interactive)
+  (tlon-insert-mdx-cite 'long))
+
+;;;;;;;;;; Locators
+
+(defvar tlon-locators)
+(defun tlon-insert-locator ()
+  "Insert locator in citation at point.
+If point is on a locator, it will be replaced by the new one. Otherwise, the new
+locator will be inserted after the key, if there are no locators, or at the end
+of the existing locators."
+  (interactive)
+  (unless (thing-at-point-looking-at tlon-mdx-cite-pattern)
+    (user-error "Not in a citation"))
+  (let* ((selection (completing-read "Locator: " tlon-locators nil t))
+	 (locator (alist-get selection tlon-locators "" "" 'string=)))
+    (if-let ((existing (tlon-get-locator-at-point)))
+	(replace-match locator)
+      (let ((end (cdadr (or (tlon-mdx-get-tag-attribute-value 'cite 'locators)
+			    (tlon-mdx-get-tag-attribute-value 'cite 'bibKey)))))
+	(goto-char end)
+	(insert (format ", %s " locator))))))
+
+(defun tlon-get-locator-at-point ()
+  "Return the locator at point, if present."
+  (let ((locators (mapcar 'cdr tlon-locators)))
+    (when (thing-at-point-looking-at (regexp-opt locators))
+      (match-string-no-properties 0))))
+
+;;;;;;;;; `Footnote'
+
 (defun tlon-insert-footnote-marker (&optional overwrite)
   "Insert a `Footnote' marker in the footnote at point.
 Text enclosed by a `Footnote' tag pair will be displayed as a footnote, as
@@ -503,7 +757,27 @@ when present."
   (interactive)
   (let ((overwrite (or overwrite (called-interactively-p 'any))))
     transient-current-command
-    (tlon-insert-note-marker tlon-footnote-marker overwrite)))
+    (tlon-insert-note-marker (tlon-md-get-formatted-tags "Footnote") overwrite)))
+
+;;;###autoload
+(defun tlon-insert-note-marker (marker &optional overwrite)
+"Insert note MARKER in the footnote at point.
+If OVERWRITE is non-nil, replace the existing marker when present."
+(if-let ((fn-data (tlon-note-content-bounds)))
+    (let ((start (car fn-data)))
+      (goto-char start)
+      (let ((other-marker (car (remove marker (list (tlon-md-get-formatted-tags "Footnote")
+						    (tlon-md-get-formatted-tags "Sidenote"))))))
+	(cond ((thing-at-point-looking-at (regexp-quote marker))
+	       nil)
+	      ((thing-at-point-looking-at (regexp-quote other-marker))
+	       (when overwrite
+		 (replace-match marker)))
+	      (t
+	       (insert marker)))))
+  (user-error "Not in a footnote")))
+
+;;;;;;;;; `Sidenote'
 
 ;;;###autoload
 (defun tlon-insert-sidenote-marker (&optional overwrite)
@@ -514,108 +788,14 @@ opposed to a footnote.
 If OVERWRITE is non-nil, or called interactively, replace the existing marker
 when present."
   (interactive)
-  (tlon-insert-note-marker tlon-sidenote-marker overwrite))
+  (tlon-insert-note-marker (tlon-md-get-formatted-tags "Sidenote") overwrite))
 
-;;;;;;;; Citations
+;;;;;;;;; `Table'
 
-;;;###autoload
-(defun tlon-insert-mdx-cite (arg)
-  "Insert an MDX `Cite' element at point or around the selected region.
-Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
-the KEY will replace the existing key.
+;; TODO: develop
+;; https://github.com/tlon-team/uqbar-issues#mdx-tag-syntax
 
-By default, it will insert a \"long\" citation. To insert a \"short\" citation,
-call the function preceded by the universal ARG or invoke
-`tlon-insert-mdx-cite-short'."
-  (interactive "P")
-  (let ((key (car (citar-select-refs))))
-    (if-let ((data (tlon-get-key-in-citation)))
-	(cl-destructuring-bind (_ (begin . end)) data
-	  (tlon-replace-bibtex-element-in-citation key begin end))
-      (tlon-md-insert-element-pair
-       (cons (format "<Cite bibKey={\"%s\"}%s>" key (if arg " short" ""))
-	     "</Cite>")
-       t))))
-
-;;;###autoload
-(defun tlon-insert-mdx-cite-short ()
-  "Insert a short MDX `Cite' element at point or around the selected region."
-  (interactive)
-  (tlon-insert-mdx-cite '(4)))
-
-;;;;;;;;; Citation elements
-
-(defun tlon-get-bibtex-element-in-citation (type)
-  "Return the BibTeX element of TYPE and its position in `Cite' element at point.
-TYPE can be either `key' or `locators'."
-  (when (thing-at-point-looking-at tlon-cite-pattern)
-    (when-let* ((num (pcase type ('key 1) ('locators 2)
-			    (_ (user-error "Invalid type"))))
-		(match (match-string-no-properties num))
-		(begin (match-beginning num))
-		(end (match-end num)))
-      (list match (cons begin end)))))
-
-(defun tlon-replace-bibtex-element-in-citation (element begin end)
-  "Delete bibtex ELEMENT between BEGIN and END."
-  (save-excursion
-    (set-buffer-modified-p t)
-    (goto-char begin)
-    (delete-region begin end)
-    (insert element)))
-
-;;;;;;;;; Locators
-
-;; TODO: make it work in org-mode
-(defun tlon-get-key-in-citation ()
-  "Return the BibTeX key and its position in `Cite' element at point."
-  (tlon-get-bibtex-element-in-citation 'key))
-(defun tlon-insert-mdx-cite-long ()
-  "Insert a long `Cite' element at point or around the selected region."
-  (interactive)
-  (tlon-insert-mdx-cite 'long))
-
-(defun tlon-get-locators-in-citation ()
-  "Return the BibTeX locators and its position in `Cite' element at point."
-  (tlon-get-bibtex-element-in-citation 'locators))
-
-(defvar tlon-locators)
-(defun tlon-insert-locator ()
-  "Insert locator in citation at point.
-If point is on a locator, it will be replaced by the new one. Otherwise, the new
-locator will be inserted after the key, if there are no locators, or at the end
-of the existing locators."
-  (interactive)
-  (unless (thing-at-point-looking-at tlon-cite-pattern)
-    (user-error "Not in a citation"))
-  (let* ((selection (completing-read "Locator: " tlon-locators nil t))
-	 (locator (alist-get selection tlon-locators "" "" 'string=)))
-    (if-let ((existing (tlon-get-locator-at-point)))
-	(replace-match locator)
-      (let ((end (cdadr (or (tlon-get-locators-in-citation)
-			    (tlon-get-key-in-citation)))))
-	(goto-char end)
-	(insert (format ", %s " locator))))))
-
-(defun tlon-get-locator-at-point ()
-  "Return the locator at point, if present."
-  (let ((locators (mapcar 'cdr tlon-locators)))
-    (when (thing-at-point-looking-at (regexp-opt locators))
-      (match-string-no-properties 0))))
-
-;;;;;;; Math
-
-;;;###autoload
-(defun tlon-insert-math-inline ()
-  "Insert an inline math tag pair at point or around the selected region."
-  (interactive)
-  (tlon-md-insert-element-pair tlon-math-inline))
-
-;;;###autoload
-(defun tlon-insert-math-display ()
-  "Insert a display math tag pair at point or around the selected region."
-  (interactive)
-  (tlon-md-insert-element-pair tlon-math-display))
+;;;;;;;; Common functions
 
 ;;;;; Note classification
 
@@ -672,9 +852,9 @@ If REPO is nil, use the current directory."
 If NOTE is nil, use the note at point. A note type may be either `footnote' or
 `sidenote'."
   (when-let ((note (or note (tlon-get-note-at-point))))
-    (cond ((string-match tlon-footnote-marker note)
+    (cond ((string-match tlon-mdx-footnote-pattern note)
 	   'footnote)
-	  ((string-match tlon-sidenote-marker note)
+	  ((string-match tlon-mdx-sidenote-pattern note)
 	   'sidenote))))
 
 (defun tlon-note-automatic-type (note)
@@ -687,7 +867,7 @@ it is classified as a footnote; otherwise, it is classified as a sidenote."
 	  (has-citation-p))
       (insert note)
       (goto-char (point-min))
-      (while (re-search-forward tlon-cite-pattern nil t)
+      (while (re-search-forward tlon-mdx-cite-pattern nil t)
 	(replace-match "")
 	(setq has-citation-p t))
       (when has-citation-p
@@ -859,27 +1039,33 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("n" "auto: at point"       tlon-auto-classify-note-at-point)
     ("N" "auto: in file"        tlon-auto-classify-notes-in-file)]
    ["Citations"
-    ("c" "cite"                 tlon-insert-mdx-cite)
     ("c" "cite long"            tlon-insert-mdx-cite-long)
     ("C" "cite short"           tlon-insert-mdx-cite-short)
     ("l" "locator"              tlon-insert-locator)]
-   ["Math"
-    ("i" "inline"               tlon-insert-math-inline)
-    ("d" "display"              tlon-insert-math-display)]
    ["TTS"
+    ("V" "alternative voice"    tlon-insert-mdx-alternative-voice)
+    ("K" "break"                tlon-tts-insert-ssml-break)
+    ("E" "emphasis"             tlon-tts-insert-ssml-emphasis)
     ("L" "lang"                 tlon-tts-insert-ssml-lang)
-    ("e" "emphasis"             tlon-tts-insert-ssml-emphasis)
-    ("v" "alternative voice"    tlon-insert-mdx-alternative-voice)
-    ("H" "visually hidden"      tlon-insert-mdx-visually-hidden)
-    ("S" "visually shown"       tlon-insert-mdx-visually-shown)]
+    ("P" "phoneme"              tlon-tts-insert-ssml-phoneme)
+    ("A" "replace audio"        tlon-insert-mdx-replace-audio)
+    ("S" "say-as"               tlon-tts-insert-ssml-say-as)
+    ("H" "visually hidden"      tlon-insert-mdx-visually-hidden)]
    ["Misc"
     ("b" "subscript"            tlon-insert-html-subscript)
     ("p" "superscript"          tlon-insert-html-superscript)
-    ("m" "small caps"           tlon-insert-mdx-small-caps)
+    ("." "special character"    tlon-insert-special-character)
+    ""
+    ("F" "figure"               tlon-insert-mdx-figure)
+    ("o" "Our World In Data"    tlon-insert-mdx-our-world-in-data)]
+   [""
     ("a" "aside"                tlon-insert-mdx-aside)
-    ("g" "lang"                 tlon-insert-mdx-lang)
-    ("r" "roman"                tlon-insert-mdx-roman)
-    ("." "special character"    tlon-insert-special-character)]])
+    ;; ("t" "table"                ) ; placeholder while I develop the command
+    ("g" "language"             tlon-insert-mdx-language)
+    ("m" "Math"                 tlon-insert-mdx-math)
+    ""
+    ("M" "small caps"           tlon-insert-mdx-small-caps)
+    ("r" "roman"                tlon-insert-mdx-roman)]])
 
 (provide 'tlon-md)
 ;;; tlon-md.el ends here
