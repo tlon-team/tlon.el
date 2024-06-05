@@ -154,17 +154,15 @@ effects to begin with."
 		  "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
 		"\\1 %\\2"))
 
-(defvar tlon-math-inline-search-pattern)
-(defvar tlon-math-display-search-pattern)
 (defvar markdown-regex-link-inline)
 (defvar ffap-url-regexp)
+(declare-function tlon-md-get-tag-pattern "tlon-md")
 (defun tlon-autofix-thousands-separators (&optional separator)
   "Replace thousands SEPARATOR (typically, a comma or a period) with thin spaces.
 Do not perform these replacements if the terms occur in math formulae, links, or
 match certain words that should not be altered, such as \"80,000 Hours\"."
   (interactive)
-  (let* ((exclusions `(,tlon-math-inline-search-pattern
-		       ,tlon-math-display-search-pattern
+  (let* ((exclusions `(,(tlon-md-get-tag-pattern "Math")
 		       ,markdown-regex-link-inline
 		       ,ffap-url-regexp
 		       "80,000 Hours"))
