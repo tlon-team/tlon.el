@@ -52,6 +52,18 @@
   :group 'tlon-tts
   :type 'boolean)
 
+(defcustom tlon-tts-prompt
+  nil
+  "Generic prompt to use in the TTS request.
+Selection candidates for each language are listed in `tlon-tts-prompts'."
+  :group 'tlon-tts
+  :type 'string)
+
+(defconst tlon-tts-prompts
+  '(("es" . ("You are a native Spanish speaker. You speak with a neutral Spanish accent."))
+    ("en" . ("You are a native English speaker. You speak with a neutral English accent.")))
+  "List of prompts to select from in each language.")
+
 ;;;;;; `break'
 
 ;; Note that, apparently, ElevenLabs *replaces* the pause that the narrator
@@ -871,7 +883,7 @@ The output format is a cons cell with the format name and extension."
 If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   (with-current-buffer (get-buffer-create (tlon-tts-get-temp-buffer-name))
     (erase-buffer)
-    (insert tlon-tts-current-content)
+    (insert (format "%s\n\n%s" (or tlon-tts-prompt "") tlon-tts-current-content))
     (tlon-tts-prepare-buffer)
     (let ((content (if chunk-size
 		       (tlon-tts-break-into-chunks chunk-size)
@@ -1871,10 +1883,23 @@ is the key to trigger the infix."
 (tlon-tts-define-duration-infix 'tlon-tts-heading-break-duration-infix
 				'tlon-tts-heading-break-duration
 				"-h")
+;;;;;; Prompt
+
+(transient-define-infix tlon-tts-menu-infix-set-prompt ()
+  "Set the prompt."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-prompt
+  :reader 'tlon-tts-prompt-reader)
 
 (tlon-tts-define-duration-infix 'tlon-tts-paragraph-break-duration-infix
 				'tlon-tts-paragraph-break-duration
 				"-p")
+(defun tlon-tts-prompt-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-set-prompt'."
+  (let* ((language (tlon-tts-get-current-language))
+	 (prompts (alist-get language tlon-tts-prompts nil nil #'string=)))
+    (completing-read "Prompt: " prompts)))
+
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
   "Toggle the value of `tlon-tts-use-alternate-voice' in `tts' menu."
@@ -1917,6 +1942,7 @@ is the key to trigger the infix."
     (tlon-tts-heading-break-duration-infix)
     (tlon-tts-paragraph-break-duration-infix)
     (tlon-tts-menu-infix-toggle-alternate-voice)]])
+    ("-p" "Prompt"                           tlon-tts-menu-infix-set-prompt)
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
