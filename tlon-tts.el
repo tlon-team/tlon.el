@@ -1337,6 +1337,13 @@ to the alternative voice for the current language."
   "Replace small caps with their full form."
   (tlon-tts-remove-formatting 'small-caps))
 
+(defun tlon-tts-process-math ()
+  "Replace math expressions with their alt text.
+If no alt text is present, replace with the expression itself."
+  (goto-char (point-min))
+  (while (re-search-forward (tlon-md-get-tag-pattern "Math") nil t)
+    (replace-match (or (match-string 4) (match-string 2)) t t)))
+
 ;;;;;; Paragraphs
 
 (defun tlon-tts-process-paragraphs ()
