@@ -486,7 +486,15 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
   <https://community.openai.com/t/what-about-to-implement-ssml-on-the-new-tts-api-service/485686/5>.
 
 - ElevenLabs: <https://elevenlabs.io/docs/speech-synthesis/prompting>. Only two
-  tags are explicitly mentioned, so maybe none of the others are supported?")
+  tags are explicitly mentioned, so maybe none of the others are supported?
+
+The value of `:replacement' is either a regexp pattern to replace with its
+second capture group when removing unsupported tags (via
+`tlon-tts-remove-unsupported-tags'), or a cons cell whose car is the replacement
+pattern and whose cdr is the the number of the capture group to replace with; if
+the cdr is nil, the entire tag is removed. We use the second capture group by
+default because that is normally the group containing the text enclosed by the
+tag.")
 
 ;;;;; Engine settings
 
