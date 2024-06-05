@@ -261,15 +261,15 @@ Options are
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "tts/")
   "Directory for files related to text-to-speech functionality.")
 
-(defconst tlon-file-phonetic-transcriptions
+(defconst tlon-file-global-phonetic-transcriptions
   (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
   "File with phonetic transcriptions.")
 
-(defconst tlon-file-phonetic-replacements
+(defconst tlon-file-global-phonetic-replacements
   (file-name-concat tlon-dir-tts "phonetic-replacements.json")
   "File with replacements.")
 
-(defconst tlon-file-abbreviations
+(defconst tlon-file-global-abbreviations
   (file-name-concat tlon-dir-tts "abbreviations.json")
   "File with abbreviations.")
 
@@ -789,28 +789,28 @@ questions\").")
 
 ;;;;; File-local variables
 
-(defvar-local tlon-file-local-abbreviations '()
+(defvar-local tlon-local-abbreviations '()
   "In-text abbreviations and their spoken equivalent.")
 
-(defvar-local tlon-file-local-replacements '()
-  "File local replacements.")
+(defvar-local tlon-local-replacements '()
+  "Local replacements.")
 
 ;;;;; Abbreviations
 
 (defvar tlon-tts-abbreviations
-  (tlon-parse-json tlon-file-abbreviations)
+  (tlon-parse-json tlon-file-global-abbreviations)
   "Standard abbreviations and their spoken equivalent in each language.")
 
 ;;;;; Phonetic replacements
 
 (defvar tlon-tts-phonetic-replacements
-  (tlon-parse-json tlon-file-phonetic-replacements)
+  (tlon-parse-json tlon-file-global-phonetic-replacements)
   "Phonetic replacements for terms.")
 
 ;;;;; Phonetic transcriptions
 
 (defvar tlon-tts-phonetic-transcriptions
-  (tlon-parse-json tlon-file-phonetic-transcriptions)
+  (tlon-parse-json tlon-file-global-phonetic-transcriptions)
   "Phonetic transcriptions for terms.")
 
 ;;;;; Listener cues
@@ -956,12 +956,12 @@ otherwise."
   "Return the substantive content of FILE, handling in-text abbreviations."
   (unless (string= (file-name-extension file) "md")
     (user-error "File `%s' is not a Markdown file" file))
-  (let ((tlon-file-local-abbreviations))
+  (let ((tlon-local-abbreviations))
     (with-current-buffer (find-file-noselect file)
-      ;; to make `tlon-tts-process-file-local-abbreviations' work, we
+      ;; to make `tlon-tts-process-local-abbreviations' work, we
       ;; let-bound the variable above and now set its value to that of its
-      ;; file-local counterpart
-      (setq tlon-file-local-abbreviations tlon-file-local-abbreviations)
+      ;; local counterpart
+      (setq tlon-local-abbreviations tlon-local-abbreviations)
       (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
 
 ;;;;;;; Language
@@ -1333,10 +1333,10 @@ attribute."
     (tlon-tts-process-formatting)
     (tlon-tts-process-headings)
     (tlon-tts-process-paragraphs)
-    (tlon-tts-process-file-local-abbreviations)
-    (tlon-tts-process-file-local-replacements)
-    (tlon-tts-process-abbreviations)
-    (tlon-tts-process-phonetic-replacements)
+    (tlon-tts-process-local-abbreviations)
+    (tlon-tts-process-global-abbreviations)
+    (tlon-tts-process-local-phonetic-replacements)
+    (tlon-tts-process-globa-phonetic-replacements)
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links'
     (tlon-tts-process-links)
@@ -1463,46 +1463,76 @@ The time length of the pause is determined by `tlon-tts-heading-break-duration'.
   (let ((initial-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
     (goto-char (point-min))
     (while (re-search-forward markdown-regex-header nil t)
-      ;; add final period if missing
-      (let ((heading (replace-regexp-in-string "\\.\\.$" "." (concat (match-string 5) "."))))
-	(replace-match (format "%s %s" initial-pause heading))))))
+      (let ((heading (match-string-no-properties 5)))
+	(save-match-data
+	  (unless (string-match "[\\.\\?!]$" heading)
+	    (setq heading (concat heading "."))))
+	(replace-match (format "%s %s" initial-pause heading) t t)))))
 
-;;;;;; File-local abbreviations
+;;;;;; Abbreviations
 
-(defun tlon-tts-process-file-local-abbreviations ()
-  "Replace file-local abbreviations with their spoken equivalent.
-In-text abbreviations are those that are introduced in the text itself,
-typically in parenthesis after the first occurrence of the phrase they
-abbreviate. We store these abbreviations on a per file basis, in the file-local
-variable `tlon-file-local-abbreviations'"
+(defun tlon-tts-process-abbreviations (type)
+  "Replace abbreviations of TYPE with their spoken equivalent."
   (let ((case-fold-search nil))
-    (dolist (entry tlon-file-local-abbreviations)
+    (dolist (entry (pcase type
+		     ('local tlon-local-abbreviations)
+		     ('global (tlon-tts-get-global-abbreviations))))
       (cl-destructuring-bind (abbrev . expansion) entry
 	(let ((abbrev-introduced (format "%s (%s)" expansion abbrev)))
 	  ;; we first replace the full abbrev introduction, then the abbrev itself
 	  (dolist (cons (list (cons abbrev-introduced expansion) entry))
 	    (goto-char (point-min))
 	    (while (re-search-forward (car cons) nil t)
-	      (replace-match (cdr cons) t nil))))))))
+	      (replace-match (cdr cons) t t))))))))
 
-;;;;;; File-local replacements
+;; TODO: the two functions below are not currently used
+;; adapt code to handle cases when abbrev ends in sentence
+(defun tlon-tts-replace-abbreviations (replacement)
+  "When processing abbreviations, replace match with REPLACEMENT.
+If the abbreviation occurs at the end of a sentence, do not remove the period."
+  (let ((replacement (if nil
+			 ;; FIXME: this throws an error when `tlon-tts-abbrev-ends-sentence-p' returns t
+			 ;; (tlon-tts-abbrev-ends-sentence-p)
+			 (concat replacement ".")
+		       replacement)))
+    (replace-match replacement t t)))
 
-(defun tlon-tts-process-file-local-replacements ()
-  "Perform replacements indicated in `tlon-file-local-replacements'."
-  (dolist (pair tlon-file-local-replacements)
-    (let ((find (car pair)))
-      (goto-char (point-min))
-      (while (re-search-forward find nil t)
-	(replace-match (cdr pair) t)))))
+(defun tlon-tts-abbrev-ends-sentence-p ()
+  "Return t iff the abbreviation at point ends the sentence."
+  (save-excursion
+    (let* ((case-fold-search nil)
+	   (start (max (point-min) (- (point) 1)))
+	   (end (min (point-max) (+ (point) 2)))
+	   (substring (buffer-substring-no-properties start end)))
+      (numberp (string-match "\\. [A-Z][[:alpha:]]*?" substring)))))
 
-;;;;;; Project-wide replacements
+;;;;;;; Local
 
-;;;;;;; Common
+(defun tlon-tts-process-local-abbreviations ()
+  "Replace local abbreviations with their spoken equivalent.
+In-text abbreviations are those that are introduced in the text itself,
+typically in parenthesis after the first occurrence of the phrase they
+abbreviate. We store these abbreviations on a per file basis, in the file-local
+variable `tlon-local-abbreviations'."
+  (tlon-tts-process-abbreviations 'local))
+
+;;;;;;; Global
+
+(defun tlon-tts-process-global-abbreviations ()
+  ;; TODO: explain how different to local abbrevs.
+  "Replace global abbreviations with their spoken equivalent."
+  (tlon-tts-process-abbreviations 'global))
+
+(defun tlon-tts-get-global-abbreviations ()
+  "Get abbreviations."
+  (tlon-tts-get-associated-terms tlon-tts-abbreviations))
+
+;;;;;; Phonetic replacements
 
 (defun tlon-tts-process-terms (terms replacement-fun &optional word-boundary)
   "Replace TERMS using REPLACEMENT-FUN.
 If WORD-BOUNDARY is non-nil, enclose TERMS in a word boundary specifier. If so,
-the terms will match only if they are adjacent by non-word characters."
+the terms will match only if they are adjacent to non-word characters."
   (let ((case-fold-search nil)
 	(pattern (if word-boundary "\\b%s\\b" "%s")))
     (dolist (term terms)
@@ -1522,40 +1552,19 @@ process, return its cdr."
 	(setq result (append result (cadr term)))))
     result))
 
-;;;;;;; Abbreviations
+;;;;;;; Local
 
-(defun tlon-tts-process-abbreviations ()
-  "Replace terms with their pronunciations."
-  (tlon-tts-process-terms
-   (tlon-tts-get-abbreviations)
-   'tlon-tts-replace-abbreviations))
+(defun tlon-tts-process-local-phonetic-replacements ()
+  "Perform replacements indicated in `tlon-local-replacements'."
+  (dolist (pair tlon-local-replacements)
+    (let ((find (car pair)))
+      (goto-char (point-min))
+      (while (re-search-forward find nil t)
+	(replace-match (cdr pair) t t)))))
 
-(defun tlon-tts-get-abbreviations ()
-  "Get abbreviations."
-  (tlon-tts-get-associated-terms tlon-tts-abbreviations))
+;;;;;;; Global
 
-(defun tlon-tts-replace-abbreviations (replacement)
-  "When processing abbreviations, replace match with REPLACEMENT.
-If the abbreviation occurs at the end of a sentence, do not remove the period."
-  (let ((replacement (if nil
-			 ;; FIXME: this throws an error when `tlon-tts-abbrev-ends-sentence-p' returns t
-			 ;; (tlon-tts-abbrev-ends-sentence-p)
-			 (concat replacement ".")
-		       replacement)))
-    (replace-match replacement t)))
-
-(defun tlon-tts-abbrev-ends-sentence-p ()
-  "Return t iff the abbreviation at point ends the sentence."
-  (save-excursion
-    (let* ((case-fold-search nil)
-	   (start (max (point-min) (- (point) 1)))
-	   (end (min (point-max) (+ (point) 2)))
-	   (substring (buffer-substring-no-properties start end)))
-      (numberp (string-match "\\. [A-Z][[:alpha:]]*?" substring)))))
-
-;;;;;;; Phonetic replacements
-
-(defun tlon-tts-process-phonetic-replacements ()
+(defun tlon-tts-process-globa-phonetic-replacements ()
   "Replace terms with their counterparts."
   (tlon-tts-process-terms
    (tlon-tts-get-phonetic-replacements)
@@ -1567,9 +1576,9 @@ If the abbreviation occurs at the end of a sentence, do not remove the period."
 
 (defun tlon-tts-replace-phonetic-replacements (replacement)
   "When processing simple replacements, replace match with REPLACEMENT."
-  (replace-match replacement t))
+  (replace-match replacement t t))
 
-;;;;;;; Phonetic transcriptions
+;;;;;; Phonetic transcriptions
 
 ;; We are not supporting this currently.
 
@@ -1826,7 +1835,7 @@ The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
 (defun tlon-tts-edit-abbreviations ()
   "Edit abbreviations."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-abbreviations tlon-file-abbreviations))
+  (tlon-tts-edit-entry 'tlon-tts-abbreviations tlon-file-global-abbreviations))
 
 ;;;;;; Phonetic replacements
 
@@ -1834,7 +1843,7 @@ The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
 (defun tlon-tts-edit-phonetic-replacements ()
   "Edit phonetic replacements."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-phonetic-replacements tlon-file-phonetic-replacements))
+  (tlon-tts-edit-entry 'tlon-tts-phonetic-replacements tlon-file-global-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
 
@@ -1842,9 +1851,9 @@ The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
 (defun tlon-tts-edit-phonetic-transcriptions ()
   "Edit phonetic transcriptions."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-phonetic-transcriptions tlon-file-phonetic-transcriptions))
+  (tlon-tts-edit-entry 'tlon-tts-phonetic-transcriptions tlon-file-global-phonetic-transcriptions))
 
-;;;;; File-local
+;;;;; Local
 
 ;;;;;; Common
 
@@ -1871,20 +1880,20 @@ PROMPTS is a cons cell with the corresponding prompts."
 ;;;;;; Abbreviations
 
 ;;;###autoload
-(defun tlon-add-file-local-abbreviation ()
-  "Add an in-text abbreviation to the file-local list."
+(defun tlon-add-local-abbreviation ()
+  "Add an in-text abbreviation to the local list."
   (interactive)
   (tlon-tts-add-in-text-cons-cell '("Abbrev: " . "Expanded abbrev: ")
-				  'tlon-file-local-abbreviations))
+				  'tlon-local-abbreviations))
 
 ;;;;;; Replacements
 
 ;;;###autoload
-(defun tlon-add-file-local-replacement ()
-  "Add an in-text replacement to the file-local list."
+(defun tlon-add-local-replacement ()
+  "Add an in-text replacement to the local list."
   (interactive)
   (tlon-tts-add-in-text-cons-cell '("Text to replace: " . "Replacement: ")
-				  'tlon-file-local-replacements))
+				  'tlon-local-replacements))
 
 ;;;;; Menu
 
