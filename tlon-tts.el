@@ -825,7 +825,7 @@ Save the audio file in the downloads folder."
   "Generate the TTS buffer without narrating its contents.
 This command is used for debugging purposes."
   (interactive)
-  (tlon-tts-set-all-current-values nil nil nil nil nil)
+  (tlon-tts-set-all-current-values)
   (tlon-tts-read-content)
   (tlon-tts-unset-all-current-values))
 
@@ -973,7 +973,7 @@ If VOICE is nil, prompt the user to select a voice."
 
 ;;;;;;; Set/unset all values
 
-(defun tlon-tts-set-all-current-values (file content engine language voice)
+(defun tlon-tts-set-all-current-values (&optional file content engine language voice)
   "Set all current values.
 FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
   (tlon-tts-set-current-file-or-buffer file)
