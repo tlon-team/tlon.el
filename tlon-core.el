@@ -757,12 +757,11 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 
 ;;;;; tags
 
+;; TODO: create pattern directly fro `tlon-tag-specs'
 (defun tlon-make-tag-replace-pattern (pair &optional format)
   "Construct a replace with FORMAT for PAIR of tags."
   (let ((format (or format "%s%%s%s")))
-    (format format
-	    (car pair)
-	    (cdr pair))))
+    (format format (car pair) (cdr pair))))
 
 ;;;;; vars
 
