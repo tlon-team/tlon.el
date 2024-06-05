@@ -1675,40 +1675,43 @@ image links are handled differently."
 	 (unsupported-by-them (tlon-lookup-all tlon-tts-supported-tags :tag property nil))
 	 (supported-by-us (tlon-lookup-all tlon-tts-supported-tags :tag :tlon t))
 	 (tags (cl-intersection unsupported-by-them supported-by-us))
-	 (patterns (mapcar (lambda (tag)
-			     (tlon-lookup tlon-tts-supported-tags :pattern :tag tag))
-			   tags)))
-    (dolist (pattern patterns)
+	 (cons-list (mapcar (lambda (tag)
+			      (tlon-tts-get-cons-for-unsupported-ssml-tags tag))
+			    tags)))
+    (dolist (cons cons-list)
       (goto-char (point-min))
-      (while (re-search-forward (tlon-make-pattern-searchable pattern) nil t)
-	;; handle double backslashes
-	(let ((replacement (replace-regexp-in-string "\\\\" "\\\\\\\\" (match-string 2))))
-	  (replace-match replacement t))))))
+      (while (re-search-forward (car cons) nil t)
+	(let ((replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons)))
+	  (replace-match replacement t t))))))
 
-(defun tlon-tts-count-format-placeholders (format)
-  "Count the number of format placeholders in the format string FORMAT."
-  (let ((count 0)
-	(pos 0))
-    (while (string-match "%\\([^%]\\)" format pos)
-      (setq count (1+ count)
-	    pos (match-end 0)))
-    count))
+(defun tlon-tts-get-cons-for-unsupported-ssml-tags (tag)
+  "Return a cons cell for an unsupported SSML TAG.
+The car of the cons cell is the search pattern and its cdr is the number group
+capturing the replacement text. If the cdr is nil, replace with an empty string.
+See the end of the `tlon-tts-supported-tags' docstring for details."
+  (let ((replacement (tlon-lookup tlon-tts-supported-tags :replacement :tag tag))
+	(cdr 2)
+	car)
+    (if (listp replacement)
+	(setq car (car replacement)
+	      cdr (cdr replacement))
+      (setq car replacement))
+    (cons car cdr)))
 
-(defun tlon-tts-fill-format-string (format string)
-  "Fill all format specifiers in FORMAT with STRING."
-  (let ((args-count (tlon-tts-count-format-placeholders format))
-	args)
-    (dotimes (_ args-count)
-      (push string args))
-    (apply 'format format (reverse args))))
+(defun tlon-tts-get-replacement-for-unsupported-ssml-tags (cons)
+  "Return the replacement text from the CONS cell of an unsupported SSML tag.
+The car of CONS is the search pattern and its cdr is the number of the group
+capturing the replacement text. If the cdr is nil, replace with an empty string."
+  (let* ((cdr (cdr cons))
+	 (replacement (cond
+		       ((null cdr)
+			"")
+		       ((numberp cdr)
+			(match-string cdr))
+		       (t (match-string 2)))))
+    (replace-regexp-in-string "\\\\" "\\\\\\\\" replacement)))
 
-(defun tlon-make-pattern-searchable (pattern &optional greedy)
-  "Make an SSML tag PATTERN searchable.
-The pattern is greedy if GREEDY is non-nil, and lazy otherwise."
-  (let ((format (if greedy ".**" ".*?")))
-    (tlon-tts-fill-format-string pattern format)))
-
-;;;;; Project-wide
+;;;;; Global
 
 ;;;;;; Common
 
