@@ -281,9 +281,6 @@ Options are
 (defvar tlon-tts-current-content nil
   "The content to narrate in the current TTS process.")
 
-(defvar tlon-tts-current-engine nil
-  "The engine used in the current TTS process.")
-
 (defvar tlon-tts-current-language nil
   "The language used in the current TTS process.")
 
@@ -1019,7 +1016,6 @@ If VOICE is nil, prompt the user to select a voice."
 FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
   (tlon-tts-set-current-file-or-buffer file)
   (tlon-tts-set-current-content content)
-  (tlon-tts-set-current-engine engine)
   (tlon-tts-set-current-language language)
   (tlon-tts-set-current-main-voice voice))
 
@@ -1027,7 +1023,6 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
   "Unset all current values."
   (setq tlon-tts-current-file-or-buffer nil
 	tlon-tts-current-content nil
-	tlon-tts-current-engine nil
 	tlon-tts-current-language nil
 	tlon-tts-current-main-voice nil
 	tlon-tts-current-voice-locale nil))
@@ -1896,6 +1891,16 @@ PROMPTS is a cons cell with the corresponding prompts."
 				  'tlon-local-replacements))
 
 ;;;;; Menu
+
+;;;;;; Engine
+
+(transient-define-infix tlon-tts-menu-infix-set-engine ()
+  "Set the engine."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-engine
+  :reader (lambda (_ _ _) (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name))))
+
+;; TODO: define infix to set the settings of the current engine
 
 ;;;;;; Prompt
 
