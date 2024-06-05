@@ -43,11 +43,6 @@
   :type 'symbol
   :group 'tlon-ai)
 
-(defcustom tlon-ai-debug nil
-  "Whether to display debug messages."
-  :type 'boolean
-  :group 'tlon-ai)
-
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -438,7 +433,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 	 (lambda (response info)
 	   (message "Detecting language...")
 	   (tlon-ai-get-abstract-from-detected-language response info file))))
-    (when tlon-ai-debug
+    (when tlon-debug
       (message "`%s' now calls `tlon-ai-batch-continue'." "tlon-get-abstract-with-ai"))
     (tlon-ai-batch-continue)))
 
@@ -448,7 +443,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
       (if-let ((file (ebib-extras-get-file extension)))
 	  (tlon-get-abstract-with-ai file)
 	(user-error "No unique file with extension `%s' found" extension))
-    (when tlon-ai-debug
+    (when tlon-debug
       (message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-with-ai-in-file"))
     (tlon-ai-batch-continue)))
 
@@ -510,7 +505,7 @@ If RESPONSE is nil, return INFO. KEY is the BibTeX key."
       ('markdown-mode) ; TODO: set `description' YAML field to it
       (_ (kill-new response)
 	 (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))
-  (when tlon-ai-debug
+  (when tlon-debug
     (message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
   (tlon-ai-batch-continue))
 
@@ -753,13 +748,6 @@ variable."
   :variable 'gptel-extras-gemini-mullvad-disconnect-after
   :reader 'tlon-mullvad-connection-duration-reader
   :prompt "Disconnect after: ")
-
-(transient-define-infix tlon-ai-menu-infix-toggle-debug ()
-  "Toggle the value of `tlon-ai-debug' in `ai' menu."
-  :class 'transient-lisp-variable
-  :variable 'tlon-ai-debug
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-debug))
-  :key "-v")
 
 ;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
 (transient-define-prefix tlon-ai-menu ()

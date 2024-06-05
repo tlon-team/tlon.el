@@ -62,6 +62,14 @@
    [""""
     ("." "notifications"                  forge-list-notifications)]])
 
+;;;;;; Common elements
+
+(transient-define-infix tlon-menu-infix-toggle-debug ()
+  "Toggle the value of `tlon-debug' in `ai' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-debug
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-debug)))
+
 ;;;;; Browse repo in Magit
 
 (defmacro tlon-generate-magit-browse-commands (name dir)

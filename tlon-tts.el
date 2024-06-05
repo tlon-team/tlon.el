@@ -900,7 +900,7 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
   "Generate audio FILE of STRING."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
 	 (request (funcall fun string file)))
-    (message "Debug: Running command: %s" request) ; Debug line
+    (when tlon-debug (message "Debug: Running command: %s" request))
     (let ((process (start-process-shell-command "generate audio" nil request)))
       (set-process-sentinel process
 			    (lambda (process event)
