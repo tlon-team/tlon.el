@@ -1870,19 +1870,6 @@ PROMPTS is a cons cell with the corresponding prompts."
 
 ;;;;; Menu
 
-(defun tlon-tts-define-duration-infix (name variable key)
-  "Helper to define duration-setting commands for tts settings.
-NAME is the name of the infix command, VARIABLE is the variable to set, and KEY
-is the key to trigger the infix."
-  (transient-define-infix name ()
-    :class 'transient-lisp-variable
-    :variable variable
-    :reader (lambda (_ _ _) (read-string "Duration (seconds): " (symbol-value variable)))
-    :key key))
-
-(tlon-tts-define-duration-infix 'tlon-tts-heading-break-duration-infix
-				'tlon-tts-heading-break-duration
-				"-h")
 ;;;;;; Prompt
 
 (transient-define-infix tlon-tts-menu-infix-set-prompt ()
@@ -1891,14 +1878,23 @@ is the key to trigger the infix."
   :variable 'tlon-tts-prompt
   :reader 'tlon-tts-prompt-reader)
 
-(tlon-tts-define-duration-infix 'tlon-tts-paragraph-break-duration-infix
-				'tlon-tts-paragraph-break-duration
-				"-p")
 (defun tlon-tts-prompt-reader (_ _ _)
   "Reader for `tlon-tts-menu-infix-set-prompt'."
   (let* ((language (tlon-tts-get-current-language))
 	 (prompts (alist-get language tlon-tts-prompts nil nil #'string=)))
     (completing-read "Prompt: " prompts)))
+
+;;;;;; Duration
+
+(transient-define-infix tlon-tts-heading-break-duration-infix ()
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-heading-break-duration
+  :reader (lambda (_ _ _) (read-string "Duration (seconds): " tlon-tts-heading-break-duration)))
+
+(transient-define-infix tlon-tts-paragraph-break-duration-infix ()
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-paragraph-break-duration
+  :reader (lambda (_ _ _) (read-string "Duration (seconds): " tlon-tts-heading-break-duration)))
 
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
@@ -1939,10 +1935,10 @@ is the key to trigger the infix."
     ("d" "Delete file chunks"               tlon-tts-delete-chunks)
     ""
     "Narration options"
-    (tlon-tts-heading-break-duration-infix)
-    (tlon-tts-paragraph-break-duration-infix)
     (tlon-tts-menu-infix-toggle-alternate-voice)]])
     ("-p" "Prompt"                           tlon-tts-menu-infix-set-prompt)
+    ("-h" "Heading break duration"           tlon-tts-heading-break-duration-infix)
+    ("-a" "Paragraph break duration"         tlon-tts-paragraph-break-duration-infix)
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
