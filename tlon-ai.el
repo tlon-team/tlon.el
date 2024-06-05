@@ -780,9 +780,10 @@ variable."
     ""
     "Summarize parameters"
     ("-b" "batch"                               tlon-ai-batch-fun-infix)
-    ("-d" "debug"                               tlon-ai-menu-infix-toggle-debug)
     ("-m" "mullvad connection duration"         tlon-mullvad-connection-duration-infix)
-    ("-o" "overwrite"                           tlon-abstract-overwrite-infix)]])
+    ("-o" "overwrite"                           tlon-abstract-overwrite-infix)
+    ""
+    ("-d" "debug"                               tlon-menu-infix-toggle-debug)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
