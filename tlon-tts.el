@@ -1855,20 +1855,15 @@ PROMPTS is a cons cell with the corresponding prompts."
   :variable 'tlon-tts-paragraph-break-duration
   :reader (lambda (_ _ _) (read-string "Duration (seconds): " tlon-tts-heading-break-duration)))
 
+;;;;;; Alternative voice
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
   "Toggle the value of `tlon-tts-use-alternate-voice' in `tts' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-use-alternate-voice
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice))
-  :key "-v")
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice)))
 
-;; TODO: define infixes to set audio settings
-;; tlon-microsoft-azure-audio-settings
-;; tlon-google-cloud-audio-settings
-;; tlon-amazon-polly-audio-settings
-;; tlon-openai-audio-settings
-;; tlon-elevenlabs-audio-settings
+;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
 (transient-define-prefix tlon-tts-menu ()
