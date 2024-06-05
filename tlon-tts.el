@@ -38,6 +38,15 @@
 
 ;;;;; Common
 
+(defcustom tlon-tts-engine "ElevenLabs"
+  "The TTS engine."
+  :group 'tlon-tts
+  :type '(choice (const :tag "Microsoft Azure" :azure)
+		 (const :tag "Google Cloud" :google)
+		 (const :tag "Amazon Polly" :polly)
+		 (const :tag "OpenAI" :openai)
+		 (const :tag "ElevenLabs" :elevenlabs)))
+
 (defcustom tlon-tts-use-alternate-voice nil
   "Whether to use an alternative voice for reading notes, asides, etc."
   :group 'tlon-tts
@@ -834,7 +843,7 @@ This command is used for debugging purposes."
 (defun tlon-tts-process-chunks ()
   "Process unprocessed chunks."
   (let* ((destination (tlon-tts-set-audio-path))
-	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-current-engine)))
+	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
 	 (nth 1))
     (setq tlon-tts-chunks (tlon-tts-read-content char-limit))
     (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-names destination (length tlon-tts-chunks)))
@@ -855,7 +864,7 @@ This command is used for debugging purposes."
 (defun tlon-tts-get-output-format ()
   "Return the output format for the current TTS engine.
 The output format is a cons cell with the format name and extension."
-  (symbol-value (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-current-engine)))
+  (symbol-value (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine)))
 
 (defun tlon-tts-read-content (&optional chunk-size)
   "Read content and return it as a string ready for TTS processing.
@@ -877,7 +886,7 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 
 (defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
-  (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-current-engine))
+  (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
 	 (request (funcall fun string file)))
     (message "Debug: Running command: %s" request) ; Debug line
     (let ((process (start-process-shell-command "generate audio" nil request)))
@@ -925,15 +934,6 @@ otherwise."
       (setq tlon-file-local-abbreviations tlon-file-local-abbreviations)
       (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
 
-;;;;;;; Engine
-
-(defun tlon-tts-set-current-engine (&optional engine)
-  "Set the current value of the TTS engine.
-If ENGINE is nile, prompt the user to select an engine."
-  (setq tlon-tts-current-engine
-	(or engine
-	    (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name)))))
-
 ;;;;;;; Language
 
 ;; TODO: decide if this getter function should also be used for the othe values (engine, voice, etc)
@@ -972,7 +972,7 @@ If VOICE is nil, prompt the user to select a voice."
 
 (defun tlon-tts-get-voices ()
   "Get available voices in the current language for the current TTS engine."
-  (let* ((voices (symbol-value (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-current-engine)))
+  (let* ((voices (symbol-value (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine)))
 	 (voice (completing-read "Voice: "
 				 (apply #'append
 					(mapcar (lambda (language)
@@ -1710,8 +1710,7 @@ image links are handled differently."
 
 (defun tlon-tts-remove-unsupported-ssml-tags ()
   "Remove SSML tags not supported by the current TTS engine."
-  (let* ((tlon-tts-current-engine "ElevenLabs")
-	 (property (tlon-lookup tlon-tts-engines :property :name tlon-tts-current-engine))
+  (let* ((property (tlon-lookup tlon-tts-engines :property :name tlon-tts-engine))
 	 (unsupported-by-them (tlon-lookup-all tlon-tts-supported-tags :tag property nil))
 	 (supported-by-us (tlon-lookup-all tlon-tts-supported-tags :tag :tlon t))
 	 (tags (cl-intersection unsupported-by-them supported-by-us))
