@@ -170,6 +170,19 @@ Admissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\""
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
+(defcustom tlon-openai-model
+  "tts-1-hd"
+  "Model to use for the OpenAI TTS.
+Options are
+
+- `\"tts-1\"': Standard model. Provides the lowest latency.
+
+- `\"tts-1-hd\"': Higher quality model.
+
+<https://platform.openai.com/docs/guides/text-to-speech/audio-quality>"
+  :group 'tlon-tts
+  :type 'string)
+
 ;;;;; ElevenLabs
 
 (defcustom tlon-elevenlabs-audio-settings
@@ -623,14 +636,14 @@ for safety.")
   -H \"Authorization: Bearer %s\" \
   -H \"Content-Type: application/json\" \
   -d '{
-    \"model\": \"tts-1\",
+    \"model\": \"%s\",
     \"input\": \"%s\",
     \"voice\": \"%s\"
   }' \
   --output '%s'"
   "Curl command to send a request to the OpenAI text-to-speech engine.
-The placeholders are the API key, the text to be synthesized, the voice, and the
-file destination.")
+The placeholders are the API key, the TTS model, the text to be synthesized, the
+voice, and the file destination.")
 
 (defconst tlon-openai-voices
   '((:voice "echo" :language "es" :gender "male")
@@ -1183,7 +1196,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Make a request to the OpenAI text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path."
   (format tlon-openai-tts-request
-	  (tlon-tts-openai-get-or-set-key) string tlon-tts-current-main-voice destination))
+	  (tlon-tts-openai-get-or-set-key) tlon-openai-model string tlon-tts-current-main-voice destination))
 
 (defun tlon-tts-openai-get-or-set-key ()
   "Get or set the Microsoft Azure API key."
