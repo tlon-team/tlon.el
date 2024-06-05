@@ -768,7 +768,7 @@ questions\").")
 ;;;;; Listener cues
 
 (defconst tlon-tts-cue-delimiter
-  (concat "\n" (format tlon-tts-ssml-break "0.5s"))
+  (format tlon-tts-ssml-break tlon-tts-listener-cue-break-duration)
   "Delimiter for listener cues.")
 
 ;;;;;; Notes
