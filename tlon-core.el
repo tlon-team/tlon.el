@@ -757,13 +757,6 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 
 ;;;;; tags
 
-(defun tlon-make-tag-pattern (pair &optional format)
-  "Construct a regexp match pattern with FORMAT for PAIR of tags."
-  (let ((format (or format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)")))
-    (format format
-	    (regexp-quote (car pair))
-	    (regexp-quote (cdr pair)))))
-
 (defun tlon-make-tag-replace-pattern (pair &optional format)
   "Construct a replace with FORMAT for PAIR of tags."
   (let ((format (or format "%s%%s%s")))
