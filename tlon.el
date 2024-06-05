@@ -371,20 +371,6 @@ If REPO is nil, use the current repo."
   (let ((repo (or repo (tlon-get-repo nil 'include-all))))
     (consult-ripgrep repo search-string)))
 
-(declare-function window-extras-split-if-unsplit "windows-extras")
-(defun tlon-search-multi (search-string &optional repo)
-  "Search for SEARCH-STRING in REPO files, commit history, and GitHub issues.
-If REPO is nil, use the current repo."
-  (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-get-repo nil 'include-all)))
-	(win1 (selected-window)))
-    (window-extras-split-if-unsplit)
-    (tlon-search-issues search-string repo)
-    (split-window-below)
-    (tlon-search-commits search-string repo)
-    (select-window win1)
-    (tlon-search-files search-string repo)))
-
 (declare-function magit-stage-file "magit")
 (declare-function magit-pull-from-upstream "magit-pull")
 (declare-function magit-push-current-to-pushremote "magit-push")

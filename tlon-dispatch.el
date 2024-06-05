@@ -314,7 +314,6 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-search-menu ()
   "Search menu."
   ["Search"
-   ("s" "multi"                        tlon-search-multi)
    ("c" "commits"                      tlon-search-commits)
    ("d" "commit-diffs"                 tlon-search-commit-diffs)
    ("f" "files"                        tlon-search-files)
