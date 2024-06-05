@@ -702,28 +702,23 @@ questions\").")
 
 ;;;;; Numbers
 
-(defconst tlon-tts-number-exponents
-  '((1 . (("es" . "a la uno")
-	  ("en" . "to the power of %s")))
-    (2 . (("es" . "al cuadrado")
+(defconst tlon-tts-regular-exponent-pattern
+  '(("es" . "a la %s")
+    ("en" . "to the power of %s"))
+  "Pattern for regular exponents.")
+
+(defconst tlon-tts-irregular-exponents
+  '((2 . (("es" . "al cuadrado")
 	  ("en" . "squared")))
     (3 . (("es" . "al cubo")
 	  ("en" . "cubed")))
-    (4 . (("es" . "a la cuarta")
-	  ("en" . "to the power of %s")))
-    (5 . (("es" . "a la quinta")
-	  ("en" . "to the power of %s")))
-    (6 . (("es" . "a la sexta")
-	  ("en" . "to the power of %s")))
-    (7 . (("es" . "a la séptima")
-	  ("en" . "to the power of %s")))
-    (8 . (("es" . "a la octava")
-	  ("en" . "to the power of %s")))
-    (9 . (("es" . "a la novena")
-	  ("en" . "to the power of %s")))
-    (10 . (("es" . "a la %s")
-	   ("en" . "to the power of %s"))))
-  "List of number exponents.")
+    (4 . (("es" . "a la cuarta")))
+    (5 . (("es" . "a la quinta")))
+    (6 . (("es" . "a la sexta")))
+    (7 . (("es" . "a la séptima")))
+    (8 . (("es" . "a la octava")))
+    (9 . (("es" . "a la novena"))))
+  "List of exponents and their irregular verbal equivalents.")
 
 ;;;;; Currencies
 
