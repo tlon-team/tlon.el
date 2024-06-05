@@ -322,11 +322,6 @@ It has one placeholder for the `time' attribute.
 ;;;;;; `emphasis'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#emphasis-tag
 
-(defconst tlon-tts-ssml-emphasis
-  '("<emphasis level=\"%s\">" . "</emphasis>")
-  "Pattern for the `emphasis' SSML tag.
-It has one placeholder for the `level' attribute.")
-
 (defconst tlon-tts-ssml-emphasis-levels
   '("none" "reduced" "moderate" "strong")
   "Admissible values for the `level' attribute of the `emphasis' SSML tag.")
@@ -334,23 +329,6 @@ It has one placeholder for the `level' attribute.")
 (defconst tlon-tts-ssml-default-emphasis-level
   "moderate"
   "Default value for the `level' attribute of the `emphasis' SSML tag.")
-
-(defconst tlon-tts-ssml-emphasis-pattern
-  (tlon-make-tag-pattern tlon-tts-ssml-emphasis)
-  "Pattern to search for `emphasis' SSML tags.")
-
-;;;;;; `lang'
-;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#lang-tag
-
-(defconst tlon-tts-ssml-lang
-  '("<lang xml:lang=\"%s\">" . "</lang>")
-  "Pattern for the SSML `lang' tag.
-It has one placeholder for the `lang' attribute, which takes a five-letter
-locale code.")
-
-(defconst tlon-tts-ssml-lang-pattern
-  (tlon-make-tag-pattern tlon-tts-ssml-lang)
-  "Pattern to search for `lang' SSML tags.")
 
 ;;;;;; `phoneme'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#phoneme-tag
@@ -368,10 +346,6 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
   "ipa"
   "Default value for the `alphabet' attribute of the `phoneme' SSML tag.")
 
-(defconst tlon-tts-ssml-phoneme-pattern
-  (tlon-make-tag-pattern tlon-tts-ssml-phoneme)
-  "Pattern to search for `phoneme' SSML tags.")
-
 (defconst tlon-tts-ssml-phoneme-replace-pattern
   (tlon-make-tag-replace-pattern tlon-tts-ssml-phoneme)
   "Pattern to replace `phoneme' SSML tags.")
@@ -384,28 +358,15 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 ;;;;;; `say-as'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#say-as-tag
 
-(defconst tlon-tts-ssml-say-as
-  '("<say-as interpret-as=\"%s\">" . "</say-as>")
-  "Pattern for the `say-as' SSML tag.
-It has one placeholder for the `interpret-as' attribute.")
-
 (defconst tlon-tts-ssml-interpret-as-values
   '("cardinal" "ordinal" "digits" "fraction" "unit" "date" "time" "telephone" "address" "interjection" "expletive" "spell-out" "characters" "verbatim")
   "Admissible values for the `interpret-as' attribute of the SSML tag.")
-
-(defconst tlon-tts-ssml-say-as-pattern
-  (tlon-make-tag-pattern tlon-tts-ssml-say-as)
-  "Pattern to search for `say-as' SSML tags.")
 
 ;;;;;; `voice'
 
 (defconst tlon-tts-ssml-voice
   '("<voice name=\"%s\">" . "</voice>")
   "SSML pair for voice tag, with voice name placeholder.")
-
-(defconst tlon-tts-ssml-voice-pattern
-  (tlon-make-tag-pattern tlon-tts-ssml-voice)
-  "Pattern to search for voice tags.")
 
 (defconst tlon-tts-ssml-voice-replace-pattern
   (tlon-make-tag-replace-pattern tlon-tts-ssml-voice)
