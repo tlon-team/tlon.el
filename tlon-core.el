@@ -503,7 +503,7 @@ PAIRS is an even-sized list of <key value> tuples. If CASE-INSENSITIVE is
 non-nil, match regardless of case."
   (let ((fun (if case-insensitive 'cl-equalp 'equal)))
     (cl-loop for (key val) on pairs by #'cddr
-             always (funcall fun val (tlon-get-value-in-entry key entry)))))
+	     always (funcall fun val (tlon-get-value-in-entry key entry)))))
 
 (defun tlon-get-value-in-entry (key entry)
   "Return the value of KEY in ENTRY, or nil if not found."
@@ -517,8 +517,8 @@ non-nil, match regardless of case."
   "Return the first value of KEY in LIST matching all PAIRS.
 PAIRS is an even-sized list of <key value> tuples."
   (cl-loop for entry in list
-           when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
-           return (tlon-get-value-in-entry key entry)))
+	   when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
+	   return (tlon-get-value-in-entry key entry)))
 
 (defun tlon-lookup (list key &rest pairs)
   "Return the first value of KEY in LIST matching all PAIRS.
@@ -537,7 +537,7 @@ PAIRS is an even-sized list of <key value> tuples."
 PAIRS is expected to be an even-sized list of <key value> tuples."
   (let (results)
     (cl-loop for entry in list
-             do (when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
+	     do (when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
 		  (when-let* ((result (tlon-get-value-in-entry key entry))
 			      (flat-result (if (listp result) result (list result))))
 		    (dolist (r flat-result)
