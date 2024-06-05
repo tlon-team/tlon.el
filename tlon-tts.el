@@ -821,8 +821,8 @@ Save the audio file in the downloads folder."
   (tlon-tts-process-chunks)
   (tlon-tts-unset-all-current-values))
 
-(defun tlon-tts-generate-tts-buffer ()
-  "Generate the TTS buffer without narrating its contents.
+(defun tlon-tts-display-tts-buffer ()
+  "Display the TTS buffer without narrating its contents.
 This command is used for debugging purposes."
   (interactive)
   (tlon-tts-set-all-current-values)
