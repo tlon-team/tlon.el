@@ -314,10 +314,9 @@ at the end of the TTS process.")
 It has one placeholder for the `time' attribute.
 <https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>.")
 
-;; FIXME: this is not working; `tlon-make-tag-pattern' needs to be adjusted to support self-closing tags
-;; (defconst tlon-tts-ssml-break-pattern
-;; (tlon-make-tag-pattern tlon-tts-ssml-break)
-;; "Pattern to search for `break' tags.")
+(defconst tlon-tts-ssml-break-pattern
+  (tlon-md-get-tag-pattern "break")
+  "Pattern to search for `break' tags.")
 
 ;;;;;; `emphasis'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#emphasis-tag
