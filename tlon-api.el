@@ -201,7 +201,7 @@ If BUFFER is nil, default to the current buffer."
 ;;;;; BibTeX data
 
 (defun tlon-api-get-citation (key &optional csl)
-  "Get citation for KEY in CSL style from the Babel API.
+  "Get citation for BibTeX KEY in CSL style from the Babel API.
 CSL is the citation style: it can be `long' (default), `short', `audio-long' or
 `audio-short'.
 
