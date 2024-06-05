@@ -826,7 +826,6 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
       (set var-name nil)
     (set var-name t)))
 
-(provide 'tlon-core)
 ;;;;; numbers
 
 (defun tlon-get-separator (type &optional language)
@@ -872,4 +871,5 @@ repository."
 	 (fixed-decimals (replace-regexp-in-string (regexp-quote decimal) "." fixed-thousands)))
     (string-to-number fixed-decimals)))
 
+(provide 'tlon-core)
 ;;; tlon-core.el ends here
