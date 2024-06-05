@@ -594,9 +594,9 @@ If FILE is nil, use the file visited by the current buffer."
 	     citar-cache--bibliographies)
     fields))
 
-(defvar tlon-cite-pattern)
-(defvar tlon-cite-pattern-short)
-(defvar tlon-cite-pattern-long)
+(defvar tlon-mdx-cite-pattern)
+(defvar tlon-mdx-cite-pattern-short)
+(defvar tlon-mdx-cite-pattern-long)
 (declare-function tlon-api-get-citation "tlon-api")
 (defun tlon-tex-replace-keys-with-citations (&optional file syntax audio)
   "Replace all BibTeX keys in FILE with CSL-defined citations.
@@ -613,10 +613,10 @@ instead."
   (let* ((file (or file (buffer-file-name)))
 	 (syntax (or syntax (if current-prefix-arg 'pandoc 'mdx)))
 	 (short (pcase syntax
-		  ('mdx tlon-cite-pattern-short)
+		  ('mdx tlon-mdx-cite-pattern-short)
 		  ('pandoc tlon-tex-pandoc-cite-pattern-short)))
 	 (long (pcase syntax
-		 ('mdx tlon-cite-pattern-long)
+		 ('mdx tlon-mdx-cite-pattern-long)
 		 ('pandoc tlon-tex-pandoc-cite-pattern-long)))
 	 (list (if audio
 		   (list (cons 'short-audio short) (cons 'long-audio long))
