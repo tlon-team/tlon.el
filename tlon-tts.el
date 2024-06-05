@@ -1876,26 +1876,29 @@ PROMPTS is a cons cell with the corresponding prompts."
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
-   ["Edit"
+  [["Edit"
     "global"
     ("a" "Abbreviation"                     tlon-tts-edit-abbreviations)
     ("r" "Replacement"                      tlon-tts-edit-phonetic-replacements)
     ("t" "Transcription"                    tlon-tts-edit-phonetic-transcriptions)
     ""
-    "file-local"
-    ("A" "Abbreviation"                     tlon-add-file-local-abbreviation)
-    ("R" "Replacement"                      tlon-add-file-local-replacement)]
-   ["Create narration"
+    "local"
+    ("A" "Abbreviation"                     tlon-add-local-abbreviation)
+    ("R" "Replacement"                      tlon-add-local-replacement)]
+   ["Narration"
     ("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
+    ("b" "Display buffer"                   tlon-tts-display-tts-buffer)
     ("j" "Join file chunks"                 tlon-tts-join-chunks)
     ("d" "Delete file chunks"               tlon-tts-delete-chunks)
     ""
     "Narration options"
-    (tlon-tts-menu-infix-toggle-alternate-voice)]])
     ("-e" "Engine"                           tlon-tts-menu-infix-set-engine)
     ("-p" "Prompt"                           tlon-tts-menu-infix-set-prompt)
     ("-h" "Heading break duration"           tlon-tts-heading-break-duration-infix)
     ("-a" "Paragraph break duration"         tlon-tts-paragraph-break-duration-infix)
+    ("-v" "Use alternative voice"            tlon-tts-menu-infix-toggle-alternate-voice)
+    ""
+    ("-d" "Debug"                            tlon-menu-infix-toggle-debug)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
