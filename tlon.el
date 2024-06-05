@@ -133,6 +133,7 @@ This variable should not be set manually.")
   (run-hooks 'tlon-post-init-hook)
   (message "Initialized `tlon'."))
 
+(defvar org-capture-templates)
 (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
 		     (id ,paths-tlon-todos-jobs-id)
 		     "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
