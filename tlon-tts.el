@@ -81,6 +81,11 @@ Selection candidates for each language are listed in `tlon-tts-prompts'."
   :group 'tlon-tts
   :type 'string)
 
+(defcustom tlon-tts-listener-cue-break-duration "0.5s"
+  "Duration of the break for a listener cue."
+  :group 'tlon-tts
+  :type 'string)
+
 ;;;;; Microsoft Azure
 
 (defcustom tlon-microsoft-azure-audio-settings
