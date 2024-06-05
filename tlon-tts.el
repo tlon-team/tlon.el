@@ -1514,7 +1514,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   "Add listener cues for text enclosed in tags of TYPE."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
-	('aside (list tlon-mdx-aside-search-pattern tlon-tts-aside-cues 2))
+	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
 	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
 	('image (list tlon-md-image tlon-tts-image-cues 1))
 	;; TODO: determine if other types should be added
