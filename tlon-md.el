@@ -717,9 +717,9 @@ a type."
 	     (image-file (expand-file-name (match-string-no-properties 2))))
 	(set-marker alt-text-marker (match-beginning 1))
 	(tlon-ai-describe-image image-file
-				      (lambda (description)
-					(goto-char (marker-position alt-text-marker))
-					(insert description))))
+				(lambda (description)
+				  (goto-char (marker-position alt-text-marker))
+				  (insert description))))
     (message "Not on an image link with missing alt text")))
 
 ;; TODO: create function to add alt text to all images in a file
@@ -730,16 +730,16 @@ a type."
   (save-excursion
     (goto-char (point-min))
     (let ((minutes (string-to-number (substring offset 0 2)))
-          (seconds (string-to-number (substring offset 3 5))))
+	  (seconds (string-to-number (substring offset 3 5))))
       (while (re-search-forward "\\[\\([0-9]+\\):\\([0-9]+\\)\\]" nil t)
-        (let* ((original-minutes (string-to-number (match-string 1)))
-               (original-seconds (string-to-number (match-string 2)))
-               (total-seconds (+ (* original-minutes 60) original-seconds
-                                 (* minutes 60) seconds))
-               (final-minutes (floor (/ total-seconds 60)))
-               (final-seconds (% total-seconds 60))
-               (new-timestamp (format "[%02d:%02d]" final-minutes final-seconds)))
-          (replace-match new-timestamp t nil))))))
+	(let* ((original-minutes (string-to-number (match-string 1)))
+	       (original-seconds (string-to-number (match-string 2)))
+	       (total-seconds (+ (* original-minutes 60) original-seconds
+				 (* minutes 60) seconds))
+	       (final-minutes (floor (/ total-seconds 60)))
+	       (final-seconds (% total-seconds 60))
+	       (new-timestamp (format "[%02d:%02d]" final-minutes final-seconds)))
+	  (replace-match new-timestamp t nil))))))
 
 ;;;;; Misc
 
