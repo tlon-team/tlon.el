@@ -25,6 +25,8 @@
 
 ;; Image processing functionality.
 
+(require 'tlon)
+
 ;;; Code:
 
 (defgroup tlon-images ()
@@ -218,7 +220,6 @@ The images are opened conditional on the value of
 
 ;;;;; Menu
 
-;;;###autoload (autoload 'tlon-images-brightness-reduction-infix "tlon-images" nil t)
 (transient-define-infix tlon-images-brightness-reduction-infix ()
   "Change the local value of the `tlon-images-default-brightness-reduction'
 variable."
@@ -227,7 +228,6 @@ variable."
   :reader (lambda (_ _ _) (read-number "Brightness reduction: " tlon-images-default-brightness-reduction))
   :prompt "Disconnect after: ")
 
-;;;###autoload (autoload 'tlon-images-toggle-open-after-processing "tlon-images" nil t)
 (transient-define-infix tlon-images-toggle-open-after-processing ()
   "Toggle the value of `tlon-images-open-after-processing' in `images' menu."
   :class 'transient-lisp-variable
