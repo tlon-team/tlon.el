@@ -513,30 +513,17 @@ respectively."
 ;; TODO: the function that adds words to the json file should also add the
 ;; hyphenated variant to `jinx-local-words'
 
-;;;;; browse commands
+;;;;; open file commands
 
-(defun tlon-browse-file ()
-  "Browse the current file in the tlon repository."
+(declare-function dired-get-filename "dired")
+(defun tlon-browse-file (&optional file)
+  "Browse Tlön FILE externally."
   (interactive)
-  (if-let (file (buffer-file-name))
-      (if-let ((repo (tlon-get-repo-from-file file)))
-	  (let* ((repo-name (tlon-repo-lookup :name :dir repo))
-		 (repo-url (concat "https://github.com/tlon-team/" repo-name))
-		 (file-url (concat "/blob/main/" (file-relative-name (buffer-file-name) repo))))
-	    (browse-url (concat repo-url file-url)))
-	(user-error "File is not in a recognized repository"))
-    (user-error "Buffer is not visiting a file")))
-
-(defun tlon-browse-entity-dir (entity &optional repo source-lang)
-  "Browse the directory of ENTITY in REPO.
-ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
-REPO is nil, default to the current repository."
-  (let* ((repo (or repo (tlon-get-repo)))
-	 (source-lang (or source-lang "en"))
-	 (target-lang (tlon-repo-lookup :language :dir repo))
-	 (dir (tlon-get-bare-dir-translation target-lang source-lang entity))
-	 (path (file-name-concat repo dir)))
-    (dired path)))
+  (let* ((file (read-file-name "File: " (or file
+					    (when (derived-mode-p 'dired-mode) (dired-get-filename))
+					    (buffer-file-name))))
+	 (url (tlon-path-to-url file)))
+    (browse-url url)))
 
 (defun tlon-find-file-in-repo (&optional repo)
   "Interactively open a file from a list of all files in REPO.
