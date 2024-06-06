@@ -572,7 +572,33 @@ presented to the user."
 	 (file (cdr (assoc selection alist))))
     (find-file file)))
 
-;;;;;;; Fix log errors helper functions
+;;;;;; path <> url conversion
+
+(defun tlon-path-to-url (path)
+  "Convert a Tlön file PATH to its URL."
+  (let* ((dir (tlon-get-repo))
+	 (relative (file-relative-name path dir))
+	 (sans-extension (file-name-sans-extension relative))
+	 (root (tlon-repo-lookup :url :dir dir)))
+    (concat root sans-extension)))
+
+(defun tlon-url-to-path (url)
+  "Convert a Tlön URL to its file path."
+  (let* ((root (tlon-get-url-root url))
+	 (rest (substring url (length root)))
+	 (dir (tlon-repo-lookup :dir :url root))
+	 ;; TODO: support non-markdown files (e.g. images)
+	 (with-extension (file-name-with-extension rest "md")))
+    (file-name-concat dir with-extension)))
+
+(defun tlon-get-url-root (url)
+  "Extract the root of the URL."
+  (let* ((parsed-url (url-generic-parse-url url))
+         (scheme (url-type parsed-url))
+         (host (url-host parsed-url)))
+    (concat scheme "://" host "/")))
+
+;;;;; Fix log errors helper functions
 
 (defvar tlon-mdx-cite-pattern)
 (defun tlon-collect-bibtex-keys-in-buffer ()
