@@ -299,11 +299,12 @@ DIR is the directory where the repo is stored."
    ["Open counterpart"
     ("f" "current window"                  tlon-open-counterpart-dwim)
     ("H-f" "other window"                  tlon-open-counterpart-in-other-window-dwim)]
-   [""
-    ("b" "Browse externally"               tlon-browse-file)]
+   ["URL<>File"
+    ("u" "Open URL of file"                tlon-browse-file)
+    ("H-u" "Open file of URL"              tlon-find-file-of-url)]
    ["Issue"
     ("i" "file"                            tlon-open-forge-file)
-    ("I" "counterpart"                     tlon-open-forge-counterpart)]
+    ("H-i" "counterpart"                   tlon-open-forge-counterpart)]
    ["Version control"
     ("l" "log"                             magit-log-buffer-file)
     ("d" "diffs since last user change"    tlon-log-buffer-latest-user-commit)
