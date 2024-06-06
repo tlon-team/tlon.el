@@ -546,6 +546,16 @@ If REPO is nil, default to the current repository."
 	 (alist (tlon-files-and-display-names-alist (list repo) repo)))
     (tlon-open-file-in-alist alist)))
 
+(declare-function ffap-url-p "ffap")
+(declare-function eww-current-url "eww")
+(defun tlon-find-file-of-url (&optional url)
+  "Open the file corresponding to URL."
+  (interactive)
+  (let ((url (or url (read-string "URL: " (or (thing-at-point 'url)
+					      (eww-current-url)
+					      (ffap-url-p (current-kill 0)))))))
+    (find-file (tlon-url-to-path url))))
+
 (defun tlon-open-file-across-repos ()
   "Interactively open a file from a list of all files in all repos."
   (interactive)
