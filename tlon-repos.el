@@ -114,16 +114,44 @@ files from possible corruption."
     (forge-add-repository url)
     (magit-status-setup-buffer dir)))
 
+;;;;; Pull issues
+
+(defun tlon-pull-issues-in-repo (&optional dir)
+  "Pull repository in DIR.
+If DIR is nil, use the current directory."
+  (interactive)
+  (when-let ((default-directory (or dir default-directory))
+	     (repo (forge-get-repository :tracked?))
+	     (name (tlon-repo-lookup :name :dir default-directory)))
+    (message "Pulling issues in %s..." name)
+    (shut-up
+      (forge--pull repo))))
+
+(defun tlon-pull-issues-in-all-repos ()
+  "Pull issues in all Tlön repositories."
+  (interactive)
+  (let ((repos (tlon-repo-lookup-all :dir)))
+    (dolist (repo repos)
+      (tlon-pull-issues-in-repo repo))))
+
 ;;;; Menu
 
 ;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
 (transient-define-prefix tlon-repos-menu ()
   "Repos menu."
   [["Repo"
+    ""
     ("c" "Create remote"     tlon-create-repo)
     ("l" "Clone remote"      tlon-clone-repo)
+    ""
     ("s" "Split local"       tlon-split-repo)]
    ["Forge"
+    ""
+    "Issues"
+    ("p" "Pull in repo"      tlon-pull-issues-in-repo)
+    ("P" "Pull in all repos" tlon-pull-issues-in-all-repos)
+    ""
+    "Repos"
     ("a" "Add"               forge-add-repository)
     ("r" "Remove"            forge-remove-repository)]])
 
