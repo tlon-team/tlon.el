@@ -91,6 +91,7 @@ background color, and the third placeholder is the output image.")
 
 ;;;;; Process images
 
+;;;###autoload
 (defun tlon-images-reduce-brightnesss (&optional source target percent)
   "Reduce the brightness of SOURCE image by PERCENT and save it to TARGET.
 Percent defaults to `tlon-images-default-brightness-reduction' if nil."
@@ -101,6 +102,7 @@ Percent defaults to `tlon-images-default-brightness-reduction' if nil."
          (command (format tlon-imagemagick-reduce-brightness source target percent)))
     (tlon-images-process-image source target command "Reduced brightness of `%s'.")))
 
+;;;###autoload
 (defun tlon-images-invert-colors (&optional source target)
   "Invert the colors of SOURCE image and save it to TARGET."
   (interactive)
@@ -109,6 +111,7 @@ Percent defaults to `tlon-images-default-brightness-reduction' if nil."
          (command (format tlon-imagemagick-invert-colors source target)))
     (tlon-images-process-image source target command "Inverted colors of `%s'.")))
 
+;;;###autoload
 (defun tlon-images-make-nontransparent (&optional source target background)
   "Make the BACKGROUND of SOURCE image non-transparent and save it to TARGET.
 BACKGROUND defaults to \"white\" if nil."
@@ -229,6 +232,7 @@ variable."
   :variable 'tlon-images-open-after-processing
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-open-after-processing)))
 
+;;;###autoload (autoload 'tlon-images-menu "tlon-images" nil t)
 (transient-define-prefix tlon-images-menu ()
   "Images menu."
   [["Commands"
