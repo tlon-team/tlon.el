@@ -45,10 +45,11 @@
     ("e" "edit data"                      tlon-edit-data-menu)
     ("f" "files"                          tlon-files-menu)
     ("g" "glossary"                       tlon-glossary-menu)
-    ("i" "api"                            tlon-api-menu)
+    ("i" "images"                         tlon-images-menu)
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)
     ("H-m" "meet"                         tlon-meet-menu)
+    ("p" "api"                            tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
     ("t" "contacts"                       tlon-contacts-menu)
@@ -298,11 +299,12 @@ DIR is the directory where the repo is stored."
    ["Open counterpart"
     ("f" "current window"                  tlon-open-counterpart-dwim)
     ("H-f" "other window"                  tlon-open-counterpart-in-other-window-dwim)]
-   [""
-    ("b" "Browse externally"               tlon-browse-file)]
+   ["URL<>File"
+    ("u" "Open URL of file"                tlon-browse-file)
+    ("H-u" "Open file of URL"              tlon-find-file-of-url)]
    ["Issue"
     ("i" "file"                            tlon-open-forge-file)
-    ("I" "counterpart"                     tlon-open-forge-counterpart)]
+    ("H-i" "counterpart"                   tlon-open-forge-counterpart)]
    ["Version control"
     ("l" "log"                             magit-log-buffer-file)
     ("d" "diffs since last user change"    tlon-log-buffer-latest-user-commit)

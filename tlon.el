@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.4.2
+;; Version: 1.4.3
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
 
@@ -513,30 +513,17 @@ respectively."
 ;; TODO: the function that adds words to the json file should also add the
 ;; hyphenated variant to `jinx-local-words'
 
-;;;;; browse commands
+;;;;; open file commands
 
-(defun tlon-browse-file ()
-  "Browse the current file in the tlon repository."
+(declare-function dired-get-filename "dired")
+(defun tlon-browse-file (&optional file)
+  "Browse Tlön FILE externally."
   (interactive)
-  (if-let (file (buffer-file-name))
-      (if-let ((repo (tlon-get-repo-from-file file)))
-	  (let* ((repo-name (tlon-repo-lookup :name :dir repo))
-		 (repo-url (concat "https://github.com/tlon-team/" repo-name))
-		 (file-url (concat "/blob/main/" (file-relative-name (buffer-file-name) repo))))
-	    (browse-url (concat repo-url file-url)))
-	(user-error "File is not in a recognized repository"))
-    (user-error "Buffer is not visiting a file")))
-
-(defun tlon-browse-entity-dir (entity &optional repo source-lang)
-  "Browse the directory of ENTITY in REPO.
-ENTITY should be passed as a string, in SOURCE-LANG, defaulting to English. If
-REPO is nil, default to the current repository."
-  (let* ((repo (or repo (tlon-get-repo)))
-	 (source-lang (or source-lang "en"))
-	 (target-lang (tlon-repo-lookup :language :dir repo))
-	 (dir (tlon-get-bare-dir-translation target-lang source-lang entity))
-	 (path (file-name-concat repo dir)))
-    (dired path)))
+  (let* ((file (read-file-name "File: " (or file
+					    (when (derived-mode-p 'dired-mode) (dired-get-filename))
+					    (buffer-file-name))))
+	 (url (tlon-path-to-url file)))
+    (browse-url url)))
 
 (defun tlon-find-file-in-repo (&optional repo)
   "Interactively open a file from a list of all files in REPO.
@@ -545,6 +532,16 @@ If REPO is nil, default to the current repository."
   (let* ((repo (or repo (tlon-get-repo 'error)))
 	 (alist (tlon-files-and-display-names-alist (list repo) repo)))
     (tlon-open-file-in-alist alist)))
+
+(declare-function ffap-url-p "ffap")
+(declare-function eww-current-url "eww")
+(defun tlon-find-file-of-url (&optional url)
+  "Open the file corresponding to URL."
+  (interactive)
+  (let ((url (or url (read-string "URL: " (or (thing-at-point 'url)
+					      (eww-current-url)
+					      (ffap-url-p (current-kill 0)))))))
+    (find-file (tlon-url-to-path url))))
 
 (defun tlon-open-file-across-repos ()
   "Interactively open a file from a list of all files in all repos."
@@ -572,7 +569,33 @@ presented to the user."
 	 (file (cdr (assoc selection alist))))
     (find-file file)))
 
-;;;;;;; Fix log errors helper functions
+;;;;;; path <> url conversion
+
+(defun tlon-path-to-url (path)
+  "Convert a Tlön file PATH to its URL."
+  (let* ((dir (tlon-get-repo))
+	 (relative (file-relative-name path dir))
+	 (sans-extension (file-name-sans-extension relative))
+	 (root (tlon-repo-lookup :url :dir dir)))
+    (concat root sans-extension)))
+
+(defun tlon-url-to-path (url)
+  "Convert a Tlön URL to its file path."
+  (let* ((root (tlon-get-url-root url))
+	 (rest (substring url (length root)))
+	 (dir (tlon-repo-lookup :dir :url root))
+	 ;; TODO: support non-markdown files (e.g. images)
+	 (with-extension (file-name-with-extension rest "md")))
+    (file-name-concat dir with-extension)))
+
+(defun tlon-get-url-root (url)
+  "Extract the root of the URL."
+  (let* ((parsed-url (url-generic-parse-url url))
+         (scheme (url-type parsed-url))
+         (host (url-host parsed-url)))
+    (concat scheme "://" host "/")))
+
+;;;;; Fix log errors helper functions
 
 (defvar tlon-mdx-cite-pattern)
 (defun tlon-collect-bibtex-keys-in-buffer ()

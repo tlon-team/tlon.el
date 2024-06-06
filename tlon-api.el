@@ -59,12 +59,15 @@
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-api-request (route)
-  "Make a request for ROUTE with the `uqbar' API."
-  (interactive (list (tlon-select-api-route)))
-  (let* ((site (tlon-repo-lookup :url
-                                       :subproject "uqbar"
-                                       :language tlon-translation-language))
+(defun tlon-api-request (route site)
+  "Make a request for ROUTE and SITE with the `uqbar' API."
+  (interactive (list (tlon-select-api-route)
+		     (completing-read "Site URL? " '("local" "remote"))))
+  (let* ((site (pcase site
+		 ("local" "https://uqbar.local.dev/")
+		 ("remote" (tlon-repo-lookup :url
+					     :subproject "uqbar"
+					     :language tlon-translation-language))))
          (route-url (format "%sapi/%s" site route))
          (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
     (tlon-api-get-token
@@ -83,7 +86,7 @@
 		       "Print response, and possibly make new request depending on ROUTE."
 		       (pcase route
 			 ("update/babel-refs"
-			  (tlon-api-request "update/uqbar/es"))
+			  (tlon-api-request "update/uqbar/es" site))
 			 (_ nil))
 		       (tlon-api-print-response route :data data)
 		       (message
@@ -248,7 +251,7 @@ If citation is not found, return nil."
       (run-with-timer
        3 nil (lambda ()
 	       "Run `tlon-api-request' once the push is expected to complete."
-	       (tlon-api-request route))))))
+	       (tlon-api-request route "remote"))))))
 
 (dolist (fun (list 'magit-push-current-to-upstream
 		   'magit-push-current-to-pushremote))
