@@ -56,10 +56,11 @@
 
 (defun tlon-create-or-visit-meeting-issue-date (date dir)
   "Create or visit issue in DIR for a meeting on DATE."
-  (tlon-wait-until-forge-updates)
-  (if-let ((issue (tlon-issue-lookup date dir)))
-      (forge-visit-issue issue)
-    (tlon-create-and-visit-issue date dir)))
+  (let ((default-directory dir))
+    (tlon-wait-until-forge-updates)
+    (if-let ((issue (tlon-issue-lookup date dir)))
+	(forge-visit-issue issue)
+      (tlon-create-and-visit-issue date dir))))
 
 (defun tlon-wait-until-forge-updates ()
   "Wait until Forge is finished updating the repo."
