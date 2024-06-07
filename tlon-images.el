@@ -261,9 +261,9 @@ variable."
     ("i" "invert colors"                         tlon-images-invert-colors)
     ("n" "make nontransparent"                   tlon-images-make-nontransparent)]
    ["Options"
-    ("-p" "percent brightness reduction"         tlon-images-brightness-reduction-infix)
     ("-o" "open after processing"                tlon-images-toggle-open-after-processing)
-    ("-o" "process without asking"               tlon-images-toggle-process-without-asking)]])
+    ("-p" "process without asking"               tlon-images-toggle-process-without-asking)
+    ("-r" "percent brightness reduction"         tlon-images-brightness-reduction-infix)]])
 
 (provide 'tlon-images)
 ;;; tlon-images.el ends here
