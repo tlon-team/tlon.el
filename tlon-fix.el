@@ -316,7 +316,8 @@ dedicated function."
 
 (defun tlon-fix-translation-in-file (lang)
   "Fix common issues in translations in LANG."
-  (let ((var (alist-get lang tlon-fix-translations nil nil #'string=)))
+  (let ((var (alist-get lang tlon-fix-translations nil nil #'string=))
+        (case-fold-search nil)) ;; Make sure searches are case-sensitive
     (dolist (cons var)
       (let ((search (car cons))
 	    (replace (cdr cons)))
