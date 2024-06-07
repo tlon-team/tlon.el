@@ -193,6 +193,7 @@ The images are opened conditional on the value of
                                     "--" boundary "--\r\n")
                             'binary))
          (url "https://invertornot.com/api/file"))
+    (message "Connecting to `invertornot.com'...")
     (with-current-buffer (url-retrieve-synchronously url t)
       (tlon-images-handle-synchronous-response))))
 
