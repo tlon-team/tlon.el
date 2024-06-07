@@ -30,6 +30,7 @@
 (require 'org-capture)
 (require 'paths)
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; Customization:
 
