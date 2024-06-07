@@ -45,6 +45,12 @@
   :type 'boolean
   :group 'tlon-images)
 
+(defcustom tlon-images-process-without-asking
+  nil
+  "Whether to process the image at point without asking for confirmation."
+  :type 'boolean
+  :group 'tlon-images)
+
 ;;;; Variables
 
 (defconst tlon-invertornot-generic-endpoint
@@ -86,10 +92,14 @@ background color, and the third placeholder is the output image.")
 (defun tlon-images-read-image (&optional image)
   "Prompt the user for an IMAGE."
   (let ((insert-default-directory nil))
-    (or image
-	(read-file-name "Image: " nil nil nil (or (when (derived-mode-p 'dired-mode)
-						    (dired-get-filename))
-						  (buffer-file-name))))))
+    (if-let ((file (or image
+		       (when (derived-mode-p 'dired-mode)
+			 (dired-get-filename))
+		       (buffer-file-name))))
+	(if tlon-images-process-without-asking
+	    file
+	  (read-file-name "Image: " nil nil nil file))
+      (read-file-name "Image: "))))
 
 ;;;;; Process images
 
@@ -234,6 +244,12 @@ variable."
   :variable 'tlon-images-open-after-processing
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-open-after-processing)))
 
+(transient-define-infix tlon-images-toggle-process-without-asking ()
+  "Toggle the value of `'tlon-images-process-without-asking' in `images' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-images-process-without-asking
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-process-without-asking)))
+
 ;;;###autoload (autoload 'tlon-images-menu "tlon-images" nil t)
 (transient-define-prefix tlon-images-menu ()
   "Images menu."
@@ -245,7 +261,8 @@ variable."
     ("n" "make nontransparent"                   tlon-images-make-nontransparent)]
    ["Options"
     ("-p" "percent brightness reduction"         tlon-images-brightness-reduction-infix)
-    ("-o" "open after processing"                tlon-images-toggle-open-after-processing)]])
+    ("-o" "open after processing"                tlon-images-toggle-open-after-processing)
+    ("-o" "process without asking"               tlon-images-toggle-process-without-asking)]])
 
 (provide 'tlon-images)
 ;;; tlon-images.el ends here
