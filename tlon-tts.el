@@ -1885,13 +1885,13 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("d" "Delete file chunks"               tlon-tts-delete-chunks)
     ""
     "Narration options"
-    ("-e" "Engine"                           tlon-tts-menu-infix-set-engine)
-    ("-p" "Prompt"                           tlon-tts-menu-infix-set-prompt)
-    ("-h" "Heading break duration"           tlon-tts-heading-break-duration-infix)
-    ("-a" "Paragraph break duration"         tlon-tts-paragraph-break-duration-infix)
-    ("-v" "Use alternative voice"            tlon-tts-menu-infix-toggle-alternate-voice)
+    ("-e" "Engine"                          tlon-tts-menu-infix-set-engine)
+    ("-p" "Prompt"                          tlon-tts-menu-infix-set-prompt)
+    ("-h" "Heading break duration"          tlon-tts-heading-break-duration-infix)
+    ("-a" "Paragraph break duration"        tlon-tts-paragraph-break-duration-infix)
+    ("-v" "Use alternative voice"           tlon-tts-menu-infix-toggle-alternate-voice)
     ""
-    ("-d" "Debug"                            tlon-menu-infix-toggle-debug)]])
+    ("-d" "Debug"                           tlon-menu-infix-toggle-debug)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
