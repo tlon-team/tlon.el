@@ -1172,21 +1172,17 @@ STRING is the string of the request. DESTINATION is the output file path."
 (defun tlon-tts-elevenlabs-make-request (string destination)
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path."
-  (let ((url (format tlon-elevenlabs-tts-url tlon-tts-current-main-voice
-		     (car tlon-elevenlabs-audio-settings)))
-	(api-key (tlon-tts-elevenlabs-get-or-set-key))
-	(data (json-encode `(("text" . ,string)
-			     ("model_id" . ,tlon-elevenlabs-model)))))
-    ;; TODO: Maybe we should use `url-retrieve' instead?
-    (with-temp-buffer
-      (call-process "curl" nil t nil
-		    "--request" "POST"
-		    "--url" url
-		    "--header" (format "Content-Type: application/json")
-		    "--header" (format "xi-api-key: %s" api-key)
-		    "--data" data
-		    "--output" destination)
-      (buffer-string))))
+  (mapconcat 'shell-quote-argument
+	     (list "curl"
+		   "--request" "POST"
+		   "--url" (format tlon-elevenlabs-tts-url tlon-tts-current-main-voice
+				   (car tlon-elevenlabs-audio-settings))
+		   "--header" "Content-Type: application/json"
+		   "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
+		   "--data" (json-encode `(("text" . ,string)
+					   ("model_id" . ,tlon-elevenlabs-model)))
+		   "--output" destination)
+	     " "))
 
 (declare-function json-mode "json-mode")
 (defun tlon-tts-elevenlabs-get-voices ()
