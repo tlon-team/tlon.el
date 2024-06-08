@@ -186,7 +186,7 @@ Options are
 ;;;;; ElevenLabs
 
 (defcustom tlon-elevenlabs-audio-settings
-  '("mp3_44100_192" . "mp3")
+  '("mp3_44100_128" . "mp3")
   "Output format and associated extension for the ElevenLabs TTS service.
 The options are:
 
@@ -706,6 +706,13 @@ questions\").")
 			  tlon-tts-ssml-voice-replace-pattern)))
 	  '("Microsoft Azure" "Google Cloud"))
   "SSML wrapper for the TTS request.")
+
+;;;;; `ffmpeg'
+
+(defconst tlon-tts-ffmpeg-convert
+  "ffmpeg -i \"%s\" -acodec libmp3lame -ar 44100 -b:a 128k -ac 1 \"%s\""
+  "Command to convert an audio file to MP3 format with settings optimized for tts.
+The first placeholder is the input file, and the second is the output file.")
 
 ;;;;; Numbers
 
