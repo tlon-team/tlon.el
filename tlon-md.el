@@ -341,7 +341,7 @@ If no section is found, do nothing."
       (forward-paragraph)
       (tlon-md-sort-elements-in-paragraph " • "))))
 
-;;;;;; Tag insertion
+;;;;;; Tag handling
 
 (defun tlon-md-insert-or-edit-tag (tag)
   "Insert or edit an MDX TAG pair at point or around the selected region."
