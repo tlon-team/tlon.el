@@ -1242,7 +1242,8 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-process-links)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
-    (tlon-tts-remove-unsupported-ssml-tags))
+    (tlon-tts-remove-unsupported-ssml-tags)
+    (tlon-tts-remove-final-break-tag))
   (goto-char (point-min)))
 
 ;;;;;; Notes
@@ -1711,6 +1712,16 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 			(match-string cdr))
 		       (t (match-string 2)))))
     (replace-regexp-in-string "\\\\" "\\\\\\\\" replacement)))
+
+;;;;;; Remove final `break' tag
+
+;; Having a final break tag sometimes caused Elevenlabs to add a strange sound at the end of the narration.
+
+(defun tlon-tts-remove-final-break-tag ()
+  "Remove the final `break' tag from the buffer."
+  (goto-char (point-max))
+  (when (re-search-backward (tlon-md-get-tag-pattern "break") nil t)
+    (replace-match "" t t)))
 
 ;;;;; Global
 
