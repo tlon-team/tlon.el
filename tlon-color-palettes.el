@@ -1,0 +1,7 @@
+;;; tlon Color Palettes -*- lexical-binding: t -*-
+
+;; This file contains saved color palettes for tlon color configurations.
+
+(setq tlon-color-palettes '(("eight" (--color-background-tag "#ededed" . "#0f0f0f") (--color-menu-overlay "#ffffff" . "#000000") (--color-search-highlight "#7aacb7" . "#19434c") (--color-border "#212121" . "#cccccc") (--color-background-empty "#e0e0e0" . "#191919") (--color-background-header "#ededed" . "#0f0f0f") (--color-background-content "#ffffff" . "#000000") (--color-lightest "#a8a8a8" . "#3f3f3f") (--color-lighter "#727272" . "#999999") (--color-active "#000000" . "#ffffff") (--color-accent-hovered "#00a2c6" . "#006c84") (--color-accent "#006c84" . "#00a2c6")) ("six" (--color-background-tag "#ededed" . "#0f0f0f") (--color-menu-overlay "#ffffff" . "#000000") (--color-search-highlight "#7aacb7" . "#19434c") (--color-border "#212121" . "#cccccc") (--color-background-empty "#e0e0e0" . "#191919") (--color-background-header "#ededed" . "#0f0f0f") (--color-background-content "#ffffff" . "#000000") (--color-lightest "#a8a8a8" . "#3f3f3f") (--color-lighter "#727272" . "#999999") (--color-active "#000000" . "#ffffff") (--color-accent-hovered "#00a2c6" . "#006c84") (--color-accent "#006c84" . "#00a2c6"))))
+
+(provide 'tlon-color-palettes)
