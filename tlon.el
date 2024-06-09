@@ -40,11 +40,6 @@
   "A companion package for the Babel project."
   :group 'files)
 
-(defcustom tlon-debug nil
-  "Whether to display debug messages."
-  :type 'boolean
-  :group 'tlon)
-
 ;;;; Variables
 
 ;;;;; Files and dirs
