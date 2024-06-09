@@ -29,6 +29,17 @@
 
 (require 'paths)
 
+;;;; User options
+
+(defgroup tlon-core ()
+  "`tlon-core' user options."
+  :group 'emacs)
+
+(defcustom tlon-debug nil
+  "Whether to display debug messages."
+  :type 'boolean
+  :group 'tlon-core)
+
 ;;;; Variables
 
 (defconst tlon-repos
