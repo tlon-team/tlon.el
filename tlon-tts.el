@@ -76,7 +76,7 @@ Selection candidates for each language are listed in `tlon-tts-prompts'."
   :group 'tlon-tts
   :type 'string)
 
-(defcustom tlon-tts-paragraph-break-duration "0.7s"
+(defcustom tlon-tts-paragraph-break-duration "0.8s"
   "Duration of the break after a paragraph."
   :group 'tlon-tts
   :type 'string)
