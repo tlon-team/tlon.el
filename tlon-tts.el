@@ -984,6 +984,7 @@ If VOICE is nil, prompt the user to select a voice."
 (defun tlon-tts-set-all-current-values (&optional file content language voice)
   "Set all current values.
 FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
+  (tlon-tts-unset-all-current-values)
   (tlon-tts-set-current-file-or-buffer file)
   (tlon-tts-set-current-content content)
   (tlon-tts-set-current-language language)
