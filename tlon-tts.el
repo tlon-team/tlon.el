@@ -750,8 +750,12 @@ The first placeholder is the input file, and the second is the output file.")
 
 ;;;;; File-local variables
 
+;;;;;; File variables
+
+;; These are the file-local variables whose values we read from the source files
+
 (defvar-local tlon-local-abbreviations '()
-  "In-text abbreviations and their spoken equivalent.")
+  "Local abbreviations and their spoken equivalent.")
 
 (defvar-local tlon-local-replacements '()
   "Local replacements.")
