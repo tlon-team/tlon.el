@@ -103,7 +103,45 @@ them from the captured string as part of the post-processing.")
 The first group captures the base, and the second group captures
 the exponent.")
 
-;;;;;; `Cite'
+;;;;;; SSML
+
+;;;;;;; `emphasis'
+;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#emphasis-tag
+
+(defconst tlon-md-ssml-emphasis-levels
+  '("none" "reduced" "moderate" "strong")
+  "Admissible values for the `level' attribute of the `emphasis' SSML tag.")
+
+(defconst tlon-tts-ssml-default-emphasis-level
+  "moderate"
+  "Default value for the `level' attribute of the `emphasis' SSML tag.")
+
+;;;;;;; `phoneme'
+;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#phoneme-tag
+
+(defconst tlon-md-ssml-phoneme-alphabets
+  '("ipa" "x-sampa")
+  "Admissible values for the `alphabet' attribute of the `phoneme' SSML tag.")
+
+(defconst tlon-tts-ssml-phoneme-default-alphabet
+  "ipa"
+  "Default value for the `alphabet' attribute of the `phoneme' SSML tag.")
+
+;;;;;;; `prosody'
+;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#prosody-tag
+
+;; not currently supported
+
+;;;;;;; `say-as'
+;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#say-as-tag
+
+(defconst tlon-md-ssml-interpret-as-values
+  '("cardinal" "ordinal" "digits" "fraction" "unit" "date" "time" "telephone" "address" "interjection" "expletive" "spell-out" "characters" "verbatim")
+  "Admissible values for the `interpret-as' attribute of the SSML tag.")
+
+;;;;;; MDX
+
+;;;;;;; `Cite'
 
 (defconst tlon-mdx-cite-pattern-formatter
   "<Cite bibKey=\"\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\"\\(?:%s />\\|>.*?</Cite>\\)"
@@ -626,7 +664,7 @@ If LEVEL is nil, prompt the user to select a value for the `level' attribute."
 (defun tlon-md-emphasis-level-reader ()
   "Prompt the user to set the `level' attribute value for a `emphasis' tag."
   (completing-read "`emphasis': "
-		   tlon-tts-ssml-emphasis-levels nil t nil nil
+		   tlon-md-ssml-emphasis-levels nil t nil nil
 		   tlon-tts-ssml-default-emphasis-level))
 
 ;;;###autoload
@@ -653,7 +691,7 @@ and `ph' attributes."
 (defun tlon-md-phoneme-alphabet-reader ()
   "Prompt the user to select the `alphabet' attribute value for a `phoneme' tag."
   (completing-read "`alphabet': "
-		   tlon-tts-ssml-phoneme-alphabets nil t nil nil
+		   tlon-md-ssml-phoneme-alphabets nil t nil nil
 		   tlon-tts-ssml-phoneme-default-alphabet))
 
 ;;;###autoload
@@ -666,7 +704,7 @@ attribute."
 
 (defun tlon-md-say-as-interpret-as-reader ()
   "Prompt the user to select the `interpret-as' attribute value for a `say-as' tag."
-  (completing-read "`interpret-as': " tlon-tts-ssml-interpret-as-values))
+  (completing-read "`interpret-as': " tlon-md-ssml-interpret-as-values))
 
 ;;;;;;;; To revise
 ;;;;;;;;; `Cite'
