@@ -823,13 +823,13 @@ The first placeholder is the input file, and the second is the output file.")
 ;;;;; Narration
 
 ;;;###autoload
-(defun tlon-tts-narrate-content (&optional content engine language voice file)
+(defun tlon-tts-narrate-content (&optional content language voice file)
   "Narrate CONTENT in LANGUAGE with VOICE using text-to-speech ENGINE.
 If region is active, read the region. Otherwise, read FILE.
 
 Save the audio file in the downloads folder."
   (interactive)
-  (tlon-tts-set-all-current-values file content engine language voice)
+  (tlon-tts-set-all-current-values file content language voice)
   (tlon-tts-process-chunks)
   (tlon-tts-unset-all-current-values))
 
@@ -981,7 +981,7 @@ If VOICE is nil, prompt the user to select a voice."
 
 ;;;;;;; Set/unset all values
 
-(defun tlon-tts-set-all-current-values (&optional file content engine language voice)
+(defun tlon-tts-set-all-current-values (&optional file content language voice)
   "Set all current values.
 FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
   (tlon-tts-set-current-file-or-buffer file)
