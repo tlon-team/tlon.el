@@ -504,6 +504,22 @@ If FILE is nil, use the current buffer's file name."
 			       directory-path)
 	  (throw 'found dir))))))
 
+(declare-function files-extras-get-nth-directory "files-extras")
+(defun tlon-get-repo-from-dir (dir)
+  "Return the repo to which DIR belongs.
+This function is meant to handles cases in which the `.git' directory of a repo
+is outside that repo’s directory."
+  (let ((dir-cands
+	 (mapcar (lambda (repo-dir)
+		   (string-trim
+		    (files-extras-get-nth-directory (file-relative-name dir repo-dir))
+		    nil "/"))
+		 (list paths-dir-tlon-repos paths-dir-split-git))))
+    (catch 'found
+      (dolist (dir-cand dir-cands)
+	(when-let ((repo-dir (tlon-repo-lookup :dir :name dir-cand)))
+	  (throw 'found repo-dir))))))
+
 ;;;;; Lookup
 
 ;;;;;; Common
