@@ -372,9 +372,9 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
   "SSML pattern for voice tag, with voice name and text placeholders.")
 
 (defconst tlon-tts-ssml-double-voice-replace-pattern
-  (concat (cdr tlon-tts-ssml-voice)
-	  (tlon-make-tag-replace-pattern tlon-tts-ssml-voice)
-	  (car tlon-tts-ssml-voice))
+  (concat (cdr (tlon-md-format-tag "voice" nil 'to-fill))
+	  (tlon-md-get-tag-to-fill "voice")
+	  (car (tlon-md-format-tag "voice" nil 'to-fill)))
   "SSML pattern for voice tag, with 2 voice name placeholders and text placeholder.")
 
 ;;;;;; common
@@ -703,7 +703,7 @@ questions\").")
   (mapcar (lambda (service)
 	    (cons service
 		  (format "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"%%s\">%s</speak>"
-			  tlon-tts-ssml-voice-replace-pattern)))
+			  (tlon-md-format-tag "voice" nil 'to-fill))))
 	  '("Microsoft Azure" "Google Cloud"))
   "SSML wrapper for the TTS request.")
 
@@ -782,7 +782,7 @@ The first placeholder is the input file, and the second is the output file.")
 ;;;;; Listener cues
 
 (defconst tlon-tts-cue-delimiter
-  (format tlon-tts-ssml-break tlon-tts-listener-cue-break-duration)
+  (tlon-md-get-tag-filled "break" `(,tlon-tts-listener-cue-break-duration))
   "Delimiter for listener cues.")
 
 ;;;;;; Notes
@@ -1220,7 +1220,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 
 (defun tlon-tts-get-ssml-break (time)
   "Return an SSML `break' tag with `time' attribute of TIME."
-  (format tlon-tts-ssml-break time))
+  (tlon-md-get-tag-filled "break" `(,time)))
 
 ;;;;; Cleanup
 
@@ -1502,7 +1502,7 @@ process, return its cdr."
 (defun tlon-tts-replace-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
-  (replace-match (format tlon-tts-ssml-phoneme-replace-pattern
+  (replace-match (format (tlon-md-get-tag-to-fill "phoneme")
 			 "ipa" replacement (match-string-no-properties 0)) t t))
 
 ;;;;;; Listener cues
@@ -1638,7 +1638,7 @@ image links are handled differently."
 (defun tlon-tts-process-numerals-convert-roman ()
   "Replace Roman numerals with their Arabic equivalents."
   (goto-char (point-min))
-  (while (re-search-forward tlon-mdx-roman-pattern nil t)
+  (while (re-search-forward (tlon-md-get-tag-pattern "Roman") nil t)
     (let* ((roman (match-string-no-properties 2))
 	   (arabic (rst-roman-to-arabic roman)))
       (replace-match (number-to-string arabic) t t))))
