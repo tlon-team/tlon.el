@@ -761,6 +761,16 @@ The first placeholder is the input file, and the second is the output file.")
 (defvar-local tlon-local-replacements '()
   "Local replacements.")
 
+;;;;;; Session variables
+
+;; These are the variables that store the file-local variable values for a particular tts session
+
+(defvar tlon-local-abbreviations-for-session '()
+  "Value of `tlon-local-abbreviations' for the file being processed.")
+
+(defvar tlon-local-replacements-for-session '()
+  "Value of `tlon-local-replacements' for the file being processed.")
+
 ;;;;; Abbreviations
 
 (defvar tlon-tts-abbreviations
@@ -921,17 +931,14 @@ otherwise."
   "Return the substantive content of FILE, handling in-text abbreviations."
   (unless (string= (file-name-extension file) "md")
     (user-error "File `%s' is not a Markdown file" file))
-  (let ((tlon-local-abbreviations))
-    (with-current-buffer (find-file-noselect file)
-      ;; to make `tlon-tts-process-local-abbreviations' work, we
-      ;; let-bound the variable above and now set its value to that of its
-      ;; local counterpart
-      (setq tlon-local-abbreviations tlon-local-abbreviations)
-      (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
+  (with-current-buffer (find-file-noselect file)
+    (setq tlon-local-abbreviations-for-session tlon-local-abbreviations
+	  tlon-local-replacements-for-session tlon-local-replacements)
+    (concat (tlon-tts-get-metadata) (tlon-md-read-content file))))
 
 ;;;;;;; Language
 
-;; TODO: decide if this getter function should also be used for the othe values (engine, voice, etc)
+;; TODO: decide if this getter function should also be used for the other values (engine, voice, etc)
 (defun tlon-tts-get-current-language (&optional language)
   "Return the value of the language of the current process.
 If LANGUAGE is return it. Otherwise, get the value of
@@ -993,7 +1000,9 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
 	tlon-tts-current-content nil
 	tlon-tts-current-language nil
 	tlon-tts-current-main-voice nil
-	tlon-tts-current-voice-locale nil))
+	tlon-tts-current-voice-locale nil
+	tlon-local-abbreviations-for-session nil
+	tlon-local-replacements-for-session nil))
 
 ;;;;;; Chunk processing
 
@@ -1382,7 +1391,7 @@ The time length of the pause is determined by `tlon-tts-heading-break-duration'.
   "Replace abbreviations of TYPE with their spoken equivalent."
   (let ((case-fold-search nil))
     (dolist (entry (pcase type
-		     ('local tlon-local-abbreviations)
+		     ('local tlon-local-abbreviations-for-session)
 		     ('global (tlon-tts-get-global-abbreviations))))
       (cl-destructuring-bind (abbrev . expansion) entry
 	(let ((abbrev-introduced (format "%s (%s)" expansion abbrev)))
@@ -1463,7 +1472,7 @@ process, return its cdr."
 
 (defun tlon-tts-process-local-phonetic-replacements ()
   "Perform replacements indicated in `tlon-local-replacements'."
-  (dolist (pair tlon-local-replacements)
+  (dolist (pair tlon-local-replacements-for-session)
     (let ((find (car pair)))
       (goto-char (point-min))
       (while (re-search-forward find nil t)
