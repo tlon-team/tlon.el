@@ -380,7 +380,7 @@ at the end of the TTS process.")
 	  :google t
 	  :openai nil
 	  :elevenlabs t
-	  :replacement ,(tlon-md-get-tag-pattern "break"))
+	  :replacement (,(tlon-md-get-tag-pattern "break")))
     (:tag emphasis
 	  :tlon t
 	  :polly nil
