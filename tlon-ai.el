@@ -119,22 +119,22 @@
   `((:prompt ,(format "The following work may or may not contain an abstract:%s. If it contains an abstract, please return it. Otherwise, create an abstract of it yourself. %s However, please omit this phrase if you are simply copying verbatim an abstract you found in the work."
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
-					 :prompt :language "en"))
+				   :prompt :language "en"))
 	     :language "en")
     (:prompt ,(format "La siguiente obra puede contener o no un resumen:%s. Si contiene un resumen, devuélvelo. En caso contrario, crea tú mismo un resumen. %s Sin embargo, omite esta frase si simplemente está devolviendo un resumen que encontraste en la obra.En otras palabras, incluye la frase sólo cuando tú hayas creado el resumen."
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
-					 :prompt :language "es"))
+				   :prompt :language "es"))
 	     :language "es")
     (:prompt ,(format "L'œuvre suivante peut ou non contenir un résumé:%s. S'il contient un résumé, veuillez le renvoyer. Sinon, créez un résumé vous-même. %s Toutefois, veuillez omettre cette phrase si vous ne faites que copier mot pour mot un résumé que vous avez trouvé dans l'œuvre."
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
-					 :prompt :language "fr"))
+				   :prompt :language "fr"))
 	     :language "fr")
     (:prompt ,(format "Das folgende Werk kann eine Zusammenfassung enthalten oder auch nicht: %s. Wenn es eine Zusammenfassung enthält, geben Sie sie bitte zurück. Andernfalls erstellen Sie bitte selbst eine Zusammenfassung des Werks. %s Bitte lassen Sie diesen Satz jedoch weg, wenn Sie einfach eine wortwörtliche Zusammenfassung kopieren, die Sie in dem Werk gefunden haben."
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
-					 :prompt :language "de"))
+				   :prompt :language "de"))
 	     :language "de"))
   "Prompts for summarization.")
 
@@ -295,7 +295,7 @@ Otherwise,
   "Return ten alternative translations of STRING."
   (interactive "sText to translate: ")
   (tlon-make-gptel-request tlon-ai-translate-variants-prompt string
-				 #'tlon-ai-translate-callback))
+			   #'tlon-ai-translate-callback))
 
 (defun tlon-ai-translate-callback (response info)
   "Callback for `tlon-ai-translate'.
@@ -342,7 +342,7 @@ is the file to translate."
 		     (buffer-substring-no-properties (region-beginning) (region-end))
 		   (read-string "Text to rewrite: "))))
     (tlon-make-gptel-request tlon-ai-rewrite-prompt string
-				   #'tlon-ai-callback-return)))
+			     #'tlon-ai-callback-return)))
 
 (defun tlon-ai-rewrite-callback (response info)
   "Callback for `tlon-ai-rewrite'.
