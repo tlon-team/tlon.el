@@ -152,6 +152,17 @@ For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
+(defconst tlon-google-cloud-audio-choices
+  '(("MP3" . "mp3")
+    ("FLAC" . "flac")
+    ("MULAW" . "mulaw")
+    ("AMR" . "amr")
+    ("AMR_WB" . "amr_wb")
+    ("OGG_OPUS" . "ogg")
+    ("SPEEX_WITH_HEADER_BYTE" . "speex")
+    ("WEBM_OPUS" . "webm"))
+  "Output format and associated extension for the Google Cloud TTS service.")
+
 ;;;;; Amazon Polly
 
 (defcustom tlon-amazon-polly-audio-settings
@@ -644,6 +655,7 @@ questions\").")
     (:name "Google Cloud"
 	   :voices-var tlon-google-cloud-voices
 	   :output-var tlon-google-cloud-audio-settings
+	   :choices-var ,tlon-google-cloud-audio-choices
 	   :request-fun tlon-tts-google-cloud-make-request
 	   :char-limit ,tlon-google-cloud-char-limit
 	   :property :google)
