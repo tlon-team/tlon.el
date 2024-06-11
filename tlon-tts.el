@@ -1212,15 +1212,17 @@ STRING is the string of the request. DESTINATION is the output file path."
 
 ;;;;; Metadata
 
-;; Should also include summary?
-;; Perhaps should be narrated by alternative voice?
+;; MAYBE: Include summary?
 (defun tlon-tts-get-metadata ()
   "Add title and author."
-  (let* ((metadata (tlon-yaml-format-values-of-alist (tlon-yaml-get-metadata)))
-	 (title (alist-get "title" metadata nil nil #'string=))
-	 (authors (alist-get "authors" metadata nil nil #'string=))
-	 (author-string (tlon-concatenate-list authors)))
-    (format "%s.\n\nPor %s.\n\n" title author-string)))
+  (when-let* ((metadata (tlon-yaml-format-values-of-alist (tlon-yaml-get-metadata)))
+	      (title (alist-get "title" metadata nil nil #'string=))
+	      (title-part (format "%s.\n\n" title)))
+    (if-let* ((authors (alist-get "authors" metadata nil nil #'string=))
+	      (author-string (tlon-concatenate-list authors))
+	      (author-part (format "Por %s.\n\n" author-string)))
+	(concat title-part author-part)
+      title-part)))
 
 ;;;;; Get SSML
 
