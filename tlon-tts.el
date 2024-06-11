@@ -1842,7 +1842,14 @@ PROMPTS is a cons cell with the corresponding prompts."
   :variable 'tlon-tts-engine
   :reader (lambda (_ _ _) (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name))))
 
-;; TODO: define infix to set the settings of the current engine
+(transient-define-infix tlon-tts-menu-infix-set-engine-settings ()
+  "Set the engine settings."
+  :class 'transient-lisp-variable
+  :variable (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine)
+  :reader (lambda (_ _ _)
+	    (let* ((choices (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-engine))
+		   (selection (completing-read "Engine: " choices)))
+	      (assoc selection choices))))
 
 ;;;;;; Prompt
 
@@ -1900,6 +1907,7 @@ PROMPTS is a cons cell with the corresponding prompts."
     ""
     "Narration options"
     ("-e" "Engine"                          tlon-tts-menu-infix-set-engine)
+    ("-s" "Settings"                        tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                          tlon-tts-menu-infix-set-prompt)
     ("-h" "Heading break duration"          tlon-tts-heading-break-duration-infix)
     ("-a" "Paragraph break duration"        tlon-tts-paragraph-break-duration-infix)
