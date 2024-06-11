@@ -305,19 +305,6 @@ at the end of the TTS process.")
 
 ;;;;; SSML tag pairs & patterns
 
-;;;;;; `break'
-;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#break-tag
-
-(defconst tlon-tts-ssml-break
-  "<break time=\"%s\" />"
-  "Pattern for the `break' SSML tag.
-It has one placeholder for the `time' attribute.
-<https://learn.microsoft.com/en-us/previous-versions/office/developer/communication-server-2007/bb813930(v=office.12)>.")
-
-(defconst tlon-tts-ssml-break-pattern
-  (tlon-md-get-tag-pattern "break")
-  "Pattern to search for `break' tags.")
-
 ;;;;;; `emphasis'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#emphasis-tag
 
@@ -332,11 +319,6 @@ It has one placeholder for the `time' attribute.
 ;;;;;; `phoneme'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#phoneme-tag
 
-(defconst tlon-tts-ssml-phoneme
-  '("<phoneme alphabet=\"%s\" ph=\"%s\">" . "</phoneme>")
-  "Pattern for the `phoneme' SSML tag.
-It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
-
 (defconst tlon-tts-ssml-phoneme-alphabets
   '("ipa" "x-sampa")
   "Admissible values for the `alphabet' attribute of the `phoneme' SSML tag.")
@@ -344,10 +326,6 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
 (defconst tlon-tts-ssml-phoneme-default-alphabet
   "ipa"
   "Default value for the `alphabet' attribute of the `phoneme' SSML tag.")
-
-(defconst tlon-tts-ssml-phoneme-replace-pattern
-  (tlon-make-tag-replace-pattern tlon-tts-ssml-phoneme)
-  "Pattern to replace `phoneme' SSML tags.")
 
 ;;;;;; `prosody'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#prosody-tag
@@ -362,14 +340,6 @@ It has two placeholders: for `alphabet' and `ph' attributes, in that order.")
   "Admissible values for the `interpret-as' attribute of the SSML tag.")
 
 ;;;;;; `voice'
-
-(defconst tlon-tts-ssml-voice
-  '("<voice name=\"%s\">" . "</voice>")
-  "SSML pair for voice tag, with voice name placeholder.")
-
-(defconst tlon-tts-ssml-voice-replace-pattern
-  (tlon-make-tag-replace-pattern tlon-tts-ssml-voice)
-  "SSML pattern for voice tag, with voice name and text placeholders.")
 
 (defconst tlon-tts-ssml-double-voice-replace-pattern
   (concat (cdr (tlon-md-format-tag "voice" nil 'to-fill))
