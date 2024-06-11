@@ -227,6 +227,18 @@ The options are:
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
+(defconst tlon-elevenlabs-audio-choices
+  '(("mp3_44100_32" . "mp3")
+    ("mp3_44100_64" . "mp3")
+    ("mp3_44100_96" . "mp3")
+    ("mp3_44100_128" . "mp3")
+    ("mp3_44100_192" . "mp3")
+    ("pcm_16000" . "pcm")
+    ("pcm_22050" . "pcm")
+    ("pcm_24000" . "pcm")
+    ("pcm_44100" . "pcm")
+    ("ulaw_8000" . "ulaw")))
+
 (defcustom tlon-elevenlabs-model
   "eleven_multilingual_v2"
   "Model to use for the ElevenLabs TTS.
@@ -674,6 +686,7 @@ questions\").")
     (:name "ElevenLabs"
 	   :voices-var tlon-elevenlabs-voices
 	   :output-var tlon-elevenlabs-audio-settings
+	   :choices-var ,tlon-elevenlabs-audio-choices
 	   :request-fun tlon-tts-elevenlabs-make-request
 	   :char-limit ,tlon-elevenlabs-char-limit
 	   :property :elevenlabs))
