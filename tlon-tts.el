@@ -1081,9 +1081,10 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 
 (defun tlon-tts-get-chunk-names (file n)
   "Return a list of the first N chunk names of FILE."
-  (let ((names '()))
-    (dotimes (i n names)
-      (push (tlon-tts-get-chunk-name file (1+ i)) names))))
+  (let (names)
+    (cl-loop for index from 1 to n
+	     do (push (tlon-tts-get-chunk-name file index) names))
+    names))
 
 (defun tlon-tts-get-original-name (chunk-name)
   "Return the original file name before it was chunked, given CHUNK-NAME."
