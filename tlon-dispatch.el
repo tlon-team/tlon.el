@@ -48,7 +48,7 @@
     ("i" "images"                         tlon-images-menu)
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)
-    ("l" "color"                          tlon-color-menul)
+    ("l" "color"                          tlon-color-menu)
     ("H-m" "meet"                         tlon-meet-menu)
     ("p" "api"                            tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
