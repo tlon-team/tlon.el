@@ -328,40 +328,6 @@ at the end of the TTS process.")
 
 ;;;;; SSML tag pairs & patterns
 
-;;;;;; `emphasis'
-;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#emphasis-tag
-
-(defconst tlon-tts-ssml-emphasis-levels
-  '("none" "reduced" "moderate" "strong")
-  "Admissible values for the `level' attribute of the `emphasis' SSML tag.")
-
-(defconst tlon-tts-ssml-default-emphasis-level
-  "moderate"
-  "Default value for the `level' attribute of the `emphasis' SSML tag.")
-
-;;;;;; `phoneme'
-;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#phoneme-tag
-
-(defconst tlon-tts-ssml-phoneme-alphabets
-  '("ipa" "x-sampa")
-  "Admissible values for the `alphabet' attribute of the `phoneme' SSML tag.")
-
-(defconst tlon-tts-ssml-phoneme-default-alphabet
-  "ipa"
-  "Default value for the `alphabet' attribute of the `phoneme' SSML tag.")
-
-;;;;;; `prosody'
-;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#prosody-tag
-
-;; not currently supported
-
-;;;;;; `say-as'
-;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#say-as-tag
-
-(defconst tlon-tts-ssml-interpret-as-values
-  '("cardinal" "ordinal" "digits" "fraction" "unit" "date" "time" "telephone" "address" "interjection" "expletive" "spell-out" "characters" "verbatim")
-  "Admissible values for the `interpret-as' attribute of the SSML tag.")
-
 ;;;;;; `voice'
 
 (defconst tlon-tts-ssml-double-voice-replace-pattern
