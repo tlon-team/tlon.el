@@ -205,6 +205,79 @@ THEME is either `light' or `dark'."
 
 (tlon-color-load-palettes)
 
+;;;;; Color manipulation
+
+(declare-function color-extras-looking-at-color "color-extras")
+(defun tlon-color-change-value-at-point (component direction &optional step)
+  "Increase or decrease the value of color COMPONENT at point by a constant amount.
+COMPONENT can be either \"h\", \"s\" or \"l\". DIRECTION can be either `+' or
+`-'. STEP is the amount to change the value by. If STEP is nil, use the value of
+`tlon-colors-change-step'."
+  (let ((color (color-extras-looking-at-color))
+	(fun (pcase direction
+	       ("+" (intern (format "ct-edit-hsluv-%s-inc" component)))
+	       ("-" (intern (format "ct-edit-hsluv-%s-dec" component))))))
+    (replace-match "")
+    (insert (funcall fun color (or step tlon-colors-change-step)))
+    (tlon-color-save-frontend-files)))
+
+;;;;;; Hue
+
+(defun tlon-color-increase-hue-at-point ()
+  "Increase the hue of the color at point by a constant amount."
+  (interactive)
+  (tlon-color-change-value-at-point "h" "+"))
+
+(defun tlon-color-decrease-hue-at-point ()
+  "Decrease the hue of the color at point by a constant amount."
+  (interactive)
+  (tlon-color-change-value-at-point "h" "-"))
+
+(defun tlon-color-change-hue-at-point (change)
+  "Decrease the hue of the color at point by CHANGE."
+  (interactive "sChange (+ or - follow by step): ")
+  (let ((direction (substring change 0 1))
+	(step (string-to-number (substring change 1))))
+    (tlon-color-change-value-at-point "h" direction step)))
+
+;;;;;; Saturation
+
+(defun tlon-color-increase-saturation-at-point ()
+  "Increase the saturation of the color at point by a constant amount."
+  (interactive)
+  (tlon-color-change-value-at-point "s" "+"))
+
+(defun tlon-color-decrease-saturation-at-point ()
+  "Decrease the saturation of the color at point by a constant amount."
+  (interactive)
+  (tlon-color-change-value-at-point "s" "-"))
+
+(defun tlon-color-change-saturation-at-point (change)
+  "Decrease the saturation of the color at point by CHANGE."
+  (interactive "sChange (+ or - follow by step): ")
+  (let ((direction (substring change 0 1))
+	(step (string-to-number (substring change 1))))
+    (tlon-color-change-value-at-point "s" direction step)))
+
+;;;;;; Lightness
+
+(defun tlon-color-increase-lightness-at-point ()
+  "Increase the lightness of the color at point by a constant amount."
+  (interactive)
+  (tlon-color-change-value-at-point "l" "+"))
+
+(defun tlon-color-decrease-lightness-at-point ()
+  "Decrease the lightness of the color at point by a constant amount."
+  (interactive)
+  (tlon-color-change-value-at-point "l" "-"))
+
+(defun tlon-color-change-lightness-at-point (change)
+  "Decrease the lightness of the color at point by CHANGE."
+  (interactive "sChange (+ or - follow by step): ")
+  (let ((direction (substring change 0 1))
+	(step (string-to-number (substring change 1))))
+    (tlon-color-change-value-at-point "l" direction step)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-color-menu "tlon-color" nil t)
@@ -214,6 +287,25 @@ THEME is either `light' or `dark'."
    ("a" "Add"               tlon-color-add-palette)
    ("r" "Remove"            tlon-color-remove-palette)
    ("s" "Set"               tlon-color-set-palette)])
+  [["Change colors"
+    ""
+    "hue (H)"
+    ("h" "Increase"                        tlon-color-increase-hue-at-point :transient t)
+    ("H" "Decrease"                        tlon-color-decrease-hue-at-point :transient t)
+    ("A-H-M-s-h" "Change"                  tlon-color-change-hue-at-point)
+    ""
+    "saturation (S)"
+    ("s" "Increase"                        tlon-color-increase-saturation-at-point :transient t)
+    ("S" "Decrease"                        tlon-color-decrease-saturation-at-point :transient t)
+    ("H-s" "Change"                        tlon-color-change-saturation-at-point)
+    ""
+    "lightness (L)"
+    ("l" "Increase"                        tlon-color-increase-lightness-at-point :transient t)
+    ("L" "Decrease"                        tlon-color-decrease-lightness-at-point :transient t)
+    ("H-l" "Change"                        tlon-color-change-lightness-at-point)
+    ""
+    "Options"
+    ("-s" "Change step"                    tlon-color-change-step-infix)]
 
 (provide 'tlon-color)
 ;;; tlon-color.el ends here
