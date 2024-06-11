@@ -354,6 +354,10 @@ If no section is found, do nothing."
   (when-let* ((tag (tlon-get-tag-at-point))
 	      (values (tlon-get-tag-attribute-values tag))
 	      (content (match-string 2)))
+(defun tlon-looking-at-tag-p (tag)
+  "Return t iff point is looking at TAG."
+  (let ((pattern (tlon-md-format-tag tag nil 'match-string)))
+    (thing-at-point-looking-at pattern)))
     (replace-match "")
     (tlon-md-insert-tag tag values content)))
 
@@ -412,11 +416,6 @@ values."
   "For the attribute named NAME in TAG, return the value of the PROPERTY."
   (let ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag)))
     (tlon-lookup attributes property :name name)))
-
-(defun tlon-looking-at-tag-p (tag)
-  "Return t iff point is looking at TAG."
-  (let ((pattern (tlon-md-get-formatted-tags tag nil 'regexp)))
-    (thing-at-point-looking-at pattern)))
 
 (defun tlon-tag-pair-with-attributes (element &rest attributes)
   "Construct a tag ELEMENT with one or more ATTRIBUTES."
