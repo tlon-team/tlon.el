@@ -818,6 +818,8 @@ The first placeholder is the input file, and the second is the output file.")
     ("es" "Imagen." .""))
   "Listener cues for images.")
 
+;; TODO: add bullet points?
+
 ;;;; Functions
 
 ;;;;; Narration
