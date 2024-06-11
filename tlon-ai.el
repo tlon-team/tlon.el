@@ -355,38 +355,68 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Image description
 
+;; For images, we use `chatgpt-shell' rather than `gptel', because the latter
+;; supports text only.
+
 ;;;###autoload
-(defun tlon-ai-describe-image (file callback &optional language)
+(declare-function chatgpt-shell-vision-make-request "chatgpt-shell")
+(defun tlon-ai-describe-image (&optional file language on-success on-failure)
   "Describe the contents of the image in FILE.
-When the description is obtained, pass it to CALLBACK as its first argument. Use
-LANGUAGE for the description; if nil, obtain the language from the current repo."
-  (interactive (list (read-file-name "Image file: " )))
-  (let* ((file (expand-file-name file))
+Use LANGUAGE for the description; if nil, obtain the language from the current
+repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
+  (interactive)
+  (let* ((file (tlon-ai-read-image-file file))
 	 (language (or language (tlon-repo-lookup :language :dir (tlon-get-repo))))
 	 (prompt (format
 		  (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language)
-		  file))
-	 (buffer (generate-new-buffer "*Image Description*")))
-    (with-current-buffer buffer
-      (insert prompt)
-      (org-mode)
-      (gptel-extras-model-config nil "ChatGPT" "gpt-4-vision-preview")
-      (gptel-send)
-      (message "Generating image description. This will take around 20 seconds...")
-      (run-with-timer 20 nil (lambda ()
-			       (tlon-return-image-description buffer callback))))))
+		  file)))
+    (chatgpt-shell-vision-make-request prompt file :on-success on-success :on-failure on-failure)))
 
-(defun tlon-return-image-description (buffer callback)
-  "Get the image description from BUFFER and pass it to CALLBACK."
-  (let ((description
-	 (with-current-buffer buffer
-	   (redisplay)
-	   (goto-char (point-min))
-	   (forward-line 6)
-	   (redisplay)
-	   (buffer-substring-no-properties (point) (point-max)))))
-    (kill-buffer buffer)
-    (funcall callback (replace-regexp-in-string "\n" " " description))))
+(declare-function tlon-get-tag-attribute-values "tlon-md")
+(declare-function tlon-md-insert-attribute-value "tlon-md")
+(defun tlon-ai-set-image-alt-text ()
+  "Insert a description of the image in the \"Figure\" tag at point."
+  (interactive)
+  (save-excursion
+    (if-let* ((src (car (tlon-get-tag-attribute-values "Figure")))
+	      (file (file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
+				      (replace-regexp-in-string "^\\.\\./" "" src)))
+	      (pos (point-marker)))
+	(tlon-ai-describe-image nil nil
+				(lambda (response)
+				  "If the RESPONSE is successful, insert it as the alt text."
+				  (with-current-buffer (marker-buffer pos)
+				    (goto-char pos)
+				    (tlon-md-insert-attribute-value "alt" response)))
+				(lambda (response)
+				  "If the RESPONSE is not successful, emit it as an error message."
+				  (user-error "Error: %s" response)))
+      (user-error "No \"Figure\" tag at point"))))
+
+(declare-function tlon-md-get-tag-pattern "tlon-md")
+(defun tlon-ai-set-image-alt-text-in-buffer ()
+  "Insert a description of all the images in the current buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward (tlon-md-get-tag-pattern "Figure") nil t)
+      (tlon-ai-set-image-alt-text))
+    (message "Successfully added alt text to all images in buffer.")))
+
+(declare-function dired-get-filename "dired")
+(defun tlon-ai-read-image-file (&optional file)
+  "Read an email FILE from multiple sources.
+  In order, the sources are: the value of FILE, the value of `src' attribute in a
+  `Figure' MDX tag, the image in the current buffer, the image at point in Dired
+  and the file selected by the user."
+  (or file
+      (when-let ((name (car (tlon-get-tag-attribute-values "Figure"))))
+	(file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
+			  (replace-regexp-in-string "^\\.\\./" "" name)))
+      (member (buffer-file-name) image-file-name-extensions)
+      (when (derived-mode-p 'dired-mode)
+	(dired-get-filename))
+      (read-file-name "Image file: ")))
 
 ;;;;; Summarization
 
@@ -762,8 +792,11 @@ variable."
     "Bibtex"
     ("b" "set language of bibtex"               tlon-ai-set-language-bibtex)
     ""
-    "Markdown"
-    ("i" "describe image"                       tlon-ai-describe-image)
+    "Images"
+    ("i d" "describe image"                     tlon-ai-describe-image)
+    ("i s" "set alt text"                       tlon-ai-set-image-alt-text)
+    ""
+    "Math"
     ;; Create command to translate all images
     ("m" "translate math"                       tlon-ai-translate-math)
     ;; TODO: develop this
