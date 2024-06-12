@@ -782,25 +782,25 @@ when present."
   (interactive)
   (let ((overwrite (or overwrite (called-interactively-p 'any))))
     transient-current-command
-    (tlon-insert-note-marker (tlon-md-get-formatted-tags "Footnote") overwrite)))
+    (tlon-insert-note-marker (car (tlon-md-format-tag "Footnote" nil 'inserted)) overwrite)))
 
 ;;;###autoload
 (defun tlon-insert-note-marker (marker &optional overwrite)
-"Insert note MARKER in the footnote at point.
+  "Insert note MARKER in the footnote at point.
 If OVERWRITE is non-nil, replace the existing marker when present."
-(if-let ((fn-data (tlon-note-content-bounds)))
-    (let ((start (car fn-data)))
-      (goto-char start)
-      (let ((other-marker (car (remove marker (list (tlon-md-get-formatted-tags "Footnote")
-						    (tlon-md-get-formatted-tags "Sidenote"))))))
-	(cond ((thing-at-point-looking-at (regexp-quote marker))
-	       nil)
-	      ((thing-at-point-looking-at (regexp-quote other-marker))
-	       (when overwrite
-		 (replace-match marker)))
-	      (t
-	       (insert marker)))))
-  (user-error "Not in a footnote")))
+  (if-let ((fn-data (tlon-note-content-bounds)))
+      (let ((start (car fn-data)))
+	(goto-char start)
+	(let ((other-marker (car (remove marker (list (car (tlon-md-format-tag "Footnote" nil 'inserted))
+						      (car (tlon-md-format-tag "Sidenote" nil 'inserted)))))))
+	  (cond ((thing-at-point-looking-at (regexp-quote marker))
+		 nil)
+		((thing-at-point-looking-at (regexp-quote other-marker))
+		 (when overwrite
+		   (replace-match marker)))
+		(t
+		 (insert marker)))))
+    (user-error "Not in a footnote")))
 
 ;;;;;;;;; `Sidenote'
 
@@ -813,7 +813,7 @@ opposed to a footnote.
 If OVERWRITE is non-nil, or called interactively, replace the existing marker
 when present."
   (interactive)
-  (tlon-insert-note-marker (tlon-md-get-formatted-tags "Sidenote") overwrite))
+  (tlon-insert-note-marker (car (tlon-md-format-tag "Sidenote" nil 'inserted)) overwrite))
 
 ;;;;;;;;; `Table'
 
@@ -825,11 +825,11 @@ when present."
 ;;;;; Note classification
 
 (defun tlon-auto-classify-note-at-point ()
-  "Automatically classify note at point as a note of TYPE."
+  "Automatically classify note at point as either a footnote or a sidenote."
   (interactive)
   (let* ((note (tlon-get-note-at-point))
 	 (type (tlon-note-automatic-type note)))
-    (tlon-classify-note-at-point type)))
+    (tlon-classify-note-at-point type 'overwrite)))
 
 (defun tlon-note-content-bounds ()
   "Return the start and end positions of the content of the note at point.
@@ -844,6 +844,7 @@ the marker that precedes it."
     (string-match (concat "\\[\\" id "\\]:[[:space:]]") fn)
     (cons (+ begin (match-end 0)) end)))
 
+;; FIXME: fails in multi-paragraph notes
 (defun tlon-get-note-at-point ()
   "Get the note at point, if any."
   (when-let* ((bounds (tlon-note-content-bounds))
@@ -877,9 +878,9 @@ If REPO is nil, use the current directory."
 If NOTE is nil, use the note at point. A note type may be either `footnote' or
 `sidenote'."
   (when-let ((note (or note (tlon-get-note-at-point))))
-    (cond ((string-match tlon-mdx-footnote-pattern note)
+    (cond ((string-match (tlon-md-get-tag-pattern "Footnote") note)
 	   'footnote)
-	  ((string-match tlon-mdx-sidenote-pattern note)
+	  ((string-match (tlon-md-get-tag-pattern "Sidenote") note)
 	   'sidenote))))
 
 (defun tlon-note-automatic-type (note)
@@ -901,15 +902,17 @@ it is classified as a footnote; otherwise, it is classified as a sidenote."
 	    (setq is-footnote-p t))))
       (if is-footnote-p 'footnote 'sidenote))))
 
-(defun tlon-classify-note-at-point (&optional type)
+(defun tlon-classify-note-at-point (&optional type overwrite)
   "Classify note at point as a note of TYPE.
 TYPE can be either `footnote' o `sidenote'. If TYPE is nil, prompt the user for
-a type."
+a type.
+
+If OVERWRITE is non, replace the existing marker when present."
   (interactive)
   (let ((type (or type (completing-read "Type: " '("footnote" "sidenote") nil t))))
     (pcase type
-      ('footnote (tlon-insert-footnote-marker))
-      ('sidenote (tlon-insert-sidenote-marker))
+      ('footnote (tlon-insert-footnote-marker overwrite))
+      ('sidenote (tlon-insert-sidenote-marker overwrite))
       (_ (user-error "Invalid type")))))
 
 ;;;;; Images
