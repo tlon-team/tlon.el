@@ -788,7 +788,23 @@ The first placeholder is the input file, and the second is the output file.")
     ("es" "Imagen." .""))
   "Listener cues for images.")
 
-;; TODO: add bullet points?
+;;;;;; Headings
+
+;; TODO: develop function for processing headings
+
+(defconst tlon-tts-heading-cues
+  '(("en" "Heading: " . "")
+    ("es" "Sección: " .""))
+  "Listener cues for headings.")
+
+(defconst tlon-tts-subheading-cues
+  '(("en" "Subheading: " . "")
+    ("es" "Subsección: " .""))
+  "Listener cues for subheadings.")
+
+;;;;;; Lists
+
+;; TODO: develop function for processing lists
 
 ;;;; Functions
 
