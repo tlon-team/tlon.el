@@ -29,6 +29,8 @@
 
 (require 'forge-core)
 (require 'forge-commands)
+(require 'forge-search)
+(require 'tlon-core)
 (require 'vc)
 (require 'vc-extras)
 
@@ -116,6 +118,7 @@ files from possible corruption."
 
 ;;;;; Pull issues
 
+(declare-function shut-up "shut-up")
 (defun tlon-pull-issues-in-repo (&optional dir)
   "Pull repository in DIR.
 If DIR is nil, use the current directory."
@@ -124,8 +127,7 @@ If DIR is nil, use the current directory."
 	     (repo (forge-get-repository :tracked?))
 	     (name (tlon-repo-lookup :name :dir default-directory)))
     (message "Pulling issues in %s..." name)
-    (shut-up
-      (forge--pull repo))))
+    (shut-up (forge--pull repo))))
 
 (defun tlon-pull-issues-in-all-repos ()
   "Pull issues in all Tlön repositories."
