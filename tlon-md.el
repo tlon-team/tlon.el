@@ -171,7 +171,7 @@ locator(s), if present.")
 The first group captures the BibTeX key, the second group captures the
 locator(s), if present, and the third group captures the short citation flag.")
 
-;;;;;; `Table'
+;;;;;;; `Table'
 
 ;; TODO: develop
 ;; https://github.com/tlon-team/uqbar-issues#mdx-tag-syntax
