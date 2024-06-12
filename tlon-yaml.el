@@ -136,7 +136,7 @@ an error."
       (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) result)
       (forward-line))
     (if (eobp)
-	(error "Delimiter not found")
+	(user-error "YAML delimiter not found")
       (nreverse result))))
 
 (defun tlon-yaml-convert-list (list)
