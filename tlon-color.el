@@ -1,4 +1,4 @@
-;;; tlon-color.el --- Color functionality -*- lexical-binding: t; eval: (rainbow-mode 1); -*-
+;;; tlon-color.el --- Color palette handling -*- lexical-binding: t; eval: (rainbow-mode 1); -*-
 
 ;; Copyright (C) 2024
 
@@ -23,7 +23,8 @@
 
 ;;; Commentary:
 
-;; Color functionality.
+;; This library provides functions to manage the color palettes of the different
+;; websites, to assist the design process.
 
 ;;; Code:
 
