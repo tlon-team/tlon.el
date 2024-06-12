@@ -187,19 +187,19 @@ locator(s), if present, and the third group captures the short citation flag.")
 	  :type mdx
 	  :self-closing nil
 	  :doc "Encloses text in an aside section.")
-    ;; (:tag "Cite"
-    ;; :attributes ((:name "bibKey" :required t :valued t :group 1 :prompt "BibTeX key: ")
-    ;; TODO: currently, the locator attribute is not
-    ;; introduced explicitly as the value of a named
-    ;; attribute. Fix this.
-    ;; (:name "locator" :required nil :valued t :group 2 :prompt "Locator(s): "))
-    ;; :type mdx
-    ;; :self-closing nil)
     (:tag "break"
 	  :attributes ((:name "time" :required t :valued t :group 2 :prompt "Time (e.g. \"1s\"): "))
 	  :type ssml
 	  :self-closing t
 	  :doc "")
+    (:tag "Cite"
+	  :attributes ((:name "bibKey" :required t :valued t :group 2 :reader tlon-md-cite-reader)
+		       ;; TODO: currently, the locator attribute is not
+		       ;; introduced explicitly as the value of a named
+		       ;; attribute. Fix this.
+		       )
+	  :type mdx
+	  :self-closing t)
     (:tag "emphasis"
 	  :attributes ((:name "level" :required t :valued t :group 3 :reader tlon-md-emphasis-level-reader))
 	  :type ssml
@@ -305,6 +305,7 @@ in this tag and pass the URL as the value of the `src' attribute.")
     (tlon-yaml-insert-field key value)))
 
 ;;;;;; Tags
+
 ;; TODO: revise to support multiple langs, including en
 ;;;###autoload
 (defun tlon-insert-internal-link ()
@@ -709,7 +710,16 @@ attribute."
 ;;;;;;;; To revise
 ;;;;;;;;; `Cite'
 
-(defun tlon-insert-mdx-cite (type)
+(defun tlon-insert-mdx-cite ()
+  "Insert a `Cite' tag pair of TYPE at point or around the selected region."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "Cite"))
+
+(defun tlon-md-cite-reader ()
+  "Prompt the user to select the `bibKey' attribute value of the `Cite' tag."
+  (car (citar-select-refs)))
+
+(defun tlon-insert-mdx-cite-old (type)
   "Insert an MDX `Cite' element at point or around the selected region.
 Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
 the KEY will replace the existing key.
@@ -717,7 +727,7 @@ the KEY will replace the existing key.
 TYPE is the citation type: it can be either `short' or `long'."
   (let ((key (car (citar-select-refs)))
 	(length (pcase type ('long "") ('short " short"))))
-    (if-let ((data (tlon-mdx-get-tag-attribute-value 'cite 'key)))
+    (if-let ((data (tlon-mdx-cite-get-tag-attribute-value 'cite 'key)))
 	(cl-destructuring-bind (_ (begin . end)) data
 	  (tlon-mdx-replace-attribute-value key begin end))
       (tlon-md-insert-tag
@@ -733,29 +743,6 @@ TYPE is the citation type: it can be either `short' or `long'."
     (delete-region begin end)
     (insert value)))
 
-;; TODO: use for `Cite' only; delete
-(defun tlon-mdx-get-tag-attribute-value (tag attribute)
-  "Return the value of ATTRIBUTE in the TAG at point and its position."
-  (let* ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag))
-	 (group (tlon-lookup attributes :group :name attribute))
-	 (prompt (tlon-lookup attributes :prompt :name attribute)))
-    (tlon-looking-at-tag-p tag)
-    (when-let* ((value (match-string-no-properties group))
-		(begin (match-beginning group))
-		(end (match-end group)))
-      (list value prompt (cons begin end)))))
-
-;;;###autoload
-(defun tlon-insert-mdx-cite-short ()
-  "Insert a short `Cite' element at point or around the selected region."
-  (interactive)
-  (tlon-insert-mdx-cite 'short))
-
-(defun tlon-insert-mdx-cite-long ()
-  "Insert a long `Cite' element at point or around the selected region."
-  (interactive)
-  (tlon-insert-mdx-cite 'long))
-
 ;;;;;;;;;; Locators
 
 (defvar tlon-locators)
@@ -765,15 +752,16 @@ If point is on a locator, it will be replaced by the new one. Otherwise, the new
 locator will be inserted after the key, if there are no locators, or at the end
 of the existing locators."
   (interactive)
-  (unless (thing-at-point-looking-at tlon-mdx-cite-pattern)
+  (unless (tlon-looking-at-tag-p "Cite")
     (user-error "Not in a citation"))
   (let* ((selection (completing-read "Locator: " tlon-locators nil t))
-	 (locator (alist-get selection tlon-locators "" "" 'string=)))
-    (if-let ((existing (tlon-get-locator-at-point)))
-	(replace-match locator)
-      (let ((end (cdadr (or (tlon-mdx-get-tag-attribute-value 'cite 'locators)
-			    (tlon-mdx-get-tag-attribute-value 'cite 'bibKey)))))
-	(goto-char end)
+	 (locator (alist-get selection tlon-locators nil nil 'string=)))
+    (let ((key (car (tlon-get-tag-attribute-values "Cite"))))
+      (forward-char)
+      (re-search-backward "<" nil t)
+      (re-search-forward key nil t)
+      (if-let ((existing (tlon-get-locator-at-point)))
+	  (replace-match locator)
 	(insert (format ", %s " locator))))))
 
 (defun tlon-get-locator-at-point ()
@@ -1076,9 +1064,11 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("n" "auto: at point"       tlon-auto-classify-note-at-point)
     ("N" "auto: in file"        tlon-auto-classify-notes-in-file)]
    ["Citations"
-    ("c" "cite long"            tlon-insert-mdx-cite-long)
-    ("C" "cite short"           tlon-insert-mdx-cite-short)
-    ("l" "locator"              tlon-insert-locator)]
+    ("c" "cite"                 tlon-insert-mdx-cite)
+    ;; ("c" "cite long"            tlon-insert-mdx-cite-long)
+    ;; ("C" "cite short"           tlon-insert-mdx-cite-short)
+    ;; ("l" "locator"              tlon-insert-locator)
+    ]
    ["TTS"
     ("V" "alternative voice"    tlon-insert-mdx-alternative-voice)
     ("K" "break"                tlon-tts-insert-ssml-break)
