@@ -388,34 +388,95 @@ If no section is found, do nothing."
       (tlon-md-edit-tag)
     (tlon-md-insert-tag tag)))
 
-(defun tlon-md-edit-tag ()
-  "Edit the tag at point."
-  (when-let* ((tag (tlon-get-tag-at-point))
-	      (values (tlon-get-tag-attribute-values tag))
-	      (content (match-string 2)))
 (defun tlon-looking-at-tag-p (tag)
   "Return t iff point is looking at TAG."
   (let ((pattern (tlon-md-format-tag tag nil 'match-string)))
     (thing-at-point-looking-at pattern)))
-    (replace-match "")
-    (tlon-md-insert-tag tag values content)))
 
-(defun tlon-md-insert-tag (tag &optional values content)
-  "Insert a TAG pair at point or around the selected region.
+(defun tlon-md-edit-tag (&optional values content format)
+  "Edit tag at point.
+Optionally, set the attribute VALUES and the tag CONTENT. FORMAT is one of
+`match-string', `to-fill', `filled' or `inserted'. If `match-string', return a
+regex pattern to match the tag and capture its attribute values. Otherwise,
+return a cons cell with the tag pair or the opening tag if it is self-closing.
+If `filled', return it filled with VALUES. If `inserted', prompt the user to
+insert VALUES. If `to-fill', return it filled with placeholders."
+  (let* ((tag (tlon-get-tag-at-point))
+	 (values (or values (tlon-get-tag-attribute-values tag)))
+	 (content (or content (match-string 2))))
+    (replace-match "")
+    (tlon-md-insert-tag tag values content format)))
+
+(defun tlon-md-set-tag-attribute-value (tag attribute value)
+  "Set the VALUE of ATTRIBUTE for TAG."
+  (let ((values (tlon-get-tag-attribute-values tag))
+	(pos (cl-position attribute (tlon-get-tag-attribute-names tag) :test #'string=)))
+    (setcar (nthcdr pos values) value)
+    values))
+
+(defun tlon-md-insert-attribute-value (attribute value)
+  "Insert an ATTRIBUTE VALUE in the tag at point.
+If the tag already contains an attribute with the same name, replace its value."
+  (let ((tag (tlon-get-tag-at-point)))
+    (tlon-md-edit-tag (tlon-md-set-tag-attribute-value tag attribute value) nil 'filled)))
+
+(defun tlon-md-insert-tag (tag &optional values content format)
+  "Insert a TAG or TAG pair at point or around the selected region.
 VALUES is a list of attribute values. When non-nil, offer each value as the
 initial input when prompting the user for the attribute value. CONTENT is the
-text to enclose in the tag. When non-nil, insert CONTENT enclosed by the tag
-pair."
-  (cl-destructuring-bind (open . close) (tlon-md-get-formatted-tags tag values)
-    (if close
-	(if (use-region-p)
-	    (let ((begin (region-beginning)))
-	      (goto-char (region-end))
-	      (insert close)
-	      (goto-char begin)
-	      (insert open))
-	  (insert (concat open (or content "") close)))
-      (insert open))))
+text the tag pair encloses. FORMAT is one of `match-string', `to-fill', `filled'
+or `inserted'. If `match-string', return a regex pattern to match the tag and
+capture its attribute values. Otherwise, return a cons cell with the tag pair or
+the opening tag if it is self-closing. If `filled', return it filled with
+VALUES. If `inserted', prompt the user to insert VALUES. If `to-fill', return it
+filled with placeholders."
+  ;; TODO: add check that the length of the VALUES list matches the number of
+  ;; tag attributes, and is nil when it takes no attributes. Similarly for
+  ;; CONTENT and self-closing tag.
+  (let ((format (or format 'inserted)))
+    (cl-destructuring-bind (open . close) (tlon-md-format-tag tag values format)
+      (if close
+	  (if (use-region-p)
+	      (let ((begin (region-beginning)))
+		(goto-char (region-end))
+		(insert close)
+		(goto-char begin)
+		(insert open))
+	    (insert (concat open (or content "") close)))
+	(insert open)))))
+
+(defun tlon-md-format-tag (tag &optional values format)
+  "Return TAG with attribute VALUES in the appropriate format.
+FORMAT is one of `match-string', `to-fill', `filled' or `inserted'. If
+`match-string', return a regex pattern to match the tag and capture its
+attribute values. Otherwise, return a cons cell with the tag pair or the opening
+tag if it is self-closing. If `filled', return it filled with VALUES. If
+`inserted', prompt the user to insert VALUES. If `to-fill', return it filled
+with placeholders."
+  (let* ((attributes (tlon-md-format-tag-with-attributes tag values format))
+	 (self-closing-p (tlon-lookup tlon-tag-specs :self-closing :tag tag))
+	 (format-string (if self-closing-p "\\(?1:%s\\)" "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)"))
+	 (open-ending (if self-closing-p " />" ">"))
+	 (open (concat "<" tag attributes open-ending))
+	 (close (unless self-closing-p (concat "</" tag ">"))))
+    (pcase format
+      ('match-string (format format-string open close))
+      ((or 'to-fill 'filled 'inserted) (if self-closing-p (list open) (cons open close))))))
+
+(defun tlon-md-get-tag-filled (tag &optional values content)
+  "Return a TAG string with VALUES and CONTENT.
+VALUES is a list of attribute values. When non-nil, offer each value as the
+initial input when prompting the user for the attribute value. CONTENT is the
+text the tag pair encloses."
+  (cl-destructuring-bind (open . close)
+      (tlon-md-format-tag tag values 'filled)
+    (if close (concat open (or content "") close) open)))
+
+(defun tlon-md-get-tag-to-fill (tag)
+  "Return a TAG string with placeholders for content and attribute values."
+  (cl-destructuring-bind (open . close)
+      (tlon-md-format-tag tag nil 'to-fill)
+    (if close (concat open "%s" close) open)))
 
 (defun tlon-get-tag-at-point ()
   "Return the name of the tag at point."
@@ -461,30 +522,37 @@ values."
   (cons (apply 'format (car element) attributes)
 	(cdr element)))
 
-(defun tlon-md-format-attributes (tag &optional values regexp)
+(defun tlon-md-format-tag-with-attributes (tag &optional values format)
   "Format TAG attributes.
-If VALUES is non-nil, use the values in VALUES. If REGEXP is non-nil, return a
-regexp pattern to match the tag. Otherwise, return a tag pair."
-  (let* ((attribute-names (tlon-get-tag-attribute-names tag))
+FORMAT is one of `match-string', `to-fill', `filled' or `inserted'. If
+`match-string', return a regex string pattern to match the tag attributes and
+capture its values. If `filled', return string with the attributes filled with
+VALUES. If `inserted', prompt the user to insert VALUES. If `to-fill', return it
+filled with placeholders."
+  (let* ((names (tlon-get-tag-attribute-names tag))
 	 (list (if values
-		   (cl-mapcar #'cons attribute-names values)
-		 (mapcar #'list attribute-names)))
+		   (cl-mapcar #'cons names values)
+		 (mapcar #'list names)))
 	 formatted)
     (dolist (cons list formatted)
       (let* ((name (car cons))
 	     (value (cdr cons))
-	     (format-string (tlon-md-format-attribute-with-placeholder tag name regexp))
+	     (format-string (tlon-md-format-attribute-with-placeholder
+			     tag name (eq format 'match-string)))
 	     (required-p (tlon-md-lookup-tag-attribute-property tag name :required))
-	     (reader (tlon-md-lookup-tag-attribute-property tag name :reader))
 	     (group (tlon-md-lookup-tag-attribute-property tag name :group))
-	     (fun (or reader (lambda ()
-			       (read-string (tlon-md-lookup-tag-attribute-property tag name :prompt) value))))
-	     (string (unless regexp (tlon-md-format-attributes-from-user required-p fun))))
-	(setq formatted (concat formatted
-				(if regexp
-				    (let ((pattern (tlon-make-attribute-pattern-searchable format-string group)))
-				      (if required-p pattern (concat pattern "?")))
-				  (format format-string string))))))))
+	     (fun (or (tlon-md-lookup-tag-attribute-property tag name :reader)
+		      (lambda ()
+			(read-string (tlon-md-lookup-tag-attribute-property tag name :prompt) value))))
+	     (string (pcase format
+		       ('inserted (tlon-md-format-tag-with-attributes-from-user required-p fun))
+		       ('filled value))))
+	(setq formatted
+	      (concat formatted
+		      (pcase format
+			('match-string (tlon-make-attribute-pattern-searchable format-string group required-p))
+			((or 'filled 'inserted) (format format-string string))
+			('to-fill format-string))))))))
 
 (defun tlon-md-format-attribute-with-placeholder (tag name &optional capture)
   "Get a formatted string for the attribute NAME of TAG.
@@ -498,18 +566,20 @@ CAPTURE is non-nil, enclose the placeholder in a named capture group."
 			   "=\"%s\"")))
     (concat attribute-template (when valued-p value-template))))
 
-(defun tlon-make-attribute-pattern-searchable (pattern group &optional greedy)
+(defun tlon-make-attribute-pattern-searchable (pattern group &optional required greedy)
   "Make attribute PATTERN with placeholders searchable.
 Enclose the PATTERN in a capture group numbered GROUP. Replace the placeholders
 with a greedy pattern if GREEDY is non-nil, and a lazy pattern otherwise.
 Enclose each pattern in a capture group numbered consecutively starting after
-the highest numbered group in the pattern."
+the highest numbered group in the pattern. Unless REQUIRED is non-nil, make the
+capture group optional."
   (let* ((string (if greedy ".**" ".*?"))
-	 (group-content (format pattern string)))
-    (format "\\(?%s:%s\\)" group group-content)))
+	 (group-content (format pattern string))
+	 (pattern (format "\\(?%s:%s\\)" group group-content)))
+    (if required pattern (concat pattern "?"))))
 
-(defun tlon-md-format-attributes-from-user (required-p fun)
-  "Prompt the user to set the value of TAG attributes.
+(defun tlon-md-format-tag-with-attributes-from-user (required-p fun)
+  "Prompt the user to set the value of tag attributes.
 FUN is the function to read the attribute value. If REQUIRED-P is non-nil, keep
 prompting the user until a non-empty string is entered."
   (let ((string (funcall fun)))
@@ -517,28 +587,9 @@ prompting the user until a non-empty string is entered."
       (setq string (funcall fun)))
     string))
 
-(defun tlon-md-get-formatted-tags (tag &optional values regexp)
-  "Return TAG with attribute VALUES in the appropriate format.
-If REGEXP is non-nil, return a pattern to match the tag. Otherwise, return a
-list with the tag (if self-closing) or tags formatted for insertion."
-  (let* ((attributes (tlon-md-format-attributes tag values regexp))
-	 (self-closing-p (tlon-lookup tlon-tag-specs :self-closing :tag tag))
-	 (open-ending (if self-closing-p " />" ">"))
-	 (open (concat "<" tag attributes open-ending))
-	 (close (unless self-closing-p (concat "</" tag ">"))))
-    (cond
-     ((and regexp self-closing-p)
-      (format "\\(?1:%s\\)" open))
-     (regexp
-      (format "\\(?1:%s\\(?2:\\(.\\|\n\\)*?\\)%s\\)" open close))
-     ((and (not regexp) self-closing-p)
-      open)
-     ((not self-closing-p)
-      (cons open close)))))
-
 (defun tlon-md-get-tag-pattern (tag)
   "Return a regexp pattern that matches a TAG expression."
-  (tlon-md-get-formatted-tags tag nil t))
+  (tlon-md-format-tag tag nil 'match-string))
 
 ;;;;;;; HTML
 
