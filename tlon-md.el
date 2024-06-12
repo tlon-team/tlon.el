@@ -917,25 +917,6 @@ If OVERWRITE is non, replace the existing marker when present."
 
 ;;;;; Images
 
-;; Maybe move to AI
-
-(declare-function tlon-ai-describe-image "tlon-ai")
-;;;###autoload
-(defun tlon-add-alt-text ()
-  "Add alt text to the image at point."
-  (interactive)
-  (if (thing-at-point-looking-at tlon-md-image-sans-alt)
-      (let* ((alt-text-marker (make-marker))
-	     (image-file (expand-file-name (match-string-no-properties 2))))
-	(set-marker alt-text-marker (match-beginning 1))
-	(tlon-ai-describe-image image-file
-				(lambda (description)
-				  (goto-char (marker-position alt-text-marker))
-				  (insert description))))
-    (message "Not on an image link with missing alt text")))
-
-;; TODO: create function to add alt text to all images in a file
-
 (defun tlon-offset-timestamps (offset)
   "Increase all MM:SS timestamps in the current buffer by OFFSET."
   (interactive "sEnter time offset (MM:SS): ")
