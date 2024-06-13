@@ -117,22 +117,6 @@ buffer."
 	 (counterpart-bare-dir (tlon-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
 
-(defun tlon-get-bare-dir (&optional file)
-  "Get the bare directory of FILE.
-A file’s bare directory is its directory minus its repository. For example, the
-bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
-
-If FILE is nil, return the counterpart repo of the file visited by the current
-buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-get-repo-from-file file)))
-    (directory-file-name (file-name-directory (file-relative-name file repo)))))
-
-(defun tlon-set-bare-dir ()
-  "Set the bare dir."
-  (let* ((bare-dirs (tlon-lookup-all tlon-core-bare-dirs "en")))
-    (completing-read "Type: " bare-dirs)))
-
 (defun tlon-open-counterpart (&optional arg file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.

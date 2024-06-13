@@ -658,8 +658,7 @@ If END is nil, use BEGIN also as the end delimiter."
 	  (when (and begin-pos end-pos)
 	    (cons begin-pos end-pos)))))))
 
-;;;;; Misc
-;; this function will eventually be deleted once we migrate to a system of English-only directory names
+;;;;; Bare dirs
 
 (defun tlon-get-bare-dir-translation (target-lang source-lang bare-dir)
   "For BARE-DIR in SOURCE-LANG, get its translation into TARGET-LANG."
@@ -669,6 +668,24 @@ If END is nil, use BEGIN also as the end delimiter."
 	(when (and (equal (cdr inner) bare-dir)
 		   (equal (car inner) source-lang))
 	  (setq result (cdr (assoc target-lang outer))))))))
+
+(defun tlon-get-bare-dir (&optional file)
+  "Get the bare directory of FILE.
+A file’s bare directory is its directory minus its repository. For example, the
+bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
+
+If FILE is nil, return the counterpart repo of the file visited by the current
+buffer."
+  (let* ((file (or file (buffer-file-name)))
+	 (repo (tlon-get-repo-from-file file)))
+    (directory-file-name (file-name-directory (file-relative-name file repo)))))
+
+(defun tlon-select-bare-dir (lang)
+  "Set the bare dir in LANG."
+  (let* ((bare-dirs (tlon-lookup-all tlon-core-bare-dirs lang)))
+    (completing-read "Type: " bare-dirs)))
+
+;;;;; Misc
 
 (defun tlon-concatenate-list (list)
   "Concatenate LIST into a string with commas and `and' as appropriate."
