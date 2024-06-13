@@ -257,6 +257,29 @@ If citation is not found, return nil."
 		   'magit-push-current-to-pushremote))
   (advice-add fun :after 'tlon-magit-trigger-api-request))
 
+;;;;; File uploading
+
+(declare-function read-file-name "files-extras")
+(defun tlon-upload-file-to-server (&optional file destination)
+  "Upload FILE asynchronously to DESTINATION in server."
+  (interactive)
+  (let ((file (or file (files-extras-read-file file)))
+	(destination (or destination (read-directory-name "Destination: "))))
+    (start-process "scp-upload" "*scp-upload*"
+                   "scp"
+                   (expand-file-name file)
+                   destination)
+    (message "Uploading `%s' to `%s'..." file destination)
+    (set-process-sentinel
+     (get-buffer-process "*scp-upload*")
+     (lambda (proc event)
+       (when (string= event "finished\n")
+	 (message "Upload successful!"))
+       (unless (string= event "finished\n")
+	 (progn
+           (message "Upload failed: %s" event)
+           (display-buffer "*scp-upload*")))))))
+
 ;;;;; Transient
 
 ;;;###autoload (autoload 'tlon-api-menu "tlon-api" nil t)
