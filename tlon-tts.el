@@ -773,7 +773,7 @@ The first placeholder is the input file, and the second is the output file.")
 ;;;;; Listener cues
 
 (defconst tlon-tts-cue-delimiter
-  (tlon-md-get-tag-filled "break" `(,tlon-tts-listener-cue-break-duration))
+  nil
   "Delimiter for listener cues.")
 
 ;;;;;; Notes
