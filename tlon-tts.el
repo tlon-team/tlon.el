@@ -714,6 +714,22 @@ The first placeholder is the input file, and the second is the output file.")
 	    ("es" . ("dólar" . "dólares")))))
   "Currency symbols and their associated three-letter codes.")
 
+;;;;; Tag sections
+
+(defconst tlon-tts-tag-section-names
+  '(("es" . "\\(?:más información\\|entradas relacionadas\\|enlaces externos\\)")
+    ("en" . "\\(?:further readong\\|related entries\\|external links\\)"))
+  "Names of the sections to be removed in each language.")
+
+(defconst tlon-tts-tag-section-patterns
+  (let ((format-string "^\\(?1:## %s\\(?:\\(.\\|\n\\)**\\)\\)"))
+    (mapcar (lambda (pair)
+	      (let ((lang (car pair))
+		    (names (cdr pair)))
+		(cons lang (format format-string names))))
+	    tlon-tts-tag-section-names))
+  "Match the name of a section to be removed until the end of the buffer.")
+
 ;;;;; File-local variables
 
 ;;;;;; File variables
@@ -1225,6 +1241,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Prepare the current buffer for audio narration."
   (save-excursion
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
+    (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
     (tlon-tex-replace-keys-with-citations nil 'mdx 'audio)
     (tlon-tts-process-formatting)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
@@ -1357,6 +1374,16 @@ The time length of the pause is determined by
       (insert (concat " " (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration))))
     (unless (eobp)
       (forward-char))))
+
+;;;;;; Tag sections
+
+(defun tlon-tts-remove-tag-sections ()
+  "Remove the ‘further reading’, ‘related entries’ and ‘external links’ sections."
+  (goto-char (point-min))
+  (let ((pattern (alist-get (tlon-tts-get-current-language) tlon-tts-tag-section-patterns nil nil #'string=)))
+    (when pattern
+      (while (re-search-forward pattern nil t)
+	(replace-match "" t t)))))
 
 ;;;;;; Headings
 
