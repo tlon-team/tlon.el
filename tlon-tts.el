@@ -1312,7 +1312,6 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-replace-audio)
   (tlon-tts-process-small-caps))
 
-
 (defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
   (cl-destructuring-bind (pattern . groups)
