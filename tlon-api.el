@@ -59,28 +59,31 @@
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-api-request (route site)
-  "Make a request for ROUTE and SITE with the `uqbar' API."
+(defun tlon-api-request (route &optional local)
+  "Make a request for ROUTE with the `uqbar' API.
+If LOCAL is non-nil, use the local server; otherwise, use the remote server."
   (interactive (list (tlon-select-api-route)
 		     (completing-read "Site URL? " '("local" "remote"))))
-  (let* ((site (pcase site
-		 ("local" "https://uqbar.local.dev/")
-		 ("remote" (tlon-repo-lookup :url
-					     :subproject "uqbar"
-					     :language tlon-translation-language))))
-         (route-url (format "%sapi/%s" site route))
-         (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
+  (let* ((site (if local
+		   "https://uqbar.local.dev/"
+		 (tlon-repo-lookup :url
+				   :subproject "uqbar"
+				   :language tlon-translation-language)))
+	 (route-url (format "%sapi/%s" site route))
+	 (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
     (tlon-api-get-token
      site
      (lambda (access-token)
        "Authenticate with ACCESS-TOKEN, then make request."
        (if (not access-token)
            (message "Failed to authenticate")
-         (request route-url
+	 (request route-url
            :type type
            :headers `(("Content-Type" . "application/json")
                       ("Authorization" . ,(concat "Bearer " access-token)))
            :parser 'json-read
+	   :data (when (and (string= route "update/babel-refs") (string= site "local"))
+		   (json-encode-hash-table '((force_update . t))))
            :success (cl-function
                      (lambda (&key data &allow-other-keys)
 		       "Print response, and possibly make new request depending on ROUTE."
