@@ -511,13 +511,11 @@ respectively."
 
 ;;;;; open file commands
 
-(declare-function dired-get-filename "dired")
+(declare-function files-extras-read-file "files-extras")
 (defun tlon-browse-file (&optional file)
   "Browse Tlön FILE externally."
   (interactive)
-  (let* ((file (read-file-name "File: " (or file
-					    (when (derived-mode-p 'dired-mode) (dired-get-filename))
-					    (buffer-file-name))))
+  (let* ((file (files-extras-read-file file))
 	 (url (tlon-path-to-url file)))
     (browse-url url)))
 
