@@ -1296,7 +1296,8 @@ citation key, format. Hence, it must be run *before*
 (defun tlon-tts-handle-note (note)
   "Handle NOTE for audio narration."
   (let ((clean-note (replace-regexp-in-string (tlon-md-get-tag-pattern "Sidenote") "" note)))
-    (tlon-tts-listener-cue-full-enclose tlon-tts-note-cues clean-note)))
+    (format "\n\n%s\n"
+	    (tlon-tts-listener-cue-full-enclose tlon-tts-note-cues clean-note))))
 
 ;;;;;;;; Formatting
 
