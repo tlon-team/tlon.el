@@ -156,12 +156,12 @@ TITLE optionally specifies the title of the entity to be imported."
       (insert html))
     filename))
 
-(declare-function tlon-set-bare-dir "tlon-counterpart")
+(declare-function tlon-select-bare-dir "tlon-counterpart")
 (defun tlon-import-convert-html-to-markdown (source &optional title)
   "Convert HTML text in SOURCE to Markdown.
 SOURCE can be a URL or a file path. If TITLE is not provided, prompt the user
 for one."
-  (let* ((bare-dir (tlon-set-bare-dir))
+  (let* ((bare-dir (tlon-select-bare-dir "en"))
 	 (target (tlon-import-set-target title bare-dir))
 	 (pandoc (if (simple-extras-string-is-url-p source)
 		     tlon-pandoc-convert-from-url
