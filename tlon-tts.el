@@ -1255,6 +1255,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   (save-excursion
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
+    (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tex-replace-keys-with-citations nil 'mdx 'audio)
     (tlon-tts-process-formatting)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
@@ -1397,6 +1398,14 @@ The time length of the pause is determined by
     (when pattern
       (while (re-search-forward pattern nil t)
 	(replace-match "" t t)))))
+
+;;;;;; Lines
+
+(defun tlon-tts-remove-horizontal-lines ()
+  "Remove horizontal lines from text."
+  (goto-char (point-min))
+  (while (re-search-forward "^---+\n\n" nil t)
+    (replace-match "" t t)))
 
 ;;;;;; Headings
 
