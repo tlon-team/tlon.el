@@ -484,14 +484,14 @@ If the field `landig' is present, the function does nothing; else, it sets the
 	(files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-filename)))))
 
 ;; TODO: maybe generalize to other fields, e.g. isbn, doi
-(declare-function tlon-get-md-links-in-file "tlon-babl-md")
+(declare-function tlon-get-urls-in-file "tlon-url")
 (declare-function simple-extras-simplify-url "simple-extras")
 (defun tlon-get-missing-urls (&optional file)
   "Return all URLs present in FILE but missing in the Tlön bibliography.
 If FILE is nil, use the file visited by the current buffer."
   (let* ((file (or file (buffer-file-name)))
 	 (urls-in-biblio (tlon-get-field-in-bibliography "url"))
-	 (urls-in-file (tlon-get-md-links-in-file file))
+	 (urls-in-file (tlon-get-urls-in-file file))
 	 (urls-in-biblio-simple (mapcar #'simple-extras-simplify-url urls-in-biblio))
 	 (urls-in-file-simple (mapcar #'simple-extras-simplify-url urls-in-file))
 	 (missing-urls-simple (cl-set-difference urls-in-file-simple urls-in-biblio-simple :test #'string=)))
