@@ -405,10 +405,10 @@ repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
 
 (declare-function dired-get-filename "dired")
 (defun tlon-ai-read-image-file (&optional file)
-  "Read an email FILE from multiple sources.
-  In order, the sources are: the value of FILE, the value of `src' attribute in a
-  `Figure' MDX tag, the image in the current buffer, the image at point in Dired
-  and the file selected by the user."
+  "Read an image FILE from multiple sources.
+In order, the sources are: the value of FILE, the value of `src' attribute in a
+`Figure' MDX tag, the image in the current buffer, the image at point in Dired
+and the file selected by the user."
   (or file
       (when-let ((name (car (tlon-get-tag-attribute-values "Figure"))))
 	(file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
