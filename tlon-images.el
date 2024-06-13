@@ -58,20 +58,20 @@
   "Generic endpoint for the invertornot.com API.")
 
 (defconst tlon-imagemagick-reduce-brightness
-  "convert %1$s -modulate %3$s %2$s"
+  "magick %1$s -modulate %3$s %2$s"
   "Command to reduce the brightness of an image using `imagemagic'.
 The first placeholder is the input image, the second placeholder is the
 percentage by which to reduce the brightness, and the third placeholder is the
 output image.")
 
 (defconst tlon-imagemagick-invert-colors
-  "convert %s -channel RGB -negate %s"
+  "magick %s -channel RGB -negate %s"
   "Command to invert the colors of an image using `imagemagic'.
 The first placeholder is the input image and the second placeholder is the
 output image.")
 
 (defconst tlon-imagemagick-make-nontransparent
-  "convert %1$s -background %3$s -flatten %2$s"
+  "magick %1$s -background %3$s -flatten %2$s"
   "Command to remove the transparent background of an image using `imagemagic'.
 The first placeholder is the input image, the second placeholder is the
 background color, and the third placeholder is the output image.")
