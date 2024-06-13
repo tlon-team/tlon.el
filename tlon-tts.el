@@ -1234,6 +1234,19 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Return an SSML `break' tag with `time' attribute of TIME."
   (tlon-md-get-tag-filled "break" `(,time)))
 
+;;;;; File uploading
+
+(declare-function tlon-upload-file-to-server "tlon-api")
+(defun tlon-tts-upload-audio-file-to-server (&optional file)
+  "Upload audio FILE to the server."
+  (interactive)
+  (let* ((file (or file (files-extras-read-file file)))
+	 (lang (or tlon-tts-current-language (tlon-select-language 'code 'babel)))
+	 (bare-dir (tlon-select-bare-dir lang))
+	 (destination (format "fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
+			      lang bare-dir (file-name-nondirectory file))))
+    (tlon-upload-file-to-server file destination)))
+
 ;;;;; Cleanup
 
 (declare-function tlon-tex-replace-keys-with-citations "tlon-tex")
@@ -1921,7 +1934,11 @@ PROMPTS is a cons cell with the corresponding prompts."
     ""
     "local"
     ("A" "Abbreviation"                     tlon-add-local-abbreviation)
-    ("R" "Replacement"                      tlon-add-local-replacement)]
+    ("R" "Replacement"                      tlon-add-local-replacement)
+    ""
+    ""
+    "Upload"
+    ("u" "Upload audio file to server"      tlon-tts-upload-audio-file-to-server)]
    ["Narration"
     ("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
     ("b" "Display buffer"                   tlon-tts-display-tts-buffer)
