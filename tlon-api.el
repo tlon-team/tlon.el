@@ -141,9 +141,6 @@ CALLBACK is called with the token as its argument."
        x))
    (copy-sequence tlon-uqbar-api-routes)))
 
-;; TODO: consider using `marginalia' for this
-;; see my questions to GPT-4 on what to implement it:
-;; [[id:625AC8A3-F330-4DD2-B8F6-8FF432158057][pass text to marginalia]]
 (defun tlon-select-api-route ()
   "Prompt the user to select an API route from `tlon-uqbar-api-routes'."
   (let* ((choices (mapcar (lambda (plist)
