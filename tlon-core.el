@@ -907,5 +907,17 @@ repository."
 	 (fixed-decimals (replace-regexp-in-string (regexp-quote decimal) "." fixed-thousands)))
     (string-to-number fixed-decimals)))
 
+;;;;; search
+
+(declare-function elgrep "elgrep")
+(defun tlon-grep (string)
+  "Perform a ripgrep search for STRING."
+  (interactive "sSearch: ")
+  (let* ((core-settings '(:interactive t :recursive t))
+	 (no-context-settings '(:c-beg-only t :c-end-only t))
+	 (context (y-or-n-p "Context?"))
+	 (settings (append core-settings (unless context no-context-settings))))
+    (apply #'elgrep nil "\\.md" string settings)))
+
 (provide 'tlon-core)
 ;;; tlon-core.el ends here
