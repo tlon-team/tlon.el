@@ -991,22 +991,18 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (save-window-excursion
     (let* ((default-directory repo)
 	   (key (tlon-get-clock-key))
-	   (issue (format "Job: `%s" key))
-	   (clocked-label (tlon-get-clock-label)))
-      (magit-status-setup-buffer repo)
-      (magit-section-show-level-3-all)
-      (goto-char (point-min))
-      (if (search-forward issue nil t)
-	  (let ((label (tlon-get-first-label))
-		(assignee (tlon-user-lookup :name :github (tlon-get-assignee))))
-	    (unless (string= clocked-label label)
-	      (user-error "The `org-mode' TODO says the label is `%s', but the actual issue label is `%s'"
-			  clocked-label label))
-	    (unless (string= user-full-name assignee)
-	      (user-error "The `org-mode' TODO says the assignee is `%s', but the actual issue assignee is `%s'"
-			  user-full-name assignee))
-	    t)
-	(user-error "No issue found for %s" key)))))
+	   (issue-title (format "Job: `%s" key))
+	   (issue (tlon-issue-lookup issue-title))
+	   (clocked-label (tlon-get-clock-label))
+	   (label (tlon-get-first-label issue))
+	   (assignee (tlon-user-lookup :name :github (tlon-get-assignee issue))))
+      (unless (string= clocked-label label)
+	(user-error "The `org-mode' TODO says the label is `%s', but the actual issue label is `%s'"
+		    clocked-label label))
+      (unless (string= user-full-name assignee)
+	(user-error "The `org-mode' TODO says the assignee is `%s', but the actual issue assignee is `%s'"
+		    user-full-name assignee))
+      t)))
 
 ;;;;; Transient
 
