@@ -725,7 +725,7 @@ argument."
    ["Ebib"
     ("a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
     ("c" "Create translation entry"            tlon-tex-create-translation-entry)]
-   ["BibTeX entries"
+   ["BibTeX"
     ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
     ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)]])
 
