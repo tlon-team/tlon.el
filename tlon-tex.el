@@ -715,15 +715,19 @@ argument."
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
 (transient-define-prefix tlon-tex-menu ()
   "Menu for `tex' functions."
-  [["Missing URLs"
-    ("f" "Find in file"                      tlon-prompt-to-add-missing-urls)
-    ("z" "Add with Zotra"                    zotra-extras-add-multiple-urls)]
+  [["Markdown"
+    "URLs missing from database"
+    ("f" "Find in file"                        tlon-prompt-to-add-missing-urls)
+    ("z" "Add with Zotra"                      zotra-extras-add-multiple-urls)
+    ""
+    "Convert to `Cite'"
+    ("b" "Convert bibliography"                tlon-convert-bibliography-to-cite)]
    ["Ebib"
-    ("a" "Fetch abstract"                    tlon-fetch-and-set-abstract)
-    ("c" "Create translation entry"          tlon-tex-create-translation-entry)]
+    ("a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
+    ("c" "Create translation entry"            tlon-tex-create-translation-entry)]
    ["BibTeX entries"
-    ("t" "Move this entry to Tlön database"  tlon-move-entry-to-fluid)
-    ("s" "Move all entries to stable"        tlon-move-all-fluid-entries-to-stable)]])
+    ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
+    ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)]])
 
 (provide 'tlon-tex)
 ;;; tlon-tex.el ends here
