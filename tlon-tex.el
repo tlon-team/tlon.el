@@ -510,11 +510,13 @@ If the field `landig' is present, the function does nothing; else, it sets the
       (dolist (url urls urls-to-add)
 	(goto-char (point-min))
 	(re-search-forward url nil t)
-	(when (y-or-n-p (format "Add `%s' to bibliography?" url))
+	(when (y-or-n-p (format "%s is missing from bibliography. Add? " url))
 	  (push url urls-to-add)))
       (if (null urls-to-add)
 	  (message "No URLs to add.")
-	(files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-filename)))))
+	(files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-filename)
+	(message "Saved URLs to `%s'. You can now add them with Zotra via `zotra-extras-add-multiple-urls'."
+		 zotra-extras-add-multiple-urls-filename)))))
 
 ;; TODO: maybe generalize to other fields, e.g. isbn, doi
 (declare-function tlon-get-urls-in-file "tlon-url")
