@@ -121,6 +121,7 @@ assumed that the paragraphs are already aligned."
 	     (>= (count-screen-lines (point-min) (point)) tlon-split-screen-line-threshold))
     (tlon-split-align-paragraphs)))
 
+;;;###autoload
 (defun tlon-split-mode-reset ()
   "Reset `split-mode'."
   (interactive)
