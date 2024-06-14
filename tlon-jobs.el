@@ -360,16 +360,22 @@ COMMIT is non-nil, commit the change."
   "`jobs' menu."
   :info-manual "(tlon) Jobs"
   [["Job phases"
-    ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)]
+    ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)
+    ""
+    "Split mode"
+    ("s s" "toggle"                     tlon-split-mode)
+    ;; ("t h" "highlight"                  tlon-highlight-corresponding-sentence)
+    ("s o" "set offset"                 tlon-sentence-highlight-offset-set)
+    ("s r" "reset"                      tlon-split-mode-reset)]
    ["Job creation"
     ("c c" "create job"                 tlon-create-job)
-    ("c d" "1 import document"            tlon-import-document)
-    ("c f" "2 create translation file"    tlon-create-translation-file)
-    ("c r" "3 create record for job"      tlon-create-record-for-job)]
+    ("c d" "1 import document"          tlon-import-document)
+    ("c f" "2 create translation file"  tlon-create-translation-file)
+    ("c r" "3 create record for job"    tlon-create-record-for-job)]
    ["Add or modify"
-    ("g" "glossary"                     tlon-edit-glossary)
-    ("s" "section correspondence"       tlon-section-correspondence-dwim)
-    ("u" "URL correspondence"           tlon-url-correspondence-dwim)]
+    ("a g" "glossary"                     tlon-edit-glossary)
+    ("a s" "section correspondence"       tlon-section-correspondence-dwim)
+    ("a u" "URL correspondence"           tlon-url-correspondence-dwim)]
    ["jobs.org"
     ("r" "create record"                tlon-create-record-for-job)
     ("h" "create heading"               tlon-create-heading-for-job)
