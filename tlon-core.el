@@ -365,7 +365,7 @@ the actual user.")
   "Alist of bare directories and associated translations.")
 
 (defconst tlon-project-languages
-  '("english" "spanish" "italian" "french" "german" "portuguese" "arabic")
+  '("english" "spanish" "italian" "french" "german" "portuguese")
   "A list of languages all languages in the Babel project.")
 
 (defconst tlon-languages-properties
