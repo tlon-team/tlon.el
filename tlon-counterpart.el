@@ -46,11 +46,12 @@ buffer."
 
 (defun tlon-get-counterpart (&optional file)
   "Get the counterpart file of FILE.
-A file's counterpart is its translation if it is an original, and vice versa.
-The translation language is defined by `tlon-translation-language'.
-
 If FILE is nil, return the counterpart of the file visited by the current
-buffer."
+buffer.
+
+A file's counterpart is the original if it is a translation, and a translation
+into some language if it is the original. If the latter, prompt the user for a
+language."
   (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file)))
     (pcase (tlon-repo-lookup :subtype :dir repo)
@@ -92,11 +93,15 @@ buffer."
 (defun tlon-get-counterpart-language (&optional repo)
   "Return the language of the counterpart of REPO."
   (let* ((repo (or repo (tlon-get-repo)))
-	 (language (tlon-repo-lookup :language :dir repo)))
+	 (language (tlon-repo-lookup :language :dir repo))
+	 (languages (mapcar (lambda (language)
+			      (tlon-get-formatted-languages language 'code))
+			    (remove "english" tlon-project-languages))))
     (pcase language
-      ("en" tlon-translation-language)
+      ("en" (completing-read "Language: " languages))
       ((pred (lambda (lang)
-	       (member lang (tlon-get-valid-language-codes))))
+	       "Return t if LANG is the code of one of the Babel languages."
+	       (member lang languages)))
        "en")
       (_ (user-error "Language not recognized")))))
 
