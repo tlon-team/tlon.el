@@ -623,16 +623,21 @@ locators (which are not relevant in a bibliography)."
 			   t t)))))))
 
 (defvar citar-cache--bibliographies)
-(defun tlon-bibliography-lookup (assoc-field field value)
-  "Return the value for ASSOC-FIELD in the entry where FIELD matches VALUE."
+(defun tlon-bibliography-lookup (assoc-field field value &optional substring)
+  "Return the ASSOC-FIELD value in the entry whose FIELD value matches VALUE.
+If SUBSTRING is non-nil, return the ASSOC-FIELD value in the entry whose FIELD
+value contains VALUE as a substring."
   (catch 'found
     (maphash (lambda (_key bibliography)
-	       (let ((entries (citar-cache--bibliography-entries bibliography)))
-		 (maphash (lambda (_ entry)
-			    (when (string= (cdr (assoc field entry)) value)
-			      (throw 'found (cdr (assoc assoc-field entry)))))
-			  entries)))
-	     citar-cache--bibliographies)
+               (let ((entries (citar-cache--bibliography-entries bibliography)))
+                 (maphash (lambda (_ entry)
+                            (when-let ((field-value (cdr (assoc field entry))))
+			      (when (if substring
+                                        (string-match-p (regexp-quote value) field-value)
+				      (string= field-value value))
+                                (throw 'found (cdr (assoc assoc-field entry))))))
+                          entries)))
+             citar-cache--bibliographies)
     nil))
 
 (defvar citar-cache--bibliographies)
