@@ -66,12 +66,22 @@
 
 ;;;;; Markdown
 
+;;;;;; Italics
+
 ;; We tweak the default value of `markdown-regex-italic' to make it analogous
 ;; to `markdown-regex-bold': the group that captures the leading character is a
 ;; proper capturing group, allowing us to prepend this character to the
 ;; replacement.
 (setq markdown-regex-italic
       "\\(?1:^\\|[^\\]\\)\\(?2:\\(?3:[*_]\\)\\(?4:[^ \n	\\]\\|[^ \n	*]\\(?:.\\|\n[^\n]\\)*?[^\\ ]\\)\\(?5:\\3\\)\\)")
+
+;;;;;; Links
+
+(defconst tlon-md-regexp-link-formatter
+  "\\(?%s:!\\)?\\(?%s:\\[\\)\\(?%s:\\^?\\(?:\\\\\\]\\|[^]]\\)*\\|\\)\\(?%s:\\]\\)\\(?%s:(\\)\\s-*\\(?%s:[^)]*?\\)\\(?:\\s-+\\(?%s:\"[^\"]*\"\\)\\)?\\s-*\\(?%s:)\\)"
+  "Formatter for a regexp pattern to match a Markdown link.
+This copies `markdown-regex-link-inline' but replaces the digits in each capture
+group with placeholders.")
 
 ;;;;;; Images
 
@@ -998,21 +1008,6 @@ The list of completion candidates can be customized via the user option
 `tlon-md-special-characters'."
   (interactive (list (completing-read "Character: " tlon-md-special-characters nil t)))
   (insert (alist-get char tlon-md-special-characters nil nil #'string= )))
-
-(declare-function ffap-url-p "ffap")
-(defun tlon-get-md-links-in-file (&optional file)
-  "Return a list of all the URLs in the Markdown links present in FILE.
-If FILE is nil, use the file visited by the current buffer."
-  (let ((file (or file (buffer-file-name))))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (goto-char (point-min))
-      (let ((links))
-	(while (re-search-forward markdown-regex-link-inline nil t)
-	  (when-let ((url (ffap-url-p (match-string-no-properties 6))))
-	    (unless (member url links)
-	      (push url links))))
-	(reverse links)))))
 
 ;;;;; Actual content
 

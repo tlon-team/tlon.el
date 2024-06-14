@@ -28,11 +28,12 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'url)
 
 ;;;; Variables
 
 (defconst tlon-deepl-key
-  (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" tlon-email-shared))
+  (auth-source-pass-get "key" (concat "tlon/babel/deepl.com/" (getenv "WORK_EMAIL")))
   "The DeepL API key.")
 
 ;;;; Functions
@@ -49,6 +50,32 @@ for a file."
 			   (user-error "Current buffer is not visiting a file"))))
 	(deepl (or deepl (read-file-name "DeepL translation: "))))
     (ediff-files deepl translation)))
+
+(defun tlon-create-deepl-glossary (glossary-name source-lang target-lang entries)
+  "Create a glossary in DeepL with specified parameters.
+GLOSSARY-NAME is the name of the glossary. SOURCE-LANG and TARGET-LANG are the
+source (e.g., \"EN\") and target (e.g., \"ES\") languages, respectively. ENTRIES
+are the glossary entries in TSV format (e.g., \"Hello\tHola\")."
+  (let ((url-request-method "POST")
+        (url-request-extra-headers
+         `(("Content-Type" . "application/json")
+           ("Authorization" . ,(concat "DeepL-Auth-Key " tlon-deepl-key))
+           ("User-Agent" . "YourApp/1.2.3")))
+        (url-request-data
+         (json-encode `(("name" . ,glossary-name)
+                        ("source_lang" . ,source-lang)
+                        ("target_lang" . ,target-lang)
+                        ("entries" . ,entries)
+                        ("entries_format" . "tsv")))))
+    (url-retrieve "https://api.deepl.com/v2/glossaries"
+                  (lambda (_)
+                    (goto-char (point-min))
+                    (when (search-forward-regexp "^HTTP/.* \\([200-299]+\\) " nil t)
+                      (if (string= "200" (match-string 1))
+                          (message "Glossary created successfully!")
+                        (message "Failed to create glossary: %s" (match-string 1))))
+                    (kill-buffer (current-buffer)))
+                  nil t)))
 
 (provide 'tlon-deepl)
 ;;; tlon-deepl.el ends here

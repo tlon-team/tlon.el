@@ -109,6 +109,39 @@ Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
 Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
 `citar-markdown-citation-key-regexp'.")
 
+;;;;; Regexp patterns
+
+(defconst tlon-regexp-locator-in-citation
+  (format "\\(?2:, \\(?:%s\\).*?\\)"
+	  (mapconcat (lambda (locator)
+		       (regexp-quote (cdr locator)))
+		     tlon-locators "\\|"))
+  "Regexp to match one or more locators in a citation.")
+
+(defconst tlon-regexp-expanded-citation-formatter-with-locators
+  (format "^[[:alnum:]]*?, [[:alnum:]& ]*? ([[:digit:]]\\{4\\}) %%s\\(?:%s\\|\\(, .*?\\)\\)*$"
+	  tlon-regexp-locator-in-citation)
+  "Formatter for a regexp pattern to match expanded citations, handling locators.
+NOTE: This is not working correctly.")
+
+(defconst tlon-regexp-expanded-citation-formatter
+  (format "^[[:alnum:]]*?, [[:alnum:]& ]*? ([[:digit:]]\\{4\\}) %%s.*$"
+	  tlon-regexp-locator-in-citation)
+  "Formatter for a regexp pattern to match expanded citations, handling locators.
+NOTE: This is not working correctly.")
+
+(defvar tlon-md-regexp-link-formatter "tlon-md")
+(defconst tlon-regexp-expanded-citation-with-link
+  (format (format tlon-regexp-expanded-citation-formatter
+		  (format tlon-md-regexp-link-formatter "" "" "1" "" "" "" "" "")))
+  "Regexp to match a citation with a link in our \"long\" style.
+The capture group 3 contains the title of the work.")
+
+(defconst tlon-regexp-expanded-citation-with-no-link
+  (format (format tlon-regexp-expanded-citation-formatter "[\"“'‘\\*]?\\(?1:.*?\\)[\"”'’\\*]"))
+  "Regexp to match a citation with a link in our \"long\" style.
+The capture group 3 contains the title of the work.")
+
 ;;;; Functions
 
 ;;;;; Fetch fields
@@ -566,6 +599,26 @@ If FILE is nil, use the file visited by the current buffer."
 					     (setq always-short t))
 					   cite-short)))))))
 	      (replace-match replacement t t))))))))
+
+(declare-function tlon-md-get-tag-to-fill "tlon-md")
+;;;###autoload
+(defun tlon-convert-bibliography-to-cite ()
+  "Convert all links in a bibliography section to citations using `Cite'.
+NB: This command should be run with the buffer narrowed to the section
+containing the bibliography (such as the \"Further reading\" section of a tag),
+since it can only handle works cited one work per line and does not handle
+locators (which are not relevant in a bibliography)."
+  (interactive)
+  (save-excursion
+    (dolist (pattern (list tlon-regexp-expanded-citation-with-link
+			   tlon-regexp-expanded-citation-with-no-link))
+      (goto-char (point-min))
+      (while (re-search-forward pattern nil t)
+	(let* ((title (match-string 1))
+	       (key (tlon-bibliography-lookup "=key=" "title" title)))
+	  (when key
+	    (replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key) ".")
+			   t t)))))))
 
 (defvar citar-cache--bibliographies)
 (defun tlon-bibliography-lookup (assoc-field field value)
