@@ -800,9 +800,13 @@ The first placeholder is the input file, and the second is the output file.")
 ;;;;;; Images
 
 (defconst tlon-tts-image-cues
-  '(("en" "Image." . "")
-    ("es" "Imagen." .""))
+  '(("en" "There’s an image here." . "")
+    ("es" "Aquí hay una imagen." . ""))
   "Listener cues for images.")
+
+(defconst tlon-tts-image-cue-for-caption
+  '(("en" . " The image is followed by a caption that reads: ")
+    ("es" . " A la imagen le sigue una leyenda que dice: ")))
 
 ;;;;;; OWID
 
@@ -1577,7 +1581,6 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
       (pcase type
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
 	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
-	('image (list (tlon-md-get-tag-pattern "Figure") tlon-tts-image-cues 6))
 	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
 	;; TODO: determine if other types should be added
 	(_ (user-error "Invalid formatting type: %s" type)))
@@ -1589,7 +1592,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 			(_ match))))
 	  (replace-match
 	   (tlon-tts-listener-cue-full-enclose cues (string-chop-newline text)) t t)
-	(user-error "Could not replace %s; match: %s" (symbol-name type) match)))))
+	(user-error "Could not process cue for %s; match: %s" (symbol-name type) match)))))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
@@ -1638,8 +1641,19 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
   (tlon-tts-add-listener-cues 'aside))
 
 (defun tlon-tts-process-images ()
-  "Add listener cues for images."
-  (tlon-tts-add-listener-cues 'image))
+  "Add listener cues for text enclosed in tags of TYPE."
+  (goto-char (point-min))
+  (while (re-search-forward (tlon-md-get-tag-pattern "Figure") nil t)
+    (if-let* ((alt (match-string-no-properties 6)))
+	(let ((caption (match-string-no-properties 2))
+	      caption-cue text)
+	  (when caption
+	    (setq caption-cue (alist-get (tlon-tts-get-current-language) tlon-tts-image-cue-for-caption
+					 nil nil #'string=)))
+	  (setq text (concat alt (when caption (concat caption-cue caption))))
+	  (replace-match
+	   (tlon-tts-listener-cue-full-enclose tlon-tts-image-cues (string-chop-newline text)) t t))
+      (user-error "Missing alt text; match: %s" alt))))
 
 (defun tlon-tts-process-owid ()
   "Add listener cues for One World In Data charts."
