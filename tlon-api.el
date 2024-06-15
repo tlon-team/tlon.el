@@ -59,17 +59,22 @@
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-api-request (route &optional local)
+(defun tlon-api-request (route &optional local force-update)
   "Make a request for ROUTE with the `uqbar' API.
-If LOCAL is non-nil, use the local server; otherwise, use the remote server."
+If LOCAL is non-nil, use the local server; otherwise, use the remote server. If
+FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
   (interactive (list (tlon-select-api-route)
-		     (completing-read "Site URL? " '("local" "remote"))))
+		     (completing-read "Site URL? " '("local" "remote"))
+		     current-prefix-arg))
   (let* ((site (if local
 		   "https://uqbar.local.dev/"
 		 (tlon-repo-lookup :url
 				   :subproject "uqbar"
 				   :language tlon-translation-language)))
-	 (route-url (format "%sapi/%s" site route))
+	 (route-url (concat (format "%sapi/%s" site route)
+			    (when (and force-update
+				       (not (string= route "update/babel-refs")))
+			      "?force=true")))
 	 (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
     (tlon-api-get-token
      site
