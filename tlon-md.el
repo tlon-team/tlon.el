@@ -247,7 +247,8 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :type mdx
 	  :self-closing nil)
     (:tag "OurWorldInData"
-	  :attributes ((:name "src" :required t :valued t :group 2 :prompt "URL: "))
+	  :attributes ((:name "src" :required t :valued t :group 3 :prompt "Chart URL: ")
+		       (:name "alt" :required nil :valued t :group 5 :prompt "Alt text: "))
 	  :type mdx
 	  :self-closing t
 	  :doc "")
