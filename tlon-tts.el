@@ -1580,12 +1580,13 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
-      (let* ((match (match-string-no-properties group))
-	     (text (pcase type
-		     ('quote (replace-regexp-in-string "^> ?" "" match))
-		     (_ match))))
-	(replace-match
-	 (tlon-tts-listener-cue-full-enclose cues (string-chop-newline text)) t t)))))
+      (if-let* ((match (match-string-no-properties group))
+		(text (pcase type
+			('quote (replace-regexp-in-string "^> ?" "" match))
+			(_ match))))
+	  (replace-match
+	   (tlon-tts-listener-cue-full-enclose cues (string-chop-newline text)) t t)
+	(user-error "Could not replace %s; match: %s" (symbol-name type) match)))))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
