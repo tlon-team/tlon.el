@@ -1412,7 +1412,7 @@ The time length of the pause is determined by
   "Remove horizontal lines from text."
   (goto-char (point-min))
   (while (re-search-forward "^---+\n\n" nil t)
-    (replace-match "" t t)))
+    (replace-match (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration) t t)))
 
 ;;;;;; Headings
 
