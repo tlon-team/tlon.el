@@ -1264,7 +1264,6 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tex-replace-keys-with-citations nil 'mdx 'audio)
-    (tlon-tts-process-formatting)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)
     (tlon-tts-process-paragraphs)
@@ -1274,6 +1273,7 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-process-globa-phonetic-replacements)
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-links)
+    (tlon-tts-process-formatting) ; should probably be after `tlon-tts-process-links'
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
     (tlon-tts-remove-unsupported-ssml-tags)
