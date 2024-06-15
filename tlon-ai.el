@@ -43,6 +43,14 @@
   :type 'symbol
   :group 'tlon-ai)
 
+(defcustom tlon-ai-overwrite-alt-text nil
+  "Whether to overwrite existing alt text in images.
+This variable only affects the behavior of
+`tlon-ai-set-image-alt-text-in-buffer'; it is ignored by
+`tlon-ai-set-image-alt-text', which always overwrites."
+  :type 'boolean
+  :group 'tlon-ai)
+
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -395,13 +403,15 @@ repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
 
 (declare-function tlon-md-get-tag-pattern "tlon-md")
 (defun tlon-ai-set-image-alt-text-in-buffer ()
-  "Insert a description of all the images in the current buffer."
+  "Insert a description of all the images in the current buffer.
+If the image already contains an `alt' field, overwrite it when
+`tlon-ai-overwrite-alt-text' is non-nil."
   (interactive)
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward (tlon-md-get-tag-pattern "Figure") nil t)
-      (tlon-ai-set-image-alt-text))
-    (message "Successfully added alt text to all images in buffer.")))
+      (when (or tlon-ai-overwrite-alt-text (not (match-string 6)))
+	(tlon-ai-set-image-alt-text)))))
 
 (declare-function dired-get-filename "dired")
 (defun tlon-ai-read-image-file (&optional file)
@@ -738,6 +748,12 @@ If RESPONSE is nil, return INFO."
 
 ;;;;; Menu
 
+(transient-define-infix tlon-ai-overwrite-alt-text-toggle-infix ()
+  "Toggle the value of `tlon-ai-overwrite-alt-text' in `ai' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-ai-overwrite-alt-text
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
+
 (defun tlon-ai-batch-fun-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
   (tlon-transient-read-symbol-choice prompt '(tlon-get-abstract-with-or-without-ai
@@ -792,16 +808,19 @@ variable."
     "Bibtex"
     ("b" "set language of bibtex"               tlon-ai-set-language-bibtex)
     ""
-    "Images"
-    ("i d" "describe image"                     tlon-ai-describe-image)
-    ("i s" "set alt text"                       tlon-ai-set-image-alt-text)
-    ""
     "Math"
     ;; Create command to translate all images
     ("m" "translate math"                       tlon-ai-translate-math)
     ;; TODO: develop this
     ;; ("M" "translate all math"                   tlon-ai-translate-math-in-buffer)
     ]
+   ["Images"
+    ("i d" "describe image"                     tlon-ai-describe-image)
+    ("i s" "set alt text"                       tlon-ai-set-image-alt-text)
+    ("i S" "set alt text in buffer"             tlon-ai-set-image-alt-text-in-buffer)
+    ""
+    "Options"
+    ("i -o" "overwrite alt text"                tlon-ai-overwrite-alt-text-toggle-infix)]
    ["Summarize"
     ("s s" "get abstract with or without AI"    tlon-get-abstract-with-or-without-ai)
     ("s n" "get abstract without AI"            tlon-fetch-and-set-abstract)
@@ -810,10 +829,10 @@ variable."
     ("s p" "get abstract with AI from PDF"      tlon-get-abstract-with-ai-from-pdf)
     ("s b" "summarize bibtex entry"             tlon-ai-summarize-bibtex-entry)
     ""
-    "Summarize parameters"
-    ("-b" "batch"                               tlon-ai-batch-fun-infix)
-    ("-m" "mullvad connection duration"         tlon-mullvad-connection-duration-infix)
-    ("-o" "overwrite"                           tlon-abstract-overwrite-infix)
+    "Options"
+    ("s -b" "batch"                             tlon-ai-batch-fun-infix)
+    ("s -m" "mullvad connection duration"       tlon-mullvad-connection-duration-infix)
+    ("s -o" "overwrite"                         tlon-abstract-overwrite-infix)
     ""
     ("-d" "debug"                               tlon-menu-infix-toggle-debug)]])
 
