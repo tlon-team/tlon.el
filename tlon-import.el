@@ -348,6 +348,10 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 		       (match-string-no-properties 2 identifier)))))
     id))
 
+(defun tlon-import-eaf-get-url-from-id (id)
+  "Return the EAF URL from ID."
+  (format "https://forum.effectivealtruism.org/posts/%s" id))
+
 (defun tlon-import-eaf-get-slug-from-identifier (identifier)
   "Return the EAF tag slug from IDENTIFIER, if found."
   (when (string-match (format "^.+?forum.effectivealtruism.org/topics/%s"
