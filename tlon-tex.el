@@ -566,46 +566,25 @@ If FILE is nil, use the file visited by the current buffer."
 	(ebib-extras-set-field key value)))
     (ebib-generate-autokey)))
 
-;;;;; Misc
+;;;;; Convert to `Cite'
 
-(defvar citar-bibliography)
-;; TODO: Maybe I should use `query-replace-regexp', to deal with the `save-match-data' issue?
-(defun tlon-replace-titles (&optional file)
-  "Replace titles in FILE with proper citations."
+(defvar markdown-regex-link-inline)
+(defun tlon-convert-links-to-cite ()
+  "Prompt the user to convert all links in the current buffer to citations."
   (interactive)
-  (let ((file (or file (buffer-file-name)))
-	(titles (tlon-get-field-in-bibliography "title"))
-	(citar-bibliography tlon-bibliography-files)
-	(open-delim "[\"'“‘\\[\\*")
-	(close-delim "[\"'”’\\]\\*]")
-	always-long always-short)
-    (find-file file)
-    (save-excursion
-      (dolist (title titles)
-	(catch 'skip
-	  (let (replacement)
-	    (goto-char (point-min))
-	    (when (re-search-forward (concat open-delim title close-delim) nil t)
-	      (save-match-data
-		(let ((choice (cond (always-long ?l)
-				    (always-short ?s)
-				    ((read-key "long (l) | short (s) | skip (n) | all long (L) | all short (S)")))))
-		  (if (eq choice ?n)
-		      (throw 'skip (message (format "Skipping `%s'." title)))
-		    (when-let* ((key (tlon-bibliography-lookup "=key=" "title" title))
-				;; TODO: replace with constants
-				(cite-long (format "<Cite bibKey={\"%s\"} />" key))
-				(cite-short (format "<Cite bibKey={\"%s\"} short />" key)))
-		      (setq replacement (pcase choice
-					  ((or ?l ?L)
-					   (when (eq choice ?L)
-					     (setq always-long t))
-					   cite-long)
-					  ((or ?s ?S)
-					   (when (eq choice ?S)
-					     (setq always-short t))
-					   cite-short)))))))
-	      (replace-match replacement t t))))))))
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward markdown-regex-link-inline nil t)
+      (let* ((url (match-string-no-properties 6))
+             (key (tlon-bibliography-lookup "=key=" "url" url))
+             (start (match-beginning 0))
+             (end (match-end 0)))
+        (when key
+          (save-match-data
+            (when (y-or-n-p (format "Convert %s to citation with key %s? " url key))
+              (goto-char start)
+              (when (re-search-forward markdown-regex-link-inline end t)
+                (replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key) ".") t t)))))))))
 
 (declare-function tlon-md-get-tag-to-fill "tlon-md")
 ;;;###autoload
@@ -733,7 +712,8 @@ argument."
     ("z" "Add with Zotra"                      zotra-extras-add-multiple-urls)
     ""
     "Convert to `Cite'"
-    ("b" "Convert bibliography"                tlon-convert-bibliography-to-cite)]
+    ("b" "Convert bibliography"                tlon-convert-bibliography-to-cite)
+    ("l" "Convert links"                       tlon-convert-links-to-cite)]
    ["Ebib"
     ("a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
     ("c" "Create translation entry"            tlon-tex-create-translation-entry)]
