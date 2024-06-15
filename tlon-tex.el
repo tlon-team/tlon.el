@@ -610,7 +610,7 @@ If FILE is nil, use the file visited by the current buffer."
 (declare-function tlon-md-get-tag-to-fill "tlon-md")
 ;;;###autoload
 (defun tlon-convert-bibliography-to-cite ()
-  "Convert all links in a bibliography section to citations using `Cite'.
+  "Convert all references in a bibliography section to citations using `Cite'.
 NB: This command should be run with the buffer narrowed to the section
 containing the bibliography (such as the \"Further reading\" section of a tag),
 since it can only handle works cited one work per line and does not handle
