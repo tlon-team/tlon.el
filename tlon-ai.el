@@ -97,9 +97,9 @@
 ;;;;; Image description
 
 (defconst tlon-ai-describe-image-prompt
-  `((:prompt "Please provide a concise description of the following image:\n\n[[file:%s]]\n\nThe description should consist of one or two sentences and must never exceed 50 words."
+  `((:prompt "Please provide a concise description of the following image:\n\n[[file:%s]]\n\nThe description should consist of one or two sentences and must never exceed 50 words. If you need to use quotes, please use single quotes."
 	     :language "en")
-    (:prompt "Por favor, describe brevemente la siguiente imagen:\n\n[[file:%s]]\n\nLa descripción debe consistir de una o dos oraciones y en ningún caso debe exceder las 50 palabras."
+    (:prompt "Por favor, describe brevemente la siguiente imagen:\n\n[[file:%s]]\n\nLa descripción debe consistir de una o dos oraciones y en ningún caso debe exceder las 50 palabras. Si necesitas usar, por favor utiliza comillas simples."
 	     :language "es")))
 
 ;;;;; Summarization
