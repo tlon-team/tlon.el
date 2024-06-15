@@ -178,7 +178,8 @@ effects to begin with."
 		"\\1"))
 
 (defun tlon-autofix-percent-signs ()
-  "Add non-breaking space before percent sign."
+  "Add non-breaking space before percent sign.
+The character used is U+202F NARROW NO-BREAK SPACE."
   (tlon-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
 		  "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
 		"\\1 %\\2"))
@@ -195,7 +196,7 @@ non-breaking."
 (defvar ffap-url-regexp)
 (declare-function tlon-md-get-tag-pattern "tlon-md")
 (defun tlon-autofix-thousands-separators (&optional separator)
-  "Replace thousands SEPARATOR (typically, a comma or a period) with thin spaces.
+  "Replace thousands SEPARATOR (typically, a comma or a period) with narrow spaces.
 Do not perform these replacements if the terms occur in math formulae, links, or
 match certain words that should not be altered, such as \"80,000 Hours\"."
   (interactive)
