@@ -804,6 +804,13 @@ The first placeholder is the input file, and the second is the output file.")
     ("es" "Imagen." .""))
   "Listener cues for images.")
 
+;;;;;; OWID
+
+(defconst tlon-tts-owid-cues
+  '(("en" "Chart." . "")
+    ("es" "Cuadro." .""))
+  "Listener cues for Our World In Data charts.")
+
 ;;;;;; Headings
 
 ;; TODO: develop function for processing headings
@@ -1558,7 +1565,8 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   "Add listener cues to relevant elements."
   (tlon-tts-process-quotes)
   (tlon-tts-process-asides)
-  (tlon-tts-process-images))
+  (tlon-tts-process-images)
+  (tlon-tts-process-owid))
 
 (defun tlon-tts-add-listener-cues (type)
   "Add listener cues for text enclosed in tags of TYPE."
@@ -1566,7 +1574,8 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
       (pcase type
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
 	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
-	('image (list tlon-md-image tlon-tts-image-cues 1))
+	('image (list (tlon-md-get-tag-pattern "Figure") tlon-tts-image-cues 6))
+	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
 	;; TODO: determine if other types should be added
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
@@ -1627,6 +1636,10 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 (defun tlon-tts-process-images ()
   "Add listener cues for images."
   (tlon-tts-add-listener-cues 'image))
+
+(defun tlon-tts-process-owid ()
+  "Add listener cues for One World In Data charts."
+  (tlon-tts-add-listener-cues 'owid))
 
 ;;;;;; Links
 
