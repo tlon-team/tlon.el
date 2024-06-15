@@ -1248,8 +1248,11 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Upload audio FILE to the server."
   (interactive)
   (let* ((file (or file (files-extras-read-file file)))
-	 (lang (or tlon-tts-current-language (tlon-select-language 'code 'babel)))
-	 (bare-dir (tlon-select-bare-dir lang))
+	 (repo (tlon-get-repo-from-file file))
+	 (lang (or tlon-tts-current-language
+		   (tlon-repo-lookup :language :dir repo)
+		   (tlon-select-language 'code 'babel)))
+	 (bare-dir (or (tlon-get-bare-dir file) (tlon-select-bare-dir lang)))
 	 (destination (format "fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
 			      lang bare-dir (file-name-nondirectory file))))
     (tlon-upload-file-to-server file destination)))
