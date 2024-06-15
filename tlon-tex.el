@@ -569,6 +569,7 @@ If FILE is nil, use the file visited by the current buffer."
 ;;;;; Convert to `Cite'
 
 (defvar markdown-regex-link-inline)
+;;;###autoload
 (defun tlon-convert-links-to-cite ()
   "Prompt the user to convert all links in the current buffer to citations."
   (interactive)
