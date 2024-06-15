@@ -88,7 +88,7 @@ FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
                       ("Authorization" . ,(concat "Bearer " access-token)))
            :parser 'json-read
 	   :data (when (and (string= route "update/babel-refs") (string= site "local"))
-		   (json-encode-hash-table '((force_update . t))))
+		   (json-encode '((force_update . t))))
            :success (cl-function
                      (lambda (&key data &allow-other-keys)
 		       "Print response, and possibly make new request depending on ROUTE."
