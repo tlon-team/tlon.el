@@ -525,6 +525,7 @@ If the field `landig' is present, the function does nothing; else, it sets the
 ;; TODO: maybe generalize to other fields, e.g. isbn, doi
 (declare-function tlon-get-urls-in-file "tlon-url")
 (declare-function simple-extras-simplify-url "simple-extras")
+(declare-function tlon-import-eaf-get-id-from-identifier "tlon-import")
 (defun tlon-get-missing-urls (&optional file)
   "Return all URLs present in FILE but missing in the Tlön bibliography.
 If FILE is nil, use the file visited by the current buffer."
