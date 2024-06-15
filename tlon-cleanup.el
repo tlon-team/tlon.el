@@ -133,8 +133,25 @@ are no level 2 headings and some headings level 3 or higher."
 Please note that the order in which these functions are called is relevant. Do
 not alter it unless you know what you are doing."
   (interactive)
+  (tlon-cleanup-eaf-replace-urls)
   (tlon-cleanup-fix-footnote-refs)
   (tlon-cleanup-remove-text))
+
+(defvar tlon-import-eaf-url-post-canonical)
+(defvar tlon-import-eaf-url-post-collection)
+(defvar tlon-import-eaf-base-regexp)
+(defun tlon-cleanup-eaf-replace-urls ()
+  "Replace EA Forum URLs in the current buffer with their \"canonical\" forms."
+  (interactive)
+  (save-excursion
+    (dolist (pattern (list tlon-import-eaf-url-post-canonical
+			   tlon-import-eaf-url-post-collection))
+      (goto-char (point-min))
+      (while (re-search-forward pattern nil t)
+	(replace-match (format "%s/posts/%s"
+			       (replace-regexp-in-string "\\\\" "" tlon-import-eaf-base-regexp)
+			       (match-string-no-properties 2))
+		       t)))))
 
 ;; If problems arise, test against documents imported from these URLs:
 ;; https://forum.effectivealtruism.org/s/vSAFjmWsfbMrTonpq/p/u5JesqQ3jdLENXBtB
