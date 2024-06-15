@@ -264,7 +264,7 @@ If citation is not found, return nil."
 
 ;;;;; File uploading
 
-(declare-function read-file-name "files-extras")
+(declare-function files-extras-read-file "files-extras")
 (defun tlon-upload-file-to-server (&optional file destination)
   "Upload FILE asynchronously to DESTINATION in server."
   (interactive)
