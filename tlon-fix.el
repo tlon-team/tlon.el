@@ -262,8 +262,9 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
   (tlon-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
 		   " <abbr>\\1</abbr>"))
 
-(defun tlon-manual-fix-thin-spaces ()
-  "Prompt the user to add a thin space between abbreviations followed by a period."
+(defun tlon-manual-fix-narrow-spaces ()
+  "Prompt user to add a narrow space between abbreviations followed by a period.
+The character used is U+202F NARROW NO-BREAK SPACE."
   (tlon-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
 		   "\\1 \\2"))
 
@@ -287,7 +288,7 @@ dedicated function."
   (tlon-manual-fix-em-dashes)
   (tlon-manual-fix-number-ranges)
   (tlon-manual-fix-roman-numerals)
-  (tlon-manual-fix-thin-spaces)
+  (tlon-manual-fix-narrow-spaces)
   (tlon-manual-fix-solo)
   (tlon-manual-fix-podcast))
 
