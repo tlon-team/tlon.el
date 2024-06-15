@@ -277,7 +277,7 @@ If citation is not found, return nil."
     (message "Uploading `%s' to `%s'..." file destination)
     (set-process-sentinel
      (get-buffer-process "*scp-upload*")
-     (lambda (proc event)
+     (lambda (_ event)
        (when (string= event "finished\n")
 	 (message "Upload successful!"))
        (unless (string= event "finished\n")
