@@ -387,8 +387,7 @@ repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
   (interactive)
   (save-excursion
     (if-let* ((src (car (tlon-get-tag-attribute-values "Figure")))
-	      (file (file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
-				      (replace-regexp-in-string "^\\.\\./" "" src)))
+	      (file (tlon-ai-get-image-file-from-src src))
 	      (pos (point-marker)))
 	(tlon-ai-describe-image nil nil
 				(lambda (response)
@@ -427,6 +426,20 @@ and the file selected by the user."
       (when (derived-mode-p 'dired-mode)
 	(dired-get-filename))
       (read-file-name "Image file: ")))
+
+(defun tlon-ai-get-image-file-from-src (src)
+  "Get the image file from the SRC attribute.
+If SRC is a One World in Data URL, download the image and return the local file.
+Otherwise, construct a local file path from SRC and return it."
+  (if (string-match-p "ourworldindata.org" src)
+      (let* ((extension ".png")
+	     (url (format "https://ourworldindata.org/grapher/thumbnail/%s%s"
+			  (car (last (split-string src "/"))) extension))
+	     (file (make-temp-file nil nil extension)))
+	(url-copy-file url file t)
+	file)
+    (file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
+		      (replace-regexp-in-string "^\\.\\./" "" src))))
 
 ;;;;; Summarization
 
