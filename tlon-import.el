@@ -336,6 +336,7 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
       ((pred tlon-import-eaf-article-id-p) identifier)
       ((pred tlon-import-eaf-tag-slug-p) identifier))))
 
+;; TODO: make it work with LW, AF, if it doesn’t already
 (defun tlon-import-eaf-get-id-from-identifier (identifier)
   "Return the EAF post ID from IDENTIFIER, if found."
   (when-let ((id (or (when (string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
