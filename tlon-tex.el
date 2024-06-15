@@ -132,14 +132,14 @@ NOTE: This is not working correctly.")
 
 (defvar tlon-md-regexp-link-formatter "tlon-md")
 (defconst tlon-regexp-expanded-citation-with-link
-  (format (format tlon-regexp-expanded-citation-formatter
-		  (format tlon-md-regexp-link-formatter "" "" "1" "" "" "" "" "")))
-  "Regexp to match a citation with a link in our \"long\" style.
+  (format tlon-regexp-expanded-citation-formatter
+	  (format tlon-md-regexp-link-formatter "" "" "1" "" "" "" "" ""))
+  "Regexp to match a citation whose title has a link in our \"long\" style.
 The capture group 3 contains the title of the work.")
 
 (defconst tlon-regexp-expanded-citation-with-no-link
   (format (format tlon-regexp-expanded-citation-formatter "[\"“'‘\\*]?\\(?1:.*?\\)[\"”'’\\*]"))
-  "Regexp to match a citation with a link in our \"long\" style.
+  "Regexp to match a citation whose title has no link in our \"long\" style.
 The capture group 3 contains the title of the work.")
 
 ;;;; Functions
