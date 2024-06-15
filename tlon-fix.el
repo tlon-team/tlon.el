@@ -183,6 +183,14 @@ effects to begin with."
 		  "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
 		"\\1 %\\2"))
 
+(defun tlon-autofix-thin-spaces ()
+  "Replace thin spaces with narrow spaces.
+This replaces the character U+2009 THIN SPACE with U+202F NARROW NO-BREAK SPACE.
+Thin and narrow spaces have exactly the same width, but only the latter are
+non-breaking."
+  (tlon-autofix '(" ")
+		" "))
+
 (defvar markdown-regex-link-inline)
 (defvar ffap-url-regexp)
 (declare-function tlon-md-get-tag-pattern "tlon-md")
@@ -228,6 +236,7 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
   (tlon-autofix-periods-in-headings)
   (tlon-autofix-percent-signs)
   (tlon-autofix-thousands-separators)
+  (tlon-autofix-thin-spaces)
   (let ((after-save-hook (remove #'tlon-autofix-all after-save-hook)))
     (save-buffer)
     (add-hook 'after-save-hook #'tlon-autofix-all nil t)))
