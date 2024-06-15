@@ -45,17 +45,34 @@
 
 ;;;;; EAF validation
 
-(defconst tlon-import-eaf-url-regexp
-  "forum\\.effectivealtruism\\.org/"
-  "Regular expression for validating EAF URLs.")
+(defconst tlon-import-eaf-base-regexp
+  "forum\\.effectivealtruism\\.org"
+  "Regular expression for matching the base EAF URL.")
 
 (defconst tlon-import-eaf-article-id-regexp
   "\\([[:alnum:]]\\{17\\}\\)"
-  "Regular expression for validating post IDs.")
+  "Regular expression for matching EAF post IDs.")
+
+(defconst tlon-import-eaf-url-post-canonical
+  (concat (format "\\(?1:%s/posts/\\(?2:%s\\)\\)" tlon-import-eaf-base-regexp tlon-import-eaf-article-id-regexp)
+	  "\\(?:[-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+([-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+)\\(?:[-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+[-a-z0-9_=#$@~%&*+\\/[:word:]]\\)?\\|[-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+[-a-z0-9_=#$@~%&*+\\/[:word:]]\\)?")
+  "Regular expression for validating canonical URLs of EAF posts.
+The first group captures the entire canonical URL, the second group captures the
+post ID.
+
+The concatenated string following the first capture group was obtained from
+`browse-url-button-regexp'. This is needed because the URLs may contain a slug
+after the proper ID.")
+
+(defconst tlon-import-eaf-url-post-collection
+  (format "\\(?1:%s/s/\\(?3:%s\\)/p/\\(?2:%2$s\\)\\)" tlon-import-eaf-base-regexp tlon-import-eaf-article-id-regexp)
+  "Regular expression for validating URLs of posts embedded in a collection.
+The first group captures the entire URL, the second group captures the post ID
+and the third group captures the collection ID.")
 
 (defconst tlon-import-eaf-tag-slug-regexp
   "\\([[:alnum:]-]*\\)"
-  "Regular expression for validating tag slugs.")
+  "Regular expression for matching tag slugs.")
 
 ;;;;; Pandoc
 
@@ -295,9 +312,9 @@ If ASYNC is t, run the request asynchronously."
 
 ;;;;; EAF validation
 
-(defun tlon-import-eaf-url-regexp (url)
+(defun tlon-import-eaf-base-regexp (url)
   "Return t if URL is an EAF URL, nil otherwise."
-  (not (not (string-match tlon-import-eaf-url-regexp url))))
+  (not (not (string-match tlon-import-eaf-base-regexp url))))
 
 (defun tlon-import-eaf-article-id-p (identifier)
   "Return t if IDENTIFIER is a post ID, nil otherwise."
