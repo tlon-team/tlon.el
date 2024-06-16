@@ -699,6 +699,15 @@ The first placeholder is the input file, and the second is the output file.")
     (9 . (("es" . "a la novena"))))
   "List of exponents and their irregular verbal equivalents.")
 
+(defconst tlon-tts-80000
+  '(("en" . "Eighty thousand")
+    ("es" . "Ochenta mil")
+    ("pt" . "Oitenta mil")
+    ("fr" . "Quatre-vingt mille")
+    ("de" . "Achtzigtausend")
+    ("it" . "Ottantamila"))
+  "The number 80000 in different languages.")
+
 ;;;;; Currencies
 
 (defconst tlon-tts-currencies
@@ -1682,7 +1691,8 @@ image links are handled differently."
   "Process numbers as appropriate."
   (tlon-tts-process-numerals-convert-powers)
   (tlon-tts-process-numerals-convert-roman)
-  (tlon-tts-process-numerals-remove-thousands-separators))
+  (tlon-tts-process-numerals-remove-thousands-separators)
+  (tlon-tts-process-80000))
 
 ;;;;;;; Specific
 
@@ -1731,6 +1741,15 @@ image links are handled differently."
   (goto-char (point-min))
   (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
     (replace-match (replace-regexp-in-string tlon-default-thousands-separator "" (match-string 1)) t t)))
+
+;;;;;;;; Misc
+
+(defun tlon-tts-process-80000 ()
+  "Replace 80000 with its verbal equivalent.
+Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish."
+  (goto-char (point-min))
+  (while (re-search-forward "80000" nil t)
+    (replace-match (alist-get (tlon-tts-get-current-language) tlon-tts-80000 nil nil #'string=) t t)))
 
 ;;;;;; Currencies
 
