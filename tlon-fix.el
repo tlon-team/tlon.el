@@ -192,6 +192,11 @@ non-breaking."
   (tlon-autofix '(" ")
 		" "))
 
+(defun tlon-autofix-superscripts ()
+  "Replace carets with `<sup'> tags."
+  (tlon-autofix '("\\^\\(?1:[[:digit:]]+\\)\\^")
+		"<sup>\\1</sup>"))
+
 (defvar markdown-regex-link-inline)
 (defvar ffap-url-regexp)
 (declare-function tlon-md-get-tag-pattern "tlon-md")
@@ -238,6 +243,7 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
   (tlon-autofix-percent-signs)
   (tlon-autofix-thousands-separators)
   (tlon-autofix-thin-spaces)
+  (tlon-autofix-superscripts)
   (let ((after-save-hook (remove #'tlon-autofix-all after-save-hook)))
     (save-buffer)
     (add-hook 'after-save-hook #'tlon-autofix-all nil t)))
