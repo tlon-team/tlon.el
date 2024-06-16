@@ -1003,12 +1003,16 @@ If VOICE is nil, prompt the user to select a voice."
 (defun tlon-tts-get-voices ()
   "Get available voices in the current language for the current TTS engine."
   (let* ((voices (symbol-value (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine)))
-	 (voice (completing-read "Voice: "
-				 (apply #'append
-					(mapcar (lambda (language)
-						  "Return lists of monolingual and multilingual voices."
-						  (tlon-lookup-all voices :voice :language language))
-						`(,(tlon-tts-get-current-language) "multilingual"))))))
+	 (voices-in-lang (apply #'append
+				(mapcar (lambda (language)
+					  "Return lists of monolingual and multilingual voices."
+					  (tlon-lookup-all voices :voice :language language))
+					`(,(tlon-tts-get-current-language) "multilingual"))))
+	 (voices-cons (mapcar (lambda (voice)
+				(let ((gender (tlon-lookup voices :gender :voice voice)))
+				  (cons (format "%-20.20s %-20.20s" voice gender) voice)))
+			      voices-in-lang))
+	 (voice (alist-get (completing-read "Voice: " voices-cons) voices-cons nil nil #'string=)))
     ;; we use voice ID if available, for those engines that require it
     (if-let ((id (tlon-lookup voices :id :voice voice))) id voice)))
 
