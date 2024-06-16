@@ -108,7 +108,7 @@ them from the captured string as part of the post-processing.")
 ;;;;;; Math
 
 (defconst tlon-md-math-power
-  "\\b\\(?1:[[:digit:]]+\\)\\^\\(?2:[[:digit:]]+\\)\\b"
+  "\\b\\(?1:[[:digit:]]+\\)<sup>\\(?2:[[:digit:]]+\\)</sup>\\b"
   "Regexp pattern for matching a number raised to a power.
 The first group captures the base, and the second group captures
 the exponent.")
