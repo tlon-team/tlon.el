@@ -514,6 +514,16 @@ is outside that repo’s directory."
 	(when-let ((repo-dir (tlon-repo-lookup :dir :name dir-cand)))
 	  (throw 'found repo-dir))))))
 
+;;;;; Get language
+
+;; TODO: we also have `tlon-translation-language'; think about what to do
+(defun tlon-get-language (&optional error)
+  "Get the current language.
+If ERROR is non-nil, signal an error if the language is not found. Otherwise,
+return nil."
+  (let ((repo (tlon-get-repo (when error 'error))))
+    (tlon-repo-lookup :language :dir repo)))
+
 ;;;;; Lookup
 
 ;;;;;; Common
@@ -862,8 +872,7 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
   "Return the decimal separator for LANGUAGE.
 TYPE is either `thousands' or `decimal'. If LANGUAGE is nil, use the language of
 the current repository."
-  (when-let* ((language (or language
-			    (tlon-repo-lookup :language :dir (tlon-get-repo 'no-prompt))))
+  (when-let* ((language (or language (tlon-get-language)))
 	      (separators '("," "."))
 	      (en (pcase type ('thousands ",") ('decimal ".")))
 	      (rest (lambda () (car (remove en separators)))))

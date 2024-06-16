@@ -328,7 +328,7 @@ The entity can be a tag or an author."
 	 (current-link (markdown-link-at-pos (point)))
 	 (current-desc (nth 2 current-link))
 	 (current-target (nth 3 current-link))
-	 (language (tlon-repo-lookup :language :dir (tlon-get-repo)))
+	 (language (tlon-get-language))
 	 current-element-title)
     (when current-target
       (setq current-element-title
