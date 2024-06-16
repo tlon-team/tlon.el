@@ -465,7 +465,7 @@ the actual user.")
 
 (mapc #'tlon-set-dir tlon-repos)
 
-;;;;; Ger repo
+;;;;; Get repo
 
 (defun tlon-get-repo (&optional no-prompt include-all)
   "Get Babel repository path.
