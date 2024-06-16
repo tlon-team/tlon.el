@@ -265,8 +265,9 @@ If citation is not found, return nil."
 ;;;;; File uploading
 
 (declare-function files-extras-read-file "files-extras")
-(defun tlon-upload-file-to-server (&optional file destination)
-  "Upload FILE asynchronously to DESTINATION in server."
+(defun tlon-upload-file-to-server (&optional file destination delete-after-upload)
+  "Upload FILE asynchronously to DESTINATION in server.
+If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
   (interactive)
   (let ((file (or file (files-extras-read-file file)))
 	(destination (or destination (read-directory-name "Destination: "))))
@@ -279,6 +280,8 @@ If citation is not found, return nil."
      (get-buffer-process "*scp-upload*")
      (lambda (_ event)
        (when (string= event "finished\n")
+	 (when delete-after-upload
+	   (delete-file file))
 	 (message "Upload successful!"))
        (unless (string= event "finished\n")
 	 (progn

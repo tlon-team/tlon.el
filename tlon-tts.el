@@ -1249,7 +1249,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 
 (declare-function tlon-upload-file-to-server "tlon-api")
 (defun tlon-tts-upload-audio-file-to-server (&optional file)
-  "Upload audio FILE to the server."
+  "Upload audio FILE to the server and delete it locally."
   (interactive)
   (let* ((file (or file (files-extras-read-file file)))
 	 (repo (tlon-get-repo-from-file file))
@@ -1259,7 +1259,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 	 (bare-dir (or (tlon-get-bare-dir file) (tlon-select-bare-dir lang)))
 	 (destination (format "fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
 			      lang bare-dir (file-name-nondirectory file))))
-    (tlon-upload-file-to-server file destination)))
+    (tlon-upload-file-to-server file destination 'delete-after-upload)))
 
 ;;;;; Cleanup
 
