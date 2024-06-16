@@ -767,9 +767,14 @@ The first placeholder is the input file, and the second is the output file.")
 
 ;;;;; Abbreviations
 
-(defvar tlon-tts-abbreviations
+(defvar tlon-global-abbreviations
   (tlon-parse-json tlon-file-global-abbreviations)
-  "Standard abbreviations and their spoken equivalent in each language.")
+  "Standard abbreviations and their spoken equivalent in each language.
+Note that the replacements are performed in the order they appear in the list.
+This may be relevant for certain types of abbreviations and languages. For
+example, in Spanish certain abbreviations will be expanded in one form if the
+term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km vs.
+2 km).")
 
 ;;;;; Phonetic replacements
 
@@ -1505,7 +1510,7 @@ variable `tlon-local-abbreviations'."
 
 (defun tlon-tts-get-global-abbreviations ()
   "Get abbreviations."
-  (tlon-tts-get-associated-terms tlon-tts-abbreviations))
+  (tlon-tts-get-associated-terms tlon-global-abbreviations))
 
 ;;;;;; Phonetic replacements
 
@@ -1872,7 +1877,7 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 (defun tlon-tts-edit-abbreviations ()
   "Edit abbreviations."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-abbreviations tlon-file-global-abbreviations))
+  (tlon-tts-edit-entry 'tlon-global-abbreviations tlon-file-global-abbreviations))
 
 ;;;;;; Phonetic replacements
 
