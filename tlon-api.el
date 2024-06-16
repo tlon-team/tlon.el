@@ -70,6 +70,7 @@ FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
 		   "https://uqbar.local.dev/"
 		 (tlon-repo-lookup :url
 				   :subproject "uqbar"
+				   ;; TODO: decided how to handle multiple langs, once we support them
 				   :language tlon-translation-language)))
 	 (route-url (concat (format "%sapi/%s" site route)
 			    (when (and force-update
