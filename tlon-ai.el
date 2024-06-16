@@ -374,7 +374,7 @@ Use LANGUAGE for the description; if nil, obtain the language from the current
 repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
   (interactive)
   (let* ((file (tlon-ai-read-image-file file))
-	 (language (or language (tlon-repo-lookup :language :dir (tlon-get-repo))))
+	 (language (or language (tlon-get-language)))
 	 (prompt (format
 		  (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language)
 		  file)))
@@ -709,8 +709,7 @@ request was sent."
 				  (if (region-active-p)
 				      (buffer-substring-no-properties (region-beginning) (region-end))
 				    (word-at-point)))
-		     (or (tlon-repo-lookup :language :dir (tlon-get-repo 'no-prompt))
-			 (tlon-select-language 'code))))
+		     (or (tlon-get-language) (tlon-select-language 'code))))
   (let ((prompt (tlon-lookup tlon-ai-transcribe-phonetically-prompt
 			     :prompt :language language)))
     (tlon-make-gptel-request prompt expression #'tlon-ai-callback-copy)))
@@ -737,7 +736,7 @@ LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
 request was sent."
   (interactive (list (read-string "Math expression: "
 				  (buffer-substring-no-properties (region-beginning) (region-end)))
-		     (tlon-repo-lookup :language :dir (tlon-get-repo))))
+		     (tlon-get-language)))
   (let ((prompt (tlon-lookup tlon-ai-translate-math-prompt :prompt :language language)))
     (tlon-make-gptel-request prompt expression #'tlon-ai-callback-insert)))
 
