@@ -686,6 +686,15 @@ instead."
 	  (tlon-tex-do-replace-keys-with-citations list))
       (tlon-tex-do-replace-keys-with-citations list))))
 
+;; NOTE: we use this temporarily to remove locators for TTS processing.
+;; Eventually the locators should appear in a separate field.
+(defun tlon-tex-remove-locators ()
+  "Remove locators from citations in the current buffer."
+  (dolist (locator (mapcar #'cdr tlon-locators))
+    (goto-char (point-min))
+    (while (re-search-forward (concat ", " (regexp-quote locator)) nil t)
+      (replace-match "" t))))
+
 (defun tlon-tex-do-replace-keys-with-citations (list)
   "Perform the actual replacement of BibTeX keys with CSL-defined citations.
 LIST is a list of cons cells, where the car is the citation style and the cdr is
