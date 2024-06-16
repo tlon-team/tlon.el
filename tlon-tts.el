@@ -1288,17 +1288,17 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)
     (tlon-tts-process-paragraphs)
-    (tlon-tts-process-local-abbreviations)
-    (tlon-tts-process-global-abbreviations)
-    (tlon-tts-process-local-phonetic-replacements)
-    (tlon-tts-process-globa-phonetic-replacements)
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-links)
     (tlon-tts-process-formatting) ; should probably be after `tlon-tts-process-links'
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
     (tlon-tts-remove-unsupported-ssml-tags)
-    (tlon-tts-remove-final-break-tag))
+    (tlon-tts-remove-final-break-tag)
+    (tlon-tts-process-local-abbreviations)
+    (tlon-tts-process-global-abbreviations)
+    (tlon-tts-process-local-phonetic-replacements)
+    (tlon-tts-process-globa-phonetic-replacements))
   (goto-char (point-min)))
 
 ;;;;;; Notes
