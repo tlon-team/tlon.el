@@ -860,7 +860,7 @@ term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km 
   "Narrate CONTENT in LANGUAGE with VOICE using text-to-speech ENGINE.
 If region is active, read the region. Otherwise, read FILE.
 
-Save the audio file in the downloads folder."
+Save the audio file in the current directory."
   (interactive)
   (tlon-tts-set-all-current-values file content language voice)
   (tlon-tts-process-chunks)
@@ -893,7 +893,7 @@ This command is used for debugging purposes."
 				    (file-name-nondirectory tlon-tts-current-file-or-buffer)))
 	 (extension (cdr (tlon-tts-get-output-format)))
 	 (file-name (file-name-with-extension file-name-sans-extension extension)))
-    (file-name-concat paths-dir-downloads file-name)))
+    (file-name-concat default-directory file-name)))
 
 (defun tlon-tts-get-output-format ()
   "Return the output format for the current TTS engine.
