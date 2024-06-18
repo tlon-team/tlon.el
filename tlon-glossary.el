@@ -148,43 +148,58 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
   (call-interactively #'magit-push-current-to-pushremote))
 
 ;;;###autoload
-(defun tlon-extract-glossary (language deepl)
+(defun tlon-extract-glossary (language recipient)
   "Extract a LANGUAGE glossary from our multilingual glossary.
-If DEEPL is non-nil, include all entries and format them with the standard DeepL
-glossary format. Otherwise, include only entries of type \"variable\",
-and format them in a human-readable format."
+RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
+
+- `human': include only entries of type \"variable\", extract to a \"csv\"
+ file, and prompt the user to share the glossary with translators.
+
+- `deepl-editor': include all entries and extract to a \"csv\" file.
+
+- `deepl-api': include all entries and extract to a \"tsv\" file."
   (interactive (list (tlon-select-language 'code 'babel)
-		     (y-or-n-p "Extract for DeepL? ")))
-  (let ((source-path tlon-file-glossary-source)
-	(target-path (file-name-concat paths-dir-downloads (format "EN-%s.csv" (upcase language))))
-	json)
+		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api) nil t))))
+  (let* ((source-path tlon-file-glossary-source)
+	 (target-extension (pcase recipient
+			     ((or 'human 'deepl-editor) "csv")
+			     ('deepl-api "tsv")))
+	 (target-path (tlon-glossary-make-file language target-extension))
+	 json)
     (with-current-buffer (find-file-noselect source-path)
       (goto-char (point-min))
       (let ((json-array-type 'list))
 	(setq json (json-read))))
     (with-current-buffer (find-file-noselect target-path)
       (erase-buffer)
-      (tlon-insert-formatted-glossary json language deepl)
+      (tlon-insert-formatted-glossary json language recipient)
       (save-buffer))
-    (if (and deepl (y-or-n-p "Share glossary with translators? "))
-	(tlon-share-glossary target-path language)
-      (message "Glossary extracted to `%s'" target-path))))
+    (pcase recipient
+      ('human (when (y-or-n-p "Share glossary with translators? ")
+		(tlon-share-glossary target-path language)))
+      ((or 'deepl-editor 'deepl-api) (message "Glossary extracted to `%s'" target-path)))))
 
-(defun tlon-insert-formatted-glossary (json language deepl)
+(defun tlon-glossary-make-file (language extension)
+  "Make a glossary file for LANGUAGE with EXTENSION."
+  (file-name-concat paths-dir-downloads
+		    (format "EN-%s.%s" (upcase language) extension)))
+
+(defun tlon-insert-formatted-glossary (json language recipient)
   "Insert a properly formatted glossary in LANGUAGE from JSON data.
-Format the glossary for a human reader, unless DEEPL is non-nil, in which case
-format it for DeepL. When formatting it for a human reader, exclude invariant
-terms (these are terms included for the sole purpose of forcing DeepL to leave
-them untranslated)."
+Format the glossary based on its RECIPIENT: if `human' or `deepl-editor', in
+\"csv\" format; if `deepl-api', in \"tsv\" format. (DeepL requires different
+formats depending on whether the glossary is meant to be uploaded to the editor
+or via the API.)"
   (dolist (item json)
     (when-let* ((source-term (alist-get 'en item))
 		(target-term (alist-get (intern language) item))
-		(entry (if deepl
-			   (format "\"%s\",\"%s\",\"EN\",\"%s\"\n"
-				   source-term target-term (upcase language))
-			 (format "\"%s\",\"%s\"\n"
-				 source-term target-term))))
-      (when (or deepl (string= (alist-get 'type item) "variable"))
+		(entry (pcase recipient
+			 ('human (format "\"%s\",\"%s\"\n" source-term target-term))
+			 ('deepl-editor
+			  (format "\"%s\",\"%s\",\"EN\",\"%s\"\n" source-term target-term (upcase language)))
+			 ('deepl-api (format "%s\t%s\n" source-term target-term)))))
+      (when (or (member recipient '(deepl-editor deepl-api))
+		(string= (alist-get 'type item) "variable"))
 	(insert entry)))))
 
 (defvar tlon-email-language)
