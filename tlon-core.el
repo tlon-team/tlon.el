@@ -780,8 +780,8 @@ languages in the Babel project only."
 
 ;;;;; json
 
-(defun tlon-parse-json (file &optional object-type array-type key-type)
-  "Parse JSON FILE using array TYPE.
+(defun tlon-read-json (&optional file object-type array-type key-type)
+  "Read JSON substring or FILE using array TYPE.
 OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
 ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 `string' (default), `symbol' or `keyword'."
