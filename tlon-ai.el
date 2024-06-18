@@ -403,13 +403,15 @@ repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
 (declare-function tlon-md-get-tag-pattern "tlon-md")
 (defun tlon-ai-set-image-alt-text-in-buffer ()
   "Insert a description of all the images in the current buffer.
-If the image already contains an `alt' field, overwrite it when
+If the image already contains a non-empty `alt' field, overwrite it when
 `tlon-ai-overwrite-alt-text' is non-nil."
   (interactive)
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward (tlon-md-get-tag-pattern "Figure") nil t)
-      (when (or tlon-ai-overwrite-alt-text (not (match-string 6)))
+      (when (or tlon-ai-overwrite-alt-text
+		(not (match-string 6))
+		(string-empty-p (match-string 6)))
 	(tlon-ai-set-image-alt-text)))))
 
 (declare-function dired-get-filename "dired")
