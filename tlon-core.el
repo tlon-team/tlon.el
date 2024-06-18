@@ -789,13 +789,15 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 	(json-array-type (or array-type 'list))
 	(json-key-type (or key-type 'string))
 	(json-false :json-false))
-    (json-read-file file)))
+    (if file
+	(json-read-file file)
+      (json-read))))
 
-(defun tlon-write-data (file data)
-  "Write DATA to a JSON FILE."
-  (with-temp-file file
-    (insert (json-encode data))
-    (json-pretty-print-buffer)))
+  (defun tlon-write-data (file data)
+    "Write DATA to a JSON FILE."
+    (with-temp-file file
+      (insert (json-encode data))
+      (json-pretty-print-buffer)))
 
 (defun tlon-get-keys (data)
   "Get keys from hash table DATA."
