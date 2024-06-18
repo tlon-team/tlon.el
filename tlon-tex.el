@@ -644,6 +644,8 @@ value contains VALUE as a substring."
 (declare-function citar-cache--bibliography-entries "citar-cache")
 (defun tlon-get-field-in-bibliography (field)
   "Return all FIELD values in BibTeX entries in the Tlön bibliography."
+  (when (eq (hash-table-count citar-cache--bibliographies) 0)
+    (user-error "No bibliographies cached; please run `M-x citar-insert-citation' (`H-/')"))
   (let (fields)
     (maphash (lambda (_key bibliography)
 	       (when-let ((entries (citar-cache--bibliography-entries bibliography)))
