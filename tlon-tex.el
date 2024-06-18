@@ -728,6 +728,14 @@ argument."
     (dolist (file files)
       (tlon-tex-replace-keys-with-citations file syntax))))
 
+(defun tlon-tex-find-next-entry-with-missing-field (field)
+  "For each entry in the current BibTeX buffer, check if FIELD’s value is missing."
+  (interactive (list (completing-read "Field: " bibtex-extras-biblatex-fields nil t)))
+  (bibtex-next-entry)
+  (while (or (bibtex-extras-get-field field)
+	     (bibtex-extras-get-field "crossref"))
+    (bibtex-next-entry)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
