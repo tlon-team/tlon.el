@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'tlon-glossary)
 (require 'tlon-core)
 (require 'url)
 
