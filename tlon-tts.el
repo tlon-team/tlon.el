@@ -1904,6 +1904,7 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 ;;;;;; Common
 
 (declare-function modify-file-local-variable "files-x")
+(declare-function back-button-local "back-button")
 (defun tlon-tts-add-in-text-cons-cell (prompts var)
   "Add an in-text cons-cell to the file-local named VAR.
 PROMPTS is a cons cell with the corresponding prompts."
@@ -1921,7 +1922,9 @@ PROMPTS is a cons cell with the corresponding prompts."
 			 (string= (car existing-cell) (car cons-cell)))
 		       var-value))
     (modify-file-local-variable var (push cons-cell var-value) 'add-or-replace)
-    (hack-local-variables)))
+    (hack-local-variables)
+    ;; `hack-local-variables' moves point even if wrapped in a `save-excursion' macro
+    (back-button-local 1)))
 
 ;;;;;; Abbreviations
 
