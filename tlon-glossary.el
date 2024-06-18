@@ -36,7 +36,7 @@
   "The JSON file containing the source glossary.")
 
 (defvar tlon-glossary-values
-  (tlon-parse-json tlon-file-glossary-source)
+  (tlon-read-json tlon-file-glossary-source)
   "The glossary values.")
 
 (defconst tlon-glossary-recipients
@@ -64,7 +64,7 @@
 
 (defun tlon-parse-glossary ()
   "Parse the glossary file into Lisp."
-  (tlon-parse-json tlon-file-glossary-source))
+  (tlon-read-json tlon-file-glossary-source))
 
 (defun tlon-get-english-terms (glossary)
   "Extract all English terms from GLOSSARY."

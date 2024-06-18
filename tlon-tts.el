@@ -768,7 +768,7 @@ The first placeholder is the input file, and the second is the output file.")
 ;;;;; Abbreviations
 
 (defvar tlon-global-abbreviations
-  (tlon-parse-json tlon-file-global-abbreviations)
+  (tlon-read-json tlon-file-global-abbreviations)
   "Standard abbreviations and their spoken equivalent in each language.
 Note that the replacements are performed in the order they appear in the list.
 This may be relevant for certain types of abbreviations and languages. For
@@ -779,13 +779,13 @@ term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km 
 ;;;;; Phonetic replacements
 
 (defvar tlon-tts-phonetic-replacements
-  (tlon-parse-json tlon-file-global-phonetic-replacements)
+  (tlon-read-json tlon-file-global-phonetic-replacements)
   "Phonetic replacements for terms.")
 
 ;;;;; Phonetic transcriptions
 
 (defvar tlon-tts-phonetic-transcriptions
-  (tlon-parse-json tlon-file-global-phonetic-transcriptions)
+  (tlon-read-json tlon-file-global-phonetic-transcriptions)
   "Phonetic transcriptions for terms.")
 
 ;;;;; Listener cues
@@ -1838,7 +1838,7 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 
 (defun tlon-tts-edit-entry (variable file)
   "Add or revise an entry in VARIABLE and write it to FILE."
-  (set variable (tlon-parse-json file))
+  (set variable (tlon-read-json file))
   (let* ((names (mapcan (lambda (group)
 			  (mapcar #'car (cadr group)))
 			(symbol-value variable)))

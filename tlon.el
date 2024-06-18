@@ -393,7 +393,7 @@ respectively."
 (defun tlon-url-correspondence-dwim ()
   "Add a new URL correspondence or modify an existing one."
   (interactive)
-  (let* ((data (tlon-parse-json tlon-file-url-correspondences 'hash-table 'vector 'symbol))
+  (let* ((data (tlon-read-json tlon-file-url-correspondences 'hash-table 'vector 'symbol))
 	 (keys (tlon-get-keys data))
 	 (selected-key (completing-read "Select existing URL or enter a new one: " keys))
 	 (default-value (gethash selected-key data))
@@ -433,7 +433,7 @@ respectively."
   "Highlight source URLs in URL correspondences file."
   (interactive)
   ;; Load JSON file
-  (let* ((json-data (tlon-parse-json tlon-file-url-correspondences 'hash-table 'vector 'symbol))
+  (let* ((json-data (tlon-read-json tlon-file-url-correspondences 'hash-table 'vector 'symbol))
 	 (key-urls (tlon-get-keys json-data))
 	 ;; Remove URL prefixes from keys
 	 (search-keywords (mapcar (lambda (url)
@@ -461,7 +461,7 @@ respectively."
 (defun tlon-section-correspondence-dwim ()
   "Add a new section correspondence or modify an existing one."
   (interactive)
-  (let* ((data (tlon-parse-json tlon-file-section-correspondences 'hash-table 'list 'symbol))
+  (let* ((data (tlon-read-json tlon-file-section-correspondences 'hash-table 'list 'symbol))
 	 (selected-key (citar-select-refs)))
     (tlon-section-correspondence-check selected-key)
     (let ((default-value (gethash selected-key data))
