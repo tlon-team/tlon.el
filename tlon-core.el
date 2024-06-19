@@ -793,11 +793,11 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 	(json-read-file file)
       (json-read))))
 
-  (defun tlon-write-data (file data)
-    "Write DATA to a JSON FILE."
-    (with-temp-file file
-      (insert (json-encode data))
-      (json-pretty-print-buffer)))
+(defun tlon-write-data (file data)
+  "Write DATA to a JSON FILE."
+  (with-temp-file file
+    (insert (json-encode data))
+    (json-pretty-print-buffer)))
 
 (defun tlon-get-keys (data)
   "Get keys from hash table DATA."
