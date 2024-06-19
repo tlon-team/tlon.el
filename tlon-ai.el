@@ -462,7 +462,7 @@ Otherwise, construct a local file path from SRC and return it."
 To get an abstract with AI, the function uses
 `tlon-fetch-and-set-abstract'. See its docstring for details.
 
-To get an abstract without AI, the function uses
+To get an abstract with AI, the function uses
 `tlon-get-abstract-with-ai'. See its docstring for details."
   (interactive)
   (unless (tlon-fetch-and-set-abstract)
