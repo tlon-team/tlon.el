@@ -42,6 +42,7 @@
     "Submenus"
     ("a" "AI"                             tlon-ai-menu)
     ("c" "clock"                          tlon-clock-menu)
+    ("H-d" "DeepL"                          tlon-deepl-menu)
     ("e" "edit data"                      tlon-edit-data-menu)
     ("f" "files"                          tlon-files-menu)
     ("g" "glossary"                       tlon-glossary-menu)
