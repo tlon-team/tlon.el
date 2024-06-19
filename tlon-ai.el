@@ -51,6 +51,15 @@ This variable only affects the behavior of
   :type 'boolean
   :group 'tlon-ai)
 
+(defcustom tlon-ai-summarization-model
+  '("Gemini" . "gemini-1.5-pro-latest")
+  "Model to use for summarization.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, do not
+use a different model for summarization."
+  :type '(cons (string :tag "Backend") (string :tag "Model"))
+  :group 'tlon-ai)
+
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -177,11 +186,12 @@ This variable only affects the behavior of
 
 ;;;;; General
 
-(defun tlon-make-gptel-request (prompt string &optional callback backend model)
+(defun tlon-make-gptel-request (prompt string &optional callback model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-BACKEND and MODEL are the language backend and model names, respectively."
-  (when (and backend model)
-    (gptel-extras-model-config nil backend model))
+MODEL is a cons cell whose car is the backend and whose cdr is the model itself."
+  (when model
+    (cl-destructuring-bind (backend . model) model
+      (gptel-extras-model-config nil backend model)))
   (if tlon-ai-batch-fun
       (condition-case nil
 	  (gptel-request (format prompt string) :callback callback)
@@ -543,7 +553,7 @@ Otherwise return INFO."
 PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function."
   (let ((prompt (tlon-lookup prompts :prompt :language language)))
-    (tlon-make-gptel-request prompt string callback)
+    (tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
     (message "Getting AI abstract...")))
 
 (defun tlon-get-abstract-callback (response info &optional key)
@@ -751,7 +761,7 @@ request was sent."
   (let ((prompt "Included below is an Emacs configuration file of the organization I work for. Please inspect it and tell me how can I search for a yasnippet snippet. Please be brief.\n\n%s")
 	(string (tlon-get-file-as-string
 		 "/Users/pablostafforini/Downloads/ai-docs.org")))
-    (tlon-make-gptel-request prompt string #'tlon-docs-callback "Claude" "claude-3-sonnet-20240229")))
+    (tlon-make-gptel-request prompt string #'tlon-docs-callback)))
 
 (defun tlon-docs-callback (response info)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
