@@ -41,6 +41,8 @@
 
 ;;;; Functions
 
+;;;;; Editing
+
 ;;;###autoload
 (defun tlon-edit-glossary ()
   "Create or update a glossary entry."
@@ -142,6 +144,8 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
 						 action term explanation))))))
   (call-interactively #'magit-push-current-to-pushremote))
+
+;;;;; Extraction
 
 ;;;###autoload
 (defun tlon-extract-glossary (language recipient)
