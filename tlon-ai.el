@@ -600,6 +600,7 @@ other value, take the action appropriate for an abstract."
 
 ;;;;;; BibTeX
 
+(declare-function bibtex-set-field "bibtex")
 (declare-function ebib-extras-set-field "ebib-extras")
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (defun tlon-ai-summarize-set-bibtex-abstract (abstract key)
@@ -618,6 +619,7 @@ other value, take the action appropriate for an abstract."
 
 ;;;;; Language detection
 
+(declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-ai-get-language-in-file (&optional file)
   "Return the language in FILE, based on the major mode.
 If FILE is nil, get the language in the current buffer or entry, depending on
@@ -638,6 +640,8 @@ If FILE is nil, detect the language in the current buffer."
 
 ;;;;;; BibTeX
 
+(declare-function ebib-extras-get-or-open-entry "bibtex-extras")
+(declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
 (defun tlon-ai-detect-language-in-bibtex (&optional string)
   "Detect language in STRING.
 If STRING is nil, use the current BibTeX entry."
@@ -649,6 +653,7 @@ If STRING is nil, use the current BibTeX entry."
 			     #'tlon-ai-callback-return)))
 
 (declare-function bibtex-beginning-of-entry "bibtex")
+(declare-function bibtex-extras-get-field-in-string "bibtex-extras")
 ;;;###autoload
 (defun tlon-ai-set-language-bibtex ()
   "Set the language of the BibTeX entry at point to LANGUAGE.
