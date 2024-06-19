@@ -49,6 +49,13 @@
 
 ;;;; Variables
 
+;;;;; Files
+
+(defconst tlon-file-abstract-translations
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs")
+		    "bib" "abstract-translations.json")
+  "The JSON file containing the abstract translations.")
+
 ;;;;; Locators
 
 (defconst tlon-locators
@@ -141,6 +148,14 @@ The capture group 3 contains the title of the work.")
   (format (format tlon-regexp-expanded-citation-formatter "[\"“'‘\\*]?\\(?1:.*?\\)[\"”'’\\*]"))
   "Regexp to match a citation whose title has no link in our \"long\" style.
 The capture group 3 contains the title of the work.")
+
+;;;;; Abstracts
+
+(defconst tlon-tex-max-abstract-length 400
+  "Maximum length of an abstract, in words.")
+
+(defconst tlon-tex-synopsis-length 2000
+  "Maximum length of a synopsis, in words.")
 
 ;;;; Functions
 
@@ -735,6 +750,93 @@ argument."
   (while (or (bibtex-extras-get-field field)
 	     (bibtex-extras-get-field "crossref"))
     (bibtex-next-entry)))
+
+;;;;; Abstracts
+
+;;;;;; Translations
+
+(defun tlon-read-abstract-translations ()
+  "Read the JSON file with the abstract translations."
+  (tlon-read-json tlon-file-abstract-translations))
+
+(defun tlon-write-abstract-translations (data)
+  "Write DATA to the JSON file with the abstract translations."
+  (tlon-write-data tlon-file-abstract-translations data))
+
+(defun tlon-add-abstract-translation (key target-lang translation &optional overwrite)
+  "Add a TRANSLATION of KEY in TARGET-LANG.
+If a translation already exists, do nothing unless OVERWRITE is non-nil. If KEY
+is not present, add a new entry for this KEY."
+  ;; (tlon-read-abstract-translations)
+  (let* ((data temp-abstract-translations)
+         (entries (cdr (assoc "translations" data)))
+         entry-found)
+    (dolist (entry entries)
+      (when (equal (cdr (assoc "bibKey" entry)) key)
+        (setq entry-found t)
+        (if-let ((abstracts (assoc "abstracts" entry))
+		 (lang-entry (assoc target-lang abstracts)))
+	    (when overwrite
+              (setcdr lang-entry translation))
+          (setcdr abstracts (cons (cons target-lang translation) (cdr abstracts))))))
+    (unless entry-found
+      (setq entries (append entries
+                            (list (list (cons "bibKey" key)
+					(cons "abstracts" (list (cons target-lang translation))))))))
+    (setcdr (assoc "translations" data) entries)
+    (setq temp-abstract-translations data)
+    ;; (tlon-write-abstract-translations data)
+    ))
+
+(declare-function tlon-deepl-api-translate "tlon-deepl")
+(declare-function tlon-deepl-api-translate-callback "tlon-deepl")
+(defun tlon-translate-abstract (&optional key target-lang source-lang)
+  "Translate the abstract of KEY from SOURCE-LANG to TARGET-LANG.
+Save the translation in `tlon-file-abstract-translations'.  If KEY is nil, use
+the key of the entry at point. If TARGET-LANG is nil, prompt the user to select
+a language."
+  (interactive)
+  (when-let* ((get-field (pcase major-mode
+			   ('ebib-entry-mode #'ebib-extras-get-field)
+			   ('bibtex-mode #'bibtex-extras-get-field)))
+	      (key (or key (pcase major-mode
+			     ('ebib-entry-mode (ebib-extras-get-field "=key="))
+			     ('bibtex-mode (bibtex-extras-get-key)))))
+	      (abstract (funcall get-field "abstract"))
+	      (source-lang (or source-lang
+			       (tlon-lookup tlon-languages-properties :code :name (funcall get-field "langid"))))
+	      (target-lang (or target-lang (tlon-select-language 'code 'babel))))
+    (tlon-deepl-api-translate abstract target-lang source-lang
+			      (lambda ()
+				(tlon-translate-abstract-callback key target-lang)))))
+
+(defun tlon-translate-abstract-callback (key target-lang &optional overwrite)
+  "Callback for `tlon-translate-abstract'.
+KEY is the key of the entry and TARGET-LANG is the target language of the
+translation. If OVERWRITE is non-nil, overwrite the existing translation."
+  (let ((translation (tlon-deepl-api-translate-callback)))
+    (tlon-add-abstract-translation key target-lang translation overwrite)))
+
+;;;;;; Length
+
+(defun tlon-tex-entries-report ()
+  "Return a report about the BibTeX buffer at point."
+  (interactive)
+  (save-excursion
+    (widen)
+    (goto-char (point-min))
+    (let (keys no-abstract)
+      (while (bibtex-next-entry)
+	(bibtex-narrow-to-entry)
+	(let ((key (bibtex-extras-get-key)))
+	  (if (re-search-forward "^[[:blank:]]+abstract = {" nil t)
+              (let* ((begin (point))
+		     (end (progn (bibtex-next-field t) (beginning-of-line) (left-char 3) (point))))
+		(when (> (count-words begin end) tlon-tex-max-abstract-length)
+		  (push key keys)))
+	    (push key no-abstract))
+	  (widen)))
+      (message "Entries above maximum length: %s\n\nEntries without abstract: %s" keys no-abstract))))
 
 ;;;;; Menu
 
