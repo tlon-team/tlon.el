@@ -27,6 +27,8 @@
 
 ;;; Code:
 
+(require 'tlon-core)
+
 ;;;; Functions
 
 ;;;;; Common
@@ -282,4 +284,3 @@ If DELETE is non-nil, delete the footnote."
 
 (provide 'tlon-cleanup)
 ;;; tlon-cleanup.el ends here
-
