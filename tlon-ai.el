@@ -121,50 +121,56 @@ use a different model for summarization."
 
 ;;;;; Summarization
 
-(defconst tlon-ai-how-to-write-summary-prompt
-  `((:prompt "Write the abstract in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing the abstract of a scientific paper. The abstract should be only one paragraph long and have a rough length of 100 to 250 words (feel free to exceed it if you really need to, but never go over 350 words). It should not mention bibliographic data of the work (such as title or author). Write the abstract directly stating what the article argues, rather than using phrases such as 'The article argues that...'. For example, instead of writing 'The article ‘The eradication of smallpox’ by William D. Tierney tells that mankind fought smallpox for centuries...', write 'Mankind fought smallpox for centuries...'. Also, please omit any disclaimers of the form 'As an AI language model, I'm unable to browse the internet in real-time.' Finally, end your abstract with the phrase ' – AI-generated abstract.'"
+;;;;;; Abstracts
+
+(defconst tlon-ai-how-to-write-abstract-prompt
+  `((:prompt (format "Write the abstract in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing the abstract of a scientific paper. The abstract should be only one paragraph long and have a rough length of 100 to 250 words (feel free to exceed it if you really need to, but never go over %s words). It should not mention bibliographic data of the work (such as title or author). Write the abstract directly stating what the article argues, rather than using phrases such as 'The article argues that...'. For example, instead of writing 'The article ‘The eradication of smallpox’ by William D. Tierney tells that mankind fought smallpox for centuries...', write 'Mankind fought smallpox for centuries...'. Also, please omit any disclaimers of the form 'As an AI language model, I'm unable to browse the internet in real-time.' Finally, end your abstract with the phrase ' – AI-generated abstract.'" tlon-tex-max-abstract-length)
 	     :language "en")
-    (:prompt "Redacta el resumen en un tono sobrio y objetivo, evitando los lugares comunes, los elogios excesivos y las florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo el resumen de un artículo científico. El resumen debe constar de un solo párrafo y tener una extensión de unas 100 a 250 palabras. No debe mencionar datos bibliográficos de la obra (como el título o el autor). Escribe el resumen indicando directamente lo que argumenta el artículo, en lugar de utilizar frases como ‘El artículo argumenta que...’. Por ejemplo, en lugar de escribir ‘El artículo 'La erradicación de la viruela' de William D. Tierney sostiene que la humanidad luchó contra la viruela durante siglos...’, escribe ‘La humanidad luchó contra la viruela durante siglos...’. Además, omite cualquier descargo de responsabilidad del tipo ‘Como modelo de lenguaje de inteligencia artificial, no puedo navegar por Internet en tiempo real.’ Por último, termina tu resumen con la frase ‘ - Resumen generado por inteligencia artificial.’"
+    (:prompt (format "Redacta el resumen en un tono sobrio y objetivo, evitando los lugares comunes, los elogios excesivos y las florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo el resumen de un artículo científico. El resumen debe constar de un solo párrafo y tener una extensión de unas 100 a 250 palabras (puedes exceder este umbral de ser necesario, pero el resumen no debe tener en ningún caso más de %s palabras). No debe mencionar datos bibliográficos de la obra (como el título o el autor). Escribe el resumen indicando directamente lo que argumenta el artículo, en lugar de utilizar frases como ‘El artículo argumenta que...’. Por ejemplo, en lugar de escribir ‘El artículo 'La erradicación de la viruela' de William D. Tierney sostiene que la humanidad luchó contra la viruela durante siglos...’, escribe ‘La humanidad luchó contra la viruela durante siglos...’. Además, omite cualquier descargo de responsabilidad del tipo ‘Como modelo de lenguaje de inteligencia artificial, no puedo navegar por Internet en tiempo real.’ Por último, termina tu resumen con la frase ‘ - Resumen generado por inteligencia artificial.’" tlon-tex-max-abstract-length)
 	     :language "es")
-    (:prompt "Rédigez le résumé sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique. Le résumé ne doit comporter qu'un seul paragraphe et avoir une longueur approximative de 100 à 250 mots (n'hésitez pas à le dépasser si vous en avez vraiment besoin, mais ne dépassez jamais 350 mots). Il ne doit pas mentionner les données bibliographiques de l'ouvrage (telles que le titre ou l'auteur). Rédigez le résumé en indiquant directement ce que l'article soutient, plutôt qu'en utilisant des phrases telles que 'L'article soutient que...'. Par exemple, au lieu d'écrire 'L'article 'L'éradication de la variole' de William D. Tierney affirme que l'humanité a combattu la variole pendant des siècles...', écrivez 'L'humanité a combattu la variole pendant des siècles...'. Veuillez également omettre toute clause de non-responsabilité du type 'En tant que modèle linguistique de l'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel'. Enfin, terminez votre résumé par la phrase ' - Résumé généré par l'IA.'"
+    (:prompt (format "Rédigez le résumé sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique. Le résumé ne doit comporter qu'un seul paragraphe et avoir une longueur approximative de 100 à 250 mots (n'hésitez pas à le dépasser si vous en avez vraiment besoin, mais ne dépassez jamais %s mots). Il ne doit pas mentionner les données bibliographiques de l'ouvrage (telles que le titre ou l'auteur). Rédigez le résumé en indiquant directement ce que l'article soutient, plutôt qu'en utilisant des phrases telles que 'L'article soutient que...'. Par exemple, au lieu d'écrire 'L'article 'L'éradication de la variole' de William D. Tierney affirme que l'humanité a combattu la variole pendant des siècles...', écrivez 'L'humanité a combattu la variole pendant des siècles...'. Veuillez également omettre toute clause de non-responsabilité du type 'En tant que modèle linguistique de l'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel'. Enfin, terminez votre résumé par la phrase ' - Résumé généré par l'IA.'" tlon-tex-max-abstract-length)
 	     :language "fr")
-    (:prompt "Schreiben Sie die Zusammenfassung in einem nüchternen, sachlichen Ton und vermeiden Sie Klischees, übermäßiges Lob und unnötige Schnörkel. Mit anderen Worten: Verfassen Sie sie so, als ob Sie die Zusammenfassung einer wissenschaftlichen Arbeit schreiben würden. Die Zusammenfassung sollte nur einen Absatz lang sein und eine ungefähre Länge von 100 bis 250 Wörtern haben (Sie können diese Zahl ruhig überschreiten, wenn es wirklich nötig ist, aber nie mehr als 350 Wörter). Sie sollte keine bibliografischen Daten der Arbeit (wie Titel oder Autor) enthalten. Geben Sie in der Zusammenfassung direkt an, worum es in dem Artikel geht, und verwenden Sie keine Sätze wie 'In dem Artikel wird argumentiert, dass...'. Schreiben Sie zum Beispiel statt 'Der Artikel 'Die Ausrottung der Pocken' von William D. Tierney besagt, dass die Menschheit jahrhundertelang die Pocken bekämpfte...' lieber 'Die Menschheit bekämpfte die Pocken jahrhundertelang...'. Lassen Sie bitte auch Haftungsausschlüsse der Form 'Als KI-Sprachmodell bin ich nicht in der Lage, das Internet in Echtzeit zu durchsuchen' weg. Beenden Sie Ihre Zusammenfassung schließlich mit dem Satz ' - KI-generierte Zusammenfassung.'"
+    (:prompt (format "Schreiben Sie die Zusammenfassung in einem nüchternen, sachlichen Ton und vermeiden Sie Klischees, übermäßiges Lob und unnötige Schnörkel. Mit anderen Worten: Verfassen Sie sie so, als ob Sie die Zusammenfassung einer wissenschaftlichen Arbeit schreiben würden. Die Zusammenfassung sollte nur einen Absatz lang sein und eine ungefähre Länge von 100 bis 250 Wörtern haben (Sie können diese Zahl ruhig überschreiten, wenn es wirklich nötig ist, aber nie mehr als %s Wörter). Sie sollte keine bibliografischen Daten der Arbeit (wie Titel oder Autor) enthalten. Geben Sie in der Zusammenfassung direkt an, worum es in dem Artikel geht, und verwenden Sie keine Sätze wie 'In dem Artikel wird argumentiert, dass...'. Schreiben Sie zum Beispiel statt 'Der Artikel 'Die Ausrottung der Pocken' von William D. Tierney besagt, dass die Menschheit jahrhundertelang die Pocken bekämpfte...' lieber 'Die Menschheit bekämpfte die Pocken jahrhundertelang...'. Lassen Sie bitte auch Haftungsausschlüsse der Form 'Als KI-Sprachmodell bin ich nicht in der Lage, das Internet in Echtzeit zu durchsuchen' weg. Beenden Sie Ihre Zusammenfassung schließlich mit dem Satz ' - KI-generierte Zusammenfassung.'" tlon-tex-max-abstract-length)
 	     :language "de")))
 
 (defconst tlon-ai-get-abstract-prompts
-  `((:prompt ,(format "The following work may or may not contain an abstract:%s. If it contains an abstract, please return it. Otherwise, create an abstract of it yourself. %s However, please omit this phrase if you are simply copying verbatim an abstract you found in the work."
+  `((:prompt ,(format "The following work may or may not contain an abstract%s. If it contains an abstract, please return it. Otherwise, create an abstract of it yourself. %s However, please omit this phrase if you are simply copying verbatim an abstract you found in the work."
 		      tlon-ai-string-wrapper
-		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
+		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "en"))
 	     :language "en")
-    (:prompt ,(format "La siguiente obra puede contener o no un resumen:%s. Si contiene un resumen, devuélvelo. En caso contrario, crea tú mismo un resumen. %s Sin embargo, omite esta frase si simplemente está devolviendo un resumen que encontraste en la obra.En otras palabras, incluye la frase sólo cuando tú hayas creado el resumen."
+    (:prompt ,(format "La siguiente obra puede contener o no un resumen%s. Si contiene un resumen, devuélvelo. En caso contrario, crea tú mismo un resumen. %s Sin embargo, omite esta frase si simplemente está devolviendo un resumen que encontraste en la obra.En otras palabras, incluye la frase sólo cuando tú hayas creado el resumen."
 		      tlon-ai-string-wrapper
-		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
+		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "es"))
 	     :language "es")
-    (:prompt ,(format "L'œuvre suivante peut ou non contenir un résumé:%s. S'il contient un résumé, veuillez le renvoyer. Sinon, créez un résumé vous-même. %s Toutefois, veuillez omettre cette phrase si vous ne faites que copier mot pour mot un résumé que vous avez trouvé dans l'œuvre."
+    (:prompt ,(format "L'œuvre suivante peut ou non contenir un résumé%s. S'il contient un résumé, veuillez le renvoyer. Sinon, créez un résumé vous-même. %s Toutefois, veuillez omettre cette phrase si vous ne faites que copier mot pour mot un résumé que vous avez trouvé dans l'œuvre."
 		      tlon-ai-string-wrapper
-		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
+		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "fr"))
 	     :language "fr")
-    (:prompt ,(format "Das folgende Werk kann eine Zusammenfassung enthalten oder auch nicht: %s. Wenn es eine Zusammenfassung enthält, geben Sie sie bitte zurück. Andernfalls erstellen Sie bitte selbst eine Zusammenfassung des Werks. %s Bitte lassen Sie diesen Satz jedoch weg, wenn Sie einfach eine wortwörtliche Zusammenfassung kopieren, die Sie in dem Werk gefunden haben."
+    (:prompt ,(format "Das folgende Werk kann eine Zusammenfassung enthalten oder auch nicht%s. Wenn es eine Zusammenfassung enthält, geben Sie sie bitte zurück. Andernfalls erstellen Sie bitte selbst eine Zusammenfassung des Werks. %s Bitte lassen Sie diesen Satz jedoch weg, wenn Sie einfach eine wortwörtliche Zusammenfassung kopieren, die Sie in dem Werk gefunden haben."
 		      tlon-ai-string-wrapper
-		      (tlon-lookup tlon-ai-how-to-write-summary-prompt
+		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "de"))
 	     :language "de"))
   "Prompts for summarization.")
 
-(defconst tlon-ai-summarize-bibtex-prompts
-  `((:prompt ,(format "Please fetch an abstract of the work described by the following BibTeX entry:%s. If the work has a DOI, you should get the abstract from the web page to which the DOI points. If it is an ISBN, you should get it from Worldcat, Amazon or the Library of Congress. Otherwise, try to find it from the other bibliographic information included in the entry. It is likely that there is already an abstract or summary of the work available online: use the URL, DOI or ISBN in the entry, or other fields if those are unavailable, to locate the abstract from an official or authoritative source (such as the journal in which the work was published or the Library of Congress entry). If you do find an abstract, copy it verbatim. Otherwise, please create one yourself. %s"
-		      tlon-ai-string-wrapper
-		      (tlon-lookup tlon-ai-how-to-write-summary-prompt :prompt :language "en"))
+;;;;;; Synopsis
+
+(defconst tlon-ai-get-synopsis-prompts
+  `((:prompt ,(format "Please write an detailed abstract of the following work%s Write it in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing the abstract of a scientific paper or academic publication. The summary should provide a detail account of the work’s main claims and arguments; it may be between one and two thousand words in length. Also, please omit any disclaimers of the form 'As an AI language model, I'm unable to browse the internet in real-time.'"
+		      tlon-ai-string-wrapper)
 	     :language "en")
-    ;; TODO: update translation to match English version
-    (:prompt ,(format "Por favor, genera un resumen del artículo que describe la siguiente entrada de BibTeX:%s. %s"
-		      tlon-ai-string-wrapper
-		      (tlon-lookup tlon-ai-how-to-write-summary-prompt :prompt :language "es"))
-	     :language "es"))
-  "Prompts for BibTeX summarization.")
+    (:prompt ,(format "Por favor, escribe un resumen detallado de la presente obra%s Redáctalo en un tono sobrio y objetivo, evitando cliches, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo el resumen de un artículo científico o de una publicación académica. El resumen debe dar cuenta detallada de las principales afirmaciones y argumentos de la obra; su extensión puede oscilar entre mil y dos mil palabras. Por favor, omite también cualquier descargo de responsabilidad del tipo 'Como modelo de lenguaje de inteligencia artificial, no puedo navegar por Internet en tiempo real'." tlon-ai-string-wrapper)
+	     :language "es")
+    (:prompt ,(format "Veuillez rédiger un résumé détaillé de ce travail%s Rédigez-le sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique ou d'une publication universitaire. Le résumé doit fournir un compte rendu détaillé des principales revendications et des principaux arguments du travail ; il peut compter entre un et deux mille mots. Veuillez également omettre toute clause de non-responsabilité du type \"En tant que modèle de langage d'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel\"." tlon-ai-string-wrapper)
+	     :language "fr")
+    (:prompt ,(format "Si prega di scrivere un riassunto esteso di questo lavoro%s Scrivetelo con un tono sobrio e oggettivo, evitando i cliché, le lodi eccessive e i fronzoli inutili. In altre parole, scrivetelo come se steste scrivendo l'abstract di un articolo scientifico o di una pubblicazione accademica. Il riassunto deve fornire un resoconto dettagliato delle principali affermazioni e argomentazioni dell'opera; può essere lungo tra le mille e le duemila parole. Inoltre, si prega di omettere qualsiasi dichiarazione di non responsabilità del tipo \"In quanto modello linguistico dell'intelligenza artificiale, non sono in grado di navigare in Internet in tempo reale\"." tlon-ai-string-wrapper)
+	     :language "it")
+    (:prompt ""
+	     :language "de"))
+  "Prompts for synopsis.")
 
 ;;;;; Phonetic transcription
 
@@ -470,7 +476,7 @@ To get an abstract with AI, the function uses
 
 (declare-function tlon-abstract-may-proceed-p "tlon-tex")
 ;;;###autoload
-(defun tlon-get-abstract-with-ai (&optional file)
+(defun tlon-get-abstract-with-ai (&optional file type)
   "Return an abstract of the relevant content using AI.
 If FILE is non-nil, get an abstract of its contents. Otherwise,
 
@@ -491,7 +497,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
       (if-let ((language (or (tlon-ai-get-language-in-file file)
 			     (unless tlon-ai-batch-fun
 			       (tlon-select-language)))))
-	  (tlon-ai-get-abstract-in-language file language)
+	  (tlon-ai-get-abstract-in-language file language type)
 	(tlon-ai-detect-language-in-file
 	 file
 	 (lambda (response info)
@@ -500,6 +506,13 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
     (when tlon-debug
       (message "`%s' now calls `tlon-ai-batch-continue'." "tlon-get-abstract-with-ai"))
     (tlon-ai-batch-continue)))
+
+(defun tlon-get-synopsis-with-ai (&optional file)
+  "Return a synopsis of the relevant content using AI.
+If FILE is non-nil, get an abstract of its contents. Otherwise, behave as
+described in the `tlon-get-abstract-with-ai' docstring."
+  (interactive)
+  (tlon-get-abstract-with-ai file 'synopsis))
 
 (defun tlon-get-abstract-with-ai-in-file (extension)
   "Return an abstract of the file with EXTENSION in the BibTeX entry at point."
@@ -521,8 +534,10 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
   (interactive)
   (tlon-get-abstract-with-ai-in-file "html"))
 
-(defun tlon-ai-get-abstract-in-language (file language)
-  "Get abstract from FILE in LANGUAGE."
+(defun tlon-ai-get-abstract-in-language (file language &optional type)
+  "Get abstract from FILE in LANGUAGE.
+If TYPE is `synopsis', generate a synopsis. If type is `abstract', nil, or any
+other value, generate an abstract."
   (if-let ((string (tlon-get-string-dwim file))
 	   (lang-2 (tlon-get-iso-code language)))
       (let ((original-buffer (current-buffer))
@@ -531,13 +546,17 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 		   ('ebib-entry-mode (ebib-extras-get-field "=key="))
 		   (_ nil))))
 	(tlon-ai-get-abstract-common
-	 tlon-ai-get-abstract-prompts string lang-2
+	 (pcase type
+	   ('synopsis tlon-ai-get-synopsis-prompts)
+	   (_ tlon-ai-get-abstract-prompts))
+	 string lang-2
 	 (lambda (response info)
 	   ;; we restore the original buffer to avoid a change in `major-mode'
 	   (with-current-buffer original-buffer
-	     (message "Generating abstract for `%s'; starts with `%s'" key
-		      (when response (substring response 0 (min (length string) 100))))
-	     (tlon-get-abstract-callback response info key)))))
+	     (when tlon-debug
+	       (message "Generating abstract for `%s'; starts with `%s'" key
+			(when response (substring response 0 (min (length string) 100)))))
+	     (tlon-get-abstract-callback response info key type)))))
     (message "Could not get abstract.")
     (tlon-ai-batch-continue)))
 
@@ -556,19 +575,25 @@ the language of the string, and CALLBACK is the callback function."
     (tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
     (message "Getting AI abstract...")))
 
-(defun tlon-get-abstract-callback (response info &optional key)
+(defun tlon-get-abstract-callback (response info &optional key type)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
-If RESPONSE is nil, return INFO. KEY is the BibTeX key."
+If RESPONSE is nil, return INFO. KEY is the BibTeX key. If TYPE is `synopsis',
+take the action appropriate for a synopsis. If type is `abstract', nil, or any
+other value, take the action appropriate for an abstract."
   (if (not response)
       (tlon-ai-callback-fail info)
-    (pcase major-mode
-      ((or 'bibtex-mode 'ebib-entry-mode)
-       (message "`tlon-get-abstract-callback' is setting `%s' to `%s'"
-		key (when response (substring response 0 (min (length response) 100))))
-       (tlon-ai-summarize-set-bibtex-abstract response key))
-      ('markdown-mode) ; TODO: set `description' YAML field to it
-      (_ (kill-new response)
-	 (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))
+    (pcase type
+      ('synopsis (kill-new response)
+		 (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))
+      (_ (pcase major-mode
+	   ((or 'bibtex-mode 'ebib-entry-mode)
+	    (when tlon-debug
+	      (message "`tlon-get-abstract-callback' is setting `%s' to `%s'"
+		       key (when response (substring response 0 (min (length response) 100)))))
+	    (tlon-ai-summarize-set-bibtex-abstract response key))
+	   ;; ('markdown-mode) ; TODO: set `description' YAML field to it
+	   (_ (kill-new response)
+	      (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
   (when tlon-debug
     (message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
   (tlon-ai-batch-continue))
