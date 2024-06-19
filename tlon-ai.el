@@ -600,31 +600,6 @@ other value, take the action appropriate for an abstract."
 
 ;;;;;; BibTeX
 
-(declare-function bibtex-set-field "bibtex-extras")
-(declare-function bibtex-extras-get-field "bibtex-extras")
-(declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
-(declare-function bibtex-extras-get-field-in-string "bibtex-extras")
-(declare-function ebib-extras-get-or-open-entry "ebib-extras")
-;;;###autoload
-(defun tlon-ai-summarize-bibtex-entry (&optional string)
-  "Summarize the work described in the BibTeX STRING using AI.
-If STRING is nil, use the current entry."
-  (interactive)
-  (let* ((get-string (pcase major-mode
-		       ('bibtex-mode #'bibtex-extras-get-entry-as-string)
-		       ('ebib-entry-mode #'ebib-extras-get-or-open-entry)
-		       (_ (user-error "Unsupported major mode"))))
-	 (string (or string (funcall get-string))))
-    (unless (bibtex-extras-get-field-in-string string "abstract")
-      (when-let* ((get-lang (pcase major-mode
-			      ('bibtex-mode #'bibtex-extras-get-field)
-			      ('ebib-entry-mode #'ebib-extras-get-field)))
-		  (language (funcall get-lang "langid"))
-		  (lang-short (tlon-get-iso-code language)))
-	(if-let ((prompt (tlon-lookup tlon-ai-summarize-bibtex-prompts :prompt :language lang-short)))
-	    (tlon-make-gptel-request prompt string #'tlon-get-abstract-callback)
-	  (user-error "No prompt defined in `tlon-ai-get-abstract-prompts' for language %s" language))))))
-
 (declare-function ebib-extras-set-field "ebib-extras")
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (defun tlon-ai-summarize-set-bibtex-abstract (abstract key)
