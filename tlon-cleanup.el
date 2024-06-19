@@ -153,6 +153,20 @@ not alter it unless you know what you are doing."
 			       (match-string-no-properties 2))
 		       t)))))
 
+(defun tlon-cleanup-eaf-replace-urls-in-repo ()
+  "Replace EA Forum URLs in all Markdown files in the current repository.
+This command should only be used once in a while to ensure that all URLs in the
+repository are in their \"canonical\" form. But this shouldn’t normally happen,
+since `tlon-cleanup-eaf-replace-urls' is run automatically every time a new
+entry is added."
+  (interactive)
+  (let ((repo (tlon-get-repo)))
+    (dolist (file (directory-files-recursively repo "\\.md"))
+      (with-current-buffer (find-file-noselect file)
+	(message "Cleaning up `%s'" file)
+	(tlon-cleanup-eaf-replace-urls)
+	(save-buffer)))))
+
 ;; If problems arise, test against documents imported from these URLs:
 ;; https://forum.effectivealtruism.org/s/vSAFjmWsfbMrTonpq/p/u5JesqQ3jdLENXBtB
 (defun tlon-cleanup-fix-footnote-refs ()
