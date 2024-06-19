@@ -615,7 +615,8 @@ other value, take the action appropriate for an abstract."
 	(shut-up
 	  (funcall set-field "abstract" abstract))))
     (message "Set abstract of `%s'" key)
-    (save-buffer)))
+    (when (derived-mode-p 'bibtex-mode)
+      (save-buffer))))
 
 ;;;;; Language detection
 
