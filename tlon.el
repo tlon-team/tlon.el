@@ -42,6 +42,10 @@
 
 ;;;; Variables
 
+(defconst tlon-package-dir
+  default-directory
+  "Directory where the Tlön package is located.")
+
 ;;;;; Files and dirs
 
 (defvar tlon-todos-jobs-file nil
