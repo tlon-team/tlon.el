@@ -59,7 +59,7 @@
     (tlon-write-data tlon-file-glossary-source glossary)))
 
 (defun tlon-parse-glossary ()
-  "Parse the glossary file into Lisp."
+  "Parse the glossary file into Emacs Lisp."
   (tlon-read-json tlon-file-glossary-source))
 
 (defun tlon-get-english-terms (glossary)
