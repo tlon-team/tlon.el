@@ -35,10 +35,6 @@
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "glossary.json")
   "The JSON file containing the source glossary.")
 
-(defvar tlon-glossary-values
-  (tlon-read-json tlon-file-glossary-source)
-  "The glossary values.")
-
 (defconst tlon-glossary-recipients
   '((:language "fr" :email "tlon-french@googlegroups.com")
     (:language "it" :email "tlon-italian@googlegroups.com")))
