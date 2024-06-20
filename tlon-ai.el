@@ -31,6 +31,7 @@
 (require 'gptel-extras)
 (require 'shut-up)
 (require 'tlon-core)
+(require 'tlon-tex) ; needed to set variables correctly
 
 ;;;; User options
 
