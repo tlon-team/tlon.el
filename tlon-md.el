@@ -203,7 +203,8 @@ locator(s), if present, and the third group captures the short citation flag.")
 	  :self-closing t
 	  :doc "")
     (:tag "Cite"
-	  :attributes ((:name "bibKey" :required t :valued t :group 2 :reader tlon-md-cite-reader)
+	  :attributes ((:name "bibKey" :required t :valued t :group 2 :reader tlon-md-cite-bibkey-reader)
+		       (:name "short" :required nil :valued nil :group 4 :reader tlon-md-cite-length-reader)
 		       ;; TODO: currently, the locator attribute is not
 		       ;; introduced explicitly as the value of a named
 		       ;; attribute. Fix this.
@@ -571,7 +572,9 @@ Include a placeholder for the attribute value, when it is a valued attribute. If
 CAPTURE is non-nil, enclose the placeholder in a named capture group."
   (let* ((valued-p (tlon-md-lookup-tag-attribute-property tag name :valued))
 	 (group (tlon-md-lookup-tag-attribute-property tag name :group))
-	 (attribute-template (format " %s" name))
+	 (attribute-template (if valued-p
+				 (concat " " name)
+			       "%s"))
 	 (value-template (if capture
 			     (format "=\"\\(?%s:%%s\\)\"" (1+ group))
 			   "=\"%s\"")))
@@ -631,6 +634,20 @@ alternative voice, as opposed to the main voice."
   "Insert an MDX `Aside' tag pair at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "Aside"))
+
+(defun tlon-insert-mdx-cite ()
+  "Insert a `Cite' tag pair of TYPE at point or around the selected region."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "Cite"))
+
+(defun tlon-md-cite-bibkey-reader ()
+  "Prompt the user to select the `bibKey' attribute value of the `Cite' tag."
+  (car (citar-select-refs)))
+
+(defun tlon-md-cite-length-reader ()
+  "Prompt the user to set the length of the `Cite' tag."
+  (let ((length (completing-read "Type? " '("short" "long") nil t)))
+    (if (string= length "short") " short" "")))
 
 ;;;###autoload
 (defun tlon-insert-mdx-figure ()
@@ -770,40 +787,6 @@ attribute."
   (completing-read "`interpret-as': " tlon-md-ssml-interpret-as-values))
 
 ;;;;;;;; To revise
-;;;;;;;;; `Cite'
-
-(defun tlon-insert-mdx-cite ()
-  "Insert a `Cite' tag pair of TYPE at point or around the selected region."
-  (interactive)
-  (tlon-md-insert-or-edit-tag "Cite"))
-
-(defun tlon-md-cite-reader ()
-  "Prompt the user to select the `bibKey' attribute value of the `Cite' tag."
-  (car (citar-select-refs)))
-
-(defun tlon-insert-mdx-cite-old (type)
-  "Insert an MDX `Cite' element at point or around the selected region.
-Prompt the user to select a BibTeX KEY. If point is already on a `Cite' element,
-the KEY will replace the existing key.
-
-TYPE is the citation type: it can be either `short' or `long'."
-  (let ((key (car (citar-select-refs)))
-	(length (pcase type ('long "") ('short " short"))))
-    (if-let ((data (tlon-mdx-cite-get-tag-attribute-value 'cite 'key)))
-	(cl-destructuring-bind (_ (begin . end)) data
-	  (tlon-mdx-replace-attribute-value key begin end))
-      (tlon-md-insert-tag
-       (cons (format "<Cite bibKey=\"%s\"%s>" key length)
-	     "</Cite>")
-       t))))
-
-(defun tlon-mdx-replace-attribute-value (value begin end)
-  "Replace existing attribute value between BEGIN and END with VALUE."
-  (save-excursion
-    (set-buffer-modified-p t)
-    (goto-char begin)
-    (delete-region begin end)
-    (insert value)))
 
 ;;;;;;;;;; Locators
 
