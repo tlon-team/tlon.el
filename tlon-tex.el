@@ -299,8 +299,7 @@ abstract will, or will not, replace the existing one, respectively."
 		     ('bibtex-mode (bibtex-extras-get-key))
 		     ('ebib-entry-mode (ebib-extras-get-field "=key="))))
 	  nil))
-    (derived-mode-p 'text-mode 'pdf-view-mode)))
-
+    (derived-mode-p 'text-mode 'pdf-view-mode 'eww-mode)))
 
 (declare-function ebib-extras-get-or-fetch-id-or-url "ebib-extras")
 (defun tlon-fetch-field-with-zotra (field &optional id-or-url no-error)

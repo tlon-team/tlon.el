@@ -278,6 +278,8 @@ Otherwise,
 
 - If in `pdf-view-mode', return the contents of the current PDF file.
 
+- If in `eww-mode', return the contents of the current HTML file.
+
 - If in `markdown-mode', return the substantive contents of the current buffer.
 
 - If otherwise in `text-mode', return the contents of the current buffer."
@@ -285,9 +287,14 @@ Otherwise,
       (buffer-substring-no-properties (region-beginning) (region-end))
     (if-let ((file (or file (pcase major-mode
 			      ((or 'bibtex-mode 'ebib-entry-mode)
-			       (or (ebib-extras-get-file "html")
-				   (ebib-extras-get-file "pdf")))
-			      ('pdf-view-mode (buffer-file-name))))))
+			       (ebib-extras-get-text-file))
+			      ('pdf-view-mode (buffer-file-name))
+			      ('eww-mode (let ((contents (buffer-string))
+					       (file (make-temp-file "eww-")))
+					   (with-current-buffer (find-file-noselect file)
+					     (insert contents)
+					     (write-file file))
+					   file))))))
 	(tlon-get-file-as-string file)
       (cond ((derived-mode-p 'markdown-mode)
 	     (tlon-md-read-content file))
@@ -487,6 +494,8 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
 
 - If in `pdf-view-mode', get an abstract of the contents of the current PDF
   file.
+
+- If in `eww-mode', get an abstract of the contents of the current HTML file.
 
 - If in `text-mode', get an abstract of the contents of the current region, if
   active; otherwise, get an abstract of the contents of the current buffer.
