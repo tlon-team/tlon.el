@@ -207,9 +207,7 @@ or via the API.)"
 ;;;###autoload
 (defun tlon-share-glossary (attachment &optional language)
   "Share LANGUAGE glossary with translators as ATTACHMENT."
-  (interactive (list (read-file-name "Glossary file: "
-				     (file-name-directory tlon-file-glossary-target) nil nil
-				     (file-name-nondirectory tlon-file-glossary-target))))
+  (interactive (list (read-file-name "Glossary file: " paths-dir-downloads) nil nil))
   (let* ((language (or language (tlon-select-language 'code 'babel)))
 	 (recipient (tlon-lookup tlon-glossary-recipients :email :language language)))
     (setq tlon-email-language (tlon-lookup tlon-languages-properties :name :code language))
