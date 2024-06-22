@@ -161,7 +161,7 @@ THEME is either `light' or `dark'."
   (concat
    (format tlon-color-globals-css-header theme)
    "    :root {\n"
-   (tlon-tlon-encode-frontend-variables palette theme 'css)
+   (tlon-color-encode-frontend-variables palette theme 'css)
    tlon-color-globals-css-footer))
 
 (defun tlon-color-encode-theme-colors-js (palette theme)
@@ -171,10 +171,10 @@ THEME is either `light' or `dark'."
    (format tlon-color-theme-colors-js-header (pcase theme
 					       ('light "LIGHT_COLORS")
 					       ('dark "DARK_COLORS")))
-   (tlon-tlon-encode-frontend-variables palette theme 'js)
+   (tlon-color-encode-frontend-variables palette theme 'js)
    tlon-color-theme-colors-js-footer))
 
-(defun tlon-tlon-encode-frontend-variables (palette theme language)
+(defun tlon-color-encode-frontend-variables (palette theme language)
   "Encode frontend variables for PALETTE of THEME.
 THEME is either `light' or `dark'. LANGUAGE is either `css' or `js'."
   (mapconcat (lambda (line)
