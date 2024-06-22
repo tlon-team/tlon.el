@@ -782,8 +782,7 @@ argument."
   "Add a TRANSLATION of KEY in TARGET-LANG.
 If a translation already exists, do nothing unless OVERWRITE is non-nil. If KEY
 is not present, add a new entry for this KEY."
-  ;; (tlon-read-abstract-translations)
-  (let* ((data temp-abstract-translations)
+  (let* ((data (tlon-read-abstract-translations))
          (entries (cdr (assoc "translations" data)))
          entry-found)
     (dolist (entry entries)
@@ -799,9 +798,7 @@ is not present, add a new entry for this KEY."
                             (list (list (cons "bibKey" key)
 					(cons "abstracts" (list (cons target-lang translation))))))))
     (setcdr (assoc "translations" data) entries)
-    (setq temp-abstract-translations data)
-    ;; (tlon-write-abstract-translations data)
-    ))
+    (tlon-write-abstract-translations data)))
 
 (declare-function tlon-deepl-api-translate "tlon-deepl")
 (declare-function tlon-deepl-api-translate-callback "tlon-deepl")
