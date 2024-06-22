@@ -157,7 +157,7 @@ If LANGUAGE is nil, load it for both CSS and JS files."
 
 (defun tlon-color-encode-globals-css (palette theme)
   "Generate `globals.css' section for THEME in PALETTE.
-  THEME is either `light' or `dark'."
+THEME is either `light' or `dark'."
   (concat
    (format tlon-color-globals-css-header theme)
    "    :root {\n"
@@ -166,7 +166,7 @@ If LANGUAGE is nil, load it for both CSS and JS files."
 
 (defun tlon-color-encode-theme-colors-js (palette theme)
   "Generate `theme-colors.js' section for THEME in PALETTE.
-  THEME is either `light' or `dark'."
+THEME is either `light' or `dark'."
   (concat
    (format tlon-color-theme-colors-js-header (pcase theme
 					       ('light "LIGHT_COLORS")
@@ -176,7 +176,7 @@ If LANGUAGE is nil, load it for both CSS and JS files."
 
 (defun tlon-tlon-encode-frontend-variables (palette theme language)
   "Encode frontend variables for PALETTE of THEME.
-  THEME is either `light' or `dark'. LANGUAGE is either `css' or `js'."
+THEME is either `light' or `dark'. LANGUAGE is either `css' or `js'."
   (mapconcat (lambda (line)
 	       (let* ((variable (car line))
 		      (cons (cdr line))
