@@ -646,8 +646,9 @@ the major mode."
 (defun tlon-ai-detect-language-in-file (&optional file callback)
   "Detect the language in FILE and call CALLBACK.
 If FILE is nil, detect the language in the current buffer."
-  (let ((string (tlon-get-string-dwim file)))
-    (tlon-make-gptel-request tlon-ai-detect-language-prompt string callback)))
+  (let* ((string (tlon-get-string-dwim file))
+	 (sample (substring string 0 (min (length string) 1000))))
+    (tlon-make-gptel-request tlon-ai-detect-language-prompt sample callback)))
 
 ;;;;;; BibTeX
 
