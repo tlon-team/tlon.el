@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'elpaca)
 (require 'paths)
 
 ;;;; User options
@@ -41,6 +42,11 @@
   :group 'tlon-core)
 
 ;;;; Variables
+
+(defvar elpaca-repos-directory)
+(defconst tlon-package-dir
+  (file-name-concat elpaca-repos-directory "tlon/")
+  "Directory where the Tlön package is located.")
 
 (defconst tlon-repos
   `((:name "babel-core"
