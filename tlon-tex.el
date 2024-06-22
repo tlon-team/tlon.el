@@ -622,15 +622,15 @@ If FILE is nil, use the file visited by the current buffer."
     (goto-char (point-min))
     (while (re-search-forward markdown-regex-link-inline nil t)
       (let* ((url (match-string-no-properties 6))
-             (key (tlon-bibliography-lookup "=key=" "url" url))
-             (start (match-beginning 0))
-             (end (match-end 0)))
-        (when key
-          (save-match-data
-            (when (y-or-n-p (format "Convert %s to citation with key %s? " url key))
-              (goto-char start)
-              (when (re-search-forward markdown-regex-link-inline end t)
-                (replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key) ".") t t)))))))))
+	     (key (tlon-bibliography-lookup "=key=" "url" url))
+	     (start (match-beginning 0))
+	     (end (match-end 0)))
+	(when key
+	  (save-match-data
+	    (when (y-or-n-p (format "Convert %s to citation with key %s? " url key))
+	      (goto-char start)
+	      (when (re-search-forward markdown-regex-link-inline end t)
+		(replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key) ".") t t)))))))))
 
 (declare-function tlon-md-get-tag-to-fill "tlon-md")
 ;;;###autoload
@@ -659,15 +659,15 @@ If SUBSTRING is non-nil, return the ASSOC-FIELD value in the entry whose FIELD
 value contains VALUE as a substring."
   (catch 'found
     (maphash (lambda (_key bibliography)
-               (let ((entries (citar-cache--bibliography-entries bibliography)))
-                 (maphash (lambda (_ entry)
-                            (when-let ((field-value (cdr (assoc field entry))))
+	       (let ((entries (citar-cache--bibliography-entries bibliography)))
+		 (maphash (lambda (_ entry)
+			    (when-let ((field-value (cdr (assoc field entry))))
 			      (when (if substring
-                                        (string-match-p (regexp-quote value) field-value)
+					(string-match-p (regexp-quote value) field-value)
 				      (string= field-value value))
-                                (throw 'found (cdr (assoc assoc-field entry))))))
-                          entries)))
-             citar-cache--bibliographies)
+				(throw 'found (cdr (assoc assoc-field entry))))))
+			  entries)))
+	     citar-cache--bibliographies)
     nil))
 
 (defvar citar-cache--bibliographies)
@@ -783,19 +783,19 @@ argument."
 If a translation already exists, do nothing unless OVERWRITE is non-nil. If KEY
 is not present, add a new entry for this KEY."
   (let* ((data (tlon-read-abstract-translations))
-         (entries (cdr (assoc "translations" data)))
-         entry-found)
+	 (entries (cdr (assoc "translations" data)))
+	 entry-found)
     (dolist (entry entries)
       (when (equal (cdr (assoc "bibKey" entry)) key)
-        (setq entry-found t)
-        (if-let ((abstracts (assoc "abstracts" entry))
+	(setq entry-found t)
+	(if-let ((abstracts (assoc "abstracts" entry))
 		 (lang-entry (assoc target-lang abstracts)))
 	    (when overwrite
-              (setcdr lang-entry translation))
-          (setcdr abstracts (cons (cons target-lang translation) (cdr abstracts))))))
+	      (setcdr lang-entry translation))
+	  (setcdr abstracts (cons (cons target-lang translation) (cdr abstracts))))))
     (unless entry-found
       (setq entries (append entries
-                            (list (list (cons "bibKey" key)
+			    (list (list (cons "bibKey" key)
 					(cons "abstracts" (list (cons target-lang translation))))))))
     (setcdr (assoc "translations" data) entries)
     (tlon-write-abstract-translations data)))

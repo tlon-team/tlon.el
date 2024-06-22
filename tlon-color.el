@@ -185,7 +185,7 @@ THEME is either `light' or `dark'. LANGUAGE is either `css' or `js'."
 			       ('dark (cdr cons))))
 		      (format-string (pcase language
 				       ('css "        %s: %s;")
-  ('js "  \"%s\": \"%s\","))))
+				       ('js "  \"%s\": \"%s\","))))
 		 (format format-string variable value)))
 	     (alist-get palette tlon-color-palettes nil nil #'string=) "\n"))
 
