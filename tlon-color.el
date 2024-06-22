@@ -274,7 +274,7 @@ hex format irrespective of their original format."
 	    (re-search-forward (format tlon-color-globals-css-header theme))
 	    (while (re-search-forward "--\\(.*?\\): \\(.*?\\);"
 				      (save-excursion
-					(re-search-forward tlon-color-css-footer) (point)) t)
+					(re-search-forward tlon-color-globals-css-footer) (point)) t)
 	      (push (cons (intern (concat "--" (match-string-no-properties 1)))
 			  (match-string-no-properties 2))
 		    theme-collect))
