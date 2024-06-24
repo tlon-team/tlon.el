@@ -614,11 +614,11 @@ Otherwise return INFO."
       (tlon-ai-callback-fail info)
     (tlon-ai-get-abstract-in-language file response)))
 
-(defun tlon-ai-get-abstract-common (prompts string language callback)
+(defun tlon-ai-get-abstract-common (prompt string language callback)
   "Common function for getting an abstract.
-PROMPTS is the prompts to use, STRING is the string to summarize, LANGUAGE is
+PROMPT is the prompt to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function."
-  (let ((prompt (tlon-lookup prompts :prompt :language language)))
+  (let ((prompt (tlon-lookup prompt :prompt :language language)))
     (tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
     (message "Getting AI abstract...")))
 
