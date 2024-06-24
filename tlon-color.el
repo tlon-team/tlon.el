@@ -272,7 +272,7 @@ hex format irrespective of their original format."
 	    (color-extras-convert-all "hex" temp-file)
 	    (goto-char (point-min))
 	    (re-search-forward (format tlon-color-globals-css-header theme))
-	    (while (re-search-forward "--\\(.*?\\): \\(.*?\\);"
+	    (while (re-search-forward "--\\(.*?\\): \\(.*?\\);$"
 				      (save-excursion
 					(re-search-forward tlon-color-globals-css-footer) (point)) t)
 	      (push (cons (intern (concat "--" (match-string-no-properties 1)))
