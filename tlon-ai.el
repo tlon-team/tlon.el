@@ -157,6 +157,25 @@ use a different model for summarization."
 	     :language "de"))
   "Prompts for summarization.")
 
+(defconst tlon-ai-shorten-abstract-prompts
+  `((:prompt ,(format "Please shorten the following abstract to %s words or less. The shortened version should consist of only one paragraph.%s"
+		      tlon-tex-max-abstract-length
+		      tlon-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "Por favor, acorta el siguiente resumen a %s palabras o menos. La versión acortada debe constar de un solo párrafo.%s"
+		      tlon-tex-max-abstract-length
+		      tlon-ai-string-wrapper)
+	     :language "es")
+    (:prompt ,(format "Veuillez raccourcir le résumé suivant à %s mots ou moins. La version raccourcie doit se composer d'un seul paragraphe.%s"
+		      tlon-tex-max-abstract-length
+		      tlon-ai-string-wrapper)
+	     :language "fr")
+    (:prompt ,(format "Bitte kürzen Sie die folgende Zusammenfassung auf %s Wörter oder weniger. Die gekürzte Version sollte nur aus einem Absatz bestehen.%s"
+		      tlon-tex-max-abstract-length
+		      tlon-ai-string-wrapper)
+	     :language "de"))
+  "Prompts for summarization.")
+
 ;;;;;; Synopsis
 
 (defconst tlon-ai-get-synopsis-prompts
@@ -516,6 +535,24 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
     (when tlon-debug
       (message "`%s' now calls `tlon-ai-batch-continue'." "tlon-get-abstract-with-ai"))
     (tlon-ai-batch-continue)))
+
+(defun tlon-shorten-abstract-with-ai ()
+  "Shorten the abstract at point so that does not exceed word threshold."
+  (interactive)
+  (when-let* ((get-field (pcase major-mode
+			   ('bibtex-mode #'bibtex-extras-get-field)
+			   ('ebib-entry-mode #'ebib-extras-get-field)))
+	      (get-key (pcase major-mode
+			 ('bibtex-mode #'bibtex-extras-get-key)
+			 ('ebib-entry-mode #'ebib--get-key-at-point)))
+	      (abstract (funcall get-field "abstract"))
+	      (language (tlon-get-iso-code (or (funcall get-field "langid")
+					       (tlon-select-language))))
+	      (key (funcall get-key)))
+    (tlon-ai-get-abstract-common
+     tlon-ai-shorten-abstract-prompts abstract language
+     (lambda (response info)
+       (tlon-get-abstract-callback response info key)))))
 
 (defun tlon-get-synopsis-with-ai (&optional file)
   "Return a synopsis of the relevant content using AI.
