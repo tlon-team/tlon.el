@@ -900,12 +900,13 @@ variable."
     "Options"
     ("i -o" "overwrite alt text"                tlon-ai-overwrite-alt-text-toggle-infix)]
    ["Summarize"
-    ("a s" "get abstract with or without AI"    tlon-get-abstract-with-or-without-ai)
-    ("a n" "get abstract without AI"            tlon-fetch-and-set-abstract)
-    ("a a" "get abstract with AI"               tlon-get-abstract-with-ai)
-    ("a h" "get abstract with AI from HTML"     tlon-get-abstract-with-ai-from-html)
-    ("a p" "get abstract with AI from PDF"      tlon-get-abstract-with-ai-from-pdf)
-    ("s s" "get synopsis with AI"               tlon-get-synopsis-with-ai)
+    ("s s" "get abstract with or without AI"    tlon-get-abstract-with-or-without-ai)
+    ("s n" "get abstract without AI"            tlon-fetch-and-set-abstract)
+    ("s a" "get abstract with AI"               tlon-get-abstract-with-ai)
+    ("s h" "get abstract with AI from HTML"     tlon-get-abstract-with-ai-from-html)
+    ("s p" "get abstract with AI from PDF"      tlon-get-abstract-with-ai-from-pdf)
+    ("s y" "get synopsis with AI"               tlon-get-synopsis-with-ai)
+    ("s h" "shorten abstract with AI"           tlon-shorten-abstract-with-ai)
     ""
     "Options"
     ("s -b" "batch"                             tlon-ai-batch-fun-infix)
