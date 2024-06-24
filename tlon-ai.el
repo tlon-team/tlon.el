@@ -272,7 +272,7 @@ INFO is the response info."
 	       ('bibtex-mode (bibtex-next-entry)
 			     (bibtex-extras-get-key))
 	       ('ebib-entry-mode (ebib-extras-next-entry)
-				 (ebib-extras-get-field "=key="))))
+				 (ebib--get-key-at-point))))
     (funcall tlon-ai-batch-fun)))
 
 (defun tlon-ai-try-try-try-again (original-fun)
@@ -590,7 +590,7 @@ other value, generate an abstract."
       (let ((original-buffer (current-buffer))
 	    (key (pcase major-mode
 		   ('bibtex-mode (bibtex-extras-get-key))
-		   ('ebib-entry-mode (ebib-extras-get-field "=key="))
+		   ('ebib-entry-mode (ebib--get-key-at-point))
 		   (_ nil))))
 	(tlon-ai-get-abstract-common
 	 (pcase type

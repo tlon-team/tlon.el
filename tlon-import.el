@@ -125,7 +125,7 @@ and the third group captures the collection ID.")
     (if-let ((identifier (or (ebib-extras-get-field "url")
 			     (ebib-extras-get-file "md")))
 	     (title (ebib-extras-get-field "title"))
-	     (key (ebib-extras-get-field "=key=")))
+	     (key (ebib--get-key-at-point)))
 	(list identifier title key)
       (user-error "The current Ebib entry seems to be missing one of the following
 fields, which are needed to create a new job: `url' or `file',

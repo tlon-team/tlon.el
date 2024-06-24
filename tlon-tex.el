@@ -198,7 +198,7 @@ abstract will, or will not, replace the existing one, respectively."
 		    (funcall get-field field))
 		  '("doi" "isbn" "url"))
 	(let ((key (pcase major-mode
-		     ('ebib-entry-mode (ebib-extras-get-field "=key="))
+		     ('ebib-entry-mode (ebib--get-key-at-point))
 		     ('bibtex-mode (bibtex-extras-get-key))))
 	      found)
 	  (if-let ((value (or
@@ -311,7 +311,7 @@ abstract will, or will not, replace the existing one, respectively."
 	  (message "Skipping: `%s' already contains an abstract."
 		   (pcase major-mode
 		     ('bibtex-mode (bibtex-extras-get-key))
-		     ('ebib-entry-mode (ebib-extras-get-field "=key="))))
+		     ('ebib-entry-mode (ebib--get-key-at-point))))
 	  nil))
     (derived-mode-p 'text-mode 'pdf-view-mode 'eww-mode)))
 
@@ -345,7 +345,7 @@ Save citekey to \"kill-ring\". If KEY is nil, use the key of the entry at point.
   ;; TODO: add ensure in tex modes check
   (let ((key (or key (pcase major-mode
 		       ('bibtex-mode (bibtex-extras-get-key))
-		       ((or 'ebib-entry-mode 'ebib-index-mode) (ebib-extras-get-field "=key="))))))
+		       ((or 'ebib-entry-mode 'ebib-index-mode) (ebib--get-key-at-point))))))
     (bibtex-extras-move-entry key tlon-file-fluid)
     (tlon-add-or-update-tlon-field-in-file key tlon-file-fluid)
     (kill-new key)
@@ -594,7 +594,7 @@ If FILE is nil, use the file visited by the current buffer."
   (unless (derived-mode-p 'ebib-entry-mode)
     (user-error "Not in `ebib-entry-mode'"))
   (let* ((language (tlon-select-language 'code 'babel))
-	 (fields `(("translation" . ,(ebib-extras-get-field "=key="))
+	 (fields `(("translation" . ,(ebib--get-key-at-point))
 		   ("=type=" . ,(ebib-extras-get-field "=type="))
 		   ("author" . ,(ebib-extras-get-field "author"))
 		   ("database" . ,(ebib-extras-get-field "database"))
@@ -812,7 +812,7 @@ a language."
 			   ('ebib-entry-mode #'ebib-extras-get-field)
 			   ('bibtex-mode #'bibtex-extras-get-field)))
 	      (key (or key (pcase major-mode
-			     ('ebib-entry-mode (ebib-extras-get-field "=key="))
+			     ('ebib-entry-mode (ebib--get-key-at-point))
 			     ('bibtex-mode (bibtex-extras-get-key)))))
 	      (abstract (funcall get-field "abstract"))
 	      (source-lang (or source-lang
