@@ -215,7 +215,7 @@ abstract will, or will not, replace the existing one, respectively."
 	  (tlon-ai-batch-continue)
 	  found)))))
 
-(defvar tlon-ai-batch-fun "tlon-ai")
+(defvar tlon-ai-batch-fun)
 (declare-function zotra-extras-fetch-field "zotra-extras")
 (defun tlon-fetch-abstract-with-zotra (url doi)
   "Return the abstract of the work with URL or DOI."
