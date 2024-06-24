@@ -155,7 +155,7 @@ The capture group 3 contains the title of the work.")
 
 ;;;;; Abstracts
 
-(defconst tlon-tex-max-abstract-length 350
+(defconst tlon-tex-max-abstract-length 300
   "Maximum length of an abstract, in words.")
 
 (defconst tlon-tex-min-abstract-length 45
