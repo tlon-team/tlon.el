@@ -790,9 +790,9 @@ is not present, add a new entry for this KEY."
     (setcdr (assoc "translations" data) entries)
     (tlon-write-abstract-translations data)))
 
-(declare-function tlon-deepl-api-translate "tlon-deepl")
-(declare-function tlon-deepl-api-translate-callback "tlon-deepl")
 (defun tlon-translate-abstract (&optional key target-lang source-lang)
+(declare-function tlon-deepl-translate "tlon-deepl")
+(declare-function tlon-deepl-translate-callback "tlon-deepl")
   "Translate the abstract of KEY from SOURCE-LANG to TARGET-LANG.
 Save the translation in `tlon-file-abstract-translations'.  If KEY is nil, use
 the key of the entry at point. If TARGET-LANG is nil, prompt the user to select
@@ -808,16 +808,16 @@ a language."
 	      (source-lang (or source-lang
 			       (tlon-lookup tlon-languages-properties :code :name (funcall get-field "langid"))))
 	      (target-lang (or target-lang (tlon-select-language 'code 'babel))))
-    (tlon-deepl-api-translate abstract target-lang source-lang
-			      (lambda ()
 				(tlon-translate-abstract-callback key target-lang)))))
+    (tlon-deepl-translate abstract target-lang source-lang
+			  (lambda ()
 
 (defun tlon-translate-abstract-callback (key target-lang &optional overwrite)
   "Callback for `tlon-translate-abstract'.
 KEY is the key of the entry and TARGET-LANG is the target language of the
 translation. If OVERWRITE is non-nil, overwrite the existing translation."
-  (let ((translation (tlon-deepl-api-translate-callback)))
     (tlon-add-abstract-translation key target-lang translation overwrite)))
+  (let ((translation (tlon-deepl-translate-callback)))
 
 ;;;;;; Report
 
