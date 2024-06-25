@@ -167,7 +167,7 @@ If COPY is non-nil, copy the translation to the kill ring instead."
 	 (decoded (tlon-deepl-fix-encoding translation)))
     (when copy
       (kill-new decoded))
-    (message (concat (when copy "Copied to kill ring: " ) decoded))))
+    (message (concat (when copy "Copied to kill ring: " ) (replace-regexp-in-string "%" "%%" decoded)))))
 
 (defun tlon-deepl-fix-encoding (string)
   "Fix encoding in STRING.
