@@ -269,7 +269,7 @@ when the source language is not English."
   "DeepL menu."
   ["Translate"
    ("t" "Translate" tlon-deepl-translate)
-   ("H-t" "Translate" tlon-deepl-translate-and-copy)
+   ("H-t" "Translate and copy" tlon-deepl-translate-and-copy)
    ""
    "Glossaries"
    ("l" "List" tlon-deepl-select-glossary)
