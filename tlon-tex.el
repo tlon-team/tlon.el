@@ -848,7 +848,7 @@ translation. If OVERWRITE is non-nil, overwrite the existing translation."
   (save-excursion
     (widen)
     (goto-char (point-min))
-    (let (no-abstract short-abstracts long-abstracts)
+    (let (no-abstract short-abstracts long-abstracts minimal-abstracts)
       (while (bibtex-next-entry)
 	(bibtex-narrow-to-entry)
 	(let ((key (bibtex-extras-get-key)))
@@ -859,12 +859,15 @@ translation. If OVERWRITE is non-nil, overwrite the existing translation."
 		       (end (progn (bibtex-next-field t) (beginning-of-line) (left-char 3) (point))))
 		  (cond ((> (count-words begin end) tlon-tex-max-abstract-length)
 			 (push key long-abstracts))
+			((< (count-words begin end) 10)
+			 (push key minimal-abstracts))
 			((< (count-words begin end) tlon-tex-min-abstract-length)
 			 (push key short-abstracts))))
 	      (push key no-abstract)))
 	  (widen)))
       (setq long-abstracts (tlon-text-remove-translated-entries long-abstracts)
 	    short-abstracts (tlon-text-remove-translated-entries short-abstracts)
+	    minimal-abstracts (tlon-text-remove-translated-entries minimal-abstracts)
 	    no-abstract (tlon-text-remove-translated-entries no-abstract))
       (let ((buffer-name "*tlon-tex-entries-report*"))
 	(with-current-buffer (get-buffer-create buffer-name)
@@ -873,9 +876,12 @@ translation. If OVERWRITE is non-nil, overwrite the existing translation."
 
 Abstracts below minimum length (%s words): %s
 
+Abstracts with fewer than 10 words: %s
+
 No abstract: %s"
 			  tlon-tex-max-abstract-length long-abstracts
 			  tlon-tex-min-abstract-length short-abstracts
+			  minimal-abstracts
 			  no-abstract))
 	  (pop-to-buffer buffer-name))))))
 
