@@ -261,6 +261,8 @@ when the source language is not English."
     (setq tlon-deepl-glossaries (cdar (json-read))))
   (message "Read glossaries from DeepL API."))
 
+(tlon-deepl-get-glossaries)
+
 ;;;;;;; Create glossary
 
 ;;;###autoload
