@@ -940,16 +940,19 @@ No abstract: %s"
 
 (defun tlon-tex-translate-abstract-when-modified (key)
   "When the abstract of KEY is modified, translate it into the relevant languages."
-  (let ((source-lang
+  (let ((text (pcase major-mode
+		('text-mode (buffer-string))
+		('ebib-entry-mode (ebib-extras-get-field "abstract"))
+		('bibtex-mode (bibtex-extras-get-field "abstract"))))
+	(source-lang
 	 (save-window-excursion
 	   (citar-extras-open-in-ebib key)
 	   (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
     (mapc (lambda (language)
 	    (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-	      (when (derived-mode-p 'text-mode)
-		(tlon-deepl-translate (buffer-string) target-lang source-lang
-				      (lambda ()
-					(tlon-translate-abstract-callback key target-lang 'overwrite))))))
+	      (tlon-deepl-translate text target-lang source-lang
+				    (lambda ()
+				      (tlon-translate-abstract-callback key target-lang 'overwrite)))))
 	  tlon-project-target-languages)))
 
 (defun tlon-tex-bibtex-set-field-advice (orig-fun &rest args)
