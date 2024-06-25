@@ -96,7 +96,7 @@ buffer."
 	 (language (tlon-repo-lookup :language :dir repo))
 	 (languages (mapcar (lambda (language)
 			      (tlon-get-formatted-languages language 'code))
-			    (remove "english" tlon-project-languages))))
+			    tlon-project-target-languages)))
     (pcase language
       ("en" (completing-read "Language: " languages))
       ((pred (lambda (lang)

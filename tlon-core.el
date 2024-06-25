@@ -378,6 +378,10 @@ the actual user.")
   '("english" "spanish" "italian" "french" "german" "portuguese")
   "A list of languages all languages in the Babel project.")
 
+(defconst tlon-project-target-languages
+  (remove "english" tlon-project-languages)
+  "A list of languages all languages in the Babel project minus English.")
+
 (defconst tlon-languages-properties
   '((:name "albanian" :code "sq" :locale "sq_AL")
     (:name "american" :code "en-US" :locale "en_US")

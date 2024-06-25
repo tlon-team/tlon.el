@@ -83,9 +83,8 @@
   "Create a new entry for a TERM of a given TYPE."
   (let ((entry (list (cons "en" term) (cons "type" type))))
     (when (string= type "invariant")
-      (let ((languages (remove "en" (mapcar 'cdr tlon-project-languages))))
-        (dolist (lang languages)
-          (setq entry (append entry (list (cons lang term)))))))
+      (dolist (lang tlon-project-target-languages)
+        (setq entry (append entry (list (cons lang term))))))
     entry))
 
 (defun tlon-edit-translation-in-entry (entry term)
