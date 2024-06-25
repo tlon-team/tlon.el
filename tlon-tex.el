@@ -790,9 +790,9 @@ is not present, add a new entry for this KEY."
 ;; TODO: include BibTeX entry as context so that DeepL can use correct genders, plurals, etc.
 (defun tlon-translate-abstract (&optional key target-lang source-lang var)
   "Translate the abstract of KEY from SOURCE-LANG to TARGET-LANG.
-Save the translation in `tlon-file-abstract-translations'.  If KEY is nil, use
-the key of the entry at point. If TARGET-LANG is nil, prompt the user to select
-a language."
+If KEY is nil, use the key of the entry at point. If TARGET-LANG is nil, prompt
+the user to select a language. If VAR is non-nil, save the translation in VAR;
+otherwise, save it to `tlon-file-abstract-translations'."
   (interactive)
   (when-let* ((get-field (pcase major-mode
 			   ('ebib-entry-mode #'ebib-extras-get-field)
