@@ -925,14 +925,16 @@ repository."
 ;;;;; search
 
 (declare-function elgrep "elgrep")
-(defun tlon-grep (string)
+(defun tlon-grep (string extension)
   "Perform a ripgrep search for STRING."
-  (interactive "sSearch: ")
+  (interactive (list (read-string "Search string: ")
+		     (completing-read "Extension: " '("md" "el" "") nil t)))
   (let* ((core-settings '(:interactive t :recursive t))
 	 (no-context-settings '(:c-beg-only t :c-end-only t))
 	 (context (y-or-n-p "Context?"))
-	 (settings (append core-settings (unless context no-context-settings))))
-    (apply #'elgrep nil "\\.md" string settings)))
+	 (settings (append core-settings (unless context no-context-settings)))
+	 (extension (unless (string-empty-p extension) (format "\\.%s" extension))))
+    (apply #'elgrep nil extension string settings)))
 
 (provide 'tlon-core)
 ;;; tlon-core.el ends here
