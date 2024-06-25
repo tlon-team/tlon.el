@@ -408,17 +408,18 @@ and sets the value of the field for all entries to `Tlön'."
 
 ;;;;; Cleanup
 
-;; TODO: support arbitrary langs
-(defun tlon-add-lang-id-to-entry (&optional _ _ _)
-  "Add `langid' field to entry at point, if appropriate.
-If the field `landig' is present, the function does nothing; else, it sets the
-`langid' field to `spanish' if the entry has either a `translation' or a
-`translator' field, and to `english' otherwise."
-  (unless (bibtex-text-in-field "langid")
-    (if (or (bibtex-text-in-field "translation")
-	    (bibtex-text-in-field "translator"))
-	(bibtex-set-field "langid" "spanish")
-      (bibtex-set-field "langid" "english"))))
+(defun tlon-add-lang-id-to-entries ()
+  "Add `langid' field to entries in the current buffer, if missing."
+  (interactive)
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "Not in `bibtex-mode'"))
+  (widen)
+  (while (bibtex-next-entry)
+    (bibtex-narrow-to-entry)
+    (unless (bibtex-extras-get-field "langid")
+      (let ((lang (tlon-select-language)))
+	(bibtex-set-field "langid" lang)))
+    (widen)))
 
 (defun tlon-remove-empty-spaces ()
   "Remove empty spaces at the end of field."
