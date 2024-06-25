@@ -415,7 +415,8 @@ and sets the value of the field for all entries to `Tlön'."
     (let ((after-save-hook nil))
       (tlon-remove-empty-spaces)
       (bibtex-extras-escape-special-characters)
-      (bibtex-clean-entry)
+      (when (looking-at bibtex-any-entry-maybe-empty-head)
+	(bibtex-clean-entry))
       (save-buffer))))
 
 (defun tlon-add-lang-id-to-entries ()
