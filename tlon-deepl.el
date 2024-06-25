@@ -149,8 +149,8 @@ If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
 If SOURCE-LANG is nil, use \"en\"."
   (interactive)
   (tlon-deepl-translate text target-lang source-lang
-			    (lambda ()
-			      (tlon-deepl-translate-callback 'copy))))
+			(lambda ()
+			  (tlon-deepl-translate-callback 'copy))))
 
 (defun tlon-deepl-translate-callback (&optional copy)
   "Print the translated text.
