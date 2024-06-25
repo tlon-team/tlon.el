@@ -408,6 +408,16 @@ and sets the value of the field for all entries to `Tlön'."
 
 ;;;;; Cleanup
 
+(defun tlon-auto-clean-entry ()
+  "Clean up bibtex entry at point upon saving."
+  (when (or (derived-mode-p 'bibtex-mode)
+	    (< (point-min) (point-max)))
+    (let ((after-save-hook nil))
+      (tlon-remove-empty-spaces)
+      (bibtex-extras-escape-special-characters)
+      (bibtex-clean-entry)
+      (save-buffer))))
+
 (defun tlon-add-lang-id-to-entries ()
   "Add `langid' field to entries in the current buffer, if missing."
   (interactive)
