@@ -101,6 +101,13 @@ FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
 		       (message
 			"`%s' request completed successfully. See the `Uqbar log' buffer for details." route)))))))))
 
+(defun tlon-api-request-force (route &optional local)
+  "Make a force request for ROUTE with the `uqbar' API.
+If LOCAL is non-nil, use the local server; otherwise, use the remote server."
+  (interactive (list (tlon-select-api-route)
+		     (completing-read "Site URL? " '("local" "remote"))))
+  (tlon-api-request route local 'force))
+
 (defun tlon-api-get-token (site callback)
   "Get API token for SITE.
 CALLBACK is called with the token as its argument."
@@ -295,7 +302,8 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
 (transient-define-prefix tlon-api-menu ()
   "`api' menu."
   ["Requests"
-   ("q" "uqbar"                        tlon-api-request)])
+   ("q" "uqbar"                        tlon-api-request)
+   ("Q" "uqbar force"                   tlon-api-request-force)])
 
 (provide 'tlon-api)
 ;;; tlon-api.el ends here
