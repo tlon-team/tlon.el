@@ -768,31 +768,27 @@ argument."
   "Write DATA to the JSON file with the abstract translations."
   (tlon-write-data tlon-file-abstract-translations data))
 
-(defun tlon-add-abstract-translation (key target-lang translation &optional overwrite)
+(defun tlon-add-abstract-translation (key target-lang translation &optional overwrite var)
   "Add a TRANSLATION of KEY in TARGET-LANG.
 If a translation already exists, do nothing unless OVERWRITE is non-nil. If KEY
 is not present, add a new entry for this KEY."
-  (let* ((data (tlon-read-abstract-translations))
-	 (entries (cdr (assoc "translations" data)))
-	 entry-found)
-    (dolist (entry entries)
-      (when (equal (cdr (assoc "bibKey" entry)) key)
-	(setq entry-found t)
-	(if-let ((abstracts (assoc "abstracts" entry))
-		 (lang-entry (assoc target-lang abstracts)))
-	    (when overwrite
-	      (setcdr lang-entry translation))
-	  (setcdr abstracts (cons (cons target-lang translation) (cdr abstracts))))))
-    (unless entry-found
-      (setq entries (append entries
-			    (list (list (cons "bibKey" key)
-					(cons "abstracts" (list (cons target-lang translation))))))))
-    (setcdr (assoc "translations" data) entries)
-    (tlon-write-abstract-translations data)))
+  (let* ((data (or (symbol-value var) (tlon-read-abstract-translations)))
+         (entry (assoc key data)))
+    (if entry
+        (let ((lang-entry (assoc target-lang (cdr entry))))
+          (if lang-entry
+              (when overwrite
+                (setcdr lang-entry translation))
+            (setcdr entry (cons (cons target-lang translation) (cdr entry)))))
+      (setq data (cons (cons key (list (cons target-lang translation))) data)))
+    (if var
+	(set var data)
+      (tlon-write-abstract-translations data))))
 
-(defun tlon-translate-abstract (&optional key target-lang source-lang)
 (declare-function tlon-deepl-translate "tlon-deepl")
 (declare-function tlon-deepl-translate-callback "tlon-deepl")
+;; TODO: include BibTeX entry as context so that DeepL can use correct genders, plurals, etc.
+(defun tlon-translate-abstract (&optional key target-lang source-lang var)
   "Translate the abstract of KEY from SOURCE-LANG to TARGET-LANG.
 Save the translation in `tlon-file-abstract-translations'.  If KEY is nil, use
 the key of the entry at point. If TARGET-LANG is nil, prompt the user to select
@@ -808,16 +804,39 @@ a language."
 	      (source-lang (or source-lang
 			       (tlon-lookup tlon-languages-properties :code :name (funcall get-field "langid"))))
 	      (target-lang (or target-lang (tlon-select-language 'code 'babel))))
-				(tlon-translate-abstract-callback key target-lang)))))
     (tlon-deepl-translate abstract target-lang source-lang
 			  (lambda ()
+			    (tlon-translate-abstract-callback key target-lang nil var)))))
 
-(defun tlon-translate-abstract-callback (key target-lang &optional overwrite)
+(defun tlon-translate-abstracts (&optional target-lang source-lang overwrite var)
+  "Translate multiple abstracts in the current buffer.
+TARGET-LANG is the target language of the translation. If SOURCE-LANG is nil,
+use the language of the `langid' field. If OVERWRITE is non-nil, overwrite the
+existing translation. If VAR is non-nil, save the translations in VAR;
+otherwise, save them in `tlon-file-abstract-translations'.
+
+Set the value of `dotimes' below to a few hundreds and repeat the command until
+all abstracts are translated. Use VAR to save the translations in a variable,
+since otherwise the file will be overwritten each time, causing repeated errors.
+
+Make sure the relevant glossaries are loaded before running this function."
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "Not in `bibtex-mode'"))
+  (widen)
+  (dotimes (_ 2000)
+    (bibtex-next-entry)
+    (bibtex-narrow-to-entry)
+    (let ((key (bibtex-extras-get-key)))
+      (when (or overwrite (not (alist-get key (symbol-value var) nil nil #'string=)))
+	(tlon-translate-abstract key target-lang source-lang var))
+      (widen))))
+
+(defun tlon-translate-abstract-callback (key target-lang &optional overwrite var)
   "Callback for `tlon-translate-abstract'.
 KEY is the key of the entry and TARGET-LANG is the target language of the
 translation. If OVERWRITE is non-nil, overwrite the existing translation."
-    (tlon-add-abstract-translation key target-lang translation overwrite)))
   (let ((translation (tlon-deepl-translate-callback)))
+    (tlon-add-abstract-translation key target-lang translation overwrite var)))
 
 ;;;;;; Report
 
