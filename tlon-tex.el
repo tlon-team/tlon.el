@@ -918,6 +918,49 @@ No abstract: %s"
     (push key tlon-tex-excluded-keys))
   (tlon-tex-save-excluded-keys))
 
+;;;;; Monitor field values
+
+(declare-function ebib-extras-get-file-of-key "ebib-extras")
+(defun tlon-tex-field-modified (field value key)
+  "Act when FIELD is set to VALUE in a BibTeX entry with KEY."
+  (cond ((and (string= field "abstract")
+	      (member (ebib-extras-get-file-of-key key) tlon-bibliography-files))
+	 (tlon-tex-translate-abstract-when-modified key))))
+
+(defun tlon-tex-translate-abstract-when-modified (key)
+  "When the abstract of KEY is modified, translate it into the relevant languages."
+  (let ((source-lang
+	 (save-window-excursion
+	   (citar-extras-open-in-ebib key)
+	   (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
+    (mapc (lambda (language)
+	    (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
+	      (when (derived-mode-p 'text-mode)
+		(tlon-deepl-translate (buffer-string) target-lang source-lang
+				      (lambda ()
+					(tlon-translate-abstract-callback key target-lang 'overwrite))))))
+	  tlon-project-target-languages)))
+
+(defun tlon-tex-bibtex-set-field-advice (orig-fun &rest args)
+  "Advice to catch modifications to BibTeX fields in `bibtex-mode'.
+ORIG-FUN is the original function, ARGS are the arguments passed to it."
+  (let ((field (nth 0 args))
+        (value (nth 1 args)))
+    (apply orig-fun args)
+    (tlon-tex-field-modified field value (bibtex-extras-get-key))))
+
+(advice-add 'bibtex-set-field :around #'tlon-tex-bibtex-set-field-advice)
+
+(defun tlon-tex-ebib-set-field-advice (orig-fun &rest args)
+  "Advice to catch modifications to BibTeX fields in `ebib-entry-mode'.
+ORIG-FUN is the original function, ARGS are the arguments passed to it."
+  (let ((field (nth 0 args))
+        (value (nth 1 args)))
+    (apply orig-fun args)
+    (tlon-tex-field-modified field value (ebib--get-key-at-point))))
+
+(advice-add 'ebib-set-field-value :around #'tlon-tex-ebib-set-field-advice)
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
