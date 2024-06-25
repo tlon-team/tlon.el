@@ -64,7 +64,7 @@
 
 (defun tlon-wait-until-forge-updates ()
   "Wait until Forge is finished updating the repo."
-  (let* ((get-last-updated (lambda () (oref (forge-current-repository) updated)))
+  (let* ((get-last-updated (lambda () (oref (forge-get-repository :tracked?) updated)))
 	 (last-updated (funcall get-last-updated))
 	 (count 0))
     (forge-pull)
@@ -130,13 +130,13 @@ If GROUP is non-nil, include the \"group\" option in the prompt."
   "Create an issue with TITLE in DIR and visit it."
   (with-temp-buffer
     (cd dir)
-    (when (forge-current-repository)
+    (when (forge-get-repository :tracked?)
       (tlon-create-issue title dir)
       (forge-pull)
       (while (not (tlon-issue-lookup title dir))
 	(sleep-for 0.1))
       (forge-visit-issue (tlon-issue-lookup title dir))
-      (format "*forge: %s %s*" (oref (forge-current-repository) slug) (oref (forge-current-topic) slug)))))
+      (format "*forge: %s %s*" (oref (forge-get-repository :tracked?) slug) (oref (forge-current-topic) slug)))))
 
 ;; TODO: generalize to all possible meetings
 (defun tlon-discuss-issue-in-meeting ()
@@ -149,11 +149,11 @@ function tried to be a nudge in that direction."
     (user-error "This command can only be invoked in Forge issue buffers"))
   (let (backlink)
     (save-excursion
-      (let* ((repo-name (oref (forge-current-repository) name))
+      (let* ((repo-name (oref (forge-get-repository :tracked?) name))
 	     (issue-number (oref (forge-current-issue) number))
 	     (link (format "tlon-team/%s#%s" repo-name issue-number)))
 	(switch-to-buffer (tlon-create-or-visit-meeting-issue))
-	(let* ((repo-name (oref (forge-current-repository) name))
+	(let* ((repo-name (oref (forge-get-repository :tracked?) name))
 	       (issue-number (oref (forge-current-issue) number)))
 	  (setq backlink (format "tlon-team/%s#%s" repo-name issue-number))
 	  (goto-char (point-max))
