@@ -436,13 +436,15 @@ repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
 (declare-function tlon-get-tag-attribute-values "tlon-md")
 (declare-function tlon-md-insert-attribute-value "tlon-md")
 (defun tlon-ai-set-image-alt-text ()
-  "Insert a description of the image in the \"Figure\" tag at point."
+  "Insert a description of the image in the image tag at point.
+The image tags are \"Figure\" or \"OurWorldInData\"."
   (interactive)
   (save-excursion
-    (if-let* ((src (car (tlon-get-tag-attribute-values "Figure")))
+    (if-let* ((src (car (or (tlon-get-tag-attribute-values "Figure")
+			    (tlon-get-tag-attribute-values "OurWorldInData"))))
 	      (file (tlon-ai-get-image-file-from-src src))
 	      (pos (point-marker)))
-	(tlon-ai-describe-image nil nil
+	(tlon-ai-describe-image file nil
 				(lambda (response)
 				  "If the RESPONSE is successful, insert it as the alt text."
 				  (with-current-buffer (marker-buffer pos)
@@ -451,7 +453,7 @@ repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
 				(lambda (response)
 				  "If the RESPONSE is not successful, emit it as an error message."
 				  (user-error "Error: %s" response)))
-      (user-error "No \"Figure\" tag at point"))))
+      (user-error "No \"Figure\" or \"OurWorldInData\" tag at point"))))
 
 (declare-function tlon-md-get-tag-pattern "tlon-md")
 (defun tlon-ai-set-image-alt-text-in-buffer ()
@@ -460,12 +462,13 @@ If the image already contains a non-empty `alt' field, overwrite it when
 `tlon-ai-overwrite-alt-text' is non-nil."
   (interactive)
   (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward (tlon-md-get-tag-pattern "Figure") nil t)
-      (when (or tlon-ai-overwrite-alt-text
-		(not (match-string 6))
-		(string-empty-p (match-string 6)))
-	(tlon-ai-set-image-alt-text)))))
+    (dolist (tag '("Figure" "OurWorldInData"))
+      (goto-char (point-min))
+      (while (re-search-forward (tlon-md-get-tag-pattern tag) nil t)
+	(when (or tlon-ai-overwrite-alt-text
+		  (not (match-string 6))
+		  (string-empty-p (match-string 6)))
+	  (tlon-ai-set-image-alt-text))))))
 
 (declare-function dired-get-filename "dired")
 (defun tlon-ai-read-image-file (&optional file)
