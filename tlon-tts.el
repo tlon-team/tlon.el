@@ -1387,14 +1387,28 @@ citation key, format. Hence, it must be run *before*
 `tlon-tts-process-citations'."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-footnote nil t)
-    (let (reposition)
+    (let ((note (tlon-tts-get-note))
+	  (reposition))
       (markdown-footnote-kill)
-      (unless (looking-back (concat "\\.\\|" markdown-regex-footnote) (line-beginning-position))
-	(setq reposition t))
-      (when (eq (tlon-get-note-type (current-kill 0)) 'sidenote)
-	(when reposition
-	  (forward-sentence))
-	(insert (tlon-tts-handle-note (string-trim (current-kill 0))))))))
+      (when (not (string-empty-p note))
+	(unless (looking-back (concat "\\.\\|" markdown-regex-footnote) (line-beginning-position))
+	  (setq reposition t))
+	(when (eq (tlon-get-note-type note) 'sidenote)
+	  (when reposition
+	    (forward-sentence)
+	    (while (thing-at-point-looking-at tlon-md-blockquote)
+	      (forward-sentence) (forward-char) (forward-char)))
+	  (insert (tlon-tts-handle-note note)))))))
+
+(defun tlon-tts-get-note ()
+  "Return the note at point."
+  (save-excursion
+    (markdown-footnote-goto-text)
+    (let ((begin (point)))
+      (re-search-forward "^[\\^[[:digit:]]+" nil t)
+      (beginning-of-line)
+      (backward-char)
+      (string-chop-newline (buffer-substring-no-properties begin (point))))))
 
 (defun tlon-tts-handle-note (note)
   "Handle NOTE for audio narration."
