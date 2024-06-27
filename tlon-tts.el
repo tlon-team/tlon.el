@@ -1850,7 +1850,14 @@ Note: this function should be run after `tlon-tts-process-images' because
 image links are handled differently."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-link-inline nil t)
-    (replace-match (match-string-no-properties 3) t t)))
+    (cl-destructuring-bind (self-link-text . self-link-replace)
+	(alist-get (tlon-tts-get-current-language) tlon-tts-self-referential-link nil nil #'string=)
+      (let* ((link-text (match-string-no-properties 3))
+	     (replacement (if (string= link-text self-link-text)
+			      self-link-replace
+			    link-text)))
+	(replace-match replacement t t)))))
+
 ;;;;;; Tables
 
 (defun tlon-tts-process-tables ()
