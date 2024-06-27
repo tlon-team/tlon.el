@@ -329,6 +329,15 @@ amounts between 1000 and 9999.")
 (defconst tlon-default-thousands-separator " "
   "The default thousands separator.")
 
+(defconst tlon-language-specific-thousands-separator
+  '((:language "en" :separator ",")
+    (:language "es" :separator ".")
+    (:language "fr" :separator " ")
+    (:language "it" :separator "."))
+  "List of language-specific thousands separators.
+These are used in TTS processes to ensure that the numbers are pronounced
+correctly.")
+
 ;;;;; To sort
 
 (defvar tlon-users

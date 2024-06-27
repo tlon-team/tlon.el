@@ -1922,13 +1922,18 @@ image links are handled differently."
 	   (arabic (rst-roman-to-arabic roman)))
       (replace-match (number-to-string arabic) t t))))
 
-;;;;;;;; Remove thousands separators
+;;;;;;;; Replace thousands separators
 
+(defvar tlon-language-specific-thousands-separator)
 (defun tlon-tts-process-numerals-remove-thousands-separators ()
-  "Remove default thousands separators in numerals."
+  "Replace narrow space with language-specific thousands separator.
+Some TTS engines do not read numbers correctly when they are not separated by
+periods or commas (depending on the language)."
   (goto-char (point-min))
-  (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
-    (replace-match (replace-regexp-in-string tlon-default-thousands-separator "" (match-string 1)) t t)))
+  (let ((separator (tlon-lookup tlon-language-specific-thousands-separator
+				:separator :language (tlon-tts-get-current-language))))
+    (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
+      (replace-match (replace-regexp-in-string tlon-default-thousands-separator separator (match-string 1)) t t))))
 
 ;;;;;;;; Misc
 
