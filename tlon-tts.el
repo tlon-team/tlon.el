@@ -1116,9 +1116,10 @@ intonation, but not the silences, correctly)."
       (goto-char (min
 		  (point-max)
 		  (+ begin chunk-size)))
-      (setq end (if (eobp)
-		    (point)
-		  (backward-sentence))) ; avoid mid-sentence breaks
+      (setq end (progn
+		  (unless (eobp)
+		    (backward-paragraph))
+		  (point)))
       (push (string-trim (buffer-substring-no-properties begin end)) chunks)
       (setq begin end))
     (nreverse chunks)))
