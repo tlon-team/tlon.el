@@ -2175,13 +2175,13 @@ PROMPTS is a cons cell with the corresponding prompts."
   "`tts' menu."
   [["Edit"
     "global"
-    ("a" "Abbreviation"                     tlon-tts-edit-abbreviations)
-    ("r" "Replacement"                      tlon-tts-edit-phonetic-replacements)
-    ("t" "Transcription"                    tlon-tts-edit-phonetic-transcriptions)
+    ("a" "Abbreviation"                            tlon-tts-edit-abbreviations)
+    ("r" "Replacement"                             tlon-tts-edit-phonetic-replacements)
+    ("t" "Transcription"                           tlon-tts-edit-phonetic-transcriptions)
     ""
     "local"
-    ("A" "Abbreviation"                     tlon-add-local-abbreviation)
-    ("R" "Replacement"                      tlon-add-local-replacement)
+    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
+    ("R" "Replacement"                             tlon-add-local-replacement)
     ""
     ""
     "Upload"
@@ -2194,14 +2194,14 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
     ""
     "Narration options"
-    ("-e" "Engine"                          tlon-tts-menu-infix-set-engine)
-    ("-s" "Settings"                        tlon-tts-menu-infix-set-engine-settings)
-    ("-p" "Prompt"                          tlon-tts-menu-infix-set-prompt)
-    ("-h" "Heading break duration"          tlon-tts-heading-break-duration-infix)
-    ("-a" "Paragraph break duration"        tlon-tts-paragraph-break-duration-infix)
-    ("-v" "Use alternative voice"           tlon-tts-menu-infix-toggle-alternate-voice)
+    ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
+    ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
+    ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
+    ("-h" "Heading break duration"                 tlon-tts-heading-break-duration-infix)
+    ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
+    ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
-    ("-d" "Debug"                           tlon-menu-infix-toggle-debug)]])
+    ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
