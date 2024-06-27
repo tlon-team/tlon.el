@@ -1554,28 +1554,19 @@ The time length of the pause is determined by `tlon-tts-heading-break-duration'.
 	  (dolist (cons (list (cons abbrev-introduced expansion) entry))
 	    (goto-char (point-min))
 	    (while (re-search-forward (car cons) nil t)
-	      (replace-match (cdr cons) t t))))))))
+	      (tlon-tts-punctuate-abbrev-replacement (cdr cons)) t t)))))))
 
-;; TODO: the two functions below are not currently used
-;; adapt code to handle cases when abbrev ends in sentence
-(defun tlon-tts-replace-abbreviations (replacement)
+(defun tlon-tts-punctuate-abbrev-replacement (replacement)
   "When processing abbreviations, replace match with REPLACEMENT.
 If the abbreviation occurs at the end of a sentence, do not remove the period."
-  (let ((replacement (if nil
-			 ;; FIXME: this throws an error when `tlon-tts-abbrev-ends-sentence-p' returns t
-			 ;; (tlon-tts-abbrev-ends-sentence-p)
+  (let ((replacement (if (tlon-tts-abbrev-ends-sentence-p)
 			 (concat replacement ".")
 		       replacement)))
     (replace-match replacement t t)))
 
 (defun tlon-tts-abbrev-ends-sentence-p ()
   "Return t iff the abbreviation at point ends the sentence."
-  (save-excursion
-    (let* ((case-fold-search nil)
-	   (start (max (point-min) (- (point) 1)))
-	   (end (min (point-max) (+ (point) 2)))
-	   (substring (buffer-substring-no-properties start end)))
-      (numberp (string-match "\\. [A-Z][[:alpha:]]*?" substring)))))
+  (looking-at-p "\n\\| [A-Z]"))
 
 ;;;;;;; Local
 
