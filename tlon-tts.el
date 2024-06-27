@@ -1549,7 +1549,8 @@ The time length of the pause is determined by `tlon-tts-heading-break-duration'.
 		     ('local tlon-local-abbreviations-for-session)
 		     ('global (tlon-tts-get-global-abbreviations))))
       (cl-destructuring-bind (abbrev . expansion) entry
-	(let ((abbrev-introduced (format "%s (%s)" expansion abbrev)))
+	(let ((abbrev-introduced (format "%1$s (%2$s)\\|%1$s \\[%2$s\\]\\|%2$s (%1$s)\\|%2$s \\[%1$s\\]"
+					 expansion abbrev)))
 	  ;; we first replace the full abbrev introduction, then the abbrev itself
 	  (dolist (cons (list (cons abbrev-introduced expansion) entry))
 	    (goto-char (point-min))
