@@ -1361,11 +1361,11 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tex-remove-locators)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)
-    (tlon-tts-process-paragraphs)
     (tlon-tts-process-alternative-voice)
-    (tlon-tts-process-links)
-    (tlon-tts-process-formatting) ; should probably be after `tlon-tts-process-links'
+    (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
     (tlon-tts-process-tables)
+    (tlon-tts-process-formatting) ; should be before `tlon-tts-process-paragraphs'
+    (tlon-tts-process-paragraphs)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
     (tlon-tts-remove-unsupported-ssml-tags)
