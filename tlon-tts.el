@@ -923,7 +923,7 @@ Save the audio file in the current directory."
 This command is used for debugging purposes."
   (interactive)
   (tlon-tts-set-all-current-values)
-  (tlon-tts-read-content)
+  (tlon-tts-read-content nil 'cold-run)
   (tlon-tts-unset-all-current-values))
 
 (defun tlon-tts-process-chunks ()
@@ -952,13 +952,14 @@ This command is used for debugging purposes."
 The output format is a cons cell with the format name and extension."
   (symbol-value (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine)))
 
-(defun tlon-tts-read-content (&optional chunk-size)
+(defun tlon-tts-read-content (&optional chunk-size cold-run)
   "Read content and return it as a string ready for TTS processing.
-If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
+If CHUNK-SIZE is non-nil, split string into chunks no larger than that size. If
+ COLD-RUN is non-nil, prepare the buffer but do not generate the audio file."
   (with-current-buffer (get-buffer-create (tlon-tts-get-temp-buffer-name))
     (erase-buffer)
     (insert (format "%s\n\n%s" (or tlon-tts-prompt "") tlon-tts-current-content))
-    (tlon-tts-prepare-buffer)
+    (tlon-tts-prepare-buffer cold-run)
     (let ((content (if chunk-size
 		       (tlon-tts-break-into-chunks chunk-size)
 		     (buffer-string))))
@@ -1337,9 +1338,11 @@ STRING is the string of the request. DESTINATION is the output file path."
 
 ;;;;; Cleanup
 
+(declare-function tlon-tex-remove-locators "tlon-tex")
 (declare-function tlon-tex-replace-keys-with-citations "tlon-tex")
-(defun tlon-tts-prepare-buffer ()
-  "Prepare the current buffer for audio narration."
+(defun tlon-tts-prepare-buffer (&optional cold-run)
+  "Prepare the current buffer for audio narration.
+If COLD-RUN is non-nil, prepare the buffer for a cold run."
   (save-excursion
     (when cold-run
       (tlon-tts-generate-report))
@@ -1347,7 +1350,8 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
-    (tlon-tex-replace-keys-with-citations nil 'mdx 'audio)
+    (unless cold-run
+      (tlon-tex-replace-keys-with-citations nil 'mdx 'audio))
     (tlon-tex-remove-locators)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)
@@ -2173,6 +2177,7 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("b" "Display buffer"                   tlon-tts-display-tts-buffer)
     ("j" "Join file chunks"                 tlon-tts-join-chunks)
     ("d" "Delete file chunks"               tlon-tts-delete-chunks)
+    ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
     ""
     "Narration options"
     ("-e" "Engine"                          tlon-tts-menu-infix-set-engine)
