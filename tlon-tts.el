@@ -689,6 +689,17 @@ The first placeholder is the input file, and the second is the output file.")
   "</SmallCaps><sub>"
   "Pattern that may match a chemical symbol.")
 
+;;;;; Links
+
+(defconst tlon-tts-self-referential-link
+  '(("en" . ("here" . "here (in the text there is a link here pointing to a web page)"))
+    ("es" . ("aquí" . "aquí (en el texto hay un enlace que apunta a una página web)"))
+    ("fr" . ("ici" . "ici (dans le texte, il y a un lien qui pointe vers une page web)"))
+    ("de" . ("hier" . "hier (im Text gibt es einen Link, der auf eine Webseite zeigt)"))
+    ("it" . ("qui" . "qui (nel testo c'è un link che punta a una pagina web)"))
+    ("pt" . ("aqui" . "aqui (no texto há um link que aponta para uma página web)")))
+  "List of self-referential link texts and replacements.")
+
 ;;;;; Tables
 
 (defconst tlon-tts-table-cell
