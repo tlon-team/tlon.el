@@ -689,6 +689,30 @@ The first placeholder is the input file, and the second is the output file.")
   "</SmallCaps><sub>"
   "Pattern that may match a chemical symbol.")
 
+;;;;; Tables
+
+(defconst tlon-tts-table-cell
+  "\\(?: .*?|\\)"
+  "Regular expression to match a table cell.")
+
+(defconst tlon-tts-table-row
+  (format "\\(?:^|%s+\n\\)" tlon-tts-table-cell)
+  "Regular expression to match a table row.")
+
+(defconst tlon-tts-table-pattern
+  (format "\\(?1:%s+\\)" tlon-tts-table-row)
+  "Regular expression to match a table.")
+
+(defconst tlon-tts-table-separator
+  "|\\(?: ?-+ ?|\\)+\n"
+  "Regular expression to match the separator between table rows.")
+
+(defconst tlon-tts-table-header
+  (format "\\(?1:%s\\)%s" tlon-tts-table-row tlon-tts-table-separator)
+  "Regular expression to match a table header.
+The expression matches the header followed by the separator, capturing the
+former in group 1.")
+
 ;;;;; Numbers
 
 (defconst tlon-tts-regular-exponent-pattern
@@ -842,6 +866,13 @@ term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km 
   '(("en" "Chart." . "")
     ("es" "Cuadro." .""))
   "Listener cues for Our World In Data charts.")
+
+;;;;;; Tables
+
+(defconst tlon-tts-table-cues
+  '(("en" "There’s a table here.\n" . "\nEnd of the table.")
+    ("es" "Aquí hay una tabla.\n" . "\nFin de la tabla."))
+  "Listener cues for tables.")
 
 ;;;;;; Headings
 
@@ -1301,6 +1332,7 @@ STRING is the string of the request. DESTINATION is the output file path."
   (save-excursion
     (when cold-run
       (tlon-tts-generate-report))
+    (tlon-tts-ensure-all-tables-have-alt-text)
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
@@ -1312,6 +1344,7 @@ STRING is the string of the request. DESTINATION is the output file path."
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-links)
     (tlon-tts-process-formatting) ; should probably be after `tlon-tts-process-links'
+    (tlon-tts-process-tables)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
     (tlon-tts-remove-unsupported-ssml-tags)
@@ -1617,13 +1650,25 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
 	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
 	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
-	;; TODO: determine if other types should be added
+	('table (list (tlon-md-get-tag-pattern "SimpleTable") tlon-tts-table-cues 4))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
     (while (re-search-forward pattern nil t)
       (if-let* ((match (match-string-no-properties group))
 		(text (pcase type
-			('quote (replace-regexp-in-string "^> ?" "" match))
+			('quote (replace-regexp-in-string "^[[:blank:]]*?> ?" "" match))
+			('table
+			 (let* ((table-contents (match-string-no-properties 2))
+				(omit-header-p (not (string-empty-p (match-string 5))))
+				(content (if omit-header-p
+					     ;; FIXME: this is a hack to remove
+					     ;; the `^A' character that is
+					     ;; somehow inserted
+					     (replace-regexp-in-string
+					      "" ""
+					      (replace-regexp-in-string tlon-tts-table-header "\1" table-contents))
+					   (replace-regexp-in-string tlon-tts-table-separator "" table-contents))))
+			   (format "%s\n%s" match content)))
 			(_ match))))
 	  (replace-match
 	   (tlon-tts-listener-cue-full-enclose cues (string-chop-newline text)) t t)
@@ -1769,6 +1814,25 @@ image links are handled differently."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-link-inline nil t)
     (replace-match (match-string-no-properties 3) t t)))
+;;;;;; Tables
+
+(defun tlon-tts-process-tables ()
+  "Format tables for text-to-speech."
+  (tlon-tts-add-listener-cues 'table)
+  (tlon-tts-remove-table-separator))
+
+(defun tlon-tts-remove-table-separator ()
+  "Remove table separators in buffer."
+  (goto-char (point-min))
+  (while (re-search-forward tlon-tts-table-separator nil t)
+    (replace-match "" t t)))
+
+(defun tlon-tts-ensure-all-tables-have-alt-text ()
+  "Ensure all tables have alt text."
+  (goto-char (point-min))
+  (while (re-search-forward tlon-tts-table-pattern nil t)
+    (unless (thing-at-point-looking-at (tlon-md-get-tag-pattern "SimpleTable"))
+      (user-error "Some tables are missing alt text"))))
 
 ;;;;;; Numbers
 
