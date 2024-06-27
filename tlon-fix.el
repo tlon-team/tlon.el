@@ -147,6 +147,10 @@
     )
   "Alist of language codes and their corresponding fix variable.")
 
+(defconst tlon-fix-numerals-sans-separator
+  "\\([ \\$£€][[:digit:]]\\{1,3\\}\\)\\([[:digit:]]\\{3\\}[\\.,:;!\\? ]\\)"
+  "Regular expression matching numerals without thousands separators.")
+
 ;;;; Functions
 
 ;;;;; autofix
@@ -209,7 +213,7 @@ non-breaking."
 (defvar markdown-regex-link-inline)
 (defvar ffap-url-regexp)
 (declare-function tlon-md-get-tag-pattern "tlon-md")
-(defun tlon-autofix-thousands-separators (&optional separator)
+(defun tlon-autofix-replace-thousands-separators (&optional separator)
   "Replace thousands SEPARATOR (typically, a comma or a period) with narrow spaces.
 Do not perform these replacements if the terms occur in math formulae, links, or
 match certain words that should not be altered, such as \"80,000 Hours\"."
@@ -250,7 +254,7 @@ match certain words that should not be altered, such as \"80,000 Hours\"."
   (tlon-autofix-footnote-punctuation)
   (tlon-autofix-periods-in-headings)
   (tlon-autofix-percent-signs)
-  (tlon-autofix-thousands-separators)
+  (tlon-autofix-replace-thousands-separators)
   (tlon-autofix-thin-spaces)
   (tlon-autofix-superscripts)
   (let ((after-save-hook (remove #'tlon-autofix-all after-save-hook)))
@@ -287,6 +291,15 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
   (tlon-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
 		   " <abbr>\\1</abbr>"))
 
+(defun tlon-manual-fix-add-thousands-separators ()
+  "Prompt the user to add thousands separators to numerals that lack them.
+Unlike `tlon-autofix-replace-thousands-separators', which replaces an existing
+separator, this function adds a separator where it is missing, and has to be run
+manually because some numerals, such as dates, should not be separated."
+  (interactive)
+  (tlon-manual-fix `(,tlon-fix-numerals-sans-separator)
+		   "\\1 \\2"))
+
 (defun tlon-manual-fix-narrow-spaces ()
   "Prompt user to add a narrow space between abbreviations followed by a period.
 The character used is U+202F NARROW NO-BREAK SPACE."
@@ -313,6 +326,7 @@ dedicated function."
   (tlon-manual-fix-em-dashes)
   (tlon-manual-fix-number-ranges)
   (tlon-manual-fix-roman-numerals)
+  (tlon-manual-fix-add-thousands-separators)
   (tlon-manual-fix-narrow-spaces)
   (tlon-manual-fix-solo)
   (tlon-manual-fix-podcast))
