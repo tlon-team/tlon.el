@@ -679,6 +679,16 @@ questions\").")
   "Command to convert an audio file to MP3 format with settings optimized for tts.
 The first placeholder is the input file, and the second is the output file.")
 
+;;;;; Report
+
+(defconst tlon-tts-report-buffer-name
+  "*TTS Report*"
+  "The name of the TTS report buffer.")
+
+(defconst tlon-tts-maybe-chemical-symbol
+  "</SmallCaps><sub>"
+  "Pattern that may match a chemical symbol.")
+
 ;;;;; Numbers
 
 (defconst tlon-tts-regular-exponent-pattern
@@ -1289,6 +1299,8 @@ STRING is the string of the request. DESTINATION is the output file path."
 (defun tlon-tts-prepare-buffer ()
   "Prepare the current buffer for audio narration."
   (save-excursion
+    (when cold-run
+      (tlon-tts-generate-report))
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
@@ -1681,6 +1693,72 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 (defun tlon-tts-process-owid ()
   "Add listener cues for One World In Data charts."
   (tlon-tts-add-listener-cues 'owid))
+
+;;;;;; Report
+
+;;;###autoload
+(defun tlon-tts-generate-report ()
+  "Generate a report of TSS issues potentially worth addressing."
+  (interactive)
+  (let ((acronyms (tlon-tts-get-missing-acronyms))
+	(chemical-symbols-p (tlon-tts-check-chemical-symols))
+	(en-dashes-p (tlon-tts-check-en-dashes))
+	(numerals-sans-separator-p (tlon-tts-get-numerals-sans-separator)))
+    (with-current-buffer (get-buffer-create tlon-tts-report-buffer-name)
+      (erase-buffer)
+      (insert "***Missing acronyms***\n\n")
+      (dolist (acronym acronyms)
+	(insert (format "%s\n" acronym)))
+      (when chemical-symbols-p
+	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’"
+			tlon-tts-maybe-chemical-symbol)))
+      (when en-dashes-p
+	(insert (format "\n***En dashes***\n\nSearch for ‘–’")))
+      (when numerals-sans-separator-p
+	(insert (format "\n***Numerals sans separator***\n\nRun ‘M-x tlon-manual-fix-add-thousands-separators’")))
+      (switch-to-buffer (current-buffer)))))
+
+;;;;;;; Missing acronyms
+
+(defun tlon-tts-get-missing-acronyms ()
+  "Return list of acronyms not found in the local or global list of abbreviations."
+  (let ((abbrevs (append tlon-local-abbreviations-for-session
+			 (tlon-tts-get-global-abbreviations)))
+	(case-fold-search nil)
+	missing)
+    (goto-char (point-min))
+    (while (re-search-forward "\\b[A-Z]\\{2,\\}\\b" nil t)
+      (let ((match (match-string-no-properties 0)))
+	(unless (or (member match (mapcar 'car abbrevs)))
+	  (push match missing))))
+    (delete-dups missing)))
+
+;;;;;;; Unprocessed strings
+
+(defun tlon-tts-check-unprocessed (string)
+  "Return t iff the current buffer appears to have unprocessed STRING."
+  (catch 'found
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward string nil t)
+	(unless (thing-at-point-looking-at (tlon-md-get-tag-pattern "ReplaceAudio"))
+	  (throw 'found t))))))
+
+(defvar tlon-fix-numerals-sans-separator)
+(defun tlon-tts-get-numerals-sans-separator ()
+  "Return it iff the current buffer has numerals without thousands separators.
+We need to use separators to get some TTS engines (such as Elevenlabs) to
+pronounce the numbers correctly. This requires manual processing since some
+numbers, such as years, should not be separated."
+  (tlon-tts-check-unprocessed tlon-fix-numerals-sans-separator))
+  
+(defun tlon-tts-check-chemical-symols ()
+  "Return t iff the current buffer appears to have unprocessed chemical symbols."
+  (tlon-tts-check-unprocessed tlon-tts-maybe-chemical-symbol))
+
+(defun tlon-tts-check-en-dashes ()
+  "Return t iff the current buffer appears to have unprocessed en dashes."
+  (tlon-tts-check-unprocessed "–"))
 
 ;;;;;; Links
 
