@@ -1351,6 +1351,7 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
   (save-excursion
     (when cold-run
       (tlon-tts-generate-report))
+    (tlon-tts-ensure-all-images-have-alt-text)
     (tlon-tts-ensure-all-tables-have-alt-text)
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
@@ -1754,6 +1755,14 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 	  (replace-match
 	   (tlon-tts-listener-cue-full-enclose tlon-tts-image-cues (string-chop-newline text)) t t))
       (user-error "Missing alt text; match: %s" alt))))
+
+(defun tlon-tts-ensure-all-images-have-alt-text ()
+  "Ensure all images have alt text."
+  (dolist (tag '("Figure" "OurWorldInData"))
+    (goto-char (point-min))
+    (while (re-search-forward (tlon-md-get-tag-pattern tag) nil t)
+      (unless (match-string 6)
+	(user-error "Some images are missing alt text; run `M-x tlon-ai-set-image-alt-text-in-buffer'")))))
 
 (defun tlon-tts-process-owid ()
   "Add listener cues for One World In Data charts."
