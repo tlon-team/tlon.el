@@ -1373,7 +1373,8 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-process-local-abbreviations)
     (tlon-tts-process-global-abbreviations)
     (tlon-tts-process-local-phonetic-replacements)
-    (tlon-tts-process-globa-phonetic-replacements))
+    (tlon-tts-process-globa-phonetic-replacements)
+    (tlon-tts-remove-extra-newlines))
   (goto-char (point-min)))
 
 ;;;;;; Notes
@@ -2016,6 +2017,14 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
   (goto-char (point-max))
   (when (re-search-backward (tlon-md-get-tag-pattern "break") nil t)
     (replace-match "" t t)))
+
+;;;;;; Remove extra newlines
+
+(defun tlon-tts-remove-extra-newlines ()
+  "Remove extra newlines in the current buffer."
+  (goto-char (point-min))
+  (while (re-search-forward "\n\\{3,\\}" nil t)
+    (replace-match "\n\n" t t)))
 
 ;;;;; Global
 
