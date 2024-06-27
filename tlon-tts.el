@@ -1833,7 +1833,7 @@ We need to use separators to get some TTS engines (such as Elevenlabs) to
 pronounce the numbers correctly. This requires manual processing since some
 numbers, such as years, should not be separated."
   (tlon-tts-check-unprocessed tlon-fix-numerals-sans-separator))
-  
+
 (defun tlon-tts-check-chemical-symols ()
   "Return t iff the current buffer appears to have unprocessed chemical symbols."
   (tlon-tts-check-unprocessed tlon-tts-maybe-chemical-symbol))
@@ -2211,15 +2211,15 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("A" "Abbreviation"                            tlon-add-local-abbreviation)
     ("R" "Replacement"                             tlon-add-local-replacement)
     ""
-    ""
-    "Upload"
-    ("u" "Upload audio file to server"      tlon-tts-upload-audio-file-to-server)]
+    "Misc"
+    ("u" "Upload audio file to server"             tlon-tts-upload-audio-file-to-server)
+    ("e" "Generate report"                         tlon-tts-generate-report)]
    ["Narration"
-    ("z" "Narrate buffer or selection"      tlon-tts-narrate-content)
-    ("b" "Display buffer"                   tlon-tts-display-tts-buffer)
-    ("j" "Join file chunks"                 tlon-tts-join-chunks)
-    ("d" "Delete file chunks"               tlon-tts-delete-chunks)
+    ("z" "Narrate buffer or selection"             tlon-tts-narrate-content)
     ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
+    ""
+    ("j" "Join file chunks"                        tlon-tts-join-chunks)
+    ("d" "Delete file chunks"                      tlon-tts-delete-chunks)
     ""
     "Narration options"
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
