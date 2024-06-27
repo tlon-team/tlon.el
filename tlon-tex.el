@@ -934,26 +934,32 @@ No abstract: %s"
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (defun tlon-tex-field-modified (field value key)
   "Act when FIELD is set to VALUE in a BibTeX entry with KEY."
-  (cond ((and (string= field "abstract")
-	      (member (ebib-extras-get-file-of-key key) tlon-bibliography-files))
-	 (tlon-tex-translate-abstract-when-modified key))))
+  (cond ((string= field "abstract")
+	 (tlon-tex-translate-abstract-when-modified value key))))
 
-(defun tlon-tex-translate-abstract-when-modified (key)
-  "When the abstract of KEY is modified, translate it into the relevant languages."
-  (let ((text (pcase major-mode
-		('text-mode (buffer-string))
-		('ebib-entry-mode (ebib-extras-get-field "abstract"))
-		('bibtex-mode (bibtex-extras-get-field "abstract"))))
-	(source-lang
-	 (save-window-excursion
-	   (citar-extras-open-in-ebib key)
-	   (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
-    (mapc (lambda (language)
-	    (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-	      (tlon-deepl-translate text target-lang source-lang
-				    (lambda ()
-				      (tlon-translate-abstract-callback key target-lang 'overwrite)))))
-	  tlon-project-target-languages)))
+(defun tlon-tex-translate-abstract-when-modified (&optional abstract key)
+  "When the ABSTRACT of KEY is modified, translate it into the relevant languages.
+If ABSTRACT is nil, get it from the current buffer. If KEY is nil, use the key
+of the entry at point."
+  (when (member (ebib-extras-get-file-of-key key) tlon-bibliography-files)
+    (let* ((key (or key (pcase major-mode
+			  ('ebib-entry-mode (ebib--get-key-at-point))
+			  ('bibtex-mode (bibtex-extras-get-key)))))
+	   (text (or abstract (pcase major-mode
+				('text-mode (buffer-string))
+				('ebib-entry-mode (ebib-extras-get-field "abstract"))
+				('bibtex-mode (bibtex-extras-get-field "abstract")))))
+	   (source-lang
+	    (save-window-excursion
+	      (citar-extras-open-in-ebib key)
+	      (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
+      (mapc (lambda (language)
+	      (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
+		(tlon-deepl-translate text target-lang source-lang
+				      (lambda ()
+					(tlon-translate-abstract-callback key target-lang 'overwrite)))))
+	    tlon-project-target-languages)
+      (message "Translated abstract of `%s' into %s" key tlon-project-target-languages))))
 
 (defun tlon-tex-bibtex-set-field-advice (orig-fun &rest args)
   "Advice to catch modifications to BibTeX fields in `bibtex-mode'.
