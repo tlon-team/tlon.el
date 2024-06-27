@@ -278,6 +278,12 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :type mdx
 	  :self-closing t
 	  :doc "")
+    (:tag "SimpleTable"
+	  :attributes ((:name "alt" :required t :valued t :group 3 :prompt "Alt text: ")
+		       (:name "header" :required nil :valued nil :group 5 :reader tlon-md-simple-table-header-reader))
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses a Markdown table.")
     (:tag "SmallCaps"
 	  :type mdx
 	  :self-closing nil
@@ -718,6 +724,17 @@ numbers correctly."
   (tlon-md-insert-or-edit-tag "SmallCaps"))
 
 ;;;###autoload
+(defun tlon-insert-mdx-simple-table ()
+  "Insert an MDX `SimpleTable' tag pair at point or around the selected region."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "SimpleTable"))
+
+(defun tlon-md-simple-table-header-reader ()
+  "Prompt the user to set the header attribute for a `SimpleTable' tag."
+  (if (y-or-n-p "Omit header? ")
+      " omit-header" ""))
+
+;;;###autoload
 (defun tlon-insert-mdx-visually-hidden ()
   "Insert an MDX `VisuallyHidden' tag pair at point or around selected region.
 Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
@@ -1091,7 +1108,8 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("P" "phoneme"              tlon-tts-insert-ssml-phoneme)
     ("A" "replace audio"        tlon-insert-mdx-replace-audio)
     ("S" "say-as"               tlon-tts-insert-ssml-say-as)
-    ("H" "visually hidden"      tlon-insert-mdx-visually-hidden)]
+    ("H" "visually hidden"      tlon-insert-mdx-visually-hidden)
+    ("T" "simple table"         tlon-insert-mdx-simple-table)]
    ["Misc"
     ("b" "subscript"            tlon-insert-html-subscript)
     ("p" "superscript"          tlon-insert-html-superscript)
