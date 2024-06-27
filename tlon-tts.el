@@ -1104,7 +1104,11 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
       )))
 
 (defun tlon-tts-break-into-chunks (chunk-size)
-  "Break text in current buffer into chunks no larger than CHUNK-SIZE."
+  "Break text in current buffer into chunks no larger than CHUNK-SIZE.
+Each chunk will include the maximum number of paragraphs that fit in that size.
+Breaking the text between paragraphs ensures that both the intonation and the
+silences are preserved (breaking the text between sentences handles the
+intonation, but not the silences, correctly)."
   (let ((chunks '())
 	(begin 1)
 	end)
