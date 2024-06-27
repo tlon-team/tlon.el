@@ -150,10 +150,11 @@ not alter it unless you know what you are doing."
 			   tlon-import-eaf-url-post-collection))
       (goto-char (point-min))
       (while (re-search-forward pattern nil t)
-	(replace-match (format "%s/posts/%s"
-			       (replace-regexp-in-string "\\\\" "" tlon-import-eaf-base-regexp)
-			       (match-string-no-properties 2))
-		       t)))))
+	(let* ((base-url (replace-regexp-in-string "\\\\" "" tlon-import-eaf-base-regexp))
+	       (post-id (match-string-no-properties 2))
+	       (comment-id (match-string-no-properties 3))
+	       (replacement (format "%s/posts/%s%s" base-url post-id (or comment-id ""))))
+	  (replace-match replacement t t))))))
 
 (defun tlon-cleanup-eaf-replace-urls-in-repo ()
   "Replace EA Forum URLs in all Markdown files in the current repository.

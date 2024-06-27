@@ -49,13 +49,17 @@
   "forum\\.effectivealtruism\\.org"
   "Regular expression for matching the base EAF URL.")
 
-(defconst tlon-import-eaf-article-id-regexp
-  "\\([[:alnum:]]\\{17\\}\\)"
-  "Regular expression for matching EAF post IDs.")
+(defconst tlon-import-eaf-id-regexp
+  "[[:alnum:]]\\{17\\}"
+  "Regular expression for matching EAF post or comment IDs.")
+
+(defconst tlon-import-eaf-url-post-comment-id
+  (format "\\?commentId=%s" tlon-import-eaf-id-regexp)
+  "Regular expression for capturing the `commentid' element in post URLs.")
 
 (defconst tlon-import-eaf-url-post-canonical
-  (concat (format "\\(?1:%s/posts/\\(?2:%s\\)\\)" tlon-import-eaf-base-regexp tlon-import-eaf-article-id-regexp)
-	  "\\(?:[-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+([-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+)\\(?:[-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+[-a-z0-9_=#$@~%&*+\\/[:word:]]\\)?\\|[-a-z0-9_=#$@~%&*+\\/[:word:]!?:;.,]+[-a-z0-9_=#$@~%&*+\\/[:word:]]\\)?")
+  (format "\\(?1:%s/posts/\\(?2:%s\\)\\)\\(?:/[-[:alnum:]]*\\)\\(?3:%s\\)?"
+	  tlon-import-eaf-base-regexp tlon-import-eaf-id-regexp tlon-import-eaf-url-post-comment-id)
   "Regular expression for validating canonical URLs of EAF posts.
 The first group captures the entire canonical URL, the second group captures the
 post ID.
@@ -65,7 +69,7 @@ The concatenated string following the first capture group was obtained from
 after the proper ID.")
 
 (defconst tlon-import-eaf-url-post-collection
-  (format "\\(?1:%s/s/\\(?3:%s\\)/p/\\(?2:%2$s\\)\\)" tlon-import-eaf-base-regexp tlon-import-eaf-article-id-regexp)
+  (format "\\(?1:%s/s/\\(?3:%s\\)/p/\\(?2:%2$s\\)\\)" tlon-import-eaf-base-regexp tlon-import-eaf-id-regexp)
   "Regular expression for validating URLs of posts embedded in a collection.
 The first group captures the entire URL, the second group captures the post ID
 and the third group captures the collection ID.")
@@ -318,7 +322,7 @@ If ASYNC is t, run the request asynchronously."
 
 (defun tlon-import-eaf-article-id-p (identifier)
   "Return t if IDENTIFIER is a post ID, nil otherwise."
-  (not (not (string-match (format "^%s$" tlon-import-eaf-article-id-regexp) identifier))))
+  (not (not (string-match (format "^%s$" tlon-import-eaf-id-regexp) identifier))))
 
 (defun tlon-import-eaf-tag-slug-p (identifier)
   "Return t if IDENTIFIER is a tag slug, nil otherwise."
@@ -340,11 +344,11 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 (defun tlon-import-eaf-get-id-from-identifier (identifier)
   "Return the EAF post ID from IDENTIFIER, if found."
   (when-let ((id (or (when (string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
-						 tlon-import-eaf-article-id-regexp)
+						 tlon-import-eaf-id-regexp)
 					 identifier)
 		       (match-string-no-properties 1 identifier))
 		     (when (string-match (format "^.+?forum.effectivealtruism.org/s/%s/p/%s"
-						 tlon-import-eaf-article-id-regexp tlon-import-eaf-article-id-regexp)
+						 tlon-import-eaf-id-regexp tlon-import-eaf-id-regexp)
 					 identifier)
 		       (match-string-no-properties 2 identifier)))))
     id))
