@@ -1099,9 +1099,7 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
   (unless tlon-tts-unprocessed-chunk-files
     (let ((file (tlon-tts-get-original-name file)))
       (tlon-tts-join-chunks file)
-      ;; make conditional to no errors
-      ;; (tlon-tts-delete-chunks file)
-      )))
+      (tlon-tts-delete-chunks file))))
 
 (defun tlon-tts-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks no larger than CHUNK-SIZE.
