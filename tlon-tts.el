@@ -842,29 +842,29 @@ term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km 
 ;;;;;; Notes
 
 (defconst tlon-tts-note-cues
-  '(("en" "Note." . "End of the note.")
-    ("es" "Nota." . "Fin de la nota."))
+  '(("en" "Note." . "\nEnd of the note.")
+    ("es" "Nota." . "\nFin de la nota."))
   "Listener cues for notes.")
 
 ;;;;;; Quotes
 
 (defconst tlon-tts-quote-cues
-  '(("en" "Quote." . "End of quote.")
-    ("es" "Cita." . "Fin de la cita."))
+  '(("en" "Quote." . "\nEnd of quote.")
+    ("es" "Cita." . "\nFin de la cita."))
   "Listener cues for quotes.")
 
 ;;;;;; Asides
 
 (defconst tlon-tts-aside-cues
-  '(("en" "Aside." . "End of the aside.")
-    ("es" "Inciso." . "Fin del inciso."))
+  '(("en" "Aside." . "\nEnd of the aside.")
+    ("es" "Inciso." . "\nFin del inciso."))
   "Listener cues for asides.")
 
 ;;;;;; Images
 
 (defconst tlon-tts-image-cues
-  '(("en" "There’s an image here." . "")
-    ("es" "Aquí hay una imagen." . ""))
+  '(("en" "There’s an image here." . "\nEnd of image.")
+    ("es" "Aquí hay una imagen." . "\nFin de la imagen."))
   "Listener cues for images.")
 
 (defconst tlon-tts-image-cue-for-caption
@@ -874,8 +874,8 @@ term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km 
 ;;;;;; OWID
 
 (defconst tlon-tts-owid-cues
-  '(("en" "Chart." . "")
-    ("es" "Cuadro." .""))
+  '(("en" "Chart." . "\nEnd of chart.")
+    ("es" "Cuadro." . "\nFin del cuadro."))
   "Listener cues for Our World In Data charts.")
 
 ;;;;;; Tables
