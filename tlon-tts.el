@@ -1509,11 +1509,14 @@ The time length of the pause is determined by
 
 (defun tlon-tts-remove-tag-sections ()
   "Remove the ‘further reading’, ‘related entries’ and ‘external links’ sections."
-  (goto-char (point-min))
-  (let ((pattern (alist-get (tlon-tts-get-current-language) tlon-tts-tag-section-patterns nil nil #'string=)))
-    (when pattern
-      (while (re-search-forward pattern nil t)
-	(replace-match "" t t)))))
+  (let* ((lang (tlon-tts-get-current-language))
+	 (bare-dir (tlon-lookup tlon-core-bare-dirs "en" lang (tlon-get-bare-dir tlon-tts-current-file-or-buffer))))
+    (when (string= bare-dir "tags")
+      (goto-char (point-min))
+      (let ((pattern (alist-get lang tlon-tts-tag-section-patterns nil nil #'string=)))
+	(when pattern
+	  (while (re-search-forward pattern nil t)
+	    (replace-match "" t t)))))))
 
 ;;;;;; Lines
 
