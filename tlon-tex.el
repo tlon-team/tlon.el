@@ -797,7 +797,7 @@ is not present, add a new entry for this KEY."
       (tlon-write-abstract-translations data))))
 
 (declare-function tlon-deepl-translate "tlon-deepl")
-(declare-function tlon-deepl-translate-callback "tlon-deepl")
+(declare-function tlon-deepl-print-translation "tlon-deepl")
 ;; TODO: include BibTeX entry as context so that DeepL can use correct genders, plurals, etc.
 (defun tlon-translate-abstract (&optional key target-lang source-lang var)
   "Translate the abstract of KEY from SOURCE-LANG to TARGET-LANG.
@@ -846,7 +846,7 @@ Make sure the relevant glossaries are loaded before running this function."
   "Callback for `tlon-translate-abstract'.
 KEY is the key of the entry and TARGET-LANG is the target language of the
 translation. If OVERWRITE is non-nil, overwrite the existing translation."
-  (let ((translation (tlon-deepl-translate-callback)))
+  (let ((translation (tlon-deepl-print-translation)))
     (tlon-add-abstract-translation key target-lang translation overwrite var)))
 
 ;;;;;; Report

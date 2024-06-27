@@ -44,7 +44,7 @@
 (defconst tlon-deepl-parameters
   '((translate . ("POST"
 		  "translate"
-		  tlon-deepl-translate-callback
+		  tlon-deepl-print-translation
 		  tlon-deepl-translate-encode))
     (glossary-create . ("POST"
 			"glossaries"
@@ -131,7 +131,7 @@ If CALLBACK is nil, use the default callback for TYPE."
 (defun tlon-deepl-translate (&optional text target-lang source-lang callback)
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK.
 If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
-`tlon-deepl-translate-callback'."
+`tlon-deepl-print-translation'."
   (interactive)
   (let ((text (or text
 		  (read-string "Text to translate: "
@@ -150,9 +150,9 @@ If SOURCE-LANG is nil, use \"en\"."
   (interactive)
   (tlon-deepl-translate text target-lang source-lang
 			(lambda ()
-			  (tlon-deepl-translate-callback 'copy))))
+			  (tlon-deepl-print-translation 'copy))))
 
-(defun tlon-deepl-translate-callback (&optional copy)
+(defun tlon-deepl-print-translation (&optional copy)
   "Print the translated text.
 If COPY is non-nil, copy the translation to the kill ring instead."
   (setq tlon-deepl-source-language nil
