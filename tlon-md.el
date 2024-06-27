@@ -113,6 +113,11 @@ them from the captured string as part of the post-processing.")
 The first group captures the base, and the second group captures
 the exponent.")
 
+(defconst tlon-md-math-big-number
+  "\\b\\(?1:[[:digit:]]\\{4,\\}\\(?:\\.[[:digit:]]+\\)?\\)\\b"
+  "Regexp pattern for matching a “big” number.
+Currently, we define it as a number no smaller than 1000.")
+
 ;;;;;; SSML
 
 ;;;;;;; `emphasis'
