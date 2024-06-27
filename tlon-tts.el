@@ -1159,7 +1159,7 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
   (interactive)
   (let ((file (tlon-tts-set-chunk-file file)))
     (dolist (file (tlon-tts-get-list-of-chunks file))
-      (delete-file file))))
+      (delete-file file 'trash))))
 
 (defun tlon-tts-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
