@@ -99,7 +99,7 @@ The third group captures the title.")
 
 ;; TODO: make sure it works even when the blockquote does *not* span more than one line
 (defconst tlon-md-blockquote
-  "\\(?1:\\(?:^>.*\n\\)+\\)"
+  "\\(?1:\\(?:^[[:blank:]]*?>.*\n\\)+\\)"
   "Pattern to match a blockquote in a Markdown file.
 The pattern captures the entire blockquote, including the quote markers. This is
 to allow for capturing multi-line quotes. To get the actual quote only, remove
