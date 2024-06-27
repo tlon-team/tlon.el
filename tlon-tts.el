@@ -1756,7 +1756,7 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
     (if-let* ((alt (match-string-no-properties 6)))
 	(let ((caption (match-string-no-properties 2))
 	      caption-cue text)
-	  (when caption
+	  (unless (string-empty-p caption)
 	    (setq caption-cue (alist-get (tlon-tts-get-current-language) tlon-tts-image-cue-for-caption
 					 nil nil #'string=)))
 	  (setq text (concat alt (when caption (concat caption-cue caption))))
