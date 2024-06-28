@@ -226,12 +226,15 @@ If TITLE is nil, prompt the user for one."
 			   tlon-pdftotext header footer path target))
     (find-file target)))
 
-(defun tlon-convert-pdf (source destination)
-  "Convert PDF in SOURCE to Markdown in DESTINATION."
-  (shell-command (format "%s '%s' '%s'"
-			 tlon-pdftotext
-			 (expand-file-name source)
-			 (expand-file-name destination))))
+(defun tlon-convert-pdf (source &optional destination)
+  "Convert PDF in SOURCE to Markdown in DESTINATION.
+If DESTINATION is nil, return the Markdown string."
+  (shell-command-to-string (format "%s '%s' '%s'"
+				   tlon-pdftotext
+				   (expand-file-name source)
+				   (if destination
+				       (expand-file-name destination)
+				     "-"))))
 
 ;;;;; EAF API
 
