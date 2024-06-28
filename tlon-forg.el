@@ -563,7 +563,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (let ((issue (or issue (forge-current-topic))))
     (when-let* ((labels (tlon-get-labels issue)))
       (pcase type
-	('tag (tlon-get-tags-in-labels labels))
+	('tag labels)
 	('phase (tlon-get-phase-in-labels labels))
 	(_ (user-error "Invalid type"))))))
 
@@ -596,7 +596,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (status (pcase (tlon-get-state issue)
 		   ('completed "done")
-		   ('open (tlon-get-status-in-labels (tlon-get-labels issue)))))
+		   ('open "todo")))
 	 (set-case (if upcased 'upcase 'downcase)))
     (when status (funcall set-case status))))
 
