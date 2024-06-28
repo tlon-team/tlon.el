@@ -264,7 +264,7 @@ If citation is not found, return nil."
       (run-with-timer
        3 nil (lambda ()
 	       "Run `tlon-api-request' once the push is expected to complete."
-	       (tlon-api-request route "remote"))))))
+	       (tlon-api-request route "local"))))))
 
 (dolist (fun (list 'magit-push-current-to-upstream
 		   'magit-push-current-to-pushremote))
