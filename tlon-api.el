@@ -111,6 +111,16 @@ CALLBACK is called with the token as its argument."
                   (when data
                     (funcall callback (alist-get "access_token" data nil nil 'string=))))))))
 
+;;;###autoload
+(defun tlon-api-copy-token ()
+  "Copy API token to the kill ring."
+  (interactive)
+  (tlon-api-get-token
+   "https://uqbar.local.dev/"
+   (lambda (access-token)
+     (kill-new access-token)
+     (message "API token copied to the kill ring."))))
+
 (cl-defun tlon-api-print-response (route &key data &allow-other-keys)
   "Print DATA returned from API ROUTE."
   (with-current-buffer (get-buffer-create (format "*Uqbar log for %s*" route))
@@ -291,7 +301,8 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
   "`api' menu."
   ["Requests"
    ("q" "uqbar"                        tlon-api-request)
-   ("Q" "uqbar force"                   tlon-api-request-force)])
+   ("Q" "uqbar force"                  tlon-api-request-force)
+   ("t" "copy access token"            tlon-api-copy-token)])
 
 (provide 'tlon-api)
 ;;; tlon-api.el ends here
