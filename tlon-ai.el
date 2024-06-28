@@ -239,7 +239,17 @@ Otherwise emit a message with the status provided by INFO."
   (if (not response)
       (tlon-ai-callback-fail info)
     (kill-new response)
-    (message "Copied `%s'" response)))
+    (message "Copied AI model response to kill ring.")))
+
+(defun tlon-ai-callback-save (response info file)
+  "If the request succeeds, save the RESPONSE to FILE.
+Otherwise emit a message with the status provided by INFO."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (with-temp-buffer
+      (erase-buffer)
+      (insert response)
+      (write-region (point-min) (point-max) file))))
 
 ;; Is this necessary; I think `gptel-request' already does this
 ;; if no callback is passed to it
@@ -823,6 +833,49 @@ If RESPONSE is nil, return INFO."
   (if (not response)
       (tlon-ai-callback-fail info)
     (message response)))
+
+;;;;; Fix encoding
+
+(defun tlon-ai-fix-encoding ()
+  "Fix encoding in the current JSON buffer."
+  (interactive)
+  (let ((prompt "El siguiente texto incluye varios errores de codificación. Por ejemplo, \"cuýn\", \"pronosticaci¾3\\263n\", etc. Por favor, devuélveme el mismo texto pero con estos errores corregidos, sin ninguna otra alteración. No uses nunca comillas dobles si el texto incluye comillas simples. Al devolverme el texto corregido, no incluyas ninguna aclaración como ‘Aquí tienes el texto corregido’. Gracias.\n\n%s")
+	(point 187527)) ; start of first sexp in file
+    (dotimes (i 463)
+      (let* ((cons (tlon-ai-get-json-chunk point 1500))
+	     (string (cdr cons))
+	     (file (file-name-concat paths-dir-babel-refs "bib"
+				     (format "chunk%s.json" (+ 14 i)))))
+	(message (format "file: %s ; begins: %s" (+ 14 i) point))
+	(setq point (car cons))
+	(unless (file-exists-p file)
+	  (tlon-make-gptel-request prompt string (lambda (response info)
+						   (tlon-ai-callback-save response info file))
+				   tlon-ai-summarization-model))))))
+
+(defun tlon-ai-get-json-chunk (begin size)
+  "In current buffer, get the longest possible string less than SIZE from BEGIN."
+  (let ((word-count 0)
+	(temp-begin begin))
+    (goto-char temp-begin)
+    (while (< word-count size)
+      (forward-sexp)
+      (setq word-count (+ word-count (count-words-region temp-begin (point))))
+      (setq temp-begin (point)))
+    (cons (point) (buffer-substring-no-properties begin (point)))))
+
+(defun tlon-ai-join-files ()
+  "Concatenate contents of files named ~file0~ to ~file9~ into a single file."
+  (interactive)
+  (let* ((dir (file-name-concat paths-dir-babel-refs "bib/"))
+	 (output-file "fixed.json"))
+    (with-temp-buffer
+      (dotimes (i 477)
+        (let ((file-name (file-name-concat dir (format "chunk%s.json" i))))
+          (when (file-exists-p file-name)
+	    (goto-char (point-max))
+	    (insert-file-contents file-name))))
+      (write-file output-file))))
 
 ;;;;; Menu
 
