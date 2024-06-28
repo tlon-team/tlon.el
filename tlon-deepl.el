@@ -177,7 +177,7 @@ The encoding in misinterpreted as ISO-8859-1 when it's actually UTF-8."
 (defun tlon-deepl-fix-encoding-persistent ()
   "Fix persistent encoding issues in the current buffer."
   (interactive)
-  (unless (derived-mode-p 'bib-mode)
+  (unless (derived-mode-p 'bibtex-mode)
     (user-error "This command must be run in BibTeX mode"))
   (save-excursion
     (goto-char (point-min))
