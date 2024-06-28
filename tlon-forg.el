@@ -39,24 +39,6 @@
   "Integration between `forge' and `org-mode'."
   :group 'tlon)
 
-(defcustom tlon-when-status-is-invalid 'prompt
-  "What to do when the issue has no valid status label.
-- `prompt': prompt the user to select a status label.
-- `change': set the status label to \"todo\".
-- `warn': capture the issue as is, logging a warning in the `*Messages*' buffer.
-- `capture': capture the issue as is, without logging a warning.
-- `no-capture', or any other value: do not capture the issue.
-
-The value of this user option can also be set interactively from
-`tlon-forg-menu'. When set that way, the value will only persist for the
-current session."
-  :type '(choice (const :tag "Prompt for selection" prompt)
-		 (const :tag "Change without prompt" change)
-		 (const :tag "Capture with warning" warn)
-		 (const :tag "Capture without warning" capture)
-		 (const :tag "Do not capture" t))
-  :group 'tlon-forg)
-
 (defcustom tlon-when-assignee-is-nil 'prompt
   "What to do when the issue has no assignee.
 - `prompt': prompt the user to confirm that it will be assigned to them.
@@ -181,8 +163,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	 (repo (forge-get-repository issue))
 	 (default-directory (oref repo worktree)))
     (when (and (eq (tlon-get-state issue) 'open)
-	       (tlon-capture-handle-assignee issue)
-	       (tlon-capture-handle-status issue))
+	       (tlon-capture-handle-assignee issue))
       (let ((message (current-message)))
 	(if (tlon-issue-is-job-p issue)
 	    (tlon-create-job-todo-from-issue issue)
@@ -249,32 +230,6 @@ The appropriate action is determined by the value of
 	   (forge--pull-topic (forge-get-repository :tracked) (oref issue number))
 	   (while (not (tlon-assignee-is-current-user-p issue))
 	     (sleep-for 0.1)))
-	  ('warn (message warning))
-	  ('capture nil)
-	  (_ (setq capture-p nil)))))
-    capture-p))
-
-(defun tlon-capture-handle-status (issue)
-  "Take appropriate action when ISSUE does not have a valid status label.
-A status label is considered valid iff it is a member of
-`tlon-todo-statuses'.
-
-The appropriate action is determined by the value of
-`tlon-when-status-is-invalid'."
-  (let ((capture-p t))
-    (unless (tlon-get-status-in-issue issue)
-      (let* ((title (oref issue title))
-	     (warning (format "Warning: issue `%s' has no valid TODO label." title))
-	     (status "todo"))
-	(pcase tlon-when-status-is-invalid
-	  ((or 'prompt 'change)
-	   (when (eq tlon-when-status-is-invalid 'prompt)
-	     (setq status
-		   (tlon-set-status (concat warning " What should it be? " ))))
-	   (tlon-set-labels `(,status) 'status issue)
-	   (forge--pull-topic (forge-get-repository :tracked) (oref issue number))
-	   (while (not (tlon-get-status-in-issue issue))
-	     (sleep-for 1)))
 	  ('warn (message warning))
 	  ('capture nil)
 	  (_ (setq capture-p nil)))))
@@ -614,14 +569,6 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 ;;;;;; tags
 
-(defun tlon-get-tags-in-labels (labels)
-  "Return the tag(s) in LABELS.
-A label is considered a tag if it is not a status and it exists in
-`tlon-todo-tags'."
-  (when-let ((tags (cl-intersection
-		    labels tlon-todo-tags :test 'string=)))
-    tags))
-
 (defun tlon-get-tags-in-issue (&optional issue)
   "Return the valid tags in ISSUE.
 A tag is valid iff it is a member of `tlon-todo-tags'.
@@ -638,19 +585,6 @@ A tag is valid iff it is a member of `tlon-todo-tags'."
 
 
 ;;;;;; status
-
-(defun tlon-get-status-in-labels (labels &optional upcased)
-  "Return the unique valid status in LABELS.
-A label is considered a valid status if it exists in `tlon-todo-statuses'.
-Return the status in lowercase when UPCASED is nil, else in uppercase. If more
-than one status is found, signal an error."
-  (when-let ((status (cl-intersection labels
-				      (mapcar 'downcase tlon-todo-statuses)
-				      :test 'string=))
-	     (set-case (if upcased 'upcase 'downcase)))
-    (if (= (length status) 1)
-	(funcall set-case (car status))
-      (user-error "Issue has more than one status: %s" (mapconcat #'identity status " ")))))
 
 (defun tlon-get-status-in-issue (&optional issue upcased)
   "Return the status of ISSUE.
@@ -1012,14 +946,6 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 				 (mapcar 'symbol-name '(prompt change warn capture no-capture)))))
     (intern input)))
 
-(transient-define-infix tlon-when-status-is-invalid-infix ()
-  "docstring."
-  :class 'transient-lisp-variable
-  :reader 'tlon-label-reader
-  :transient t
-  :prompt "Set ‘tlon-when-status-is-invalid’ to (see docstring for details): "
-  :variable 'tlon-when-status-is-invalid)
-
 (transient-define-infix tlon-when-assignee-is-nil-infix ()
   "docstring."
   :class 'transient-lisp-variable
@@ -1052,7 +978,6 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("r" "reconcile"                      tlon-reconcile-issue-and-todo)
     ("R" "reconcile all"                  tlon-reconcile-all-issues-and-todos)]
    ["Options"
-    ("-i" "When status is invalid"        tlon-when-status-is-invalid-infix)
     ("-n" "When assignee is nil"          tlon-when-assignee-is-nil-infix)
     ("-e" "When assignee is someone else" tlon-when-assignee-is-someone-else-infix)]])
 
