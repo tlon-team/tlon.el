@@ -59,22 +59,14 @@
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-api-request (route &optional local force-update)
+(defun tlon-api-request (route &optional force-update)
   "Make a request for ROUTE with the `uqbar' API.
-If LOCAL is non-nil, use the local server; otherwise, use the remote server. If
-FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
+If FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
   (interactive (list (tlon-select-api-route)
-		     (completing-read "Site URL? " '("local" "remote"))
 		     current-prefix-arg))
-  (let* ((site (if local
-		   "https://uqbar.local.dev/"
-		 (tlon-repo-lookup :url
-				   :subproject "uqbar"
-				   ;; TODO: decided how to handle multiple langs, once we support them
-				   :language tlon-translation-language)))
+  (let* ((site "https://uqbar.local.dev/")
 	 (route-url (concat (format "%sapi/%s" site route)
-			    (when (and force-update
-				       (not (string= route "update/babel-refs")))
+			    (when force-update
 			      "?force=true")))
 	 (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
     (tlon-api-get-token
@@ -88,25 +80,21 @@ FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
            :headers `(("Content-Type" . "application/json")
                       ("Authorization" . ,(concat "Bearer " access-token)))
            :parser 'json-read
-	   :data (when (and (string= route "update/babel-refs") (string= site "local"))
-		   (json-encode '((force_update . t))))
            :success (cl-function
                      (lambda (&key data &allow-other-keys)
 		       "Print response, and possibly make new request depending on ROUTE."
 		       (pcase route
 			 ("update/babel-refs"
-			  (tlon-api-request "update/uqbar/es" site))
+			  (tlon-api-request "update/uqbar/es"))
 			 (_ nil))
 		       (tlon-api-print-response route :data data)
 		       (message
 			"`%s' request completed successfully. See the `Uqbar log' buffer for details." route)))))))))
 
-(defun tlon-api-request-force (route &optional local)
-  "Make a force request for ROUTE with the `uqbar' API.
-If LOCAL is non-nil, use the local server; otherwise, use the remote server."
-  (interactive (list (tlon-select-api-route)
-		     (completing-read "Site URL? " '("local" "remote"))))
-  (tlon-api-request route local 'force))
+(defun tlon-api-request-force (route)
+  "Make a force request for ROUTE with the `uqbar' API."
+  (interactive (list (tlon-select-api-route)))
+  (tlon-api-request route 'force))
 
 (defun tlon-api-get-token (site callback)
   "Get API token for SITE.
@@ -264,7 +252,7 @@ If citation is not found, return nil."
       (run-with-timer
        3 nil (lambda ()
 	       "Run `tlon-api-request' once the push is expected to complete."
-	       (tlon-api-request route "local"))))))
+	       (tlon-api-request route))))))
 
 (dolist (fun (list 'magit-push-current-to-upstream
 		   'magit-push-current-to-pushremote))
