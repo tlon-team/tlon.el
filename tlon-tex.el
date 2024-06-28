@@ -784,13 +784,13 @@ argument."
 If a translation already exists, do nothing unless OVERWRITE is non-nil. If KEY
 is not present, add a new entry for this KEY."
   (let* ((data (or (symbol-value var) (tlon-read-abstract-translations)))
-         (entry (assoc key data)))
+	 (entry (assoc key data)))
     (if entry
-        (let ((lang-entry (assoc target-lang (cdr entry))))
-          (if lang-entry
-              (when overwrite
-                (setcdr lang-entry translation))
-            (setcdr entry (cons (cons target-lang translation) (cdr entry)))))
+	(let ((lang-entry (assoc target-lang (cdr entry))))
+	  (if lang-entry
+	      (when overwrite
+		(setcdr lang-entry translation))
+	    (setcdr entry (cons (cons target-lang translation) (cdr entry)))))
       (setq data (cons (cons key (list (cons target-lang translation))) data)))
     (if var
 	(set var data)
@@ -965,7 +965,7 @@ of the entry at point."
   "Advice to catch modifications to BibTeX fields in `bibtex-mode'.
 ORIG-FUN is the original function, ARGS are the arguments passed to it."
   (let ((field (nth 0 args))
-        (value (nth 1 args)))
+	(value (nth 1 args)))
     (apply orig-fun args)
     (tlon-tex-field-modified field value (bibtex-extras-get-key))))
 
@@ -975,7 +975,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
   "Advice to catch modifications to BibTeX fields in `ebib-entry-mode'.
 ORIG-FUN is the original function, ARGS are the arguments passed to it."
   (let ((field (nth 0 args))
-        (value (nth 1 args)))
+	(value (nth 1 args)))
     (apply orig-fun args)
     (tlon-tex-field-modified field value (ebib--get-key-at-point))))
 
