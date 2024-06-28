@@ -941,18 +941,18 @@ No abstract: %s"
   "When the ABSTRACT of KEY is modified, translate it into the relevant languages.
 If ABSTRACT is nil, get it from the current buffer. If KEY is nil, use the key
 of the entry at point."
-  (when (member (ebib-extras-get-file-of-key key) tlon-bibliography-files)
-    (let* ((key (or key (pcase major-mode
-			  ('ebib-entry-mode (ebib--get-key-at-point))
-			  ('bibtex-mode (bibtex-extras-get-key)))))
-	   (text (or abstract (pcase major-mode
-				('text-mode (buffer-string))
-				('ebib-entry-mode (ebib-extras-get-field "abstract"))
-				('bibtex-mode (bibtex-extras-get-field "abstract")))))
-	   (source-lang
-	    (save-window-excursion
-	      (citar-extras-open-in-ebib key)
-	      (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
+  (let* ((key (or key (pcase major-mode
+			('ebib-entry-mode (ebib--get-key-at-point))
+			('bibtex-mode (bibtex-extras-get-key)))))
+	 (text (or abstract (pcase major-mode
+			      ('text-mode (buffer-string))
+			      ('ebib-entry-mode (ebib-extras-get-field "abstract"))
+			      ('bibtex-mode (bibtex-extras-get-field "abstract")))))
+	 (source-lang
+	  (save-window-excursion
+	    (citar-extras-open-in-ebib key)
+	    (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
+    (when (member (ebib-extras-get-file-of-key key) tlon-bibliography-files)
       (mapc (lambda (language)
 	      (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
 		(tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang
