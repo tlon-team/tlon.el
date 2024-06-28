@@ -815,7 +815,7 @@ otherwise, save it to `tlon-file-abstract-translations'."
 	      (source-lang (or source-lang
 			       (tlon-lookup tlon-languages-properties :code :name (funcall get-field "langid"))))
 	      (target-lang (or target-lang (tlon-select-language 'code 'babel))))
-    (tlon-deepl-translate abstract target-lang source-lang
+    (tlon-deepl-translate (tlon-tex-remove-braces abstract) target-lang source-lang
 			  (lambda ()
 			    (tlon-translate-abstract-callback key target-lang nil var)))))
 
@@ -955,11 +955,15 @@ of the entry at point."
 	      (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
       (mapc (lambda (language)
 	      (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-		(tlon-deepl-translate text target-lang source-lang
+		(tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang
 				      (lambda ()
 					(tlon-translate-abstract-callback key target-lang 'overwrite)))))
 	    tlon-project-target-languages)
       (message "Translated abstract of `%s' into %s" key tlon-project-target-languages))))
+
+(defun tlon-tex-remove-braces (string)
+  "Remove braces from STRING."
+  (replace-regexp-in-string "[{}]" "" string))
 
 (defun tlon-tex-bibtex-set-field-advice (orig-fun &rest args)
   "Advice to catch modifications to BibTeX fields in `bibtex-mode'.
