@@ -938,6 +938,120 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 		    user-full-name assignee))
       t)))
 
+;;;;; `gh'
+
+;; The code in this section is a work in progress.
+;; See `update-issue-field-with-gh.org' in the `gptel' dir for more info.
+
+(defconst tlon-forg-gh-project-query
+  "gh api graphql -f query='
+query {
+  repository(owner: \"tlon-team\", name: \"%s\") {
+    issue(number: %s) {
+      title
+      assignees(first: 10) {
+        nodes {
+          login
+        }
+      }
+      labels(first: 10) {
+        nodes {
+          name
+        }
+      }
+      projectItems(first: 10) {
+        nodes {
+          fieldValues(first: 10) {
+            nodes {
+              ... on ProjectV2ItemFieldTextValue {
+                textValue: text
+                field {
+                  ... on ProjectV2FieldCommon {
+                    name
+                  }
+                }
+              }
+              ... on ProjectV2ItemFieldNumberValue {
+                numberValue: number
+                field {
+                  ... on ProjectV2FieldCommon {
+                    name
+                  }
+                }
+              }
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                singleSelectValue: name
+                field {
+                  ... on ProjectV2FieldCommon {
+                    name
+                  }
+                }
+              }
+              ... on ProjectV2ItemFieldIterationValue {
+                iterationValue: title
+                field {
+                  ... on ProjectV2FieldCommon {
+                    name
+                  }
+                }
+              }
+              ... on ProjectV2ItemFieldDateValue {
+                dateValue: date
+                field {
+                  ... on ProjectV2FieldCommon {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}'"
+  "GitHub GraphQL query to get project fields for issue in repo.
+The first argument is the repo name, and the second is the issue number.")
+
+(defun tlon-gh-get-issue-fields (issue repo)
+  "Return the relevant fields for ISSUE in REPO as a raw list."
+  (let* ((command (format tlon-forg-gh-project-query repo issue))
+	 (json (shell-command-to-string command)))
+    (with-temp-buffer
+      (insert json)
+      (goto-char (point-min))
+      (tlon-read-json))))
+
+(defun tlon-gh-parse-issue-fields (raw-list)
+  "Parse RAW-LIST of issue fields into a property."
+  (let* ((data (cdr (assoc "data" raw-list)))
+         (repository (cdr (assoc "repository" data)))
+         (issue (cdr (assoc "issue" repository)))
+         (title (cdr (assoc "title" issue)))
+         (assignees (mapcar (lambda (node) (cdr (assoc "login" node)))
+                            (cdr (assoc "nodes" (cdr (assoc "assignees" issue))))))
+         (labels (mapcar (lambda (node) (cdr (assoc "name" node)))
+                         (cdr (assoc "nodes" (cdr (assoc "labels" issue))))))
+         (project-item (car (cdr (assoc "nodes" (cdr (assoc "projectItems" issue))))))
+         (field-values (cdr (assoc "nodes" (cdr (assoc "fieldValues" project-item)))))
+         (effort (cdr (assoc "numberValue"
+			     (seq-find (lambda (item)
+                                         (string= "Estimate"
+                                                  (cdr (assoc "name" (cdr (assoc "field" item))))))
+                                       field-values))))
+         (status (cdr (assoc "singleSelectValue"
+			     (seq-find (lambda (item)
+                                         (string= "Status"
+                                                  (cdr (assoc "name" (cdr (assoc "field" item))))))
+                                       field-values)))))
+    (list :title title :assignees assignees :labels labels :effort effort :status status)))
+
+(defconst tlon-gh-field-ids
+  '(:titleid "PVTF_lADOBtGWf84AdqPTzgTQA3Y"
+	     :effortid "PVTF_lADOBtGWf84AdqPTzgTQA6c"
+	     :statusid "PVTSSF_lADOBtGWf84AdqPTzgTQA3g"
+	     :projectid "PVT_kwDOBtGWf84AdqPT"))
+
 ;;;;; Transient
 
 (defun tlon-label-reader (prompt _ _)
