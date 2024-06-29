@@ -95,6 +95,8 @@ If FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
   (interactive (list (tlon-select-api-route)))
   (tlon-api-request route 'force))
 
+;;;;;; Token
+
 (defun tlon-api-get-token (site callback)
   "Get API token for SITE.
 CALLBACK is called with the token as its argument."
@@ -137,6 +139,9 @@ CALLBACK is called with the token as its argument."
             "&password=" (url-hexify-string
 			  (auth-source-pass-get 'secret
 						(concat "tlon/babel/altruismoeficaz.net/" username))))))
+
+;;;;;; Routes
+
 (defun tlon-api-get-routes ()
   "Return the `uqbar' API routes reflecting the current translation language."
   (mapcar
