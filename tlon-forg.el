@@ -489,7 +489,7 @@ ISSUE is nil, use the issue at point."
 (defun tlon-get-issues (&optional repo)
   "Return a list of all open issues in REPO.
 If REPO is nil, use the current repository."
-  (let* ((repo (or repo (forge-get-repository (forge-current-topic))))
+  (let* ((repo (or repo (forge-get-repository :tracked)))
          (issues (forge-sql [:select [id]
 				     :from issue
 				     :where (= repository $s1)
