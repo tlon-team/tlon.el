@@ -27,7 +27,6 @@
 
 ;;; Code:
 
-(require 'json-mode)
 (require 'request)
 (require 'tlon-core)
 
@@ -164,6 +163,7 @@ CALLBACK is called with the token as its argument."
 
 ;;;;; Process output buffer
 
+(declare-function json-mode "json-mode")
 (defun tlon-fix-source-filename-paths (&optional buffer)
   "Fix `:source_filename' paths in output log in BUFFER.
 If BUFFER is nil, default to the current buffer."
