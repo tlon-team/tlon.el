@@ -92,6 +92,9 @@ value of that option is reset.")
   '("PendingReview" "Later")
   "List of admissible TODO tags.")
 
+(defconst tlon-forg-sort-by-tags-regexp
+  "[[:digit:]]\\{2\\}_[[:digit:]]\\{2\\}")
+
 ;;;; Functions
 
 ;;;;; Visit
@@ -587,6 +590,25 @@ A tag is valid iff it is a member of `tlon-todo-tags'."
 		    (cdr (org-get-tags)) tlon-todo-tags :test 'string=)))
     tags))
 
+;;;;;; sort by tag
+
+(defun tlon-forg-sort-by-tag ()
+  "Sort org entries by the first tag that matches the relevant regexp pattern.
+The pattern is defined in `tlon-forg-sort-by-tags-regexp'. Unmatched tags are
+sorted to the end."
+  (interactive)
+  (org-sort-entries nil ?f #'tlon-forg-tag-sorter))
+
+(defun tlon-forg-tag-sorter ()
+  "Return the first tag of an org heading that matches the relevant regexp pattern.
+The pattern is defined in `tlon-forg-sort-by-tags-regexp'. If no tag matches,
+return \"zzz\"."
+  (when-let ((tags (org-get-tags)))
+    (catch 'match
+      (dolist (tag tags)
+	(when (string-match-p tlon-forg-sort-by-tags-regexp tag)
+	  (throw 'match tag)))
+      "zzz")))
 
 ;;;;;; status
 
