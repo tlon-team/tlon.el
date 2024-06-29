@@ -592,11 +592,14 @@ A tag is valid iff it is a member of `tlon-todo-tags'."
 
 ;;;;;; sort by tag
 
+;;;###autoload
 (defun tlon-forg-sort-by-tag ()
   "Sort org entries by the first tag that matches the relevant regexp pattern.
 The pattern is defined in `tlon-forg-sort-by-tags-regexp'. Unmatched tags are
 sorted to the end."
   (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an `org-mode' buffer"))
   (org-sort-entries nil ?f #'tlon-forg-tag-sorter))
 
 (defun tlon-forg-tag-sorter ()
@@ -1110,7 +1113,8 @@ The first argument is the repo name, and the second is the issue number.")
     ("y" "dwim"                           tlon-visit-counterpart-or-capture)
     ("v" "visit"                          tlon-visit-counterpart)
     ("p" "post"                           tlon-create-issue-from-todo)
-    ("x" "close"                          tlon-close-issue-and-todo)]
+    ("x" "close"                          tlon-close-issue-and-todo)
+    ("s" "sort"                           tlon-forg-sort-by-tag)]
    ["Capture"
     ("c" "capture"                        tlon-capture-issue)
     ("C" "capture all"                    tlon-capture-all-issues)]
