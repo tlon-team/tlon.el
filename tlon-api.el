@@ -169,10 +169,8 @@ CALLBACK is called with the token as its argument."
 If BUFFER is nil, default to the current buffer."
   (let ((buffer (or buffer (current-buffer))))
     (with-current-buffer buffer
-      ;; Delete trailing whitespace and newlines
       (goto-char (point-max))
       (delete-trailing-whitespace)
-      ;; Parse the JSON.
       (goto-char (point-min))
       (let* ((json-array-type 'list)
 	     (json-object-type 'alist)
@@ -185,7 +183,6 @@ If BUFFER is nil, default to the current buffer."
 			  (setf (cdr (assoc 'source_filename json-object)) new-filename))
 			json-object)
 		      json-data)))
-	;; Erase the buffer and insert the modified JSON, making sure it's pretty-printed
 	(erase-buffer)
 	(insert (json-encode json-modified))
 	(json-pretty-print-buffer)
