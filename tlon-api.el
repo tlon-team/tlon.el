@@ -55,12 +55,16 @@
 	    :docstring "Show log of \"update/rebuild-frontend\" request."))
   "Routes for `uqbar' API requests.")
 
+(defvar tlon-api-most-recent-log-buffer nil
+  "The name of the most recent log buffer.")
+
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-api-request (route &optional force-update)
+(defun tlon-api-request (route &optional force-update pop-to-buffer)
   "Make a request for ROUTE with the `uqbar' API.
-If FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
+If FORCE-UPDATE is non-nil, or called with a prefix argument, force the update.
+If POP-TO-BUFFER is non-nil, display the log buffer."
   (interactive (list (tlon-select-api-route)
 		     current-prefix-arg))
   (let* ((site "https://uqbar.local.dev/")
@@ -81,11 +85,7 @@ If FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
            :success (cl-function
                      (lambda (&key data &allow-other-keys)
 		       "Print response, and possibly make new request depending on ROUTE."
-		       (pcase route
-			 ("update/babel-refs"
-			  (tlon-api-request "update/uqbar/es"))
-			 (_ nil))
-		       (tlon-api-print-response route :data data)
+		       (tlon-api-print-response route pop-to-buffer :data data)
 		       (message
 			"`%s' request completed successfully. See the `Uqbar log' buffer for details." route)))))))))
 
@@ -121,14 +121,30 @@ CALLBACK is called with the token as its argument."
      (kill-new access-token)
      (message "API token copied to the kill ring."))))
 
-(cl-defun tlon-api-print-response (route &key data &allow-other-keys)
-  "Print DATA returned from API ROUTE."
-  (with-current-buffer (get-buffer-create (format "*Uqbar log for %s*" route))
+;;;;;; Logs
+
+;;;###autoload
+(defun tlon-api-open-log ()
+  "Open the most recent log buffer."
+  (interactive)
+  (unless tlon-api-most-recent-log-buffer
+    (user-error "No log buffer to open"))
+  (if (get-buffer tlon-api-most-recent-log-buffer)
+      (pop-to-buffer tlon-api-most-recent-log-buffer)
+    (tlon-api-request tlon-api-most-recent-log-buffer nil 'pop-to-buffer)))
+
+(cl-defun tlon-api-print-response (route pop-to-buffer &key data &allow-other-keys)
+  "Print DATA returned from API ROUTE.
+If POP-TO-BUFFER is non-nil, display the response in a buffer."
+  (setq tlon-api-most-recent-log-buffer route)
+  (with-current-buffer (get-buffer-create tlon-api-most-recent-log-buffer)
     (erase-buffer)
     (insert (json-encode data))
     (json-pretty-print-buffer)
     (tlon-fix-source-filename-paths)
-    (tlon-make-paths-clickable)))
+    (tlon-make-paths-clickable)
+    (when pop-to-buffer
+      (pop-to-buffer (current-buffer)))))
 
 (defun tlon-api-get-credentials ()
   "Return a list of credentials for `uqbar' API requests."
@@ -303,6 +319,8 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
   ["Requests"
    ("q" "uqbar"                        tlon-api-request)
    ("Q" "uqbar force"                  tlon-api-request-force)
+   ""
+   ("l" "open log"                     tlon-api-open-log)
    ("t" "copy access token"            tlon-api-copy-token)])
 
 (provide 'tlon-api)
