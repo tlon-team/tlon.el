@@ -65,8 +65,7 @@ If FORCE-UPDATE is non-nil, or called with a prefix argument, force the update."
 		     current-prefix-arg))
   (let* ((site "https://uqbar.local.dev/")
 	 (route-url (concat (format "%sapi/%s" site route)
-			    (when force-update
-			      "?force=true")))
+			    (when force-update "?force=true")))
 	 (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
     (tlon-api-get-token
      site
