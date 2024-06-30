@@ -1806,9 +1806,10 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 	(numerals-sans-separator-p (tlon-tts-get-numerals-sans-separator)))
     (with-current-buffer (get-buffer-create tlon-tts-report-buffer-name)
       (erase-buffer)
-      (insert "***Missing acronyms***\n\n")
-      (dolist (acronym acronyms)
-	(insert (format "%s\n" acronym)))
+      (when acronyms
+	(insert "***Missing acronyms***\n\n")
+	(dolist (acronym acronyms)
+	  (insert (format "%s\n" acronym))))
       (when chemical-symbols-p
 	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’"
 			tlon-tts-maybe-chemical-symbol)))
