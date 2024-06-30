@@ -245,9 +245,41 @@ when the source language is not English."
   (when (string= "en" tlon-deepl-source-language)
     (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
 
-;;;;;; Glossaries
+;;;;;; Tex
 
-;;;;;;; Get glossary
+(declare-function ebib--get-key-at-point "ebib")
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(declare-function citar-extras-open-in-ebib "citar-extras")
+(declare-function ebib-extras-get-file-of-key "ebib-extras")
+(declare-function tlon-tex-remove-braces "tlon-tex")
+(defun tlon-deepl-translate-abstract (&optional abstract key)
+  "When the ABSTRACT of KEY is modified, translate it into the relevant languages.
+If ABSTRACT is nil, get it from the current buffer. If KEY is nil, use the key
+of the entry at point."
+  (interactive)
+  (let* ((key (or key (pcase major-mode
+			('ebib-entry-mode (ebib--get-key-at-point))
+			('bibtex-mode (bibtex-extras-get-key)))))
+	 (text (or abstract (pcase major-mode
+			      ('text-mode (buffer-string))
+			      ('ebib-entry-mode (ebib-extras-get-field "abstract"))
+			      ('bibtex-mode (bibtex-extras-get-field "abstract")))))
+	 (source-lang
+	  (save-window-excursion
+	    (citar-extras-open-in-ebib key)
+	    (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
+    (when (member (ebib-extras-get-file-of-key key) tlon-bibliography-files)
+      (mapc (lambda (language)
+	      (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
+		(tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang
+				      (lambda ()
+					(tlon-translate-abstract-callback key target-lang 'overwrite)))))
+	    tlon-project-target-languages)
+      (message "Translated abstract of `%s' into %s" key tlon-project-target-languages))))
+
+;;;;; Glossaries
+
+;;;;;; Get glossary
 
 ;;;###autoload
 (defun tlon-deepl-get-glossaries ()
@@ -266,7 +298,7 @@ when the source language is not English."
 
 (tlon-deepl-get-glossaries)
 
-;;;;;;; Create glossary
+;;;;;; Create glossary
 
 ;;;###autoload
 (defun tlon-deepl-glossary-create (language)
@@ -300,7 +332,7 @@ when the source language is not English."
     (tlon-deepl-get-glossaries)
     (message "Response: %s" response)))
 
-;;;;;;; Delete glossary
+;;;;;; Delete glossary
 
 ;;;###autoload
 (defun tlon-deepl-glossary-delete ()
