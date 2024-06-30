@@ -1328,6 +1328,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 ;;;;; File uploading
 
 (declare-function tlon-upload-file-to-server "tlon-api")
+;;;###autoload
 (defun tlon-tts-upload-audio-file-to-server (&optional file)
   "Upload audio FILE to the server and delete it locally."
   (interactive)
@@ -1336,6 +1337,7 @@ STRING is the string of the request. DESTINATION is the output file path."
 	 (destination (tlon-tts-get-audio-directory lang file)))
     (tlon-upload-file-to-server file destination 'delete-after-upload)))
 
+;;;###autoload
 (defun tlon-tts-open-audio-directory (&optional lang)
   "Open the directory where the audio files for LANG are stored."
   (interactive)
@@ -2245,7 +2247,8 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
     ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
-    ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]])
+    ("o" "Open dir"                                tlon-tts-open-audio-directory)
+    ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
