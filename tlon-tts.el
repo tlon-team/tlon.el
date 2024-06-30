@@ -2223,7 +2223,20 @@ PROMPTS is a cons cell with the corresponding prompts."
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
-  [["Edit"
+  [["Narration"
+    ("z" "Narrate buffer or selection"             tlon-tts-narrate-content)
+    ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
+    ("e" "Generate report"                         tlon-tts-generate-report)    ]
+   ["Narration options"
+    ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
+    ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
+    ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
+    ("-h" "Heading break duration"                 tlon-tts-heading-break-duration-infix)
+    ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
+    ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
+    ""
+    ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]
+   ["Edit"
     "global"
     ("a" "Abbreviation"                            tlon-tts-edit-abbreviations)
     ("r" "Replacement"                             tlon-tts-edit-phonetic-replacements)
@@ -2231,25 +2244,10 @@ PROMPTS is a cons cell with the corresponding prompts."
     ""
     "local"
     ("A" "Abbreviation"                            tlon-add-local-abbreviation)
-    ("R" "Replacement"                             tlon-add-local-replacement)
-    ""
-    "Misc"
-    ("u" "Upload audio file to server"             tlon-tts-upload-audio-file-to-server)
-    ("e" "Generate report"                         tlon-tts-generate-report)]
-   ["Narration"
-    ("z" "Narrate buffer or selection"             tlon-tts-narrate-content)
-    ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
-    ""
+    ("R" "Replacement"                             tlon-add-local-replacement)]
+   ["Files"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks)
-    ""
-    "Narration options"
-    ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
-    ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
-    ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
-    ("-h" "Heading break duration"                 tlon-tts-heading-break-duration-infix)
-    ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
-    ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
     ("o" "Open dir"                                tlon-tts-open-audio-directory)
     ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]])
