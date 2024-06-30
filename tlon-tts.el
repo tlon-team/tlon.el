@@ -592,10 +592,7 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 
 (defconst tlon-elevenlabs-voices
   '((:voice "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female")
-    (:voice "Mady" :id "4v7HtLWqY9rpQ7Cg2GT4" :language "multilingual" :gender "female") ; funny latam accent
-    (:voice "Scarlett" :id "KyO6Jxd7C7eOOJiXbuX6" :language "multilingual" :gender "female")
     (:voice "Mia" :id "1bMpKrcyV56bfYc1l9yf" :language "multilingual" :gender "female")
-    ;; (:voice "Alice" :id "QP0KlDGxDLNFeV5I7SvQ" :language "multilingual" :gender "female") ; gradually fades out
     (:voice "Nigel" :id "jjz72sHaqmTCiPFqnw2N" :language "multilingual" :gender "male")
     (:voice "Knightley" :id "L0Nf9VH02lduEuhdmbJ5" :language "multilingual" :gender "male")
     (:voice "Brian" :id "rncjssM0aAEg1ApKehUP" :language "multilingual" :gender "male")
