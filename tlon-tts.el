@@ -1336,6 +1336,12 @@ STRING is the string of the request. DESTINATION is the output file path."
 	 (destination (tlon-tts-get-audio-directory lang file)))
     (tlon-upload-file-to-server file destination 'delete-after-upload)))
 
+(defun tlon-tts-open-audio-directory (&optional lang)
+  "Open the directory where the audio files for LANG are stored."
+  (interactive)
+  (let ((lang (tlon-tts-get-current-language lang)))
+    (dired (tlon-tts-get-audio-directory lang nil 'tramp))))
+
 ;;;;; Cleanup
 
 (declare-function tlon-tex-remove-locators "tlon-tex")
