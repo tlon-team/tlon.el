@@ -1342,6 +1342,19 @@ STRING is the string of the request. DESTINATION is the output file path."
   (let ((lang (tlon-tts-get-current-language lang)))
     (dired (tlon-tts-get-audio-directory lang nil 'tramp))))
 
+(defun tlon-tts-get-audio-directory (lang &optional file tramp)
+  "Return the directory where audio files are stored for LANG.
+If FILE is non-nil, get the bare directory from it; otherwise, prompt the user
+to select it. By default, return the direct remote path. If TRAMP is non-nil,
+return the TRAMP SSH path."
+  (let ((bare-dir (if file
+		      (tlon-get-bare-dir file)
+		    (tlon-select-bare-dir lang)))
+	(path (if tramp
+		  "/ssh:fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
+		"fede@tlon.team:/home/fede/uqbar-%s-audio/%s/")))
+    (format path lang bare-dir)))
+
 ;;;;; Cleanup
 
 (declare-function tlon-tex-remove-locators "tlon-tex")
