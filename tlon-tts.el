@@ -1332,13 +1332,8 @@ STRING is the string of the request. DESTINATION is the output file path."
   "Upload audio FILE to the server and delete it locally."
   (interactive)
   (let* ((file (or file (files-extras-read-file file)))
-	 (repo (tlon-get-repo-from-file file))
-	 (lang (or tlon-tts-current-language
-		   (tlon-repo-lookup :language :dir repo)
-		   (tlon-select-language 'code 'babel)))
-	 (bare-dir (or (tlon-get-bare-dir file) (tlon-select-bare-dir lang)))
-	 (destination (format "fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
-			      lang bare-dir (file-name-nondirectory file))))
+	 (lang (tlon-tts-get-current-language))
+	 (destination (tlon-tts-get-audio-directory lang file)))
     (tlon-upload-file-to-server file destination 'delete-after-upload)))
 
 ;;;;; Cleanup
