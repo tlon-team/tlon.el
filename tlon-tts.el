@@ -983,6 +983,7 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size. If
 				      (tlon-tts-open-file file)
 				    (tlon-tts-process-chunk file))
 				(message "Process %s: Event occurred - %s" (process-name process) event))
+			      (kill-buffer "*Shell Command Output*")
 			      (shell-command (format "open '%s'" (tlon-tts-get-original-name file))))))))
 
 (defun tlon-tts-open-file (file)
