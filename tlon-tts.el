@@ -1918,7 +1918,10 @@ image links are handled differently."
     (goto-char (point-min))
     (while (re-search-forward tlon-md-math-power nil t)
       (let* ((base (match-string-no-properties 1))
-	     (exponent (string-to-number (match-string-no-properties 2)))
+	     (raw-exponent (match-string-no-properties 2))
+	     (exponent (if (string-match "[[:digit:]]+" raw-exponent)
+			   (string-to-number raw-exponent)
+			 raw-exponent))
 	     (verbal-exponent (tlon-tts-get-verbal-exponent exponent language)))
 	(replace-match (format "%s %s" base verbal-exponent) t t)))))
 
