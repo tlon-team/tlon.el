@@ -606,7 +606,7 @@ sorted to the end."
   "Return the first tag of an org heading that matches the relevant regexp pattern.
 The pattern is defined in `tlon-forg-sort-by-tags-regexp'. If no tag matches,
 return \"zzz\"."
-  (when-let ((tags (org-get-tags)))
+  (let ((tags (org-get-tags)))
     (catch 'match
       (dolist (tag tags)
 	(when (string-match-p tlon-forg-sort-by-tags-regexp tag)
