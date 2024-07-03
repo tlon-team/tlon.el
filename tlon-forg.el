@@ -768,7 +768,7 @@ Use PROMPT as the prompt, defaulting to \"Who should be the assignee? \"."
   "Return ELEMENT of ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (when-let ((issue (or issue (forge-current-topic))))
-    (closql--iref issue element)))
+    (eieio-oref issue element)))
 
 (defun tlon-get-labels (&optional issue)
   "Return labels in ISSUE.
@@ -782,7 +782,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 If the issue has more than one element, return the first. If ISSUE is nil, use
 the issue at point or in the current buffer."
   (when-let ((issue (or issue (forge-current-topic))))
-    (caar (closql--iref issue element))))
+    (caar (eieio-oref issue element))))
 
 ;; TODO: should return all labels, not just first
 (defun tlon-get-first-label (&optional issue)
