@@ -1112,7 +1112,7 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
   (unless tlon-tts-unprocessed-chunk-files
     (let ((file (tlon-tts-get-original-name file)))
       (tlon-tts-join-chunks file)
-      (tlon-tts-delete-chunks file))))
+      (tlon-tts-delete-chunks-of-file file))))
 
 (defun tlon-tts-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks no larger than CHUNK-SIZE.
@@ -1165,8 +1165,9 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
       (setq nth (1+ nth)))
     (nreverse files)))
 
-(defun tlon-tts-delete-chunks (&optional file)
-  "Delete the chunks of FILE."
+(defun tlon-tts-delete-chunks-of-file (&optional file)
+  "Delete the chunks of FILE.
+Also delete the temporary TTS buffer."
   (interactive)
   (let ((file (tlon-tts-set-chunk-file file)))
     (dolist (file (tlon-tts-get-list-of-chunks file))
@@ -2264,7 +2265,7 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("R" "Replacement"                             tlon-add-local-replacement)]
    ["Files"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
-    ("d" "Delete file chunks"                      tlon-tts-delete-chunks)
+    ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
     ""
     ("o" "Open dir"                                tlon-tts-open-audio-directory)
     ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]])
