@@ -1496,7 +1496,8 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-italics)
   (tlon-tts-process-visually-hidden)
   (tlon-tts-process-replace-audio)
-  (tlon-tts-process-small-caps))
+  (tlon-tts-process-small-caps)
+  (tlon-tts-process-math))
 
 (defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
