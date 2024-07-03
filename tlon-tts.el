@@ -1171,11 +1171,12 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
   "Delete the chunks of FILE.
 Also delete the temporary TTS buffer."
   (interactive)
-  (let ((file (tlon-tts-set-chunk-file file)))
   (let* ((file (tlon-tts-set-chunk-file file))
 	 (buffer-name (tlon-tts-get-temp-buffer-name file)))
     (dolist (file (tlon-tts-get-list-of-chunks file))
-      (delete-file file 'trash))))
+      (delete-file file 'trash))
+    (when (get-buffer buffer-name)
+      (kill-buffer buffer-name))))
 
 (defun tlon-tts-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
