@@ -121,7 +121,7 @@ link, else get their values from the heading title, if possible."
 	      (repo (or repo
 			(tlon-get-repo-from-heading)))
 	      (default-directory repo)
-	      (forge-repo (forge-get-repository nil))
+	      (forge-repo (forge-get-repository :tracked))
 	      (issue-id (caar (forge-sql [:select [id] :from issue
 						  :where (and (= repository $s1)
 							      (= number $s2))]
@@ -479,7 +479,7 @@ ISSUE is nil, use the issue at point."
 (defun tlon-get-issue-number-from-open-issues ()
   "Prompt user to select from a list of open issues and return number of selection."
   (let* ((default-directory (tlon-get-repo nil 'include-all))
-	 (repo (forge-get-repository 'full))
+	 (repo (forge-get-repository :tracked))
 	 ;; Fetch all issues, but filter for open ones
 	 (issue-list (mapcar #'(lambda (issue)
 				 (cons (format "#%d %s"
