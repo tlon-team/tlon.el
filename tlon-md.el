@@ -737,6 +737,13 @@ numbers correctly."
   (interactive)
   (tlon-md-insert-or-edit-tag "SmallCaps"))
 
+;; TODO: develop
+;;;###autoload
+(defun tlon-insert-mdx-table ()
+  "Insert an MDX `Table' tag pair at point or around the selected region."
+  (interactive)
+  (message "This command is not yet developed."))
+
 ;;;###autoload
 (defun tlon-insert-mdx-simple-table ()
   "Insert an MDX `SimpleTable' tag pair at point or around the selected region."
