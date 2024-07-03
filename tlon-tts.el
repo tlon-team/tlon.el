@@ -977,9 +977,11 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size. If
       (display-buffer (current-buffer))
       content)))
 
-(defun tlon-tts-get-temp-buffer-name ()
-  "Return the name of the temporary buffer for the current TTS process."
-  (format "*TTS process: %s*" (file-name-nondirectory tlon-tts-current-file-or-buffer)))
+(defun tlon-tts-get-temp-buffer-name (&optional file)
+  "Return the name of the temporary buffer for FILE.
+If FILE is nil, use file of the current TTS process."
+  (let ((file (or file tlon-tts-current-file-or-buffer)))
+    (format "*TTS process: %s*" (file-name-base file))))
 
 (defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
@@ -1170,6 +1172,8 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 Also delete the temporary TTS buffer."
   (interactive)
   (let ((file (tlon-tts-set-chunk-file file)))
+  (let* ((file (tlon-tts-set-chunk-file file))
+	 (buffer-name (tlon-tts-get-temp-buffer-name file)))
     (dolist (file (tlon-tts-get-list-of-chunks file))
       (delete-file file 'trash))))
 
