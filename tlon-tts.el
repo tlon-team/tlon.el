@@ -854,9 +854,16 @@ term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km 
 ;;;;;; Quotes
 
 (defconst tlon-tts-quote-cues
+  '(("en" "(quote)" . "(End of quote)")
+    ("es" "(cita)" . "(Fin de la cita)"))
+  "Listener cues for quotes.")
+
+;;;;;; Blockquotes
+
+(defconst tlon-tts-blockquote-cues
   '(("en" "Quote." . "\nEnd of quote.")
     ("es" "Cita." . "\nFin de la cita."))
-  "Listener cues for quotes.")
+  "Listener cues for blockquotes.")
 
 ;;;;;; Asides
 
@@ -1690,6 +1697,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 (defun tlon-tts-process-listener-cues ()
   "Add listener cues to relevant elements."
   (tlon-tts-process-quotes)
+  (tlon-tts-process-blockquotes)
   (tlon-tts-process-asides)
   (tlon-tts-process-images)
   (tlon-tts-process-owid))
@@ -1699,7 +1707,8 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
-	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
+	('quote (list (tlon-md-get-tag-pattern "q") tlon-tts-quote-cues 2))
+	('blockquote (list tlon-md-blockquote tlon-tts-blockquote-cues 1))
 	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
 	('table (list (tlon-md-get-tag-pattern "SimpleTable") tlon-tts-table-cues 4))
 	(_ (user-error "Invalid formatting type: %s" type)))
@@ -1707,7 +1716,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
     (while (re-search-forward pattern nil t)
       (if-let* ((match (match-string-no-properties group))
 		(text (pcase type
-			('quote (replace-regexp-in-string "^[[:blank:]]*?> ?" "" match))
+			('blockquote (replace-regexp-in-string "^[[:blank:]]*?> ?" "" match))
 			('table
 			 (let* ((table-contents (match-string-no-properties 2))
 				(omit-header-p (not (string-empty-p (match-string 5))))
@@ -1764,8 +1773,12 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 ;;;;;;; Specific
 
 (defun tlon-tts-process-quotes ()
-  "Add listener cues for blockquotes."
+  "Add listener cues for quotes."
   (tlon-tts-add-listener-cues 'quote))
+
+(defun tlon-tts-process-blockquotes ()
+  "Add listener cues for blockquotes."
+  (tlon-tts-add-listener-cues 'blockquote))
 
 (defun tlon-tts-process-asides ()
   "Add listener cues for asides."
