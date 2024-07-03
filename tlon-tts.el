@@ -2312,25 +2312,39 @@ OBJ is the infix object."
 	 (prompts (alist-get language tlon-tts-prompts nil nil #'string=)))
     (completing-read "Prompt: " prompts)))
 
-;;;;;; Duration
+;;;;;;; Heading break duration
 
 (transient-define-infix tlon-tts-heading-break-duration-infix ()
   :class 'transient-lisp-variable
   :variable 'tlon-tts-heading-break-duration
-  :reader (lambda (_ _ _) (read-string "Duration (seconds): " tlon-tts-heading-break-duration)))
+  :reader 'tlon-tts-heading-break-duration-reader)
+
+(defun tlon-tts-heading-break-duration-reader (_ _ _)
+  "Reader for `tlon-tts-heading-break-duration-infix'."
+  (read-string "Duration (seconds): " tlon-tts-heading-break-duration))
+
+;;;;;;; Paragraph break duration
 
 (transient-define-infix tlon-tts-paragraph-break-duration-infix ()
   :class 'transient-lisp-variable
   :variable 'tlon-tts-paragraph-break-duration
-  :reader (lambda (_ _ _) (read-string "Duration (seconds): " tlon-tts-heading-break-duration)))
+  :reader 'tlon-tts-paragraph-break-duration-reader)
 
-;;;;;; Alternative voice
+(defun tlon-tts-paragraph-break-duration-reader (_ _ _)
+  "Reader for `tlon-tts-paragraph-break-duration-infix'."
+  (read-string "Duration (seconds): " tlon-tts-paragraph-break-duration))
+
+;;;;;;; Alternative voice
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
   "Toggle the value of `tlon-tts-use-alternate-voice' in `tts' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-use-alternate-voice
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice)))
+  :reader 'tlon-tts-alternative-voice-reader)
+
+(defun tlon-tts-alternative-voice-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-alternate-voice'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice))
 
 ;;;;;; Main menu
 
