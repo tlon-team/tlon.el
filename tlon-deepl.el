@@ -357,6 +357,7 @@ of the entry at point."
   ["Translate"
    ("t" "Translate" tlon-deepl-translate)
    ("H-t" "Translate and copy" tlon-deepl-translate-and-copy)
+   ("a" "Translate abstract" tlon-deepl-translate-abstract)
    ""
    "Glossaries"
    ("l" "List" tlon-deepl-select-glossary)
