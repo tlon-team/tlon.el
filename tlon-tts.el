@@ -2227,24 +2227,78 @@ PROMPTS is a cons cell with the corresponding prompts."
 
 ;;;;; Menu
 
-;;;;;; Engine
+;;;;;; Settings
+
+;;;;;;; Engine
 
 (transient-define-infix tlon-tts-menu-infix-set-engine ()
   "Set the engine."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-engine
-  :reader (lambda (_ _ _) (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name))))
+  :reader 'tlon-tts-set-engine-reader)
+
+(defun tlon-tts-set-engine-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-set-engine'."
+  (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name)))
+
+;;;;;;; Engine settings
+
+(defclass tlon-tts-engine-settings-infix (transient-infix)
+  ((variable :initarg :variable
+	     :initform nil
+	     :type (or null symbol))
+   (custom-value :initarg :custom-value
+		 :initform nil
+		 :type t)))
+
+(defun tlon-tts-engine-settings-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-set-engine-settings'."
+  (let* ((choices (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-engine))
+	 (selection (completing-read "Engine settings: " choices)))
+    (assoc selection choices)))
+
+(cl-defmethod transient-infix-init ((obj tlon-tts-engine-settings-infix))
+  "Initialize the infix object.
+OBJ is the infix object."
+  (when-let* ((variable-name (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine))
+	      (variable (and variable-name (intern-soft variable-name))))
+    (setf (slot-value obj 'variable) variable)
+    (when (boundp variable)
+      (setf (slot-value obj 'custom-value) (symbol-value variable)))))
+
+(cl-defmethod transient-infix-read ((obj tlon-tts-engine-settings-infix))
+  "Read the value for the infix object.
+OBJ is the infix object."
+  (when-let* ((variable (slot-value obj 'variable))
+	      (value (tlon-tts-engine-settings-reader nil nil variable)))
+    (set variable value)
+    (setf (slot-value obj 'custom-value) value)
+    value)))
+
+(cl-defmethod transient-format-value ((obj tlon-tts-engine-settings-infix))
+  "Format the value for the infix object.
+OBJ is the infix object."
+  (if-let ((value (slot-value obj 'custom-value)))
+      (format "%s" (if (consp value) (prin1-to-string value) value))
+    "Not set"))
+
+(defun tlon-tts-menu-infix-set-engine-settings-action ()
+"Set the engine settings."
+(interactive)
+(let* ((infix (transient-suffix-object 'tlon-tts-menu-infix-set-engine-settings))
+       (value (transient-infix-read infix)))
+  (transient-infix-set infix value)
+  (transient--show)))
 
 (transient-define-infix tlon-tts-menu-infix-set-engine-settings ()
   "Set the engine settings."
-  :class 'transient-lisp-variable
-  :variable (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine)
-  :reader (lambda (_ _ _)
-	    (let* ((choices (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-engine))
-		   (selection (completing-read "Engine: " choices)))
-	      (assoc selection choices))))
+  :class 'tlon-tts-engine-settings-infix
+  :argument "-s"
+  :description "Settings"
+  :key "-s"
+  :command #'tlon-tts-menu-infix-set-engine-settings-action)
 
-;;;;;; Prompt
+;;;;;;; Prompt
 
 (transient-define-infix tlon-tts-menu-infix-set-prompt ()
   "Set the prompt."
