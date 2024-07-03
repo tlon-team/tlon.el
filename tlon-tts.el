@@ -940,13 +940,11 @@ This command is used for debugging purposes."
     (setq tlon-tts-chunks (tlon-tts-read-content char-limit))
     (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-names destination (length tlon-tts-chunks)))
     (dolist (chunk tlon-tts-chunks)
-      ;; TODO: see if this can be done in parallel
       (tlon-tts-generate-audio chunk (tlon-tts-get-chunk-name destination nth))
       (setq nth (1+ nth)))))
 
 (defun tlon-tts-set-audio-path ()
   "Set the audio file path."
-  ;; TODO: decide if files should always be saved in the downloads directory
   (let* ((file-name-sans-extension (file-name-sans-extension
 				    (file-name-nondirectory tlon-tts-current-file-or-buffer)))
 	 (extension (cdr (tlon-tts-get-output-format)))
