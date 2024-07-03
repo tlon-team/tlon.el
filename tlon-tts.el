@@ -1206,6 +1206,41 @@ Also delete the temporary TTS buffer."
 	 (original-base-name (replace-regexp-in-string "-[0-9]+\\'" "" base-name)))
     (format "%s.%s" original-base-name extension)))
 
+;;;;;; Audio truncation
+
+;;;###autoload
+(defun tlon-tts-truncate-audio-file (file miliseconds)
+  "Remove the last MILISECONDS from FILE."
+  (interactive (list (files-extras-read-file)
+		     (read-number "Miliseconds: ")))
+  (let ((duration (tlon-tts-get-new-duration file miliseconds))
+	(output-filename (tlon-tts-get-output-filename file miliseconds)))
+    (shell-command (format "mp3splt 0.0 %s %2$s -o %2$s" duration file))
+    (shell-command (format "mv %s %s" output-filename file))))
+
+(defun tlon-tts-get-output-filename (file miliseconds)
+  "Return the output filename for FILE minus MILISECONDS."
+  (let* ((elts (split-string (tlon-tts-get-new-duration file miliseconds) "\\."))
+	 (dir (file-name-directory file))
+	 (base (file-name-base file))
+	 (filename (apply 'format "%s_00m_00s__%sm_%ss_%sh.mp3" base elts)))
+    (file-name-concat dir filename)))
+
+(defun tlon-tts-get-new-duration (file miliseconds)
+  "Return the duration of FILE minus MILISECONDS.
+The duration is returned in the format minutes.seconds.hundreds, which is the
+format used by `mp3split'."
+  (let* ((output (string-chop-newline
+		  (shell-command-to-string
+		   (format "ffmpeg -i \"%s\"  2>&1 | grep \"Duration\" | awk '{print $2}' | tr -d ,"
+			   file)))))
+    (cl-destructuring-bind (h m s) (split-string output ":")
+      (let* ((seconds (+ (* (string-to-number h) 3600)
+			 (* (string-to-number m) 60)
+			 (string-to-number s)))
+	     (new-duration (/ (- (* 1000 seconds) miliseconds) 1000.0)))
+	(format "%02d.%05.2f" (/ new-duration 60) (mod new-duration 60))))))
+
 ;;;;;; TTS engines
 
 ;;;;;;; Microsoft Azure
@@ -2271,6 +2306,7 @@ PROMPTS is a cons cell with the corresponding prompts."
    ["Files"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
+    ("n" "Truncate file"                           tlon-tts-truncate-audio-file)
     ""
     ("o" "Open dir"                                tlon-tts-open-audio-directory)
     ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]])
