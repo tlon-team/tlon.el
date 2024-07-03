@@ -2249,46 +2249,37 @@ PROMPTS is a cons cell with the corresponding prompts."
 	     :type (or null symbol))
    (custom-value :initarg :custom-value
 		 :initform nil
-		 :type t)))
-
-(defun tlon-tts-engine-settings-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-set-engine-settings'."
-  (let* ((choices (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-engine))
-	 (selection (completing-read "Engine settings: " choices)))
-    (assoc selection choices)))
+		 :type t)))  ;; Allow custom-value to be of any type.
 
 (cl-defmethod transient-infix-init ((obj tlon-tts-engine-settings-infix))
-  "Initialize the infix object.
-OBJ is the infix object."
-  (when-let* ((variable-name (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine))
-	      (variable (and variable-name (intern-soft variable-name))))
-    (setf (slot-value obj 'variable) variable)
-    (when (boundp variable)
-      (setf (slot-value obj 'custom-value) (symbol-value variable)))))
+  (let* ((variable-name (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine))
+	 (variable (and variable-name (intern-soft variable-name))))
+    (when variable
+      (setf (slot-value obj 'variable) variable)
+      (when (boundp variable)
+	(setf (slot-value obj 'custom-value) (symbol-value variable))))))
 
 (cl-defmethod transient-infix-read ((obj tlon-tts-engine-settings-infix))
-  "Read the value for the infix object.
-OBJ is the infix object."
-  (when-let* ((variable (slot-value obj 'variable))
-	      (value (tlon-tts-engine-settings-reader nil nil variable)))
-    (set variable value)
-    (setf (slot-value obj 'custom-value) value)
-    value)))
+  (let* ((variable (slot-value obj 'variable)))
+    (when variable
+      (let ((value (tlon-tts-engine-settings-reader nil nil variable)))
+	(when value
+	  (set variable value)
+	  (setf (slot-value obj 'custom-value) value)
+	  value)))))
 
 (cl-defmethod transient-format-value ((obj tlon-tts-engine-settings-infix))
-  "Format the value for the infix object.
-OBJ is the infix object."
-  (if-let ((value (slot-value obj 'custom-value)))
-      (format "%s" (if (consp value) (prin1-to-string value) value))
-    "Not set"))
+  (let ((value (slot-value obj 'custom-value)))
+    (if value
+	(format "%s" (if (consp value) (prin1-to-string value) value))  ;; handle cons cell
+      "Not set")))
 
 (defun tlon-tts-menu-infix-set-engine-settings-action ()
-"Set the engine settings."
-(interactive)
-(let* ((infix (transient-suffix-object 'tlon-tts-menu-infix-set-engine-settings))
-       (value (transient-infix-read infix)))
-  (transient-infix-set infix value)
-  (transient--show)))
+  (interactive)
+  (let* ((infix (transient-suffix-object 'tlon-tts-menu-infix-set-engine-settings))
+	 (value (transient-infix-read infix)))
+    (transient-infix-set infix value)
+    (transient--show)))
 
 (transient-define-infix tlon-tts-menu-infix-set-engine-settings ()
   "Set the engine settings."
