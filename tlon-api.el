@@ -124,8 +124,8 @@ CALLBACK is called with the token as its argument."
 ;;;;;; Logs
 
 ;;;###autoload
-(defun tlon-api-open-log ()
-  "Open the most recent log buffer."
+(defun tlon-api-open-most-recent-log ()
+  "Open a buffer with the most recent log returned by the API."
   (interactive)
   (unless tlon-api-most-recent-log-buffer
     (user-error "No log buffer to open"))
