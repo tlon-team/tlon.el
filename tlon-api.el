@@ -133,6 +133,13 @@ CALLBACK is called with the token as its argument."
       (pop-to-buffer tlon-api-most-recent-log-buffer)
     (tlon-api-request tlon-api-most-recent-log-buffer nil 'pop-to-buffer)))
 
+;;;###autoload
+(defun tlon-api-open-local-log ()
+  "Open a buffer with the local log in `uqbar-api'."
+  (interactive)
+  (let ((file (file-name-concat (tlon-repo-lookup :dir :name "uqbar-api") "logs/uqbar-api.log")))
+    (find-file file)))
+
 (cl-defun tlon-api-print-response (route pop-to-buffer &key data &allow-other-keys)
   "Print DATA returned from API ROUTE.
 If POP-TO-BUFFER is non-nil, display the response in a buffer."
