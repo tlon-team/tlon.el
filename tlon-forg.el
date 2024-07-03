@@ -1081,6 +1081,8 @@ The first argument is the repo name, and the second is the issue number.")
 	     :statusid "PVTSSF_lADOBtGWf84AdqPTzgTQA3g"
 	     :projectid "PVT_kwDOBtGWf84AdqPT"))
 
+;; see FBB5C2A8-8506-45FF-993B-FE7D07C16483 for discussion on updated code
+
 ;;;;; Transient
 
 (defun tlon-label-reader (prompt _ _)
