@@ -299,6 +299,9 @@ in this tag and pass the URL as the value of the `src' attribute.")
     (:tag "sup"
 	  :type html
 	  :self-closing nil)
+    (:tag "q"
+	  :type html
+	  :self-closing nil)
     (:tag "VisuallyHidden"
 	  :type mdx
 	  :self-closing nil
@@ -629,6 +632,12 @@ prompting the user until a non-empty string is entered."
   "Insert an HTML `sup' tag pair at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "sup"))
+
+;;;###autoload
+(defun tlon-insert-html-quote ()
+  "Insert an HTML `q' tag pair at point or around the selected region."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "q"))
 
 ;;;;;;; MDX
 
