@@ -321,11 +321,10 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (save-window-excursion
     (with-current-buffer (find-file-noselect (tlon-get-todos-generic-file))
       (goto-char (point-min))
-      (while (not (eobp))
-	(let ((issue (tlon-get-issue)))
-	  (when (and issue
-		     ;; consider adding a user option to include archives
-		     (not (member org-archive-tag (org-get-tags))))
+      (while (re-search-forward org-heading-regexp nil t)
+	(when-let ((issue (tlon-get-issue)))
+	  (when (or (not (member org-archive-tag (org-get-tags)))
+		    tlon-forg-include-archived)
 	    (tlon-reconcile-issue-and-todo-from-issue issue)))
 	(org-next-visible-heading 1))
       (message "Finished reconciling."))))
