@@ -324,11 +324,15 @@ If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
 (transient-define-prefix tlon-api-menu ()
   "`api' menu."
   ["Requests"
-   ("q" "uqbar"                        tlon-api-request)
-   ("Q" "uqbar force"                  tlon-api-request-force)
+   ("q" "uqbar"                                tlon-api-request)
+   ("Q" "uqbar force"                          tlon-api-request-force)
    ""
-   ("l" "open log"                     tlon-api-open-log)
-   ("t" "copy access token"            tlon-api-copy-token)])
+   "Logs"
+   ("l" "open most recent"                     tlon-api-open-most-recent-log)
+   ("L" "open local"                           tlon-api-open-local-log)
+   ""
+   "Misc"
+   ("t" "copy access token"                    tlon-api-copy-token)])
 
 (provide 'tlon-api)
 ;;; tlon-api.el ends here
