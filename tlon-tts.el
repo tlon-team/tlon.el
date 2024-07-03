@@ -1889,7 +1889,8 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
     (goto-char (point-min))
     (while (re-search-forward "\\b[A-Z]\\{2,\\}\\b" nil t)
       (let ((match (match-string-no-properties 0)))
-	(unless (or (member match (mapcar 'car abbrevs)))
+	(unless (or (member match (mapcar 'car abbrevs))
+		    (thing-at-point-looking-at (tlon-md-get-tag-pattern "Roman")))
 	  (push match missing))))
     (delete-dups missing)))
 
