@@ -1042,9 +1042,9 @@ query {
   "GitHub GraphQL query to get project fields for issue in repo.
 The first argument is the repo name, and the second is the issue number.")
 
-(defun tlon-gh-get-issue-fields (issue repo)
-  "Return the relevant fields for ISSUE in REPO as a raw list."
-  (let* ((command (format tlon-forg-gh-project-query repo issue))
+(defun tlon-gh-get-issue-fields (issue-number repo-name)
+  "Return the relevant fields for ISSUE-NUMBER in REPO-NAME as a raw list."
+  (let* ((command (format tlon-forg-gh-project-query repo-name issue-number))
 	 (json (shell-command-to-string command)))
     (with-temp-buffer
       (insert json)
