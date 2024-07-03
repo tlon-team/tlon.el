@@ -168,9 +168,15 @@ For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
 (defcustom tlon-amazon-polly-audio-settings
   '("mp3" . "mp3")
   "Output format and associated extension for the Amazon Polly TTS service.
-Admissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\""
+Admissible values are `\"ogg_vorbis\"', `\"pcm\"' and `\"mp3\"'."
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+(defconst tlon-amazon-polly-audio-choices
+  '(("mp3" . "mp3")
+    ("ogg_vorbis" . "ogg")
+    ("pcm" . "pcm"))
+  "Output format and associated extension for the Google Cloud TTS service.")
 
 ;;;;; OpenAI
 
@@ -641,6 +647,7 @@ questions\").")
     (:name "Amazon Polly"
 	   :voices-var tlon-amazon-polly-voices
 	   :output-var tlon-amazon-polly-audio-settings
+	   :choices-var ,tlon-amazon-polly-audio-choices
 	   :request-fun tlon-tts-amazon-polly-make-request
 	   :char-limit ,tlon-amazon-polly-char-limit
 	   :property :polly)
