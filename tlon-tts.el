@@ -927,6 +927,7 @@ Save the audio file in the current directory."
   "Display the TTS buffer without narrating its contents.
 This command is used for debugging purposes."
   (interactive)
+  (save-buffer)
   (tlon-tts-set-all-current-values)
   (tlon-tts-read-content nil 'cold-run)
   (tlon-tts-unset-all-current-values))
