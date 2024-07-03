@@ -168,9 +168,15 @@ For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
 (defcustom tlon-amazon-polly-audio-settings
   '("mp3" . "mp3")
   "Output format and associated extension for the Amazon Polly TTS service.
-Admissible values are `\"ogg_vorbis\"', `\"json\"', `\"mp3\"' and `\""
+Admissible values are `\"ogg_vorbis\"', `\"pcm\"' and `\"mp3\"'."
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+(defconst tlon-amazon-polly-audio-choices
+  '(("mp3" . "mp3")
+    ("ogg_vorbis" . "ogg")
+    ("pcm" . "pcm"))
+  "Output format and associated extension for the Google Cloud TTS service.")
 
 ;;;;; OpenAI
 
@@ -592,10 +598,7 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 
 (defconst tlon-elevenlabs-voices
   '((:voice "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female")
-    (:voice "Mady" :id "4v7HtLWqY9rpQ7Cg2GT4" :language "multilingual" :gender "female") ; funny latam accent
-    (:voice "Scarlett" :id "KyO6Jxd7C7eOOJiXbuX6" :language "multilingual" :gender "female")
     (:voice "Mia" :id "1bMpKrcyV56bfYc1l9yf" :language "multilingual" :gender "female")
-    ;; (:voice "Alice" :id "QP0KlDGxDLNFeV5I7SvQ" :language "multilingual" :gender "female") ; gradually fades out
     (:voice "Nigel" :id "jjz72sHaqmTCiPFqnw2N" :language "multilingual" :gender "male")
     (:voice "Knightley" :id "L0Nf9VH02lduEuhdmbJ5" :language "multilingual" :gender "male")
     (:voice "Brian" :id "rncjssM0aAEg1ApKehUP" :language "multilingual" :gender "male")
@@ -604,7 +607,8 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
     (:voice "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
     (:voice "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male")
     (:voice "Readwell" :id "5ZrfTID2FK4q4M1dxIpc" :language "multilingual" :gender "male")
-    (:voice "Hades" :id "y3uxYtdWYpmzg8Wwx2k3" :language "multilingual" :gender "male"))
+    (:voice "Hades" :id "y3uxYtdWYpmzg8Wwx2k3" :language "multilingual" :gender "male")
+    (:voice "Hannah" :id "9CwhYxaF830StYPLuBaD" :language "multilingual" :gender "female"))
   "Preferred ElevenLabs voices for different languages.
 A list of available voices may be found here:
 <https://elevenlabs.io/app/voice-library>. To get information about the voices,
@@ -644,6 +648,7 @@ questions\").")
     (:name "Amazon Polly"
 	   :voices-var tlon-amazon-polly-voices
 	   :output-var tlon-amazon-polly-audio-settings
+	   :choices-var ,tlon-amazon-polly-audio-choices
 	   :request-fun tlon-tts-amazon-polly-make-request
 	   :char-limit ,tlon-amazon-polly-char-limit
 	   :property :polly)
@@ -849,9 +854,16 @@ term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km 
 ;;;;;; Quotes
 
 (defconst tlon-tts-quote-cues
+  '(("en" "(quote)" . "(End of quote)")
+    ("es" "(cita)" . "(Fin de la cita)"))
+  "Listener cues for quotes.")
+
+;;;;;; Blockquotes
+
+(defconst tlon-tts-blockquote-cues
   '(("en" "Quote." . "\nEnd of quote.")
     ("es" "Cita." . "\nFin de la cita."))
-  "Listener cues for quotes.")
+  "Listener cues for blockquotes.")
 
 ;;;;;; Asides
 
@@ -922,6 +934,7 @@ Save the audio file in the current directory."
   "Display the TTS buffer without narrating its contents.
 This command is used for debugging purposes."
   (interactive)
+  (save-buffer)
   (tlon-tts-set-all-current-values)
   (tlon-tts-read-content nil 'cold-run)
   (tlon-tts-unset-all-current-values))
@@ -934,13 +947,11 @@ This command is used for debugging purposes."
     (setq tlon-tts-chunks (tlon-tts-read-content char-limit))
     (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-names destination (length tlon-tts-chunks)))
     (dolist (chunk tlon-tts-chunks)
-      ;; TODO: see if this can be done in parallel
       (tlon-tts-generate-audio chunk (tlon-tts-get-chunk-name destination nth))
       (setq nth (1+ nth)))))
 
 (defun tlon-tts-set-audio-path ()
   "Set the audio file path."
-  ;; TODO: decide if files should always be saved in the downloads directory
   (let* ((file-name-sans-extension (file-name-sans-extension
 				    (file-name-nondirectory tlon-tts-current-file-or-buffer)))
 	 (extension (cdr (tlon-tts-get-output-format)))
@@ -966,9 +977,11 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size. If
       (display-buffer (current-buffer))
       content)))
 
-(defun tlon-tts-get-temp-buffer-name ()
-  "Return the name of the temporary buffer for the current TTS process."
-  (format "*TTS process: %s*" (file-name-nondirectory tlon-tts-current-file-or-buffer)))
+(defun tlon-tts-get-temp-buffer-name (&optional file)
+  "Return the name of the temporary buffer for FILE.
+If FILE is nil, use file of the current TTS process."
+  (let ((file (or file tlon-tts-current-file-or-buffer)))
+    (format "*TTS process: %s*" (file-name-base file))))
 
 (defun tlon-tts-generate-audio (string file)
   "Generate audio FILE of STRING."
@@ -982,7 +995,9 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size. If
 				  (if (region-active-p)
 				      (tlon-tts-open-file file)
 				    (tlon-tts-process-chunk file))
-				(message "Process %s: Event occurred - %s" (process-name process) event)))))))
+				(message "Process %s: Event occurred - %s" (process-name process) event))
+			      (kill-buffer "*Shell Command Output*")
+			      (shell-command (format "open '%s'" (tlon-tts-get-original-name file))))))))
 
 (defun tlon-tts-open-file (file)
   "Open generated TTS FILE."
@@ -1099,7 +1114,7 @@ FILE, CONTENT, ENGINE, LANGUAGE, and VOICE are the values to set."
   (unless tlon-tts-unprocessed-chunk-files
     (let ((file (tlon-tts-get-original-name file)))
       (tlon-tts-join-chunks file)
-      (tlon-tts-delete-chunks file))))
+      (tlon-tts-delete-chunks-of-file file))))
 
 (defun tlon-tts-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks no larger than CHUNK-SIZE.
@@ -1152,12 +1167,16 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
       (setq nth (1+ nth)))
     (nreverse files)))
 
-(defun tlon-tts-delete-chunks (&optional file)
-  "Delete the chunks of FILE."
+(defun tlon-tts-delete-chunks-of-file (&optional file)
+  "Delete the chunks of FILE.
+Also delete the temporary TTS buffer."
   (interactive)
-  (let ((file (tlon-tts-set-chunk-file file)))
+  (let* ((file (tlon-tts-set-chunk-file file))
+	 (buffer-name (tlon-tts-get-temp-buffer-name file)))
     (dolist (file (tlon-tts-get-list-of-chunks file))
-      (delete-file file 'trash))))
+      (delete-file file 'trash))
+    (when (get-buffer buffer-name)
+      (kill-buffer buffer-name))))
 
 (defun tlon-tts-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
@@ -1186,6 +1205,41 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 	 (extension (file-name-extension chunk-name))
 	 (original-base-name (replace-regexp-in-string "-[0-9]+\\'" "" base-name)))
     (format "%s.%s" original-base-name extension)))
+
+;;;;;; Audio truncation
+
+;;;###autoload
+(defun tlon-tts-truncate-audio-file (file miliseconds)
+  "Remove the last MILISECONDS from FILE."
+  (interactive (list (files-extras-read-file)
+		     (read-number "Miliseconds: ")))
+  (let ((duration (tlon-tts-get-new-duration file miliseconds))
+	(output-filename (tlon-tts-get-output-filename file miliseconds)))
+    (shell-command (format "mp3splt 0.0 %s %2$s -o %2$s" duration file))
+    (shell-command (format "mv %s %s" output-filename file))))
+
+(defun tlon-tts-get-output-filename (file miliseconds)
+  "Return the output filename for FILE minus MILISECONDS."
+  (let* ((elts (split-string (tlon-tts-get-new-duration file miliseconds) "\\."))
+	 (dir (file-name-directory file))
+	 (base (file-name-base file))
+	 (filename (apply 'format "%s_00m_00s__%sm_%ss_%sh.mp3" base elts)))
+    (file-name-concat dir filename)))
+
+(defun tlon-tts-get-new-duration (file miliseconds)
+  "Return the duration of FILE minus MILISECONDS.
+The duration is returned in the format minutes.seconds.hundreds, which is the
+format used by `mp3split'."
+  (let* ((output (string-chop-newline
+		  (shell-command-to-string
+		   (format "ffmpeg -i \"%s\"  2>&1 | grep \"Duration\" | awk '{print $2}' | tr -d ,"
+			   file)))))
+    (cl-destructuring-bind (h m s) (split-string output ":")
+      (let* ((seconds (+ (* (string-to-number h) 3600)
+			 (* (string-to-number m) 60)
+			 (string-to-number s)))
+	     (new-duration (/ (- (* 1000 seconds) miliseconds) 1000.0)))
+	(format "%02d.%05.2f" (/ new-duration 60) (mod new-duration 60))))))
 
 ;;;;;; TTS engines
 
@@ -1326,18 +1380,34 @@ STRING is the string of the request. DESTINATION is the output file path."
 ;;;;; File uploading
 
 (declare-function tlon-upload-file-to-server "tlon-api")
+;;;###autoload
 (defun tlon-tts-upload-audio-file-to-server (&optional file)
   "Upload audio FILE to the server and delete it locally."
   (interactive)
   (let* ((file (or file (files-extras-read-file file)))
-	 (repo (tlon-get-repo-from-file file))
-	 (lang (or tlon-tts-current-language
-		   (tlon-repo-lookup :language :dir repo)
-		   (tlon-select-language 'code 'babel)))
-	 (bare-dir (or (tlon-get-bare-dir file) (tlon-select-bare-dir lang)))
-	 (destination (format "fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
-			      lang bare-dir (file-name-nondirectory file))))
+	 (lang (tlon-tts-get-current-language))
+	 (destination (tlon-tts-get-audio-directory lang file)))
     (tlon-upload-file-to-server file destination 'delete-after-upload)))
+
+;;;###autoload
+(defun tlon-tts-open-audio-directory (&optional lang)
+  "Open the directory where the audio files for LANG are stored."
+  (interactive)
+  (let ((lang (tlon-tts-get-current-language lang)))
+    (dired (tlon-tts-get-audio-directory lang nil 'tramp))))
+
+(defun tlon-tts-get-audio-directory (lang &optional file tramp)
+  "Return the directory where audio files are stored for LANG.
+If FILE is non-nil, get the bare directory from it; otherwise, prompt the user
+to select it. By default, return the direct remote path. If TRAMP is non-nil,
+return the TRAMP SSH path."
+  (let ((bare-dir (if file
+		      (tlon-get-bare-dir file)
+		    (tlon-select-bare-dir lang)))
+	(path (if tramp
+		  "/ssh:fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
+		"fede@tlon.team:/home/fede/uqbar-%s-audio/%s/")))
+    (format path lang bare-dir)))
 
 ;;;;; Cleanup
 
@@ -1426,7 +1496,8 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-italics)
   (tlon-tts-process-visually-hidden)
   (tlon-tts-process-replace-audio)
-  (tlon-tts-process-small-caps))
+  (tlon-tts-process-small-caps)
+  (tlon-tts-process-math))
 
 (defun tlon-tts-remove-formatting (type)
   "Remove formatting TYPE from text."
@@ -1668,6 +1739,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 (defun tlon-tts-process-listener-cues ()
   "Add listener cues to relevant elements."
   (tlon-tts-process-quotes)
+  (tlon-tts-process-blockquotes)
   (tlon-tts-process-asides)
   (tlon-tts-process-images)
   (tlon-tts-process-owid))
@@ -1677,7 +1749,8 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
-	('quote (list tlon-md-blockquote tlon-tts-quote-cues 1))
+	('quote (list (tlon-md-get-tag-pattern "q") tlon-tts-quote-cues 2))
+	('blockquote (list tlon-md-blockquote tlon-tts-blockquote-cues 1))
 	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
 	('table (list (tlon-md-get-tag-pattern "SimpleTable") tlon-tts-table-cues 4))
 	(_ (user-error "Invalid formatting type: %s" type)))
@@ -1685,7 +1758,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
     (while (re-search-forward pattern nil t)
       (if-let* ((match (match-string-no-properties group))
 		(text (pcase type
-			('quote (replace-regexp-in-string "^[[:blank:]]*?> ?" "" match))
+			('blockquote (replace-regexp-in-string "^[[:blank:]]*?> ?" "" match))
 			('table
 			 (let* ((table-contents (match-string-no-properties 2))
 				(omit-header-p (not (string-empty-p (match-string 5))))
@@ -1742,8 +1815,12 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 ;;;;;;; Specific
 
 (defun tlon-tts-process-quotes ()
-  "Add listener cues for blockquotes."
+  "Add listener cues for quotes."
   (tlon-tts-add-listener-cues 'quote))
+
+(defun tlon-tts-process-blockquotes ()
+  "Add listener cues for blockquotes."
+  (tlon-tts-add-listener-cues 'blockquote))
 
 (defun tlon-tts-process-asides ()
   "Add listener cues for asides."
@@ -1788,9 +1865,10 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 	(numerals-sans-separator-p (tlon-tts-get-numerals-sans-separator)))
     (with-current-buffer (get-buffer-create tlon-tts-report-buffer-name)
       (erase-buffer)
-      (insert "***Missing acronyms***\n\n")
-      (dolist (acronym acronyms)
-	(insert (format "%s\n" acronym)))
+      (when acronyms
+	(insert "***Missing acronyms***\n\n")
+	(dolist (acronym acronyms)
+	  (insert (format "%s\n" acronym))))
       (when chemical-symbols-p
 	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’"
 			tlon-tts-maybe-chemical-symbol)))
@@ -1811,7 +1889,8 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
     (goto-char (point-min))
     (while (re-search-forward "\\b[A-Z]\\{2,\\}\\b" nil t)
       (let ((match (match-string-no-properties 0)))
-	(unless (or (member match (mapcar 'car abbrevs)))
+	(unless (or (member match (mapcar 'car abbrevs))
+		    (thing-at-point-looking-at (tlon-md-get-tag-pattern "Roman")))
 	  (push match missing))))
     (delete-dups missing)))
 
@@ -1899,7 +1978,10 @@ image links are handled differently."
     (goto-char (point-min))
     (while (re-search-forward tlon-md-math-power nil t)
       (let* ((base (match-string-no-properties 1))
-	     (exponent (string-to-number (match-string-no-properties 2)))
+	     (raw-exponent (match-string-no-properties 2))
+	     (exponent (if (string-match "[[:digit:]]+" raw-exponent)
+			   (string-to-number raw-exponent)
+			 raw-exponent))
 	     (verbal-exponent (tlon-tts-get-verbal-exponent exponent language)))
 	(replace-match (format "%s %s" base verbal-exponent) t t)))))
 
@@ -2145,24 +2227,78 @@ PROMPTS is a cons cell with the corresponding prompts."
 
 ;;;;; Menu
 
-;;;;;; Engine
+;;;;;; Settings
+
+;;;;;;; Engine
 
 (transient-define-infix tlon-tts-menu-infix-set-engine ()
   "Set the engine."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-engine
-  :reader (lambda (_ _ _) (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name))))
+  :reader 'tlon-tts-set-engine-reader)
+
+(defun tlon-tts-set-engine-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-set-engine'."
+  (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name)))
+
+;;;;;;; Engine settings
+
+(defclass tlon-tts-engine-settings-infix (transient-infix)
+  ((variable :initarg :variable
+	     :initform nil
+	     :type (or null symbol))
+   (custom-value :initarg :custom-value
+		 :initform nil
+		 :type t)))
+
+(defun tlon-tts-engine-settings-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-set-engine-settings'."
+  (let* ((choices (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-engine))
+	 (selection (completing-read "Engine settings: " choices)))
+    (assoc selection choices)))
+
+(cl-defmethod transient-infix-init ((obj tlon-tts-engine-settings-infix))
+  "Initialize the infix object.
+OBJ is the infix object."
+  (when-let* ((variable-name (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine))
+	      (variable (and variable-name (intern-soft variable-name))))
+    (setf (slot-value obj 'variable) variable)
+    (when (boundp variable)
+      (setf (slot-value obj 'custom-value) (symbol-value variable)))))
+
+(cl-defmethod transient-infix-read ((obj tlon-tts-engine-settings-infix))
+  "Read the value for the infix object.
+OBJ is the infix object."
+  (when-let* ((variable (slot-value obj 'variable))
+	      (value (tlon-tts-engine-settings-reader nil nil variable)))
+    (set variable value)
+    (setf (slot-value obj 'custom-value) value)
+    value)))
+
+(cl-defmethod transient-format-value ((obj tlon-tts-engine-settings-infix))
+  "Format the value for the infix object.
+OBJ is the infix object."
+  (if-let ((value (slot-value obj 'custom-value)))
+      (format "%s" (if (consp value) (prin1-to-string value) value))
+    "Not set"))
+
+(defun tlon-tts-menu-infix-set-engine-settings-action ()
+"Set the engine settings."
+(interactive)
+(let* ((infix (transient-suffix-object 'tlon-tts-menu-infix-set-engine-settings))
+       (value (transient-infix-read infix)))
+  (transient-infix-set infix value)
+  (transient--show)))
 
 (transient-define-infix tlon-tts-menu-infix-set-engine-settings ()
   "Set the engine settings."
-  :class 'transient-lisp-variable
-  :variable (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine)
-  :reader (lambda (_ _ _)
-	    (let* ((choices (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-engine))
-		   (selection (completing-read "Engine: " choices)))
-	      (assoc selection choices))))
+  :class 'tlon-tts-engine-settings-infix
+  :argument "-s"
+  :description "Settings"
+  :key "-s"
+  :command #'tlon-tts-menu-infix-set-engine-settings-action)
 
-;;;;;; Prompt
+;;;;;;; Prompt
 
 (transient-define-infix tlon-tts-menu-infix-set-prompt ()
   "Set the prompt."
@@ -2176,52 +2312,50 @@ PROMPTS is a cons cell with the corresponding prompts."
 	 (prompts (alist-get language tlon-tts-prompts nil nil #'string=)))
     (completing-read "Prompt: " prompts)))
 
-;;;;;; Duration
+;;;;;;; Heading break duration
 
 (transient-define-infix tlon-tts-heading-break-duration-infix ()
   :class 'transient-lisp-variable
   :variable 'tlon-tts-heading-break-duration
-  :reader (lambda (_ _ _) (read-string "Duration (seconds): " tlon-tts-heading-break-duration)))
+  :reader 'tlon-tts-heading-break-duration-reader)
+
+(defun tlon-tts-heading-break-duration-reader (_ _ _)
+  "Reader for `tlon-tts-heading-break-duration-infix'."
+  (read-string "Duration (seconds): " tlon-tts-heading-break-duration))
+
+;;;;;;; Paragraph break duration
 
 (transient-define-infix tlon-tts-paragraph-break-duration-infix ()
   :class 'transient-lisp-variable
   :variable 'tlon-tts-paragraph-break-duration
-  :reader (lambda (_ _ _) (read-string "Duration (seconds): " tlon-tts-heading-break-duration)))
+  :reader 'tlon-tts-paragraph-break-duration-reader)
 
-;;;;;; Alternative voice
+(defun tlon-tts-paragraph-break-duration-reader (_ _ _)
+  "Reader for `tlon-tts-paragraph-break-duration-infix'."
+  (read-string "Duration (seconds): " tlon-tts-paragraph-break-duration))
+
+;;;;;;; Alternative voice
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
   "Toggle the value of `tlon-tts-use-alternate-voice' in `tts' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-use-alternate-voice
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice)))
+  :reader 'tlon-tts-alternative-voice-reader)
+
+(defun tlon-tts-alternative-voice-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-alternate-voice'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice))
 
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
-  [["Edit"
-    "global"
-    ("a" "Abbreviation"                            tlon-tts-edit-abbreviations)
-    ("r" "Replacement"                             tlon-tts-edit-phonetic-replacements)
-    ("t" "Transcription"                           tlon-tts-edit-phonetic-transcriptions)
-    ""
-    "local"
-    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
-    ("R" "Replacement"                             tlon-add-local-replacement)
-    ""
-    "Misc"
-    ("u" "Upload audio file to server"             tlon-tts-upload-audio-file-to-server)
-    ("e" "Generate report"                         tlon-tts-generate-report)]
-   ["Narration"
+  [["Narration"
     ("z" "Narrate buffer or selection"             tlon-tts-narrate-content)
     ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
-    ""
-    ("j" "Join file chunks"                        tlon-tts-join-chunks)
-    ("d" "Delete file chunks"                      tlon-tts-delete-chunks)
-    ""
-    "Narration options"
+    ("e" "Generate report"                         tlon-tts-generate-report)    ]
+   ["Narration options"
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
@@ -2229,7 +2363,23 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
     ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
-    ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]])
+    ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]
+   ["Edit"
+    "global"
+    ("a" "Abbreviation"                            tlon-tts-edit-abbreviations)
+    ("r" "Replacement"                             tlon-tts-edit-phonetic-replacements)
+    ("t" "Transcription"                           tlon-tts-edit-phonetic-transcriptions)
+    ""
+    "local"
+    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
+    ("R" "Replacement"                             tlon-add-local-replacement)]
+   ["Files"
+    ("j" "Join file chunks"                        tlon-tts-join-chunks)
+    ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
+    ("n" "Truncate file"                           tlon-tts-truncate-audio-file)
+    ""
+    ("o" "Open dir"                                tlon-tts-open-audio-directory)
+    ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here

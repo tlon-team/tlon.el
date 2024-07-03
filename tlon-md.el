@@ -108,7 +108,7 @@ them from the captured string as part of the post-processing.")
 ;;;;;; Math
 
 (defconst tlon-md-math-power
-  "\\b\\(?1:[[:digit:]]+\\)<sup>\\(?2:[[:digit:]]+\\)</sup>\\b"
+  "\\(?1:[[:digit:]]+\\)<sup>\\(?2:[n[:digit:]]+\\)</sup>"
   "Regexp pattern for matching a number raised to a power.
 The first group captures the base, and the second group captures
 the exponent.")
@@ -297,6 +297,9 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :type html
 	  :self-closing nil)
     (:tag "sup"
+	  :type html
+	  :self-closing nil)
+    (:tag "q"
 	  :type html
 	  :self-closing nil)
     (:tag "VisuallyHidden"
@@ -630,6 +633,12 @@ prompting the user until a non-empty string is entered."
   (interactive)
   (tlon-md-insert-or-edit-tag "sup"))
 
+;;;###autoload
+(defun tlon-insert-html-quote ()
+  "Insert an HTML `q' tag pair at point or around the selected region."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "q"))
+
 ;;;;;;; MDX
 
 ;;;###autoload
@@ -727,6 +736,13 @@ same visual effects as `SmallCaps', but it also makes the TTS engine read the
 numbers correctly."
   (interactive)
   (tlon-md-insert-or-edit-tag "SmallCaps"))
+
+;; TODO: develop
+;;;###autoload
+(defun tlon-insert-mdx-table ()
+  "Insert an MDX `Table' tag pair at point or around the selected region."
+  (interactive)
+  (message "This command is not yet developed."))
 
 ;;;###autoload
 (defun tlon-insert-mdx-simple-table ()
@@ -1091,45 +1107,52 @@ variables section. If FILE is nil, read the file visited by the current buffer."
   :info-manual "(tlon) Editing Markdown"
   [["YAML"
     ("y" "field"                tlon-edit-yaml-field)]
-   ["Link"
-    ("k" "internal"             tlon-insert-internal-link)
-    ("t" "literal"              tlon-insert-mdx-literal-link)]
+   ["TTS"
+    ("t a" "alternative voice"    tlon-insert-mdx-alternative-voice)
+    ("t b" "break"                tlon-tts-insert-ssml-break)
+    ("t e" "emphasis"             tlon-tts-insert-ssml-emphasis)
+    ("t l" "lang"                 tlon-tts-insert-ssml-lang)
+    ("t p" "phoneme"              tlon-tts-insert-ssml-phoneme)
+    ("t r" "replace audio"        tlon-insert-mdx-replace-audio)
+    ("t s" "say-as"               tlon-tts-insert-ssml-say-as)
+    ("t v" "visually hidden"      tlon-insert-mdx-visually-hidden)]
    ["Note markers"
     ("f" "footnote"             (lambda () (interactive) (tlon-insert-footnote-marker 'overwrite)))
     ("s" "sidenote"             (lambda () (interactive) (tlon-insert-sidenote-marker 'overwrite)))
     ("n" "auto: at point"       tlon-auto-classify-note-at-point)
-    ("N" "auto: in file"        tlon-auto-classify-notes-in-file)]
-   ["Citations"
+    ("N" "auto: in file"        tlon-auto-classify-notes-in-file)
+    ""
+    "Citations"
     ("c" "cite"                 tlon-insert-mdx-cite)
-    ;; ("c" "cite long"            tlon-insert-mdx-cite-long)
-    ;; ("C" "cite short"           tlon-insert-mdx-cite-short)
-    ;; ("l" "locator"              tlon-insert-locator)
+    ""
+    "Quotes"
+    ("i" "inline"                tlon-insert-html-quote)
+    ("b" "blockquote"            markdown-insert-blockquote)
     ]
-   ["TTS"
-    ("V" "alternative voice"    tlon-insert-mdx-alternative-voice)
-    ("K" "break"                tlon-tts-insert-ssml-break)
-    ("E" "emphasis"             tlon-tts-insert-ssml-emphasis)
-    ("L" "lang"                 tlon-tts-insert-ssml-lang)
-    ("P" "phoneme"              tlon-tts-insert-ssml-phoneme)
-    ("A" "replace audio"        tlon-insert-mdx-replace-audio)
-    ("S" "say-as"               tlon-tts-insert-ssml-say-as)
-    ("H" "visually hidden"      tlon-insert-mdx-visually-hidden)
-    ("T" "simple table"         tlon-insert-mdx-simple-table)]
+   ["Images"
+    ("g" "figure"               tlon-insert-mdx-figure)
+    ("o" "Our World In Data"    tlon-insert-mdx-our-world-in-data)
+    ""
+    "Link"
+    ("k" "internal"             tlon-insert-internal-link)
+    ("e" "literal"              tlon-insert-mdx-literal-link)
+    ""
+    "Subscripts and superscripts"
+    ("," "subscript"            tlon-insert-html-subscript)
+    ("/" "superscript"          tlon-insert-html-superscript)]
    ["Misc"
-    ("b" "subscript"            tlon-insert-html-subscript)
-    ("p" "superscript"          tlon-insert-html-superscript)
+    ("a" "aside"                tlon-insert-mdx-aside)
+    ("l" "language"             tlon-insert-mdx-language)
+    ("m" "Math"                 tlon-insert-mdx-math)
     ("." "special character"    tlon-insert-special-character)
     ""
-    ("F" "figure"               tlon-insert-mdx-figure)
-    ("o" "Our World In Data"    tlon-insert-mdx-our-world-in-data)]
-   [""
-    ("a" "aside"                tlon-insert-mdx-aside)
-    ;; ("t" "table"                ) ; placeholder while I develop the command
-    ("g" "language"             tlon-insert-mdx-language)
-    ("m" "Math"                 tlon-insert-mdx-math)
+    "Caps"
+    ("p" "small caps"           tlon-insert-mdx-small-caps)
+    ("r" "roman"                tlon-insert-mdx-roman)
     ""
-    ("M" "small caps"           tlon-insert-mdx-small-caps)
-    ("r" "roman"                tlon-insert-mdx-roman)]])
+    "Table"
+    ("a" "table"                tlon-insert-mdx-table)
+    ("T" "simple table"         tlon-insert-mdx-simple-table)]])
 
 (provide 'tlon-md)
 ;;; tlon-md.el ends here
