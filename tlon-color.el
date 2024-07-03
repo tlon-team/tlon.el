@@ -204,8 +204,10 @@ THEME is either `light' or `dark'. LANGUAGE is either `css' or `js'."
 	 (erase-buffer))
 	(save-buffer)))))
 
+;;;###autoload
 (defun tlon-color-save-frontend-files ()
   "Save `globals.css' and propagate its state to `theme-colors.js'."
+  (interactive)
   (save-excursion
     (with-current-buffer (find-file-noselect tlon-color-globals-css-file))
     (save-buffer))
@@ -417,6 +419,7 @@ COMPONENT can be either \"h\", \"s\" or \"l\". DIRECTION can be either `+' or
     ("d" "Delete"                          tlon-color-delete-palette)
     ""
     ("g" "Open ‘globals.css’ file"         tlon-color-open-globals-file)
+    ("f" "Save frontend files"             tlon-color-save-frontend-files)
     ("c" "Convert colors"                  color-extras-convert-all)
     ("C" "Calculate contrast"              color-extras-contrast)
     ""
