@@ -574,22 +574,6 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	('phase (tlon-get-phase-in-labels labels))
 	(_ (user-error "Invalid type"))))))
 
-;;;;;; tags
-
-(defun tlon-get-tags-in-issue (&optional issue)
-  "Return the valid tags in ISSUE.
-A tag is valid iff it is a member of `tlon-todo-tags'.
-
-If ISSUE is nil, use the issue at point or in the current buffer."
-  (tlon-get-labels-of-type 'tag issue))
-
-(defun tlon-get-tags-in-todo ()
-  "Return the valid tags in the `org-mode' heading at point.
-A tag is valid iff it is a member of `tlon-todo-tags'."
-  (when-let ((tags (cl-intersection
-		    (cdr (org-get-tags)) tlon-todo-tags :test 'string=)))
-    tags))
-
 ;;;;;; sort by tag
 
 ;;;###autoload
@@ -657,6 +641,7 @@ A label is valid job phase iff it is a member of `tlon-job-labels'.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (tlon-get-labels-of-type 'phase issue))
 
+
 ;;;;;; assignees
 
 (defun tlon-get-assignee (&optional issue)
@@ -670,6 +655,32 @@ the issue at point or in the current buffer."
     (if (> (length assignees) 1)
 	(user-error "Issue has more than one assignee")
       (caar assignees))))
+;;;;;; labels
+
+(defun tlon-forg-get-labels (&optional issue)
+  "Return the labels of ISSUE.
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (let* ((issue (or issue (forge-current-topic)))
+         (label-ids (oref issue labels))
+         (label-names (mapcar #'tlon-forg-get-label-name label-ids)))
+    label-names))
+
+(defun tlon-forg-get-label-name (label-id)
+  "Get the name of the label with LABEL-ID from the Forge database."
+  (let* ((db (forge-database))
+         (label-row (emacsql db
+                             [:select [name]
+				      :from label
+				      :where (= id $s1)]
+                             label-id)))
+    (caar label-row)))
+
+(defun tlon-get-tags-in-todo ()
+  "Return the valid tags in the `org-mode' heading at point.
+A tag is valid iff it is a member of `tlon-todo-tags'."
+  (when-let ((tags (cl-intersection
+		    (cdr (org-get-tags)) tlon-todo-tags :test 'string=)))
+    tags))
 
 ;;;;; Validate
 
@@ -816,7 +827,7 @@ buffer."
 			 "")
 		   ""))
 	 (status (tlon-get-status-in-issue issue 'upcased))
-	 (tags (tlon-get-tags-in-issue issue))
+	 (tags (tlon-forg-get-labels issue))
 	 (repo-name (oref (forge-get-repository issue) name))
 	 (repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
 	 (todo-name (replace-regexp-in-string
