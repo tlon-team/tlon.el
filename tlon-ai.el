@@ -208,6 +208,14 @@ use a different model for summarization."
     (:prompt ,(format "Por favor traduce esta expresión matemática a lenguaje natural, es decir, a la manera en que un humano la leería en voz alta:%sPor ejemplo, si la expresión es `\\frac{1}{2} \\times 2^5 \\= 16`, debes traducir \"un medio por dos a la quinta potencia es igual a dieciséis\". Es posible que la expresión no requiera ningún tratamiento sofisticado. Por ejemplo, si te pido que traduzcas una letra (como `S`), tu “traducción” debería ser esa misma letra (`ese`). Por favor, devuelve solamente la expresión traducida, sin comentarios ni clarificaciones. Si por alguna razón no puedes hacer lo que te pido, simplemente no respondas nada; en ningún caso debes devolver mensajes como ‘No he podido traducir la expresión’ o ‘Por favor, incluye la expresión matemática que necesitas que traduzca.’" tlon-ai-string-wrapper)
 	     :language "es")))
 
+;;;;; Encoding
+
+(defconst tlon-ai-fix-encoding-prompt
+  `((:prompt ,(format "The following text includes several encoding errors. For example, \"cuýn\", \"pronosticaci¾3\\263n\", etc.%sPlease return the same text but with these errors corrected, without any other alteration. Do not use double quotes if the text includes single quotes. When returning the corrected text, do not include any clarifications such as ‘Here is the corrected text’. Thank you." tlon-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "El siguiente texto incluye varios errores de codificación. Por ejemplo, \"cuýn\", \"pronosticaci¾3\\263n\", etc.%sPor favor, devuélveme el mismo texto pero con estos errores corregidos, sin ninguna otra alteración. No uses nunca comillas dobles si el texto incluye comillas simples. Al devolverme el texto corregido, no incluyas ninguna aclaración como ‘Aquí tienes el texto corregido’. Gracias." tlon-ai-string-wrapper)
+	     :language "es")))
+
 ;;;; Functions
 
 ;;;;; General
@@ -839,10 +847,16 @@ If RESPONSE is nil, return INFO."
 
 ;;;;; Fix encoding
 
-(defun tlon-ai-fix-encoding ()
+(defun tlon-ai-fix-encoding-in-string (string &optional language)
+  "Fix encoding in STRING."
+  (let* ((language (or language "en"))
+	 (prompt (tlon-lookup tlon-ai-fix-encoding-prompt :prompt :language language)))
+    (tlon-make-gptel-request prompt string #'tlon-ai-callback-return)))
+
+(defun tlon-ai-fix-encoding-in-buffer ()
   "Fix encoding in the current JSON buffer."
   (interactive)
-  (let ((prompt "El siguiente texto incluye varios errores de codificación. Por ejemplo, \"cuýn\", \"pronosticaci¾3\\263n\", etc. Por favor, devuélveme el mismo texto pero con estos errores corregidos, sin ninguna otra alteración. No uses nunca comillas dobles si el texto incluye comillas simples. Al devolverme el texto corregido, no incluyas ninguna aclaración como ‘Aquí tienes el texto corregido’. Gracias.\n\n%s")
+  (let ((prompt (tlon-lookup tlon-ai-fix-encoding-prompt :prompt :language "en"))
 	(point 187527)) ; start of first sexp in file
     (dotimes (i 463)
       (let* ((cons (tlon-ai-get-json-chunk point 1500))
