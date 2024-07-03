@@ -79,6 +79,11 @@ this variable is `no-capture'."
 		 (const :tag "Do not capture" t))
   :group 'tlon-forg)
 
+(defcustom tlon-forg-include-archived nil
+  "Whether to include archived issues in capture or reconcile processes."
+  :type 'boolean
+  :group 'tlon-forg)
+
 ;;;; Variables
 
 (defconst tlon-todo-statuses
@@ -1125,6 +1130,12 @@ The first argument is the repo name, and the second is the issue number.")
   :prompt "Set ‘tlon-when-assignee-is-someone-else’ to (see docstring for details): "
   :variable 'tlon-when-assignee-is-someone-else)
 
+(transient-define-infix tlon-infix-toggle-include-archived ()
+  "Toggle the value of `tlon-forg-include-archived' in `forg' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-forg-include-archived
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-include-archived)))
+
 ;;;###autoload (autoload 'tlon-forg-menu "tlon-forg" nil t)
 (transient-define-prefix tlon-forg-menu ()
   "`forg' menu."
@@ -1142,6 +1153,7 @@ The first argument is the repo name, and the second is the issue number.")
     ("r" "reconcile"                      tlon-reconcile-issue-and-todo)
     ("R" "reconcile all"                  tlon-reconcile-all-issues-and-todos)]
    ["Options"
+    ("-a" "Include archived"              tlon-infix-toggle-include-archived)
     ("-n" "When assignee is nil"          tlon-when-assignee-is-nil-infix)
     ("-e" "When assignee is someone else" tlon-when-assignee-is-someone-else-infix)]])
 
