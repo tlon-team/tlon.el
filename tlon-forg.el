@@ -649,12 +649,19 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 If the issue has more than one assignee, return the first. If ISSUE is nil, use
 the issue at point or in the current buffer."
   (when-let* ((issue (or issue (forge-current-topic)))
-	      (assignees (closql--iref issue 'assignees)))
-    ;; multiple assignees are only supported for premium users, but we add this
-    ;; check anyway
-    (if (> (length assignees) 1)
-	(user-error "Issue has more than one assignee")
-      (caar assignees))))
+              (assignee (car (oref issue assignees))))
+    (tlon-forg-get-assignee-name assignee)))
+
+(defun tlon-forg-get-assignee-name (id)
+  "Get the name of the assignee with ID from the Forge database."
+  (let* ((db (forge-database))
+         (assignee-row (emacsql db
+                                [:select [login]
+					 :from assignee
+					 :where (= id $s1)]
+                                id)))
+    (caar assignee-row)))
+
 ;;;;;; labels
 
 (defun tlon-forg-get-labels (&optional issue)
