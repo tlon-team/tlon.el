@@ -210,7 +210,13 @@ a prefix ARG, omit this initial pull."
   (interactive "P")
   (if arg
       (tlon-capture-all-issues-after-pull)
-    (forge--pull (forge-get-repository :tracked) #'tlon-capture-all-issues-after-pull)))
+    (tlon-pull-then-call #'tlon-capture-all-issues-after-pull)))
+
+(defun tlon-pull-then-call (callback)
+  "Pull all issues from forge before calling CALLBACK."
+  (message "Pulling issues from forge...")
+  (shut-up
+    (forge--pull (forge-get-repository :tracked) callback)))
 
 (defun tlon-capture-all-issues-after-pull ()
   "Capture all issues in the current repo after `forge-pull' is finished."
@@ -330,11 +336,14 @@ If ISSUE is nil, use the issue at point or in the current buffer."
    #'tlon-reconcile-issue-and-todo-from-issue))
 
 ;;;###autoload
-(defun tlon-reconcile-all-issues-and-todos ()
-  "Reconcile all TODOs with their issues."
-  (interactive)
-  (forge--pull (forge-get-repository :tracked)
-	       #'tlon-reconcile-all-issues-and-todos-callback))
+(defun tlon-reconcile-all-issues-and-todos (arg)
+  "Reconcile all TODOs with their issues.
+Pull all issues from forge before initiating the capture process. If called with
+a prefix ARG, omit this initial pull."
+  (interactive "P")
+  (if arg
+      (tlon-reconcile-all-issues-and-todos-after-pull)
+    (tlon-pull-then-call #'tlon-reconcile-all-issues-and-todos-after-pull)))
 
 (defun tlon-reconcile-all-issues-and-todos-callback ()
   "Reconcile TODOs with their issues after after `forge-pull' is finished."
