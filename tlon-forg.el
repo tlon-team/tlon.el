@@ -691,7 +691,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 If the issue has more than one assignee, return the first. If ISSUE is nil, use
 the issue at point or in the current buffer."
   (when-let* ((issue (or issue (forge-current-topic)))
-	      (assignees (closql-dref issue 'assignees))
+	      (assignees (car (closql-dref issue 'assignees)))
 	      (assignee-name (nth 1 assignees)))
     assignee-name))
 
