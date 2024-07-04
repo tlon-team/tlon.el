@@ -1144,26 +1144,28 @@ The first argument is the repo name, and the second is the issue number.")
 
 ;;;;; Transient
 
-(defun tlon-label-reader (prompt _ _)
-  "Return a list of choices with PROMPT to be used as an `infix' reader function."
+(defun tlon-symbol-reader (prompt symbols)
+  "Return a list of SYMBOLS with PROMPT to be used as an `infix' reader function."
   (let* ((input (completing-read prompt
-				 (mapcar 'symbol-name '(prompt change warn capture no-capture)))))
+				 (mapcar 'symbol-name symbols))))
     (intern input)))
 
 (transient-define-infix tlon-when-assignee-is-nil-infix ()
-  "docstring."
+  "Set the value of `tlon-when-assignee-is-nil' in `forg' menu."
   :class 'transient-lisp-variable
-  :reader 'tlon-label-reader
+  :reader (lambda (prompt _ _)
+	    (tlon-symbol-reader prompt '(prompt change warn capture no-capture)))
   :transient t
-  :prompt "Set ‘tlon-when-assignee-is-nil’ to (see docstring for details): "
+  :prompt "What to do when the assignee is nil (see docstring for details): "
   :variable 'tlon-when-assignee-is-nil)
 
 (transient-define-infix tlon-when-assignee-is-someone-else-infix ()
-  "docstring."
+  "Set the value of `tlon-when-assignee-is-someone-else' in `forg' menu."
   :class 'transient-lisp-variable
-  :reader 'tlon-label-reader
+  :reader (lambda (prompt _ _)
+	    (tlon-symbol-reader prompt '(prompt change warn capture no-capture)))
   :transient t
-  :prompt "Set ‘tlon-when-assignee-is-someone-else’ to (see docstring for details): "
+  :prompt "What to do when the assignee is someone else (see docstring for details): "
   :variable 'tlon-when-assignee-is-someone-else)
 
 (transient-define-infix tlon-forg-when-reconciling-infix ()
