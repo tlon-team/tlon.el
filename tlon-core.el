@@ -703,8 +703,8 @@ bare directory of `~/Dropbox/repos/uqbar-es/autores/' is `autores'.
 
 If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-get-repo-from-file file)))
+  (when-let* ((file (or file (buffer-file-name)))
+	      (repo (tlon-get-repo-from-file file)))
     (directory-file-name (file-name-directory (file-relative-name file repo)))))
 
 (defun tlon-select-bare-dir (lang)
