@@ -208,7 +208,6 @@ ensure that it reflects its remote state.
 Pull all issues from forge before initiating the capture process. If called with
 a prefix ARG, omit this initial pull."
   (interactive "P")
-  (tlon-get-repo 'error 'include-all)
   (if arg
       (tlon-capture-all-issues-after-pull)
     (forge--pull (forge-get-repository :tracked) #'tlon-capture-all-issues-after-pull)))
