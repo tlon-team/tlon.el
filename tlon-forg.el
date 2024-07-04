@@ -229,13 +229,12 @@ a prefix ARG, omit this initial pull."
   "Store a new TODO using TEMPLATE.
 If TODO already exists, do nothing. If NO-ACTION is non-nil, store a master
 TODO. If ISSUE is non-nil, use it instead of the issue at point."
-  (let ((issue (or issue (forge-current-topic)))
-	(inhibit-message t))
-    (unless (tlon-get-todo-position-from-issue issue)
-      (let ((todo (tlon-make-todo-name-from-issue issue no-action nil)))
-	(kill-new todo)
-	(message "Creating %s..." todo)
-	(org-capture nil template)))))
+  (let ((issue (or issue (forge-current-topic))))
+    (shut-up
+      (unless (tlon-get-todo-position-from-issue issue)
+	(let ((todo (tlon-make-todo-name-from-issue issue no-action nil)))
+	  (kill-new todo)
+	  (org-capture nil template))))))
 
 ;;;;;; Handling assignee, status, phase
 
