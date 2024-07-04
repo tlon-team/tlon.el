@@ -343,7 +343,7 @@ a prefix ARG, omit this initial pull."
       (tlon-reconcile-all-issues-and-todos-after-pull)
     (tlon-pull-then-call #'tlon-reconcile-all-issues-and-todos-after-pull)))
 
-(defun tlon-reconcile-all-issues-and-todos-callback ()
+(defun tlon-reconcile-all-issues-and-todos-after-pull ()
   "Reconcile TODOs with their issues after after `forge-pull' is finished."
   (save-window-excursion
     (with-current-buffer (find-file-noselect (tlon-get-todos-generic-file))
