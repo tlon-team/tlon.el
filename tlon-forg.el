@@ -220,8 +220,7 @@ a prefix ARG, omit this initial pull."
 
 (defun tlon-capture-all-issues-after-pull ()
   "Capture all issues in the current repo after `forge-pull' is finished."
-  (let* ((repo (forge-get-repository :tracked))
-	 (tlon-when-assignee-is-someone-else nil))
+  (let* ((repo (forge-get-repository :tracked)))
     (dolist (issue (tlon-get-issues repo))
       (unless (tlon-get-todo-position-from-issue issue)
 	(tlon-capture-issue issue)))))
