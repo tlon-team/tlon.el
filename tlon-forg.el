@@ -255,8 +255,9 @@ The appropriate action is determined by the value of
 			(format "Warning: issue `%s' has no assignee." title))))
 	(pcase cond
 	  ('prompt
-	   (when (y-or-n-p (concat warning " Assign to you? "))
-	     (tlon-forg-change-assignee)))
+	   (if (y-or-n-p (concat warning " Assign to you? "))
+	       (tlon-forg-change-assignee)
+	     (setq capture-p nil)))
 	  ('change (tlon-forg-change-assignee))
 	  ('warn (message warning))
 	  ('capture nil)
