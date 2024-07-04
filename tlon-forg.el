@@ -99,6 +99,12 @@ current session."
   :type 'boolean
   :group 'tlon-forg)
 
+(defcustom tlon-forg-enforce-user nil
+  "If non-nil, the name to be considered that of the current user.
+For testing purposes."
+  :type 'string
+  :group 'tlon-forg)
+
 ;;;; Variables
 
 (defconst tlon-todo-statuses
@@ -718,7 +724,9 @@ A tag is valid iff it is a member of `tlon-todo-tags'."
 (defun tlon-assignee-is-current-user-p (issue)
   "Return t iff the assignee of ISSUE is the current user."
   (let ((assignee (tlon-get-assignee issue))
-	(user (tlon-user-lookup :github :name user-full-name)))
+	(user (or
+	       tlon-forg-enforce-user
+	       (tlon-user-lookup :github :name user-full-name))))
     (string= assignee user)))
 
 (defun tlon-todo-has-valid-status-p ()
