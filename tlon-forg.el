@@ -189,15 +189,15 @@ on whether or not is a job). ISSUE is needed if either POS or FILE is nil."
 If ISSUE is nil, use the issue at point or in the current buffer."
   (interactive)
   (let* ((issue (or issue (forge-current-topic)))
+	 (issue-name (oref issue title))
 	 (repo (forge-get-repository issue))
 	 (default-directory (oref repo worktree)))
     (when (and (eq (tlon-get-state issue) 'open)
 	       (tlon-capture-handle-assignee issue))
-      (let ((message (current-message)))
-	(if (tlon-issue-is-job-p issue)
-	    (tlon-create-job-todo-from-issue issue)
-	  (tlon-store-todo "tbG" nil issue))
-	(message message)))))
+      (message "Capturing ‘%s’" issue-name)
+      (if (tlon-issue-is-job-p issue)
+	  (tlon-create-job-todo-from-issue issue)
+	(tlon-store-todo "tbG" nil issue)))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues (arg)
