@@ -688,17 +688,17 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 If the issue has more than one assignee, return the first. If ISSUE is nil, use
 the issue at point or in the current buffer."
   (when-let* ((issue (or issue (forge-current-topic)))
-              (assignee (car (oref issue assignees))))
+	      (assignee (car (oref issue assignees))))
     (tlon-forg-get-assignee-name assignee)))
 
 (defun tlon-forg-get-assignee-name (id)
   "Get the name of the assignee with ID from the Forge database."
   (let* ((db (forge-database))
-         (assignee-row (emacsql db
-                                [:select [login]
+	 (assignee-row (emacsql db
+				[:select [login]
 					 :from assignee
 					 :where (= id $s1)]
-                                id)))
+				id)))
     (caar assignee-row)))
 
 ;;;;;; labels
@@ -707,18 +707,18 @@ the issue at point or in the current buffer."
   "Return the labels of ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-         (label-ids (oref issue labels))
-         (label-names (mapcar #'tlon-forg-get-label-name label-ids)))
+	 (label-ids (oref issue labels))
+	 (label-names (mapcar #'tlon-forg-get-label-name label-ids)))
     label-names))
 
 (defun tlon-forg-get-label-name (label-id)
   "Get the name of the label with LABEL-ID from the Forge database."
   (let* ((db (forge-database))
-         (label-row (emacsql db
-                             [:select [name]
+	 (label-row (emacsql db
+			     [:select [name]
 				      :from label
 				      :where (= id $s1)]
-                             label-id)))
+			     label-id)))
     (caar label-row)))
 
 (defun tlon-get-tags-in-todo ()
@@ -1186,17 +1186,17 @@ The first argument is the repo name, and the second is the issue number.")
   "`forg' menu."
   :info-manual "(tlon) GitHub and org-mode synchronization"
   [["Actions"
-    ("y" "dwim"                           tlon-visit-counterpart-or-capture)
-    ("v" "visit"                          tlon-visit-counterpart)
-    ("p" "post"                           tlon-create-issue-from-todo)
-    ("x" "close"                          tlon-close-issue-and-todo)
-    ("s" "sort"                           tlon-forg-sort-by-tag)]
+    ("y" "dwim"                                             tlon-visit-counterpart-or-capture)
+    ("v" "visit"                                            tlon-visit-counterpart)
+    ("p" "post"                                             tlon-create-issue-from-todo)
+    ("x" "close"                                            tlon-close-issue-and-todo)
+    ("s" "sort"                                             tlon-forg-sort-by-tag)]
    ["Capture"
-    ("c" "capture"                        tlon-capture-issue)
-    ("C" "capture all"                    tlon-capture-all-issues)]
+    ("c" "capture"                                          tlon-capture-issue)
+    ("C" "capture all"                                      tlon-capture-all-issues)]
    ["Reconcile"
-    ("r" "reconcile"                      tlon-reconcile-issue-and-todo)
-    ("R" "reconcile all"                  tlon-reconcile-all-issues-and-todos)]
+    ("r" "reconcile"                                        tlon-reconcile-issue-and-todo)
+    ("R" "reconcile all"                                    tlon-reconcile-all-issues-and-todos)]
    ["Options"
     ("-a" "Include archived"              tlon-infix-toggle-include-archived)
     ("-n" "When assignee is nil"          tlon-when-assignee-is-nil-infix)
