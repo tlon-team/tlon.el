@@ -30,6 +30,7 @@
 (require 'forge)
 (require 'org)
 (require 'org-extras)
+(require 'shut-up)
 (require 'tlon-core)
 (require 'tlon-dispatch)
 
