@@ -80,6 +80,20 @@ this variable is `no-capture'."
 		 (const :tag "Do not capture" t))
   :group 'tlon-forg)
 
+(defcustom tlon-forg-when-reconciling 'issue
+  "What to do when the issue and its associated todo differ.
+- `prompt': prompt the user to choose between the issue and the todo.
+- `issue': update the todo to match the issue.
+- `todo': update the issue to match the todo.
+
+The value of this user option can also be set interactively from
+`tlon-forg-menu'. When set that way, the value will only persist for the
+current session."
+  :type '(choice (const :tag "Prompt for choice" prompt)
+		 (const :tag "Update issue" issue)
+		 (const :tag "Update todo" todo))
+  :group 'tlon-forg)
+
 (defcustom tlon-forg-include-archived nil
   "Whether to include archived issues in capture or reconcile processes."
   :type 'boolean
@@ -345,13 +359,18 @@ If ISSUE is nil, use the issue at point."
 
 (defun tlon-reconcile-issue-and-todo-prompt (issue-name todo-name)
   "Prompt the user to reconcile discrepancies between ISSUE-NAME and TODO-NAME."
-  (pcase (read-char-choice
-	  (format "The issue differs from its todo. Keep (i)ssue | Keep (t)odo | (a)bort\nissue: `%s'\ntodo:  `%s' "
-		  issue-name todo-name)
-	  '(?i ?t ?a))
-    (?i (tlon-update-todo-from-issue issue-name))
-    (?t (tlon-update-issue-from-todo todo-name))
-    (_ (user-error "Aborted"))))
+  (let ((choice (pcase tlon-forg-when-reconciling
+		  ('prompt
+		   (read-char-choice
+		    (format "The issue differs from its todo. Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
+			    issue-name todo-name)
+		    '(?i ?t)))
+		  ('issue ?i)
+		  ('todo ?t))))
+    (pcase choice
+      (?i (tlon-update-todo-from-issue issue-name))
+      (?t (tlon-update-issue-from-todo todo-name))
+      (_ (user-error "Aborted")))))
 
 (defun tlon-update-todo-from-issue (issue-name)
   "Update TODO to match ISSUE-NAME."
@@ -1130,6 +1149,15 @@ The first argument is the repo name, and the second is the issue number.")
   :prompt "Set ‘tlon-when-assignee-is-someone-else’ to (see docstring for details): "
   :variable 'tlon-when-assignee-is-someone-else)
 
+(transient-define-infix tlon-forg-when-reconciling-infix ()
+  "Set the value of `tlon-forg-when-reconciling' in `forg' menu."
+  :class 'transient-lisp-variable
+  :reader (lambda (prompt _ _)
+	    (tlon-symbol-reader prompt '(prompt issue todo)))
+  :transient t
+  :prompt "What to do when the issue and its associated todo differ (see docstring for details): "
+  :variable 'tlon-forg-when-reconciling)
+
 (transient-define-infix tlon-infix-toggle-include-archived ()
   "Toggle the value of `tlon-forg-include-archived' in `forg' menu."
   :class 'transient-lisp-variable
@@ -1156,6 +1184,7 @@ The first argument is the repo name, and the second is the issue number.")
     ("-a" "Include archived"              tlon-infix-toggle-include-archived)
     ("-n" "When assignee is nil"          tlon-when-assignee-is-nil-infix)
     ("-e" "When assignee is someone else" tlon-when-assignee-is-someone-else-infix)]])
+    ("-r" "When reconciling"                                tlon-forg-when-reconciling-infix)
 
 (provide 'tlon-forg)
 ;;; tlon-forg.el ends here
