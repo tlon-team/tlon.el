@@ -1198,10 +1198,10 @@ The first argument is the repo name, and the second is the issue number.")
     ("r" "reconcile"                                        tlon-reconcile-issue-and-todo)
     ("R" "reconcile all"                                    tlon-reconcile-all-issues-and-todos)]
    ["Options"
-    ("-a" "Include archived"              tlon-infix-toggle-include-archived)
-    ("-n" "When assignee is nil"          tlon-when-assignee-is-nil-infix)
-    ("-e" "When assignee is someone else" tlon-when-assignee-is-someone-else-infix)]])
+    ("-a" "Include archived"                                tlon-infix-toggle-include-archived)
     ("-r" "When reconciling"                                tlon-forg-when-reconciling-infix)
+    ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)
+    ("-e" "When assignee is someone else"                   tlon-when-assignee-is-someone-else-infix)]])
 
 (provide 'tlon-forg)
 ;;; tlon-forg.el ends here
