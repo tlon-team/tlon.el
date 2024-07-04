@@ -254,18 +254,21 @@ The appropriate action is determined by the value of
 			  (format "Warning: the assignee of issue `%s' is %s." title assignee)
 			(format "Warning: issue `%s' has no assignee." title))))
 	(pcase cond
-	  ((or 'prompt 'change)
-	   (when (eq cond 'prompt)
-	     (unless (y-or-n-p (concat warning " Assign to you? "))
-	       (user-error "Aborted")))
-	   (tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
-	   (forge--pull-topic (forge-get-repository :tracked) (oref issue number))
-	   (while (not (tlon-assignee-is-current-user-p issue))
-	     (sleep-for 0.1)))
+	  ('prompt
+	   (when (y-or-n-p (concat warning " Assign to you? "))
+	     (tlon-forg-change-assignee)))
+	  ('change (tlon-forg-change-assignee))
 	  ('warn (message warning))
 	  ('capture nil)
 	  (_ (setq capture-p nil)))))
     capture-p))
+
+(defun tlon-forg-change-assignee ()
+  "Change the assignee of the issue at point to the current user."
+  (tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
+  (forge--pull-topic (forge-get-repository :tracked) (oref issue number))
+  (while (not (tlon-assignee-is-current-user-p issue))
+    (sleep-for 0.1)))
 
 (defun tlon-capture-handle-phase (issue)
   "Take appropriate action when ..."
