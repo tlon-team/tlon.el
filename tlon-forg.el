@@ -80,7 +80,7 @@ this variable is `no-capture'."
 		 (const :tag "Do not capture" t))
   :group 'tlon-forg)
 
-(defcustom tlon-forg-when-reconciling 'issue
+(defcustom tlon-forg-when-reconciling 'prompt
   "What to do when the issue and its associated todo differ.
 - `prompt': prompt the user to choose between the issue and the todo.
 - `issue': update the todo to match the issue.
