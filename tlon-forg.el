@@ -691,18 +691,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 If the issue has more than one assignee, return the first. If ISSUE is nil, use
 the issue at point or in the current buffer."
   (when-let* ((issue (or issue (forge-current-topic)))
-	      (assignee (car (oref issue assignees))))
-    (tlon-forg-get-assignee-name assignee)))
-
-(defun tlon-forg-get-assignee-name (id)
-  "Get the name of the assignee with ID from the Forge database."
-  (let* ((db (forge-database))
-	 (assignee-row (emacsql db
-				[:select [login]
-					 :from assignee
-					 :where (= id $s1)]
-				id)))
-    (caar assignee-row)))
+	      (assignees (closql-dref issue 'assignees))
+	      (assignee-name (nth 1 assignees)))
+    assignee-name))
 
 ;;;;;; labels
 
@@ -710,19 +701,11 @@ the issue at point or in the current buffer."
   "Return the labels of ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-	 (label-ids (oref issue labels))
-	 (label-names (mapcar #'tlon-forg-get-label-name label-ids)))
+	 (labels (closql-dref issue 'labels))
+	 (label-names (mapcar (lambda (label)
+				(nth 1 label))
+			      labels)))
     label-names))
-
-(defun tlon-forg-get-label-name (label-id)
-  "Get the name of the label with LABEL-ID from the Forge database."
-  (let* ((db (forge-database))
-	 (label-row (emacsql db
-			     [:select [name]
-				      :from label
-				      :where (= id $s1)]
-			     label-id)))
-    (caar label-row)))
 
 (defun tlon-get-tags-in-todo ()
   "Return the valid tags in the `org-mode' heading at point.
