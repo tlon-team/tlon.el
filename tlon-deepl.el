@@ -56,7 +56,9 @@
     (glossary-delete . ("DELETE"
 			tlon-deepl-glossary-delete-formatter
 			tlon-deepl-glossary-delete-callback)))
-  "Alist of API calls and their parameters.")
+  "Alist of API calls and their parameters.
+The cdr of each cons cell is a list of the form
+ (METHOD URL-SUFFIX CALLBACK JSON).")
 
 (defvar tlon-deepl-glossaries nil
   "A list of glossaries retrieved from the DeepL API.")
@@ -111,19 +113,35 @@ for a file."
 If CALLBACK is nil, use the default callback for TYPE."
   (cl-destructuring-bind (method url-suffix-or-fun default-callback &optional json)
       (alist-get type tlon-deepl-parameters)
-    (let ((callback (or callback default-callback))
-	  (url (if (functionp url-suffix-or-fun)
-		   (funcall url-suffix-or-fun)
-		 (concat tlon-deepl-url-prefix url-suffix-or-fun)))
-	  (url-request-method method)
-	  (url-request-extra-headers
-	   `(("Content-Type" . "application/json")
-	     ("Authorization" . ,(concat "DeepL-Auth-Key " tlon-deepl-key))
-	     ("User-Agent" . "YourApp/1.2.3")))
-	  (url-request-data (when json (funcall json))))
-      (url-retrieve url
-		    (lambda (_) (funcall callback))
-		    nil t))))
+    (let* ((callback (or callback default-callback))
+           (url (if (functionp url-suffix-or-fun)
+                    (funcall url-suffix-or-fun)
+                  (concat tlon-deepl-url-prefix url-suffix-or-fun)))
+           (payload (when json (funcall json)))
+           (temp-file (make-temp-file "deepl-payload-" nil ".json")))
+      ;; Write payload to temporary file
+      (with-temp-file temp-file
+        (insert payload))
+      
+      ;; Construct and send the curl command
+      (let* ((curl-command
+              (format "curl -s -X %s %s \
+-H \"Content-Type: application/json\" \
+-H \"Authorization: DeepL-Auth-Key %s\" \
+--data @%s"
+                      method url tlon-deepl-key temp-file))
+             (response (shell-command-to-string curl-command)))
+        ;; Cleanup temp file
+        (delete-file temp-file)
+
+        ;; Process the response
+        (with-temp-buffer
+          (insert response)
+          (goto-char (point-min))
+          ;; Ensure to handle proper response beginnings
+          (when (re-search-forward "^{\\|\\[{" nil t)
+            (goto-char (match-beginning 0)))
+          (funcall callback))))))
 
 ;;;;; Translation
 
@@ -155,19 +173,15 @@ If SOURCE-LANG is nil, use \"en\"."
 (defun tlon-deepl-print-translation (&optional copy)
   "Print the translated text.
 If COPY is non-nil, copy the translation to the kill ring instead."
-  (setq tlon-deepl-source-language nil
-	tlon-deepl-target-language nil
-	tlon-deepl-text nil)
   (goto-char (point-min))
-  (search-forward "\n\n")
   (let* ((json-array-type 'list)
-	 (json-key-type 'string)
-	 (json (cadar (json-read)))
-	 (translation (alist-get "text" json nil nil #'string=))
-	 (decoded (tlon-deepl-fix-encoding translation)))
+         (json-key-type 'string)
+         (json (cadar (json-read)))
+         (translation (alist-get "text" json nil nil #'string=))
+         (decoded (decode-coding-string translation 'utf-8)))
     (when copy
       (kill-new decoded))
-    (message (concat (when copy "Copied to kill ring: " ) (replace-regexp-in-string "%" "%%" decoded)))))
+    (message (concat (when copy "Copied to kill ring: ") (replace-regexp-in-string "%" "%%" decoded)))))
 
 (defun tlon-deepl-fix-encoding (string)
   "Fix encoding in STRING.
@@ -230,13 +244,13 @@ The encoding in misinterpreted as ISO-8859-1 when it's actually UTF-8."
 (defun tlon-deepl-translate-encode ()
   "Return a JSON representation of the text to be translated to language."
   (let ((id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
-	(text (list (encode-coding-string tlon-deepl-text 'utf-8))))
+        (text (vector tlon-deepl-text))) ; Use vector for proper array representation
     (when (and (not id) (string= tlon-deepl-source-language "en"))
       (user-error "No glossary found for %s" tlon-deepl-target-language))
     (json-encode `(("text" . ,text)
-		   ("source_lang" . ,tlon-deepl-source-language)
-		   ("target_lang" . ,tlon-deepl-target-language)
-		   ("glossary_id" . ,id)))))
+                   ("source_lang" . ,tlon-deepl-source-language)
+                   ("target_lang" . ,tlon-deepl-target-language)
+                   ("glossary_id" . ,id)))))
 
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
@@ -271,9 +285,10 @@ of the entry at point."
     (when (member (ebib-extras-get-file-of-key key) tlon-bibliography-files)
       (mapc (lambda (language)
 	      (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-		(tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang
-				      (lambda ()
-					(tlon-translate-abstract-callback key target-lang 'overwrite)))))
+		(unless (string= source-lang target-lang)
+		  (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang
+					(lambda ()
+					  (tlon-translate-abstract-callback key target-lang 'overwrite))))))
 	    tlon-project-target-languages)
       (message "Translated abstract of `%s' into %s" key tlon-project-target-languages))))
 
