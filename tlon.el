@@ -43,6 +43,9 @@
 
 ;;;; Variables
 
+(defconst tlon-version "1.4.11"
+  "Version of the `tlon' package.")
+
 ;;;;; Files and dirs
 
 (defvar tlon-todos-jobs-file nil
@@ -143,6 +146,12 @@ This variable should not be set manually.")
   "Signal an error if the value of VAR is not set."
   (unless (symbol-value var)
     (user-error "Please set the value of `%s'" (symbol-name var))))
+
+(declare-function magit-git-string "magit-git")
+(defun tlon-get-latest-commit ()
+  "Return the latest commit in the `tlon' package."
+  (let ((default-directory tlon-package-dir))
+    (magit-git-string "rev-parse" "--short" "HEAD")))
 
 ;;;;; [name]
 
