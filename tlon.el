@@ -677,7 +677,7 @@ Return the path of the temporary file created."
   (interactive)
   (let* ((files (directory-files tlon-package-dir t "\\.el"))
 	 (choices (mapcar #'file-name-base files))
-	 (selection (completing-read "Package: " choices nil t))
+	 (selection (completing-read "Feature: " choices nil t))
 	 (file (file-name-concat tlon-package-dir (file-name-with-extension selection "el"))))
     (find-file file)))
 
