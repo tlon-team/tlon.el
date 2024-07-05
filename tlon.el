@@ -670,5 +670,16 @@ Return the path of the temporary file created."
       (browse-url (format url (url-hexify-string string)) 'new-buffer)))
   (goldendict-ng-search-string string))
 
+;;;;; Open files
+
+(defun tlon-open-package-files ()
+  "Prompt the user to select a `tlon' feature and open its file."
+  (interactive)
+  (let* ((files (directory-files tlon-package-dir t "\\.el"))
+	 (choices (mapcar #'file-name-base files))
+	 (selection (completing-read "Package: " choices nil t))
+	 (file (file-name-concat tlon-package-dir (file-name-with-extension selection "el"))))
+    (find-file file)))
+
 (provide 'tlon)
 ;;; tlon.el ends here
