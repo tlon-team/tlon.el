@@ -210,13 +210,14 @@ a prefix ARG, omit this initial pull."
   (interactive "P")
   (if arg
       (tlon-capture-all-issues-after-pull)
-    (tlon-pull-then-call #'tlon-capture-all-issues-after-pull)))
+    (tlon-pull-silently "Pulling issues..." #'tlon-capture-all-issues-after-pull)))
 
-(defun tlon-pull-then-call (callback)
-  "Pull all issues from forge before calling CALLBACK."
-  (message "Pulling issues from forge...")
-  (shut-up
-    (forge--pull (forge-get-repository :tracked) callback)))
+(defun tlon-pull-silently (&optional message callback)
+  "Pull all issues from forge before.
+If MESSAGE is non-nil while the process is ongoing. If CALLBACK if non-nil, call
+it after the process completes."
+  (when message (message message))
+  (shut-up (forge--pull (forge-get-repository :tracked) callback)))
 
 (defun tlon-capture-all-issues-after-pull ()
   "Capture all issues in the current repo after `forge-pull' is finished."
@@ -256,20 +257,22 @@ The appropriate action is determined by the value of
 	(pcase cond
 	  ('prompt
 	   (if (y-or-n-p (concat warning " Assign to you? "))
-	       (tlon-forg-change-assignee)
+	       (tlon-forg-change-assignee issue)
 	     (setq capture-p nil)))
-	  ('change (tlon-forg-change-assignee))
+	  ('change (tlon-forg-change-assignee issue))
 	  ('warn (message warning))
 	  ('capture nil)
 	  (_ (setq capture-p nil)))))
     capture-p))
 
-(defun tlon-forg-change-assignee ()
-  "Change the assignee of the issue at point to the current user."
-  (tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
-  (forge--pull-topic (forge-get-repository :tracked) (oref issue number))
-  (while (not (tlon-assignee-is-current-user-p issue))
-    (sleep-for 0.1)))
+(defun tlon-forg-change-assignee (&optional issue)
+  "Change the assignee of ISSUE to the current user.
+If ISSUE is nil, use the issue at point or in the current buffer."
+  (let ((issue (or issue (forge-current-topic))))
+    (tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
+    (while (not (tlon-assignee-is-current-user-p issue))
+      (tlon-pull-silently "Changing assignee...")
+      (sleep-for 0.1))))
 
 (defun tlon-capture-handle-phase (issue)
   "Take appropriate action when ..."
@@ -345,7 +348,7 @@ a prefix ARG, omit this initial pull."
   (interactive "P")
   (if arg
       (tlon-reconcile-all-issues-and-todos-after-pull)
-    (tlon-pull-then-call #'tlon-reconcile-all-issues-and-todos-after-pull)))
+    (tlon-pull-silently "Pulling issues..." #'tlon-reconcile-all-issues-and-todos-after-pull)))
 
 (defun tlon-reconcile-all-issues-and-todos-after-pull ()
   "Reconcile TODOs with their issues after after `forge-pull' is finished."
