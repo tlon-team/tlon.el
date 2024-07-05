@@ -670,7 +670,7 @@ Return the path of the temporary file created."
       (browse-url (format url (url-hexify-string string)) 'new-buffer)))
   (goldendict-ng-search-string string))
 
-;;;;; Open files
+;;;;; Package files
 
 (defun tlon-open-package-files ()
   "Prompt the user to select a `tlon' feature and open its file."
