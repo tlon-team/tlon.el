@@ -49,7 +49,8 @@
     ("i" "images"                         tlon-images-menu)
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)
-    ("l" "DeepL"                          tlon-deepl-menu)
+    ("l" "DeepL"                          tlon-deepl-menu)]
+   [""""
     ("H-l" "color"                        tlon-color-menu)
     ("H-m" "meet"                         tlon-meet-menu)
     ("p" "api"                            tlon-api-menu)
@@ -60,11 +61,19 @@
     ("y" "forg"                           tlon-forg-menu)
     ("x" "tex"                            tlon-tex-menu)
     ("z" "tts"                            tlon-tts-menu)]
-   ["""Browse repo"
+   [""
+    "Browse repo"
     ("d" "in Dired"                       tlon-dired-repo-menu)
-    ("m" "in Magit"                       tlon-magit-repo-menu)]
-   [""""
-    ("." "notifications"                  forge-list-notifications)]])
+    ("m" "in Magit"                       tlon-magit-repo-menu)
+    ""
+    ("." "notifications"                  forge-list-notifications)
+    ""]
+   [""
+    "Package"
+    ("H-p" "package files"                tlon-open-package-files)
+    """"""""""""""
+    (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
+    (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))]])
 
 ;;;;;; Common elements
 
