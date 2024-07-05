@@ -1150,7 +1150,9 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 	 (files (tlon-tts-get-list-of-chunks file))
 	 (list-of-files (tlon-tts-create-list-of-chunks files)))
     (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
-			   list-of-files file))))
+			   list-of-files file)))
+  (when (derived-mode-p 'dired-mode)
+    (revert-buffer)))
 
 (defun tlon-tts-get-list-of-chunks (file)
   "Return a list of the file chunks for FILE."
@@ -1171,7 +1173,9 @@ Also delete the temporary TTS buffer."
     (dolist (file (tlon-tts-get-list-of-chunks file))
       (delete-file file 'trash))
     (when (get-buffer buffer-name)
-      (kill-buffer buffer-name))))
+      (kill-buffer buffer-name))
+    (when (derived-mode-p 'dired-mode)
+      (revert-buffer))))
 
 (defun tlon-tts-create-list-of-chunks (files)
   "Create a temporary file with a list of audio FILES for use with `ffmpeg'."
