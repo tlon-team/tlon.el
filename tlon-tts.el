@@ -597,18 +597,13 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 ;;;;;; ElevenLabs
 
 (defconst tlon-elevenlabs-voices
-  '((:voice "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female")
-    (:voice "Mia" :id "1bMpKrcyV56bfYc1l9yf" :language "multilingual" :gender "female")
-    (:voice "Nigel" :id "jjz72sHaqmTCiPFqnw2N" :language "multilingual" :gender "male")
-    (:voice "Knightley" :id "L0Nf9VH02lduEuhdmbJ5" :language "multilingual" :gender "male")
-    (:voice "Brian" :id "rncjssM0aAEg1ApKehUP" :language "multilingual" :gender "male")
-    (:voice "Valentino" :id "2BCou3n0mac8CZsumOUv" :language "multilingual" :gender "male")
+  '((:voice "Brian" :id "rncjssM0aAEg1ApKehUP" :language "multilingual" :gender "male")
     (:voice "Bruce" :id "qUqZ27WoGID6BUp35xTV" :language "multilingual" :gender "male")
-    (:voice "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
-    (:voice "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male")
-    (:voice "Readwell" :id "5ZrfTID2FK4q4M1dxIpc" :language "multilingual" :gender "male")
     (:voice "Hades" :id "y3uxYtdWYpmzg8Wwx2k3" :language "multilingual" :gender "male")
-    (:voice "Hannah" :id "9CwhYxaF830StYPLuBaD" :language "multilingual" :gender "female"))
+    (:voice "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male")
+    (:voice "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
+    (:voice "Amelia" :id "Lpn2A60EAsgGCWjFue20" :language "multilingual" :gender "female")
+    (:voice "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female"))
   "Preferred ElevenLabs voices for different languages.
 A list of available voices may be found here:
 <https://elevenlabs.io/app/voice-library>. To get information about the voices,
