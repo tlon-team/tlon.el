@@ -214,7 +214,11 @@ use a different model for summarization."
   `((:prompt ,(format "The following text includes several encoding errors. For example, \"cuýn\", \"pronosticaci¾3\\263n\", etc.%sPlease return the same text but with these errors corrected, without any other alteration. Do not use double quotes if the text includes single quotes. When returning the corrected text, do not include any clarifications such as ‘Here is the corrected text’. Thank you." tlon-ai-string-wrapper)
 	     :language "en")
     (:prompt ,(format "El siguiente texto incluye varios errores de codificación. Por ejemplo, \"cuýn\", \"pronosticaci¾3\\263n\", etc.%sPor favor, devuélveme el mismo texto pero con estos errores corregidos, sin ninguna otra alteración. No uses nunca comillas dobles si el texto incluye comillas simples. Al devolverme el texto corregido, no incluyas ninguna aclaración como ‘Aquí tienes el texto corregido’. Gracias." tlon-ai-string-wrapper)
-	     :language "es")))
+	     :language "es")
+    (:prompt ,(format "Il testo seguente contiene diversi errori di codifica. Ad esempio, \"cuýn\", \"pronosticaci¾3\263n\", ecc.%sSi prega di restituire lo stesso testo ma con questi errori corretti, senza altre modifiche. Non utilizzare le virgolette doppie se il testo contiene virgolette singole. Quando si restituisce il testo corretto, non includere chiarimenti come ‘Ecco il testo corretto’. Grazie." tlon-ai-string-wrapper)
+	     :language "it")
+    (:prompt ,(format "Le texte suivant contient plusieurs erreurs d'encodage. Par exemple, \"cuýn\", \"pronosticaci¾3\263n\", etc.%sVeuillez renvoyer le même texte mais avec ces erreurs corrigées, sans aucune autre altération. N'utilisez pas de guillemets doubles si le texte comporte des guillemets simples. Lorsque vous renvoyez le texte corrigé, n'incluez pas d'éclaircissements tels que \"Voici le texte corrigé\". Je vous remercie de votre attention." tlon-ai-string-wrapper)
+	     :language "fr")))
 
 ;;;; Functions
 
