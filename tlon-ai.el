@@ -851,11 +851,37 @@ If RESPONSE is nil, return INFO."
 
 ;;;;; Fix encoding
 
-(defun tlon-ai-fix-encoding-in-string (string &optional language)
-  "Fix encoding in STRING."
-  (let* ((language (or language "en"))
+(defun tlon-ai-fix-encoding-in-string (&optional string language)
+  "Fix encoding in STRING containing text in LANGUAGE.
+Copy the result to the kill ring."
+  (interactive)
+  (let* ((json (tlon-ai-return-json-value-at-point))
+	 (string (or string (cdr json)))
+	 (language (or language (car json)))
 	 (prompt (tlon-lookup tlon-ai-fix-encoding-prompt :prompt :language language)))
-    (tlon-make-gptel-request prompt string #'tlon-ai-callback-return)))
+    (tlon-make-gptel-request prompt string)))
+
+(defun tlon-ai-replace-encoded-string (response info)
+  "Replace STRING with RESPONSE.
+If RESPONSE is nil, return INFO."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (insert response)))
+
+;; quick 'n dirty function to get the JSON key and value at point
+(defun tlon-ai-return-json-value-at-point ()
+  "Return the JSON key and value at point as a cons cell."
+  (interactive)
+  (let (car cdr)
+    (save-excursion
+      (re-search-backward "\"\\([a-z]\\{2\\}\\)\"" nil t)
+      (setq car (match-string-no-properties 1))
+      (goto-char (+ (point) 7))
+      (let ((begin (point)))
+	(search-forward "\"" nil t)
+	(setq cdr (buffer-substring-no-properties begin (1- (point))))
+	(delete-region begin (1- (point))))
+      (cons car cdr))))
 
 (defun tlon-ai-fix-encoding-in-buffer ()
   "Fix encoding in the current JSON buffer."
