@@ -305,7 +305,6 @@ of the entry at point."
 (defun tlon-deepl-glossary-get-callback ()
   "Callback for `tlon-deepl-get-glossaries'."
   (goto-char (point-min))
-  (search-forward "\n\n")
   (let ((json-array-type 'list)
 	(json-key-type 'string))
     (setq tlon-deepl-glossaries (cdar (json-read))))
@@ -331,7 +330,7 @@ of the entry at point."
 	 entries)
     (with-temp-buffer
       (insert-file-contents file)
-      (setq entries (encode-coding-string (buffer-string) 'utf-8))   ;; Encode entries in UTF-8
+      (setq entries (encode-coding-string (buffer-string) 'utf-8))
       (json-encode `(("name" . ,name)
 		     ("source_lang" . "en")
 		     ("target_lang" . ,tlon-deepl-target-language)
@@ -342,7 +341,6 @@ of the entry at point."
   "Callback for `tlon-deepl-glossary-create'."
   (setq tlon-deepl-target-language nil)
   (goto-char (point-min))
-  (search-forward "\n\n")
   (let ((response (json-read)))
     (tlon-deepl-get-glossaries)
     (message "Response: %s" response)))
