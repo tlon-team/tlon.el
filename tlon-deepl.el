@@ -119,22 +119,18 @@ If CALLBACK is nil, use the default callback for TYPE."
                   (concat tlon-deepl-url-prefix url-suffix-or-fun)))
            (payload (when json (funcall json)))
            (temp-file (make-temp-file "deepl-payload-" nil ".json")))
-      ;; Write payload to temporary file
-      (with-temp-file temp-file
-        (insert payload))
-      
-      ;; Construct and send the curl command
+      (when payload
+	(with-temp-file temp-file
+          (insert payload)))
       (let* ((curl-command
-              (format "curl -s -X %s %s \
+              (concat (format "curl -s -X %s %s \
 -H \"Content-Type: application/json\" \
--H \"Authorization: DeepL-Auth-Key %s\" \
---data @%s"
-                      method url tlon-deepl-key temp-file))
+-H \"Authorization: DeepL-Auth-Key %s\""
+			      method url tlon-deepl-key)
+		      (when payload (format " --data @%s" temp-file))))
              (response (shell-command-to-string curl-command)))
         ;; Cleanup temp file
-        (delete-file temp-file)
-
-        ;; Process the response
+	(when payload (delete-file temp-file))
         (with-temp-buffer
           (insert response)
           (goto-char (point-min))
@@ -305,7 +301,6 @@ of the entry at point."
 (defun tlon-deepl-glossary-get-callback ()
   "Callback for `tlon-deepl-get-glossaries'."
   (goto-char (point-min))
-  (search-forward "\n\n")
   (let ((json-array-type 'list)
 	(json-key-type 'string))
     (setq tlon-deepl-glossaries (cdar (json-read))))
@@ -342,7 +337,6 @@ of the entry at point."
   "Callback for `tlon-deepl-glossary-create'."
   (setq tlon-deepl-target-language nil)
   (goto-char (point-min))
-  (search-forward "\n\n")
   (let ((response (json-read)))
     (tlon-deepl-get-glossaries)
     (message "Response: %s" response)))
