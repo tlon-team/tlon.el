@@ -326,7 +326,7 @@ of the entry at point."
 	 entries)
     (with-temp-buffer
       (insert-file-contents file)
-      (setq entries (encode-coding-string (buffer-string) 'utf-8))   ;; Encode entries in UTF-8
+      (setq entries (encode-coding-string (buffer-string) 'utf-8))
       (json-encode `(("name" . ,name)
 		     ("source_lang" . "en")
 		     ("target_lang" . ,tlon-deepl-target-language)
