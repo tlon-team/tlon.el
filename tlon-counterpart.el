@@ -232,5 +232,30 @@ default to \".md\"."
     (cl-loop for file in files
 	     do (tlon-check-counterpart-paragraph-number-match file))))
 
+;;;;; Temporary
+
+(defun tlon-add-counterpart-metadata (file language bare-dir)
+  "Read FILE with comma-separated counterpart pairs and add metadata to each."
+  (let ((dir (tlon-repo-lookup :dir :subproject "uqbar" :language language))
+	(subdir (tlon-get-bare-dir-translation language "en" bare-dir))
+	(lines (split-string (with-temp-buffer
+			       (insert-file-contents file)
+			       (buffer-string))
+			     "\n" t)))
+    (dolist (line lines)
+      (let* ((pair (split-string line "," t))
+	     (original (car pair))
+	     (translation (simple-extras-asciify-string (cadr pair)))
+	     (translation-path (file-name-concat dir subdir translation))
+	     (metadata (format "original_path:       %s\n" original)))
+	(message "Processing %s" translation-path)
+	(with-current-buffer (find-file-noselect translation-path)
+	  (goto-char (point-min))
+	  (forward-line 1)
+	  (search-forward tlon-yaml-delimiter)
+	  (forward-line -1)
+	  (insert metadata)
+	  (save-buffer))))))
+
 (provide 'tlon-counterpart)
 ;;; tlon-counterpart.el ends here
