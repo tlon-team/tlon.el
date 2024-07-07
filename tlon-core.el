@@ -670,19 +670,22 @@ If DIR is nil, use the current repository."
 
 ;;;;; Get region pos
 
-(defun tlon-get-delimited-region-pos (begin &optional end)
+(defun tlon-get-delimited-region-pos (begin &optional end exclude-delims)
   "Get the position of the region delimited by BEGIN and END.
-If END is nil, use BEGIN also as the end delimiter."
-  (save-restriction
-    (widen)
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward begin nil t)
-	(let* ((begin-pos (match-beginning 0))
-	       (end-pos (when (re-search-forward (or end begin) nil t)
-			  (match-end 0))))
-	  (when (and begin-pos end-pos)
-	    (cons begin-pos end-pos)))))))
+If END is nil, use BEGIN also as the end delimiter. If EXCLUDE-DELIMS is
+non-nil, exclude the delimiters when returning the region position."
+  (let ((begin-fun (if exclude-delims 'match-end 'match-beginning))
+	(end-fun (if exclude-delims 'match-beginning 'match-end)))
+    (save-restriction
+      (widen)
+      (save-excursion
+	(goto-char (point-min))
+	(when (re-search-forward begin nil t)
+	  (let* ((begin-pos (funcall begin-fun 0))
+		 (end-pos (when (re-search-forward (or end begin) nil t)
+			    (funcall end-fun 0))))
+	    (when (and begin-pos end-pos)
+	      (cons begin-pos end-pos))))))))
 
 ;;;;; Bare dirs
 
