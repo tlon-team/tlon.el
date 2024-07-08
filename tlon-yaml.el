@@ -205,6 +205,26 @@ alist, unless RAW is non-nil."
 	      metadata
 	    (tlon-yaml-to-alist metadata)))))))
 
+(defun tlon-yaml-get-metadata2 (&optional file-or-buffer raw)
+  "Return the YAML metadata from FILE-OR-BUFFER as strings in a list.
+If FILE-OR-BUFFER is nil, use the current buffer. Return the metadata as an
+alist, unless RAW is non-nil."
+  (let ((file-or-buffer (or file-or-buffer
+			    (buffer-file-name)
+			    (current-buffer))))
+    (with-temp-buffer
+      (cond
+       ((bufferp file-or-buffer)
+	(insert (with-current-buffer file-or-buffer (buffer-string))))
+       ((stringp file-or-buffer)
+	(insert-file-contents file-or-buffer)))
+      (when-let ((metadata-pos (tlon-get-delimited-region-pos tlon-yaml-delimiter nil t)))
+	(cl-destructuring-bind (begin . end) metadata-pos
+	  (let ((metadata (buffer-substring-no-properties begin end)))
+	    (if raw
+		metadata
+	      (yaml-parse-string metadata :object-type 'alist))))))))
+
 (defun tlon-yaml-sort-fields (fields &optional keys no-error)
   "Sort alist of YAML FIELDS by order of KEYS.
 If one of FIELDS is not found, throw an error unless NO-ERROR is non-nil."
