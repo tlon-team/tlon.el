@@ -193,10 +193,8 @@ alist, unless RAW is non-nil."
 			    (current-buffer))))
     (with-temp-buffer
       (cond
-       ;; If `file-or-buffer' is a buffer object
        ((bufferp file-or-buffer)
 	(insert (with-current-buffer file-or-buffer (buffer-string))))
-       ;; If `file-or-buffer' is a string
        ((stringp file-or-buffer)
 	(insert-file-contents file-or-buffer)))
       (goto-char (point-min))
