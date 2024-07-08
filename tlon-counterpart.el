@@ -257,5 +257,25 @@ default to \".md\"."
 	  (insert metadata)
 	  (save-buffer))))))
 
+(defun tlon-add-author-metadata (language)
+  "Add metadata to author files in LANGUAGE."
+  (let* ((dir (tlon-repo-lookup :dir :subproject "uqbar" :language language))
+	 (subdir (tlon-get-bare-dir-translation language "en" "authors"))
+	 (full-dir (file-name-concat dir subdir))
+	 (files (directory-files full-dir t directory-files-no-dot-files-regexp)))
+    (dolist (file files)
+      (message "Processing %s" file)
+      (with-current-buffer (find-file-noselect file)
+	(let* ((title (tlon-yaml-get-key "title"))
+	       (slug (simple-extras-slugify title))
+	       (filename (file-name-with-extension slug "md"))
+	       (metadata `(("type" . "author")
+			   ("title" . ,title)
+			   ("role" . "[\"creator\"]")
+			   ("original_path" . ,filename)
+			   ("publication_status" . "production"))))
+	  (tlon-yaml-delete-metadata)
+	  (tlon-yaml-insert-fields metadata))))))
+
 (provide 'tlon-counterpart)
 ;;; tlon-counterpart.el ends here
