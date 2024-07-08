@@ -1401,7 +1401,8 @@ If FILE is non-nil, get the bare directory from it; otherwise, prompt the user
 to select it. By default, return the direct remote path. If TRAMP is non-nil,
 return the TRAMP SSH path."
   (let ((bare-dir (if file
-		      (tlon-get-bare-dir file)
+		      (or (tlon-get-bare-dir file)
+			  (tlon-select-bare-dir lang))
 		    (tlon-select-bare-dir lang)))
 	(path (if tramp
 		  "/ssh:fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
