@@ -483,7 +483,7 @@ by the current buffer."
 
 ;; TODO: integrate `tlon-yaml-get-key-values'
 (declare-function tlon-get-content-subtype "tlon-counterpart")
-(defun tlon-yaml-insert-field (&optional key value file field-exists)
+(defun tlon-yaml-insert-new-field (&optional key value file field-exists)
   "Insert a new field in the YAML metadata of FILE.
 If KEY or VALUE are nil, prompt for one. If FILE is nil, use the file visited by
 the current buffer. If field exists, throw an error if FIELD-EXISTS is
