@@ -173,11 +173,15 @@ If REPO is nil, return metadata of the current repository."
 This includes the YAML metadata at the beginning of the file, as well as
 additional metadata such as the file name and the file type."
   (let* ((file-or-buffer (or file-or-buffer (buffer-file-name)))
-	 (metadata (tlon-yaml-format-values-of-alist
-		    (tlon-yaml-get-metadata file-or-buffer)))
+	 (metadata (tlon-yaml-get-metadata file-or-buffer))
+	 (repo (tlon-get-repo-from-dir (or
+					(when-let ((file (buffer-file-name)))
+					  (file-name-directory file))
+					default-directory)))
+	 (language (tlon-repo-lookup :language :dir repo))
 	 (extras `(("file" . ,file-or-buffer)
 		   ("database" . "Tlön")
-		   ("landid" . "es"))))
+		   ("landid" . ,language))))
     (append metadata extras)))
 
 (defun tlon-yaml-get-metadata (&optional file-or-buffer raw)
