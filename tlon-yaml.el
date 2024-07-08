@@ -91,9 +91,11 @@ The order of the keys determines the sort order by
 ;;;;; Parse
 
 ;; I tried an Elisp implementation of YAML parsing
-;; (https://github.com/zkry/yaml.el), but it was too slow.
-;; But I haven’t tried this C-based parser:
-;; https://github.com/syohex/emacs-libyaml
+;; (https://github.com/zkry/yaml.el), but it was too slow. The unused function
+;; is `tlon-yaml-get-metadata2'.
+;;
+;; There is also a C-based parser, but it doesn’t support association lists and
+;; installing it is a hassle: https://github.com/syohex/emacs-libyaml
 
 (defun tlon-yaml-to-alist (strings)
   "Convert YAML STRINGS to an alist."
