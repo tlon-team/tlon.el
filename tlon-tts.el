@@ -1903,7 +1903,10 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
     (save-excursion
       (goto-char (point-min))
       (while (re-search-forward string nil t)
-	(unless (thing-at-point-looking-at (tlon-md-get-tag-pattern "ReplaceAudio"))
+	(unless (or (thing-at-point-looking-at (tlon-md-get-tag-pattern "ReplaceAudio"))
+		    ;; if en dash, exclude matches in locators
+		    (when (string= string "–")
+		      (thing-at-point-looking-at (tlon-md-get-tag-pattern "Cite"))))
 	  (throw 'found t))))))
 
 (defvar tlon-fix-numerals-sans-separator)
