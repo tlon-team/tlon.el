@@ -845,11 +845,6 @@ when present."
   (interactive)
   (tlon-insert-note-marker (car (tlon-md-format-tag "Sidenote" nil 'inserted)) overwrite))
 
-;;;;;;;;; `Table'
-
-;; TODO: develop
-;; https://github.com/tlon-team/uqbar-issues#mdx-tag-syntax
-
 ;;;;;;;; Common functions
 
 ;;;;; Note classification
