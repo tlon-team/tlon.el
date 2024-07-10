@@ -255,7 +255,7 @@ If citation is not found, return nil."
 
 (defun tlon-api-get-citation-url (key csl)
   "Return the URL for the citation with KEY in CSL style."
-  (let* ((string-formatter "https://altruismoeficaz.net/api/citations/%s/%s")
+  (let* ((string-formatter "https://uqbar.local.dev/api/citations/%s/%s")
 	 (type (pcase csl ((or 'long 'short) "text") ((or 'long-audio 'short-audio) "audio"))))
     (format string-formatter key type)))
 
