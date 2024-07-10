@@ -1380,34 +1380,54 @@ STRING is the string of the request. DESTINATION is the output file path."
 
 (declare-function tlon-upload-file-to-server "tlon-api")
 ;;;###autoload
-(defun tlon-tts-upload-audio-file-to-server (&optional file)
-  "Upload audio FILE to the server and delete it locally."
+(defun tlon-tts-upload-audio-file-to-server (&optional file temp)
+  "Upload audio FILE to the server and delete it locally.
+If TEMP is non-nil, upload FILE to temporary server directory."
   (interactive)
   (let* ((file (or file (files-extras-read-file file)))
 	 (lang (tlon-tts-get-current-language))
-	 (destination (tlon-tts-get-audio-directory lang file)))
+	 (destination (tlon-tts-get-audio-directory lang file nil temp)))
     (tlon-upload-file-to-server file destination 'delete-after-upload)))
 
 ;;;###autoload
-(defun tlon-tts-open-audio-directory (&optional lang)
-  "Open the directory where the audio files for LANG are stored."
+(defun tlon-tts-upload-audio-file-to-server-temp-dir (&optional file)
+  "Upload audio FILE to the server and delete it locally."
+  (interactive)
+  (let* ((file (or file (files-extras-read-file file))))
+    (tlon-tts-upload-audio-file-to-server file 'temp)))
+
+;;;###autoload
+(defun tlon-tts-open-audio-directory (&optional lang temp)
+  "Open the directory where the audio files for LANG are stored.
+If TEMP is non-nil, open temporary server directory."
   (interactive)
   (let ((lang (tlon-tts-get-current-language lang)))
-    (dired (tlon-tts-get-audio-directory lang nil 'tramp))))
+    (dired (tlon-tts-get-audio-directory lang nil 'tramp temp))))
 
-(defun tlon-tts-get-audio-directory (lang &optional file tramp)
+;;;###autoload
+(defun tlon-tts-open-temp-audio-directory (&optional lang)
+  "Open the temporary directory where the audio files for LANG are stored."
+  (interactive)
+  (let ((lang (tlon-tts-get-current-language lang)))
+    (tlon-tts-open-audio-directory lang 'temp)))
+
+(defun tlon-tts-get-audio-directory (lang &optional file tramp temp)
   "Return the directory where audio files are stored for LANG.
 If FILE is non-nil, get the bare directory from it; otherwise, prompt the user
 to select it. By default, return the direct remote path. If TRAMP is non-nil,
-return the TRAMP SSH path."
+return the TRAMP SSH path.
+
+If TEMP is non-nil, return temporary server directory."
   (let ((bare-dir (if file
 		      (or (tlon-get-bare-dir file)
 			  (tlon-select-bare-dir lang))
 		    (tlon-select-bare-dir lang)))
+	(dirname (if temp (format "uqbar-%s-audio-temp" lang)
+		   (format "uqbar-%s-audio" lang)))
 	(path (if tramp
-		  "/ssh:fede@tlon.team:/home/fede/uqbar-%s-audio/%s/"
-		"fede@tlon.team:/home/fede/uqbar-%s-audio/%s/")))
-    (format path lang bare-dir)))
+		  "/ssh:fede@tlon.team:/home/fede/%s/%s/"
+		"fede@tlon.team:/home/fede/%s/%s/")))
+    (format path dirname bare-dir)))
 
 ;;;;; Cleanup
 
@@ -2365,7 +2385,7 @@ PROMPTS is a cons cell with the corresponding prompts."
   [["Narration"
     ("z" "Narrate buffer or selection"             tlon-tts-narrate-content)
     ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
-    ("e" "Generate report"                         tlon-tts-generate-report)    ]
+    ("e" "Generate report"                         tlon-tts-generate-report)]
    ["Narration options"
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
@@ -2390,7 +2410,9 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("n" "Truncate file"                           tlon-tts-truncate-audio-file)
     ""
     ("o" "Open dir"                                tlon-tts-open-audio-directory)
-    ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]])
+    ("O" "Open temp dir"                            tlon-tts-open-temp-audio-directory)
+    ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)
+    ("U" "Upload to temp dir"                      tlon-tts-upload-audio-file-to-server-temp-dir)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
