@@ -1431,7 +1431,6 @@ If TEMP is non-nil, return temporary server directory."
 
 ;;;;; Cleanup
 
-(declare-function tlon-tex-remove-locators "tlon-tex")
 (declare-function tlon-tex-replace-keys-with-citations "tlon-tex")
 (defun tlon-tts-prepare-buffer (&optional cold-run)
   "Prepare the current buffer for audio narration.
@@ -1446,7 +1445,6 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (unless cold-run
       (tlon-tex-replace-keys-with-citations nil 'audio))
-    (tlon-tex-remove-locators)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)
     (tlon-tts-process-alternative-voice)
