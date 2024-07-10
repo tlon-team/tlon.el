@@ -58,6 +58,10 @@
 (defvar tlon-api-most-recent-log-buffer nil
   "The name of the most recent log buffer.")
 
+(defconst tlon-api-local-url
+  "https://uqbar.local.dev/"
+  "Local URL for the `uqbar' API.")
+
 ;;;; Functions
 
 ;;;###autoload
@@ -67,12 +71,11 @@ If FORCE-UPDATE is non-nil, or called with a prefix argument, force the update.
 If POP-TO-BUFFER is non-nil, display the log buffer."
   (interactive (list (tlon-select-api-route)
 		     current-prefix-arg))
-  (let* ((site "https://uqbar.local.dev/")
-	 (route-url (concat (format "%sapi/%s" site route)
+  (let* ((route-url (concat (format "%sapi/%s" tlon-api-local-url route)
 			    (when force-update "?force=true")))
 	 (type (tlon-lookup (tlon-api-get-routes) :type :route route)))
     (tlon-api-get-token
-     site
+     tlon-api-local-url
      (lambda (access-token)
        "Authenticate with ACCESS-TOKEN, then make request."
        (if (not access-token)
@@ -115,11 +118,9 @@ CALLBACK is called with the token as its argument."
 (defun tlon-api-copy-token ()
   "Copy API token to the kill ring."
   (interactive)
-  (tlon-api-get-token
-   "https://uqbar.local.dev/"
-   (lambda (access-token)
-     (kill-new access-token)
-     (message "API token copied to the kill ring."))))
+  (tlon-api-get-token tlon-api-local-url (lambda (access-token)
+					   (kill-new access-token)
+					   (message "API token copied to the kill ring."))))
 
 ;;;;;; Logs
 
@@ -255,7 +256,7 @@ If citation is not found, return nil."
 
 (defun tlon-api-get-citation-url (key csl)
   "Return the URL for the citation with KEY in CSL style."
-  (let* ((string-formatter "https://uqbar.local.dev/api/citations/%s/%s")
+  (let* ((string-formatter (file-name-concat tlon-api-local-url "api/citations/%s/%s"))
 	 (type (pcase csl ((or 'long 'short) "text") ((or 'long-audio 'short-audio) "audio"))))
     (format string-formatter key type)))
 
