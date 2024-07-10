@@ -1425,7 +1425,7 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (unless cold-run
-      (tlon-tex-replace-keys-with-citations nil 'mdx 'audio))
+      (tlon-tex-replace-keys-with-citations nil 'audio))
     (tlon-tex-remove-locators)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)

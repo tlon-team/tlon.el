@@ -687,77 +687,54 @@ value contains VALUE as a substring."
 	     citar-cache--bibliographies)
     fields))
 
-(defvar tlon-mdx-cite-pattern)
-(defvar tlon-mdx-cite-pattern-short)
-(defvar tlon-mdx-cite-pattern-long)
-(declare-function tlon-api-get-citation "tlon-api")
-(defun tlon-tex-replace-keys-with-citations (&optional file syntax audio)
+(defun tlon-tex-replace-keys-with-citations (&optional file audio)
   "Replace all BibTeX keys in FILE with CSL-defined citations.
 If FILE is nil, use the current buffer.
-
-SYNTAX is the citation syntax: it can be either `mdx' or `pandoc'. It is set to
-`mdx' if called interactively, and to `pandoc' if called with a universal
-argument.
 
 By default, export citations in \"short\" or \"long\" format depending on what
 the tag specified. If AUDIO is non-nil, export all citations in \"audio\" format
 instead."
   (interactive)
-  (let* ((file (or file (buffer-file-name)))
-	 (syntax (or syntax (if current-prefix-arg 'pandoc 'mdx)))
-	 (short (pcase syntax
-		  ('mdx tlon-mdx-cite-pattern-short)
-		  ('pandoc tlon-tex-pandoc-cite-pattern-short)))
-	 (long (pcase syntax
-		 ('mdx tlon-mdx-cite-pattern-long)
-		 ('pandoc tlon-tex-pandoc-cite-pattern-long)))
-	 (list (if audio
-		   (list (cons 'short-audio short) (cons 'long-audio long))
-		 (list (cons 'short short) (cons 'long long)))))
-    (if file
-	(with-current-buffer (find-file-noselect file)
-	  (tlon-tex-do-replace-keys-with-citations list))
-      (tlon-tex-do-replace-keys-with-citations list))))
+  (if-let ((file (or file (buffer-file-name))))
+      (with-current-buffer (find-file-noselect file)
+	(tlon-tex-do-replace-keys-with-citations audio))
+    (tlon-tex-do-replace-keys-with-citations audio)))
 
-;; NOTE: we use this temporarily to remove locators for TTS processing.
-;; Eventually the locators should appear in a separate field.
-(defun tlon-tex-remove-locators ()
-  "Remove locators from citations in the current buffer."
-  (dolist (locator (mapcar #'cdr tlon-locators))
-    (goto-char (point-min))
-    (while (re-search-forward (concat ", " (regexp-quote locator)) nil t)
-      (replace-match "" t))))
-
-(defun tlon-tex-do-replace-keys-with-citations (list)
+(declare-function tlon-md-get-tag-pattern "tlon-md")
+(declare-function tlon-api-get-citation "tlon-api")
+(defun tlon-tex-do-replace-keys-with-citations (&optional audio)
   "Perform the actual replacement of BibTeX keys with CSL-defined citations.
 LIST is a list of cons cells, where the car is the citation style and the cdr is
-the regular expression pattern to match the key."
-  (save-excursion
-    (dolist (cons list)
-      (let ((csl (car cons))
-	    (pattern (cdr cons)))
-	(goto-char (point-min))
-	(while (re-search-forward pattern nil t)
-	  (let ((match (match-string-no-properties 1))
-		(locator (match-string-no-properties 2)))
-	    (message "Processing `%s'..." match)
-	    (if-let ((citation (tlon-api-get-citation match csl))
-		     (replacement (if locator
-				      (format "%s, %s" citation locator)
-				    (format "%s" citation))))
-		(replace-match replacement t)
-	      (message "Could not find `%s'" match))))))))
+the regular expression pattern to match the key.
 
-(defun tlon-tex-replace-keys-with-citations-in-dir (&optional syntax)
+By default, export citations in \"short\" or \"long\" format depending on what
+the tag specified. If AUDIO is non-nil, export all citations in \"audio\" format
+instead."
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
+      (let* ((key (match-string-no-properties 3))
+	     short-p csl)
+	(message "Processing `%s'..." key)
+	(save-match-data
+	  (setq short-p (string-match "short" (match-string-no-properties 6)))
+	  (setq csl (if audio
+			(if short-p 'short-audio 'long-audio)
+		      (if short-p 'short 'long))))
+	(if-let ((citation (tlon-api-get-citation key csl)))
+	    (replace-match citation t)
+	  (user-error "Could not find `%s'" key))))))
+
+(defun tlon-tex-replace-keys-with-citations-in-dir (&optional audio)
   "Recursively replace all BibTeX keys with CSL-defined citations in current dir.
-SYNTAX is the citation syntax: it can be either `mdx' or `pandoc'. It is set to
-`mdx' if called interactively, and to `pandoc' if called with a universal
-argument."
+
+By default, export citations in \"short\" or \"long\" format depending on what
+the tag specified. If AUDIO is non-nil, export all citations in \"audio\" format
+instead."
   (interactive)
-  (let ((files (directory-files-recursively default-directory "\\.md$"))
-	(syntax (or syntax (if current-prefix-arg 'pandoc 'mdx))))
+  (let ((files (directory-files-recursively default-directory "\\.md$")))
     (dolist (file files)
-      (tlon-tex-replace-keys-with-citations file syntax))))
+      (tlon-tex-replace-keys-with-citations file audio))))
 
 (defun tlon-tex-find-next-entry-with-missing-field (field)
   "For each entry in the current BibTeX buffer, check if FIELD’s value is missing."
