@@ -156,36 +156,6 @@ Currently, we define it as a number no smaller than 1000.")
 
 ;;;;;; MDX
 
-;;;;;;; `Cite'
-
-(defconst tlon-mdx-cite-pattern-formatter
-  "<Cite bibKey=\"\\(?1:.*?\\)\\(?:, \\(?2:.*?\\)\\)?\"\\(?:%s />\\|>.*?</Cite>\\)"
-  "Formatter for `Cite' patterns.")
-
-(defconst tlon-mdx-cite-pattern-short-element
-  "\\(?3: short\\)"
-  "Pattern that matches a short citation flag in the third capture group.
-To use in conjunction with `tlon-mdx-cite-pattern-formatter'.")
-
-(defconst tlon-mdx-cite-pattern
-  (format tlon-mdx-cite-pattern-formatter (concat tlon-mdx-cite-pattern-short-element "?"))
-  "Pattern to match a citation in a Markdown file.
-The first group captures the BibTeX key, the second group captures the
-locator(s), if present, and the third group captures the short citation flag, if
-present.")
-
-(defconst tlon-mdx-cite-pattern-long
-  (format tlon-mdx-cite-pattern-formatter "")
-  "Pattern to match a long citation in a Markdown file.
-The first group captures the BibTeX key, the second group captures the
-locator(s), if present.")
-
-(defconst tlon-mdx-cite-pattern-short
-  (format tlon-mdx-cite-pattern-formatter tlon-mdx-cite-pattern-short-element)
-  "Pattern to match a short citation in a Markdown file.
-The first group captures the BibTeX key, the second group captures the
-locator(s), if present, and the third group captures the short citation flag.")
-
 ;;;;;;; `Table'
 
 ;; TODO: develop
@@ -209,11 +179,8 @@ locator(s), if present, and the third group captures the short citation flag.")
 	  :doc "")
     (:tag "Cite"
 	  :attributes ((:name "bibKey" :required t :valued t :group 2 :reader tlon-md-cite-bibkey-reader)
-		       (:name "short" :required nil :valued nil :group 4 :reader tlon-md-cite-length-reader)
-		       ;; TODO: currently, the locator attribute is not
-		       ;; introduced explicitly as the value of a named
-		       ;; attribute. Fix this.
-		       )
+		       (:name "locator" :required nil :valued t :group 4 :reader tlon-md-cite-locator-reader)
+		       (:name "short" :required nil :valued nil :group 6 :reader tlon-md-cite-length-reader))
 	  :type mdx
 	  :self-closing t)
     (:tag "emphasis"
@@ -577,7 +544,8 @@ filled with placeholders."
 	      (concat formatted
 		      (pcase format
 			('match-string (tlon-make-attribute-pattern-searchable format-string group required-p))
-			((or 'filled 'inserted) (format format-string string))
+			((or 'filled 'inserted) (when string ; don't insert nil values (typically optional attributes)
+						  (format format-string string)))
 			('to-fill format-string))))))))
 
 (defun tlon-md-format-attribute-with-placeholder (tag name &optional capture)
@@ -663,6 +631,12 @@ alternative voice, as opposed to the main voice."
 (defun tlon-md-cite-bibkey-reader ()
   "Prompt the user to select the `bibKey' attribute value of the `Cite' tag."
   (car (citar-select-refs)))
+
+(defvar tlon-locators)
+(defun tlon-md-cite-locator-reader ()
+  "Prompt the user to select the `locator' attribute value of the `Cite' tag."
+  (let* ((selection (completing-read "Locator: " (push "" tlon-locators) nil t)))
+    (alist-get selection tlon-locators nil nil 'string=)))
 
 (defun tlon-md-cite-length-reader ()
   "Prompt the user to set the length of the `Cite' tag."
@@ -825,33 +799,6 @@ attribute."
   (completing-read "`interpret-as': " tlon-md-ssml-interpret-as-values))
 
 ;;;;;;;; To revise
-
-;;;;;;;;;; Locators
-
-(defvar tlon-locators)
-(defun tlon-insert-locator ()
-  "Insert locator in citation at point.
-If point is on a locator, it will be replaced by the new one. Otherwise, the new
-locator will be inserted after the key, if there are no locators, or at the end
-of the existing locators."
-  (interactive)
-  (unless (tlon-looking-at-tag-p "Cite")
-    (user-error "Not in a citation"))
-  (let* ((selection (completing-read "Locator: " tlon-locators nil t))
-	 (locator (alist-get selection tlon-locators nil nil 'string=)))
-    (let ((key (car (tlon-get-tag-attribute-values "Cite"))))
-      (forward-char)
-      (re-search-backward "<" nil t)
-      (re-search-forward key nil t)
-      (if-let ((existing (tlon-get-locator-at-point)))
-	  (replace-match locator)
-	(insert (format ", %s " locator))))))
-
-(defun tlon-get-locator-at-point ()
-  "Return the locator at point, if present."
-  (let ((locators (mapcar 'cdr tlon-locators)))
-    (when (thing-at-point-looking-at (regexp-opt locators))
-      (match-string-no-properties 0))))
 
 ;;;;;;;;; `Footnote'
 
