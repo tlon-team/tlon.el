@@ -818,8 +818,8 @@ former in group 1.")
 Note that the replacements are performed in the order they appear in the list.
 This may be relevant for certain types of abbreviations and languages. For
 example, in Spanish certain abbreviations will be expanded in one form if the
-term thathat precedes them is ‘1’ and in another form otherwise (e.g., 1 km vs.
-2 km).")
+term that precedes them is ‘1’ and in another form otherwise (e.g., 1 km vs. 2
+km).")
 
 ;;;;; Phonetic replacements
 
