@@ -73,7 +73,8 @@
     ("H-p" "package files"                tlon-open-package-files)
     """"""""""""""
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
-    (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))]])
+    (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))
+    ("P" "copy package info"              tlon-copy-package-info)]])
 
 ;;;;;; Common elements
 

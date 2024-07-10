@@ -153,15 +153,24 @@ This variable should not be set manually.")
   (let ((default-directory tlon-package-dir))
     (magit-git-string "rev-parse" "--short" "HEAD")))
 
+;;;###autoload
+(defun tlon-copy-package-info ()
+  "Copy information about the `tlon' package to the kill ring."
+  (interactive)
+  (let ((info (format "Package version: %s\nLatest commit: %s"
+		      tlon-version (tlon-get-latest-commit))))
+    (kill-new info)
+    (message info)))
+
 ;;;;; [name]
 
 (declare-function tlon-metadata-in-repos "tlon-yaml")
 (defun tlon-get-file-from-key (key)
-  "Return the file path of KEY."
-  (if-let ((file (tlon-metadata-lookup
-		  (tlon-metadata-in-repos :subtype 'translations) "file" "original_key" key)))
-      file
-    (user-error "Metadata lookup for key `%s' returned nil" key)))
+"Return the file path of KEY."
+(if-let ((file (tlon-metadata-lookup
+		(tlon-metadata-in-repos :subtype 'translations) "file" "original_key" key)))
+    file
+  (user-error "Metadata lookup for key `%s' returned nil" key)))
 
 (declare-function tlon-metadata-in-repo "tlon-yaml")
 (declare-function tlon-get-counterpart "tlon-counterpart")
