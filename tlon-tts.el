@@ -1015,7 +1015,7 @@ If CONTENT is nil, read the region if selected or the current file or buffer
 otherwise."
   (setq tlon-tts-current-content
 	(or content (if (region-active-p)
-			(buffer-substring-no-properties (region-beginning) (region-end))
+			(tlon-tts-get-selection)
 		      (tlon-tts-read-file tlon-tts-current-file-or-buffer)))))
 
 (defun tlon-tts-read-file (file)
@@ -1026,6 +1026,28 @@ otherwise."
     (setq tlon-local-abbreviations-for-session tlon-local-abbreviations
 	  tlon-local-replacements-for-session tlon-local-replacements)
     (concat (tlon-tts-get-metadata) (tlon-md-read-content file))))
+
+(defun tlon-tts-get-selection ()
+  "Return the current selection, plus any footnotes references therein."
+  (let ((text (buffer-substring-no-properties (region-beginning) (region-end)))
+        (footnotes (make-hash-table :test 'equal))
+	(beg (region-beginning))
+	(end (region-end)))
+    (with-current-buffer (current-buffer)
+      (save-excursion
+        (goto-char beg)
+        (while (re-search-forward markdown-regex-footnote end t)
+          (let* ((ref (match-string 2))
+                 (note-number (string-to-number ref))
+                 (note-content (tlon-md-get-note note-number 'content-only)))
+            (puthash ref note-content footnotes)))))
+    (let ((footnotes-section
+           (mapconcat (lambda (key)
+                        (concat "[^" key "]: " (gethash key footnotes)))
+                      (hash-table-keys footnotes) "\n")))
+      (if (string-empty-p footnotes-section)
+          text
+        (concat text "\n\n" footnotes-section)))))
 
 ;;;;;;; Language
 
