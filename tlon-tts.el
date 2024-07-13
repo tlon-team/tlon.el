@@ -1930,10 +1930,17 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
     (while (re-search-forward "\\(?:[A-Z]\\{2,\\}\\(?:\\. ?\\)?\\)+\\.?" nil t)
       (let ((match (match-string-no-properties 0)))
 	(unless (or (string-match (mapconcat 'car abbrevs "\\|") match)
-		    (thing-at-point-looking-at (tlon-md-get-tag-pattern "Roman"))
-		    (thing-at-point-looking-at (tlon-md-get-tag-pattern "Math")))
+		    (tlon-tts-looking-at-excluded-tag-p))
 	  (push match missing))))
     (delete-dups missing)))
+
+(defun tlon-tts-looking-at-excluded-tag-p ()
+  "Return t iff point is looking at an excluded tag.
+An excluded tag is one enclosing text that does not contain acronyms to be
+processed."
+  (seq-some (lambda (tag)
+              (thing-at-point-looking-at (tlon-md-get-tag-pattern tag)))
+            '("Cite" "Math" "ReplaceAudio" "Roman" "SmallCaps")))
 
 ;;;;;;; Unprocessed strings
 
