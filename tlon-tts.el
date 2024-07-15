@@ -1028,7 +1028,7 @@ otherwise."
     (concat (tlon-tts-get-metadata) (tlon-md-read-content file))))
 
 (defun tlon-tts-get-selection ()
-  "Return the current selection, plus any footnotes references therein."
+  "Return the current selection, plus any footnotes referenced therein."
   (let ((text (buffer-substring-no-properties (region-beginning) (region-end)))
         (footnotes (make-hash-table :test 'equal))
 	(beg (region-beginning))
