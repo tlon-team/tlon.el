@@ -610,8 +610,8 @@ A list of available voices may be found here:
 including the voice ID, run `tlon-tts-elevenlabs-get-voices'.")
 
 (defconst tlon-elevenlabs-char-limit (* 5000 0.9)
-  "Maximum number of characters that OpenAI can process per request.
-OpenAI can process up to 4096 bytes per request. We use a slightly
+  "Maximum number of characters that Elevenlabs can process per request.
+Elevenlabs can process up to 4096 bytes per request. We use a slightly
 lower number to err on the safe side.
 
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
@@ -1015,7 +1015,7 @@ If CONTENT is nil, read the region if selected or the current file or buffer
 otherwise."
   (setq tlon-tts-current-content
 	(or content (if (region-active-p)
-			(buffer-substring-no-properties (region-beginning) (region-end))
+			(tlon-tts-get-selection)
 		      (tlon-tts-read-file tlon-tts-current-file-or-buffer)))))
 
 (defun tlon-tts-read-file (file)
@@ -1026,6 +1026,28 @@ otherwise."
     (setq tlon-local-abbreviations-for-session tlon-local-abbreviations
 	  tlon-local-replacements-for-session tlon-local-replacements)
     (concat (tlon-tts-get-metadata) (tlon-md-read-content file))))
+
+(defun tlon-tts-get-selection ()
+  "Return the current selection, plus any footnotes referenced therein."
+  (let ((text (buffer-substring-no-properties (region-beginning) (region-end)))
+        (footnotes (make-hash-table :test 'equal))
+	(beg (region-beginning))
+	(end (region-end)))
+    (with-current-buffer (current-buffer)
+      (save-excursion
+        (goto-char beg)
+        (while (re-search-forward markdown-regex-footnote end t)
+          (let* ((ref (match-string 2))
+                 (note-number (string-to-number ref))
+                 (note-content (tlon-md-get-note note-number 'content-only)))
+            (puthash ref note-content footnotes)))))
+    (let ((footnotes-section
+           (mapconcat (lambda (key)
+                        (concat "[^" key "]: " (gethash key footnotes)))
+                      (hash-table-keys footnotes) "\n")))
+      (if (string-empty-p footnotes-section)
+          text
+        (concat text "\n\n" footnotes-section)))))
 
 ;;;;;;; Language
 
@@ -1444,8 +1466,7 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
-    (unless cold-run
-      (tlon-tex-replace-keys-with-citations nil 'audio))
+    (tlon-tex-replace-keys-with-citations nil 'audio)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-headings)
     (tlon-tts-process-alternative-voice)
@@ -1909,10 +1930,17 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
     (while (re-search-forward "\\(?:[A-Z]\\{2,\\}\\(?:\\. ?\\)?\\)+\\.?" nil t)
       (let ((match (match-string-no-properties 0)))
 	(unless (or (string-match (mapconcat 'car abbrevs "\\|") match)
-		    (thing-at-point-looking-at (tlon-md-get-tag-pattern "Roman"))
-		    (thing-at-point-looking-at (tlon-md-get-tag-pattern "Math")))
+		    (tlon-tts-looking-at-excluded-tag-p))
 	  (push match missing))))
     (delete-dups missing)))
+
+(defun tlon-tts-looking-at-excluded-tag-p ()
+  "Return t iff point is looking at an excluded tag.
+An excluded tag is one enclosing text that does not contain acronyms to be
+processed."
+  (seq-some (lambda (tag)
+              (thing-at-point-looking-at (tlon-md-get-tag-pattern tag)))
+            '("Cite" "Math" "ReplaceAudio" "Roman" "SmallCaps")))
 
 ;;;;;;; Unprocessed strings
 

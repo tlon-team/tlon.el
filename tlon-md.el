@@ -118,6 +118,13 @@ the exponent.")
   "Regexp pattern for matching a “big” number.
 Currently, we define it as a number no smaller than 1000.")
 
+;;;;; Footnotes
+
+(defconst tlon-md-footnote-start
+  "\\[\\^%s\\]:[[:space:]]"
+  "Regexp pattern to match the start of a footnote.
+The placeholder is the footnote number.")
+
 ;;;;;; SSML
 
 ;;;;;;; `emphasis'
@@ -818,7 +825,7 @@ when present."
 (defun tlon-insert-note-marker (marker &optional overwrite)
   "Insert note MARKER in the footnote at point.
 If OVERWRITE is non-nil, replace the existing marker when present."
-  (if-let ((fn-data (tlon-note-content-bounds)))
+  (if-let ((fn-data (tlon-md-get-note-bounds nil 'content-only)))
       (let ((start (car fn-data)))
 	(goto-char start)
 	(let ((other-marker (car (remove marker (list (car (tlon-md-format-tag "Footnote" nil 'inserted))
@@ -847,35 +854,67 @@ when present."
 
 ;;;;;;;; Common functions
 
+;;;;; Notes
+
+(defun tlon-md-get-note (&optional n content-only)
+  "Return the note N.
+If N is nil, return the note at point.
+
+If CONTENT-ONLY is non-nil, return the beginning of the note content. The note
+content is the note minus the marker that precedes it."
+  (when-let* ((bounds (tlon-md-get-note-bounds n content-only))
+	      (begin (car bounds))
+	      (end (cdr bounds)))
+    (string-trim (buffer-substring-no-properties begin end))))
+
+(defun tlon-md-get-note-bounds (&optional n content-only)
+  "Return the start and end positions of note N.
+If N is nil, return the note at point.
+If CONTENT-ONLY is non-nil, return the beginning of the note content. The note
+content is the note minus the marker that precedes it."
+  (save-excursion
+    (when n
+      (if-let ((id (concat "^" (number-to-string n))))
+	  (goto-char (markdown-footnote-find-text id))
+	(user-error "Note %d not found" n)))
+    (when-let* ((begin (tlon-md-get-note-beginning content-only))
+		(end (tlon-md-get-note-end)))
+      (cons begin end))))
+
+(defun tlon-md-get-note-beginning (&optional content-only)
+  "Return the beginning of the note at point.
+If CONTENT-ONLY is non-nil, return the beginning of the note content. The note
+content is the note minus the marker that precedes it."
+  (if-let ((fn-pos (markdown-footnote-text-positions))
+	   (id (nth 0 fn-pos))
+	   (start (nth 1 fn-pos)))
+      (if content-only
+	  (markdown-footnote-find-text id)
+	start)
+    (save-excursion
+      (re-search-backward (format tlon-md-footnote-start "[[:digit:]]+") nil t)
+      (if content-only
+	  (match-end 0)
+	(match-beginning 0)))))
+
+(defun tlon-md-get-note-end ()
+  "Return the end of the note at point."
+  (let ((note-start (format tlon-md-footnote-start "[[:digit:]]+"))
+	(point (point)))
+    (save-excursion
+      (re-search-forward note-start nil t)
+      (while (<= (match-beginning 0) point)
+	(re-search-forward note-start nil t))
+      (1- (tlon-md-get-note-beginning)))))
+
 ;;;;; Note classification
 
 (defun tlon-auto-classify-note-at-point ()
   "Automatically classify note at point as either a footnote or a sidenote."
   (interactive)
-  (let* ((note (tlon-get-note-at-point))
+  (let* ((note (tlon-md-get-note))
 	 (type (tlon-note-automatic-type note)))
     (tlon-classify-note-at-point type 'overwrite)))
-
-(defun tlon-note-content-bounds ()
-  "Return the start and end positions of the content of the note at point.
-The content of a note is its substantive part of the note, i.e. the note minus
-the marker that precedes it."
-  (when-let* ((fn-pos (markdown-footnote-text-positions))
-	      (id (nth 0 fn-pos))
-	      (begin (nth 1 fn-pos))
-	      (end (nth 2 fn-pos))
-	      (fn (buffer-substring-no-properties begin end)))
-    ;; regexp pattern copied from `markdown-footnote-kill-text'
-    (string-match (concat "\\[\\" id "\\]:[[:space:]]") fn)
-    (cons (+ begin (match-end 0)) end)))
-
-;; FIXME: fails in multi-paragraph notes
-(defun tlon-get-note-at-point ()
-  "Get the note at point, if any."
-  (when-let* ((bounds (tlon-note-content-bounds))
-	      (begin (car bounds))
-	      (end (cdr bounds)))
-    (string-trim (buffer-substring-no-properties begin end))))
 
 (defun tlon-auto-classify-notes-in-file (&optional file)
   "Automatically classify all notes in FILE.
@@ -902,7 +941,7 @@ If REPO is nil, use the current directory."
   "Return the type of NOTE.
 If NOTE is nil, use the note at point. A note type may be either `footnote' or
 `sidenote'."
-  (when-let ((note (or note (tlon-get-note-at-point))))
+  (when-let ((note (or note (tlon-md-get-note))))
     (cond ((string-match (tlon-md-get-tag-pattern "Footnote") note)
 	   'footnote)
 	  ((string-match (tlon-md-get-tag-pattern "Sidenote") note)

@@ -529,7 +529,7 @@ To get an abstract with AI, the function uses
 (declare-function tlon-abstract-may-proceed-p "tlon-tex")
 ;;;###autoload
 (defun tlon-get-abstract-with-ai (&optional file type)
-  "Return an abstract of the relevant content using AI.
+  "Return an abstract of TYPE using AI.
 If FILE is non-nil, get an abstract of its contents. Otherwise,
 
 - If in `bibtex-mode' or in `ebib-entry-mode', get an abstract of the contents
