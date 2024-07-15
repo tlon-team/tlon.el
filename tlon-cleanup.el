@@ -143,7 +143,7 @@ not alter it unless you know what you are doing."
 (defvar tlon-import-eaf-url-post-collection)
 (defvar tlon-import-eaf-base-regexp)
 ;;;###autoload
-(defun tlon-cl.aeanup-eaf-replace-urls ()
+(defun tlon-cleanup-eaf-replace-urls ()
   "Replace EA Forum URLs in the current buffer with their \"canonical\" forms."
   (interactive)
   (save-excursion
