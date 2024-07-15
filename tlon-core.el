@@ -338,6 +338,41 @@ amounts between 1000 and 9999.")
 These are used in TTS processes to ensure that the numbers are pronounced
 correctly.")
 
+;;;;; EAF validation
+
+(defconst tlon-eaf-base-regexp
+  "forum\\.effectivealtruism\\.org"
+  "Regular expression for matching the base EAF URL.")
+
+(defconst tlon-eaf-id-regexp
+  "[[:alnum:]]\\{17\\}"
+  "Regular expression for matching EAF post or comment IDs.")
+
+(defconst tlon-eaf-url-post-comment-id
+  (format "\\?commentId=%s" tlon-eaf-id-regexp)
+  "Regular expression for capturing the `commentid' element in post URLs.")
+
+(defconst tlon-eaf-url-post-canonical
+  (format "\\(?1:%s/posts/\\(?2:%s\\)\\)\\(?:/[-[:alnum:]]*\\)\\(?3:%s\\)?"
+	  tlon-eaf-base-regexp tlon-eaf-id-regexp tlon-eaf-url-post-comment-id)
+  "Regular expression for validating canonical URLs of EAF posts.
+The first group captures the entire canonical URL, the second group captures the
+post ID.
+
+The concatenated string following the first capture group was obtained from
+`browse-url-button-regexp'. This is needed because the URLs may contain a slug
+after the proper ID.")
+
+(defconst tlon-eaf-url-post-collection
+  (format "\\(?1:%s/s/\\(?3:%s\\)/p/\\(?2:%2$s\\)\\)" tlon-eaf-base-regexp tlon-eaf-id-regexp)
+  "Regular expression for validating URLs of posts embedded in a collection.
+The first group captures the entire URL, the second group captures the post ID
+and the third group captures the collection ID.")
+
+(defconst tlon-eaf-tag-slug-regexp
+  "\\([[:alnum:]-]*\\)"
+  "Regular expression for matching tag slugs.")
+
 ;;;;; To sort
 
 (defvar tlon-users

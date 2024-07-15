@@ -139,19 +139,16 @@ not alter it unless you know what you are doing."
   (tlon-cleanup-fix-footnote-refs)
   (tlon-cleanup-remove-text))
 
-(defvar tlon-import-eaf-url-post-canonical)
-(defvar tlon-import-eaf-url-post-collection)
-(defvar tlon-import-eaf-base-regexp)
 ;;;###autoload
 (defun tlon-cleanup-eaf-replace-urls ()
   "Replace EA Forum URLs in the current buffer with their \"canonical\" forms."
   (interactive)
   (save-excursion
-    (dolist (pattern (list tlon-import-eaf-url-post-canonical
-			   tlon-import-eaf-url-post-collection))
+    (dolist (pattern (list tlon-eaf-url-post-canonical
+			   tlon-eaf-url-post-collection))
       (goto-char (point-min))
       (while (re-search-forward pattern nil t)
-	(let* ((base-url (replace-regexp-in-string "\\\\" "" tlon-import-eaf-base-regexp))
+	(let* ((base-url (replace-regexp-in-string "\\\\" "" tlon-eaf-base-regexp))
 	       (post-id (match-string-no-properties 2))
 	       (comment-id (match-string-no-properties 3))
 	       (replacement (format "%s/posts/%s%s" base-url post-id (or comment-id ""))))
