@@ -622,7 +622,7 @@ questions\").")
   "Base URL for the ElevenLabs TTS API.")
 
 (defvar tlon-elevenlabs-key nil
-  "API key for the ElevelLabs TTS service.")
+  "API key for the ElevenLabs TTS service.")
 
 ;;;;; Engines
 
