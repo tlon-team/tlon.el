@@ -611,7 +611,7 @@ including the voice ID, run `tlon-tts-elevenlabs-get-voices'.")
 
 (defconst tlon-elevenlabs-char-limit (* 5000 0.9)
   "Maximum number of characters that Elevenlabs can process per request.
-Elevenlabs can process up to 4096 bytes per request. We use a slightly
+Elevenlabs can process up to 5000 characters per request. We use a slightly
 lower number to err on the safe side.
 
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
