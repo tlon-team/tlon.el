@@ -118,6 +118,37 @@ For a full list of audio outputs, see
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
+(defconst tlon-microsoft-azure-audio-choices
+  '(("amr-wb-16000hz")
+    ("audio-16khz-16bit-32kbps-mono-opus" . "opus")
+    ("audio-16khz-32kbitrate-mono-mp3" . "mp3")
+    ("audio-16khz-64kbitrate-mono-mp3" . "mp3")
+    ("audio-16khz-128kbitrate-mono-mp3" . "mp3")
+    ("audio-24khz-16bit-24kbps-mono-opus" . "opus")
+    ("audio-24khz-16bit-48kbps-mono-opus" . "opus")
+    ("audio-24khz-48kbitrate-mono-mp3" . "mp3")
+    ("audio-24khz-96kbitrate-mono-mp3" . "mp3")
+    ("audio-24khz-160kbitrate-mono-mp3" . "mp3")
+    ("audio-48khz-96kbitrate-mono-mp3" . "mp3")
+    ("audio-48khz-192kbitrate-mono-mp3" . "mp3")
+    ("ogg-16khz-16bit-mono-opus" . "opus")
+    ("ogg-24khz-16bit-mono-opus" . "opus")
+    ("ogg-48khz-16bit-mono-opus" . "opus")
+    ("raw-8khz-8bit-mono-alaw" . "alaw")
+    ("raw-8khz-8bit-mono-mulaw" . "mulaw")
+    ("raw-8khz-16bit-mono-pcm" . "pcm")
+    ("raw-16khz-16bit-mono-pcm" . "pcm")
+    ("raw-16khz-16bit-mono-truesilk" . "sil")
+    ("raw-22050hz-16bit-mono-pcm" . "pcm")
+    ("raw-24khz-16bit-mono-pcm" . "pcm")
+    ("raw-24khz-16bit-mono-truesilk" . "sil")
+    ("raw-44100hz-16bit-mono-pcm" . "pcm")
+    ("raw-48khz-16bit-mono-pcm" . "pcm")
+    ("webm-16khz-16bit-mono-opus" . "opus")
+    ("webm-24khz-16bit-24kbps-mono-opus" . "opus")
+    ("webm-24khz-16bit-mono-opus" . "opus"))
+  "Output format and associated extension for the Microsoft Azure TTS service.")
+
 ;;;;; Google Cloud
 
 (defcustom tlon-google-cloud-audio-settings
@@ -637,6 +668,7 @@ questions\").")
   `((:name "Microsoft Azure"
 	   :voices-var tlon-microsoft-azure-voices
 	   :output-var tlon-microsoft-azure-audio-settings
+	   :choices-var ,tlon-microsoft-azure-audio-choices
 	   :request-fun tlon-tts-microsoft-azure-make-request
 	   :char-limit ,tlon-microsoft-azure-char-limit
 	   :property :azure)
