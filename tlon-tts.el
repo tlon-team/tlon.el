@@ -2441,8 +2441,9 @@ PROMPTS is a cons cell with the corresponding prompts."
   [["Narration"
     ("z" "Narrate buffer or selection"             tlon-tts-narrate-content)
     ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
-    ("e" "Generate report"                         tlon-tts-generate-report)]
-   ["Narration options"
+    ("e" "Generate report"                         tlon-tts-generate-report)
+    ""
+    "Narration options"
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
@@ -2451,24 +2452,32 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
     ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]
-   ["Edit"
-    "global"
-    ("a" "Abbreviation"                            tlon-tts-edit-abbreviations)
-    ("r" "Replacement"                             tlon-tts-edit-phonetic-replacements)
-    ("t" "Transcription"                           tlon-tts-edit-phonetic-transcriptions)
-    ""
-    "local"
-    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
-    ("R" "Replacement"                             tlon-add-local-replacement)]
    ["Files"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
-    ("n" "Truncate file"                           tlon-tts-truncate-audio-file)
+    ("n" "Truncate audio file"                     tlon-tts-truncate-audio-file)
     ""
+    "Dirs"
     ("o" "Open dir"                                tlon-tts-open-audio-directory)
-    ("O" "Open temp dir"                            tlon-tts-open-temp-audio-directory)
+    ("O" "Open temp dir"                           tlon-tts-open-temp-audio-directory)
     ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)
-    ("U" "Upload to temp dir"                      tlon-tts-upload-audio-file-to-server-temp-dir)]])
+    ("U" "Upload to temp dir"                      tlon-tts-upload-audio-file-to-server-temp-dir)]
+   ["Edit"
+    "global"
+    ("a" "Abbreviation"                            tlon-tts-edit-global-abbreviations)
+    ("r" "Replacement"                             tlon-tts-edit-global-phonetic-replacements)
+    ("t" "Transcription"                           tlon-tts-edit-global-phonetic-transcriptions)
+    ""
+    "local"
+    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
+    ("R" "Replacement"                             tlon-add-local-replacement)
+    ""
+    "Reload"
+    "global"
+    ("H-a" "Abbreviations"                         tlon-tts-load-global-abbreviations)
+    ("H-r" "Replacements"                          tlon-tts-load-global-phonetic-replacements)
+    ("H-t" "Transcriptions"                        tlon-tts-load-global-phonetic-transcriptions)]])
 
 (provide 'tlon-tts)
+
 ;;; tlon-tts.el ends here
