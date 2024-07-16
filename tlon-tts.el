@@ -2195,6 +2195,8 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 
 (tlon-tts-load-global-phonetic-transcriptions)
 
+;;;;;;; Entry manipulation
+
 (defun tlon-tts-edit-entry (variable file)
   "Add or revise an entry in VARIABLE and write it to FILE."
   (set variable (tlon-read-json file))
