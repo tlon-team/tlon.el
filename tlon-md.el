@@ -234,7 +234,6 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :doc "")
     (:tag "phoneme"
 	  :attributes ((:name "alphabet" :required t :valued t :group 3 :reader tlon-md-phoneme-alphabet-reader)
-		       ;; TODO: integrate with AI
 		       (:name "ph" :required t :valued t :group 5 :prompt "Phonetic symbols: "))
 	  :type ssml
 	  :self-closing nil
