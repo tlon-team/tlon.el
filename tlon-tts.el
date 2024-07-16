@@ -387,8 +387,14 @@ at the end of the TTS process.")
 	  :azure nil ; https://bit.ly/azure-ssml-phoneme
 	  :google t
 	  :openai nil
-	  :elevenlabs nil ; only some models, otherwise not read (https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation)
-	  :replacement ,(tlon-md-get-tag-pattern "phoneme"))
+	  :elevenlabs nil
+	  ;; it works with v2 turbo but not with v2 multilingual, and turbo is
+	  ;; not currently multilingual
+	  ;; <https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation>
+	  :replacement ,(tlon-md-get-tag-pattern "phoneme")
+	  ;; TODO: ideally it should be replaced by a mapping from IPA to
+	  ;; closest alphabetical equivalent
+	  )
     (:tag prosody
 	  :tlon nil
 	  :polly t ; partial support
