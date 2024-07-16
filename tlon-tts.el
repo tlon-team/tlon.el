@@ -113,7 +113,8 @@ Here's a description of the main options:
   16kHz versions, which can provide better audio quality at the expense of
   larger file sizes.
 
-For details, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
+For a full list of audio outputs, see
+<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
