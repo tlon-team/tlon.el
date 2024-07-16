@@ -276,7 +276,7 @@ Options are
   it still retains the fantastic quality offered in our other models. Even if
   optimized for real-time and more conversational applications, we still
   recommend testing it out for other applications as it is very versatile and
-  stable.\"
+  stable.\ As of 2024-07-15, it does not support multilingual voices.
 
 <https://help.elevenlabs.io/hc/en-us/articles/17883183930129-What-models-do-you-offer-and-what-is-the-difference-between-them>"
   :group 'tlon-tts
