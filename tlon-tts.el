@@ -1799,22 +1799,25 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
       (if-let* ((match (match-string-no-properties group))
 		(text (pcase type
 			('blockquote (replace-regexp-in-string "^[[:blank:]]*?> ?" "" match))
-			('table
-			 (let* ((table-contents (match-string-no-properties 2))
-				(omit-header-p (not (string-empty-p (match-string 5))))
-				(content (if omit-header-p
-					     ;; FIXME: this is a hack to remove
-					     ;; the `^A' character that is
-					     ;; somehow inserted
-					     (replace-regexp-in-string
-					      "" ""
-					      (replace-regexp-in-string tlon-tts-table-header "\1" table-contents))
-					   (replace-regexp-in-string tlon-tts-table-separator "" table-contents))))
-			   (format "%s\n%s" match content)))
+			('table (tlon-tts-add-listener-cues-in-table match))
 			(_ match))))
 	  (replace-match
 	   (tlon-tts-listener-cue-full-enclose cues (string-chop-newline text)) t t)
 	(user-error "Could not process cue for %s; match: %s" (symbol-name type) match)))))
+
+(defun tlon-tts-add-listener-cues-in-table (match)
+  "Add listener cues to the table in MATCH."
+  (save-match-data
+    (let* ((table-contents (match-string-no-properties 2))
+	   (include (match-string 5))
+	   (include-value (progn
+			    (string-match "include=\"\\(?1:.*\\)\"" include)
+			    (match-string 1 include)))
+	   (content (pcase include-value
+		      ("nothing" "")
+		      ("everything" (replace-regexp-in-string tlon-tts-table-separator "" table-contents))
+		      ("body" (replace-regexp-in-string tlon-tts-table-header "\1" table-contents)))))
+      (format "%s\n%s" match content))))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
