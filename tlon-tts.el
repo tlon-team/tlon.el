@@ -1473,12 +1473,12 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-process-paragraphs)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
-    (tlon-tts-remove-unsupported-ssml-tags)
     (tlon-tts-remove-final-break-tag)
     (tlon-tts-process-local-abbreviations)
     (tlon-tts-process-global-abbreviations)
     (tlon-tts-process-local-phonetic-replacements)
     (tlon-tts-process-global-phonetic-replacements)
+    (tlon-tts-remove-unsupported-ssml-tags)
     (tlon-tts-remove-extra-newlines))
   (goto-char (point-min)))
 
