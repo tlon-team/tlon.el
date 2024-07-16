@@ -290,17 +290,17 @@ Options are
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "tts/")
   "Directory for files related to text-to-speech functionality.")
 
-(defconst tlon-file-global-phonetic-transcriptions
-  (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
-  "File with phonetic transcriptions.")
+(defconst tlon-file-global-abbreviations
+  (file-name-concat tlon-dir-tts "abbreviations.json")
+  "File with abbreviations.")
 
 (defconst tlon-file-global-phonetic-replacements
   (file-name-concat tlon-dir-tts "phonetic-replacements.json")
   "File with replacements.")
 
-(defconst tlon-file-global-abbreviations
-  (file-name-concat tlon-dir-tts "abbreviations.json")
-  "File with abbreviations.")
+(defconst tlon-file-global-phonetic-transcriptions
+  (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
+  "File with phonetic transcriptions.")
 
 ;;;;; Current values
 
@@ -1478,7 +1478,7 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-process-local-abbreviations)
     (tlon-tts-process-global-abbreviations)
     (tlon-tts-process-local-phonetic-replacements)
-    (tlon-tts-process-globa-phonetic-replacements)
+    (tlon-tts-process-global-phonetic-replacements)
     (tlon-tts-remove-extra-newlines))
   (goto-char (point-min)))
 
@@ -1735,35 +1735,33 @@ process, return its cdr."
 
 ;;;;;;; Global
 
-(defun tlon-tts-process-globa-phonetic-replacements ()
+(defun tlon-tts-process-global-phonetic-replacements ()
   "Replace terms with their counterparts."
   (tlon-tts-process-terms
-   (tlon-tts-get-phonetic-replacements)
-   'tlon-tts-replace-phonetic-replacements 'word-boundary))
+   (tlon-tts-get-global-phonetic-replacements)
+   'tlon-tts-replace-global-phonetic-replacements 'word-boundary))
 
-(defun tlon-tts-get-phonetic-replacements ()
+(defun tlon-tts-get-global-phonetic-replacements ()
   "Get simple replacements."
-  (tlon-tts-get-associated-terms tlon-tts-phonetic-replacements))
+  (tlon-tts-get-associated-terms tlon-tts-global-phonetic-replacements))
 
-(defun tlon-tts-replace-phonetic-replacements (replacement)
+(defun tlon-tts-replace-global-phonetic-replacements (replacement)
   "When processing simple replacements, replace match with REPLACEMENT."
   (replace-match replacement t t))
 
 ;;;;;; Phonetic transcriptions
 
-;; We are not supporting this currently.
-
-(defun tlon-tts-process-phonetic-transcriptions ()
+(defun tlon-tts-process-global-phonetic-transcriptions ()
   "Replace terms with their pronunciations."
   (tlon-tts-process-terms
-   (tlon-tts-get-phonetic-transcriptions)
-   'tlon-tts-replace-phonetic-transcriptions 'word-boundary))
+   (tlon-tts-get-global-phonetic-transcriptions)
+   'tlon-tts-replace-global-phonetic-transcriptions 'word-boundary))
 
-(defun tlon-tts-get-phonetic-transcriptions ()
+(defun tlon-tts-get-global-phonetic-transcriptions ()
   "Get the phonetic transcriptions."
-  (tlon-tts-get-associated-terms tlon-tts-phonetic-transcriptions))
+  (tlon-tts-get-associated-terms tlon-tts-global-phonetic-transcriptions))
 
-(defun tlon-tts-replace-phonetic-transcriptions (replacement)
+(defun tlon-tts-replace-global-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (replace-match (format (tlon-md-get-tag-to-fill "phoneme")
@@ -2239,7 +2237,7 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 ;;;;;; Abbreviations
 
 ;;;###autoload
-(defun tlon-tts-edit-abbreviations ()
+(defun tlon-tts-edit-global-abbreviations ()
   "Edit abbreviations."
   (interactive)
   (tlon-tts-edit-entry 'tlon-global-abbreviations tlon-file-global-abbreviations))
@@ -2247,18 +2245,18 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 ;;;;;; Phonetic replacements
 
 ;;;###autoload
-(defun tlon-tts-edit-phonetic-replacements ()
+(defun tlon-tts-edit-global-phonetic-replacements ()
   "Edit phonetic replacements."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-phonetic-replacements tlon-file-global-phonetic-replacements))
+  (tlon-tts-edit-entry 'tlon-tts-global-phonetic-replacements tlon-file-global-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
 
 ;;;###autoload
-(defun tlon-tts-edit-phonetic-transcriptions ()
+(defun tlon-tts-edit-global-phonetic-transcriptions ()
   "Edit phonetic transcriptions."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-phonetic-transcriptions tlon-file-global-phonetic-transcriptions))
+  (tlon-tts-edit-entry 'tlon-tts-global-phonetic-transcriptions tlon-file-global-phonetic-transcriptions))
 
 ;;;;; Local
 
