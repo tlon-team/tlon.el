@@ -812,8 +812,7 @@ former in group 1.")
 
 ;;;;; Abbreviations
 
-(defvar tlon-global-abbreviations
-  (tlon-read-json tlon-file-global-abbreviations)
+(defvar tlon-global-abbreviations nil
   "Standard abbreviations and their spoken equivalent in each language.
 Note that the replacements are performed in the order they appear in the list.
 This may be relevant for certain types of abbreviations and languages. For
@@ -823,14 +822,12 @@ km).")
 
 ;;;;; Phonetic replacements
 
-(defvar tlon-tts-phonetic-replacements
-  (tlon-read-json tlon-file-global-phonetic-replacements)
+(defvar tlon-tts-global-phonetic-replacements nil
   "Phonetic replacements for terms.")
 
 ;;;;; Phonetic transcriptions
 
-(defvar tlon-tts-phonetic-transcriptions
-  (tlon-read-json tlon-file-global-phonetic-transcriptions)
+(defvar tlon-tts-global-phonetic-transcriptions nil
   "Phonetic transcriptions for terms.")
 
 ;;;;; Listener cues
@@ -2170,6 +2167,35 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 ;;;;; Global
 
 ;;;;;; Common
+
+;;;;;;; Variable setters
+
+;;;###autoload
+(defun tlon-tts-load-global-abbreviations ()
+  "Load global abbreviations."
+  (interactive)
+  (tlon-read-json tlon-file-global-abbreviations)
+  (message "Loaded global abbreviations."))
+
+(tlon-tts-load-global-abbreviations)
+
+;;;###autoload
+(defun tlon-tts-load-global-phonetic-replacements ()
+  "Load global phonetic replacements."
+  (interactive)
+  (tlon-read-json tlon-file-global-phonetic-replacements)
+  (message "Loaded global phonetic replacements."))
+
+(tlon-tts-load-global-phonetic-replacements)
+
+;;;###autoload
+(defun tlon-tts-load-global-phonetic-transcriptions ()
+  "Load global phonetic transcriptions."
+  (interactive)
+  (tlon-read-json tlon-file-global-phonetic-transcriptions)
+  (message "Loaded global phonetic transcriptions."))
+
+(tlon-tts-load-global-phonetic-transcriptions)
 
 (defun tlon-tts-edit-entry (variable file)
   "Add or revise an entry in VARIABLE and write it to FILE."
