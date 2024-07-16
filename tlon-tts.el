@@ -113,9 +113,41 @@ Here's a description of the main options:
   16kHz versions, which can provide better audio quality at the expense of
   larger file sizes.
 
-For details, see <https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
+For a full list of audio outputs, see
+<https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech?tabs=streaming#audio-outputs>."
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+(defconst tlon-microsoft-azure-audio-choices
+  '(("amr-wb-16000hz")
+    ("audio-16khz-16bit-32kbps-mono-opus" . "opus")
+    ("audio-16khz-32kbitrate-mono-mp3" . "mp3")
+    ("audio-16khz-64kbitrate-mono-mp3" . "mp3")
+    ("audio-16khz-128kbitrate-mono-mp3" . "mp3")
+    ("audio-24khz-16bit-24kbps-mono-opus" . "opus")
+    ("audio-24khz-16bit-48kbps-mono-opus" . "opus")
+    ("audio-24khz-48kbitrate-mono-mp3" . "mp3")
+    ("audio-24khz-96kbitrate-mono-mp3" . "mp3")
+    ("audio-24khz-160kbitrate-mono-mp3" . "mp3")
+    ("audio-48khz-96kbitrate-mono-mp3" . "mp3")
+    ("audio-48khz-192kbitrate-mono-mp3" . "mp3")
+    ("ogg-16khz-16bit-mono-opus" . "opus")
+    ("ogg-24khz-16bit-mono-opus" . "opus")
+    ("ogg-48khz-16bit-mono-opus" . "opus")
+    ("raw-8khz-8bit-mono-alaw" . "alaw")
+    ("raw-8khz-8bit-mono-mulaw" . "mulaw")
+    ("raw-8khz-16bit-mono-pcm" . "pcm")
+    ("raw-16khz-16bit-mono-pcm" . "pcm")
+    ("raw-16khz-16bit-mono-truesilk" . "sil")
+    ("raw-22050hz-16bit-mono-pcm" . "pcm")
+    ("raw-24khz-16bit-mono-pcm" . "pcm")
+    ("raw-24khz-16bit-mono-truesilk" . "sil")
+    ("raw-44100hz-16bit-mono-pcm" . "pcm")
+    ("raw-48khz-16bit-mono-pcm" . "pcm")
+    ("webm-16khz-16bit-mono-opus" . "opus")
+    ("webm-24khz-16bit-24kbps-mono-opus" . "opus")
+    ("webm-24khz-16bit-mono-opus" . "opus"))
+  "Output format and associated extension for the Microsoft Azure TTS service.")
 
 ;;;;; Google Cloud
 
@@ -276,7 +308,7 @@ Options are
   it still retains the fantastic quality offered in our other models. Even if
   optimized for real-time and more conversational applications, we still
   recommend testing it out for other applications as it is very versatile and
-  stable.\"
+  stable.\ As of 2024-07-15, it does not support multilingual voices.
 
 <https://help.elevenlabs.io/hc/en-us/articles/17883183930129-What-models-do-you-offer-and-what-is-the-difference-between-them>"
   :group 'tlon-tts
@@ -290,17 +322,17 @@ Options are
   (file-name-concat (tlon-repo-lookup :dir :name "babel-core") "tts/")
   "Directory for files related to text-to-speech functionality.")
 
-(defconst tlon-file-global-phonetic-transcriptions
-  (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
-  "File with phonetic transcriptions.")
+(defconst tlon-file-global-abbreviations
+  (file-name-concat tlon-dir-tts "abbreviations.json")
+  "File with abbreviations.")
 
 (defconst tlon-file-global-phonetic-replacements
   (file-name-concat tlon-dir-tts "phonetic-replacements.json")
   "File with replacements.")
 
-(defconst tlon-file-global-abbreviations
-  (file-name-concat tlon-dir-tts "abbreviations.json")
-  "File with abbreviations.")
+(defconst tlon-file-global-phonetic-transcriptions
+  (file-name-concat tlon-dir-tts "phonetic-transcriptions.json")
+  "File with phonetic transcriptions.")
 
 ;;;;; Current values
 
@@ -387,8 +419,14 @@ at the end of the TTS process.")
 	  :azure nil ; https://bit.ly/azure-ssml-phoneme
 	  :google t
 	  :openai nil
-	  :elevenlabs nil ; only some models, otherwise not read (https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation)
-	  :replacement ,(tlon-md-get-tag-pattern "phoneme"))
+	  :elevenlabs nil
+	  ;; it works with v2 turbo but not with v2 multilingual, and turbo is
+	  ;; not currently multilingual
+	  ;; <https://elevenlabs.io/docs/speech-synthesis/prompting#pronunciation>
+	  :replacement ,(tlon-md-get-tag-pattern "phoneme")
+	  ;; TODO: ideally it should be replaced by a mapping from IPA to
+	  ;; closest alphabetical equivalent
+	  )
     (:tag prosody
 	  :tlon nil
 	  :polly t ; partial support
@@ -611,7 +649,7 @@ including the voice ID, run `tlon-tts-elevenlabs-get-voices'.")
 
 (defconst tlon-elevenlabs-char-limit (* 5000 0.9)
   "Maximum number of characters that Elevenlabs can process per request.
-Elevenlabs can process up to 4096 bytes per request. We use a slightly
+Elevenlabs can process up to 5000 characters per request. We use a slightly
 lower number to err on the safe side.
 
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
@@ -622,7 +660,7 @@ questions\").")
   "Base URL for the ElevenLabs TTS API.")
 
 (defvar tlon-elevenlabs-key nil
-  "API key for the ElevelLabs TTS service.")
+  "API key for the ElevenLabs TTS service.")
 
 ;;;;; Engines
 
@@ -630,6 +668,7 @@ questions\").")
   `((:name "Microsoft Azure"
 	   :voices-var tlon-microsoft-azure-voices
 	   :output-var tlon-microsoft-azure-audio-settings
+	   :choices-var ,tlon-microsoft-azure-audio-choices
 	   :request-fun tlon-tts-microsoft-azure-make-request
 	   :char-limit ,tlon-microsoft-azure-char-limit
 	   :property :azure)
@@ -812,8 +851,7 @@ former in group 1.")
 
 ;;;;; Abbreviations
 
-(defvar tlon-global-abbreviations
-  (tlon-read-json tlon-file-global-abbreviations)
+(defvar tlon-global-abbreviations nil
   "Standard abbreviations and their spoken equivalent in each language.
 Note that the replacements are performed in the order they appear in the list.
 This may be relevant for certain types of abbreviations and languages. For
@@ -823,14 +861,12 @@ km).")
 
 ;;;;; Phonetic replacements
 
-(defvar tlon-tts-phonetic-replacements
-  (tlon-read-json tlon-file-global-phonetic-replacements)
+(defvar tlon-tts-global-phonetic-replacements nil
   "Phonetic replacements for terms.")
 
 ;;;;; Phonetic transcriptions
 
-(defvar tlon-tts-phonetic-transcriptions
-  (tlon-read-json tlon-file-global-phonetic-transcriptions)
+(defvar tlon-tts-global-phonetic-transcriptions nil
   "Phonetic transcriptions for terms.")
 
 ;;;;; Listener cues
@@ -1476,12 +1512,17 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-process-paragraphs)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
-    (tlon-tts-remove-unsupported-ssml-tags)
     (tlon-tts-remove-final-break-tag)
     (tlon-tts-process-local-abbreviations)
     (tlon-tts-process-global-abbreviations)
     (tlon-tts-process-local-phonetic-replacements)
-    (tlon-tts-process-globa-phonetic-replacements)
+    (tlon-tts-process-global-phonetic-replacements)
+    (tlon-tts-process-global-phonetic-transcriptions)
+    ;; FIXME: the below is not working properly.
+    ;; `tlon-tts-get-replacement-for-unsupported-ssml-tags' is not returning the
+    ;; correct value when run with the `phoneme' tag. Fixing it is not a
+    ;; priority because Elevenlabs does not support this tag anyway.
+    (tlon-tts-remove-unsupported-ssml-tags)
     (tlon-tts-remove-extra-newlines))
   (goto-char (point-min)))
 
@@ -1738,35 +1779,33 @@ process, return its cdr."
 
 ;;;;;;; Global
 
-(defun tlon-tts-process-globa-phonetic-replacements ()
+(defun tlon-tts-process-global-phonetic-replacements ()
   "Replace terms with their counterparts."
   (tlon-tts-process-terms
-   (tlon-tts-get-phonetic-replacements)
-   'tlon-tts-replace-phonetic-replacements 'word-boundary))
+   (tlon-tts-get-global-phonetic-replacements)
+   'tlon-tts-replace-global-phonetic-replacements 'word-boundary))
 
-(defun tlon-tts-get-phonetic-replacements ()
+(defun tlon-tts-get-global-phonetic-replacements ()
   "Get simple replacements."
-  (tlon-tts-get-associated-terms tlon-tts-phonetic-replacements))
+  (tlon-tts-get-associated-terms tlon-tts-global-phonetic-replacements))
 
-(defun tlon-tts-replace-phonetic-replacements (replacement)
+(defun tlon-tts-replace-global-phonetic-replacements (replacement)
   "When processing simple replacements, replace match with REPLACEMENT."
   (replace-match replacement t t))
 
 ;;;;;; Phonetic transcriptions
 
-;; We are not supporting this currently.
-
-(defun tlon-tts-process-phonetic-transcriptions ()
+(defun tlon-tts-process-global-phonetic-transcriptions ()
   "Replace terms with their pronunciations."
   (tlon-tts-process-terms
-   (tlon-tts-get-phonetic-transcriptions)
-   'tlon-tts-replace-phonetic-transcriptions 'word-boundary))
+   (tlon-tts-get-global-phonetic-transcriptions)
+   'tlon-tts-replace-global-phonetic-transcriptions 'word-boundary))
 
-(defun tlon-tts-get-phonetic-transcriptions ()
+(defun tlon-tts-get-global-phonetic-transcriptions ()
   "Get the phonetic transcriptions."
-  (tlon-tts-get-associated-terms tlon-tts-phonetic-transcriptions))
+  (tlon-tts-get-associated-terms tlon-tts-global-phonetic-transcriptions))
 
-(defun tlon-tts-replace-phonetic-transcriptions (replacement)
+(defun tlon-tts-replace-global-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
 REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (replace-match (format (tlon-md-get-tag-to-fill "phoneme")
@@ -1799,22 +1838,25 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
       (if-let* ((match (match-string-no-properties group))
 		(text (pcase type
 			('blockquote (replace-regexp-in-string "^[[:blank:]]*?> ?" "" match))
-			('table
-			 (let* ((table-contents (match-string-no-properties 2))
-				(omit-header-p (not (string-empty-p (match-string 5))))
-				(content (if omit-header-p
-					     ;; FIXME: this is a hack to remove
-					     ;; the `^A' character that is
-					     ;; somehow inserted
-					     (replace-regexp-in-string
-					      "" ""
-					      (replace-regexp-in-string tlon-tts-table-header "\1" table-contents))
-					   (replace-regexp-in-string tlon-tts-table-separator "" table-contents))))
-			   (format "%s\n%s" match content)))
+			('table (tlon-tts-add-listener-cues-in-table match))
 			(_ match))))
 	  (replace-match
 	   (tlon-tts-listener-cue-full-enclose cues (string-chop-newline text)) t t)
 	(user-error "Could not process cue for %s; match: %s" (symbol-name type) match)))))
+
+(defun tlon-tts-add-listener-cues-in-table (match)
+  "Add listener cues to the table in MATCH."
+  (save-match-data
+    (let* ((table-contents (match-string-no-properties 2))
+	   (include (match-string 5))
+	   (include-value (progn
+			    (string-match "include=\"\\(?1:.*\\)\"" include)
+			    (match-string 1 include)))
+	   (content (pcase include-value
+		      ("nothing" "")
+		      ("everything" (replace-regexp-in-string tlon-tts-table-separator "" table-contents))
+		      ("body" (replace-regexp-in-string tlon-tts-table-header "\1" table-contents)))))
+      (format "%s\n%s" match content))))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
@@ -2168,6 +2210,37 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 
 ;;;;;; Common
 
+;;;;;;; Variable setters
+
+;;;###autoload
+(defun tlon-tts-load-global-abbreviations ()
+  "Load global abbreviations."
+  (interactive)
+  (tlon-read-json tlon-file-global-abbreviations)
+  (message "Loaded global abbreviations."))
+
+(tlon-tts-load-global-abbreviations)
+
+;;;###autoload
+(defun tlon-tts-load-global-phonetic-replacements ()
+  "Load global phonetic replacements."
+  (interactive)
+  (tlon-read-json tlon-file-global-phonetic-replacements)
+  (message "Loaded global phonetic replacements."))
+
+(tlon-tts-load-global-phonetic-replacements)
+
+;;;###autoload
+(defun tlon-tts-load-global-phonetic-transcriptions ()
+  "Load global phonetic transcriptions."
+  (interactive)
+  (tlon-read-json tlon-file-global-phonetic-transcriptions)
+  (message "Loaded global phonetic transcriptions."))
+
+(tlon-tts-load-global-phonetic-transcriptions)
+
+;;;;;;; Entry manipulation
+
 (defun tlon-tts-edit-entry (variable file)
   "Add or revise an entry in VARIABLE and write it to FILE."
   (set variable (tlon-read-json file))
@@ -2210,7 +2283,7 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 ;;;;;; Abbreviations
 
 ;;;###autoload
-(defun tlon-tts-edit-abbreviations ()
+(defun tlon-tts-edit-global-abbreviations ()
   "Edit abbreviations."
   (interactive)
   (tlon-tts-edit-entry 'tlon-global-abbreviations tlon-file-global-abbreviations))
@@ -2218,18 +2291,18 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 ;;;;;; Phonetic replacements
 
 ;;;###autoload
-(defun tlon-tts-edit-phonetic-replacements ()
+(defun tlon-tts-edit-global-phonetic-replacements ()
   "Edit phonetic replacements."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-phonetic-replacements tlon-file-global-phonetic-replacements))
+  (tlon-tts-edit-entry 'tlon-tts-global-phonetic-replacements tlon-file-global-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
 
 ;;;###autoload
-(defun tlon-tts-edit-phonetic-transcriptions ()
+(defun tlon-tts-edit-global-phonetic-transcriptions ()
   "Edit phonetic transcriptions."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-phonetic-transcriptions tlon-file-global-phonetic-transcriptions))
+  (tlon-tts-edit-entry 'tlon-tts-global-phonetic-transcriptions tlon-file-global-phonetic-transcriptions))
 
 ;;;;; Local
 
@@ -2412,8 +2485,9 @@ PROMPTS is a cons cell with the corresponding prompts."
   [["Narration"
     ("z" "Narrate buffer or selection"             tlon-tts-narrate-content)
     ("c" "Narrate buffer or selection: cold run"   tlon-tts-display-tts-buffer)
-    ("e" "Generate report"                         tlon-tts-generate-report)]
-   ["Narration options"
+    ("e" "Generate report"                         tlon-tts-generate-report)
+    ""
+    "Narration options"
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
@@ -2422,24 +2496,32 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
     ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]
-   ["Edit"
-    "global"
-    ("a" "Abbreviation"                            tlon-tts-edit-abbreviations)
-    ("r" "Replacement"                             tlon-tts-edit-phonetic-replacements)
-    ("t" "Transcription"                           tlon-tts-edit-phonetic-transcriptions)
-    ""
-    "local"
-    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
-    ("R" "Replacement"                             tlon-add-local-replacement)]
    ["Files"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
-    ("n" "Truncate file"                           tlon-tts-truncate-audio-file)
+    ("n" "Truncate audio file"                     tlon-tts-truncate-audio-file)
     ""
+    "Dirs"
     ("o" "Open dir"                                tlon-tts-open-audio-directory)
-    ("O" "Open temp dir"                            tlon-tts-open-temp-audio-directory)
+    ("O" "Open temp dir"                           tlon-tts-open-temp-audio-directory)
     ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)
-    ("U" "Upload to temp dir"                      tlon-tts-upload-audio-file-to-server-temp-dir)]])
+    ("U" "Upload to temp dir"                      tlon-tts-upload-audio-file-to-server-temp-dir)]
+   ["Edit"
+    "global"
+    ("a" "Abbreviation"                            tlon-tts-edit-global-abbreviations)
+    ("r" "Replacement"                             tlon-tts-edit-global-phonetic-replacements)
+    ("t" "Transcription"                           tlon-tts-edit-global-phonetic-transcriptions)
+    ""
+    "local"
+    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
+    ("R" "Replacement"                             tlon-add-local-replacement)
+    ""
+    "Reload"
+    "global"
+    ("H-a" "Abbreviations"                         tlon-tts-load-global-abbreviations)
+    ("H-r" "Replacements"                          tlon-tts-load-global-phonetic-replacements)
+    ("H-t" "Transcriptions"                        tlon-tts-load-global-phonetic-transcriptions)]])
 
 (provide 'tlon-tts)
+
 ;;; tlon-tts.el ends here

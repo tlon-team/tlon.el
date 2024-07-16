@@ -234,7 +234,6 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :doc "")
     (:tag "phoneme"
 	  :attributes ((:name "alphabet" :required t :valued t :group 3 :reader tlon-md-phoneme-alphabet-reader)
-		       ;; TODO: integrate with AI
 		       (:name "ph" :required t :valued t :group 5 :prompt "Phonetic symbols: "))
 	  :type ssml
 	  :self-closing nil
@@ -259,7 +258,7 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :doc "")
     (:tag "SimpleTable"
 	  :attributes ((:name "alt" :required t :valued t :group 3 :prompt "Alt text: ")
-		       (:name "header" :required nil :valued nil :group 5 :reader tlon-md-simple-table-header-reader))
+		       (:name "include" :required nil :valued nil :group 5 :reader tlon-md-simple-table-include-reader))
 	  :type mdx
 	  :self-closing nil
 	  :doc "Encloses a Markdown table.")
@@ -731,10 +730,10 @@ numbers correctly."
   (interactive)
   (tlon-md-insert-or-edit-tag "SimpleTable"))
 
-(defun tlon-md-simple-table-header-reader ()
-  "Prompt the user to set the header attribute for a `SimpleTable' tag."
-  (if (y-or-n-p "Omit header? ")
-      " omit-header" ""))
+(defun tlon-md-simple-table-include-reader ()
+  "Prompt the user to set the `include' attribute for a `SimpleTable' tag."
+  (let ((selection (completing-read "Include: " '("nothing" "everything" "body") nil t)))
+    (format " include=\"%s\"" selection)))
 
 ;;;###autoload
 (defun tlon-insert-mdx-visually-hidden ()
