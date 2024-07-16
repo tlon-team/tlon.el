@@ -1478,6 +1478,11 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-process-global-abbreviations)
     (tlon-tts-process-local-phonetic-replacements)
     (tlon-tts-process-global-phonetic-replacements)
+    (tlon-tts-process-global-phonetic-transcriptions)
+    ;; FIXME: the below is not working properly.
+    ;; `tlon-tts-get-replacement-for-unsupported-ssml-tags' is not returning the
+    ;; correct value when run with the `phoneme' tag. Fixing it is not a
+    ;; priority because Elevenlabs does not support this tag anyway.
     (tlon-tts-remove-unsupported-ssml-tags)
     (tlon-tts-remove-extra-newlines))
   (goto-char (point-min)))
