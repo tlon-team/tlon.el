@@ -441,8 +441,14 @@ filled with placeholders."
 		(insert close)
 		(goto-char begin)
 		(insert open))
-	    (insert (concat open (or content "") close)))
-	(insert open)))))
+	    (tlon-md-act-on-returned-tag (concat open (or content "") close) format))
+	(tlon-md-act-on-returned-tag open format)))))
+
+(defun tlon-md-act-on-returned-tag (string format)
+  "Act on the returned STRING based on FORMAT."
+  (pcase format
+    ((or 'inserted 'to-fill) (insert string))
+    ((or 'match-string 'filled) string)))
 
 (defun tlon-md-format-tag (tag &optional values format)
   "Return TAG with attribute VALUES in the appropriate format.
