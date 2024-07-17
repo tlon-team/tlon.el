@@ -385,7 +385,7 @@ If no section is found, do nothing."
   "Insert or edit an MDX TAG pair at point or around the selected region."
   (if (tlon-looking-at-tag-p tag)
       (tlon-md-edit-tag)
-    (tlon-md-insert-tag tag)))
+    (tlon-md-return-tag tag)))
 
 (defun tlon-looking-at-tag-p (tag)
   "Return t iff point is looking at TAG."
@@ -404,7 +404,7 @@ insert VALUES. If `to-fill', return it filled with placeholders."
 	 (values (or values (tlon-get-tag-attribute-values tag)))
 	 (content (or content (match-string 2))))
     (replace-match "")
-    (tlon-md-insert-tag tag values content format)))
+    (tlon-md-return-tag tag values content format)))
 
 (defun tlon-md-set-tag-attribute-value (tag attribute value)
   "Set the VALUE of ATTRIBUTE for TAG."
@@ -419,8 +419,8 @@ If the tag already contains an attribute with the same name, replace its value."
   (let ((tag (tlon-get-tag-at-point)))
     (tlon-md-edit-tag (tlon-md-set-tag-attribute-value tag attribute value) nil 'filled)))
 
-(defun tlon-md-insert-tag (tag &optional values content format)
-  "Insert a TAG or TAG pair at point or around the selected region.
+(defun tlon-md-return-tag (tag &optional values content format)
+  "Return a TAG or TAG pair at point or around the selected region.
 VALUES is a list of attribute values. When non-nil, offer each value as the
 initial input when prompting the user for the attribute value. CONTENT is the
 text the tag pair encloses. FORMAT is one of `match-string', `to-fill', `filled'
@@ -664,7 +664,7 @@ is the alt text."
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
   (interactive)
-  (tlon-md-insert-tag "Language"))
+  (tlon-md-return-tag "Language"))
 
 ;;;###autoload
 (defun tlon-insert-mdx-literal-link ()
