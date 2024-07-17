@@ -516,7 +516,11 @@ file, and destination for the log file.")
 
 (defconst tlon-microsoft-azure-voices
   '((:voice "es-US-AlonsoNeural" :language "es" :gender "male")
-    (:voice "es-US-PalomaNeural" :language "es" :gender "female"))
+    (:voice "es-US-PalomaNeural" :language "es" :gender "female")
+    (:voice "es-CO-GonzaloNeural" :language "es" :gender "male")
+    (:voice "es-CO-SalomeNeural" :language "es" :gender "female")
+    (:voice "es-AR-TomasNeural" :language "es" :gender "male")
+    (:voice "es-AR-ElenaNeural" :language "es" :gender "female"))
   "Preferred Microsoft Azure voices for different languages.
 All the voices in this property list are neural and multilingual, and are the
 best male and female voices we were able to identify in each language.
