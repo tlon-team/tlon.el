@@ -509,7 +509,7 @@ tag.")
 --header 'X-Microsoft-OutputFormat: %s' \
 --header 'User-Agent: curl' \
 --data-raw '%s' \
-> '%4$s' 2> '%4$s.log'"
+-o '%4$s'"
   "Curl command to send a request to the Microsoft Azure text-to-speech engine.
 The placeholders are: API key, output format, SSML, destination for the audio
 file, and destination for the log file.")
@@ -707,7 +707,7 @@ questions\").")
   (mapcar (lambda (service)
 	    (cons service
 		  (format "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"%%s\">%s</speak>"
-			  (tlon-md-format-tag "voice" nil 'to-fill))))
+			  (tlon-md-return-tag "voice" '("%s") "%s" 'filled))))
 	  '("Microsoft Azure" "Google Cloud"))
   "SSML wrapper for the TTS request.")
 
