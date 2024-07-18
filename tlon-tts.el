@@ -71,11 +71,6 @@ Selection candidates for each language are listed in `tlon-tts-prompts'."
 ;; tag. This is different from the behavior of other engines, which *add* the
 ;; duration specified in the tag to the default pause duration.
 
-(defcustom tlon-tts-heading-break-duration "1s"
-  "Duration of the break after a heading."
-  :group 'tlon-tts
-  :type 'string)
-
 (defcustom tlon-tts-paragraph-break-duration "0.8s"
   "Duration of the break after a paragraph."
   :group 'tlon-tts
@@ -2440,17 +2435,6 @@ PROMPTS is a cons cell with the corresponding prompts."
 	 (prompts (alist-get language tlon-tts-prompts nil nil #'string=)))
     (completing-read "Prompt: " prompts)))
 
-;;;;;;; Heading break duration
-
-(transient-define-infix tlon-tts-heading-break-duration-infix ()
-  :class 'transient-lisp-variable
-  :variable 'tlon-tts-heading-break-duration
-  :reader 'tlon-tts-heading-break-duration-reader)
-
-(defun tlon-tts-heading-break-duration-reader (_ _ _)
-  "Reader for `tlon-tts-heading-break-duration-infix'."
-  (read-string "Duration (seconds): " tlon-tts-heading-break-duration))
-
 ;;;;;;; Paragraph break duration
 
 (transient-define-infix tlon-tts-paragraph-break-duration-infix ()
@@ -2488,7 +2472,6 @@ PROMPTS is a cons cell with the corresponding prompts."
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
-    ("-h" "Heading break duration"                 tlon-tts-heading-break-duration-infix)
     ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
     ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
