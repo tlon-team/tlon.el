@@ -1530,7 +1530,7 @@ citation key, format. Hence, it must be run *before*
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-footnote nil t)
     (let ((note (tlon-tts-get-note))
-	  (reposition))
+	  reposition)
       (markdown-footnote-kill)
       (when (not (string-empty-p note))
 	(unless (looking-back (concat "\\.\\|" markdown-regex-footnote) (line-beginning-position))
