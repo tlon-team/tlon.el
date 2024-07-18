@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.4.18
+;; Version: 1.4.19
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
 
@@ -43,7 +43,7 @@
 
 ;;;; Variables
 
-(defconst tlon-version "1.4.18"
+(defconst tlon-version "1.4.19"
   "Version of the `tlon' package.")
 
 ;;;;; Files and dirs
