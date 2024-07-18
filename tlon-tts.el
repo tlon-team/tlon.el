@@ -930,17 +930,10 @@ km).")
 
 ;;;;;; Headings
 
-;; TODO: develop function for processing headings
-
 (defconst tlon-tts-heading-cues
-  '(("en" "Heading: " . "")
-    ("es" "Sección: " .""))
+  '(("en" "Heading." . "")
+    ("es" "Sección." .""))
   "Listener cues for headings.")
-
-(defconst tlon-tts-subheading-cues
-  '(("en" "Subheading: " . "")
-    ("es" "Subsección: " .""))
-  "Listener cues for subheadings.")
 
 ;;;;;; Lists
 
@@ -1504,7 +1497,6 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tex-replace-keys-with-citations nil 'audio)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
-    (tlon-tts-process-headings)
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
     (tlon-tts-process-tables)
@@ -1678,21 +1670,7 @@ The time length of the pause is determined by
   "Remove horizontal lines from text."
   (goto-char (point-min))
   (while (re-search-forward "^---+\n\n" nil t)
-    (replace-match (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration) t t)))
-
-;;;;;; Headings
-
-(defun tlon-tts-process-headings ()
-  "Remove heading markers from headings and add an optional pause.
-The time length of the pause is determined by `tlon-tts-heading-break-duration'."
-  (let ((initial-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
-    (goto-char (point-min))
-    (while (re-search-forward markdown-regex-header nil t)
-      (let ((heading (match-string-no-properties 5)))
-	(save-match-data
-	  (unless (string-match "[\\.\\?!]$" heading)
-	    (setq heading (concat heading "."))))
-	(replace-match (format "%s %s" initial-pause heading) t t)))))
+    (replace-match (concat (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration) "\n\n") t t)))
 
 ;;;;;; Abbreviations
 
@@ -1822,6 +1800,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (tlon-tts-process-quotes)
   (tlon-tts-process-blockquotes)
   (tlon-tts-process-asides)
+  (tlon-tts-process-headings)
   (tlon-tts-process-images)
   (tlon-tts-process-owid))
 
@@ -1830,9 +1809,10 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
-	('quote (list (tlon-md-get-tag-pattern "q") tlon-tts-quote-cues 2))
 	('blockquote (list tlon-md-blockquote tlon-tts-blockquote-cues 1))
+	('heading (list markdown-regex-header tlon-tts-heading-cues 5))
 	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
+	('quote (list (tlon-md-get-tag-pattern "q") tlon-tts-quote-cues 2))
 	('table (list (tlon-md-get-tag-pattern "SimpleTable") tlon-tts-table-cues 4))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
@@ -1909,6 +1889,10 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 (defun tlon-tts-process-asides ()
   "Add listener cues for asides."
   (tlon-tts-add-listener-cues 'aside))
+
+(defun tlon-tts-process-headings ()
+  "Add listener cues for headings."
+  (tlon-tts-add-listener-cues 'headings))
 
 (defun tlon-tts-process-images ()
   "Add listener cues for text enclosed in tags of TYPE."
