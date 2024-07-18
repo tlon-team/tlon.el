@@ -1646,7 +1646,9 @@ The time length of the pause is determined by
     (forward-paragraph)
     (unless (eobp)
       (backward-char))
-    (unless (looking-back "^\\s-*$" (line-beginning-position))
+    (unless (or
+	     (looking-back (tlon-md-get-tag-pattern "break") (line-beginning-position))
+	     (looking-back "^\\s-*$" (line-beginning-position)))
       (insert (concat "\n" (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration))))
     (unless (eobp)
       (forward-char))))
