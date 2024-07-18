@@ -1832,15 +1832,19 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   "Add listener cues to the table in MATCH."
   (save-match-data
     (let* ((table-contents (match-string-no-properties 2))
-	   (include (match-string 5))
+	   (include-field (match-string 5))
 	   (include-value (progn
-			    (string-match "include=\"\\(?1:.*\\)\"" include)
-			    (match-string 1 include)))
+			    (string-match "include=\"\\(?1:.*\\)\"" include-field)
+			    (match-string 1 include-field)))
 	   (content (pcase include-value
 		      ("nothing" "")
 		      ("everything" (replace-regexp-in-string tlon-tts-table-separator "" table-contents))
-		      ("body" (replace-regexp-in-string tlon-tts-table-header "\1" table-contents)))))
-      (format "%s\n%s" match content))))
+		      ("body" (replace-regexp-in-string tlon-tts-table-header "\\1" table-contents)))))
+      (format "%s\n%s" match (tlon-tts-separate-table-cells content)))))
+
+(defun tlon-tts-separate-table-cells (table)
+  "Replace TABLE separators with periods."
+  (replace-regexp-in-string " *|\\(?1:.*?\\) *|" "\\1." table))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
