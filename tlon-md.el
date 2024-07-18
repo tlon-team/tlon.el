@@ -749,6 +749,49 @@ displayed."
   (interactive)
   (tlon-md-insert-or-edit-tag "VisuallyHidden"))
 
+;;;;;;;; Notes
+
+(defun tlon-insert-note-marker (marker &optional overwrite)
+  "Insert note MARKER in the footnote at point.
+If OVERWRITE is non-nil, replace the existing marker when present."
+  (if-let ((fn-data (tlon-md-get-note-bounds nil 'content-only)))
+      (let ((start (car fn-data)))
+	(goto-char start)
+	(let ((other-marker (car (remove marker (list (car (tlon-md-format-tag "Footnote" nil 'inserted))
+						      (car (tlon-md-format-tag "Sidenote" nil 'inserted)))))))
+	  (cond ((thing-at-point-looking-at (regexp-quote marker))
+		 nil)
+		((thing-at-point-looking-at (regexp-quote other-marker))
+		 (when overwrite
+		   (replace-match marker)))
+		(t
+		 (insert marker)))))
+    (user-error "Not in a footnote")))
+
+;;;###autoload
+(defun tlon-insert-footnote-marker (&optional overwrite)
+  "Insert a `Footnote' marker in the footnote at point.
+Text enclosed by a `Footnote' tag pair will be displayed as a footnote, as
+opposed to a sidenote.
+
+If OVERWRITE is non-nil, or called interactively, replace the existing marker
+when present."
+  (interactive)
+  (let ((overwrite (or overwrite (called-interactively-p 'any))))
+    transient-current-command
+    (tlon-insert-note-marker (car (tlon-md-format-tag "Footnote" nil 'inserted)) overwrite)))
+
+;;;###autoload
+(defun tlon-insert-sidenote-marker (&optional overwrite)
+  "Insert a `Sidenote' marker in the footnote at point.
+Text enclosed by a `Sidenote' tag pair will be displayed as a sidenote, as
+opposed to a footnote.
+
+If OVERWRITE is non-nil, or called interactively, replace the existing marker
+when present."
+  (interactive)
+  (tlon-insert-note-marker (car (tlon-md-format-tag "Sidenote" nil 'inserted)) overwrite))
+
 ;;;;;;; SSML
 
 ;;;###autoload
@@ -809,53 +852,6 @@ attribute."
 (defun tlon-md-say-as-interpret-as-reader ()
   "Prompt the user to select the `interpret-as' attribute value for a `say-as' tag."
   (completing-read "`interpret-as': " tlon-md-ssml-interpret-as-values))
-
-;;;;;;;; To revise
-
-;;;;;;;;; `Footnote'
-
-(defun tlon-insert-footnote-marker (&optional overwrite)
-  "Insert a `Footnote' marker in the footnote at point.
-Text enclosed by a `Footnote' tag pair will be displayed as a footnote, as
-opposed to a sidenote.
-
-If OVERWRITE is non-nil, or called interactively, replace the existing marker
-when present."
-  (interactive)
-  (let ((overwrite (or overwrite (called-interactively-p 'any))))
-    transient-current-command
-    (tlon-insert-note-marker (car (tlon-md-format-tag "Footnote" nil 'inserted)) overwrite)))
-
-;;;###autoload
-(defun tlon-insert-note-marker (marker &optional overwrite)
-  "Insert note MARKER in the footnote at point.
-If OVERWRITE is non-nil, replace the existing marker when present."
-  (if-let ((fn-data (tlon-md-get-note-bounds nil 'content-only)))
-      (let ((start (car fn-data)))
-	(goto-char start)
-	(let ((other-marker (car (remove marker (list (car (tlon-md-format-tag "Footnote" nil 'inserted))
-						      (car (tlon-md-format-tag "Sidenote" nil 'inserted)))))))
-	  (cond ((thing-at-point-looking-at (regexp-quote marker))
-		 nil)
-		((thing-at-point-looking-at (regexp-quote other-marker))
-		 (when overwrite
-		   (replace-match marker)))
-		(t
-		 (insert marker)))))
-    (user-error "Not in a footnote")))
-
-;;;;;;;;; `Sidenote'
-
-;;;###autoload
-(defun tlon-insert-sidenote-marker (&optional overwrite)
-  "Insert a `Sidenote' marker in the footnote at point.
-Text enclosed by a `Sidenote' tag pair will be displayed as a sidenote, as
-opposed to a footnote.
-
-If OVERWRITE is non-nil, or called interactively, replace the existing marker
-when present."
-  (interactive)
-  (tlon-insert-note-marker (car (tlon-md-format-tag "Sidenote" nil 'inserted)) overwrite))
 
 ;;;;;;;; Common functions
 
