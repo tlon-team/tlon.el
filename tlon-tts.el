@@ -1303,7 +1303,8 @@ STRING is the string of the request. DESTINATION is the output file path."
 	 (wrapped-string (format ssml-wrapper
 				 tlon-tts-current-voice-locale
 				 tlon-tts-current-main-voice
-				 string)))
+				 ;; handle single quotes in `string' without breaking `curl' command
+				 (replace-regexp-in-string "'" "'\"'\"'" string))))
     (format tlon-microsoft-azure-request
 	    (tlon-tts-microsoft-azure-get-or-set-key) (car tlon-microsoft-azure-audio-settings)
 	    wrapped-string destination)))
