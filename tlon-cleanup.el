@@ -189,19 +189,19 @@ entry is added."
       (replace-match (format "[^%s]: %s" (match-string-no-properties 1) (match-string-no-properties 2)))))))
 
 (defun tlon-cleanup-remove-text ()
-"Remove various strings of text."
-(dolist (string '("::: footnotes\n"
-		  "{rev=\"footnote\"} :::"
-		  "(#fnref[[:digit:]]\\{1,3\\})"
-		  " \\[↩︎](#fnref-.*?){\\.footnote-backref}"
-		  "\\[↩]"
-		  " :::"
-		  "————————————————————————\n\n"
-		  "\n\n::: {.section .footnotes}"
-		  "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License.\\](https://creativecommons.org/licenses/by/4.0/)\\*\n\n"))
-  (goto-char (point-min))
-  (while (re-search-forward string nil t)
-    (replace-match ""))))
+  "Remove various strings of text."
+  (dolist (string '("::: footnotes\n"
+		    "{rev=\"footnote\"} :::"
+		    "(#fnref[[:digit:]]\\{1,3\\})"
+		    " \\[↩︎](#fnref-.*?){\\.footnote-backref}"
+		    "\\[↩]"
+		    " :::"
+		    "————————————————————————\n\n"
+		    "\n\n::: {.section .footnotes}"
+		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License.\\](https://creativecommons.org/licenses/by/4.0/)\\*\n\n"))
+    (goto-char (point-min))
+    (while (re-search-forward string nil t)
+      (replace-match ""))))
 
 ;;;;;; Footnotes
 
@@ -224,20 +224,20 @@ entry is added."
 
 (declare-function markdown-insert-footnote "markdown-mode")
 (defun tlon-cleanup-consolidate-footnotes ()
-  "Consolidate consecutive footnotes."
-  (interactive)
-  (goto-char (point-min))
-  (let ((regex "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\ ?\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]"))
-    (while (re-search-forward regex nil t)
-      (let* ((n1 (string-to-number (match-string-no-properties 1)))
-	     (n2 (string-to-number (match-string-no-properties 2))))
-	(replace-match "" nil nil)
-	(let* ((fn1 (tlon-cleanup-get-footnote n1 'delete))
-	       (fn2 (tlon-cleanup-get-footnote n2 'delete))
-	       (consolidated (tlon-cleanup-consolidate-bibtex-keys (format "%s; %s" fn1 fn2))))
-	  (markdown-insert-footnote)
-	  (insert (format "%s." consolidated))
-	  (goto-char (point-min)))))))
+"Consolidate consecutive footnotes."
+(interactive)
+(goto-char (point-min))
+(let ((regex "\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]\\ ?\\[\\^\\([[:digit:]]\\{1,3\\}\\)\\]"))
+  (while (re-search-forward regex nil t)
+    (let* ((n1 (string-to-number (match-string-no-properties 1)))
+	   (n2 (string-to-number (match-string-no-properties 2))))
+      (replace-match "" nil nil)
+      (let* ((fn1 (tlon-cleanup-get-footnote n1 'delete))
+	     (fn2 (tlon-cleanup-get-footnote n2 'delete))
+	     (consolidated (tlon-cleanup-consolidate-bibtex-keys (format "%s; %s" fn1 fn2))))
+	(markdown-insert-footnote)
+	(insert (format "%s." consolidated))
+	(goto-char (point-min)))))))
 
 (defun tlon-cleanup-get-footnote (n &optional delete)
   "Get the content of footnote number N.
