@@ -1555,9 +1555,11 @@ citation key, format. Hence, it must be run *before*
   (save-excursion
     (markdown-footnote-goto-text)
     (let ((begin (point)))
-      (re-search-forward "^[\\^[[:digit:]]+" nil t)
-      (beginning-of-line)
-      (backward-char)
+      (if (re-search-forward "^[\\^[[:digit:]]+" nil t)
+	  (progn
+	    (beginning-of-line)
+	    (backward-char))
+	(goto-char (point-max)))
       (string-chop-newline (buffer-substring-no-properties begin (point))))))
 
 (defun tlon-tts-handle-note (note)
