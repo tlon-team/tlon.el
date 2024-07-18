@@ -1059,24 +1059,24 @@ otherwise."
 (defun tlon-tts-get-selection ()
   "Return the current selection, plus any footnotes referenced therein."
   (let ((text (buffer-substring-no-properties (region-beginning) (region-end)))
-        (footnotes (make-hash-table :test 'equal))
+	(footnotes (make-hash-table :test 'equal))
 	(beg (region-beginning))
 	(end (region-end)))
     (with-current-buffer (current-buffer)
       (save-excursion
-        (goto-char beg)
-        (while (re-search-forward markdown-regex-footnote end t)
-          (let* ((ref (match-string 2))
-                 (note-number (string-to-number ref))
-                 (note-content (tlon-md-get-note note-number 'content-only)))
-            (puthash ref note-content footnotes)))))
+	(goto-char beg)
+	(while (re-search-forward markdown-regex-footnote end t)
+	  (let* ((ref (match-string 2))
+		 (note-number (string-to-number ref))
+		 (note-content (tlon-md-get-note note-number 'content-only)))
+	    (puthash ref note-content footnotes)))))
     (let ((footnotes-section
-           (mapconcat (lambda (key)
-                        (concat "[^" key "]: " (gethash key footnotes)))
-                      (hash-table-keys footnotes) "\n")))
+	   (mapconcat (lambda (key)
+			(concat "[^" key "]: " (gethash key footnotes)))
+		      (hash-table-keys footnotes) "\n")))
       (if (string-empty-p footnotes-section)
-          text
-        (concat text "\n\n" footnotes-section)))))
+	  text
+	(concat text "\n\n" footnotes-section)))))
 
 ;;;;;;; Language
 
@@ -1969,8 +1969,8 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 An excluded tag is one enclosing text that does not contain acronyms to be
 processed."
   (seq-some (lambda (tag)
-              (thing-at-point-looking-at (tlon-md-get-tag-pattern tag)))
-            '("Cite" "Math" "ReplaceAudio" "Roman" "SmallCaps")))
+	      (thing-at-point-looking-at (tlon-md-get-tag-pattern tag)))
+	    '("Cite" "Math" "ReplaceAudio" "Roman" "SmallCaps")))
 
 ;;;;;;; Unprocessed strings
 
@@ -2361,13 +2361,13 @@ PROMPTS is a cons cell with the corresponding prompts."
 
 (defclass tlon-tts-engine-settings-infix (transient-infix)
   ((variable :initarg :variable
-             :initform nil
-             :type (or null symbol)
-             :documentation "Variable to hold some symbol.")
+	     :initform nil
+	     :type (or null symbol)
+	     :documentation "Variable to hold some symbol.")
    (custom-value :initarg :custom-value
-                 :initform nil
-                 :type t
-                 :documentation "Custom value for the setting."))
+		 :initform nil
+		 :type t
+		 :documentation "Custom value for the setting."))
   "Infix class for setting engine settings.")
 
 (defun tlon-tts-engine-settings-reader (_ _ _)
@@ -2379,11 +2379,11 @@ PROMPTS is a cons cell with the corresponding prompts."
 (cl-defmethod transient-init-value ((object tlon-tts-engine-settings-infix))
   "Initialize the value of the infix OBJECT."
   (let* ((variable-name (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine))
-         (variable (and variable-name (intern-soft variable-name))))
+	 (variable (and variable-name (intern-soft variable-name))))
     (when variable
       (setf (slot-value object 'variable) variable)
       (when (boundp variable)
-        (setf (slot-value object 'custom-value) (symbol-value variable)))
+	(setf (slot-value object 'custom-value) (symbol-value variable)))
       (symbol-value variable))))
 
 (cl-defmethod transient-infix-set ((object tlon-tts-engine-settings-infix) value)
@@ -2398,14 +2398,14 @@ PROMPTS is a cons cell with the corresponding prompts."
   "Format the value of the infix OBJECT."
   (let ((value (slot-value object 'custom-value)))
     (if value
-        (format "%s" value)
+	(format "%s" value)
       "Not set")))
 
 (defun tlon-tts-menu-infix-set-engine-settings-action ()
   "Set the engine settings."
   (interactive)
   (let* ((infix (transient-suffix-object 'tlon-tts-menu-infix-set-engine-settings))
-         (value (transient-infix-read infix)))
+	 (value (transient-infix-read infix)))
     (transient-infix-set infix value)
     (transient--show)))
 
