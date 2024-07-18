@@ -118,16 +118,16 @@ the exponent.")
   "Regexp pattern for matching a “big” number.
 Currently, we define it as a number no smaller than 1000.")
 
-;;;;; Footnotes
+;;;;;; Footnotes
 
 (defconst tlon-md-footnote-start
   "\\[\\^%s\\]:[[:space:]]"
   "Regexp pattern to match the start of a footnote.
 The placeholder is the footnote number.")
 
-;;;;;; SSML
+;;;;; SSML
 
-;;;;;;; `emphasis'
+;;;;;; `emphasis'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#emphasis-tag
 
 (defconst tlon-md-ssml-emphasis-levels
@@ -138,7 +138,7 @@ The placeholder is the footnote number.")
   "moderate"
   "Default value for the `level' attribute of the `emphasis' SSML tag.")
 
-;;;;;;; `phoneme'
+;;;;;; `phoneme'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#phoneme-tag
 
 (defconst tlon-md-ssml-phoneme-alphabets
@@ -149,26 +149,26 @@ The placeholder is the footnote number.")
   "ipa"
   "Default value for the `alphabet' attribute of the `phoneme' SSML tag.")
 
-;;;;;;; `prosody'
+;;;;;; `prosody'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#prosody-tag
 
 ;; not currently supported
 
-;;;;;;; `say-as'
+;;;;;; `say-as'
 ;; https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#say-as-tag
 
 (defconst tlon-md-ssml-interpret-as-values
   '("cardinal" "ordinal" "digits" "fraction" "unit" "date" "time" "telephone" "address" "interjection" "expletive" "spell-out" "characters" "verbatim")
   "Admissible values for the `interpret-as' attribute of the SSML tag.")
 
-;;;;;; MDX
+;;;;; MDX
 
-;;;;;;; `Table'
+;;;;;; `Table'
 
 ;; TODO: develop
 ;; https://github.com/tlon-team/uqbar-issues#mdx-tag-syntax
 
-;;;;;; Common constants
+;;;;; Common constants
 
 (defconst tlon-tag-specs
   `((:tag "AlternativeVoice"
