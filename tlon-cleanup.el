@@ -136,7 +136,8 @@ Please note that the order in which these functions are called is relevant. Do
 not alter it unless you know what you are doing."
   (interactive)
   (tlon-cleanup-eaf-replace-urls)
-  (tlon-cleanup-fix-footnote-refs)
+  (tlon-cleanup-fix-footnotes)
+  (tlon-cleanup-fix-footnote-references)
   (tlon-cleanup-remove-text))
 
 ;;;###autoload
@@ -170,33 +171,37 @@ entry is added."
 
 ;; If problems arise, test against documents imported from these URLs:
 ;; https://forum.effectivealtruism.org/s/vSAFjmWsfbMrTonpq/p/u5JesqQ3jdLENXBtB
-(defun tlon-cleanup-fix-footnote-refs ()
+(defun tlon-cleanup-fix-footnotes ()
+  "Convert footnotes to valid Markdown syntax."
+  (let* ((ref-number "[[:digit:]]\\{1,3\\}")
+	 (ref-source (format "\\^\\[\\\\\\[\\(?1:%s\\)\\\\\\]\\](#fn.*?){.*?}\\^" ref-number)))
+    (goto-char (point-min))
+    (while (re-search-forward ref-source nil t)
+      (replace-match (format "[^%s]" (match-string-no-properties 1))))))
+
+(defun tlon-cleanup-fix-footnote-references ()
   "Convert footnote references to valid Markdown syntax."
   (let* ((ref-number "[[:digit:]]\\{1,3\\}")
-	 (ref-source (format "\\^\\[\\(%s\\)\\](#fn.*?){.*?}\\^" ref-number))
-	 (ref-target (format "\\(%s\\)\\.  \\(::: \\)?{#fn.*?} " ref-number))
-	 (find-replace `((,ref-source . "[^\\1]")
-			 (,ref-target . "[^\\1]: "))))
-    (dolist (elt find-replace)
-      (goto-char (point-min))
-      (while (re-search-forward (car elt) nil t)
-	(replace-match (cdr elt))))))
+	 (ref-target (format "\\(?1:%1$s\\)\\..*?\\(?2:[^[:space:]].*?\\)\\[↩︎\\](#fnref-[[:alnum:]]*-%1$s){\\.footnote-backref}"
+			     ref-number)))
+    (goto-char (point-min))
+    (while (re-search-forward ref-target nil t)
+      (replace-match (format "[^%s]: %s" (match-string-no-properties 1) (match-string-no-properties 2)))))))
 
 (defun tlon-cleanup-remove-text ()
-  "Remove various strings of text."
-  (dolist (string '("::: footnotes\n"
-		    "{rev=\"footnote\"} :::"
-		    "(#fnref[[:digit:]]\\{1,3\\})"
-		    " \\[↩︎](#fnref-.*?){\\.footnote-backref}"
-		    "\\[↩]"
-		    " :::"
-		    "————————————————————————
-
-  ::: {.section .footnotes}"
-		    "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License.\\](https://creativecommons.org/licenses/by/4.0/)\\*\n\n"))
-    (goto-char (point-min))
-    (while (re-search-forward string nil t)
-      (replace-match ""))))
+"Remove various strings of text."
+(dolist (string '("::: footnotes\n"
+		  "{rev=\"footnote\"} :::"
+		  "(#fnref[[:digit:]]\\{1,3\\})"
+		  " \\[↩︎](#fnref-.*?){\\.footnote-backref}"
+		  "\\[↩]"
+		  " :::"
+		  "————————————————————————\n\n"
+		  "\n\n::: {.section .footnotes}"
+		  "\\*This work is licensed under a \\[Creative Commons Attribution 4.0 International License.\\](https://creativecommons.org/licenses/by/4.0/)\\*\n\n"))
+  (goto-char (point-min))
+  (while (re-search-forward string nil t)
+    (replace-match ""))))
 
 ;;;;;; Footnotes
 
