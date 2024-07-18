@@ -311,19 +311,9 @@ IDENTIFIER can be an URL, a post ID or a tag slug."
 ;; TODO: make it work with LW, AF, if it doesn’t already
 (defun tlon-import-eaf-get-id-from-identifier (identifier)
   "Return the EAF post ID from IDENTIFIER, if found."
-  (when-let ((id (or (when (string-match (format "^.+?forum.effectivealtruism.org/posts/%s"
-						 tlon-eaf-id-regexp)
-					 identifier)
-		       (match-string-no-properties 1 identifier))
-		     (when (string-match (format "^.+?forum.effectivealtruism.org/s/%s/p/%s"
-						 tlon-eaf-id-regexp tlon-eaf-id-regexp)
-					 identifier)
-		       (match-string-no-properties 2 identifier)))))
-    id))
-
-(defun tlon-import-eaf-get-url-from-id (id)
-  "Return the EAF URL from ID."
-  (format "https://forum.effectivealtruism.org/posts/%s" id))
+  (when (or (string-match tlon-eaf-url-post-collection identifier)
+	    (string-match tlon-eaf-url-post-canonical identifier))
+    (match-string-no-properties 2 identifier)))
 
 (defun tlon-import-eaf-get-slug-from-identifier (identifier)
   "Return the EAF tag slug from IDENTIFIER, if found."
