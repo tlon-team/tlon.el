@@ -934,17 +934,10 @@ km).")
 
 ;;;;;; Headings
 
-;; TODO: develop function for processing headings
-
 (defconst tlon-tts-heading-cues
-  '(("en" "Heading: " . "")
-    ("es" "Sección: " .""))
+  '(("en" "Heading." . "")
+    ("es" "Sección." .""))
   "Listener cues for headings.")
-
-(defconst tlon-tts-subheading-cues
-  '(("en" "Subheading: " . "")
-    ("es" "Subsección: " .""))
-  "Listener cues for subheadings.")
 
 ;;;;;; Lists
 
@@ -1070,24 +1063,24 @@ otherwise."
 (defun tlon-tts-get-selection ()
   "Return the current selection, plus any footnotes referenced therein."
   (let ((text (buffer-substring-no-properties (region-beginning) (region-end)))
-        (footnotes (make-hash-table :test 'equal))
+	(footnotes (make-hash-table :test 'equal))
 	(beg (region-beginning))
 	(end (region-end)))
     (with-current-buffer (current-buffer)
       (save-excursion
-        (goto-char beg)
-        (while (re-search-forward markdown-regex-footnote end t)
-          (let* ((ref (match-string 2))
-                 (note-number (string-to-number ref))
-                 (note-content (tlon-md-get-note note-number 'content-only)))
-            (puthash ref note-content footnotes)))))
+	(goto-char beg)
+	(while (re-search-forward markdown-regex-footnote end t)
+	  (let* ((ref (match-string 2))
+		 (note-number (string-to-number ref))
+		 (note-content (tlon-md-get-note note-number 'content-only)))
+	    (puthash ref note-content footnotes)))))
     (let ((footnotes-section
-           (mapconcat (lambda (key)
-                        (concat "[^" key "]: " (gethash key footnotes)))
-                      (hash-table-keys footnotes) "\n")))
+	   (mapconcat (lambda (key)
+			(concat "[^" key "]: " (gethash key footnotes)))
+		      (hash-table-keys footnotes) "\n")))
       (if (string-empty-p footnotes-section)
-          text
-        (concat text "\n\n" footnotes-section)))))
+	  text
+	(concat text "\n\n" footnotes-section)))))
 
 ;;;;;;; Language
 
@@ -1314,7 +1307,8 @@ STRING is the string of the request. DESTINATION is the output file path."
 	 (wrapped-string (format ssml-wrapper
 				 tlon-tts-current-voice-locale
 				 tlon-tts-current-main-voice
-				 string)))
+				 ;; handle single quotes in `string' without breaking `curl' command
+				 (replace-regexp-in-string "'" "'\"'\"'" string))))
     (format tlon-microsoft-azure-request
 	    (tlon-tts-microsoft-azure-get-or-set-key) (car tlon-microsoft-azure-audio-settings)
 	    wrapped-string destination)))
@@ -1508,10 +1502,8 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tex-replace-keys-with-citations nil 'audio)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
-    (tlon-tts-process-headings)
     (tlon-tts-process-alternative-voice)
     (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
-    (tlon-tts-process-tables)
     (tlon-tts-process-formatting) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tts-process-paragraphs)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
@@ -1542,7 +1534,7 @@ citation key, format. Hence, it must be run *before*
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-footnote nil t)
     (let ((note (tlon-tts-get-note))
-	  (reposition))
+	  reposition)
       (markdown-footnote-kill)
       (when (not (string-empty-p note))
 	(unless (looking-back (concat "\\.\\|" markdown-regex-footnote) (line-beginning-position))
@@ -1559,9 +1551,11 @@ citation key, format. Hence, it must be run *before*
   (save-excursion
     (markdown-footnote-goto-text)
     (let ((begin (point)))
-      (re-search-forward "^[\\^[[:digit:]]+" nil t)
-      (beginning-of-line)
-      (backward-char)
+      (if (re-search-forward "^[\\^[[:digit:]]+" nil t)
+	  (progn
+	    (beginning-of-line)
+	    (backward-char))
+	(goto-char (point-max)))
       (string-chop-newline (buffer-substring-no-properties begin (point))))))
 
 (defun tlon-tts-handle-note (note)
@@ -1656,7 +1650,9 @@ The time length of the pause is determined by
     (forward-paragraph)
     (unless (eobp)
       (backward-char))
-    (unless (looking-back "^\\s-*$" (line-beginning-position))
+    (unless (or
+	     (looking-back (tlon-md-get-tag-pattern "break") (line-beginning-position))
+	     (looking-back "^\\s-*$" (line-beginning-position)))
       (insert (concat "\n" (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration))))
     (unless (eobp)
       (forward-char))))
@@ -1680,21 +1676,7 @@ The time length of the pause is determined by
   "Remove horizontal lines from text."
   (goto-char (point-min))
   (while (re-search-forward "^---+\n\n" nil t)
-    (replace-match (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration) t t)))
-
-;;;;;; Headings
-
-(defun tlon-tts-process-headings ()
-  "Remove heading markers from headings and add an optional pause.
-The time length of the pause is determined by `tlon-tts-heading-break-duration'."
-  (let ((initial-pause (tlon-tts-get-ssml-break tlon-tts-heading-break-duration)))
-    (goto-char (point-min))
-    (while (re-search-forward markdown-regex-header nil t)
-      (let ((heading (match-string-no-properties 5)))
-	(save-match-data
-	  (unless (string-match "[\\.\\?!]$" heading)
-	    (setq heading (concat heading "."))))
-	(replace-match (format "%s %s" initial-pause heading) t t)))))
+    (replace-match (concat (tlon-tts-get-ssml-break tlon-tts-paragraph-break-duration) "\n\n") t t)))
 
 ;;;;;; Abbreviations
 
@@ -1821,9 +1803,11 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 
 (defun tlon-tts-process-listener-cues ()
   "Add listener cues to relevant elements."
+  (tlon-tts-process-tables)
   (tlon-tts-process-quotes)
   (tlon-tts-process-blockquotes)
   (tlon-tts-process-asides)
+  (tlon-tts-process-headings)
   (tlon-tts-process-images)
   (tlon-tts-process-owid))
 
@@ -1832,9 +1816,10 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
-	('quote (list (tlon-md-get-tag-pattern "q") tlon-tts-quote-cues 2))
 	('blockquote (list tlon-md-blockquote tlon-tts-blockquote-cues 1))
+	('heading (list markdown-regex-header tlon-tts-heading-cues 5))
 	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
+	('quote (list (tlon-md-get-tag-pattern "q") tlon-tts-quote-cues 2))
 	('table (list (tlon-md-get-tag-pattern "SimpleTable") tlon-tts-table-cues 4))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
@@ -1852,15 +1837,19 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   "Add listener cues to the table in MATCH."
   (save-match-data
     (let* ((table-contents (match-string-no-properties 2))
-	   (include (match-string 5))
+	   (include-field (match-string 5))
 	   (include-value (progn
-			    (string-match "include=\"\\(?1:.*\\)\"" include)
-			    (match-string 1 include)))
+			    (string-match "include=\"\\(?1:.*\\)\"" include-field)
+			    (match-string 1 include-field)))
 	   (content (pcase include-value
 		      ("nothing" "")
 		      ("everything" (replace-regexp-in-string tlon-tts-table-separator "" table-contents))
-		      ("body" (replace-regexp-in-string tlon-tts-table-header "\1" table-contents)))))
-      (format "%s\n%s" match content))))
+		      ("body" (replace-regexp-in-string tlon-tts-table-header "\\1" table-contents)))))
+      (format "%s\n%s" match (tlon-tts-separate-table-cells content)))))
+
+(defun tlon-tts-separate-table-cells (table)
+  "Replace TABLE separators with periods."
+  (replace-regexp-in-string " *|\\(?1:.*?\\) *|" "\\1." table))
 
 (defun tlon-tts-enclose-in-listener-cues (type text)
   "Enclose TEXT in listener cues of TYPE."
@@ -1911,6 +1900,10 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 (defun tlon-tts-process-asides ()
   "Add listener cues for asides."
   (tlon-tts-add-listener-cues 'aside))
+
+(defun tlon-tts-process-headings ()
+  "Add listener cues for headings."
+  (tlon-tts-add-listener-cues 'headings))
 
 (defun tlon-tts-process-images ()
   "Add listener cues for text enclosed in tags of TYPE."
@@ -1985,8 +1978,8 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 An excluded tag is one enclosing text that does not contain acronyms to be
 processed."
   (seq-some (lambda (tag)
-              (thing-at-point-looking-at (tlon-md-get-tag-pattern tag)))
-            '("Cite" "Math" "ReplaceAudio" "Roman" "SmallCaps")))
+	      (thing-at-point-looking-at (tlon-md-get-tag-pattern tag)))
+	    '("Cite" "Math" "ReplaceAudio" "Roman" "SmallCaps")))
 
 ;;;;;;; Unprocessed strings
 
@@ -2377,13 +2370,13 @@ PROMPTS is a cons cell with the corresponding prompts."
 
 (defclass tlon-tts-engine-settings-infix (transient-infix)
   ((variable :initarg :variable
-             :initform nil
-             :type (or null symbol)
-             :documentation "Variable to hold some symbol.")
+	     :initform nil
+	     :type (or null symbol)
+	     :documentation "Variable to hold some symbol.")
    (custom-value :initarg :custom-value
-                 :initform nil
-                 :type t
-                 :documentation "Custom value for the setting."))
+		 :initform nil
+		 :type t
+		 :documentation "Custom value for the setting."))
   "Infix class for setting engine settings.")
 
 (defun tlon-tts-engine-settings-reader (_ _ _)
@@ -2395,11 +2388,11 @@ PROMPTS is a cons cell with the corresponding prompts."
 (cl-defmethod transient-init-value ((object tlon-tts-engine-settings-infix))
   "Initialize the value of the infix OBJECT."
   (let* ((variable-name (tlon-lookup tlon-tts-engines :output-var :name tlon-tts-engine))
-         (variable (and variable-name (intern-soft variable-name))))
+	 (variable (and variable-name (intern-soft variable-name))))
     (when variable
       (setf (slot-value object 'variable) variable)
       (when (boundp variable)
-        (setf (slot-value object 'custom-value) (symbol-value variable)))
+	(setf (slot-value object 'custom-value) (symbol-value variable)))
       (symbol-value variable))))
 
 (cl-defmethod transient-infix-set ((object tlon-tts-engine-settings-infix) value)
@@ -2414,14 +2407,14 @@ PROMPTS is a cons cell with the corresponding prompts."
   "Format the value of the infix OBJECT."
   (let ((value (slot-value object 'custom-value)))
     (if value
-        (format "%s" value)
+	(format "%s" value)
       "Not set")))
 
 (defun tlon-tts-menu-infix-set-engine-settings-action ()
   "Set the engine settings."
   (interactive)
   (let* ((infix (transient-suffix-object 'tlon-tts-menu-infix-set-engine-settings))
-         (value (transient-infix-read infix)))
+	 (value (transient-infix-read infix)))
     (transient-infix-set infix value)
     (transient--show)))
 
