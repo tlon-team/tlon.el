@@ -1903,7 +1903,7 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 
 (defun tlon-tts-process-headings ()
   "Add listener cues for headings."
-  (tlon-tts-add-listener-cues 'headings))
+  (tlon-tts-add-listener-cues 'heading))
 
 (defun tlon-tts-process-images ()
   "Add listener cues for text enclosed in tags of TYPE."
