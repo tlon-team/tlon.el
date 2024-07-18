@@ -125,6 +125,22 @@ Currently, we define it as a number no smaller than 1000.")
   "Regexp pattern to match the start of a footnote.
 The placeholder is the footnote number.")
 
+;;;;;; Headings
+
+;; adapted from `markdown-regex-header'
+(defconst tlon-md-heading-template
+  "^\\(?:\\(?1:[^\n	 -].*\\)\n\\(?:\\(?2:=+\\)\\|\\(?3:-+\\)\\)\\|\\(?4:%s[ 	]+\\)\\(?5:.*?\\)\\(?6:[ 	]+#+\\)?\\)$"
+  "Template to construct constants to match headings and subheadings.")
+
+(defconst tlon-md-heading
+  (format tlon-md-heading-template "##")
+  "Regexp patern to match a top-level heading.")
+
+(defconst tlon-md-subheading
+  (format tlon-md-heading-template "###+")
+  "Regexp patern to match a subheading.
+A subheading is defined as any heading that is not top-level.")
+
 ;;;;; SSML
 
 ;;;;;; `emphasis'

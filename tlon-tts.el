@@ -934,6 +934,13 @@ km).")
     ("es" "Sección." .""))
   "Listener cues for headings.")
 
+;;;;;; Subheadings
+
+(defconst tlon-tts-subheading-cues
+  '(("en" "Subheading." . "")
+    ("es" "Subsección." .""))
+  "Listener cues for subheadings.")
+
 ;;;;;; Lists
 
 ;; TODO: develop function for processing lists
@@ -1493,7 +1500,7 @@ If COLD-RUN is non-nil, prepare the buffer for a cold run."
     (tlon-tts-ensure-all-images-have-alt-text)
     (tlon-tts-ensure-all-tables-have-alt-text)
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
-    (tlon-tts-remove-tag-sections) ; should be before `tlon-tts-process-headings'
+    (tlon-tts-remove-tag-sections) ; should probably be before `tlon-tts-process-listener-cues'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tex-replace-keys-with-citations nil 'audio)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
@@ -1803,16 +1810,21 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (tlon-tts-process-blockquotes)
   (tlon-tts-process-asides)
   (tlon-tts-process-headings)
+  (tlon-tts-process-subheadings)
   (tlon-tts-process-images)
   (tlon-tts-process-owid))
 
+;; TODO: consider revising so that each listener cue type has an associated
+;; break duration. This may be worth it if it feels like some cues (like section
+;; and subsection cues) should insert a longer silence than others.
 (defun tlon-tts-add-listener-cues (type)
   "Add listener cues for text enclosed in tags of TYPE."
   (cl-destructuring-bind (pattern cues group)
       (pcase type
 	('aside (list (tlon-md-get-tag-pattern "Aside") tlon-tts-aside-cues 2))
 	('blockquote (list tlon-md-blockquote tlon-tts-blockquote-cues 1))
-	('heading (list markdown-regex-header tlon-tts-heading-cues 5))
+	('heading (list tlon-md-heading tlon-tts-heading-cues 5))
+	('subheading (list tlon-md-subheading tlon-tts-subheading-cues 5))
 	('owid (list (tlon-md-get-tag-pattern "OurWorldInData") tlon-tts-owid-cues 6))
 	('quote (list (tlon-md-get-tag-pattern "q") tlon-tts-quote-cues 2))
 	('table (list (tlon-md-get-tag-pattern "SimpleTable") tlon-tts-table-cues 4))
@@ -1899,6 +1911,10 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
 (defun tlon-tts-process-headings ()
   "Add listener cues for headings."
   (tlon-tts-add-listener-cues 'heading))
+
+(defun tlon-tts-process-subheadings ()
+  "Add listener cues for subheadings."
+  (tlon-tts-add-listener-cues 'subheading))
 
 (defun tlon-tts-process-images ()
   "Add listener cues for text enclosed in tags of TYPE."
