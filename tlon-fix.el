@@ -320,6 +320,41 @@ dedicated function."
 		   " pódcast"
 		   'keep-case))
 
+(defun tlon-manual-fix-emphasis ()
+  "Prompt the user to add an `emphasis' tag around text enclosed in quotes."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let (content replacement replace-p)
+      (while (re-search-forward markdown-regex-italic nil t)
+	(save-match-data
+	  (setq content (match-string-no-properties 0))
+	  (setq replacement (match-string-no-properties 2))
+	  (if (yes-or-no-p (format "Enclose '%s' in `emphasis' tag?" content))
+	      (setq replace-p t)
+	    (setq replace-p nil)))
+	(when replace-p
+	  (replace-match (format "%s%s" (match-string-no-properties 1)
+				 (tlon-md-return-tag "emphasis" '("moderate") replacement 'filled))
+			 t t nil))))))
+
+(defun tlon-manual-fix-quote ()
+  "Prompt the user to add a `quote' tag around text enclosed in quotes."
+  (interactive)
+  (goto-char (point-min))
+  (let (content replacement replace-p)
+    (while (re-search-forward "[\"“'‘\\*]\\(?1:.*?\\)[\"”'’\\*]" nil t)
+      (save-match-data
+	(setq content (match-string-no-properties 0))
+	(setq replacement (match-string-no-properties 1))
+	(unless (thing-at-point-looking-at "<.**>")
+	  (if (yes-or-no-p (format "Enclose '%s' in `q' tag?" content))
+	      (setq replace-p t)
+	    (setq replace-p nil))))
+      (when replace-p
+	(replace-match (tlon-md-return-tag "q" nil replacement 'filled)
+		       t t nil)))))
+
 (defun tlon-manual-fix-all ()
   "Run all the `tlon-manual-fix' commands."
   (interactive)
@@ -329,7 +364,9 @@ dedicated function."
   (tlon-manual-fix-add-thousands-separators)
   (tlon-manual-fix-narrow-spaces)
   (tlon-manual-fix-solo)
-  (tlon-manual-fix-podcast))
+  (tlon-manual-fix-podcast)
+  (tlon-manual-fix-emphasis)
+  (tlon-manual-fix-quote))
 
 (defun tlon-fix-internet-archive-links ()
   "Fix Internet Archive links in the current buffer."
