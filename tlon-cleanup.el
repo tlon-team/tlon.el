@@ -186,7 +186,7 @@ entry is added."
 			     ref-number)))
     (goto-char (point-min))
     (while (re-search-forward ref-target nil t)
-      (replace-match (format "[^%s]: %s" (match-string-no-properties 1) (match-string-no-properties 2)))))))
+      (replace-match (format "[^%s]: %s" (match-string-no-properties 1) (match-string-no-properties 2))))))
 
 (defun tlon-cleanup-remove-text ()
   "Remove various strings of text."
