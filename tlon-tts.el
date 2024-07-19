@@ -364,9 +364,9 @@ at the end of the TTS process.")
 ;;;;;; `voice'
 
 (defconst tlon-tts-ssml-double-voice-replace-pattern
-  (concat (cdr (tlon-md-format-tag "voice" nil 'to-fill))
+  (concat (cdr (tlon-md-format-tag "voice" nil 'get-placeholders))
 	  (tlon-md-get-tag-to-fill "voice")
-	  (car (tlon-md-format-tag "voice" nil 'to-fill)))
+	  (car (tlon-md-format-tag "voice" nil 'get-placeholders)))
   "SSML pattern for voice tag, with 2 voice name placeholders and text placeholder.")
 
 ;;;;;; common
@@ -706,7 +706,7 @@ questions\").")
   (mapcar (lambda (service)
 	    (cons service
 		  (format "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"%%s\">%s</speak>"
-			  (tlon-md-return-tag "voice" '("%s") "%s" 'filled))))
+			  (tlon-md-return-tag "voice" '("%s") "%s" 'get-values))))
 	  '("Microsoft Azure" "Google Cloud"))
   "SSML wrapper for the TTS request.")
 
