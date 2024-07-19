@@ -368,8 +368,8 @@ dedicated function."
   (tlon-manual-fix-emphasis)
   (tlon-manual-fix-quote))
 
-(defun tlon-fix-internet-archive-links ()
-  "Fix Internet Archive links in the current buffer."
+(defun tlon-fix-internet-archive-urls ()
+  "Convert Internet Archive URLs in the current buffer into their originals."
   (interactive)
   (save-excursion
     (goto-char (point-min))
