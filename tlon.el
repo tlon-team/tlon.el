@@ -153,6 +153,13 @@ This variable should not be set manually.")
   (let ((default-directory tlon-package-dir))
     (magit-git-string "rev-parse" "--short" "HEAD")))
 
+(declare-function elpaca-extras-update-and-reload "elpaca-extras")
+;;;###autoload
+(defun tlon-update-package-and-reload ()
+  "Update and reload the `tlon' package."
+  (interactive)
+  (elpaca-extras-update-and-reload 'tlon))
+
 ;;;###autoload
 (defun tlon-copy-package-info ()
   "Copy information about the `tlon' package to the kill ring."

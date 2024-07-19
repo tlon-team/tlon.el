@@ -70,11 +70,12 @@
     ""]
    [""
     "Package"
-    ("H-p" "package files"                tlon-open-package-files)
+    ("H-u" "update & reload"              tlon-update-package-and-reload)
+    ("H-o" "open"                         tlon-open-package-files)
+    ("H-c" "copy info"                    tlon-copy-package-info)
     """"""""""""""
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
-    (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))
-    ("P" "copy package info"              tlon-copy-package-info)]])
+    (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))]])
 
 ;;;;;; Common elements
 
