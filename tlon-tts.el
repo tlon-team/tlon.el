@@ -84,7 +84,7 @@ Selection candidates for each language are listed in `tlon-tts-prompts'."
 ;;;;; Microsoft Azure
 
 (defcustom tlon-microsoft-azure-audio-settings
-  '("audio-16khz-64kbitrate-mono-mp3" . "mp3")
+  '("audio-24khz-160kbitrate-mono-mp3" . "mp3")
   "Output format and associated extension for the Microsoft Azure TTS service.
 Here's a description of the main options:
 
