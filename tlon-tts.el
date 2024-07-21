@@ -2224,8 +2224,9 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 (defun tlon-tts-load-global-abbreviations ()
   "Load global abbreviations."
   (interactive)
-  (tlon-read-json tlon-file-global-abbreviations)
-  (message "Loaded global abbreviations."))
+  (if-let ((abbrevs (tlon-read-json tlon-file-global-abbreviations)))
+      (setq tlon-global-abbreviations abbrevs)
+    (user-error "Warning: no global abbreviations found; check `tlon-global-abbreviations'")))
 
 (tlon-tts-load-global-abbreviations)
 
@@ -2233,8 +2234,9 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 (defun tlon-tts-load-global-phonetic-replacements ()
   "Load global phonetic replacements."
   (interactive)
-  (tlon-read-json tlon-file-global-phonetic-replacements)
-  (message "Loaded global phonetic replacements."))
+  (if-let ((replacements (tlon-read-json tlon-file-global-phonetic-replacements)))
+      (setq tlon-tts-global-phonetic-replacements replacements)
+    (user-error "Warning: no global phonetic replacements found; check `tlon-tts-global-phonetic-replacements'")))
 
 (tlon-tts-load-global-phonetic-replacements)
 
@@ -2242,8 +2244,9 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 (defun tlon-tts-load-global-phonetic-transcriptions ()
   "Load global phonetic transcriptions."
   (interactive)
-  (tlon-read-json tlon-file-global-phonetic-transcriptions)
-  (message "Loaded global phonetic transcriptions."))
+  (if-let ((transcriptions (tlon-read-json tlon-file-global-phonetic-transcriptions)))
+      (setq tlon-tts-global-phonetic-transcriptions transcriptions)
+    (user-error "Warning: no global phonetic transcriptions found; check `tlon-tts-global-phonetic-transcriptions'")))
 
 (tlon-tts-load-global-phonetic-transcriptions)
 
