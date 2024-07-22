@@ -227,7 +227,7 @@ which is rendered as @*
 As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
 @end example
 
-To insert a normal citation, use @code{tlon-insert-mdx-cite}. To insert a short citation, use @code{tlon-insert-mdx-cite-short}. To insert a locator, invoke @code{tlon-insert-locator} with point on a citation. These three commands may also be called from @code{tlon-md-menu} (@code{H-;}), with the keys @code{c}, @code{C} and @code{l}, respectively. @*
+To insert a normal citation, use @code{tlon-mdx-insert-cite}. To insert a short citation, use @code{tlon-mdx-insert-cite-short}. To insert a locator, invoke @code{tlon-insert-locator} with point on a citation. These three commands may also be called from @code{tlon-md-menu} (@code{H-;}), with the keys @code{c}, @code{C} and @code{l}, respectively. @*
 
 @node Commands to insert note markers
 @section Commands to insert note markers

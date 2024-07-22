@@ -633,19 +633,19 @@ prompting the user until a non-empty string is entered."
 ;;;;;;; HTML
 
 ;;;###autoload
-(defun tlon-insert-html-subscript ()
+(defun tlon-html-insert-subscript ()
   "Insert an HTML `sub' tag pair at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "sub"))
 
 ;;;###autoload
-(defun tlon-insert-html-superscript ()
+(defun tlon-html-insert-superscript ()
   "Insert an HTML `sup' tag pair at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "sup"))
 
 ;;;###autoload
-(defun tlon-insert-html-quote ()
+(defun tlon-html-insert-quote ()
   "Insert an HTML `q' tag pair at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "q"))
@@ -653,20 +653,12 @@ prompting the user until a non-empty string is entered."
 ;;;;;;; MDX
 
 ;;;###autoload
-(defun tlon-insert-mdx-alternative-voice ()
-  "Insert an MDX `AlternativeVoice' tag pair at point or around region.
-Text enclosed by a `AlternativeVoice' tag pair will be narrated in the
-alternative voice, as opposed to the main voice."
-  (interactive)
-  (tlon-md-insert-or-edit-tag "AlternativeVoice"))
-
-;;;###autoload
-(defun tlon-insert-mdx-aside ()
+(defun tlon-mdx-insert-aside ()
   "Insert an MDX `Aside' tag pair at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "Aside"))
 
-(defun tlon-insert-mdx-cite ()
+(defun tlon-mdx-insert-cite ()
   "Insert a `Cite' tag pair of TYPE at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "Cite"))
@@ -687,7 +679,7 @@ alternative voice, as opposed to the main voice."
     (if (string= length "short") " short" "")))
 
 ;;;###autoload
-(defun tlon-insert-mdx-figure ()
+(defun tlon-mdx-insert-figure ()
   "Insert a `Figure' tag pair at point or around the selected region.
 Prompt the user to enter values for SRC and ALT. SRC is the image URL, and ALT
 is the alt text."
@@ -696,7 +688,7 @@ is the alt text."
 
 ;; TODO: offer language candidates
 ;;;###autoload
-(defun tlon-insert-mdx-language ()
+(defun tlon-mdx-insert-language ()
   "Insert an MDX `Language' tag pair at point or around the selected region.
 Prompt the user to select a LANGUAGE. The enclosed text will be interpreted as
 written in that language."
@@ -704,14 +696,14 @@ written in that language."
   (tlon-md-return-tag "Language"))
 
 ;;;###autoload
-(defun tlon-insert-mdx-literal-link ()
+(defun tlon-mdx-insert-literal-link ()
   "Insert an MDX `LiteralLink' tag pair at point or around the selected region.
 Prompt the user to select a URL."
   (interactive)
   (tlon-md-insert-or-edit-tag "LiteralLink"))
 
 ;; TODO: create command to set alt text; integrate with AI
-(defun tlon-insert-mdx-math ()
+(defun tlon-mdx-insert-math ()
   "Insert an `Math' tag pair of TYPE at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "Math"))
@@ -722,14 +714,14 @@ Prompt the user to select a URL."
     (if (string= display "display") " display" "")))
 
 ;;;###autoload
-(defun tlon-insert-mdx-our-world-in-data ()
+(defun tlon-mdx-insert-our-world-in-data ()
   "Insert an `OurWorldInData' tag pair at point or around the selected region.
 Prompt the user to enter a SRC value."
   (interactive)
   (tlon-md-insert-or-edit-tag "OurWorldInData"))
 
 ;;;###autoload
-(defun tlon-insert-mdx-replace-audio ()
+(defun tlon-mdx-insert-replace-audio ()
   "Insert an MDX `ReplaceAudio' tag pair at point or around selected region.
 Text enclosed by an `ReplaceAudio' tag pair will be displayed, but when narrated
 the value of TEXT will be used instead."
@@ -756,18 +748,18 @@ the value of TEXT will be used instead."
   (completing-read "`voice': " '("main" "alternate" "male" "female") nil t))
 
 ;;;###autoload
-(defun tlon-insert-mdx-roman ()
+(defun tlon-mdx-insert-romantlon-insert-mdx-roman ()
   "Insert an MDX `Roman' tag pair at point or around the selected region.
 Text enclosed by an `Roman' tag pair will be displayed in small caps."
   (interactive)
   (tlon-md-insert-or-edit-tag "Roman"))
 
 ;;;###autoload
-(defun tlon-insert-mdx-small-caps ()
+(defun tlon-mdx-insert-small-caps ()
   "Insert an MDX `SmallCaps' tag pair at point or around the selected region.
 Text enclosed by an `SmallCaps' tag pair will be displayed in small caps.
 
-Note: for Roman numerals, use `tlon-insert-mdx-roman': `Roman' has exactly the
+Note: for Roman numerals, use `tlon-mdx-insert-romantlon-insert-mdx-roman': `Roman' has exactly the
 same visual effects as `SmallCaps', but it also makes the TTS engine read the
 numbers correctly."
   (interactive)
@@ -775,13 +767,13 @@ numbers correctly."
 
 ;; TODO: develop
 ;;;###autoload
-(defun tlon-insert-mdx-table ()
+(defun tlon-mdx-insert-table ()
   "Insert an MDX `Table' tag pair at point or around the selected region."
   (interactive)
   (message "This command is not yet developed."))
 
 ;;;###autoload
-(defun tlon-insert-mdx-simple-table ()
+(defun tlon-mdx-insert-simple-table ()
   "Insert an MDX `SimpleTable' tag pair at point or around the selected region."
   (interactive)
   (tlon-md-insert-or-edit-tag "SimpleTable"))
@@ -792,12 +784,20 @@ numbers correctly."
     (format " include=\"%s\"" selection)))
 
 ;;;###autoload
-(defun tlon-insert-mdx-visually-hidden ()
+(defun tlon-mdx-insert-visually-hidden ()
   "Insert an MDX `VisuallyHidden' tag pair at point or around selected region.
 Text enclosed by a `VisuallyHidden' tag pair will be narrated, but not
 displayed."
   (interactive)
   (tlon-md-insert-or-edit-tag "VisuallyHidden"))
+
+;;;###autoload
+(defun tlon-mdx-insert-voice-role ()
+  "Insert an MDX `VoiceRole' tag pair at point or around region.
+Text enclosed by a `VoiceRole' tag pair will be narrated in the
+alternative voice, as opposed to the main voice."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "VoiceRole"))
 
 ;;;;;;;; Notes
 
@@ -1140,14 +1140,14 @@ variables section. If FILE is nil, read the file visited by the current buffer."
   [["YAML"
     ("y" "field"                tlon-edit-yaml-field)]
    ["TTS"
-    ("t a" "alternative voice"    tlon-insert-mdx-alternative-voice)
-    ("t b" "break"                tlon-tts-insert-ssml-break)
-    ("t e" "emphasis"             tlon-tts-insert-ssml-emphasis)
-    ("t l" "lang"                 tlon-tts-insert-ssml-lang)
-    ("t p" "phoneme"              tlon-tts-insert-ssml-phoneme)
-    ("t r" "replace audio"        tlon-insert-mdx-replace-audio)
-    ("t s" "say-as"               tlon-tts-insert-ssml-say-as)
-    ("t v" "visually hidden"      tlon-insert-mdx-visually-hidden)]
+    ("t b" "break"              tlon-tts-insert-ssml-break)
+    ("t e" "emphasis"           tlon-tts-insert-ssml-emphasis)
+    ("t l" "lang"               tlon-tts-insert-ssml-lang)
+    ("t o" "voice role"         tlon-mdx-insert-voice-role)
+    ("t p" "phoneme"            tlon-tts-insert-ssml-phoneme)
+    ("t r" "replace audio"      tlon-mdx-insert-replace-audio)
+    ("t s" "say-as"             tlon-tts-insert-ssml-say-as)
+    ("t v" "visually hidden"    tlon-mdx-insert-visually-hidden)]
    ["Note markers"
     ("f" "footnote"             (lambda () (interactive) (tlon-insert-footnote-marker 'overwrite)))
     ("s" "sidenote"             (lambda () (interactive) (tlon-insert-sidenote-marker 'overwrite)))
@@ -1155,36 +1155,36 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("N" "auto: in file"        tlon-auto-classify-notes-in-file)
     ""
     "Citations"
-    ("c" "cite"                 tlon-insert-mdx-cite)
+    ("c" "cite"                 tlon-mdx-insert-cite)
     ""
     "Quotes"
-    ("i" "inline"                tlon-insert-html-quote)
-    ("b" "blockquote"            markdown-insert-blockquote)
+    ("i" "inline"               lon-insert-html-quote)
+    ("b" "blockquote"           arkdown-insert-blockquote)
     ]
    ["Images"
-    ("g" "figure"               tlon-insert-mdx-figure)
-    ("o" "Our World In Data"    tlon-insert-mdx-our-world-in-data)
+    ("g" "figure"               tlon-mdx-insert-figure)
+    ("o" "Our World In Data"    tlon-mdx-insert-our-world-in-data)
     ""
     "Link"
     ("k" "internal"             tlon-insert-internal-link)
-    ("e" "literal"              tlon-insert-mdx-literal-link)
+    ("e" "literal"              tlon-mdx-insert-literal-link)
     ""
     "Subscripts and superscripts"
-    ("," "subscript"            tlon-insert-html-subscript)
-    ("/" "superscript"          tlon-insert-html-superscript)]
+    ("," "subscript"            tlon-html-insert-subscript)
+    ("/" "superscript"          tlon-html-insert-superscript)]
    ["Misc"
-    ("a" "aside"                tlon-insert-mdx-aside)
-    ("l" "language"             tlon-insert-mdx-language)
-    ("m" "Math"                 tlon-insert-mdx-math)
+    ("a" "aside"                tlon-mdx-insert-aside)
+    ("l" "language"             tlon-mdx-insert-language)
+    ("m" "Math"                 tlon-mdx-insert-math)
     ("." "special character"    tlon-insert-special-character)
     ""
     "Caps"
-    ("p" "small caps"           tlon-insert-mdx-small-caps)
-    ("r" "roman"                tlon-insert-mdx-roman)
+    ("p" "small caps"           tlon-mdx-insert-small-caps)
+    ("r" "roman"                tlon-mdx-insert-romantlon-insert-mdx-roman)
     ""
     "Table"
-    ("A" "table"                tlon-insert-mdx-table)
-    ("T" "simple table"         tlon-insert-mdx-simple-table)]])
+    ("A" "table"                tlon-mdx-insert-table)
+    ("T" "simple table"         tlon-mdx-insert-simple-table)]])
 
 (provide 'tlon-md)
 ;;; tlon-md.el ends here

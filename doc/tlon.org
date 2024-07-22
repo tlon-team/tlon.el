@@ -158,7 +158,7 @@ which is rendered as
 As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
 #+end_src
 
-To insert a normal citation, use ~tlon-insert-mdx-cite~. To insert a short citation, use ~tlon-insert-mdx-cite-short~. To insert a locator, invoke ~tlon-insert-locator~ with point on a citation. These three commands may also be called from ~tlon-md-menu~ (~H-;~), with the keys ~c~, ~C~ and ~l~, respectively.
+To insert a normal citation, use ~tlon-mdx-insert-cite~. To insert a short citation, use ~tlon-mdx-insert-cite-short~. To insert a locator, invoke ~tlon-insert-locator~ with point on a citation. These three commands may also be called from ~tlon-md-menu~ (~H-;~), with the keys ~c~, ~C~ and ~l~, respectively.
 
 ** Commands to insert note markers
 
