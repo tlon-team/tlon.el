@@ -373,6 +373,16 @@ and the third group captures the collection ID.")
   "\\([[:alnum:]-]*\\)"
   "Regular expression for matching tag slugs.")
 
+;;;;; Misc
+
+(defconst tlon-tts-conjuncts
+  '((:language "en" :conjunct "and")
+    (:language "es" :conjunct "y")
+    (:language "fr" :conjunct "et")
+    (:language "it" :conjunct "e")
+    (:language "de" :conjunct "und"))
+  "List of language-specific conjunctions for text-to-speech processes.")
+
 ;;;;; To sort
 
 (defvar tlon-users
@@ -755,8 +765,9 @@ buffer."
   "Concatenate LIST into a string with commas and `and' as appropriate."
   (if (cdr list)
       (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
-	    (last (car (last list))))
-	(format "%s and %s" all-but-last last))
+	    (last (car (last list)))
+	    (conjunct (tlon-lookup tlon-tts-conjuncts :conjunct :language (tlon-get-language))))
+	(format "%s %s %s" all-but-last conjunct last))
     (car list)))
 
 ;;;;; language
