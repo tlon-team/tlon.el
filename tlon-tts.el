@@ -48,7 +48,7 @@
 		 (const :tag "ElevenLabs" :elevenlabs)))
 
 (defcustom tlon-tts-use-alternate-voice t
-  "Whether to use an alternative voice for reading notes, asides, etc."
+  "Whether to use an alternate voice for reading notes, asides, etc."
   :group 'tlon-tts
   :type 'boolean)
 
@@ -2003,7 +2003,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
 
 (defun tlon-tts-enclose-in-voice-tag (string &optional voice)
   "Enclose STRING in `voice' SSML tags.
-If VOICE is nil, default to the alternative voice.
+If VOICE is nil, default to the alternate voice.
 
 Note that this function inserts two pairs of `voice' tags: the inner pair to set
 the voice for the string that it encloses, and an outer pair of tags in reverse
@@ -2042,7 +2042,7 @@ Whether TEXT is enclosed in `voice' tags is determined by the value of
        (tlon-tts-enclose-in-listener-cues cues text)))))
 
 (defun tlon-tts-use-alternate-voice-maybe-with-cue (type text)
-  "Read TEXT with alternative voice.
+  "Read TEXT with alternate voice.
 Depending on TYPE, also enclose TEXT in listener cues."
   (let* ((cues (alist-get type tlon-tts-listener-cues))
 	 (content (pcase type
@@ -2669,15 +2669,15 @@ move point to the file-local variables section."
   "Reader for `tlon-tts-paragraph-break-duration-infix'."
   (read-string "Duration (seconds): " tlon-tts-paragraph-break-duration))
 
-;;;;;;; Alternative voice
+;;;;;;; Alternate voice
 
 (transient-define-infix tlon-tts-menu-infix-toggle-alternate-voice ()
   "Toggle the value of `tlon-tts-use-alternate-voice' in `tts' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-use-alternate-voice
-  :reader 'tlon-tts-alternative-voice-reader)
+  :reader 'tlon-tts-alternate-voice-reader)
 
-(defun tlon-tts-alternative-voice-reader (_ _ _)
+(defun tlon-tts-alternate-voice-reader (_ _ _)
   "Reader for `tlon-tts-menu-infix-toggle-alternate-voice'."
   (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice))
 
@@ -2709,7 +2709,7 @@ move point to the file-local variables section."
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
-    ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
+    ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
     ""
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["Files"
