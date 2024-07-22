@@ -52,6 +52,11 @@
   :group 'tlon-tts
   :type 'boolean)
 
+(defcustom tlon-tts-delete-file-chunks nil
+  "Whether to delete file chunks after they have been merged into the main file."
+  :group 'tlon-tts
+  :type 'boolean)
+
 ;; TODO: it looks like this is not being used; decide what to do about it
 (defcustom tlon-tts-prompt
   nil
@@ -2683,6 +2688,18 @@ move point to the file-local variables section."
   "Reader for `tlon-tts-menu-infix-toggle-alternate-voice'."
   (tlon-transient-toggle-variable-value 'tlon-tts-use-alternate-voice))
 
+;;;;;;; Delete chunks
+
+(transient-define-infix tlon-tts-menu-infix-toggle-delete-file-chunks ()
+  "Toggle the value of `tlon-tts-delete-file-chunks' in `tts' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-delete-file-chunks
+  :reader 'tlon-tts-delete-file-chunks-reader)
+
+(defun tlon-tts-delete-file-chunks-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
+
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
@@ -2694,13 +2711,14 @@ move point to the file-local variables section."
     ("e" "Generate report"                         tlon-tts-generate-report)
     ""
     "Narration options"
+    ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
+    ("-d" "Delete file chunks"                     tlon-tts-menu-infix-toggle-delete-file-chunks)
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
-    ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
     ("-v" "Use alternative voice"                  tlon-tts-menu-infix-toggle-alternate-voice)
     ""
-    ("-d" "Debug"                                  tlon-menu-infix-toggle-debug)]
+    ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["Files"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
