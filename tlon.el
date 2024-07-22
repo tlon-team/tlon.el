@@ -31,7 +31,6 @@
 (require 'paths)
 (require 'tlon-core)
 (require 'tlon-tex)
-(require 'transient)
 
 ;;;; Customization:
 
