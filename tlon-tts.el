@@ -1399,8 +1399,10 @@ If VOICE is nil, prompt the user to select a voice."
 				"Return a cons cell of voice metadata and voices."
 				(let* ((gender (tlon-lookup voices :gender :id id))
 				       (name (tlon-lookup voices :name :id id))
+				       (role (or (tlon-lookup voices :role :id id) ""))
 				       (display-name (if name name id))
-				       (metadata (format "%-20.20s %-20.20s" display-name gender)))
+				       (metadata (format "%-20.20s %-10.20s %-10.20s"
+							 display-name gender role)))
 				  (cons metadata id)))
 			      voices-in-lang)))
     (alist-get (completing-read "Voice: " voices-cons) voices-cons nil nil #'string=)))
