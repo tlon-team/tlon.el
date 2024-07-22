@@ -335,7 +335,7 @@ dedicated function."
 	    (setq replace-p nil)))
 	(when replace-p
 	  (replace-match (format "%s%s" (match-string-no-properties 1)
-				 (tlon-md-return-tag "emphasis" '("moderate") replacement 'filled))
+				 (tlon-md-return-tag "emphasis" '("moderate") replacement 'get-values))
 			 t t nil))))))
 
 (defun tlon-manual-fix-quote ()
@@ -352,7 +352,7 @@ dedicated function."
 	      (setq replace-p t)
 	    (setq replace-p nil))))
       (when replace-p
-	(replace-match (tlon-md-return-tag "q" nil replacement 'filled)
+	(replace-match (tlon-md-return-tag "q" nil replacement 'get-values)
 		       t t nil)))))
 
 (defun tlon-manual-fix-all ()

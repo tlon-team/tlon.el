@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.4.20
+;; Version: 1.5.1
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
 
@@ -31,7 +31,6 @@
 (require 'paths)
 (require 'tlon-core)
 (require 'tlon-tex)
-(require 'transient)
 
 ;;;; Customization:
 
@@ -152,6 +151,13 @@ This variable should not be set manually.")
   "Return the latest commit in the `tlon' package."
   (let ((default-directory tlon-package-dir))
     (magit-git-string "rev-parse" "--short" "HEAD")))
+
+(declare-function elpaca-extras-update-and-reload "elpaca-extras")
+;;;###autoload
+(defun tlon-update-package-and-reload ()
+  "Update and reload the `tlon' package."
+  (interactive)
+  (elpaca-extras-update-and-reload 'tlon))
 
 ;;;###autoload
 (defun tlon-copy-package-info ()
