@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(require 'tlon)
 (require 'tlon-core)
 
 ;;;; Functions
