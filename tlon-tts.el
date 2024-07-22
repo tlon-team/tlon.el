@@ -1048,7 +1048,6 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tex-replace-keys-with-citations nil 'audio)
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
-    (tlon-tts-process-alternative-voice)
     (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
     (tlon-tts-process-formatting) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tts-process-paragraphs)
@@ -1744,7 +1743,6 @@ citation key, format. Hence, it must be run *before*
 	('italics (cons markdown-regex-italic '(1 4)))
 	('visually-hidden (cons (tlon-md-get-tag-pattern "VisuallyHidden") '(2)))
 	('replace-audio (cons (tlon-md-get-tag-pattern "ReplaceAudio") '(4)))
-	('alternative-voice (cons (tlon-md-get-tag-pattern "AlternativeVoice") '(2)))
 	('small-caps (cons (tlon-md-get-tag-pattern "SmallCaps") '(2)))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
@@ -1773,18 +1771,6 @@ citation key, format. Hence, it must be run *before*
 (defun tlon-tts-process-replace-audio ()
   "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
   (tlon-tts-remove-formatting 'replace-audio))
-
-(defun tlon-tts-process-alternative-voice ()
-  "Remove `AlternativeVoice' tag, or replace it with an SSML `voice' tag.
-Whether the tag is removed or replaced depends on the value of
-`tlon-tts-use-alternate-voice'. When the tag is replaced, the `voice' tag is set
-to the alternative voice for the current language."
-  (if tlon-tts-use-alternate-voice
-      (progn
-	(goto-char (point-min))
-	(while (re-search-forward (tlon-md-get-tag-pattern "AlternativeVoice") nil t)
-	  (replace-match (tlon-tts-enclose-in-voice-tag (match-string 2)) t t)))
-    (tlon-tts-remove-formatting 'alternative-voice)))
 
 (defun tlon-tts-process-small-caps ()
   "Replace small caps with their full form."
