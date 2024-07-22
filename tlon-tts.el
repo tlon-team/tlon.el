@@ -2239,7 +2239,7 @@ image links are handled differently."
   "Process numbers as appropriate."
   (tlon-tts-process-numerals-convert-powers)
   (tlon-tts-process-numerals-convert-roman)
-  (tlon-tts-process-numerals-remove-thousands-separators)
+  (tlon-tts-process-numerals-set-thousands-separators)
   (tlon-tts-process-80000))
 
 ;;;;;;; Specific
@@ -2288,13 +2288,18 @@ image links are handled differently."
 ;;;;;;;; Replace thousands separators
 
 (defvar tlon-language-specific-thousands-separator)
-(defun tlon-tts-process-numerals-remove-thousands-separators ()
+(defun tlon-tts-process-numerals-set-thousands-separators ()
   "Replace narrow space with language-specific thousands separator.
 Some TTS engines do not read numbers correctly when they are not separated by
 periods or commas (depending on the language)."
   (goto-char (point-min))
-  (let ((separator (tlon-lookup tlon-language-specific-thousands-separator
-				:separator :language (tlon-tts-get-current-language))))
+  (let* ((default-separator (tlon-lookup tlon-language-specific-thousands-separator
+					 :separator :language (tlon-tts-get-current-language)))
+	 (separator (pcase tlon-tts-engine
+		      ("ElevenLabs" default-separator)
+		      ("Microsoft Azure" "")
+		      (_ default-separator) ; fallback; for engines we haven’t yet tested
+		      )))
     (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
       (replace-match (replace-regexp-in-string tlon-default-thousands-separator separator (match-string 1)) t t))))
 
