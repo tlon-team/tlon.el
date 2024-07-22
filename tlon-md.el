@@ -1008,7 +1008,7 @@ it is classified as a footnote; otherwise, it is classified as a sidenote."
 	  (has-citation-p))
       (insert note)
       (goto-char (point-min))
-      (while (re-search-forward tlon-mdx-cite-pattern nil t)
+      (while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
 	(replace-match "")
 	(setq has-citation-p t))
       (when has-citation-p
