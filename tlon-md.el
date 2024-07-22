@@ -1183,7 +1183,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("r" "roman"                tlon-insert-mdx-roman)
     ""
     "Table"
-    ("a" "table"                tlon-insert-mdx-table)
+    ("A" "table"                tlon-insert-mdx-table)
     ("T" "simple table"         tlon-insert-mdx-simple-table)]])
 
 (provide 'tlon-md)
