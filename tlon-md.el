@@ -255,7 +255,8 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :self-closing nil
 	  :doc "")
     (:tag "ReplaceAudio"
-	  :attributes ((:name "text" :required t :valued t :group 3 :prompt "Audio text: "))
+	  :attributes ((:name "text" :required t :valued t :group 3 :prompt "Audio text: ")
+		       (:name "role" :required nil :valued t :group 5 :prompt "Role: " :reader tlon-md-replace-audio-voice-reader))
 	  :type mdx
 	  :self-closing nil
 	  :doc "Encloses text be read based on the value of `text'.")
@@ -734,6 +735,25 @@ Text enclosed by an `ReplaceAudio' tag pair will be displayed, but when narrated
 the value of TEXT will be used instead."
   (interactive)
   (tlon-md-insert-or-edit-tag "ReplaceAudio"))
+
+(defun tlon-md-replace-audio-voice-reader ()
+  "Prompt the user to select the `voice' attribute value for a `ReplaceAudio' tag.
+
+- `\"main\"' is the voice used for reading the text body.
+
+- `\"alternate\"' is the voice used for reading textual elements that are not
+  part of the main body, such as notes, quotes, and asides, as well as for
+  reading listener cues (such as cues introducing headings, images, and tables.
+  It is a voice of the same gender as the main voice.
+
+- `\"male\"' and `\"female\"' are, respectively, male and female voices
+  different from the main voice. These voice roles may be used for reading text
+  that is attributed to people of a particular gender (e.g. quotes). The voice
+  is the same as the alternate voice of that gender.
+
+- `\"alternate gender\"' is a voice of the gender other than that of the main
+  voice."
+  (completing-read "`voice': " '("main" "alternate" "male" "female") nil t))
 
 ;;;###autoload
 (defun tlon-insert-mdx-roman ()
