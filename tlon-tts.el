@@ -1794,9 +1794,9 @@ If no alt text is present, replace with the expression itself."
   (while (re-search-forward (tlon-md-get-tag-pattern "ReplaceAudio") nil t)
     (let* ((text (match-string 4))
 	   (role (match-string 6))
-	   (voice (tlon-tts-get-voice-of-role role))
-	   replacement)
+	   replacement voice)
       (save-match-data
+	(setq voice (tlon-tts-get-voice-of-role role))
 	(setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
 			      text
 			    (tlon-tts-enclose-in-voice-tag text voice))))
