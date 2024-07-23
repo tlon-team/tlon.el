@@ -1406,6 +1406,16 @@ If VOICE is nil, prompt the user to select a voice."
 			      voices-in-lang)))
     (alist-get (completing-read "Voice: " voices-cons) voices-cons nil nil #'string=)))
 
+(defun tlon-tts-get-voice-at-point ()
+  "Get the value of the \"name\" attribute of the `voice' tag enclosing point.
+When point is not enclosed by a `voice' tag, return the value of
+`tlon-tts-voice'. This is because each chunk is wrapped around a `voice' tag
+`tlon-tts-voice' as its value when sent via the API. Thus, although the tag is
+not present in the buffer, the text will be read as if it was present."
+  (or (when (thing-at-point-looking-at (tlon-md-get-tag-pattern "voice"))
+	(match-string 4))
+      tlon-tts-voice))
+
 ;;;;;;; Locale
 
 (defun tlon-tts-set-locale (&optional locale)
