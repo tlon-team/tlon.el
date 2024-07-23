@@ -523,8 +523,8 @@ The placeholders are: API key, output format, SSML, destination for the audio
 file, and destination for the log file.")
 
 (defconst tlon-microsoft-azure-voices
-  '((:id "es-US-AlonsoNeural" :language "es" :gender "male" :role "default")
-    (:id "es-US-PalomaNeural" :language "es" :gender "female" :role "default")
+  '((:id "es-US-AlonsoNeural" :language "es" :gender "male" :role "main")
+    (:id "es-US-PalomaNeural" :language "es" :gender "female" :role "main")
     (:id "es-CO-GonzaloNeural" :language "es" :gender "male" :role "alternate")
     (:id "es-CO-SalomeNeural" :language "es" :gender "female" :role "alternate")
     (:id "es-AR-TomasNeural" :language "es" :gender "male")
@@ -648,12 +648,12 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 
 (defconst tlon-elevenlabs-voices
   '((:name "Brian" :id "rncjssM0aAEg1ApKehUP" :language "multilingual" :gender "male")
-    (:name "Bruce" :id "qUqZ27WoGID6BUp35xTV" :language "multilingual" :gender "male" :role "default")
+    (:name "Bruce" :id "qUqZ27WoGID6BUp35xTV" :language "multilingual" :gender "male" :role "main")
     (:name "Hades" :id "y3uxYtdWYpmzg8Wwx2k3" :language "multilingual" :gender "male")
     (:name "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male" :role "alternate")
     (:name "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
     (:name "Amelia" :id "Lpn2A60EAsgGCWjFue20" :language "multilingual" :gender "female" :role "alternate")
-    (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "default"))
+    (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "main"))
   "Preferred ElevenLabs voices for different languages.
 A list of available voices may be found here:
 <https://elevenlabs.io/app/voice-library>. To get information about the voices,
