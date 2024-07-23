@@ -1742,7 +1742,6 @@ citation key, format. Hence, it must be run *before*
 	('boldface (cons markdown-regex-bold '(1 4)))
 	('italics (cons markdown-regex-italic '(1 4)))
 	('visually-hidden (cons (tlon-md-get-tag-pattern "VisuallyHidden") '(2)))
-	('replace-audio (cons (tlon-md-get-tag-pattern "ReplaceAudio") '(4)))
 	('small-caps (cons (tlon-md-get-tag-pattern "SmallCaps") '(2)))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
@@ -1768,10 +1767,6 @@ citation key, format. Hence, it must be run *before*
   "Remove `VisuallyHidden' MDX tag."
   (tlon-tts-remove-formatting 'visually-hidden))
 
-(defun tlon-tts-process-replace-audio ()
-  "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
-  (tlon-tts-remove-formatting 'replace-audio))
-
 (defun tlon-tts-process-small-caps ()
   "Replace small caps with their full form."
   (tlon-tts-remove-formatting 'small-caps))
@@ -1782,6 +1777,20 @@ If no alt text is present, replace with the expression itself."
   (goto-char (point-min))
   (while (re-search-forward (tlon-md-get-tag-pattern "Math") nil t)
     (replace-match (or (match-string 4) (match-string 2)) t t)))
+
+(defun tlon-tts-process-replace-audio ()
+  "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
+  (goto-char (point-min))
+  (while (re-search-forward (tlon-md-get-tag-pattern "ReplaceAudio") nil t)
+    (let* ((text (match-string 4))
+	   (role (match-string 6))
+	   (voice (tlon-tts-get-voice-of-role role))
+	   replacement)
+      (save-match-data
+	(setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
+			      text
+			    (tlon-tts-enclose-in-voice-tag text voice))))
+      (replace-match replacement t t))))
 
 ;;;;;; Paragraphs
 
