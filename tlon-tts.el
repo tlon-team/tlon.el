@@ -2040,11 +2040,20 @@ For the relevant roles, consult the docstring of
   (let* ((role (or role "alternate"))
 	 (voices-var (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine))
 	 (gender (tlon-lookup (symbol-value voices-var) :gender :id tlon-tts-voice))
-	 (other-gender (if (string= gender "male") "female" "male")))
+	 (other-gender (if (string= gender "male") "female" "male"))
+	 (other-role (if (tlon-tts-looking-at-listener-cue-tag-p)
+			 "main"
+		       "alternate")))
     (pcase role
       ((or "main" "alternate") (tlon-lookup (symbol-value voices-var) :id :role role :gender gender))
-      ((or "male" "female") (tlon-lookup (symbol-value voices-var) :id :role "alternate" :gender role))
+      ((or "male" "female") (tlon-lookup (symbol-value voices-var) :id :role other-role :gender gender))
       ("alternate-gender" (tlon-lookup (symbol-value voices-var) :id :role role :gender other-gender)))))
+
+;; TODO: replace with function that detects voice at point
+(defun tlon-tts-looking-at-listener-cue-tag-p ()
+  "Return t iff point is looking at a listener cue tag."
+  (let ((patterns (mapcar 'cadr tlon-tts-listener-cue-patterns)))
+    (seq-some 'thing-at-point-looking-at patterns)))
 
 (defun tlon-tts-enclose-in-cue-delimiter (string)
   "Enclose STRING in listener cue delimiter."
