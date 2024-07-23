@@ -1158,7 +1158,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("c" "cite"                 tlon-mdx-insert-cite)
     ""
     "Quotes"
-    ("i" "inline"               tlon-insert-html-quote)
+    ("i" "inline"               tlon-html-insert-quote)
     ("b" "blockquote"           markdown-insert-blockquote)
     ]
    ["Images"
