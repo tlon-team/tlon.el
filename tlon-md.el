@@ -731,6 +731,9 @@ the value of TEXT will be used instead."
 (defun tlon-md-replace-audio-voice-reader ()
   "Prompt the user to select the `voice' attribute value for a `ReplaceAudio' tag.
 
+- `\"inherit\"' is the voice with which the text surrounding the `ReplaceAudio'
+  tag is read.
+
 - `\"main\"' is the voice used for reading the text body.
 
 - `\"alternate\"' is the voice used for reading textual elements that are not
@@ -745,7 +748,7 @@ the value of TEXT will be used instead."
 
 - `\"alternate gender\"' is a voice of the gender other than that of the main
   voice."
-  (completing-read "`voice': " '("main" "alternate" "male" "female") nil t))
+  (completing-read "`voice': " '("inherit" "main" "alternate" "male" "female" "alternate gender") nil t))
 
 ;;;###autoload
 (defun tlon-mdx-insert-romantlon-insert-mdx-roman ()

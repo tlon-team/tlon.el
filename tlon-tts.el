@@ -2033,11 +2033,11 @@ then reopen it."
 
 (defun tlon-tts-get-voice-of-role (&optional role)
   "Return the voice associated with ROLE.
-If ROLE is nil, default to `\"alternate\"'.
+If ROLE is nil, default to `\"inherit\"'.
 
 For the relevant roles, consult the docstring of
 `tlon-md-replace-audio-voice-reader'."
-  (let* ((role (or role "alternate"))
+  (let* ((role (or role "inherit"))
 	 (voices-var (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine))
 	 (gender (tlon-lookup (symbol-value voices-var) :gender :id tlon-tts-voice))
 	 (other-gender (if (string= gender "male") "female" "male"))
@@ -2045,6 +2045,7 @@ For the relevant roles, consult the docstring of
 			 "main"
 		       "alternate")))
     (pcase role
+      ("inherit" (tlon-tts-get-voice-at-point))
       ((or "main" "alternate") (tlon-lookup (symbol-value voices-var) :id :role role :gender gender))
       ((or "male" "female") (tlon-lookup (symbol-value voices-var) :id :role other-role :gender gender))
       ("alternate-gender" (tlon-lookup (symbol-value voices-var) :id :role role :gender other-gender)))))
