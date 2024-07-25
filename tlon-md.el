@@ -557,11 +557,6 @@ values."
   (let ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag)))
     (tlon-lookup attributes property :name name)))
 
-(defun tlon-tag-pair-with-attributes (element &rest attributes)
-  "Construct a tag ELEMENT with one or more ATTRIBUTES."
-  (cons (apply 'format (car element) attributes)
-	(cdr element)))
-
 (defun tlon-md-format-tag-with-attributes (tag &optional values format)
   "Format TAG attributes.
 FORMAT is one of `get-match-string', `get-placeholders', `get-values' or
