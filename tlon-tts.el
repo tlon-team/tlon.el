@@ -1227,15 +1227,13 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
       (tlon-tts-get-original-name (dired-get-filename))
       (tlon-tts-get-original-name (read-file-name "File: "))))
 
-(defun tlon-tts-join-chunks (&optional file intersperse-silences)
+(defun tlon-tts-join-chunks (&optional file)
   "Join chunks of FILE back into a single file.
 If FILE is nil, use the file visited by the current buffer, the file at point in
-Dired, or prompt the user for a file (removing the chunk numbers if necessary).
-If INTERSPERSE-SILENCES is non-nil, add an audio file with a silence equal to
-the duration set in `tlon-tts-paragraph-break-duration'."
+Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
   (interactive)
   (let* ((file (tlon-tts-set-chunk-file file))
-	 (files (tlon-tts-get-list-of-chunks file intersperse-silences))
+	 (files (tlon-tts-get-list-of-chunks file))
 	 (list-of-files (tlon-tts-create-list-of-chunks files)))
     (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
 			   list-of-files file)))
