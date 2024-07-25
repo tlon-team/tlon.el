@@ -2420,6 +2420,7 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 ;; functions will change positions of their predecessors
 (defun tlon-tts-chunkify-unsupported-ssml-tags (tags)
   "Chunkify unsupported SSML TAGS."
+  (tlon-tts-reposition-closing-voice-tag)
   (setq tlon-tts-voice-chunks '())
   (dolist (tag tags)
     (let ((cons (tlon-tts-get-cons-for-unsupported-ssml-tags tag))
@@ -2433,6 +2434,16 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 	(tlon-tts-move-point-before-break-tag)
 	(push (cons (point-marker) voice) tlon-tts-voice-chunks))))
   (setq tlon-tts-voice-chunks (nreverse tlon-tts-voice-chunks)))
+
+(defun tlon-tts-reposition-closing-voice-tag ()
+  "Reposition the trailing closing `voice' tag to the end of the buffer."
+  (let ((tag "</voice>")) ; TODO: get this properly from `tlon-tag-specs'
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward tag nil t)
+	(replace-match "" t t)
+	(tlon-md-end-of-buffer-dwim)
+	(insert (concat tag "\n\n"))))))
 
 ;;;;;; Remove final `break' tag
 
