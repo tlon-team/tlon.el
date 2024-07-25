@@ -2506,7 +2506,7 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 
 (defun tlon-tts-add-entry (data term)
   "Add a new TERM to DATA."
-  (let* ((languages (tlon-select-language 'code 'babel 'multiple))
+  (let* ((languages (tlon-select-language 'code 'babel nil nil nil 'multiple))
 	 (dict-entry (read-string "Term: "))
 	 (new-entry (cons term dict-entry))
 	 (added nil))

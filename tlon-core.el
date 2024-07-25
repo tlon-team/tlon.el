@@ -794,7 +794,8 @@ validate a list of natural languages."
 		(code-raw (tlon-lookup tlon-languages-properties :code :name downcased)))
       (string-limit code-raw 2))))
 
-(defun tlon-select-language (&optional format babel multiple)
+(defun tlon-select-language (&optional format babel require-match initial-input
+				       additional-langs multiple)
   "Prompt the user to select a LANGUAGE and return it in FORMAT.
 If FORMAT is `code', return the two-letter code of the language (e.g.
 \"es\"). If it is `locale', return the predefined locale for that language (e.g.
@@ -803,11 +804,17 @@ If FORMAT is `code', return the two-letter code of the language (e.g.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project.
 
+REQUIRE-MATCH and INITIAL-INPUT behave as those arguments do in
+`completing-read'; check its docstring for details.
+
+ADDITIONAL-LANGS is a list of languages to add to the default list of languages
+presented as completion candidates.
+
 If MULTIPLE is non-nil, allow the user to select multiple languages. In that
 case, the return value will be a list of strings rather than a string."
   (let* ((selection (if multiple
 			(tlon-read-multiple-languages babel)
-		      (tlon-read-language babel))))
+		      (tlon-read-language babel require-match initial-input additional-langs))))
     (pcase format
       ((or 'code 'locale) (tlon-get-formatted-languages selection format))
       (_ selection))))
@@ -825,12 +832,15 @@ English. FORMAT must be either `code' or `locale'."
 		selection)
       (funcall fun selection))))
 
-(defun tlon-read-language (&optional babel)
+(defun tlon-read-language (&optional babel require-match initial-input additional-langs)
   "Read a language from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
-candidates to languages in the Babel project."
-  (let* ((language-candidates (tlon-get-language-candidates babel)))
-    (completing-read "Language: " language-candidates nil t)))
+candidates to languages in the Babel project. REQUIRE-MATCH and INITIAL-INPUT
+behave as those arguments do in `completing-read'; check its docstring for
+details. ADDITIONAL-LANGS is a list of languages to add to the default list of
+languages presented as completion candidates."
+  (let ((language-candidates (tlon-get-language-candidates babel additional-langs)))
+    (completing-read "Language: " language-candidates nil require-match initial-input)))
 
 (defun tlon-read-multiple-languages (&optional babel)
   "Read a list of languages from a list of languages.
@@ -841,13 +851,15 @@ candidates to languages in the Babel project."
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
 
-(defun tlon-get-language-candidates (babel)
+(defun tlon-get-language-candidates (babel &optional additional-langs)
   "Return a list of language candidates.
 If BABEL is nil, return all valid BibTeX languages; otherwise, return candidates
-languages in the Babel project only."
-  (if babel
-      tlon-project-languages
-    (tlon-lookup-all tlon-languages-properties :name)))
+languages in the Babel project only. ADDITIONAL-LANGS is a list of languages to
+add to the default list of languages presented as completion candidates."
+  (let ((base-langs (if babel
+			tlon-project-languages
+		      (tlon-lookup-all tlon-languages-properties :name))))
+    (append base-langs additional-langs)))
 
 ;;;;; json
 
