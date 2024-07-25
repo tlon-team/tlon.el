@@ -1213,9 +1213,11 @@ overriding value."
 	(remove file tlon-tts-unprocessed-chunk-files))
   (unless tlon-tts-unprocessed-chunk-files
     (let ((file (tlon-tts-get-original-name file)))
+      (when (string= tlon-tts-engine "ElevenLabs")
+	(tlon-tts-append-silence-to-chunks file))
       (tlon-tts-join-chunks file)
-      ;; (tlon-tts-delete-chunks-of-file file)
-      )))
+      (when tlon-tts-delete-file-chunks
+	(tlon-tts-delete-chunks-of-file file)))))
 
 (defun tlon-tts-set-chunk-file (file)
   "Set chunk file based on FILE.
@@ -1468,6 +1470,40 @@ format used by `mp3split'."
 			 (string-to-number s)))
 	     (new-duration (/ (- (* 1000 seconds) miliseconds) 1000.0)))
 	(format "%02d.%05.2f" (/ new-duration 60) (mod new-duration 60))))))
+
+;;;;;; Audio silences
+
+(defun tlon-tts-create-silence-file (duration file)
+  "Create a silence file of DURATION seconds with the name FILE."
+  (shell-command (format "ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t %s -q:a 9 %s"
+                         duration
+                         (shell-quote-argument file))))
+
+(defun tlon-tts-concatenate-files (input-file silence-file output-file)
+  "Concatenate INPUT-FILE and SILENCE-FILE into OUTPUT-FILE."
+  (shell-command (format "ffmpeg -i \"concat:%s|%s\" -c copy %s"
+                         (shell-quote-argument input-file)
+                         (shell-quote-argument silence-file)
+                         (shell-quote-argument output-file))))
+
+(defun tlon-tts-append-silence-to-file (file duration)
+  "Append silence of DURATION seconds to FILE.
+This method does not re-encode the audio file, so it can handle lossless formats
+like mp3."
+  (let ((silence-file (concat (file-name-sans-extension file) "-silence.mp3"))
+        (output-file (concat (file-name-sans-extension file) "-silent.mp3")))
+    (tlon-tts-create-silence-file duration silence-file)
+    (tlon-tts-concatenate-files file silence-file output-file)
+    (rename-file output-file file t)
+    (delete-file silence-file)))
+
+(defun tlon-tts-append-silence-to-chunks (file)
+  "Append a silence to each chunk of FILE."
+  (let ((duration (replace-regexp-in-string "[[:alpha:]]" "" tlon-tts-paragraph-break-duration)))
+    (message "Appending silence of %s to chunks of `%s'..."
+	     tlon-tts-paragraph-break-duration (file-name-nondirectory file))
+    (dolist (chunk (tlon-tts-get-list-of-chunks file))
+      (tlon-tts-append-silence-to-file chunk duration))))
 
 ;;;;;; TTS engines
 
