@@ -2379,7 +2379,7 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
 ;;;;;;; Remove
 
 (defun tlon-tts-remove-unsupported-ssml-tags (tags)
-  ""
+  "Remove unsupported SSML TAGS."
   (dolist (tag tags)
     (let ((cons (tlon-tts-get-cons-for-unsupported-ssml-tags tag)))
       (goto-char (point-min))
