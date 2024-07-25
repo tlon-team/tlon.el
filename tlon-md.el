@@ -300,7 +300,12 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :attributes ((:name "name" :required t :valued t :group 3 :prompt "Voice name: "))
 	  :type ssml
 	  :self-closing nil
-	  :doc ""))
+	  :doc "")
+    (:tag "VoiceRole"
+	  :attributes ((:name "role" :required t :valued t :group 3 :prompt "Role: " :reader tlon-md-replace-audio-voice-reader))
+	  :type mdx
+	  :self-closing nil
+	  :doc "Encloses text be read based on the value of `text'."))
   "Property list of MDX tag attributes and patterns.
 - `:group': the group number that captures the attribute. The value of the
   attribute is captured in a separate group, numbered `:group' + 1. The entire
