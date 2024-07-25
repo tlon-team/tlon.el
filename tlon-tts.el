@@ -2396,7 +2396,7 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 		       ((null cdr)
 			"")
 		       ((numberp cdr)
-			(match-string cdr))
+			(match-string-no-properties cdr))
 		       (t (match-string 2)))))
     (replace-regexp-in-string "\\\\" "\\\\\\\\" replacement)))
 
