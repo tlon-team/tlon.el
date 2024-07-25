@@ -1742,6 +1742,7 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-italics)
   (tlon-tts-process-visually-hidden)
   (tlon-tts-process-replace-audio)
+  (tlon-tts-process-voice-role)
   (tlon-tts-process-small-caps)
   (tlon-tts-process-math))
 
@@ -1800,6 +1801,18 @@ If no alt text is present, replace with the expression itself."
 	(setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
 			      text
 			    (tlon-tts-enclose-in-voice-tag text voice))))
+      (replace-match replacement t t))))
+
+(defun tlon-tts-process-voice-role ()
+  "Replace text enclosed in a `VoiceRole' MDX tag with a SMML `voice' tag."
+  (goto-char (point-min))
+  (while (re-search-forward (tlon-md-get-tag-pattern "VoiceRole") nil t)
+    (let* ((content (match-string 2))
+	   (role (match-string 4))
+	   replacement voice)
+      (save-match-data
+	(setq voice (tlon-tts-get-voice-of-role role))
+	(setq replacement (tlon-tts-enclose-in-voice-tag content voice)))
       (replace-match replacement t t))))
 
 ;;;;;; Paragraphs
