@@ -356,6 +356,11 @@ dedicated function."
 	(replace-match (tlon-md-return-tag "q" nil replacement 'get-values)
 		       t t nil)))))
 
+;; TODO: write function
+(defun tlon-manual-fix-foreign-words ()
+  "Prompt the user to set the language of foreign words."
+  (interactive))
+
 (defun tlon-manual-fix-all ()
   "Run all the `tlon-manual-fix' commands."
   (interactive)
@@ -367,7 +372,8 @@ dedicated function."
   (tlon-manual-fix-solo)
   (tlon-manual-fix-podcast)
   (tlon-manual-fix-emphasis)
-  (tlon-manual-fix-quote))
+  (tlon-manual-fix-quote)
+  (tlon-manual-fix-foreign-words))
 
 (defun tlon-fix-internet-archive-urls ()
   "Convert Internet Archive URLs in the current buffer into their originals."
