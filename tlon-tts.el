@@ -47,7 +47,7 @@
 		 (const :tag "OpenAI" :openai)
 		 (const :tag "ElevenLabs" :elevenlabs)))
 
-(defcustom tlon-tts-use-alternate-voice t
+(defcustom tlon-tts-use-alternate-voice nil
   "Whether to use an alternate voice for reading notes, asides, etc."
   :group 'tlon-tts
   :type 'boolean)
