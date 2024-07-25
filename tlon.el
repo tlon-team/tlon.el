@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.5.3
+;; Version: 1.5.4
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
 
@@ -42,7 +42,7 @@
 
 ;;;; Variables
 
-(defconst tlon-version "1.5.3"
+(defconst tlon-version "1.5.4"
   "Version of the `tlon' package.")
 
 ;;;;; Files and dirs
@@ -64,14 +64,11 @@ This variable should not be set manually.")
 ;; `tlon-get-file-glossary' i.e. a repo-relative path stored in a variable
 ;; and a function to get it for specific languages
 
-(defvar tlon-dir-correspondences
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-es") "correspondences/")
-  "Directory where correspondence files are stored.")
-
 (defvar tlon-dir-dict
   (file-name-concat (tlon-repo-lookup :dir :name "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
+;; TODO: check if this is used anywhere, or needed
 (defvar tlon-file-hyphenation
   "hyphenation.json"
   "File containing hyphenation rules.")
@@ -81,16 +78,17 @@ This variable should not be set manually.")
   "File containing the Babel manual.")
 
 (defvar tlon-file-url-correspondences
-  (file-name-concat tlon-dir-correspondences "url-correspondences.json")
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "url" "url-correspondences.json")
   "File containing the URL correspondences.")
 
-(defvar tlon-file-section-correspondences
-  (file-name-concat tlon-dir-correspondences "section-correspondences.json")
-  "File containing the section correspondences.")
-
 (defvar tlon-file-bibtex-correspondences
-  (file-name-concat tlon-dir-correspondences "bibtex-correspondences.json")
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "bibtex-correspondences.json")
   "File containing the BibTeX correspondences.")
+
+;; TODO: not currently implemented
+(defvar tlon-file-section-correspondences
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "section-correspondences.json")
+  "File containing the section correspondences.")
 
 (defmacro tlon-create-file-opening-command (file)
   "Create a command to open FILE."
@@ -415,28 +413,22 @@ respectively."
 
 ;;;;; URL correspondences
 
-(defun tlon-url-correspondence-dwim ()
-  "Add a new URL correspondence or modify an existing one."
+(declare-function tlon-read-language "tlon-core")
+(defun tlon-edit-url-correspondences ()
+  "Add or edit a URL correspondence in `tlon-file-url-correspondences`."
   (interactive)
-  (let* ((data (tlon-read-json tlon-file-url-correspondences 'hash-table 'vector 'symbol))
-	 (keys (tlon-get-keys data))
-	 (selected-key (completing-read "Select existing URL or enter a new one: " keys))
-	 (default-value (gethash selected-key data))
-	 (new-value (read-string (format "Enter value for key '%s': " selected-key) default-value)))
-    (puthash selected-key new-value data)
-    (with-temp-file tlon-file-url-correspondences
-      (insert "{\n")
-      (maphash (lambda (k v)
-		 (insert (format "  \"%s\": \"%s\",\n" k v)))
-	       data)
-      ;; Remove last comma
-      (goto-char (- (point) 2))
-      (delete-char 1)
-      (insert "\n}")
-      (write-file tlon-file-url-correspondences)
-      (tlon-url-correspondence-commit))))
+  (let* ((json-data (tlon-read-json tlon-file-url-correspondences))
+         (outer-urls (mapcar #'car json-data))
+         (chosen-outer-url (completing-read "Old URL: " outer-urls))
+         (inner-alist (alist-get chosen-outer-url json-data nil nil #'string=))
+         (chosen-lang (tlon-select-language 'code 'babel nil '("default")))
+	 (inner-url (alist-get chosen-lang inner-alist nil nil #'string=))
+         (chosen-inner-url (read-string "New URL: " inner-url nil nil)))
+    (setf (alist-get chosen-lang inner-alist nil nil #'string=) chosen-inner-url)
+    (setf (alist-get chosen-outer-url json-data nil nil #'string=) inner-alist)
+    (tlon-write-data tlon-file-url-correspondences json-data)
+    (message "Edited `%s'" tlon-file-url-correspondences)))
 
-(declare-function magit-staged-files "magit-git")
 (declare-function magit-save-repository-buffers "magit-mode")
 (declare-function magit-run-git "magit-process")
 (defvar magit-commit-ask-to-stage)

@@ -38,7 +38,7 @@
 
 ;;;;; Common
 
-(defcustom tlon-tts-global-engine "ElevenLabs"
+(defcustom tlon-tts-global-engine "Microsoft Azure"
   "The TTS engine to use when creating the staging buffer."
   :group 'tlon-tts
   :type '(choice (const :tag "Microsoft Azure" :azure)
@@ -47,7 +47,7 @@
 		 (const :tag "OpenAI" :openai)
 		 (const :tag "ElevenLabs" :elevenlabs)))
 
-(defcustom tlon-tts-use-alternate-voice t
+(defcustom tlon-tts-use-alternate-voice nil
   "Whether to use an alternate voice for reading notes, asides, etc."
   :group 'tlon-tts
   :type 'boolean)
@@ -1743,6 +1743,7 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-italics)
   (tlon-tts-process-visually-hidden)
   (tlon-tts-process-replace-audio)
+  (tlon-tts-process-voice-role)
   (tlon-tts-process-small-caps)
   (tlon-tts-process-math))
 
@@ -1801,6 +1802,18 @@ If no alt text is present, replace with the expression itself."
 	(setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
 			      text
 			    (tlon-tts-enclose-in-voice-tag text voice))))
+      (replace-match replacement t t))))
+
+(defun tlon-tts-process-voice-role ()
+  "Replace text enclosed in a `VoiceRole' MDX tag with a SMML `voice' tag."
+  (goto-char (point-min))
+  (while (re-search-forward (tlon-md-get-tag-pattern "VoiceRole") nil t)
+    (let* ((content (match-string 2))
+	   (role (match-string 4))
+	   replacement voice)
+      (save-match-data
+	(setq voice (tlon-tts-get-voice-of-role role))
+	(setq replacement (tlon-tts-enclose-in-voice-tag content voice)))
       (replace-match replacement t t))))
 
 ;;;;;; Paragraphs
@@ -2042,13 +2055,11 @@ For the relevant roles, consult the docstring of
 	 (voices-var (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine))
 	 (gender (tlon-lookup (symbol-value voices-var) :gender :id tlon-tts-voice))
 	 (other-gender (if (string= gender "male") "female" "male"))
-	 (other-role (if (tlon-tts-looking-at-listener-cue-tag-p)
-			 "main"
-		       "alternate")))
+	 (other-role (if (tlon-tts-looking-at-listener-cue-tag-p) "main" "alternate")))
     (pcase role
       ("inherit" (tlon-tts-get-voice-at-point))
       ((or "main" "alternate") (tlon-lookup (symbol-value voices-var) :id :role role :gender gender))
-      ((or "male" "female") (tlon-lookup (symbol-value voices-var) :id :role other-role :gender gender))
+      ((or "male" "female") (tlon-lookup (symbol-value voices-var) :id :role other-role :gender role))
       ("alternate-gender" (tlon-lookup (symbol-value voices-var) :id :role role :gender other-gender)))))
 
 ;; TODO: replace with function that detects voice at point
@@ -2369,7 +2380,7 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
 ;;;;;;; Remove
 
 (defun tlon-tts-remove-unsupported-ssml-tags (tags)
-  ""
+  "Remove unsupported SSML TAGS."
   (dolist (tag tags)
     (let ((cons (tlon-tts-get-cons-for-unsupported-ssml-tags tag)))
       (goto-char (point-min))
@@ -2386,7 +2397,7 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 		       ((null cdr)
 			"")
 		       ((numberp cdr)
-			(match-string cdr))
+			(match-string-no-properties cdr))
 		       (t (match-string 2)))))
     (replace-regexp-in-string "\\\\" "\\\\\\\\" replacement)))
 
@@ -2410,6 +2421,7 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 ;; functions will change positions of their predecessors
 (defun tlon-tts-chunkify-unsupported-ssml-tags (tags)
   "Chunkify unsupported SSML TAGS."
+  (tlon-tts-reposition-closing-voice-tag)
   (setq tlon-tts-voice-chunks '())
   (dolist (tag tags)
     (let ((cons (tlon-tts-get-cons-for-unsupported-ssml-tags tag))
@@ -2423,6 +2435,16 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 	(tlon-tts-move-point-before-break-tag)
 	(push (cons (point-marker) voice) tlon-tts-voice-chunks))))
   (setq tlon-tts-voice-chunks (nreverse tlon-tts-voice-chunks)))
+
+(defun tlon-tts-reposition-closing-voice-tag ()
+  "Reposition the trailing closing `voice' tag to the end of the buffer."
+  (let ((tag "</voice>")) ; TODO: get this properly from `tlon-tag-specs'
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward tag nil t)
+	(replace-match "" t t)
+	(tlon-md-end-of-buffer-dwim)
+	(insert (concat tag "\n\n"))))))
 
 ;;;;;; Remove final `break' tag
 
@@ -2507,7 +2529,7 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 
 (defun tlon-tts-add-entry (data term)
   "Add a new TERM to DATA."
-  (let* ((languages (tlon-select-language 'code 'babel 'multiple))
+  (let* ((languages (tlon-select-language 'code 'babel nil nil nil 'multiple))
 	 (dict-entry (read-string "Term: "))
 	 (new-entry (cons term dict-entry))
 	 (added nil))

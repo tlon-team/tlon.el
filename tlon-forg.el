@@ -616,7 +616,7 @@ If REPO is nil, use the current repository."
   "Return the valid label(s) of TYPE in ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let ((issue (or issue (forge-current-topic))))
-    (when-let* ((labels (tlon-get-labels issue)))
+    (when-let* ((labels (tlon-forg-get-labels issue)))
       (pcase type
 	('tag labels)
 	('phase (tlon-get-phase-in-labels labels))
@@ -748,7 +748,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
   (interactive)
   (let* ((issue (or issue (forge-current-topic)))
 	 (repo (forge-get-repository issue))
-	 (current-labels (tlon-get-labels issue))
+	 (current-labels (tlon-forg-get-labels) issue)
 	 (status (tlon-get-status-in-issue issue))
 	 (phase (tlon-get-phase-in-issue issue))
 	 (trimmed-labels (pcase type
@@ -802,13 +802,6 @@ Use PROMPT as the prompt, defaulting to \"Who should be the assignee? \"."
 If ISSUE is nil, use the issue at point or in the current buffer."
   (when-let ((issue (or issue (forge-current-topic))))
     (eieio-oref issue element)))
-
-(defun tlon-get-labels (&optional issue)
-  "Return labels in ISSUE.
-If ISSUE is nil, use the issue at point or in the current buffer."
-  (let* ((issue (or issue (forge-current-topic)))
-	 (raw-labels (tlon-get-element 'labels issue)))
-    (mapcar #'car raw-labels)))
 
 (defun tlon-get-first-element (element &optional issue)
   "Return first ELEMENT of ISSUE.
