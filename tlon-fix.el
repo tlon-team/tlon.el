@@ -338,6 +338,7 @@ dedicated function."
 				 (tlon-md-return-tag "emphasis" '("moderate") replacement 'get-values))
 			 t t nil))))))
 
+(declare-function thing-at-point-looking-at "thingatpt")
 (defun tlon-manual-fix-quote ()
   "Prompt the user to add a `quote' tag around text enclosed in quotes."
   (interactive)
