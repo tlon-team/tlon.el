@@ -373,9 +373,9 @@ COMMIT is non-nil, commit the change."
     ("c f" "2 create translation file"  tlon-create-translation-file)
     ("c r" "3 create record for job"    tlon-create-record-for-job)]
    ["Add or modify"
-    ("a g" "glossary"                     tlon-edit-glossary)
-    ("a s" "section correspondence"       tlon-section-correspondence-dwim)
-    ("a u" "URL correspondence"           tlon-url-correspondence-dwim)]
+    ("a g" "glossary"                   tlon-edit-glossary)
+    ("a s" "section correspondence"     tlon-section-correspondence-dwim)
+    ("a u" "URL correspondence"         tlon-edit-url-correspondences)]
    ["jobs.org"
     ("r" "create record"                tlon-create-record-for-job)
     ("h" "create heading"               tlon-create-heading-for-job)
