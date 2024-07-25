@@ -2054,13 +2054,11 @@ For the relevant roles, consult the docstring of
 	 (voices-var (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine))
 	 (gender (tlon-lookup (symbol-value voices-var) :gender :id tlon-tts-voice))
 	 (other-gender (if (string= gender "male") "female" "male"))
-	 (other-role (if (tlon-tts-looking-at-listener-cue-tag-p)
-			 "main"
-		       "alternate")))
+	 (other-role (if (tlon-tts-looking-at-listener-cue-tag-p) "main" "alternate")))
     (pcase role
       ("inherit" (tlon-tts-get-voice-at-point))
       ((or "main" "alternate") (tlon-lookup (symbol-value voices-var) :id :role role :gender gender))
-      ((or "male" "female") (tlon-lookup (symbol-value voices-var) :id :role other-role :gender gender))
+      ((or "male" "female") (tlon-lookup (symbol-value voices-var) :id :role other-role :gender role))
       ("alternate-gender" (tlon-lookup (symbol-value voices-var) :id :role role :gender other-gender)))))
 
 ;; TODO: replace with function that detects voice at point
