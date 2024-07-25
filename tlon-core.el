@@ -999,7 +999,7 @@ repository."
 
 (declare-function elgrep "elgrep")
 (defun tlon-grep (string extension)
-  "Perform a ripgrep search for STRING."
+  "Perform a ripgrep search for STRING in files with EXTENSION."
   (interactive (list (read-string "Search string: ")
 		     (completing-read "Extension: " '("md" "el" "") nil t)))
   (let* ((core-settings '(:interactive t :recursive t))
