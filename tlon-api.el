@@ -32,7 +32,7 @@
 
 ;;;; Variables
 
-;; TODO: add `:repo-name' property, then constract `:route' dynamically with
+;; TODO: add `:repo-name' property, then construct `:route' dynamically with
 ;; `tlon-api-get-routes'
 (defconst tlon-uqbar-api-routes
   '((:route "update/babel-refs"
