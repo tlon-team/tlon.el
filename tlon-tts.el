@@ -1242,23 +1242,21 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
     (revert-buffer)))
 
 (defun tlon-tts-get-list-of-chunks (file)
-  "Return a list of the file chunks for FILE."
-  (let ((nth 1)
-	file-chunk
-	files)
-    (while (file-exists-p (setq file-chunk (tlon-tts-get-chunk-name file nth)))
-      (push file-chunk files)
-      (setq nth (1+ nth)))
-    (nreverse files)))
+  "Return a list of the file chunks for FILE, sorted alphabetically."
+  (let* ((dir (file-name-directory file))
+         (base-name (file-name-base file))
+         (extension (file-name-extension file))
+         (pattern (concat "^" (regexp-quote base-name) "-.*\\." (regexp-quote extension) "$"))
+         (files (directory-files dir t pattern)))
+    (sort files #'string<)))
 
 (defun tlon-tts-delete-chunks-of-file (file)
-  "Delete the chunks of FILE.
-Also delete the staging buffer."
+  "Delete the chunks of FILE. Also delete the staging buffer."
   (interactive)
   (let* ((file (tlon-tts-set-chunk-file file))
-	 (buffer-name (tlon-tts-get-staging-buffer-name file)))
-    (dolist (file (tlon-tts-get-list-of-chunks file))
-      (delete-file file 'trash))
+         (buffer-name (tlon-tts-get-staging-buffer-name file)))
+    (dolist (chunk-file (tlon-tts-get-list-of-chunks file))
+      (delete-file chunk-file 'trash))
     (when (get-buffer buffer-name)
       (kill-buffer buffer-name))
     (when (derived-mode-p 'dired-mode)
@@ -1274,10 +1272,8 @@ Also delete the staging buffer."
 
 (defun tlon-tts-get-chunk-names (file n)
   "Return a list of the first N chunk names of FILE."
-  (let (names)
-    (cl-loop for index from 1 to n
-	     do (push (tlon-tts-get-chunk-name file index) names))
-    names))
+  (let ((all-chunks (tlon-tts-get-list-of-chunks file)))
+    (cl-subseq all-chunks 0 (min n (length all-chunks)))))
 
 (defun tlon-tts-get-original-name (chunk-name)
   "Return the original file name before it was chunked, given CHUNK-NAME."
