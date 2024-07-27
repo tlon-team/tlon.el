@@ -1216,7 +1216,7 @@ overriding value."
 	(remove file tlon-tts-unprocessed-chunk-files))
   (unless tlon-tts-unprocessed-chunk-files
     (let ((file (tlon-tts-get-original-name file)))
-      (when (string= tlon-tts-engine "ElevenLabs")
+      (when (tlon-tts-append-silence-to-chunks-p file)
 	(tlon-tts-append-silence-to-chunks file))
       (tlon-tts-join-chunks file)
       (when tlon-tts-delete-file-chunks
@@ -1507,6 +1507,17 @@ like mp3."
 	     tlon-tts-paragraph-break-duration (file-name-nondirectory file))
     (dolist (chunk (tlon-tts-get-list-of-chunks file))
       (tlon-tts-append-silence-to-file chunk duration))))
+
+(defun tlon-tts-append-silence-to-chunks-p (file)
+  "Return t iff FILE is a file to which silence should be appended."
+  (let* ((staging-buffer-name (tlon-tts-get-staging-buffer-name file))
+	 (engine (tlon-tts-get-buffer-local-variable-value 'tlon-tts-engine staging-buffer-name)))
+    (string= engine "ElevenLabs")))
+
+(defun tlon-tts-get-buffer-local-variable-value (var-name buffer-name)
+  "Return the name of the buffer-local variable VAR-NAME for BUFFER-NAME."
+  (with-current-buffer buffer-name
+    (symbol-value var-name)))
 
 ;;;;;; TTS engines
 
