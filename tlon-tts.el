@@ -660,15 +660,10 @@ A list of available voices may be found here:
 <https://elevenlabs.io/app/voice-library>. To get information about the voices,
 including the voice ID, run `tlon-tts-elevenlabs-get-voices'.")
 
-(defconst tlon-elevenlabs-char-limit (* 5000 0.9 0.4)
+(defconst tlon-elevenlabs-char-limit (* 5000 0.9)
   "Maximum number of characters that Elevenlabs can process per request.
 Elevenlabs can process up to 5000 characters per request. We use a slightly
-lower number to err on the safe side. Furthermore, we use 40% of the limit
-because the ElevenLabs voice sometimes degrades in the course of reading a chunk
-of text. Shortening the length of the text to be read reduces the chances of
-this degradation, and also makes it cheaper to fix it if it does happen.
-However, the length must be high enough that at least one full paragraph fits in
-the chunk.
+lower number to err on the safe side.
 
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
 questions\").")
@@ -1479,22 +1474,34 @@ format used by `mp3split'."
 ;;;;;; Audio silences
 
 (defun tlon-tts-create-silence-file (duration file)
-  "Create a silence file of DURATION seconds with the name FILE."
-  (shell-command (format "ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t %s -q:a 9 %s"
+  "Create a silence file of DURATION seconds with the name FILE in mono."
+  ;; TODO: the audio parameters are hard-coded; they should be obtained from the
+  ;; relevant `audio-settings' variable
+  (shell-command (format "ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t %s -b:a 128k %s"
                          duration
                          (shell-quote-argument file))))
 
 (defun tlon-tts-concatenate-files (input-file silence-file output-file)
-  "Concatenate INPUT-FILE and SILENCE-FILE into OUTPUT-FILE."
-  (shell-command (format "ffmpeg -i \"concat:%s|%s\" -c copy %s"
-                         (shell-quote-argument input-file)
-                         (shell-quote-argument silence-file)
-                         (shell-quote-argument output-file))))
+  "Concatenate INPUT-FILE and SILENCE-FILE into OUTPUT-FILE.
+We do it this way, via an intermediary container, because the silences generated
+with the simpler version were not recognized by some audio players."
+  (let ((concat-file (make-temp-file "ffmpeg-concat" nil ".txt"))
+        (intermediate-file (concat (file-name-sans-extension output-file) ".ts")))
+    (with-temp-file concat-file
+      (insert (format "file '%s'\nfile '%s'\n"
+                      (shell-quote-argument input-file)
+                      (shell-quote-argument silence-file))))
+    (shell-command (format "ffmpeg -f concat -safe 0 -i %s -c copy -f mpegts %s"
+                           (shell-quote-argument concat-file)
+                           (shell-quote-argument intermediate-file)))
+    (shell-command (format "ffmpeg -i %s -c copy %s"
+                           (shell-quote-argument intermediate-file)
+                           (shell-quote-argument output-file)))
+    (delete-file concat-file)
+    (delete-file intermediate-file)))
 
 (defun tlon-tts-append-silence-to-file (file duration)
-  "Append silence of DURATION seconds to FILE.
-This method does not re-encode the audio file, so it can handle lossless formats
-like mp3."
+  "Append silence of DURATION seconds to FILE."
   (let ((silence-file (concat (file-name-sans-extension file) "-silence.mp3"))
         (output-file (concat (file-name-sans-extension file) "-silent.mp3")))
     (tlon-tts-create-silence-file duration silence-file)
