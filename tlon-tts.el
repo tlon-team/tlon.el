@@ -2841,9 +2841,7 @@ move point to the file-local variables section."
     ""
     "Dirs"
     ("o" "Open dir"                                tlon-tts-open-audio-directory)
-    ("O" "Open temp dir"                           tlon-tts-open-temp-audio-directory)
-    ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)
-    ("U" "Upload to temp dir"                      tlon-tts-upload-audio-file-to-server-temp-dir)]
+    ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                            tlon-tts-edit-global-abbreviations)
