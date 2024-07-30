@@ -320,6 +320,7 @@ dedicated function."
 		   " pódcast"
 		   'keep-case))
 
+(defvar markdown-regex-italic)
 (defun tlon-manual-fix-emphasis ()
   "Prompt the user to add an `emphasis' tag around text enclosed in quotes."
   (interactive)

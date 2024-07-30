@@ -2210,6 +2210,7 @@ Depending on TYPE, also enclose TEXT in listener cues."
   (let ((staging-buffer (current-buffer))
 	(acronyms (tlon-tts-get-missing-acronyms))
 	(chemical-symbols-p (tlon-tts-check-chemical-symols))
+	(emphasis-p (tlon-tts-check-emphasis))
 	(en-dashes-p (tlon-tts-check-en-dashes))
 	(numerals-sans-separator-p (tlon-tts-get-numerals-sans-separator))
 	report-buffer)
@@ -2223,6 +2224,8 @@ Depending on TYPE, also enclose TEXT in listener cues."
       (when chemical-symbols-p
 	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’"
 			tlon-tts-maybe-chemical-symbol)))
+      (when emphasis-p
+	(insert (format "\n***Emphasis***\n\Run ‘M-x tlon-manual-fix-emphasis’")))
       (when en-dashes-p
 	(insert (format "\n***En dashes***\n\nSearch for ‘–’")))
       (when numerals-sans-separator-p
@@ -2280,6 +2283,10 @@ numbers, such as years, should not be separated."
 (defun tlon-tts-check-chemical-symols ()
   "Return t iff the current buffer appears to have unprocessed chemical symbols."
   (tlon-tts-check-unprocessed tlon-tts-maybe-chemical-symbol))
+
+(defun tlon-tts-check-emphasis ()
+  "Return t iff the current buffer appears to have unprocessed emphasis markers."
+  (tlon-tts-check-unprocessed markdown-regex-italic))
 
 (defun tlon-tts-check-en-dashes ()
   "Return t iff the current buffer appears to have unprocessed en dashes."
