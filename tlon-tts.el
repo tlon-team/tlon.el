@@ -1231,8 +1231,8 @@ If FILE is nil, use the file visited by the current buffer, the file at point in
 Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
   (or file
       (buffer-file-name)
-      (tlon-tts-get-original-name (dired-get-filename))
-      (tlon-tts-get-original-name (read-file-name "File: "))))
+      (tlon-tts-get-original-filename (dired-get-filename))
+      (tlon-tts-get-original-filename (read-file-name "File: "))))
 
 (defun tlon-tts-join-chunks (&optional file)
   "Join chunks of FILE back into a single file.
@@ -1276,15 +1276,15 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 	(insert (format "file '%s'\n" (expand-file-name file)))))
     temp-file-list))
 
-(defun tlon-tts-get-chunk-names (file n)
-  "Return a list of the first N chunk names of FILE."
+(defun tlon-tts-get-chunk-filenames (file n)
+  "Return a list of the first N chunk filenames of FILE."
   (let ((all-chunks (tlon-tts-get-list-of-chunks file)))
     (cl-subseq all-chunks 0 (min n (length all-chunks)))))
 
-(defun tlon-tts-get-original-name (chunk-name)
-  "Return the original file name before it was chunked, given CHUNK-NAME."
-  (let* ((base-name (file-name-sans-extension chunk-name))
-	 (extension (file-name-extension chunk-name))
+(defun tlon-tts-get-original-filename (file)
+  "Return the filename from which chunk FILE derives."
+  (let* ((base-name (file-name-sans-extension file))
+	 (extension (file-name-extension file))
 	 (original-base-name (replace-regexp-in-string "-[0-9]+\\'" "" base-name)))
     (format "%s.%s" original-base-name extension)))
 
