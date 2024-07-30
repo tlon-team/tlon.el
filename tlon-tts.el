@@ -2243,7 +2243,7 @@ Depending on TYPE, also enclose TEXT in listener cues."
 	(case-fold-search nil)
 	missing)
     (goto-char (point-min))
-    (while (re-search-forward "\\(?:[A-Z]\\{2,\\}\\(?:\\. ?\\)?\\)+\\.?" nil t)
+    (while (re-search-forward "\\b\\(?:[A-Z]\\{2,\\}\\(?:\\. ?\\)?\\)+\\.?\\b" nil t)
       (let ((match (match-string-no-properties 0)))
 	(unless (or (string-match (mapconcat 'car abbrevs "\\|") match)
 		    (tlon-tts-looking-at-excluded-tag-p))
