@@ -1256,7 +1256,7 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
          (files (directory-files dir t pattern)))
     (sort files #'string<)))
 
-(defun tlon-tts-delete-chunks-of-file (file)
+(defun tlon-tts-delete-chunks-of-file (&optional file)
   "Delete the chunks of FILE. Also delete the staging buffer."
   (interactive)
   (let* ((file (tlon-tts-set-chunk-file file))
