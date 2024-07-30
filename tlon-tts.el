@@ -1704,7 +1704,7 @@ the car is the name of the file-local variable the cdr is its overriding value."
 If TEMP is non-nil, upload FILE to temporary server directory."
   (interactive)
   (let* ((file (or file (files-extras-read-file file)))
-	 (lang (tlon-tts-get-current-language))
+	 (lang (tlon-get-language))
 	 (destination (tlon-tts-get-audio-directory lang file nil temp)))
     (tlon-upload-file-to-server file destination 'delete-after-upload)))
 
