@@ -864,6 +864,9 @@ chunk and the cdr voice to be used to narrate this chunk.")
 The value of this variable is used for debugging purposes. Hence it is not unset
 at the end of the TTS process.")
 
+(defvar tlon-tts-chunks-to-process 0
+  "Number of chunks left to process.")
+
 (defvar tlon-tts-unprocessed-chunk-files nil
   "The chunks to process in the current TTS session.")
 
@@ -1088,8 +1091,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (let* ((destination (tlon-tts-set-destination))
 	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
 	 (chunks (tlon-tts-read-into-chunks char-limit)))
-    (setq tlon-tts-chunks chunks)
-    (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-names destination (length tlon-tts-chunks)))))
+    (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-filenames destination (length tlon-tts-chunks)))))
 
 (defun tlon-tts-set-destination ()
   "Set the destination for the audio file."
@@ -1166,16 +1168,15 @@ This is to prevent Elevenlabs from inserting weird audio artifacts."
   "Process chunks.
 After processing the chunks, open the relevant Dired buffer."
   (let ((destination (tlon-tts-set-destination))
-	(nth 1))
+        (nth 1))
+    (setq tlon-tts-chunks-to-process (length tlon-tts-chunks))
     (dolist (chunk tlon-tts-chunks)
       (let ((string (car chunk))
-	    (voice-data (cdr chunk)))
-	(tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth)
-				 (when voice-data
-				   `(,voice-data)))
-	(setq nth (1+ nth))))
-    (let ((dired-listing-switches "-alht")) ; sort by date
-      (dired (file-name-directory destination)))))
+            (voice-data (cdr chunk)))
+        (tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth)
+                                 (when voice-data
+                                   `(,voice-data)))
+        (setq nth (1+ nth))))))
 
 (defun tlon-tts-generate-audio (string file &optional parameters)
   "Generate audio FILE of STRING.
@@ -1192,9 +1193,7 @@ overriding value."
 				  (if (region-active-p)
 				      (tlon-tts-open-file file)
 				    (tlon-tts-process-chunk file))
-				(message "Process %s: Event occurred - %s" (process-name process) event))
-			      (kill-buffer "*Shell Command Output*")
-			      (shell-command (format "open '%s'" (tlon-tts-get-original-name file))))))))
+				(message "Process %s: Event occurred - %s" (process-name process) event)))))))
 
 (defun tlon-tts-get-chunk-name (file nth)
   "Return the name of the NTH chunk of FILE."
@@ -1207,16 +1206,24 @@ overriding value."
   (shell-command (format "open %s" file)))
 
 (defun tlon-tts-process-chunk (file)
-  "Process FILE chunk."
+  "Process chunk in FILE."
   (setq tlon-tts-unprocessed-chunk-files
-	(remove file tlon-tts-unprocessed-chunk-files))
-  (unless tlon-tts-unprocessed-chunk-files
-    (let ((file (tlon-tts-get-original-name file)))
+        (remove file tlon-tts-unprocessed-chunk-files))
+  (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
+  (when tlon-debug
+    (message "Debug: Chunks left to process: %d" tlon-tts-chunks-to-process))
+  (when (= tlon-tts-chunks-to-process 0)
+    (let ((file (tlon-tts-get-original-filename file))
+          (dired-listing-switches "-alht"))
       (when (tlon-tts-append-silence-to-chunks-p file)
-	(tlon-tts-append-silence-to-chunks file))
+        (tlon-tts-append-silence-to-chunks file))
       (tlon-tts-join-chunks file)
+      (when tlon-debug
+        (message "Appended silence to chunks."))
       (when tlon-tts-delete-file-chunks
-	(tlon-tts-delete-chunks-of-file file)))))
+        (tlon-tts-delete-chunks-of-file file))
+      (dired (file-name-directory file))
+      (shell-command (format "open '%s'" (tlon-tts-get-original-filename file))))))
 
 (defun tlon-tts-set-chunk-file (file)
   "Set chunk file based on FILE.
