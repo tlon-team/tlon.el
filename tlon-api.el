@@ -300,24 +300,27 @@ If citation is not found, return nil."
   "Upload FILE asynchronously to DESTINATION in server.
 If DELETE-AFTER-UPLOAD is non-nil, delete FILE after uploading."
   (interactive)
-  (let ((file (or file (files-extras-read-file file)))
-	(destination (or destination (read-directory-name "Destination: "))))
+  (let* ((file (or file (files-extras-read-file file)))
+	 (file-sans-fir (file-name-nondirectory file))
+	 (destination (or destination (read-directory-name "Destination: "))))
     (start-process "scp-upload" "*scp-upload*"
                    "scp"
                    (expand-file-name file)
                    destination)
-    (message "Uploading `%s' to `%s'..." file destination)
+    (message "Uploading `%s' to `%s'..." file-sans-fir destination)
     (set-process-sentinel
      (get-buffer-process "*scp-upload*")
      (lambda (_ event)
        (when (string= event "finished\n")
 	 (when delete-after-upload
 	   (delete-file file))
-	 (message "Upload successful!"))
+	 (message "`%s' successfully uploaded to `%s'." file-sans-fir destination))
        (unless (string= event "finished\n")
 	 (progn
            (message "Upload failed: %s" event)
-           (display-buffer "*scp-upload*")))))))
+           (display-buffer "*scp-upload*"))))))
+  (when (derived-mode-p 'dired-mode)
+    (revert-buffer)))
 
 ;;;;; Transient
 
