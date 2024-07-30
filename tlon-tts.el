@@ -1092,6 +1092,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (let* ((destination (tlon-tts-set-destination))
 	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
 	 (chunks (tlon-tts-read-into-chunks char-limit)))
+    (setq tlon-tts-chunks chunks)
     (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-filenames destination (length tlon-tts-chunks)))))
 
 (defun tlon-tts-set-destination ()
