@@ -417,17 +417,7 @@ respectively."
 (defun tlon-edit-url-correspondences ()
   "Add or edit a URL correspondence in `tlon-file-url-correspondences`."
   (interactive)
-  (let* ((json-data (tlon-read-json tlon-file-url-correspondences))
-         (outer-urls (mapcar #'car json-data))
-         (chosen-outer-url (completing-read "Old URL: " outer-urls))
-         (inner-alist (alist-get chosen-outer-url json-data nil nil #'string=))
-         (chosen-lang (tlon-select-language 'code 'babel nil '("default")))
-	 (inner-url (alist-get chosen-lang inner-alist nil nil #'string=))
-         (chosen-inner-url (read-string "New URL: " inner-url nil nil)))
-    (setf (alist-get chosen-lang inner-alist nil nil #'string=) chosen-inner-url)
-    (setf (alist-get chosen-outer-url json-data nil nil #'string=) inner-alist)
-    (tlon-write-data tlon-file-url-correspondences json-data)
-    (message "Edited `%s'" tlon-file-url-correspondences)))
+  (tlon-edit-correspondence tlon-file-url-correspondences))
 
 (declare-function magit-save-repository-buffers "magit-mode")
 (declare-function magit-run-git "magit-process")
