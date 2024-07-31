@@ -2208,14 +2208,14 @@ Depending on TYPE, also enclose TEXT in listener cues."
 	(dolist (acronym acronyms)
 	  (insert (format "%s\n" acronym))))
       (when chemical-symbols-p
-	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’"
+	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’\n"
 			tlon-tts-maybe-chemical-symbol)))
       (when emphasis-p
-	(insert (format "\n***Emphasis***\n\Run ‘M-x tlon-manual-fix-emphasis’")))
+	(insert (format "\n***Emphasis***\n\nRun ‘M-x tlon-manual-fixe-emphasis’\n")))
       (when en-dashes-p
 	(insert (format "\n***En dashes***\n\nSearch for ‘–’")))
       (when numerals-sans-separator-p
-	(insert (format "\n***Numerals sans separator***\n\nRun ‘M-x tlon-manual-fix-add-thousands-separators’"))))
+	(insert (format "\n***Numerals sans separator***\n\nRun ‘M-x tlon-manual-fix-add-thousands-separators’\n"))))
     (switch-to-buffer report-buffer)
     (other-window 1)
     (switch-to-buffer staging-buffer)))
