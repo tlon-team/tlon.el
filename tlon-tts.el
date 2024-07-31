@@ -882,26 +882,6 @@ at the end of the TTS process.")
 (defvar tlon-local-replacements-for-session '()
   "Value of `tlon-local-replacements' for the file being processed.")
 
-;;;;; Abbreviations
-
-(defvar tlon-global-abbreviations nil
-  "Standard abbreviations and their spoken equivalent in each language.
-Note that the replacements are performed in the order they appear in the list.
-This may be relevant for certain types of abbreviations and languages. For
-example, in Spanish certain abbreviations will be expanded in one form if the
-term that precedes them is ‘1’ and in another form otherwise (e.g., 1 km vs. 2
-km).")
-
-;;;;; Phonetic replacements
-
-(defvar tlon-tts-global-phonetic-replacements nil
-  "Phonetic replacements for terms.")
-
-;;;;; Phonetic transcriptions
-
-(defvar tlon-tts-global-phonetic-transcriptions nil
-  "Phonetic transcriptions for terms.")
-
 ;;;;; Listener cues
 
 (defconst tlon-tts-cue-delimiter
@@ -1968,8 +1948,8 @@ variable `tlon-local-abbreviations'."
   "Get global abbreviations.
 We throw an error if no global abbreviations are found, since (unlike local
 abbreviations) this list should always be non-empty."
-  (or (tlon-tts-get-associated-terms tlon-global-abbreviations)
-      (user-error "Warning: no global abbreviations found; check `tlon-global-abbreviations'")))
+  (or (tlon-tts-get-associated-terms (tlon-read-json tlon-file-global-abbreviations))
+      (user-error "Warning: no global abbreviations found; check `tlon-file-global-abbreviations'")))
 
 ;;;;;; Phonetic replacements
 
@@ -2020,7 +2000,7 @@ process, return its cdr."
 
 (defun tlon-tts-get-global-phonetic-replacements ()
   "Get simple replacements."
-  (tlon-tts-get-associated-terms tlon-tts-global-phonetic-replacements))
+  (tlon-tts-get-associated-terms (tlon-read-json tlon-file-global-phonetic-replacements)))
 
 (defun tlon-tts-replace-global-phonetic-replacements (replacement)
   "When processing simple replacements, replace match with REPLACEMENT."
@@ -2036,7 +2016,7 @@ process, return its cdr."
 
 (defun tlon-tts-get-global-phonetic-transcriptions ()
   "Get the phonetic transcriptions."
-  (tlon-tts-get-associated-terms tlon-tts-global-phonetic-transcriptions))
+  (tlon-tts-get-associated-terms (tlon-read-json tlon-file-global-phonetic-transcriptions)))
 
 (defun tlon-tts-replace-global-phonetic-transcriptions (replacement)
   "When processing phonetic transcriptions, replace match with pattern.
@@ -2540,47 +2520,11 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 
 ;;;;; Global
 
-;;;;;; Common
-
-;;;;;;; Variable setters
-
-;;;###autoload
-(defun tlon-tts-load-global-abbreviations ()
-  "Load global abbreviations."
-  (interactive)
-  (if-let ((abbrevs (tlon-read-json tlon-file-global-abbreviations)))
-      (setq tlon-global-abbreviations abbrevs)
-    (user-error "Warning: no global abbreviations found; check `tlon-global-abbreviations'")))
-
-(tlon-tts-load-global-abbreviations)
-
-;;;###autoload
-(defun tlon-tts-load-global-phonetic-replacements ()
-  "Load global phonetic replacements."
-  (interactive)
-  (if-let ((replacements (tlon-read-json tlon-file-global-phonetic-replacements)))
-      (setq tlon-tts-global-phonetic-replacements replacements)
-    (user-error "Warning: no global phonetic replacements found; check `tlon-tts-global-phonetic-replacements'")))
-
-(tlon-tts-load-global-phonetic-replacements)
-
-;;;###autoload
-(defun tlon-tts-load-global-phonetic-transcriptions ()
-  "Load global phonetic transcriptions."
-  (interactive)
-  (if-let ((transcriptions (tlon-read-json tlon-file-global-phonetic-transcriptions)))
-      (setq tlon-tts-global-phonetic-transcriptions transcriptions)
-    (user-error "Warning: no global phonetic transcriptions found; check `tlon-tts-global-phonetic-transcriptions'")))
-
-(tlon-tts-load-global-phonetic-transcriptions)
-
-;;;;;;; Entry manipulation
-
 ;;;;;; Abbreviations
 
 ;;;###autoload
 (defun tlon-tts-edit-global-abbreviations ()
-  "Add or edit a URL correspondence in `tlon-global-abbreviations'."
+  "Add or edit a URL correspondence in `tlon-file-global-abbreviations'."
   (interactive)
   (tlon-edit-correspondence tlon-file-global-abbreviations))
 
