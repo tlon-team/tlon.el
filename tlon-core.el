@@ -889,6 +889,22 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (maphash (lambda (k _v) (push k keys)) data)
     keys))
 
+;;;;; correspondences
+
+(defun tlon-edit-correspondence (file)
+  "Add or edit a correspondence in FILE."
+  (let* ((json-data (tlon-read-json file))
+         (outer-urls (mapcar #'car json-data))
+         (chosen-outer-url (completing-read "Old URL: " outer-urls))
+         (inner-alist (alist-get chosen-outer-url json-data nil nil #'string=))
+         (chosen-lang (tlon-select-language 'code 'babel nil nil '("default")))
+	 (inner-url (alist-get chosen-lang inner-alist nil nil #'string=))
+         (chosen-inner-url (read-string "New URL: " inner-url nil nil)))
+    (setf (alist-get chosen-lang inner-alist nil nil #'string=) chosen-inner-url)
+    (setf (alist-get chosen-outer-url json-data nil nil #'string=) inner-alist)
+    (tlon-write-data file json-data)
+    (message "Edited `%s'" file)))
+
 ;;;;; tags
 
 ;; TODO: create pattern directly fro `tlon-tag-specs'
