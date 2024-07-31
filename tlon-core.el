@@ -895,11 +895,11 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
   "Add or edit a correspondence in FILE."
   (let* ((json-data (tlon-read-json file))
          (outer-urls (mapcar #'car json-data))
-         (chosen-outer-url (completing-read "Old URL: " outer-urls))
+         (chosen-outer-url (completing-read "Source: " outer-urls))
          (inner-alist (alist-get chosen-outer-url json-data nil nil #'string=))
          (chosen-lang (tlon-select-language 'code 'babel nil nil '("default")))
 	 (inner-url (alist-get chosen-lang inner-alist nil nil #'string=))
-         (chosen-inner-url (read-string "New URL: " inner-url nil nil)))
+         (chosen-inner-url (read-string "Target: " inner-url nil nil)))
     (setf (alist-get chosen-lang inner-alist nil nil #'string=) chosen-inner-url)
     (setf (alist-get chosen-outer-url json-data nil nil #'string=) inner-alist)
     (tlon-write-data file json-data)
