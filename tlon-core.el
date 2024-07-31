@@ -797,9 +797,10 @@ validate a list of natural languages."
 (defun tlon-select-language (&optional format babel require-match initial-input
 				       additional-langs multiple)
   "Prompt the user to select a LANGUAGE and return it in FORMAT.
-If FORMAT is `code', return the two-letter code of the language (e.g.
-\"es\"). If it is `locale', return the predefined locale for that language (e.g.
-\"en-US\"). Otherwise, return the original selection (e.g. \"english\").
+If FORMAT is `code', return the two-letter code of the language (e.g. \"es\"),
+if found. If it is `locale', return the predefined locale for that
+language (e.g. \"en-US\"), if found. Otherwise, return the original
+selection (e.g. \"english\").
 
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project.
@@ -816,7 +817,7 @@ case, the return value will be a list of strings rather than a string."
 			(tlon-read-multiple-languages babel)
 		      (tlon-read-language babel require-match initial-input additional-langs))))
     (pcase format
-      ((or 'code 'locale) (tlon-get-formatted-languages selection format))
+      ((or 'code 'locale) (or (tlon-get-formatted-languages selection format) selection))
       (_ selection))))
 
 (defun tlon-get-formatted-languages (selection format)
