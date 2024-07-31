@@ -1991,9 +1991,13 @@ the terms will match only if they are adjacent to non-word characters."
 For each cons cell in VAR for the language in the current text-to-speech
 process, return its cdr."
   (let ((result '()))
-    (dolist (term var result)
-      (when (member (tlon-tts-get-current-language) (car term))
-	(setq result (append result (cadr term)))))
+    (dolist (cons var result)
+      (let* ((term (car cons))
+	     (lang (tlon-tts-get-current-language))
+	     (assoc (or (alist-get lang (cdr cons) nil nil #'string=)
+			(alist-get "default" (cdr cons) nil nil #'string=))))
+	(when assoc
+	  (push (cons term assoc) result))))
     result))
 
 ;;;;;;; Local
