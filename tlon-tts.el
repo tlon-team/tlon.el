@@ -2572,52 +2572,13 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 
 ;;;;;;; Entry manipulation
 
-(defun tlon-tts-edit-entry (variable file)
-  "Add or revise an entry in VARIABLE and write it to FILE."
-  (set variable (tlon-read-json file))
-  (let* ((names (mapcan (lambda (group)
-			  (mapcar #'car (cadr group)))
-			(symbol-value variable)))
-	 (term (completing-read "Term: " names nil nil))
-	 (current-entry (catch 'current-entry
-			  (dolist (group (symbol-value variable))
-			    (dolist (pair (cadr group))
-			      (when (string= (car pair) term)
-				(throw 'current-entry (cdr pair))))))))
-    (if current-entry
-	(let ((cdr (read-string (format "Updated entry for %s: " term) current-entry)))
-	  (tlon-tts-revise-entry (symbol-value variable) term cdr))
-      (tlon-tts-add-entry (symbol-value variable) term))
-    (tlon-write-data file (symbol-value variable))))
-
-(defun tlon-tts-revise-entry (data term cdr)
-  "Update the CDR for an existing TERM in DATA."
-  (dolist (group data)
-    (dolist (pair (cadr group))
-      (when (string= (car pair) term)
-	(setcdr pair cdr)))))
-
-(defun tlon-tts-add-entry (data term)
-  "Add a new TERM to DATA."
-  (let* ((languages (tlon-select-language 'code 'babel nil nil nil 'multiple))
-	 (dict-entry (read-string "Term: "))
-	 (new-entry (cons term dict-entry))
-	 (added nil))
-    (dolist (group data)
-      (when (and (not added)
-		 (equal (car group) languages))
-	(setf (cadr group) (cons new-entry (cadr group)))
-	(setq added t)))
-    (unless added
-      (nconc data (list (list languages (list new-entry)))))))
-
 ;;;;;; Abbreviations
 
 ;;;###autoload
 (defun tlon-tts-edit-global-abbreviations ()
-  "Edit abbreviations."
+  "Add or edit a URL correspondence in `tlon-global-abbreviations'."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-global-abbreviations tlon-file-global-abbreviations))
+  (tlon-edit-correspondence tlon-file-global-abbreviations))
 
 ;;;;;; Phonetic replacements
 
@@ -2625,7 +2586,7 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 (defun tlon-tts-edit-global-phonetic-replacements ()
   "Edit phonetic replacements."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-global-phonetic-replacements tlon-file-global-phonetic-replacements))
+  (tlon-edit-correspondence tlon-file-global-phonetic-replacements))
 
 ;;;;;; Phonetic transcriptions
 
@@ -2633,7 +2594,7 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
 (defun tlon-tts-edit-global-phonetic-transcriptions ()
   "Edit phonetic transcriptions."
   (interactive)
-  (tlon-tts-edit-entry 'tlon-tts-global-phonetic-transcriptions tlon-file-global-phonetic-transcriptions))
+  (tlon-edit-correspondence tlon-file-global-phonetic-transcriptions))
 
 ;;;;; Local
 
