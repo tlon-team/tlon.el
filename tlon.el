@@ -421,6 +421,7 @@ respectively."
 
 (declare-function magit-save-repository-buffers "magit-mode")
 (declare-function magit-run-git "magit-process")
+(declare-function magit-staged-files "magit-git")
 (defvar magit-commit-ask-to-stage)
 ;; TODO: consider adapting `tlon-commit-and-push' instead
 (defun tlon-url-correspondence-commit ()
