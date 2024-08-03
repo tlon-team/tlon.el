@@ -1,4 +1,4 @@
-;;; tlon-words.el --- Functionality for counting words -*- lexical-binding: t -*-
+;;; tlon-count.el --- Functionality for counting words -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -32,7 +32,7 @@
 
 ;;;; Variables
 
-(defconst tlon-words-gdrive-directory-ids
+(defconst tlon-count-gdrive-directory-ids
   '(("de" . "1K9OuZSP1yB-2m7G5pib9DkNqyE17bwJ-")
     ("en" . "13WXtjz18x3jSz5NI080SfTJAdWMN-zvC")
     ("es" . "1uwu3CyVdOa3o6NgohQTbMwqQ451fKP8p")
@@ -113,19 +113,19 @@ other value, return a message with the word count and the file count."
 
 (declare-function dired-filename-at-point "dired-x")
 ;;;###autoload
-(defun tlon-words-create-table-for-dir (&optional dir)
+(defun tlon-count-create-table-for-dir (&optional dir)
   "Create an `org-mode' table with the word counts for all Markdown files in DIR.
 If DIR is nil, use the directory at point, else prompt the user for one."
   (interactive)
   (let* ((dir (or dir (dired-filename-at-point)))
 	 (list (tlon-count-words-in-dir dir 'list))
-	 (destination (tlon-words-get-table-output-path dir)))
-    (tlon-words-insert-table-from-list list destination)
-    (tlon-words-export-org-table destination)
-    (tlon-words-export-to-google-drive (tlon-words-get-tsv-file destination))))
+	 (destination (tlon-count-get-table-output-path dir)))
+    (tlon-count-insert-table-from-list list destination)
+    (tlon-count-export-org-table destination)
+    (tlon-count-export-to-google-drive (tlon-count-get-tsv-file destination))))
 
 (declare-function org-table-align "org-table")
-(defun tlon-words-insert-table-from-list (list &optional destination)
+(defun tlon-count-insert-table-from-list (list &optional destination)
   "Insert an `org-mode' table into a new buffer from LIST.
 LIST is a list of cons cells. If DESTINATION is non-nil, save the table to it."
   (let ((buffer (generate-new-buffer "*Tlön stats*")))
@@ -138,7 +138,7 @@ LIST is a list of cons cells. If DESTINATION is non-nil, save the table to it."
     (when destination
       (write-file destination))))
 
-(defun tlon-words-get-table-output-path (dir)
+(defun tlon-count-get-table-output-path (dir)
   "Return the path of the `org-mode' table file for DIR."
   (let* ((target-dir (file-name-concat (tlon-get-repo 'error) "stats/"))
 	 (filename-base (file-name-nondirectory (directory-file-name dir)))
@@ -148,28 +148,28 @@ LIST is a list of cons cells. If DESTINATION is non-nil, save the table to it."
 ;;;;; Google Drive export
 
 (declare-function org-table-export "org-table")
-(defun tlon-words-export-org-table (&optional file)
+(defun tlon-count-export-org-table (&optional file)
   "Export the `org-mode' table in FILE to a `tsv' file.
 If FILE is nil, use the file visited by the current buffer."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
-	 (destination (tlon-words-get-tsv-file file)))
+	 (destination (tlon-count-get-tsv-file file)))
     (with-current-buffer (find-file-noselect file)
       (org-table-export destination "orgtbl-to-tsv"))))
 
-(defun tlon-words-get-tsv-file (file)
+(defun tlon-count-get-tsv-file (file)
   ""
   (let* ((target-dir (file-name-directory file))
 	 (target-file-base (file-name-base (file-name-nondirectory file)))
 	 (target-file (file-name-with-extension target-file-base "tsv")))
     (file-name-concat target-dir target-file)))
 
-(defun tlon-words-export-to-google-drive (&optional file)
+(defun tlon-count-export-to-google-drive (&optional file)
   "Export FILE to Google Drive.
 If FILE is nil, export the file visited by the current buffer."
   (interactive)
   (let* ((dir-id (alist-get (tlon-get-language 'error)
-			    tlon-words-gdrive-directory-ids nil nil 'string=))
+			    tlon-count-gdrive-directory-ids nil nil 'string=))
 	 (output (shell-command (format "gdrive files import %s --parent %s" file dir-id)))
 	 (url (format "https://drive.google.com/drive/folders/%s" dir-id)))
     (pcase output
@@ -223,12 +223,12 @@ computed by dividing the file size by CHARS-PER-WORD."
 	 (script (file-name-concat (tlon-repo-lookup :dir :name "babel")
 				   "count/historic-word-count")))
     (shell-command (format "sh %s %s %s %s" script dir days chars-per-word) buffer)))
-(provide 'tlon-words)
+(provide 'tlon-count)
 
 ;;;;; Menu
 
-;;;###autoload (autoload 'tlon-words-menu "tlon-words" nil t)
-(transient-define-prefix tlon-words-menu ()
+;;;###autoload (autoload 'tlon-count-menu "tlon-count" nil t)
+(transient-define-prefix tlon-count-menu ()
   "`words' menu."
   ["Count words"
    ("f" "in file(s)"           tlon-count-words-in-files)
@@ -236,8 +236,8 @@ computed by dividing the file size by CHARS-PER-WORD."
    ("r" "in repo"              tlon-count-words-in-repo)
    ""
    "Create table"
-   ("t" "for dir"              tlon-words-create-table-for-dir)])
+   ("t" "for dir"              tlon-count-create-table-for-dir)])
 
-(provide 'tlon-words)
-;;; tlon-words.el ends here
+(provide 'tlon-count)
+;;; tlon-count.el ends here
 
