@@ -200,6 +200,69 @@ defined in `tlon-count-extraneous-words'."
     (let ((raw (count-words (point-min) (point-max))))
       (- raw (tlon-count-extraneous-words)))))
 
+;;;;; BibTeX
+
+;;;###autoload
+(defun tlon-count-bibtex-keys-in-dir (recursive &optional dir)
+  "Count occurrences of each BibTeX key in every file in DIR.
+If RECURSIVE is non-nil, include files in subdirectories."
+  (interactive "P")
+  (let* ((dir (let ((file (files-extras-read-file dir)))
+                (if (file-directory-p file)
+		    file
+		  (user-error "Not a directory: %s" file))))
+	 (bibkey-pattern (tlon-md-get-tag-pattern "Cite"))
+         (files (tlon-get-files-in-dir dir recursive))
+         (total-key-counts (make-hash-table :test #'equal)))
+    (dolist (file files)
+      (let ((file-key-counts (tlon-extract-bibkeys-from-file file bibkey-pattern)))
+        (tlon-merge-key-counts total-key-counts file-key-counts)))
+    (let ((sorted-keys (tlon-sort-key-counts total-key-counts)))
+      (tlon-display-key-counts sorted-keys))))
+
+(defun tlon-get-files-in-dir (dir &optional recursive)
+  "Get a list of all files in DIR, excluding hidden files.
+If RECURSIVE is non-nil, include files in subdirectories."
+  (let ((files (if recursive
+		   (directory-files-recursively dir "^[^.][^/]*$")
+		 (directory-files dir t "^[^.][^/]*$"))))
+    (cl-remove-if #'file-directory-p files)))
+
+(defun tlon-extract-bibkeys-from-file (file bibkey-pattern)
+  "Extract and count BibTeX keys in FILE using BIBKEY-PATTERN.
+Returns a hash table with BibTeX keys and their counts."
+  (let ((key-counts (make-hash-table :test #'equal)))
+    (with-temp-buffer
+      (insert-file-contents file nil nil nil t)
+      (while (re-search-forward bibkey-pattern nil t)
+        (let ((key (match-string 3)))
+          (puthash key (1+ (gethash key key-counts 0)) key-counts))))
+    key-counts))
+
+(defun tlon-merge-key-counts (hash-table1 hash-table2)
+  "Merge two hash tables HASH-TABLE1 and HASH-TABLE2 containing key counts."
+  (maphash (lambda (key count)
+             (puthash key (+ count (gethash key hash-table1 0)) hash-table1))
+           hash-table2)
+  hash-table1)
+
+(defun tlon-sort-key-counts (key-counts)
+  "Sort the KEY-COUNTS hash table and return a sorted list."
+  (sort (cl-loop for key being the hash-keys of key-counts
+                 using (hash-values count)
+                 collect (cons key count))
+        (lambda (a b) (> (cdr a) (cdr b)))))
+
+(defun tlon-display-key-counts (sorted-keys)
+  "Display the sorted key counts SORTED-KEYS in a new buffer."
+  (with-current-buffer (get-buffer-create "/BibTeX Key Counts/")
+    (erase-buffer)
+    (dolist (pair sorted-keys)
+      (let ((count (cdr pair)))
+        (insert (format "%-4d %s\n" count (car pair)))))
+    (switch-to-buffer (current-buffer))
+    (goto-char (point-min))))
+
 ;;;;; Misc
 
 ;; this may be obsolete; revise
@@ -229,14 +292,16 @@ computed by dividing the file size by CHARS-PER-WORD."
 
 ;;;###autoload (autoload 'tlon-count-menu "tlon-count" nil t)
 (transient-define-prefix tlon-count-menu ()
-  "`words' menu."
-  ["Count words"
-   ("f" "in file(s)"           tlon-count-words-in-files)
-   ("d" "in dir"               tlon-count-words-in-dir)
-   ("r" "in repo"              tlon-count-words-in-repo)
-   ""
-   "Create table"
-   ("t" "for dir"              tlon-count-create-table-for-dir)])
+  "`count' menu."
+  [["Count words"
+    ("w f" "in file(s)"                tlon-count-words-in-files)
+    ("w d" "in dir"                    tlon-count-words-in-dir)
+    ("w r" "in repo"                   tlon-count-words-in-repo)
+    ""
+    "Create table with word count"
+    ("w t" "for dir"                   tlon-count-create-table-for-dir)]
+   ["Count BibTeX keys"
+    ("k d" "in dir"                    tlon-count-bibtex-keys-in-dir)]])
 
 (provide 'tlon-count)
 ;;; tlon-count.el ends here
