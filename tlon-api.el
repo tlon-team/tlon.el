@@ -264,10 +264,12 @@ If citation is not found, return nil."
   "Return the JSON response from URL."
   (let* ((command (format "curl -sS -X 'GET' \ '%s' \ -H 'accept: application/json'" url))
 	 (output (shell-command-to-string command)))
-    (with-temp-buffer
-      (insert output)
-      (goto-char (point-min))
-      (json-read))))
+    (if (string-match "could not resolve host" output)
+	(user-error "Failed to get citation. Is your local environment set up correctly?")
+      (with-temp-buffer
+	(insert output)
+	(goto-char (point-min))
+	(json-read)))))
 
 ;;;;; Magit integration
 
