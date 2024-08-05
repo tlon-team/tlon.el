@@ -2759,13 +2759,7 @@ move point to the file-local variables section."
     ""
     "local"
     ("A" "Abbreviation"                            tlon-add-local-abbreviation)
-    ("R" "Replacement"                             tlon-add-local-replacement)
-    ""
-    "Reload"
-    "global"
-    ("H-a" "Abbreviations"                         tlon-tts-load-global-abbreviations)
-    ("H-r" "Replacements"                          tlon-tts-load-global-phonetic-replacements)
-    ("H-t" "Transcriptions"                        tlon-tts-load-global-phonetic-transcriptions)]])
+    ("R" "Replacement"                             tlon-add-local-replacement)]])
 
 (provide 'tlon-tts)
 
