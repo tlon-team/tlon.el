@@ -916,7 +916,8 @@ No abstract: %s"
 
 (defun tlon-tex-remove-braces (string)
   "Remove braces from STRING."
-  (replace-regexp-in-string "[{}]" "" string))
+  (when string
+    (replace-regexp-in-string "[{}]" "" string)))
 
 (defun tlon-tex-bibtex-set-field-advice (orig-fun &rest args)
   "Advice to catch modifications to BibTeX fields in `bibtex-mode'.
