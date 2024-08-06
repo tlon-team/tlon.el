@@ -1785,6 +1785,8 @@ citation key, format. Hence, it must be run *before*
   "Remove formatting from text."
   (tlon-tts-process-boldface)
   (tlon-tts-process-italics)
+  (tlon-tts-process-sup)
+  (tlon-tts-process-sub)
   (tlon-tts-process-visually-hidden)
   (tlon-tts-process-replace-audio)
   (tlon-tts-process-voice-role)
@@ -1798,6 +1800,8 @@ citation key, format. Hence, it must be run *before*
 	('boldface (cons markdown-regex-bold '(1 4)))
 	('italics (cons markdown-regex-italic '(1 4)))
 	('visually-hidden (cons (tlon-md-get-tag-pattern "VisuallyHidden") '(2)))
+	('sup (cons (tlon-md-get-tag-pattern "sup") '(2)))
+	('sub (cons (tlon-md-get-tag-pattern "sub") '(2)))
 	('small-caps (cons (tlon-md-get-tag-pattern "SmallCaps") '(2)))
 	(_ (user-error "Invalid formatting type: %s" type)))
     (goto-char (point-min))
@@ -1826,6 +1830,14 @@ citation key, format. Hence, it must be run *before*
 (defun tlon-tts-process-small-caps ()
   "Replace small caps with their full form."
   (tlon-tts-remove-formatting 'small-caps))
+
+(defun tlon-tts-process-sup ()
+  "Remove `sup' tag."
+  (tlon-tts-remove-formatting 'sup))
+
+(defun tlon-tts-process-sub ()
+  "Remove `sub' tag."
+  (tlon-tts-remove-formatting 'sub))
 
 (defun tlon-tts-process-math ()
   "Replace math expressions with their alt text.
