@@ -1787,6 +1787,7 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-sup)
   (tlon-tts-process-sub)
   (tlon-tts-process-slashes)
+  (tlon-tts-process-literal-link)
   (tlon-tts-process-visually-hidden)
   (tlon-tts-process-replace-audio)
   (tlon-tts-process-voice-role)
@@ -1800,6 +1801,7 @@ citation key, format. Hence, it must be run *before*
 	('boldface (cons markdown-regex-bold '(1 4)))
 	('italics (cons markdown-regex-italic '(1 4)))
 	('visually-hidden (cons (tlon-md-get-tag-pattern "VisuallyHidden") '(2)))
+	('literal-link (cons (tlon-md-get-tag-pattern "LiteralLink") '(2)))
 	('sup (cons (tlon-md-get-tag-pattern "sup") '(2)))
 	('sub (cons (tlon-md-get-tag-pattern "sub") '(2)))
 	('small-caps (cons (tlon-md-get-tag-pattern "SmallCaps") '(2)))
@@ -1834,6 +1836,10 @@ citation key, format. Hence, it must be run *before*
 (defun tlon-tts-process-sup ()
   "Remove `sup' tag."
   (tlon-tts-remove-formatting 'sup))
+
+(defun tlon-tts-process-literal-link ()
+  "Replace text enclosed in a `LiteralLink' MDX tag with its contents'."
+  (tlon-tts-remove-formatting 'literal-link))
 
 (defun tlon-tts-process-sub ()
   "Remove `sub' tag."
