@@ -1786,6 +1786,7 @@ citation key, format. Hence, it must be run *before*
   (tlon-tts-process-italics)
   (tlon-tts-process-sup)
   (tlon-tts-process-sub)
+  (tlon-tts-process-slashes)
   (tlon-tts-process-visually-hidden)
   (tlon-tts-process-replace-audio)
   (tlon-tts-process-voice-role)
@@ -1844,6 +1845,13 @@ If no alt text is present, replace with the expression itself."
   (goto-char (point-min))
   (while (re-search-forward (tlon-md-get-tag-pattern "Math") nil t)
     (replace-match (or (match-string 4) (match-string 2)) t t)))
+
+(defun tlon-tts-process-slashes ()
+  "Replace slashes between alphanumeric characters with hyphens."
+  (goto-char (point-min))
+  (while (re-search-forward "\\(?1:[[:alpha:]]\\)/\\(?2:[[:alpha:]]\\)" nil t)
+    (unless (looking-at-p markdown-regex-link-inline)
+      (replace-match (concat (match-string 1) "-" (match-string 2))))))
 
 (defun tlon-tts-process-replace-audio ()
   "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
