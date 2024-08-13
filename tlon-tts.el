@@ -1853,11 +1853,16 @@ If no alt text is present, replace with the expression itself."
     (replace-match (or (match-string 4) (match-string 2)) t t)))
 
 (defun tlon-tts-process-slashes ()
-  "Replace slashes between alphanumeric characters with hyphens."
-  (goto-char (point-min))
-  (while (re-search-forward "\\(?1:[[:alpha:]]\\)/\\(?2:[[:alpha:]]\\)" nil t)
-    (unless (looking-at-p markdown-regex-link-inline)
-      (replace-match (concat (match-string 1) "-" (match-string 2))))))
+  "Conditionally replace slashes between alphanumeric characters.
+Whether slashes are replaced, and by what character, depends on the TTS engine."
+  (let ((replacement (pcase tlon-tts-engine
+		       ("ElevenLabs" "/") ; do not replace
+		       ("Microsoft Azure" " ")
+		       (_ "-")))) ; fallback; for engines we haven’t yet tested
+    (goto-char (point-min))
+    (while (re-search-forward "\\(?1:[[:alpha:]]\\)/\\(?2:[[:alpha:]]\\)" nil t)
+      (unless (looking-at-p markdown-regex-link-inline)
+	(replace-match (concat (match-string 1) replacement (match-string 2)))))))
 
 (defun tlon-tts-process-replace-audio ()
   "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
