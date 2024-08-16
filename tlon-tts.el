@@ -309,7 +309,19 @@ Options are
   it still retains the fantastic quality offered in our other models. Even if
   optimized for real-time and more conversational applications, we still
   recommend testing it out for other applications as it is very versatile and
-  stable.\ As of 2024-07-15, it does not support multilingual voices.
+  stable.\ As of 2024-07-15, it does not support multilingual voices.\"
+
+- `\"eleven_turbo_v2_5\"': \"Turbo v2.5 generates human-like text to speech in
+  32 languages with low latency. We recommend Turbo v2.5 for users building real
+  time, conversational interfaces in non-English languages. It’s 300% faster
+  than Multilingual v2 and adds Vietnamese, Hungarian and Swedish to our
+  existing 29 languages. A highly optimized model, specifically tailored for
+  low-latency applications without sacrificing vocal performance and keeping
+  inline with the quality standard that people have come to expect from our
+  models.Because of its very optimized nature, it does have slightly lower
+  accuracy than multilingual V2 and is missing the style slider, which adds
+  latency when used. However, the accuracy is still very good when using a
+  properly created instant voice clone, and it is very stable.\"
 
 <https://help.elevenlabs.io/hc/en-us/articles/17883183930129-What-models-do-you-offer-and-what-is-the-difference-between-them>"
   :group 'tlon-tts
