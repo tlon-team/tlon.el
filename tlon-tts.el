@@ -535,14 +535,14 @@ The placeholders are: API key, output format, SSML, destination for the audio
 file, and destination for the log file.")
 
 (defconst tlon-microsoft-azure-voices
-	'((:id "es-US-AlonsoNeural" :language "es" :gender "male" :role "main")
-		 (:id "es-US-PalomaNeural" :language "es" :gender "female" :role "main")
-		 (:id "es-CO-GonzaloNeural" :language "es" :gender "male" :role "alternate")
-		 (:id "es-MX-DaliaNeural" :language "es" :gender "female" :role "alternate")
-		 (:id "es-CO-SalomeNeural" :language "es" :gender "female")
-		 (:id "es-AR-TomasNeural" :language "es" :gender "male")
-		 (:id "es-AR-ElenaNeural" :language "es" :gender "female"))
-	"Preferred Microsoft Azure voices for different languages.
+  '((:id "es-US-AlonsoNeural" :language "es" :gender "male" :role "main")
+    (:id "es-US-PalomaNeural" :language "es" :gender "female" :role "main")
+    (:id "es-CO-GonzaloNeural" :language "es" :gender "male" :role "alternate")
+    (:id "es-MX-DaliaNeural" :language "es" :gender "female" :role "alternate")
+    (:id "es-CO-SalomeNeural" :language "es" :gender "female")
+    (:id "es-AR-TomasNeural" :language "es" :gender "male")
+    (:id "es-AR-ElenaNeural" :language "es" :gender "female"))
+  "Preferred Microsoft Azure voices for different languages.
 All the voices in this property list are neural and multilingual, and are the
 best male and female voices we were able to identify in each language.
 
@@ -1162,15 +1162,15 @@ This is to prevent Elevenlabs from inserting weird audio artifacts."
   "Process chunks.
 After processing the chunks, open the relevant Dired buffer."
   (let ((destination (tlon-tts-set-destination))
-        (nth 1))
+	(nth 1))
     (setq tlon-tts-chunks-to-process (length tlon-tts-chunks))
     (dolist (chunk tlon-tts-chunks)
       (let ((string (car chunk))
-            (voice-data (cdr chunk)))
-        (tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth)
-                                 (when voice-data
-                                   `(,voice-data)))
-        (setq nth (1+ nth))))))
+	    (voice-data (cdr chunk)))
+	(tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth)
+				 (when voice-data
+				   `(,voice-data)))
+	(setq nth (1+ nth))))))
 
 (defun tlon-tts-generate-audio (string file &optional parameters)
   "Generate audio FILE of STRING.
@@ -1202,20 +1202,20 @@ overriding value."
 (defun tlon-tts-process-chunk (file)
   "Process chunk in FILE."
   (setq tlon-tts-unprocessed-chunk-files
-        (remove file tlon-tts-unprocessed-chunk-files))
+	(remove file tlon-tts-unprocessed-chunk-files))
   (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
   (when tlon-debug
     (message "Debug: Chunks left to process: %d" tlon-tts-chunks-to-process))
   (when (= tlon-tts-chunks-to-process 0)
     (let ((file (tlon-tts-get-original-filename file))
-          (dired-listing-switches "-alht"))
+	  (dired-listing-switches "-alht"))
       (when (tlon-tts-append-silence-to-chunks-p file)
-        (tlon-tts-append-silence-to-chunks file))
+	(tlon-tts-append-silence-to-chunks file))
       (tlon-tts-join-chunks file)
       (when tlon-debug
-        (message "Appended silence to chunks."))
+	(message "Appended silence to chunks."))
       (when tlon-tts-delete-file-chunks
-        (tlon-tts-delete-chunks-of-file file))
+	(tlon-tts-delete-chunks-of-file file))
       (dired (file-name-directory file))
       (shell-command (format "open '%s'" (tlon-tts-get-original-filename file))))))
 
@@ -1244,17 +1244,17 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 (defun tlon-tts-get-list-of-chunks (file)
   "Return a list of the file chunks for FILE, sorted alphabetically."
   (let* ((dir (file-name-directory file))
-         (base-name (file-name-base file))
-         (extension (file-name-extension file))
-         (pattern (concat "^" (regexp-quote base-name) "-.*\\." (regexp-quote extension) "$"))
-         (files (directory-files dir t pattern)))
+	 (base-name (file-name-base file))
+	 (extension (file-name-extension file))
+	 (pattern (concat "^" (regexp-quote base-name) "-.*\\." (regexp-quote extension) "$"))
+	 (files (directory-files dir t pattern)))
     (sort files #'string<)))
 
 (defun tlon-tts-delete-chunks-of-file (&optional file)
   "Delete the chunks of FILE. Also delete the staging buffer."
   (interactive)
   (let* ((file (tlon-tts-set-chunk-file file))
-         (buffer-name (tlon-tts-get-staging-buffer-name file)))
+	 (buffer-name (tlon-tts-get-staging-buffer-name file)))
     (dolist (chunk-file (tlon-tts-get-list-of-chunks file))
       (delete-file chunk-file 'trash))
     (when (get-buffer buffer-name)
@@ -1474,32 +1474,32 @@ format used by `mp3split'."
   ;; TODO: the audio parameters are hard-coded; they should be obtained from the
   ;; relevant `audio-settings' variable
   (shell-command (format "ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t %s -b:a 128k %s"
-                         duration
-                         (shell-quote-argument file))))
+			 duration
+			 (shell-quote-argument file))))
 
 (defun tlon-tts-concatenate-files (input-file silence-file output-file)
   "Concatenate INPUT-FILE and SILENCE-FILE into OUTPUT-FILE.
 We do it this way, via an intermediary container, because the silences generated
 with the simpler version were not recognized by some audio players."
   (let ((concat-file (make-temp-file "ffmpeg-concat" nil ".txt"))
-        (intermediate-file (concat (file-name-sans-extension output-file) ".ts")))
+	(intermediate-file (concat (file-name-sans-extension output-file) ".ts")))
     (with-temp-file concat-file
       (insert (format "file '%s'\nfile '%s'\n"
-                      (shell-quote-argument input-file)
-                      (shell-quote-argument silence-file))))
+		      (shell-quote-argument input-file)
+		      (shell-quote-argument silence-file))))
     (shell-command (format "ffmpeg -f concat -safe 0 -i %s -c copy -f mpegts %s"
-                           (shell-quote-argument concat-file)
-                           (shell-quote-argument intermediate-file)))
+			   (shell-quote-argument concat-file)
+			   (shell-quote-argument intermediate-file)))
     (shell-command (format "ffmpeg -i %s -c copy %s"
-                           (shell-quote-argument intermediate-file)
-                           (shell-quote-argument output-file)))
+			   (shell-quote-argument intermediate-file)
+			   (shell-quote-argument output-file)))
     (delete-file concat-file)
     (delete-file intermediate-file)))
 
 (defun tlon-tts-append-silence-to-file (file duration)
   "Append silence of DURATION seconds to FILE."
   (let ((silence-file (concat (file-name-sans-extension file) "-silence.mp3"))
-        (output-file (concat (file-name-sans-extension file) "-silent.mp3")))
+	(output-file (concat (file-name-sans-extension file) "-silent.mp3")))
     (tlon-tts-create-silence-file duration silence-file)
     (tlon-tts-concatenate-files file silence-file output-file)
     (rename-file output-file file t)
