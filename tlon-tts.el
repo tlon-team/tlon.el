@@ -279,7 +279,7 @@ The options are:
     ("ulaw_8000" . "ulaw")))
 
 (defcustom tlon-elevenlabs-model
-  "eleven_multilingual_v2"
+  "eleven_turbo_v2_5"
   "Model to use for the ElevenLabs TTS.
 Options are
 
