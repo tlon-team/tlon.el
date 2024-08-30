@@ -1018,7 +1018,7 @@ repository."
 (defun tlon-grep (string extension)
   "Perform a ripgrep search for STRING in files with EXTENSION."
   (interactive (list (read-string "Search string: ")
-		     (completing-read "Extension: " '("md" "el" "") nil t)))
+		     (completing-read "Extension: " '("" "el" "md" "org") nil t)))
   (let* ((core-settings '(:interactive t :recursive t))
 	 (no-context-settings '(:c-beg-only t :c-end-only t))
 	 (context (y-or-n-p "Context?"))
