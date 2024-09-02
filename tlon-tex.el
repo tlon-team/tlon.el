@@ -33,6 +33,7 @@
 (require 'paths)
 (require 'shut-up)
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; User options
 
@@ -822,7 +823,9 @@ Make sure the relevant glossaries are loaded before running this function."
 (defun tlon-translate-abstract-callback (key target-lang &optional overwrite var)
   "Callback for `tlon-translate-abstract'.
 KEY is the key of the entry and TARGET-LANG is the target language of the
-translation. If OVERWRITE is non-nil, overwrite the existing translation."
+translation. If OVERWRITE is non-nil, overwrite the existing translation. If VAR
+is non-nil, save the translations in VAR; otherwise, save them in
+`tlon-file-abstract-translations'."
   (let ((translation (tlon-deepl-print-translation)))
     (tlon-add-abstract-translation key target-lang translation overwrite var)))
 
