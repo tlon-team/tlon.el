@@ -158,7 +158,7 @@ If FILE is nil, use the file visited by the current buffer."
       (org-table-export destination "orgtbl-to-tsv"))))
 
 (defun tlon-count-get-tsv-file (file)
-  ""
+  "Return the path of the `tsv' FILE."
   (let* ((target-dir (file-name-directory file))
 	 (target-file-base (file-name-base (file-name-nondirectory file)))
 	 (target-file (file-name-with-extension target-file-base "tsv")))

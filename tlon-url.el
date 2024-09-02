@@ -29,8 +29,6 @@
 
 (require 'tlon-core)
 
-;;;; Variables
-
 ;;;; Functions
 
 (declare-function ffap-url-p "ffap")

@@ -88,6 +88,7 @@
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
+(declare-function ebib--get-key-at-point "ebib")
 (defun tlon-get-import-details-from-ebib ()
   "Get the relevant details for importing a document from the current BibTeX entry."
   (when (derived-mode-p 'ebib-entry-mode 'ebib-index-mode)

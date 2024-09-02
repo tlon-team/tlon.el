@@ -259,6 +259,7 @@ when the source language is not English."
 
 (declare-function ebib--get-key-at-point "ebib")
 (declare-function bibtex-extras-get-field "bibtex-extras")
+(declare-function ebib-extras-get-field "ebib-extras")
 (declare-function citar-extras-open-in-ebib "citar-extras")
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (declare-function tlon-tex-remove-braces "tlon-tex")

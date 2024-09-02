@@ -29,6 +29,7 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; User options
 

@@ -29,6 +29,7 @@
 
 (require 'org-clock)
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; Variables
 

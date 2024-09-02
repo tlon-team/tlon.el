@@ -762,9 +762,9 @@ Text enclosed by an `Roman' tag pair will be displayed in small caps."
   "Insert an MDX `SmallCaps' tag pair at point or around the selected region.
 Text enclosed by an `SmallCaps' tag pair will be displayed in small caps.
 
-Note: for Roman numerals, use `tlon-mdx-insert-romantlon-insert-mdx-roman': `Roman' has exactly the
-same visual effects as `SmallCaps', but it also makes the TTS engine read the
-numbers correctly."
+Note: for Roman numerals, use `tlon-mdx-insert-romantlon-insert-mdx-roman':
+`Roman' has exactly the same visual effects as `SmallCaps', but it also makes
+the TTS engine read the numbers correctly."
   (interactive)
   (tlon-md-insert-or-edit-tag "SmallCaps"))
 

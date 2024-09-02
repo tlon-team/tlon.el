@@ -207,6 +207,7 @@ alist, unless RAW is non-nil."
 	      metadata
 	    (tlon-yaml-to-alist metadata)))))))
 
+(declare-function yaml-parse-string "yaml")
 (defun tlon-yaml-get-metadata2 (&optional file-or-buffer raw)
   "Return the YAML metadata from FILE-OR-BUFFER as strings in a list.
 If FILE-OR-BUFFER is nil, use the current buffer. Return the metadata as an
@@ -403,7 +404,7 @@ If KEY already has VALUE, use it as the initial input."
 ;; then an insert or edit command
 
 (defun tlon-yaml-set-key-value (key)
-  ""
+  "Set the value of the YAML field with KEY."
   (let ((values (tlon-yaml-get-key-values key)))
     (tlon-yaml-select-key-values key values)))
 
@@ -419,7 +420,7 @@ If KEY already has VALUE, use it as the initial input."
     ("publication_status" tlon-yaml-publication-statuses)))
 
 (defun tlon-yaml-select-key-values (key values)
-  ""
+  "Select a value for a YAML field with KEY from a list of VALUES."
   (let ((prompt (format "%s: " key)))
     (pcase key
       ((or "type" "authors" "translators" "tags" "original_path" "publication_status")
@@ -430,7 +431,7 @@ If KEY already has VALUE, use it as the initial input."
        (tlon-yaml-get-bibtex-key-values key)))))
 
 (defun tlon-yaml-insert-key-value (key value)
-  "."
+  "Insert a YAML field with KEY and VALUE."
   (pcase key
     ((or "authors" "translators" "tags")
      (tlon-yaml-insert-list value))

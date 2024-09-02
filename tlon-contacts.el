@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; Variables
 
@@ -138,6 +139,7 @@ If PROP is nil, prompt the user to select a property."
 	      (cons prop (org-entry-get (point) prop)))
 	    (cdr (assoc role tlon-contacts-properties)))))
 
+(declare-function org-get-heading "org")
 (defun tlon-contacts-get-contact-name ()
   "Get the first and last name contact at point.
 Return a cons cell with the name and email address."

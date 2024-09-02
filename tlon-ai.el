@@ -304,7 +304,7 @@ INFO is the response info."
     (message "Retrying language detection (try %d of 3)..." tlon-ai-retries)
     (funcall original-fun)))
 
-(declare-function ebib-extras-get-file "ebib-extras")
+(declare-function ebib-extras-get-text-file "ebib-extras")
 (declare-function tlon-md-read-content "tlon-md")
 (defun tlon-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
@@ -586,6 +586,7 @@ described in the `tlon-get-abstract-with-ai' docstring."
   (interactive)
   (tlon-get-abstract-with-ai file 'synopsis))
 
+(declare-function ebib-extras-get-file "ebib-extras")
 (defun tlon-get-abstract-with-ai-in-file (extension)
   "Return an abstract of the file with EXTENSION in the BibTeX entry at point."
   (if (tlon-abstract-may-proceed-p)

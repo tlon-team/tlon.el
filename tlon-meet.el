@@ -33,7 +33,7 @@
 ;;;; Functions
 
 (defun tlon-create-or-visit-meeting-issue (&optional person-or-group)
-  ""
+  "Create or visit issue for a meeting with PERSON-OR-GROUP."
   (interactive)
   (let ((person-or-group (or person-or-group (tlon-prompt-for-all-other-users t))))
     (if (string= person-or-group "group")

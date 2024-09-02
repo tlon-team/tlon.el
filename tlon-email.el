@@ -48,7 +48,7 @@ either a string or the name of the variable whose value should replace
 it.")
 
 (defun tlon-email-unset-variables ()
-  ""
+  "Unset email variables."
   (setq tlon-email-language nil
 	tlon-email-language nil))
 
@@ -87,7 +87,7 @@ it.")
   "Return the subject and body of the email TEMPLATE, as a cons cell."
   (let ((path (file-name-concat tlon-email-templates-directory template)))
     (with-current-buffer (or (find-buffer-visiting path)
-			     (find-file-noselect (path)))
+			     (find-file-noselect path))
       (cons (string-trim (tlon-email-get-heading-contents "Subject"))
 	    (tlon-email-get-heading-contents "Body")))))
 

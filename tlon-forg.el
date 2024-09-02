@@ -275,7 +275,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (sleep-for 0.1))))
 
 (defun tlon-capture-handle-phase (issue)
-  "Take appropriate action when ..."
+  "Take appropriate action when ISSUE has no valid job phase."
   (unless (tlon-get-phase-in-issue issue)
     (let* ((title (oref issue title))
 	   (prompt (format "Warning: issue `%s' has no valid job phase. What should it be?" title))
@@ -748,7 +748,7 @@ If ISSUE is nil, use issue at point or in the current buffer."
   (interactive)
   (let* ((issue (or issue (forge-current-topic)))
 	 (repo (forge-get-repository issue))
-	 (current-labels (tlon-forg-get-labels) issue)
+	 (current-labels (tlon-forg-get-labels issue))
 	 (status (tlon-get-status-in-issue issue))
 	 (phase (tlon-get-phase-in-issue issue))
 	 (trimmed-labels (pcase type

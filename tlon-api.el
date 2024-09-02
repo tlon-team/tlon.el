@@ -29,6 +29,7 @@
 
 (require 'request)
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; Variables
 

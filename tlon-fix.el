@@ -321,6 +321,7 @@ dedicated function."
 		   'keep-case))
 
 (defvar markdown-regex-italic)
+(declare-function tlon-md-return-tag "tlon-md")
 (defun tlon-manual-fix-emphasis ()
   "Prompt the user to add an `emphasis' tag around text enclosed in quotes."
   (interactive)
