@@ -279,7 +279,7 @@ The options are:
     ("ulaw_8000" . "ulaw")))
 
 (defcustom tlon-elevenlabs-model
-  "eleven_turbo_v2_5"
+  "eleven_multilingual_v2"
   "Model to use for the ElevenLabs TTS.
 Options are
 
@@ -667,7 +667,9 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
     (:name "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male" :role "alternate")
     (:name "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
     (:name "Amelia" :id "Lpn2A60EAsgGCWjFue20" :language "multilingual" :gender "female" :role "alternate")
-    (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "main"))
+    (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "main")
+    (:name "JeiJo" :id "PBaBRSRTvwmnK1PAq9e0" :language "multilingual" :gender "male" :role "main")
+    (:name "Ricardo" :id "CoAqFXxZEa3kpJmE7rDr" :language "multilingual" :gender "male" :role "main"))
   "Preferred ElevenLabs voices for different languages.
 A list of available voices may be found here:
 <https://elevenlabs.io/app/voice-library>. To get information about the voices,
