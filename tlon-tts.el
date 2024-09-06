@@ -668,7 +668,6 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
     (:name "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
     (:name "Amelia" :id "Lpn2A60EAsgGCWjFue20" :language "multilingual" :gender "female" :role "alternate")
     (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "main")
-    (:name "Alice" :id "Xb7hH8MSUJpSbSDYk0k2" :language "multilingual" :gender "female" :role "main")
     (:name "Mariluz" :id "m1VE7dnwBN0zMer3LcKv" :language "multilingual" :gender "female" :role "main")
     (:name "Ricardo" :id "CoAqFXxZEa3kpJmE7rDr" :language "multilingual" :gender "male" :role "main"))
   "Preferred ElevenLabs voices for different languages.
