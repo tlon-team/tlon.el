@@ -845,7 +845,7 @@ former in group 1.")
   "Names of the sections to be removed in each language.")
 
 (defconst tlon-tts-tag-section-patterns
-  (let ((format-string "^\\(?1:## %s\\(?:\\(.\\|\n\\)**\\)\\)"))
+  (let ((format-string "^\\(?1:## %s\\)"))
     (mapcar (lambda (pair)
 	      (let ((lang (car pair))
 		    (names (cdr pair)))
@@ -1929,10 +1929,12 @@ The time length of the pause is determined by
 	 (bare-dir (tlon-lookup tlon-core-bare-dirs "en" lang (tlon-get-bare-dir tlon-tts-source))))
     (when (string= bare-dir "tags")
       (goto-char (point-min))
-      (let ((pattern (alist-get lang tlon-tts-tag-section-patterns nil nil #'string=)))
-	(when pattern
-	  (while (re-search-forward pattern nil t)
-	    (replace-match "" t t)))))))
+      (when-let ((pattern (alist-get lang tlon-tts-tag-section-patterns nil nil #'string=)))
+	(when (re-search-forward pattern nil t)
+	  (goto-char (match-beginning 0))
+	  (let ((begin (point)))
+	    (tlon-md-end-of-buffer-dwim)
+	    (delete-region begin (point))))))))
 
 ;;;;;; Lines
 
