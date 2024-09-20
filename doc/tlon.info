@@ -1,4 +1,4 @@
-This is tlon.info, produced by makeinfo version 7.1 from tlon.texi.
+This is tlon.info, produced by makeinfo version 7.1.1 from tlon.texi.
 
 INFO-DIR-SECTION Emacs misc features
 START-INFO-DIR-ENTRY
@@ -346,22 +346,22 @@ as completion candidates.
 
 
 Tag Table:
-Node: Top225
-Node: Main menu853
-Node: Jobs950
-Node: 0 New job1272
-Node: 1 Processing3537
-Node: 2 Translation3954
-Node: 3 Revision4085
-Node: 4 Check4282
-Node: 5 Review4458
-Node: 6 Publication4654
-Node: GitHub and org-mode synchronization4762
-Node: Editing Markdown7584
-Node: Commands to insert mathematical expressions8318
-Node: Commands to insert citations9659
-Node: Commands to insert note markers11218
-Node: Other commands12937
+Node: Top227
+Node: Main menu855
+Node: Jobs952
+Node: 0 New job1274
+Node: 1 Processing3539
+Node: 2 Translation3956
+Node: 3 Revision4087
+Node: 4 Check4284
+Node: 5 Review4460
+Node: 6 Publication4656
+Node: GitHub and org-mode synchronization4764
+Node: Editing Markdown7586
+Node: Commands to insert mathematical expressions8320
+Node: Commands to insert citations9661
+Node: Commands to insert note markers11220
+Node: Other commands12939
 
 End Tag Table
 
