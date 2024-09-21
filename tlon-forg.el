@@ -637,13 +637,13 @@ sorted to the end."
 (defun tlon-forg-tag-sorter ()
   "Return the first tag of an org heading that matches the relevant regexp pattern.
 The pattern is defined in `tlon-forg-sort-by-tags-regexp'. If no tag matches,
-return \"zzz\"."
+return \"~\", so that the entry is sorted to the end."
   (let ((tags (org-get-tags)))
     (catch 'match
       (dolist (tag tags)
 	(when (string-match-p tlon-forg-sort-by-tags-regexp tag)
 	  (throw 'match tag)))
-      "zzz")))
+      "~")))
 
 ;;;;;; status
 
