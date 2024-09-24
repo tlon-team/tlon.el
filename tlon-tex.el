@@ -149,7 +149,7 @@ NOTE: This is not working correctly.")
 The capture group 3 contains the title of the work.")
 
 (defconst tlon-regexp-expanded-citation-with-no-link
-  (format (format tlon-regexp-expanded-citation-formatter "[\"“'‘\\*]?\\(?1:.*?\\)[\"”'’\\*]"))
+  (format tlon-regexp-expanded-citation-formatter "[\"“'‘\\*]?\\(?1:.*?\\)[\"”'’\\*]")
   "Regexp to match a citation whose title has no link in our \"long\" style.
 The capture group 3 contains the title of the work.")
 
