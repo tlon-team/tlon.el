@@ -137,8 +137,7 @@ Group 1 captures the key. Group 2 captures the locator(s), if present. Based on
 NOTE: This is not working correctly.")
 
 (defconst tlon-regexp-expanded-citation-formatter
-  (format "^[[:alnum:]]*?, [[:alnum:]& ]*? ([[:digit:]]\\{4\\}) %%s.*$"
-	  tlon-regexp-locator-in-citation)
+  "^[[:alnum:]]*?, [[:alnum:]& ]*? ([[:digit:]]\\{4\\}) %%s.*$"
   "Formatter for a regexp pattern to match expanded citations, handling locators.
 NOTE: This is not working correctly.")
 
