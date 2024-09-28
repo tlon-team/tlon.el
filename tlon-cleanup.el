@@ -33,7 +33,6 @@
 
 ;;;;; Common
 
-(declare-function unfill-region "unfill")
 (defun tlon-cleanup-common ()
   "Cleanup a buffer visiting an imported document.
 These functions are to be called for all imported documents: both EAF and
@@ -48,7 +47,8 @@ non-EAF."
   (tlon-cleanup-remove-double-brackets)
   (tlon-cleanup-remove-nonbreaking-spaces)
   (tlon-cleanup-remove-span-elements)
-  (unfill-region (point-min) (point-max)))
+  (let ((fill-column (point-max)))
+    (fill-region (point) (point-max))))
 
 (defun tlon-cleanup-unescape-chars ()
   "Unescape relevant characters in the current buffer."
