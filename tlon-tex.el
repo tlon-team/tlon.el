@@ -227,6 +227,7 @@ abstract will, or will not, replace the existing one, respectively."
 		  (dolist (field (list url (unless (string= url doi) doi)))
 		    (when (and field
 			       (not (string-match-p "\\.pdf$" field)))
+		      (require 'zotra-extras)
 		      (when-let ((abstract
 				  (shut-up (zotra-extras-fetch-field
 					    "abstract" field (when tlon-ai-batch-fun 'no-error)))))
