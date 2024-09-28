@@ -349,6 +349,7 @@ Otherwise,
   (with-temp-buffer
     (when (string= (file-name-extension file) "pdf")
       (let ((markdown (make-temp-file "pdf-to-markdown-")))
+	(require 'tlon-import)
 	(tlon-convert-pdf file markdown)
 	(setq file markdown)))
     (insert-file-contents file)
