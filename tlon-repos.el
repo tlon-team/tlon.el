@@ -129,6 +129,7 @@ If DIR is nil, use the current directory."
     (message "Pulling issues in %s..." name)
     (shut-up (forge--pull repo))))
 
+;;;###autoload
 (defun tlon-pull-issues-in-all-repos ()
   "Pull issues in all Tlön repositories."
   (interactive)
