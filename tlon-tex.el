@@ -27,7 +27,6 @@
 
 ;;; Code:
 
-(require 'bib)
 (require 'bibtex-extras)
 (require 'doi-utils)
 (require 'paths)
