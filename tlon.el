@@ -169,11 +169,11 @@ This variable should not be set manually.")
 
 (declare-function tlon-metadata-in-repos "tlon-yaml")
 (defun tlon-get-file-from-key (key)
-"Return the file path of KEY."
-(if-let ((file (tlon-metadata-lookup
-		(tlon-metadata-in-repos :subtype 'translations) "file" "original_key" key)))
-    file
-  (user-error "Metadata lookup for key `%s' returned nil" key)))
+  "Return the file path of KEY."
+  (if-let ((file (tlon-metadata-lookup
+		  (tlon-metadata-in-repos :subtype 'translations) "file" "original_key" key)))
+      file
+    (user-error "Metadata lookup for key `%s' returned nil" key)))
 
 (declare-function tlon-metadata-in-repo "tlon-yaml")
 (declare-function tlon-get-counterpart "tlon-counterpart")
@@ -592,8 +592,8 @@ presented to the user."
 (defun tlon-get-url-root (url)
   "Extract the root of the URL."
   (let* ((parsed-url (url-generic-parse-url url))
-         (scheme (url-type parsed-url))
-         (host (url-host parsed-url)))
+	 (scheme (url-type parsed-url))
+	 (host (url-host parsed-url)))
     (concat scheme "://" host "/")))
 
 ;;;;; Fix log errors helper functions
