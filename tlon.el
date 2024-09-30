@@ -27,7 +27,6 @@
 
 ;;; Code:
 
-(require 'org-capture)
 (require 'paths)
 (require 'tlon-core)
 
@@ -130,13 +129,14 @@ This variable should not be set manually.")
   (message "Initialized `tlon'."))
 
 (defvar org-capture-templates)
-(dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
-		     (id ,paths-tlon-todos-jobs-id)
-		     "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
-		    ("tbG" "Tlön: Babel: Create new generic todo from GitHub" entry
-		     (id ,paths-tlon-todos-generic-id)
-		     "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
-  (push template org-capture-templates))
+(with-eval-after-load 'org-capture
+  (dolist (template `(("tbJ" "Tlön: Babel: Create a new Babel job" entry
+		       (id ,paths-tlon-todos-jobs-id)
+		       "** %c" :immediate-finish t :empty-lines 1 :jump-to-captured t)
+		      ("tbG" "Tlön: Babel: Create new generic todo from GitHub" entry
+		       (id ,paths-tlon-todos-generic-id)
+		       "** %c" :immediate-finish t :empty-lines 1 :prepend t :jump-to-captured t)))
+    (push template org-capture-templates)))
 
 (defun tlon-warn-if-unbound (var)
   "Signal an error if the value of VAR is not set."
