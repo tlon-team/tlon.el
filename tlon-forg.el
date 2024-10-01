@@ -491,7 +491,7 @@ ISSUE is nil, use the issue at point."
      (unless (org-at-heading-p)
        (user-error "I could not find an `org-mode' heading at point"))
      (funcall todo-fun))
-    ((or 'forge-topic-mode 'forge-issue-mode 'forge-issue-list-mode 'magit-status-mode)
+    ((or 'forge-topic-mode 'forge-issue-mode 'magit-status-mode)
      (unless (tlon-get-issue-name)
        (user-error "I could not find a GitHub issue at point"))
      (funcall issue-fun))
