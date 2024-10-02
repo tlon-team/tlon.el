@@ -920,10 +920,12 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
   (or (symbol-value var) (set var (tlon-get-file-with-org-id id))))
 
 (declare-function org-roam-id-find "org-roam-id")
+(declare-function org-id-find-id-file "org-id")
 (defun tlon-get-file-with-org-id (id)
   "Return the file containing the heading with the given `org-mode' ID."
-  (when-let ((location (org-roam-id-find id)))
-    (car location)))
+  (if-let ((location (org-roam-id-find id)))
+      (car location))
+  (file-truename (org-id-find-id-file id))))
 
 ;;;;; org-mode
 
