@@ -925,7 +925,7 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
   "Return the file containing the heading with the given `org-mode' ID."
   (if-let ((location (org-roam-id-find id)))
       (car location))
-  (file-truename (org-id-find-id-file id))))
+  (file-truename (org-id-find-id-file id)))
 
 ;;;;; org-mode
 
