@@ -623,7 +623,7 @@ If FILE is nil, use the file visited by the current buffer."
     (goto-char (point-min))
     (while (re-search-forward markdown-regex-link-inline nil t)
       (let* ((url (match-string-no-properties 6))
-	     (key (tlon-bibliography-lookup "=key=" "url" url))
+	     (key (tlon-bibliography-lookup "url" url "=key="))
 	     (start (match-beginning 0))
 	     (end (match-end 0)))
 	(when key
@@ -648,28 +648,30 @@ locators (which are not relevant in a bibliography)."
       (goto-char (point-min))
       (while (re-search-forward pattern nil t)
 	(let* ((title (match-string 1))
-	       (key (tlon-bibliography-lookup "=key=" "title" title)))
+	       (key (tlon-bibliography-lookup "title" title "=key=")))
 	  (when key
 	    (replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key) ".")
 			   t t)))))))
 
 (defvar citar-cache--bibliographies)
-(defun tlon-bibliography-lookup (assoc-field field value &optional substring)
+(defun tlon-bibliography-lookup (field value &optional assoc-field substring)
   "Return the ASSOC-FIELD value in the entry whose FIELD value matches VALUE.
-If SUBSTRING is non-nil, return the ASSOC-FIELD value in the entry whose FIELD
+If ASSOC-FIELD is nil, return VALUE if the entry is found, else return nil. If
+SUBSTRING is non-nil, return the ASSOC-FIELD value in the entry whose FIELD
 value contains VALUE as a substring."
-  (catch 'found
-    (maphash (lambda (_key bibliography)
-	       (let ((entries (citar-cache--bibliography-entries bibliography)))
-		 (maphash (lambda (_ entry)
-			    (when-let ((field-value (cdr (assoc field entry))))
-			      (when (if substring
-					(string-match-p (regexp-quote value) field-value)
-				      (string= field-value value))
-				(throw 'found (cdr (assoc assoc-field entry))))))
-			  entries)))
-	     citar-cache--bibliographies)
-    nil))
+  (let ((assoc-field (or assoc-field field)))
+    (catch 'found
+      (maphash (lambda (_key bibliography)
+		 (let ((entries (citar-cache--bibliography-entries bibliography)))
+		   (maphash (lambda (_ entry)
+			      (when-let ((field-value (cdr (assoc field entry))))
+				(when (if substring
+					  (string-match-p (regexp-quote value) field-value)
+					(string= field-value value))
+				  (throw 'found (cdr (assoc assoc-field entry))))))
+			    entries)))
+	       citar-cache--bibliographies)
+      nil)))
 
 (defvar citar-cache--bibliographies)
 (declare-function citar-cache--bibliography-entries "citar-cache")
