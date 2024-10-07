@@ -47,7 +47,7 @@ split the `.git' directory. If t or any other non-nil value, always split the
 `.git' directory."
   :type '(choice (const :tag "Never" nil)
 		 (const :tag "Prompt" prompt)
-		 (boolean :tag "Always"))
+		 (boolean :tag "Always" t))
   :group 'tlon-repos)
 
 ;;;; Functions
