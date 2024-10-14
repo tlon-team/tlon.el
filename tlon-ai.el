@@ -131,6 +131,8 @@ use a different model for summarization."
 	     :language "es")
     (:prompt ,(format "Rédigez le résumé sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique. Le résumé ne doit comporter qu'un seul paragraphe et avoir une longueur approximative de 100 à 250 mots (n'hésitez pas à le dépasser si vous en avez vraiment besoin, mais ne dépassez jamais %s mots). Il ne doit pas mentionner les données bibliographiques de l'ouvrage (telles que le titre ou l'auteur). Rédigez le résumé en indiquant directement ce que l'article soutient, plutôt qu'en utilisant des phrases telles que 'L'article soutient que...'. Par exemple, au lieu d'écrire 'L'article 'L'éradication de la variole' de William D. Tierney affirme que l'humanité a combattu la variole pendant des siècles...', écrivez 'L'humanité a combattu la variole pendant des siècles...'. Veuillez également omettre toute clause de non-responsabilité du type 'En tant que modèle linguistique de l'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel'. Enfin, terminez votre résumé par la phrase ' - Résumé généré par l'IA.'" tlon-tex-max-abstract-length)
 	     :language "fr")
+    (:prompt ,(format "Scrivete l'abstract con un tono sobrio e oggettivo, evitando i cliché, le lodi eccessive e i fronzoli inutili. In altre parole, scrivetelo come se steste scrivendo l'abstract di un articolo scientifico. L'abstract dovrebbe essere lungo solo un paragrafo e avere una lunghezza approssimativa di 100-250 parole (sentitevi liberi di superarlo se ne avete davvero bisogno, ma non superate mai le %s di parole). Non deve riportare i dati bibliografici del lavoro (come il titolo o l'autore). Scrivete l'abstract indicando direttamente ciò che l'articolo sostiene, piuttosto che usare frasi come 'L'articolo sostiene che...'. Ad esempio, invece di scrivere 'L'articolo 'L'eradicazione del vaiolo' di William D. Tierney afferma che l'umanità ha combattuto il vaiolo per secoli...', scrivete 'L'umanità ha combattuto il vaiolo per secoli...'. Inoltre, omettete qualsiasi dichiarazione di non responsabilità del tipo 'Come modello linguistico dell'IA, non sono in grado di navigare in Internet in tempo reale'. Infine, terminate il vostro riassunto con la frase ' - riassunto generato dall'IA'." tlon-tex-max-abstract-length)
+	     :language "it")
     (:prompt ,(format "Schreiben Sie die Zusammenfassung in einem nüchternen, sachlichen Ton und vermeiden Sie Klischees, übermäßiges Lob und unnötige Schnörkel. Mit anderen Worten: Verfassen Sie sie so, als ob Sie die Zusammenfassung einer wissenschaftlichen Arbeit schreiben würden. Die Zusammenfassung sollte nur einen Absatz lang sein und eine ungefähre Länge von 100 bis 250 Wörtern haben (Sie können diese Zahl ruhig überschreiten, wenn es wirklich nötig ist, aber nie mehr als %s Wörter). Sie sollte keine bibliografischen Daten der Arbeit (wie Titel oder Autor) enthalten. Geben Sie in der Zusammenfassung direkt an, worum es in dem Artikel geht, und verwenden Sie keine Sätze wie 'In dem Artikel wird argumentiert, dass...'. Schreiben Sie zum Beispiel statt 'Der Artikel 'Die Ausrottung der Pocken' von William D. Tierney besagt, dass die Menschheit jahrhundertelang die Pocken bekämpfte...' lieber 'Die Menschheit bekämpfte die Pocken jahrhundertelang...'. Lassen Sie bitte auch Haftungsausschlüsse der Form 'Als KI-Sprachmodell bin ich nicht in der Lage, das Internet in Echtzeit zu durchsuchen' weg. Beenden Sie Ihre Zusammenfassung schließlich mit dem Satz ' - KI-generierte Zusammenfassung.'" tlon-tex-max-abstract-length)
 	     :language "de")))
 
@@ -150,6 +152,11 @@ use a different model for summarization."
 		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "fr"))
 	     :language "fr")
+    (:prompt ,(format "Il seguente lavoro può contenere o meno un estratto%s. Se contiene un estratto, si prega di restituirlo. Altrimenti, creane uno tu stesso. %s Tuttavia, si prega di omettere questa frase se si sta semplicemente copiando alla lettera un estratto trovato nell'opera."
+		      tlon-ai-string-wrapper
+		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
+				   :prompt :language "it"))
+	     :language "it")
     (:prompt ,(format "Das folgende Werk kann eine Zusammenfassung enthalten oder auch nicht%s. Wenn es eine Zusammenfassung enthält, geben Sie sie bitte zurück. Andernfalls erstellen Sie bitte selbst eine Zusammenfassung des Werks. %s Bitte lassen Sie diesen Satz jedoch weg, wenn Sie einfach eine wortwörtliche Zusammenfassung kopieren, die Sie in dem Werk gefunden haben."
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
@@ -170,6 +177,10 @@ use a different model for summarization."
 		      tlon-tex-max-abstract-length
 		      tlon-ai-string-wrapper)
 	     :language "fr")
+    (:prompt ,(format "Si prega di abbreviare il seguente abstract a %s parole o meno. La versione abbreviata deve essere composta da un solo paragrafo.%s"
+		      tlon-tex-max-abstract-length
+		      tlon-ai-string-wrapper)
+	     :language "it")
     (:prompt ,(format "Bitte kürzen Sie die folgende Zusammenfassung auf %s Wörter oder weniger. Die gekürzte Version sollte nur aus einem Absatz bestehen.%s"
 		      tlon-tex-max-abstract-length
 		      tlon-ai-string-wrapper)
@@ -659,9 +670,11 @@ Otherwise return INFO."
   "Common function for getting an abstract.
 PROMPT is the prompt to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function."
-  (let ((prompt (tlon-lookup prompt :prompt :language language)))
-    (tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
-    (message "Getting AI abstract...")))
+  (if-let ((prompt (tlon-lookup prompt :prompt :language language)))
+      (progn
+	(tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
+	(message "Getting AI abstract..."))
+    (user-error "Could not get prompt for language %s" language)))
 
 (defun tlon-get-abstract-callback (response info &optional key type)
   "If RESPONSE is non-nil, take appropriate action based on major mode.
