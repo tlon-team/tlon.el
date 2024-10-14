@@ -123,10 +123,13 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-magit-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-magit-browse-uqbar-api)
     ""
+    ("q a" "uqbar-ar"                     tlon-magit-browse-uqbar-ar)
     ("q n" "uqbar-en"                     tlon-magit-browse-uqbar-en)
     ("q s" "uqbar-es"                     tlon-magit-browse-uqbar-es)
     ("q r" "uqbar-fr"                     tlon-magit-browse-uqbar-fr)
-    ("q t" "uqbar-it"                     tlon-magit-browse-uqbar-it)]
+    ("q t" "uqbar-it"                     tlon-magit-browse-uqbar-it)
+    ("q j" "uqbar-ja"                     tlon-magit-browse-uqbar-ja)
+    ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)
@@ -196,10 +199,13 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-dired-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-dired-browse-uqbar-api)
     ""
+    ("q a" "uqbar-ar"                     tlon-dired-browse-uqbar-ar)
     ("q n" "uqbar-en"                     tlon-dired-browse-uqbar-en)
     ("q s" "uqbar-es"                     tlon-dired-browse-uqbar-es)
     ("q r" "uqbar-fr"                     tlon-dired-browse-uqbar-fr)
-    ("q t" "uqbar-it"                     tlon-dired-browse-uqbar-it)]
+    ("q t" "uqbar-it"                     tlon-dired-browse-uqbar-it)
+    ("q j" "uqbar-ja"                     tlon-dired-browse-uqbar-ja)
+    ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
@@ -268,10 +274,13 @@ DIR is the directory where the repo is stored."
     ("q f" "uqbar-front"                  tlon-open-file-in-uqbar-front)
     ("q a" "uqbar-api"                    tlon-open-file-in-uqbar-api)
     ""
+    ("q a" "uqbar-ar"                     tlon-open-file-in-uqbar-ar)
     ("q n" "uqbar-en"                     tlon-open-file-in-uqbar-en)
     ("q s" "uqbar-es"                     tlon-open-file-in-uqbar-es)
     ("q r" "uqbar-fr"                     tlon-open-file-in-uqbar-fr)
-    ("q t" "uqbar-it"                     tlon-open-file-in-uqbar-it)]
+    ("q t" "uqbar-it"                     tlon-open-file-in-uqbar-it)
+    ("q j" "uqbar-ja"                     tlon-open-file-in-uqbar-ja)
+    ("q k" "uqbar-ko"                     tlon-open-file-in-uqbar-ko)]
    ["utilitarianism"
     ("u n" "utilitarianism-en"            tlon-open-file-in-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-open-file-in-utilitarianism-es)

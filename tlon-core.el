@@ -118,6 +118,15 @@
 	   :type development
 	   :subtype api
 	   :key "q a")
+    (:name "uqbar-ar"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-ar"
+	   :type content
+	   :subtype translations
+	   :language "ar"
+	   :key "q a"
+	   :url "")
     (:name "uqbar-en"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -152,6 +161,24 @@
 	   :subtype translations
 	   :language "it"
 	   :key "q t"
+	   :url "")
+    (:name "uqbar-ko"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-ko"
+	   :type content
+	   :subtype translations
+	   :language "ko"
+	   :key "q k"
+	   :url "")
+    (:name "uqbar-ja"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-ja"
+	   :type content
+	   :subtype translations
+	   :language "ja"
+	   :key "q j"
 	   :url "")
     (:name "utilitarianism-en"
 	   :project "babel"
