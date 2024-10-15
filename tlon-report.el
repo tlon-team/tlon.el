@@ -87,7 +87,7 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
     (when (not (file-exists-p file))
       (user-error "File `%s' does not exist" file))
     (magit-extras-track-file file)
-    (magit-extras-stage-commit-and-push (format "Add clock entry: %s" (file-name-nondirectory file)) file)))
+    (magit-extras-stage-commit-and-push (format "Add clock entry: %s" (file-name-nondirectory file)))))
 
 ;;;###autoload
 (defun tlon-clock-entry-submit-all ()
