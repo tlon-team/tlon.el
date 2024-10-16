@@ -994,8 +994,6 @@ variable."
   "Menu for `tlon-ai'."
   :info-manual "(tlon) AI"
   [[""
-    ("c" "configure model"                      gptel-extras-model-config)
-    ""
     ("t" "translate"                            tlon-ai-translate)
     ("r" "rewrite"                              tlon-ai-rewrite)
     ("p" "phonetically transcribe"              tlon-ai-phonetically-transcribe)
