@@ -53,12 +53,12 @@ This variable only affects the behavior of
   :group 'tlon-ai)
 
 (defcustom tlon-ai-summarization-model
-  '("Gemini" . "gemini-1.5-flash")
+  '("Gemini" . gemini-1.5-flash)
   "Model to use for summarization.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
 use a different model for summarization."
-  :type '(cons (string :tag "Backend") (string :tag "Model"))
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
 ;;;; Variables
