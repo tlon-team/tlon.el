@@ -53,12 +53,12 @@ This variable only affects the behavior of
   :group 'tlon-ai)
 
 (defcustom tlon-ai-summarization-model
-  '("Gemini" . "gemini-1.5-flash")
+  '("Gemini" . gemini-1.5-flash)
   "Model to use for summarization.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
 use a different model for summarization."
-  :type '(cons (string :tag "Backend") (string :tag "Model"))
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
 ;;;; Variables
@@ -240,12 +240,13 @@ use a different model for summarization."
 MODEL is a cons cell whose car is the backend and whose cdr is the model itself."
   (when model
     (cl-destructuring-bind (backend . model) model
-      (gptel-extras-model-config nil backend model)))
-  (if tlon-ai-batch-fun
-      (condition-case nil
-	  (gptel-request (format prompt string) :callback callback)
-	(error nil))
-    (gptel-request (format prompt string) :callback callback)))
+      (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
+	    (gptel-model model))
+	(if tlon-ai-batch-fun
+	    (condition-case nil
+		(gptel-request (format prompt string) :callback callback)
+	      (error nil))
+	  (gptel-request (format prompt string) :callback callback))))))
 
 ;;;;;; Generic callback functions
 
@@ -1006,8 +1007,6 @@ variable."
   "Menu for `tlon-ai'."
   :info-manual "(tlon) AI"
   [[""
-    ("c" "configure model"                      gptel-extras-model-config)
-    ""
     ("t" "translate"                            tlon-ai-translate)
     ("r" "rewrite"                              tlon-ai-rewrite)
     ("p" "phonetically transcribe"              tlon-ai-phonetically-transcribe)
