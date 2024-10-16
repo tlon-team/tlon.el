@@ -229,12 +229,13 @@ use a different model for summarization."
 MODEL is a cons cell whose car is the backend and whose cdr is the model itself."
   (when model
     (cl-destructuring-bind (backend . model) model
-      (gptel-extras-model-config nil backend model)))
-  (if tlon-ai-batch-fun
-      (condition-case nil
-	  (gptel-request (format prompt string) :callback callback)
-	(error nil))
-    (gptel-request (format prompt string) :callback callback)))
+      (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
+	    (gptel-model model))
+	(if tlon-ai-batch-fun
+	    (condition-case nil
+		(gptel-request (format prompt string) :callback callback)
+	      (error nil))
+	  (gptel-request (format prompt string) :callback callback))))))
 
 ;;;;;; Generic callback functions
 
