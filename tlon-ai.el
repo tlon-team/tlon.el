@@ -61,6 +61,13 @@ use a different model for summarization."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
+(defcustom tlon-ai-use-summarization-model t
+  "Whether to use a different model for summarization.
+If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
+ use the currently active model."
+  :type 'boolean
+  :group 'tlon-ai)
+
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -671,9 +678,11 @@ Otherwise return INFO."
   "Common function for getting an abstract.
 PROMPT is the prompt to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function."
-  (if-let ((prompt (tlon-lookup prompt :prompt :language language)))
+  (if-let ((prompt (tlon-lookup prompt :prompt :language language))
+	   (model (when tlon-ai-use-summarization-model
+		    tlon-ai-summarization-model)))
       (progn
-	(tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
+	(tlon-make-gptel-request prompt string callback model)
 	(message "Getting AI abstract..."))
     (user-error "Could not get prompt for language %s" language)))
 
@@ -928,7 +937,9 @@ If RESPONSE is nil, return INFO."
 	(unless (file-exists-p file)
 	  (tlon-make-gptel-request prompt string (lambda (response info)
 						   (tlon-ai-callback-save response info file))
-				   tlon-ai-summarization-model))))))
+				   
+				   (when tlon-ai-use-summarization-model
+				     tlon-ai-summarization-model)))))))
 
 (defun tlon-ai-get-json-chunk (begin size)
   "In current buffer, get the longest possible string less than SIZE from BEGIN."
@@ -961,6 +972,12 @@ If RESPONSE is nil, return INFO."
   :class 'transient-lisp-variable
   :variable 'tlon-ai-overwrite-alt-text
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
+
+(transient-define-infix tlon-ai-use-summarization-model-toggle-infix ()
+  "Toggle the value of `tlon-ai-use-summarization-model' in `ai' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-ai-use-summarization-model
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-summarization-model)))
 
 (defun tlon-ai-batch-fun-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
@@ -1007,42 +1024,43 @@ variable."
   "Menu for `tlon-ai'."
   :info-manual "(tlon) AI"
   [[""
-    ("t" "translate"                            tlon-ai-translate)
-    ("r" "rewrite"                              tlon-ai-rewrite)
-    ("p" "phonetically transcribe"              tlon-ai-phonetically-transcribe)
+    ("t" "translate"                                  tlon-ai-translate)
+    ("r" "rewrite"                                    tlon-ai-rewrite)
+    ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ""
     "Bibtex"
-    ("b" "set language of bibtex"               tlon-ai-set-language-bibtex)
+    ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ""
     "Math"
     ;; Create command to translate all images
-    ("m" "translate math"                       tlon-ai-translate-math)
+    ("m" "translate math"                             tlon-ai-translate-math)
     ;; TODO: develop this
-    ;; ("M" "translate all math"                   tlon-ai-translate-math-in-buffer)
+    ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
     ]
    ["Images"
-    ("i d" "describe image"                     tlon-ai-describe-image)
-    ("i s" "set alt text"                       tlon-ai-set-image-alt-text)
-    ("i S" "set alt text in buffer"             tlon-ai-set-image-alt-text-in-buffer)
+    ("i d" "describe image"                           tlon-ai-describe-image)
+    ("i s" "set alt text"                             tlon-ai-set-image-alt-text)
+    ("i S" "set alt text in buffer"                   tlon-ai-set-image-alt-text-in-buffer)
     ""
     "Options"
-    ("i -o" "overwrite alt text"                tlon-ai-overwrite-alt-text-toggle-infix)]
+    ("i -o" "overwrite alt text"                      tlon-ai-overwrite-alt-text-toggle-infix)]
    ["Summarize"
-    ("s s" "get abstract with or without AI"    tlon-get-abstract-with-or-without-ai)
-    ("s n" "get abstract without AI"            tlon-fetch-and-set-abstract)
-    ("s a" "get abstract with AI"               tlon-get-abstract-with-ai)
-    ("s h" "get abstract with AI from HTML"     tlon-get-abstract-with-ai-from-html)
-    ("s p" "get abstract with AI from PDF"      tlon-get-abstract-with-ai-from-pdf)
-    ("s y" "get synopsis with AI"               tlon-get-synopsis-with-ai)
-    ("s c" "get custom description with AI"     tlon-get-custom-text-description-with-ai)
-    ("s h" "shorten abstract with AI"           tlon-shorten-abstract-with-ai)
+    ("s s" "get abstract with or without AI"          tlon-get-abstract-with-or-without-ai)
+    ("s n" "get abstract without AI"                  tlon-fetch-and-set-abstract)
+    ("s a" "get abstract with AI"                     tlon-get-abstract-with-ai)
+    ("s h" "get abstract with AI from HTML"           tlon-get-abstract-with-ai-from-html)
+    ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
+    ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
+    ("s c" "get custom description with AI"           tlon-get-custom-text-description-with-ai)
+    ("s h" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
     ""
     "Options"
-    ("s -b" "batch"                             tlon-ai-batch-fun-infix)
-    ("s -m" "mullvad connection duration"       tlon-mullvad-connection-duration-infix)
-    ("s -o" "overwrite"                         tlon-abstract-overwrite-infix)
+    ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
+    ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
+    ("s -o" "overwrite"                               tlon-abstract-overwrite-infix)
+    ("s -s" "use summarization model for summaries"   tlon-ai-use-summarization-model-toggle-infix)
     ""
-    ("-d" "debug"                               tlon-menu-infix-toggle-debug)]])
+    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
