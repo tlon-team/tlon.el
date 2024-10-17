@@ -1051,8 +1051,8 @@ variable."
     ("s h" "get abstract with AI from HTML"           tlon-get-abstract-with-ai-from-html)
     ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
     ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
-    ("s c" "get custom description with AI"           tlon-get-custom-text-description-with-ai)
     ("s h" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
+    ("s c" "custom AI prompt"                         tlon-get-custom-text-description-with-ai)
     ""
     "Options"
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
