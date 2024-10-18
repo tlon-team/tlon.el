@@ -97,13 +97,13 @@
 	   :type development
 	   :subtype issues
 	   :key "b i")
-    (:name "uqbar-issues"
+    (:name "uqbar"
 	   :project "babel"
 	   :subproject "uqbar"
-	   :abbrev "uqbar-issues"
+	   :abbrev "uqbar"
 	   :type development
-	   :subtype issues
-	   :key "q i")
+	   :subtype issues ; is this correct?
+	   :key "q q")
     (:name "uqbar-front"
 	   :project "babel"
 	   :subproject "uqbar"

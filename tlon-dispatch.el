@@ -29,6 +29,7 @@
 
 (require 'tlon)
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; Functions
 
@@ -119,7 +120,7 @@ DIR is the directory where the repo is stored."
     ("b r" "babel-fr"                     tlon-magit-browse-babel-fr)
     ("b t" "babel-it"                     tlon-magit-browse-babel-it)]
    ["Uqbar"
-    ("q i" "uqbar-issues"                 tlon-magit-browse-uqbar-issues)
+    ("q q" "uqbar"                        tlon-magit-browse-uqbar)
     ("q f" "uqbar-front"                  tlon-magit-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-magit-browse-uqbar-api)
     ""
@@ -195,7 +196,7 @@ DIR is the directory where the repo is stored."
     ("b r" "babel-fr"                     tlon-dired-browse-babel-fr)
     ("b t" "babel-it"                     tlon-dired-browse-babel-it)]
    ["Uqbar"
-    ("q i" "uqbar-issues"                 tlon-dired-browse-uqbar-issues)
+    ("q q" "uqbar"                        tlon-dired-browse-uqbar)
     ("q f" "uqbar-front"                  tlon-dired-browse-uqbar-front)
     ("q a" "uqbar-api"                    tlon-dired-browse-uqbar-api)
     ""
@@ -270,7 +271,7 @@ DIR is the directory where the repo is stored."
     ("b r" "babel-fr"                     tlon-open-file-in-babel-fr)
     ("b t" "babel-it"                     tlon-open-file-in-babel-it)]
    ["Uqbar"
-    ("q i" "uqbar-issues"                 tlon-open-file-in-uqbar-issues)
+    ("q q" "uqbar"                        tlon-open-file-in-uqbar)
     ("q f" "uqbar-front"                  tlon-open-file-in-uqbar-front)
     ("q a" "uqbar-api"                    tlon-open-file-in-uqbar-api)
     ""
