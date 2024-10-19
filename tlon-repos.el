@@ -28,7 +28,6 @@
 ;;; Code:
 
 (require 'forge-core)
-(require 'forge-commands)
 (require 'forge-search)
 (require 'tlon-core)
 (require 'vc)
