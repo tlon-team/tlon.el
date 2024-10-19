@@ -124,10 +124,9 @@ files from possible corruption."
 If DIR is nil, use the current directory."
   (interactive)
   (when-let ((default-directory (or dir default-directory))
-	     (repo (forge-get-repository :tracked?))
 	     (name (tlon-repo-lookup :name :dir default-directory)))
     (message "Pulling issues in %s..." name)
-    (shut-up (forge--pull repo))))
+    (shut-up (forge-pull))))
 
 ;;;###autoload
 (defun tlon-pull-issues-in-all-repos ()
