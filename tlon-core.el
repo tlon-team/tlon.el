@@ -300,10 +300,6 @@
 	   :project "tlon"
 	   :abbrev "tlon-content"
 	   :type development)
-    (:name "tlon.el"
-	   :project "tlon"
-	   :abbrev "tlon.el"
-	   :type emacs)
     (:name "sandbox"
 	   :abbrev "sandbox"
 	   :type test))
