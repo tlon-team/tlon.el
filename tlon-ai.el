@@ -242,13 +242,13 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
 
 ;;;;; General
 
-(defun tlon-make-gptel-request (prompt string &optional callback model)
+(defun tlon-make-gptel-request (prompt string &optional callback full-model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-MODEL is a cons cell whose car is the backend and whose cdr is the model itself."
-  (when model
-    (cl-destructuring-bind (backend . model) model
+FULL-MODEL is a cons cell whose car is the backend and whose cdr is the model."
+  (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model))))
+    (cl-destructuring-bind (backend . model) full-model
       (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	    (gptel-model model))
+	    (gptel-model full-model))
 	(if tlon-ai-batch-fun
 	    (condition-case nil
 		(gptel-request (format prompt string) :callback callback)
