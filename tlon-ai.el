@@ -751,6 +751,28 @@ If FILE is nil, detect the language in the current buffer."
 	 (sample (substring string 0 (min (length string) 1000))))
     (tlon-make-gptel-request tlon-ai-detect-language-prompt sample callback)))
 
+(defun tlon-ai-set-language-in-file (&optional file)
+  "Detect language of FILE and set it as the spell checker language.
+If FILE is nil, use the current buffer."
+  (interactive)
+  (with-current-buffer
+      (if file
+	  (find-file-noselect file)
+	(current-buffer))
+    (tlon-ai-detect-language-in-file file #'tlon-ai-set-language-in-file-callback)))
+
+(declare-function jinx-languages "jinx")
+(defvar jinx-save-languages)
+(defun tlon-ai-set-language-in-file-callback (response info)
+  "Callback for `tlon-ai-set-language-in-file'.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let ((lang (tlon-get-iso-code response)))
+      (require 'jinx)
+      (let ((jinx-save-languages))
+	(jinx-languages lang)))))
+
 ;;;;;; BibTeX
 
 (declare-function ebib-extras-get-or-open-entry "bibtex-extras")
