@@ -33,20 +33,17 @@
   "`tlon' images functionality."
   :group 'emacs)
 
-(defcustom tlon-images-default-brightness-reduction
-  20
+(defcustom tlon-images-default-brightness-reduction 20
   "Default percentage by which to reduce the brightness of an image."
   :type 'integer
   :group 'tlon-images)
 
-(defcustom tlon-images-open-after-processing
-  t
+(defcustom tlon-images-open-after-processing t
   "Whether to open the original and processed image after processing."
   :type 'boolean
   :group 'tlon-images)
 
-(defcustom tlon-images-process-without-asking
-  nil
+(defcustom tlon-images-process-without-asking nil
   "Whether to process the image at point without asking for confirmation."
   :type 'boolean
   :group 'tlon-images)
