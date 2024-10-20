@@ -342,7 +342,7 @@ Otherwise,
 
 - If in `markdown-mode', return the substantive contents of the current buffer.
 
-- If otherwise in `text-mode', return the contents of the current buffer."
+- Otherwise, return the contents of the current buffer."
   (if (region-active-p)
       (buffer-substring-no-properties (region-beginning) (region-end))
     (if-let ((file (or file (pcase major-mode
@@ -358,7 +358,7 @@ Otherwise,
 	(tlon-get-file-as-string file)
       (cond ((derived-mode-p 'markdown-mode)
 	     (tlon-md-read-content file))
-	    ((derived-mode-p 'text-mode)
+	    (t
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
 (declare-function shr-render-buffer "shr")
