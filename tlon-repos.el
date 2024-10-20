@@ -72,7 +72,7 @@ NAME is nil, prompt the user for a repo name."
   (interactive)
   (let* ((name (or name (completing-read "Repo: " (vc-extras-gh-list-repos vc-extras-github-account-work))))
 	 (remote (vc-extras-get-github-remote vc-extras-github-account-work name))
-	 (dir (file-name-as-directory (file-name-concat paths-dir-tlon-repos name))))
+	 (dir (tlon-get-repo-dir name)))
     (when (file-exists-p dir)
       (user-error "Directory `%s' already exists" dir))
     (vc-clone remote 'Git dir)
@@ -86,6 +86,16 @@ NAME is nil, prompt the user for a repo name."
 	(tlon-forge-add-repository dir)
       (dired dir))))
 
+(defun tlon-get-repo-file (name &optional git)
+  "Return the file of the Tlön repo NAME.
+If GIT is non-nil, return the `.git' file of the repo."
+  (file-name-concat paths-dir-tlon-repos name (when git ".git")))
+
+(defun tlon-get-repo-dir (name &optional git)
+  "Return the directory of the Tlön repo NAME.
+If GIT is non-nil, return the `.git' directory of the repo."
+  (file-name-as-directory (tlon-get-repo-file name git)))
+
 ;;;###autoload
 (defun tlon-split-repo (dir)
   "Move the `.git' in DIR to a separate dir and set the `.git' file accordingly.
@@ -93,9 +103,9 @@ Normally, this command is run for repos managed by Dropbox, to protect the Git
 files from possible corruption."
   (interactive "D")
   (let* ((name (file-name-nondirectory (directory-file-name dir)))
-	 (source (file-name-as-directory (file-name-concat paths-dir-tlon-repos name ".git")))
+	 (source (tlon-get-repo-dir name 'git))
 	 (target (file-name-concat paths-dir-split-git name))
-	 (git-file (file-name-concat paths-dir-tlon-repos name ".git")))
+	 (git-file (tlon-get-repo-file name 'git)))
     (when (file-exists-p target)
       (user-error "Directory `%s' already exists" target))
     (rename-file source paths-dir-split-git t)
