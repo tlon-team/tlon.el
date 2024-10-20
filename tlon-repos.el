@@ -114,6 +114,20 @@ files from possible corruption."
       (insert (format "gitdir: %s" target))
       (write-file git-file))))
 
+;;;###autoload
+(defun tlon-clone-missing-repos ()
+  "Clone missing Tlön repos and add them to the Forge database."
+  (interactive)
+  (let ((repos (tlon-repo-lookup-all :dir))
+	(count 0))
+    (dolist (repo repos)
+      (unless (file-exists-p repo)
+	(tlon-clone-repo (tlon-repo-lookup :name :dir repo))
+	(setq count (1+ count))))
+    (if (zerop count)
+	(message "No repos missing")
+      (message "Cloned %d missing repos" count))))
+
 (declare-function magit-status "magit-status")
 (defun tlon-forge-add-repository (dir)
   "Add DIR to the Forge database."
@@ -291,6 +305,7 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
     ""
     ("c" "Create remote"     tlon-create-repo)
     ("l" "Clone remote"      tlon-clone-repo)
+    ("L" "Clone all missing" tlon-clone-missing-repos)
     ""
     ("s" "Split local"       tlon-split-repo)]
    ["Forge"
