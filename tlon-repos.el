@@ -374,23 +374,26 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 ;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
 (transient-define-prefix tlon-repos-menu ()
   "Repos menu."
-  [["Repo"
+  [["Magit"
     ""
-    ("c" "Create remote"     tlon-create-repo)
-    ("l" "Clone remote"      tlon-clone-repo)
-    ("L" "Clone all missing" tlon-clone-missing-repos)
+    ("l" "Clone remote repo"        tlon-clone-repo)
+    ("L" "Clone all missing repos"  tlon-clone-missing-repos)
     ""
-    ("s" "Split local"       tlon-split-repo)]
+    ("c" "Create remote repo"       tlon-create-repo)
+    ""
+    ("s" "Split local repo"         tlon-split-repo)
+    ""
+    ("d" "Delete local repo"        tlon-delete-repo)]
    ["Forge"
     ""
-    "Issues"
-    ("p" "Pull in repo"      tlon-pull-issues-in-repo)
-    ("P" "Pull in all repos" tlon-pull-issues-in-all-repos)
+    ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
+    ("P" "Pull issues in all repos" tlon-pull-issues-in-all-repos)
     ""
-    "Repos"
-    ("a" "Add"               forge-add-repository)
-    ("r" "Remove"            forge-remove-repository)]])
+    ("a" "Add repo"                 tlon-forge-add-repository)
+    ("A" "Add all missing repos"    tlon-forge-add-missing-repos)
+    ""
+    ("r" "Remove repo"              forge-remove-repository)
+    ("R" "Reset database"           forge-reset-database)]])
 
 (provide 'tlon-repos)
 ;;; tlon-repos.el ends here
-
