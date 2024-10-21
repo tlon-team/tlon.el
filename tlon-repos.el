@@ -87,15 +87,6 @@ NAME is nil, prompt the user for a repo name. If NO-FORGE is non-nil, do not
 	(tlon-forge-add-repository dir)
       (dired dir))))
 
-(defun tlon-get-repo-file (name &optional git)
-  "Return the file of the Tlön repo NAME.
-If GIT is non-nil, return the `.git' file of the repo."
-  (file-name-concat paths-dir-tlon-repos name (when git ".git")))
-
-(defun tlon-get-repo-dir (name &optional git)
-  "Return the directory of the Tlön repo NAME.
-If GIT is non-nil, return the `.git' directory of the repo."
-  (file-name-as-directory (tlon-get-repo-file name git)))
 
 ;;;###autoload
 (defun tlon-split-repo (dir)
@@ -130,6 +121,21 @@ database. To add these repos, use `tlon-forge-add-missing-repos'."
     (if (zerop count)
 	(message "No repos missing")
       (message "Cloned %d missing repos" count))))
+
+(defun tlon-get-git-file (name)
+  "Return the `.git' file of the Tlön repo named NAME."
+  (file-name-concat paths-dir-tlon-repos name ".git"))
+
+(defun tlon-get-repo-dir (name &optional git)
+  "Return the directory of the Tlön repo named NAME.
+If GIT is `git', return the repo’s `.git' directory. If GIT is `split-git',
+return the repo’s split `.git' directory. Otherwise, return the repo directory."
+  (let ((dir (pcase git
+	       ('split-git paths-dir-split-git)
+	       (_ paths-dir-tlon-repos)))
+	(git-dir (pcase git
+		   ('git ".git"))))
+    (file-name-as-directory (file-name-concat dir name git-dir))))
 
 (declare-function magit-status "magit-status")
 (defun tlon-forge-add-repository (dir)
