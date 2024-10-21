@@ -97,13 +97,12 @@ Normally, this command is run for repos managed by Dropbox, to protect the Git
 files from possible corruption."
   (interactive "D")
   (let* ((name (file-name-nondirectory (directory-file-name dir)))
-	 (source (tlon-get-repo-dir name 'git))
-	 (target (file-name-concat paths-dir-split-git name))
-	 (git-file (tlon-get-repo-file name 'git)))
+	 (source (directory-file-name (tlon-get-repo-dir name 'git)))
+	 (target (directory-file-name (tlon-get-repo-dir name 'split-git)))
+	 (git-file (tlon-get-git-file name)))
     (when (file-exists-p target)
       (user-error "Directory `%s' already exists" target))
-    (rename-file source paths-dir-split-git t)
-    (rename-file (file-name-concat paths-dir-split-git ".git") target t)
+    (rename-file source target t)
     (with-temp-file git-file
       (insert (format "gitdir: %s" target))
       (write-file git-file))))
