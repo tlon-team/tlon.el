@@ -190,6 +190,21 @@ repo."
 	 (repo (forge-get-repository repo-url nil :insert!)))
     (forge--pull repo nil nil)))
 
+(defun tlon-forge-add-missing-repos ()
+  "Add missing Tlön repos to the Forge database.
+Note that this function will omit Tlön repos that do not exist locally. To add
+those repos, use `tlon-clone-missing-repos'."
+  (interactive)
+  (dolist (repo (tlon-repo-lookup-all :dir))
+    (when (file-exists-p repo)
+      (let ((default-directory repo))
+	(unless (forge-get-repository :tracked?)
+	  (tlon-forge-add-repo-all-topics repo)
+	  (while (not (forge-get-repository :tracked?))
+	    (message "Adding repo %s..." (tlon-repo-lookup :name :dir repo))
+	    (sleep-for 1))))))
+  (message "Added all missing repos"))
+
 (declare-function shut-up "shut-up")
 (defun tlon-pull-issues-in-repo (&optional dir)
   "Pull repository in DIR.
