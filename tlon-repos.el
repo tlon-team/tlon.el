@@ -171,6 +171,25 @@ If DIR is nil, use the current directory."
 	  (magit-status-setup-buffer dir))
       (user-error "`%s' is not a Git repository" default-directory))))
 
+(defun tlon-forge-add-repo-all-topics (&optional url-or-path)
+  "Add a repository to the forge database, pulling all topics.
+If URL-OR-PATH is provided, add that repository. Otherwise, add the current
+repo."
+  (let* ((default-directory (if (and url-or-path (file-directory-p url-or-path))
+				(expand-file-name url-or-path)
+			      (or (locate-dominating-file default-directory ".git")
+				  default-directory)))
+	 (remote (forge--get-remote))
+	 (repo-url (cond
+		    ((and url-or-path (string-match-p "^\\(https?\\|git@\\)" url-or-path))
+		     url-or-path)
+		    (remote
+		     (magit-git-string "remote" "get-url" remote))
+		    (t
+		     (user-error "No suitable repository found"))))
+	 (repo (forge-get-repository repo-url nil :insert!)))
+    (forge--pull repo nil nil)))
+
 (declare-function shut-up "shut-up")
 (defun tlon-pull-issues-in-repo (&optional dir)
   "Pull repository in DIR.
