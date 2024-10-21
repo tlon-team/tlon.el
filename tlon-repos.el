@@ -65,10 +65,11 @@ non-nil, make it private."
     (message "Cloned repo `%s'" name)))
 
 ;;;###autoload
-(defun tlon-clone-repo (&optional name)
+(defun tlon-clone-repo (&optional name no-forge)
   "Clone an existing Tlön repo and add it to the Forge database.
 The repo will be cloned in the directory specified by `paths-dir-tlon-repos'. If
-NAME is nil, prompt the user for a repo name."
+NAME is nil, prompt the user for a repo name. If NO-FORGE is non-nil, do not
+ prompt the user to add the repo to the Forge database."
   (interactive)
   (let* ((name (or name (completing-read "Repo: " (vc-extras-gh-list-repos vc-extras-github-account-work))))
 	 (remote (vc-extras-get-github-remote vc-extras-github-account-work name))
@@ -116,13 +117,15 @@ files from possible corruption."
 
 ;;;###autoload
 (defun tlon-clone-missing-repos ()
-  "Clone missing Tlön repos and add them to the Forge database."
+  "Clone missing Tlön repos and add them to the Forge database.
+Note that this function will not prompt the user to add the repos to the Forge
+database. To add these repos, use `tlon-forge-add-missing-repos'."
   (interactive)
   (let ((repos (tlon-repo-lookup-all :dir))
 	(count 0))
     (dolist (repo repos)
       (unless (file-exists-p repo)
-	(tlon-clone-repo (tlon-repo-lookup :name :dir repo))
+	(tlon-clone-repo (tlon-repo-lookup :name :dir repo) 'no-forge)
 	(setq count (1+ count))))
     (if (zerop count)
 	(message "No repos missing")
