@@ -51,6 +51,8 @@ split the `.git' directory. If t or any other non-nil value, always split the
 
 ;;;; Functions
 
+;;;;; vc
+
 ;;;###autoload
 (defun tlon-create-repo (name description private)
   "Create a new Tlön repo.
@@ -155,6 +157,9 @@ return the repo’s split `.git' directory. Otherwise, return the repo directory
 		   ('git ".git"))))
     (file-name-as-directory (file-name-concat dir name git-dir))))
 
+;;;;; Forge
+;;;;;; Add repos
+
 (declare-function magit-status "magit-status")
 ;;;###autoload
 (defun tlon-forge-add-repository (&optional dir)
@@ -205,6 +210,8 @@ those repos, use `tlon-clone-missing-repos'."
 	    (sleep-for 1))))))
   (message "Added all missing repos"))
 
+;;;;;; Pull issues
+
 (declare-function shut-up "shut-up")
 (defun tlon-pull-issues-in-repo (&optional dir)
   "Pull repository in DIR.
@@ -223,7 +230,7 @@ If DIR is nil, use the current directory."
     (dolist (repo repos)
       (tlon-pull-issues-in-repo repo))))
 
-;;;;; Search
+;;;; Search
 
 (defun tlon-forge-search-titles (string)
   "Search for STRING in the title of the current repo."
@@ -306,6 +313,8 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 		(search-string string))))
 	  (emacsql db [:drop-table search]))))))
 
+;;;;;; Search menu
+
 (transient-define-prefix tlon-forge-menu ()
   "Dispatch a forge command."
   [:if forge--get-repository:tracked?
@@ -360,7 +369,7 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 
 (advice-add 'forge-dispatch :override #'tlon-forge-menu)
 
-;;;; Menu
+;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
 (transient-define-prefix tlon-repos-menu ()
