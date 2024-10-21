@@ -156,17 +156,20 @@ return the repo’s split `.git' directory. Otherwise, return the repo directory
     (file-name-as-directory (file-name-concat dir name git-dir))))
 
 (declare-function magit-status "magit-status")
-(defun tlon-forge-add-repository (dir)
-  "Add DIR to the Forge database."
-  (let* ((default-directory dir)
-	 (url (and-let*
-		  ((repo (forge-get-repository :stub))
-		   (remote (oref repo remote)))
-		(magit-git-string "remote" "get-url" remote))))
-    (forge-add-repository url)
-    (magit-status-setup-buffer dir)))
-
-;;;;; Pull issues
+;;;###autoload
+(defun tlon-forge-add-repository (&optional dir)
+  "Add DIR to the Forge database.
+If DIR is nil, use the current directory."
+  (interactive)
+  (let ((default-directory (or dir default-directory)))
+    (if (vc-extras-is-git-dir-p default-directory)
+	(let ((url (and-let*
+		       ((repo (forge-get-repository :stub))
+			(remote (oref repo remote)))
+		     (magit-git-string "remote" "get-url" remote))))
+	  (tlon-forge-add-repo-all-topics url)
+	  (magit-status-setup-buffer dir))
+      (user-error "`%s' is not a Git repository" default-directory))))
 
 (declare-function shut-up "shut-up")
 (defun tlon-pull-issues-in-repo (&optional dir)
