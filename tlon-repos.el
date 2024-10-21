@@ -122,6 +122,23 @@ database. To add these repos, use `tlon-forge-add-missing-repos'."
 	(message "No repos missing")
       (message "Cloned %d missing repos" count))))
 
+;;;###autoload
+(defun tlon-delete-repo (name)
+  "Delete the Tlön repo NAME."
+  (interactive (list (completing-read "Repo: " (tlon-repo-lookup-all :name))))
+  (let ((dir (tlon-get-repo-dir name))
+	(split-git (tlon-get-repo-dir name 'split-git))
+	deleted)
+    (when (file-exists-p dir)
+      (delete-directory dir t)
+      (push dir deleted))
+    (when (file-exists-p split-git)
+      (delete-directory split-git t)
+      (push split-git deleted))
+    (if deleted
+	(message "Deleted repos: %s" (string-join deleted ", "))
+      (message "Repo `%s' not found locally" name))))
+
 (defun tlon-get-git-file (name)
   "Return the `.git' file of the Tlön repo named NAME."
   (file-name-concat paths-dir-tlon-repos name ".git"))
