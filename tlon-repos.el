@@ -208,7 +208,7 @@ those repos, use `tlon-clone-missing-repos'."
 	  (while (not (forge-get-repository :tracked?))
 	    (message "Adding repo %s..." (tlon-repo-lookup :name :dir repo))
 	    (sleep-for 1))))))
-  (message "Added all missing repos"))
+  (message "Added all missing repos to the Forge database."))
 
 ;;;;;; Pull issues
 
