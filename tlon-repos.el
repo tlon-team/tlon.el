@@ -83,10 +83,12 @@ NAME is nil, prompt the user for a repo name. If NO-FORGE is non-nil, do not
 		   (tlon-split-repo dir)
 		 (message "You can customize the `tlon-split-repo' user option to avoid this prompt.")))
       (_ (tlon-split-repo dir)))
-    (if (y-or-n-p "Add to Forge? ")
-	(tlon-forge-add-repository dir)
-      (dired dir))))
-
+    (let ((default-directory dir))
+      (if (and no-forge
+	       (not (forge-get-repository :tracked?))
+	       (y-or-n-p "Add to Forge? "))
+	  (tlon-forge-add-repository dir)
+	(dired dir)))))
 
 ;;;###autoload
 (defun tlon-split-repo (dir)
