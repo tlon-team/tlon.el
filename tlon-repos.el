@@ -269,56 +269,56 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 	  (emacsql db [:drop-table search]))))))
 
 (transient-define-prefix tlon-forge-menu ()
-"Dispatch a forge command."
-[:if forge--get-repository:tracked?
-     ["Create"
-      ("c i" "issue"             forge-create-issue)
-      ("c p" "pull-request"      forge-create-pullreq)
-      ("c u" "pull-request from issue"
-       forge-create-pullreq-from-issue
-       :if forge--get-github-repository)
-      ("c f" "fork or remote"    forge-fork)]
-     ["Search"
-      "full"
-      ("s s" "this repo"      forge-search)
-      ("s a" "all repos"      tlon-forge-search-in-all-repos)
-      "titles only"
-      ("s S" "this repo"      tlon-forge-search-titles)
-      ("s A" "all repos"      tlon-forge-search-titles-in-all-repos)]]
-[:if forge--get-repository:tracked?
-     ["List"
-      ("t" "topics...         "  forge-topics-menu        :transient replace)
-      ("n" "notifications...  "  forge-notifications-menu :transient replace)
-      ("r" "repositories...   "  forge-repositories-menu  :transient replace)]
-     ["Fetch"
-      ("f f" "all topics       " forge-pull)
-      ("f t" "one topic        " forge-pull-topic)
-      ("f n" "notifications    " forge-pull-notifications)]
-     ["Do"
-      :if forge--get-repository:tracked?
-      ("C" "configure"       forge-configure)
-      ("M" "merge w/api"     forge-merge :level 7)]]
-[:if forge--get-repository:tracked?
-     ["Visit"
-      ("v t" "topic"         forge-visit-topic)
-      ("v i" "issue"         forge-visit-issue)
-      ("v p" "pull-request"  forge-visit-pullreq)]
-     ["Browse"
-      ("b t" "topic"         forge-browse-topic)
-      ("b i" "issue"         forge-browse-issue)
-      ("b p" "pull-request"  forge-browse-pullreq)]
-     ["Browse"
-      ("b r" "remote"        forge-browse-remote)
-      ("b I" "issues"        forge-browse-issues)
-      ("b P" "pull-requests" forge-browse-pullreqs)]]
-[[:description (lambda ()
-                 (if (magit-gitdir)
-                     "Forge doesn't know about this Git repository yet"
-                   "Not inside a Git repository"))
-	       :if-not forge--get-repository:tracked?
-	       ("a" "add repository to database" forge-add-repository)
-	       ("f" "fetch notifications"        forge-pull-notifications)
-	       ("l" "list notifications"         forge-list-notifications)]])
+  "Dispatch a forge command."
+  [:if forge--get-repository:tracked?
+       ["Create"
+	("c i" "issue"             forge-create-issue)
+	("c p" "pull-request"      forge-create-pullreq)
+	("c u" "pull-request from issue"
+	 forge-create-pullreq-from-issue
+	 :if forge--get-github-repository)
+	("c f" "fork or remote"    forge-fork)]
+       ["Search"
+	"full"
+	("s s" "this repo"      forge-search)
+	("s a" "all repos"      tlon-forge-search-in-all-repos)
+	"titles only"
+	("s S" "this repo"      tlon-forge-search-titles)
+	("s A" "all repos"      tlon-forge-search-titles-in-all-repos)]]
+  [:if forge--get-repository:tracked?
+       ["List"
+	("t" "topics...         "  forge-topics-menu        :transient replace)
+	("n" "notifications...  "  forge-notifications-menu :transient replace)
+	("r" "repositories...   "  forge-repositories-menu  :transient replace)]
+       ["Fetch"
+	("f f" "all topics       " forge-pull)
+	("f t" "one topic        " forge-pull-topic)
+	("f n" "notifications    " forge-pull-notifications)]
+       ["Do"
+	:if forge--get-repository:tracked?
+	("C" "configure"       forge-configure)
+	("M" "merge w/api"     forge-merge :level 7)]]
+  [:if forge--get-repository:tracked?
+       ["Visit"
+	("v t" "topic"         forge-visit-topic)
+	("v i" "issue"         forge-visit-issue)
+	("v p" "pull-request"  forge-visit-pullreq)]
+       ["Browse"
+	("b t" "topic"         forge-browse-topic)
+	("b i" "issue"         forge-browse-issue)
+	("b p" "pull-request"  forge-browse-pullreq)]
+       ["Browse"
+	("b r" "remote"        forge-browse-remote)
+	("b I" "issues"        forge-browse-issues)
+	("b P" "pull-requests" forge-browse-pullreqs)]]
+  [[:description (lambda ()
+		   (if (magit-gitdir)
+		       "Forge doesn't know about this Git repository yet"
+		     "Not inside a Git repository"))
+		 :if-not forge--get-repository:tracked?
+		 ("a" "add repository to database" forge-add-repository)
+		 ("f" "fetch notifications"        forge-pull-notifications)
+		 ("l" "list notifications"         forge-list-notifications)]])
 
 (advice-add 'forge-dispatch :override #'tlon-forge-menu)
 
