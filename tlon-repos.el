@@ -68,10 +68,10 @@ non-nil, make it private."
 
 ;;;###autoload
 (defun tlon-clone-repo (&optional name no-forge)
-  "Clone an existing Tlön repo and add it to the Forge database.
+  "Clone an existing Tlön repo.
 The repo will be cloned in the directory specified by `paths-dir-tlon-repos'. If
 NAME is nil, prompt the user for a repo name. If NO-FORGE is non-nil, do not
- prompt the user to add the repo to the Forge database."
+prompt the user to add the repo to the Forge database."
   (interactive)
   (let* ((name (or name (completing-read "Repo: " (vc-extras-gh-list-repos vc-extras-github-account-work))))
 	 (remote (vc-extras-get-github-remote vc-extras-github-account-work name))
@@ -89,7 +89,7 @@ NAME is nil, prompt the user for a repo name. If NO-FORGE is non-nil, do not
       (if (and no-forge
 	       (not (forge-get-repository :tracked?))
 	       (y-or-n-p "Add to Forge? "))
-	  (tlon-forge-add-repository dir)
+	  (tlon-forge-track-repository dir)
 	(dired dir)))))
 
 ;;;###autoload
@@ -111,9 +111,9 @@ files from possible corruption."
 
 ;;;###autoload
 (defun tlon-clone-missing-repos ()
-  "Clone missing Tlön repos and add them to the Forge database.
+  "Clone missing Tlön repos.
 Note that this function will not prompt the user to add the repos to the Forge
-database. To add these repos, use `tlon-forge-add-missing-repos'."
+database. To track these repos, use `tlon-forge-track-missing-repos'."
   (interactive)
   (let ((repos (tlon-repo-lookup-all :dir))
 	(count 0))
@@ -158,11 +158,11 @@ return the repo’s split `.git' directory. Otherwise, return the repo directory
     (file-name-as-directory (file-name-concat dir name git-dir))))
 
 ;;;;; Forge
-;;;;;; Add repos
+;;;;;; Track repos
 
 (declare-function magit-status "magit-status")
 ;;;###autoload
-(defun tlon-forge-add-repository (&optional dir)
+(defun tlon-forge-track-repository (&optional dir)
   "Add DIR to the Forge database.
 If DIR is nil, use the current directory."
   (interactive)
@@ -172,11 +172,11 @@ If DIR is nil, use the current directory."
 		       ((repo (forge-get-repository :stub))
 			(remote (oref repo remote)))
 		     (magit-git-string "remote" "get-url" remote))))
-	  (tlon-forge-add-repo-all-topics url)
+	  (tlon-forge-track-repo-all-topics url)
 	  (magit-status-setup-buffer dir))
       (user-error "`%s' is not a Git repository" default-directory))))
 
-(defun tlon-forge-add-repo-all-topics (&optional url-or-path)
+(defun tlon-forge-track-repo-all-topics (&optional url-or-path)
   "Add a repository to the forge database, pulling all topics.
 If URL-OR-PATH is provided, add that repository. Otherwise, add the current
 repo."
@@ -195,7 +195,7 @@ repo."
 	 (repo (forge-get-repository repo-url nil :insert!)))
     (forge--pull repo nil nil)))
 
-(defun tlon-forge-add-missing-repos ()
+(defun tlon-forge-track-missing-repos ()
   "Add missing Tlön repos to the Forge database.
 Note that this function will omit Tlön repos that do not exist locally. To add
 those repos, use `tlon-clone-missing-repos'."
@@ -204,7 +204,7 @@ those repos, use `tlon-clone-missing-repos'."
     (when (file-exists-p repo)
       (let ((default-directory repo))
 	(unless (forge-get-repository :tracked?)
-	  (tlon-forge-add-repo-all-topics repo)
+	  (tlon-forge-track-repo-all-topics repo)
 	  (while (not (forge-get-repository :tracked?))
 	    (message "Adding repo %s..." (tlon-repo-lookup :name :dir repo))
 	    (sleep-for 1))))))
@@ -389,11 +389,12 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
     ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
     ("P" "Pull issues in all repos" tlon-pull-issues-in-all-repos)
     ""
-    ("a" "Add repo"                 tlon-forge-add-repository)
-    ("A" "Add all missing repos"    tlon-forge-add-missing-repos)
+    ("a" "Track repo"               tlon-forge-track-repository)
+    ("A" "Track all missing repos"  tlon-forge-track-missing-repos)
     ""
-    ("r" "Remove repo"              forge-remove-repository)
+    ("r" "Untrack repo"             forge-remove-repository)
     ("R" "Reset database"           forge-reset-database)]])
 
 (provide 'tlon-repos)
+
 ;;; tlon-repos.el ends here
