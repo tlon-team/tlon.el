@@ -272,15 +272,16 @@ Otherwise emit a message with the status provided by INFO."
     (kill-new response)
     (message "Copied AI model response to kill ring.")))
 
-(defun tlon-ai-callback-save (response info file)
-  "If the request succeeds, save the RESPONSE to FILE.
+(defun tlon-ai-callback-save (file)
+  "If a response is obtained, save it to FILE.
 Otherwise emit a message with the status provided by INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (with-temp-buffer
-      (erase-buffer)
-      (insert response)
-      (write-region (point-min) (point-max) file))))
+  (lambda (response info)
+    (if (not response)
+	(tlon-ai-callback-fail info)
+      (with-temp-buffer
+	(erase-buffer)
+	(insert response)
+	(write-region (point-min) (point-max) file)))))
 
 ;; Is this necessary; I think `gptel-request' already does this
 ;; if no callback is passed to it
@@ -405,24 +406,23 @@ RESPONSE is the response from the AI model and INFO is the response info."
 		   (insert-file-contents file)
 		   (buffer-string))))
     (tlon-make-gptel-request tlon-ai-translate-prompt string
-			     (lambda (response info)
-			       (tlon-ai-translate-file-callback response info file)))))
+			     (tlon-ai-translate-file-callback file))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
-(defun tlon-ai-translate-file-callback (response info file)
+(defun tlon-ai-translate-file-callback (file)
   "Callback for `tlon-ai-translate-file'.
-RESPONSE is the response from the AI model and INFO is the response info. FILE
-is the file to translate."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((counterpart (tlon-get-counterpart file))
-	   (filename (file-name-nondirectory counterpart))
-	   (target-path (concat
-			 (file-name-sans-extension filename)
-			 "--ai-translated.md")))
-      (with-temp-buffer
-	(insert response)
-	(write-region (point-min) (point-max) target-path)))))
+FILE is the file to translate."
+  (lambda (response info)
+    (if (not response)
+	(tlon-ai-callback-fail info)
+      (let* ((counterpart (tlon-get-counterpart file))
+	     (filename (file-name-nondirectory counterpart))
+	     (target-path (concat
+			   (file-name-sans-extension filename)
+			   "--ai-translated.md")))
+	(with-temp-buffer
+	  (insert response)
+	  (write-region (point-min) (point-max) target-path))))))
 
 ;;;;; Rewriting
 
@@ -573,10 +573,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 			       (tlon-select-language)))))
 	  (tlon-ai-get-abstract-in-language file language type)
 	(tlon-ai-detect-language-in-file
-	 file
-	 (lambda (response info)
-	   (message "Detecting language...")
-	   (tlon-ai-get-abstract-from-detected-language response info file))))
+	 file (tlon-ai-get-abstract-from-detected-language file)))
     (when tlon-debug
       (message "`%s' now calls `tlon-ai-batch-continue'." "tlon-get-abstract-with-ai"))
     (tlon-ai-batch-continue)))
@@ -596,8 +593,7 @@ it finds one, use it. Otherwise it will create an abstract from scratch.."
 	      (key (funcall get-key)))
     (tlon-ai-get-abstract-common
      tlon-ai-shorten-abstract-prompts abstract language
-     (lambda (response info)
-       (tlon-get-abstract-callback response info key)))))
+     (tlon-get-abstract-callback key))))
 
 (defun tlon-get-synopsis-with-ai (&optional file)
   "Return a synopsis of the relevant content using AI.
@@ -650,14 +646,7 @@ prompt. If TYPE is `abstract', nil, or any other value, generate an abstract."
 	   ('synopsis tlon-ai-get-synopsis-prompts)
 	   ('custom (tlon-ai-set-custom-prompt lang-2))
 	   (_ tlon-ai-get-abstract-prompts))
-	 string lang-2
-	 (lambda (response info)
-	   ;; we restore the original buffer to avoid a change in `major-mode'
-	   (with-current-buffer original-buffer
-	     (when tlon-debug
-	       (message "Generating abstract for `%s'; starts with `%s'" key
-			(when response (substring response 0 (min (length string) 100)))))
-	     (tlon-get-abstract-callback response info key type)))))
+	 string lang-2 (tlon-get-abstract-callback key type original-buffer)))
     (message "Could not get abstract.")
     (tlon-ai-batch-continue)))
 
@@ -667,12 +656,14 @@ prompt. If TYPE is `abstract', nil, or any other value, generate an abstract."
 	 (prompt (concat response " Here is the text" tlon-ai-string-wrapper)))
     `((:prompt ,prompt :language ,language))))
 
-(defun tlon-ai-get-abstract-from-detected-language (response info file)
+(defun tlon-ai-get-abstract-from-detected-language (file)
   "If RESPONSE is non-nil, get a summary of FILE.
 Otherwise return INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (tlon-ai-get-abstract-in-language file response)))
+  (lambda (response info)
+    (message "Detecting language...")
+    (if (not response)
+	(tlon-ai-callback-fail info)
+      (tlon-ai-get-abstract-in-language file response))))
 
 (defun tlon-ai-get-abstract-common (prompt string language callback)
   "Common function for getting an abstract.
@@ -686,28 +677,31 @@ the language of the string, and CALLBACK is the callback function."
 	(message "Getting AI abstract..."))
     (user-error "Could not get prompt for language %s" language)))
 
-(defun tlon-get-abstract-callback (response info &optional key type)
-  "If RESPONSE is non-nil, take appropriate action based on major mode.
-If RESPONSE is nil, return INFO. KEY is the BibTeX key. If TYPE is `synopsis' or
-`custom', copy the response to the kill ring. If type is `abstract', nil, or any
-other value, take the action appropriate for an abstract."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (pcase type
-      ((or 'synopsis 'custom) (kill-new response)
-       (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))
-      (_ (pcase major-mode
-	   ((or 'bibtex-mode 'ebib-entry-mode)
-	    (when tlon-debug
-	      (message "`tlon-get-abstract-callback' is setting `%s' to `%s'"
-		       key (when response (substring response 0 (min (length response) 100)))))
-	    (tlon-ai-summarize-set-bibtex-abstract response key))
-	   ;; ('markdown-mode) ; TODO: set `description' YAML field to it
-	   (_ (kill-new response)
-	      (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
-  (when tlon-debug
-    (message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
-  (tlon-ai-batch-continue))
+(defun tlon-get-abstract-callback (&optional key type buffer)
+  "Process the response, taking appropriate action based on major mode.
+KEY is the BibTeX key. If TYPE is `synopsis' or `custom', copy the response to
+the kill ring. If type is `abstract', nil, or any other value, take the action
+appropriate for an abstract. BUFFER is the buffer where the abstract should be
+inserted; if nil, use the current buffer."
+  (lambda (response info)
+    (if (not response)
+	(tlon-ai-callback-fail info)
+      (with-current-buffer (or buffer (current-buffer))
+	(pcase type
+	  ((or 'synopsis 'custom) (kill-new response)
+	   (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))
+	  (_ (pcase major-mode
+	       ((or 'bibtex-mode 'ebib-entry-mode)
+		(when tlon-debug
+		  (message "`tlon-get-abstract-callback' is setting `%s' to `%s'"
+			   key (when response (substring response 0 (min (length response) 100)))))
+		(tlon-ai-summarize-set-bibtex-abstract response key))
+	       ;; ('markdown-mode) ; TODO: set `description' YAML field to it
+	       (_ (kill-new response)
+		  (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
+      (when tlon-debug
+	(message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
+      (tlon-ai-batch-continue))))
 
 ;;;;;; BibTeX
 
@@ -957,11 +951,9 @@ If RESPONSE is nil, return INFO."
 	(message (format "file: %s ; begins: %s" (+ 14 i) point))
 	(setq point (car cons))
 	(unless (file-exists-p file)
-	  (tlon-make-gptel-request prompt string (lambda (response info)
-						   (tlon-ai-callback-save response info file))
-				   
-				   (when tlon-ai-use-summarization-model
-				     tlon-ai-summarization-model)))))))
+	  (tlon-make-gptel-request prompt string (tlon-ai-callback-save file))
+	  (when tlon-ai-use-summarization-model
+	    tlon-ai-summarization-model))))))
 
 (defun tlon-ai-get-json-chunk (begin size)
   "In current buffer, get the longest possible string less than SIZE from BEGIN."
@@ -981,8 +973,8 @@ If RESPONSE is nil, return INFO."
 	 (output-file "fixed.json"))
     (with-temp-buffer
       (dotimes (i 477)
-        (let ((file-name (file-name-concat dir (format "chunk%s.json" i))))
-          (when (file-exists-p file-name)
+	(let ((file-name (file-name-concat dir (format "chunk%s.json" i))))
+	  (when (file-exists-p file-name)
 	    (goto-char (point-max))
 	    (insert-file-contents file-name))))
       (write-file output-file))))
