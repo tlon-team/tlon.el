@@ -39,32 +39,17 @@
   "`tlon-repos' functionality."
   :group 'tlon)
 
-(defcustom tlon-split-repo 'prompt
-  "Whether to split the `.git' directory in a separate directory.
-If nil, never split the `.git' directory. If `prompt', ask the user whether to
-split the `.git' directory. If t or any other non-nil value, always split the
-`.git' directory."
-  :type '(choice (const :tag "Never" nil)
-		 (const :tag "Prompt" prompt)
-		 (boolean :tag "Always" t))
-  :group 'tlon-repos)
-
 ;;;; Functions
 
 ;;;;; vc
 
 ;;;###autoload
-(defun tlon-create-repo (name description private)
+(defun tlon-create-repo (&optional name)
   "Create a new Tlön repo.
 NAME and DESCRIPTION are the name and description of the repo. If PRIVATE is
 non-nil, make it private."
-  (interactive (list (read-string "Name: ")
-		     (read-string "Description: ")
-		     (y-or-n-p "Private? ")))
-  (vc-extras-gh-create-repo name description vc-extras-github-account-work private)
-  (if (y-or-n-p "Clone? ")
-      (tlon-clone-repo name)
-    (message "Cloned repo `%s'" name)))
+  (interactive)
+  (vc-extras-gh-create-repo name "tlon-team"))
 
 (declare-function forge-extras-track-repository "forge-extras")
 ;;;###autoload
@@ -74,42 +59,7 @@ The repo will be cloned in the directory specified by `paths-dir-tlon-repos'. If
 NAME is nil, prompt the user for a repo name. If NO-FORGE is non-nil, do not
 prompt the user to add the repo to the Forge database."
   (interactive)
-  (let* ((name (or name (completing-read "Repo: " (vc-extras-gh-list-repos vc-extras-github-account-work))))
-	 (remote (vc-extras-get-github-remote vc-extras-github-account-work name))
-	 (dir (tlon-get-repo-dir name)))
-    (when (file-exists-p dir)
-      (user-error "Directory `%s' already exists" dir))
-    (vc-clone remote 'Git dir)
-    (pcase tlon-split-repo
-      ('nil)
-      ('prompt (if (y-or-n-p "Move `.git' directory to separate directory?")
-		   (tlon-split-repo dir)
-		 (message "You can customize the `tlon-split-repo' user option to avoid this prompt.")))
-      (_ (tlon-split-repo dir)))
-    (let ((default-directory dir))
-      (if (and no-forge
-	       (not (forge-get-repository :tracked?))
-	       (y-or-n-p "Add to Forge? "))
-	  (progn (require 'forge-extras)
-		 (forge-extras-track-repository dir))
-	(dired dir)))))
-
-;;;###autoload
-(defun tlon-split-repo (dir)
-  "Move the `.git' in DIR to a separate dir and set the `.git' file accordingly.
-Normally, this command is run for repos managed by Dropbox, to protect the Git
-files from possible corruption."
-  (interactive "D")
-  (let* ((name (file-name-nondirectory (directory-file-name dir)))
-	 (source (directory-file-name (tlon-get-repo-dir name 'git)))
-	 (target (directory-file-name (tlon-get-repo-dir name 'split-git)))
-	 (git-file (tlon-get-git-file name)))
-    (when (file-exists-p target)
-      (user-error "Directory `%s' already exists" target))
-    (rename-file source target t)
-    (with-temp-file git-file
-      (insert (format "gitdir: %s" target))
-      (write-file git-file))))
+  (vc-extras-clone-repo name "tlon-team" no-forge))
 
 ;;;###autoload
 (defun tlon-clone-missing-repos ()
@@ -121,7 +71,7 @@ database. To track these repos, use `tlon-forge-track-missing-repos'."
 	(count 0))
     (dolist (repo repos)
       (unless (file-exists-p repo)
-	(tlon-clone-repo (tlon-repo-lookup :name :dir repo) 'no-forge)
+	(vc-extras-clone-repo "tlon-team" (tlon-repo-lookup :name :dir repo) 'no-forge)
 	(setq count (1+ count))))
     (if (zerop count)
 	(message "No repos missing")
@@ -131,33 +81,7 @@ database. To track these repos, use `tlon-forge-track-missing-repos'."
 (defun tlon-delete-repo (name)
   "Delete the Tlön repo NAME."
   (interactive (list (completing-read "Repo: " (tlon-repo-lookup-all :name))))
-  (let ((dir (tlon-get-repo-dir name))
-	(split-git (tlon-get-repo-dir name 'split-git))
-	deleted)
-    (when (file-exists-p dir)
-      (delete-directory dir t)
-      (push dir deleted))
-    (when (file-exists-p split-git)
-      (delete-directory split-git t)
-      (push split-git deleted))
-    (if deleted
-	(message "Deleted repos: %s" (string-join deleted ", "))
-      (message "Repo `%s' not found locally" name))))
-
-(defun tlon-get-git-file (name)
-  "Return the `.git' file of the Tlön repo named NAME."
-  (file-name-concat paths-dir-tlon-repos name ".git"))
-
-(defun tlon-get-repo-dir (name &optional git)
-  "Return the directory of the Tlön repo named NAME.
-If GIT is `git', return the repo’s `.git' directory. If GIT is `split-git',
-return the repo’s split `.git' directory. Otherwise, return the repo directory."
-  (let ((dir (pcase git
-	       ('split-git paths-dir-split-git)
-	       (_ paths-dir-tlon-repos)))
-	(git-dir (pcase git
-		   ('git ".git"))))
-    (file-name-as-directory (file-name-concat dir name git-dir))))
+  (vc-extras-delete-repo name "tlon-team"))
 
 ;;;;; Forge
 ;;;;;; Track repos
@@ -350,7 +274,7 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
     ""
     ("c" "Create remote repo"       tlon-create-repo)
     ""
-    ("s" "Split local repo"         tlon-split-repo)
+    ("s" "Split local repo"         vc-extras-split-repo)
     ""
     ("d" "Delete local repo"        tlon-delete-repo)]
    ["Forge"
