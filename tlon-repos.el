@@ -66,6 +66,7 @@ non-nil, make it private."
       (tlon-clone-repo name)
     (message "Cloned repo `%s'" name)))
 
+(declare-function forge-extras-track-repository "forge-extras")
 ;;;###autoload
 (defun tlon-clone-repo (&optional name no-forge)
   "Clone an existing Tlön repo.
@@ -89,7 +90,8 @@ prompt the user to add the repo to the Forge database."
       (if (and no-forge
 	       (not (forge-get-repository :tracked?))
 	       (y-or-n-p "Add to Forge? "))
-	  (tlon-forge-track-repository dir)
+	  (progn (require 'forge-extras)
+		 (forge-extras-track-repository dir))
 	(dired dir)))))
 
 ;;;###autoload
@@ -160,41 +162,7 @@ return the repo’s split `.git' directory. Otherwise, return the repo directory
 ;;;;; Forge
 ;;;;;; Track repos
 
-(declare-function magit-status "magit-status")
-;;;###autoload
-(defun tlon-forge-track-repository (&optional dir)
-  "Add DIR to the Forge database.
-If DIR is nil, use the current directory."
-  (interactive)
-  (let ((default-directory (or dir default-directory)))
-    (if (vc-extras-is-git-dir-p default-directory)
-	(let ((url (and-let*
-		       ((repo (forge-get-repository :stub))
-			(remote (oref repo remote)))
-		     (magit-git-string "remote" "get-url" remote))))
-	  (tlon-forge-track-repo-all-topics url)
-	  (magit-status-setup-buffer dir))
-      (user-error "`%s' is not a Git repository" default-directory))))
-
-(defun tlon-forge-track-repo-all-topics (&optional url-or-path)
-  "Add a repository to the forge database, pulling all topics.
-If URL-OR-PATH is provided, add that repository. Otherwise, add the current
-repo."
-  (let* ((default-directory (if (and url-or-path (file-directory-p url-or-path))
-				(expand-file-name url-or-path)
-			      (or (locate-dominating-file default-directory ".git")
-				  default-directory)))
-	 (remote (forge--get-remote))
-	 (repo-url (cond
-		    ((and url-or-path (string-match-p "^\\(https?\\|git@\\)" url-or-path))
-		     url-or-path)
-		    (remote
-		     (magit-git-string "remote" "get-url" remote))
-		    (t
-		     (user-error "No suitable repository found"))))
-	 (repo (forge-get-repository repo-url nil :insert!)))
-    (forge--pull repo nil nil)))
-
+(declare-function forge-extras-track-repo-all-topics "forge-extras")
 (defun tlon-forge-track-missing-repos ()
   "Add missing Tlön repos to the Forge database.
 Note that this function will omit Tlön repos that do not exist locally. To add
@@ -204,7 +172,8 @@ those repos, use `tlon-clone-missing-repos'."
     (when (file-exists-p repo)
       (let ((default-directory repo))
 	(unless (forge-get-repository :tracked?)
-	  (tlon-forge-track-repo-all-topics repo)
+	  (require 'forge-extras)
+	  (forge-extras-track-repo-all-topics repo)
 	  (while (not (forge-get-repository :tracked?))
 	    (message "Adding repo %s..." (tlon-repo-lookup :name :dir repo))
 	    (sleep-for 1))))))
@@ -389,7 +358,7 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
     ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
     ("P" "Pull issues in all repos" tlon-pull-issues-in-all-repos)
     ""
-    ("a" "Track repo"               tlon-forge-track-repository)
+    ("a" "Track repo"               forge-extras-track-repository)
     ("A" "Track all missing repos"  tlon-forge-track-missing-repos)
     ""
     ("r" "Untrack repo"             forge-remove-repository)
