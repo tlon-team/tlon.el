@@ -78,10 +78,10 @@ database. To track these repos, use `tlon-forge-track-missing-repos'."
       (message "Cloned %d missing repos" count))))
 
 ;;;###autoload
-(defun tlon-delete-repo (name)
+(defun tlon-delete-local-repo (name)
   "Delete the Tlön repo NAME."
   (interactive (list (completing-read "Repo: " (tlon-repo-lookup-all :name))))
-  (vc-extras-delete-repo name "tlon-team"))
+  (vc-extras-delete-local-repo name "tlon-team"))
 
 ;;;;; Forge
 ;;;;;; Track repos
@@ -274,9 +274,9 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
     ""
     ("c" "Create remote repo"       tlon-create-repo)
     ""
-    ("s" "Split local repo"         vc-extras-split-repo)
+    ("s" "Split local repo"         vc-extras-split-local-repo)
     ""
-    ("d" "Delete local repo"        tlon-delete-repo)]
+    ("d" "Delete local repo"        tlon-delete-local-repo)]
    ["Forge"
     ""
     ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
