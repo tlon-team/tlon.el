@@ -49,7 +49,7 @@
 NAME and DESCRIPTION are the name and description of the repo. If PRIVATE is
 non-nil, make it private."
   (interactive)
-  (vc-extras-gh-create-repo name "tlon-team"))
+  (vc-extras-create-repo name "tlon-team"))
 
 (declare-function forge-extras-track-repository "forge-extras")
 ;;;###autoload
