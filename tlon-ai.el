@@ -122,10 +122,16 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
 ;;;;; Image description
 
 (defconst tlon-ai-describe-image-prompt
-  `((:prompt "Please provide a concise description of the following image:\n\n[[file:%s]]\n\nThe description should consist of one or two sentences and must never exceed 50 words. If you need to use quotes, please use single quotes."
+  `((:prompt "Please provide a concise description of the attached image. The description should consist of one or two sentences and must never exceed 50 words. If you need to use quotes, please use single quotes."
 	     :language "en")
-    (:prompt "Por favor, describe brevemente la siguiente imagen:\n\n[[file:%s]]\n\nLa descripción debe consistir de una o dos oraciones y en ningún caso debe exceder las 50 palabras. Si necesitas usar comillas, por favor utiliza comillas simples."
-	     :language "es")))
+    (:prompt "Por favor, describe brevemente la imagen adjunta. La descripción debe consistir de una o dos oraciones y en ningún caso debe exceder las 50 palabras. Si necesitas usar comillas, por favor utiliza comillas simples."
+	     :language "es")
+    (:prompt "Veuillez fournir une description concise de l'image ci-jointe. La description doit consister en une ou deux phrases et ne doit pas dépasser 50 mots. Si vous devez utiliser des guillemets, veuillez utiliser des guillemets simples."
+	     :language "fr")
+    (:prompt "Si prega di fornire una descrizione concisa dell'immagine allegata. La descrizione deve consistere in una o due frasi e non deve mai superare le 50 parole. Se è necessario utilizzare le virgolette, si prega di utilizzare le virgolette singole."
+	     :language "it")
+    (:prompt "Bitte geben Sie eine kurze Beschreibung des beigefügten Bildes. Die Beschreibung sollte aus ein oder zwei Sätzen bestehen und darf 50 Wörter nicht überschreiten. Wenn Sie Anführungszeichen verwenden müssen, verwenden Sie bitte einfache Anführungszeichen."
+	     :language "de")))
 
 ;;;;; Summarization
 
@@ -244,7 +250,10 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
 
 (defun tlon-make-gptel-request (prompt string &optional callback full-model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-FULL-MODEL is a cons cell whose car is the backend and whose cdr is the model."
+PROMPT is a formatting string containing the prompt and a slot for a string,
+which is the variable part of the prompt (e.g. the text to be summarized in a
+prompt to summarize text). FULL-MODEL is a cons cell whose car is the backend
+and whose cdr is the model."
   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model))))
     (cl-destructuring-bind (backend . model) full-model
       (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
@@ -448,22 +457,24 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Image description
 
-;; For images, we use `chatgpt-shell' rather than `gptel', because the latter
-;; supports text only.
-
+(declare-function gptel-context-add-file "gptel-context")
 ;;;###autoload
-(declare-function chatgpt-shell-vision-make-request "chatgpt-shell")
-(defun tlon-ai-describe-image (&optional file language on-success on-failure)
+(defun tlon-ai-describe-image (&optional file callback)
   "Describe the contents of the image in FILE.
-Use LANGUAGE for the description; if nil, obtain the language from the current
-repo. ON-SUCCESS and ON-FAILURE are the success and failure callbacks,"
+By default, print the description in the minibuffer. If CALLBACK is non-nil, use
+it instead."
   (interactive)
   (let* ((file (tlon-ai-read-image-file file))
-	 (language (or language (tlon-get-language)))
-	 (prompt (format
-		  (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language)
-		  file)))
-    (chatgpt-shell-vision-make-request prompt file :on-success on-success :on-failure on-failure)))
+	 (language (tlon-get-language))
+	 (prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language)))
+    (gptel-context-add-file file)
+    (gptel-request prompt
+      :callback (or callback
+		    (lambda (response info)
+		      (if response
+			  (message response)
+			(user-error "Error: %s" (plist-get info :status)))
+		      (setq gptel-context--alist nil))))))
 
 (declare-function tlon-get-tag-attribute-values "tlon-md")
 (declare-function tlon-md-insert-attribute-value "tlon-md")
@@ -476,15 +487,12 @@ The image tags are \"Figure\" or \"OurWorldInData\"."
 			    (tlon-get-tag-attribute-values "OurWorldInData"))))
 	      (file (tlon-ai-get-image-file-from-src src))
 	      (pos (point-marker)))
-	(tlon-ai-describe-image file nil
-				(lambda (response)
-				  "If the RESPONSE is successful, insert it as the alt text."
-				  (with-current-buffer (marker-buffer pos)
-				    (goto-char pos)
-				    (tlon-md-insert-attribute-value "alt" response)))
-				(lambda (response)
-				  "If the RESPONSE is not successful, emit it as an error message."
-				  (user-error "Error: %s" response)))
+	(tlon-ai-describe-image file (lambda (response info)
+				       (if response
+					   (with-current-buffer (marker-buffer pos)
+					     (goto-char pos)
+					     (tlon-md-insert-attribute-value "alt" response))
+					 (user-error "Error: %s" (plist-get info :status)))))
       (user-error "No \"Figure\" or \"OurWorldInData\" tag at point"))))
 
 (declare-function tlon-md-get-tag-pattern "tlon-md")
