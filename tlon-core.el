@@ -104,20 +104,6 @@
 	   :type development
 	   :subtype issues ; is this correct?
 	   :key "q q")
-    (:name "uqbar-front"
-	   :project "babel"
-	   :subproject "uqbar"
-	   :abbrev "uqbar-front"
-	   :type development
-	   :subtype front
-	   :key "q f")
-    (:name "uqbar-api"
-	   :project "babel"
-	   :subproject "uqbar"
-	   :abbrev "uqbar-api"
-	   :type development
-	   :subtype api
-	   :key "q a")
     (:name "uqbar-ar"
 	   :project "babel"
 	   :subproject "uqbar"
