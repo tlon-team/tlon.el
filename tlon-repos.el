@@ -71,7 +71,7 @@ database. To track these repos, use `tlon-forge-track-missing-repos'."
 	(count 0))
     (dolist (repo repos)
       (unless (file-exists-p repo)
-	(vc-extras-clone-repo "tlon-team" (tlon-repo-lookup :name :dir repo) 'no-forge)
+	(vc-extras-clone-repo (tlon-repo-lookup :name :dir repo) "tlon-team" 'no-forge)
 	(setq count (1+ count))))
     (if (zerop count)
 	(message "No repos missing")
