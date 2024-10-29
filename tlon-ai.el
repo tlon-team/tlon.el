@@ -1070,7 +1070,7 @@ variable."
     "Summarize options"
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
     ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
-    ("s -o" "overwrite"                               tlon-abstract-overwrite-infix)
+    ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
     ("s -s" "use summarization model for summaries"   tlon-ai-infix-toggle-use-summarization-model)
     ""]
    ["Images"
