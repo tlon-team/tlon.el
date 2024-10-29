@@ -617,13 +617,6 @@ described in the `tlon-get-abstract-with-ai' docstring."
   (interactive)
   (tlon-get-abstract-with-ai file 'synopsis))
 
-(defun tlon-get-custom-text-description-with-ai (&optional file)
-  "Return a custom description of the relevant content using AI.
-If FILE is non-nil, get an abstract of its contents. Otherwise, behave as
-described in the `tlon-get-abstract-with-ai' docstring."
-  (interactive)
-  (tlon-get-abstract-with-ai file 'custom))
-
 (declare-function ebib-extras-get-file "ebib-extras")
 (defun tlon-get-abstract-with-ai-in-file (extension)
   "Return an abstract of the file with EXTENSION in the BibTeX entry at point."
@@ -647,8 +640,8 @@ described in the `tlon-get-abstract-with-ai' docstring."
 
 (defun tlon-ai-get-abstract-in-language (file language &optional type)
   "Get abstract from FILE in LANGUAGE.
-If TYPE is `synopsis', generate a synopsis. If TYPE is `custom', use a custom
-prompt. If TYPE is `abstract', nil, or any other value, generate an abstract."
+If TYPE is `synopsis', generate a synopsis. If TYPE is `abstract', nil, or any
+other value, generate an abstract."
   (if-let ((string (tlon-get-string-dwim file))
 	   (lang-2 (tlon-get-iso-code language)))
       (let ((original-buffer (current-buffer))
@@ -659,17 +652,10 @@ prompt. If TYPE is `abstract', nil, or any other value, generate an abstract."
 	(tlon-ai-get-abstract-common
 	 (pcase type
 	   ('synopsis tlon-ai-get-synopsis-prompts)
-	   ('custom (tlon-ai-set-custom-prompt lang-2))
 	   (_ tlon-ai-get-abstract-prompts))
 	 string lang-2 (tlon-get-abstract-callback key type original-buffer)))
     (message "Could not get abstract.")
     (tlon-ai-batch-continue)))
-
-(defun tlon-ai-set-custom-prompt (language)
-  "Set a custom prompt for AI text description in LANGUAGE."
-  (let* ((response (read-string "Custom prompt: "))
-	 (prompt (concat response " Here is the text" tlon-ai-string-wrapper)))
-    `((:prompt ,prompt :language ,language))))
 
 (defun tlon-ai-get-abstract-from-detected-language (file)
   "If RESPONSE is non-nil, get a summary of FILE.
@@ -693,8 +679,8 @@ the language of the string, and CALLBACK is the callback function."
 
 (defun tlon-get-abstract-callback (&optional key type buffer)
   "Process the response, taking appropriate action based on major mode.
-KEY is the BibTeX key. If TYPE is `synopsis' or `custom', copy the response to
-the kill ring. If type is `abstract', nil, or any other value, take the action
+KEY is the BibTeX key. If TYPE is `synopsis', copy the response to the kill
+ring. If type is `abstract', nil, or any other value, take the action
 appropriate for an abstract. BUFFER is the buffer where the abstract should be
 inserted; if nil, use the current buffer."
   (lambda (response info)
@@ -702,7 +688,8 @@ inserted; if nil, use the current buffer."
 	(tlon-ai-callback-fail info)
       (with-current-buffer (or buffer (current-buffer))
 	(pcase type
-	  ((or 'synopsis 'custom) (kill-new response)
+	  ('synopsis
+	   (kill-new response)
 	   (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))
 	  (_ (pcase major-mode
 	       ((or 'bibtex-mode 'ebib-entry-mode)
@@ -1065,7 +1052,6 @@ variable."
     ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
     ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
     ("s h" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
-    ("s c" "custom AI prompt"                         tlon-get-custom-text-description-with-ai)
     ""
     "Summarize options"
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
