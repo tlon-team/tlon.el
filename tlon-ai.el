@@ -1031,7 +1031,7 @@ If RESPONSE is nil, return INFO."
 
 (defun tlon-abstract-overwrite-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
-  (tlon-transient-read-symbol-choice prompt '(always prompt never)))
+  (tlon-transient-read-symbol-choice prompt '(always ask never)))
 
 (transient-define-infix tlon-abstract-overwrite-infix ()
   "Change the local value of the `tlon-abstract-overwrite' variable."

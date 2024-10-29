@@ -40,12 +40,12 @@
   "BibTeX related functionality."
   :group 'tlon)
 
-(defcustom tlon-abstract-overwrite 'prompt
+(defcustom tlon-abstract-overwrite 'ask
   "Whether to overwrite the abstract if already present."
   :type '(choice
 	  (const :tag "Always overwrite" always)
 	  (const :tag "Never overwrite" never)
-	  (const :tag "Prompt" prompt)))
+	  (const :tag "Ask" ask)))
 
 ;;;; Variables
 
