@@ -995,13 +995,13 @@ If RESPONSE is nil, return INFO."
 
 ;;;;; Menu
 
-(transient-define-infix tlon-ai-overwrite-alt-text-toggle-infix ()
+(transient-define-infix tlon-ai-infix-toggle-overwrite-alt-text ()
   "Toggle the value of `tlon-ai-overwrite-alt-text' in `ai' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-ai-overwrite-alt-text
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
 
-(transient-define-infix tlon-ai-use-summarization-model-toggle-infix ()
+(transient-define-infix tlon-ai-infix-toggle-use-summarization-model ()
   "Toggle the value of `tlon-ai-use-summarization-model' in `ai' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-ai-use-summarization-model
