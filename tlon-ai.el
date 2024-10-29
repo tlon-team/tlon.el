@@ -1077,7 +1077,6 @@ variable."
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
     ]
    ["General options"
-    ""
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)]])
 
