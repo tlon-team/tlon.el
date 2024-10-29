@@ -1057,28 +1057,7 @@ variable."
 (transient-define-prefix tlon-ai-menu ()
   "Menu for `tlon-ai'."
   :info-manual "(tlon) AI"
-  [[""
-    ("t" "translate"                                  tlon-ai-translate)
-    ("r" "rewrite"                                    tlon-ai-rewrite)
-    ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
-    ""
-    "Bibtex"
-    ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
-    ""
-    "Math"
-    ;; Create command to translate all images
-    ("m" "translate math"                             tlon-ai-translate-math)
-    ;; TODO: develop this
-    ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
-    ]
-   ["Images"
-    ("i d" "describe image"                           tlon-ai-describe-image)
-    ("i s" "set alt text"                             tlon-ai-set-image-alt-text)
-    ("i S" "set alt text in buffer"                   tlon-ai-set-image-alt-text-in-buffer)
-    ""
-    "Options"
-    ("i -o" "overwrite alt text"                      tlon-ai-overwrite-alt-text-toggle-infix)]
-   ["Summarize"
+  [["Summarize"
     ("s s" "get abstract with or without AI"          tlon-get-abstract-with-or-without-ai)
     ("s n" "get abstract without AI"                  tlon-fetch-and-set-abstract)
     ("s a" "get abstract with AI"                     tlon-get-abstract-with-ai)
@@ -1088,12 +1067,32 @@ variable."
     ("s h" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
     ("s c" "custom AI prompt"                         tlon-get-custom-text-description-with-ai)
     ""
-    "Options"
+    "Summarize options"
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
     ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
     ("s -o" "overwrite"                               tlon-abstract-overwrite-infix)
-    ("s -s" "use summarization model for summaries"   tlon-ai-use-summarization-model-toggle-infix)
+    ("s -s" "use summarization model for summaries"   tlon-ai-infix-toggle-use-summarization-model)
+    ""]
+   ["Images"
+    ("i d" "describe image"                           tlon-ai-describe-image)
+    ("i s" "set alt text"                             tlon-ai-set-image-alt-text)
+    ("i S" "set alt text in buffer"                   tlon-ai-set-image-alt-text-in-buffer)
     ""
+    "Image options"
+    ("i -o" "overwrite alt text"                      tlon-ai-infix-toggle-overwrite-alt-text)]
+   ["Misc"
+    ("t" "translate"                                  tlon-ai-translate)
+    ("r" "rewrite"                                    tlon-ai-rewrite)
+    ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
+    ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
+    ;; Create command to translate all images
+    ("m" "translate math"                             tlon-ai-translate-math)
+    ;; TODO: develop this
+    ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
+    ]
+   ["General options"
+    ""
+    ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)]])
 
 (provide 'tlon-ai)
