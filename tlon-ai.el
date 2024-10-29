@@ -68,6 +68,11 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
   :type 'boolean
   :group 'tlon-ai)
 
+(defcustom tlon-ai-edit-prompt nil
+  "Whether to edit the prompt before sending it to the AI model."
+  :type 'boolean
+  :group 'tlon-ai)
+
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -254,7 +259,8 @@ PROMPT is a formatting string containing the prompt and a slot for a string,
 which is the variable part of the prompt (e.g. the text to be summarized in a
 prompt to summarize text). FULL-MODEL is a cons cell whose car is the backend
 and whose cdr is the model."
-  (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model))))
+  (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
+	(prompt (if tlon-ai-edit-prompt (read-string prompt) prompt)))
     (cl-destructuring-bind (backend . model) full-model
       (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
 	    (gptel-model full-model))
@@ -466,7 +472,8 @@ it instead."
   (interactive)
   (let* ((file (tlon-ai-read-image-file file))
 	 (language (tlon-get-language))
-	 (prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language)))
+	 (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
+	 (prompt (if tlon-ai-edit-prompt (read-string default-prompt) default-prompt)))
     (gptel-context-add-file file)
     (gptel-request prompt
       :callback (or callback
@@ -999,6 +1006,12 @@ If RESPONSE is nil, return INFO."
   :class 'transient-lisp-variable
   :variable 'tlon-ai-use-summarization-model
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-summarization-model)))
+
+(transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
+  "Toggle the value of `tlon-ai-edit-prompt' in `ai' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-ai-edit-prompt
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-edit-prompt)))
 
 (defun tlon-ai-batch-fun-reader (prompt _ _)
   "Return a list of choices with PROMPT to be used as an `infix' reader function."
