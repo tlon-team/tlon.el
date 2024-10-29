@@ -951,9 +951,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
   [["Markdown"
     "URLs missing from database"
     ("f" "Find in file"                        tlon-prompt-to-add-missing-urls)
-    ;; commenting out the line below because the package may not be loaded
-    ;; TODO: figure out how to deal with this
-    ;; ("z" "Add with Zotra"                      zotra-extras-add-multiple-urls)
+    ("z" "Add with Zotra"                      zotra-extras-add-multiple-urls)
     ""
     "Convert to `Cite'"
     ("b" "Convert bibliography"                tlon-convert-bibliography-to-cite)
