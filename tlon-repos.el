@@ -299,6 +299,8 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
     ("r" "Untrack repo"             forge-remove-repository)
     ("R" "Reset database"           forge-reset-database)
     ""
+    ("t" "List tracked repos"       forge-list-repositories)
+    ""
     ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
     ("P" "Pull issues in all repos" tlon-pull-issues-in-all-repos)]])
 
