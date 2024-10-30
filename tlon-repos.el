@@ -279,14 +279,14 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
     ("d" "Delete local repo"        tlon-delete-local-repo)]
    ["Forge"
     ""
-    ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
-    ("P" "Pull issues in all repos" tlon-pull-issues-in-all-repos)
-    ""
     ("a" "Track repo"               forge-extras-track-repository)
     ("A" "Track all missing repos"  tlon-forge-track-missing-repos)
     ""
     ("r" "Untrack repo"             forge-remove-repository)
-    ("R" "Reset database"           forge-reset-database)]])
+    ("R" "Reset database"           forge-reset-database)
+    ""
+    ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
+    ("P" "Pull issues in all repos" tlon-pull-issues-in-all-repos)]])
 
 (provide 'tlon-repos)
 
