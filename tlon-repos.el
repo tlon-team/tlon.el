@@ -144,8 +144,8 @@ If DIR is nil, use the current directory."
   "Perform a search for STRING in the title of issues and pull requests of REPOS.
 If REPOS is nil, use a list of full the Tlön repos. By default, search in titles
 only. If FULL is non-nil, search also in the body of issues and pull requests."
-  (let* ((repos (or repos (tlon-repo-lookup-all :dir)))
-	 (matches))
+  (let ((repos (or repos (tlon-repo-lookup-all :dir)))
+	(results 0))
     (dolist (repo repos)
       (when-let* ((default-directory repo)
 		  (db (forge-db))
@@ -155,6 +155,7 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 	  (emacsql db [:create-virtual-table :if :not :exists search
 					     :using :fts5
 					     ([id haystack author date type title body])])
+	  ;; Insert issues
 	  (emacsql db
 		   (concat "insert into search "
 			   "select id, "
@@ -164,6 +165,8 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 			   "author, " forge-search-date-type " as date, "
 			   "'\"issue\"' as type, title, body "
 			   "from issue where repository = '\"" repoid "\"';"))
+
+	  ;; Insert issue comments if full search
 	  (when full
 	    (emacsql db
 		     (concat "insert into search "
@@ -175,6 +178,8 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 			     "from issue_post "
 			     "inner join issue on issue.id = issue_post.issue "
 			     "where issue.repository = '\"" repoid "\"';")))
+
+	  ;; Insert pull requests
 	  (emacsql db
 		   (concat "insert into search "
 			   "select id, "
@@ -184,27 +189,36 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 			   "author, " forge-search-date-type " as date, "
 			   "'\"pr\"' as type, title, body "
 			   "from pullreq where repository = '\"" repoid "\"';"))
+
+	  ;; Insert pull request comments if full search
 	  (when full
-	    (concat "insert into search "
-		    "select pullreq_post.pullreq, "
-		    "('\"' || replace(pullreq_post.body, '\"', ' ') || '\"') as haystack, "
-		    "pullreq_post.author, "
-		    "pullreq_post." forge-search-date-type " as date, "
-		    "'\"pr_msg\"' as type, '\"\"' as title, pullreq_post.body "
-		    "from pullreq_post "
-		    "inner join pullreq on pullreq.id = pullreq_post.pullreq "
-		    "where repository = '\"" repoid "\"';"))
-	  (let* ((magit-generate-buffer-name-function (lambda (_mode _value)
-							(format "*Forge Search Results: %s*" (slot-value repo 'name)))))
-	    (setq matches (emacsql db [:select [id author date type title body]
+	    (emacsql db
+		     (concat "insert into search "
+			     "select pullreq_post.pullreq, "
+			     "('\"' || replace(pullreq_post.body, '\"', ' ') || '\"') as haystack, "
+			     "pullreq_post.author, "
+			     "pullreq_post." forge-search-date-type " as date, "
+			     "'\"pr_msg\"' as type, '\"\"' as title, pullreq_post.body "
+			     "from pullreq_post "
+			     "inner join pullreq on pullreq.id = pullreq_post.pullreq "
+			     "where pullreq.repository = '\"" repoid "\"';")))
+
+	  (let* ((matches (emacsql db [:select [id author date type title body]
 					       :from search
 					       :where haystack :match $r1]
 				   string))
+		 (magit-generate-buffer-name-function
+		  (lambda (_mode _value)
+		    (format "*Forge Search Results: %s*" (slot-value repo 'name)))))
 	    (when matches
 	      (magit-setup-buffer #'forge-search-mode t
 		(matches matches)
-		(search-string string))))
-	  (emacsql db [:drop-table search]))))))
+		(search-string string))
+	      (setq results (1+ results))))
+	  (emacsql db [:drop-table search]))))
+    (message (if (zerop results)
+		 (format "No matches found for string \"%s\"." string)
+	       (format "Found results in %d repos." results)))))
 
 ;;;;;; Search menu
 
