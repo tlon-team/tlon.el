@@ -104,6 +104,13 @@
 	   :type development
 	   :subtype issues ; is this correct?
 	   :key "q q")
+    (:name "uqbar-audio"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-audio"
+	   :type content
+	   :subtype audio
+	   :key "q d")
     (:name "uqbar-ar"
 	   :project "babel"
 	   :subproject "uqbar"
