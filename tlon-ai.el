@@ -260,7 +260,7 @@ which is the variable part of the prompt (e.g. the text to be summarized in a
 prompt to summarize text). FULL-MODEL is a cons cell whose car is the backend
 and whose cdr is the model."
   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	(prompt (if tlon-ai-edit-prompt (read-string prompt) prompt)))
+	(prompt (if tlon-ai-edit-prompt (read-string "Prompt: " prompt) prompt)))
     (cl-destructuring-bind (backend . model) full-model
       (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
 	    (gptel-model full-model))
