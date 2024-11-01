@@ -1694,56 +1694,29 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;;;;; File uploading
 
-(declare-function tlon-upload-file-to-server "tlon-api")
 ;;;###autoload
-(defun tlon-tts-upload-audio-file-to-server (&optional file temp)
-  "Upload audio FILE to the server and delete it locally.
-If TEMP is non-nil, upload FILE to temporary server directory."
+(defun tlon-tts-move-file-to-audio-server (&optional file)
+  "Upload audio FILE to the audio repo."
   (interactive)
-  (let* ((file (or file (files-extras-read-file file)))
-	 (lang (tlon-get-language))
-	 (destination (tlon-tts-get-audio-directory lang file nil temp)))
-    (tlon-upload-file-to-server file destination 'delete-after-upload)))
+  (let* ((file (files-extras-read-file file))
+	 (lang (tlon-tts-get-current-language))
+	 (destination (file-name-concat (tlon-tts-get-audio-directory lang)
+					(file-name-nondirectory file))))
+    (rename-file file destination 0)
+    (message "Moved `%s' to `%s'." file destination)))
 
-;;;###autoload
-(defun tlon-tts-upload-audio-file-to-server-temp-dir (&optional file)
-  "Upload audio FILE to the server and delete it locally."
-  (interactive)
-  (let* ((file (or file (files-extras-read-file file))))
-    (tlon-tts-upload-audio-file-to-server file 'temp)))
-
-;;;###autoload
-(defun tlon-tts-open-audio-directory (&optional lang temp)
-  "Open the directory where the audio files for LANG are stored.
-If TEMP is non-nil, open temporary server directory."
-  (interactive)
-  (let ((lang (tlon-tts-get-current-language lang)))
-    (dired (tlon-tts-get-audio-directory lang nil 'tramp temp))))
-
-;;;###autoload
-(defun tlon-tts-open-temp-audio-directory (&optional lang)
-  "Open the temporary directory where the audio files for LANG are stored."
-  (interactive)
-  (let ((lang (tlon-tts-get-current-language lang)))
-    (tlon-tts-open-audio-directory lang 'temp)))
-
-(defun tlon-tts-get-audio-directory (lang &optional file tramp temp)
+(defun tlon-tts-get-audio-directory (&optional lang)
   "Return the directory where audio files are stored for LANG.
-If FILE is non-nil, get the bare directory from it; otherwise, prompt the user
-to select it. By default, return the direct remote path. If TRAMP is non-nil,
-return the TRAMP SSH path.
+If LANG is nil, get it from the current language process."
+  (let ((dir (tlon-repo-lookup :dir :name "uqbar-audio"))
+	(lang (tlon-tts-get-current-language lang)))
+    (file-name-concat dir lang)))
 
-If TEMP is non-nil, return temporary server directory."
-  (let ((bare-dir (if file
-		      (or (tlon-get-bare-dir file)
-			  (tlon-select-bare-dir lang))
-		    (tlon-select-bare-dir lang)))
-	(dirname (if temp (format "uqbar-%s-audio-temp" lang)
-		   (format "uqbar-%s-audio" lang)))
-	(path (if tramp
-		  "/ssh:fede@tlon.team:/home/fede/%s/%s/"
-		"fede@tlon.team:/home/fede/%s/%s/")))
-    (format path dirname bare-dir)))
+;;;###autoload
+(defun tlon-tts-open-audio-directory (&optional lang)
+  "Open the directory where the audio files for LANG are stored."
+  (interactive)
+  (dired (tlon-tts-get-audio-directory lang)))
 
 ;;;;; Cleanup
 
@@ -2791,14 +2764,14 @@ move point to the file-local variables section."
     ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
     ""
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
-   ["Files"
+   ["File processing"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
     ("x" "Truncate audio file"                     tlon-tts-truncate-audio-file)
     ""
-    "Dirs"
-    ("o" "Open dir"                                tlon-tts-open-audio-directory)
-    ("u" "Upload to dir"                           tlon-tts-upload-audio-file-to-server)]
+    "Audio repo"
+    ("o" "Open"                                    tlon-tts-open-audio-directory)
+    ("m" "Move file to"                            tlon-tts-move-file-to-audio-server)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                            tlon-tts-edit-global-abbreviations)
