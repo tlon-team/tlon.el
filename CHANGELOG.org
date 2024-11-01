@@ -4,6 +4,44 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
+* Version 1.5.15 on 2024-11-01
+** Core Changes
+*** tlon-core
+- Enhanced language support by adding Arabic, Korean and Japanese translations for bare directories
+- Fixed ~tlon-get-language~ to properly handle error cases when repo is not found
+- Added new repo "uqbar-audio" with content type audio
+
+*** tlon-tts
+- Major change in audio file handling:
+  - Removed server upload functionality
+  - Now moves files to a dedicated audio repo instead
+  - Simplified directory structure and file management
+  - Breaking change: ~tlon-tts-upload-audio-file-to-server~ replaced by ~tlon-tts-move-file-to-audio-server~
+
+** User Interface Improvements
+*** tlon-ai 
+- Added ability to edit prompts before sending to AI model with new ~tlon-ai-edit-prompt~ option
+- Improved image description functionality:
+  - Now uses gptel instead of chatgpt-shell for image handling
+  - Enhanced multilingual support with prompts in multiple languages
+- Menu reorganization:
+  - Grouped related commands together
+  - Added new general options section
+  - Renamed toggle infixes for consistency
+
+*** tlon-repos
+- Enhanced forge search functionality:
+  - Added feedback on search results
+  - Fixed issues with repos containing zero issues
+  - Added repository tracking management to menu
+  - User interface improvements in search results display
+
+** Bug Fixes and Performance Improvements
+- Multiple improvements to menu organization and command naming
+- Fixed forge search functionality to handle edge cases
+- Added support for tracking repositories and managing issues
+
+The most significant breaking changes are in the TTS module's file handling system and some command renames in the AI module. Users should particularly note the change from server uploads to local repo management for audio files.
 * Version 1.3.0 on 2024-05-02
 ** tlon-ai
   - Added functions for handling language detection and translations.
