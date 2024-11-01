@@ -616,7 +616,7 @@ is outside that repo’s directory."
   "Get the current language.
 If ERROR is non-nil, signal an error if the language is not found. Otherwise,
 return nil."
-  (let ((repo (tlon-get-repo (when error 'error))))
+  (when-let ((repo (tlon-get-repo (if error 'error t))))
     (tlon-repo-lookup :language :dir repo)))
 
 ;;;;; Lookup
