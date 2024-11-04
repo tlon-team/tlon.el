@@ -57,7 +57,9 @@ This variable only affects the behavior of
   "Model to use for summarization.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for summarization."
+use a different model for summarization. Note that the selected model should
+have a large context window, ideally larger than 1m tokens, since otherwise some
+books will not be summarized."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
