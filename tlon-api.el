@@ -60,7 +60,7 @@
   "The name of the most recent log buffer.")
 
 (defconst tlon-api-local-url
-  "https://uqbar.local.dev/"
+  "https://uqbar.local"
   "Local URL for the `uqbar' API.")
 
 ;;;; Functions
