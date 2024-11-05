@@ -125,107 +125,40 @@ If DIR is nil, use the current directory."
 
 ;;;; Search
 
-(defun tlon-forge-search-titles (string)
-  "Search for STRING in the title of the current repo."
-  (interactive "sSearch string: ")
-  (tlon-forge-search string (list default-directory) nil))
-
-(defun tlon-forge-search-titles-in-all-repos (string)
-  "Search for STRING in the title of issues in all Tlön repos."
-  (interactive "sSearch string: ")
-  (tlon-forge-search string))
-
-(defun tlon-forge-search-in-all-repos (string)
-  "Search for STRING in the title and body of issues in all Tlön repos."
-  (interactive "sSearch string: ")
-  (tlon-forge-search string nil 'full))
-
-(defun tlon-forge-search (string &optional repos full)
-  "Perform a search for STRING in the title of issues and pull requests of REPOS.
-If REPOS is nil, use a list of full the Tlön repos. By default, search in titles
-only. If FULL is non-nil, search also in the body of issues and pull requests."
+;; 2024-11-05: this is a very inefficient and inelegant approach, but my
+;; attempts to query the db directly all failed. try again with the best LLM in
+;; a few months
+(defun tlon-forge-search (string &optional repos)
+  "Search for STRING in Tlön REPOS.
+If REPOS is nil, search in all tracked repos."
   (save-selected-window
-    ;; we call the function from the uqbar repo because the search fails if the
-    ;; command is invoked from a repo containing zero issues
-    (let* ((uqbar-buffer-exists (get-buffer (format "magit: uqbar")))
-	   (repos (or repos (tlon-repo-lookup-all :dir)))
-	   (results 0))
-      (magit-status-setup-buffer (tlon-repo-lookup :dir :name "uqbar"))
-      (dolist (repo repos)
-	(when-let* ((default-directory repo)
-		    (db (forge-db))
-		    (repo (forge-get-repository ':tracked?))
-		    (repoid (slot-value repo 'id)))
-	  (emacsql-with-transaction db
-	    (emacsql db [:create-virtual-table :if :not :exists search
-					       :using :fts5
-					       ([id haystack author date type title body])])
-	    ;; Insert issues
-	    (emacsql db
-		     (concat "insert into search "
-			     "select id, "
-			     (if full
-				 "('\"' || replace(title, '\"', ' ') || ' ' || replace(body, '\"', ' ') || '\"') as haystack, "
-			       "('\"' || replace(title, '\"', ' ') || '\"') as haystack, ")
-			     "author, " forge-search-date-type " as date, "
-			     "'\"issue\"' as type, title, body "
-			     "from issue where repository = '\"" repoid "\"';"))
-
-	    ;; Insert issue comments if full search
-	    (when full
-	      (emacsql db
-		       (concat "insert into search "
-			       "select issue_post.issue, "
-			       "('\"' || replace(issue_post.body, '\"', ' ') || '\"') as haystack, "
-			       "issue_post.author, "
-			       "issue_post." forge-search-date-type " as date, "
-			       "'\"issue_msg\"' as type, '\"\"' as title, issue_post.body "
-			       "from issue_post "
-			       "inner join issue on issue.id = issue_post.issue "
-			       "where issue.repository = '\"" repoid "\"';")))
-
-	    ;; Insert pull requests
-	    (emacsql db
-		     (concat "insert into search "
-			     "select id, "
-			     (if full
-				 "('\"' || replace(title, '\"', ' ') || ' ' || replace(body, '\"', ' ') || '\"') as haystack, "
-			       "('\"' || replace(title, '\"', ' ') || '\"') as haystack, ")
-			     "author, " forge-search-date-type " as date, "
-			     "'\"pr\"' as type, title, body "
-			     "from pullreq where repository = '\"" repoid "\"';"))
-
-	    ;; Insert pull request comments if full search
-	    (when full
-	      (emacsql db
-		       (concat "insert into search "
-			       "select pullreq_post.pullreq, "
-			       "('\"' || replace(pullreq_post.body, '\"', ' ') || '\"') as haystack, "
-			       "pullreq_post.author, "
-			       "pullreq_post." forge-search-date-type " as date, "
-			       "'\"pr_msg\"' as type, '\"\"' as title, pullreq_post.body "
-			       "from pullreq_post "
-			       "inner join pullreq on pullreq.id = pullreq_post.pullreq "
-			       "where pullreq.repository = '\"" repoid "\"';")))
-
-	    (let* ((matches (emacsql db [:select [id author date type title body]
-						 :from search
-						 :where haystack :match $r1]
-				     string))
-		   (magit-generate-buffer-name-function
-		    (lambda (_mode _value)
-		      (format "*Forge Search Results: %s*" (slot-value repo 'name)))))
-	      (when matches
-		(magit-setup-buffer #'forge-search-mode t
-		  (matches matches)
-		  (search-string string))
-		(setq results (1+ results))))
-	    (emacsql db [:drop-table search]))))
-      (unless uqbar-buffer-exists
-	(kill-buffer (get-buffer (format "magit: uqbar"))))
-      (message (if (zerop results)
-		   (format "No matches found for string \"%s\"." string)
-		 (format "Found results in %d repos." results))))))
+    ;; First kill any existing search results buffers
+    (dolist (buffer (buffer-list))
+      (when (string-match "\\/Forge Search Results\\*" (buffer-name buffer))
+        (kill-buffer buffer)))
+    (let ((repos (or repos (tlon-repo-lookup-all :dir)))
+          (results 0)
+          (start-time (current-time)))
+      (message "Running search... (it may take a few seconds)")
+      (shut-up
+        (dolist (repo repos)
+          (let ((default-directory repo)
+                (magit-buffer-existed (get-buffer (format "magit: %s"
+                                                          (file-name-nondirectory (directory-file-name repo))))))
+            (magit-status-setup-buffer repo)
+            (when (forge-get-repository ':tracked?)
+              (forge-search string))
+            (unless magit-buffer-existed
+              (kill-buffer (get-buffer (format "magit: %s"
+                                               (file-name-nondirectory (directory-file-name repo)))))))))
+      ;; Count result buffers at the end
+      (setq results (length (seq-filter (lambda (buf)
+                                          (string-match "\\*Forge Search Results\\*" (buffer-name buf)))
+					(buffer-list))))
+      (let ((elapsed (float-time (time-subtract (current-time) start-time))))
+        (message (if (zerop results)
+                     (format "No matches found for string \"%s\" (%.2f seconds)." string elapsed)
+                   (format "Found results in %d repos (%.2f seconds)." results elapsed)))))))
 
 ;;;;;; Search menu
 
@@ -240,12 +173,8 @@ only. If FULL is non-nil, search also in the body of issues and pull requests."
 	 :if forge--get-github-repository)
 	("c f" "fork or remote"    forge-fork)]
        ["Search"
-	"full"
 	("s s" "this repo"      forge-search)
-	("s a" "all repos"      tlon-forge-search-in-all-repos)
-	"titles only"
-	("s S" "this repo"      tlon-forge-search-titles)
-	("s A" "all repos"      tlon-forge-search-titles-in-all-repos)]]
+	("s a" "all repos"      tlon-forge-search-in-all-repos)]]
   [:if forge--get-repository:tracked?
        ["List"
 	("t" "topics...         "  forge-topics-menu        :transient replace)
