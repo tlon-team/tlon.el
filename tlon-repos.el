@@ -128,9 +128,11 @@ If DIR is nil, use the current directory."
 ;; 2024-11-05: this is a very inefficient and inelegant approach, but my
 ;; attempts to query the db directly all failed. try again with the best LLM in
 ;; a few months
+;;;###autoload
 (defun tlon-forge-search (string &optional repos)
   "Search for STRING in Tlön REPOS.
 If REPOS is nil, search in all tracked repos."
+  (interactive "sSearch string: ")
   (save-selected-window
     ;; First kill any existing search results buffers
     (dolist (buffer (buffer-list))
@@ -174,7 +176,7 @@ If REPOS is nil, search in all tracked repos."
 	("c f" "fork or remote"    forge-fork)]
        ["Search"
 	("s s" "this repo"      forge-search)
-	("s a" "all repos"      tlon-forge-search-in-all-repos)]]
+	("s a" "all repos"      tlon-forge-search)]]
   [:if forge--get-repository:tracked?
        ["List"
 	("t" "topics...         "  forge-topics-menu        :transient replace)
