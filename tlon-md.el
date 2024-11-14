@@ -414,7 +414,7 @@ If no section is found, do nothing."
   (let ((pattern (tlon-md-format-tag tag nil 'get-match-string)))
     (thing-at-point-looking-at pattern)))
 
-(defun tlon-md-edit-tag (&optional values content format)
+(defun tlon-md-edit-tag (&optional values format)
   "Edit tag at point.
 Optionally, set the attribute VALUES and the tag CONTENT. FORMAT is one of
 `get-match-string', `get-placeholders', `get-values', `insert-values', or
@@ -425,10 +425,18 @@ filled with placeholders. If `get-values', return it filled with VALUES. If
 `insert-values', insert it filled with VALUES. If `insert-prompt', prompt the
 user to insert VALUES."
   (let* ((tag (tlon-get-tag-at-point))
-	 (values (or values (tlon-get-tag-attribute-values tag)))
-	 (content (or content (match-string 2))))
-    (replace-match "")
-    (tlon-md-return-tag tag values content format)))
+         (pattern (tlon-md-get-tag-pattern tag)))
+    ;; Re-scan to get fresh match data
+    (goto-char (line-beginning-position))
+    (when (re-search-forward pattern (line-end-position) t)
+      (let* ((existing-values (or values (tlon-get-tag-attribute-values tag)))
+             (content (match-string-no-properties 2))
+             (beg (match-beginning 0))
+             (end (match-end 0)))
+        ;; Store positions before we lose match data
+        (delete-region beg end)
+        (goto-char beg)
+        (tlon-md-return-tag tag existing-values content format)))))
 
 (defun tlon-md-set-tag-attribute-value (tag attribute value)
   "Set the VALUE of ATTRIBUTE for TAG."
@@ -441,7 +449,7 @@ user to insert VALUES."
   "Insert an ATTRIBUTE VALUE in the tag at point.
 If the tag already contains an attribute with the same name, replace its value."
   (let ((tag (tlon-get-tag-at-point)))
-    (tlon-md-edit-tag (tlon-md-set-tag-attribute-value tag attribute value) nil 'insert-values)))
+    (tlon-md-edit-tag (tlon-md-set-tag-attribute-value tag attribute value) 'insert-values)))
 
 (defun tlon-md-return-tag (tag &optional values content format)
   "Return a TAG or TAG pair at point or around the selected region.
@@ -535,7 +543,11 @@ values."
   (let* ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag))
 	 (groups (mapcar (lambda (attribute)
 			   (plist-get attribute :group))
-			 attributes)))
+                         (if values
+                             (seq-filter (lambda (attr)
+                                           (plist-get attr :valued))
+					 attributes)
+                           attributes))))
     (if values (mapcar #'1+ groups) groups)))
 
 (defun tlon-get-tag-attribute-names (tag)
@@ -548,9 +560,16 @@ values."
 (defun tlon-get-tag-attribute-values (tag)
   "Return a list of all attribute values of TAG at point."
   (when (tlon-looking-at-tag-p tag)
-    (mapcar (lambda (group)
-	      (match-string-no-properties group))
-	    (tlon-get-tag-groups tag 'values))))
+    (let* ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag))
+           values)
+      (dolist (attr attributes values)
+        (let* ((group (plist-get attr :group))
+               (valued (plist-get attr :valued))
+               (value (if valued
+                          (match-string-no-properties (1+ group))  ; value group
+			(match-string-no-properties group))))      ; attribute group
+          (push value values)))
+      (nreverse values))))
 
 (defun tlon-md-lookup-tag-attribute-property (tag name property)
   "For the attribute named NAME in TAG, return the value of the PROPERTY."
@@ -711,7 +730,7 @@ Prompt the user to select a URL."
 (defun tlon-md-math-display-reader ()
   "Prompt the user to set the display attribute for a `Math' tag."
   (let ((display (completing-read "Type? " '("inline" "display"))))
-    (if (string= display "display") " display" "")))
+    (concat " " display)))
 
 ;;;###autoload
 (defun tlon-mdx-insert-our-world-in-data ()
