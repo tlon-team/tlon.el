@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'tlon)
+(require 'transient)
 
 ;;;; Variables
 
