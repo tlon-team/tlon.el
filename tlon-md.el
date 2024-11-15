@@ -571,6 +571,19 @@ values."
           (push value values)))
       (nreverse values))))
 
+;; Not currently used, but might come handy
+(defun tlon-md-goto-tag-attribute-value (tag attribute)
+  "When point is on TAG, move to beginning of ATTRIBUTE value and return it."
+  (interactive)
+  (when (tlon-looking-at-tag-p tag)
+    (let* ((group (1+ (tlon-md-lookup-tag-attribute-property tag attribute :group))))
+      (when-let* ((values (tlon-get-tag-attribute-values tag))
+                  (value (car values))
+                  (pattern (tlon-md-format-attribute-with-placeholder tag attribute 'capture)))
+        (re-search-backward (format pattern value) nil t)
+        (goto-char (match-beginning group))
+        value))))
+
 (defun tlon-md-lookup-tag-attribute-property (tag name property)
   "For the attribute named NAME in TAG, return the value of the PROPERTY."
   (let ((attributes (tlon-lookup tlon-tag-specs :attributes :tag tag)))
