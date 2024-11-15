@@ -721,11 +721,12 @@ Prompt the user to select a URL."
   (interactive)
   (tlon-md-insert-or-edit-tag "LiteralLink"))
 
-;; TODO: create command to set alt text; integrate with AI
+;;;###autoload
 (defun tlon-mdx-insert-math ()
   "Insert an `Math' tag pair of TYPE at point or around the selected region."
   (interactive)
-  (tlon-md-insert-or-edit-tag "Math"))
+  (tlon-md-insert-or-edit-tag "Math")
+  (message "To set the “alt” text with AI, call `tlon-ai-translate-math' (`H-r a m')."))
 
 (defun tlon-md-math-display-reader ()
   "Prompt the user to set the display attribute for a `Math' tag."
