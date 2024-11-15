@@ -879,15 +879,36 @@ Separate the original line and the transcription with a comma."
 
 ;;;;; Math
 
-(defun tlon-ai-translate-math (expression language)
-  "Insert the natural LANGUAGE translation of the mathematical EXPRESSION.
-LANGUAGE is a two-letter ISO 639-1 code. The string is inserted at the point the
-request was sent."
-  (interactive (list (read-string "Math expression: "
-				  (buffer-substring-no-properties (region-beginning) (region-end)))
-		     (tlon-get-language)))
-  (let ((prompt (tlon-lookup tlon-ai-translate-math-prompt :prompt :language language)))
-    (tlon-make-gptel-request prompt expression #'tlon-ai-callback-insert)))
+(declare-function tlon-looking-at-tag-p "tlon-md")
+(defun tlon-ai-translate-math (&optional expression language)
+  "Generate the natural LANGUAGE translation of the mathematical EXPRESSION.
+If EXPRESSION is nil, prompt the user for it. As initial input, use the region,
+if active, or the contents of the `Math' tag at point, if any. LANGUAGE is a
+two-letter ISO 639-1 code.
+
+If point is on a `Math' tag, insert the string as the value of the `alt'
+attribute. Otherwise, print and copy the string to the kill ring."
+  (interactive)
+  (let* ((expression (or expression
+			 (read-string "Math expression to translate: "
+				      (if (region-active-p)
+					  (buffer-substring-no-properties (region-beginning) (region-end))
+					(when (tlon-looking-at-tag-p "Math")
+					  (match-string-no-properties 2))))))
+	 (language (or language (tlon-get-language) (tlon-select-language 'code)))
+	 (prompt (tlon-lookup tlon-ai-translate-math-prompt :prompt :language language)))
+    (tlon-make-gptel-request prompt expression #'tlon-ai-insert-math-alt-text)
+    (message "Generating translation...")))
+
+(defun tlon-ai-insert-math-alt-text (response info)
+  "Insert RESPONSE as the value of the `alt' attribute of the `Math' tag at point.
+If RESPONSE is nil, return INFO."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (if (tlon-looking-at-tag-p "Math")
+	(tlon-md-insert-attribute-value "alt" response)
+      (kill-new response)
+      (message response))))
 
 ;;;;; Docs
 
