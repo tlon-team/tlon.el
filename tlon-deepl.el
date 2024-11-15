@@ -72,6 +72,12 @@ The cdr of each cons cell is a list of the form
 (defvar tlon-deepl-text nil
   "The text to be translated in the current API request.")
 
+(defconst tlon-deepl-supported-glossary-languages
+  '("da" "de" "en" "es" "fr" "it" "ja" "ko" "nb" "nl" "pl" "pt" "ro" "ru" "sv" "zh")
+  "A list of the languages for which glossaries are currently supported.
+See <https://developers.deepl.com/docs/api-reference/glossaries> for the
+official source.")
+
 ;;;; Functions
 
 ;;;###autoload
