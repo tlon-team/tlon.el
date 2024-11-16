@@ -75,7 +75,7 @@ database. To track these repos, use `tlon-forge-track-missing-repos'."
 	(setq count (1+ count))))
     (if (zerop count)
 	(message "No repos missing")
-      (message "Cloned %d missing repos" count))))
+      (message "Cloning %d missing repos" count))))
 
 ;;;###autoload
 (defun tlon-delete-local-repo (name)
