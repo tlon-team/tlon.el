@@ -1045,7 +1045,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should probably be before `tlon-tts-process-listener-cues'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
-    (tlon-tex-replace-keys-with-citations nil 'audio)
+    (tlon-tex-replace-keys-with-citations nil 'audio) ; should be before `tlon-tts-escape-xml-special-characters'
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
     (tlon-tts-process-formatting) ; should be before `tlon-tts-process-paragraphs'
@@ -1063,7 +1063,8 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     ;; correct value when run with the `phoneme' tag. Fixing it is not a
     ;; priority because Elevenlabs does not support this tag anyway.
     (tlon-tts-process-unsupported-ssml-tags)
-    (tlon-tts-remove-extra-newlines)))
+    (tlon-tts-remove-extra-newlines)
+    (tlon-tts-escape-xml-special-characters)))
 
 ;;;;; Narrate
 
@@ -2538,6 +2539,26 @@ See the end of the `tlon-tts-supported-tags' docstring for details."
   (goto-char (point-min))
   (while (re-search-forward "\n\\{3,\\}" nil t)
     (replace-match "\n\n" t t)))
+
+;;;;;; Escape xml special chars
+
+(defun tlon-tts-escape-xml-special-characters ()
+  "Escape XML special characters in the current buffer for SSML."
+  (let ((escaped-content (tlon-tts-escape-xml-special-characters-in-text (buffer-string))))
+    (erase-buffer)
+    (insert escaped-content)))
+
+(defun tlon-tts-escape-xml-special-characters-in-text (text)
+  "Escape XML special characters in TEXT for SSML."
+  (replace-regexp-in-string "[&<>\"']"
+                            (lambda (match)
+                              (pcase match
+                                ("&" "&amp;")
+                                ("<" "&lt;")
+                                (">" "&gt;")
+                                ("\"" "&quot;")
+                                ("'" "&apos;")))
+                            text))
 
 ;;;;; Global
 
