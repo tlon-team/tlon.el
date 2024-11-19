@@ -153,13 +153,14 @@ If CALLBACK is nil, use the default callback for TYPE."
 If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
 `tlon-deepl-print-translation'."
   (interactive)
-  (let ((text (or text
+  (let ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: ")))
+	(target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: ")))
+	(text (or text
 		  (read-string "Text to translate: "
 			       (when (region-active-p)
-				 (buffer-substring-no-properties (region-beginning) (region-end))))))
-	(target-lang (or target-lang (tlon-select-language 'code 'babel))))
+				 (buffer-substring-no-properties (region-beginning) (region-end)))))))
     (setq tlon-deepl-text text
-	  tlon-deepl-source-language (or source-lang "en")
+	  tlon-deepl-source-language source-lang
 	  tlon-deepl-target-language target-lang)
     (tlon-deepl-request-wrapper 'translate callback)))
 
