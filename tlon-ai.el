@@ -53,7 +53,7 @@ This variable only affects the behavior of
   :group 'tlon-ai)
 
 (defcustom tlon-ai-summarization-model
-  '("Gemini" . gemini-1.5-flash)
+  '("Claude" . claude-3-5-haiku-20241022)
   "Model to use for summarization.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
