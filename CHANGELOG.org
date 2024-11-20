@@ -4,6 +4,44 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
+* Verion 1.6.1 on 2024-11-19
+** AI and Language Models
+*** tlon-ai
+- Changed default summarization model from Gemini to Claude Haiku
+- Added functionality to insert math translations as alt text values
+- Fixed and improved math translation features
+
+*** deepl
+- Added prompting for both source and target languages in ~tlon-deepl-translate~
+- Added support for glossary languages with new constant ~tlon-deepl-supported-glossary-languages~
+
+** Git and Repository Management
+*** tlon-repos
+- Added ~tlon-unlock-uqbar-git-crypt~ function and menu item for unlocking git-crypt repos
+- Updated ~tlon-forge-search~ functionality to be more efficient
+- Fixed async behavior messaging for cloning repos
+
+*** forge
+- Revised Forge menu structure and search functionality
+- Improved cross-repo search capabilities
+
+** Infrastructure and Core
+*** tlon-core
+- Added new prompt argument to ~tlon-select-language~ for more flexible language selection
+
+*** tlon-api
+- Updated local URL from "https://uqbar.local.dev/" to "https://uqbar.local"
+
+** Text Processing and Markdown
+*** tlon-md
+- Improved handling of non-valued attributes in tags
+- Added functionality to work with tag attribute values
+- Fixed tag editing functionality
+
+*** tlon-tts
+- Added XML special character escaping functionality for SSML
+- Updated text processing pipeline order
+
 * Version 1.5.15 on 2024-11-01
 ** Core Changes
 *** tlon-core
