@@ -594,8 +594,8 @@ an error if the repo is not found. Otherwise, return nil."
 (declare-function files-extras-get-nth-directory "files-extras")
 (defun tlon-get-repo-from-dir (dir)
   "Return the repo to which DIR belongs.
-This function is meant to handles cases in which the `.git' directory of a repo
-is outside that repo’s directory."
+This function correctly handles cases in which the `.git' directory of a repo is
+outside that repo’s directory."
   (let ((dir-cands
 	 (mapcar (lambda (repo-dir)
 		   (string-trim
