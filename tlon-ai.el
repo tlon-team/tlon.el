@@ -633,7 +633,7 @@ In all the above cases, the AI will first look for an existing abstract and, if
 it finds one, use it. Otherwise it will create an abstract from scratch.."
   (interactive)
   (if (tlon-abstract-may-proceed-p)
-      (if-let ((language (or (tlon-ai-get-language-in-file file)
+      (if-let ((language (or (tlon-get-language-in-mode)
 			     (unless tlon-ai-batch-fun
 			       (tlon-select-language)))))
 	  (tlon-ai-get-abstract-in-language file language type)
@@ -775,19 +775,6 @@ inserted; if nil, use the current buffer."
       (save-buffer))))
 
 ;;;;; Language detection
-
-(declare-function bibtex-extras-get-field "bibtex-extras")
-(defun tlon-ai-get-language-in-file (&optional file)
-  "Return the language in FILE, based on the major mode.
-If FILE is nil, get the language in the current buffer or entry, depending on
-the major mode."
-  (pcase major-mode
-    ('ebib-entry-mode (ebib-extras-get-field "langid"))
-    ('bibtex-mode (bibtex-extras-get-field "langid"))
-    ('markdown-mode
-     (let* ((file (or file (buffer-file-name)))
-	    (repo (tlon-get-repo-from-file file)))
-       (tlon-repo-lookup :language :dir repo)))))
 
 (defun tlon-ai-detect-language-in-file (&optional file callback)
   "Detect the language in FILE and call CALLBACK.

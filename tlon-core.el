@@ -798,6 +798,18 @@ an error if the language is not found. Otherwise, return nil."
   (when-let* ((file (or file (buffer-file-name)))
 	      (repo (tlon-get-repo-from-file file error)))
     (tlon-repo-lookup :language :dir repo)))
+
+(declare-function ebib-extras-get-field "ebib-extras")
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(defun tlon-get-language-in-mode ()
+  "Return the language in the current major mode.
+The language is returned in standard format."
+  (pcase major-mode
+    ('ebib-entry-mode (ebib-extras-get-field "langid"))
+    ('bibtex-mode (bibtex-extras-get-field "langid"))
+    ('markdown-mode (let ((code (tlon-get-language-in-file (buffer-file-name))))
+		      (tlon-lookup tlon-languages-properties :standard :code code)))))
+
 (defun tlon-validate-language (language &optional format)
   "If LANGUAGE is a valid language, return it.
 The validation is case-insensitive, but the returned language is in lowercase.
