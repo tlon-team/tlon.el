@@ -214,6 +214,19 @@ If REPOS is nil, search in all tracked repos."
 
 (advice-add 'forge-dispatch :override #'tlon-forge-menu)
 
+;;;;; git-crypt
+
+(declare-function pass-extras-git-crypt-unlock "pass-extras")
+(defun tlon-unlock-uqbar-git-crypt ()
+  "Unlock `uqbar' git-crypt repos."
+  (interactive)
+  (require 'pass-extras)
+  (let ((uqbar-dir (tlon-repo-lookup :dir :name "uqbar")))
+    (dolist (repo-name '("uqbar-api" "uqbar-front"))
+      (let ((repo-dir (file-name-concat uqbar-dir repo-name))
+	    (entry (concat "tlon/core/git-crypt/" repo-name)))
+	(pass-extras-git-crypt-unlock repo-dir entry)))))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
@@ -228,7 +241,9 @@ If REPOS is nil, search in all tracked repos."
     ""
     ("s" "Split local repo"         vc-extras-split-local-repo)
     ""
-    ("d" "Delete local repo"        tlon-delete-local-repo)]
+    ("d" "Delete local repo"        tlon-delete-local-repo)
+    ""
+    ("u" "Unlock uqbar git-crypt"   tlon-unlock-uqbar-git-crypt)]
    ["Forge"
     ""
     ("a" "Track repo"               forge-extras-track-repository)
