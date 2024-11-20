@@ -609,16 +609,6 @@ is outside that repo’s directory."
 	(when-let ((repo-dir (tlon-repo-lookup :dir :name dir-cand)))
 	  (throw 'found repo-dir))))))
 
-;;;;; Get language
-
-;; TODO: we also have `tlon-translation-language'; think about what to do
-(defun tlon-get-language (&optional error)
-  "Get the current language.
-If ERROR is non-nil, signal an error if the language is not found. Otherwise,
-return nil."
-  (when-let ((repo (tlon-get-repo (if error 'error t))))
-    (tlon-repo-lookup :language :dir repo)))
-
 ;;;;; Lookup
 
 ;;;;;; Common
@@ -794,12 +784,20 @@ buffer."
   (if (cdr list)
       (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
 	    (last (car (last list)))
-	    (conjunct (tlon-lookup tlon-tts-conjuncts :conjunct :language (tlon-get-language))))
+	    (conjunct (tlon-lookup tlon-tts-conjuncts :conjunct :language (tlon-get-language-in-file))))
 	(format "%s %s %s" all-but-last conjunct last))
     (car list)))
 
 ;;;;; language
 
+;; TODO: we also have `tlon-translation-language'; think about what to do
+(defun tlon-get-language-in-file (&optional file error)
+  "Get the two-letter ISO 639-1 language code in FILE.
+If FILE is nil, use the current buffer's file name. If ERROR is non-nil, signal
+an error if the language is not found. Otherwise, return nil."
+  (when-let* ((file (or file (buffer-file-name)))
+	      (repo (tlon-get-repo-from-file file error)))
+    (tlon-repo-lookup :language :dir repo)))
 (defun tlon-validate-language (language &optional format)
   "If LANGUAGE is a valid language, return it.
 The validation is case-insensitive, but the returned language is in lowercase.
@@ -1007,7 +1005,7 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
   "Return the decimal separator for LANGUAGE.
 TYPE is either `thousands' or `decimal'. If LANGUAGE is nil, use the language of
 the current repository."
-  (when-let* ((language (or language (tlon-get-language)))
+  (when-let* ((language (or language (tlon-get-language-in-file)))
 	      (separators '("," "."))
 	      (en (pcase type ('thousands ",") ('decimal ".")))
 	      (rest (lambda () (car (remove en separators)))))

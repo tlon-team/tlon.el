@@ -171,7 +171,7 @@
 
 (defun tlon-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
-  (let ((language (tlon-get-language)))
+  (let ((language (tlon-get-language-in-file)))
     (when (member language '("en" "es")) ; usage varies across languages
       (tlon-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([,\\.:;\\?!]\\)")
 		    "\\1\\3\\2")

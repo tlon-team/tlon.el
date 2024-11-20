@@ -168,7 +168,7 @@ If FILE is nil, use the file visited by the current buffer."
   "Export FILE to Google Drive.
 If FILE is nil, export the file visited by the current buffer."
   (interactive)
-  (let* ((dir-id (alist-get (tlon-get-language 'error)
+  (let* ((dir-id (alist-get (tlon-get-language-in-file file 'error)
 			    tlon-count-gdrive-directory-ids nil nil 'string=))
 	 (output (shell-command (format "gdrive files import %s --parent %s" file dir-id)))
 	 (url (format "https://drive.google.com/drive/folders/%s" dir-id)))

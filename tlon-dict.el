@@ -36,7 +36,7 @@
 (defun tlon-reverso-get-synonyms ()
   "Advice to enforce that language is always the current language."
   (interactive)
-  (let ((language (tlon-lookup tlon-languages-properties :name :code (tlon-get-language)))
+  (let ((language (tlon-lookup tlon-languages-properties :name :code (tlon-get-language-in-file)))
 	(text (read-string "Word:" (thing-at-point 'word))))
     (reverso--get-synonyms text (intern language)
 			   (lambda (data)
