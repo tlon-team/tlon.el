@@ -582,16 +582,14 @@ property `:type'."
 					   (if include-all all content)))))))
 
 (declare-function files-extras-buffer-file-name "files-extras")
-(defun tlon-get-repo-from-file (&optional file)
+(defun tlon-get-repo-from-file (&optional file error)
   "Return the repo to which FILE belongs.
-If FILE is nil, use the current buffer's file name."
-  (let* ((file (or file (files-extras-buffer-file-name) default-directory))
-	 (directory-path (file-name-directory file)))
-    (catch 'found
-      (dolist (dir (tlon-repo-lookup-all :dir))
-	(when (string-prefix-p (file-name-as-directory dir)
-			       directory-path)
-	  (throw 'found dir))))))
+If FILE is nil, use the current buffer's file name. If ERROR is non-nil, signal
+an error if the repo is not found. Otherwise, return nil."
+  (let* ((file (or file (files-extras-buffer-file-name) default-directory)))
+    (if-let ((repo (tlon-get-repo-from-dir (file-name-directory file))))
+	repo
+      (when error (user-error "Not in a recognized Babel repo")))))
 
 (declare-function files-extras-get-nth-directory "files-extras")
 (defun tlon-get-repo-from-dir (dir)
