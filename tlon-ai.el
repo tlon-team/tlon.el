@@ -489,7 +489,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 By default, print the description in the minibuffer. If CALLBACK is non-nil, use
 it instead."
   (interactive)
-  (let* ((file (tlon-ai-read-image-file file))
+  (let* ((previous-context gptel-context--alist)
+	 (file (tlon-ai-read-image-file file))
 	 (language (tlon-get-language))
 	 (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
 	 (prompt (tlon-ai-maybe-edit-prompt default-prompt)))
@@ -497,10 +498,10 @@ it instead."
     (gptel-request prompt
       :callback (or callback
 		    (lambda (response info)
+		      (setq gptel-context--alist previous-context)
 		      (if response
 			  (message response)
-			(user-error "Error: %s" (plist-get info :status)))
-		      (setq gptel-context--alist nil))))))
+			(user-error "Error: %s" (plist-get info :status))))))))
 
 (declare-function tlon-get-tag-attribute-values "tlon-md")
 (declare-function tlon-md-insert-attribute-value "tlon-md")
