@@ -126,6 +126,17 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
   (format "Por favor, genera las mejores diez variantes del siguiente texto castellano:%s. Por favor, devuelve todas las variantes en una única linea, separadas por '|'. No insertes un espacio ni antes ni después de '|'. No agregues ningún comentario aclaratorio: solo necesito la lista de variantes. A modo de ejemplo, para la expresión 'búsqueda de poder' el texto a devolver sería: 'ansia de poder|ambición de poder|búsqueda de autoridad|sed de poder|afán de poder|aspiración de poder|anhelo de poder|deseo de control|búsqueda de dominio|búsqueda de control' (esta lista solo pretende ilustrar el formato en que debes presentar tu respuesta). Gracias!" tlon-ai-string-wrapper)
   "Prompt for rewriting.")
 
+;;;;; File comparison
+
+;; this should be a general category that compares an original file and its
+;; translation, and admits of specific prompts, with ‘fix formatting’ being one
+;; of these species
+
+;; this does not need to be translated
+(defconst tlon-ai-fix-markdown-format-prompt
+  `((:prompt "Please take a look at the two Markdown files attached: `%1$s' and `%2$s'. `%1$s' is the original and `%2$s' is its translation. In the translation, some of the original formatting (which includes not only Markdown elements but potentially HTML components and SSML tags) has been lost or altered. What I want you to do is to generate a new translation file with all the original formatting restored. Please look closely at the original and, every time you find a formatting element, locate the corresponding text in the translation and apply exactly the same formatting. If you find content in one of the files not present in the other, such as a YAML section at the beginning or a footnotes section at the end, just ignore them. Return a single string with the entire file correctly formatted. Do not ask for confirmation; just return the complete formatted translation file. Thank you!"
+	     :language "en")))
+
 ;;;;; Image description
 
 (defconst tlon-ai-describe-image-prompt
@@ -547,6 +558,36 @@ Otherwise, construct a local file path from SRC and return it."
 	file)
     (file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
 		      (replace-regexp-in-string "^\\.\\./" "" src))))
+
+;;;;; File comparison
+
+;;;;;; Fix formatting
+
+;;;###autoload
+(defun tlon-ai-fix-markdown-format (original translation &optional callback)
+  "Fix the Markdown format in TRANSLATION by copying the format in ORIGINAL.
+The file with the fixed format will be saved in the same directory as
+TRANSLATION."
+  (interactive (list (read-file-name "Original file: ")
+		     (read-file-name "Translation file: ")))
+  (let* ((previous-context gptel-context--alist)
+	 (default-prompt (format
+			  (tlon-lookup tlon-ai-fix-markdown-format-prompt :prompt :language "en")
+			  (file-name-nondirectory original) (file-name-nondirectory translation)))
+	 (prompt (tlon-ai-maybe-edit-prompt default-prompt))
+	 (fixed-file-path (concat (file-name-sans-extension translation) "--fixed.md")))
+    (mapc #'gptel-context-add-file (list original translation))
+    (message "Fixing the format of `%s'..." (file-name-nondirectory translation))
+    (gptel-request prompt
+      :callback (or callback
+		    (lambda (response info)
+		      (setq gptel-context--alist previous-context)
+		      (if response
+			  (with-temp-buffer
+			    (insert response)
+			    (write-region (point-min) (point-max) fixed-file-path)
+			    (find-file fixed-file-path))
+			(user-error "Error: %s" (plist-get info :status))))))))
 
 ;;;;; Summarization
 
@@ -1090,12 +1131,14 @@ variable."
     "Image options"
     ("i -o" "overwrite alt text"                      tlon-ai-infix-toggle-overwrite-alt-text)]
    ["Misc"
-    ("t" "translate"                                  tlon-ai-translate)
-    ("r" "rewrite"                                    tlon-ai-rewrite)
-    ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
-    ;; Create command to translate all images
+    ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
+    ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
     ("m" "translate math"                             tlon-ai-translate-math)
+    ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
+    ("r" "rewrite"                                    tlon-ai-rewrite)
+    ("t" "translate"                                  tlon-ai-translate)
+    ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
     ]
