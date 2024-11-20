@@ -134,7 +134,7 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
 
 ;; this does not need to be translated
 (defconst tlon-ai-fix-markdown-format-prompt
-  `((:prompt "Please take a look at the two Markdown files attached: `%1$s' and `%2$s'. `%1$s' is the original and `%2$s' is its translation. In the translation, some of the original formatting (which includes not only Markdown elements but potentially HTML components and SSML tags) has been lost or altered. What I want you to do is to generate a new translation file with all the original formatting restored. Please look closely at the original and, every time you find a formatting element, locate the corresponding text in the translation and apply exactly the same formatting. If you find content in one of the files not present in the other, such as a YAML section at the beginning or a footnotes section at the end, just ignore them. Return a single string with the entire file correctly formatted. Do not ask for confirmation; just return the complete formatted translation file. Thank you!"
+  `((:prompt "Please take a look at the two files attached. The first, ‘%s’, is the original document in %s, while the second, ‘%s’, is a translation into %s. In the translation, some of the original formatting (which includes not only Markdown elements but potentially HTML components and SSML tags) has been lost or altered. What I want you to do is to generate a new translation file with all the original formatting restored. Please look closely at the original and, every time you find a formatting element, locate the corresponding text in the translation and apply exactly the same formatting. If you find content in one of the files not present in the other, such as a YAML section at the beginning or a footnotes section at the end, just ignore them. Return a single string with the entire file correctly formatted. Do not ask for confirmation; just return the complete formatted translation file. And please do not surround the text in backticks. Thank you!"
 	     :language "en")))
 
 ;;;;; Image description
@@ -571,21 +571,28 @@ Otherwise, construct a local file path from SRC and return it."
 ;;;;;; Fix formatting
 
 ;;;###autoload
-(defun tlon-ai-fix-markdown-format (original translation &optional callback)
-  "Fix the Markdown format in TRANSLATION by copying the format in ORIGINAL.
+(defun tlon-ai-fix-markdown-format (original-file translation-file &optional callback)
+  "Fix Markdown format in TRANSLATION-FILE by copying the format in ORIGINAL-FILE.
 The file with the fixed format will be saved in the same directory as
-TRANSLATION."
+TRANSLATION-FILE."
   (interactive (list (read-file-name "Original file: ")
 		     (read-file-name "Translation file: ")))
   (let* ((previous-context gptel-context--alist)
-	 (default-prompt (format
-			  (tlon-lookup tlon-ai-fix-markdown-format-prompt :prompt :language "en")
-			  (file-name-nondirectory original) (file-name-nondirectory translation)))
-	 (prompt (tlon-ai-maybe-edit-prompt default-prompt))
-	 (fixed-file-path (concat (file-name-sans-extension translation) "--fixed.md")))
-    (mapc #'gptel-context-add-file (list original translation))
-    (message "Fixing the format of `%s'..." (file-name-nondirectory translation))
-    (gptel-request prompt
+	 (original-lang (or (tlon-lookup tlon-languages-properties :standard :code
+					 (tlon-get-language-in-file original-file))
+			    (tlon-select-language)))
+	 (translation-lang (or (tlon-lookup tlon-languages-properties :standard :code
+					    (tlon-get-language-in-file translation-file))
+			       (tlon-select-language)))
+	 (prompt (tlon-ai-maybe-edit-prompt
+		  (tlon-lookup tlon-ai-fix-markdown-format-prompt :prompt :language
+			       (tlon-lookup tlon-languages-properties :code :standard original-lang))))
+	 (formatted-prompt (format prompt (file-name-nondirectory original-file) original-lang
+				   (file-name-nondirectory translation-file) translation-lang))
+	 (fixed-file-path (concat (file-name-sans-extension translation-file) "--fixed.md")))
+    (mapc #'gptel-context-add-file (list original-file translation-file))
+    (message "Fixing the format of `%s'..." (file-name-nondirectory translation-file))
+    (gptel-request formatted-prompt
       :callback (or callback
 		    (lambda (response info)
 		      (setq gptel-context--alist previous-context)
