@@ -1151,7 +1151,9 @@ variable."
     ]
    ["General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
-    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)]])
+    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
+    ""
+    (gptel--infix-provider)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
