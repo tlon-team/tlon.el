@@ -4,7 +4,30 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
-* Verion 1.6.1 on 2024-11-19
+* Version 1.6.2 on 2024-11-20
+** AI/Language Model Integration (~tlon-ai.el~)
+*** Math Translation Enhancements
+- Added support for math conversion to LaTeX
+- Created new functions ~tlon-ai-convert-math~ and ~tlon-ai-process-math~
+- Improved math translation prompt formatting
+
+*** Code Organization
+- Added ~tlon-ai-maybe-edit-prompt~ helper function
+- Improved context management by restoring original context after completion
+- Added ability to change model directly from menu
+- Revised functionality to handle language detection and model selection
+
+** Core Functionality (~tlon-core.el~)
+*** Language Handling Improvements
+- Renamed and relocated ~tlon-ai-get-language-in-file~ to ~tlon-get-language-in-file~
+- Added better error handling for language detection
+- Added ~tlon-get-language-in-mode~ function for mode-specific language detection
+
+** DeepL Integration (~tlon-deepl.el~)
+- Modified error handling to only throw errors for missing glossaries in supported languages
+
+
+* Version 1.6.1 on 2024-11-19
 ** AI and Language Models
 *** tlon-ai
 - Changed default summarization model from Gemini to Claude Haiku
