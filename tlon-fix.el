@@ -212,7 +212,7 @@ non-breaking."
 
 (defvar markdown-regex-link-inline)
 (defvar ffap-url-regexp)
-(declare-function tlon-md-get-tag-pattern "tlon-md")
+(autoload 'tlon-md-get-tag-pattern "tlon-md")
 (defun tlon-autofix-replace-thousands-separators (&optional separator)
   "Replace thousands SEPARATOR (typically, a comma or a period) with narrow spaces.
 Do not perform these replacements if the terms occur in math formulae, links, or

@@ -86,7 +86,7 @@ database. To track these repos, use `tlon-forge-track-missing-repos'."
 ;;;;; Forge
 ;;;;;; Track repos
 
-(declare-function forge-extras-track-repo-all-topics "forge-extras")
+(autoload 'forge-extras-track-repo-all-topics "forge-extras")
 (defun tlon-forge-track-missing-repos ()
   "Add missing Tlön repos to the Forge database.
 Note that this function will omit Tlön repos that do not exist locally. To add
@@ -96,7 +96,6 @@ those repos, use `tlon-clone-missing-repos'."
     (when (file-exists-p repo)
       (let ((default-directory repo))
 	(unless (forge-get-repository :tracked?)
-	  (require 'forge-extras)
 	  (forge-extras-track-repo-all-topics repo)
 	  (while (not (forge-get-repository :tracked?))
 	    (message "Adding repo %s..." (tlon-repo-lookup :name :dir repo))
@@ -216,11 +215,10 @@ If REPOS is nil, search in all tracked repos."
 
 ;;;;; git-crypt
 
-(declare-function pass-extras-git-crypt-unlock "pass-extras")
+(autoload 'pass-extras-git-crypt-unlock "pass-extras")
 (defun tlon-unlock-uqbar-git-crypt ()
   "Unlock `uqbar' git-crypt repos."
   (interactive)
-  (require 'pass-extras)
   (let ((uqbar-dir (tlon-repo-lookup :dir :name "uqbar")))
     (dolist (repo-name '("uqbar-api" "uqbar-front"))
       (let ((repo-dir (file-name-concat uqbar-dir repo-name))

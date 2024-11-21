@@ -403,13 +403,12 @@ Otherwise,
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
 (declare-function shr-render-buffer "shr")
-(declare-function tlon-convert-pdf "tlon-import")
+(autoload 'tlon-convert-pdf "tlon-import")
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string."
   (with-temp-buffer
     (when (string= (file-name-extension file) "pdf")
       (let ((markdown (make-temp-file "pdf-to-markdown-")))
-	(require 'tlon-import)
 	(tlon-convert-pdf file markdown)
 	(setq file markdown)))
     (insert-file-contents file)
@@ -806,7 +805,7 @@ If FILE is nil, use the current buffer."
 	(current-buffer))
     (tlon-ai-detect-language-in-file file #'tlon-ai-set-language-in-file-callback)))
 
-(declare-function jinx-languages "jinx")
+(autoload 'jinx-languages "jinx")
 (defvar jinx-save-languages)
 (defun tlon-ai-set-language-in-file-callback (response info)
   "Callback for `tlon-ai-set-language-in-file'.
@@ -814,7 +813,6 @@ RESPONSE is the response from the AI model and INFO is the response info."
   (if (not response)
       (tlon-ai-callback-fail info)
     (let ((lang (tlon-get-iso-code response)))
-      (require 'jinx)
       (let ((jinx-save-languages))
 	(jinx-languages lang)))))
 
