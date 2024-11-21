@@ -928,7 +928,7 @@ Separate the original line and the transcription with a comma."
 ;;;;; Math
 
 (defun tlon-ai-convert-math (&optional expression language)
-  "Convert math EXPRESSION into LaTeX."
+  "Convert math EXPRESSION in LANGUAGE into LaTeX."
   (interactive)
   (tlon-ai-process-math 'convert expression language))
 
