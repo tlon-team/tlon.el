@@ -1133,6 +1133,7 @@ variable."
   :reader 'tlon-mullvad-connection-duration-reader
   :prompt "Disconnect after: ")
 
+(autoload 'gptel--infix-provider "gptel-transient")
 ;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
 (transient-define-prefix tlon-ai-menu ()
   "Menu for `tlon-ai'."
