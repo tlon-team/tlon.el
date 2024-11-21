@@ -414,7 +414,7 @@ If no section is found, do nothing."
   (let ((pattern (tlon-md-format-tag tag nil 'get-match-string)))
     (thing-at-point-looking-at pattern)))
 
-(defun tlon-md-edit-tag (&optional values format)
+(defun tlon-md-edit-tag (&optional values content format)
   "Edit tag at point.
 Optionally, set the attribute VALUES and the tag CONTENT. FORMAT is one of
 `get-match-string', `get-placeholders', `get-values', `insert-values', or
@@ -430,7 +430,7 @@ user to insert VALUES."
     (goto-char (line-beginning-position))
     (when (re-search-forward pattern (line-end-position) t)
       (let* ((existing-values (or values (tlon-get-tag-attribute-values tag)))
-             (content (match-string-no-properties 2))
+             (content (or content (match-string-no-properties 2)))
              (beg (match-beginning 0))
              (end (match-end 0)))
         ;; Store positions before we lose match data
@@ -445,11 +445,12 @@ user to insert VALUES."
     (setcar (nthcdr pos values) value)
     values))
 
-(defun tlon-md-insert-attribute-value (attribute value)
+(defun tlon-md-insert-attribute-value (attribute value &optional content)
   "Insert an ATTRIBUTE VALUE in the tag at point.
 If the tag already contains an attribute with the same name, replace its value."
   (let ((tag (tlon-get-tag-at-point)))
-    (tlon-md-edit-tag (tlon-md-set-tag-attribute-value tag attribute value) 'insert-values)))
+    (tlon-md-edit-tag (tlon-md-set-tag-attribute-value tag attribute value)
+		      content 'insert-values)))
 
 (defun tlon-md-return-tag (tag &optional values content format)
   "Return a TAG or TAG pair at point or around the selected region.

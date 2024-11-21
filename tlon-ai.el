@@ -245,9 +245,15 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
 ;;;;; Math
 
 (defconst tlon-ai-translate-math-prompt
-  `((:prompt ,(format "Please translate this math expression to natural language, i.e. as a human would read it:%s For example, if the expression is `\\frac{1}{2} \\times 2^5 \\= 16`, you should translate \"one half times two to the fifth power equals sixteen\". The expression may not require any sophisticated treatment. For example, if I ask you to translate a letter (such as `S`), your “translation” should be that same letter. Please return only the translated expression, without comments or clarifications. If for some reason you cannot do what I ask, simply do not respond at all; in no case should you return messages such as 'I could not translate the expression' or 'Please include the mathematical expression you need me to translate.'" tlon-ai-string-wrapper)
+  `((:prompt ,(format "Please translate this math expression to natural language, i.e. as a human would read it%s For example, if the expression is `\\frac{1}{2} \\times 2^5 \\= 16`, you should translate \"one half times two to the fifth power equals sixteen\". The expression may not require any sophisticated treatment. For example, if I ask you to translate a letter (such as `S`), your “translation” should be that same letter. Please return only the translated expression, without comments or clarifications. If for some reason you cannot do what I ask, simply do not respond at all; in no case should you return messages such as 'I could not translate the expression' or 'Please include the mathematical expression you need me to translate.'" tlon-ai-string-wrapper)
 	     :language "en")
-    (:prompt ,(format "Por favor traduce esta expresión matemática a lenguaje natural, es decir, a la manera en que un humano la leería en voz alta:%sPor ejemplo, si la expresión es `\\frac{1}{2} \\times 2^5 \\= 16`, debes traducir \"un medio por dos a la quinta potencia es igual a dieciséis\". Es posible que la expresión no requiera ningún tratamiento sofisticado. Por ejemplo, si te pido que traduzcas una letra (como `S`), tu “traducción” debería ser esa misma letra (`ese`). Por favor, devuelve solamente la expresión traducida, sin comentarios ni clarificaciones. Si por alguna razón no puedes hacer lo que te pido, simplemente no respondas nada; en ningún caso debes devolver mensajes como ‘No he podido traducir la expresión’ o ‘Por favor, incluye la expresión matemática que necesitas que traduzca.’" tlon-ai-string-wrapper)
+    (:prompt ,(format "Por favor traduce esta expresión matemática a lenguaje natural, es decir, a la manera en que un humano la leería en voz alta%sPor ejemplo, si la expresión es `\\frac{1}{2} \\times 2^5 \\= 16`, debes traducir \"un medio por dos a la quinta potencia es igual a dieciséis\". Es posible que la expresión no requiera ningún tratamiento sofisticado. Por ejemplo, si te pido que traduzcas una letra (como `S`), tu “traducción” debería ser esa misma letra (`ese`). Por favor, devuelve solamente la expresión traducida, sin comentarios ni clarificaciones. Si por alguna razón no puedes hacer lo que te pido, simplemente no respondas nada; en ningún caso debes devolver mensajes como ‘No he podido traducir la expresión’ o ‘Por favor, incluye la expresión matemática que necesitas que traduzca.’" tlon-ai-string-wrapper)
+	     :language "es")))
+
+(defconst tlon-ai-convert-math-prompt
+  `((:prompt ,(format "Please convert this string into LaTeX%sDo not include LaTeX delimiters." tlon-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "Por favor, convierte esta cadena en LaTeX%sNo incluyas los delimitadores de LaTeX" tlon-ai-string-wrapper)
 	     :language "es")))
 
 ;;;;; Encoding
@@ -921,36 +927,58 @@ Separate the original line and the transcription with a comma."
 
 ;;;;; Math
 
-(declare-function tlon-looking-at-tag-p "tlon-md")
+(defun tlon-ai-convert-math (&optional expression language)
+  "Convert math EXPRESSION into LaTeX."
+  (interactive)
+  (tlon-ai-process-math 'convert expression language))
+
 (defun tlon-ai-translate-math (&optional expression language)
-  "Generate the natural LANGUAGE translation of the mathematical EXPRESSION.
+  "Translate math EXPRESSION in LANGUAGE into alt text."
+  (interactive)
+  (tlon-ai-process-math 'translate expression language))
+
+(declare-function tlon-looking-at-tag-p "tlon-md")
+(defun tlon-ai-process-math (action &optional expression language)
+  "Take ACTION with math EXPRESSION in LANGUAGE.
+If ACTION is `convert', convert expression into LaTeX. If ACTION is `translate',
+translate LaTeX into alt text.
+
 If EXPRESSION is nil, prompt the user for it. As initial input, use the region,
 if active, or the contents of the `Math' tag at point, if any. LANGUAGE is a
 two-letter ISO 639-1 code.
 
 If point is on a `Math' tag, insert the string as the value of the `alt'
 attribute. Otherwise, print and copy the string to the kill ring."
-  (interactive)
-  (let* ((expression (or expression
-			 (read-string "Math expression to translate: "
-				      (if (region-active-p)
-					  (buffer-substring-no-properties (region-beginning) (region-end))
-					(when (tlon-looking-at-tag-p "Math")
-					  (match-string-no-properties 2))))))
-	 (language (or language (tlon-get-language-in-file) (tlon-select-language 'code)))
-	 (prompt (tlon-lookup tlon-ai-translate-math-prompt :prompt :language language)))
-    (tlon-make-gptel-request prompt expression #'tlon-ai-insert-math-alt-text)
-    (message "Generating translation...")))
+  (cl-destructuring-bind (var message)
+      (pcase action
+	('convert `(,tlon-ai-convert-math-prompt  "Converting"))
+	('translate `(,tlon-ai-translate-math-prompt  "Translating")))
+    (let* ((expression (or expression
+			   (read-string "Math expression: "
+					(if (region-active-p)
+					    (buffer-substring-no-properties (region-beginning) (region-end))
+					  (when (tlon-looking-at-tag-p "Math")
+					    (match-string-no-properties 2))))))
+	   (language (or language (tlon-get-language-in-file) (tlon-select-language 'code)))
+	   (prompt (tlon-lookup var :prompt :language language)))
+      (tlon-make-gptel-request prompt expression (tlon-ai-insert-math-text expression action))
+      (message "%s math..." message))))
 
-(defun tlon-ai-insert-math-alt-text (response info)
-  "Insert RESPONSE as the value of the `alt' attribute of the `Math' tag at point.
-If RESPONSE is nil, return INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (if (tlon-looking-at-tag-p "Math")
-	(tlon-md-insert-attribute-value "alt" response)
-      (kill-new response)
-      (message response))))
+(defun tlon-ai-insert-math-text (content action)
+  "Insert RESPONSE based on ACTION.
+CONTENT is the content of the `Math' element. If RESPONSE is nil, return INFO.
+`tlon-ai-process-math'."
+  (lambda (response info)
+    (if (not response)
+	(tlon-ai-callback-fail info)
+      (if (tlon-looking-at-tag-p "Math")
+	  (apply #'tlon-md-insert-attribute-value
+		 "alt" (pcase action
+			 ('convert (list (car (tlon-get-tag-attribute-values "Math")) response))
+			 ('translate (list response content))))
+	(kill-new response)
+	(message response))
+      (message "Inserted math."))))
 
 ;;;;; Docs
 
@@ -1131,14 +1159,16 @@ variable."
     ""
     "Image options"
     ("i -o" "overwrite alt text"                      tlon-ai-infix-toggle-overwrite-alt-text)]
+   ["Math"
+    ("c" "convert"                                    tlon-ai-convert-math)
+    ("t" "translate"                                  tlon-ai-translate-math)]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
     ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
-    ("m" "translate math"                             tlon-ai-translate-math)
     ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
-    ("t" "translate"                                  tlon-ai-translate)
+    ("l" "translate"                                  tlon-ai-translate)
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
