@@ -2,7 +2,7 @@
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
-;; Version: 1.6.2
+;; Version: 1.6.3
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
 ;; Package-Requires: ((bibtex-extras "0.1")
@@ -52,7 +52,7 @@
 
 ;;;; Variables
 
-(defconst tlon-version "1.6.2"
+(defconst tlon-version "1.6.3"
   "Version of the `tlon' package.")
 
 ;;;;; Files and dirs

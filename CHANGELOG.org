@@ -4,6 +4,45 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
+* Version 1.6.3 on 2024-11-22
+** Core functionality
+*** tlon-core
+- Fixed bug in ~tlon-get-file-with-org-id~ function
+- Removed elpaca requirement, now using hardcoded package directory
+- Enhanced autoloading of functions
+- Set JSON variable values explicitly as workaround for initialization issue in ~json-read-file~
+
+** Authentication & Version Control 
+*** tlon-repos
+- Improved autoloading of forge and pass-extras functions
+- Refined repository tracking and git-crypt unlocking functionality
+
+** UI Improvements
+*** File Headers
+- Removed redundant version and homepage information from multiple file headers to reduce duplication
+- Standardized header format across files
+
+** Text Processing
+*** tlon-tts
+- Commented out problematic XML escaping function that was breaking SSML tags
+- Improved number separator handling with language-aware patterns
+
+** Language & Translation
+*** tlon-counterpart
+- Added documentation for function arguments
+- Improved autoloading of utility functions
+
+** AI Integration  
+*** tlon-ai
+- Improved markdown formatting prompt for better translation handling
+- Enhanced autoloading of gptel and other AI-related functions
+- Added documentation for math expression language parameter
+
+** Build & Dependencies
+- Significantly revised requirements and autoloads across multiple files
+- Replaced many ~require~ statements with autoload declarations
+- Updated references and package descriptions to reflect "Tlön" branding
+
 * Version 1.6.2 on 2024-11-20
 ** AI/Language Model Integration (~tlon-ai.el~)
 *** Math Translation Enhancements
@@ -25,7 +64,6 @@ This document summarizes the changes pertaining to the ~tlon~ package.
 
 ** DeepL Integration (~tlon-deepl.el~)
 - Modified error handling to only throw errors for missing glossaries in supported languages
-
 
 * Version 1.6.1 on 2024-11-19
 ** AI and Language Models
