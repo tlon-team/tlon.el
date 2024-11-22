@@ -316,19 +316,6 @@ to be set via `tlon-populate-translation-metadata'."
       (tlon-yaml-insert-field "type" type)
       (tlon-yaml-insert-field "original_path" (file-name-nondirectory original)))))
 
-(defun tlon-populate-translation-metadata (&optional file)
-  "Populate the metadata section of translation FILE.
-If FILE is nil, use the file visited by the current buffer."
-  (let ((file (or file (buffer-file-name))))
-    (if-let ((type (tlon-yaml-get-key "type" file)))
-	(dolist (key (tlon-yaml-get-valid-keys file type 'no-core))
-	  (tlon-yaml-get-completion-values key 'translations)
-	  ;; for each key, call its generating function and record its return
-	  ;; value, then insert it into the file
-	  ;; perhaps the insertion should be done by another fun
-	  )
-      (user-error "File `%s' is missing a `type' metadata field" file))))
-
 (defun tlon-yaml-set-key (key)
   "Set the value of the YAML field with KEY."
   (tlon-yaml-convert-list
@@ -462,53 +449,6 @@ is `translation_key', return the BibTeX key of the translation"
 	   original-key)
 	  ((and (eq subtype 'translations) (string= field "original_key"))
 	   (citar-get-value "translation" original-key)))))
-
-;; TODO: delete
-(defun tlon-yaml-get-field-setter (key subtype)
-  "Get field setter function for KEY in repo of SUBTYPE."
-  (alist-get subtype
-	     (alist-get key tlon-yaml-field-setters nil nil #'string=)))
-
-;; TODO: delete
-(defun tlon-yaml-get-completion-values (key &optional subtype file)
-  "Get completion values for a YAML field with KEY in repo of SUBTYPE.
-If SUBTYPE is nil, use the subtype of FILE. If FILE is nil, use the file visited
-by the current buffer."
-  (let* ((file (or file (buffer-file-name)))
-	 (subtype (or subtype (tlon-get-content-subtype file)))
-	 (fun (tlon-yaml-get-field-setter key subtype)))
-    (pcase key
-      ((or "translators" "original_path" "original_key" "translation_key" "publication_status")
-       (funcall fun))
-      ((or "authors" "tags")
-       (funcall fun key))
-      (_ nil))))
-
-;; TODO: integrate `tlon-yaml-get-key-values'
-(declare-function tlon-get-content-subtype "tlon-counterpart")
-(defun tlon-yaml-insert-new-field (&optional key value file field-exists)
-  "Insert a new field in the YAML metadata of FILE.
-If KEY or VALUE are nil, prompt for one. If FILE is nil, use the file visited by
-the current buffer. If field exists, throw an error if FIELD-EXISTS is
-`throw-error', overwrite if it is `overwrite', and do nothing otherwise.
-
-If the file does not contain a metadata section, insert one before inserting the
-field."
-  (interactive)
-  (let* ((key (or key (completing-read "Key: " (tlon-yaml-get-valid-keys))))
-	 (file (or file (buffer-file-name)))
-	 (value (or value (tlon-yaml-get-completion-values key file))))
-    (if-let ((metadata (tlon-yaml-get-metadata file)))
-	(if-let ((key-exists-p (assoc key metadata)))
-	    (pcase field-exists
-	      ('overwrite
-	       (tlon-yaml-delete-field key file)
-	       (tlon-yaml-write-field key value file))
-	      ('throw-error
-	       (user-error "Field `%s' already exists in `%s'" key file)))
-	  (tlon-yaml-write-field key value file))
-      (tlon-yaml-insert-metadata-section file)
-      (tlon-yaml-write-field key value file))))
 
 (defun tlon-yaml-write-field (key value file)
   "Set KEY to VALUE in FILE."
