@@ -2398,14 +2398,15 @@ image links are handled differently."
 Some TTS engines do not read numbers correctly when they are not separated by
 periods or commas (depending on the language)."
   (goto-char (point-min))
-  (let* ((default-separator (tlon-lookup tlon-language-specific-thousands-separator
-					 :separator :language (tlon-tts-get-current-language)))
+  (let* ((lang (tlon-tts-get-current-language))
+	 (default-separator (tlon-lookup tlon-language-specific-thousands-separator
+					 :separator :language lang))
 	 (separator (pcase tlon-tts-engine
 		      ("ElevenLabs" default-separator)
 		      ("Microsoft Azure" "")
 		      (_ default-separator) ; fallback; for engines we haven’t yet tested
 		      )))
-    (while (re-search-forward (tlon-get-number-separator-pattern tlon-default-thousands-separator) nil t)
+    (while (re-search-forward (tlon-get-number-separator-pattern lang tlon-default-thousands-separator) nil t)
       (replace-match (replace-regexp-in-string tlon-default-thousands-separator separator (match-string 1)) t t))))
 
 ;;;;;;;; Misc
@@ -2421,12 +2422,12 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
 
 (defun tlon-tts-process-currencies ()
   "Format currency with appropriate SSML tags."
-  (let ((language (tlon-tts-get-current-language)))
+  (let ((lang (tlon-tts-get-current-language)))
     (dolist (cons tlon-tts-currencies)
-      (let* ((pair (alist-get language (cdr cons) nil nil #'string=))
+      (let* ((pair (alist-get lang (cdr cons) nil nil #'string=))
 	     (symbol (regexp-quote (car cons)))
 	     (pattern (format "\\(?4:%s\\)%s" symbol
-			      (tlon-get-number-separator-pattern tlon-default-thousands-separator))))
+			      (tlon-get-number-separator-pattern lang tlon-default-thousands-separator))))
 	(goto-char (point-min))
 	(while (re-search-forward pattern nil t)
 	  (let* ((amount (match-string-no-properties 1))

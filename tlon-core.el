@@ -1031,13 +1031,14 @@ If LANGUAGE is nil, use the language of the current repository."
 If LANGUAGE is nil, use the language of the current repository."
   (tlon-get-separator 'thousands language))
 
-(defun tlon-get-number-separator-pattern (&optional thousands decimal bounded)
+(defun tlon-get-number-separator-pattern (&optional lang thousands decimal bounded)
   "Return the pattern that matches a number with THOUSANDS and DECIMAL separators.
-If THOUSANDS or DECIMAL are nil, infer them from the language of the current
+If LANG is nil, obtain it from the file visited by the current buffer. If
+THOUSANDS or DECIMAL are nil, infer them from the language of the current
 repository. If BOUNDED is non-nil, match only text at the beginning or end of a
 word."
-  (when-let* ((thousands (or thousands (tlon-get-thousands-separator)))
-	      (decimal (or decimal (tlon-get-decimal-separator)))
+  (when-let* ((thousands (or thousands (tlon-get-thousands-separator lang)))
+	      (decimal (or decimal (tlon-get-decimal-separator lang)))
 	      (pattern (format tlon-number-separated-by-separator (regexp-quote thousands) (regexp-quote decimal))))
     (if bounded (format "\\b%s\\b" pattern) pattern)))
 
