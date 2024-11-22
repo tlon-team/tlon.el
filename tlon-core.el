@@ -911,6 +911,11 @@ add to the default list of languages presented as completion candidates."
 
 ;;;;; json
 
+;; We set these values explicitly because `tlon-read-json' behaves weirdly
+;; otherwise. Not sure what is going on.
+(setq json-object-type 'alist)
+(setq json-array-type 'list)
+(setq json-key-type 'string)
 (defun tlon-read-json (&optional file object-type array-type key-type)
   "Read JSON substring or FILE using array TYPE.
 OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
