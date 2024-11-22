@@ -235,7 +235,7 @@ default to \".md\"."
 ;;;;; Temporary
 
 (defun tlon-add-counterpart-metadata (file language bare-dir)
-  "Read FILE with comma-separated counterpart pairs and add metadata to each."
+  "Read FILE in LANGUAGE located in BARE-DIR."
   (let ((dir (tlon-repo-lookup :dir :subproject "uqbar" :language language))
 	(subdir (tlon-get-bare-dir-translation language "en" bare-dir))
 	(lines (split-string (with-temp-buffer
