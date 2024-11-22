@@ -1062,7 +1062,9 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     ;; priority because Elevenlabs does not support this tag anyway.
     (tlon-tts-process-unsupported-ssml-tags)
     (tlon-tts-remove-extra-newlines)
-    (tlon-tts-escape-xml-special-characters)))
+    ;; FIXME: this is breaking the SSML tags
+    ;; (tlon-tts-escape-xml-special-characters)
+    ))
 
 ;;;;; Narrate
 
