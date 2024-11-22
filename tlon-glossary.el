@@ -1,4 +1,4 @@
-;;; tlon-glossary.el --- Glossary functions for the Babel project -*- lexical-binding: t -*-
+;;; tlon-glossary.el --- Glossary functions for Tlön -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Glossary functions for the Babel project
+;; Glossary functions for Tlön
 
 ;;; Code:
 

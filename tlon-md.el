@@ -1,4 +1,4 @@
-;;; tlon-md.el --- Markdown functionality for the Babel project -*- lexical-binding: t -*-
+;;; tlon-md.el --- Markdown functionality for Tlön -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Markdown functionality for the Babel project.
+;; Markdown functionality for Tlön.
 
 ;;; Code:
 

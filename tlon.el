@@ -1,4 +1,4 @@
-;;; tlon.el --- A companion package for the Babel project. -*- lexical-binding: t -*-
+;;; tlon.el --- A companion package for Tlön. -*- lexical-binding: t -*-
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini
@@ -35,7 +35,7 @@
 ;;;; User options
 
 (defgroup tlon ()
-  "A companion package for the Babel project."
+  "A companion package for Tlön."
   :group 'files)
 
 ;;;; Variables

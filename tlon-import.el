@@ -1,4 +1,4 @@
-;;; tlon-import.el --- Import functions for the Babel project -*- lexical-binding: t -*-
+;;; tlon-import.el --- Import functions for Tlön -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Import functions for the Babel project.
+;; Import functions for Tlön.
 
 ;;; Code:
 

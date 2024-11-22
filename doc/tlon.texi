@@ -12,7 +12,7 @@
 
 @dircategory Emacs misc features
 @direntry
-* Tlon Babel: (tlon).   Companion Emacs package for the Tlön Babel projects.
+* Tlon Babel: (tlon).   Companion Emacs package for Tlön.
 @end direntry
 
 @finalout

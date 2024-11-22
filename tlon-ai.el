@@ -1,4 +1,4 @@
-;;; tlon-ai.el --- AI functionality for the Babel project -*- lexical-binding: t -*-
+;;; tlon-ai.el --- AI functionality for Tlön -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2024
 
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; AI functionality for the Babel project.
+;; AI functionality for Tlön.
 
 ;;; Code:
 
@@ -36,7 +36,7 @@
 ;;;; User options
 
 (defgroup tlon-ai nil
-  "AI functionality for the Babel project."
+  "AI functionality for Tlön."
   :group 'tlon)
 
 (defcustom tlon-ai-batch-fun nil
