@@ -4,7 +4,6 @@
 
 ;; Author: Pablo Stafforini
 ;; URL: https://github.com/tlon-team/tlon
-;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
 

@@ -3,8 +3,6 @@
 ;; Copyright (C) 2024
 
 ;; Author: Pablo Stafforini
-;; Homepage: https://github.com/tlon-team/tlon
-;; Version: 0.1
 
 ;; This file is NOT part of GNU Emacs.
 
