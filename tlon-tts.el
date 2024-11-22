@@ -2381,7 +2381,7 @@ image links are handled differently."
 
 ;;;;;;;; Convert Roman numerals
 
-(declare-function rst-roman-to-arabic "rst")
+(autoload 'rst-roman-to-arabic "rst")
 (defun tlon-tts-process-numerals-convert-roman ()
   "Replace Roman numerals with their Arabic equivalents."
   (goto-char (point-min))
@@ -2609,7 +2609,7 @@ PROMPTS is a cons cell with the corresponding prompts."
 		       var-value))
     (tlon-tts-set-file-local-variable var (push cons-cell var-value) 'save-excursion)))
 
-(declare-function modify-file-local-variable "files-x")
+(autoload 'modify-file-local-variable "files-x")
 (declare-function back-button-local "back-button")
 (defun tlon-tts-set-file-local-variable (var value &optional save-excursion)
   "Set VALUE of VAR in file-local variables section.

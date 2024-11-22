@@ -5,8 +5,22 @@
 ;; Version: 1.6.2
 ;; URL: https://github.com/tlon-team/tlon
 ;; Keywords: convenience tools
-
-
+;; Package-Requires: ((bibtex-extras "0.1")
+;;                   (citar "1.4.0")
+;;                   (ebib "2.36")
+;;                   (el-patch "0.1")
+;;                   (files-extras "0.1")
+;;                   (forge "0.3.0")
+;;                   (forge-search "0")
+;;                   (gptel "0.1")
+;;                   (gptel-extras "0.1")
+;;                   (markdown-mode-extras "0.1")
+;;                   (paths "0.1")
+;;                   (read-aloud "0.0.2")
+;;                   (request "0.3.3")
+;;                   (reverso "0.1")
+;;                   (shut-up "0.1")
+;;                   (vc-extras "0.1"))
 ;; This file is not part of GNU Emacs
 
 ;; This program is free software: you can redistribute it and/or modify it under
@@ -29,8 +43,6 @@
 
 (require 'paths)
 (require 'tlon-core)
-
-;;;; Customization:
 
 ;;;; User options
 
@@ -143,7 +155,7 @@ This variable should not be set manually.")
   (unless (symbol-value var)
     (user-error "Please set the value of `%s'" (symbol-name var))))
 
-(declare-function magit-git-string "magit-git")
+(autoload 'magit-git-string "magit-git")
 (defun tlon-get-latest-commit ()
   "Return the latest commit in the `tlon' package."
   (let ((default-directory tlon-package-dir))
@@ -254,7 +266,7 @@ If FILE is not provided, use the file visited by the current buffer."
     (user-error "Repo `%s' not found" repo)))
 
 (declare-function files-extras-buffer-file-name "file-extras")
-(declare-function magit-extras-get-commit-file "magit-extra")
+(autoload 'magit-extras-get-commit-file "magit-extra")
 (defun tlon-get-commit-key ()
   "Get key of commit file."
   (let* ((dir (file-name-directory (files-extras-buffer-file-name)))
@@ -264,7 +276,7 @@ If FILE is not provided, use the file visited by the current buffer."
 
 ;;;;; Checks
 
-(declare-function magit-get-current-branch "magit-git")
+(autoload 'magit-get-current-branch "magit-git")
 (defun tlon-check-branch (branch repo)
   "Throw an error unless current buffer is in REPO branch BRANCH."
   (let ((default-directory repo))
@@ -298,7 +310,7 @@ check that current file matches translation."
 	(when (not (string-empty-p (shell-command-to-string git-command)))
 	  (throw 'found t))))))
 
-(declare-function magit-git-str "magit-git")
+(autoload 'magit-git-str "magit-git")
 (defun tlon-ensure-no-uncommitted-changes (file)
   "Throw an error if there are uncommitted modifications in repo of FILE.
 FILE is excluded from the check."
@@ -418,9 +430,9 @@ respectively."
   (interactive)
   (tlon-edit-correspondence tlon-file-url-correspondences))
 
-(declare-function magit-save-repository-buffers "magit-mode")
-(declare-function magit-run-git "magit-process")
-(declare-function magit-staged-files "magit-git")
+(autoload 'magit-save-repository-buffers "magit-mode")
+(autoload 'magit-run-git "magit-process")
+(autoload 'magit-staged-files "magit-git")
 (defvar magit-commit-ask-to-stage)
 ;; TODO: consider adapting `tlon-commit-and-push' instead
 (defun tlon-url-correspondence-commit ()
@@ -464,7 +476,7 @@ respectively."
 
 ;;;;; section correspondences
 
-(declare-function citar-select-refs "citar")
+(autoload 'citar-select-refs "citar")
 (defun tlon-section-correspondence-dwim ()
   "Add a new section correspondence or modify an existing one."
   (interactive)
@@ -534,8 +546,8 @@ If REPO is nil, default to the current repository."
 	 (alist (tlon-files-and-display-names-alist (list repo) repo)))
     (tlon-open-file-in-alist alist)))
 
-(declare-function ffap-url-p "ffap")
-(declare-function eww-current-url "eww")
+(autoload 'ffap-url-p "ffap")
+(autoload 'eww-current-url "eww")
 (defun tlon-find-file-of-url (&optional url)
   "Open the file corresponding to URL."
   (interactive)

@@ -26,6 +26,7 @@
 ;; Image processing functionality.
 
 (require 'tlon)
+(require 'transient)
 
 ;;; Code:
 

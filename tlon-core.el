@@ -632,6 +632,7 @@ PAIRS is an even-sized list of <key value> tuples."
 	   when (tlon-all-pairs-in-entry-p pairs entry case-insensitive)
 	   return (tlon-get-value-in-entry key entry)))
 
+;;;###autoload
 (defun tlon-lookup (list key &rest pairs)
   "Return the first value of KEY in LIST matching all PAIRS.
 PAIRS is an even-sized list of <key value> tuples."
@@ -656,6 +657,7 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
 		      (push r results)))))
     (delete-dups (nreverse results))))
 
+;;;###autoload
 (defun tlon-lookup-all (list key &rest pairs)
   "Return all unique values of KEY in LIST matching all PAIRS.
 PAIRS is expected to be an even-sized list of <key value> tuples."
@@ -668,30 +670,36 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
 
 ;;;;;; Metadata lookup
 
+;;;###autoload
 (defun tlon-metadata-lookup (metadata key &rest key-value)
   "Return the value of KEY in METADATA matching all KEY-VALUE pairs."
   (apply #'tlon-lookup metadata key key-value))
 
+;;;###autoload
 (defun tlon-metadata-lookup-all (metadata key &rest key-value)
   "Return all unique values of KEY in METADATA matching alll KEY-VALUE pairs."
   (apply #'tlon-lookup-all metadata key key-value))
 
 ;;;;;; Repo lookup
 
+;;;###autoload
 (defun tlon-repo-lookup (key &rest key-value)
   "Return the value of KEY in repos matching all KEY-VALUE pairs."
   (apply #'tlon-lookup tlon-repos key key-value))
 
+;;;###autoload
 (defun tlon-repo-lookup-all (key &rest key-value)
   "Return all unique values of KEY in repos matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-repos key key-value))
 
 ;;;;;; User lookup
 
+;;;###autoload
 (defun tlon-user-lookup (key &rest key-value)
   "Return the value of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-lookup tlon-users key key-value))
 
+;;;###autoload
 (defun tlon-user-lookup-all (key &rest key-value)
   "Return all unique values of KEY in users matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-users key key-value))
@@ -699,10 +707,12 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
 ;;;;;; Label lookup
 
 (defvar tlon-job-labels)
+;;;###autoload
 (defun tlon-label-lookup (key &rest key-value)
   "Return the value of KEY in labels matching all KEY-VALUE pairs."
   (apply #'tlon-lookup tlon-job-labels key key-value))
 
+;;;###autoload
 (defun tlon-label-lookup-all (key &rest key-value)
   "Return all values of KEY in labels matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-job-labels key key-value))
@@ -828,6 +838,7 @@ validate a list of natural languages."
 		(code-raw (tlon-lookup tlon-languages-properties :code :name downcased)))
       (string-limit code-raw 2))))
 
+;;;###autoload
 (defun tlon-select-language (&optional format babel prompt require-match initial-input
 				       additional-langs multiple)
   "Prompt the user to select a LANGUAGE and return it in FORMAT.
@@ -868,6 +879,7 @@ English. FORMAT must be either `code' or `locale'."
 		selection)
       (funcall fun selection))))
 
+;;;###autoload
 (defun tlon-read-language (&optional babel prompt require-match initial-input additional-langs)
   "Read a language from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the

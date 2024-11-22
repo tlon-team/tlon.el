@@ -29,7 +29,6 @@
 
 (require 'citar)
 (require 'files-extras)
-(require 'simple-extras)
 (require 'tlon-core)
 
 ;;;; Variables
@@ -147,6 +146,7 @@ an error."
 
 ;;;;; Get
 
+;;;###autoload
 (defun tlon-metadata-in-repos (&rest pairs)
   "Return metadata of all repos matching all PAIRS.
 PAIRS is an even-sized list of <key value> tuples."
@@ -155,6 +155,7 @@ PAIRS is an even-sized list of <key value> tuples."
       (setq metadata (append (tlon-metadata-in-repo repo) metadata)))
     metadata))
 
+;;;###autoload
 (defun tlon-metadata-in-repo (&optional repo)
   "Return metadata of REPO.
 If REPO is nil, return metadata of the current repository."
@@ -162,6 +163,7 @@ If REPO is nil, return metadata of the current repository."
     (when (eq (tlon-repo-lookup :type :dir repo) 'content)
       (tlon-metadata-in-dir repo))))
 
+;;;###autoload
 (defun tlon-metadata-in-dir (dir)
   "Return the metadata in DIR and all its subdirectories as an association list."
   (let (metadata)
@@ -170,6 +172,7 @@ If REPO is nil, return metadata of the current repository."
 	(push meta-in-file metadata)))
     metadata))
 
+;;;###autoload
 (defun tlon-metadata-in-file (&optional file-or-buffer)
   "Return the metadata in FILE-OR-BUFFER as an association list.
 This includes the YAML metadata at the beginning of the file, as well as
@@ -395,6 +398,7 @@ If KEY already has VALUE, use it as the initial input."
   (let ((values (tlon-yaml-get-key-values key)))
     (tlon-yaml-select-key-values key values)))
 
+;;;###autoload
 (defun tlon-yaml-get-key-values (key)
   "Return the admissible values for a YAML field with KEY."
   (pcase key
@@ -437,6 +441,7 @@ INITIAL-INPUT is used as the initial input for the completion."
 	 (when initial-input (concat initial-input " "))
 	 'citar-history citar-presets nil))))
 
+(autoload 'tlon-get-content-subtype "tlon-counterpart")
 (defun tlon-yaml-get-bibtex-key-values (field)
   "Return the BibTeX key of the work at point apprporiate for FIELD.
 If FIELD is `original_key', return the BibTeX key of the original work. If FIELD
@@ -598,6 +603,7 @@ renaming it."
 	 (dir (tlon-repo-lookup :dir :subproject subproject :language "en")))
     (tlon-yaml-get-filenames-in-dir dir)))
 
+(declare-function simple-extras-slugify "simple-extras")
 (defun tlon-set-file-from-title (&optional title dir)
   "Set the file path based on its title.
 The file name is the slugified version of TITLE with the extension `.md'. This

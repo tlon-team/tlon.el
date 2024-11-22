@@ -28,14 +28,14 @@
 ;;; Code:
 
 (require 'paths)
-(require 'magit-extra)
-(require 'org-extras)
 (require 'tlon-core)
 
 ;;;; Functions
 
 ;;;;; Create
 
+(autoload 'org-read-date "org")
+(autoload 'org-extras-clock-report-insert "org-extras")
 ;;;###autoload
 (defun tlon-clock-entry-create (date &optional submit)
   "Create a clock entry for DATE in the user’s clock repo.
@@ -76,6 +76,8 @@ confirmation."
       (tlon-clock-entry-submit file)
     (message "You can submit the entry later by calling `tlon-clock-entry-submit'.")))
 
+(autoload 'magit-extras-track-file "magit-extras")
+(autoload 'magit-extras-stage-commit-and-push "magit-extras")
 ;;;###autoload
 (defun tlon-clock-entry-submit (file)
   "Submit the clock entry FILE.
@@ -89,6 +91,8 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
     (magit-extras-track-file file)
     (magit-extras-stage-commit-and-push (format "Add clock entry: %s" (file-name-nondirectory file)))))
 
+(autoload 'magit-extras-get-unstaged-files "magit-extras")
+(autoload 'magit-untracked-files "magit-extras")
 ;;;###autoload
 (defun tlon-clock-entry-submit-all ()
   "Submit all clock files not yet submitted."

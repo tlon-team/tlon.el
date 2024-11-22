@@ -32,8 +32,6 @@
 (require 'tlon-core)
 (require 'tlon-forg)
 (require 'tlon-import)
-(require 'tlon-split)
-(require 'tlon-tts)
 
 ;;;; Variables
 
@@ -101,10 +99,12 @@ This variable should not be set manually.")
   (let ((action (cadr (split-string label))))
     action))
 
-(declare-function orgit-topic-open "orgit-forge")
-(declare-function magit-pull-from-upstream "magit-pull")
-(declare-function tlon-check-branch "tlon")
-(declare-function winum-select-window-2 "winum")
+(autoload 'orgit-topic-open "orgit-forge")
+(autoload 'magit-pull-from-upstream "magit-pull")
+(autoload 'tlon-check-branch "tlon")
+(autoload 'winum-select-window-2 "winum")
+(autoload 'tlon-metadata-in-repos "tlon-yaml")
+(autoload 'tlon-get-clock-key "tlon-clock")
 (defun tlon-jobs-initialize (fun)
   "Initialize process associated with FUN.
 Runs all the general initialization functions, followed by the specific function
@@ -129,8 +129,9 @@ for the process that is being initialized."
 	(tlon-copy-buffer original-path)
 	(funcall fun)))))
 
-(declare-function tlon-check-file "tlon")
-(declare-function tlon-commit-and-push "tlon")
+(autoload 'tlon-check-file "tlon")
+(autoload 'tlon-commit-and-push "tlon")
+(autoload 'tlon-split-mode "tlon")
 (defun tlon-jobs-finalize ()
   "Finalize current stage of translation process."
   (tlon-split-mode -1)
@@ -275,6 +276,7 @@ substitute assignee."
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
+(autoload 'tlon-create-translation-file "tlon-yaml")
 ;;;###autoload
 (defun tlon-create-job ()
   "Create a new job for IDENTIFIER based on Ebib entry at point.
@@ -307,6 +309,7 @@ Markdown buffer at point is used."
 
 ;;;;; `jobs.org'
 
+(declare-function tlon-metadata-in-repo "tlon-yaml")
 (defun tlon-create-heading-for-job (&optional key commit)
   "Create a heading based on BibTeX KEY in `jobs.org'.
 If KEY is not provided, the key in the Markdown buffer at point is used. If

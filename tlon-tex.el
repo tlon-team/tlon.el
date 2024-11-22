@@ -28,7 +28,6 @@
 ;;; Code:
 
 (require 'bibtex-extras)
-(require 'doi-utils)
 (require 'paths)
 (require 'shut-up)
 (require 'tlon-core)
@@ -215,7 +214,7 @@ abstract will, or will not, replace the existing one, respectively."
 	  found)))))
 
 (defvar tlon-ai-batch-fun)
-(zotra-extras-fetch-field 'zotra-extras-fetch-field "zotra-extras")
+(autoload 'zotra-extras-fetch-field "zotra-extras")
 (defun tlon-fetch-abstract-with-zotra (url doi)
   "Return the abstract of the work with URL or DOI."
   (when-let ((id (or url doi)))
@@ -237,8 +236,10 @@ abstract will, or will not, replace the existing one, respectively."
 ;; `doi-utils-get-redirect' doesn't work
 ;; note that my function doesn't always return the final target of the redirect
 ;; because they sometimes use JavaScript; see id:1ED71E19-1CE4-4221-8880-AFFD799E34F0
+(defvar doi-utils-dx-doi-org-url)
 (defun tlon-fetch-url-from-doi (doi)
   "Fetch the URL from a DOI."
+  (require 'doi-utils)
   (with-temp-buffer
     (call-process "curl" nil t nil
 		  "-ILs" (concat doi-utils-dx-doi-org-url doi))

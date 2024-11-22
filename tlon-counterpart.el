@@ -44,6 +44,7 @@ buffer."
       (user-error "Repo of file `%s' is not of type `content'" file))
     (tlon-repo-lookup :subtype :dir repo)))
 
+;;;###autoload
 (defun tlon-get-counterpart (&optional file)
   "Get the counterpart file of FILE.
 If FILE is nil, return the counterpart of the file visited by the current
@@ -122,6 +123,7 @@ buffer."
 	 (counterpart-bare-dir (tlon-get-bare-dir-translation target-lang source-lang bare-dir)))
     (file-name-concat counterpart-repo counterpart-bare-dir)))
 
+;;;###autoload
 (defun tlon-open-counterpart (&optional arg file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
@@ -144,6 +146,7 @@ If called with a prefix ARG, open the counterpart in the other window."
     (markdown-forward-paragraph (- paragraphs offset))
     (goto-char (1+ (point)))))
 
+(autoload 'dired-get-file-for-visit "dired")
 (defun tlon-open-counterpart-in-dired (&optional arg file)
   "Open the counterpart of file in FILE in Dired.
 If FILE is nil, open the counterpart of the file at point.
@@ -154,6 +157,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 		       (or file (dired-get-file-for-visit)))))
     (dired-jump arg counterpart)))
 
+;;;###autoload
 (defun tlon-open-counterpart-dwim (&optional arg file)
   "Open the counterpart of file in FILE as appropriate.
 If called in `markdown-mode', open FILE’s counterpart. If called in
@@ -167,6 +171,7 @@ If called with a prefix ARG, open the counterpart in the other window."
     ('markdown-mode (tlon-open-counterpart arg file))
     ('dired-mode (tlon-open-counterpart-in-dired arg file))))
 
+;;;###autoload
 (defun tlon-open-counterpart-in-other-window-dwim (&optional file)
   "Open the counterpart of file in FILE as appropriate.
 If called in `markdown-mode', open FILE’s counterpart. If called in
@@ -234,6 +239,7 @@ default to \".md\"."
 
 ;;;;; Temporary
 
+(autoload 'simple-extras-asciify-string "simple-extras")
 (defun tlon-add-counterpart-metadata (file language bare-dir)
   "Read FILE in LANGUAGE located in BARE-DIR."
   (let ((dir (tlon-repo-lookup :dir :subproject "uqbar" :language language))
@@ -257,6 +263,7 @@ default to \".md\"."
 	  (insert metadata)
 	  (save-buffer))))))
 
+(declare-function simple-extras-slugify "simple-extras")
 (defun tlon-add-author-metadata (language)
   "Add metadata to author files in LANGUAGE."
   (let* ((dir (tlon-repo-lookup :dir :subproject "uqbar" :language language))

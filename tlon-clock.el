@@ -45,6 +45,7 @@ The second capture group handles the `.md' extension, which we used previously."
       (substring-no-properties org-clock-current-task)
     (user-error "No clock running")))
 
+;;;###autoload
 (defun tlon-get-clock-key ()
   "Return bibtex key in clocked heading.
 Assumes key is enclosed in backticks."

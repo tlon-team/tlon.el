@@ -1088,6 +1088,7 @@ If OVERWRITE is non, replace the existing marker when present."
 
 ;;;;; Misc
 
+;;;###autoload
 (defun tlon-ensure-markdown-mode ()
   "Check if the current buffer is in a Markdown-derived mode."
   (unless (derived-mode-p 'markdown-mode)

@@ -29,7 +29,6 @@
 
 (require 'forge)
 (require 'org)
-(require 'org-extras)
 (require 'shut-up)
 (require 'tlon-core)
 (require 'tlon-dispatch)
@@ -312,6 +311,8 @@ current buffer."
 	  (tlon-set-initial-label-and-assignee))
 	(tlon-store-todo "tbJ" 'master-todo issue)))))
 
+(autoload 'org-extras-refile-goto-latest "org-extras")
+(autoload 'org-extras-refile-at-position "org-extras")
 (defun tlon-store-or-refile-job-todo (&optional issue)
   "Refile TODO under appropriate heading, or create new master TODO if none exists.
 If ISSUE is nil, use the issue at point or in the current buffer."
@@ -565,6 +566,7 @@ If REPO is nil, use the current repository."
 
 ;;;;; Set heading elements
 
+(autoload 'org-extras-goto-beginning-of-heading-text "org-extras")
 (defun tlon-set-repo-in-heading ()
   "Set the repo in the heading at point if not already present."
   (when (and (org-at-heading-p)
@@ -581,7 +583,6 @@ If REPO is nil, use the current repository."
     ;; move past repo name
     (re-search-forward "\\[.+?\\] ")
     (insert (format "#%s " (number-to-string issue-number)))))
-
 
 ;;;;; Close issues, todos
 
