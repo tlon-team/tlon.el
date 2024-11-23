@@ -1252,7 +1252,11 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
     (revert-buffer)))
 
 (defun tlon-tts-get-list-of-chunks (file)
-  "Return a list of the file chunks for FILE, sorted alphabetically."
+  "Return a list of the existing file chunks for FILE.
+The file chunks are the files in the same directory as FILE that have the same
+base name and extension as FILE, but with a number appended to the base name
+before the extension. The list is sorted in ascending order by the appended
+number. If no chunks are found, return nil."
   (let* ((dir (file-name-directory file))
 	 (base-name (file-name-base file))
 	 (extension (file-name-extension file))
