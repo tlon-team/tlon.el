@@ -1145,6 +1145,8 @@ intonation, but not the silences, correctly)."
 	  (backward-paragraph))
 	(tlon-tts-move-point-before-break-tag)
 	(setq end (point))
+	(when (= begin end)
+	  (user-error "Paragraph exceeds chunk size"))
 	(let* ((string (string-trim (buffer-substring-no-properties begin end)))
 	       (chunk (cons string (when voice (cons 'tlon-tts-voice voice)))))
 	  (push chunk chunks))
