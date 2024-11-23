@@ -28,6 +28,7 @@
 
 (require 'forge-core)
 (require 'forge-search)
+(require 'shut-up)
 (require 'tlon-core)
 (require 'vc)
 (require 'vc-extras)
@@ -103,7 +104,6 @@ those repos, use `tlon-clone-missing-repos'."
 
 ;;;;;; Pull issues
 
-(declare-function shut-up "shut-up")
 (defun tlon-pull-issues-in-repo (&optional dir)
   "Pull repository in DIR.
 If DIR is nil, use the current directory."
