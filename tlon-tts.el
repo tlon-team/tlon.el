@@ -881,9 +881,6 @@ at the end of the TTS process.")
 (defvar tlon-tts-chunks-to-process 0
   "Number of chunks left to process.")
 
-(defvar tlon-tts-unprocessed-chunk-files nil
-  "The chunks to process in the current TTS session.")
-
 ;;;;;; Local abbrevs
 
 ;; These are the variables that store the file-local variable values for a particular tts session
@@ -1085,13 +1082,9 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 
 (defun tlon-tts-prepare-chunks ()
   "Prepare the list of chunks."
-  (let* ((destination (tlon-tts-set-destination))
-	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
+  (let* ((char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
 	 (chunks (tlon-tts-read-into-chunks char-limit)))
-    (setq tlon-tts-chunks chunks)
-    (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-first-n-chunk-files destination (length tlon-tts-chunks)))
-    (when tlon-debug
-      (message "`tlon-tts-unprocessed-chunk-files' is now: %s" tlon-tts-unprocessed-chunk-files))))
+    (setq tlon-tts-chunks chunks)))
 
 (defun tlon-tts-set-destination ()
   "Set the path where the audio file will be saved."
@@ -1209,10 +1202,6 @@ overriding value."
 
 (defun tlon-tts-process-chunk (file)
   "Process chunk in FILE."
-  (setq tlon-tts-unprocessed-chunk-files
-	(remove file tlon-tts-unprocessed-chunk-files))
-  (when tlon-debug
-    (message "`tlon-tts-unprocessed-chunk-files' is now: %s" tlon-tts-unprocessed-chunk-files))
   (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
   (when tlon-debug
     (message "Debug: Chunks left to process: %d" tlon-tts-chunks-to-process))
