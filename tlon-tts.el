@@ -1074,17 +1074,17 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (interactive)
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a staging buffer"))
-  (tlon-tts-set-chunks)
+  (tlon-tts-prepare-chunks)
   (tlon-tts-process-chunks))
 
 (defun tlon-tts-staging-buffer-p ()
   "Return t iff the current buffer is a staging buffer."
   (bound-and-true-p tlon-tts-staging-buffer-p))
 
-;;;;;; Set chunks
+;;;;;; Prepare chunks
 
-(defun tlon-tts-set-chunks ()
-  "Set chunks contents."
+(defun tlon-tts-prepare-chunks ()
+  "Prepare the list of chunks."
   (let* ((destination (tlon-tts-set-destination))
 	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
 	 (chunks (tlon-tts-read-into-chunks char-limit)))
