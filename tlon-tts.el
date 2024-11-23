@@ -1211,6 +1211,8 @@ overriding value."
   "Process chunk in FILE."
   (setq tlon-tts-unprocessed-chunk-files
 	(remove file tlon-tts-unprocessed-chunk-files))
+  (when tlon-debug
+    (message "`tlon-tts-unprocessed-chunk-files' is now: %s" tlon-tts-unprocessed-chunk-files))
   (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
   (when tlon-debug
     (message "Debug: Chunks left to process: %d" tlon-tts-chunks-to-process))
