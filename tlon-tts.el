@@ -1094,7 +1094,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
       (message "`tlon-tts-unprocessed-chunk-files' is now: %s" tlon-tts-unprocessed-chunk-files))))
 
 (defun tlon-tts-set-destination ()
-  "Set the destination for the audio file."
+  "Set the path where the audio file will be saved."
   (let* ((staged-file (file-name-base tlon-tts-source))
 	 (extension (cdr tlon-tts-audio))
 	 (file-name (file-name-with-extension staged-file extension)))
