@@ -1089,7 +1089,9 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 	 (char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
 	 (chunks (tlon-tts-read-into-chunks char-limit)))
     (setq tlon-tts-chunks chunks)
-    (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-chunk-filenames destination (length tlon-tts-chunks)))))
+    (setq tlon-tts-unprocessed-chunk-files (tlon-tts-get-first-n-chunk-files destination (length tlon-tts-chunks)))
+    (when tlon-debug
+      (message "`tlon-tts-unprocessed-chunk-files' is now: %s" tlon-tts-unprocessed-chunk-files))))
 
 (defun tlon-tts-set-destination ()
   "Set the destination for the audio file."
@@ -1274,7 +1276,7 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 	(insert (format "file '%s'\n" (expand-file-name file)))))
     temp-file-list))
 
-(defun tlon-tts-get-chunk-filenames (file n)
+(defun tlon-tts-get-first-n-chunk-files (file n)
   "Return a list of the first N chunk filenames of FILE."
   (let ((all-chunks (tlon-tts-get-list-of-chunks file)))
     (cl-subseq all-chunks 0 (min n (length all-chunks)))))
