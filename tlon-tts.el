@@ -1221,9 +1221,9 @@ overriding value."
 	  (dired-listing-switches "-alht"))
       (when (tlon-tts-append-silence-to-chunks-p file)
 	(tlon-tts-append-silence-to-chunks file))
-      (tlon-tts-join-chunks file)
       (when tlon-debug
 	(message "Appended silence to chunks."))
+      (tlon-tts-join-chunks file)
       (when tlon-tts-delete-file-chunks
 	(tlon-tts-delete-chunks-of-file file))
       (dired (file-name-directory file))
