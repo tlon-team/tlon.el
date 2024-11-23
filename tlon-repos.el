@@ -231,28 +231,28 @@ If REPOS is nil, search in all tracked repos."
   "Repos menu."
   [["Magit"
     ""
-    ("l" "Clone remote repo"        tlon-clone-repo)
-    ("L" "Clone all missing repos"  tlon-clone-missing-repos)
+    ("c" "Create remote repo"            tlon-create-repo)
+    ("l" "Clone remote repo"             tlon-clone-repo)
+    ("L" "Clone all missing repos"       tlon-clone-missing-repos)
     ""
-    ("c" "Create remote repo"       tlon-create-repo)
+    ("s" "Split local repo"              vc-extras-split-local-repo)
+    ("d" "Delete local repo"             tlon-delete-local-repo)
     ""
-    ("s" "Split local repo"         vc-extras-split-local-repo)
+    ("u" "Unlock uqbar git-crypt"        tlon-unlock-uqbar-git-crypt)
     ""
-    ("d" "Delete local repo"        tlon-delete-local-repo)
-    ""
-    ("u" "Unlock uqbar git-crypt"   tlon-unlock-uqbar-git-crypt)]
+    ("!" "Check authentication"          vc-extras-check-gh-authenticated)]
    ["Forge"
     ""
-    ("a" "Track repo"               forge-extras-track-repository)
-    ("A" "Track all missing repos"  tlon-forge-track-missing-repos)
+    ("a" "Track repo"                    forge-extras-track-repository)
+    ("A" "Track all missing repos"       tlon-forge-track-missing-repos)
     ""
-    ("r" "Untrack repo"             forge-remove-repository)
-    ("R" "Reset database"           forge-reset-database)
+    ("r" "Untrack repo"                  forge-remove-repository)
+    ("R" "Untrack all repos (db reset)"  forge-reset-database)
     ""
-    ("t" "List tracked repos"       forge-list-repositories)
+    ("t" "List tracked repos"            forge-list-repositories)
     ""
-    ("p" "Pull issues in repo"      tlon-pull-issues-in-repo)
-    ("P" "Pull issues in all repos" tlon-pull-issues-in-all-repos)]])
+    ("p" "Pull issues in repo"           tlon-pull-issues-in-repo)
+    ("P" "Pull issues in all repos"      tlon-pull-issues-in-all-repos)]])
 
 (provide 'tlon-repos)
 
