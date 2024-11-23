@@ -79,9 +79,10 @@ confirmation."
 (autoload 'magit-extras-track-file "magit-extras")
 (autoload 'magit-extras-stage-commit-and-push "magit-extras")
 ;;;###autoload
-(defun tlon-clock-entry-submit (file)
+(defun tlon-clock-entry-submit (file &optional no-push)
   "Submit the clock entry FILE.
-If FILE is nil, prompt the user for a file, defaulting to the one for today."
+If FILE is nil, prompt the user for a file, defaulting to the one for today.
+If NO-PUSH is nil, do not push the commit to the remote repository."
   (interactive (list (read-file-name "File: "
 				     (tlon-clock-get-repo) nil nil
 				     (format-time-string "%Y-%m-%d"))))
@@ -89,10 +90,12 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
     (unless (file-exists-p file)
       (user-error "File `%s' does not exist" file))
     (magit-extras-track-file file)
-    (magit-extras-stage-commit-and-push (format "Add clock entry: %s" (file-name-nondirectory file)))))
+    (magit-extras-stage-commit-and-push (format "Add clock entry: %s" (file-name-nondirectory file))
+					file no-push)))
 
 (autoload 'magit-extras-get-unstaged-files "magit-extras")
 (autoload 'magit-untracked-files "magit-extras")
+(declare-function magit-push-current-to-pushremote "magit-push")
 ;;;###autoload
 (defun tlon-clock-entry-submit-all ()
   "Submit all clock files not yet submitted."
@@ -101,7 +104,8 @@ If FILE is nil, prompt the user for a file, defaulting to the one for today."
 	 (unstaged (magit-extras-get-unstaged-files))
 	 (untracked (magit-untracked-files)))
     (dolist (file (append unstaged untracked))
-      (tlon-clock-entry-submit file))))
+      (tlon-clock-entry-submit file 'no-push))
+    (call-interactively #'magit-push-current-to-pushremote)))
 
 ;;;;; Report
 
