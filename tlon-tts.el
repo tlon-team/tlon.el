@@ -480,7 +480,7 @@ file name.")
     (:tag voice
 	  :tlon t
 	  :polly nil
-	  :azure t
+	  :azure nil ; stopped working
 	  :google t
 	  :openai nil
 	  :elevenlabs nil
