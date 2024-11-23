@@ -134,7 +134,9 @@ If GROUP is non-nil, include the \"group\" option in the prompt."
       (while (not (tlon-issue-lookup title dir))
 	(sleep-for 0.1))
       (forge-visit-issue (tlon-issue-lookup title dir))
-      (format "*forge: %s %s*" (oref (forge-get-repository :tracked?) slug) (oref (forge-current-topic) slug)))))
+      (format "*forge: %s %s*"
+	      (oref (forge-get-repository :tracked?) slug)
+	      (oref (forge-current-topic) slug)))))
 
 ;; TODO: generalize to all possible meetings
 (defun tlon-discuss-issue-in-meeting ()
