@@ -59,7 +59,8 @@ confirmation."
 ;;;###autoload
 (defun tlon-clock-entry-create-in-range (start end)
   "Create clock entries for dates between START to END in the user’s clock repo."
-  (interactive (list (org-read-date) (org-read-date)))
+  (interactive (list (org-read-date nil nil nil "Start date (inclusive):")
+		     (org-read-date nil nil nil "End date (inclusive):")))
   (let ((dates (calendar-extras-get-dates-in-range start end)))
     (dolist (date dates)
       (tlon-clock-entry-create date 'never))
