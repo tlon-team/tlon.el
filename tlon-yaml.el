@@ -334,7 +334,7 @@ If FILE is nil, use the file visited by the current buffer."
       (user-error "File `%s' already contains a metadata section" file))
     (with-current-buffer (find-file-noselect file)
       (goto-char (point-min))
-      (insert (format "%1$s\n%1$s" tlon-yaml-delimiter))
+      (insert (format "%1$s%1$s" tlon-yaml-delimiter))
       (save-buffer))))
 
 ;; TODO: throw error if any of fields already present
