@@ -273,26 +273,27 @@ abstract will, or will not, replace the existing one, respectively."
 	      (progn (message "No abstract found.") nil))))))))
 
 (defun tlon-fetch-abstract-from-google-books (isbn)
-  "Return the abstract of the book with ISBN."
+  "Return the abstract of the book with ISBN, timing out after 5 seconds."
   (when isbn
-    (let ((url (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn))
-	  (description nil))
-      (message "Trying to find abstract for %s with Google Books..." isbn)
-      (with-current-buffer (url-retrieve-synchronously url)
-	(set-buffer-multibyte t) ;; Ensure buffer is treated as multibyte
-	(set-buffer-file-coding-system 'utf-8) ;; Set coding system to UTF-8
-	(goto-char (point-min))
-	(re-search-forward "^$")
-	(delete-region (point) (point-min))
-	(let* ((json-object-type 'plist)
-	       (json-array-type 'list)
-	       (json (json-read))
-	       (items (plist-get json :items))
-	       (volume-info (and items (plist-get (car items) :volumeInfo))))
-	  (setq description (and volume-info (plist-get volume-info :description)))))
-      (when (get-buffer url)
-	(kill-buffer url))
-      (if description description (progn (message "No abstract found.") nil)))))
+    (with-timeout (5 (message "Timeout while fetching abstract") nil)
+      (let ((url (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn))
+            (description nil))
+        (message "Trying to find abstract for %s with Google Books..." isbn)
+        (with-current-buffer (url-retrieve-synchronously url)
+          (set-buffer-multibyte t)
+          (set-buffer-file-coding-system 'utf-8)
+          (goto-char (point-min))
+          (re-search-forward "^$")
+          (delete-region (point) (point-min))
+          (let* ((json-object-type 'plist)
+                 (json-array-type 'list)
+                 (json (json-read))
+                 (items (plist-get json :items))
+                 (volume-info (and items (plist-get (car items) :volumeInfo))))
+            (setq description (and volume-info (plist-get volume-info :description)))))
+        (when (get-buffer url)
+          (kill-buffer url))
+        (if description description (progn (message "No abstract found.") nil))))))
 
 (defun tlon-abstract-may-proceed-p ()
   "Return t iff it’s okay to proceed with abstract processing."
