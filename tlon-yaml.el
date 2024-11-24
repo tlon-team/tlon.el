@@ -395,8 +395,7 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
 	  (user-error "Aborted")))
       (let* ((value (or value
 			(completing-read (format "%s: " key)
-					 (tlon-metadata-lookup-all
-					  (tlon-metadata-in-repo) key))))
+					 (tlon-yaml-get-key-values key))))
 	     (formatted-value (cond
 			       ((or (vectorp value) (listp value))
 				(format "[%s]"
@@ -436,10 +435,9 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
 (defun tlon-yaml-get-key-values (key)
   "Return the admissible values for a YAML field with KEY."
   (pcase key
-    ;; ("type" )
-    ("authors" (tlon-get-metadata-values-of-type "author"))
+    ("authors" (tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "author"))
     ("translators" (tlon-metadata-get-translators))
-    ("tags" (tlon-get-metadata-values-of-type "tag")) ; make it language-specific
+    ("tags" (tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "tag"))
     ("date" (format-time-string "%FT%T%z"))
     ("original_path" (tlon-yaml-get-original-path))
     ("publication_status" tlon-yaml-publication-statuses)))
