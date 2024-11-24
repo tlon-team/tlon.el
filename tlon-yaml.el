@@ -561,6 +561,7 @@ list, use them pre-populate the selection."
 						    "]")
 					    line)))))))
 
+;; unused
 (defun tlon-yaml-insert-string (candidates)
   "Insert a string in the YAML field at point.
 Prompt the user for a choice in CANDIDATES. If point is on a string, use it to
