@@ -229,14 +229,15 @@ If REPOS is nil, search in all tracked repos."
 ;;;###autoload (autoload 'tlon-repos-menu "tlon-repos" nil t)
 (transient-define-prefix tlon-repos-menu ()
   "Repos menu."
-  [["Magit"
+  [["Git"
     ""
-    ("c" "Create remote repo"            tlon-create-repo)
-    ("l" "Clone remote repo"             tlon-clone-repo)
+    ("l" "Clone repo"                    tlon-clone-repo)
     ("L" "Clone all missing repos"       tlon-clone-missing-repos)
     ""
     ("s" "Split local repo"              vc-extras-split-local-repo)
     ("d" "Delete local repo"             tlon-delete-local-repo)
+    ""
+    ("c" "Create remote repo"            tlon-create-repo)
     ""
     ("u" "Unlock uqbar git-crypt"        tlon-unlock-uqbar-git-crypt)
     ""
