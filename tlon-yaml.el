@@ -502,7 +502,7 @@ is `translation_key', return the BibTeX key of the translation"
 ;; TODO: refactor with above
 (defun tlon-yaml-delete-field (&optional key file)
   "Delete the YAML field with KEY in FILE."
-  (let ((key (or key (completing-read "Field: " tlon-yaml-article-keys)))
+  (let ((key (or key (completing-read "Field: " (tlon-yaml-get-valid-keys))))
 	(file (or file (buffer-file-name))))
     (if-let ((metadata (tlon-yaml-get-metadata file)))
 	(if (assoc key metadata)
