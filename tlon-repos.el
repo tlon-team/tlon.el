@@ -121,7 +121,7 @@ If DIR is nil, use the current directory."
     (dolist (repo repos)
       (tlon-pull-issues-in-repo repo))))
 
-;;;; Search
+;;;;;; Search
 
 ;; 2024-11-05: this is a very inefficient and inelegant approach, but my
 ;; attempts to query the db directly all failed. try again with the best LLM in
