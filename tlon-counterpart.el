@@ -210,7 +210,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 
 ;; TODO: make it inform the user where the discrepancies arise, e.g. by coloring
 ;; the relevant paragraphs
-(defun tlon-check-counterpart-paragraph-number-match (&optional file)
+(defun tlon-ensure-counterpart-paragraph-number-match (&optional file)
   "Check that FILE and its counterpart have the same number of paragraphs.
 If FILE is not provided, use the current buffer."
   (interactive)
@@ -226,14 +226,17 @@ If FILE is not provided, use the current buffer."
 	       (file-name-nondirectory part) paras-in-part
 	       (file-name-nondirectory counterpart) paras-in-counterpart))))
 
-(defun tlon-check-counterpart-paragraph-number-match-in-dir (dir &optional extension)
+(defun tlon-ensure-counterpart-paragraph-number-match-in-dir (&optional dir extension)
   "Check that files in DIR and counterparts have the same number of paragraphs.
-If EXTENSION is provided, only check files with that extension. Otherwise,
-default to \".md\"."
-  (let* ((extension (or extension ".md"))
+If DIR is nil, check the files in the current directory. If EXTENSION is nil,
+check files with \".md\" extension only."
+  (interactive)
+  (let* ((dir (or dir default-directory))
+	 (extension (or extension ".md"))
 	 (files (directory-files dir t (concat ".*\\" extension "$"))))
     (cl-loop for file in files
-	     do (tlon-check-counterpart-paragraph-number-match file))))
+	     do (tlon-ensure-counterpart-paragraph-number-match file))))
+
 
 ;;;;; Temporary
 
