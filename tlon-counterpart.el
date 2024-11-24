@@ -237,6 +237,18 @@ check files with \".md\" extension only."
     (cl-loop for file in files
 	     do (tlon-ensure-counterpart-paragraph-number-match file))))
 
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-counterpart-menu "tlon-counterpart" nil t)
+(transient-define-prefix tlon-counterpart-menu ()
+  "`tlon-counterpart' menu."
+  [[""
+    ("u" "visit counterpart"                     tlon-open-counterpart-dwim)
+    ("H-u" "visit counterpart other window"      tlon-open-counterpart-in-other-window-dwim)
+    ("U" "open counterpart in Dired"             tlon-open-counterpart-in-dired)]
+   [""
+    ("m" "ensure paragraph number match"         tlon-ensure-counterpart-paragraph-number-match)
+    ("M" "ensure paragraph number match in dir"  tlon-ensure-counterpart-paragraph-number-match-in-dir)]])
 
 ;;;;; Temporary
 

@@ -58,6 +58,7 @@
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
     ("t" "contacts"                       tlon-contacts-menu)
+    ("u" "counterpart"                    tlon-counterpart-menu)
     ("y" "forg"                           tlon-forg-menu)
     ("x" "tex"                            tlon-tex-menu)
     ("z" "tts"                            tlon-tts-menu)]
