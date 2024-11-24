@@ -606,10 +606,17 @@ renaming it."
 	  (save-buffer))
       (write-file target))))
 
+(autoload 'tlon-get-counterpart-dir "tlon-counterpart")
 (defun tlon-yaml-get-original-path ()
-  "Set the value of `original_path' YAML field."
-  (let* ((subproject (tlon-repo-lookup :subproject :dir (tlon-get-repo)))
-	 (dir (tlon-repo-lookup :dir :subproject subproject :language "en")))
+  "Get the value of `original_path' YAML field.
+Accumulate the list of all files of current type in the English version of the
+current project. For example, if the current project is \"uqbar\" and the
+current type is \"article\", get all filenames in \"uqbar-en/articles\"."
+  (let* ((lang (tlon-get-language-in-file))
+	 (dir (if (string= lang "en")
+		  (let ((subproject (tlon-repo-lookup :subproject :dir (tlon-get-repo))))
+		    (tlon-repo-lookup :dir :subproject subproject :language "en"))
+		(tlon-get-counterpart-dir))))
     (tlon-yaml-get-filenames-in-dir dir)))
 
 (declare-function simple-extras-slugify "simple-extras")
