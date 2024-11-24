@@ -379,14 +379,50 @@ FIELDS is an alist, typically generated via `tlon-yaml-to-alist'."
 
 ;;;;; Interactive editing
 
-(defun tlon-yaml-insert-field (key &optional value)
-  "Insert field for KEY.
-If KEY already has VALUE, use it as the initial input."
+(defun tlon-yaml-insert-field (&optional key value)
+  "Insert YAML field with KEY and VALUE in the metadata section.
+If KEY or VALUE are nil, prompt user to select from list of suitable candidates."
   (interactive)
-  (when (tlon-yaml-get-key key)
-    (user-error "Field `%s' already exists" key))
-  (let ((value (or value (tlon-yaml-set-key-value key))))
-    (tlon-yaml-insert-key-value key value)))
+  (save-excursion
+    (goto-char (point-min))
+    (unless (looking-at-p tlon-yaml-delimiter)
+      (tlon-yaml-insert-metadata-section))
+    (let* ((candidates (tlon-yaml-get-valid-keys))
+	   (key (or key (completing-read "key:" candidates))))
+      (when (tlon-yaml-get-key key)
+	(if (y-or-n-p (format "Field '%s' already exists; replace?" key))
+	    (tlon-yaml-delete-field key)
+	  (user-error "Aborted")))
+      (let* ((value (or value
+			(completing-read (format "%s: " key)
+					 (tlon-metadata-lookup-all
+					  (tlon-metadata-in-repo) key))))
+	     (formatted-value (cond
+			       ((or (vectorp value) (listp value))
+				(format "[%s]"
+					(mapconcat (lambda (item)
+						     (format "\"%s\"" item))
+						   (if (vectorp value)
+						       (append value nil)
+						     value)
+						   ", ")))
+			       ((stringp value) value)
+			       (t (format "%s" value))))
+	     (new-field (format "%-20s %s" (concat key ":") formatted-value))
+	     (target-pos (cl-position key candidates :test #'string=))
+	     (next-key (nth (1+ target-pos) candidates)))
+	(goto-char (point-min))
+	(forward-line)
+	(when next-key
+	  (search-forward-regexp (format "^%s:" next-key) nil t)
+	  (beginning-of-line))
+	(insert new-field "\n")))))
+
+;;;###autoload
+(defun tlon-yaml-insert-original-path ()
+  "Insert the value of `original_path' YAML field."
+  (interactive)
+  (tlon-yaml-insert-field "original_path"))
 
 ;; create an edit field command
 ;; then an insert or edit command
