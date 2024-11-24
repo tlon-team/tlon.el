@@ -241,7 +241,7 @@ If REPOS is nil, search in all tracked repos."
     ""
     ("u" "Unlock uqbar git-crypt"        tlon-unlock-uqbar-git-crypt)
     ""
-    ("!" "Check authentication"          vc-extras-check-gh-authenticated)]
+    ("?" "Check authentication"          vc-extras-check-gh-authenticated)]
    ["Forge"
     ""
     ("a" "Track repo"                    forge-extras-track-repository)
