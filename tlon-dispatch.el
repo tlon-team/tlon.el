@@ -74,7 +74,9 @@
     ("H-u" "update & reload"              tlon-update-package-and-reload)
     ("H-o" "open"                         tlon-open-package-files)
     ("H-c" "copy info"                    tlon-copy-package-info)
-    """"""""""""""
+    """"""""""
+    ("!" "report bug"                     tlon-report-bug)
+    ""
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
     (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))]])
 

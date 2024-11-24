@@ -914,6 +914,19 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	       :reader 'ignore) ;; do not parse the response json
     (message "Created issue with title %s" title)))
 
+;; currently only used for submitting bugs; maybe it can be integrated with the
+;; forg code
+(defun tlon-create-issue-in-dir (dir)
+  "Create a new issue in the git repository at DIR."
+  (magit-status-setup-buffer dir)
+  (forge-create-issue))
+
+;;;###autoload
+(defun tlon-report-bug ()
+  "Submit a bug report in the `tlon.el' repo."
+  (interactive)
+  (tlon-create-issue-in-dir (tlon-repo-lookup :dir :name "tlon.el")))
+
 ;;;###autoload
 (defun tlon-create-issue-from-todo ()
   "Create a new GitHub issue based on the current `org-mode' heading."
