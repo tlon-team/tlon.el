@@ -724,20 +724,21 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
 (declare-function forge-db "forge-db")
 (declare-function forge-get-repository "forge-core")
 (declare-function forge-get-issue "forge-core")
-(defun tlon-issue-lookup (string &optional dir)
-  "Return the first issue in DIR whose title includes STRING.
+(with-eval-after-load 'forge
+  (defun tlon-issue-lookup (string &optional dir)
+    "Return the first issue in DIR whose title includes STRING.
 If DIR is nil, use the current repository."
-  (when-let* ((string (concat "%" string "%"))
-	      (default-directory (or dir default-directory))
-	      (repo (forge-get-repository :tracked))
-	      (issue-id (caar (emacsql (forge-db)
-				       [:select [number]
-						:from 'issue
-						:where (and (= repository $s1)
-							    (like title $s2))]
-				       (oref repo id)
-				       string))))
-    (forge-get-issue repo issue-id)))
+    (when-let* ((string (concat "%" string "%"))
+		(default-directory (or dir default-directory))
+		(repo (forge-get-repository :tracked))
+		(issue-id (caar (emacsql (forge-db)
+					 [:select [number]
+						  :from 'issue
+						  :where (and (= repository $s1)
+							      (like title $s2))]
+					 (oref repo id)
+					 string))))
+      (forge-get-issue repo issue-id))))
 
 ;;;;; Get region pos
 
@@ -915,23 +916,19 @@ add to the default list of languages presented as completion candidates."
 
 ;;;;; json
 
-;; We set these values explicitly because `tlon-read-json' behaves weirdly
-;; otherwise. Not sure what is going on.
-(setq json-object-type 'alist)
-(setq json-array-type 'list)
-(setq json-key-type 'string)
-(defun tlon-read-json (&optional file object-type array-type key-type)
-  "Read JSON substring or FILE using array TYPE.
+(with-eval-after-load 'json
+  (defun tlon-read-json (&optional file object-type array-type key-type)
+    "Read JSON substring or FILE using array TYPE.
 OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
 ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 `string' (default), `symbol' or `keyword'."
-  (let ((json-object-type (or object-type 'alist))
-	(json-array-type (or array-type 'list))
-	(json-key-type (or key-type 'string))
-	(json-false :json-false))
-    (if file
-	(json-read-file file)
-      (json-read))))
+    (let ((json-object-type (or object-type 'alist))
+	  (json-array-type (or array-type 'list))
+	  (json-key-type (or key-type 'string))
+	  (json-false :json-false))
+      (if file
+	  (json-read-file file)
+	(json-read)))))
 
 (defun tlon-write-data (file data)
   "Write DATA to a JSON FILE."
