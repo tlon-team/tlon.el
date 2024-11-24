@@ -577,36 +577,12 @@ pre-populate the selection."
 
 ;;;;;; Get repo-specific entities
 
-(defun tlon-get-metadata-values-of-type (type &optional language current-repo)
-  "Return all metadata values of TYPE.
-Search all repos of `translations' subtype in LANGUAGE. If LANGUAGE is nil,
-default to `tlon-translation-language'. If CURRENT-REPO is non-nil,
-restrict search to the current repository."
-  (let ((repos (if current-repo
-		   (list (tlon-get-repo))
-		 (tlon-repo-lookup-all
-		  :dir
-		  :subtype 'translations
-		  :language (or language tlon-translation-language))))
-	metadata)
-    (dolist (repo repos)
-      (setq metadata
-	    (append metadata
-		    (tlon-metadata-lookup-all
-		     (tlon-metadata-in-repo repo)
-		     ;; TODO: add `type' field to metadata in utilitarianism
-		     "title" "type" type))))
-    metadata))
-
-(defun tlon-metadata-get-values-of-all-types (&optional language current-repo)
-  "Get a list of all `uqbar-en' entities.
-Search all repos of `translations' subtype in LANGUAGE. If LANGUAGE is nil,
-default to `tlon-translation-language'. If CURRENT-REPO is non-nil,
-restrict search to the current repository."
+(defun tlon-metadata-get-values-of-all-types ()
+  "Get a list of all `uqbar-en' entities."
   (append
-   (tlon-get-metadata-values-of-type "article" language current-repo)
-   (tlon-get-metadata-values-of-type "author" language current-repo)
-   (tlon-get-metadata-values-of-type "tag" language current-repo)))
+   (tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "article")
+   (tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "author")
+   (tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "tag")))
 
 ;;;;;; Create repo-specific entities
 

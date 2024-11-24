@@ -336,13 +336,15 @@ The entity can be a tag or an author."
 	 (current-link (markdown-link-at-pos (point)))
 	 (current-desc (nth 2 current-link))
 	 (current-target (nth 3 current-link))
-	 (language (tlon-get-language-in-file))
 	 current-element-title)
     (when current-target
       (setq current-element-title
 	    (tlon-md-get-title-in-link-target
 	     current-target)))
-    (let* ((candidates (tlon-metadata-get-values-of-all-types language 'current-repo))
+    (let* ((candidates (append
+			(tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "article")
+			(tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "author")
+			(tlon-metadata-lookup-all (tlon-metadata-in-repo) "title" "type" "tag")))
 	   (new-element-title (completing-read "Selection: " candidates nil t
 					       (or current-element-title selection)))
 	   (new-target-file (tlon-metadata-lookup (tlon-metadata-in-repo) "file" "title" new-element-title))
