@@ -405,17 +405,18 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
 						       (append value nil)
 						     value)
 						   ", ")))
-			       ((stringp value) value)
-			       (t (format "%s" value))))
-	     (new-field (format "%-20s %s" (concat key ":") formatted-value))
-	     (target-pos (cl-position key candidates :test #'string=))
-	     (next-key (nth (1+ target-pos) candidates)))
-	(goto-char (point-min))
-	(forward-line)
-	(when next-key
-	  (search-forward-regexp (format "^%s:" next-key) nil t)
-	  (beginning-of-line))
-	(insert new-field "\n")))))
+                               ((stringp value) value)
+                               (t (format "%s" value))))
+             (new-field (format "%-20s %s" (concat key ":") formatted-value))
+             (target-pos (cl-position key candidates :test #'string=)))
+        (goto-char (point-min))
+        (forward-line)
+        ;; Only try to find next key if target-pos is not nil
+        (when target-pos 
+          (when-let ((next-key (nth (1+ target-pos) candidates)))
+            (when (search-forward-regexp (format "^%s:" next-key) nil t)
+              (beginning-of-line))))
+        (insert new-field "\n")))))
 
 ;;;###autoload
 (defun tlon-yaml-insert-original-path ()
