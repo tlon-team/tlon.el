@@ -270,24 +270,30 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
 
 ;;;;; General
 
+(defmacro tlon-warn-if-gptel-context (&rest body)
+  "Execute BODY after checking if `gptel' context is empty.
+If context is not empty, ask for user confirmation before proceeding."
+  `(when (or (null gptel-context--alist)
+             (y-or-n-p "The `gptel' context is not empty. Proceed? "))
+     ,@body))
+
 (defun tlon-make-gptel-request (prompt string &optional callback full-model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
 PROMPT is a formatting string containing the prompt and a slot for a string,
 which is the variable part of the prompt (e.g. the text to be summarized in a
 prompt to summarize text). FULL-MODEL is a cons cell whose car is the backend
 and whose cdr is the model."
-  (when (or (null gptel-context--alist)
-	    (y-or-n-p "The `gptel' context is not empty. Proceed? "))
-    (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	  (prompt (tlon-ai-maybe-edit-prompt prompt)))
-      (cl-destructuring-bind (backend . model) full-model
-	(let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	      (gptel-model full-model))
-	  (if tlon-ai-batch-fun
-	      (condition-case nil
-		  (gptel-request (format prompt string) :callback callback)
-		(error nil))
-	    (gptel-request (format prompt string) :callback callback)))))))
+  (tlon-warn-if-gptel-context
+   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
+	 (prompt (tlon-ai-maybe-edit-prompt prompt)))
+     (cl-destructuring-bind (backend . model) full-model
+       (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
+	     (gptel-model full-model))
+	 (if tlon-ai-batch-fun
+	     (condition-case nil
+		 (gptel-request (format prompt string) :callback callback)
+	       (error nil))
+	   (gptel-request (format prompt string) :callback callback)))))))
 
 (defun tlon-ai-maybe-edit-prompt (prompt)
   "If `tlon-ai-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
