@@ -577,6 +577,7 @@ Otherwise, construct a local file path from SRC and return it."
 ;;;;;; Fix formatting
 
 (autoload 'gptel-context-add-file "gptel-context")
+(autoload 'tlon-get-corresponding-paragraphs "tlon-counterpart")
 ;;;###autoload
 (defun tlon-ai-fix-markdown-format (&optional file)
   "Fix Markdown format in FILE by copying the formatting in its counterpart.
@@ -588,24 +589,24 @@ use the file visited by the current buffer."
               (original-lang (tlon-get-language-in-file original-file))
               (translation-lang (tlon-get-language-in-file file))
               (prompt (tlon-ai-maybe-edit-prompt
-                       (tlon-lookup tlon-ai-fix-markdown-format-prompt 
+                       (tlon-lookup tlon-ai-fix-markdown-format-prompt
                                     :prompt :language original-lang)))
               (pairs (tlon-get-corresponding-paragraphs file))
               (fixed-file-path (concat (file-name-sans-extension file) "--fixed.md"))
               (results (make-vector (length pairs) nil))
               (completed 0))
-    (message "Fixing format of `%s' (%d paragraphs)..." 
+    (message "Fixing format of `%s' (%d paragraphs)..."
              (file-name-nondirectory file) (length pairs))
     (dotimes (i (length pairs))
       (let* ((pair (nth i pairs))
-             (formatted-prompt 
-              (format prompt 
+             (formatted-prompt
+              (format prompt
                       (cdr pair)
 		      (tlon-lookup tlon-languages-properties :standard :code original-lang)
 		      (car pair)
 		      (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
 	(gptel-request formatted-prompt
-          :callback 
+          :callback
           (lambda (response info)
             (if response
 		(progn
@@ -617,7 +618,7 @@ use the file visited by the current buffer."
 			(insert para "\n\n"))
                       (write-region (point-min) (point-max) fixed-file-path)
                       (find-file fixed-file-path))))
-              (user-error "Error processing paragraph %d: %s" 
+              (user-error "Error processing paragraph %d: %s"
                           i (plist-get info :status)))))))))
 
 ;;;;; Summarization
