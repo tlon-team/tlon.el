@@ -4,6 +4,53 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
+* Version 1.6.4 on 2024-11-25
+** Core changes
+*** tlon-core
+- Retired package with functionality moved to =tlon=
+- Added =tlon.el= repo to repository list
+- Enclosed some functions in =eval-after-load=
+
+** YAML processing 
+*** tlon-yaml
+- Revised and redefined =tlon-yaml-get-key-values= for metadata fields
+- Updated =tlon-yaml-article-keys= to include translation keys
+- Removed space between metadata delimiters
+- Improved =tlon-yaml-get-original-path= functionality
+- Revised field insertion and handling functionality
+
+** UI Enhancements
+*** Directory Locals
+- Added .dir-locals.el to disable jinx-mode for Korean & Arabic, since Aspell does not support these languages (!)
+
+** Repository Management
+*** tlon-repos
+- Revised repos menu structure and organization
+- Added bug reporting functionality: ~H-r !~
+- Improved repo handling logic
+
+** Text-to-Speech 
+*** tlon-tts
+- Added translations for all prompts in multiple languages
+- Sorted prompts alphabetically
+- Disabled voice tag for Azure (this is officially supported but was not working)
+- Improved chunk processing and error handling
+
+** Meeting Features
+*** tlon-meet
+- Improved issue handling and formatting
+- Enhanced buffer naming logic
+
+** Code Organization
+- Multiple refactoring changes across packages
+- Improved docstrings and comments
+- Reorganized functions into more logical groupings
+
+** Breaking Changes
+- YAML field handling has been significantly revised
+- A few repository management commands have new key bindings
+- Minor TTS voice functionality changes for Azure
+
 * Version 1.6.3 on 2024-11-22
 ** Core functionality
 *** tlon-core
