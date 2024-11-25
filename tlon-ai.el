@@ -576,39 +576,49 @@ Otherwise, construct a local file path from SRC and return it."
 
 ;;;;;; Fix formatting
 
+(autoload 'gptel-context-add-file "gptel-context")
 ;;;###autoload
-(defun tlon-ai-fix-markdown-format (original-file translation-file &optional callback)
-  "Fix Markdown format in TRANSLATION-FILE by copying the format in ORIGINAL-FILE.
-The file with the fixed format will be saved in the same directory as
-TRANSLATION-FILE."
-  (interactive (list (read-file-name "Original file: ")
-		     (read-file-name "Translation file: ")))
-  (let* ((previous-context gptel-context--alist)
-	 (original-lang (or (tlon-lookup tlon-languages-properties :standard :code
-					 (tlon-get-language-in-file original-file))
-			    (tlon-select-language)))
-	 (translation-lang (or (tlon-lookup tlon-languages-properties :standard :code
-					    (tlon-get-language-in-file translation-file))
-			       (tlon-select-language)))
-	 (prompt (tlon-ai-maybe-edit-prompt
-		  (tlon-lookup tlon-ai-fix-markdown-format-prompt :prompt :language
-			       (tlon-lookup tlon-languages-properties :code :standard original-lang))))
-	 (formatted-prompt (format prompt (file-name-nondirectory original-file) original-lang
-				   (file-name-nondirectory translation-file) translation-lang))
-	 (fixed-file-path (concat (file-name-sans-extension translation-file) "--fixed.md")))
-    (gptel-extras-clear-file-context)
-    (mapc #'gptel-context-add-file (list original-file translation-file))
-    (message "Fixing the format of `%s'..." (file-name-nondirectory translation-file))
-    (gptel-request formatted-prompt
-      :callback (or callback
-		    (lambda (response info)
-		      (if response
-			  (with-temp-buffer
-			    (insert response)
-			    (write-region (point-min) (point-max) fixed-file-path)
-			    (find-file fixed-file-path))
-			(user-error "Error: %s" (plist-get info :status)))
-		      (setq gptel-context--alist previous-context))))))
+(defun tlon-ai-fix-markdown-format (&optional file)
+  "Fix Markdown format in FILE by copying the formatting in its counterpart.
+Process the file paragraph by paragraph to avoid token limits. If FILE is nil,
+use the file visited by the current buffer."
+  (interactive)
+  (when-let* ((file (or file (buffer-file-name) (read-file-name "File to fix: ")))
+              (original-file (tlon-get-counterpart file))
+              (original-lang (tlon-get-language-in-file original-file))
+              (translation-lang (tlon-get-language-in-file file))
+              (prompt (tlon-ai-maybe-edit-prompt
+                       (tlon-lookup tlon-ai-fix-markdown-format-prompt 
+                                    :prompt :language original-lang)))
+              (pairs (tlon-get-corresponding-paragraphs file))
+              (fixed-file-path (concat (file-name-sans-extension file) "--fixed.md"))
+              (results (make-vector (length pairs) nil))
+              (completed 0))
+    (message "Fixing format of `%s' (%d paragraphs)..." 
+             (file-name-nondirectory file) (length pairs))
+    (dotimes (i (length pairs))
+      (let* ((pair (nth i pairs))
+             (formatted-prompt 
+              (format prompt 
+                      (cdr pair)
+		      (tlon-lookup tlon-languages-properties :standard :code original-lang)
+		      (car pair)
+		      (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
+	(gptel-request formatted-prompt
+          :callback 
+          (lambda (response info)
+            (if response
+		(progn
+                  (aset results i response)
+                  (setq completed (1+ completed))
+                  (when (= completed (length pairs))
+                    (with-temp-buffer
+                      (dolist (para (append results nil))
+			(insert para "\n\n"))
+                      (write-region (point-min) (point-max) fixed-file-path)
+                      (find-file fixed-file-path))))
+              (user-error "Error processing paragraph %d: %s" 
+                          i (plist-get info :status)))))))))
 
 ;;;;; Summarization
 
