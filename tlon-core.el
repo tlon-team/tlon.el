@@ -843,7 +843,7 @@ validate a list of natural languages."
 
 ;;;###autoload
 (defun tlon-select-language (&optional format babel prompt require-match initial-input
-				       additional-langs multiple)
+				       additional-langs excluded-langs multiple)
   "Prompt the user to select a LANGUAGE and return it in FORMAT.
 If FORMAT is `code', return the two-letter code of the language (e.g. \"es\"),
 if found. If it is `locale', return the predefined locale for that
@@ -857,14 +857,15 @@ PROMPT, REQUIRE-MATCH and INITIAL-INPUT behave as those arguments do in
 `completing-read'; check its docstring for details. If PROMPT is nil, use
 \"Language: \".
 
-ADDITIONAL-LANGS is a list of languages to add to the default list of languages
-presented as completion candidates.
+ADDITIONAL-LANGS and EXCLUDED-LANGS are lists of languages to add to or to
+exclude from the default list of languages, respectively.
 
 If MULTIPLE is non-nil, allow the user to select multiple languages. In that
 case, the return value will be a list of strings rather than a string."
   (let* ((selection (if multiple
 			(tlon-read-multiple-languages babel)
-		      (tlon-read-language babel prompt require-match initial-input additional-langs))))
+		      (tlon-read-language
+		       babel prompt require-match initial-input additional-langs excluded-langs))))
     (pcase format
       ((or 'code 'locale) (or (tlon-get-formatted-languages selection format) selection))
       (_ selection))))
@@ -883,16 +884,16 @@ English. FORMAT must be either `code' or `locale'."
       (funcall fun selection))))
 
 ;;;###autoload
-(defun tlon-read-language (&optional babel prompt require-match initial-input additional-langs)
+(defun tlon-read-language (&optional babel prompt require-match initial-input additional-langs excluded-langs)
   "Read a language from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project. Prompt user using PROMPT; if nil,
 use \"Language: \". REQUIRE-MATCH and INITIAL-INPUT behave as those arguments do
-in `completing-read'; check its docstring for details. ADDITIONAL-LANGS is a
-list of languages to add to the default list of languages presented as
-completion candidates."
+in `completing-read'; check its docstring for details. ADDITIONAL-LANGS and
+EXCLUDED-LANGS are lists of languages to add to or to exclude from the default
+list of languages, respectively."
   (let ((prompt (or prompt "Language: "))
-	(language-candidates (tlon-get-language-candidates babel additional-langs)))
+	(language-candidates (tlon-get-language-candidates babel additional-langs excluded-langs)))
     (completing-read prompt language-candidates nil require-match initial-input)))
 
 (defun tlon-read-multiple-languages (&optional babel)
@@ -904,15 +905,18 @@ candidates to languages in the Babel project."
 						       (append '("*all*") language-candidates))))
     (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
 
-(defun tlon-get-language-candidates (babel &optional additional-langs)
+(defun tlon-get-language-candidates (babel &optional additional-langs excluded-langs)
   "Return a list of language candidates.
 If BABEL is nil, return all valid BibTeX languages; otherwise, return candidates
-languages in the Babel project only. ADDITIONAL-LANGS is a list of languages to
-add to the default list of languages presented as completion candidates."
+languages in the Babel project only. ADDITIONAL-LANGS and EXCLUDED-LANGS are
+lists of languages to add to or to exclude from the default list of languages,
+respectively."
   (let ((base-langs (if babel
 			tlon-project-languages
 		      (tlon-lookup-all tlon-languages-properties :name))))
-    (append base-langs additional-langs)))
+    (cl-remove-if (lambda (lang)
+		    (member lang excluded-langs))
+		  (append base-langs additional-langs))))
 
 ;;;;; json
 
@@ -950,7 +954,7 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
          (outer-urls (mapcar #'car json-data))
          (chosen-outer-url (completing-read "Source: " outer-urls))
          (inner-alist (alist-get chosen-outer-url json-data nil nil #'string=))
-         (chosen-lang (tlon-select-language 'code 'babel nil nil nil '("default")))
+         (chosen-lang (tlon-select-language 'code 'babel nil nil nil nil '("default")))
 	 (inner-url (alist-get chosen-lang inner-alist nil nil #'string=))
          (chosen-inner-url (read-string "Target: " inner-url nil nil)))
     (setf (alist-get chosen-lang inner-alist nil nil #'string=) chosen-inner-url)
