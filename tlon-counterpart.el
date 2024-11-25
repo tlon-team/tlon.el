@@ -186,56 +186,91 @@ If called with a prefix ARG, open the counterpart in the other window."
   (not (= (tlon-count-paragraphs nil (point))
 	  (tlon-count-paragraphs nil (min (point-max) (1+ (point)))))))
 
+(defun tlon-with-paragraphs (file fn)
+  "Execute FN for each paragraph in FILE.
+FN is called with the start and end positions of each paragraph and should
+return a value. Returns a list of these values in buffer order.
+If FILE is nil, use the current buffer's file."
+  (with-current-buffer (find-file-noselect (or file (buffer-file-name)))
+    (save-excursion
+      (goto-char (or (cdr (tlon-get-delimited-region-pos
+                           tlon-yaml-delimiter))
+                     (point-min)))
+      (let ((content-end (or (car (tlon-get-delimited-region-pos
+                                   tlon-md-local-variables-line-start
+                                   tlon-md-local-variables-line-end))
+                             (point-max)))
+            result)
+        (while (and (< (point) content-end)
+                    (not (looking-at-p tlon-md-local-variables-line-start)))
+          (let ((start (point)))
+            (markdown-forward-paragraph)
+            (let ((para-text (buffer-substring-no-properties start (min (point) content-end))))
+              (when (and (> (point) start)
+                         (string-match-p "[^\s\n]" para-text))
+                (push (funcall fn start (min (point) content-end)) result)))))
+        (nreverse result)))))
+
 (defun tlon-count-paragraphs (&optional start end)
   "Count the number of paragraphs in a Markdown buffer between START and END."
   (interactive)
-  (save-excursion
-    (goto-char (or start
-		   (cdr (tlon-get-delimited-region-pos
-			 tlon-yaml-delimiter))
-		   (point-min)))
-    (let ((count 0))
-      (while (< (point) (or end
-			    (cdr (tlon-get-delimited-region-pos
-				  tlon-md-local-variables-line-start
-				  tlon-md-local-variables-line-end))
-			    (point-max)))
-	(let ((pos (point)))
-	  (markdown-forward-paragraph)
-	  (when (> (point) pos)
-	    (setq count (1+ count)))))
-      (if (called-interactively-p t)
-	  (message "%d" count)
-	count))))
+  (let ((count (length (tlon-with-paragraphs start
+					     (lambda (para-start para-end)
+					       (and (or (null end) (< para-start end)) t))))))
+    (if (called-interactively-p t)
+        (message "%d" count)
+      count)))
 
-;; TODO: make it inform the user where the discrepancies arise, e.g. by coloring
-;; the relevant paragraphs
-(defun tlon-ensure-counterpart-paragraph-number-match (&optional file)
-  "Check that FILE and its counterpart have the same number of paragraphs.
-If FILE is not provided, use the current buffer."
-  (interactive)
-  (let* ((part (or file (buffer-file-name)))
-	 (counterpart (tlon-get-counterpart part))
-	 (paras-in-part (tlon-count-paragraphs))
-	 paras-in-counterpart)
-    (with-current-buffer (find-file-noselect counterpart)
-      (setq paras-in-counterpart (tlon-count-paragraphs)))
-    (if (= paras-in-part paras-in-counterpart)
-	t
-      (message "Paragraph number mismatch: \n%s has %s paragraphs\n%s has %s paragraphs"
-	       (file-name-nondirectory part) paras-in-part
-	       (file-name-nondirectory counterpart) paras-in-counterpart))))
+(defun tlon-get-corresponding-paragraphs (&optional file)
+  "Return pairs of paragraphs between FILE and its counterpart.
+Signals an error if files have different number of paragraphs,
+but also displays the paragraphs in a buffer."
+  (let* ((file (or file (buffer-file-name)))
+         (counterpart (tlon-get-counterpart file))
+         (orig-paras (tlon-with-paragraphs file
+					   (lambda (start end)
+					     (buffer-substring-no-properties start end))))
+         (trans-paras (tlon-with-paragraphs counterpart
+					    (lambda (start end)
+					      (buffer-substring-no-properties start end))))
+         (max-len (max (length orig-paras) (length trans-paras)))
+         pairs
+         (buf (get-buffer-create "/Paragraph Pairs/")))
+    (dotimes (i max-len)
+      (push (cons (nth i orig-paras) (nth i trans-paras)) pairs))
+    (setq pairs (nreverse pairs))
+    (with-current-buffer buf
+      (erase-buffer)
+      (when (/= (length orig-paras) (length trans-paras))
+        (insert (format "Paragraph number mismatch: \n%s has %d paragraphs\n%s has %d paragraphs\n\n"
+			(file-name-nondirectory file) (length orig-paras)
+			(file-name-nondirectory counterpart) (length trans-paras))))
+      (dolist (pair pairs)
+        (insert "Original:\n"
+                (or (car pair) "[Missing paragraph]")
+                "\n\nTranslation:\n"
+                (or (cdr pair) "[Missing paragraph]")
+                "\n\n"
+                (make-string 40 ?-)
+                "\n\n"))
+      (goto-char (point-min)))
+    (display-buffer buf)
+    (when (/= (length orig-paras) (length trans-paras))
+      (user-error "Paragraph number mismatch"))
+    pairs))
 
-(defun tlon-ensure-counterpart-paragraph-number-match-in-dir (&optional dir extension)
-  "Check that files in DIR and counterparts have the same number of paragraphs.
-If DIR is nil, check the files in the current directory. If EXTENSION is nil,
-check files with \".md\" extension only."
-  (interactive)
-  (let* ((dir (or dir default-directory))
-	 (extension (or extension ".md"))
-	 (files (directory-files dir t (concat ".*\\" extension "$"))))
-    (cl-loop for file in files
-	     do (tlon-ensure-counterpart-paragraph-number-match file))))
+(defun tlon-display-corresponding-paragraphs (pairs-or-fn)
+  "Display PAIRS-OR-FN of corresponding paragraphs in parallel.
+PAIRS-OR-FN can be either the output of =tlon-get-corresponding-paragraphs'
+or the function itself."
+  (interactive (list #'tlon-get-corresponding-paragraphs))
+  (condition-case _err
+      (let ((pairs (if (functionp pairs-or-fn)
+                       (funcall pairs-or-fn)
+                     pairs-or-fn)))
+        (display-buffer "/Paragraph Pairs/"))
+    (user-error
+     (display-buffer "/Paragraph Pairs/"))))
 
 ;;;;; Menu
 
@@ -247,8 +282,7 @@ check files with \".md\" extension only."
     ("H-u" "visit counterpart other window"      tlon-open-counterpart-in-other-window-dwim)
     ("U" "open counterpart in Dired"             tlon-open-counterpart-in-dired)]
    ["Matching"
-    ("m" "ensure paragraph number match"         tlon-ensure-counterpart-paragraph-number-match)
-    ("M" "ensure paragraph number match in dir"  tlon-ensure-counterpart-paragraph-number-match-in-dir)]
+    ("d" "display corresponding paragraphs"      tlon-display-corresponding-paragraphs)]
    ["Metadata"
     ("o" "set ‘original_path’"                   tlon-yaml-insert-original-path)]])
 
