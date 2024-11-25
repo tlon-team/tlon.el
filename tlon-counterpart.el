@@ -214,17 +214,20 @@ If FILE is nil, use the current buffer's file."
 (defun tlon-count-paragraphs (&optional start end)
   "Count the number of paragraphs in a Markdown buffer between START and END."
   (interactive)
-  (let ((count (length (tlon-with-paragraphs start
-					     (lambda (para-start para-end)
-					       (and (or (null end) (< para-start end)) t))))))
-    (if (called-interactively-p t)
-        (message "%d" count)
-      count)))
+  (if (numberp start)
+      ;; When called with numeric arguments, count paragraphs in current buffer
+      (length (tlon-with-paragraphs nil
+				    (lambda (para-start _para-end)
+				      (and (or (null end) (< para-start end)) t))))
+    ;; When called with a file argument
+    (length (tlon-with-paragraphs start
+				  (lambda (para-start _para-end)
+				    (and (or (null end) (< para-start end)) t))))))
 
 (defun tlon-get-corresponding-paragraphs (&optional file)
   "Return pairs of paragraphs between FILE and its counterpart.
 Signals an error if files have different number of paragraphs,
-but also displays the paragraphs in a buffer."
+and displays the paragraphs in a buffer only in that case."
   (let* ((file (or file (buffer-file-name)))
          (counterpart (tlon-get-counterpart file))
          (orig-paras (tlon-with-paragraphs file
@@ -234,43 +237,53 @@ but also displays the paragraphs in a buffer."
 					    (lambda (start end)
 					      (buffer-substring-no-properties start end))))
          (max-len (max (length orig-paras) (length trans-paras)))
-         pairs
-         (buf (get-buffer-create "/Paragraph Pairs/")))
+         pairs)
     (dotimes (i max-len)
       (push (cons (nth i orig-paras) (nth i trans-paras)) pairs))
     (setq pairs (nreverse pairs))
-    (with-current-buffer buf
-      (erase-buffer)
-      (when (/= (length orig-paras) (length trans-paras))
+    (when (/= (length orig-paras) (length trans-paras))
+      (with-current-buffer (get-buffer-create "/Paragraph Pairs/")
+        (erase-buffer)
         (insert (format "Paragraph number mismatch: \n%s has %d paragraphs\n%s has %d paragraphs\n\n"
 			(file-name-nondirectory file) (length orig-paras)
-			(file-name-nondirectory counterpart) (length trans-paras))))
-      (dolist (pair pairs)
-        (insert "Original:\n"
-                (or (car pair) "[Missing paragraph]")
-                "\n\nTranslation:\n"
-                (or (cdr pair) "[Missing paragraph]")
-                "\n\n"
-                (make-string 40 ?-)
-                "\n\n"))
-      (goto-char (point-min)))
-    (display-buffer buf)
-    (when (/= (length orig-paras) (length trans-paras))
-      (user-error "Paragraph number mismatch"))
+			(file-name-nondirectory counterpart) (length trans-paras)))
+        (dolist (pair pairs)
+          (insert "Original:\n"
+                  (or (car pair) "[Missing paragraph]")
+                  "\n\nTranslation:\n"
+                  (or (cdr pair) "[Missing paragraph]")
+                  "\n\n"
+                  (make-string 40 ?-)
+                  "\n\n"))
+        (goto-char (point-min))
+        (display-buffer (current-buffer))
+        (user-error "Paragraph number mismatch")))
     pairs))
 
 (defun tlon-display-corresponding-paragraphs (pairs-or-fn)
   "Display PAIRS-OR-FN of corresponding paragraphs in parallel.
-PAIRS-OR-FN can be either the output of =tlon-get-corresponding-paragraphs'
+PAIRS-OR-FN can be either the output of `tlon-get-corresponding-paragraphs'
 or the function itself."
   (interactive (list #'tlon-get-corresponding-paragraphs))
   (condition-case _err
-      (let ((pairs (if (functionp pairs-or-fn)
-                       (funcall pairs-or-fn)
-                     pairs-or-fn)))
-        (display-buffer "/Paragraph Pairs/"))
+      (let* ((pairs (if (functionp pairs-or-fn)
+                        (funcall pairs-or-fn)
+                      pairs-or-fn))
+             (buf (get-buffer-create "/Paragraph Pairs/")))
+        (with-current-buffer buf
+          (erase-buffer)
+          (dolist (pair pairs)
+            (insert "Original:\n"
+                    (or (car pair) "[Missing paragraph]")
+                    "\n\nTranslation:\n"
+                    (or (cdr pair) "[Missing paragraph]")
+                    "\n\n"
+                    (make-string 40 ?-)
+                    "\n\n"))
+          (goto-char (point-min)))
+        (display-buffer buf))
     (user-error
-     (display-buffer "/Paragraph Pairs/"))))
+     (display-buffer (get-buffer "/Paragraph Pairs/")))))
 
 ;;;;; Menu
 
