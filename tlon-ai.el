@@ -276,16 +276,18 @@ PROMPT is a formatting string containing the prompt and a slot for a string,
 which is the variable part of the prompt (e.g. the text to be summarized in a
 prompt to summarize text). FULL-MODEL is a cons cell whose car is the backend
 and whose cdr is the model."
-  (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	(prompt (tlon-ai-maybe-edit-prompt prompt)))
-    (cl-destructuring-bind (backend . model) full-model
-      (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	    (gptel-model full-model))
-	(if tlon-ai-batch-fun
-	    (condition-case nil
-		(gptel-request (format prompt string) :callback callback)
-	      (error nil))
-	  (gptel-request (format prompt string) :callback callback))))))
+  (when (or (null gptel-context--alist)
+	    (y-or-n-p "The `gptel' context is not empty. Proceed? "))
+    (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
+	  (prompt (tlon-ai-maybe-edit-prompt prompt)))
+      (cl-destructuring-bind (backend . model) full-model
+	(let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
+	      (gptel-model full-model))
+	  (if tlon-ai-batch-fun
+	      (condition-case nil
+		  (gptel-request (format prompt string) :callback callback)
+		(error nil))
+	    (gptel-request (format prompt string) :callback callback)))))))
 
 (defun tlon-ai-maybe-edit-prompt (prompt)
   "If `tlon-ai-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
@@ -485,7 +487,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Image description
 
-(declare-function gptel-context-add-file "gptel-context")
+(declare-function gptel-extras-clear-file-context "gptel-extras")
 ;;;###autoload
 (defun tlon-ai-describe-image (&optional file callback)
   "Describe the contents of the image in FILE.
@@ -497,14 +499,15 @@ it instead."
 	 (language (tlon-get-language-in-file file))
 	 (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
 	 (prompt (tlon-ai-maybe-edit-prompt default-prompt)))
+    (gptel-extras-clear-file-context)
     (gptel-context-add-file file)
     (gptel-request prompt
       :callback (or callback
 		    (lambda (response info)
-		      (setq gptel-context--alist previous-context)
 		      (if response
 			  (message response)
-			(user-error "Error: %s" (plist-get info :status))))))))
+			(user-error "Error: %s" (plist-get info :status)))
+		      (setq gptel-context--alist previous-context))))))
 
 (declare-function tlon-get-tag-attribute-values "tlon-md")
 (declare-function tlon-md-insert-attribute-value "tlon-md")
@@ -593,18 +596,19 @@ TRANSLATION-FILE."
 	 (formatted-prompt (format prompt (file-name-nondirectory original-file) original-lang
 				   (file-name-nondirectory translation-file) translation-lang))
 	 (fixed-file-path (concat (file-name-sans-extension translation-file) "--fixed.md")))
+    (gptel-extras-clear-file-context)
     (mapc #'gptel-context-add-file (list original-file translation-file))
     (message "Fixing the format of `%s'..." (file-name-nondirectory translation-file))
     (gptel-request formatted-prompt
       :callback (or callback
 		    (lambda (response info)
-		      (setq gptel-context--alist previous-context)
 		      (if response
 			  (with-temp-buffer
 			    (insert response)
 			    (write-region (point-min) (point-max) fixed-file-path)
 			    (find-file fixed-file-path))
-			(user-error "Error: %s" (plist-get info :status))))))))
+			(user-error "Error: %s" (plist-get info :status)))
+		      (setq gptel-context--alist previous-context))))))
 
 ;;;;; Summarization
 
