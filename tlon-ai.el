@@ -590,42 +590,49 @@ Otherwise, construct a local file path from SRC and return it."
 Process the file paragraph by paragraph to avoid token limits. If FILE is nil,
 use the file visited by the current buffer."
   (interactive)
-  (when-let* ((file (or file (buffer-file-name) (read-file-name "File to fix: ")))
-              (original-file (tlon-get-counterpart file))
-              (original-lang (tlon-get-language-in-file original-file))
-              (translation-lang (tlon-get-language-in-file file))
-              (prompt (tlon-ai-maybe-edit-prompt
-                       (tlon-lookup tlon-ai-fix-markdown-format-prompt
-                                    :prompt :language original-lang)))
-              (pairs (tlon-get-corresponding-paragraphs file))
-              (fixed-file-path (concat (file-name-sans-extension file) "--fixed.md"))
-              (results (make-vector (length pairs) nil))
-              (completed 0))
-    (message "Fixing format of `%s' (%d paragraphs)..."
-             (file-name-nondirectory file) (length pairs))
-    (dotimes (i (length pairs))
-      (let* ((pair (nth i pairs))
-             (formatted-prompt
-              (format prompt
-                      (cdr pair)
-		      (tlon-lookup tlon-languages-properties :standard :code original-lang)
-		      (car pair)
-		      (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
-	(gptel-request formatted-prompt
-          :callback
-          (lambda (response info)
-            (if response
-		(progn
-                  (aset results i response)
-                  (setq completed (1+ completed))
-                  (when (= completed (length pairs))
-                    (with-temp-buffer
-                      (dolist (para (append results nil))
-			(insert para "\n\n"))
-                      (write-region (point-min) (point-max) fixed-file-path)
-                      (find-file fixed-file-path))))
-              (user-error "Error processing paragraph %d: %s"
-                          i (plist-get info :status)))))))))
+  (tlon-warn-if-gptel-context
+   (when-let* ((file (or file (buffer-file-name) (read-file-name "File to fix: ")))
+	       (original-file (tlon-get-counterpart file))
+	       (original-lang (tlon-get-language-in-file original-file))
+	       (translation-lang (tlon-get-language-in-file file))
+	       (prompt (tlon-ai-maybe-edit-prompt
+			(tlon-lookup tlon-ai-fix-markdown-format-prompt
+				     :prompt :language original-lang)))
+	       (pairs (tlon-get-corresponding-paragraphs file))
+	       (fixed-file-path (concat (file-name-sans-extension file) "--fixed.md"))
+	       (results (make-vector (length pairs) nil))
+	       (completed 0))
+     (message "Fixing format of `%s' (%d paragraphs)..."
+	      (file-name-nondirectory file) (length pairs))
+     (dotimes (i (length pairs))
+       (let* ((pair (nth i pairs))
+	      (formatted-prompt
+	       (format prompt
+		       (cdr pair)
+		       (tlon-lookup tlon-languages-properties :standard :code original-lang)
+		       (car pair)
+		       (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
+	 (gptel-request formatted-prompt
+	   :callback
+	   (lambda (response info)
+	     (if response
+		 (progn
+		   (aset results i response)
+		   (setq completed (1+ completed))
+		   (message "Processing paragraphs... %d%% (%d/%d)"
+			    (round (* 100 (/ completed (float (length pairs)))))
+			    completed
+			    (length pairs))
+		   (when (= completed (length pairs))
+		     (message "Processing complete. Writing file...")
+		     (with-temp-buffer
+		       (dolist (para (append results nil))
+			 (insert para "\n\n"))
+		       (write-region (point-min) (point-max) fixed-file-path)
+		       (find-file fixed-file-path)
+		       (message "Done!"))))
+	       (user-error "Error processing paragraph %d: %s"
+			   i (plist-get info :status))))))))))
 
 ;;;;; Summarization
 
