@@ -38,6 +38,7 @@
 
 ;;;; Functions
 
+;;;###autoload (autoload 'tlon-split-mode "tlon-split" nil t)
 (define-minor-mode tlon-split-mode
   "Enable `tlon-split-mode' locally."
   :init-value nil)
@@ -142,6 +143,7 @@ assumed that the paragraphs are already aligned."
 (defvar tlon-enable-automatic-highlighting nil
   "Whether to automatically highlight corresponding sentences.")
 
+;;;###autoload
 (defun tlon-sentence-highlight-offset-set ()
   "Set the sentence offset.
 This command should be run from the source window."
@@ -164,6 +166,7 @@ This command should be run from the source window."
       (move-to-window-line 0)
       (count-screen-lines (point) end))))
 
+;;;###autoload
 (defun tlon-highlight-corresponding-sentence ()
   "Highlight the corresponding sentence in the source text and unhighlight others."
   (interactive)
@@ -206,6 +209,17 @@ This command should be run from the source window."
     (add-hook 'post-command-hook 'tlon-highlight-corresponding-sentence nil t)
     (setq tlon-enable-automatic-highlighting t)
     (message "Automatic sentence highlighting enabled.")))
+
+;;;; menu
+
+;;;###autoload (autoload 'tlon-split-menu "tlon-split" nil t)
+(transient-define-prefix tlon-split-menu ()
+  "`split' menu."
+  [["Split mode"
+    ("s" "toggle"                     tlon-split-mode)
+    ("h" "highlight"                  tlon-highlight-corresponding-sentence)
+    ("o" "set offset"                 tlon-sentence-highlight-offset-set)
+    ("r" "reset"                      tlon-split-mode-reset)]])
 
 (provide 'tlon-split)
 ;;; tlon-split.el ends here

@@ -361,13 +361,7 @@ COMMIT is non-nil, commit the change."
   "`jobs' menu."
   :info-manual "(tlon) Jobs"
   [["Job phases"
-    ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)
-    ""
-    "Split mode"
-    ("s s" "toggle"                     tlon-split-mode)
-    ;; ("t h" "highlight"                  tlon-highlight-corresponding-sentence)
-    ("s o" "set offset"                 tlon-sentence-highlight-offset-set)
-    ("s r" "reset"                      tlon-split-mode-reset)]
+    ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)]
    ["Job creation"
     ("c c" "create job"                 tlon-create-job)
     ("c d" "1 import document"          tlon-import-document)

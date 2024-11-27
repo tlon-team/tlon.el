@@ -49,14 +49,15 @@
     ("i" "images"                         tlon-images-menu)
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)
-    ("l" "DeepL"                          tlon-deepl-menu)]
+    ("l" "DeepL"                          tlon-deepl-menu)
+    ("H-l" "color"                        tlon-color-menu)]
    [""""
-    ("H-l" "color"                        tlon-color-menu)
     ("H-m" "meet"                         tlon-meet-menu)
     ("o" "count"                          tlon-count-menu)
     ("p" "api"                            tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
+    ("S" "split"                           tlon-split-menu)
     ("t" "contacts"                       tlon-contacts-menu)
     ("u" "counterpart"                    tlon-counterpart-menu)
     ("y" "forg"                           tlon-forg-menu)
