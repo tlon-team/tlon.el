@@ -353,16 +353,16 @@ a prefix ARG, omit this initial pull."
   "Reconcile TODOs with their issues after after `forge-pull' is finished."
   (save-window-excursion
     (with-current-buffer (find-file-noselect (tlon-get-todos-generic-file))
-      (org-fold-core-save-visibility t
-	(org-fold-show-all)
-	(goto-char (point-min))
-	(while (re-search-forward org-heading-regexp nil t)
-	  (when-let ((issue (tlon-get-issue)))
-	    (when (or (not (member org-archive-tag (org-get-tags)))
-		      tlon-forg-include-archived)
-	      (tlon-reconcile-issue-and-todo-from-issue issue)))
-	  (org-next-visible-heading 1))
-	(message "Finished reconciling.")))))
+      (save-excursion
+        (let ((org-fold-core-style 'overlays))
+          (org-fold-core-save-visibility
+              (org-fold-show-all)
+            (goto-char (point-min))
+            (while (re-search-forward org-heading-regexp nil t)
+              (when-let ((issue (tlon-get-issue)))
+		(when (or (not (member org-archive-tag (org-get-tags)))
+                          tlon-forg-include-archived)
+                  (tlon-reconcile-issue-and-todo-from-issue issue))))))))))
 
 (defun tlon-reconcile-issue-and-todo-from-issue (&optional issue)
   "Reconcile ISSUE and associated TODO.
