@@ -82,6 +82,7 @@ If REGEXP is nil, restrict return the number of words in Markdown files."
 	(tlon-count-words-in-files files format))
     (user-error "No directory found")))
 
+(autoload 'dired-get-marked-files "dired")
 ;;;###autoload
 (defun tlon-count-words-in-files (&optional files format)
   "Return the number of words in the list of FILES.
