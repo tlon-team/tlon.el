@@ -186,12 +186,12 @@ If called with a prefix ARG, open the counterpart in the other window."
   (not (= (tlon-get-number-of-paragraphs nil (point))
 	  (tlon-get-number-of-paragraphs nil (min (point-max) (1+ (point)))))))
 
-(defun tlon-with-paragraphs (file fn)
+(defun tlon-with-paragraphs (file fn &optional return-positions)
   "Execute FN for each paragraph in FILE.
-FN is called with the start and end positions of each paragraph and should
-return a value. Returns a list of these values in buffer order.
+If RETURN-POSITIONS is non-nil, return list of (start . end) positions.
+Otherwise, return list of FN's results for each paragraph.
 If FILE is nil, use the current buffer's file."
-  (with-current-buffer (find-file-noselect (or file (buffer-file-name)))
+  (with-current-buffer (find-file-noselect (if (stringp file) file (buffer-file-name)))
     (save-excursion
       (goto-char (or (cdr (tlon-get-delimited-region-pos
                            tlon-yaml-delimiter))
@@ -205,10 +205,14 @@ If FILE is nil, use the current buffer's file."
                     (not (looking-at-p tlon-md-local-variables-line-start)))
           (let ((start (point)))
             (markdown-forward-paragraph)
-            (let ((para-text (buffer-substring-no-properties start (min (point) content-end))))
-              (when (and (> (point) start)
-                         (string-match-p "[^\s\n]" para-text))
-                (push (funcall fn start (min (point) content-end)) result)))))
+            (let ((end (min (point) content-end)))
+              (when (and (> end start)
+                         (string-match-p "[^\s\n]"
+					 (buffer-substring-no-properties start end)))
+                (push (if return-positions
+                          (cons start end)
+			(funcall fn start end))
+                      result)))))
         (nreverse result)))))
 
 (defun tlon-get-number-of-paragraphs (&optional start end)
