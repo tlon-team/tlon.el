@@ -136,7 +136,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 	      (paragraphs (tlon-get-number-of-paragraphs
 			   (point-min)
 			   (point)))
-	      (offset (if (tlon-is-between-paragraphs-p) 0 1)))
+	      (offset (if (tlon-is-between-paragraphs-p) -1 0)))
     (funcall fun counterpart)
     (goto-char (or (cdr (tlon-get-delimited-region-pos
 			 tlon-yaml-delimiter))
@@ -216,17 +216,24 @@ If FILE is nil, use the current buffer's file."
         (nreverse result)))))
 
 (defun tlon-get-number-of-paragraphs (&optional start end)
-  "Return the number of paragraphs between START and END."
+  "Return the number of paragraphs between START and END.
+START and END are buffer positions. If START is nil, use `point-min'.
+If END is nil, use `point-max'."
+  (let ((positions (tlon-with-paragraphs nil #'ignore t)))
+    (cl-count-if (lambda (pos)
+		   (and (>= (car pos) (or start (point-min)))
+			(< (cdr pos) (or end (point-max)))))
+		 positions)))
+
+(defun tlon-count-paragraphs (&optional start end)
+  ""
   (interactive)
-  (if (numberp start)
-      ;; When called with numeric arguments, count paragraphs in current buffer
-      (length (tlon-with-paragraphs nil
-				    (lambda (para-start _para-end)
-				      (and (or (null end) (< para-start end)) t))))
-    ;; When called with a file argument
-    (length (tlon-with-paragraphs start
-				  (lambda (para-start _para-end)
-				    (and (or (null end) (< para-start end)) t))))))
+  (message "Number of paragraphs: %d"
+	   (tlon-get-number-of-paragraphs (cl-destructuring-bind (start . end)
+					      (if (region-active-p)
+						  (cons (region-beginning) (region-end))
+						(cons start end))
+					    start end))))
 
 (defun tlon-get-corresponding-paragraphs (&optional file)
   "Return pairs of paragraphs between FILE and its counterpart.
