@@ -94,7 +94,7 @@ The alignment is performed by scrolling up or down the other window."
 	(goto-char (1+ (point)))
 	(markdown-backward-paragraph)
 	(cons (count-screen-lines (window-start) (point))
-	      (tlon-count-paragraphs nil (point))))
+	      (tlon-get-number-of-paragraphs nil (point))))
     (save-selected-window
       (other-window 1)
       (save-restriction

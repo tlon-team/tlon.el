@@ -133,7 +133,7 @@ If called with a prefix ARG, open the counterpart in the other window."
   (when-let* ((fun (if arg #'find-file-other-window #'find-file))
 	      (counterpart (tlon-get-counterpart
 			    (or file (buffer-file-name))))
-	      (paragraphs (tlon-count-paragraphs
+	      (paragraphs (tlon-get-number-of-paragraphs
 			   (point-min)
 			   (point)))
 	      (offset (if (tlon-is-between-paragraphs-p) 0 1)))
@@ -183,8 +183,8 @@ If called with a prefix ARG, open the counterpart in the other window."
 
 (defun tlon-is-between-paragraphs-p ()
   "Return t iff point is right between to paragraphs."
-  (not (= (tlon-count-paragraphs nil (point))
-	  (tlon-count-paragraphs nil (min (point-max) (1+ (point)))))))
+  (not (= (tlon-get-number-of-paragraphs nil (point))
+	  (tlon-get-number-of-paragraphs nil (min (point-max) (1+ (point)))))))
 
 (defun tlon-with-paragraphs (file fn)
   "Execute FN for each paragraph in FILE.
@@ -211,8 +211,8 @@ If FILE is nil, use the current buffer's file."
                 (push (funcall fn start (min (point) content-end)) result)))))
         (nreverse result)))))
 
-(defun tlon-count-paragraphs (&optional start end)
-  "Count the number of paragraphs in a Markdown buffer between START and END."
+(defun tlon-get-number-of-paragraphs (&optional start end)
+  "Return the number of paragraphs between START and END."
   (interactive)
   (if (numberp start)
       ;; When called with numeric arguments, count paragraphs in current buffer
