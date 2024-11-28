@@ -163,16 +163,10 @@ If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
     (setq tlon-deepl-text text
 	  tlon-deepl-source-language source-lang
 	  tlon-deepl-target-language target-lang)
-    (tlon-deepl-request-wrapper 'translate callback)))
-
-;;;###autoload
-(defun tlon-deepl-translate-and-copy (&optional text target-lang source-lang)
-  "Translate TEXT from SOURCE-LANG into TARGET-LANG and copy the translation.
-If SOURCE-LANG is nil, use \"en\"."
-  (interactive)
-  (tlon-deepl-translate text target-lang source-lang
-			(lambda ()
-			  (tlon-deepl-print-translation 'copy))))
+    (tlon-deepl-request-wrapper 'translate
+				(or callback
+				    (lambda ()
+				      (tlon-deepl-print-translation 'copy))))))
 
 (defun tlon-deepl-print-translation (&optional copy)
   "Print the translated text.
@@ -378,7 +372,6 @@ of the entry at point."
   "DeepL menu."
   ["Translate"
    ("t" "Translate" tlon-deepl-translate)
-   ("H-t" "Translate and copy" tlon-deepl-translate-and-copy)
    ("a" "Translate abstract" tlon-deepl-translate-abstract)
    ""
    "Glossaries"
