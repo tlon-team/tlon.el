@@ -4,6 +4,30 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
+* Version 1.6.5 on 2024-11-29
+** tlon-ai
+- Enhanced error handling in =tlon-ai-fix-markdown-format= by adding retry logic for failed paragraphs (up to 3 attempts)
+- Added validation to ensure the command runs only on non-English Markdown files
+
+** tlon-deepl
+- Modified glossary handling to prompt user rather than abort when no glossary is found
+- Added user confirmation before proceeding without a glossary for supported languages
+
+** tlon-counterpart
+- Major refactoring of paragraph counting functionality:
+  - Renamed =tlon-count-paragraphs= to =tlon-get-number-of-paragraphs=
+  - Enhanced =tlon-with-paragraphs= to optionally return paragraph positions
+  - Fixed broken functionality in =tlon-open-counterpart-dwim= for moving point to corresponding paragraphs
+  - Adjusted offset calculation for between-paragraph positions
+
+** tlon-count
+- Minor enhancement: Added autoload for =dired-get-marked-files=
+
+The changes focus on three main areas:
+1. Improved error handling and validation in AI/translation workflows
+2. Better user experience with more prompts instead of hard failures
+3. Significant refactoring of paragraph handling functionality
+
 * Version 1.6.4 on 2024-11-25
 ** Core changes
 *** tlon-core
