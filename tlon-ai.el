@@ -1031,8 +1031,7 @@ CONTENT is the content of the `Math' element. If RESPONSE is nil, return INFO.
 			 ('convert (list (car (tlon-get-tag-attribute-values "Math")) response))
 			 ('translate (list response content))))
 	(kill-new response)
-	(message response))
-      (message "Inserted math."))))
+	(message response)))))
 
 ;;;;; Docs
 
