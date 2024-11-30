@@ -601,60 +601,68 @@ times."
             (translation-lang (tlon-get-language-in-file file))
             (prompt (tlon-ai-maybe-edit-prompt
                      (tlon-lookup tlon-ai-fix-markdown-format-prompt
-                                  :prompt :language original-lang)))
+				  :prompt :language original-lang)))
             (pairs (tlon-get-corresponding-paragraphs file))
             (results (make-vector (length pairs) nil))
             (completed 0)
             (failed-indices '())
-            (retry-count 0))
+            (retry-count 0)
+            (active-requests 0)
+            (max-concurrent 5))
        (cl-labels ((process-paragraphs
-                     (indices)
-                     (dolist (i indices)
-                       (let* ((pair (nth i pairs))
-                              (formatted-prompt
-                               (format prompt
-                                       (cdr pair)
-                                       (tlon-lookup tlon-languages-properties :standard :code original-lang)
-                                       (car pair)
-                                       (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
+		     (indices)
+		     (dolist (i indices)
+		       (while (>= active-requests max-concurrent)
+			 (sleep-for 0.1))
+		       (let* ((pair (nth i pairs))
+			      (formatted-prompt
+			       (format prompt
+				       (cdr pair)
+				       (tlon-lookup tlon-languages-properties :standard :code original-lang)
+				       (car pair)
+				       (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
+			 (cl-incf active-requests)
 			 (gptel-request formatted-prompt
-                           :callback
-                           (lambda (response info)
-                             (if response
+			   :callback
+			   (lambda (response info)
+			     (cl-decf active-requests)
+			     (if response
 				 (progn
-                                   (aset results i response)
-                                   (setq completed (1+ completed))
-                                   (message "Processing paragraphs... %d%% (%d/%d)"
-                                            (round (* 100 (/ completed (float (length pairs)))))
-                                            completed
-                                            (length pairs))
-                                   (when (= completed (length pairs))
-                                     (write-fixed-file)))
-                               (push i failed-indices)
-                               (message "Failed to process paragraph %d: %s" 
+				   (aset results i response)
+				   (setq completed (1+ completed))
+				   (message "Processing paragraphs... %d%% (%d/%d)"
+					    (round (* 100 (/ completed (float (length pairs)))))
+					    completed
+					    (length pairs))
+				   (when (and (= completed (length pairs))
+					      (zerop active-requests))
+				     (write-fixed-file)))
+			       (push i failed-indices)
+			       (message "Failed to process paragraph %d: %s"
 					i (plist-get info :status))))))))
                    (write-fixed-file ()
-                     (message "Processing complete. Writing file...")
-                     (let ((fixed-file-path (concat (file-name-sans-extension file) "--fixed.md")))
-                       (with-temp-buffer
-                         (dolist (para (append results nil))
-                           (insert para "\n\n"))
-                         (write-region (point-min) (point-max) fixed-file-path))
-                       (find-file fixed-file-path)
-                       (message "Done!")))
+		     (message "Processing complete. Writing file...")
+		     (let ((fixed-file-path (concat (file-name-sans-extension file) "--fixed.md")))
+		       (with-temp-buffer
+			 (dolist (para (append results nil))
+                           (insert (or para "") "\n\n"))
+			 (write-region (point-min) (point-max) fixed-file-path))
+		       (find-file fixed-file-path)
+		       (when (y-or-n-p "Done! Run ediff session? ")
+			 (ediff-files file fixed-file-path))))
                    (retry-failed ()
-                     (when (and failed-indices (< retry-count 3))
-                       (setq retry-count (1+ retry-count))
-                       (message "Retrying %d failed paragraphs (attempt %d of 3)..."
+		     (when (and failed-indices (< retry-count 3))
+		       (setq retry-count (1+ retry-count))
+		       (message "Retrying %d failed paragraphs (attempt %d of 3)..."
 				(length failed-indices) retry-count)
-                       (let ((to-retry (nreverse failed-indices)))
-                         (setq failed-indices nil)
-                         (process-paragraphs to-retry))
-                       (run-with-timer 5 nil #'retry-failed))))
+		       (let ((to-retry (nreverse failed-indices)))
+			 (setq failed-indices nil)
+			 (process-paragraphs to-retry))
+		       (run-with-timer 5 nil #'retry-failed))))
          (message "Fixing format of `%s' (%d paragraphs)..."
                   (file-name-nondirectory file) (length pairs))
          (process-paragraphs (number-sequence 0 (1- (length pairs))))
-	 (run-with-timer 5 nil #'retry-failed))))))
+         (run-with-timer 5 nil #'retry-failed))))))
 
 ;;;;; Summarization
 
