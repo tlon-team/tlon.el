@@ -600,8 +600,8 @@ times."
             (translation-lang (tlon-get-language-in-file file))
             (prompt (tlon-ai-maybe-edit-prompt
                      (tlon-lookup tlon-ai-fix-markdown-format-prompt
-            (pairs (tlon-get-corresponding-paragraphs file))
 				  :prompt :language "en")))
+            (pairs (tlon-get-corresponding-paragraphs file original-file))
             (results (make-vector (length pairs) nil))
             (completed 0)
             (failed-indices '())

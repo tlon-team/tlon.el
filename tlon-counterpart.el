@@ -235,12 +235,13 @@ If END is nil, use `point-max'."
 						(cons start end))
 					    start end))))
 
-(defun tlon-get-corresponding-paragraphs (&optional file)
-  "Return pairs of paragraphs between FILE and its counterpart.
-Signals an error if files have different number of paragraphs,
-and displays the paragraphs in a buffer only in that case."
+(defun tlon-get-corresponding-paragraphs (&optional file counterpart)
+  "Return pairs of paragraphs between FILE and its COUNTERPART.
+Signals an error if files have different number of paragraphs, and displays the
+paragraphs in a buffer only in that case. If COUNTERPART is nil, infer it from
+FILE."
   (let* ((file (or file (buffer-file-name)))
-         (counterpart (tlon-get-counterpart file))
+         (counterpart (or counterpart (tlon-get-counterpart file)))
          (orig-paras (tlon-with-paragraphs file
 					   (lambda (start end)
 					     (buffer-substring-no-properties start end))))
