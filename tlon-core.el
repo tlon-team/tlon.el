@@ -25,6 +25,7 @@
 
 ;;; Code:
 
+(require 'json)
 (require 'paths)
 
 ;;;; User options
@@ -920,19 +921,18 @@ respectively."
 
 ;;;;; json
 
-(with-eval-after-load 'json
-  (defun tlon-read-json (&optional file object-type array-type key-type)
-    "Read JSON substring or FILE using array TYPE.
+(defun tlon-read-json (&optional file object-type array-type key-type)
+  "Read JSON substring or FILE using array TYPE.
 OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
 ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 `string' (default), `symbol' or `keyword'."
-    (let ((json-object-type (or object-type 'alist))
-	  (json-array-type (or array-type 'list))
-	  (json-key-type (or key-type 'string))
-	  (json-false :json-false))
-      (if file
-	  (json-read-file file)
-	(json-read)))))
+  (let ((json-object-type (or object-type 'alist))
+	(json-array-type (or array-type 'list))
+	(json-key-type (or key-type 'string))
+	(json-false :json-false))
+    (if file
+	(json-read-file file)
+      (json-read))))
 
 (defun tlon-write-data (file data)
   "Write DATA to a JSON FILE."
