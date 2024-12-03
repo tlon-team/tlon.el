@@ -593,9 +593,8 @@ times."
   (interactive)
   (tlon-warn-if-gptel-context
    (let ((file (or file (buffer-file-name) (read-file-name "File to fix: "))))
-     (when (or (not (derived-mode-p 'markdown-mode))
-               (string= (tlon-get-language-in-file file) "en"))
-       (user-error "This command must be run on a Markdown file in a language other than English"))
+     (unless (derived-mode-p 'markdown-mode)
+       (user-error "This command must be run on a Markdown file"))
      (let* ((original-file (tlon-get-counterpart file))
             (original-lang (tlon-get-language-in-file original-file))
             (translation-lang (tlon-get-language-in-file file))
