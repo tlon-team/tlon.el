@@ -150,12 +150,15 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
   "Extract a LANGUAGE glossary from our multilingual glossary.
 RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
 
-- `human': include only entries of type \"variable\", extract to a \"csv\"
- file, and prompt the user to share the glossary with translators.
+- `human': extracts a glossary intended to be shared with another human being.
+ Includes only entries of type \"variable\", saves them to a \"csv\" file, and
+ prompts the user to share the glossary with translators.
 
-- `deepl-editor': include all entries and extract to a \"csv\" file.
+- `deepl-editor': extracts a glossary intended to be uploaded to the DeepL
+  editor. Includes all entries and saves them to a \"csv\" file.
 
-- `deepl-api': include all entries and extract to a \"tsv\" file."
+- `deepl-api': extracts a glossary intended to be sent via the DeepL API.
+  Includes all entries and saves them a \"tsv\" file."
   (interactive (list (tlon-select-language 'code 'babel)
 		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api) nil t))))
   (let* ((source-path tlon-file-glossary-source)
@@ -163,11 +166,7 @@ RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
 			     ((or 'human 'deepl-editor) "csv")
 			     ('deepl-api "tsv")))
 	 (target-path (tlon-glossary-make-file language target-extension))
-	 json)
-    (with-current-buffer (find-file-noselect source-path)
-      (goto-char (point-min))
-      (let ((json-array-type 'list))
-	(setq json (json-read))))
+	 (json (tlon-read-json source-path nil 'list 'symbol)))
     (with-current-buffer (find-file-noselect target-path)
       (erase-buffer)
       (tlon-insert-formatted-glossary json language recipient)
