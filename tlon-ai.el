@@ -697,7 +697,9 @@ If FILE is non-nil, get an abstract of its contents. Otherwise,
   active; otherwise, get an abstract of the contents of the current buffer.
 
 In all the above cases, the AI will first look for an existing abstract and, if
-it finds one, use it. Otherwise it will create an abstract from scratch.."
+it finds one, use it. Otherwise it will create an abstract from scratch.
+
+TYPE is either `abstract' or `synopsis'."
   (interactive)
   (if (tlon-abstract-may-proceed-p)
       (if-let ((language (or (tlon-get-language-in-mode)
