@@ -215,7 +215,8 @@ abstract will, or will not, replace the existing one, respectively."
 (defvar tlon-ai-batch-fun)
 (autoload 'zotra-extras-fetch-field "zotra-extras")
 (defun tlon-fetch-abstract-with-zotra (url doi)
-  "Return the abstract of the work with URL or DOI."
+  "Return the abstract of the work with URL or DOI.
+Give up after five seconds."
   (when-let ((id (or url doi)))
     (message "Trying to find abstract for %s with zotra..." id)
     (let* ((doi (when doi (tlon-fetch-url-from-doi doi))))
@@ -226,7 +227,7 @@ abstract will, or will not, replace the existing one, respectively."
 			       (not (string-match-p "\\.pdf$" field)))
 		      (when-let ((abstract
 				  (shut-up (zotra-extras-fetch-field
-					    "abstract" field (when tlon-ai-batch-fun 'no-error)))))
+					    "abstract" field (when tlon-ai-batch-fun 'no-error) 5))))
 			(throw 'found abstract)))))))
 	  abstract
 	(progn (message "No abstract found.") nil)))))
