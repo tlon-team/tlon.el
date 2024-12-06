@@ -926,13 +926,18 @@ respectively."
 OBJECT-TYPE must be one of `alist' (default), `plist' or `hash-table'.
 ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 `string' (default), `symbol' or `keyword'."
-  (let ((json-object-type (or object-type 'alist))
-	(json-array-type (or array-type 'list))
-	(json-key-type (or key-type 'string))
-	(json-false :json-false))
-    (if file
-	(json-read-file file)
-      (json-read))))
+  (condition-case err
+      (let ((json-object-type (or object-type 'alist))
+            (json-array-type (or array-type 'list))
+            (json-key-type (or key-type 'string))
+            (json-false :json-false))
+        (if file
+            (json-read-file file)
+          (json-read)))
+    (error
+     (when tlon-debug
+       (message "JSON parsing error in %s: %s" (or file "buffer") err))
+     nil)))
 
 (defun tlon-write-data (file data)
   "Write DATA to a JSON FILE."
