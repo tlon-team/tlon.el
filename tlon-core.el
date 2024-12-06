@@ -933,10 +933,15 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
             (json-false :json-false))
         (if file
             (json-read-file file)
-          (json-read)))
+          ;; Try to find and parse just the JSON part
+          (save-excursion
+            (goto-char (point-min))
+            (when (re-search-forward "{" nil t)
+              (goto-char (match-beginning 0))
+              (json-read)))))
     (error
-     (when tlon-debug
-       (message "JSON parsing error in %s: %s" (or file "buffer") err))
+     (message "JSON parsing error in %s: %s"
+              (or file "buffer") err)
      nil)))
 
 (defun tlon-write-data (file data)
