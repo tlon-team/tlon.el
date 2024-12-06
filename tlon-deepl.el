@@ -312,7 +312,7 @@ of the entry at point."
   (goto-char (point-min))
   (let ((json-array-type 'list)
 	(json-key-type 'string))
-    (setq tlon-deepl-glossaries (cdar (json-read))))
+    (setq tlon-deepl-glossaries (cdar (tlon-read-json))))
   (message "Read glossaries from DeepL API."))
 
 (tlon-deepl-get-glossaries)
