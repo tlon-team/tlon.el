@@ -4,6 +4,43 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
+
+* Version 1.6.7 on 2024-12-06
+** Core Infrastructure
+*** tlon-core
+- Added error handling for JSON parsing with =tlon-read-json=
+- Moved function out of =with-eval-after-load= block and required =json= package
+- Improved JSON error handling behavior to:
+  - Search for valid JSON in buffer
+  - Always show error messages (removed =tlon-debug= condition)
+
+*** tlon-dispatch
+- Removed obsolete "edit data" menu
+- Preserved core dispatcher functionality
+
+** API and Integration
+*** tlon-api
+- Updated local URL value to =https://local-dev.altruismoeficaz.net/=
+
+** AI and Language Processing 
+*** tlon-ai
+- Improved markdown formatting prompt to handle single-word paragraphs
+- Allowed =tlon-ai-fix-markdown-format= to run from English buffer
+- Enhanced docstring for abstract generation
+- Made changes to handle errors in AI formatting tasks
+
+*** tlon-deepl
+- Updated to use =tlon-read-json= for reading JSON data
+
+** File and Data Management
+*** tlon-glossary
+- Switched to =tlon-read-json= for reading JSON files
+- Improved documentation for glossary extraction functionality
+
+*** tlon-tex
+- Added 5-second timeout for zotra abstract fetching to prevent hanging
+
+
 * Version 1.6.5 on 2024-11-29
 ** tlon-ai
 - Enhanced error handling in =tlon-ai-fix-markdown-format= by adding retry logic for failed paragraphs (up to 3 attempts)
