@@ -1092,7 +1092,10 @@ repository."
   (let* ((core-settings '(:interactive t :recursive t))
 	 (no-context-settings '(:c-beg-only t :c-end-only t))
 	 (context (y-or-n-p "Context?"))
-	 (settings (append core-settings (unless context no-context-settings)))
+	 (context-lines (when context (read-number "Context lines: " 0)))
+	 (settings (append core-settings
+			   (unless context no-context-settings)
+			   (when context (list :c-end context-lines))))
 	 (extension (unless (string-empty-p extension) (format "\\.%s" extension))))
     (apply #'elgrep nil extension string settings)))
 
