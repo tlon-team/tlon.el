@@ -250,6 +250,7 @@ found."
         (text (vector tlon-deepl-text)))
     (unless id
       (user-error "`id' field is nil"))
+    ;; TODO: decide whether we should handle this rather than throw an error
     (unless (string= tlon-deepl-source-language "en")
       (user-error "Source language is not English"))
     (unless
