@@ -278,6 +278,7 @@ when the source language is not English."
 (declare-function citar-extras-open-in-ebib "citar-extras")
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (declare-function tlon-tex-remove-braces "tlon-tex")
+(declare-function tlon-translate-abstract-callback "tlon-tex")
 ;;;###autoload
 (defun tlon-deepl-translate-abstract (&optional abstract key)
   "When the ABSTRACT of KEY is modified, translate it into the relevant languages.
