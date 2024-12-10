@@ -243,11 +243,11 @@ The encoding in misinterpreted as ISO-8859-1 when it's actually UTF-8."
   "Return a JSON representation of the text to be translated to language."
   (let ((id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
         (text (vector tlon-deepl-text)))
-    (when (and (not id)
-	       (string= tlon-deepl-source-language "en")
-	       (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages)
-	       (not (y-or-n-p (format "No glossary found for %s. Proceed anyway? "
 				      tlon-deepl-target-language))))
+    (unless id
+      (user-error "`id' field is nil"))
+    (unless (string= tlon-deepl-source-language "en")
+      (user-error "Source language is not English"))
       (user-error "Aborted"))
     (json-encode `(("text" . ,text)
                    ("source_lang" . ,tlon-deepl-source-language)
