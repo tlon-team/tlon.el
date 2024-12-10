@@ -295,8 +295,9 @@ of the entry at point."
 	       (save-window-excursion
 		 (citar-extras-open-in-ebib key)
 		 (tlon-lookup tlon-languages-properties :code :name (ebib-extras-get-field "langid")))))
-    (when (and (member (ebib-extras-get-file-of-key key) tlon-bibliography-files)
-	       (y-or-n-p "Translate abstract? "))
+    (when (or (called-interactively-p 'any)
+	      (and (member (ebib-extras-get-file-of-key key) tlon-bibliography-files)
+		   (y-or-n-p "Translate abstract? ")))
       (mapc (lambda (language)
 	      (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
 		(unless (string= source-lang target-lang)
