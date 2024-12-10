@@ -113,16 +113,17 @@ for a file."
 
 ;;;;; API
 
-(defun tlon-deepl-request-wrapper (type &optional callback)
+(defun tlon-deepl-request-wrapper (type &optional callback no-glossary-ok)
   "Wrapper for API requests of TYPE.
-If CALLBACK is nil, use the default callback for TYPE."
+If CALLBACK is nil, use the default callback for TYPE. If NO-GLOSSARY-OK is
+non-nil, don't ask for confirmation when no glossary is found."
   (cl-destructuring-bind (method url-suffix-or-fun default-callback &optional json)
       (alist-get type tlon-deepl-parameters)
     (let* ((callback (or callback default-callback))
            (url (if (functionp url-suffix-or-fun)
                     (funcall url-suffix-or-fun)
                   (concat tlon-deepl-url-prefix url-suffix-or-fun)))
-           (payload (when json (funcall json)))
+           (payload (when json (funcall json no-glossary-ok)))
            (temp-file (make-temp-file "deepl-payload-" nil ".json")))
       (when payload
 	(with-temp-file temp-file
@@ -147,10 +148,11 @@ If CALLBACK is nil, use the default callback for TYPE."
 ;;;;; Translation
 
 ;;;###autoload
-(defun tlon-deepl-translate (&optional text target-lang source-lang callback)
+(defun tlon-deepl-translate (&optional text target-lang source-lang callback no-glossary-ok)
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK.
 If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
-`tlon-deepl-print-translation'."
+`tlon-deepl-print-translation'. If NO-GLOSSARY-OK is non-nil, don't ask for
+confirmation when no glossary is found."
   (interactive)
   (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
 	 (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
@@ -166,7 +168,8 @@ If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
     (tlon-deepl-request-wrapper 'translate
 				(or callback
 				    (lambda ()
-				      (tlon-deepl-print-translation 'copy))))))
+				      (tlon-deepl-print-translation 'copy)))
+				no-glossary-ok)))
 
 (defun tlon-deepl-print-translation (&optional copy)
   "Print the translated text.
@@ -239,15 +242,21 @@ The encoding in misinterpreted as ISO-8859-1 when it's actually UTF-8."
 	(while (re-search-forward search nil t)
 	  (replace-match replace t t))))))
 
-(defun tlon-deepl-translate-encode ()
-  "Return a JSON representation of the text to be translated to language."
+(defun tlon-deepl-translate-encode (&optional no-glossary-ok)
+  "Return a JSON representation of the text to be translated to language.
+If NO-GLOSSARY-OK is non-nil, don't ask for confirmation when no glossary is
+found."
   (let ((id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
         (text (vector tlon-deepl-text)))
-				      tlon-deepl-target-language))))
     (unless id
       (user-error "`id' field is nil"))
     (unless (string= tlon-deepl-source-language "en")
       (user-error "Source language is not English"))
+    (unless
+	(or no-glossary-ok
+	    (not (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
+	    (y-or-n-p (format "No glossary found for %s. Proceed anyway? "
+			      tlon-deepl-target-language)))
       (user-error "Aborted"))
     (json-encode `(("text" . ,text)
                    ("source_lang" . ,tlon-deepl-source-language)
@@ -293,7 +302,8 @@ of the entry at point."
 		(unless (string= source-lang target-lang)
 		  (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang
 					(lambda ()
-					  (tlon-translate-abstract-callback key target-lang 'overwrite))))))
+					  (tlon-translate-abstract-callback key target-lang 'overwrite))
+					'no-glossary-ok))))
 	    tlon-project-target-languages)
       (message "Translated abstract of `%s' into %s" key tlon-project-target-languages))))
 
