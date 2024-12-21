@@ -350,7 +350,7 @@ INFO is the response info."
 
 (declare-function bibtex-next-entry "bibtex")
 (declare-function bibtex-extras-get-key "bibtex-extras")
-(declare-function ebib-extras-next-entry "ebib-extras")
+(autoload 'ebib-extras-next-entry "ebib-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-ai-batch-continue ()
   "Move to the next entry and call `tlon-ai-batch-fun''."
