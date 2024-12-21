@@ -796,8 +796,7 @@ otherwise, save it to `tlon-file-abstract-translations'."
 			       (tlon-lookup tlon-languages-properties :code :name (funcall get-field "langid"))))
 	      (target-lang (or target-lang (tlon-select-language 'code 'babel))))
     (tlon-deepl-translate (tlon-tex-remove-braces abstract) target-lang source-lang
-			  (lambda ()
-			    (tlon-translate-abstract-callback key target-lang nil var)))))
+			  (tlon-translate-abstract-callback key target-lang nil var))))
 
 (defun tlon-translate-abstracts (&optional target-lang source-lang overwrite var)
   "Translate multiple abstracts in the current buffer.
