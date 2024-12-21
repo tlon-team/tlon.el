@@ -248,13 +248,9 @@ If NO-GLOSSARY-OK is non-nil, don't ask for confirmation when no glossary is
 found."
   (let ((id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
         (text (vector tlon-deepl-text)))
-    (unless id
-      (user-error "`id' field is nil"))
-    ;; TODO: decide whether we should handle this rather than throw an error
-    (unless (string= tlon-deepl-source-language "en")
-      (user-error "Source language is not English"))
     (unless
-	(or no-glossary-ok
+	(or id
+	    no-glossary-ok
 	    (not (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
 	    (y-or-n-p (format "No glossary found for %s. Proceed anyway? "
 			      tlon-deepl-target-language)))
