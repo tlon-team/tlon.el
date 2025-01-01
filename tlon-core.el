@@ -228,6 +228,20 @@
 	   :abbrev "ea-international"
 	   :type meta
 	   :key "i")
+    (:name "aea-front"
+	   :project "other"
+	   :subproject "aea"
+	   :abbrev "aea-front"
+	   :type development
+	   :subtype front
+	   :key "r f")
+    (:name "aea-content"
+	   :project "other"
+	   :subproject "aea"
+	   :abbrev "aea-content"
+	   :type development
+	   :subtype content
+	   :key "r c")
     (:name "bisagra-api"
 	   :project "other"
 	   :subproject "bisagra"

@@ -146,6 +146,10 @@ DIR is the directory where the repo is stored."
     ("s f" "bisagra-front"                tlon-magit-browse-bisagra-front)
     ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
     ""
+    "Altruismo Eficaz Argentina"
+    ("r f" "aea-front"                    tlon-magit-browse-aea-front)
+    ("r c" "aea-content"                  tlon-magit-browse-aea-content)
+    ""
     "Boletín"
     ("a a" "boletin"                      tlon-magit-browse-boletin)]
    ["EA News"
@@ -221,6 +225,10 @@ DIR is the directory where the repo is stored."
     ("s f" "bisagra-front"                tlon-dired-browse-bisagra-front)
     ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
     ""
+    "Altruismo Eficaz Argentina"
+    ("r f" "aea-front"                    tlon-dired-browse-aea-front)
+    ("r c" "aea-content"                  tlon-dired-browse-aea-content)
+    ""
     "Boletín"
     ("a a" "boletin"                      tlon-dired-browse-boletin)]
    ["EA News"
@@ -294,6 +302,10 @@ DIR is the directory where the repo is stored."
     ("s a" "bisagra-dev"                  tlon-open-file-in-bisagra-api)
     ("s f" "bisagra-front"                tlon-open-file-in-bisagra-front)
     ("s c" "bisagra-content"              tlon-open-file-in-bisagra-content)
+    ""
+    "Altruismo Eficaz Argentina"
+    ("r f" "aea-front"                    tlon-open-file-in-aea-front)
+    ("r c" "aea-content"                  tlon-open-file-in-aea-content)
     ""
     "Boletín"
     ("a a" "boletin"                      tlon-open-file-in-boletin)]
