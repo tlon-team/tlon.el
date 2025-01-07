@@ -735,25 +735,23 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
   "Return all values of KEY in labels matching all KEY-VALUE pairs."
   (apply #'tlon-lookup-all tlon-job-labels key key-value))
 
-(declare-function emacsql "emacsql")
-(declare-function forge-db "forge-db")
 (declare-function forge-get-repository "forge-core")
 (declare-function forge-get-issue "forge-core")
-(with-eval-after-load 'forge
-  (defun tlon-issue-lookup (string &optional dir)
-    "Return the first issue in DIR whose title includes STRING.
+(autoload 'forge-sql "forge-db")
+;;;###autoload
+(defun tlon-issue-lookup (string &optional dir)
+  "Return the first issue in DIR whose title includes STRING.
 If DIR is nil, use the current repository."
-    (when-let* ((string (concat "%" string "%"))
-		(default-directory (or dir default-directory))
-		(repo (forge-get-repository :tracked))
-		(issue-id (caar (emacsql (forge-db)
-					 [:select [number]
-						  :from 'issue
-						  :where (and (= repository $s1)
-							      (like title $s2))]
-					 (oref repo id)
-					 string))))
-      (forge-get-issue repo issue-id))))
+  (when-let* ((string (concat "%" string "%"))
+              (default-directory (or dir default-directory))
+              (repo (forge-get-repository :tracked))
+              (repo-id (eieio-oref repo 'id))
+              (issue-number (caar (forge-sql [:select [number] :from issue
+						      :where (and (= repository $s1)
+								  (like title $s2))]
+					     repo-id
+					     string))))
+    (forge-get-issue repo issue-number)))
 
 ;;;;; Get region pos
 
