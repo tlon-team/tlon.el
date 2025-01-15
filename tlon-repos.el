@@ -221,7 +221,7 @@ If REPOS is nil, search in all tracked repos."
   (let* ((repo-name (completing-read "Repo: " '("uqbar/uqbar-api" "uqbar/uqbar-front" "uqbar")))
 	(repo-dir (file-name-concat paths-dir-tlon-repos repo-name))
 	(entry (concat "tlon/core/git-crypt/" repo-name)))
-    (pass-extras-git-crypt-unlock repo-dir entry))))
+    (pass-extras-git-crypt-unlock repo-dir entry)))
 
 ;;;;; Menu
 
