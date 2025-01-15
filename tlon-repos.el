@@ -215,14 +215,13 @@ If REPOS is nil, search in all tracked repos."
 ;;;;; git-crypt
 
 (autoload 'pass-extras-git-crypt-unlock "pass-extras")
-(defun tlon-unlock-uqbar-git-crypt ()
+(defun tlon-git-crypt-unlock ()
   "Unlock `uqbar' git-crypt repos."
   (interactive)
-  (let ((uqbar-dir (tlon-repo-lookup :dir :name "uqbar")))
-    (dolist (repo-name '("uqbar-api" "uqbar-front"))
-      (let ((repo-dir (file-name-concat uqbar-dir repo-name))
-	    (entry (concat "tlon/core/git-crypt/" repo-name)))
-	(pass-extras-git-crypt-unlock repo-dir entry)))))
+  (let* ((repo-name (completing-read "Repo: " '("uqbar/uqbar-api" "uqbar/uqbar-front" "uqbar")))
+	(repo-dir (file-name-concat paths-dir-tlon-repos repo-name))
+	(entry (concat "tlon/core/git-crypt/" repo-name)))
+    (pass-extras-git-crypt-unlock repo-dir entry))))
 
 ;;;;; Menu
 
@@ -239,7 +238,7 @@ If REPOS is nil, search in all tracked repos."
     ""
     ("c" "Create remote repo"            tlon-create-repo)
     ""
-    ("u" "Unlock uqbar git-crypt"        tlon-unlock-uqbar-git-crypt)
+    ("u" "Unlock uqbar git-crypt"        tlon-git-crypt-unlock)
     ""
     ("?" "Check authentication"          vc-extras-check-gh-authenticated)]
    ["Forge"
