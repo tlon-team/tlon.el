@@ -1,4 +1,4 @@
-;;; tlon-counterpart.el --- File, dir & repo counterparts -*- lexical-binding: t -*-
+;;; tlon-counterpart.el --- File, dir & repo counterparts -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025l
 

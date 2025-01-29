@@ -1,4 +1,4 @@
-;;; tlon-yaml.el --- Parse, get, set & edit YAML -*- lexical-binding: t -*-
+;;; tlon-yaml.el --- Parse, get, set & edit YAML -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

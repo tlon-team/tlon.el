@@ -1,4 +1,4 @@
-;;; tlon-dispatch.el --- Transient dispatchers -*- lexical-binding: t -*-
+;;; tlon-dispatch.el --- Transient dispatchers -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

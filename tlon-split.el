@@ -1,4 +1,4 @@
-;;; tlon-split.el --- Minor mode for working with split windows -*- lexical-binding: t -*-
+;;; tlon-split.el --- Minor mode for working with split windows -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 22024
 

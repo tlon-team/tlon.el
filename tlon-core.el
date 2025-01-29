@@ -1,4 +1,4 @@
-;;; tlon-core.el --- Core Babel functionality  -*- lexical-binding: t -*-
+;;; tlon-core.el --- Core Babel functionality  -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

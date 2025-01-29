@@ -1,4 +1,4 @@
-;;; tlon-fix.el --- Manual & auto fix functionality -*- lexical-binding: t -*-
+;;; tlon-fix.el --- Manual & auto fix functionality -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

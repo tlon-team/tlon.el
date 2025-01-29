@@ -1,4 +1,4 @@
-;;; tlon-tts.el --- Text-to-speech functionality -*- lexical-binding: t -*-
+;;; tlon-tts.el --- Text-to-speech functionality -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

@@ -1,4 +1,4 @@
-;;; tlon-url.el --- Dead URL checking -*- lexical-binding: t -*-
+;;; tlon-url.el --- Dead URL checking -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

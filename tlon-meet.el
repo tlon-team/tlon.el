@@ -1,4 +1,4 @@
-;;; tlon-meet.el --- Manage Tlön meetings -*- lexical-binding: t -*-
+;;; tlon-meet.el --- Manage Tlön meetings -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

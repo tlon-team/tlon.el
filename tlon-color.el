@@ -289,7 +289,7 @@ hex format irrespective of their original format."
 (defun tlon-color-save-palettes-to-file ()
   "Save the current color palettes to the file."
   (with-temp-file tlon-color-palette-file
-    (insert ";;; tlon Color Palettes -*- lexical-binding: t -*-\n\n")
+    (insert ";;; tlon Color Palettes -*- lexical-binding: t; fill-column: 80 -*-\n\n")
     (insert ";; This file contains saved color palettes for tlon color configurations.\n\n")
     (insert "(setq tlon-color-palettes '")
     (prin1 tlon-color-palettes (current-buffer))

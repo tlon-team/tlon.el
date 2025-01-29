@@ -1,4 +1,4 @@
-;;; tlon-cleanup.el --- Cleanup Markdown buffers after import  -*- lexical-binding: t -*-
+;;; tlon-cleanup.el --- Cleanup Markdown buffers after import  -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

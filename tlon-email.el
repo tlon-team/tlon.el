@@ -1,4 +1,4 @@
-;;; tlon-email.el --- Send emails to coworkers and clients -*- lexical-binding: t -*-
+;;; tlon-email.el --- Send emails to coworkers and clients -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; Copyright (C) 2025
 

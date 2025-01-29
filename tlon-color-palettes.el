@@ -1,4 +1,4 @@
-;;; tlon Color Palettes -*- lexical-binding: t -*-
+;;; tlon Color Palettes -*- lexical-binding: t; fill-column: 80 -*-
 
 ;; This file contains saved color palettes for tlon color configurations.
 
