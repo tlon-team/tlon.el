@@ -1,4 +1,4 @@
-This is tlon.info, produced by makeinfo version 7.1.1 from tlon.texi.
+This is tlon.info, produced by makeinfo version 7.2 from tlon.texi.
 
 INFO-DIR-SECTION Emacs misc features
 START-INFO-DIR-ENTRY
@@ -38,7 +38,6 @@ Editing Markdown
 * Commands to insert citations::
 * Commands to insert note markers::
 * Other commands::
-
 
 
 File: tlon.info,  Node: Main menu,  Next: Jobs,  Prev: Top,  Up: Top
@@ -276,7 +275,6 @@ optionally followed by one or more locators
 (https://docs.citationstyles.org/en/stable/specification.html#locators).
 The attribute ‘short’ indicates that the citation is a “short” citation.
 
-
    “Short” citations are defined as citations that only display the
 title of the work, rather than its full bibliographic details.  Such
 citations are appropriate in contexts in which the work is being
@@ -325,7 +323,6 @@ commands in the second paragraph will instead keep the existing tags.
 This behavior is intended to reflect the fact that a manual
 classification should take precedence over an automatic classification.
 
-
 
 File: tlon.info,  Node: Other commands,  Prev: Commands to insert note markers,  Up: Editing Markdown
 
@@ -343,29 +340,29 @@ insert not accessible in a normal keyboard—can be inserted with
 ‘tlon-md-special-characters’ customizes the list of characters offered
 as completion candidates.
 
-
 
 Tag Table:
-Node: Top208
-Node: Main menu836
-Node: Jobs933
-Node: 0 New job1255
-Node: 1 Processing3520
-Node: 2 Translation3937
-Node: 3 Revision4068
-Node: 4 Check4265
-Node: 5 Review4441
-Node: 6 Publication4637
-Node: GitHub and org-mode synchronization4745
-Node: Editing Markdown7567
-Node: Commands to insert mathematical expressions8301
-Node: Commands to insert citations9642
-Node: Commands to insert note markers11201
-Node: Other commands12920
+Node: Top206
+Node: Main menu833
+Node: Jobs930
+Node: 0 New job1252
+Node: 1 Processing3517
+Node: 2 Translation3934
+Node: 3 Revision4065
+Node: 4 Check4262
+Node: 5 Review4438
+Node: 6 Publication4634
+Node: GitHub and org-mode synchronization4742
+Node: Editing Markdown7564
+Node: Commands to insert mathematical expressions8298
+Node: Commands to insert citations9639
+Node: Commands to insert note markers11197
+Node: Other commands12915
 
 End Tag Table
 
 
 Local Variables:
 coding: utf-8
+Info-documentlanguage: en
 End:
