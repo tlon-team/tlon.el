@@ -203,8 +203,7 @@ abstract will, or will not, replace the existing one, respectively."
 			   (tlon-fetch-abstract-from-google-books isbn)
 			   (tlon-fetch-abstract-with-zotra url url))))
 	      (progn
-		(shut-up
-		  (funcall set-field "abstract" (tlon-abstract-cleanup value)))
+		(funcall set-field "abstract" (tlon-abstract-cleanup value))
 		(message "Set abstract of `%s'." key)
 		(setq found t))
 	    (message "Could not find abstract for `%s' using non-AI methods." key)
