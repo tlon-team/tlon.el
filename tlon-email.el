@@ -1,6 +1,6 @@
 ;;; tlon-email.el --- Send emails to coworkers and clients -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

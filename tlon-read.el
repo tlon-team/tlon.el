@@ -1,6 +1,6 @@
 ;;; tlon-read.el --- Functions for reading the current buffer aloud -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

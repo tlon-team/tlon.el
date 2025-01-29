@@ -1,6 +1,6 @@
 ;;; tlon-meet.el --- Manage Tlön meetings -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

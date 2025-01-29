@@ -1,6 +1,6 @@
 ;;; tlon-yaml.el --- Parse, get, set & edit YAML -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

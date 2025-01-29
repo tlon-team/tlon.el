@@ -1,6 +1,6 @@
 ;;; tlon-color.el --- Color palette handling -*- lexical-binding: t; eval: (rainbow-mode 1); -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

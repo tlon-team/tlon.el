@@ -1,6 +1,6 @@
 ;;; tlon-report.el --- Team clock data and reports -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 ;; URL: https://github.com/tlon-team/tlon/blob/main/tlon-report.el

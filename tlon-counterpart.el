@@ -1,6 +1,6 @@
 ;;; tlon-counterpart.el --- File, dir & repo counterparts -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024l
+;; Copyright (C) 2025l
 
 ;; Author: Pablo Stafforini
 

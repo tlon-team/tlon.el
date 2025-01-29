@@ -1,6 +1,6 @@
 ;;; tlon-count.el --- Functionality for counting words -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

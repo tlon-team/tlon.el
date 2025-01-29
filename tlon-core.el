@@ -1,6 +1,6 @@
 ;;; tlon-core.el --- Core Babel functionality  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

@@ -1,6 +1,6 @@
 ;;; tlon-md.el --- Markdown functionality for Tlön -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

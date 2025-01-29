@@ -1,6 +1,6 @@
 ;;; tlon-url.el --- Dead URL checking -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

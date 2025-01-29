@@ -1,6 +1,6 @@
 ;;; tlon-forg.el --- Integration between forge and org-mode -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

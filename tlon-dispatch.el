@@ -1,6 +1,6 @@
 ;;; tlon-dispatch.el --- Transient dispatchers -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 

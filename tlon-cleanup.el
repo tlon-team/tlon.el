@@ -1,6 +1,6 @@
 ;;; tlon-cleanup.el --- Cleanup Markdown buffers after import  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2024
+;; Copyright (C) 2025
 
 ;; Author: Pablo Stafforini
 
