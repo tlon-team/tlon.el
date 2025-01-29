@@ -164,7 +164,7 @@ If REPOS is nil, search in all tracked repos."
 
 (transient-define-prefix tlon-forge-menu ()
   "Dispatch a forge command."
-  [:if forge--get-repository:tracked?
+  [:if (##forge-get-repository :tracked?)
        ["Create"
 	("c i" "issue"             forge-create-issue)
 	("c p" "pull-request"      forge-create-pullreq)
@@ -175,7 +175,7 @@ If REPOS is nil, search in all tracked repos."
        ["Search"
 	("s s" "this repo"      forge-search)
 	("s a" "all repos"      tlon-forge-search)]]
-  [:if forge--get-repository:tracked?
+  [:if (##forge-get-repository :tracked?)
        ["List"
 	("t" "topics...         "  forge-topics-menu        :transient replace)
 	("n" "notifications...  "  forge-notifications-menu :transient replace)
@@ -185,10 +185,10 @@ If REPOS is nil, search in all tracked repos."
 	("f t" "one topic        " forge-pull-topic)
 	("f n" "notifications    " forge-pull-notifications)]
        ["Do"
-	:if forge--get-repository:tracked?
+	:if (##forge-get-repository :tracked?)
 	("C" "configure"       forge-configure)
 	("M" "merge w/api"     forge-merge :level 7)]]
-  [:if forge--get-repository:tracked?
+  [:if (##forge-get-repository :tracked?)
        ["Visit"
 	("v t" "topic"         forge-visit-topic)
 	("v i" "issue"         forge-visit-issue)
@@ -205,7 +205,7 @@ If REPOS is nil, search in all tracked repos."
 		   (if (magit-gitdir)
 		       "Forge doesn't know about this Git repository yet"
 		     "Not inside a Git repository"))
-		 :if-not forge--get-repository:tracked?
+		 :if-not (##forge-get-repository :tracked?)
 		 ("a" "add repository to database" forge-add-repository)
 		 ("f" "fetch notifications"        forge-pull-notifications)
 		 ("l" "list notifications"         forge-list-notifications)]])
