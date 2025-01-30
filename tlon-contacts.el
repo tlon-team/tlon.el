@@ -44,12 +44,12 @@ This variable should not be set manually.")
 
 (eval-and-compile
   (defconst tlon-contacts-property-values
-    '(("EMAIL" :shortcut "m" :candidates nil)
+    `(("EMAIL" :shortcut "m" :candidates nil)
       ("URL" :shortcut "u" :candidates nil)
       ("GENDER" :shortcut "g" :candidates ("male" "female" "other" "not applicable"))
       ("ENTITY" :shortcut "t" :candidates ("living person" "deceased person" "non-person"))
       ("UNIVERSAL-CONSENT" :shortcut "s" :candidates ("yes" "no" "waiting" "unknown"))
-      ("LANGUAGE" :shortcut "l" :candidates ("English" "Spanish" "French"))
+      ("LANGUAGE" :shortcut "l" :candidates ,(tlon-get-language-candidates 'babel))
       ("X" :shortcut "x" :candidates nil))
     "List of (PROPERTY :shortcut SHORTCUT :candidates COMPLETION-LIST)."))
 
