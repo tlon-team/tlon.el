@@ -26,6 +26,8 @@
 ;;; Code:
 
 (require 'tlon-core)
+(eval-and-compile
+  (require 'transient))
 
 ;;;; Functions
 
