@@ -83,9 +83,12 @@ If FILE is nil, use the file visited by the current buffer."
 	 (find-file output-file)
 	 (goto-address-mode 1))))))
 
-(defun tlon-get-archived (url)
+;;;###autoload
+(defun tlon-get-archived (&optional url)
   "Get and copy the latest archived version of URL from Wayback Machine."
-  (let ((archived (format "https://web.archive.org/web/2/%s" url)))
+  (interactive)
+  (let ((url (or url (read-string "URL: " (thing-at-point 'url t))))
+	(archived (format "https://web.archive.org/web/2/%s" url)))
     (kill-new (format "https://web.archive.org/web/2/%s" url))
     archived))
 
@@ -122,8 +125,9 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
 (transient-define-prefix tlon-url-menu ()
   "`url' menu."
   [[""
-    ("v" "Replace url across projects"                 tlon-replace-url-across-projects)
-    ("c" "Check URLs in file"                          tlon-check-urls-in-file)]])
+    ("a" "Get archived"                                tlon-get-archived)
+    ("c" "Check URLs in file"                          tlon-check-urls-in-file)
+    ("v" "Replace url across projects"                 tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
