@@ -80,6 +80,12 @@ If FILE is nil, use the file visited by the current buffer."
 	 (find-file output-file)
 	 (goto-address-mode 1))))))
 
+(defun tlon-get-archived (url)
+  "Get and copy the latest archived version of URL from Wayback Machine."
+  (let ((archived (format "https://web.archive.org/web/2/%s" url)))
+    (kill-new (format "https://web.archive.org/web/2/%s" url))
+    archived))
+
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
 
