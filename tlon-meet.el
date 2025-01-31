@@ -104,6 +104,18 @@
 		  (_ (user-error "This command is only for Leo and Fede meetings")))))
     (tlon-create-or-visit-individual-meeting-issue person date)))
 
+(defun tlon-advice-org-clock-in-meetings ()
+  "Call appropriate meeting function based on heading pattern."
+  (let ((heading (org-get-heading t t t t)))
+    (cond
+     ((string-match "Leo<>Pablo" heading)
+      (tlon-create-or-visit-meeting-issue-leo-pablo (format-time-string "%Y-%m-%d")))
+     ((string-match "Fede<>Pablo" heading)
+      (tlon-create-or-visit-meeting-issue-fede-pablo (format-time-string "%Y-%m-%d")))
+     ((string-match "Group meeting" heading)
+      (tlon-create-or-visit-group-meeting-issue (format-time-string "%Y-%m-%d"))))))
+
+(advice-add 'org-clock-in :after #'tlon-advice-org-clock-in-meetings)
 
 (defun tlon-prompt-for-all-other-users (&optional group)
   "Ask the user to select from a list of all users except himself.
