@@ -116,6 +116,15 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
              replacements
              (mapconcat #'identity (delete-dups affected-dirs) ", "))))
 
+;;;; Menu
+
+;;;###autoload (autoload 'tlon-url-menu "tlon-url" nil t)
+(transient-define-prefix tlon-url-menu ()
+  "`url' menu."
+  [[""
+    ("v" "Replace url across projects"                 tlon-replace-url-across-projects)
+    ("c" "Check URLs in file"                          tlon-check-urls-in-file)]])
+
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
 
