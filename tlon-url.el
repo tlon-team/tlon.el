@@ -89,6 +89,33 @@ If FILE is nil, use the file visited by the current buffer."
     (kill-new (format "https://web.archive.org/web/2/%s" url))
     archived))
 
+(defun tlon-replace-url-across-projects (&optional url-dead url-live)
+  "Replace URL-DEAD with URL-LIVE in all files across content repos.
+If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
+  (interactive)
+  (let* ((url-dead (or url-dead (read-string "Dead URL: " (thing-at-point 'url t))))
+	 (url-live (or url-live (read-string "Live URL: ")))
+	 (files (cl-loop for dir in
+			 (append (tlon-repo-lookup-all :dir :type 'content :subtype 'originals)
+				 (tlon-repo-lookup-all :dir :type 'content :subtype 'translations))
+			 append (directory-files-recursively dir ".*")))
+	 (replacements 0)
+	 (affected-dirs nil))
+    (dolist (file files)
+      (when (file-regular-p file)
+        (with-temp-buffer
+          (insert-file-contents file)
+          (when (search-forward url-dead nil t)
+            (cl-incf replacements)
+            (push (file-name-directory file) affected-dirs)
+            (goto-char (point-min))
+            (while (search-forward url-dead nil t)
+              (replace-match url-live))
+            (write-region (point-min) (point-max) file)))))
+    (message "Made %d replacements in directories: %s"
+             replacements
+             (mapconcat #'identity (delete-dups affected-dirs) ", "))))
+
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
 
