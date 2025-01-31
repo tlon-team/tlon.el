@@ -72,34 +72,38 @@
 
 ;; TODO: generate the next three functions with function
 ;;;###autoload
-(defun tlon-create-or-visit-meeting-issue-leo-pablo ()
-  "Create or visit issue for a meeting with Leo and Pablo."
+(defun tlon-create-or-visit-meeting-issue-leo-pablo (&optional date)
+  "Create or visit issue for a meeting with Leo and Pablo on DATE."
   (interactive)
-  (let ((person (pcase user-full-name
+  (let ((date (or date (org-read-date)))
+	(person (pcase user-full-name
 		  ("Pablo Stafforini" "Leonardo Picón")
 		  ("Leonardo Picón" "Pablo Stafforini")
 		  (_ (user-error "This command is only for Leo and Pablo meetings")))))
-    (tlon-create-or-visit-individual-meeting-issue person (org-read-date))))
+    (tlon-create-or-visit-individual-meeting-issue person date)))
 
 ;;;###autoload
-(defun tlon-create-or-visit-meeting-issue-fede-pablo ()
-  "Create or visit issue for a meeting with Fede and Pablo."
+(defun tlon-create-or-visit-meeting-issue-fede-pablo (&optional date)
+  "Create or visit issue for a meeting with Fede and Pablo on DATE."
   (interactive)
-  (let ((person (pcase user-full-name
+  (let ((date (or date (org-read-date)))
+	(person (pcase user-full-name
 		  ("Pablo Stafforini" "Federico Stafforini")
 		  ("Federico Stafforini" "Pablo Stafforini")
 		  (_ (user-error "This command is only for Fede and Pablo meetings")))))
-    (tlon-create-or-visit-individual-meeting-issue person (org-read-date))))
+    (tlon-create-or-visit-individual-meeting-issue person date)))
 
 ;;;###autoload
-(defun tlon-create-or-visit-meeting-issue-fede-leo ()
-  "Create or visit issue for a meeting with Fede and Leo."
+(defun tlon-create-or-visit-meeting-issue-fede-leo (&optional date)
+  "Create or visit issue for a meeting with Fede and Leo on DATE."
   (interactive)
-  (let ((person (pcase user-full-name
+  (let ((date (or date (org-read-date)))
+	(person (pcase user-full-name
 		  ("Federico Stafforini" "Leonardo Picón")
 		  ("Leonardo Picón" "Federico Stafforini")
 		  (_ (user-error "This command is only for Leo and Fede meetings")))))
-    (tlon-create-or-visit-individual-meeting-issue person (org-read-date))))
+    (tlon-create-or-visit-individual-meeting-issue person date)))
+
 
 (defun tlon-prompt-for-all-other-users (&optional group)
   "Ask the user to select from a list of all users except himself.
