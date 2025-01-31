@@ -27,6 +27,9 @@
 
 (require 'tlon-core)
 (require 'tlon-md)
+(eval-and-compile
+  (require 'eieio)
+  (require 'transient))
 
 ;;;; User options
 
@@ -2692,10 +2695,6 @@ move point to the file-local variables section."
   (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name)))
 
 ;;;;;;; Engine settings
-
-(eval-and-compile
-  (require 'eieio)
-  (require 'transient))
 
 (defclass tlon-tts-global-engine-settings-infix (transient-infix)
   ((variable :initarg :variable
