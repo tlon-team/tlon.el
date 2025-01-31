@@ -104,7 +104,7 @@
 		  (_ (user-error "This command is only for Leo and Fede meetings")))))
     (tlon-create-or-visit-individual-meeting-issue person date)))
 
-(defun tlon-advice-org-clock-in-meetings ()
+(defun tlon-advice-org-clock-in-meetings (&optional _ _)
   "Call appropriate meeting function based on heading pattern."
   (let ((heading (org-get-heading t t t t)))
     (cond
