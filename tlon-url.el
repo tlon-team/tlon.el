@@ -62,6 +62,7 @@ EXTENSION is nil, use \"md\"."
 	(insert url "\n")))
     file))
 
+;;;###autoload
 (defun tlon-check-urls-in-file (&optional file)
   "Check all the URLs in FILE for dead links asynchronously.
 If FILE is nil, use the file visited by the current buffer."
