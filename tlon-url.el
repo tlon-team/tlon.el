@@ -119,7 +119,7 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
              replacements
              (mapconcat #'identity (delete-dups affected-dirs) ", "))))
 
-;;;; Menu
+;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-url-menu "tlon-url" nil t)
 (transient-define-prefix tlon-url-menu ()
