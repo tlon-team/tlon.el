@@ -127,7 +127,7 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
   [[""
     ("a" "Get archived"                                tlon-get-archived)
     ("c" "Check URLs in file"                          tlon-check-urls-in-file)
-    ("v" "Replace url across projects"                 tlon-replace-url-across-projects)]])
+    ("v" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
