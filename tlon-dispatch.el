@@ -26,6 +26,7 @@
 ;;; Code:
 
 (require 'tlon)
+(require 'tlon-contacts) ; `tlon-contacts-menu' can't be autoloaded
 (require 'tlon-core)
 (require 'transient)
 
