@@ -348,7 +348,7 @@ INFO is the response info."
 
 ;;;;;; Other functions
 
-(declare-function bibtex-next-entry "bibtex")
+(autoload 'bibtex-next-entry "bibtex")
 (declare-function bibtex-extras-get-key "bibtex-extras")
 (autoload 'ebib-extras-next-entry "ebib-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
@@ -370,8 +370,8 @@ INFO is the response info."
     (message "Retrying language detection (try %d of 3)..." tlon-ai-retries)
     (funcall original-fun)))
 
-(declare-function ebib-extras-get-text-file "ebib-extras")
-(declare-function tlon-md-read-content "tlon-md")
+(autoload 'ebib-extras-get-text-file "ebib-extras")
+(autoload 'tlon-md-read-content "tlon-md")
 (defun tlon-get-string-dwim (&optional file)
   "Return FILE, region or buffer as string, depending on major mode.
 If FILE is non-nil, return it as a string or, if in `markdown-mode', return a
@@ -408,7 +408,7 @@ Otherwise,
 	    (t
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
-(declare-function shr-render-buffer "shr")
+(autoload 'shr-render-buffer "shr")
 (autoload 'tlon-convert-pdf "tlon-import")
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string."
@@ -515,8 +515,8 @@ it instead."
 			(user-error "Error: %s" (plist-get info :status)))
 		      (setq gptel-context--alist previous-context))))))
 
-(declare-function tlon-get-tag-attribute-values "tlon-md")
-(declare-function tlon-md-insert-attribute-value "tlon-md")
+(autoload 'tlon-get-tag-attribute-values "tlon-md")
+(autoload 'tlon-md-insert-attribute-value "tlon-md")
 (defun tlon-ai-set-image-alt-text ()
   "Insert a description of the image in the image tag at point.
 The image tags are \"Figure\" or \"OurWorldInData\"."
@@ -534,7 +534,7 @@ The image tags are \"Figure\" or \"OurWorldInData\"."
 					 (user-error "Error: %s" (plist-get info :status)))))
       (user-error "No \"Figure\" or \"OurWorldInData\" tag at point"))))
 
-(declare-function tlon-md-get-tag-pattern "tlon-md")
+(autoload 'tlon-md-get-tag-pattern "tlon-md")
 (defun tlon-ai-set-image-alt-text-in-buffer ()
   "Insert a description of all the images in the current buffer.
 If the image already contains a non-empty `alt' field, overwrite it when
@@ -549,7 +549,7 @@ If the image already contains a non-empty `alt' field, overwrite it when
 		  (string-empty-p (match-string 6)))
 	  (tlon-ai-set-image-alt-text))))))
 
-(declare-function dired-get-filename "dired")
+(autoload 'dired-get-filename "dired")
 (defun tlon-ai-read-image-file (&optional file)
   "Read an image FILE from multiple sources.
 In order, the sources are: the value of FILE, the value of `src' attribute in a
@@ -678,7 +678,7 @@ To get an abstract with AI, the function uses
   (unless (tlon-fetch-and-set-abstract)
     (tlon-get-abstract-with-ai)))
 
-(declare-function tlon-abstract-may-proceed-p "tlon-tex")
+(autoload 'tlon-abstract-may-proceed-p "tlon-tex")
 ;;;###autoload
 (defun tlon-get-abstract-with-ai (&optional file type)
   "Return an abstract of TYPE using AI.
@@ -826,7 +826,7 @@ inserted; if nil, use the current buffer."
 ;;;;;; BibTeX
 
 (declare-function bibtex-set-field "bibtex")
-(declare-function ebib-extras-set-field "ebib-extras")
+(autoload 'ebib-extras-set-field "ebib-extras")
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (defun tlon-ai-summarize-set-bibtex-abstract (abstract key)
   "Set the `abstract' field of entry with KEY entry to ABSTRACT."
@@ -875,8 +875,8 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;;; BibTeX
 
-(declare-function ebib-extras-get-or-open-entry "bibtex-extras")
-(declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
+(autoload 'ebib-extras-get-or-open-entry "bibtex-extras")
+(autoload 'bibtex-extras-get-entry-as-string "bibtex-extras")
 (defun tlon-ai-detect-language-in-bibtex (&optional string)
   "Detect language in STRING.
 If STRING is nil, use the current BibTeX entry."
@@ -887,8 +887,8 @@ If STRING is nil, use the current BibTeX entry."
     (tlon-make-gptel-request tlon-ai-detect-language-bibtex-prompt string
 			     #'tlon-ai-callback-return)))
 
-(declare-function bibtex-beginning-of-entry "bibtex")
-(declare-function bibtex-extras-get-field-in-string "bibtex-extras")
+(autoload 'bibtex-beginning-of-entry "bibtex")
+(autoload 'bibtex-extras-get-field-in-string "bibtex-extras")
 ;;;###autoload
 (defun tlon-ai-set-language-bibtex ()
   "Set the language of the BibTeX entry at point to LANGUAGE.
@@ -951,7 +951,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Phonetic transcription
 
-(declare-function word-at-point "thingatpt")
+(autoload 'word-at-point "thingatpt")
 ;;;###autoload
 (defun tlon-ai-phonetically-transcribe (expression language)
   "Insert the phonetic transcription of the EXPRESSION in LANGUAGE.
@@ -992,7 +992,7 @@ Separate the original line and the transcription with a comma."
   (interactive)
   (tlon-ai-process-math 'translate expression language))
 
-(declare-function tlon-looking-at-tag-p "tlon-md")
+(autoload 'tlon-looking-at-tag-p "tlon-md")
 (defun tlon-ai-process-math (action &optional expression language)
   "Take ACTION with math EXPRESSION in LANGUAGE.
 If ACTION is `convert', convert expression into LaTeX. If ACTION is `translate',
