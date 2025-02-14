@@ -665,7 +665,7 @@ Return the path of the temporary file created."
     (message "File created: %s" new-file)
     new-file))
 
-(declare-function goldendict-ng-search-string "goldendict-ng")
+(autoload 'goldendict-ng-search-string "goldendict-ng")
 ;; TODO: move to relevant section
 (defun tlon-search-for-translation (string)
   "Search for a Spanish translation of English STRING."
