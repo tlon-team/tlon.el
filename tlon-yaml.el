@@ -522,6 +522,7 @@ is `translation_key', return the BibTeX key of the translation"
 	      (elts (split-string line ":" nil "\\s-+")))
     elts))
 
+;;;###autoload
 (defun tlon-yaml-get-key (key &optional file-or-buffer)
   "Get value of KEY in YAML metadata of FILE-OR-BUFFER.
 If FILE is nil, use the file visited by the current buffer."
