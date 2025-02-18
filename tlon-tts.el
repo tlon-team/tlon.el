@@ -1668,7 +1668,7 @@ the car is the name of the file-local variable the cdr is its overriding value."
   "Get or set the OpenAI API key."
   (or tlon-openai-key
       (setq tlon-openai-key
-	    (auth-source-pass-get "key" (concat "tlon/core/openai.com/" tlon-email-shared)))))
+	    (auth-source-pass-get "emacs" (concat "tlon/core/openai.com/" tlon-email-shared)))))
 
 ;;;;;;; ElevenLabs
 
