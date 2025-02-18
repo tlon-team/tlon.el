@@ -693,7 +693,7 @@ Return the path of the temporary file created."
 ;;;;; Meet
 
 (declare-function tlon-set-meeting-buffers "tlon-core")
-(advice-add 'org-clock-in :after #'tlon-set-meeting-buffers)
+;; (advice-add 'org-clock-in :after #'tlon-set-meeting-buffers)
 
 (provide 'tlon)
 ;;; tlon.el ends here
