@@ -104,18 +104,6 @@
 		  (_ (user-error "This command is only for Leo and Fede meetings")))))
     (tlon-create-or-visit-individual-meeting-issue person date)))
 
-;;;###autoload
-(defun tlon-advice-org-clock-in-meetings (&optional _ _)
-  "Call appropriate meeting function based on heading pattern."
-  (let ((heading (org-get-heading t t t t)))
-    (cond
-     ((string-match "Leo<>Pablo" heading)
-      (tlon-create-or-visit-meeting-issue-leo-pablo (format-time-string "%Y-%m-%d")))
-     ((string-match "Fede<>Pablo" heading)
-      (tlon-create-or-visit-meeting-issue-fede-pablo (format-time-string "%Y-%m-%d")))
-     ((string-match "Group meeting" heading)
-      (tlon-create-or-visit-group-meeting-issue (format-time-string "%Y-%m-%d"))))))
-
 (defun tlon-prompt-for-all-other-users (&optional group)
   "Ask the user to select from a list of all users except himself.
 If GROUP is non-nil, include the \"group\" option in the prompt."
@@ -185,6 +173,20 @@ function tried to be a nudge in that direction."
     (insert (format "A discutir en %s." backlink))
     (forge-post-submit)))
 
+;;;;; Advice org
+
+;;;###autoload
+(defun tlon-set-meeting-buffers (&optional _ _)
+  "Open Zoom link and Create or visit appropriate meeting issue."
+  (org-open-at-point)
+  (let ((heading (org-get-heading t t t t)))
+    (cond
+     ((string-match "Leo<>Pablo" heading)
+      (tlon-create-or-visit-meeting-issue-leo-pablo (format-time-string "%Y-%m-%d")))
+     ((string-match "Fede<>Pablo" heading)
+      (tlon-create-or-visit-meeting-issue-fede-pablo (format-time-string "%Y-%m-%d")))
+     ((string-match "Group meeting" heading)
+      (tlon-create-or-visit-group-meeting-issue (format-time-string "%Y-%m-%d"))))))
 
 ;;;;; Menu
 
