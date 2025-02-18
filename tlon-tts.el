@@ -1665,7 +1665,7 @@ the car is the name of the file-local variable the cdr is its overriding value."
 	      (tlon-tts-openai-get-or-set-key) tlon-openai-model string voice destination))))
 
 (defun tlon-tts-openai-get-or-set-key ()
-  "Get or set the Microsoft Azure API key."
+  "Get or set the OpenAI API key."
   (or tlon-openai-key
       (setq tlon-openai-key
 	    (auth-source-pass-get "key" (concat "tlon/core/openai.com/" tlon-email-shared)))))
