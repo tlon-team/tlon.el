@@ -980,6 +980,53 @@ Separate the original line and the transcription with a comma."
 	  (tlon-ai-phonetically-transcribe line language)
 	  (forward-line))))))
 
+;;;;; Audio transcription
+
+(autoload 'tlon-tts-openai-get-or-set-key "tlon-tts")
+(declare-function request "request")
+(defun tlon-transcribe-audio (file callback)
+  "Asynchronously transcribe the audio in FILE using OpenAI's Whisper API via curl.
+FILE is the audio file to transcribe. CALLBACK is a function that is called with
+the transcript string on success, or nil if no transcript is available or an
+error occurs."
+  (interactive "fChoose audio file: ")
+  (let* ((api-key (tlon-tts-openai-get-or-set-key))
+         (endpoint "https://api.openai.com/v1/audio/transcriptions"))
+    (unless api-key
+      (error "Could not retrieve API key"))
+    (message "Uploading %s to OpenAI via curl asynchronously..." file)
+    (let* ((output-buffer (generate-new-buffer "/openai-transcribe-output/"))
+           (args (list "-s" "-X" "POST"
+		       endpoint
+		       "-H" (concat "Authorization: Bearer " api-key)
+		       "-F" "model=whisper-1"
+		       "-F" (concat "file=@" (expand-file-name file)))))
+      (let ((proc (apply 'start-process "openai-transcribe-process" output-buffer "curl" args)))
+	(set-process-sentinel
+	 proc
+	 (lambda (process _)
+	   (when (eq (process-status process) 'exit)
+	     (with-current-buffer (process-buffer process)
+	       (let ((output (buffer-string)))
+		 (condition-case err
+		     (let* ((json-object-type 'hash-table)
+			    (json-array-type 'list)
+			    (json-key-type 'string)
+			    (response (json-read-from-string output))
+			    (transcript (gethash "text" response)))
+		       (if transcript
+			   (progn
+			     (message "Transcription complete.")
+			     (funcall callback transcript))
+			 (progn
+			   (message "No transcript returned. Full response: %s" output)
+			   (funcall callback nil))))
+		   (error
+		    (message "Error parsing JSON response: %s" (error-message-string err))
+		    (message "Response was: %s" output)
+		    (funcall callback nil)))))
+	     (kill-buffer (process-buffer process)))))))))
+
 ;;;;; Math
 
 (defun tlon-ai-convert-math (&optional expression language)
