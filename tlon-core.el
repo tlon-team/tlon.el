@@ -1068,7 +1068,7 @@ If LANGUAGE is nil, use the language of the current repository."
   (tlon-get-separator 'thousands language))
 
 (defun tlon-get-number-separator-pattern (&optional lang thousands decimal bounded)
-  "Return the pattern that matches a number with THOUSANDS and DECIMAL separators.
+  "Return pattern matching a number with THOUSANDS and DECIMAL separators in LANG.
 If LANG is nil, obtain it from the file visited by the current buffer. If
 THOUSANDS or DECIMAL are nil, infer them from the language of the current
 repository. If BOUNDED is non-nil, match only text at the beginning or end of a
