@@ -1514,7 +1514,7 @@ format used by `mp3split'."
 ;;;;;; Audio silences
 
 (defun tlon-tts-create-silence-file (duration file)
-  "Create a silence file of DURATION seconds with the name FILE in mono."
+  "Create a mono silence file of DURATION seconds with the name FILE."
   ;; TODO: the audio parameters are hard-coded; they should be obtained from the
   ;; relevant `audio-settings' variable
   (shell-command (format "ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t %s -b:a 128k %s"
