@@ -829,6 +829,20 @@ former in group 1.")
     ("it" . "Ottantamila"))
   "The number 80000 in different languages.")
 
+(defconst tlon-language-specific-thousands-separator
+  '((:language "en" :separator ",")
+    (:language "es" :separator ".")
+    (:language "fr" :separator " ")
+    (:language "it" :separator ".")
+    (:language "de" :separator ".")
+    (:language "ar" :separator ",")
+    (:language "ko" :separator ",")
+    (:language "ja" :separator ","))
+
+  "List of language-specific thousands separators.
+These are used in TTS processes to ensure that the numbers are pronounced
+correctly.")
+
 ;;;;; Currencies
 
 (defconst tlon-tts-currencies
