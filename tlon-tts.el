@@ -829,7 +829,7 @@ former in group 1.")
     ("it" . "Ottantamila"))
   "The number 80000 in different languages.")
 
-(defconst tlon-language-specific-thousands-separator
+(defconst tlon-tts-thousands-separator
   '((:language "en" :separator ",")
     (:language "es" :separator ".")
     (:language "fr" :separator " ")
@@ -838,10 +838,9 @@ former in group 1.")
     (:language "ar" :separator ",")
     (:language "ko" :separator ",")
     (:language "ja" :separator ","))
-
   "List of language-specific thousands separators.
-These are used in TTS processes to ensure that the numbers are pronounced
-correctly.")
+The specified separator will replace existing thousands separators, so that the
+TTS engine pronounces the numbers correctly.")
 
 ;;;;; Currencies
 
@@ -2446,14 +2445,13 @@ image links are handled differently."
 
 ;;;;;;;; Replace thousands separators
 
-(defvar tlon-language-specific-thousands-separator)
 (defun tlon-tts-process-numerals-set-thousands-separators ()
   "Replace narrow space with language-specific thousands separator.
 Some TTS engines do not read numbers correctly when they are not separated by
 periods or commas (depending on the language)."
   (goto-char (point-min))
   (let* ((lang (tlon-tts-get-current-language))
-	 (default-separator (tlon-lookup tlon-language-specific-thousands-separator
+	 (default-separator (tlon-lookup tlon-tts-thousands-separator
 					 :separator :language lang))
 	 (separator (pcase tlon-tts-engine
 		      ("ElevenLabs" default-separator)
