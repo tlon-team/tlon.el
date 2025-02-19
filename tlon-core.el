@@ -365,7 +365,12 @@ amounts between 1000 and 9999.")
   '((:language "en" :separator ",")
     (:language "es" :separator ".")
     (:language "fr" :separator " ")
-    (:language "it" :separator "."))
+    (:language "it" :separator ".")
+    (:language "de" :separator ".")
+    (:language "ar" :separator ",")
+    (:language "ko" :separator ",")
+    (:language "ja" :separator ","))
+
   "List of language-specific thousands separators.
 These are used in TTS processes to ensure that the numbers are pronounced
 correctly.")
@@ -412,7 +417,10 @@ and the third group captures the collection ID.")
     (:language "es" :conjunct "y")
     (:language "fr" :conjunct "et")
     (:language "it" :conjunct "e")
-    (:language "de" :conjunct "und"))
+    (:language "de" :conjunct "und")
+    (:language "ar" :conjunct "و")
+    (:language "ko" :conjunct "그리고")
+    (:language "ja" :conjunct "と"))
   "List of language-specific conjunctions for text-to-speech processes.")
 
 ;;;;; To sort
