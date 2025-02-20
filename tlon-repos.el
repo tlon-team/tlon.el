@@ -77,10 +77,23 @@ database. To track these repos, use `tlon-forge-track-missing-repos'."
 	(message "No repos missing")
       (message "Cloning %d missing repos" count))))
 
+(autoload 'vc-extras-list-local-candidates "vc-extras")
 ;;;###autoload
-(defun tlon-delete-local-repo (name)
-  "Delete the Tlön repo NAME."
-  (interactive (list (completing-read "Repo: " (tlon-repo-lookup-all :name))))
+(defun tlon-delete-local-repo (&optional name)
+  "Delete the Tlön repo NAME if it exists locally.
+If NAME is nil, the user is prompted with the intersection of repositories
+reported by `tlon-repo-lookup-all' and the local repositories (as determined by
+`vc-extras--list-local-candidates'). Delegates deletion to
+`vc-extras-delete-local-repo'."
+  (interactive)
+  (unless name
+    (let* ((all-names (tlon-repo-lookup-all :name))
+           (local-candidates (vc-extras-list-local-candidates "tlon-team"))
+           (local-names (mapcar #'car local-candidates))
+           (intersection (cl-intersection all-names local-names :test #'string=)))
+      (unless intersection
+        (user-error "No local Tlön repos match the known list"))
+      (setq name (completing-read "Repo to delete: " intersection nil t))))
   (vc-extras-delete-local-repo name "tlon-team"))
 
 ;;;;; Forge
