@@ -51,6 +51,16 @@ non-nil, make it private."
   (interactive)
   (vc-extras-create-repo name "tlon-team"))
 
+(defun tlon-get-local-repos ()
+  "Prompt the user to select from a list of repo names and return the selection."
+  (let* ((all-names (tlon-repo-lookup-all :name))
+         (local-candidates (vc-extras-list-local-candidates "tlon-team"))
+         (local-names (mapcar #'car local-candidates))
+         (intersection (cl-intersection all-names local-names :test #'string=)))
+    (unless intersection
+      (user-error "No local Tlön repos found"))
+    (completing-read "Repo: " intersection nil t)))
+
 (declare-function forge-extras-track-repository "forge-extras")
 ;;;###autoload
 (defun tlon-clone-repo (&optional name no-forge)
@@ -86,18 +96,19 @@ reported by `tlon-repo-lookup-all' and the local repositories (as determined by
 `vc-extras--list-local-candidates'). Delegates deletion to
 `vc-extras-delete-local-repo'."
   (interactive)
-  (unless name
-    (let* ((all-names (tlon-repo-lookup-all :name))
-           (local-candidates (vc-extras-list-local-candidates "tlon-team"))
-           (local-names (mapcar #'car local-candidates))
-           (intersection (cl-intersection all-names local-names :test #'string=)))
-      (unless intersection
-        (user-error "No local Tlön repos match the known list"))
-      (setq name (completing-read "Repo to delete: " intersection nil t))))
-  (vc-extras-delete-local-repo name "tlon-team"))
+  (let ((name (or name (tlon-get-local-repos))))
+    (vc-extras-delete-local-repo name "tlon-team")))
 
 ;;;;; Forge
 ;;;;;; Track repos
+
+;;;###autoload
+(defun tlon-forge-track-repo (&optional name)
+  "Track Tlön repo NAME in the Forge database."
+  (interactive)
+  (let* ((name (or name (tlon-get-local-repos)))
+	 (dir (tlon-repo-lookup :dir :name name)))
+    (forge-extras-track-repository dir)))
 
 (autoload 'forge-extras-track-repo-all-topics "forge-extras")
 (defun tlon-forge-track-missing-repos ()
@@ -256,7 +267,7 @@ If REPOS is nil, search in all tracked repos."
     ("?" "Check authentication"          vc-extras-check-gh-authenticated)]
    ["Forge"
     ""
-    ("a" "Track repo"                    forge-extras-track-repository)
+    ("a" "Track repo"                    tlon-forge-track-repo)
     ("A" "Track all missing repos"       tlon-forge-track-missing-repos)
     ""
     ("r" "Untrack repo"                  forge-remove-repository)
