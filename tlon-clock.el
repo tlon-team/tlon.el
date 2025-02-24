@@ -159,21 +159,6 @@ Defaults to the current buffer if no FILE is specified."
   (winum-select-window-2)
   (find-file translation-path))
 
-;;;;; Menu
-
-;;;###autoload (autoload 'tlon-clock-menu "tlon-clock" nil t)
-(transient-define-prefix tlon-clock-menu ()
-  "`clock' menu."
-  [["Create"
-    ("c" "Create entry"               tlon-clock-entry-create)
-    ("C" "Create entries in range"    tlon-clock-entry-create-in-range)]
-   ["Submit"
-    ("s" "Submit entry"               tlon-clock-entry-submit)
-    ("S" "Submit all entries"         tlon-clock-entry-submit-all)]
-   ;; ["Report"] ; TODO
-   ["Misc"
-    ("o" "Open entry"                 tlon-clock-open-entry)]])
-
 (provide 'tlon-clock)
 ;;; tlon-clock.el ends here
 
