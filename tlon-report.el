@@ -28,6 +28,7 @@
 
 (require 'paths)
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; Functions
 
@@ -109,7 +110,133 @@ If NO-PUSH is nil, do not push the commit to the remote repository."
 
 ;;;;; Report
 
-;; TODO
+(autoload 'org-table-align "org-table")
+;;;###autoload
+(defun tlon-clock-report-create (start-date end-date)
+  "Aggregate clock data from your org clock files between START-DATE and END-DATE.
+Both dates should be entered as strings in \"YYYY-MM-DD\" format.
+The command searches through files in `org-agenda-files' whose names look
+like \"YYYY-MM-DD.org\" and expects to find one or more clocktable blocks.
+It produces an aggregated report in a new buffer with one table row per
+activity (summing times if an activity occurs more than once)."
+  (interactive
+   (list (read-string "Start date (YYYY-MM-DD): ")
+         (read-string "End date (YYYY-MM-DD): ")))
+  (let ((activities (make-hash-table :test 'equal))
+        (files (tlon-clock-collect-clock-files start-date end-date)))
+    (unless files
+      (user-error "No org clock files found in the specified date range"))
+    (dolist (file files)
+      (with-temp-buffer
+        (insert-file-contents file)
+        (goto-char (point-min))
+        ;; Look for each clocktable block in the file.
+        (while (re-search-forward "^#\\+BEGIN: clocktable\\_>" nil t)
+          (let ((block-start (match-beginning 0)))
+            (when (re-search-forward "^#\\+END:" nil t)
+              (let ((block-end (point)))
+                (let ((block-text (buffer-substring-no-properties block-start block-end)))
+                  (tlon-clock-parse-clocktable-block block-text activities))))))))
+    ;; Now produce the report buffer.
+    (let ((report-buffer (get-buffer-create "*Aggregated Clock Report*"))
+          total)
+      (with-current-buffer report-buffer
+        (erase-buffer)
+        (insert (format "#+TITLE: Aggregated Clock Report from %s to %s\n\n" start-date end-date))
+        (insert "| Headline | Time |\n")
+        (insert "|----------+------|\n")
+        (setq total 0)
+        ;; Collect and sort the activity keys.
+        (let (keys)
+          (maphash (lambda (k _v) (push k keys)) activities)
+          (setq keys (sort keys #'string<))
+          (dolist (key keys)
+            (let ((mins (gethash key activities)))
+              (setq total (+ total mins))
+              (insert (format "| %s | %s |\n" key (tlon-clock-minutes-to-time-string mins))))))
+        (insert "|----------+------|\n")
+        (insert (format "| ALL /Total time/ | %s |\n" (tlon-clock-minutes-to-time-string total)))
+	(org-table-align)
+        (insert "\n")
+	(tlon-clock-insert-summary-stats total start-date end-date)
+        (org-mode))
+      (display-buffer report-buffer))))
+
+;; Helper: convert a time string “HH:MM” into minutes.
+(defun tlon-clock-time-string-to-minutes (time-string)
+  "Convert a TIME-STRING of the form \"H:MM\" to minutes."
+  (when time-string
+    (if (string-match "\\([0-9]+\\):\\([0-9]+\\)" time-string)
+        (+ (* 60 (string-to-number (match-string 1 time-string)))
+           (string-to-number (match-string 2 time-string)))
+      0)))
+
+;; Helper: convert minutes to a “H:MM” formatted string.
+(defun tlon-clock-minutes-to-time-string (minutes)
+  "Convert MINUTES to a formatted time string H:MM."
+  (format "%d:%02d" (/ minutes 60) (mod minutes 60)))
+
+;; Helper: given a block of text (the clocktable block text) update ACTIVITIES.
+(defun tlon-clock-parse-clocktable-block (block-text activities)
+  "Parse clocktable BLOCK-TEXT and add activity times into ACTIVITIES.
+Each detailed activity row is expected to have no text in its first column.
+Rows that include the words \"Total time\" or \"/File time/\" are skipped."
+  (dolist (line (split-string block-text "\n" t))
+    (when (string-match-p "^|" line)  ; only process table rows
+      (let* ((cells (mapcar #'string-trim
+                            (split-string
+                             ;; remove the leading and trailing vertical bar:
+                             (substring line 1 (if (string-suffix-p "|" line)
+                                                   -1
+                                                 (length line)))
+                             "|" t)))
+             (col1 (nth 0 cells))
+             (headline (nth 1 cells)))
+        ;; We want only detailed rows, which have an empty first column;
+        ;; also skip summary rows.
+        (unless (or (not (string= col1 ""))
+		    (or (string-match-p "Total time" headline)
+                        (string-match-p "\\/File time\\*" headline)))
+          ;; Try to get a time value from column 3 or, if blank, column 4.
+          (let ((time-cell (or (nth 2 cells) (nth 3 cells))))
+	    (when (and time-cell (not (string= time-cell "")))
+	      ;; Remove any extraneous asterisks.
+	      (setq time-cell (replace-regexp-in-string "\\*" "" time-cell))
+	      (let ((minutes (tlon-clock-time-string-to-minutes time-cell)))
+                (when minutes
+                  (puthash headline (+ (gethash headline activities 0)
+                                       minutes)
+                           activities))))))))))
+
+(autoload 'org-string<= "org-macs")
+(defun tlon-clock-collect-clock-files (start-date end-date)
+  "Return a list of org files between START-DATE and END-DATE."
+  (let (result)
+    (dolist (file (directory-files (tlon-clock-get-repo) t "\\.org$"))
+      (let ((fname (file-name-nondirectory file)))
+        (when (string-match "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)\\.org" fname)
+          (let ((file-date (match-string 1 fname)))
+            (when (and (org-string<= start-date file-date)
+                       (org-string<= file-date end-date))
+              (push file result))))))
+    result))
+
+(autoload 'org-time-string-to-time "org")
+(defun tlon-clock-insert-summary-stats (total start-date end-date)
+  "Return summary statistics for TOTAL hours worked between START-DATE END-DATE."
+  (let* ((total-hours (/ (float total) 60))
+         (start-time (org-time-string-to-time start-date))
+         (end-time (org-time-string-to-time end-date))
+         (num-days (max 1 (1+ (floor (/ (float-time (time-subtract end-time start-time))
+                                        86400)))))
+         (hours-per-day (/ total-hours num-days))
+         (hours-per-week (* hours-per-day 7)))
+    (insert (format "Total days: %d\n" num-days))
+    (insert (format "Total hours: %.2f\n" total-hours))
+    (insert (format "Hours per day: %.2f\n" hours-per-day))
+    (insert (format "Hours per week: %.2f\n" hours-per-week))
+    (insert (format "Hours per weekday: %.2f\n" (/ hours-per-week 5)))
+    (insert "\n")))
 
 ;;;;; Misc
 
