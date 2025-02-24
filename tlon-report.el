@@ -235,7 +235,7 @@ Rows that include the words \"Total time\" or \"/File time/\" are skipped."
     (insert (format "Total hours: %.2f\n" total-hours))
     (insert (format "Hours per day: %.2f\n" hours-per-day))
     (insert (format "Hours per week: %.2f\n" hours-per-week))
-    (insert (format "Hours per weekday: %.2f\n" (/ hours-per-week 5)))
+    (insert (format "Hours per workday: %.2f\n" (/ hours-per-week 5)))
     (insert "\n")))
 
 ;;;;; Misc
