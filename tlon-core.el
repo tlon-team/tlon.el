@@ -101,6 +101,10 @@
 	   :type development
 	   :subtype issues ; is this correct?
 	   :key "q q")
+    (:name "web-server"
+	   :project "tlon"
+	   :abbrev "web-server"
+	   :type development)
     (:name "uqbar-audio"
 	   :project "babel"
 	   :subproject "uqbar"
