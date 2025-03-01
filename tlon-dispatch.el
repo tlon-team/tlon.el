@@ -57,7 +57,7 @@
     ("p" "api"                            tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
-    ("S" "split"                           tlon-split-menu)
+    ("S" "split"                          tlon-split-menu)
     ("t" "contacts"                       tlon-contacts-menu)
     ("u" "counterpart"                    tlon-counterpart-menu)
     ("v" "url"                            tlon-url-menu)
