@@ -925,7 +925,21 @@ If ISSUE is nil, use the issue at point or in current buffer."
 (defun tlon-report-bug ()
   "Submit a bug report in the `tlon.el' repo."
   (interactive)
-  (tlon-create-issue-in-dir (tlon-repo-lookup :dir :name "tlon.el")))
+  (tlon-create-issue-in-dir (tlon-repo-lookup :dir :name "tlon.el"))
+  (tlon-prepopulate-bug-report-buffer))
+
+(defun tlon-prepopulate-bug-report-buffer ()
+  "Prepopulate the bug report buffer with relevant headings and information."
+  (goto-char (point-max))
+  (insert (concat "\n\n"
+		  "## Descripción\n\n\n"
+		  "## Pasos para reproducir\n\n\n"
+		  "## Backtrace\n\n```elisp\n\n```\n\n"
+		  "## Información del sistema\n<!-- No modificar -->\n"
+		  "\n- Tlon version: " tlon-version
+		  "\n- Latest commit: " (tlon-get-latest-commit)
+		  "\n\n"))
+  (goto-char (+ (point-min) 2)))
 
 ;;;###autoload
 (defun tlon-create-issue-from-todo ()
