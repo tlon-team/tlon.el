@@ -4,6 +4,67 @@
 
 This document summarizes the changes pertaining to the ~tlon~ package.
 
+* Version 1.7.1 on 2025-03-04
+** AI Integration (tlon-ai)
+:PROPERTIES:
+:CUSTOM_ID: ai-integration-tlon-ai
+:END:
+- Set summarization model from Claude to Gemini (=gemini-2.0-flash-thinking-exp-01-21=)
+- Added audio transcription functionality with =tlon-transcribe-audio= using OpenAI's Whisper API
+- Autoloaded various functions like =tlon-md-read-content=, =tlon-looking-at-tag-p=, etc.
+
+** Bug Reports (tlon-forg)
+:PROPERTIES:
+:CUSTOM_ID: bug-reports-tlon-forg
+:END:
+- Added functionality to prepopulate bug report buffers with standard templates
+
+** Clock & Reporting (tlon-report, tlon-clock)
+:PROPERTIES:
+:CUSTOM_ID: clock-reporting-tlon-report-tlon-clock
+:END:
+- Added comprehensive clock report functionality to aggregate and analyze time data (=tlon-clock-report-create=)
+
+** Repositories (tlon-repos, tlon-core)
+:PROPERTIES:
+:CUSTOM_ID: repositories-tlon-repos-tlon-core
+:END:
+- Added "web-server" to =tlon-repos=
+- Improved repository management including cloning notification ("asynchronously...")
+- Added =tlon-forge-track-repo= for easier tracking of repos in Forge database
+- Enhanced generation of completion candidates for repos
+- Fixed =tlon-delete-local-repo= to return only local Tlön repos
+
+** Interface Improvements
+:PROPERTIES:
+:CUSTOM_ID: interface-improvements
+:END:
+- Added =tlon-url-menu= with commands for archived URLs and URL replacements
+
+** Internationalization and TTS
+:PROPERTIES:
+:CUSTOM_ID: internationalization-and-tts
+:END:
+- Added missing translations in Korean, Japanese & Arabic for exponents and numbers
+- Clarified docstrings and fixed typos
+
+** Code Quality and Configuration
+:PROPERTIES:
+:CUSTOM_ID: code-quality-and-configuration
+:END:
+- Set fill-column to 80 across all files
+- Updated copyright year to 2025
+- Autoloaded various functions to improve performance
+- Silenced byte-compiler warnings
+- Fixed or improved several docstrings
+- Applied file-local variables to standardize formatting
+
+** URL Management
+:PROPERTIES:
+:CUSTOM_ID: url-management
+:END:
+- Added =tlon-url-menu= for URL-related operations
+- Added =tlon-replace-url-across-projects= to replace dead URLs globally
 
 * Version 1.6.7 on 2024-12-06
 ** Core Infrastructure
@@ -39,7 +100,6 @@ This document summarizes the changes pertaining to the ~tlon~ package.
 
 *** tlon-tex
 - Added 5-second timeout for zotra abstract fetching to prevent hanging
-
 
 * Version 1.6.5 on 2024-11-29
 ** tlon-ai
