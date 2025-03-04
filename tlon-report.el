@@ -162,7 +162,6 @@ activity (summing times if an activity occurs more than once)."
         (org-mode))
       (display-buffer report-buffer))))
 
-;; Helper: convert a time string “HH:MM” into minutes.
 (defun tlon-clock-time-string-to-minutes (time-string)
   "Convert a TIME-STRING of the form \"H:MM\" to minutes."
   (when time-string
@@ -171,12 +170,10 @@ activity (summing times if an activity occurs more than once)."
            (string-to-number (match-string 2 time-string)))
       0)))
 
-;; Helper: convert minutes to a “H:MM” formatted string.
 (defun tlon-clock-minutes-to-time-string (minutes)
   "Convert MINUTES to a formatted time string H:MM."
   (format "%d:%02d" (/ minutes 60) (mod minutes 60)))
 
-;; Helper: given a block of text (the clocktable block text) update ACTIVITIES.
 (defun tlon-clock-parse-clocktable-block (block-text activities)
   "Parse clocktable BLOCK-TEXT and add activity times into ACTIVITIES.
 Each detailed activity row is expected to have no text in its first column.
