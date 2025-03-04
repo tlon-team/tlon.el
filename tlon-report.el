@@ -259,7 +259,7 @@ Rows that include the words \"Total time\" or \"/File time/\" are skipped."
 
 ;;;;; Menu
 
-;;;###autoload (autoload 'tlon-clock-menu "tlon-clock" nil t)
+;;;###autoload (autoload 'tlon-clock-menu "tlon-report" nil t)
 (transient-define-prefix tlon-clock-menu ()
   "`clock' menu."
   [["Create"
