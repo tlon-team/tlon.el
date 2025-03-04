@@ -934,6 +934,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
   (insert (concat "\n\n"
 		  "## Descripción\n\n\n"
 		  "## Pasos para reproducir\n\n\n"
+		  "## Comentarios\n<!-- Opcional -->\n\n\n"
 		  "## Backtrace\n\n```elisp\n\n```\n\n"
 		  "## Información del sistema\n<!-- No modificar -->\n"
 		  "\n- Tlon version: " tlon-version
