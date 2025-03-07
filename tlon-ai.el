@@ -68,6 +68,22 @@ If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
   :type 'boolean
   :group 'tlon-ai)
 
+(defcustom tlon-ai-markdown-fix-model
+  '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
+  "Model to use for fixing the Markdown.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, do not
+use a different model for fixing the Markdown."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-ai)
+
+(defcustom tlon-ai-use-markdown-fix-model t
+  "Whether to use a different model for summarization.
+If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
+ use the currently active model."
+  :type 'boolean
+  :group 'tlon-ai)
+
 (defcustom tlon-ai-edit-prompt nil
   "Whether to edit the prompt before sending it to the AI model."
   :type 'boolean
@@ -588,91 +604,97 @@ Otherwise, construct a local file path from SRC and return it."
 (defun tlon-ai-fix-markdown-format (&optional file)
   "Fix Markdown format in FILE by copying the formatting in its counterpart.
 Process the file paragraph by paragraph to avoid token limits. If FILE is nil,
-use the file visited by the current buffer. Retry failed paragraphs up to 3
-times."
+use the file visited by the current buffer.
+Aborts the whole process if any paragraph permanently fails (after 3 attempts),
+logging detailed error information for debugging.
+If `tlon-ai-use-markdown-fix-model' is non-nil, use the model specified in
+`tlon-ai-markdown-fix-model'; otherwise, use the active model.
+Messages refer to paragraphs with one-based numbering."
   (interactive)
   (tlon-warn-if-gptel-context
-   (let ((file (or file (buffer-file-name) (read-file-name "File to fix: "))))
-     (unless (derived-mode-p 'markdown-mode)
-       (user-error "This command must be run on a Markdown file"))
-     (let* ((original-file (tlon-get-counterpart file))
-            (original-lang (tlon-get-language-in-file original-file))
-            (translation-lang (tlon-get-language-in-file file))
-            (prompt (tlon-ai-maybe-edit-prompt
-                     (tlon-lookup tlon-ai-fix-markdown-format-prompt
-				  :prompt :language "en")))
-            (pairs (tlon-get-corresponding-paragraphs file original-file))
-            (results (make-vector (length pairs) nil))
-            (completed 0)
-            (failed-indices '())
-            (retry-count 0)
-            (active-requests 0)
-            (max-concurrent 5)
-            (all-pairs-count (length pairs))
-            (pending-check-timer nil))
-       (cl-labels ((process-paragraphs
-		     (indices)
-		     (dolist (i indices)
-		       (while (>= active-requests max-concurrent)
-			 (sleep-for 0.1))
-		       (let* ((pair (nth i pairs))
-			      (formatted-prompt
-			       (format prompt
-				       (cdr pair)
-				       (tlon-lookup tlon-languages-properties :standard :code original-lang)
-				       (car pair)
-				       (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
-			 (cl-incf active-requests)
-			 (gptel-request formatted-prompt
-			   :callback
-			   (lambda (response info)
-			     (cl-decf active-requests)
-			     (if response
-				 (progn
-				   (aset results i response)
-				   (setq completed (1+ completed))
-				   (message "Processing paragraphs... %d%% (%d/%d)"
-					    (round (* 100 (/ completed (float all-pairs-count))))
-					    completed
-					    all-pairs-count)
-				   (check-completion))
-			       (push i failed-indices)
-			       (message "Failed to process paragraph %d: %s"
-					i (plist-get info :status))
-			       (check-completion)))))))
-                   (check-completion ()
-                     (when pending-check-timer
-                       (cancel-timer pending-check-timer))
-                     (setq pending-check-timer
-                           (run-with-timer 0.5 nil
-                                           (lambda ()
-                                             (when (and (= completed (+ (length failed-indices)
-									(cl-count-if 'identity results)))
-							(zerop active-requests))
-                                               (if failed-indices
-                                                   (retry-failed)
-                                                 (write-fixed-file)))))))
-                   (write-fixed-file ()
-		     (message "Processing complete. Writing file...")
-		     (let ((fixed-file-path (concat (file-name-sans-extension file) "--fixed.md")))
-		       (with-temp-buffer
-			 (dolist (para (append results nil))
-                           (insert (or para "") "\n\n"))
-			 (write-region (point-min) (point-max) fixed-file-path))
-		       (find-file fixed-file-path)
-		       (when (y-or-n-p "Done! Run ediff session? ")
-			 (ediff-files file fixed-file-path))))
-                   (retry-failed ()
-		     (when (and failed-indices (< retry-count 3))
-		       (setq retry-count (1+ retry-count))
-		       (message "Retrying %d failed paragraphs (attempt %d of 3)..."
-				(length failed-indices) retry-count)
-		       (let ((to-retry (nreverse failed-indices)))
-			 (setq failed-indices nil)
-			 (process-paragraphs to-retry)))))
-         (message "Fixing format of `%s' (%d paragraphs)..."
-                  (file-name-nondirectory file) all-pairs-count)
-         (process-paragraphs (number-sequence 0 (1- all-pairs-count))))))))
+   (let* ((file (or file (buffer-file-name) (read-file-name "File to fix: ")))
+          (original-file (tlon-get-counterpart file))
+          (original-lang (tlon-get-language-in-file original-file))
+          (translation-lang (tlon-get-language-in-file file))
+          (prompt (tlon-ai-maybe-edit-prompt
+                   (tlon-lookup tlon-ai-fix-markdown-format-prompt
+                                :prompt :language "en")))
+          (pairs (tlon-get-corresponding-paragraphs file original-file))
+          (all-pairs-count (length pairs))
+          (results (make-vector all-pairs-count nil))
+          (completed 0)
+          (active-requests 0)
+          (max-concurrent 3)           ; lower concurrency helps avoid rate limiting
+          (retry-table (make-hash-table :test 'equal))
+          (abort-flag nil)
+          ;; Define ISSUE-REQUEST: use the fix model if enabled.
+          (issue-request
+           (lambda (full-prompt callback)
+             (if tlon-ai-use-markdown-fix-model
+                 (tlon-make-gptel-request full-prompt "" callback tlon-ai-markdown-fix-model)
+               (gptel-request full-prompt :callback callback)))))
+     (cl-labels
+         ;; CHECK-COMPLETION: When all paragraphs are done, write the file.
+         ((check-completion ()
+            (when (and (= completed all-pairs-count)
+                       (= active-requests 0)
+                       (not abort-flag))
+              (write-fixed-file)))
+          ;; WRITE-FIXED-FILE: Write the fixed content.
+          (write-fixed-file ()
+            (message "Processing complete. Writing fixed file...")
+            (let ((fixed-file-path (concat (file-name-sans-extension file)
+                                           "--fixed.md")))
+              (with-temp-buffer
+                (dotimes (i all-pairs-count)
+                  (insert (or (aref results i) "") "\n\n"))
+                (write-region (point-min) (point-max) fixed-file-path))
+              (find-file fixed-file-path)
+              (when (y-or-n-p "Done! Run ediff session? ")
+                (ediff-files file fixed-file-path))))
+          ;; PROCESS-SINGLE-PARAGRAPH: Process one paragraph (i is zero-based, but messages show i+1).
+          (process-single-paragraph (i)
+            (while (>= active-requests max-concurrent)
+              (sleep-for 0.1))
+            (let* ((pair (nth i pairs))
+                   (formatted-prompt
+                    (format prompt
+                            (cdr pair)
+                            (tlon-lookup tlon-languages-properties :standard :code original-lang)
+                            (car pair)
+                            (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
+              (cl-incf active-requests)
+              (funcall issue-request
+                       formatted-prompt
+                       (lambda (response info)
+                         (cl-decf active-requests)
+                         (if response
+                             (progn
+                               (aset results i response)
+                               (cl-incf completed)
+                               (message "Processed paragraph %d (%d%%)"
+                                        (1+ i)
+                                        (round (* 100 (/ (float completed)
+                                                         all-pairs-count))))
+                               (check-completion))
+                           (let* ((status (plist-get info :status))
+                                  (retry-count (or (gethash i retry-table) 0)))
+                             (if (< retry-count 3)
+                                 (progn
+                                   (puthash i (1+ retry-count) retry-table)
+                                   (message "Paragraph %d failed with %S; retrying attempt %d of 3..."
+                                            (1+ i) status (1+ retry-count))
+                                   ;; Exponential backoff: wait longer on subsequent failures.
+                                   (run-with-timer (* 2 (1+ retry-count)) nil
+                                                   (lambda ()
+                                                     (process-single-paragraph i))))
+                               (setq abort-flag t)
+                               (error "Aborting: Paragraph %d permanently failed after 3 attempts. Status: %S, info: %S"
+                                      (1+ i) status info)))))))))
+       (message "Fixing format of `%s' (%d paragraphs)..."
+                (file-name-nondirectory file) all-pairs-count)
+       (dotimes (i all-pairs-count)
+         (process-single-paragraph i))))))
 
 ;;;;; Summarization
 
@@ -1199,6 +1221,12 @@ If RESPONSE is nil, return INFO."
   :variable 'tlon-ai-use-summarization-model
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-summarization-model)))
 
+(transient-define-infix tlon-ai-infix-toggle-use-markdown-fix-model ()
+  "Toggle the value of `tlon-ai-use-markdown-fix-model' in `ai' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-ai-use-markdown-fix-model
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-markdown-fix-model)))
+
 (transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
   "Toggle the value of `tlon-ai-edit-prompt' in `ai' menu."
   :class 'transient-lisp-variable
@@ -1263,7 +1291,7 @@ variable."
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
     ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
     ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
-    ("s -s" "use summarization model for summaries"   tlon-ai-infix-toggle-use-summarization-model)
+    ("s -s" "use special model for summaries"         tlon-ai-infix-toggle-use-summarization-model)
     ""]
    ["Images"
     ("i d" "describe image"                           tlon-ai-describe-image)
@@ -1285,7 +1313,9 @@ variable."
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
-    ]
+    ""
+    "Misc options"
+    ("m -m" "use special model for Markdown fix"      tlon-ai-infix-toggle-use-markdown-fix-model)]
    ["General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
