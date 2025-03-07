@@ -1215,16 +1215,39 @@ If RESPONSE is nil, return INFO."
   :variable 'tlon-ai-overwrite-alt-text
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
 
+(defclass tlon-ai-model-display-infix (transient-lisp-variable)
+  ((model-function :initarg :model-function
+                   :initform nil
+                   :documentation "Function to get the actual model name to display"))
+  "A transient infix that shows model names instead of t/nil for boolean values.")
+
+(cl-defmethod transient-format-value ((obj tlon-ai-model-display-infix))
+  "Format OBJ's value for display, showing model name instead of t/nil."
+  (let ((value (slot-value obj 'value)))
+    (if (slot-value obj 'model-function)
+        (let ((model-name (funcall (slot-value obj 'model-function) value)))
+          (propertize (format "%s" model-name)
+                      'face 'transient-value))
+      (transient-format-value (cl-call-next-method)))))
+
 (transient-define-infix tlon-ai-infix-toggle-use-summarization-model ()
   "Toggle the value of `tlon-ai-use-summarization-model' in `ai' menu."
-  :class 'transient-lisp-variable
+  :class 'tlon-ai-model-display-infix
   :variable 'tlon-ai-use-summarization-model
+  :model-function (lambda (value)
+                    (if value
+			(cdr tlon-ai-summarization-model)
+                      gptel-model))
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-summarization-model)))
 
 (transient-define-infix tlon-ai-infix-toggle-use-markdown-fix-model ()
   "Toggle the value of `tlon-ai-use-markdown-fix-model' in `ai' menu."
-  :class 'transient-lisp-variable
+  :class 'tlon-ai-model-display-infix
   :variable 'tlon-ai-use-markdown-fix-model
+  :model-function (lambda (value)
+                    (if value
+			(cdr tlon-ai-markdown-fix-model)
+                      gptel-model))
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-markdown-fix-model)))
 
 (transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
@@ -1291,7 +1314,7 @@ variable."
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
     ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
     ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
-    ("s -s" "use special model for summaries"         tlon-ai-infix-toggle-use-summarization-model)
+    ("s -s" "model for summaries" tlon-ai-infix-toggle-use-summarization-model)
     ""]
    ["Images"
     ("i d" "describe image"                           tlon-ai-describe-image)
@@ -1315,7 +1338,7 @@ variable."
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
     ""
     "Misc options"
-    ("m -m" "use special model for Markdown fix"      tlon-ai-infix-toggle-use-markdown-fix-model)]
+    ("m -m" "model for Markdown fix" tlon-ai-infix-toggle-use-markdown-fix-model)]
    ["General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
