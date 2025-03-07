@@ -607,7 +607,9 @@ times."
             (failed-indices '())
             (retry-count 0)
             (active-requests 0)
-            (max-concurrent 5))
+            (max-concurrent 5)
+            (all-pairs-count (length pairs))
+            (pending-check-timer nil))
        (cl-labels ((process-paragraphs
 		     (indices)
 		     (dolist (i indices)
@@ -630,15 +632,26 @@ times."
 				   (aset results i response)
 				   (setq completed (1+ completed))
 				   (message "Processing paragraphs... %d%% (%d/%d)"
-					    (round (* 100 (/ completed (float (length pairs)))))
+					    (round (* 100 (/ completed (float all-pairs-count))))
 					    completed
-					    (length pairs))
-				   (when (and (= completed (length pairs))
-					      (zerop active-requests))
-				     (write-fixed-file)))
+					    all-pairs-count)
+				   (check-completion))
 			       (push i failed-indices)
 			       (message "Failed to process paragraph %d: %s"
-					i (plist-get info :status))))))))
+					i (plist-get info :status))
+			       (check-completion)))))))
+                   (check-completion ()
+                     (when pending-check-timer
+                       (cancel-timer pending-check-timer))
+                     (setq pending-check-timer
+                           (run-with-timer 0.5 nil
+                                           (lambda ()
+                                             (when (and (= completed (+ (length failed-indices)
+									(cl-count-if 'identity results)))
+							(zerop active-requests))
+                                               (if failed-indices
+                                                   (retry-failed)
+                                                 (write-fixed-file)))))))
                    (write-fixed-file ()
 		     (message "Processing complete. Writing file...")
 		     (let ((fixed-file-path (concat (file-name-sans-extension file) "--fixed.md")))
@@ -656,12 +669,10 @@ times."
 				(length failed-indices) retry-count)
 		       (let ((to-retry (nreverse failed-indices)))
 			 (setq failed-indices nil)
-			 (process-paragraphs to-retry))
-		       (run-with-timer 5 nil #'retry-failed))))
+			 (process-paragraphs to-retry)))))
          (message "Fixing format of `%s' (%d paragraphs)..."
-                  (file-name-nondirectory file) (length pairs))
-         (process-paragraphs (number-sequence 0 (1- (length pairs))))
-         (run-with-timer 5 nil #'retry-failed))))))
+                  (file-name-nondirectory file) all-pairs-count)
+         (process-paragraphs (number-sequence 0 (1- all-pairs-count))))))))
 
 ;;;;; Summarization
 
