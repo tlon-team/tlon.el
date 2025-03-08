@@ -800,7 +800,7 @@ buffer."
 ;;;;; Misc
 
 (defun tlon-concatenate-list (list)
-  "Concatenate LIST into a string with commas and `and' as appropriate."
+  "Concatenate LIST into a string with commas and a conjunct, as appropriate."
   (if (cdr list)
       (let ((all-but-last (mapconcat #'identity (butlast list) ", "))
 	    (last (car (last list)))
