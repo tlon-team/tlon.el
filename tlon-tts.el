@@ -763,6 +763,21 @@ The first placeholder is the input file, and the second is the output file.")
   "</SmallCaps><sub>"
   "Pattern that may match a chemical symbol.")
 
+;;;;; Authorhip
+
+(defconst tlon-tts-authorship-pattern
+  '((:language "en" :pattern "by %s.")
+    (:language "es" :pattern "por %s.")
+    (:language "fr" :pattern "par %s.")
+    (:language "it" :pattern "di %s.")
+    (:language "de" :pattern "von %s.")
+    (:language "ar" :pattern "بواسطة %s.")
+    (:language "ko" :pattern "%s에 의해.")
+    (:language "ja" :pattern "%sによって".))
+  "Pattern to use when listing the author(s) of a work.
+For example, in English, the pattern is `by %s', where `%s' is replaced by the
+author name(s).")
+
 ;;;;; Links
 
 (defconst tlon-tts-self-referential-link
@@ -1816,14 +1831,16 @@ the car is the name of the file-local variable the cdr is its overriding value."
 ;; MAYBE: Include summary?
 (defun tlon-tts-get-metadata ()
   "Add title and author."
-  (when-let* ((metadata (tlon-yaml-format-values-of-alist (tlon-yaml-get-metadata)))
-	      (title (alist-get "title" metadata nil nil #'string=))
-	      (title-part (format "%s.\n\n" title)))
-    (if-let* ((authors (alist-get "authors" metadata nil nil #'string=))
-	      (author-string (tlon-concatenate-list authors))
-	      (author-part (format "Por %s.\n\n" author-string)))
-	(concat title-part author-part)
-      title-part)))
+  (let ((separator "\n\n"))
+    (when-let* ((metadata (tlon-yaml-format-values-of-alist (tlon-yaml-get-metadata)))
+		(title (alist-get "title" metadata nil nil #'string=))
+		(title-part (concat (format "%s." title) separator)))
+      (if-let* ((authors (alist-get "authors" metadata nil nil #'string=))
+		(author-string (tlon-concatenate-list authors))
+		(pattern (tlon-lookup tlon-tts-authorship-pattern :pattern :language (tlon-tts-get-current-language)))
+		(author-part (concat (format pattern author-string) separator)))
+	  (concat title-part author-part)
+	title-part))))
 
 ;;;;; Get SSML
 
