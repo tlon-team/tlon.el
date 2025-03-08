@@ -132,10 +132,11 @@ those repos, use `tlon-clone-missing-repos'."
   "Pull repository in DIR.
 If DIR is nil, use the current directory."
   (interactive)
-  (when-let ((dir (or dir default-directory))
-	     (name (tlon-repo-lookup :name :dir dir)))
+  (when-let ((default-directory (or dir default-directory))
+	     (name (tlon-repo-lookup :name :dir default-directory))
+	     (repo (forge-get-repository :tracked?)))
     (message "Pulling issues in %s..." name)
-    (shut-up (forge-pull))))
+    (shut-up (forge--pull repo))))
 
 ;;;###autoload
 (defun tlon-pull-issues-in-all-repos ()
