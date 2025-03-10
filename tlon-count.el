@@ -103,6 +103,7 @@ other value, return a message with the word count and the file count."
 	  (kill-buffer (current-buffer))))
       (let ((word-count (apply '+ (mapcar 'car list)))
 	    (file-count (length list)))
+	(kill-new (number-to-string word-count))
 	(pcase format
 	  ('list (reverse list))
 	  ('count word-count)
