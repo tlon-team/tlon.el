@@ -188,6 +188,15 @@ function tried to be a nudge in that direction."
      ((string-match "Group meeting" heading)
       (tlon-create-or-visit-group-meeting-issue (format-time-string "%Y-%m-%d"))))))
 
+;;;;; clock-in
+
+(declare-function org-clocking-p "org-clock")
+(defun tlon-goto-meeting-when-clocking-in ()
+  "Go to the meeting issue when clocking in."
+  (when (and (derived-mode-p 'org-mode)
+	     (org-clocking-p))
+    (tlon-set-meeting-buffers)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-meet-menu "tlon-meet.el" nil t)
