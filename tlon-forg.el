@@ -1154,6 +1154,15 @@ The first argument is the repo name, and the second is the issue number.")
 
 ;; see FBB5C2A8-8506-45FF-993B-FE7D07C16483 for discussion on updated code
 
+;;;;; misc
+
+(declare-function org-roam-extras-node-find-special "org-roam-extras")
+;;;###autoload
+(defun tlon-list-all-todos ()
+  "List all todos in the \"tlon-todos\" directory sorted by priority."
+  (interactive)
+  (org-roam-extras-node-find-special `(:dir ,paths-dir-tlon-todos)))
+
 ;;;;; Transient
 
 (defun tlon-symbol-reader (prompt symbols)
