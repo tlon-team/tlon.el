@@ -906,8 +906,8 @@ If ISSUE is nil, use the issue at point or in current buffer."
 	 (owner (oref repo owner))
 	 (reponame (oref repo name))
 	 (resource (format "/repos/%s/%s/issues" owner reponame))
-	 (data `(("title" . ,title)
-		 ("body" . ,body))))
+	 (data `((title . ,title)
+		 (body . ,body))))
     (ghub-post resource data
 	       :auth 'forge
 	       :noerror t ;; avoid showing the original large output
