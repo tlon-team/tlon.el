@@ -935,7 +935,7 @@ If ISSUE is nil, use the issue at point or in current buffer."
 		  "## Descripción\n\n\n"
 		  "## Pasos para reproducir\n\n1.\n2.\n3.\n\n\n"
 		  "## Comentarios\n<!-- Opcional -->\n\n\n"
-		  "## Backtrace\n\n```elisp\n\n```\n\n"
+		  "## Backtrace\n<!-- Si el backtrace es demasiado largo y GitHub lo rechaza, adjuntar como archivo txt -->\n\n\n```elisp\n\n```\n\n"
 		  "## Información del sistema\n<!-- No modificar -->\n"
 		  "\n- Tlon version: " tlon-version
 		  "\n- Latest commit: " (tlon-get-latest-commit)
