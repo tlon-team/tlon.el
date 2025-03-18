@@ -509,7 +509,6 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 ;;;;; Image description
 
-(declare-function gptel-extras-clear-file-context "gptel-extras")
 ;;;###autoload
 (defun tlon-ai-describe-image (&optional file callback)
   "Describe the contents of the image in FILE.
@@ -521,7 +520,7 @@ it instead."
 	 (language (tlon-get-language-in-file file))
 	 (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
 	 (prompt (tlon-ai-maybe-edit-prompt default-prompt)))
-    (gptel-extras-clear-file-context)
+    (gptel-context-remove-all)
     (gptel-context-add-file file)
     (gptel-request prompt
       :callback (or callback
