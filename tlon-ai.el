@@ -286,20 +286,18 @@ If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
 
 ;;;;; General
 
-(defmacro tlon-warn-if-gptel-context (&rest body)
-  "Execute BODY after checking if `gptel' context is empty.
-If context is not empty, ask for user confirmation before proceeding."
-  `(when (or (null gptel-context--alist)
-             (y-or-n-p "The `gptel' context is not empty. Proceed? "))
-     ,@body))
-
-(defun tlon-make-gptel-request (prompt &optional string callback full-model)
+(defun tlon-make-gptel-request (prompt &optional string callback full-model no-context-check)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
 When STRING is non-nil, PROMPT is a formatting string containing the prompt and
 a slot for a string, which is the variable part of the prompt (e.g. the text to
 be summarized in a prompt to summarize text). When STRING is nil (because there
 is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
-car is the backend and whose cdr is the model."
+car is the backend and whose cdr is the model.
+
+By default, warn the user if the context is not empty. If NO-CONTEXT-CHECK is
+non-nil, bypass this check."
+  (unless tlon-ai-batch-fun
+    (tlon-warn-if-gptel-context no-context-check))
   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
 	(prompt (tlon-ai-maybe-edit-prompt prompt)))
     (cl-destructuring-bind (backend . model) full-model
@@ -318,6 +316,18 @@ car is the backend and whose cdr is the model."
   (if tlon-ai-edit-prompt
       (read-string "Prompt: " prompt)
     prompt))
+
+(defun tlon-warn-if-gptel-context (&optional no-context-check)
+  "Prompt for confirmation to proceed when `gptel' context is not empty.
+If NO-CONTEXT-CHECK is non-nil, by pass the check."
+  (unless (or no-context-check
+	      (null gptel-context--alist)
+	      (y-or-n-p "The `gptel' context is not empty. Proceed? "))
+    (let ((message "Aborted"))
+      (when (y-or-n-p "Clear the `gptel' context? ")
+	(gptel-context-remove-all)
+	(setq message (concat message " (context cleared)")))
+      (user-error message))))
 
 ;;;;;; Generic callback functions
 
@@ -517,20 +527,24 @@ RESPONSE is the response from the AI model and INFO is the response info."
 By default, print the description in the minibuffer. If CALLBACK is non-nil, use
 it instead."
   (interactive)
+  ;; we warn here because this command adds files to the context, so the usual
+  ;; check downstream must be bypassed via `no-context-check'
+  (tlon-warn-if-gptel-context)
   (let* ((previous-context gptel-context--alist)
-	 (file (tlon-ai-read-image-file file))
-	 (language (tlon-get-language-in-file file))
-	 (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
-	 (prompt (tlon-ai-maybe-edit-prompt default-prompt)))
+         (file (tlon-ai-read-image-file file))
+         (language (tlon-get-language-in-file file))
+         (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
+         (custom-callback (lambda (response info)
+                            (when callback
+                              (funcall callback response info))
+                            (unless callback
+                              (if response
+                                  (message response)
+                                (user-error "Error: %s" (plist-get info :status))))
+                            (setq gptel-context--alist previous-context))))
     (gptel-context-remove-all)
     (gptel-context-add-file file)
-    (gptel-request prompt
-      :callback (or callback
-		    (lambda (response info)
-		      (if response
-			  (message response)
-			(user-error "Error: %s" (plist-get info :status)))
-		      (setq gptel-context--alist previous-context))))))
+    (tlon-make-gptel-request default-prompt nil custom-callback nil 'no-context-check)))
 
 (autoload 'tlon-get-tag-attribute-values "tlon-md")
 (autoload 'tlon-md-insert-attribute-value "tlon-md")
@@ -612,90 +626,89 @@ If `tlon-ai-use-markdown-fix-model' is non-nil, use the model specified in
 `tlon-ai-markdown-fix-model'; otherwise, use the active model.
 Messages refer to paragraphs with one-based numbering."
   (interactive)
-  (tlon-warn-if-gptel-context
-   (let* ((file (or file (buffer-file-name) (read-file-name "File to fix: ")))
-          (original-file (tlon-get-counterpart file))
-          (original-lang (tlon-get-language-in-file original-file))
-          (translation-lang (tlon-get-language-in-file file))
-          (prompt (tlon-ai-maybe-edit-prompt
-                   (tlon-lookup tlon-ai-fix-markdown-format-prompt
-                                :prompt :language "en")))
-          (pairs (tlon-get-corresponding-paragraphs file original-file))
-          (all-pairs-count (length pairs))
-          (results (make-vector all-pairs-count nil))
-          (completed 0)
-          (active-requests 0)
-          (max-concurrent 3)           ; lower concurrency helps avoid rate limiting
-          (retry-table (make-hash-table :test 'equal))
-          (abort-flag nil)
-          ;; Define ISSUE-REQUEST: use the fix model if enabled.
-          (issue-request
-           (lambda (full-prompt callback)
-             (if tlon-ai-use-markdown-fix-model
-                 (tlon-make-gptel-request full-prompt nil callback tlon-ai-markdown-fix-model)
-               (gptel-request full-prompt :callback callback)))))
-     (cl-labels
-         ;; CHECK-COMPLETION: When all paragraphs are done, write the file.
-         ((check-completion ()
-            (when (and (= completed all-pairs-count)
-                       (= active-requests 0)
-                       (not abort-flag))
-              (write-fixed-file)))
-          ;; WRITE-FIXED-FILE: Write the fixed content.
-          (write-fixed-file ()
-            (message "Processing complete. Writing fixed file...")
-            (let ((fixed-file-path (concat (file-name-sans-extension file)
-                                           "--fixed.md")))
-              (with-temp-buffer
-                (dotimes (i all-pairs-count)
-                  (insert (or (aref results i) "") "\n\n"))
-                (write-region (point-min) (point-max) fixed-file-path))
-              (find-file fixed-file-path)
-              (when (y-or-n-p "Done! Run ediff session? ")
-                (ediff-files file fixed-file-path))))
-          ;; PROCESS-SINGLE-PARAGRAPH: Process one paragraph (i is zero-based, but messages show i+1).
-          (process-single-paragraph (i)
-            (while (>= active-requests max-concurrent)
-              (sleep-for 0.1))
-            (let* ((pair (nth i pairs))
-                   (formatted-prompt
-                    (format prompt
-                            (cdr pair)
-                            (tlon-lookup tlon-languages-properties :standard :code original-lang)
-                            (car pair)
-                            (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
-              (cl-incf active-requests)
-              (funcall issue-request
-                       formatted-prompt
-                       (lambda (response info)
-                         (cl-decf active-requests)
-                         (if response
-                             (progn
-                               (aset results i response)
-                               (cl-incf completed)
-                               (message "Processed paragraph %d (%d%%)"
-                                        (1+ i)
-                                        (round (* 100 (/ (float completed)
-                                                         all-pairs-count))))
-                               (check-completion))
-                           (let* ((status (plist-get info :status))
-                                  (retry-count (or (gethash i retry-table) 0)))
-                             (if (< retry-count 3)
-                                 (progn
-                                   (puthash i (1+ retry-count) retry-table)
-                                   (message "Paragraph %d failed with %S; retrying attempt %d of 3..."
-                                            (1+ i) status (1+ retry-count))
-                                   ;; Exponential backoff: wait longer on subsequent failures.
-                                   (run-with-timer (* 2 (1+ retry-count)) nil
-                                                   (lambda ()
-                                                     (process-single-paragraph i))))
-                               (setq abort-flag t)
-                               (error "Aborting: Paragraph %d permanently failed after 3 attempts. Status: %S, info: %S"
-                                      (1+ i) status info)))))))))
-       (message "Fixing format of `%s' (%d paragraphs)..."
-                (file-name-nondirectory file) all-pairs-count)
-       (dotimes (i all-pairs-count)
-         (process-single-paragraph i))))))
+  (let* ((file (or file (buffer-file-name) (read-file-name "File to fix: ")))
+         (original-file (tlon-get-counterpart file))
+         (original-lang (tlon-get-language-in-file original-file))
+         (translation-lang (tlon-get-language-in-file file))
+         (prompt (tlon-ai-maybe-edit-prompt
+                  (tlon-lookup tlon-ai-fix-markdown-format-prompt
+                               :prompt :language "en")))
+         (pairs (tlon-get-corresponding-paragraphs file original-file))
+         (all-pairs-count (length pairs))
+         (results (make-vector all-pairs-count nil))
+         (completed 0)
+         (active-requests 0)
+         (max-concurrent 3)           ; lower concurrency helps avoid rate limiting
+         (retry-table (make-hash-table :test 'equal))
+         (abort-flag nil)
+         ;; Define ISSUE-REQUEST: use the fix model if enabled.
+         (issue-request
+          (lambda (full-prompt callback)
+            (if tlon-ai-use-markdown-fix-model
+                (tlon-make-gptel-request full-prompt nil callback tlon-ai-markdown-fix-model)
+              (gptel-request full-prompt :callback callback)))))
+    (cl-labels
+        ;; CHECK-COMPLETION: When all paragraphs are done, write the file.
+        ((check-completion ()
+           (when (and (= completed all-pairs-count)
+                      (= active-requests 0)
+                      (not abort-flag))
+             (write-fixed-file)))
+         ;; WRITE-FIXED-FILE: Write the fixed content.
+         (write-fixed-file ()
+           (message "Processing complete. Writing fixed file...")
+           (let ((fixed-file-path (concat (file-name-sans-extension file)
+                                          "--fixed.md")))
+             (with-temp-buffer
+               (dotimes (i all-pairs-count)
+                 (insert (or (aref results i) "") "\n\n"))
+               (write-region (point-min) (point-max) fixed-file-path))
+             (find-file fixed-file-path)
+             (when (y-or-n-p "Done! Run ediff session? ")
+               (ediff-files file fixed-file-path))))
+         ;; PROCESS-SINGLE-PARAGRAPH: Process one paragraph (i is zero-based, but messages show i+1).
+         (process-single-paragraph (i)
+           (while (>= active-requests max-concurrent)
+             (sleep-for 0.1))
+           (let* ((pair (nth i pairs))
+                  (formatted-prompt
+                   (format prompt
+                           (cdr pair)
+                           (tlon-lookup tlon-languages-properties :standard :code original-lang)
+                           (car pair)
+                           (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
+             (cl-incf active-requests)
+             (funcall issue-request
+                      formatted-prompt
+                      (lambda (response info)
+                        (cl-decf active-requests)
+                        (if response
+                            (progn
+                              (aset results i response)
+                              (cl-incf completed)
+                              (message "Processed paragraph %d (%d%%)"
+                                       (1+ i)
+                                       (round (* 100 (/ (float completed)
+                                                        all-pairs-count))))
+                              (check-completion))
+                          (let* ((status (plist-get info :status))
+                                 (retry-count (or (gethash i retry-table) 0)))
+                            (if (< retry-count 3)
+                                (progn
+                                  (puthash i (1+ retry-count) retry-table)
+                                  (message "Paragraph %d failed with %S; retrying attempt %d of 3..."
+                                           (1+ i) status (1+ retry-count))
+                                  ;; Exponential backoff: wait longer on subsequent failures.
+                                  (run-with-timer (* 2 (1+ retry-count)) nil
+                                                  (lambda ()
+                                                    (process-single-paragraph i))))
+                              (setq abort-flag t)
+                              (error "Aborting: Paragraph %d permanently failed after 3 attempts. Status: %S, info: %S"
+                                     (1+ i) status info)))))))))
+      (message "Fixing format of `%s' (%d paragraphs)..."
+               (file-name-nondirectory file) all-pairs-count)
+      (dotimes (i all-pairs-count)
+        (process-single-paragraph i)))))
 
 ;;;;; Summarization
 
