@@ -632,7 +632,7 @@ Messages refer to paragraphs with one-based numbering."
           (issue-request
            (lambda (full-prompt callback)
              (if tlon-ai-use-markdown-fix-model
-                 (tlon-make-gptel-request full-prompt "" callback tlon-ai-markdown-fix-model)
+                 (tlon-make-gptel-request full-prompt nil callback tlon-ai-markdown-fix-model)
                (gptel-request full-prompt :callback callback)))))
      (cl-labels
          ;; CHECK-COMPLETION: When all paragraphs are done, write the file.
