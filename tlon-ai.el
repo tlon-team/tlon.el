@@ -293,23 +293,25 @@ If context is not empty, ask for user confirmation before proceeding."
              (y-or-n-p "The `gptel' context is not empty. Proceed? "))
      ,@body))
 
-(defun tlon-make-gptel-request (prompt string &optional callback full-model)
+(defun tlon-make-gptel-request (prompt &optional string callback full-model)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-PROMPT is a formatting string containing the prompt and a slot for a string,
-which is the variable part of the prompt (e.g. the text to be summarized in a
-prompt to summarize text). FULL-MODEL is a cons cell whose car is the backend
-and whose cdr is the model."
-  (tlon-warn-if-gptel-context
-   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	 (prompt (tlon-ai-maybe-edit-prompt prompt)))
-     (cl-destructuring-bind (backend . model) full-model
-       (let ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	     (gptel-model full-model))
-	 (if tlon-ai-batch-fun
-	     (condition-case nil
-		 (gptel-request (format prompt string) :callback callback)
-	       (error nil))
-	   (gptel-request (format prompt string) :callback callback)))))))
+When STRING is non-nil, PROMPT is a formatting string containing the prompt and
+a slot for a string, which is the variable part of the prompt (e.g. the text to
+be summarized in a prompt to summarize text). When STRING is nil (because there
+is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
+car is the backend and whose cdr is the model."
+  (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
+	(prompt (tlon-ai-maybe-edit-prompt prompt)))
+    (cl-destructuring-bind (backend . model) full-model
+      (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
+	     (gptel-model full-model)
+	     (full-prompt (if string (format prompt string) prompt))
+	     (request (lambda () (gptel-request full-prompt :callback callback))))
+	(if tlon-ai-batch-fun
+	    (condition-case nil
+		(funcall request)
+	      (error nil))
+	  (funcall request))))))
 
 (defun tlon-ai-maybe-edit-prompt (prompt)
   "If `tlon-ai-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
