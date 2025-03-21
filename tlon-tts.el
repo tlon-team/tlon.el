@@ -469,8 +469,7 @@ file name.")
 	  :google t
 	  :openai nil
 	  :elevenlabs nil ; content is sometimes read, sometimes not read
-	  :if-unsupported remove
-	  :replacement ,(tlon-md-get-tag-pattern "say-as"))
+	  :if-unsupported remove)
     (:tag speak
 	  :tlon t
 	  :polly t
