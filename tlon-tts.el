@@ -228,9 +228,11 @@ Admissible values are `\"ogg_vorbis\"', `\"pcm\"' and `\"mp3\"'."
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 (defcustom tlon-openai-model
-  "tts-1-hd"
+  "gpt-4o-mini-tts"
   "Model to use for the OpenAI TTS.
 Options are
+
+- `\"gpt-4o-mini-tts\"': Latest model.
 
 - `\"tts-1\"': Standard model. Provides the lowest latency.
 
@@ -238,7 +240,7 @@ Options are
 
 <https://platform.openai.com/docs/guides/text-to-speech/audio-quality>"
   :group 'tlon-tts
-  :type 'string)
+  :type'string)
 
 ;;;;; ElevenLabs
 
