@@ -216,7 +216,7 @@ Admissible values are `\"ogg_vorbis\"', `\"pcm\"' and `\"mp3\"'."
   '(("mp3" . "mp3")
     ("ogg_vorbis" . "ogg")
     ("pcm" . "pcm"))
-  "Output format and associated extension for the Google Cloud TTS service.")
+  "Output format and associated extension for the Amazon Polly TTS service.")
 
 ;;;;; OpenAI
 
