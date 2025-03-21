@@ -632,14 +632,14 @@ to err on the safe side.")
 ;;;;;; OpenAI
 
 (defconst tlon-openai-tts-request
-  "curl https://api.openai.com/v1/audio/speech \
-  -H \"Authorization: Bearer %s\" \
-  -H \"Content-Type: application/json\" \
+  "curl https://api.openai.com/v1/audio/speech \\
+  -H 'Authorization: Bearer %s' \\
+  -H 'Content-Type: application/json' \\
   -d '{
     \"model\": \"%s\",
-    \"input\": \"%s\",
+    \"input\": %s,
     \"voice\": \"%s\"
-  }' \
+  }' \\
   --output '%s'"
   "Curl command to send a request to the OpenAI text-to-speech engine.
 The placeholders are the API key, the TTS model, the text to be synthesized, the
@@ -1775,7 +1775,11 @@ the car is the name of the file-local variable the cdr is its overriding value."
 	       parameters)))
     (cl-destructuring-bind (voice) vars
       (format tlon-openai-tts-request
-	      (tlon-tts-openai-get-or-set-key) tlon-openai-model string voice destination))))
+	      (tlon-tts-openai-get-or-set-key) 
+              tlon-openai-model 
+              (json-encode-string string) 
+              voice 
+              destination))))
 
 (defun tlon-tts-openai-get-or-set-key ()
   "Get or set the OpenAI API key."
