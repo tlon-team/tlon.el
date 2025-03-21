@@ -220,12 +220,17 @@ Admissible values are `\"ogg_vorbis\"', `\"pcm\"' and `\"mp3\"'."
 
 ;;;;; OpenAI
 
-;; TODO: check if the OpenAI API allows for different output formats
 (defcustom tlon-openai-audio-settings
-  '("mp3" . "mp3")
+  '("wav" . "wav")
   "Output format and associated extension for the OpenAI TTS service."
   :group 'tlon-tts
   :type '(cons (string :tag "Name") (string :tag "Extension")))
+
+(defconst tlon-openai-audio-choices
+  '(("mp3" . "mp3")
+    ("wav" . "wav")
+    ("opus" . "opus"))
+  "Output format and associated extension for the OpenAI TTS service.")
 
 (defcustom tlon-openai-model
   "gpt-4o-mini-tts"
