@@ -524,7 +524,7 @@ second capture group when removing unsupported tags (via
 pattern and whose cdr is the the number of the capture group to replace with; if
 the cdr is nil, the entire tag is removed. We use the second capture group by
 default because that is normally the group containing the text enclosed by the
-tag.")
+tag. When `:replacement' is nil, the tag is simply removed.")
 
 ;;;;; Engine settings
 
@@ -2647,15 +2647,16 @@ capturing the replacement text. If the cdr is nil, replace with an empty string.
 
 (defun tlon-tts-get-cons-for-unsupported-ssml-tags (tag)
   "Return a cons cell for an unsupported SSML TAG.
-The car of the cons cell is the search pattern and its cdr is the number group
-capturing the replacement text. If the cdr is nil, replace with an empty string.
-See the end of the `tlon-tts-supported-tags' docstring for details."
-  (let ((replacement (tlon-lookup tlon-tts-supported-tags :replacement :tag tag))
+The car of the cons cell is the search pattern and its cdr is the number of
+group capturing the replacement text. If the cdr is nil, replace with an empty
+string. See the end of the `tlon-tts-supported-tags' docstring for details."
+  (let ((replacement (or (tlon-lookup tlon-tts-supported-tags :replacement :tag tag)
+			 (tlon-md-get-tag-pattern (symbol-name tag))))
 	(cdr 2)
 	car)
     (if (listp replacement)
 	(setq car (car replacement)
-	      cdr (cdr replacement))
+              cdr (cdr replacement))
       (setq car replacement))
     (cons car cdr)))
 
