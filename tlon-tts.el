@@ -646,8 +646,16 @@ The placeholders are the API key, the TTS model, the text to be synthesized, the
 voice, and the file destination.")
 
 (defconst tlon-openai-voices
-  '((:id "echo" :language "es" :gender "male")
-    (:id "nova" :language "es" :gender "female"))
+  '((:id "allow" :language "es" :gender "female")
+    (:id "ash" :language "es" :gender "male")
+    (:id "ballad" :language "es" :gender "male")
+    (:id "echo" :language "es" :gender "male")
+    (:id "fable" :language "es" :gender "female")
+    (:id "onyx" :language "es" :gender "male")
+    (:id "nova" :language "es" :gender "female")
+    (:id "sage" :language "es" :gender "female")
+    (:id "shimmer" :language "es" :gender "female")
+    (:id "verse" :language "es" :gender "male"))
   "Preferred OpenAI voices for different languages.
 All the voices in this property list are neural and multilingual, and are the
 best male and female voices we were able to identify in each language.
