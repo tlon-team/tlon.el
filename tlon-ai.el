@@ -134,6 +134,13 @@ If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
   (format "Please generate the best ten Spanish translations of the following English text:%s. Please return each translation on the same line, separated by '|'. Do not add a space either before or after the '|'. Do not precede your answer by 'Here are ten Spanish translations' or any comments of that sort: just return the translations. An example return string for the word 'very beautiful' would be: 'muy bello|muy bonito|muy hermoso|muy atractivo' (etc). Thanks!" tlon-ai-string-wrapper)
   "Prompt for translation variants.")
 
+;;;;; Writing
+
+(defconst tlon-ai-write-wiki-article-prompt
+  `((:prompt ,"Write a wiki article on the topic of ‘%1$s’.You should write the article *primarily* based on the text files attached, though you may also rely on your general knowledge of the topic. Each of these articles discusses the topic of the entry. So you should inspect each of these files closely and make an effort to understand what they claim thoroughly. Then, once you have inspected and understood the contents of all of these files, make a synthesis of the topic (%1$s) and write the article based on this synthesis.\n\nWrite the article in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing an article in the Encyclopaedia Britannica. When you make a claim traceable to a specific source, please credit this source using a Chicago-style citation (last name followed by year). Do not include a references section at the end."
+	     :language "en"))
+  "Prompt for writing a wiki article.")
+
 ;;;;; Rewriting
 
 (defconst tlon-ai-rewrite-prompt
@@ -496,6 +503,65 @@ FILE is the file to translate."
 	(with-temp-buffer
 	  (insert response)
 	  (write-region (point-min) (point-max) target-path))))))
+
+;;;;; Writing
+
+(declare-function tlon-yaml-get-key "tlon-yaml")
+(defun tlon-ai-create-wiki-article ()
+  "Create a new wiki article using AI."
+  (interactive)
+  (if-let ((title (tlon-yaml-get-key "title")))
+      (let ((prompt (format (tlon-lookup tlon-ai-write-wiki-article-prompt
+					 :prompt :language (tlon-get-language-in-file nil 'error))
+			    title)))
+	(tlon-warn-if-gptel-context)
+	(tlon-add-add-sources-to-context)
+	(tlon-make-gptel-request prompt nil #'tlon-ai-callback-insert nil 'no-context-check))
+    (user-error "No \"title\" value found in front matter")))
+
+(defun tlon-ai-get-keys-in-buffer ()
+  "Return a list of BibTeX keys in the current buffer."
+  (let (keys)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
+	(push (match-string-no-properties 3) keys))
+      keys)))
+
+(declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
+(defun tlon-ai-add-source-to-context (key)
+  "Add the PDF file associated with KEY to the context."
+  (if-let ((field (bibtex-extras-get-entry-as-string key "file")))
+      (let* ((files (split-string field ";"))
+	     (pdf-files (seq-filter (lambda (file)
+				      (string-match-p "\\.pdf$" file))
+				    files)))
+	(tlon-ai-ensure-one-file key pdf-files)
+	;; we convert to text because some AI models limit the number or pages
+	;; of PDF files
+	(let ((text (tlon-get-string-dwim (car pdf-files)))
+	      (file (make-temp-file "pdf-to-text-")))
+	  (with-temp-buffer
+	    (insert text)
+	    (write-region (point-min) (point-max) file))
+	  (gptel-context-add-file file)))
+    (user-error "No `file' field found in entry %s" key)))
+
+(defun tlon-add-add-sources-to-context ()
+  "Add all PDF files in the current buffer to the context."
+  (mapc (lambda (key)
+	  (tlon-ai-add-source-to-context key))
+	(tlon-ai-get-keys-in-buffer))
+  (message "Added all PDF files of the keys in the current buffer to the `gptel' context."))
+
+(defun tlon-ai-ensure-one-file (key pdf-files)
+  "Ensure PDF-FILES has exactly one PDF file.
+KEY is the key of the entry containing the PDF files."
+  (let ((file-count (length pdf-files)))
+    (when (/= file-count 1)
+      (pcase file-count
+	(0 (user-error "No PDF files found in %s" key))
+	(_ (user-error "Multiple PDF files found in %s" key))))))
 
 ;;;;; Rewriting
 
