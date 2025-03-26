@@ -270,30 +270,6 @@ If citation is not found, return nil."
 	(goto-char (point-min))
 	(json-read)))))
 
-;;;;; Magit integration
-
-;; TODO do this properly by getting request from `tlon-api-get-routes'
-(defun tlon-magit-trigger-api-request (&rest _)
-  "Trigger appropriate request when a commit is pushed in Magit."
-  (let ((uqbar-es (tlon-repo-lookup :dir :name "uqbar-es"))
-	(babel-refs (tlon-repo-lookup :dir :name "babel-refs"))
-	route)
-    ;; can’t be done with `pcase'
-    (cond
-     ((string= default-directory uqbar-es)
-      (setq route "update/uqbar/es"))
-     ((string= default-directory babel-refs)
-      (setq route "update/babel-refs")))
-    (when route
-      (run-with-timer
-       3 nil (lambda ()
-	       "Run `tlon-api-request' once the push is expected to complete."
-	       (tlon-api-request route))))))
-
-(dolist (fun (list 'magit-push-current-to-upstream
-		   'magit-push-current-to-pushremote))
-  (advice-add fun :after 'tlon-magit-trigger-api-request))
-
 ;;;;; File uploading
 
 (declare-function files-extras-read-file "files-extras")
