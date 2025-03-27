@@ -137,10 +137,18 @@ If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
 ;;;;; Writing
 
 ;; TODO: instruct the model to use `Cite' tags in Chicago-style citations
-(defconst tlon-ai-write-wiki-article-prompt
+(defconst tlon-ai-write-reference-article-prompt
   `((:prompt "You are an encyclopedia writer, and are currently writing a series of articles for an encyclopedia of effective altruism. Please write an entry on the topic of ‘%1$s’.\n\nYou should write the article *primarily* based on the text files attached, though you may also rely on your general knowledge of the topic. Each of these articles discusses the topic of the entry. So you should inspect each of these files closely and make an effort to understand what they claim thoroughly. Then, once you have inspected and understood the contents of all of these files, make a synthesis of the topic (%1$s) and write the article based on this synthesis.\n\nWrite the article in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing an article for a reputable encyclopedia, such as the Encyclopaedia Britannica (but remember that this is not a general encyclopedia, but specifically an encyclopdia of effective altruism, so it should be written from that perspective).\n\nWhen you make a claim traceable to a specific source, please credit this source using a Chicago-style citation (last name followed by year). Do not include a references section at the end."
-	     :language "en"))
+	     :language "en")
+    (:prompt "Eres un escritor de enciclopedias y estás escribiendo una serie de artículos para una enciclopedia sobre el altruismo eficaz. Por favor, escribe una entrada sobre el tema ‘%1$s’.\n\nDebes escribir el artículo *principalmente* basándote en los archivos de texto adjuntos, aunque también puedes tener en cuenta tu conocimiento general del tema. Cada uno de estos artículos trata el tema de la entrada. Por lo tanto, debes examinar detenidamente cada uno de estos archivos y esforzarte por comprender a fondo lo que sostiene. Luego, una vez que hayas inspeccionado y comprendido el contenido de todos estos archivos, haz una síntesis del tema (%1$s) y escribe el artículo basándote en esta síntesis.\n\nEscribe el artículo en un tono sobrio y objetivo, evitando clichés, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo un artículo para una enciclopedia de prestigio, como la Encyclopaedia Britannica (pero recuerda que no se trata de una enciclopedia general, sino específicamente de una enciclopedia aobre el altruismo eficaz, por lo que debe redactarse desde esa perspectiva).\n\nCuando hagas una afirmación que pueda atribuirse a una fuente específica, menciona dicha fuente utilizando una cita al estilo Chicago (apellido seguido del año). No incluyas una sección de referencias al final."
+	     :language "es"))
   "Prompt for writing a wiki article.")
+
+(defconst tlon-ai-proofread-reference-article-prompt
+  `((:prompt "You are an expert proofreader. Please proofread the following article. The article is intended for an encyclopedia of effective altruism. Your task is to correct any errors you find, especially factual errors, calculation errors, and any other errors that you think are important.\n\n%s"
+	     :language "en")
+    (:prompt "Eres un corrector experto. Por favor, corrije el siguiente artículo. El artículo está destinado a una enciclopedia sobre altruismo eficaz. Tu tarea consiste en corregir los errores que encuentres, especialmente errores fácticos, errores de cálculo y cualquier otro error que consideres importante.\n\n%s"
+	     :language "es")))
 
 ;;;;; Rewriting
 
@@ -244,16 +252,16 @@ If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
 
 (defconst tlon-ai-get-synopsis-prompts
   `((:prompt ,(format "Please write an detailed abstract of the following work%s Write it in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing the abstract of a scientific paper or academic publication. The summary should provide a detail account of the work’s main claims and arguments; it may be between one and two thousand words in length. Also, please omit any disclaimers of the form 'As an AI language model, I'm unable to browse the internet in real-time.'"
-		      tlon-ai-string-wrapper)
-	     :language "en")
-    (:prompt ,(format "Por favor, escribe un resumen detallado de la presente obra%s Redáctalo en un tono sobrio y objetivo, evitando cliches, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo el resumen de un artículo científico o de una publicación académica. El resumen debe dar cuenta detallada de las principales afirmaciones y argumentos de la obra; su extensión puede oscilar entre mil y dos mil palabras. Por favor, omite también cualquier descargo de responsabilidad del tipo 'Como modelo de lenguaje de inteligencia artificial, no puedo navegar por Internet en tiempo real'." tlon-ai-string-wrapper)
-	     :language "es")
-    (:prompt ,(format "Veuillez rédiger un résumé détaillé de ce travail%s Rédigez-le sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique ou d'une publication universitaire. Le résumé doit fournir un compte rendu détaillé des principales revendications et des principaux arguments du travail ; il peut compter entre un et deux mille mots. Veuillez également omettre toute clause de non-responsabilité du type \"En tant que modèle de langage d'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel\"." tlon-ai-string-wrapper)
-	     :language "fr")
-    (:prompt ,(format "Si prega di scrivere un riassunto esteso di questo lavoro%s Scrivetelo con un tono sobrio e oggettivo, evitando i cliché, le lodi eccessive e i fronzoli inutili. In altre parole, scrivetelo come se steste scrivendo l'abstract di un articolo scientifico o di una pubblicazione accademica. Il riassunto deve fornire un resoconto dettagliato delle principali affermazioni e argomentazioni dell'opera; può essere lungo tra le mille e le duemila parole. Inoltre, si prega di omettere qualsiasi dichiarazione di non responsabilità del tipo \"In quanto modello linguistico dell'intelligenza artificiale, non sono in grado di navigare in Internet in tempo reale\"." tlon-ai-string-wrapper)
-	     :language "it")
-    (:prompt ""
-	     :language "de"))
+  tlon-ai-string-wrapper)
+    :language "en")
+  (:prompt ,(format "Por favor, escribe un resumen detallado de la presente obra%s Redáctalo en un tono sobrio y objetivo, evitando cliches, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo el resumen de un artículo científico o de una publicación académica. El resumen debe dar cuenta detallada de las principales afirmaciones y argumentos de la obra; su extensión puede oscilar entre mil y dos mil palabras. Por favor, omite también cualquier descargo de responsabilidad del tipo 'Como modelo de lenguaje de inteligencia artificial, no puedo navegar por Internet en tiempo real'." tlon-ai-string-wrapper)
+	   :language "es")
+  (:prompt ,(format "Veuillez rédiger un résumé détaillé de ce travail%s Rédigez-le sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique ou d'une publication universitaire. Le résumé doit fournir un compte rendu détaillé des principales revendications et des principaux arguments du travail ; il peut compter entre un et deux mille mots. Veuillez également omettre toute clause de non-responsabilité du type \"En tant que modèle de langage d'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel\"." tlon-ai-string-wrapper)
+	   :language "fr")
+  (:prompt ,(format "Si prega di scrivere un riassunto esteso di questo lavoro%s Scrivetelo con un tono sobrio e oggettivo, evitando i cliché, le lodi eccessive e i fronzoli inutili. In altre parole, scrivetelo come se steste scrivendo l'abstract di un articolo scientifico o di una pubblicazione accademica. Il riassunto deve fornire un resoconto dettagliato delle principali affermazioni e argomentazioni dell'opera; può essere lungo tra le mille e le duemila parole. Inoltre, si prega di omettere qualsiasi dichiarazione di non responsabilità del tipo \"In quanto modello linguistico dell'intelligenza artificiale, non sono in grado di navigare in Internet in tempo reale\"." tlon-ai-string-wrapper)
+	   :language "it")
+  (:prompt ""
+	   :language "de"))
   "Prompts for synopsis.")
 
 ;;;;; Phonetic transcription
@@ -508,24 +516,78 @@ FILE is the file to translate."
 ;;;;; Writing
 
 (declare-function tlon-yaml-get-key "tlon-yaml")
-(defun tlon-ai-create-wiki-article ()
-  "Create a new wiki article using AI."
+(defun tlon-ai-create-reference-article ()
+  "Create a new reference article using AI."
   (interactive)
   (if-let ((title (tlon-yaml-get-key "title")))
-      (let ((prompt (format (tlon-lookup tlon-ai-write-wiki-article-prompt
+      (let ((prompt (format (tlon-lookup tlon-ai-write-reference-article-prompt
 					 :prompt :language (tlon-get-language-in-file nil 'error))
 			    title)))
 	(tlon-warn-if-gptel-context)
 	(tlon-add-add-sources-to-context)
-	(tlon-make-gptel-request prompt nil #'tlon-ai-callback-insert nil 'no-context-check))
+	(tlon-make-gptel-request prompt nil #'tlon-ai-create-reference-article-callback
+				 nil 'no-context-check))
     (user-error "No \"title\" value found in front matter")))
 
+(declare-function markdown-mode "markdown-mode")
+(defun tlon-ai-create-reference-article-callback (response info)
+  "Callback for `tlon-ai-create-reference-article'.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let* ((title (tlon-ai-get-reference-article-title response))
+	   (buffer-name (if title
+			    (generate-new-buffer-name title)
+			  (generate-new-buffer-name "*new-article*")))
+	   (buffer (get-buffer-create buffer-name)))
+      (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
+      (gptel-context-remove-all)
+      (when (y-or-n-p "Proofread the article? ")
+	(tlon-ai-proofread-reference-article)))))
+
+(defun tlon-ai-get-reference-article-title (response)
+"Return the title of the reference article in RESPONSE."
+(with-temp-buffer
+  (insert response)
+  (goto-char (point-min))
+  (when (looking-at "# \\(.*\\)$")
+    (match-string 1))))
+
+(defun tlon-ai-proofread-reference-article ()
+  "Proofread the current reference article using AI."
+  (interactive)
+  (let ((prompt (tlon-lookup tlon-ai-proofread-reference-article-prompt
+			     :prompt :language (or (tlon-get-language-in-file nil)
+						   (tlon-select-language 'code)))))
+    (tlon-make-gptel-request prompt (buffer-string) #'tlon-ai-proofread-reference-article-callback)))
+
+(defun tlon-ai-proofread-reference-article-callback (response info)
+  "Callback for `tlon-ai-proofread-reference-article'.
+RESPONSE is the response from the AI model and INFO is the response info."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let* ((title (tlon-ai-get-reference-article-title response))
+           (buffer-name (if title
+                            (generate-new-buffer-name (format "Comments on %s" title))
+                          (generate-new-buffer-name "*Comments on article*")))
+           (buffer (get-buffer-create buffer-name)))
+      (tlon-ai-insert-in-buffer-and-switch-to-it response buffer))))
+
+(defun tlon-ai-insert-in-buffer-and-switch-to-it (response buffer)
+  "Insert RESPONSE in BUFFER and switch to it."
+  (with-current-buffer buffer
+    (erase-buffer)
+    (insert response)
+    (markdown-mode)
+    (goto-char (point-min)))
+  (switch-to-buffer buffer))
+
 (autoload 'markdown-narrow-to-subtree "markdown-mode")
+(declare-function tlon-md-get-tag-section "tlon-md")
 (defun tlon-ai-get-keys-in-section ()
   "Return a list of BibTeX keys in the \"Further reading\" section."
-  ;; TODO: Make it multilingual. See `tlon-tts-tag-section-patterns', which
-  ;; needs to be revised.
-  (let* ((section "Further reading")
+  (let* ((lang (tlon-get-language-in-file nil 'error))
+	 (section (tlon-md-get-tag-section "Further reading" lang))
 	 keys)
     (save-excursion
       (save-restriction
@@ -1421,6 +1483,7 @@ variable."
     ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)
+    ("w" "create reference article"                   tlon-ai-create-reference-article)
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
