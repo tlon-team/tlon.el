@@ -519,14 +519,21 @@ FILE is the file to translate."
 	(tlon-make-gptel-request prompt nil #'tlon-ai-callback-insert nil 'no-context-check))
     (user-error "No \"title\" value found in front matter")))
 
-(defun tlon-ai-get-keys-in-buffer ()
-  "Return a list of BibTeX keys in the current buffer."
-  (let (keys)
+(autoload 'markdown-narrow-to-subtree "markdown-mode")
+(defun tlon-ai-get-keys-in-section ()
+  "Return a list of BibTeX keys in the \"Further reading\" section."
+  ;; TODO: Make it multilingual. See `tlon-tts-tag-section-patterns', which
+  ;; needs to be revised.
+  (let* ((section "Further reading")
+	 keys)
     (save-excursion
-      (goto-char (point-min))
-      (while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
-	(push (match-string-no-properties 3) keys))
-      keys)))
+      (save-restriction
+	(goto-char (point-min))
+	(re-search-forward (format "^#\\{1,\\} %s" section))
+	(markdown-narrow-to-subtree)
+	(while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
+	  (push (match-string-no-properties 3) keys))
+	keys))))
 
 (declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
 (defun tlon-ai-add-source-to-context (key)
@@ -551,7 +558,7 @@ FILE is the file to translate."
   "Add all PDF files in the current buffer to the context."
   (mapc (lambda (key)
 	  (tlon-ai-add-source-to-context key))
-	(tlon-ai-get-keys-in-buffer))
+	(tlon-ai-get-keys-in-section))
   (message "Added all PDF files of the keys in the current buffer to the `gptel' context."))
 
 (defun tlon-ai-ensure-one-file (key pdf-files)
