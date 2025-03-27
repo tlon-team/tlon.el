@@ -140,7 +140,7 @@ If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
 (defconst tlon-ai-write-reference-article-prompt
   `((:prompt "You are an encyclopedia writer, and are currently writing a series of articles for an encyclopedia of effective altruism. Please write an entry on the topic of ‘%1$s’.\n\nYou should write the article *primarily* based on the text files attached, though you may also rely on your general knowledge of the topic. Each of these articles discusses the topic of the entry. So you should inspect each of these files closely and make an effort to understand what they claim thoroughly. Then, once you have inspected and understood the contents of all of these files, make a synthesis of the topic (%1$s) and write the article based on this synthesis.\n\nWrite the article in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing an article for a reputable encyclopedia, such as the Encyclopaedia Britannica (but remember that this is not a general encyclopedia, but specifically an encyclopdia of effective altruism, so it should be written from that perspective).\n\nWhen you make a claim traceable to a specific source, please credit this source using a Chicago-style citation (last name followed by year). Do not include a references section at the end."
 	     :language "en")
-    (:prompt "Eres un escritor de enciclopedias y estás escribiendo una serie de artículos para una enciclopedia sobre el altruismo eficaz. Por favor, escribe una entrada sobre el tema ‘%1$s’.\n\nDebes escribir el artículo *principalmente* basándote en los archivos de texto adjuntos, aunque también puedes tener en cuenta tu conocimiento general del tema. Cada uno de estos artículos trata el tema de la entrada. Por lo tanto, debes examinar detenidamente cada uno de estos archivos y esforzarte por comprender a fondo lo que sostiene. Luego, una vez que hayas inspeccionado y comprendido el contenido de todos estos archivos, haz una síntesis del tema (%1$s) y escribe el artículo basándote en esta síntesis.\n\nEscribe el artículo en un tono sobrio y objetivo, evitando clichés, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo un artículo para una enciclopedia de prestigio, como la Encyclopaedia Britannica (pero recuerda que no se trata de una enciclopedia general, sino específicamente de una enciclopedia aobre el altruismo eficaz, por lo que debe redactarse desde esa perspectiva).\n\nCuando hagas una afirmación que pueda atribuirse a una fuente específica, menciona dicha fuente utilizando una cita al estilo Chicago (apellido seguido del año). No incluyas una sección de referencias al final."
+    (:prompt "Eres un escritor de enciclopedias y estás escribiendo una serie de artículos para una enciclopedia sobre el altruismo eficaz. Por favor, escribe una entrada sobre el tema ‘%1$s’.\n\nDebes escribir el artículo *principalmente* basándote en los archivos de texto adjuntos, aunque también puedes tener en cuenta tu conocimiento general del tema. Cada uno de estos artículos trata el tema de la entrada. Por lo tanto, debes examinar detenidamente cada uno de estos archivos y esforzarte por comprender a fondo lo que sostiene. Luego, una vez que hayas inspeccionado y comprendido el contenido de todos estos archivos, haz una síntesis del tema (%1$s) y escribe el artículo basándote en esta síntesis.\n\nAdjunto también un glosario sobre terminología relacionada con el altruismo eficaz. Procura utilizar estos términos para vertir al castellano expresiones peculiares de ese movimiento.\n\nEscribe el artículo en un tono sobrio y objetivo, evitando clichés, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo un artículo para una enciclopedia de prestigio, como la Encyclopaedia Britannica (pero recuerda que no se trata de una enciclopedia general, sino específicamente de una enciclopedia aobre el altruismo eficaz, por lo que debe redactarse desde esa perspectiva).\n\nCuando hagas una afirmación que pueda atribuirse a una fuente específica, menciona dicha fuente utilizando una cita al estilo Chicago (apellido seguido del año). No incluyas una sección de referencias al final."
 	     :language "es"))
   "Prompt for writing a wiki article.")
 
@@ -520,11 +520,13 @@ FILE is the file to translate."
   "Create a new reference article using AI."
   (interactive)
   (if-let ((title (tlon-yaml-get-key "title")))
-      (let ((prompt (format (tlon-lookup tlon-ai-write-reference-article-prompt
-					 :prompt :language (tlon-get-language-in-file nil 'error))
-			    title)))
+      (let* ((lang (tlon-get-language-in-file nil 'error))
+	     (prompt (format (tlon-lookup tlon-ai-write-reference-article-prompt
+					  :prompt :language lang)
+			     title)))
 	(tlon-warn-if-gptel-context)
 	(tlon-add-add-sources-to-context)
+	(tlon-add-glossary-to-context lang)
 	(tlon-make-gptel-request prompt nil #'tlon-ai-create-reference-article-callback
 				 nil 'no-context-check))
     (user-error "No \"title\" value found in front matter")))
@@ -623,6 +625,14 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	  (tlon-ai-add-source-to-context key))
 	(tlon-ai-get-keys-in-section))
   (message "Added all PDF files of the keys in the current buffer to the `gptel' context."))
+
+(declare-function tlon-extract-glossary "tlon-glossary")
+(declare-function tlon-glossary-target-path "tlon-glossary")
+(defun tlon-add-glossary-to-context (lang)
+  "Add the glossary of LANG to the context."
+  (unless (string= lang "en")
+    (tlon-extract-glossary lang 'deepl-editor)
+    (gptel-context-add-file (tlon-glossary-target-path lang 'deepl-editor))))
 
 (defun tlon-ai-ensure-one-file (key pdf-files)
   "Ensure PDF-FILES has exactly one PDF file.
