@@ -136,6 +136,7 @@ If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
 
 ;;;;; Writing
 
+;; TODO: instruct the model to use `Cite' tags in Chicago-style citations
 (defconst tlon-ai-write-wiki-article-prompt
   `((:prompt "You are an encyclopedia writer, and are currently writing a series of articles for an encyclopedia on effective altruism. Please write an entry on the topic of ‘%1$s’.\n\nYou should write the article *primarily* based on the text files attached, though you may also rely on your general knowledge of the topic. Each of these articles discusses the topic of the entry. So you should inspect each of these files closely and make an effort to understand what they claim thoroughly. Then, once you have inspected and understood the contents of all of these files, make a synthesis of the topic (%1$s) and write the article based on this synthesis.\n\nWrite the article in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing an article for a reputable encyclopedia, such as the Encyclopaedia Britannica.\n\nWhen you make a claim traceable to a specific source, please credit this source using a Chicago-style citation (last name followed by year). Do not include a references section at the end."
 	     :language "en"))
