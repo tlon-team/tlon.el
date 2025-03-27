@@ -62,6 +62,12 @@
   "End: -->"
   "End of the last line that contains file local variables.")
 
+;;;;; Tag sections
+
+(defconst tlon-md-canonical-tag-sections
+  '((:sections ("Further reading" "External links" "Related entries") :language "en")
+    (:sections ("Más información" "Enlaces externos" "Entradas relacionadas") :language "es")))
+
 ;;;;; Markdown
 
 ;;;;;; Italics
@@ -311,6 +317,21 @@ in this tag and pass the URL as the value of the `src' attribute.")
   tags, when the tag is not self-closing, is captured in group number 2.")
 
 ;;;; Functions
+
+;;;;; Tag sections
+
+;;;###autoload
+(defun tlon-md-get-tag-section (section target-language)
+  "Translate tag SECTION to TARGET-LANGUAGE."
+  (let ((result nil))
+    (dolist (entry tlon-md-canonical-tag-sections)
+      (let ((sections (plist-get entry :sections)))
+        (when (member section sections)
+          (let ((index (cl-position section sections :test 'equal))
+                (target-entry (tlon-lookup tlon-md-canonical-tag-sections :sections :language target-language)))
+            (when (and target-entry index)
+              (setq result (nth index target-entry)))))))
+    result))
 
 ;;;;; Insertion
 
