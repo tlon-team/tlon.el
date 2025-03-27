@@ -162,10 +162,7 @@ RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
   (interactive (list (tlon-select-language 'code 'babel)
 		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api) nil t))))
   (let* ((source-path tlon-file-glossary-source)
-	 (target-extension (pcase recipient
-			     ((or 'human 'deepl-editor) "csv")
-			     ('deepl-api "tsv")))
-	 (target-path (tlon-glossary-make-file language target-extension))
+	 (target-path (tlon-glossary-target-path language recipient))
 	 (json (tlon-read-json source-path nil 'list 'symbol)))
     (with-current-buffer (find-file-noselect target-path)
       (erase-buffer)
@@ -175,6 +172,14 @@ RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
       ('human (when (y-or-n-p "Share glossary with translators? ")
 		(tlon-share-glossary target-path language)))
       ((or 'deepl-editor 'deepl-api) (message "Glossary extracted to `%s'" target-path)))))
+
+;;;###autoload
+(defun tlon-glossary-target-path (language recipient)
+  "Return the target path for a glossary in LANGUAGE for RECIPIENT."
+  (let ((target-extension (pcase recipient
+			    ((or 'human 'deepl-editor) "csv")
+			    ('deepl-api "tsv"))))
+    (tlon-glossary-make-file language target-extension)))
 
 (defun tlon-glossary-make-file (language extension)
   "Make a glossary file for LANGUAGE with EXTENSION."
