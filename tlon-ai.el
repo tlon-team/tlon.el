@@ -89,6 +89,15 @@ If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
   :type 'boolean
   :group 'tlon-ai)
 
+(defcustom tlon-ai-proofread-reference-article-model
+  '("ChatGPT" . gpt-4.5-preview)
+  "Model to use for proofreading reference articles.")
+
+(defcustom tlon-ai-auto-proofread nil
+  "Whether to automatically proofread reference articles."
+  :type 'boolean
+  :group 'tlon-ai)
+
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
