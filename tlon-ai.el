@@ -1490,7 +1490,6 @@ variable."
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
     ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
     ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
-    ("s -s" "Select summarization model" tlon-ai-infix-select-summarization-model)
     ""]
    ["Images"
     ("i d" "describe image"                           tlon-ai-describe-image)
@@ -1508,8 +1507,6 @@ variable."
     ("w p" "proofread reference article"                tlon-ai-proofread-reference-article)
     ""
     "Reference article options"
-    
-
     ]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
@@ -1527,7 +1524,8 @@ variable."
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ""
     "Models"
-    ("m -f" "Select markdown fix model" tlon-ai-infix-select-markdown-fix-model)
+    ("m -f" "Markdown fix model" tlon-ai-infix-select-markdown-fix-model)
+    ("s -s" "Summarization model" tlon-ai-infix-select-summarization-model)
     ""
     (gptel--infix-provider)]])
 
