@@ -187,6 +187,7 @@ additional metadata such as the file name and the file type."
 		   ("landid" . ,language))))
     (append metadata extras)))
 
+;;;###autoload
 (defun tlon-yaml-get-metadata (&optional file-or-buffer raw)
   "Return the YAML metadata from FILE-OR-BUFFER as strings in a list.
 If FILE-OR-BUFFER is nil, use the current buffer. Return the metadata as an
