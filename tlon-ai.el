@@ -61,13 +61,6 @@ books will not be summarized."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
-(defcustom tlon-ai-use-summarization-model t
-  "Whether to use a different model for summarization.
-If non-nil, use the model specified in `tlon-ai-summarization-model'. Otherwise,
- use the currently active model."
-  :type 'boolean
-  :group 'tlon-ai)
-
 (defcustom tlon-ai-markdown-fix-model
   '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
   "Model to use for fixing the Markdown.
@@ -75,13 +68,6 @@ The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
 use a different model for fixing the Markdown."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
-  :group 'tlon-ai)
-
-(defcustom tlon-ai-use-markdown-fix-model t
-  "Whether to use a different model for summarization.
-If non-nil, use the model specified in `tlon-ai-markdown-fix-model' Otherwise,
- use the currently active model."
-  :type 'boolean
   :group 'tlon-ai)
 
 (defcustom tlon-ai-edit-prompt nil
