@@ -50,14 +50,27 @@ This variable only affects the behavior of
   :type 'boolean
   :group 'tlon-ai)
 
+(defcustom tlon-ai-edit-prompt nil
+  "Whether to edit the prompt before sending it to the AI model."
+  :type 'boolean
+  :group 'tlon-ai)
+
+(defcustom tlon-ai-auto-proofread nil
+  "Whether to automatically proofread reference articles."
+  :type 'boolean
+  :group 'tlon-ai)
+
+;;;;; Custom models
+
 (defcustom tlon-ai-summarization-model
   '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
   "Model to use for summarization.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for summarization. Note that the selected model should
-have a large context window, ideally larger than 1m tokens, since otherwise some
-books will not be summarized."
+use a different model for summarization.
+
+Note that the selected model should have a large context window, ideally larger
+than 1m tokens, since otherwise some books will not be summarized."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
@@ -70,18 +83,21 @@ use a different model for fixing the Markdown."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
-(defcustom tlon-ai-edit-prompt nil
-  "Whether to edit the prompt before sending it to the AI model."
-  :type 'boolean
+(defcustom tlon-ai-create-reference-article-model nil
+  "Model to use for creating reference articles.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, do not
+use a different model for fixing the Markdown."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
 (defcustom tlon-ai-proofread-reference-article-model
   '("ChatGPT" . gpt-4.5-preview)
-  "Model to use for proofreading reference articles.")
-
-(defcustom tlon-ai-auto-proofread nil
-  "Whether to automatically proofread reference articles."
-  :type 'boolean
+  "Model to use for proofreading reference articles.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, do not
+use a different model for fixing the Markdown."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
 ;;;; Variables
@@ -523,7 +539,9 @@ FILE is the file to translate."
 	(tlon-add-add-sources-to-context)
 	(tlon-add-glossary-to-context lang)
 	(tlon-make-gptel-request prompt nil #'tlon-ai-create-reference-article-callback
-				 nil 'no-context-check))
+				 tlon-ai-create-reference-article-model 'no-context-check)
+	(message "Creating reference article with %S..."
+		 (or (cdr tlon-ai-create-reference-article-model) gptel-model)))
     (user-error "No \"title\" value found in front matter")))
 
 (declare-function markdown-mode "markdown-mode")
@@ -556,7 +574,10 @@ RESPONSE is the response from the AI model and INFO is the response info."
   (let ((prompt (tlon-lookup tlon-ai-proofread-reference-article-prompt
 			     :prompt :language (or (tlon-get-language-in-file nil)
 						   (tlon-select-language 'code)))))
-    (tlon-make-gptel-request prompt (buffer-string) #'tlon-ai-proofread-reference-article-callback)))
+    (tlon-make-gptel-request prompt (buffer-string) #'tlon-ai-proofread-reference-article-callback
+			     tlon-ai-proofread-reference-article-model)
+    (message "Proofreading reference article with %S..."
+	     (or (cdr tlon-ai-proofread-reference-article-model) gptel-model))))
 
 (defun tlon-ai-proofread-reference-article-callback (response info)
   "Callback for `tlon-ai-proofread-reference-article'.
@@ -1369,58 +1390,7 @@ If RESPONSE is nil, return INFO."
   :variable 'tlon-ai-overwrite-alt-text
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
 
-(defclass tlon-ai-model-selection-infix (transient-infix)
-  ((variable :initarg :variable)
-   (choices  :initarg :choices)
-   (default-label :initarg :default-label :initform "Default model"))
-  "A transient infix for selecting AI models or using the default.")
 
-(cl-defmethod transient-init-value ((obj tlon-ai-model-selection-infix))
-  "Initialize OBJ's value slot."
-  (oset obj value (symbol-value (oref obj variable))))
-
-(cl-defmethod transient-infix-read ((obj tlon-ai-model-selection-infix))
-  "Read a new value for OBJ's variable."
-  (let* ((choices 
-          (append 
-           '(("Default model" . nil))
-           (cl-loop for (backend-name . backend) in gptel--known-backends
-                    append (cl-loop for model in (gptel-backend-models backend)
-                                   collect (cons (format "%s: %s" 
-                                                        backend-name
-                                                        (gptel--model-name model))
-                                                 (cons backend-name model))))))
-         (choice (completing-read 
-                  (format "Select model (current: %s): " 
-                          (if (symbol-value (oref obj variable))
-                              (format "%s: %s" 
-                                      (car (symbol-value (oref obj variable)))
-                                      (cdr (symbol-value (oref obj variable))))
-                            (oref obj default-label)))
-                  choices nil t)))
-    (cdr (assoc choice choices))))
-
-(cl-defmethod transient-infix-set ((obj tlon-ai-model-selection-infix) value)
-  "Set the value of OBJ's variable to VALUE."
-  (set (oref obj variable) value))
-
-(cl-defmethod transient-format-value ((obj tlon-ai-model-selection-infix))
-  "Format OBJ's value for display."
-  (let ((value (symbol-value (oref obj variable))))
-    (propertize (if value
-                    (format "%s: %s" (car value) (cdr value))
-                  (oref obj default-label))
-                'face 'transient-value)))
-
-(transient-define-infix tlon-ai-infix-select-summarization-model ()
-  "Select model for summarization or use default."
-  :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-summarization-model)
-
-(transient-define-infix tlon-ai-infix-select-markdown-fix-model ()
-  "Select model for markdown fixing or use default."
-  :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-markdown-fix-model)
 
 (transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
   "Toggle the value of `tlon-ai-edit-prompt' in `ai' menu."
@@ -1444,9 +1414,7 @@ If RESPONSE is nil, return INFO."
   :reader 'tlon-ai-batch-fun-reader
   :prompt "Function for batch-processing: ")
 
-(defun tlon-abstract-overwrite-reader (prompt _ _)
-  "Return a list of choices with PROMPT to be used as an `infix' reader function."
-  (tlon-transient-read-symbol-choice prompt '(always ask never)))
+;;;;;; Abstract overwrite
 
 (transient-define-infix tlon-abstract-overwrite-infix ()
   "Change the local value of the `tlon-abstract-overwrite' variable."
@@ -1454,6 +1422,12 @@ If RESPONSE is nil, return INFO."
   :variable 'tlon-abstract-overwrite
   :reader 'tlon-abstract-overwrite-reader
   :prompt "Overwrite when the entry already contains an abstract? ")
+
+(defun tlon-abstract-overwrite-reader (prompt _ _)
+  "Return a list of choices with PROMPT to be used as an `infix' reader function."
+  (tlon-transient-read-symbol-choice prompt '(always ask never)))
+
+;;;;;; Mullvad
 
 (defvar mullvad-durations)
 (defun tlon-mullvad-connection-duration-reader (prompt _ _)
@@ -1467,6 +1441,77 @@ variable."
   :variable 'gptel-extras-gemini-mullvad-disconnect-after
   :reader 'tlon-mullvad-connection-duration-reader
   :prompt "Disconnect after: ")
+
+;;;;;; Model selection
+
+(defclass tlon-ai-model-selection-infix (transient-infix)
+  ((variable :initarg :variable)
+   (choices  :initarg :choices)
+   (default-label :initarg :default-label :initform "Default model"))
+  "A transient infix for selecting AI models or using the default.")
+
+(cl-defmethod transient-init-value ((obj tlon-ai-model-selection-infix))
+  "Initialize OBJ's value slot."
+  (oset obj value (symbol-value (oref obj variable))))
+
+(cl-defmethod transient-infix-read ((obj tlon-ai-model-selection-infix))
+  "Read a new value for OBJ's variable."
+  (let* ((choices
+          (append
+           '(("Default model" . nil))
+           (cl-loop for (backend-name . backend) in gptel--known-backends
+                    append (cl-loop for model in (gptel-backend-models backend)
+                                    collect (cons (format "%s: %s"
+                                                          backend-name
+                                                          (gptel--model-name model))
+                                                  (cons backend-name model))))))
+         (choice (completing-read
+                  (format "Select model (current: %s): "
+                          (if (symbol-value (oref obj variable))
+                              (format "%s: %s"
+                                      (car (symbol-value (oref obj variable)))
+                                      (cdr (symbol-value (oref obj variable))))
+                            (oref obj default-label)))
+                  choices nil t)))
+    (cdr (assoc choice choices))))
+
+(cl-defmethod transient-infix-set ((obj tlon-ai-model-selection-infix) value)
+  "Set the value of OBJ's variable to VALUE."
+  (set (oref obj variable) value))
+
+(cl-defmethod transient-format-value ((obj tlon-ai-model-selection-infix))
+  "Format OBJ's value for display."
+  (let ((value (symbol-value (oref obj variable))))
+    (propertize (if value
+                    (format "%s: %s" (car value) (cdr value))
+                  (oref obj default-label))
+                'face 'transient-value)))
+
+(transient-define-infix tlon-ai-infix-select-summarization-model ()
+  "AI model to use for summarizing.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-summarization-model)
+
+(transient-define-infix tlon-ai-infix-select-markdown-fix-model ()
+  "AI model to use for fixing the markdown.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-markdown-fix-model)
+
+(transient-define-infix tlon-ai-infix-select-create-reference-article-model ()
+  "AI model to use for creating a reference article.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-create-reference-article-model)
+
+(transient-define-infix tlon-ai-infix-select-proofread-reference-article-model ()
+  "AI model to use for proofreading a reference article.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-proofread-reference-article-model)
+
+;;;;;; Main menu
 
 (autoload 'gptel--infix-provider "gptel-transient")
 ;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
@@ -1500,10 +1545,7 @@ variable."
     ""
     "Reference articles"
     ("w w" "create reference article"                   tlon-ai-create-reference-article)
-    ("w p" "proofread reference article"                tlon-ai-proofread-reference-article)
-    ""
-    "Reference article options"
-    ]
+    ("w p" "proofread reference article"                tlon-ai-proofread-reference-article)]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
@@ -1520,8 +1562,10 @@ variable."
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ""
     "Models"
-    ("m -f" "Markdown fix model" tlon-ai-infix-select-markdown-fix-model)
-    ("s -s" "Summarization model" tlon-ai-infix-select-summarization-model)
+    ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
+    ("s -s" "Summarization" tlon-ai-infix-select-summarization-model)
+    ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
+    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
     ""
     (gptel--infix-provider)]])
 
