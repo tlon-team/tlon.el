@@ -796,10 +796,10 @@ Messages refer to paragraphs with one-based numbering."
          (max-concurrent 3)           ; lower concurrency helps avoid rate limiting
          (retry-table (make-hash-table :test 'equal))
          (abort-flag nil)
-         ;; Define ISSUE-REQUEST: use the fix model if enabled.
+         ;; Define ISSUE-REQUEST: use the fix model if defined.
          (issue-request
           (lambda (full-prompt callback)
-            (if tlon-ai-use-markdown-fix-model
+            (if tlon-ai-markdown-fix-model
                 (tlon-make-gptel-request full-prompt nil callback tlon-ai-markdown-fix-model)
               (gptel-request full-prompt :callback callback)))))
     (cl-labels
@@ -992,9 +992,8 @@ Otherwise return INFO."
 PROMPT is the prompt to use, STRING is the string to summarize, LANGUAGE is
 the language of the string, and CALLBACK is the callback function."
   (if-let ((prompt (tlon-lookup prompt :prompt :language language)))
-      (let ((model (when tlon-ai-use-summarization-model
-		     tlon-ai-summarization-model)))
-	(tlon-make-gptel-request prompt string callback model)
+      (progn
+	(tlon-make-gptel-request prompt string callback tlon-ai-summarization-model)
 	(message "Getting AI abstract..."))
     (user-error "Could not get prompt for language %s" language)))
 
@@ -1384,40 +1383,62 @@ If RESPONSE is nil, return INFO."
   :variable 'tlon-ai-overwrite-alt-text
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
 
-(defclass tlon-ai-model-display-infix (transient-lisp-variable)
-  ((model-function :initarg :model-function
-                   :initform nil
-                   :documentation "Function to get the actual model name to display"))
-  "A transient infix that shows model names instead of t/nil for boolean values.")
+(defclass tlon-ai-model-selection-infix (transient-infix)
+  ((variable :initarg :variable)
+   (choices  :initarg :choices)
+   (default-label :initarg :default-label :initform "Default model"))
+  "A transient infix for selecting AI models or using the default.")
 
-(cl-defmethod transient-format-value ((obj tlon-ai-model-display-infix))
-  "Format OBJ's value for display, showing model name instead of t/nil."
-  (let ((value (slot-value obj 'value)))
-    (if (slot-value obj 'model-function)
-        (let ((model-name (funcall (slot-value obj 'model-function) value)))
-          (propertize (format "%s" model-name)
-                      'face 'transient-value))
-      (transient-format-value (cl-call-next-method)))))
+(cl-defmethod transient-init-value ((obj tlon-ai-model-selection-infix))
+  "Initialize OBJ's value slot."
+  (oset obj value (symbol-value (oref obj variable))))
 
-(transient-define-infix tlon-ai-infix-toggle-use-summarization-model ()
-  "Toggle the value of `tlon-ai-use-summarization-model' in `ai' menu."
-  :class 'tlon-ai-model-display-infix
-  :variable 'tlon-ai-use-summarization-model
-  :model-function (lambda (value)
-                    (if value
-			(cdr tlon-ai-summarization-model)
-                      gptel-model))
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-summarization-model)))
+(cl-defmethod transient-infix-read ((obj tlon-ai-model-selection-infix))
+  "Read a new value for OBJ's variable."
+  (let* ((choices (append '(("Default model" . nil)) 
+                          (mapcar (lambda (model)
+                                    (cons (format "%s: %s" 
+                                                 (car model) 
+                                                 (cdr model))
+                                          model))
+                                  (oref obj choices))))
+         (choice (completing-read 
+                  (format "Select model (current: %s): " 
+                          (if (symbol-value (oref obj variable))
+                              (format "%s: %s" 
+                                      (car (symbol-value (oref obj variable)))
+                                      (cdr (symbol-value (oref obj variable))))
+                            (oref obj default-label)))
+                  choices nil t)))
+    (cdr (assoc choice choices))))
 
-(transient-define-infix tlon-ai-infix-toggle-use-markdown-fix-model ()
-  "Toggle the value of `tlon-ai-use-markdown-fix-model' in `ai' menu."
-  :class 'tlon-ai-model-display-infix
-  :variable 'tlon-ai-use-markdown-fix-model
-  :model-function (lambda (value)
-                    (if value
-			(cdr tlon-ai-markdown-fix-model)
-                      gptel-model))
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-use-markdown-fix-model)))
+(cl-defmethod transient-infix-set ((obj tlon-ai-model-selection-infix) value)
+  "Set the value of OBJ's variable to VALUE."
+  (set (oref obj variable) value))
+
+(cl-defmethod transient-format-value ((obj tlon-ai-model-selection-infix))
+  "Format OBJ's value for display."
+  (let ((value (symbol-value (oref obj variable))))
+    (propertize (if value
+                    (format "%s: %s" (car value) (cdr value))
+                  (oref obj default-label))
+                'face 'transient-value)))
+
+(transient-define-infix tlon-ai-infix-select-summarization-model ()
+  "Select model for summarization or use default."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-summarization-model
+  :choices '(("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
+             ("ChatGPT" . gpt-4.5-preview)
+             ("Claude" . claude-3-opus-20240229)))
+
+(transient-define-infix tlon-ai-infix-select-markdown-fix-model ()
+  "Select model for markdown fixing or use default."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-markdown-fix-model
+  :choices '(("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
+             ("ChatGPT" . gpt-4.5-preview)
+             ("Claude" . claude-3-opus-20240229)))
 
 (transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
   "Toggle the value of `tlon-ai-edit-prompt' in `ai' menu."
@@ -1483,7 +1504,7 @@ variable."
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
     ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
     ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
-    ("s -s" "model for summaries" tlon-ai-infix-toggle-use-summarization-model)
+    ("s -s" "Select summarization model" tlon-ai-infix-select-summarization-model)
     ""]
    ["Images"
     ("i d" "describe image"                           tlon-ai-describe-image)
@@ -1520,7 +1541,7 @@ variable."
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ""
     "Models"
-    ("s -s" "model for summaries" tlon-ai-infix-toggle-use-summarization-model)
+    ("m -f" "Select markdown fix model" tlon-ai-infix-select-markdown-fix-model)
     ""
     (gptel--infix-provider)]])
 
