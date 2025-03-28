@@ -26,6 +26,7 @@
 ;;; Code:
 
 (require 'gptel)
+(require 'gptel-curl)
 (require 'gptel-extras)
 (require 'shut-up)
 (require 'tlon-core)
