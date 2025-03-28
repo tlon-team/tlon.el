@@ -1568,7 +1568,7 @@ If nil, use the default model."
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
     ""
-    (gptel--infix-provider)]])
+    ("-m" "General model" gptel--infix-provider)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
