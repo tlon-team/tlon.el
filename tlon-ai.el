@@ -1381,13 +1381,15 @@ If RESPONSE is nil, return INFO."
 
 (cl-defmethod transient-infix-read ((obj tlon-ai-model-selection-infix))
   "Read a new value for OBJ's variable."
-  (let* ((choices (append '(("Default model" . nil)) 
-                          (mapcar (lambda (model)
-                                    (cons (format "%s: %s" 
-                                                 (car model) 
-                                                 (cdr model))
-                                          model))
-                                  (oref obj choices))))
+  (let* ((choices 
+          (append 
+           '(("Default model" . nil))
+           (cl-loop for (backend-name . backend) in gptel--known-backends
+                    append (cl-loop for model in (gptel-backend-models backend)
+                                   collect (cons (format "%s: %s" 
+                                                        backend-name
+                                                        (gptel--model-name model))
+                                                 (cons backend-name model))))))
          (choice (completing-read 
                   (format "Select model (current: %s): " 
                           (if (symbol-value (oref obj variable))
@@ -1413,18 +1415,12 @@ If RESPONSE is nil, return INFO."
 (transient-define-infix tlon-ai-infix-select-summarization-model ()
   "Select model for summarization or use default."
   :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-summarization-model
-  :choices '(("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
-             ("ChatGPT" . gpt-4.5-preview)
-             ("Claude" . claude-3-opus-20240229)))
+  :variable 'tlon-ai-summarization-model)
 
 (transient-define-infix tlon-ai-infix-select-markdown-fix-model ()
   "Select model for markdown fixing or use default."
   :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-markdown-fix-model
-  :choices '(("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
-             ("ChatGPT" . gpt-4.5-preview)
-             ("Claude" . claude-3-opus-20240229)))
+  :variable 'tlon-ai-markdown-fix-model)
 
 (transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
   "Toggle the value of `tlon-ai-edit-prompt' in `ai' menu."
