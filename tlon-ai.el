@@ -1485,7 +1485,16 @@ variable."
     ("i -o" "overwrite alt text"                      tlon-ai-infix-toggle-overwrite-alt-text)]
    ["Math"
     ("c" "convert"                                    tlon-ai-convert-math)
-    ("t" "translate"                                  tlon-ai-translate-math)]
+    ("t" "translate"                                  tlon-ai-translate-math)
+    ""
+    "Reference articles"
+    ("w w" "create reference article"                   tlon-ai-create-reference-article)
+    ("w p" "proofread reference article"                tlon-ai-proofread-reference-article)
+    ""
+    "Reference article options"
+    
+
+    ]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
@@ -1493,16 +1502,16 @@ variable."
     ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)
-    ("w" "create reference article"                   tlon-ai-create-reference-article)
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
-    ""
-    "Misc options"
-    ("m -m" "model for Markdown fix" tlon-ai-infix-toggle-use-markdown-fix-model)]
+    ]
    ["General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
+    ""
+    "Models"
+    ("s -s" "model for summaries" tlon-ai-infix-toggle-use-summarization-model)
     ""
     (gptel--infix-provider)]])
 
