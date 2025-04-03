@@ -160,8 +160,9 @@ confirmation when no glossary is found."
 							    'require-match nil nil excluded-lang)))
 	 (text (or text
 		   (read-string "Text to translate: "
-				(when (region-active-p)
-				  (buffer-substring-no-properties (region-beginning) (region-end)))))))
+				(or (when (region-active-p)
+				      (buffer-substring-no-properties (region-beginning) (region-end)))
+				    (thing-at-point 'word))))))
     (setq tlon-deepl-text text
 	  tlon-deepl-source-language source-lang
 	  tlon-deepl-target-language target-lang)
