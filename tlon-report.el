@@ -1,4 +1,4 @@
-;;; tlon-report.el --- Team clock data and reports -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-report.el --- Team clock data and reports -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

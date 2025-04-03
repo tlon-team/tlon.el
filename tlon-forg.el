@@ -1,4 +1,4 @@
-;;; tlon-forg.el --- Integration between forge and org-mode -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-forg.el --- Integration between forge and org-mode -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

@@ -1,4 +1,4 @@
-;;; tlon-deepl.el --- Support for DeepL API calls -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-deepl.el --- Support for DeepL API calls -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

@@ -1,4 +1,4 @@
-;;; Tlon excluded keys -*- lexical-binding: t; fill-column: 80 -*-
+;;; Tlon excluded keys -*- lexical-binding: t -*-
 
 ;; This file contains the keys to be excluded from `tlon-tex-entries-report'.
 

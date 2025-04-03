@@ -1,4 +1,4 @@
-;;; tlon-tex.el --- BibTeX related functionality -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-tex.el --- BibTeX related functionality -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 
@@ -889,7 +889,7 @@ No abstract: %s"
 (defun tlon-tex-save-excluded-keys ()
   "Save the excluded citation keys to the file."
   (with-temp-file tlon-tex-excluded-keys-file
-    (insert ";;; Tlon excluded keys -*- lexical-binding: t; fill-column: 80 -*-\n\n")
+    (insert ";;; Tlon excluded keys -*- lexical-binding: t -*-\n\n")
     (insert ";; This file contains the keys to be excluded from `tlon-tex-entries-report'.\n\n")
     (insert "(setq tlon-tex-excluded-keys '")
     (prin1 tlon-tex-excluded-keys (current-buffer))

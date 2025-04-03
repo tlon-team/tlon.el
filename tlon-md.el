@@ -1,4 +1,4 @@
-;;; tlon-md.el --- Markdown functionality for Tlön -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-md.el --- Markdown functionality for Tlön -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

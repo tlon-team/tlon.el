@@ -1,4 +1,4 @@
-;;; tlon-api.el --- Make requests with the Babel APIs -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-api.el --- Make requests with the Babel APIs -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 
