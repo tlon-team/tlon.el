@@ -1,4 +1,4 @@
-;;; tlon-ai.el --- AI functionality for Tlön -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-ai.el --- AI functionality for Tlön -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

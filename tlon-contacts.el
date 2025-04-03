@@ -1,4 +1,4 @@
-;;; tlon-contacts.el --- Contacts management -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-contacts.el --- Contacts management -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

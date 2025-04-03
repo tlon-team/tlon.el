@@ -1,4 +1,4 @@
-;;; tlon-jobs.el --- Functions for processing Babel jobs -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-jobs.el --- Functions for processing Babel jobs -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

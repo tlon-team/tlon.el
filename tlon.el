@@ -1,4 +1,4 @@
-;;; tlon.el --- A companion package for Tlön. -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon.el --- A companion package for Tlön. -*- lexical-binding: t -*-
 
 ;; Author: Pablo Stafforini
 ;; Maintainer: Pablo Stafforini

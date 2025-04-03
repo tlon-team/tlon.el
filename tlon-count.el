@@ -1,4 +1,4 @@
-;;; tlon-count.el --- Functionality for counting words -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-count.el --- Functionality for counting words -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

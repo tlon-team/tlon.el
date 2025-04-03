@@ -1,4 +1,4 @@
-;;; tlon-repos.el --- Functionality for manipulating repositories -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-repos.el --- Functionality for manipulating repositories -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

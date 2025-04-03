@@ -1,4 +1,4 @@
-;;; tlon-glossary.el --- Glossary functions for Tlön -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-glossary.el --- Glossary functions for Tlön -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

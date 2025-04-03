@@ -1,4 +1,4 @@
-;;; tlon-images.el --- Image processing functionality -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-images.el --- Image processing functionality -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 

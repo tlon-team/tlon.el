@@ -1,4 +1,4 @@
-;;; tlon-read.el --- Functions for reading the current buffer aloud -*- lexical-binding: t; fill-column: 80 -*-
+;;; tlon-read.el --- Functions for reading the current buffer aloud -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 
