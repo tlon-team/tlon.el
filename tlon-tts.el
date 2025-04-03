@@ -1284,37 +1284,95 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 (defun tlon-tts-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks.
 If CHUNK-SIZE is non-nil, break text into chunks no larger thank CHUNK-SIZE.
-Each chunk will include the maximum number of paragraphs that fit in that size.
+Each chunk will include the maximum number of paragraphs that fit in that size,
+unless a single paragraph exceeds CHUNK-SIZE, in which case that paragraph
+becomes its own chunk.
 Breaking the text between paragraphs ensures that both the intonation and the
 silences are preserved (breaking the text between sentences handles the
 intonation, but not the silences, correctly)."
   (goto-char (point-min))
   (let* ((begin 1)
-	 (chunk-size (or chunk-size most-positive-fixnum))
-	 (voice-chunk tlon-tts-voice-chunks)
-	 break chunks end voice voice-break)
+         (chunk-size (or chunk-size most-positive-fixnum))
+         (voice-chunk tlon-tts-voice-chunks)
+         chunks end voice voice-break paragraph-end potential-break break)
     (while (not (eobp))
       (let ((voice-begin (if voice-chunk
-			     (marker-position (caar voice-chunk))
-			   most-positive-fixnum))
-	    (next-voice (when voice-chunk (cdar voice-chunk))))
-	(setq break (min (point-max) (+ begin chunk-size) voice-begin))
-	(when (eq break voice-begin)
-	  (setq voice-break t))
-	(goto-char break)
-	(unless (or voice-break (eobp))
-	  (backward-paragraph))
-	(tlon-tts-move-point-before-break-tag)
-	(setq end (point))
-	(when (= begin end)
-	  (user-error "Paragraph exceeds chunk size"))
-	(let* ((string (string-trim (buffer-substring-no-properties begin end)))
-	       (chunk (cons string (when voice (cons 'tlon-tts-voice voice)))))
-	  (push chunk chunks))
-	(setq voice next-voice)
-	(setq begin end)
-	(when voice-break
-	  (setq voice-chunk (cdr voice-chunk)))))
+                             (marker-position (caar voice-chunk))
+                           most-positive-fixnum))
+            (next-voice (when voice-chunk (cdar voice-chunk))))
+
+        ;; Calculate potential break based *only* on chunk size
+        (setq potential-break (min (point-max) (+ begin chunk-size)))
+
+        ;; Determine actual potential break considering voice changes
+        (setq break (min potential-break voice-begin))
+        (setq voice-break (eq break voice-begin))
+
+        ;; Find the end of the paragraph starting at 'begin'
+        (save-excursion
+          (goto-char begin)
+          ;; Ensure we are not at the start of an empty line which forward-paragraph might skip
+          (skip-chars-forward " \t\n")
+          (when (< (point) (point-max)) ; Avoid error at buffer end
+             (forward-paragraph)
+             (setq paragraph-end (point)))
+          ;; If paragraph-end wasn't set (e.g., already at end), use point-max
+          (unless paragraph-end (setq paragraph-end (point-max))))
+
+        ;; --- Decision Logic ---
+        (cond
+         ;; Case 1: The paragraph starting at 'begin' extends beyond the calculated 'break' point.
+         ;; Also check paragraph-end > begin to avoid issues with empty paragraphs or start position.
+         ((and (> paragraph-end break) (> paragraph-end begin))
+          ;; Take the whole paragraph, ignoring chunk-size for this chunk.
+          ;; Ensure we don't cross a voice chunk boundary if it's within this long paragraph.
+          (setq end (min paragraph-end voice-begin))
+          ;; Update voice_break status based on whether 'end' is now the voice boundary
+          (setq voice-break (eq end voice-begin)))
+
+         ;; Case 2: The paragraph fits within or ends at the 'break' point.
+         (t
+          ;; Use the original logic: go to the calculated break point...
+          (goto-char break)
+          ;; ...and move back to the end of the last complete paragraph if not at EOF or voice break.
+          (unless (or voice-break (eobp))
+            (backward-paragraph))
+          (setq end (point))))
+        ;; --- End Decision Logic ---
+
+        ;; Check for zero progress (could indicate an issue like an empty paragraph loop)
+        (when (and (= begin end) (not (eobp)))
+           ;; Attempt to recover by moving past the current paragraph if stuck
+           (save-excursion (goto-char begin) (forward-paragraph) (setq end (point)))
+           ;; If still stuck, signal an error
+           (when (= begin end)
+             (user-error "TTS chunking failed to advance. Position: %d. Check for empty paragraphs or unusual content." begin)))
+
+        ;; Ensure 'end' doesn't somehow go backward (sanity check)
+        (when (< end begin)
+           (user-error "TTS chunking error: end point (%d) is before begin point (%d)." end begin))
+
+        ;; Move point back if it landed right after a break tag
+        ;; Do this *before* extracting the substring
+        (let ((final-end end))
+           (save-excursion
+             (goto-char final-end)
+             (tlon-tts-move-point-before-break-tag)
+             (setq final-end (point))) ;; Update end if move occurred
+           (setq end final-end))
+
+        ;; Extract chunk
+        (when (> end begin) ; Only extract if there's content
+           (let* ((string (string-trim (buffer-substring-no-properties begin end)))
+                  (chunk (cons string (when voice (cons 'tlon-tts-voice voice)))))
+             (unless (string-empty-p string) ; Avoid empty chunks after trimming
+               (push chunk chunks))))
+
+        ;; Update for next iteration
+        (setq voice next-voice)
+        (setq begin end)
+        (when voice-break
+          (setq voice-chunk (cdr voice-chunk)))))
     (nreverse chunks)))
 
 (defun tlon-tts-move-point-before-break-tag ()
