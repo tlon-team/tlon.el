@@ -1093,7 +1093,7 @@ at the end of the TTS process.")
      ("it" "Nota." . "\nFine della nota.")
      ("ja" "ノート." . "\nノートの終わり.")
      ("ko" "노트." . "\n노트의 끝."))
-    (owid
+    (embedded
      ("ar" "رسم بياني." . "\nنهاية الرسم البياني.")
      ("de" "Diagramm." . "\nEnde des Diagramms.")
      ("en" "Chart." . "\nEnd of chart.")
@@ -1135,7 +1135,7 @@ at the end of the TTS process.")
   `((aside ,(tlon-md-get-tag-pattern "Aside") . 2)
     (blockquote ,tlon-md-blockquote . 1)
     (heading ,tlon-md-heading . 5)
-    (owid ,(tlon-md-get-tag-pattern "OurWorldInData") . 6)
+    (embedded ,(tlon-md-get-tag-pattern "Embedded") . 6)
     (quote ,(tlon-md-get-tag-pattern "q") . 2)
     (subheading ,tlon-md-subheading . 5)
     (table ,(tlon-md-get-tag-pattern "SimpleTable") . 4)))
@@ -2293,7 +2293,7 @@ REPLACEMENT is the cdr of the cons cell for the term being replaced."
   (tlon-tts-process-headings)
   (tlon-tts-process-subheadings)
   (tlon-tts-process-images)
-  (tlon-tts-process-owid))
+  (tlon-tts-process-embedded))
 
 ;; TODO: consider revising so that each listener cue type has an associated
 ;; break duration. This may be worth it if it feels like some cues (like section
@@ -2432,15 +2432,15 @@ Depending on TYPE, also enclose TEXT in listener cues."
 
 (defun tlon-tts-ensure-all-images-have-alt-text ()
   "Ensure all images have alt text."
-  (dolist (tag '("Figure" "OurWorldInData"))
+  (dolist (tag '("Figure" "Embedded"))
     (goto-char (point-min))
     (while (re-search-forward (tlon-md-get-tag-pattern tag) nil t)
       (unless (match-string 6)
 	(user-error "Some images are missing alt text; run `M-x tlon-ai-set-image-alt-text-in-buffer'")))))
 
-(defun tlon-tts-process-owid ()
-  "Add listener cues for One World In Data charts."
-  (tlon-tts-add-listener-cues 'owid))
+(defun tlon-tts-process-embedded ()
+  "Add listener cues for embedded charts."
+  (tlon-tts-add-listener-cues 'embedded))
 
 ;;;;;; Report
 
