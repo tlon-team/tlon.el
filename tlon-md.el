@@ -246,9 +246,10 @@ in this tag and pass the URL as the value of the `src' attribute.")
 		       (:name "display" :required nil :valued nil :group 5 :reader tlon-md-math-display-reader))
 	  :type mdx
 	  :self-closing nil)
-    (:tag "OurWorldInData"
+    (:tag "Embedded"
 	  :attributes ((:name "src" :required t :valued t :group 3 :prompt "Chart URL: ")
-		       (:name "alt" :required nil :valued t :group 5 :prompt "Alt text: "))
+		       (:name "alt" :required nil :valued t :group 5 :prompt "Alt text: ")
+		       (:name "height" :required nil :valued t :group 7 :prompt "Height: "))
 	  :type mdx
 	  :self-closing t
 	  :doc "")
@@ -769,11 +770,11 @@ Prompt the user to select a URL."
     (concat " " display)))
 
 ;;;###autoload
-(defun tlon-mdx-insert-our-world-in-data ()
-  "Insert an `OurWorldInData' tag pair at point or around the selected region.
+(defun tlon-mdx-insert-embedded ()
+  "Insert an `Embedded' tag pair at point or around the selected region.
 Prompt the user to enter a SRC value."
   (interactive)
-  (tlon-md-insert-or-edit-tag "OurWorldInData"))
+  (tlon-md-insert-or-edit-tag "Embedded"))
 
 ;;;###autoload
 (defun tlon-mdx-insert-replace-audio ()
@@ -1222,7 +1223,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ]
    ["Images"
     ("g" "figure"               tlon-mdx-insert-figure)
-    ("o" "Our World In Data"    tlon-mdx-insert-our-world-in-data)
+    ("o" "Embedded"             tlon-mdx-insert-embedded)
     ""
     "Link"
     ("k" "internal"             tlon-insert-internal-link)
