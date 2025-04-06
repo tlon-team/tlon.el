@@ -29,10 +29,10 @@
 (require 'gptel-curl)
 (require 'gptel-extras)
 (require 'shut-up)
+(require 'tlon)
 (require 'tlon-core)
 (require 'tlon-tex) ; needed to set variables correctly
 (require 'tlon-counterpart)
-(require 'magit) ;; Or ensure git commands are available
 
 ;;;; User options
 
@@ -1387,6 +1387,77 @@ If RESPONSE is nil, return INFO."
 
 ;;;; Helper Functions for Change Propagation
 
+;;;;; Change Propagation Command
+
+;;;###autoload
+(defun tlon-ai-propagate-changes ()
+  "Propagate modifications from the latest commit of the current file.
+Gets the diff of the latest commit affecting the current file in its repository.
+Then, for each corresponding file in other \"uqbar\" content
+repositories (originals and translations), asks the AI to apply the semantically
+equivalent changes. Finally, commits the changes made by the AI in each target
+repository."
+  (interactive)
+  (let* ((source-file (buffer-file-name))
+         (_ (unless source-file (user-error "Current buffer is not visiting a file")))
+         (source-repo (tlon-get-repo-from-file source-file 'no-prompt))
+         (_ (unless source-repo (user-error "Could not determine repository for %s" source-file)))
+         (source-repo-name (tlon-repo-lookup :name :dir source-repo)) ; Get the repo name
+         (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
+         (source-lang (tlon-repo-lookup :language :dir source-repo))
+         (latest-commit (tlon-latest-user-commit-in-file source-file))
+         (_ (unless latest-commit (user-error "Could not find latest commit for %s" source-file)))
+         (diff (tlon-ai--get-commit-diff latest-commit source-file source-repo))
+         (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
+                                    (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
+         (target-repos (remove source-repo all-content-repos)))
+
+    (unless diff
+      (user-error "No changes found in commit %s for file %s. Aborting" latest-commit source-file))
+
+    (unless target-repos
+      (user-error "No target repositories found to propagate changes to"))
+
+    (message "Found commit %s for %s in %s. Propagating changes..."
+             (substring latest-commit 0 7) (file-name-nondirectory source-file) source-repo-name)
+    (message "Diff:\n%s" diff) ; Log the diff for debugging/info
+
+    (dolist (target-repo target-repos)
+      (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
+             (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
+        (if target-file
+            (let* ((target-content (with-temp-buffer
+                                     (insert-file-contents target-file)
+                                     (buffer-string)))
+                   ;; Construct the prompt carefully
+                   (prompt (format
+                            (concat
+                             "You are an expert code/text synchronizer.\n"
+                             "The following diff shows changes made to a file in %s (source language), located at relative path '%s'.\n\n"
+                             "--- DIFF START ---\n%s\n--- DIFF END ---\n\n"
+                             "Your task is to apply the *semantic equivalent* of these changes to the corresponding file in %s (target language).\n"
+                             "The *entire current content* of the target file is provided below.\n\n"
+                             "--- TARGET FILE CONTENT START ---\n%s\n--- TARGET FILE CONTENT END ---\n\n"
+                             "Please output *only* the complete, modified content of the target file. Do not add explanations, comments, apologies, or markdown formatting (like ```) around the output.")
+                            source-lang
+                            (file-relative-name source-file source-repo)
+                            diff
+                            target-lang
+                            target-content)))
+              (message "Requesting AI to update %s (lang: %s) in repo %s..."
+                       (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
+              ;; Make the request - the callback handles writing and committing
+              (tlon-make-gptel-request prompt nil
+                                       (lambda (response info) ; Wrap callback to pass context
+                                         (tlon-ai--propagate-changes-callback response info target-file target-repo source-repo-name latest-commit)) ; Pass source-repo-name
+                                       nil ; Use default model for now, consider a custom one
+                                       t)) ; Bypass context check as we manage context implicitly
+          ;; Message is now handled inside tlon-ai--find-target-file
+          )))
+    (message "AI change propagation requests initiated for all target repositories.")))
+
+;;;;; Helper functions
+
 (defun tlon-ai--get-commit-diff (commit file repo-path)
   "Get the diff for FILE at COMMIT hash within REPO-PATH.
 Returns the diff string or nil if no changes or error."
@@ -1449,31 +1520,28 @@ Based on SOURCE-FILE in SOURCE-REPO."
                                                   "original_path"
                                                   original-relative-path))
         (message "Warning: Could not find 'original_path' in source file %s" source-file)))
-
      ;; Other cases (e.g., original to original) are not expected for propagation
-     (t (message "Warning: Unsupported propagation from %s (%s) to %s (%s)"
-                 (file-name-nondirectory source-repo) source-subtype
-                 (file-name-nondirectory source-repo) source-subtype
-                 (file-name-nondirectory target-repo) target-subtype)))
-
+     (t (message "Warning: Unsupported propagation from %s (%s) to %s (%s)."
+		 (file-name-nondirectory source-repo) source-subtype
+		 (file-name-nondirectory target-repo) target-subtype)))
     ;; Final check and warning generation
     (let ((warning-message nil))
       (cond
        ((null target-path)
-        (setq warning-message
+	(setq warning-message
               (format "Target file for %s in %s could not be determined (metadata lookup failed)."
                       (file-name-nondirectory source-file)
                       (file-name-nondirectory target-repo))))
        ((not (file-exists-p target-path))
-        (setq warning-message
+	(setq warning-message
               (format "Target file path %s determined for %s in %s, but file does not exist."
                       target-path
                       (file-name-nondirectory source-file)
                       (file-name-nondirectory target-repo)))))
       (if warning-message
           (progn (message "Warning: %s Skipping." warning-message) nil)
-        ;; Only return target-path if it exists
-        target-path))))
+	;; Only return target-path if it exists
+	target-path))))
 
 (defun tlon-ai--commit-in-repo (repo-path file-path message)
   "Stage FILE-PATH and commit it in REPO-PATH with MESSAGE."
@@ -1489,7 +1557,11 @@ Based on SOURCE-FILE in SOURCE-REPO."
       (message "Error: Failed to stage %s in %s" relative-file (file-name-nondirectory repo-path)))))
 
 (defun tlon-ai--propagate-changes-callback (response info target-file target-repo source-repo-name source-commit)
-  "Callback for AI change propagation. Writes file and commits."
+  "Callback for AI change propagation. Writes file and commits.
+RESPONSE is the AI's response, INFO is the response info. TARGET-FILE is the
+file to write the changes to, TARGET-REPO is the target repository,
+SOURCE-REPO-NAME is the name of the source repository, and SOURCE-COMMIT is the
+commit hash."
   (if (not response)
       (progn
         (message "AI failed to process changes for %s. Status: %s"
@@ -1506,79 +1578,9 @@ Based on SOURCE-FILE in SOURCE-REPO."
 
       ;; If write succeeded, commit the changes
       (when (file-exists-p target-file) ; Double check write didn't fail silently
-          (let ((commit-message (format "AI: Propagate changes from %s commit %s"
-                                        source-repo-name ; Use the passed name
-                                        (substring source-commit 0 7)))) ; Short hash
-            (tlon-ai--commit-in-repo target-repo target-file commit-message))))))
-
-;;;;; Change Propagation Command
-
-;;;###autoload
-(defun tlon-ai-propagate-changes ()
-  "Propagate changes from the latest commit of the current file to counterparts.
-Gets the diff of the latest commit affecting the current file in its
-repository. Then, for each corresponding file in other 'uqbar' content
-repositories (originals and translations), asks the AI to apply the
-semantically equivalent changes. Finally, commits the changes made by
-the AI in each target repository."
-  (interactive)
-  (let* ((source-file (buffer-file-name))
-         (_ (unless source-file (user-error "Current buffer is not visiting a file")))
-         (source-repo (tlon-get-repo-from-file source-file 'no-prompt))
-         (_ (unless source-repo (user-error "Could not determine repository for %s" source-file)))
-         (source-repo-name (tlon-repo-lookup :name :dir source-repo)) ; Get the repo name
-         (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
-         (source-lang (tlon-repo-lookup :language :dir source-repo))
-         (latest-commit (tlon-latest-user-commit-in-file source-file))
-         (_ (unless latest-commit (user-error "Could not find latest commit for %s" source-file)))
-         (diff (tlon-ai--get-commit-diff latest-commit source-file source-repo))
-         (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
-                                    (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
-         (target-repos (remove source-repo all-content-repos)))
-
-    (unless diff
-      (user-error "No changes found in commit %s for file %s. Aborting." latest-commit source-file))
-
-    (unless target-repos
-      (user-error "No target repositories found to propagate changes to."))
-
-    (message "Found commit %s for %s in %s. Propagating changes..."
-             (substring latest-commit 0 7) (file-name-nondirectory source-file) source-repo-name)
-    (message "Diff:\n%s" diff) ; Log the diff for debugging/info
-
-    (dolist (target-repo target-repos)
-      (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
-             (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
-        (if target-file
-            (let* ((target-content (with-temp-buffer
-                                     (insert-file-contents target-file)
-                                     (buffer-string)))
-                  ;; Construct the prompt carefully
-                  (prompt (format
-                           (concat
-                            "You are an expert code/text synchronizer.\n"
-                            "The following diff shows changes made to a file in %s (source language), located at relative path '%s'.\n\n"
-                            "--- DIFF START ---\n%s\n--- DIFF END ---\n\n"
-                            "Your task is to apply the *semantic equivalent* of these changes to the corresponding file in %s (target language).\n"
-                            "The *entire current content* of the target file is provided below.\n\n"
-                            "--- TARGET FILE CONTENT START ---\n%s\n--- TARGET FILE CONTENT END ---\n\n"
-                            "Please output *only* the complete, modified content of the target file. Do not add explanations, comments, apologies, or markdown formatting (like ```) around the output.")
-                           source-lang
-                           (file-relative-name source-file source-repo)
-                           diff
-                           target-lang
-                           target-content)))
-              (message "Requesting AI to update %s (lang: %s) in repo %s..."
-                       (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
-              ;; Make the request - the callback handles writing and committing
-              (tlon-make-gptel-request prompt nil
-                                       (lambda (response info) ; Wrap callback to pass context
-                                         (tlon-ai--propagate-changes-callback response info target-file target-repo source-repo-name latest-commit)) ; Pass source-repo-name
-                                       nil ; Use default model for now, consider a custom one
-                                       t)) ; Bypass context check as we manage context implicitly
-          ;; Message is now handled inside tlon-ai--find-target-file
-          )))
-    (message "AI change propagation requests initiated for all target repositories.")))
+        (let ((commit-message (format "AI: Propagate changes from commit %s in %s"
+                                      (substring source-commit 0 7) source-repo-name)))
+          (tlon-ai--commit-in-repo target-repo target-file commit-message))))))
 
 ;;;;; Menu
 
