@@ -1453,15 +1453,27 @@ Based on SOURCE-FILE in SOURCE-REPO."
      ;; Other cases (e.g., original to original) are not expected for propagation
      (t (message "Warning: Unsupported propagation from %s (%s) to %s (%s)"
                  (file-name-nondirectory source-repo) source-subtype
+                 (file-name-nondirectory source-repo) source-subtype
                  (file-name-nondirectory target-repo) target-subtype)))
 
-    ;; Final check and warning
-    (if (and target-path (file-exists-p target-path))
-        target-path
-      (progn
-        (message "Warning: Target file for %s in %s could not be determined or found. Looked for: %s"
-                 (file-name-nondirectory source-file) (file-name-nondirectory target-repo) target-path)
-        nil))))
+    ;; Final check and warning generation
+    (let ((warning-message nil))
+      (cond
+       ((null target-path)
+        (setq warning-message
+              (format "Target file for %s in %s could not be determined (metadata lookup failed)."
+                      (file-name-nondirectory source-file)
+                      (file-name-nondirectory target-repo))))
+       ((not (file-exists-p target-path))
+        (setq warning-message
+              (format "Target file path %s determined for %s in %s, but file does not exist."
+                      target-path
+                      (file-name-nondirectory source-file)
+                      (file-name-nondirectory target-repo)))))
+      (if warning-message
+          (progn (message "Warning: %s Skipping." warning-message) nil)
+        ;; Only return target-path if it exists
+        target-path))))
 
 (defun tlon-ai--commit-in-repo (repo-path file-path message)
   "Stage FILE-PATH and commit it in REPO-PATH with MESSAGE."
@@ -1495,7 +1507,7 @@ Based on SOURCE-FILE in SOURCE-REPO."
       ;; If write succeeded, commit the changes
       (when (file-exists-p target-file) ; Double check write didn't fail silently
           (let ((commit-message (format "AI: Propagate changes from %s commit %s"
-                                        source-repo-name
+                                        source-repo-name ; Use the passed name
                                         (substring source-commit 0 7)))) ; Short hash
             (tlon-ai--commit-in-repo target-repo target-file commit-message))))))
 
@@ -1514,7 +1526,8 @@ the AI in each target repository."
          (_ (unless source-file (user-error "Current buffer is not visiting a file")))
          (source-repo (tlon-get-repo-from-file source-file 'no-prompt))
          (_ (unless source-repo (user-error "Could not determine repository for %s" source-file)))
-         (source-repo-name (file-name-nondirectory source-repo))
+         (source-repo-name (tlon-repo-lookup :name :dir source-repo)) ; Get the repo name
+         (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
          (source-lang (tlon-repo-lookup :language :dir source-repo))
          (latest-commit (tlon-latest-user-commit-in-file source-file))
          (_ (unless latest-commit (user-error "Could not find latest commit for %s" source-file)))
@@ -1560,10 +1573,11 @@ the AI in each target repository."
               ;; Make the request - the callback handles writing and committing
               (tlon-make-gptel-request prompt nil
                                        (lambda (response info) ; Wrap callback to pass context
-                                         (tlon-ai--propagate-changes-callback response info target-file target-repo source-repo-name latest-commit))
+                                         (tlon-ai--propagate-changes-callback response info target-file target-repo source-repo-name latest-commit)) ; Pass source-repo-name
                                        nil ; Use default model for now, consider a custom one
                                        t)) ; Bypass context check as we manage context implicitly
-          (message "Skipping repository %s as target file could not be determined or found." (file-name-nondirectory target-repo)))))
+          ;; Message is now handled inside tlon-ai--find-target-file
+          )))
     (message "AI change propagation requests initiated for all target repositories.")))
 
 ;;;;; Menu
