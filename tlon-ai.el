@@ -1749,21 +1749,22 @@ If nil, use the default model."
     ("t" "translate"                                  tlon-ai-translate-math)
     ""
     "Reference articles"
-    ("w w" "create reference article"                   tlon-ai-create-reference-article)
-    ("w p" "proofread reference article"                tlon-ai-proofread-reference-article)]
+    ("w w" "create reference article"                 tlon-ai-create-reference-article)
+    ("w p" "proofread reference article"              tlon-ai-proofread-reference-article)
+    ""
+    "Propagation"
+    ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
+    ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
-    ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
-    ("p" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
+    ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
     ]
-   ["Propagation" ; Or add to "Misc"
-    ("P" "Propagate latest commit changes" tlon-ai-propagate-changes)]
    ["General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
