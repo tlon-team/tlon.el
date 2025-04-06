@@ -1537,9 +1537,9 @@ the AI in each target repository."
       (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
              (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
         (if target-file
-            (let ((target-content (with-temp-buffer
-                                    (insert-file-contents target-file)
-                                    (buffer-string)))
+            (let* ((target-content (with-temp-buffer
+                                     (insert-file-contents target-file)
+                                     (buffer-string)))
                   ;; Construct the prompt carefully
                   (prompt (format
                            (concat
