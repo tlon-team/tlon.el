@@ -1414,16 +1414,53 @@ Returns the diff string or nil if no changes or error."
 (defun tlon-ai--find-target-file (source-file source-repo target-repo)
   "Find the corresponding target file path in TARGET-REPO.
 Based on SOURCE-FILE in SOURCE-REPO."
-  (let* ((source-bare-dir (tlon-get-bare-dir source-file))
-         (source-lang (tlon-repo-lookup :language :dir source-repo))
-         (target-lang (tlon-repo-lookup :language :dir target-repo))
-         (target-bare-dir (tlon-get-bare-dir-translation target-lang source-lang source-bare-dir))
-         (filename (file-name-nondirectory source-file))
-         (target-path (file-name-concat target-repo target-bare-dir filename)))
-    (if (file-exists-p target-path)
+  (let* ((source-subtype (tlon-repo-lookup :subtype :dir source-repo))
+         (target-subtype (tlon-repo-lookup :subtype :dir target-repo))
+         (target-path nil))
+    (cond
+     ;; Case 1: Source is original, Target is translation
+     ((and (eq source-subtype 'originals) (eq target-subtype 'translations))
+      (let ((source-filename (file-name-nondirectory source-file)))
+        ;; Look for a file in the target repo whose 'original_path' matches the source filename
+        (setq target-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
+                                                "file" ; The key to return (the full file path)
+                                                "original_path" ; The key to match
+                                                source-filename)))) ; The value to match
+
+     ;; Case 2: Source is translation, Target is original
+     ((and (eq source-subtype 'translations) (eq target-subtype 'originals))
+      (if-let ((original-relative-path (tlon-yaml-get-key "original_path" source-file)))
+          (let* ((source-bare-dir (tlon-get-bare-dir source-file))
+                 (source-lang (tlon-repo-lookup :language :dir source-repo))
+                 (target-lang "en") ; Originals are always 'en' in this setup
+                 (original-bare-dir (tlon-get-bare-dir-translation target-lang source-lang source-bare-dir)))
+            ;; Ensure target repo path ends with a slash before concatenating
+            (setq target-path (file-name-concat (directory-file-name target-repo)
+                                                original-bare-dir
+                                                original-relative-path)))
+        (message "Warning: Could not find 'original_path' in source file %s" source-file)))
+
+     ;; Case 3: Source is translation, Target is another translation
+     ((and (eq source-subtype 'translations) (eq target-subtype 'translations))
+      (if-let ((original-relative-path (tlon-yaml-get-key "original_path" source-file)))
+          ;; Find the translation in the target repo that points to the same original
+          (setq target-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
+                                                  "file"
+                                                  "original_path"
+                                                  original-relative-path))
+        (message "Warning: Could not find 'original_path' in source file %s" source-file)))
+
+     ;; Other cases (e.g., original to original) are not expected for propagation
+     (t (message "Warning: Unsupported propagation from %s (%s) to %s (%s)"
+                 (file-name-nondirectory source-repo) source-subtype
+                 (file-name-nondirectory target-repo) target-subtype)))
+
+    ;; Final check and warning
+    (if (and target-path (file-exists-p target-path))
         target-path
       (progn
-        (message "Warning: Target file %s does not exist. Skipping." target-path)
+        (message "Warning: Target file for %s in %s could not be determined or found. Looked for: %s"
+                 (file-name-nondirectory source-file) (file-name-nondirectory target-repo) target-path)
         nil))))
 
 (defun tlon-ai--commit-in-repo (repo-path file-path message)
