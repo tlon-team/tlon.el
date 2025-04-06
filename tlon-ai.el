@@ -1554,7 +1554,12 @@ Based on SOURCE-FILE in SOURCE-REPO."
         (progn
           (message "Committing '%s' with message: %s" relative-file message)
           (if (zerop (call-process "git" nil nil nil "commit" "-m" message))
-              (message "Successfully committed %s in %s" relative-file (file-name-nondirectory repo-path))
+              (let ((new-commit (string-trim (shell-command-to-string "git rev-parse HEAD"))))
+                (message "Successfully committed %s in %s (commit: %s)"
+                         relative-file (file-name-nondirectory repo-path) (substring new-commit 0 7))
+                ;; Open Magit status showing the new commit
+                (when (and (not noninteractive) (fboundp 'magit-show-commit))
+                  (magit-show-commit new-commit)))
             (message "Error: Failed to commit %s in %s" relative-file (file-name-nondirectory repo-path))))
       (message "Error: Failed to stage %s in %s" relative-file (file-name-nondirectory repo-path)))))
 
