@@ -1400,13 +1400,15 @@ Returns the diff string or nil if no changes or error."
                      (shell-command-to-string command)
                    (error (message "Error getting diff for %s in %s: %s" relative-file commit err)
                           nil))))
-      ;; Check if diff is empty or indicates no changes (git show can be verbose)
+      ;; Check if diff is empty or indicates no changes (git show includes commit info)
       (if (or (null diff)
               (string-blank-p diff)
-              (string-match-p "^commit" diff)) ; Basic check if it's just commit info
+              ;; Check if the actual diff section marker is present
+              (not (string-match-p "diff --git" diff)))
           (progn
             (message "No effective changes found for %s in commit %s." relative-file commit)
             nil)
+        ;; Return the full output, including commit info and diff
         diff))))
 
 (defun tlon-ai--find-target-file (source-file source-repo target-repo)
