@@ -1590,8 +1590,6 @@ commit hash."
   :variable 'tlon-ai-overwrite-alt-text
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
 
-
-
 (transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
   "Toggle the value of `tlon-ai-edit-prompt' in `ai' menu."
   :class 'transient-lisp-variable
