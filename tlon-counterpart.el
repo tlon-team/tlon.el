@@ -226,7 +226,9 @@ If END is nil, use `point-max'."
 		 positions)))
 
 (defun tlon-count-paragraphs (&optional start end)
-  ""
+  "Count the number of paragraphs in the active region.
+If the region is not active, count the number of paragraphs between START and
+END."
   (interactive)
   (message "Number of paragraphs: %d"
 	   (tlon-get-number-of-paragraphs (cl-destructuring-bind (start . end)
