@@ -230,6 +230,9 @@ If END is nil, use `point-max'."
 If the region is not active, count the number of paragraphs between START and
 END."
   (interactive)
+  (unless (or (region-active-p)
+	      (and start end))
+    (user-error "No region selected and no START and END specified"))
   (message "Number of paragraphs: %d"
 	   (tlon-get-number-of-paragraphs (cl-destructuring-bind (start . end)
 					      (if (region-active-p)
