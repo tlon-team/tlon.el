@@ -1585,6 +1585,7 @@ user to select it, in that order."
 	tlon-tts-language)
       (when (boundp 'tlon-tts-source)
 	(tlon-repo-lookup :language :dir (tlon-get-repo-from-file tlon-tts-source)))
+      (tlon-get-language-in-file)
       (tlon-select-language 'code 'babel)))
 
 ;;;;;;; Engine
