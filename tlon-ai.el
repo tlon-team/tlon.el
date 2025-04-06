@@ -1487,6 +1487,8 @@ Returns the diff string or nil if no changes or error."
 Based on SOURCE-FILE in SOURCE-REPO."
   (let* ((source-subtype (tlon-repo-lookup :subtype :dir source-repo))
          (target-subtype (tlon-repo-lookup :subtype :dir target-repo))
+         (target-repo-name (or (tlon-repo-lookup :name :dir target-repo) ; Get repo name
+                               (file-name-nondirectory target-repo))) ; Fallback
          (target-path nil))
     (cond
      ;; Case 1: Source is original, Target is translation
