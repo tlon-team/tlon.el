@@ -1577,9 +1577,9 @@ to select it."
 ;; TODO: decide if this getter function should also be used for the other values (engine, voice, etc)
 (defun tlon-tts-get-current-language (&optional language)
   "Return the value of the language of the current process.
-If LANGUAGE is return it. Otherwise, get the value of
-`tlon-tts-set-language', look up the language of the current file or
-prompt the user to select it, in that order."
+If LANGUAGE is non-nil, return it. Otherwise, get the value of
+`tlon-tts-set-language', look up the language of the current file or prompt the
+user to select it, in that order."
   (or language
       (when (boundp 'tlon-tts-language)
 	tlon-tts-language)
@@ -1908,7 +1908,7 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;; MAYBE: Include summary?
 (defun tlon-tts-get-metadata ()
-  "Add title and author."
+  "Return the metadata of the current file."
   (let ((separator "\n\n"))
     (when-let* ((metadata (tlon-yaml-format-values-of-alist (tlon-yaml-get-metadata)))
 		(title (alist-get "title" metadata nil nil #'string=))
