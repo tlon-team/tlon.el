@@ -122,15 +122,16 @@ buffer."
     (file-name-concat counterpart-repo counterpart-bare-dir)))
 
 ;;;###autoload
-(defun tlon-open-counterpart (&optional arg file)
+(defun tlon-open-counterpart (&optional other-win file)
   "Open the counterpart of file in FILE and move point to matching position.
 If FILE is nil, open the counterpart of the file visited by the current buffer.
 
-If called with a prefix ARG, open the counterpart in the other window."
+If called with a prefix argument, or OTHER-WIN is non-nil, open the counterpart
+in the other window."
   (interactive "P")
   (unless file
     (save-buffer))
-  (when-let* ((fun (if arg #'find-file-other-window #'find-file))
+  (when-let* ((fun (if other-win #'find-file-other-window #'find-file))
 	      (counterpart (tlon-get-counterpart
 			    (or file (buffer-file-name))))
 	      (paragraphs (tlon-get-number-of-paragraphs
