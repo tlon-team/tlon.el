@@ -31,6 +31,8 @@
 (require 'shut-up)
 (require 'tlon-core)
 (require 'tlon-tex) ; needed to set variables correctly
+(require 'tlon-counterpart)
+(require 'magit) ;; Or ensure git commands are available
 
 ;;;; User options
 
@@ -1558,6 +1560,8 @@ If nil, use the default model."
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
     ]
+   ["Propagation" ; Or add to "Misc"
+    ("P" "Propagate latest commit changes" tlon-ai-propagate-changes)]
    ["General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
