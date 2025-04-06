@@ -1530,19 +1530,19 @@ Based on SOURCE-FILE in SOURCE-REPO."
     (let ((warning-message nil))
       (cond
        ((null target-path)
-	(setq warning-message
+        (setq warning-message
               (format "Target file for %s in %s could not be determined (metadata lookup failed)."
                       (file-name-nondirectory source-file)
-                      (file-name-nondirectory target-repo))))
+                      target-repo-name)))) ; Use repo name
        ((not (file-exists-p target-path))
-	(setq warning-message
+        (setq warning-message
               (format "Target file path %s determined for %s in %s, but file does not exist."
                       target-path
                       (file-name-nondirectory source-file)
-                      (file-name-nondirectory target-repo)))))
+                      target-repo-name))))) ; Use repo name
       (if warning-message
           (progn (message "Warning: %s Skipping." warning-message) nil)
-	;; Only return target-path if it exists
+        ;; Only return target-path if it exists
 	target-path))))
 
 (defun tlon-ai--commit-in-repo (repo-path file-path message)
