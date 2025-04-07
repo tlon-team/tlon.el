@@ -276,22 +276,25 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
        transcript
        (lambda (response info)
          (if response
-             (tlon-meet--save-summary response date buffer)
+             (tlon-meet--save-summary response transcript date buffer transcript-file)
            (with-current-buffer buffer
              (goto-char (point-max))
              (insert (format "\nError generating summary: %s\n"
                              (plist-get info :status))))))))))
 
-(defun tlon-meet--save-summary (summary date output-buffer)
-  "Save SUMMARY for meeting on DATE to appropriate repo.
-Updates OUTPUT-BUFFER with progress messages."
+(defun tlon-meet--save-summary (summary transcript date output-buffer source-transcript-file)
+  "Save SUMMARY and TRANSCRIPT for meeting on DATE to appropriate repo.
+Updates OUTPUT-BUFFER with progress messages.
+SOURCE-TRANSCRIPT-FILE is the original transcript file path."
   (let* ((meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
          (repo (tlon-meet--determine-repo date meeting-repos))
-         (summary-file (expand-file-name "meeting-summaries.org" repo)))
+         (summary-file (expand-file-name "meeting-summaries.org" repo))
+         (transcript-file (expand-file-name (format "%s-transcript.txt" date) repo)))
     
     (with-current-buffer output-buffer
       (goto-char (point-max))
-      (insert (format "\nSaving summary to %s\n" summary-file)))
+      (insert (format "\nSaving summary to %s\n" summary-file))
+      (insert (format "Saving transcript to %s\n" transcript-file)))
     
     ;; Create or append to the summaries file
     (with-temp-buffer
@@ -313,6 +316,11 @@ Updates OUTPUT-BUFFER with progress messages."
       ;; Save the file
       (write-region (point-min) (point-max) summary-file))
     
+    ;; Save the transcript file
+    (with-temp-buffer
+      (insert transcript)
+      (write-region (point-min) (point-max) transcript-file))
+    
     ;; Commit the changes
     (let ((default-directory repo))
       (with-current-buffer output-buffer
@@ -320,13 +328,15 @@ Updates OUTPUT-BUFFER with progress messages."
         (insert "Committing changes...\n"))
       
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory summary-file))
+      (call-process "git" nil output-buffer t "add" (file-name-nondirectory transcript-file))
       (call-process "git" nil output-buffer t "commit" "-m"
-                    (format "Add AI-generated summary for meeting on %s" date))
+                    (format "Add AI-generated summary and transcript for meeting on %s" date))
       
       (with-current-buffer output-buffer
         (goto-char (point-max))
-        (insert "\nSummary added to meeting-summaries.org successfully!\n")
-        (insert (format "Summary file: %s\n" summary-file))))))
+        (insert "\nSummary and transcript added successfully!\n")
+        (insert (format "Summary file: %s\n" summary-file))
+        (insert (format "Transcript file: %s\n" transcript-file))))))
 
 (defun tlon-meet--determine-repo (date meeting-repos)
   "Determine which meeting repository to use for DATE.
