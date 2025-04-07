@@ -287,19 +287,31 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
 Updates OUTPUT-BUFFER with progress messages."
   (let* ((meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
          (repo (tlon-meet--determine-repo date meeting-repos))
-         (summary-file (expand-file-name
-                        (format "%s-summary.org" date)
-                        repo)))
+         (summary-file (expand-file-name "meeting-summaries.org" repo)))
     
     (with-current-buffer output-buffer
       (goto-char (point-max))
       (insert (format "\nSaving summary to %s\n" summary-file)))
     
-    ;; Create the summary file with org formatting
-    (with-temp-file summary-file
-      (insert (format "#+TITLE: Meeting Summary %s\n" date))
-      (insert "#+OPTIONS: toc:nil num:nil\n\n")
-      (insert summary))
+    ;; Create or append to the summaries file
+    (with-temp-buffer
+      (when (file-exists-p summary-file)
+        (insert-file-contents summary-file))
+      
+      ;; If file is empty or doesn't exist, add the header
+      (when (= (buffer-size) 0)
+        (insert "#+TITLE: Meeting Summaries\n")
+        (insert "#+OPTIONS: toc:t num:nil\n\n"))
+      
+      ;; Go to end of file to append
+      (goto-char (point-max))
+      
+      ;; Add a section for this meeting
+      (insert (format "\n* Meeting on %s\n\n" date))
+      (insert summary)
+      
+      ;; Save the file
+      (write-region (point-min) (point-max) summary-file))
     
     ;; Commit the changes
     (let ((default-directory repo))
@@ -313,7 +325,7 @@ Updates OUTPUT-BUFFER with progress messages."
       
       (with-current-buffer output-buffer
         (goto-char (point-max))
-        (insert "\nSummary created and committed successfully!\n")
+        (insert "\nSummary added to meeting-summaries.org successfully!\n")
         (insert (format "Summary file: %s\n" summary-file))))))
 
 (defun tlon-meet--determine-repo (date meeting-repos)
