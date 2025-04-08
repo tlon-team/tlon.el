@@ -1797,7 +1797,6 @@ If nil, use the default model."
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
-    ("q" "ask about repo"                           tlon-ai-ask-abtlon-ai-get-helpeneral options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ""
