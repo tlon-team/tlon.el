@@ -2924,6 +2924,103 @@ These functions appear to be specific utilities for bulk metadata updates, likel
 #+findex: tlon-add-author-metadata
 + ~tlon-add-author-metadata~ :: Processes author files in a specific =LANGUAGE= repository. For each file, it extracts the =title= from YAML, generates a slug, constructs the expected =original_path=, deletes existing metadata, and inserts a standard set of author metadata fields (=type=, =title=, =role=, =original_path=, =publication_status=). Requires =simple-extras-slugify=.
 
+* URL Handling (=tlon-url.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-url
+:END:
+
+This module provides tools for checking dead URLs within files and replacing URLs across multiple Tlön content repositories. It integrates with the external =linkchecker= command-line tool and the Wayback Machine (web.archive.org).
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-url-dependencies
+:END:
+
++ =tlon-core=
++ =transient=
++ =ffap= (Find File At Point, built-in)
++ =linkchecker= (External command-line tool)
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-url-commands
+:END:
+
+*** Check URLs in File
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-check-urls-in-file-cmd
+:END:
+#+findex: tlon-check-urls-in-file
+The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a specified =FILE= (or the current buffer's file) for dead links using the external =linkchecker= tool asynchronously.
+1. Identifies the input file.
+2. Extracts all URLs from the file using ~tlon-get-urls-in-file~.
+3. Creates a temporary output file for the =linkchecker= results.
+4. Constructs the =linkchecker= command, specifying the output file and the list of URLs to check (with =--recursion-level=0= to prevent checking linked pages).
+5. Starts the =linkchecker= process asynchronously using =start-process-shell-command=.
+6. Sets a process sentinel:
+   - When the process finishes (indicated by an event string starting with "finished"), it displays a completion message.
+   - It then opens the temporary output file containing the =linkchecker= results.
+   - It enables =goto-address-mode= in the results buffer, making URLs clickable.
+
+*** Get Archived URL
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-archived-cmd
+:END:
+#+findex: tlon-get-archived
+The command ~tlon-get-archived~ (Autoloaded) constructs the Wayback Machine URL for the latest archived version of a given =URL= and copies it to the kill ring.
+1. Prompts for the =URL=, defaulting to the URL at point (~thing-at-point 'url t~).
+2. Formats the Wayback Machine URL as =https://web.archive.org/web/2/URL=.
+3. Copies the formatted URL to the kill ring using =kill-new=.
+4. Returns the archived URL string.
+
+*** Replace URL Across Projects
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-replace-url-across-projects-cmd
+:END:
+#+findex: tlon-replace-url-across-projects
+The command ~tlon-replace-url-across-projects~ performs a search-and-replace operation for URLs across all files within Tlön content repositories (both originals and translations).
+1. Prompts for the =URL-DEAD= (the URL to replace), defaulting to the URL at point.
+2. Prompts for the =URL-LIVE= (the replacement URL).
+3. Gathers a list of all repository directories marked as =type= 'content using ~tlon-repo-lookup-all~.
+4. Recursively finds all files within these directories using =directory-files-recursively=.
+5. Iterates through each regular file:
+   - Reads the file content into a temporary buffer.
+   - Checks if =URL-DEAD= exists in the buffer.
+   - If found:
+     - Increments a replacement counter.
+     - Records the directory of the affected file.
+     - Performs a global search-and-replace within the temporary buffer, replacing all occurrences of =URL-DEAD= with =URL-LIVE=.
+     - Writes the modified content back to the original file.
+6. After processing all files, displays a message indicating the total number of replacements made and the unique directories affected.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-url-menu-cmd
+:END:
+#+findex: tlon-url-menu
+The command ~tlon-url-menu~ (Autoloaded) activates a =transient= menu interface for URL-related operations.
+
+It provides the following options under the "" (main) group:
++ =a= :: Get archived URL (~tlon-get-archived~)
++ =c= :: Check URLs in file (~tlon-check-urls-in-file~)
++ =v= :: Replace URL across projects (~tlon-replace-url-across-projects~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-url-internals
+:END:
+
+This section lists non-interactive functions used internally or potentially useful for advanced customization.
+
+#+findex: tlon-get-urls-in-file
++ ~tlon-get-urls-in-file~ :: Extracts a list of unique URLs from a given =FILE= (or the current buffer's file). It inserts the file content into a temporary buffer, searches for potential URLs using =browse-url-button-regexp=, validates them using =ffap-url-p=, and returns a list of unique URLs found.
+
+#+findex: tlon-get-urls-in-dir
++ ~tlon-get-urls-in-dir~ :: Recursively finds all files with a specific =EXTENSION= (defaulting to "md") within a given =DIR= (defaulting to the current repository) and returns a combined list of all unique URLs found within those files by calling ~tlon-get-urls-in-file~ on each.
+
+#+findex: tlon-save-list-of-urls
++ ~tlon-save-list-of-urls~ :: Takes a list of =URLS=, creates a temporary file, writes the URLs (one per line) prefixed with a =# LinkChecker URL list= header, and returns the path to the temporary file. (Note: This function seems unused within the current module).
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
