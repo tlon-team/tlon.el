@@ -617,6 +617,192 @@ The command ~tlon-dict-menu~ activates a =transient= menu interface for dictiona
 Currently, it offers one option:
 + =s= :: Calls ~tlon-reverso-get-synonyms~ to fetch synonyms for the word at point.
 
+* Image Processing (=tlon-images.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images
+:END:
+
+This module provides functionality for processing images, primarily using the external =ImageMagick= command-line tool. It allows for operations like reducing brightness, inverting colors, and making images non-transparent. It also integrates with the =invertornot.com= API to determine if an image's colors can be safely inverted.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-dependencies
+:END:
+
++ =ImageMagick= :: Must be installed and accessible in the system's PATH for image processing commands to work.
++ =transient= :: Required for the menu interface.
++ =window-extras= :: Used by ~tlon-images-maybe-open-after-processing~ for window management.
+
+** User Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-options
+:END:
+
+#+vindex: tlon-images-default-brightness-reduction
++ ~tlon-images-default-brightness-reduction~ :: Default percentage (integer) by which to reduce image brightness when using ~tlon-images-reduce-brightnesss~ without specifying a percentage. Defaults to 20.
+
+#+vindex: tlon-images-open-after-processing
++ ~tlon-images-open-after-processing~ :: Boolean flag. If non-nil (the default), the original (copied as light theme) and processed (dark theme) images will be opened in separate windows after processing via ~tlon-images-reduce-brightnesss~ or ~tlon-images-invert-colors~. Uses ~tlon-images-maybe-open-after-processing~.
+
+#+vindex: tlon-images-process-without-asking
++ ~tlon-images-process-without-asking~ :: Boolean flag. If non-nil, commands like ~tlon-images-reduce-brightnesss~ will process the image at point (in Dired) or the current buffer's file without prompting for confirmation via ~tlon-images-read-image~. Defaults to nil.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-commands
+:END:
+
+*** Auto Process Image
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-auto-process
+:END:
+#+findex: tlon-images-auto-process
+The command ~tlon-images-auto-process~ attempts to intelligently process an image for a dark theme.
+
+1. It prompts for the =IMAGE= file using ~tlon-images-read-image~.
+2. It determines the output filename using ~tlon-images-get-themed-file-name~ with the =dark= theme.
+3. It checks if the image can be safely inverted using ~tlon-images-can-invert-p~ (which calls the =invertornot.com= API).
+4. If inversion is safe, it calls ~tlon-images-invert-colors~.
+5. Otherwise, it calls ~tlon-images-reduce-brightnesss~ using the default reduction percentage.
+
+*** Reduce Image Brightness
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-reduce-brightnesss
+:END:
+#+findex: tlon-images-reduce-brightnesss
+The command ~tlon-images-reduce-brightnesss~ reduces the brightness of an image using ImageMagick.
+
+1. It prompts for the =SOURCE= image using ~tlon-images-read-image~ (unless provided).
+2. It determines the =TARGET= filename (defaulting to a dark-themed version via ~tlon-images-get-themed-file-name~) unless provided.
+3. It prompts for the reduction =PERCENT= (defaulting to ~tlon-images-default-brightness-reduction~) unless provided. Note: The percentage passed to ImageMagick's =-modulate= is calculated as =100 - PERCENT=.
+4. It constructs the ImageMagick command using ~tlon-imagemagick-reduce-brightness~.
+5. It calls ~tlon-images-process-image~ to execute the command, copy the original to a light-themed file, handle output, and potentially open the images.
+
+*** Invert Image Colors
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-invert-colors
+:END:
+#+findex: tlon-images-invert-colors
+The command ~tlon-images-invert-colors~ inverts the colors of an image using ImageMagick.
+
+1. It prompts for the =SOURCE= image using ~tlon-images-read-image~ (unless provided).
+2. It determines the =TARGET= filename (defaulting to a dark-themed version via ~tlon-images-get-themed-file-name~) unless provided.
+3. It constructs the ImageMagick command using ~tlon-imagemagick-invert-colors~.
+4. It calls ~tlon-images-process-image~ to execute the command, copy the original to a light-themed file, handle output, and potentially open the images.
+
+*** Make Image Non-Transparent
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-make-nontransparent
+:END:
+#+findex: tlon-images-make-nontransparent
+The command ~tlon-images-make-nontransparent~ removes transparency from an image, replacing it with a solid background color using ImageMagick.
+
+1. It prompts for the =SOURCE= image using ~tlon-images-read-image~ (unless provided).
+2. It determines the =TARGET= filename (defaulting to the source file itself, thus overwriting it) unless provided.
+3. It prompts for the =BACKGROUND= color (defaulting to "white") unless provided.
+4. It constructs the ImageMagick command using ~tlon-imagemagick-make-nontransparent~.
+5. It executes the command using =shell-command-to-string=.
+6. It calls ~tlon-images-handle-output~ to display success or error messages.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-menu
+:END:
+#+findex: tlon-images-menu
+The command ~tlon-images-menu~ activates a =transient= menu interface for image processing.
+
+It provides the following groups and commands:
++ *Commands*:
+  + =a= :: Auto process (~tlon-images-auto-process~)
+  + =r= :: Reduce brightness (~tlon-images-reduce-brightnesss~)
+  + =i= :: Invert colors (~tlon-images-invert-colors~)
+  + =n= :: Make non-transparent (~tlon-images-make-nontransparent~)
++ *Options*:
+  + =-o= :: Toggle opening images after processing (~tlon-images-toggle-open-after-processing~ infix, modifies ~tlon-images-open-after-processing~)
+  + =-p= :: Toggle processing without asking (~tlon-images-toggle-process-without-asking~ infix, modifies ~tlon-images-process-without-asking~)
+  + =-r= :: Set brightness reduction percentage (~tlon-images-brightness-reduction-infix~, modifies ~tlon-images-default-brightness-reduction~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-internals
+:END:
+
+This section lists non-interactive functions, variables, and constants used internally or potentially useful for advanced customization.
+
+*** ImageMagick Command Constants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-imagemagick-consts
+:END:
+
+#+vindex: tlon-imagemagick-reduce-brightness
++ ~tlon-imagemagick-reduce-brightness~ :: Format string for the =magick= command to reduce brightness using =-modulate=. Placeholders: %1$s (input), %2$s (output), %3$s (brightness percentage for modulate).
+
+#+vindex: tlon-imagemagick-invert-colors
++ ~tlon-imagemagick-invert-colors~ :: Format string for the =magick= command to invert colors using =-channel RGB -negate=. Placeholders: %s (input), %s (output).
+
+#+vindex: tlon-imagemagick-make-nontransparent
++ ~tlon-imagemagick-make-nontransparent~ :: Format string for the =magick= command to remove transparency using =-background= and =-flatten=. Placeholders: %1$s (input), %2$s (output), %3$s (background color).
+
+*** InvertOrNot API Integration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-invertornot
+:END:
+
+#+vindex: tlon-invertornot-generic-endpoint
++ ~tlon-invertornot-generic-endpoint~ :: Base URL for the =invertornot.com= API.
+
+#+findex: tlon-images-post-file-to-invertornot
++ ~tlon-images-post-file-to-invertornot~ :: Sends an image =FILE= to the =invertornot.com/api/file= endpoint using a multipart/form-data POST request. Returns the parsed JSON response via ~tlon-images-handle-synchronous-response~.
+
+#+findex: tlon-images-post-url-to-invertornot
++ ~tlon-images-post-url-to-invertornot~ :: Sends an =IMAGE-URL= to the =invertornot.com/api/url= endpoint using a JSON POST request. Returns the parsed JSON response via ~tlon-images-handle-synchronous-response~.
+
+#+findex: tlon-images-handle-synchronous-response
++ ~tlon-images-handle-synchronous-response~ :: Helper function to process the buffer returned by =url-retrieve-synchronously=, extract the JSON payload, and parse it into an alist.
+
+#+findex: tlon-images-can-invert-p
++ ~tlon-images-can-invert-p~ :: Takes an =IMAGE= file path, sends it to the =invertornot.com= API using ~tlon-images-post-file-to-invertornot~, and checks the =invert= field in the response. Returns =t= if the value is 1, =nil= if 0, and signals an error otherwise.
+
+*** Helper Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-helpers
+:END:
+
+#+findex: tlon-images-read-image
++ ~tlon-images-read-image~ :: Prompts the user for an image file path. If called within Dired, defaults to the file at point. If the current buffer has a file, defaults to that. If ~tlon-images-process-without-asking~ is non-nil, it skips the prompt and uses the default directly.
+
+#+findex: tlon-images-process-image
++ ~tlon-images-process-image~ :: Core utility for processing images. Takes =SOURCE=, =TARGET=, the ImageMagick =COMMAND= string, and a =MESSAGE-FMT= string.
+  1. Executes the =COMMAND= using =shell-command-to-string=.
+  2. Copies the =SOURCE= file to a light-themed filename (using ~tlon-images-get-themed-file-name~).
+  3. Calls ~tlon-images-maybe-open-after-processing~ with the light and dark themed files.
+  4. Calls ~tlon-images-handle-output~ with the command output and the formatted message.
+
+#+findex: tlon-images-handle-output
++ ~tlon-images-handle-output~ :: Checks the =OUTPUT= string from a shell command. If empty, displays the success =MESSAGE=. If non-empty, signals a user error with the output content.
+
+#+findex: tlon-images-get-themed-file-name
++ ~tlon-images-get-themed-file-name~ :: Takes a =FILE= path and a =THEME= symbol (=light= or =dark=). Returns a new filename with =-[theme].ext= appended before the extension (e.g., =image.png= becomes =image-dark.png=).
+
+#+findex: tlon-images-maybe-open-after-processing
++ ~tlon-images-maybe-open-after-processing~ :: If ~tlon-images-open-after-processing~ is non-nil, it opens the =ORIGINAL= (light theme) and =PROCESSED= (dark theme) files in separate windows, splitting the frame if necessary using =window-extras= functions.
+
+*** Transient Infix Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-transient-infixes
+:END:
+
+These functions define the behavior of the options within the ~tlon-images-menu~.
+
+#+findex: tlon-images-brightness-reduction-infix
++ ~tlon-images-brightness-reduction-infix~ :: Reads a number from the user to set the local value of ~tlon-images-default-brightness-reduction~ for the current menu invocation.
+
+#+findex: tlon-images-toggle-open-after-processing
++ ~tlon-images-toggle-open-after-processing~ :: Toggles the boolean value of ~tlon-images-open-after-processing~ for the current menu invocation using ~tlon-transient-toggle-variable-value~.
+
+#+findex: tlon-images-toggle-process-without-asking
++ ~tlon-images-toggle-process-without-asking~ :: Toggles the boolean value of ~tlon-images-process-without-asking~ for the current menu invocation using ~tlon-transient-toggle-variable-value~.
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
