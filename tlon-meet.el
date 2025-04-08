@@ -47,6 +47,21 @@ The %s will be replaced with the transcript text."
   :type 'string
   :group 'tlon-meet)
 
+(defcustom tlon-meet-recordings-directory "~/My Drive/Meet Recordings/"
+  "Directory where Google Meet recordings are stored."
+  :type 'directory
+  :group 'tlon-meet)
+
+(defcustom tlon-zoom-recordings-directory "~/Documents/Zoom/"
+  "Directory where Zoom recordings are stored."
+  :type 'directory
+  :group 'tlon-meet)
+
+(defcustom tlon-default-conference-app 'meet
+  "Default conference app for meetings."
+  :type '(choice (const :tag "Google Meet" meet)
+		 (const :tag "Zoom" zoom)))
+
 ;;;; Functions
 
 (defun tlon-create-or-visit-meeting-issue (&optional person-or-group)
