@@ -1405,7 +1405,7 @@ If RESPONSE is nil, return INFO."
     (unless (file-exists-p doc-file)
       (user-error "Documentation file not found: %s" doc-file))
     (gptel-context-add-file doc-file)
-    (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-about-repotlon-ai-get-helpext-check)
+    (tlon-make-gptel-request full-prompt nil #'tlon-ai-get-help)
     (message "Preparing your answer...")))
 
 (defun tlon-ai-get-help-callback (response info)
