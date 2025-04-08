@@ -2085,6 +2085,187 @@ This section lists non-interactive functions used internally or potentially usef
 #+findex: tlon-display-key-counts
 + ~tlon-display-key-counts~ :: Takes a =SORTED-KEYS= list (as returned by ~tlon-sort-key-counts~) and displays it in a formatted way (count followed by key) in the dedicated "/BibTeX Key Counts/" buffer.
 
+* API Interaction (=tlon-api.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api
+:END:
+
+This module facilitates interaction with the Tlön Babel APIs, specifically the =uqbar= API. It handles authentication (token retrieval), making requests to various API endpoints, processing responses (especially logs), retrieving citations, and uploading files.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-dependencies
+:END:
+
++ =request= (for making HTTP requests)
++ =tlon-core=
++ =transient= (for the menu)
++ =json= (for parsing responses)
++ =auth-source= (for credentials)
++ =url= (for URL encoding)
+
+** Configuration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-config
+:END:
+
+*** API Routes
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-uqbar-api-routes
+:END:
+#+vindex: tlon-uqbar-api-routes
+The constant ~tlon-uqbar-api-routes~ defines the available endpoints for the =uqbar= API. Each entry is a plist specifying the =:route= (URL path, potentially with =%s= for language), =:type= (HTTP method, e.g., "GET", "POST"), and a =:docstring= explaining the endpoint's purpose. The =%s= in routes is dynamically replaced with the current ~tlon-translation-language~ by ~tlon-api-get-routes~.
+
+*** Local API URL
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-local-url
+:END:
+#+vindex: tlon-api-local-url
+The constant ~tlon-api-local-url~ defines the base URL for the local development instance of the =uqbar= API.
+
+*** Log Buffer Variable
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-most-recent-log-buffer
+:END:
+#+vindex: tlon-api-most-recent-log-buffer
+The variable ~tlon-api-most-recent-log-buffer~ stores the name (typically the route) of the buffer containing the most recently received API log response. Used by ~tlon-api-open-most-recent-log~.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-commands
+:END:
+
+This section details the interactive commands provided by =tlon-api.el=.
+
+*** Make API Request
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-request
+:END:
+#+findex: tlon-api-request
+The command ~tlon-api-request~ makes a request to a specified =ROUTE= on the =uqbar= API.
+1. Prompts the user to select the =ROUTE= using ~tlon-select-api-route~.
+2. Optionally takes =FORCE-UPDATE= (non-nil or prefix argument) to append =?force=true= to the URL.
+3. Optionally takes =POP-TO-BUFFER= (non-nil) to display the log response buffer immediately.
+4. Retrieves an authentication token using ~tlon-api-get-token~.
+5. Makes the HTTP request using the =request= library, specifying the method (=:type=) and headers (including the bearer token).
+6. Parses the JSON response.
+7. On success, calls ~tlon-api-print-response~ to process and display the log data, and messages the user about completion.
+
+#+findex: tlon-api-request-force
++ ~tlon-api-request-force~ :: A convenience command that calls ~tlon-api-request~ with the =FORCE-UPDATE= argument set to =t=.
+
+*** Authentication Token
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-copy-token
+:END:
+#+findex: tlon-api-copy-token
+The command ~tlon-api-copy-token~ retrieves an authentication token for the local API using ~tlon-api-get-token~ and copies it to the kill ring.
+
+*** Log Handling
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-log-commands
+:END:
+
+#+findex: tlon-api-open-most-recent-log
++ ~tlon-api-open-most-recent-log~ :: Opens the buffer associated with the most recent API log response (whose name is stored in ~tlon-api-most-recent-log-buffer~). If the buffer doesn't exist, it re-requests the log from the API using ~tlon-api-request~ with =POP-TO-BUFFER= set.
+
+#+findex: tlon-api-open-local-log
++ ~tlon-api-open-local-log~ :: Opens the local log file maintained by the =uqbar-api= backend itself (typically =logs/uqbar-api.log= within the =uqbar-api= repository).
+
+*** File Upload
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-upload-file-to-server
+:END:
+#+findex: tlon-upload-file-to-server
+The command ~tlon-upload-file-to-server~ uploads a local =FILE= to a remote =DESTINATION= using the =scp= command asynchronously.
+1. Prompts for the =FILE= to upload (using =files-extras-read-file=).
+2. Prompts for the remote =DESTINATION= directory.
+3. Optionally takes =DELETE-AFTER-UPLOAD= (non-nil) to delete the local file upon successful upload.
+4. Starts the =scp= process in the background.
+5. Sets a process sentinel to monitor the upload status, displaying messages for success or failure. If successful and requested, deletes the local file. If failed, displays the error and the =*scp-upload*= buffer.
+6. If called from Dired, reverts the buffer after initiating the upload.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-menu-cmd
+:END:
+#+findex: tlon-api-menu
+The command ~tlon-api-menu~ activates a =transient= menu interface for API operations.
+
+It provides the following groups and commands:
++ *Requests*:
+  + =q= :: Make request (~tlon-api-request~)
+  + =Q= :: Make force request (~tlon-api-request-force~)
++ *Logs*:
+  + =l= :: Open most recent log (~tlon-api-open-most-recent-log~)
+  + =L= :: Open local log (~tlon-api-open-local-log~)
++ *Misc*:
+  + =t= :: Copy access token (~tlon-api-copy-token~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-internals
+:END:
+
+This section lists non-interactive functions used internally or potentially useful for advanced customization.
+
+*** Authentication
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-auth-internals
+:END:
+
+#+findex: tlon-api-get-token
++ ~tlon-api-get-token~ :: Retrieves an authentication token for a given =SITE= (URL). It gets credentials using ~tlon-api-get-credentials~, makes a POST request to the =/api/auth/login= endpoint, parses the JSON response, and calls the provided =CALLBACK= function with the extracted =access_token=.
+
+#+findex: tlon-api-get-credentials
++ ~tlon-api-get-credentials~ :: Constructs the data string for the authentication request. It retrieves the username (based on =user-full-name= via ~tlon-user-lookup~) and the password (from =auth-source= using a specific key format) and URL-encodes them into the required =application/x-www-form-urlencoded= format.
+
+*** Route Handling
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-route-internals
+:END:
+
+#+findex: tlon-api-get-routes
++ ~tlon-api-get-routes~ :: Returns a processed version of ~tlon-uqbar-api-routes~ where any =%s= placeholder in the =:route= property is replaced with the current value of ~tlon-translation-language~.
+
+#+findex: tlon-select-api-route
++ ~tlon-select-api-route~ :: Prompts the user to select an API route using completion. It formats the choices from ~tlon-api-get-routes~ to include the route path and its docstring. Returns the selected route path string.
+
+*** Response and Log Processing
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-response-internals
+:END:
+
+#+findex: tlon-api-print-response
++ ~tlon-api-print-response~ :: Processes the =DATA= (parsed JSON) received from an API request for a given =ROUTE=.
+  1. Sets ~tlon-api-most-recent-log-buffer~ to the =ROUTE=.
+  2. Creates or clears the buffer named after the =ROUTE=.
+  3. Inserts the JSON =DATA= into the buffer.
+  4. Pretty-prints the JSON using =json-pretty-print-buffer=.
+  5. Fixes any relative =:source_filename= paths within the JSON to be absolute paths based on ~paths-dir-tlon-repos~ using ~tlon-fix-source-filename-paths~.
+  6. Makes file paths within the buffer clickable using ~tlon-make-paths-clickable~.
+  7. If =POP-TO-BUFFER= is non-nil, displays the buffer.
+
+#+findex: tlon-fix-source-filename-paths
++ ~tlon-fix-source-filename-paths~ :: Parses the JSON content of the current (or specified) =BUFFER=, finds all =source_filename= keys, prepends the Tlön repository base path (~paths-dir-tlon-repos~) to their values, re-encodes the modified JSON, inserts it back, and re-formats/modes the buffer.
+
+#+findex: tlon-make-paths-clickable
++ ~tlon-make-paths-clickable~ :: Searches the current (or specified) =BUFFER= for quoted strings that represent existing file paths. For each valid path found, it creates an Emacs button overlay that allows opening the file with mouse clicks or RET. It also enables =goto-address-mode= and binds RET locally to =ffap= (find file at point).
+
+*** Citation Retrieval
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-api-citation-internals
+:END:
+
+#+findex: tlon-api-get-citation
++ ~tlon-api-get-citation~ :: Retrieves a formatted citation for a BibTeX =KEY= from the Babel API. Takes an optional =CSL= style argument ('long, 'short, 'audio-long, 'audio-short). Constructs the URL using ~tlon-api-get-citation-url~, fetches the JSON using ~tlon-api-get-citation-json~, and extracts the relevant citation string based on the =CSL= style. Returns nil if not found.
+
+#+findex: tlon-api-get-citation-url
++ ~tlon-api-get-citation-url~ :: Constructs the specific API URL for retrieving a citation based on the =KEY= and =CSL= style (determining text/audio endpoint).
+
+#+findex: tlon-api-get-citation-json
++ ~tlon-api-get-citation-json~ :: Fetches the JSON response from a given citation =URL= using an external =curl= command. Includes basic error handling for host resolution issues. Parses the JSON response using =json-read=.
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
