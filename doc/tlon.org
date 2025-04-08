@@ -2266,6 +2266,115 @@ This section lists non-interactive functions used internally or potentially usef
 #+findex: tlon-api-get-citation-json
 + ~tlon-api-get-citation-json~ :: Fetches the JSON response from a given citation =URL= using an external =curl= command. Includes basic error handling for host resolution issues. Parses the JSON response using =json-read=.
 
+* Repository Management (=tlon-repos.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos
+:END:
+
+This module provides functions for managing Tlön's Git repositories. It integrates with =vc=, =vc-extras=, =forge=, =forge-extras=, and =pass-extras= to offer commands for creating, cloning, deleting, tracking, searching, and interacting with repositories, both locally and remotely (primarily on GitHub under the =tlon-team= organization).
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-dependencies
+:END:
+
++ =forge-core=, =forge-search=, =forge-extras=
++ =shut-up=
++ =tlon-core=
++ =vc=, =vc-extras=
++ =pass-extras=
++ =transient=
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-commands
+:END:
+
+This section details the interactive commands provided by =tlon-repos.el=.
+
+*** Version Control (VC) Operations
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-vc-commands
+:END:
+
+#+findex: tlon-create-repo
++ ~tlon-create-repo~ :: Creates a new repository on GitHub under the =tlon-team= organization. Prompts for the repository =NAME=. Delegates to =vc-extras-create-repo=.
+
+#+findex: tlon-clone-repo
++ ~tlon-clone-repo~ :: Clones an existing Tlön repository from the =tlon-team= organization into the directory specified by =paths-dir-tlon-repos=. Prompts for the repository =NAME= if not provided. Optionally skips adding the repo to the Forge database if =NO-FORGE= is non-nil. Delegates to =vc-extras-clone-repo=.
+
+#+findex: tlon-clone-missing-repos
++ ~tlon-clone-missing-repos~ :: Clones all Tlön repositories defined in the configuration (=tlon-repo-lookup-all :dir=) that do not exist locally. Clones are performed asynchronously and do *not* automatically add the repos to the Forge database (use ~tlon-forge-track-missing-repos~ for that).
+
+#+findex: tlon-delete-local-repo
++ ~tlon-delete-local-repo~ :: Deletes a local copy of a Tlön repository. Prompts the user to select a repository from the intersection of configured Tlön repos and locally existing ones (using ~tlon-get-local-repos~) if =NAME= is not provided. Delegates deletion to =vc-extras-delete-local-repo=.
+
+*** Forge Integration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-forge-commands
+:END:
+
+#+findex: tlon-forge-track-repo
++ ~tlon-forge-track-repo~ :: Adds a local Tlön repository to the Forge database, enabling Forge features like issue tracking and pull request management. Prompts for the repository =NAME= using ~tlon-get-local-repos~ if not provided. Uses =forge-extras-track-repository=.
+
+#+findex: tlon-forge-track-missing-repos
++ ~tlon-forge-track-missing-repos~ :: Iterates through all configured Tlön repositories that exist locally and adds any untracked ones to the Forge database using =forge-extras-track-repo-all-topics=. Waits until each repo is successfully tracked before proceeding.
+
+#+findex: tlon-pull-issues-in-all-repos
++ ~tlon-pull-issues-in-all-repos~ :: Pulls the latest issues and pull requests from the remote for *all* tracked Tlön repositories. Iterates through configured repos and calls ~tlon-pull-issues-in-repo~ for each.
+
+#+findex: tlon-forge-search
++ ~tlon-forge-search~ :: Searches for a given =STRING= across all tracked Tlön repositories (or a specified subset =REPOS=) using Forge's search functionality. It temporarily opens Magit buffers, performs the search via =forge-search=, and then closes the Magit buffers if they weren't already open. Reports the number of repositories with matches and the time taken. Kills previous search result buffers before starting.
+
+*** Git Crypt
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-git-crypt-commands
+:END:
+
+#+findex: tlon-git-crypt-unlock
++ ~tlon-git-crypt-unlock~ :: Unlocks specific Tlön repositories that use =git-crypt= (currently =uqbar/uqbar-api=, =uqbar/uqbar-front=, =uqbar=). Prompts the user to select the repository and uses =pass-extras-git-crypt-unlock~ with the corresponding password store entry (e.g., =tlon/core/git-crypt/uqbar/uqbar-api=).
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-menu-cmd
+:END:
+#+findex: tlon-repos-menu
+The command ~tlon-repos-menu~ activates a =transient= menu interface for repository management.
+
+It provides the following groups and commands:
++ *Git*:
+  + =l= :: Clone repo (~tlon-clone-repo~)
+  + =L= :: Clone all missing repos (~tlon-clone-missing-repos~)
+  + =s= :: Split local repo (~vc-extras-split-local-repo~)
+  + =d= :: Delete local repo (~tlon-delete-local-repo~)
+  + =c= :: Create remote repo (~tlon-create-repo~)
+  + =u= :: Unlock uqbar git-crypt (~tlon-git-crypt-unlock~)
+  + =?= :: Check authentication (~vc-extras-check-gh-authenticated~)
++ *Forge*:
+  + =a= :: Track repo (~tlon-forge-track-repo~)
+  + =A= :: Track all missing repos (~tlon-forge-track-missing-repos~)
+  + =r= :: Untrack repo (~forge-remove-repository~)
+  + =R= :: Untrack all repos (db reset) (~forge-reset-database~)
+  + =t= :: List tracked repos (~forge-list-repositories~)
+  + =p= :: Pull issues in repo (~tlon-pull-issues-in-repo~)
+  + =P= :: Pull issues in all repos (~tlon-pull-issues-in-all-repos~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-internals
+:END:
+
+This section lists non-interactive functions and variables used internally or potentially useful for advanced customization.
+
+#+findex: tlon-get-local-repos
++ ~tlon-get-local-repos~ :: Prompts the user to select a Tlön repository name using completion. The candidates are the intersection of all configured Tlön repositories (~tlon-repo-lookup-all :name=) and the repositories found locally within the Tlön repos directory (~vc-extras-list-local-candidates "tlon-team"=). Signals an error if no local Tlön repos are found.
+
+#+findex: tlon-pull-issues-in-repo
++ ~tlon-pull-issues-in-repo~ :: Pulls issues and pull requests for a single repository specified by =DIR= (or the current directory). Uses =forge-get-repository= to check if the repo is tracked and then calls =forge--pull= (suppressing its messages with =shut-up=).
+
+#+findex: tlon-forge-menu
++ ~tlon-forge-menu~ :: A =transient= menu definition that *overrides* the default =forge-dispatch= command. It provides a customized menu structure for Forge commands within the Tlön context, including options to search across all Tlön repos (~tlon-forge-search~).
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
