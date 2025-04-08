@@ -1727,6 +1727,186 @@ These functions define the behavior of the options within the ~tlon-color-menu~.
 #+findex: tlon-color-change-step-infix
 + ~tlon-color-change-step-infix~ :: Reads a number from the user to set the local value of ~tlon-colors-change-step~ for the current menu invocation.
 
+* Meeting Management (=tlon-meet.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet
+:END:
+
+This module provides tools for managing meetings within the Tlön workflow. It focuses on creating and accessing dedicated Forge issues for meetings (both individual and group), linking discussions to these issues, and processing meeting recordings (diarization and AI summarization).
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-dependencies
+:END:
+
++ =org=
++ =tlon-forg=
++ =tlon-ai=
++ =transient=
++ An external diarization script (configurable via ~tlon-meet-diarize-script~).
+
+** User Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-options
+:END:
+
+#+vindex: tlon-meet-diarize-script
++ ~tlon-meet-diarize-script~ :: Path to the Python script used for audio diarization (default: ="diarize.py"=).
+
+#+vindex: tlon-meet-summary-prompt
++ ~tlon-meet-summary-prompt~ :: The prompt template used for generating AI summaries of meeting transcripts. It should contain =%s= which will be replaced by the transcript text.
+
+#+vindex: tlon-meet-recordings-directory
++ ~tlon-meet-recordings-directory~ :: The directory where Google Meet recordings are typically stored (default: =~/My Drive/Meet Recordings/=).
+
+#+vindex: tlon-zoom-recordings-directory
++ ~tlon-zoom-recordings-directory~ :: The directory where Zoom recordings are typically stored (default: =~/Documents/Zoom/=).
+
+#+vindex: tlon-default-conference-app
++ ~tlon-default-conference-app~ :: The default conferencing application, used to determine the default directory when searching for recordings (choice between =meet= or =zoom=, default: =meet=).
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-commands
+:END:
+
+This section details the interactive commands provided by =tlon-meet.el=.
+
+*** Create or Visit Meeting Issues
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-issue-commands
+:END:
+
+#+findex: tlon-create-or-visit-meeting-issue
++ ~tlon-create-or-visit-meeting-issue~ :: The main entry point for accessing meeting issues. Prompts the user to select another participant (using completion from ~tlon-user-lookup-all~) or "group". If a person is selected, it calls ~tlon-create-or-visit-individual-meeting-issue~. If "group" is selected, it calls ~tlon-create-or-visit-group-meeting-issue~.
+
+#+findex: tlon-create-or-visit-individual-meeting-issue
++ ~tlon-create-or-visit-individual-meeting-issue~ :: Creates or visits the Forge issue for a 1-on-1 meeting with a specific =PERSON=. Prompts for the =PERSON= if not provided. Prompts for the =DATE= using =org-read-date=. Determines the correct meeting repository using ~tlon-get-meeting-repo~ and then calls ~tlon-create-or-visit-meeting-issue-date~.
+
+#+findex: tlon-create-or-visit-group-meeting-issue
++ ~tlon-create-or-visit-group-meeting-issue~ :: Creates or visits the Forge issue for a group meeting. Prompts for the =DATE= using =org-read-date=. Uses the repository designated as =meetings-group= (via ~tlon-repo-lookup~) and calls ~tlon-create-or-visit-meeting-issue-date~.
+
+#+findex: tlon-create-or-visit-meeting-issue-leo-pablo
++ ~tlon-create-or-visit-meeting-issue-leo-pablo~ :: Convenience command specifically for Leo-Pablo meetings. Determines the other participant based on =user-full-name= and calls ~tlon-create-or-visit-individual-meeting-issue~ with the appropriate person and date (prompting if not provided).
+
+#+findex: tlon-create-or-visit-meeting-issue-fede-pablo
++ ~tlon-create-or-visit-meeting-issue-fede-pablo~ :: Convenience command specifically for Fede-Pablo meetings. Similar logic to the Leo-Pablo version.
+
+#+findex: tlon-create-or-visit-meeting-issue-fede-leo
++ ~tlon-create-or-visit-meeting-issue-fede-leo~ :: Convenience command specifically for Fede-Leo meetings. Similar logic to the Leo-Pablo version.
+
+*** Linking Issues for Discussion
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-discuss-commands
+:END:
+
+#+findex: tlon-discuss-issue-in-meeting
++ ~tlon-discuss-issue-in-meeting~ :: Creates cross-references between the current Forge issue buffer and the relevant meeting issue buffer.
+  1. Ensures the command is run from a =forge-issue-mode= buffer.
+  2. Gets the link to the current issue.
+  3. Switches to the appropriate meeting issue buffer (determined by participants, prompting if necessary via ~tlon-create-or-visit-meeting-issue~).
+  4. Gets the link to the meeting issue.
+  5. Enters edit mode for the last post in the meeting issue and inserts a line like "- Discutir [link-to-original-issue]."
+  6. Submits the post.
+  7. Switches back to the original issue buffer.
+  8. Creates a new post and inserts "A discutir en [link-to-meeting-issue]."
+  9. Submits the post.
+
+*** Recording Processing
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-recording-commands
+:END:
+
+#+findex: tlon-meet-diarize-and-summarize
++ ~tlon-meet-diarize-and-summarize~ :: Processes an audio recording file to generate a transcript and an AI summary.
+  1. Prompts the user to select an =AUDIO-FILE=, defaulting to the directory specified by ~tlon-default-conference-app~ (~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~).
+  2. Extracts the date from the filename (if possible, using regex) or defaults to the current date.
+  3. Creates and displays a "*Diarization Output*" buffer.
+  4. Runs the diarization script specified by ~tlon-meet-diarize-script~ asynchronously on the =AUDIO-FILE=.
+  5. When the script finishes, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension]-transcript.txt=).
+  6. If the transcript exists, it calls ~tlon-meet--generate-summary~.
+  7. If the transcript doesn't exist, it reports an error in the output buffer.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-menu-cmd
+:END:
+#+findex: tlon-meet-menu
+The command ~tlon-meet-menu~ activates a =transient= menu interface for meeting-related operations.
+
+It provides the following groups and commands:
++ *Meetings*:
+  + =l p= :: Leo-Pablo meeting (~tlon-create-or-visit-meeting-issue-leo-pablo~)
+  + =f p= :: Fede-Pablo meeting (~tlon-create-or-visit-meeting-issue-fede-pablo~)
+  + =f l= :: Fede-Leo meeting (~tlon-create-or-visit-meeting-issue-fede-leo~)
+  + =g= :: Group meeting (~tlon-create-or-visit-group-meeting-issue~)
+  + =i= :: Discuss issue in meeting (~tlon-discuss-issue-in-meeting~)
+  + =d= :: Diarize and summarize (~tlon-meet-diarize-and-summarize~)
+
+** Org Mode Integration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-org-integration
+:END:
+
+#+findex: tlon-set-meeting-buffers
++ ~tlon-set-meeting-buffers~ :: This function is designed to be used as advice or a hook, typically triggered when opening a link from an Org agenda heading. It parses the heading text to identify the meeting type (e.g., "Leo<>Pablo", "Group meeting") and calls the corresponding ~tlon-create-or-visit-...~ command for the current date. It also calls =org-open-at-point= to follow the original link (e.g., Zoom/Meet URL).
+
+#+findex: tlon-goto-meeting-when-clocking-in
++ ~tlon-goto-meeting-when-clocking-in~ :: A hook function intended for =org-clock-in-hook=. When clocking into a task in Org mode, it calls ~tlon-set-meeting-buffers~ to automatically open the relevant meeting issue alongside any meeting link.
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-internals
+:END:
+
+This section lists non-interactive functions used internally or potentially useful for advanced customization.
+
+*** Issue Handling Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-issue-helpers
+:END:
+
+#+findex: tlon-create-or-visit-meeting-issue-date
++ ~tlon-create-or-visit-meeting-issue-date~ :: The core logic for finding or creating a meeting issue. Takes a =DATE= string and the target repository =DIR=. It waits for Forge updates (~tlon-wait-until-forge-updates~), looks up an existing issue matching the date (~tlon-issue-lookup~), and either visits it (~forge-visit-issue~) or creates a new one (~tlon-create-and-visit-issue~).
+
+#+findex: tlon-wait-until-forge-updates
++ ~tlon-wait-until-forge-updates~ :: Pulls changes using =forge-pull= and waits (with a timeout) until the repository's =updated= timestamp changes, ensuring local data is synchronized before proceeding.
+
+#+findex: tlon-create-and-visit-issue
++ ~tlon-create-and-visit-issue~ :: Creates a new Forge issue with the given =TITLE= in the specified =DIR= using ~tlon-create-issue~, pulls changes, waits for the issue to appear locally, and then visits it.
+
+*** Diarize and Summarize Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-diarize-helpers
+:END:
+
+#+findex: tlon-meet--generate-summary
++ ~tlon-meet--generate-summary~ :: Reads the content of the =TRANSCRIPT-FILE=, formats the AI prompt using ~tlon-meet-summary-prompt~, and sends the request to the AI model via ~tlon-make-gptel-request~. The callback function is ~tlon-meet--save-summary~.
+
+#+findex: tlon-meet--save-summary
++ ~tlon-meet--save-summary~ :: Saves the generated =SUMMARY= and the original =TRANSCRIPT= to the appropriate meeting repository for the given =DATE=.
+  1. Determines the target repository by prompting the user via ~tlon-meet--determine-repo~.
+  2. Defines the output filenames: =meeting-summaries.org= and =[date]-transcript.txt=.
+  3. Appends the summary to =meeting-summaries.org= under a new heading for the date, creating the file and adding a title/options header if it doesn't exist.
+  4. Saves the transcript to =[date]-transcript.txt=.
+  5. Stages both files using =git add=.
+  6. Commits the changes using =git commit= with a message indicating the meeting date.
+  7. Updates the "*Diarization Output*" buffer with progress and final file paths.
+
+#+findex: tlon-meet--determine-repo
++ ~tlon-meet--determine-repo~ :: Prompts the user to select the correct meeting repository directory from a list of all repositories with =subtype= 'meetings. Takes the =DATE= for context in the prompt. Returns the selected directory path.
+
+*** Repository and User Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-repo-user-helpers
+:END:
+
+#+findex: tlon-prompt-for-all-other-users
++ ~tlon-prompt-for-all-other-users~ :: Prompts the user to select a person using completion. The candidates are all users defined in ~tlon-users~ except for the current user (=user-full-name=). If the optional =GROUP= argument is non-nil, "group" is added as a candidate.
+
+#+findex: tlon-get-meeting-repo
++ ~tlon-get-meeting-repo~ :: Finds the directory (:dir) of the meeting repository shared by =PARTICIPANT1= and =PARTICIPANT2=. It iterates through ~tlon-repos~, looking for a repo with =subtype= 'meetings that includes both participants in its =:participants= list.
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
