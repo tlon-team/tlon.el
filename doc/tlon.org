@@ -421,6 +421,46 @@ This section lists non-interactive functions and variables used internally or po
 #+vindex: tlon-key-regexp
 + ~tlon-key-regexp~ :: The constant regular expression used by ~tlon-get-clock-key~ to identify BibTeX keys within clocked task headings. It specifically looks for text enclosed in backticks, optionally followed by =.md=.
 
+* Dictionary Functionality (=tlon-dict.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dict
+:END:
+
+This module integrates with the external =reverso.el= package to provide dictionary-related features, specifically fetching synonyms, while ensuring that the language context aligns with the Tlön workflow.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dict-dependencies
+:END:
+
+This module requires the =reverso= package to be installed and available.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dict-commands
+:END:
+
+*** Get Synonyms via Reverso
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-reverso-get-synonyms
+:END:
+#+findex: tlon-reverso-get-synonyms
+The command ~tlon-reverso-get-synonyms~ fetches synonyms for the word currently at point using the =reverso.el= package.
+
+Crucially, it overrides the default language selection mechanism of =reverso.el=. Instead, it determines the language of the current file using ~tlon-get-language-in-file~, looks up the corresponding language code recognized by =reverso.el= using Tlön's configuration (~tlon-lookup~), and passes this language code to the underlying =reverso--get-synonyms= function.
+
+It prompts the user for the word, defaulting to the word at point (~thing-at-point 'word~). The results are displayed in a dedicated Reverso buffer, similar to how =reverso.el= typically operates.
+
+** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dict-menu
+:END:
+#+findex: tlon-dict-menu
+The command ~tlon-dict-menu~ activates a =transient= menu interface for dictionary-related commands.
+
+Currently, it offers one option:
++ =s= :: Calls ~tlon-reverso-get-synonyms~ to fetch synonyms for the word at point.
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
