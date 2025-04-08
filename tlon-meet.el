@@ -239,7 +239,12 @@ function tried to be a nudge in that direction."
 This function runs the diarization script on the audio file, then uses AI to
 generate a summary of the conversation. The summary is saved in the appropriate
 meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
-  (interactive "fSelect audio file: ")
+  (interactive
+   (let ((default-dir (pcase tlon-default-conference-app
+                        ('meet tlon-meet-recordings-directory)
+                        ('zoom tlon-zoom-recordings-directory)
+                        (_ default-directory))))
+     (list (read-file-name "Select audio file: " default-dir))))
   (let* ((default-directory (file-name-directory audio-file))
          (audio-filename (file-name-nondirectory audio-file))
          (date (or (and (string-match "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" audio-filename)
