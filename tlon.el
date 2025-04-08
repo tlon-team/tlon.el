@@ -367,29 +367,6 @@ but will not throw an error if it is located in `uqbar-en/articles/FILE' or
 
 ;;;;; Search
 
-(declare-function magit-log-all "magit-log")
-(defun tlon-search-commits (search-string &optional repo)
-  "Search for SEARCH-STRING in REPO's commit history.
-If REPO is nil, use the current repo."
-  (interactive "sSearch string: ")
-  (let ((default-directory (or repo default-directory)))
-    (magit-log-all (list "--grep" search-string))))
-
-(defun tlon-search-commit-diffs (search-string &optional repo)
-  "Search for SEARCH-STRING in REPO's commit diff history.
-If REPO is nil, use the current repo."
-  (interactive "sSearch commit diffs : ")
-  (let ((default-directory (or repo default-directory)))
-    (magit-log-all `("-S" ,search-string))))
-
-(declare-function consult-ripgrep "consult")
-(defun tlon-search-files (search-string &optional repo)
-  "Search for SEARCH-STRING in REPO files.
-If REPO is nil, use the current repo."
-  (interactive "sSearch string: ")
-  (let ((repo (or repo (tlon-get-repo nil 'include-all))))
-    (consult-ripgrep repo search-string)))
-
 (declare-function magit-stage-file "magit")
 (declare-function magit-pull-from-upstream "magit-pull")
 (declare-function magit-push-current-to-pushremote "magit-push")
@@ -664,20 +641,6 @@ Return the path of the temporary file created."
 	(write-file new-file)))
     (message "File created: %s" new-file)
     new-file))
-
-(autoload 'goldendict-ng-search-string "goldendict-ng")
-;; TODO: move to relevant section
-(defun tlon-search-for-translation (string)
-  "Search for a Spanish translation of English STRING."
-  (interactive "sString to translate: ")
-  (let ((urls '("https://spanish.stackexchange.com/search?q=%s"
-		"https://es.bab.la/diccionario/ingles-espanol/%s"
-		"https://en.wikipedia.org/w/index.php?fulltext=Search&profile=default&search=%s"
-		"https://context.reverso.net/traduccion/ingles-espanol/%s"
-		"https://www.linguee.com/english-spanish/search?query=%s")))
-    (dolist (url urls)
-      (browse-url (format url (url-hexify-string string)) 'new-buffer)))
-  (goldendict-ng-search-string string))
 
 ;;;;; Package files
 
