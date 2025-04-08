@@ -1,0 +1,136 @@
+* Clock Functionality (`tlon-clock.el`)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-clock
+:END:
+
+This file provides functions for interacting with Org mode's clocking
+mechanism (`org-clock`). It allows retrieving information about the
+currently clocked task, opening associated files or issues, and managing
+workflows related to clocked actions, particularly in the context of
+translation tasks.
+
+** Retrieving Clock Information
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-clock-retrieving
+:END:
+
+#+findex: tlon-get-clock
+The function ~tlon-get-clock~ returns the string representation of the
+currently clocked Org heading. If no clock is running, it signals a
+user error.
+
+#+vindex: tlon-key-regexp
+The constant ~tlon-key-regexp~ defines the regular expression used to
+match BibTeX keys within clocked headings. It specifically looks for
+strings enclosed in backticks (`) and optionally handles a trailing
+`.md` extension, which was used in previous versions of the workflow.
+
+#+findex: tlon-get-clock-key
+Based on ~tlon-key-regexp~, the function ~tlon-get-clock-key~ extracts
+the BibTeX key from the currently clocked heading. It returns only the
+key itself (the first capture group). If no key matching the pattern is
+found, it signals a user error.
+
+#+findex: tlon-get-clock-file
+The function ~tlon-get-clock-file~ retrieves the full file path
+associated with the BibTeX key found in the currently clocked heading.
+It uses ~tlon-get-clock-key~ internally and then calls
+~tlon-get-file-from-key~ ([[h:tlon-main-files][tlon.el]]) to resolve the key to a file path.
+
+#+findex: tlon-get-clock-issue
+The function ~tlon-get-clock-issue~ attempts to find an `orgit-forge`
+link (e.g., =[[orgit-topic:GID][description]]=) within the currently
+clocked heading's subtree. If found, it extracts and returns the issue
+GID (e.g., =owner/repo#123=). If no clock is running or no such link is
+found, it signals a user error or returns nil respectively.
+
+#+findex: tlon-get-clock-action
+The function ~tlon-get-clock-action~ extracts the presumed "action"
+word from the currently clocked heading. It assumes the action is the
+first word following the heading's stars. It validates this word
+against the list of known actions obtained via ~tlon-label-lookup-all~
+([[h:tlon-core-lookups][tlon-core.el]]). If no valid action is found or no key is present in the
+heading, it signals a user error.
+
+#+findex: tlon-get-clock-label
+The function ~tlon-get-clock-label~ retrieves the label associated with
+the action identified by ~tlon-get-clock-action~. It uses
+~tlon-label-lookup~ ([[h:tlon-core-lookups][tlon-core.el]]) to find the corresponding label based on the
+action.
+
+#+findex: tlon-get-clock-next-label
+The function ~tlon-get-clock-next-label~ determines the label that
+follows the current clock's label in the sequence defined by the
+~tlon-job-labels~ variable. This is useful for workflows involving sequential
+tasks. It utilizes the helper function ~tlon-next-value~.
+
+#+findex: tlon-next-value
+The helper function ~tlon-next-value~ finds the value associated with a
+given =PROPERTY= that appears immediately after the entry with the
+current =VALUE= within an =ALIST=. This is used by
+~tlon-get-clock-next-label~ to determine the subsequent step in a
+workflow.
+
+** Opening Clocked Items
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-clock-opening
+:END:
+
+#+findex: tlon-open-clock-file
+The command ~tlon-open-clock-file~ interactively opens the file
+associated with the currently clocked task. It uses ~tlon-get-clock-file~
+to determine the path and then visits it using ~find-file~.
+
+#+findex: tlon-open-clock-issue
+The command ~tlon-open-clock-issue~ interactively opens the `orgit-forge`
+issue linked within the currently clocked heading. It retrieves the
+issue GID using ~tlon-get-clock-issue~ and the repository path using
+~tlon-get-repo~ ([[h:tlon-core-repo][tlon-core.el]]), then calls ~forge-visit-issue~ (from the `forge`
+package) to open it.
+
+** Copying Content (DWIM)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-clock-copying
+:END:
+
+These functions provide convenient ways to copy text to the kill ring.
+
+#+findex: tlon-copy-buffer
+The function ~tlon-copy-buffer~ copies the entire content of a specified
+=FILE= (or the current buffer if =FILE= is nil) to the kill ring. It
+displays a confirmation message.
+
+#+findex: tlon-copy-region
+The function ~tlon-copy-region~ copies the text within the specified
+region (between =BEG= and =END=) to the kill ring. It displays a
+confirmation message.
+
+#+findex: tlon-copy-dwim
+The command ~tlon-copy-dwim~ ("Do What I Mean") interactively copies
+either the active region (if one exists) or the entire current buffer
+to the kill ring, using ~tlon-copy-region~ or ~tlon-copy-buffer~
+respectively.
+
+** Managing Translation Windows
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-clock-translation
+:END:
+
+These functions facilitate workflows involving original and translated
+files, often used in conjunction with clocked tasks.
+
+#+findex: tlon-set-paths-from-clock
+The function ~tlon-set-paths-from-clock~ determines the file paths for
+both the original and translation files based on the currently clocked
+task. It extracts the BibTeX key using ~tlon-get-clock-key~, looks up
+the translation file path in the metadata using ~tlon-metadata-in-repos~
+and ~tlon-metadata-lookup~ ([[h:tlon-yaml-metadata][tlon-yaml.el]]), and finds the original file path using
+~tlon-get-counterpart~ ([[h:tlon-counterpart][tlon-counterpart.el]]). It returns the original path,
+translation path, and the key as multiple values.
+
+#+findex: tlon-set-windows
+The function ~tlon-set-windows~ arranges the Emacs window configuration
+for translation work. It ensures the frame is split (using
+~window-extras-split-if-unsplit~), then opens the =ORIGINAL-PATH= in
+window 1 and the =TRANSLATION-PATH= in window 2 (using ~winum-select-window-N~
+and ~find-file~).
