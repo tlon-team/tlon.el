@@ -312,6 +312,13 @@ use a different model for fixing the Markdown."
     (:prompt ,(format "Le texte suivant contient plusieurs erreurs d'encodage. Par exemple, \"cuýn\", \"pronosticaci¾3\263n\", etc.%sVeuillez renvoyer le même texte mais avec ces erreurs corrigées, sans aucune autre altération. N'utilisez pas de guillemets doubles si le texte comporte des guillemets simples. Lorsque vous renvoyez le texte corrigé, n'incluez pas d'éclaircissements tels que \"Voici le texte corrigé\". Je vous remercie de votre attention." tlon-ai-string-wrapper)
 	     :language "fr")))
 
+;;;;; Ask about repo
+
+(defconst tlon-ai-ask-about-repo-prompt
+  `((:prompt "Here is the documentation for the tlon Emacs package, which provides functionality for the Tlön team's workflow. Please answer the following question based on this documentation:\n\n%s"
+             :language "en"))
+  "Prompt for asking questions about the repository documentation.")
+
 ;;;; Functions
 
 ;;;;; General
@@ -1764,6 +1771,7 @@ If nil, use the default model."
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
+    ("q" "ask about repo"                           tlon-ai-ask-about-repo)
     ]
    ["General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
