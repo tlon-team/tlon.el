@@ -7,7 +7,7 @@
 #+export_file_name: tlon.texi
 #+texinfo_filename: tlon.info
 #+texinfo_dir_category: Emacs misc features
-#+texinfo_dir_title: Tlon Babel: (tlon)
+#+texinfo_dir_title: Tlon: (tlon)
 #+texinfo_dir_desc: Companion Emacs package for Tlön
 #+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
 #+texinfo_header: @set MAINTAINER Pablo Stafforini
