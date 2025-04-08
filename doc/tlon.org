@@ -17,164 +17,336 @@
 
 ~tlon~ provides all the Emacs functionality used by the Tlön team.
 
-* Main menu
-* Jobs
-
-** 0. New job
+* AI Functionality (=tlon-ai.el=)
 :PROPERTIES:
-:ID:       9D98A417-0C45-4309-A026-593A66C6EA2E
+:CUSTOM_ID: h:tlon-ai
 :END:
 
-This is a phase prior to the actual process, and that is why we call it "phase 0". It consists of (a) creating an entry in Ebib of the job to be translated and then (b) running, with the cursor on that entry, the ~tlon-create-job~ command.
+This module provides integration with AI models for various tasks such as summarization, translation, image description, and code manipulation within the Tlön ecosystem. It leverages the =gptel= package and its extensions.
 
-This command does three things:
-
-1. It imports the content of the job in Markdown format and saves it as a file in a directory specified by the user (by default, the ~articles~ folder).
-2. It creates a file in the appropriate translations repository, with the relevant metadata.
-3. It creates a "record" associated with this work, consisting of (a) a /issue/ on GitHub and (b) a /heading/ on ~jobs.org~.
-     - While the /issue/ on GitHub is used to discuss translation-related issues and coordinate the different phases of the process, the /heading/ allows us to prioritize the different jobs and leave non-translation-related comments, such as author permissions issues.
-
-In special cases, one or two of these three steps may need to be omitted. For example, there may already be an entry for the translation of the work, or we may already have the document in Markdown format and do not need to import it. In these cases, ~tlon-create-job~ should not be run and instead the commands corresponding to the relevant steps should be run manually:
-
-1. To import a document: ~tlon-import-document~.
-2. To create the translation file : ~tlon-create-translation-file~.
-3. To create a record: ~tlon-create-record-for-job~.
-
-If the commands fail to import a URL, this may be due to a /bug/ or a problem with Pandoc. To determine what happened, examine the message buffer. For example, if we see that the buffer says ~pandoc: Cannot decode byte '\xf9': Data.Text.Internal.Encoding: Invalid UTF-8 stream~, this tells us that the problem is with Pandoc. In such a case, you can import the file manually using the [[https://chrome.google.com/webstore/detail/markdownload-markdown-web/pcmpcfapbekmbjjkdalcgopdkipoggdi][MarkDownload]] extension.
-
-If the problem is not with Pandoc, alert Pablo to fix the /bug/.
-
-** 1. Processing
+** User Options
 :PROPERTIES:
-:ID:       87330FE9-6C76-4055-8E0A-E280F30DF226
-:END:
-:PROPERTIES: :ID: 60251C8E-6A6F-430A-9DB3-15158CC82EAE :END:
-:LOGBOOK:
-CLOCK: [2023-06-09 Fri 11:27]--[2023-06-09 Fri 11:30] => 0:03
+:CUSTOM_ID: h:tlon-ai-options
 :END:
 
+This section describes the user-configurable options available in =tlon-ai.el=.
 
-/This phases consists of processing the imported file./
-
-It involves:
-1. Insuring that the Markdown has imported correctly, cleaning up stuff if necessary.
-2. Replace the citations by the corresopnding BibTeX keys.
-   
-** 2. Translation
+*** Batch Processing Function
 :PROPERTIES:
-:ID:       3666FA5B-F943-4F7D-8CAE-D9103F0FE787
+:CUSTOM_ID: h:tlon-ai-batch-fun
 :END:
+#+vindex: tlon-ai-batch-fun
+The user option ~tlon-ai-batch-fun~ specifies a function to be run when ~tlon~ operates in batch mode. This allows for automated processing of multiple items using AI functions. Set this to the symbol of the desired function.
 
-** 3. Revision
-:PROPERTIES:
-:ID:       51160802-069D-4DEA-B0D3-0919CC897A74
-:END:
-
-
-/This phase consists in revising style and readability of the translation./
-** 4. Check
-:PROPERTIES:
-:ID:       68AE24E1-ADDC-4843-B505-B002F26ABE8F
-:END:
-
-
-/This phase consits in checking the accuracy of the translation./
-
-** 5. Review
-:PROPERTIES:
-:ID:       6FFF3F0C-4940-4A86-8AFF-C36091C692DA
-:END:
-
-
-/This phase consists in reviewing the changes introduced in phases (3) and (4)./
-
-** 6. Publication
-:PROPERTIES:
-:ID:       4BC0B924-7B48-4BE0-9FDC-0C4BFC1A24C2
-:END:
-
-
-* GitHub and org-mode synchronization
-:PROPERTIES:
-:ID:       D64C37A8-5A5D-49D7-819A-6FE4DFA7FE2F
-:END:
-
-~tlon~ includes several functions to synchronize the GitHub issues on a given repository with the corresponding ~org-mode~ TODOs in the user’s local file. The relevant GitHub sync functions are accessed from ~tlon-dispatch~ (~H-r~), under the “sync” section (~y~):
-
-- "visit or capture" (~tlon-visit-counterpart-or-capture~, ~H-r y y~): visits the “counterpart” (the associated ~org-mode~ TODO if point is on a GitHub issue, and vice versa) or, if point is on an issue that has not yet been captured, creates an associated ~org-mode~ TODO. This command can also be invoked directly by pressing ~,~ with point on an issue or visiting an issue buffer. It may be regarded as a “dwim” (“do-what-I-mean”) command, in the sense that it is meant to guess the action that the user will normally want to perform in the relevant context.
-- "visit" (~tlon-visit-counterpart~, ~H-r y v~): visits the “counterpart”. If point is on an issue that has not yet been captured, no action will be taken.
-- "post" (~tlon-create-issue-from-todo~, ~H-r y p~): posts the ~org-mode~ TODO at point to GitHub, i.e. creates an associated GitHub issue.
-- "capture" (~tlon-capture-issue~, ~H-r y c~): captures the GitHub issue at point, i.e. creates an associated ~org-mode~ TODO.
-- "capture all" (~tlon-capture-all-issues~, ~H-r y C~): like the above, but iterates over all GitHub issues in the repository.
-- "reconcile" (~tlon-reconcile-issue-and-todo~ , ~H-r y r~): reconcile any differences between a GitHub issue and its associated ~org-mode~ TODO. If differences are found, the user will be prompted to indicate whether they want to keep the GitHub issue and modify the ~org-mode~ TODO to match it (~i~), or vice versa (~t~). (Note: usually you want to keep the issue, so you will normally press ~i~ when prompted).
-- "reconcile all" (~tlon-reconcile-all-issues-and-todos~, ~H-r y R~): like the above, but iterates over all GitHub issues in the repository. Note that issues not yet captured will be ignored, so you may want to  capture all issues (~tlon-capture-all-issues~) before reconciling them, if your goal is to ensure that the your ~org-mode~ TODOs are fully in sync with the GitHub issues.
-- "close" (~tlon-close-issue-and-todo~, ~H-r y x~): close the GitHub issue and mark its associated ~org-mode~ TODO as DONE.
-
-* Editing Markdown
-
-This section describes the custom commands we use to edit Markdown files.
-
-All the relevant commands can be called from ~tlon-md-menu~, the Markdown menu, bound to ~s-d~ (“d” as in “dispatcher”).
-
-[We extend the native Markdown markup language with various custom [[https://mdxjs.com/][MDX]] tags.]
-
-[Point out that the user should insert the relevant entities using the Emacs commands whenever possible, to avoid human error.]
-
-** Commands to insert mathematical expressions
-
-Our websites support LaTeX-formatted math. These expressions may be of two types: /inline/ and /display/. Inline expressions are embedded in a paragraph, while display expressions occupy their own paragraph.
-
-Inline expressions are delimited by ~$`~ and ~`$~, like this:
-
-#+begin_src markdown
-[T]he marginal chance of success is proportional to $`1/x`$, where $`x`$ is the total amount of resources that will be devoted to the problem before the point where we need a solution.
+#+begin_src emacs-lisp
+(setq tlon-ai-batch-fun 'my-batch-processing-function)
 #+end_src
 
-Display expressions, in turn, are delimited by double dollar signs, like this:
+*** Overwrite Image Alt Text
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-overwrite-alt-text
+:END:
+#+vindex: tlon-ai-overwrite-alt-text
+The user option ~tlon-ai-overwrite-alt-text~ controls whether existing alt text in image tags should be overwritten when generating new descriptions.
 
-#+begin_src markdown
-$$
-\frac{v(S)}{v(L)}\ =\ \frac{p(S)}{p(L)}\ \times\ \frac{n(S)}{n(L)}\ \times\ \frac{r(L)}{r(S)}
-$$
+- If non-nil, existing alt text will be replaced by the newly generated text when using ~tlon-ai-set-image-alt-text-in-buffer~.
+- If nil (the default), existing alt text will be preserved.
+
+Note: The command ~tlon-ai-set-image-alt-text~ (operating on a single image tag at point) *always* overwrites existing alt text, regardless of this option's setting.
+
+*** Edit Prompt Before Sending
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-edit-prompt
+:END:
+#+vindex: tlon-ai-edit-prompt
+When the user option ~tlon-ai-edit-prompt~ is non-nil, ~tlon~ will prompt the user to edit the generated prompt string before sending it to the AI model. This allows for on-the-fly customization of AI requests.
+
+#+begin_src emacs-lisp
+(setq tlon-ai-edit-prompt t)
 #+end_src
 
-Note that the dollar sign delimiters occupy their own lines.
+*** Auto Proofread Reference Articles
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-auto-proofread
+:END:
+#+vindex: tlon-ai-auto-proofread
+If the user option ~tlon-ai-auto-proofread~ is set to a non-nil value, ~tlon~ will automatically initiate the proofreading process using the configured AI model after a reference article has been generated via ~tlon-ai-create-reference-article~.
 
-Inline and display expressions can be inserted with ~tlon-md-insert-math-inline~ and with ~tlon-md-insert-math-display~, respectively. If called in an active region, the selected text will be enclosed by the appropriate delimiters. Otherwise, the delimiters will be inserted at point. These commands can also be inserted from ~tlon-md-menu~ (~H-;~).
+*** Custom Models
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-custom-models
+:END:
 
-** Commands to insert citations
+~tlon~ allows specifying different AI models for specific tasks, overriding the default =gptel= model configuration. This enables using models optimized for particular capabilities (e.g., large context window for summarization, advanced reasoning for proofreading).
 
-To insert citations, we use the custom MDX tag ~Cite~. This self-closing tag takes the mandatory attribute ~bibKey~ and the optional attribute ~short~. The value type of ~bibKey~ is a single BibTeX key, optionally followed by one or more [[https://docs.citationstyles.org/en/stable/specification.html#locators][locators]]. The attribute ~short~ indicates that the citation is a “short” citation.
+Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (e.g., ="ChatGPT"=, ="Gemini"=) and =MODEL= is a symbol representing the specific model (e.g., =gpt-4.5-preview=, =gemini-2.0-flash-thinking-exp-01-21=). Refer to ~gptel-extras-ai-models~ for available options. If an option is nil, the default =gptel= model is used for that task.
 
-“Short” citations are defined as citations that only display the title of the work, rather than its full bibliographic details. Such citations are appropriate in contexts in which the work is being referred to explicitly rather than merely cited, as in this example:
+#+vindex: tlon-ai-summarization-model
++ ~tlon-ai-summarization-model~ :: Model for summarizing text (e.g., generating abstracts, synopses). It's recommended to use a model with a large context window.
+  #+begin_src emacs-lisp
+  (setq tlon-ai-summarization-model '("Gemini" . gemini-2.0-flash-thinking-exp-01-21))
+  #+end_src
 
-#+begin_src markdown
-As Toby Ord writes in <Cite bibKey={"Ord2020PrecipiceExistentialRisk"} short />, humanity’s long-term potential may be lost this century.
-#+end_src
+#+vindex: tlon-ai-markdown-fix-model
++ ~tlon-ai-markdown-fix-model~ :: Model for fixing Markdown formatting issues, especially when comparing original and translated documents.
+  #+begin_src emacs-lisp
+  (setq tlon-ai-markdown-fix-model '("Gemini" . gemini-2.0-flash-thinking-exp-01-21))
+  #+end_src
 
-which is rendered as
+#+vindex: tlon-ai-create-reference-article-model
++ ~tlon-ai-create-reference-article-model~ :: Model used by ~tlon-ai-create-reference-article~ to draft encyclopedia-style articles based on provided source materials.
+  #+begin_src emacs-lisp
+  (setq tlon-ai-create-reference-article-model nil) ; Use default gptel model
+  #+end_src
 
-#+begin_src markdown
-As Toby Ord writes in *The Precipice*, humanity’s long-term potential may be lost this century.
-#+end_src
+#+vindex: tlon-ai-proofread-reference-article-model
++ ~tlon-ai-proofread-reference-article-model~ :: Model used by ~tlon-ai-proofread-reference-article~ for correcting factual errors, calculation mistakes, etc., in generated reference articles. Often benefits from a more powerful model.
+  #+begin_src emacs-lisp
+  (setq tlon-ai-proofread-reference-article-model '("ChatGPT" . gpt-4.5-preview))
+  #+end_src
 
-To insert a normal citation, use ~tlon-mdx-insert-cite~. To insert a short citation, use ~tlon-mdx-insert-cite-short~. To insert a locator, invoke ~tlon-insert-locator~ with point on a citation. These three commands may also be called from ~tlon-md-menu~ (~H-;~), with the keys ~c~, ~C~ and ~l~, respectively.
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-commands
+:END:
 
-** Commands to insert note markers
+This section details the interactive commands provided by =tlon-ai.el=.
 
-A note may be of two types: a /footnote/, shown at the end of the web page, and a /sidenote/, shown on the side of the page. We indicate that a note is a footnote or a sidenote with the self-enclosing tags ~<Footnote />~ and ~<Sidenote />~, respectively. These tags may, and should, be inserted with the corresponding commands, ~tlon-insert-footnote-marker~ and ~tlon-insert-sidenote-marker~, bound to the letters ~f~ and ~s~ in the Markdown transient menu.
+*** Translation Variants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-translate
+:END:
+#+findex: tlon-ai-translate
+The command ~tlon-ai-translate~ prompts for text and returns ten alternative Spanish translations using the configured AI model. The user can then select the preferred translation from the minibuffer, which is copied to the kill ring.
 
-We use a system of automatic classification of notes into either footnotes or sidenotes that seeks to capture the intuitive idea that some notes are merely bibliographic while others are substantive. Currently, the criterion classifies a note as a footnote if it contains at least one citation and four words or less, excluding citations. To auto-classify the note at point, call ~tlon-auto-classify-note-at-point~ (~n~). To auto-classify all notes in the file, call ~tlon-auto-classify-notes-in-file~ (~N~).
+*** Writing Reference Articles
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-create-reference-article
+:END:
+#+findex: tlon-ai-create-reference-article
+The command ~tlon-ai-create-reference-article~ generates a new encyclopedia-style article based on the current buffer's content and linked sources.
 
-Note that, while the two commands in the first paragraph of this section will replace an existing note tag, if present (e.g. a ~<Sidenote />~ tag in a note will be replaced by a ~<Footnote />~ tag if ~tlon-insert-footnote-marker~ is invoked with point on it), the two commands in the second paragraph will instead keep the existing tags. This behavior is intended to reflect the fact that a manual classification should take precedence over an automatic classification.
-** Other commands
+It extracts the title from the buffer's front matter (=title= key). It determines the language of the article from the current file. It constructs a prompt using ~tlon-ai-write-reference-article-prompt~, instructing the AI to synthesize information primarily from attached source files (added to the =gptel= context via ~tlon-add-add-sources-to-context~) and an optional glossary (added via ~tlon-add-glossary-to-context~).
 
-~tlon-edit-yaml-field~
+The AI response (the generated article) is placed in a new buffer. If the user confirms, it can then be proofread using ~tlon-ai-proofread-reference-article~. The model used can be customized via ~tlon-ai-create-reference-article-model~.
 
-~tlon-insert-internal-link~
+*** Proofreading Reference Articles
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-proofread-reference-article
+:END:
+#+findex: tlon-ai-proofread-reference-article
+The command ~tlon-ai-proofread-reference-article~ sends the content of the current buffer (assumed to be a reference article) to the AI for proofreading.
 
+It uses the prompt defined in ~tlon-ai-proofread-reference-article-prompt~, instructing the AI to act as an expert proofreader, focusing on factual errors, calculation mistakes, and other important issues within the context of an encyclopedia of effective altruism. The language is determined from the current file.
 
-Special characters—such as em and en dashes, thin and non-breaking spaces, ellipsis and dots, and most other characters we may want to insert not accessible in a normal keyboard—can be inserted with ~tlon-insert-special-character~. The user option ~tlon-md-special-characters~ customizes the list of characters offered as completion candidates.
+The AI's response, containing the proofread version or comments, is displayed in a new buffer named "*Comments on [Article Title]*". The model used can be customized via ~tlon-ai-proofread-reference-article-model~.
+
+*** Rewriting Text
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-rewrite
+:END:
+#+findex: tlon-ai-rewrite
+The command ~tlon-ai-rewrite~ prompts for text (defaulting to the active region) and requests ten alternative Spanish rewrites from the AI using the prompt ~tlon-ai-rewrite-prompt~.
+
+The user selects one of the suggested variants from the minibuffer. If a region was active, it is deleted and replaced with the selected variant. The selected variant is also copied to the kill ring.
+
+*** Image Description
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-describe-image
+:END:
+#+findex: tlon-ai-describe-image
+The command ~tlon-ai-describe-image~ generates a concise description (alt text) for an image file.
+
+It prompts the user to select an image file if one isn't automatically detected (e.g., from a =Figure= tag at point or the file at point in Dired). It determines the desired language for the description based on the context (e.g., the language of the current buffer).
+
+It uses the prompt from ~tlon-ai-describe-image-prompt~ for the determined language, instructing the AI to provide a one- or two-sentence description under 50 words. The image file is added to the =gptel= context for the request.
+
+By default, the resulting description is displayed as a message. An optional CALLBACK argument can be provided programmatically to handle the response differently.
+
+*** Setting Image Alt Text
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-set-image-alt-text
+:END:
+#+findex: tlon-ai-set-image-alt-text
+The command ~tlon-ai-set-image-alt-text~ automatically generates and inserts an alt text description for an image tag (=Figure= or =OurWorldInData=) at point.
+
+It extracts the image source (=src=) attribute from the tag, locates the corresponding image file (handling local paths and Our World In Data URLs), and then calls ~tlon-ai-describe-image~ to get the description. The generated alt text is then inserted into the =alt= attribute of the image tag at point. This command *always* overwrites any existing alt text.
+
+#+findex: tlon-ai-set-image-alt-text-in-buffer
+The command ~tlon-ai-set-image-alt-text-in-buffer~ iterates through all =Figure= and =OurWorldInData= tags in the current buffer and calls ~tlon-ai-set-image-alt-text~ for each one.
+
+Whether it overwrites existing alt text depends on the value of the user option ~tlon-ai-overwrite-alt-text~.
+
+*** Fixing Markdown Formatting
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-fix-markdown-format
+:END:
+#+findex: tlon-ai-fix-markdown-format
+The command ~tlon-ai-fix-markdown-format~ attempts to restore lost or altered formatting in a translated Markdown file by comparing it paragraph by paragraph with its original counterpart.
+
+It identifies the original file using ~tlon-get-counterpart~. It retrieves corresponding paragraphs from both files using ~tlon-get-corresponding-paragraphs~. For each pair of paragraphs, it sends a request to the AI using the prompt ~tlon-ai-fix-markdown-format-prompt~, asking it to apply the formatting from the original paragraph to the translated text.
+
+The command processes paragraphs concurrently (up to a limit defined internally) and includes a retry mechanism with exponential backoff for failed requests. If a paragraph fails permanently after 3 retries, the process aborts.
+
+Upon successful completion of all paragraphs, the reconstructed content is saved to a new file named =[original-filename]--fixed.md=. The user is then prompted to optionally start an =ediff= session between the original translation and the newly fixed file. The model used can be customized via ~tlon-ai-markdown-fix-model~.
+
+*** Generating Abstracts and Synopses
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-get-abstracts
+:END:
+
+These commands generate summaries of documents using AI.
+
+#+findex: tlon-get-abstract-with-or-without-ai
++ ~tlon-get-abstract-with-or-without-ai~ :: This command first attempts to extract an abstract using non-AI methods via ~tlon-fetch-and-set-abstract~. If that fails (e.g., no abstract found in metadata or the file), it falls back to generating one using AI via ~tlon-get-abstract-with-ai~.
+
+#+findex: tlon-get-abstract-with-ai
++ ~tlon-get-abstract-with-ai~ :: Generates a standard abstract (typically 100-250 words) for the specified content (file, region, PDF/HTML associated with BibTeX entry, etc.). It first asks the AI to check if an abstract already exists in the text using the prompt ~tlon-ai-get-abstract-prompts~. If found, the AI returns it; otherwise, the AI generates a new abstract following the guidelines in ~tlon-ai-how-to-write-abstract-prompt~. The language is either detected automatically or selected by the user. The result is typically inserted into the =abstract= field of the corresponding BibTeX entry or copied to the kill ring. The model used can be customized via ~tlon-ai-summarization-model~.
+
+#+findex: tlon-shorten-abstract-with-ai
++ ~tlon-shorten-abstract-with-ai~ :: Takes an existing abstract (typically from the =abstract= field of the BibTeX entry at point) and asks the AI to shorten it to meet the length requirements specified in ~tlon-tex-max-abstract-length~, using the prompt ~tlon-ai-shorten-abstract-prompts~. The shortened abstract replaces the original one in the BibTeX entry.
+
+#+findex: tlon-get-synopsis-with-ai
++ ~tlon-get-synopsis-with-ai~ :: Generates a more detailed summary (synopsis, typically 1000-2000 words) of the specified content. It uses the prompt ~tlon-ai-get-synopsis-prompts~. The resulting synopsis is copied to the kill ring. The model used can be customized via ~tlon-ai-summarization-model~.
+
+#+findex: tlon-get-abstract-with-ai-from-pdf
++ ~tlon-get-abstract-with-ai-from-pdf~ :: A convenience command that specifically targets the PDF file associated with the BibTeX entry at point and calls ~tlon-get-abstract-with-ai~ on it.
+
+#+findex: tlon-get-abstract-with-ai-from-html
++ ~tlon-get-abstract-with-ai-from-html~ :: A convenience command that specifically targets the HTML file associated with the BibTeX entry at point and calls ~tlon-get-abstract-with-ai~ on it.
+
+*** Setting Language in BibTeX Entries
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-set-language-bibtex
+:END:
+#+findex: tlon-ai-set-language-bibtex
+The command ~tlon-ai-set-language-bibtex~ automatically detects and sets the =langid= field for the BibTeX entry at point.
+
+It sends the BibTeX entry text to the AI using the prompt ~tlon-ai-detect-language-bibtex-prompt~.
+
+- If the entry already has a =langid= field:
+  - If the detected language matches the existing =langid=, no change is made (unless the existing =langid= needs validation/standardization).
+  - If they conflict, the user is prompted to choose which language to use.
+- If the entry has no =langid= field, the detected language is added.
+
+The language code is validated and standardized using ~tlon~'s language functions before being set.
+
+*** Phonetic Transcription
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-phonetically-transcribe
+:END:
+#+findex: tlon-ai-phonetically-transcribe
+The command ~tlon-ai-phonetically-transcribe~ generates the International Phonetic Alphabet (IPA) transcription for a given text string.
+
+It prompts for the text to transcribe (defaulting to the active region or word at point) and determines the language (from the file or user selection). It uses the prompt ~tlon-ai-transcribe-phonetically-prompt~ for the specified language. The resulting IPA transcription is copied to the kill ring.
+
+#+findex: tlon-phonetically-transcribe-in-buffer
+The command ~tlon-phonetically-transcribe-in-buffer~ iterates through each line in the current buffer, calls ~tlon-ai-phonetically-transcribe~ on the line's content, and inserts the resulting IPA transcription after the original line, separated by a comma.
+
+*** Audio Transcription
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-transcribe-audio
+:END:
+#+findex: tlon-transcribe-audio
+The command ~tlon-transcribe-audio~ transcribes an audio file using OpenAI's Whisper API.
+
+It prompts the user to select an audio file. It retrieves the OpenAI API key (prompting to set it if necessary via ~tlon-tts-openai-get-or-set-key~). It then makes an asynchronous request to the OpenAI API endpoint using =curl=, uploading the audio file.
+
+A CALLBACK function must be provided programmatically to handle the result. The callback receives the transcript text on success, or nil on failure.
+
+*** Mathematical Expression Handling
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-math
+:END:
+
+#+findex: tlon-ai-convert-math
++ ~tlon-ai-convert-math~ :: Converts a natural language mathematical expression into LaTeX format. It prompts for the expression (defaulting to the region or =Math= tag content) and language. It uses the prompt ~tlon-ai-convert-math-prompt~. If point is on a =Math= tag, the LaTeX result is inserted as the second value in the =alt= attribute (preserving the original expression as the first value). Otherwise, the result is copied to the kill ring and messaged.
+
+#+findex: tlon-ai-translate-math
++ ~tlon-ai-translate-math~ :: Converts a LaTeX mathematical expression into a natural language description (alt text). It prompts for the expression (defaulting to the region or =Math= tag content) and language. It uses the prompt ~tlon-ai-translate-math-prompt~. If point is on a =Math= tag, the natural language result is inserted as the first value in the =alt= attribute (preserving the LaTeX expression as the second value). Otherwise, the result is copied to the kill ring and messaged.
+
+*** Fixing Encoding Errors
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-fix-encoding
+:END:
+#+findex: tlon-ai-fix-encoding-in-string
+The command ~tlon-ai-fix-encoding-in-string~ attempts to correct encoding errors within a given string.
+
+It typically operates on a JSON value identified at point using helper functions. It determines the language associated with the JSON key. It sends the string to the AI using the prompt ~tlon-ai-fix-encoding-prompt~, asking it to correct encoding issues like =cuýn= or =pronosticaci¾3\263n=. The corrected string is then copied to the kill ring.
+
+#+findex: tlon-ai-fix-encoding-in-buffer
+The command ~tlon-ai-fix-encoding-in-buffer~ is a specialized command designed to process a large JSON buffer containing potentially many encoding errors, chunk by chunk. It saves the corrected chunks to separate files. (This seems highly specific to a particular data processing task).
+
+#+findex: tlon-ai-join-files
+The command ~tlon-ai-join-files~ concatenates the content of chunk files (e.g., =chunk0.json=, =chunk1.json=, ...) generated by ~tlon-ai-fix-encoding-in-buffer~ back into a single output file (e.g., =fixed.json=).
+
+*** Propagating Changes Across Repositories
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-propagate-changes
+:END:
+#+findex: tlon-ai-propagate-changes
+The command ~tlon-ai-propagate-changes~ attempts to automatically apply changes made in the latest commit of the current file to its corresponding files in other ~tlon~ content repositories (originals and translations).
+
+1. It identifies the current file, its repository, language, and the latest commit affecting it using ~tlon~ and Git functions.
+2. It retrieves the diff for the file from that commit using =git show=.
+3. It identifies all other ~tlon~ content repositories (excluding the source repo).
+4. For each target repository:
+   - It determines the corresponding target file using metadata lookups (~tlon-ai--find-target-file~), handling different scenarios (original to translation, translation to original, translation to translation).
+   - If a target file is found and exists, it constructs a prompt asking the AI to apply the *semantic equivalent* of the source diff to the target file's content (provided in the prompt).
+   - It sends the request to the AI.
+   - The callback function (~tlon-ai--propagate-changes-callback~) receives the AI's response (the modified target content).
+   - If the AI response is valid, the callback overwrites the target file with the new content.
+   - It then stages and commits the changes in the target repository using Git, with a commit message indicating the source commit and repository.
+
+This command relies heavily on accurate metadata (=original_path=) and consistent file structures across repositories.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-menu
+:END:
+#+findex: tlon-ai-menu
+The command ~tlon-ai-menu~ displays a =transient= menu interface, providing quick access to most of the AI-related commands and options described above. It allows toggling options like =tlon-ai-overwrite-alt-text= and =tlon-ai-edit-prompt=, selecting models for specific tasks, setting batch functions, and invoking the various AI operations (summarization, image description, translation, etc.).
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-internals
+:END:
+
+This section lists some non-interactive functions and variables used internally by =tlon-ai.el=. While not intended for direct user interaction, understanding them can be helpful for customization or debugging.
+
++ ~tlon-make-gptel-request~: Core function for sending requests to the AI model via =gptel=. Handles prompt formatting, model selection, context checks, and callbacks.
++ ~tlon-ai-maybe-edit-prompt~: Conditionally allows editing the prompt based on ~tlon-ai-edit-prompt~.
++ ~tlon-warn-if-gptel-context~: Checks if the =gptel= context is empty and warns the user if not.
++ Callback functions (e.g., ~tlon-ai-callback-return~, ~tlon-ai-callback-copy~, ~tlon-ai-callback-save~, ~tlon-ai-callback-insert~, ~tlon-ai-callback-fail~): Handle responses from AI requests in various ways (returning value, copying, saving, inserting, error handling).
++ ~tlon-ai-batch-continue~: Helper for batch processing, moves to the next item and calls the batch function.
++ ~tlon-get-string-dwim~: Retrieves text content from various sources (file, region, buffer, PDF/HTML associated with BibTeX entry) for AI processing.
++ ~tlon-get-file-as-string~: Reads the content of a file (handling PDF conversion) into a string.
++ Prompt constants (e.g., ~tlon-ai-detect-language-prompt~, ~tlon-ai-translate-prompt~, ~tlon-ai-write-reference-article-prompt~, etc.): Store the various prompt templates used for different AI tasks, often including language-specific versions.
++ Change propagation helpers (~tlon-ai--get-commit-diff~, ~tlon-ai--find-target-file~, ~tlon-ai--commit-in-repo~, ~tlon-ai--propagate-changes-callback~): Internal functions used by ~tlon-ai-propagate-changes~.
++ Transient infix definitions (e.g., ~tlon-ai-infix-toggle-overwrite-alt-text~, ~tlon-ai-batch-fun-infix~, model selection infixes): Define the interactive elements within the ~tlon-ai-menu~.
+
+* Indices
+:PROPERTIES:
+:CUSTOM_ID: h:indices
+:END:
+
+** Function index
+:PROPERTIES:
+:INDEX: fn
+:CUSTOM_ID: h:fn-index
+:END:
+
+** Variable index
+:PROPERTIES:
+:INDEX: vr
+:CUSTOM_ID: h:vr-index
+:END:
+
+** Concept index
+:PROPERTIES:
+:INDEX: cp
+:CUSTOM_ID: h:cp-index
+:END:
 
 * local variables                                                  :noexport:
 (Note that the local variables below will still be exported to the ~info~ file, unfortunately. It looks like they are not considered part of this heading.)
