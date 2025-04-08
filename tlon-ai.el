@@ -266,16 +266,16 @@ use a different model for fixing the Markdown."
 
 (defconst tlon-ai-get-synopsis-prompts
   `((:prompt ,(format "Please write an detailed abstract of the following work%s Write it in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing the abstract of a scientific paper or academic publication. The summary should provide a detail account of the work’s main claims and arguments; it may be between one and two thousand words in length. Also, please omit any disclaimers of the form 'As an AI language model, I'm unable to browse the internet in real-time.'"
-  tlon-ai-string-wrapper)
-    :language "en")
-  (:prompt ,(format "Por favor, escribe un resumen detallado de la presente obra%s Redáctalo en un tono sobrio y objetivo, evitando cliches, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo el resumen de un artículo científico o de una publicación académica. El resumen debe dar cuenta detallada de las principales afirmaciones y argumentos de la obra; su extensión puede oscilar entre mil y dos mil palabras. Por favor, omite también cualquier descargo de responsabilidad del tipo 'Como modelo de lenguaje de inteligencia artificial, no puedo navegar por Internet en tiempo real'." tlon-ai-string-wrapper)
-	   :language "es")
-  (:prompt ,(format "Veuillez rédiger un résumé détaillé de ce travail%s Rédigez-le sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique ou d'une publication universitaire. Le résumé doit fournir un compte rendu détaillé des principales revendications et des principaux arguments du travail ; il peut compter entre un et deux mille mots. Veuillez également omettre toute clause de non-responsabilité du type \"En tant que modèle de langage d'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel\"." tlon-ai-string-wrapper)
-	   :language "fr")
-  (:prompt ,(format "Si prega di scrivere un riassunto esteso di questo lavoro%s Scrivetelo con un tono sobrio e oggettivo, evitando i cliché, le lodi eccessive e i fronzoli inutili. In altre parole, scrivetelo come se steste scrivendo l'abstract di un articolo scientifico o di una pubblicazione accademica. Il riassunto deve fornire un resoconto dettagliato delle principali affermazioni e argomentazioni dell'opera; può essere lungo tra le mille e le duemila parole. Inoltre, si prega di omettere qualsiasi dichiarazione di non responsabilità del tipo \"In quanto modello linguistico dell'intelligenza artificiale, non sono in grado di navigare in Internet in tempo reale\"." tlon-ai-string-wrapper)
-	   :language "it")
-  (:prompt ""
-	   :language "de"))
+		      tlon-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "Por favor, escribe un resumen detallado de la presente obra%s Redáctalo en un tono sobrio y objetivo, evitando cliches, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo el resumen de un artículo científico o de una publicación académica. El resumen debe dar cuenta detallada de las principales afirmaciones y argumentos de la obra; su extensión puede oscilar entre mil y dos mil palabras. Por favor, omite también cualquier descargo de responsabilidad del tipo 'Como modelo de lenguaje de inteligencia artificial, no puedo navegar por Internet en tiempo real'." tlon-ai-string-wrapper)
+	     :language "es")
+    (:prompt ,(format "Veuillez rédiger un résumé détaillé de ce travail%s Rédigez-le sur un ton sobre et objectif, en évitant les clichés, les éloges excessifs et les fioritures inutiles. En d'autres termes, rédigez-le comme si vous écriviez le résumé d'un article scientifique ou d'une publication universitaire. Le résumé doit fournir un compte rendu détaillé des principales revendications et des principaux arguments du travail ; il peut compter entre un et deux mille mots. Veuillez également omettre toute clause de non-responsabilité du type \"En tant que modèle de langage d'IA, je ne suis pas en mesure de naviguer sur l'internet en temps réel\"." tlon-ai-string-wrapper)
+	     :language "fr")
+    (:prompt ,(format "Si prega di scrivere un riassunto esteso di questo lavoro%s Scrivetelo con un tono sobrio e oggettivo, evitando i cliché, le lodi eccessive e i fronzoli inutili. In altre parole, scrivetelo come se steste scrivendo l'abstract di un articolo scientifico o di una pubblicazione accademica. Il riassunto deve fornire un resoconto dettagliato delle principali affermazioni e argomentazioni dell'opera; può essere lungo tra le mille e le duemila parole. Inoltre, si prega di omettere qualsiasi dichiarazione di non responsabilità del tipo \"In quanto modello linguistico dell'intelligenza artificiale, non sono in grado di navigare in Internet in tempo reale\"." tlon-ai-string-wrapper)
+	     :language "it")
+    (:prompt ""
+	     :language "de"))
   "Prompts for synopsis.")
 
 ;;;;; Phonetic transcription
@@ -312,9 +312,9 @@ use a different model for fixing the Markdown."
     (:prompt ,(format "Le texte suivant contient plusieurs erreurs d'encodage. Par exemple, \"cuýn\", \"pronosticaci¾3\263n\", etc.%sVeuillez renvoyer le même texte mais avec ces erreurs corrigées, sans aucune autre altération. N'utilisez pas de guillemets doubles si le texte comporte des guillemets simples. Lorsque vous renvoyez le texte corrigé, n'incluez pas d'éclaircissements tels que \"Voici le texte corrigé\". Je vous remercie de votre attention." tlon-ai-string-wrapper)
 	     :language "fr")))
 
-;;;;; Ask about repo
+;;;;; Get help
 
-(defconst tlon-ai-ask-about-repo-prompt
+(defconst tlon-ai-get-help-prompt
   `((:prompt "Here is the documentation for the tlon Emacs package, which provides functionality for the Tlön team's workflow. Please answer the following question based on this documentation:\n\n%s"
              :language "en"))
   "Prompt for asking questions about the repository documentation.")
@@ -571,12 +571,12 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	(tlon-ai-proofread-reference-article)))))
 
 (defun tlon-ai-get-reference-article-title (response)
-"Return the title of the reference article in RESPONSE."
-(with-temp-buffer
-  (insert response)
-  (goto-char (point-min))
-  (when (looking-at "# \\(.*\\)$")
-    (match-string 1))))
+  "Return the title of the reference article in RESPONSE."
+  (with-temp-buffer
+    (insert response)
+    (goto-char (point-min))
+    (when (looking-at "# \\(.*\\)$")
+      (match-string 1))))
 
 (defun tlon-ai-proofread-reference-article ()
   "Proofread the current reference article using AI."
@@ -1392,6 +1392,32 @@ If RESPONSE is nil, return INFO."
 	    (insert-file-contents file-name))))
       (write-file output-file))))
 
+;;;;; Get help
+
+(defun tlon-ai-get-help ()
+  "Ask a question about the tlon repository using doc/tlon.org as context."
+  (interactive)
+  (tlon-warn-if-gptel-context)
+  (let* ((question (read-string "What do you need help with? "))
+	 (doc-file (file-name-concat (tlon-repo-lookup :dir :name "tlon.el") "doc/tlon.org"))
+	 (prompt-template (tlon-lookup tlon-ai-get-help-prompt :prompt :language "en"))
+	 (full-prompt (format prompt-template question)))
+    (unless (file-exists-p doc-file)
+      (user-error "Documentation file not found: %s" doc-file))
+    (gptel-context-add-file doc-file)
+    (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-about-repotlon-ai-get-helpext-check)
+    (message "Preparing your answer...")))
+
+(defun tlon-ai-get-help-callback (response info)
+"Callback for `tlon-ai-get-help'.
+Displays the RESPONSE in a new buffer. If RESPONSE is nil, return INFO."
+(if (not response)
+    (tlon-ai-callback-fail info)
+  (let* ((buffer-name (generate-new-buffer-name "*AI Repo Question Answer*"))
+         (buffer (get-buffer-create buffer-name)))
+    (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
+    (gptel-context-remove-all))))
+
 ;;;; Helper Functions for Change Propagation
 
 ;;;;; Change Propagation Command
@@ -1771,9 +1797,7 @@ If nil, use the default model."
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
-    ("q" "ask about repo"                           tlon-ai-ask-about-repo)
-    ]
-   ["General options"
+    ("q" "ask about repo"                           tlon-ai-ask-abtlon-ai-get-helpeneral options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ""
