@@ -803,6 +803,224 @@ These functions define the behavior of the options within the ~tlon-images-menu~
 #+findex: tlon-images-toggle-process-without-asking
 + ~tlon-images-toggle-process-without-asking~ :: Toggles the boolean value of ~tlon-images-process-without-asking~ for the current menu invocation using ~tlon-transient-toggle-variable-value~.
 
+* Job Management (=tlon-jobs.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs
+:END:
+
+This module manages the workflow for processing "Babel jobs," which typically involve translating documents. It integrates Org mode's clocking mechanism, GitHub issues (via =orgit-forge=), and Git version control (via =magit=) to track the progress of jobs through various phases like processing, translation, revision, checking, and review.
+
+** Configuration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-config
+:END:
+
+*** Job Labels and Phases
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-job-labels
+:END:
+#+vindex: tlon-job-labels
+The constant ~tlon-job-labels~ defines the different stages or phases a job goes through. It's an alist where each element represents a phase and contains properties like the display label, the action verb associated with the phase, and the default assignee for that phase.
+
+#+begin_src emacs-lisp
+(defconst tlon-job-labels
+  '((:label "Awaiting processing" :action "Process" :assignee "worldsaround")
+    (:label "Awaiting translation" :action "Translate" :assignee "")
+    ;; ... other phases ...
+    (:label "Published" :action "Publish" :assignee "")))
+#+end_src
+
+This structure drives the workflow logic, determining the next step and assignee after a phase is completed.
+
+*** Org ID Constants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-org-ids
+:END:
+
+#+vindex: tlon-jobs-manual-processing-id
++ ~tlon-jobs-manual-processing-id~ :: The Org ID of the specific heading within =manual.org= that contains instructions relevant to the "processing" phase. Used by ~tlon-jobs-initialize-processing~.
+
+#+vindex: tlon-jobs-id
++ ~tlon-jobs-id~ :: The Org ID of the main "jobs" heading in the central =jobs.org= file. This file serves as the primary tracker for all jobs.
+
+*** Jobs File Variable
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-file-var
+:END:
+#+vindex: tlon-jobs-file
+The variable ~tlon-jobs-file~ holds the path to the =jobs.org= file. It is set dynamically by ~tlon-jobs-get-file~ and should not be configured manually.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-commands
+:END:
+
+This section details the interactive commands provided by =tlon-jobs.el=.
+
+*** Start or Finish Job Phase
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-start-or-finish-phase
+:END:
+#+findex: tlon-jobs-start-or-finish-phase
+The command ~tlon-jobs-start-or-finish-phase~ is the central command for advancing the job workflow. It determines the current context (Org mode for starting, Markdown mode for finishing) and the action associated with the currently clocked task (~tlon-get-clock-action~).
+
+- *Initialization (in Org mode):*
+  1. Clocks into the task.
+  2. Saves the buffer.
+  3. Determines the initialization function based on the action (e.g., ~tlon-jobs-initialize-processing~).
+  4. Calls the general ~tlon-jobs-initialize~ function, which performs common setup tasks:
+     - Checks the associated repository's label and assignee (~tlon-check-label-and-assignee~).
+     - Ensures the repository is on the "main" branch (~tlon-check-branch~).
+     - Pulls the latest changes from upstream (~magit-pull-from-upstream~).
+     - Sets up the window configuration with original and translation files (~tlon-set-windows~).
+     - Opens the associated GitHub issue (~orgit-topic-open~).
+     - Copies the original buffer content.
+  5. Calls the specific initialization function for the current phase (e.g., opening the manual for processing, opening DeepL for translation, setting up diffs for review).
+
+- *Finalization (in Markdown mode):*
+  1. Closes split mode if active (~tlon-split-mode -1~).
+  2. Saves the buffer.
+  3. Calls ~tlon-jobs-finalize~, which performs common finalization tasks:
+     - Checks the repository branch and label/assignee.
+     - Performs phase-specific checks (e.g., prompts for Jinx/Flycheck confirmation after translation).
+     - Saves the modified original (if processing) or translation file.
+     - Commits and pushes the changes for the translation file (and original if processing) using ~tlon-commit-and-push~.
+     - Updates the associated GitHub issue: sets the next label (~tlon-get-clock-next-label~) and assignee (~tlon-jobs-get-next-assignee~), potentially closing the issue after the "Review" phase using ~tlon-jobs-act-on-issue~.
+     - Updates the corresponding TODO items in =jobs.org= and the main TODO file using ~tlon-jobs-finalize-set-todos~.
+
+*** Create Job
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-create-job
+:END:
+#+findex: tlon-create-job
+The command ~tlon-create-job~ orchestrates the entire process of creating a new job based on a BibTeX entry at point in an Ebib buffer.
+
+1. Imports the document associated with the BibTeX entry using ~tlon-import-document~, which returns the BibTeX key.
+2. Creates the initial translation file structure using ~tlon-create-translation-file~.
+3. Creates the necessary records for the job (GitHub issue and =jobs.org= heading) using ~tlon-create-record-for-job~.
+
+*** Create Job Record
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-create-record-for-job
+:END:
+#+findex: tlon-create-record-for-job
+The command ~tlon-create-record-for-job~ creates the tracking records for a job based on a BibTeX =KEY=. If =KEY= is not provided, it attempts to find it in the current buffer (Markdown or Ebib).
+
+1. Creates a GitHub issue titled "Job: `KEY`" using ~tlon-create-issue-from-key~.
+2. Creates a corresponding heading in =jobs.org= using ~tlon-create-heading-for-job~, optionally committing the change.
+
+*** Create Heading in jobs.org
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-create-heading-for-job
+:END:
+#+findex: tlon-create-heading-for-job
+The command ~tlon-create-heading-for-job~ adds a new heading to the =jobs.org= file for tracking a specific job based on its BibTeX =KEY=.
+
+1. Determines the =KEY= (from argument or current buffer).
+2. Formats the heading as =[cite:@KEY]=.
+3. Finds the associated repository and its abbreviation (~tlon-repo-lookup~).
+4. Opens =jobs.org= (finding the buffer or file).
+5. If the heading doesn't exist:
+   - Navigates to the main jobs section (using ~tlon-jobs-id~).
+   - Inserts the new heading.
+   - Sets the TODO state to "TODO".
+   - Adds the repository abbreviation as a tag.
+   - Sorts the headings in the file (~tlon-sort-headings~).
+   - Saves the buffer.
+6. Optionally commits the change to =jobs.org= using ~tlon-commit-and-push~ if =COMMIT= is non-nil.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-menu
+:END:
+#+findex: tlon-jobs-menu
+The command ~tlon-jobs-menu~ activates a =transient= menu interface for job-related operations.
+
+It provides the following groups and commands:
++ *Job phases*:
+  + =j= :: Start or finish phase (~tlon-jobs-start-or-finish-phase~)
++ *Job creation*:
+  + =c c= :: Create job (~tlon-create-job~)
+  + =c d= :: 1 Import document (~tlon-import-document~)
+  + =c f= :: 2 Create translation file (~tlon-create-translation-file~)
+  + =c r= :: 3 Create record for job (~tlon-create-record-for-job~)
++ *Add or modify*:
+  + =a s= :: Section correspondence (~tlon-section-correspondence-dwim~)
+  + =a u= :: URL correspondence (~tlon-edit-url-correspondences~)
++ *jobs.org*:
+  + =r= :: Create record (~tlon-create-record-for-job~)
+  + =h= :: Create heading (~tlon-create-heading-for-job~)
+  + =t= :: Sort headings (~tlon-sort-headings~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-internals
+:END:
+
+This section lists non-interactive functions and variables used internally or potentially useful for advanced customization.
+
+*** File and Path Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-files
+:END:
+
+#+findex: tlon-jobs-get-file
++ ~tlon-jobs-get-file~ :: Retrieves the path to the =jobs.org= file, using the Org ID ~tlon-jobs-id~ and caching the result in ~tlon-jobs-file~ via ~tlon-get-or-set-org-var~.
+
+*** Job Phase Logic
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-phase-logic
+:END:
+
+#+findex: tlon-jobs-get-action-in-label
++ ~tlon-jobs-get-action-in-label~ :: Extracts the action verb (e.g., "Process", "Translate") from a job phase =LABEL= string (e.g., "Awaiting processing").
+
+#+findex: tlon-jobs-initialize
++ ~tlon-jobs-initialize~ :: Performs common setup tasks when starting any job phase (checking repo, pulling, setting up windows, opening issue, copying buffer). Takes the specific phase initialization function (=FUN=) as an argument and calls it after the common setup.
+
+#+findex: tlon-jobs-finalize
++ ~tlon-jobs-finalize~ :: Performs common cleanup and update tasks when finishing any job phase (checking repo, committing files, updating GitHub issue label/assignee, updating TODOs).
+
+#+findex: tlon-jobs-get-next-assignee
++ ~tlon-jobs-get-next-assignee~ :: Determines the assignee for the *next* phase. It considers the current user and the designated assignee for the current phase versus the next phase, potentially assigning a substitute if the current user isn't the designated one for the current phase.
+
+#+findex: tlon-jobs-initialize-processing
++ ~tlon-jobs-initialize-processing~ :: Specific setup for the "Process" phase: opens the original file and the relevant section in =manual.org= (using ~tlon-jobs-manual-processing-id~), narrows the view, and opens the issue.
+
+#+findex: tlon-jobs-initialize-translation
++ ~tlon-jobs-initialize-translation~ :: Specific setup for the "Translate" phase: opens the DeepL application using ~macos-open-app~.
+
+#+findex: tlon-jobs-initialize-revision
++ ~tlon-jobs-initialize-revision~ :: Specific setup for the "Revise" phase: activates split mode (~tlon-split-mode~).
+
+#+findex: tlon-jobs-initialize-check
++ ~tlon-jobs-initialize-check~ :: Specific setup for the "Check" phase: rearranges windows, starts Markdown preview, and initiates text-to-speech using ~read-aloud-buf~.
+
+#+findex: tlon-jobs-initialize-review
++ ~tlon-jobs-initialize-review~ :: Specific setup for the "Review" phase: opens an =ediff= session showing changes since the last user commit (~tlon-log-buffer-latest-user-commit-ediff~), sets up =jinx= for spell/grammar checking in the target language, and moves to the beginning of the buffer.
+
+*** Issue and TODO Interaction
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-issue-todo
+:END:
+
+#+findex: tlon-jobs-act-on-issue
++ ~tlon-jobs-act-on-issue~ :: Updates a GitHub issue associated with an =ORIGINAL-KEY=. It finds the issue (using ~tlon-issue-lookup~), sets the specified =LABEL= and =ASSIGNEE= using ~tlon-set-labels~ and ~tlon-set-assignee~, and optionally closes the issue if =CLOSE= is non-nil.
+
+#+findex: tlon-jobs-finalize-set-todos
++ ~tlon-jobs-finalize-set-todos~ :: Marks the relevant TODO items as DONE during the finalization process. It marks the clocked task itself as DONE in the main TODO file (~tlon-get-todos-jobs-file~). For "Review" and "Check" phases, it also marks the parent TODO as DONE. For the "Review" phase, it additionally marks the corresponding job heading in =jobs.org= as DONE, sorts the headings, and commits the change.
+
+*** jobs.org Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-jobs-org-helpers
+:END:
+
+#+findex: tlon-jobs-get-key-in-heading
++ ~tlon-jobs-get-key-in-heading~ :: Extracts the BibTeX key from the Org heading at point, assuming the format =[cite:@KEY]= or ``Job: `KEY`.md``.
+
+#+findex: tlon-jobs-goto-heading
++ ~tlon-jobs-goto-heading~ :: Moves the point to the heading corresponding to the given BibTeX =KEY= within the =jobs.org= file.
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
