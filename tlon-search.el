@@ -33,6 +33,7 @@
 ;;;; Functions
 
 (declare-function magit-log-all "magit-log")
+;;;###autoload
 (defun tlon-search-commits (search-string &optional repo)
   "Search for SEARCH-STRING in REPO's commit history.
 If REPO is nil, use the current repo."
@@ -40,6 +41,7 @@ If REPO is nil, use the current repo."
   (let ((default-directory (or repo default-directory)))
     (magit-log-all (list "--grep" search-string))))
 
+;;;###autoload
 (defun tlon-search-commit-diffs (search-string &optional repo)
   "Search for SEARCH-STRING in REPO's commit diff history.
 If REPO is nil, use the current repo."
@@ -48,6 +50,7 @@ If REPO is nil, use the current repo."
     (magit-log-all `("-S" ,search-string))))
 
 (declare-function consult-ripgrep "consult")
+;;;###autoload
 (defun tlon-search-files (search-string &optional repo)
   "Search for SEARCH-STRING in REPO files.
 If REPO is nil, use the current repo."
@@ -56,6 +59,7 @@ If REPO is nil, use the current repo."
     (consult-ripgrep repo search-string)))
 
 (autoload 'goldendict-ng-search-string "goldendict-ng")
+;;;###autoload
 (defun tlon-search-for-translation (string)
   "Search for a Spanish translation of English STRING."
   (interactive "sString to translate: ")
