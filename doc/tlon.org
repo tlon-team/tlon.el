@@ -2375,6 +2375,95 @@ This section lists non-interactive functions and variables used internally or po
 #+findex: tlon-forge-menu
 + ~tlon-forge-menu~ :: A =transient= menu definition that *overrides* the default =forge-dispatch= command. It provides a customized menu structure for Forge commands within the Tlön context, including options to search across all Tlön repos (~tlon-forge-search~).
 
+* Search Functionality (=tlon-search.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search
+:END:
+
+This module provides miscellaneous search commands, integrating with =magit=, =consult=, =forge=, and external web services for various search needs within the Tlön workflow.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-dependencies
+:END:
+
++ =tlon= (specifically =tlon-core=)
++ =transient=
++ =magit-log=
++ =consult=
++ =forge=
++ =goldendict-ng= (optional, for translation)
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-commands
+:END:
+
+This section details the interactive commands provided by =tlon-search.el=.
+
+*** Search Commits
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-commits
+:END:
+#+findex: tlon-search-commits
+The command ~tlon-search-commits~ searches for a =SEARCH-STRING= within the commit messages of a Git repository.
+1. Prompts the user for the =SEARCH-STRING=.
+2. Optionally takes a =REPO= directory path. If nil, uses the current repository (=default-directory=).
+3. Calls =magit-log-all= with the =--grep= argument and the =SEARCH-STRING= to display the matching commits in a Magit log buffer.
+
+*** Search Commit Diffs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-commit-diffs
+:END:
+#+findex: tlon-search-commit-diffs
+The command ~tlon-search-commit-diffs~ searches for a =SEARCH-STRING= within the content (diffs) of commits in a Git repository.
+1. Prompts the user for the =SEARCH-STRING=.
+2. Optionally takes a =REPO= directory path. If nil, uses the current repository (=default-directory=).
+3. Calls =magit-log-all= with the =-S= argument (pickaxe search) and the =SEARCH-STRING= to display commits where the string was added or removed.
+
+*** Search Files (Ripgrep)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-files
+:END:
+#+findex: tlon-search-files
+The command ~tlon-search-files~ searches for a =SEARCH-STRING= within the files of a Tlön repository using =consult-ripgrep=.
+1. Prompts the user for the =SEARCH-STRING=.
+2. Optionally takes a =REPO= directory path. If nil, it determines the current repository using ~tlon-get-repo~ (including all sub-repositories).
+3. Calls =consult-ripgrep= with the determined repository path and the search string, presenting results in the minibuffer with live preview.
+
+*** Search for Translation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-for-translation
+:END:
+#+findex: tlon-search-for-translation
+The command ~tlon-search-for-translation~ searches for a Spanish translation of an English =STRING= using various online resources and the local =goldendict-ng= application.
+1. Prompts the user for the English =STRING= to translate.
+2. Defines a list of URL templates for different translation websites (Spanish Stack Exchange, Bab.la, Wikipedia, Reverso Context, Linguee).
+3. Iterates through the URLs, formats them with the URL-encoded =STRING=, and opens each in a new browser buffer using =browse-url=.
+4. Calls =goldendict-ng-search-string= to search for the =STRING= in the locally installed GoldenDict-NG application (if configured).
+
+*** Search Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-menu-cmd
+:END:
+#+findex: tlon-search-menu
+The command ~tlon-search-menu~ activates a =transient= menu interface for accessing the various search commands.
+
+It provides the following options under the "Search" group:
++ =c= :: Commits (~tlon-search-commits~)
++ =d= :: Commit diffs (~tlon-search-commit-diffs~)
++ =f= :: Files (~tlon-search-files~)
++ =i= :: Issues (current repo) (~forge-search~)
++ =I= :: Issues (all repos) (~tlon-forge-search~)
++ =t= :: Translation (~tlon-search-for-translation~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-search-internals
+:END:
+
+This module primarily consists of interactive commands and the transient menu definition. There are no significant internal-only functions or variables exposed for general customization beyond the declared dependencies.
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
