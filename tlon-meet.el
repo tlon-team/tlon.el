@@ -296,16 +296,15 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
        transcript
        (lambda (response info)
          (if response
-             (tlon-meet--save-summary response transcript date buffer transcript-file)
+             (tlon-meet--save-summary response transcript date buffer)
            (with-current-buffer buffer
              (goto-char (point-max))
              (insert (format "\nError generating summary: %s\n"
                              (plist-get info :status))))))))))
 
-(defun tlon-meet--save-summary (summary transcript date output-buffer source-transcript-file)
+(defun tlon-meet--save-summary (summary transcript date output-buffer)
   "Save SUMMARY and TRANSCRIPT for meeting on DATE to appropriate repo.
-Updates OUTPUT-BUFFER with progress messages.
-SOURCE-TRANSCRIPT-FILE is the original transcript file path."
+Updates OUTPUT-BUFFER with progress messages."
   (let* ((meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
          (repo (tlon-meet--determine-repo date meeting-repos))
          (summary-file (expand-file-name "meeting-summaries.org" repo))
