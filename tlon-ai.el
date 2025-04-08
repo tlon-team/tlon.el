@@ -1418,9 +1418,9 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, return INFO."
     (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
     (gptel-context-remove-all))))
 
-;;;; Helper Functions for Change Propagation
+;;;;; Change propagation
 
-;;;;; Change Propagation Command
+;;;;;; Change Propagation Command
 
 ;;;###autoload
 (defun tlon-ai-propagate-changes ()
@@ -1489,7 +1489,7 @@ repository."
           )))
     (message "AI change propagation requests initiated for all target repositories.")))
 
-;;;;; Helper functions
+;;;;;; Helper functions
 
 (defun tlon-ai--get-commit-diff (commit file repo-path)
   "Get the diff for FILE at COMMIT hash within REPO-PATH.
