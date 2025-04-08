@@ -74,7 +74,7 @@ If REPO is nil, use the current repo."
 
 ;;;;; Menu
 
-;;;###autoload (autoload 'tlon-search-menu "tlon-dispatch" nil t)
+;;;###autoload (autoload 'tlon-search-menu "tlon-search" nil t)
 (transient-define-prefix tlon-search-menu ()
   "Search menu."
   ["Search"
