@@ -2747,6 +2747,183 @@ This section lists non-interactive functions used internally or potentially usef
 #+findex: tlon-contacts-select-role
 + ~tlon-contacts-select-role~ :: Prompts the user to select a role using completion. The candidates are the keys (roles) from the ~tlon-contacts-properties~ alist. Returns the selected role string.
 
+* Counterpart Navigation and Comparison (=tlon-counterpart.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart
+:END:
+
+This module provides functionality for finding, opening, and comparing "counterpart" files. In the Tlön context, a counterpart is typically the original version of a translated document, or a translation in a specific language if the current file is the original. It also includes tools for working with paragraphs within these files.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-dependencies
+:END:
+
++ =tlon-core=
++ =tlon-md=
++ =tlon-yaml=
++ =files-extras=
++ =transient=
++ =dired= (optional, for Dired integration)
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-commands
+:END:
+
+*** Finding Counterparts
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-finding-cmds
+:END:
+
+#+findex: tlon-get-counterpart
++ ~tlon-get-counterpart~ :: (Autoloaded) Calculates and returns the full path to the counterpart file of =FILE= (or the current buffer's file).
+  - If the file is in a repository marked as =translations= (based on its =:subtype= property), it looks for the =original_path= key in the file's YAML front matter and combines it with the counterpart directory (~tlon-get-counterpart-dir~).
+  - If the file is in a repository marked as =originals=, it prompts the user to select a target language, finds the corresponding translations repository, and looks up the file's entry in the target repository's metadata to find the translated filename.
+  - Signals an error if the repository subtype is neither =originals= nor =translations=, or if necessary metadata is missing.
+
+#+findex: tlon-get-counterpart-dir
++ ~tlon-get-counterpart-dir~ :: Calculates and returns the directory path where the counterpart of =FILE= (or the current buffer's file) should reside. It determines the counterpart repository (~tlon-get-counterpart-repo~) and translates the relative directory structure within the source repository to the equivalent structure in the target repository using ~tlon-get-bare-dir-translation~.
+
+#+findex: tlon-get-counterpart-repo
++ ~tlon-get-counterpart-repo~ :: Returns the full path to the repository directory containing the counterpart of =FILE= (or the current buffer's file). It identifies the source repository, its subproject, determines the counterpart language (~tlon-get-counterpart-language~), and looks up the repository matching the subproject and counterpart language using ~tlon-repo-lookup~.
+
+#+findex: tlon-get-counterpart-language
++ ~tlon-get-counterpart-language~ :: Determines the language code of the counterpart for a given =REPO= (or the current repository).
+  - If the repository language is "en" (English), it prompts the user to select a target language from ~tlon-project-target-languages~ using completion.
+  - If the repository language is one of the target languages, it returns "en".
+  - Signals an error if the repository language is not recognized.
+
+#+findex: tlon-get-content-subtype
++ ~tlon-get-content-subtype~ :: Returns the =:subtype= property ('originals or 'translations) of the repository containing =FILE= (or the current buffer's file). Ensures the repository's =:type= is 'content.
+
+*** Opening Counterparts
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-opening-cmds
+:END:
+
+#+findex: tlon-open-counterpart
++ ~tlon-open-counterpart~ :: (Autoloaded) Opens the counterpart of =FILE= (or the current buffer's file) and attempts to position the cursor at the corresponding paragraph.
+  1. Saves the current buffer if no =FILE= argument is given.
+  2. Finds the counterpart file using ~tlon-get-counterpart~.
+  3. Calculates the number of paragraphs before the current point using ~tlon-get-number-of-paragraphs~.
+  4. Determines if point is exactly between paragraphs using ~tlon-is-between-paragraphs-p~ to apply an offset.
+  5. Opens the counterpart file using =find-file= (or =find-file-other-window= if =OTHER-WIN= or prefix argument is non-nil).
+  6. In the counterpart buffer, moves past the YAML front matter.
+  7. Moves forward the calculated number of paragraphs (minus the offset).
+  8. Moves point one character forward (typically to the start of the paragraph content).
+
+#+findex: tlon-open-counterpart-in-dired
++ ~tlon-open-counterpart-in-dired~ :: Opens Dired to the directory containing the counterpart of =FILE= (or the file at point in Dired). Uses ~tlon-get-counterpart~ to find the file and =dired-jump= to open Dired. Supports opening in another window with a prefix argument.
+
+#+findex: tlon-open-counterpart-dwim
++ ~tlon-open-counterpart-dwim~ :: (Autoloaded) "Do What I Mean" command for opening counterparts.
+  - If called in =markdown-mode=, behaves like ~tlon-open-counterpart~.
+  - If called in =dired-mode=, behaves like ~tlon-open-counterpart-in-dired~.
+  - Supports opening in another window with a prefix argument.
+
+#+findex: tlon-open-counterpart-in-other-window-dwim
++ ~tlon-open-counterpart-in-other-window-dwim~ :: (Autoloaded) Convenience command that calls ~tlon-open-counterpart-dwim~ with the =OTHER-WIN= argument set to =t=, forcing the counterpart to open in another window.
+
+*** Paragraph Operations
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-paragraph-cmds
+:END:
+
+#+findex: tlon-count-paragraphs
++ ~tlon-count-paragraphs~ :: Interactively counts and displays the number of paragraphs in the active region, or between specified =START= and =END= positions. Uses ~tlon-get-number-of-paragraphs~.
+
+#+findex: tlon-display-corresponding-paragraphs
++ ~tlon-display-corresponding-paragraphs~ :: Displays pairs of corresponding paragraphs from a file and its counterpart in a dedicated buffer ("/Paragraph Pairs/").
+  1. Takes =PAIRS-OR-FN= as input. If it's a function (interactively defaults to ~tlon-get-corresponding-paragraphs~), calls it to get the pairs. Otherwise, assumes it's already a list of pairs.
+  2. Creates or clears the "/Paragraph Pairs/" buffer.
+  3. Iterates through the pairs, inserting "Original:\n[paragraph]\n\nTranslation:\n[paragraph]\n\n----\n\n". Handles missing paragraphs gracefully.
+  4. Displays the buffer. Catches =user-error= (like paragraph mismatch from ~tlon-get-corresponding-paragraphs~) and still displays the buffer containing the comparison up to the point of error.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-menu-cmd
+:END:
+#+findex: tlon-counterpart-menu
+The command ~tlon-counterpart-menu~ activates a =transient= menu interface for counterpart operations.
+
+It provides the following groups and commands:
++ *Navigation*:
+  + =u= :: Visit counterpart (~tlon-open-counterpart-dwim~)
+  + =H-u= :: Visit counterpart other window (~tlon-open-counterpart-in-other-window-dwim~)
+  + =U= :: Open counterpart in Dired (~tlon-open-counterpart-in-dired~)
++ *Matching*:
+  + =d= :: Display corresponding paragraphs (~tlon-display-corresponding-paragraphs~)
++ *Metadata*:
+  + =o= :: Set ‘original_path’ (~tlon-yaml-insert-original-path~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-internals
+:END:
+
+This section lists non-interactive functions used internally or potentially useful for advanced customization.
+
+*** Counterpart Finding Logic
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-finding-internals
+:END:
+
+#+findex: tlon-get-counterpart-in-translations
++ ~tlon-get-counterpart-in-translations~ :: Specific logic for finding the counterpart when =FILE= is in a =translations= repository. Gets the counterpart directory (~tlon-get-counterpart-dir~) and looks up the =original_path= in the file's YAML metadata.
+
+#+findex: tlon-get-counterpart-in-originals
++ ~tlon-get-counterpart-in-originals~ :: Specific logic for finding the counterpart when =FILE= is in an =originals= repository. Gets the counterpart repository (~tlon-get-counterpart-repo~), reads its metadata (~tlon-metadata-in-repo~), and searches for an entry where the =original_path= matches the filename of =FILE=. Returns the =file= property of the matching entry.
+
+*** Paragraph Handling Logic
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-paragraph-internals
+:END:
+
+#+findex: tlon-is-between-paragraphs-p
++ ~tlon-is-between-paragraphs-p~ :: Returns non-nil if point is exactly between two paragraphs (i.e., moving one character forward changes the paragraph count). Uses ~tlon-get-number-of-paragraphs~.
+
+#+findex: tlon-with-paragraphs
++ ~tlon-with-paragraphs~ :: Iterates through each paragraph in =FILE= (or current buffer) and executes =FN= for each.
+  1. Finds the file and switches to its buffer.
+  2. Moves past the YAML front matter.
+  3. Determines the end of the content (before local variables).
+  4. Loops while point is before the content end:
+     - Records the start position.
+     - Moves forward one paragraph using =markdown-forward-paragraph=.
+     - Records the end position (capped at content end).
+     - If the region between start and end is non-empty and contains non-whitespace characters:
+       - If =RETURN-POSITIONS= is non-nil, pushes =(start . end)= to the result list.
+       - Otherwise, calls =FN= with start and end positions and pushes its result to the list.
+  5. Returns the reversed list of results or positions.
+
+#+findex: tlon-get-number-of-paragraphs
++ ~tlon-get-number-of-paragraphs~ :: Calculates the number of paragraphs between optional =START= and =END= positions. Calls ~tlon-with-paragraphs~ with =RETURN-POSITIONS= set to =t= and counts the resulting position pairs that fall within the specified range.
+
+#+findex: tlon-get-corresponding-paragraphs
++ ~tlon-get-corresponding-paragraphs~ :: Returns a list of corresponding paragraph pairs =((orig-para-1 . trans-para-1) (orig-para-2 . trans-para-2) ...)= between =FILE= (or current buffer) and its =COUNTERPART= (inferred if nil).
+  1. Finds the counterpart file.
+  2. Uses ~tlon-with-paragraphs~ to get lists of paragraph text for both the original and translation files.
+  3. Checks if the number of paragraphs is different. If so:
+     - Creates the "/Paragraph Pairs/" buffer.
+     - Inserts an error message detailing the mismatch.
+     - Inserts all paragraph pairs found so far (padding with "[Missing paragraph]" if one list is shorter).
+     - Displays the buffer.
+     - Signals a =user-error= "Paragraph number mismatch".
+  4. If paragraph counts match, pairs up the paragraphs and returns the list.
+
+*** Temporary Utility Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-counterpart-temp-utils
+:END:
+These functions appear to be specific utilities for bulk metadata updates, likely used during initial setup or migration. They are not part of the core counterpart functionality.
+
+#+findex: tlon-add-counterpart-metadata
++ ~tlon-add-counterpart-metadata~ :: Reads a CSV file mapping original filenames to translation filenames, finds the corresponding translation files in a specified =LANGUAGE= repository and =BARE-DIR=, and inserts the =original_path= metadata into their YAML front matter. Requires =simple-extras-asciify-string=.
+
+#+findex: tlon-add-author-metadata
++ ~tlon-add-author-metadata~ :: Processes author files in a specific =LANGUAGE= repository. For each file, it extracts the =title= from YAML, generates a slug, constructs the expected =original_path=, deletes existing metadata, and inserts a standard set of author metadata fields (=type=, =title=, =role=, =original_path=, =publication_status=). Requires =simple-extras-slugify=.
+
 * Indices
 :PROPERTIES:
 :CUSTOM_ID: h:indices
