@@ -136,7 +136,8 @@ If PROP is nil, prompt the user to select a property."
   "Prompt the user to select a contact and get value of PROP.
 If PROP is nil, prompt the user to select a property."
   (org-contacts)
-  (with-current-buffer (find-buffer-visiting tlon-contacts-file)
+  ;; Ensure tlon-contacts-file is set before using it.
+  (with-current-buffer (find-buffer-visiting (tlon-contacts-get-file))
     (tlon-contacts-get-property-value prop)))
 
 (defun tlon-contacts-get-nonempty-properties ()
