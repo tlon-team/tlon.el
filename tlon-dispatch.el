@@ -350,18 +350,5 @@ DIR is the directory where the repo is stored."
     ("d" "diffs since last user change"    tlon-log-buffer-latest-user-commit)
     ("e" "ediff with last user change"     tlon-log-buffer-latest-user-commit-ediff)]])
 
-;;;;; Search menu
-
-;;;###autoload (autoload 'tlon-search-menu "tlon-dispatch" nil t)
-(transient-define-prefix tlon-search-menu ()
-  "Search menu."
-  ["Search"
-   ("c" "commits"                      tlon-search-commits)
-   ("d" "commit-diffs"                 tlon-search-commit-diffs)
-   ("f" "files"                        tlon-search-files)
-   ("i" "issues (current repo)"        forge-search)
-   ("I" "issues (all repos)"           tlon-forge-search)
-   ("t" "translation"                  tlon-search-for-translation)])
-
 (provide 'tlon-dispatch)
 ;;; tlon-dispatch.el ends here
