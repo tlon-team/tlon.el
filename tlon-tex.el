@@ -942,6 +942,33 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 
 (advice-add 'ebib-set-field-value :around #'tlon-tex-ebib-set-field-advice)
 
+;;;;; Bare Bibliography
+
+(defun tlon-tex-create-bare-bibliography ()
+  "Create a JSON file with author, date, and title from `tlon-file-fluid'."
+  (interactive)
+  (let ((bibliography-data '())
+	(output-dir (tlon-repo-lookup :dir :name "babel-refs"))
+	(output-file "bare-bibliography.json"))
+    (unless output-dir
+      (user-error "Could not find directory for 'babel-refs' repository"))
+    (with-current-buffer (find-file-noselect tlon-file-fluid)
+      (save-excursion
+	(goto-char (point-min))
+	(bibtex-map-entries
+	 (lambda (_key start _end)
+	   (save-excursion
+	     (goto-char start)
+	     (let ((author (bibtex-extras-get-field "author"))
+		   (date (bibtex-extras-get-field "date"))
+		   (title (bibtex-extras-get-field "title")))
+	       (when (and author date title) ; Only add entries with all required fields
+		 (push `((author . ,author) (date . ,date) (title . ,title))
+		       bibliography-data))))))))
+    (let ((output-path (file-name-concat output-dir output-file)))
+      (tlon-write-data output-path (reverse bibliography-data)) ; Reverse to maintain original order
+      (message "Created bare bibliography at: %s" output-path))))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
@@ -965,7 +992,9 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
     ""
     "Move"
     ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
-    ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)]])
+    ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)]
+   ["Misc"
+    ("B" "Create bare bibliography"            tlon-tex-create-bare-bibliography)]])
 
 (provide 'tlon-tex)
 ;;; tlon-tex.el ends here
