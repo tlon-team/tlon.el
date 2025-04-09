@@ -964,13 +964,13 @@ Includes entries even if some fields are missing (value will be null)."
 	       (goto-char start)
 	       (let ((author (bibtex-extras-get-field "author"))
 		     (date (bibtex-extras-get-field "date"))
-		     (title (bibtex-extras-get-field "title")))
-		 ;; Add entry even if fields are missing
-		 (push `((author . ,author) (date . ,date) (title . ,title))
+		     (title (bibtex-extras-get-field "title"))
+		     (key (bibtex-extras-get-key)))
+		 (push `((author . ,author) (date . ,date) (title . ,title) (key . ,key))
 		       bibliography-data))))))))
     (let ((output-path (file-name-concat output-dir output-subdir output-file)))
       (tlon-write-data output-path (reverse bibliography-data)) ; Reverse to maintain original order
-      (message "Created bare bibliography at: %s" output-path))))
+      (find-file output-path))))
 
 ;;;;; Menu
 
