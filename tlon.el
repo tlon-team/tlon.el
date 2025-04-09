@@ -100,6 +100,10 @@ This variable should not be set manually.")
   (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "section-correspondences.json")
   "File containing the section correspondences.")
 
+(defvar tlon-file-bare-bibliography
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "bib" "bare-bibliography.json")
+  "File containing the bare bibliography.")
+
 (defmacro tlon-create-file-opening-command (file)
   "Create a command to open FILE."
   (let* ((file-base (downcase (file-name-base file)))
