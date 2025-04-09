@@ -696,10 +696,13 @@ A list of available voices may be found here:
 <https://elevenlabs.io/app/voice-library>. To get information about the voices,
 including the voice ID, run `tlon-tts-elevenlabs-get-voices'.")
 
-(defconst tlon-elevenlabs-char-limit (* 5000 0.9)
+(defconst tlon-elevenlabs-char-limit nil
   "Maximum number of characters that Elevenlabs can process per request.
-Elevenlabs can process up to 5000 characters per request. We use a slightly
-lower number to err on the safe side.
+Elevenlabs can process up to 5000 characters per request.
+
+When set to nil (the default), text will be chunked by paragraph regardless of size,
+which helps mitigate voice degradation issues for longer texts.
+When set to a number (e.g., (* 5000 0.9)), text will be chunked based on character count.
 
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
 questions\").")
@@ -1249,9 +1252,11 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 ;;;;;; Prepare chunks
 
 (defun tlon-tts-prepare-chunks ()
-  "Prepare the list of chunks."
-  (let* ((char-limit (round (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine)))
-	 (chunks (tlon-tts-read-into-chunks char-limit)))
+  "Prepare the list of chunks.
+For ElevenLabs, if `tlon-elevenlabs-char-limit' is nil, will chunk by paragraph
+regardless of size to work around voice degradation issues."
+  (let* ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
+         (chunks (tlon-tts-read-into-chunks char-limit)))
     (setq tlon-tts-chunks chunks)))
 
 (defun tlon-tts-set-destination ()
@@ -1283,38 +1288,82 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 
 (defun tlon-tts-break-into-chunks (chunk-size)
   "Break text in current buffer into chunks.
-If CHUNK-SIZE is non-nil, break text into chunks no larger thank CHUNK-SIZE.
+If CHUNK-SIZE is non-nil, break text into chunks no larger than CHUNK-SIZE.
 Each chunk will include the maximum number of paragraphs that fit in that size.
-Breaking the text between paragraphs ensures that both the intonation and the
-silences are preserved (breaking the text between sentences handles the
-intonation, but not the silences, correctly)."
+
+For ElevenLabs specifically, when `tlon-elevenlabs-char-limit' is nil,
+each paragraph is treated as a separate chunk regardless of size to help
+mitigate voice degradation issues for longer texts."
   (goto-char (point-min))
   (let* ((begin 1)
-	 (chunk-size (or chunk-size most-positive-fixnum))
-	 (voice-chunk tlon-tts-voice-chunks)
-	 break chunks end voice voice-break)
+         (chunk-size (or chunk-size most-positive-fixnum))
+         (voice-chunk tlon-tts-voice-chunks)
+         (use-paragraph-chunks (and (string= tlon-tts-engine "ElevenLabs")
+                                    (null (tlon-lookup tlon-tts-engines
+                                                      :char-limit
+                                                      :name tlon-tts-engine))))
+         (max-safe-chunk-size 4500)  ;; Safe limit for any paragraph
+         (min-chunk-size 100)        ;; Minimum chunk size to ensure progress
+         break chunks end voice voice-break)
     (while (not (eobp))
       (let ((voice-begin (if voice-chunk
-			     (marker-position (caar voice-chunk))
-			   most-positive-fixnum))
-	    (next-voice (when voice-chunk (cdar voice-chunk))))
-	(setq break (min (point-max) (+ begin chunk-size) voice-begin))
-	(when (eq break voice-begin)
-	  (setq voice-break t))
-	(goto-char break)
-	(unless (or voice-break (eobp))
-	  (backward-paragraph))
-	(tlon-tts-move-point-before-break-tag)
-	(setq end (point))
-	(when (= begin end)
-	  (user-error "Paragraph exceeds chunk size"))
-	(let* ((string (string-trim (buffer-substring-no-properties begin end)))
-	       (chunk (cons string (when voice (cons 'tlon-tts-voice voice)))))
-	  (push chunk chunks))
-	(setq voice next-voice)
-	(setq begin end)
-	(when voice-break
-	  (setq voice-chunk (cdr voice-chunk)))))
+                            (marker-position (caar voice-chunk))
+                          most-positive-fixnum))
+            (next-voice (when voice-chunk (cdar voice-chunk))))
+        ;; Calculate potential break point
+        (setq break (min (point-max) (+ begin chunk-size) voice-begin))
+        (when (eq break voice-begin)
+          (setq voice-break t))
+        (goto-char break)
+
+        ;; Move to paragraph boundary if needed
+        (unless (or voice-break (eobp))
+          (if use-paragraph-chunks
+              (progn
+                ;; Try to move forward by paragraph
+                (condition-case nil
+                    (forward-paragraph)
+                  (error (forward-line 1)))
+
+                ;; If paragraph is too large, break it at a reasonable point
+                (when (> (- (point) begin) max-safe-chunk-size)
+                  (goto-char begin)
+                  (forward-char (min max-safe-chunk-size (- (point-max) begin)))
+                  (backward-char 1)
+                  ;; Try to break at a sentence, phrase, or word boundary
+                  (cond
+                   ((re-search-backward "[.!?;:,]\\($\\|[ \t\n]\\)" (max (- (point) 200) begin) t)
+                    (forward-char 1))
+                   ((re-search-backward "\\s-" (max (- (point) 100) begin) t)
+                    (forward-char 1))
+                   (t nil))))
+            (backward-paragraph)))
+
+        ;; Store ending position before checking break tags
+        (setq end (point))
+
+        ;; Handle SSML break tags
+        (let ((orig-pos (point)))
+          (tlon-tts-move-point-before-break-tag)
+          (when (< (point) orig-pos)
+            (setq end (point))))
+
+        ;; Ensure we're making progress
+        (when (= begin end)
+          (goto-char (+ begin min-chunk-size))
+          (setq end (point))
+          (message "Warning: Had to force chunk boundary at position %d" begin))
+
+        ;; Add the chunk
+        (let* ((string (string-trim (buffer-substring-no-properties begin end)))
+               (chunk (cons string (when voice (cons 'tlon-tts-voice voice)))))
+          (push chunk chunks))
+
+        ;; Prepare for next iteration
+        (setq voice next-voice)
+        (setq begin end)
+        (when voice-break
+          (setq voice-chunk (cdr voice-chunk)))))
     (nreverse chunks)))
 
 (defun tlon-tts-move-point-before-break-tag ()
@@ -2937,6 +2986,17 @@ move point to the file-local variables section."
   "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks'."
   (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
 
+;;;;;;; ElevenLabs chunking mode
+
+(transient-define-infix tlon-tts-elevenlabs-chunk-by-paragraph-infix ()
+  :class 'transient-lisp-variable
+  :variable 'tlon-elevenlabs-char-limit
+  :reader (lambda (_ _ _)
+            (if (y-or-n-p "Chunk by paragraph (recommended)? ")
+                nil
+              (* 5000 0.9)))
+  :description "ElevenLabs chunking mode")
+
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
@@ -2952,6 +3012,7 @@ move point to the file-local variables section."
     ("-d" "Delete file chunks"                     tlon-tts-menu-infix-toggle-delete-file-chunks)
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
+    ("-l" "ElevenLabs chunking mode"               tlon-tts-elevenlabs-chunk-by-paragraph-infix)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
     ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
     ""
