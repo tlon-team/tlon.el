@@ -3018,17 +3018,6 @@ move point to the file-local variables section."
   "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks'."
   (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
 
-;;;;;;; ElevenLabs chunking mode
-
-(transient-define-infix tlon-tts-elevenlabs-chunk-by-paragraph-infix ()
-  :class 'transient-lisp-variable
-  :variable 'tlon-elevenlabs-char-limit
-  :reader (lambda (_ _ _)
-            (if (y-or-n-p "Chunk by paragraph (recommended)? ")
-                nil
-              (* 5000 0.9)))
-  :description "ElevenLabs chunking mode")
-
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
@@ -3044,7 +3033,6 @@ move point to the file-local variables section."
     ("-d" "Delete file chunks"                     tlon-tts-menu-infix-toggle-delete-file-chunks)
     ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
-    ("-l" "ElevenLabs chunking mode"               tlon-tts-elevenlabs-chunk-by-paragraph-infix)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
     ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
     ""
