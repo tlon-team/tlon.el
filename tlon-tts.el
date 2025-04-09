@@ -704,6 +704,10 @@ When set to nil (the default), text will be chunked by paragraph regardless of s
 which helps mitigate voice degradation issues for longer texts.
 When set to a number (e.g., (* 5000 0.9)), text will be chunked based on character count.
 
+With paragraph-based chunking, we use ElevenLabs' request stitching feature to
+maintain natural prosody between paragraphs by providing context from surrounding
+paragraphs in each request.
+
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
 questions\").")
 
@@ -1382,12 +1386,27 @@ After processing the chunks, open the relevant Dired buffer."
   (let ((destination (tlon-tts-set-destination))
 	(nth 1))
     (setq tlon-tts-chunks-to-process (length tlon-tts-chunks))
-    (dolist (chunk tlon-tts-chunks)
-      (let ((string (car chunk))
-	    (voice-data (cdr chunk)))
-	(tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth)
-				 (when voice-data
-				   `(,voice-data)))
+    (dotimes (i (length tlon-tts-chunks))
+      (let* ((string (car (nth i tlon-tts-chunks)))
+	     (voice-data (cdr (nth i tlon-tts-chunks)))
+             (before-text (when (and (> i 0) (string= tlon-tts-engine "ElevenLabs"))
+                           (car (nth (1- i) tlon-tts-chunks))))
+             (after-text (when (and (< (1+ i) (length tlon-tts-chunks))
+                                   (string= tlon-tts-engine "ElevenLabs"))
+                          (car (nth (1+ i) tlon-tts-chunks))))
+             ;; Fix: properly create a list of cons cells for parameters
+             (params (cond
+                      ((string= tlon-tts-engine "ElevenLabs")
+                       (append (delq nil
+                                     (list
+                                      (when before-text (cons :before-text before-text))
+                                      (when after-text (cons :after-text after-text))))
+                              (if voice-data (list voice-data) nil)))
+                      (voice-data
+                       (list voice-data))
+                      (t
+                       nil))))
+	(tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth) params)
 	(setq nth (1+ nth))))))
 
 (defun tlon-tts-generate-audio (string file &optional parameters)
@@ -1856,23 +1875,31 @@ the car is the name of the file-local variable the cdr is its overriding value."
 (defun tlon-tts-elevenlabs-make-request (string destination &optional parameters)
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
-PARAMETERS is a cons cell of parameters to use when generating the audio, where
-the car is the name of the file-local variable the cdr is its overriding value."
-  (let ((vars (tlon-tts-get-file-local-or-override
-	       '(tlon-tts-voice
-		 tlon-tts-audio)
-	       parameters)))
+PARAMETERS is a list of cons cells with parameters to use when generating the audio."
+  (let* ((vars (tlon-tts-get-file-local-or-override
+               '(tlon-tts-voice
+                 tlon-tts-audio)
+               parameters))
+         (before-text-param (assoc :before-text parameters))
+         (after-text-param (assoc :after-text parameters))
+         (before-text (when before-text-param (cdr before-text-param)))
+         (after-text (when after-text-param (cdr after-text-param))))
     (cl-destructuring-bind (voice audio) vars
-      (mapconcat 'shell-quote-argument
-		 (list "curl"
-		       "--request" "POST"
-		       "--url" (format tlon-elevenlabs-tts-url voice (car audio))
-		       "--header" "Content-Type: application/json"
-		       "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
-		       "--data" (json-encode `(("text" . ,string)
-					       ("model_id" . ,tlon-elevenlabs-model)))
-		       "--output" destination)
-		 " "))))
+      (let* ((payload (json-encode
+                      `(("text" . ,string)
+                        ("model_id" . ,tlon-elevenlabs-model)
+                        ,@(when before-text `(("before_text" . ,before-text)))
+                        ,@(when after-text `(("after_text" . ,after-text)))
+                        ("stitch_audio" . ,(if (or before-text after-text) t :json-false))))))
+        (mapconcat 'shell-quote-argument
+                 (list "curl"
+                       "--request" "POST"
+                       "--url" (format tlon-elevenlabs-tts-url voice (car audio))
+                       "--header" "Content-Type: application/json"
+                       "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
+                       "--data" payload
+                       "--output" destination)
+                 " ")))))
 
 (declare-function json-mode "json-mode")
 (defun tlon-tts-elevenlabs-get-voices ()
