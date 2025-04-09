@@ -945,7 +945,8 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 ;;;;; Bare Bibliography
 
 (defun tlon-tex-create-bare-bibliography ()
-  "Create a JSON file with author, date, and title from `tlon-file-fluid'."
+  "Create a JSON file with author, date, and title from `tlon-bibliography-files'.
+Includes entries even if some fields are missing (value will be null)."
   (interactive)
   (let ((bibliography-data '())
 	(output-dir (tlon-repo-lookup :dir :name "babel-refs"))
@@ -953,17 +954,18 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 	(output-file "bare-bibliography.json"))
     (unless output-dir
       (user-error "Could not find directory for 'babel-refs' repository"))
-    (with-current-buffer (find-file-noselect tlon-file-fluid)
-      (save-excursion
-	(goto-char (point-min))
-	(bibtex-map-entries
-	 (lambda (_key start _end)
-	   (save-excursion
-	     (goto-char start)
-	     (let ((author (bibtex-extras-get-field "author"))
-		   (date (bibtex-extras-get-field "date"))
-		   (title (bibtex-extras-get-field "title")))
-	       (when (and author date title) ; Only add entries with all required fields
+    (dolist (bib-file tlon-bibliography-files)
+      (with-current-buffer (find-file-noselect bib-file)
+	(save-excursion
+	  (goto-char (point-min))
+	  (bibtex-map-entries
+	   (lambda (_key start _end)
+	     (save-excursion
+	       (goto-char start)
+	       (let ((author (bibtex-extras-get-field "author"))
+		     (date (bibtex-extras-get-field "date"))
+		     (title (bibtex-extras-get-field "title")))
+		 ;; Add entry even if fields are missing
 		 (push `((author . ,author) (date . ,date) (title . ,title))
 		       bibliography-data))))))))
     (let ((output-path (file-name-concat output-dir output-subdir output-file)))
