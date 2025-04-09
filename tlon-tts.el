@@ -701,13 +701,13 @@ including the voice ID, run `tlon-tts-elevenlabs-get-voices'.")
   "Maximum number of characters that Elevenlabs can process per request.
 Elevenlabs can process up to 5000 characters per request.
 
-When set to nil (the default), text will be chunked by paragraph regardless of size,
-which helps mitigate voice degradation issues for longer texts.
-When set to a number (e.g., (* 5000 0.9)), text will be chunked based on character count.
+When set to nil (the default), text will be chunked by paragraph regardless of
+size, which helps mitigate voice degradation issues for longer texts. When set
+to a number (e.g., (* 5000 0.9)), text will be chunked based on character count.
 
 With paragraph-based chunking, we use ElevenLabs' request stitching feature to
-maintain natural prosody between paragraphs by providing context from surrounding
-paragraphs in each request.
+maintain natural prosody between paragraphs by providing context from
+surrounding paragraphs in each request.
 
 See <https://elevenlabs.io/app/subscription> (scroll down to \"Frequently asked
 questions\").")
@@ -1859,10 +1859,10 @@ the car is the name of the file-local variable the cdr is its overriding value."
 	       parameters)))
     (cl-destructuring-bind (voice) vars
       (format tlon-openai-tts-request
-	      (tlon-tts-openai-get-or-set-key) 
-              tlon-openai-model 
-              (json-encode-string string) 
-              voice 
+	      (tlon-tts-openai-get-or-set-key)
+              tlon-openai-model
+              (json-encode-string string)
+              voice
               destination))))
 
 (defun tlon-tts-openai-get-or-set-key ()
@@ -1876,7 +1876,8 @@ the car is the name of the file-local variable the cdr is its overriding value."
 (defun tlon-tts-elevenlabs-make-request (string destination &optional parameters)
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
-PARAMETERS is a list of cons cells with parameters to use when generating the audio."
+PARAMETERS is a list of cons cells with parameters to use when generating the
+audio."
   (let* ((vars (tlon-tts-get-file-local-or-override
                '(tlon-tts-voice
                  tlon-tts-audio)
