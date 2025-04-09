@@ -747,8 +747,6 @@ It provides the following groups and commands:
   + *Move*:
     + =t= :: Move this entry to Tlön database (~tlon-move-entry-to-fluid~)
     + =s= :: Move all entries to stable (~tlon-move-all-fluid-entries-to-stable~)
-   ["Misc"
-    ("B" "Create bare bibliography"            tlon-tex-create-bare-bibliography)]])
 
 ** Internal Functions and Variables
 :PROPERTIES:
