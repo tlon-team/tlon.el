@@ -2894,15 +2894,21 @@ move point to the file-local variables section."
 
 ;;;;;;; Engine
 
+(defun tlon-tts-menu-infix-set-engine-action (prompt &optional _initial _history)
+  "Action to take when engine is changed via the transient menu.
+Sets `tlon-tts-global-engine' to value selected via completion.
+PROMPT is used as the prompt string, _INITIAL and _HISTORY are ignored."
+  (let ((value (completing-read prompt (tlon-lookup-all tlon-tts-engines :name))))
+    (setq tlon-tts-global-engine value)
+    ;; Force refresh of the transient menu to update settings infix
+    (transient--redisplay)
+    value))  ; Return the selected value
+
 (transient-define-infix tlon-tts-menu-infix-set-engine ()
   "Set the engine."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-global-engine
-  :reader 'tlon-tts-set-engine-reader)
-
-(defun tlon-tts-set-engine-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-set-engine'."
-  (completing-read "Engine: " (tlon-lookup-all tlon-tts-engines :name)))
+  :reader 'tlon-tts-menu-infix-set-engine-action)
 
 ;;;;;;; Engine settings
 
@@ -2922,10 +2928,13 @@ move point to the file-local variables section."
   (tlon-tts-global-engine-settings-reader nil nil nil))
 
 (defun tlon-tts-global-engine-settings-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-set-engine-settings'."
+  "Reader for `tlon-tts-menu-infix-set-engine-settings'.
+Reads audio format choices based on the currently selected engine."
   (let* ((choices-var (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-global-engine))
          (choices (when choices-var (symbol-value choices-var)))
-         (selection (completing-read "Engine settings: " choices)))
+         (selection (completing-read
+                     (format "Engine settings for %s: " tlon-tts-global-engine)
+                     choices)))
     (assoc selection choices)))
 
 (cl-defmethod transient-init-value ((object tlon-tts-global-engine-settings-infix))
@@ -2940,17 +2949,20 @@ move point to the file-local variables section."
 
 (cl-defmethod transient-infix-set ((object tlon-tts-global-engine-settings-infix) value)
   "Set the value of the infix OBJECT to VALUE."
-  (let* ((variable (slot-value object 'variable)))
+  (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
+         (variable (and variable-name (intern-soft variable-name))))
     (when variable
-      (setf (slot-value object 'custom-value) value)
       (set variable value)
       value)))
 
 (cl-defmethod transient-format-value ((object tlon-tts-global-engine-settings-infix))
   "Format the value of the infix OBJECT."
-  (let ((value (slot-value object 'custom-value)))
+  (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
+         (variable (and variable-name (intern-soft variable-name)))
+         (value (when (and variable (boundp variable))
+                  (symbol-value variable))))
     (if value
-	(format "%s" value)
+        (format "%s" value)
       "Not set")))
 
 (defun tlon-tts-menu-infix-set-engine-settings-action ()
