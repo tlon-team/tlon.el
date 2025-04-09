@@ -2917,10 +2917,15 @@ move point to the file-local variables section."
 		 :documentation "Custom value for the setting."))
   "Infix class for setting engine settings.")
 
+(cl-defmethod transient-infix-read ((obj tlon-tts-global-engine-settings-infix))
+  "Read the value for engine settings infix OBJ."
+  (tlon-tts-global-engine-settings-reader nil nil nil))
+
 (defun tlon-tts-global-engine-settings-reader (_ _ _)
   "Reader for `tlon-tts-menu-infix-set-engine-settings'."
-  (let* ((choices (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-global-engine))
-	 (selection (completing-read "Engine settings: " choices)))
+  (let* ((choices-var (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-global-engine))
+         (choices (when choices-var (symbol-value choices-var)))
+         (selection (completing-read "Engine settings: " choices)))
     (assoc selection choices)))
 
 (cl-defmethod transient-init-value ((object tlon-tts-global-engine-settings-infix))
