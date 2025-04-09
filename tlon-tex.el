@@ -949,6 +949,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
   (interactive)
   (let ((bibliography-data '())
 	(output-dir (tlon-repo-lookup :dir :name "babel-refs"))
+	(output-subdir "bib")
 	(output-file "bare-bibliography.json"))
     (unless output-dir
       (user-error "Could not find directory for 'babel-refs' repository"))
@@ -965,7 +966,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 	       (when (and author date title) ; Only add entries with all required fields
 		 (push `((author . ,author) (date . ,date) (title . ,title))
 		       bibliography-data))))))))
-    (let ((output-path (file-name-concat output-dir output-file)))
+    (let ((output-path (file-name-concat output-dir output-subdir output-file)))
       (tlon-write-data output-path (reverse bibliography-data)) ; Reverse to maintain original order
       (message "Created bare bibliography at: %s" output-path))))
 
