@@ -28,6 +28,7 @@
 (require 'gptel)
 (require 'gptel-curl)
 (require 'gptel-extras)
+(require 'json)
 (require 'shut-up)
 (require 'tlon)
 (require 'tlon-core)
@@ -107,6 +108,9 @@ use a different model for fixing the Markdown."
 
 (defvar tlon-ai-retries 0
   "Number of retries for AI requests.")
+
+(defvar tlon-file-bare-bibliography (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "bare-bibliography.json")
+  "Path to the JSON file containing the bare bibliography.")
 
 (defconst tlon-ai-string-wrapper
   ":\n\n```\n%s\n```\n\n"
@@ -1420,6 +1424,139 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, return INFO."
     (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
     (gptel-context-remove-all))))
 
+;;;;; Bibliography Extraction
+
+;;;###autoload
+(defun tlon-ai-extract-references (&optional use-region)
+  "Scan the current buffer or region for bibliographic references using AI.
+Displays the found references in the *Messages* buffer and copies them (newline-separated) to the kill ring.
+With prefix argument USE-REGION, operate only on the active region."
+  (interactive "P")
+  (let ((text (if use-region
+                  (if (region-active-p)
+                      (buffer-substring-no-properties (region-beginning) (region-end))
+                    (user-error "Region not active"))
+                (buffer-string))))
+    (when (string-empty-p text)
+      (user-error "Buffer or region is empty"))
+    (message "Requesting AI to extract references...")
+    (tlon-make-gptel-request tlon-ai-extract-references-prompt text
+                             #'tlon-ai-extract-references-callback)))
+
+(defun tlon-ai-extract-references-callback (response info)
+  "Callback for `tlon-ai-extract-references'.
+Displays the found references and copies them to the kill ring."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let* ((references (split-string (string-trim response) "\n" t)) ; Split by newline, remove empty
+           (count (length references)))
+      (kill-new (mapconcat #'identity references "\n"))
+      (message "AI found %d potential reference(s). Copied to kill ring." count)
+      ;; Optionally display the references (might be long)
+      (when (> count 0)
+        (message "References:\n%s%s"
+                 (mapconcat (lambda (ref) (concat "- " ref))
+                            (seq-take references (min count 10)) ; Show first 10
+                            "\n")
+                 (if (> count 10) "\n..." ""))))))
+
+;;;;;; Bibkey Lookup Command
+
+;;;###autoload
+(defun tlon-ai-get-bibkeys-from-references (&optional references-string)
+  "Get corresponding BibTeX keys for a list of bibliographic references.
+The list of references is taken from the active region (one per line)
+or prompted from the user (newline-separated).
+Matches against `tlon-file-bare-bibliography` using AI."
+  (interactive (list nil)) ; No prefix arg needed here
+  (unless (file-exists-p tlon-file-bare-bibliography)
+    (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
+
+  (let* ((input-string (or references-string
+                           (if (region-active-p)
+                               (buffer-substring-no-properties (region-beginning) (region-end))
+                             (read-string "Paste references (one per line): "))))
+         (references (split-string (string-trim input-string) "\n" t))
+         (db-string (with-temp-buffer
+                      (insert-file-contents tlon-file-bare-bibliography)
+                      (buffer-string))) ; Pass raw JSON string
+         (results-alist '())
+         (output-buffer (get-buffer-create "*BibTeX Key Matches*")))
+
+    (when (string-empty-p db-string)
+      (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
+    (unless references
+      (user-error "No references provided or found in region."))
+
+    (message "Matching %d references against %s..." (length references) (file-name-nondirectory tlon-file-bare-bibliography))
+
+    ;; Process each reference using the synchronous helper
+    (dolist (ref references)
+      (let ((key (tlon-ai--get-single-bibkey-sync ref db-string)))
+        (push (cons ref key) results-alist)
+        (message "."))) ; Progress indicator
+
+    ;; Display results
+    (with-current-buffer output-buffer
+      (erase-buffer)
+      (insert (format ";; BibTeX Key Matches from %s\n\n" (file-name-nondirectory tlon-file-bare-bibliography)))
+      (dolist (pair (reverse results-alist)) ; Reverse to maintain original order
+        (insert (format "Reference: %s\nKey      : %s\n\n" (car pair) (cdr pair))))
+      (goto-char (point-min))
+      (display-buffer output-buffer))
+    (message "Matching complete. Results in %s buffer." (buffer-name output-buffer))))
+
+
+;;;;;; Bibkey Lookup Helpers
+
+;; NOTE: This synchronous implementation is basic and assumes an OpenAI-compatible API.
+;; It bypasses gptel context management and might need refinement.
+(defun tlon-ai--get-single-bibkey-sync (reference db-string)
+  "Synchronously ask AI for the bibkey for REFERENCE using DB-STRING.
+Returns the key string, 'NOT_FOUND', or 'ERROR_AI'."
+  (let* ((prompt (format tlon-ai-get-bibkeys-prompt reference db-string))
+         ;; Determine backend and model (using default gptel settings for simplicity)
+         (backend-info (gptel-backend))
+         (model-info (gptel-model))
+         (api-key (funcall (oref backend-info key)))
+         (api-url (oref backend-info endpoint))
+         (model-name (oref model-info name))
+         ;; Construct payload (example for OpenAI Chat Completions)
+         (data (json-encode `(:messages ((:role "user" :content ,prompt))
+                              :model ,model-name
+                              :max_tokens 50 ; Key should be short
+                              :temperature 0.1))) ; Low temp for deterministic output
+         ;; Construct headers
+         (headers (list (cons "Content-Type" "application/json")
+                        (cons "Authorization" (concat "Bearer " api-key))))
+         ;; Prepare request arguments for url-retrieve-synchronously
+         (request-method "POST")
+         (request-data data)
+         (url-request-extra-headers headers)
+         (url-request-method request-method)
+         (url-request-data request-data))
+
+    (message "Asking AI for key for: %s" (substring reference 0 (min 50 (length reference))))
+    (condition-case err
+        (let* ((buffer (url-retrieve-synchronously api-url))
+               (response-json (when buffer
+                                (with-current-buffer buffer
+                                  (goto-char (point-min))
+                                  (when (re-search-forward "^$" nil t) ; Skip headers
+                                    (json-read))))))
+          (when buffer (kill-buffer buffer)) ; Clean up buffer
+
+          (if response-json
+              (let* ((choices (or (assoc-default 'choices response-json) '()))
+                     (message (when choices (assoc-default 'message (car choices))))
+                     (content (when message (assoc-default 'content message))))
+                (if (and content (not (string-empty-p content)))
+                    (string-trim content) ; Return the key or "NOT_FOUND"
+                  (progn (message "AI response format unexpected: %S" response-json) "ERROR_AI")))
+            (progn (message "AI request failed or returned empty response.") "ERROR_AI")))
+      (error (message "Error during synchronous AI request: %s" err) "ERROR_AI"))))
+
+
 ;;;;; Change propagation
 
 ;;;;;; Change Propagation Command
@@ -1806,9 +1943,21 @@ If nil, use the default model."
     ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("s -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
-    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
-    ""
-    ("-m" "General model" gptel--infix-provider)]])
+    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)]
+   ["Bibliography"
+    ("x" "Extract references from buffer/region" tlon-ai-extract-references)
+    ("k" "Get BibKeys for references"            tlon-ai-get-bibkeys-from-references)]
+   ["Misc"
+    ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
+    ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
+    ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
+    ("r" "rewrite"                                    tlon-ai-rewrite)
+    ("l" "translate"                                  tlon-ai-translate)
+    ;; Create command to translate all images
+    ;; TODO: develop this
+    ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
+    ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
+    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
