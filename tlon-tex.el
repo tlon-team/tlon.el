@@ -948,10 +948,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
   "Create a JSON file with author, date, and title from `tlon-bibliography-files'.
 Includes entries even if some fields are missing (value will be null)."
   (interactive)
-  (let ((bibliography-data '())
-	(output-dir (tlon-repo-lookup :dir :name "babel-refs"))
-	(output-subdir "bib")
-	(output-file "bare-bibliography.json"))
+  (let ((bibliography-data '()))
     (unless output-dir
       (user-error "Could not find directory for 'babel-refs' repository"))
     (dolist (bib-file tlon-bibliography-files)
@@ -968,9 +965,8 @@ Includes entries even if some fields are missing (value will be null)."
 		     (key (bibtex-extras-get-key)))
 		 (push `((author . ,author) (date . ,date) (title . ,title) (key . ,key))
 		       bibliography-data))))))))
-    (let ((output-path (file-name-concat output-dir output-subdir output-file)))
-      (tlon-write-data output-path (reverse bibliography-data)) ; Reverse to maintain original order
-      (find-file output-path))))
+    (tlon-write-data tlon-file-bare-bibliography (reverse bibliography-data)) ; Reverse to maintain original order
+    (find-file tlon-file-bare-bibliography)))
 
 ;;;;; Menu
 
