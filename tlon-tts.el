@@ -724,21 +724,21 @@ questions\").")
   `((:name "Microsoft Azure"
 	   :voices-var tlon-microsoft-azure-voices
 	   :audio-var tlon-microsoft-azure-audio-settings
-	   :choices-var ,tlon-microsoft-azure-audio-choices
+	   :choices-var tlon-microsoft-azure-audio-choices
 	   :request-fun tlon-tts-microsoft-azure-make-request
 	   :char-limit ,tlon-microsoft-azure-char-limit
 	   :property :azure)
     (:name "Google Cloud"
 	   :voices-var tlon-google-cloud-voices
 	   :audio-var tlon-google-cloud-audio-settings
-	   :choices-var ,tlon-google-cloud-audio-choices
+	   :choices-var tlon-google-cloud-audio-choices
 	   :request-fun tlon-tts-google-cloud-make-request
 	   :char-limit ,tlon-google-cloud-char-limit
 	   :property :google)
     (:name "Amazon Polly"
 	   :voices-var tlon-amazon-polly-voices
 	   :audio-var tlon-amazon-polly-audio-settings
-	   :choices-var ,tlon-amazon-polly-audio-choices
+	   :choices-var tlon-amazon-polly-audio-choices
 	   :request-fun tlon-tts-amazon-polly-make-request
 	   :char-limit ,tlon-amazon-polly-char-limit
 	   :property :polly)
@@ -751,7 +751,7 @@ questions\").")
     (:name "ElevenLabs"
 	   :voices-var tlon-elevenlabs-voices
 	   :audio-var tlon-elevenlabs-audio-settings
-	   :choices-var ,tlon-elevenlabs-audio-choices
+	   :choices-var tlon-elevenlabs-audio-choices
 	   :request-fun tlon-tts-elevenlabs-make-request
 	   :char-limit ,tlon-elevenlabs-char-limit
 	   :property :elevenlabs))
