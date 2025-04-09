@@ -536,6 +536,8 @@ FILE is the file to translate."
 
 ;;;;; Writing
 
+;;;;;; Reference article
+
 (declare-function tlon-yaml-get-key "tlon-yaml")
 (defun tlon-ai-create-reference-article ()
   "Create a new reference article using AI."
