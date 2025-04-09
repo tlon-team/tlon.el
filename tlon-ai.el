@@ -316,6 +316,21 @@ use a different model for fixing the Markdown."
     (:prompt ,(format "Le texte suivant contient plusieurs erreurs d'encodage. Par exemple, \"cuýn\", \"pronosticaci¾3\263n\", etc.%sVeuillez renvoyer le même texte mais avec ces erreurs corrigées, sans aucune autre altération. N'utilisez pas de guillemets doubles si le texte comporte des guillemets simples. Lorsque vous renvoyez le texte corrigé, n'incluez pas d'éclaircissements tels que \"Voici le texte corrigé\". Je vous remercie de votre attention." tlon-ai-string-wrapper)
 	     :language "fr")))
 
+;;;;; Bibliographic Reference Extraction
+
+(defconst tlon-ai-extract-references-prompt
+  (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference on a new line. Do not include any commentary, numbering, or bullet points, just the references themselves. Examples of references might look like 'Author (Year) Title', 'Author, A. B. (Year). Title of work.', etc."
+          tlon-ai-string-wrapper)
+  "Prompt for extracting bibliographic references from text.")
+
+(defconst tlon-ai-get-bibkeys-prompt
+  (format "You are an expert bibliographic database lookup tool. You will be given an 'Input Reference' string and a 'Database' in JSON format containing bibliographic entries.\n\nYour task is to find the *single best matching entry* in the Database for the Input Reference. The match should be based on semantic similarity (author, title, year), even if the strings are not identical. \n\nOnce you find the best match, you must return *only* the value of the 'key' field for that matching entry. Do not return anything else - no explanations, no 'The key is:', just the key string itself.\n\nIf you cannot find a reasonably good match in the Database, return the exact string 'NOT_FOUND'.\n\nInput Reference:\n%s\n\nDatabase:\n```json\n%s\n```\n\nKey:"
+          ;; %s will be the single input reference
+          ;; %s will be the JSON database string
+          )
+  "Prompt for finding a BibTeX key for a single reference against a JSON database.")
+
+
 ;;;;; Get help
 
 (defconst tlon-ai-get-help-prompt
