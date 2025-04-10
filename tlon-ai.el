@@ -1480,40 +1480,54 @@ Displays the found references and copies them to the kill ring."
   "Internal state variable for asynchronous bibkey lookup.")
 
 ;;;###autoload
-(defun tlon-ai-get-bibkeys-from-references (&optional references-string)
-  "Get corresponding BibTeX keys for a list of bibliographic references using AI.
-The list of references is taken from the active region (one per line)
-or prompted from the user (newline-separated).
-Matches against `tlon-file-bare-bibliography` asynchronously."
-  (interactive (list nil))
+(defun tlon-ai-get-bibkeys-from-references (beg end)
+  "Replace bibliographic references in region with <Cite> tags using AI.
+Scans each line in the active region (BEG END), treats it as a reference,
+and asks the AI to find the corresponding BibTeX key in
+`tlon-file-bare-bibliography`. Replaces the original reference line with
+`<Cite bibKey=\"KEY\" />` if a key is found. Lines where no key is found
+or an error occurs are left unchanged."
+  (interactive "r") ; Require region
   (unless (file-exists-p tlon-file-bare-bibliography)
     (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
 
-  (let* ((input-string (or references-string
-                           (if (region-active-p)
-                               (buffer-substring-no-properties (region-beginning) (region-end))
-                             (read-string "Paste references (one per line): "))))
-         (references (split-string (string-trim input-string) "\n" t))
+  (let* ((references-with-pos '())
          (db-string (with-temp-buffer
                       (insert-file-contents tlon-file-bare-bibliography)
                       (buffer-string)))
-         (output-buffer-name "*BibTeX Key Matches*"))
+         (source-buffer (current-buffer))) ; Store the buffer where the command was invoked
+
+    ;; Parse region line by line, storing text and positions
+    (save-excursion
+      (goto-char beg)
+      (while (< (point) end)
+        (let* ((line-start (line-beginning-position))
+               (line-end (line-end-position))
+               ;; Ensure we don't go past the original region end
+               (actual-end (min line-end end))
+               (line-text (buffer-substring-no-properties line-start actual-end)))
+          (unless (string-blank-p line-text)
+            (push (list (string-trim line-text) line-start actual-end) references-with-pos)))
+        (forward-line 1)))
+
+    (setq references-with-pos (nreverse references-with-pos)) ; Maintain original order
 
     (when (string-empty-p db-string)
       (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
-    (unless references
-      (user-error "No references provided or found in region."))
+    (unless references-with-pos
+      (user-error "No non-blank reference lines found in region."))
 
     ;; Initialize state for the asynchronous process
     (setq tlon-ai--bibkey-state
-          `(:references ,references
+          `(:references-with-pos ,references-with-pos
             :db-string ,db-string
             :index 0
-            :results ()
-            :output-buffer-name ,output-buffer-name
-            :total ,(length references)))
+            :results () ; Will store (start . end . key)
+            :source-buffer ,source-buffer
+            :total ,(length references-with-pos)))
 
-    (message "Starting asynchronous BibTeX key lookup for %d references..." (plist-get tlon-ai--bibkey-state :total))
+    (message "Starting asynchronous BibTeX key lookup for %d references in region..."
+             (plist-get tlon-ai--bibkey-state :total))
     ;; Start the first request
     (tlon-ai--process-next-bibkey-reference)))
 
@@ -1561,24 +1575,41 @@ Stores the result (including position) and triggers the next request."
     ;; Process the next reference
     (tlon-ai--process-next-bibkey-reference)))
 
-(defun tlon-ai--display-bibkey-results ()
-  "Displays the final bibkey lookup results in the designated buffer."
+(defun tlon-ai--apply-bibkey-replacements ()
+  "Applies the BibTeX key replacements in the source buffer."
   (let* ((state tlon-ai--bibkey-state)
-         (results-alist (plist-get state :results)) ; Results are in reverse order
-         (output-buffer-name (plist-get state :output-buffer-name))
-         (output-buffer (get-buffer-create output-buffer-name)))
+         (results (plist-get state :results)) ; List of (start end key)
+         (source-buffer (plist-get state :source-buffer))
+         (replacements-made 0)
+         (errors-occurred 0))
 
-    (with-current-buffer output-buffer
-      (erase-buffer)
-      (insert (format ";; BibTeX Key Matches from %s (%d references)\n\n"
-                      (file-name-nondirectory tlon-file-bare-bibliography)
-                      (length results-alist)))
-      (dolist (pair (reverse results-alist)) ; Reverse to display in original order
-        (insert (format "Reference: %s\nKey      : %s\n\n" (car pair) (cdr pair))))
-      (goto-char (point-min))
-      (display-buffer output-buffer))
+    (unless (buffer-live-p source-buffer)
+      (message "Source buffer is no longer live. Aborting replacements.")
+      (setq tlon-ai--bibkey-state nil)
+      (cl-return-from tlon-ai--apply-bibkey-replacements))
 
-    (message "Asynchronous BibTeX key lookup complete. Results in %s buffer." output-buffer-name)
+    ;; Sort results by start position in REVERSE order to avoid messing up positions
+    (setq results (sort results (lambda (a b) (> (car a) (car b)))))
+
+    (with-current-buffer source-buffer
+      (dolist (result results)
+        (let ((start (nth 0 result))
+              (end (nth 1 result))
+              (key (nth 2 result)))
+          ;; Check if key is valid (not an error marker)
+          (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+              (progn
+                (message "No valid key found for text at %d-%d (Result: %s). Skipping." start end key)
+                (cl-incf errors-occurred))
+            ;; Perform replacement
+            (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+              (goto-char start) ; Go to start before deleting
+              (delete-region start end)
+              (insert replacement-text)
+              (cl-incf replacements-made))))))
+
+    (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
+             replacements-made errors-occurred)
     ;; Clean up state variable
     (setq tlon-ai--bibkey-state nil)))
 
