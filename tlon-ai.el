@@ -2114,7 +2114,18 @@ Returns an alist: (ref-string . list-of-(start . end))."
           (save-excursion
             (goto-char end) ; Start searching backwards from the end
             (while (search-backward ref beg t)
-              (push (cons (match-beginning 0) (match-end 0)) ref-positions)))
+              (let* ((match-start (match-beginning 0))
+                     (match-end (match-end 0))
+                     (line-start (line-beginning-position))
+                     (adjusted-start match-start))
+                ;; Check if the match is preceded by a footnote marker at line start
+                (save-excursion
+                  (goto-char match-start)
+                  (when (and (= (point) line-start) ; Ensure match starts exactly at line beginning
+                             (looking-at "\\[\\^[0-9]+\\]: "))
+                    ;; If marker found, adjust start position past the marker
+                    (setq adjusted-start (match-end 0))))
+                (push (cons adjusted-start match-end) ref-positions))))
           (when ref-positions
             (push (cons ref ref-positions) positions-alist)))))))
 
