@@ -1474,49 +1474,6 @@ Displays the found references and copies them to the kill ring."
                             "\n")
                  (if (> count 10) "\n..." ""))))))
 
-;;;;;; Bibkey Lookup Command
-
-;;;###autoload
-(defun tlon-ai-get-bibkeys-from-references (&optional references-string)
-  "Get corresponding BibTeX keys for a list of bibliographic references.
-The list of references is taken from the active region (one per line)
-or prompted from the user (newline-separated).
-Matches against `tlon-file-bare-bibliography` using AI."
-  (interactive (list nil)) ; No prefix arg needed here
-  (unless (file-exists-p tlon-file-bare-bibliography)
-    (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
-
-  (let* ((input-string (or references-string
-                           (if (region-active-p)
-                               (buffer-substring-no-properties (region-beginning) (region-end))
-                             (read-string "Paste references (one per line): "))))
-         (references (split-string (string-trim input-string) "\n" t))
-         (db-string (with-temp-buffer
-                      (insert-file-contents tlon-file-bare-bibliography)
-                      (buffer-string))) ; Pass raw JSON string
-         (results-alist '())
-         (output-buffer (get-buffer-create "*BibTeX Key Matches*")))
-
-    (when (string-empty-p db-string)
-      (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
-    (unless references
-      (user-error "No references provided or found in region."))
-
-    (message "Matching %d references against %s..." (length references) (file-name-nondirectory tlon-file-bare-bibliography))
-
-    ;; Process each reference using the synchronous helper
-    (dolist (ref references)
-      (let ((key (tlon-ai--get-single-bibkey-sync ref db-string)))
-        (push (cons ref key) results-alist)
-        (message "."))) ; Progress indicator
-
-    ;; Display results
-    (with-current-buffer output-buffer
-      (erase-buffer)
-      (insert (format ";; BibTeX Key Matches from %s\n\n" (file-name-nondirectory tlon-file-bare-bibliography)))
-      (dolist (pair (reverse results-alist)) ; Reverse to maintain original order
-        (insert (format "Reference: %s\nKey      : %s\n\n" (car pair) (cdr pair))))
-      (goto-char (point-min))
 ;;;;;; Bibkey Lookup Command and Helpers
 
 (defvar tlon-ai--bibkey-state nil
