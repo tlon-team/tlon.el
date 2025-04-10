@@ -1521,56 +1521,6 @@ Matches against `tlon-file-bare-bibliography` using AI."
     (message "Matching complete. Results in %s buffer." (buffer-name output-buffer))))
 
 
-;;;;;; Bibkey Lookup Helpers
-
-;; NOTE: This synchronous implementation is basic and assumes an OpenAI-compatible API.
-;; It bypasses gptel context management and might need refinement.
-(defun tlon-ai--get-single-bibkey-sync (reference db-string)
-  "Synchronously ask AI for the bibkey for REFERENCE using DB-STRING.
-Returns the key string, 'NOT_FOUND', or 'ERROR_AI'."
-  (let* ((prompt (format tlon-ai-get-bibkeys-prompt reference db-string))
-         ;; Determine backend and model (using default gptel settings for simplicity)
-         (backend-info (gptel-backend))
-         (model-info (gptel-model))
-         (api-key (funcall (oref backend-info key)))
-         (api-url (oref backend-info endpoint))
-         (model-name (oref model-info name))
-         ;; Construct payload (example for OpenAI Chat Completions)
-         (data (json-encode `(:messages ((:role "user" :content ,prompt))
-                              :model ,model-name
-                              :max_tokens 50 ; Key should be short
-                              :temperature 0.1))) ; Low temp for deterministic output
-         ;; Construct headers
-         (headers (list (cons "Content-Type" "application/json")
-                        (cons "Authorization" (concat "Bearer " api-key))))
-         ;; Prepare request arguments for url-retrieve-synchronously
-         (request-method "POST")
-         (request-data data)
-         (url-request-extra-headers headers)
-         (url-request-method request-method)
-         (url-request-data request-data))
-
-    (message "Asking AI for key for: %s" (substring reference 0 (min 50 (length reference))))
-    (condition-case err
-        (let* ((buffer (url-retrieve-synchronously api-url))
-               (response-json (when buffer
-                                (with-current-buffer buffer
-                                  (goto-char (point-min))
-                                  (when (re-search-forward "^$" nil t) ; Skip headers
-                                    (json-read))))))
-          (when buffer (kill-buffer buffer)) ; Clean up buffer
-
-          (if response-json
-              (let* ((choices (or (assoc-default 'choices response-json) '()))
-                     (message (when choices (assoc-default 'message (car choices))))
-                     (content (when message (assoc-default 'content message))))
-                (if (and content (not (string-empty-p content)))
-                    (string-trim content) ; Return the key or "NOT_FOUND"
-                  (progn (message "AI response format unexpected: %S" response-json) "ERROR_AI")))
-            (progn (message "AI request failed or returned empty response.") "ERROR_AI")))
-      (error (message "Error during synchronous AI request: %s" err) "ERROR_AI"))))
-
-
 ;;;;; Change propagation
 
 ;;;;;; Change Propagation Command
