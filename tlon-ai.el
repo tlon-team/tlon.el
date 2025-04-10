@@ -1546,8 +1546,8 @@ or an error occurs are left unchanged."
           ;; Make the async request, passing the handler as callback
           ;; Use a low-temp model if possible, maybe define a specific one?
           (tlon-make-gptel-request prompt nil #'tlon-ai--bibkey-result-handler nil t)) ; Bypass context check
-      ;; All references processed, display results
-      (tlon-ai--display-bibkey-results))))
+      ;; All references processed, apply replacements
+      (tlon-ai--apply-bibkey-replacements))))
 
 (defun tlon-ai--bibkey-result-handler (response info)
   "Callback function to handle the result of a single bibkey lookup.
