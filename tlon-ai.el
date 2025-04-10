@@ -324,10 +324,9 @@ use a different model for fixing the Markdown."
   "Prompt for extracting bibliographic references from text.")
 
 (defconst tlon-ai-get-bibkeys-prompt
-  (format "You are an expert bibliographic database lookup tool. You will be given an 'Input Reference' string and a 'Database' in JSON format containing bibliographic entries.\n\nYour task is to find the *single best matching entry* in the Database for the Input Reference. The match should be based on semantic similarity (author, title, year), even if the strings are not identical. \n\nOnce you find the best match, you must return *only* the value of the 'key' field for that matching entry. Do not return anything else - no explanations, no 'The key is:', just the key string itself.\n\nIf you cannot find a reasonably good match in the Database, return the exact string 'NOT_FOUND'.\n\nInput Reference:\n%s\n\nDatabase:\n```json\n%s\n```\n\nKey:"
-          ;; %s will be the single input reference
-          ;; %s will be the JSON database string
-          )
+  "You are an expert bibliographic database lookup tool. You will be given an 'Input Reference' string and a 'Database' in JSON format containing bibliographic entries.\n\nYour task is to find the *single best matching entry* in the Database for the Input Reference. The match should be based on semantic similarity (author, title, year), even if the strings are not identical. \n\nOnce you find the best match, you must return *only* the value of the 'key' field for that matching entry. Do not return anything else - no explanations, no 'The key is:', just the key string itself.\n\nIf you cannot find a reasonably good match in the Database, return the exact string 'NOT_FOUND'.\n\nInput Reference:\n%s\n\nDatabase:\n```json\n%s\n```\n\nKey:"
+  ;; %s will be the single input reference
+  ;; %s will be the JSON database string
   "Prompt for finding a BibTeX key for a single reference against a JSON database.")
 
 
