@@ -1523,11 +1523,12 @@ Matches against `tlon-file-bare-bibliography` asynchronously."
          (index (plist-get state :index))
          (total (plist-get state :total)))
     (if (< index total)
-        (let* ((reference (nth index (plist-get state :references)))
+        (let* ((entry (nth index (plist-get state :references-with-pos)))
+               (reference-text (nth 0 entry))
                (db-string (plist-get state :db-string))
-               (prompt (format tlon-ai-get-bibkeys-prompt reference db-string)))
+               (prompt (format tlon-ai-get-bibkeys-prompt reference-text db-string)))
           (message "Requesting key for reference %d/%d: %s..."
-                   (1+ index) total (substring reference 0 (min 50 (length reference))))
+                   (1+ index) total (substring reference-text 0 (min 50 (length reference-text))))
           ;; Make the async request, passing the handler as callback
           ;; Use a low-temp model if possible, maybe define a specific one?
           (tlon-make-gptel-request prompt nil #'tlon-ai--bibkey-result-handler nil t)) ; Bypass context check
@@ -1536,19 +1537,22 @@ Matches against `tlon-file-bare-bibliography` asynchronously."
 
 (defun tlon-ai--bibkey-result-handler (response info)
   "Callback function to handle the result of a single bibkey lookup.
-Stores the result and triggers the next request."
+Stores the result (including position) and triggers the next request."
   (let* ((state tlon-ai--bibkey-state)
          (index (plist-get state :index))
-         (reference (nth index (plist-get state :references)))
-         (key (if response (string-trim response) "ERROR_AI")))
+         (entry (nth index (plist-get state :references-with-pos)))
+         (reference-text (nth 0 entry))
+         (start-pos (nth 1 entry))
+         (end-pos (nth 2 entry))
+         (key (if response (string-trim response) "ERROR_AI"))) ; Keep error markers
 
     (unless response
       (message "AI request failed for reference %d: %s. Status: %s"
-               (1+ index) reference (plist-get info :status)))
+               (1+ index) reference-text (plist-get info :status)))
 
-    ;; Store the result
+    ;; Store the result as (start . end . key)
     (setf (plist-get state :results)
-          (cons (cons reference key) (plist-get state :results)))
+          (cons (list start-pos end-pos key) (plist-get state :results)))
 
     ;; Increment index and update state
     (setf (plist-get state :index) (1+ index))
