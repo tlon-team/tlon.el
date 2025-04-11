@@ -234,12 +234,12 @@ END."
   (unless (or (region-active-p)
 	      (and start end))
     (user-error "No region selected and no START and END specified"))
-  (message "Number of paragraphs: %d"
-	   (tlon-get-number-of-paragraphs (cl-destructuring-bind (start . end)
-					      (if (region-active-p)
-						  (cons (region-beginning) (region-end))
-						(cons start end))
-					    start end))))
+  (cl-destructuring-bind (start . end)
+      (if (region-active-p)
+	  (cons (region-beginning) (region-end))
+	(cons start end))
+    (message "There are %d paragraphs in the selected region"
+	     (tlon-get-number-of-paragraphs start end))))
 
 (defun tlon-get-corresponding-paragraphs (&optional file counterpart)
   "Return pairs of paragraphs between FILE and its COUNTERPART.
