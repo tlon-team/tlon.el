@@ -32,6 +32,7 @@
 (require 'tlon-core)
 (require 'vc)
 (require 'vc-extras)
+(require 'pass-extras)
 
 ;;;; Variables
 
@@ -239,13 +240,27 @@ If REPOS is nil, search in all tracked repos."
 
 ;;;;; git-crypt
 
+(defun tlon--get-git-crypt-repos ()
+  "Return a list of Tlön repo names that use git-crypt.
+This list is derived from entries stored under 'tlon/core/git-crypt/'
+in the password store."
+  (let* ((base-path "tlon/core/git-crypt/")
+         (base-path-len (length base-path))
+         (entries (pass-extras--list-entries base-path)))
+    (mapcar (lambda (entry)
+              (substring entry base-path-len))
+            entries)))
+
 (autoload 'pass-extras-git-crypt-unlock "pass-extras")
 (defun tlon-git-crypt-unlock ()
-  "Unlock `uqbar' git-crypt repos."
+  "Unlock a Tlön repository that uses git-crypt.
+Prompts the user to select a repository from the list derived
+from entries under 'tlon/core/git-crypt/' in the password store."
   (interactive)
-  (let* ((repo-name (completing-read "Repo: " '("uqbar/uqbar-api" "uqbar/uqbar-front" "uqbar")))
-	(repo-dir (file-name-concat paths-dir-tlon-repos repo-name))
-	(entry (concat "tlon/core/git-crypt/" repo-name)))
+  (let* ((repo-names (tlon--get-git-crypt-repos))
+         (repo-name (completing-read "Repo: " repo-names nil t))
+         (repo-dir (file-name-concat paths-dir-tlon-repos repo-name))
+         (entry (concat "tlon/core/git-crypt/" repo-name)))
     (pass-extras-git-crypt-unlock repo-dir entry)))
 
 ;;;;; Menu
