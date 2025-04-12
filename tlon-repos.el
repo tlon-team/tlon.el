@@ -246,7 +246,7 @@ This list is derived from entries stored under 'tlon/core/git-crypt/'
 in the password store."
   (let* ((base-path "tlon/core/git-crypt/")
          (base-path-len (length base-path))
-         (entries (pass-extras--list-entries base-path)))
+         (entries (password-store-list base-path)))
     (mapcar (lambda (entry)
               (substring entry base-path-len))
             entries)))
