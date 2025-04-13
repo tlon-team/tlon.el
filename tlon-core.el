@@ -1043,9 +1043,9 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 
 (defun tlon-transient-toggle-variable-value (var-name)
   "Toggle the value of the VAR-NAME."
-  (if (symbol-value var-name)
-      (set var-name nil)
-    (set var-name t)))
+  (set var-name (if (symbol-value var-name)
+		    nil
+		  t)))
 
 ;;;;; numbers
 
