@@ -3855,11 +3855,11 @@ To run the tests:
   2. Run the command =M-x ert-run-tests-interactively RET=.
   3. Press =RET= again at the selector prompt to run all loaded tests, or type =tlon-tts= and =RET= to run only these specific tests.
 
-+ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). You need to add both the specific package directory and the parent directory containing all package repositories (e.g., the Elpaca `repos` directory) to the load path using =-L=. Load the main package file (=tlon.el=) first to set up dependencies before loading the test file.
++ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). You need to add both the specific package directory and the parent directory containing all package repositories (e.g., the Elpaca `repos` directory) to the load path using =-L=. Load the main package file (=tlon.el=) first to set up dependencies before loading the test file. Use the full path for the files specified with =--load=.
   #+begin_src shell
-  emacs --batch -L /path/to/tlon/directory/ -L /path/to/parent/repos/directory/ --load /path/to/tlon/directory/tlon.el --load tlon-tts-tests.el --funcall ert-run-tests-batch-and-exit
+  emacs --batch -L /path/to/tlon/directory/ -L /path/to/parent/repos/directory/ --load /path/to/tlon/directory/tlon.el --load /path/to/tlon/directory/tlon-tts-tests.el --funcall ert-run-tests-batch-and-exit
   #+end_src
-  Replace =/path/to/tlon/directory/= with the path to the specific `tlon` package checkout (e.g., =.../elpaca/repos/tlon/=). Replace =/path/to/parent/repos/directory/= with the path to the directory containing *all* package checkouts (e.g., =.../elpaca/repos/=). Emacs will exit with status 0 if all tests pass, and non-zero otherwise.
+  Replace =/path/to/tlon/directory/= with the full path to the specific `tlon` package checkout (e.g., =/Users/user/.emacs.d/elpaca/repos/tlon/=). Replace =/path/to/parent/repos/directory/= with the full path to the directory containing *all* package checkouts (e.g., =/Users/user/.emacs.d/elpaca/repos/=). Emacs will exit with status 0 if all tests pass, and non-zero otherwise.
 
 These tests help verify that chunking behaves correctly under various conditions, including different engine character limits, paragraph-based chunking (for ElevenLabs), and the presence of voice change markers. Adding more tests, especially for edge cases encountered during development, is encouraged to improve robustness.
 
