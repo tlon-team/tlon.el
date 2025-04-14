@@ -1294,8 +1294,7 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 	  section))))
 
 (defun tlon-tts-break-into-chunks (chunk-size)
-  "Break text in current buffer into chunks based on limits and voice changes.
-
+  "Break text in current buffer into chunks.
 If CHUNK-SIZE is non-nil, break text into chunks no larger than CHUNK-SIZE,
 respecting paragraph boundaries. Each chunk will include the maximum number of
 paragraphs that fit within the size limit.
@@ -2801,8 +2800,8 @@ Signals an error if the name is not found."
 (defun tlon-tts-chunkify-unsupported-ssml-tags (tags)
   "Chunkify unsupported SSML TAGS.
 This removes the tag but stores its position and the associated voice ID
-(looked up from the friendly name in the tag's `name` attribute)
-in `tlon-tts-voice-chunks'."
+\\=(looked up from the friendly name in the tag's `name' attribute) in
+`tlon-tts-voice-chunks'."
   (tlon-tts-reposition-closing-voice-tag)
   (setq tlon-tts-voice-chunks '())
   (dolist (tag tags)
