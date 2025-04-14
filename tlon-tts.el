@@ -1310,21 +1310,16 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
          chunks current-voice next-voice-change-pos next-voice-id
          ;; Determine initial voice and update voice-chunk-list
          (initial-state (tlon-tts--determine-initial-voice voice-chunk-list)))
-
     (setq current-voice (car initial-state)
           voice-chunk-list (cdr initial-state))
-
     (while (< begin (point-max))
       ;; Determine position of the next voice change, if any
       (setq next-voice-change-pos (if voice-chunk-list (marker-position (caar voice-chunk-list)) most-positive-fixnum)
             next-voice-id (when voice-chunk-list (cdar voice-chunk-list)))
-
       ;; Calculate the end position for the current chunk
       (let ((end (tlon-tts--calculate-chunk-end begin chunk-size next-voice-change-pos use-paragraph-chunks)))
-
         ;; Add the chunk if it's valid
         (setq chunks (tlon-tts--add-chunk begin end current-voice chunks))
-
         ;; --- Prepare for next iteration ---
         ;; Final safety check: If end <= begin here, force minimal progress.
         (when (and (<= end begin) (< begin (point-max)))
@@ -1332,20 +1327,17 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
           (goto-char begin)
           (forward-char 1)
           (setq end (point)))
-
         (setq begin end) ; Update begin for the next loop iteration
-
         ;; Update voice state if we reached a voice change point
         (let ((new-voice-state (tlon-tts--update-voice-state begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)))
           (setq current-voice (car new-voice-state)
                 voice-chunk-list (cdr new-voice-state)))))
-
     (nreverse chunks)))
 
 ;;;;;; Chunking Helpers
 
 (defun tlon-tts--determine-initial-voice (voice-chunk-list)
-  "Determine the initial voice and the remaining voice chunk list.
+  "Determine the initial voice and the remaining VOICE-CHUNK-LIST.
 Returns (cons INITIAL-VOICE REMAINING-VOICE-CHUNK-LIST)."
   (let ((first-voice-chunk (car voice-chunk-list))
         initial-voice remaining-list)
@@ -1359,7 +1351,10 @@ Returns (cons INITIAL-VOICE REMAINING-VOICE-CHUNK-LIST)."
     (cons initial-voice remaining-list)))
 
 (defun tlon-tts--calculate-chunk-end (begin chunk-size next-voice-change-pos use-paragraph-chunks)
-  "Calculate the end position for the next chunk."
+  "Calculate the end position for the next chunk.
+BEGIN is the start position of the chunk, CHUNK-SIZE is the maximum size of the
+chunk, NEXT-VOICE-CHANGE-POS is the position of the next voice change, and
+USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
   (let (end)
     (cond
      ;; --- Case 1: Paragraph chunking ---
@@ -1414,7 +1409,6 @@ Returns (cons NEW-CURRENT-VOICE NEW-VOICE-CHUNK-LIST)."
   (if (= begin next-voice-change-pos)
       (cons next-voice-id (cdr voice-chunk-list))
     (cons current-voice voice-chunk-list)))
-
 
 (defun tlon-tts-move-point-before-break-tag ()
   "Move point before `break' tag if it immediately follows it.
