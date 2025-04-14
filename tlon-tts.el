@@ -1360,8 +1360,9 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
         (when (> end begin) ; Only add non-empty chunks if progress was made
           (let* ((text (buffer-substring-no-properties begin end))
                  (trimmed-text (string-trim text))
-                 ;; Only add chunk if trimmed text is not empty
-                 (chunk (when (not (string-empty-p trimmed-text))
+                 ;; Only add chunk if trimmed text is not empty AND not just a break tag
+                 (is-only-break (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text))
+                 (chunk (when (and (not (string-empty-p trimmed-text)) (not is-only-break))
                           (cons trimmed-text (when current-voice (cons 'tlon-tts-voice current-voice))))))
             (when chunk (push chunk chunks))))
 
