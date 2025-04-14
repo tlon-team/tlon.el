@@ -3853,7 +3853,7 @@ To run the tests:
 + *Interactively*:
   1. Ensure =tlon-tts-tests.el= is loaded (e.g., =M-x load-file RET tlon-tts-tests.el RET=).
   2. Run the command =M-x ert-run-tests-interactively RET=.
-  3. Press =RET= again at the selector prompt to run all loaded tests, or type =tlon-tts= and =RET= to run only these specific tests.
+  3. At the "Run tests matching selector:" prompt, type =t= and press =RET= to run all loaded tests. Alternatively, type =tlon-tts= and =RET= to run only the tests defined in this specific suite.
 
 + *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). Use a single =--eval= argument containing a =progn= block to set up the `load-path`, load the necessary files (`tlon.el` first, then the test file), and finally run the tests. Use full paths for loaded files. Run the command as a single line to avoid shell interpretation issues.
   #+begin_src shell
