@@ -1888,8 +1888,7 @@ audio."
          (after-text-param (assoc :after-text parameters))
          (before-text (when before-text-param (cdr before-text-param)))
          (after-text (when after-text-param (cdr after-text-param)))
-         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed))
-         voice-settings-payload)
+         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
     (cl-destructuring-bind (voice audio) vars
       ;; Look up the full voice definition
       (let* ((voice-definition (tlon-lookup tlon-elevenlabs-voices :id voice))
