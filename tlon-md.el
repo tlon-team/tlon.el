@@ -28,7 +28,6 @@
 (require 'markdown-mode-extras)
 (require 'tlon-core)
 (require 'tlon-yaml)
-(require 'tlon-tts) ; Added for voice selection
 
 ;;;; User options
 
