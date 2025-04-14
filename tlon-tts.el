@@ -2747,6 +2747,16 @@ string. See the end of the `tlon-tts-supported-tags' docstring for details."
 
 ;;;;;;; Chunkify
 
+(defun tlon-tts-get-voice-id-from-name (name)
+  "Return the voice ID for the voice with friendly NAME for the current engine.
+Signals an error if the name is not found."
+  (let* ((voices-var (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine))
+         (voices (when voices-var (symbol-value voices-var)))
+         (voice-id (tlon-lookup voices :id :name name)))
+    (unless voice-id
+      (user-error "Voice name '%s' not found for engine '%s'" name tlon-tts-engine))
+    voice-id))
+
 ;; This assumes only one function will chunkify, since otherwise successive
 ;; functions will change positions of their predecessors
 (defun tlon-tts-chunkify-unsupported-ssml-tags (tags)
