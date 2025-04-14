@@ -1263,7 +1263,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 For ElevenLabs, if `tlon-elevenlabs-char-limit' is nil, will chunk by paragraph
 regardless of size to work around voice degradation issues."
   (let* ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
-         (chunks (tlon-tts-read-into-chunks char-limit)))
+	 (chunks (tlon-tts-read-into-chunks char-limit)))
     (setq tlon-tts-chunks chunks)))
 
 (defun tlon-tts-set-destination ()
@@ -1305,33 +1305,33 @@ paragraph becomes a separate chunk, breaking before voice changes.
 Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
   (goto-char (point-min))
   (let* ((begin (point))
-         (voice-chunk-list tlon-tts-voice-chunks)
-         (use-paragraph-chunks (null chunk-size))
-         chunks current-voice next-voice-change-pos next-voice-id
-         ;; Determine initial voice and update voice-chunk-list
-         (initial-state (tlon-tts--determine-initial-voice voice-chunk-list)))
+	 (voice-chunk-list tlon-tts-voice-chunks)
+	 (use-paragraph-chunks (null chunk-size))
+	 chunks current-voice next-voice-change-pos next-voice-id
+	 ;; Determine initial voice and update voice-chunk-list
+	 (initial-state (tlon-tts--determine-initial-voice voice-chunk-list)))
     (setq current-voice (car initial-state)
-          voice-chunk-list (cdr initial-state))
+	  voice-chunk-list (cdr initial-state))
     (while (< begin (point-max))
       ;; Determine position of the next voice change, if any
       (setq next-voice-change-pos (if voice-chunk-list (marker-position (caar voice-chunk-list)) most-positive-fixnum)
-            next-voice-id (when voice-chunk-list (cdar voice-chunk-list)))
+	    next-voice-id (when voice-chunk-list (cdar voice-chunk-list)))
       ;; Calculate the end position for the current chunk
       (let ((end (tlon-tts--calculate-chunk-end begin chunk-size next-voice-change-pos use-paragraph-chunks)))
-        ;; Add the chunk if it's valid
-        (setq chunks (tlon-tts--add-chunk begin end current-voice chunks))
-        ;; --- Prepare for next iteration ---
-        ;; Final safety check: If end <= begin here, force minimal progress.
-        (when (and (<= end begin) (< begin (point-max)))
-          (message "Warning: Forcing minimal progress at position %d due to end <= begin" begin)
-          (goto-char begin)
-          (forward-char 1)
-          (setq end (point)))
-        (setq begin end) ; Update begin for the next loop iteration
-        ;; Update voice state if we reached a voice change point
-        (let ((new-voice-state (tlon-tts--update-voice-state begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)))
-          (setq current-voice (car new-voice-state)
-                voice-chunk-list (cdr new-voice-state)))))
+	;; Add the chunk if it's valid
+	(setq chunks (tlon-tts--add-chunk begin end current-voice chunks))
+	;; --- Prepare for next iteration ---
+	;; Final safety check: If end <= begin here, force minimal progress.
+	(when (and (<= end begin) (< begin (point-max)))
+	  (message "Warning: Forcing minimal progress at position %d due to end <= begin" begin)
+	  (goto-char begin)
+	  (forward-char 1)
+	  (setq end (point)))
+	(setq begin end) ; Update begin for the next loop iteration
+	;; Update voice state if we reached a voice change point
+	(let ((new-voice-state (tlon-tts--update-voice-state begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)))
+	  (setq current-voice (car new-voice-state)
+		voice-chunk-list (cdr new-voice-state)))))
     (nreverse chunks)))
 
 ;;;;;; Chunking Helpers
@@ -1340,14 +1340,14 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
   "Determine the initial voice and the remaining VOICE-CHUNK-LIST.
 Returns (cons INITIAL-VOICE REMAINING-VOICE-CHUNK-LIST)."
   (let ((first-voice-chunk (car voice-chunk-list))
-        initial-voice remaining-list)
+	initial-voice remaining-list)
     (if (and first-voice-chunk (= (marker-position (car first-voice-chunk)) (point-min)))
-        ;; If first voice change is at the very beginning
-        (setq initial-voice (cdr first-voice-chunk)
-              remaining-list (cdr voice-chunk-list))
+	;; If first voice change is at the very beginning
+	(setq initial-voice (cdr first-voice-chunk)
+	      remaining-list (cdr voice-chunk-list))
       ;; Otherwise, use the default voice for the file if bound, else nil
       (setq initial-voice (when (boundp 'tlon-tts-voice) tlon-tts-voice)
-            remaining-list voice-chunk-list))
+	    remaining-list voice-chunk-list))
     (cons initial-voice remaining-list)))
 
 (defun tlon-tts--calculate-chunk-end (begin chunk-size next-voice-change-pos use-paragraph-chunks)
@@ -1366,25 +1366,25 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
      ;; --- Case 2: Character limit chunking ---
      (t
       (let (potential-end)
-        (setq potential-end (min (point-max) (+ begin chunk-size) next-voice-change-pos))
-        (goto-char potential-end)
-        ;; If we are not at a voice change point or end of buffer, move back to paragraph boundary
-        (unless (or (= potential-end next-voice-change-pos) (eobp))
-          (backward-paragraph)
-          ;; Ensure we don't move back before 'begin' if a paragraph is huge
-          (when (< (point) begin) (goto-char begin)))
-        (setq end (point))
-        ;; If moving back put us exactly at 'begin', force progress.
-        (when (and (= end begin) (< begin (point-max)))
-          (setq end potential-end))
-        ;; Adjust end point for SSML break tags (Only for char limit mode)
-        (let ((adjusted-end end))
-          (goto-char adjusted-end)
-          (tlon-tts-move-point-before-break-tag) ; This moves point backward
-          ;; Only accept the adjustment if it doesn't move us back to or before 'begin'
-          (when (> (point) begin)
-            (setq adjusted-end (point)))
-          (setq end adjusted-end))))) ; Update end with the potentially adjusted value
+	(setq potential-end (min (point-max) (+ begin chunk-size) next-voice-change-pos))
+	(goto-char potential-end)
+	;; If we are not at a voice change point or end of buffer, move back to paragraph boundary
+	(unless (or (= potential-end next-voice-change-pos) (eobp))
+	  (backward-paragraph)
+	  ;; Ensure we don't move back before 'begin' if a paragraph is huge
+	  (when (< (point) begin) (goto-char begin)))
+	(setq end (point))
+	;; If moving back put us exactly at 'begin', force progress.
+	(when (and (= end begin) (< begin (point-max)))
+	  (setq end potential-end))
+	;; Adjust end point for SSML break tags (Only for char limit mode)
+	(let ((adjusted-end end))
+	  (goto-char adjusted-end)
+	  (tlon-tts-move-point-before-break-tag) ; This moves point backward
+	  ;; Only accept the adjustment if it doesn't move us back to or before 'begin'
+	  (when (> (point) begin)
+	    (setq adjusted-end (point)))
+	  (setq end adjusted-end))))) ; Update end with the potentially adjusted value
     end))
 
 (defun tlon-tts--add-chunk (begin end current-voice chunks)
@@ -1392,15 +1392,15 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 Returns the updated CHUNKS list."
   (when (> end begin) ; Ensure we made progress
     (let* ((raw-text (buffer-substring-no-properties begin end))
-           ;; Remove trailing break tag and surrounding whitespace before final trim
-           (text-no-break (replace-regexp-in-string
-                           (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
-                           "" raw-text))
-           (trimmed-text (string-trim text-no-break)))
+	   ;; Remove trailing break tag and surrounding whitespace before final trim
+	   (text-no-break (replace-regexp-in-string
+			   (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
+			   "" raw-text))
+	   (trimmed-text (string-trim text-no-break)))
       ;; Only add chunk if trimmed text is not empty AND not just a break tag
       (when (and (not (string-empty-p trimmed-text))
-                 (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
-        (push (cons trimmed-text (when current-voice (cons 'tlon-tts-voice current-voice))) chunks))))
+		 (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
+	(push (cons trimmed-text (when current-voice (cons 'tlon-tts-voice current-voice))) chunks))))
   chunks)
 
 (defun tlon-tts--update-voice-state (begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)
@@ -1429,23 +1429,23 @@ After processing the chunks, open the relevant Dired buffer."
     (dotimes (i (length tlon-tts-chunks))
       (let* ((string (car (nth i tlon-tts-chunks)))
 	     (voice-data (cdr (nth i tlon-tts-chunks)))
-             (before-text (when (and (> i 0) (string= tlon-tts-engine "ElevenLabs"))
-                           (car (nth (1- i) tlon-tts-chunks))))
-             (after-text (when (and (< (1+ i) (length tlon-tts-chunks))
-                                   (string= tlon-tts-engine "ElevenLabs"))
-                          (car (nth (1+ i) tlon-tts-chunks))))
-             ;; Fix: properly create a list of cons cells for parameters
-             (params (cond
-                      ((string= tlon-tts-engine "ElevenLabs")
-                       (append (delq nil
-                                     (list
-                                      (when before-text (cons :before-text before-text))
-                                      (when after-text (cons :after-text after-text))))
-                              (if voice-data (list voice-data) nil)))
-                      (voice-data
-                       (list voice-data))
-                      (t
-                       nil))))
+	     (before-text (when (and (> i 0) (string= tlon-tts-engine "ElevenLabs"))
+			    (car (nth (1- i) tlon-tts-chunks))))
+	     (after-text (when (and (< (1+ i) (length tlon-tts-chunks))
+				    (string= tlon-tts-engine "ElevenLabs"))
+			   (car (nth (1+ i) tlon-tts-chunks))))
+	     ;; Fix: properly create a list of cons cells for parameters
+	     (params (cond
+		      ((string= tlon-tts-engine "ElevenLabs")
+		       (append (delq nil
+				     (list
+				      (when before-text (cons :before-text before-text))
+				      (when after-text (cons :after-text after-text))))
+			       (if voice-data (list voice-data) nil)))
+		      (voice-data
+		       (list voice-data))
+		      (t
+		       nil))))
 	(tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth) params)
 	(setq nth (1+ nth))))))
 
@@ -1899,10 +1899,10 @@ the car is the name of the file-local variable the cdr is its overriding value."
     (cl-destructuring-bind (voice) vars
       (format tlon-openai-tts-request
 	      (tlon-tts-openai-get-or-set-key)
-              tlon-openai-model
-              (json-encode-string string)
-              voice
-              destination))))
+	      tlon-openai-model
+	      (json-encode-string string)
+	      voice
+	      destination))))
 
 (defun tlon-tts-openai-get-or-set-key ()
   "Get or set the OpenAI API key."
@@ -1918,50 +1918,50 @@ STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a list of cons cells with parameters to use when generating the
 audio."
   (let* ((vars (tlon-tts-get-file-local-or-override
-               '(tlon-tts-voice
-                 tlon-tts-audio)
-               parameters))
-         (before-text-param (assoc :before-text parameters))
-         (after-text-param (assoc :after-text parameters))
-         (before-text (when before-text-param (cdr before-text-param)))
-         (after-text (when after-text-param (cdr after-text-param)))
-         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
+		'(tlon-tts-voice
+		  tlon-tts-audio)
+		parameters))
+	 (before-text-param (assoc :before-text parameters))
+	 (after-text-param (assoc :after-text parameters))
+	 (before-text (when before-text-param (cdr before-text-param)))
+	 (after-text (when after-text-param (cdr after-text-param)))
+	 (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
     (cl-destructuring-bind (voice audio) vars
       ;; Look up the full voice definition
       (let* ((voice-definition (tlon-lookup tlon-elevenlabs-voices :id voice))
-             ;; Extract voice settings if they exist
-             (voice-settings
-              (delq nil
-                    (mapcar (lambda (param)
-                              (when-let ((value (plist-get voice-definition param)))
-                                ;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
-                                (cons (symbol-name param)
-                                      (if (eq param :use_speaker_boost)
-                                          (if value :json-true :json-false)
-                                        value))))
-                            voice-settings-params)))
-             (payload (json-encode
-                       `(("text" . ,string)
-                         ("model_id" . ,tlon-elevenlabs-model)
-                         ,@(when before-text `(("before_text" . ,before-text)))
-                         ,@(when after-text `(("after_text" . ,after-text)))
-                         ("stitch_audio" . ,(if (or before-text after-text) t :json-false))))
-             ;; Add voice_settings if they exist
-             (final-payload-parts
-              (if voice-settings
-                  (append payload-parts `(("voice_settings" . ,voice-settings)))
-                payload-parts))
-             ;; Encode the complete payload
-             (payload (json-encode final-payload-parts))))
-        (mapconcat 'shell-quote-argument
-                 (list "curl"
-                       "--request" "POST"
-                       "--url" (format tlon-elevenlabs-tts-url voice (car audio))
-                       "--header" "Content-Type: application/json"
-                       "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
-                       "--data" payload
-                       "--output" destination)
-                 " ")))))
+	     ;; Extract voice settings if they exist
+	     (voice-settings
+	      (delq nil
+		    (mapcar (lambda (param)
+			      (when-let ((value (plist-get voice-definition param)))
+				;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
+				(cons (symbol-name param)
+				      (if (eq param :use_speaker_boost)
+					  (if value :json-true :json-false)
+					value))))
+			    voice-settings-params)))
+	     (payload (json-encode
+		       `(("text" . ,string)
+			 ("model_id" . ,tlon-elevenlabs-model)
+			 ,@(when before-text `(("before_text" . ,before-text)))
+			 ,@(when after-text `(("after_text" . ,after-text)))
+			 ("stitch_audio" . ,(if (or before-text after-text) t :json-false))))
+		      ;; Add voice_settings if they exist
+		      (final-payload-parts
+		       (if voice-settings
+			   (append payload-parts `(("voice_settings" . ,voice-settings)))
+			 payload-parts))
+		      ;; Encode the complete payload
+		      (payload (json-encode final-payload-parts))))
+	(mapconcat 'shell-quote-argument
+		   (list "curl"
+			 "--request" "POST"
+			 "--url" (format tlon-elevenlabs-tts-url voice (car audio))
+			 "--header" "Content-Type: application/json"
+			 "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
+			 "--data" payload
+			 "--output" destination)
+		   " ")))))
 
 (declare-function json-mode "json-mode")
 (defun tlon-tts-elevenlabs-get-voices ()
@@ -2800,7 +2800,7 @@ string. See the end of the `tlon-tts-supported-tags' docstring for details."
 	car)
     (if (listp replacement)
 	(setq car (car replacement)
-              cdr (cdr replacement))
+	      cdr (cdr replacement))
       (setq car replacement))
     (cons car cdr)))
 
@@ -2810,8 +2810,8 @@ string. See the end of the `tlon-tts-supported-tags' docstring for details."
   "Return the voice ID for the voice with friendly NAME for the current engine.
 Signals an error if the name is not found."
   (let* ((voices-var (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine))
-         (voices (when voices-var (symbol-value voices-var)))
-         (voice-id (tlon-lookup voices :id :name name)))
+	 (voices (when voices-var (symbol-value voices-var)))
+	 (voice-id (tlon-lookup voices :id :name name)))
     (unless voice-id
       (user-error "Voice name '%s' not found for engine '%s'" name tlon-tts-engine))
     voice-id))
@@ -2827,21 +2827,21 @@ This removes the tag but stores its position and the associated voice ID
   (setq tlon-tts-voice-chunks '())
   (dolist (tag tags)
     (let ((cons (tlon-tts-get-cons-for-unsupported-ssml-tags tag))
-          voice-name voice-id replacement)
+	  voice-name voice-id replacement)
       (goto-char (point-min))
       (while (re-search-forward (car cons) nil t)
-        ;; Get friendly name from tag attribute
-        (setq voice-name (match-string-no-properties 4))
-        ;; Look up the corresponding voice ID
-        (setq voice-id (tlon-tts-get-voice-id-from-name voice-name))
-        ;; Get the replacement text (usually the content inside the tag)
-        (setq replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons))
-        ;; Replace the tag with its content
-        (replace-match replacement t t)
-        ;; Store the position and the looked-up voice ID
-        (goto-char (match-beginning 0)) ; Point is now at the start of the replaced content
-        ;; (tlon-tts-move-point-before-break-tag) ; This call was misplaced here
-        (push (cons (point-marker) voice-id) tlon-tts-voice-chunks))))
+	;; Get friendly name from tag attribute
+	(setq voice-name (match-string-no-properties 4))
+	;; Look up the corresponding voice ID
+	(setq voice-id (tlon-tts-get-voice-id-from-name voice-name))
+	;; Get the replacement text (usually the content inside the tag)
+	(setq replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons))
+	;; Replace the tag with its content
+	(replace-match replacement t t)
+	;; Store the position and the looked-up voice ID
+	(goto-char (match-beginning 0)) ; Point is now at the start of the replaced content
+	;; (tlon-tts-move-point-before-break-tag) ; This call was misplaced here
+	(push (cons (point-marker) voice-id) tlon-tts-voice-chunks))))
   (setq tlon-tts-voice-chunks (nreverse tlon-tts-voice-chunks)))
 
 (defun tlon-tts-reposition-closing-voice-tag ()
@@ -2883,14 +2883,14 @@ This removes the tag but stores its position and the associated voice ID
 (defun tlon-tts-escape-xml-special-characters-in-text (text)
   "Escape XML special characters in TEXT for SSML."
   (replace-regexp-in-string "[&<>\"']"
-                            (lambda (match)
-                              (pcase match
-                                ("&" "&amp;")
-                                ("<" "&lt;")
-                                (">" "&gt;")
-                                ("\"" "&quot;")
-                                ("'" "&apos;")))
-                            text))
+			    (lambda (match)
+			      (pcase match
+				("&" "&amp;")
+				("<" "&lt;")
+				(">" "&gt;")
+				("\"" "&quot;")
+				("'" "&apos;")))
+			    text))
 
 ;;;;; Global
 
@@ -3012,10 +3012,10 @@ PROMPT is used as the prompt string, _INITIAL and _HISTORY are ignored."
   "Reader for `tlon-tts-menu-infix-set-engine-settings'.
 Reads audio format choices based on the currently selected engine."
   (let* ((choices-var (tlon-lookup tlon-tts-engines :choices-var :name tlon-tts-global-engine))
-         (choices (when choices-var (symbol-value choices-var)))
-         (selection (completing-read
-                     (format "Engine settings for %s: " tlon-tts-global-engine)
-                     choices)))
+	 (choices (when choices-var (symbol-value choices-var)))
+	 (selection (completing-read
+		     (format "Engine settings for %s: " tlon-tts-global-engine)
+		     choices)))
     (assoc selection choices)))
 
 (cl-defmethod transient-init-value ((object tlon-tts-global-engine-settings-infix))
@@ -3031,7 +3031,7 @@ Reads audio format choices based on the currently selected engine."
 (cl-defmethod transient-infix-set ((object tlon-tts-global-engine-settings-infix) value)
   "Set the value of the infix OBJECT to VALUE."
   (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
-         (variable (and variable-name (intern-soft variable-name))))
+	 (variable (and variable-name (intern-soft variable-name))))
     (when variable
       (set variable value)
       value)))
@@ -3039,11 +3039,11 @@ Reads audio format choices based on the currently selected engine."
 (cl-defmethod transient-format-value ((object tlon-tts-global-engine-settings-infix))
   "Format the value of the infix OBJECT."
   (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
-         (variable (and variable-name (intern-soft variable-name)))
-         (value (when (and variable (boundp variable))
-                  (symbol-value variable))))
+	 (variable (and variable-name (intern-soft variable-name)))
+	 (value (when (and variable (boundp variable))
+		  (symbol-value variable))))
     (if value
-        (format "%s" value)
+	(format "%s" value)
       "Not set")))
 
 (defun tlon-tts-menu-infix-set-engine-settings-action ()
