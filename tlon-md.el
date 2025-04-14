@@ -979,7 +979,7 @@ voices available for the `tlon-tts-global-engine'."
 (defun tlon-md-voice-name-reader ()
   "Prompt the user to select the friendly `name` attribute value for a `voice` tag.
 Uses the voices defined for the `tlon-tts-global-engine'. Returns the selected
-friendly name (e.g., \"Brian\"), not the voice ID."
+friendly name (e.g., \"Brian\"), not the voice ID or the full display string."
   (let* ((engine-name tlon-tts-global-engine)
 	 (voices-var (tlon-lookup tlon-tts-engines :voices-var :name engine-name))
 	 (voices (when voices-var (symbol-value voices-var)))
@@ -995,9 +995,10 @@ friendly name (e.g., \"Brian\"), not the voice ID."
 			      voices)))
     (unless voices-cons
       (user-error "No voices configured for engine: %s" engine-name))
-    ;; Return the friendly name (car) instead of the ID (cdr)
-    (car (assoc (completing-read (format "Voice for %s: " engine-name) voices-cons)
-                voices-cons))))
+    (let* ((selected-display (completing-read (format "Voice for %s: " engine-name) voices-cons))
+           (selected-id (cdr (assoc selected-display voices-cons)))
+           (friendly-name (tlon-lookup voices :name :id selected-id)))
+      friendly-name)))
 
 ;;;;; Notes
 
