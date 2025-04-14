@@ -1301,7 +1301,7 @@ respecting paragraph boundaries. Each chunk will include the maximum number of
 paragraphs that fit within the size limit.
 
 If CHUNK-SIZE is nil (specifically for ElevenLabs paragraph mode), each
-paragraph becomes a separate chunk.
+paragraph becomes a separate chunk, breaking before voice changes.
 
 Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
   (goto-char (point-min))
@@ -1310,66 +1310,71 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
         (use-paragraph-chunks (null chunk-size)) ; True if chunk_size is nil
         chunks current-voice next-voice-change-pos next-voice-id)
 
-    ;; Set initial voice if specified at the very beginning
-    (when (and voice-chunk-list (= (marker-position (caar voice-chunk-list)) (point-min)))
-      (setq current-voice (cdar voice-chunk-list))
-      (setq voice-chunk-list (cdr voice-chunk-list)))
+    ;; Determine initial voice
+    (let ((first-voice-chunk (car voice-chunk-list)))
+      (if (and first-voice-chunk (= (marker-position (car first-voice-chunk)) (point-min)))
+          ;; If first voice change is at the very beginning
+          (progn
+            (setq current-voice (cdr first-voice-chunk))
+            (setq voice-chunk-list (cdr voice-chunk-list))) ; Consume the first entry
+        ;; Otherwise, use the default voice for the file
+        (setq current-voice tlon-tts-voice)))
 
     (while (< begin (point-max))
       ;; Determine position of the next voice change, if any
       (setq next-voice-change-pos (if voice-chunk-list (marker-position (caar voice-chunk-list)) most-positive-fixnum)
             next-voice-id (when voice-chunk-list (cdar voice-chunk-list)))
 
-      (let (end potential-end)
+      (let (end paragraph-end)
         (cond
          ;; --- Case 1: Paragraph chunking (chunk_size is nil) ---
          (use-paragraph-chunks
           (goto-char begin)
+          ;; Find the end of the current paragraph
           (condition-case nil (forward-paragraph) (error (goto-char (point-max))))
-          (setq potential-end (point))
-          ;; If a voice change occurs within this paragraph, break before it
-          (setq end (min potential-end next-voice-change-pos)))
+          (setq paragraph-end (point))
+          ;; Chunk ends at paragraph end or before next voice change, whichever is first
+          (setq end (min paragraph-end next-voice-change-pos)))
 
          ;; --- Case 2: Character limit chunking (chunk_size is non-nil) ---
          (t
-          (setq potential-end (min (point-max) (+ begin chunk-size) next-voice-change-pos))
-          (goto-char potential-end)
-          ;; If we are not at a voice change point or end of buffer, move back to paragraph boundary
-          (unless (or (= potential-end next-voice-change-pos) (eobp))
-            (backward-paragraph)
-            ;; Ensure we don't move back before 'begin' if a paragraph is huge
-            (when (< (point) begin) (goto-char begin)))
-          (setq end (point))
-          ;; If moving back put us exactly at 'begin', it means the first paragraph
-          ;; itself exceeds chunk_size or hits a voice change immediately.
-          ;; We must make progress, so take the original potential_end.
-          (when (and (= end begin) (< begin (point-max)))
-              (setq end potential-end))))
-
-        ;; --- Adjust end point for SSML break tags ---
-        ;; Avoid ending a chunk immediately after a break tag if possible
-        (let ((adjusted-end end))
-          (goto-char adjusted-end)
-          (tlon-tts-move-point-before-break-tag) ; This moves point backward
-          ;; Only accept the adjustment if it doesn't move us back to or before 'begin'
-          (when (> (point) begin)
-            (setq adjusted-end (point)))
-          (setq end adjusted-end)) ; Update end with the potentially adjusted value
+          ;; Existing logic for character limit chunking
+          (let (potential-end)
+             (setq potential-end (min (point-max) (+ begin chunk-size) next-voice-change-pos))
+             (goto-char potential-end)
+             ;; If we are not at a voice change point or end of buffer, move back to paragraph boundary
+             (unless (or (= potential-end next-voice-change-pos) (eobp))
+               (backward-paragraph)
+               ;; Ensure we don't move back before 'begin' if a paragraph is huge
+               (when (< (point) begin) (goto-char begin)))
+             (setq end (point))
+             ;; If moving back put us exactly at 'begin', it means the first paragraph
+             ;; itself exceeds chunk_size or hits a voice change immediately.
+             ;; We must make progress, so take the original potential_end.
+             (when (and (= end begin) (< begin (point-max)))
+                 (setq end potential-end))
+             ;; --- Adjust end point for SSML break tags (Only for char limit mode) ---
+             (let ((adjusted-end end))
+               (goto-char adjusted-end)
+               (tlon-tts-move-point-before-break-tag) ; This moves point backward
+               ;; Only accept the adjustment if it doesn't move us back to or before 'begin'
+               (when (> (point) begin)
+                 (setq adjusted-end (point)))
+               (setq end adjusted-end))))) ; Update end with the potentially adjusted value
 
         ;; --- Add the chunk ---
-        (when (> end begin) ; Only add non-empty chunks if progress was made
+        ;; Ensure we made progress and end is strictly after begin
+        (when (> end begin)
           (let* ((text (buffer-substring-no-properties begin end))
-                 (trimmed-text (string-trim text))
-                 ;; Only add chunk if trimmed text is not empty AND not just a break tag
-                 (is-only-break (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text))
-                 (chunk (when (and (not (string-empty-p trimmed-text)) (not is-only-break))
-                          (cons trimmed-text (when current-voice (cons 'tlon-tts-voice current-voice))))))
-            (when chunk (push chunk chunks))))
+                 (trimmed-text (string-trim text)))
+            ;; Only add chunk if trimmed text is not empty AND not just a break tag
+            (when (and (not (string-empty-p trimmed-text))
+                       (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
+              (push (cons trimmed-text (when current-voice (cons 'tlon-tts-voice current-voice))) chunks))))
 
         ;; --- Prepare for next iteration ---
         ;; Final safety check: If end <= begin here, it means no valid chunk could be formed
-        ;; (e.g., empty space at end) or the SSML adjustment prevented progress.
-        ;; We must force progress if not at the end of the buffer to avoid infinite loop.
+        ;; (e.g., empty space at end). We must force progress if not at the end of the buffer.
         (when (and (<= end begin) (< begin (point-max)))
            (message "Warning: Forcing minimal progress at position %d due to end <= begin" begin)
            (goto-char begin)
@@ -2809,8 +2814,8 @@ in `tlon-tts-voice-chunks'."
         ;; Replace the tag with its content
         (replace-match replacement t t)
         ;; Store the position and the looked-up voice ID
-        (goto-char (match-beginning 0))
-        (tlon-tts-move-point-before-break-tag)
+        (goto-char (match-beginning 0)) ; Point is now at the start of the replaced content
+        ;; (tlon-tts-move-point-before-break-tag) ; This call was misplaced here
         (push (cons (point-marker) voice-id) tlon-tts-voice-chunks))))
   (setq tlon-tts-voice-chunks (nreverse tlon-tts-voice-chunks)))
 
