@@ -1303,74 +1303,68 @@ each paragraph is treated as a separate chunk regardless of size to help
 mitigate voice degradation issues for longer texts."
   (goto-char (point-min))
   (let* ((begin 1)
-         (chunk-size (or chunk-size most-positive-fixnum))
+         (chunk-size chunk-size) ; Keep original chunk-size for non-paragraph logic
          (voice-chunk tlon-tts-voice-chunks)
          (use-paragraph-chunks (and (string= tlon-tts-engine "ElevenLabs")
                                     (null (tlon-lookup tlon-tts-engines
                                                       :char-limit
                                                       :name tlon-tts-engine))))
-         (max-safe-chunk-size 4500)  ;; Safe limit for any paragraph
-         (min-chunk-size 100)        ;; Minimum chunk size to ensure progress
-         break chunks end voice voice-break)
+         (max-safe-chunk-size 4500)
+         (min-chunk-size 100)
+         chunks end voice next-voice voice-begin)
     (while (not (eobp))
-      (let ((voice-begin (if voice-chunk
-                            (marker-position (caar voice-chunk))
-                          most-positive-fixnum))
-            (next-voice (when voice-chunk (cdar voice-chunk))))
-        ;; Calculate potential break point
-        (setq break (min (point-max) (+ begin chunk-size) voice-begin))
-        (when (eq break voice-begin)
-          (setq voice-break t))
-        (goto-char break)
+      (setq voice-begin (if voice-chunk (marker-position (caar voice-chunk)) most-positive-fixnum)
+            next-voice (when voice-chunk (cdar voice-chunk)))
 
-        ;; Move to paragraph boundary if needed
-        (unless (or voice-break (eobp))
-          (if use-paragraph-chunks
-              (progn
-                ;; Try to move forward by paragraph
-                (condition-case nil
-                    (forward-paragraph)
-                  (error (forward-line 1)))
-
-                ;; If paragraph is too large, break it at a reasonable point
-                (when (> (- (point) begin) max-safe-chunk-size)
-                  (goto-char begin)
-                  (forward-char (min max-safe-chunk-size (- (point-max) begin)))
-                  (backward-char 1)
-                  ;; Try to break at a sentence, phrase, or word boundary
-                  (cond
-                   ((re-search-backward "[.!?;:,]\\($\\|[ \t\n]\\)" (max (- (point) 200) begin) t)
-                    (forward-char 1))
-                   ((re-search-backward "\\s-" (max (- (point) 100) begin) t)
-                    (forward-char 1))
-                   (t nil))))
-            (backward-paragraph)))
-
-        ;; Store ending position before checking break tags
+      ;; Determine the end of the current chunk
+      (cond
+       ;; Case 1: Paragraph chunking for ElevenLabs
+       (use-paragraph-chunks
+        (goto-char begin)
+        (condition-case nil (forward-paragraph) (error (goto-char (point-max)))) ; Move to end of current paragraph
         (setq end (point))
+        ;; If a voice change happens within this paragraph, break earlier
+        (when (< voice-begin end)
+          (setq end voice-begin)))
 
-        ;; Handle SSML break tags
-        (let ((orig-pos (point)))
-          (tlon-tts-move-point-before-break-tag)
-          (when (< (point) orig-pos)
-            (setq end (point))))
+       ;; Case 2: Character limit chunking (or voice change)
+       (t
+        (let ((potential-break (min (point-max) (+ begin (or chunk-size most-positive-fixnum)) voice-begin)))
+          (goto-char potential-break)
+          ;; Move back to paragraph boundary unless it's a voice break or eobp
+          (unless (or (eq potential-break voice-begin) (eobp))
+            (backward-paragraph))
+          (setq end (point)))))
 
-        ;; Ensure we're making progress
-        (when (= begin end)
-          (goto-char (+ begin min-chunk-size))
-          (setq end (point))
-          (message "Warning: Had to force chunk boundary at position %d" begin))
+      ;; Handle SSML break tags potentially moving 'end' back
+      (let ((orig-pos end))
+        (goto-char end)
+        (tlon-tts-move-point-before-break-tag)
+        (when (< (point) orig-pos)
+          (setq end (point))))
 
-        ;; Add the chunk
-        (let* ((string (string-trim (buffer-substring-no-properties begin end)))
-               (chunk (cons string (when voice (cons 'tlon-tts-voice voice)))))
-          (push chunk chunks))
+      ;; Ensure progress
+      (when (<= end begin)
+         ;; If stuck at the beginning or moved backward due to break tag logic
+         ;; and not at eobp, force minimum progress.
+         (unless (eobp)
+           (goto-char begin)
+           (forward-char (min min-chunk-size (- (point-max) begin)))
+           (setq end (point))
+           (message "Warning: Had to force chunk boundary at position %d" begin)))
 
-        ;; Prepare for next iteration
+      ;; Add the chunk if end > begin (avoid empty chunks if stuck at eobp)
+      (when (> end begin)
+          (let* ((string (string-trim (buffer-substring-no-properties begin end)))
+                 (chunk (cons string (when voice (cons 'tlon-tts-voice voice)))))
+            (push chunk chunks)))
+
+      ;; Prepare for next iteration
+      (setq begin end)
+      (when (and voice-chunk (= begin (marker-position (caar voice-chunk))))
         (setq voice next-voice)
-        (setq begin end)
-        (when voice-break
-          (setq voice-chunk (cdr voice-chunk)))))
+        (setq voice-chunk (cdr voice-chunk))))
+
     (nreverse chunks)))
 
 (defun tlon-tts-move-point-before-break-tag ()
