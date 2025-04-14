@@ -3840,6 +3840,20 @@ This section lists key non-interactive functions, variables, and constants used 
 #+findex: tlon-tts-append-silence-to-chunks-p
 + ~tlon-tts-append-silence-to-chunks-p~ :: Determines if silence should be appended based on the TTS engine used for the file.
 
+** Testing
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tts-testing
+:INDEX: test @tlon-tts-break-into-chunks-paragraph-mode @tlon-tts-break-into-chunks-char-limit @tlon-tts-break-into-chunks-with-voice-change @tlon-tts-break-into-chunks-voice-change-at-start @tlon-tts-break-into-chunks-ssml-break-boundary @tlon-tts-break-into-chunks-empty-input @tlon-tts-break-into-chunks-single-large-paragraph
+:END:
+
+The file =tlon-tts-tests.el= contains unit tests for the TTS functionality, particularly focusing on the text chunking logic in ~tlon-tts-break-into-chunks~. These tests use the Emacs Lisp Regression Testing framework (=ert=).
+
+To run the tests:
+1. Ensure =tlon-tts-tests.el= is loaded.
+2. Run the command =M-x ert-run-tests-interactively= and select the =tlon-tts= tests.
+
+These tests help verify that chunking behaves correctly under various conditions, including different engine character limits, paragraph-based chunking (for ElevenLabs), and the presence of voice change markers. Adding more tests, especially for edge cases encountered during development, is encouraged to improve robustness.
+
 * URL Handling (=tlon-url.el=)
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-url
