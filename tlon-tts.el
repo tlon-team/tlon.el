@@ -1887,14 +1887,31 @@ audio."
          (before-text-param (assoc :before-text parameters))
          (after-text-param (assoc :after-text parameters))
          (before-text (when before-text-param (cdr before-text-param)))
-         (after-text (when after-text-param (cdr after-text-param))))
+         (after-text (when after-text-param (cdr after-text-param)))
+         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed))
+         voice-settings-payload)
     (cl-destructuring-bind (voice audio) vars
-      (let* ((payload (json-encode
-                      `(("text" . ,string)
-                        ("model_id" . ,tlon-elevenlabs-model)
-                        ,@(when before-text `(("before_text" . ,before-text)))
-                        ,@(when after-text `(("after_text" . ,after-text)))
-                        ("stitch_audio" . ,(if (or before-text after-text) t :json-false))))))
+      ;; Look up the full voice definition
+      (let* ((voice-definition (tlon-lookup tlon-elevenlabs-voices :id voice))
+             ;; Extract voice settings if they exist
+             (voice-settings
+              (delq nil
+                    (mapcar (lambda (param)
+                              (when-let ((value (plist-get voice-definition param)))
+                                ;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
+                                (cons (symbol-name param)
+                                      (if (eq param :use_speaker_boost)
+                                          (if value :json-true :json-false)
+                                        value))))
+                            voice-settings-params)))
+             (payload (json-encode
+                       `(("text" . ,string)
+                         ("model_id" . ,tlon-elevenlabs-model)
+                         ,@(when before-text `(("before_text" . ,before-text)))
+                         ,@(when after-text `(("after_text" . ,after-text)))
+                         ("stitch_audio" . ,(if (or before-text after-text) t :json-false))
+                         ;; Add voice_settings if any were found
+                         ,@(when voice-settings `(("voice_settings" . ,(json-encode voice-settings))))))))
         (mapconcat 'shell-quote-argument
                  (list "curl"
                        "--request" "POST"
