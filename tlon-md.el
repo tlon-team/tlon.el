@@ -28,6 +28,7 @@
 (require 'markdown-mode-extras)
 (require 'tlon-core)
 (require 'tlon-yaml)
+(require 'tlon-tts) ; Added for voice selection
 
 ;;;; User options
 
@@ -133,7 +134,8 @@ The placeholder is the footnote number.")
 
 ;; adapted from `markdown-regex-header'
 (defconst tlon-md-heading-template
-  "^\\(?:\\(?1:[^\n	 -].*\\)\n\\(?:\\(?2:=+\\)\\|\\(?3:-+\\)\\)\\|\\(?4:%s[ 	]+\\)\\(?5:.*?\\)\\(?6:[ 	]+#+\\)?\\)$"
+  "^\\(?:\\(?1:[^
+\n	 -].*\\)\n\\(?:\\(?2:=+\\)\\|\\(?3:-+\\)\\)\\|\\(?4:%s[ 	]+\\)\\(?5:.*?\\)\\(?6:[ 	]+#+\\)?\\)$"
   "Template to construct constants to match headings and subheadings.")
 
 (defconst tlon-md-heading
@@ -302,7 +304,7 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :self-closing nil
 	  :doc "Text to be narrated, but not displayed.")
     (:tag "voice"
-	  :attributes ((:name "name" :required t :valued t :group 3 :prompt "Voice name: "))
+	  :attributes ((:name "name" :required t :valued t :group 3 :reader tlon-md-voice-name-reader)) ; Added reader
 	  :type ssml
 	  :self-closing nil
 	  :doc "")
@@ -962,7 +964,38 @@ attribute."
   "Prompt the user to select the `interpret-as' attribute value for a `say-as' tag."
   (completing-read "`interpret-as': " tlon-md-ssml-interpret-as-values))
 
+;;;###autoload
+(defun tlon-tts-insert-ssml-voice ()
+  "Insert a `voice' SSML tag pair at point or around the selected region.
+Prompts the user to select a value for the `name' attribute based on the
+voices available for the `tlon-tts-global-engine'."
+  (interactive)
+  (tlon-md-insert-or-edit-tag "voice"))
+
 ;;;;;;;; Common functions
+
+;;;;;;; Attribute readers
+
+(defun tlon-md-voice-name-reader ()
+  "Prompt the user to select the `name` attribute value for a `voice` tag.
+Uses the voices defined for the `tlon-tts-global-engine'."
+  (let* ((engine-name tlon-tts-global-engine)
+	 (voices-var (tlon-lookup tlon-tts-engines :voices-var :name engine-name))
+	 (voices (when voices-var (symbol-value voices-var)))
+	 (voices-cons (mapcar (lambda (voice-plist)
+				(let* ((id (plist-get voice-plist :id))
+				       (name (plist-get voice-plist :name))
+				       (gender (plist-get voice-plist :gender))
+				       (language (plist-get voice-plist :language))
+				       (display-name (or name id))
+				       (metadata (format "%-20.20s %-10.10s (%s)"
+							 display-name gender language)))
+				  (cons metadata id)))
+			      voices)))
+    (unless voices-cons
+      (user-error "No voices configured for engine: %s" engine-name))
+    (alist-get (completing-read (format "Voice for %s: " engine-name) voices-cons)
+	       voices-cons nil nil #'string=)))
 
 ;;;;; Notes
 
@@ -1207,7 +1240,8 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("t p" "phoneme"            tlon-tts-insert-ssml-phoneme)
     ("t r" "replace audio"      tlon-mdx-insert-replace-audio)
     ("t s" "say-as"             tlon-tts-insert-ssml-say-as)
-    ("t v" "visually hidden"    tlon-mdx-insert-visually-hidden)]
+    ("t v" "voice"              tlon-tts-insert-ssml-voice) ; Added voice tag command
+    ("t V" "visually hidden"    tlon-mdx-insert-visually-hidden)] ; Changed shortcut for visually hidden
    ["Note markers"
     ("f" "footnote"             (lambda () (interactive) (tlon-insert-footnote-marker 'overwrite)))
     ("s" "sidenote"             (lambda () (interactive) (tlon-insert-sidenote-marker 'overwrite)))
