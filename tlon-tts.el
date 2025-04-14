@@ -1317,8 +1317,8 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
           (progn
             (setq current-voice (cdr first-voice-chunk))
             (setq voice-chunk-list (cdr voice-chunk-list))) ; Consume the first entry
-        ;; Otherwise, use the default voice for the file
-        (setq current-voice tlon-tts-voice)))
+        ;; Otherwise, use the default voice for the file if bound, else nil
+        (setq current-voice (when (boundp 'tlon-tts-voice) tlon-tts-voice))))
 
     (while (< begin (point-max))
       ;; Determine position of the next voice change, if any
