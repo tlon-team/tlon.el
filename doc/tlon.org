@@ -4138,6 +4138,12 @@ This section lists non-interactive functions used internally or potentially usef
 :CUSTOM_ID: h:cp-index
 :END:
 
+** Test index
+:PROPERTIES:
+:INDEX: test
+:CUSTOM_ID: h:test-index
+:END:
+
 * local variables                                                  :noexport:
 (Note that the local variables below will still be exported to the ~info~ file, unfortunately. It looks like they are not considered part of this heading.)
 
