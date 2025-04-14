@@ -1348,23 +1348,16 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
 
         ;; --- Adjust end point for SSML break tags ---
         ;; Avoid ending a chunk immediately after a break tag if possible
-        (let ((orig-pos end))
-          (goto-char end)
-          (tlon-tts-move-point-before-break-tag)
-          (when (< (point) orig-pos)
-            (setq end (point))))
-
-        ;; --- Final check for progress ---
-        ;; If 'end' is still <= 'begin', something is wrong (e.g., empty buffer region?)
-        ;; Force minimal progress to avoid infinite loop, unless at end of buffer.
-        (when (and (<= end begin) (< begin (point-max)))
-          (goto-char begin)
-          (forward-char 1) ; Move at least one character forward
-          (setq end (point))
-          (message "Warning: Minimal progress forced at position %d" begin))
+        (let ((adjusted-end end))
+          (goto-char adjusted-end)
+          (tlon-tts-move-point-before-break-tag) ; This moves point backward
+          ;; Only accept the adjustment if it doesn't move us back to or before 'begin'
+          (when (> (point) begin)
+            (setq adjusted-end (point)))
+          (setq end adjusted-end)) ; Update end with the potentially adjusted value
 
         ;; --- Add the chunk ---
-        (when (> end begin) ; Only add non-empty chunks
+        (when (> end begin) ; Only add non-empty chunks if progress was made
           (let* ((text (buffer-substring-no-properties begin end))
                  (trimmed-text (string-trim text))
                  ;; Only add chunk if trimmed text is not empty
@@ -1373,7 +1366,17 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
             (when chunk (push chunk chunks))))
 
         ;; --- Prepare for next iteration ---
-        (setq begin end)
+        ;; Final safety check: If end <= begin here, it means no valid chunk could be formed
+        ;; (e.g., empty space at end) or the SSML adjustment prevented progress.
+        ;; We must force progress if not at the end of the buffer to avoid infinite loop.
+        (when (and (<= end begin) (< begin (point-max)))
+           (message "Warning: Forcing minimal progress at position %d due to end <= begin" begin)
+           (goto-char begin)
+           (forward-char 1)
+           (setq end (point)))
+
+        (setq begin end) ; Update begin for the next loop iteration
+
         ;; Update voice if we reached a voice change point
         (when (= begin next-voice-change-pos)
           (setq current-voice next-voice-id)
