@@ -139,7 +139,10 @@ DIR is the directory where the repo is stored."
     ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)
     ""
     "EA International"
-    ("i i" "ea.international"             tlon-magit-browse-ea-international)]
+    ("i i" "ea.international"             tlon-magit-browse-ea-international)
+    ""
+    "80k podcast"
+    ("p p" "80k podcast"                  tlon-magit-browse-80k-podcast)]
    ["La bisagra de la historia"
     ("s a" "bisagra-api"                  tlon-magit-browse-bisagra-api)
     ("s f" "bisagra-front"                tlon-magit-browse-bisagra-front)
@@ -214,7 +217,10 @@ DIR is the directory where the repo is stored."
     ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
     ""
     "EA International"
-    ("i i" "ea-international"             tlon-dired-browse-ea-international)]
+    ("i i" "ea-international"             tlon-dired-browse-ea-international)
+    ""
+    "80k podcast"
+    ("p p" "80k podcast"                  tlon-dired-browse-80k-podcast)]
    ["La bisagra de la historia"
     ("s a" "bisagra-api"                  tlon-dired-browse-bisagra-api)
     ("s f" "bisagra-front"                tlon-dired-browse-bisagra-front)
@@ -288,7 +294,10 @@ DIR is the directory where the repo is stored."
     ("u s" "utilitarianism-es"            tlon-open-file-in-utilitarianism-es)
     ""
     "EA International"
-    ("i " "ea-international"              tlon-open-file-in-ea-international)]
+    ("i " "ea-international"              tlon-open-file-in-ea-international)
+    ""
+    "80k podcast"
+    ("i " "80 podcast"                    tlon-open-file-in-80k-podcast)]
    ["La bisagra de la historia"
     ("s a" "bisagra-dev"                  tlon-open-file-in-bisagra-api)
     ("s f" "bisagra-front"                tlon-open-file-in-bisagra-front)

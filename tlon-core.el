@@ -232,6 +232,12 @@
 	   :abbrev "ea-international"
 	   :type meta
 	   :key "i")
+    (:name "80k-podcast"
+	   :project "other"
+	   :subproject "80k-podcast"
+	   :abbrev "80k-podcast"
+	   :type content
+	   :key "i")
     (:name "aea-front"
 	   :project "other"
 	   :subproject "aea"
