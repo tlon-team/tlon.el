@@ -250,7 +250,7 @@ Options are
 ;;;;; ElevenLabs
 
 (defcustom tlon-elevenlabs-audio-settings
-  '("mp3_44100_128" . "mp3")
+  '("mp3_44100_192" . "mp3")
   "Output format and associated extension for the ElevenLabs TTS service.
 The options are:
 
@@ -262,8 +262,8 @@ The options are:
 
 - `\"mp3_44100_128\"': mp3 with 44.1kHz sample rate at 128kbps.
 
-- `\"mp3_44100_192\"': mp3 with 44.1kHz sample rate at 192kbps. Requires you to
-  be subscribed to Creator tier or above.
+- `\"mp3_44100_192\"': mp3 with 44.1kHz sample rate at 192kbps. Requires you at
+  least a Creator tier subscription.
 
 - `\"pcm_16000\"': PCM format (S16LE) with 16kHz sample rate.
 
