@@ -2750,20 +2750,29 @@ string. See the end of the `tlon-tts-supported-tags' docstring for details."
 ;; This assumes only one function will chunkify, since otherwise successive
 ;; functions will change positions of their predecessors
 (defun tlon-tts-chunkify-unsupported-ssml-tags (tags)
-  "Chunkify unsupported SSML TAGS."
+  "Chunkify unsupported SSML TAGS.
+This removes the tag but stores its position and the associated voice ID
+(looked up from the friendly name in the tag's `name` attribute)
+in `tlon-tts-voice-chunks'."
   (tlon-tts-reposition-closing-voice-tag)
   (setq tlon-tts-voice-chunks '())
   (dolist (tag tags)
     (let ((cons (tlon-tts-get-cons-for-unsupported-ssml-tags tag))
-	  voice replacement)
+          voice-name voice-id replacement)
       (goto-char (point-min))
       (while (re-search-forward (car cons) nil t)
-	(setq voice (match-string-no-properties 4)
-	      replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons))
-	(replace-match replacement t t)
-	(goto-char (match-beginning 0))
-	(tlon-tts-move-point-before-break-tag)
-	(push (cons (point-marker) voice) tlon-tts-voice-chunks))))
+        ;; Get friendly name from tag attribute
+        (setq voice-name (match-string-no-properties 4))
+        ;; Look up the corresponding voice ID
+        (setq voice-id (tlon-tts-get-voice-id-from-name voice-name))
+        ;; Get the replacement text (usually the content inside the tag)
+        (setq replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons))
+        ;; Replace the tag with its content
+        (replace-match replacement t t)
+        ;; Store the position and the looked-up voice ID
+        (goto-char (match-beginning 0))
+        (tlon-tts-move-point-before-break-tag)
+        (push (cons (point-marker) voice-id) tlon-tts-voice-chunks))))
   (setq tlon-tts-voice-chunks (nreverse tlon-tts-voice-chunks)))
 
 (defun tlon-tts-reposition-closing-voice-tag ()

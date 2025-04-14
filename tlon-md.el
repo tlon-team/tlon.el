@@ -307,7 +307,7 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :attributes ((:name "name" :required t :valued t :group 3 :reader tlon-md-voice-name-reader)) ; Added reader
 	  :type ssml
 	  :self-closing nil
-	  :doc "")
+	  :doc "Specifies the voice to use. The `name` attribute should contain the friendly voice name (e.g., \"Brian\", \"Victoria\").")
     (:tag "VoiceRole"
 	  :attributes ((:name "role" :required t :valued t :group 3 :prompt "Role: " :reader tlon-md-replace-audio-voice-reader))
 	  :type mdx
@@ -977,8 +977,9 @@ voices available for the `tlon-tts-global-engine'."
 ;;;;;;; Attribute readers
 
 (defun tlon-md-voice-name-reader ()
-  "Prompt the user to select the `name` attribute value for a `voice` tag.
-Uses the voices defined for the `tlon-tts-global-engine'."
+  "Prompt the user to select the friendly `name` attribute value for a `voice` tag.
+Uses the voices defined for the `tlon-tts-global-engine'. Returns the selected
+friendly name (e.g., \"Brian\"), not the voice ID."
   (let* ((engine-name tlon-tts-global-engine)
 	 (voices-var (tlon-lookup tlon-tts-engines :voices-var :name engine-name))
 	 (voices (when voices-var (symbol-value voices-var)))
@@ -994,8 +995,9 @@ Uses the voices defined for the `tlon-tts-global-engine'."
 			      voices)))
     (unless voices-cons
       (user-error "No voices configured for engine: %s" engine-name))
-    (alist-get (completing-read (format "Voice for %s: " engine-name) voices-cons)
-	       voices-cons nil nil #'string=)))
+    ;; Return the friendly name (car) instead of the ID (cdr)
+    (car (assoc (completing-read (format "Voice for %s: " engine-name) voices-cons)
+                voices-cons))))
 
 ;;;;; Notes
 
