@@ -1449,8 +1449,9 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, return INFO."
 ;;;###autoload
 (defun tlon-ai-extract-references (&optional use-region)
   "Scan the current buffer or region for bibliographic references using AI.
-Displays the found references in the *Messages* buffer and copies them (newline-separated) to the kill ring.
-With prefix argument USE-REGION, operate only on the active region."
+Display the found references in the *Messages* buffer and copies
+them (newline-separated) to the kill ring. With prefix argument USE-REGION,
+operate only on the active region."
   (interactive "P")
   (let ((text (if use-region
                   (if (region-active-p)
@@ -2074,7 +2075,8 @@ With prefix argument USE-REGION, operate only on the active region."
                              #'tlon-ai--extract-references-exact-callback)))
 
 (defun tlon-ai--extract-references-exact-callback (response info)
-  "Callback for the initial reference extraction. Finds positions and starts key lookup."
+  "Callback for the initial reference extraction.
+Finds positions and starts key lookup."
   (if (not response)
       (progn
         (setq tlon-ai--extract-replace-state nil) ; Clean up state
@@ -2105,7 +2107,7 @@ With prefix argument USE-REGION, operate only on the active region."
           (tlon-ai--get-keys-for-extracted-references)))))) ; Start key lookup
 
 (defun tlon-ai--find-reference-positions (references buffer beg end)
-  "Search for exact occurrences of REFERENCES strings within BUFFER between BEG and END.
+  "Search for occurrences of REFERENCES strings within BUFFER between BEG and END.
 Returns an alist: (ref-string . list-of-(start . end))."
   (let ((positions-alist '()))
     (with-current-buffer buffer
@@ -2144,7 +2146,7 @@ Returns an alist: (ref-string . list-of-(start . end))."
                                    nil t))))))
 
 (defun tlon-ai--extracted-bibkey-result-handler (reference-text response info)
-  "Callback to handle the result of a single bibkey lookup for extracted references."
+  "Callback to handle the result of bibkey lookup for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
          (key-map (plist-get state :key-map))
          (key (if response (string-trim response) "ERROR_AI")))
@@ -2166,7 +2168,7 @@ Returns an alist: (ref-string . list-of-(start . end))."
       (tlon-ai--apply-extracted-reference-replacements))))
 
 (defun tlon-ai--apply-extracted-reference-replacements ()
-  "Applies the BibTeX key replacements in the source buffer for extracted references."
+  "Apply the BibTeX key replacements in the source buffer for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
          (source-buffer (plist-get state :source-buffer))
          (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
