@@ -1365,9 +1365,14 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
         ;; --- Add the chunk ---
         ;; Ensure we made progress and end is strictly after begin
         (when (> end begin)
-          (let* ((text (buffer-substring-no-properties begin end))
-                 (trimmed-text (string-trim text)))
+          (let* ((raw-text (buffer-substring-no-properties begin end))
+                 ;; Remove trailing break tag and surrounding whitespace before final trim
+                 (text-no-break (replace-regexp-in-string
+                                 (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
+                                 "" raw-text))
+                 (trimmed-text (string-trim text-no-break)))
             ;; Only add chunk if trimmed text is not empty AND not just a break tag
+            ;; (The break tag check might be redundant now, but kept for safety)
             (when (and (not (string-empty-p trimmed-text))
                        (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
               (push (cons trimmed-text (when current-voice (cons 'tlon-tts-voice current-voice))) chunks))))
