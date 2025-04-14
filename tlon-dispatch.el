@@ -138,13 +138,9 @@ DIR is the directory where the repo is stored."
     ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)
     ""
-    "Essays on Longtermism"
-    ("e n" "essays-en"                    tlon-magit-browse-essays-en)
-    ("e s" "essays-es"                    tlon-magit-browse-essays-es)
-    ""
     "EA International"
     ("i i" "ea.international"             tlon-magit-browse-ea-international)]
-   ["La Bisagra"
+   ["La bisagra de la historia"
     ("s a" "bisagra-api"                  tlon-magit-browse-bisagra-api)
     ("s f" "bisagra-front"                tlon-magit-browse-bisagra-front)
     ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
@@ -217,13 +213,9 @@ DIR is the directory where the repo is stored."
     ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
     ""
-    "Essays on Longtermism"
-    ("e n" "essays-en"                    tlon-dired-browse-essays-en)
-    ("e s" "essays-es"                    tlon-dired-browse-essays-es)
-    ""
     "EA International"
     ("i i" "ea-international"             tlon-dired-browse-ea-international)]
-   ["La Bisagra"
+   ["La bisagra de la historia"
     ("s a" "bisagra-api"                  tlon-dired-browse-bisagra-api)
     ("s f" "bisagra-front"                tlon-dired-browse-bisagra-front)
     ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
@@ -295,13 +287,9 @@ DIR is the directory where the repo is stored."
     ("u n" "utilitarianism-en"            tlon-open-file-in-utilitarianism-en)
     ("u s" "utilitarianism-es"            tlon-open-file-in-utilitarianism-es)
     ""
-    "Essays on Longtermism"
-    ("e n" "essays-en"                    tlon-open-file-in-essays-en)
-    ("e s" "essays-es"                    tlon-open-file-in-essays-es)
-    ""
     "EA International"
     ("i " "ea-international"              tlon-open-file-in-ea-international)]
-   ["La Bisagra"
+   ["La bisagra de la historia"
     ("s a" "bisagra-dev"                  tlon-open-file-in-bisagra-api)
     ("s f" "bisagra-front"                tlon-open-file-in-bisagra-front)
     ("s c" "bisagra-content"              tlon-open-file-in-bisagra-content)
