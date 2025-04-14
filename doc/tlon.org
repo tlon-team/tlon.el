@@ -3849,8 +3849,17 @@ This section lists key non-interactive functions, variables, and constants used 
 The file =tlon-tts-tests.el= contains unit tests for the TTS functionality, particularly focusing on the text chunking logic in ~tlon-tts-break-into-chunks~. These tests use the Emacs Lisp Regression Testing framework (=ert=).
 
 To run the tests:
-1. Ensure =tlon-tts-tests.el= is loaded.
-2. Run the command =M-x ert-run-tests-interactively= and select the =tlon-tts= tests.
+
++ *Interactively*:
+  1. Ensure =tlon-tts-tests.el= is loaded (e.g., =M-x load-file RET tlon-tts-tests.el RET=).
+  2. Run the command =M-x ert-run-tests-interactively RET=.
+  3. Press =RET= again at the selector prompt to run all loaded tests, or type =tlon-tts= and =RET= to run only these specific tests.
+
++ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines).
+  #+begin_src shell
+  emacs --batch --load tlon-tts-tests.el --funcall ert-run-tests-batch-and-exit
+  #+end_src
+  Emacs will exit with status 0 if all tests pass, and non-zero otherwise.
 
 These tests help verify that chunking behaves correctly under various conditions, including different engine character limits, paragraph-based chunking (for ElevenLabs), and the presence of voice change markers. Adding more tests, especially for edge cases encountered during development, is encouraged to improve robustness.
 
