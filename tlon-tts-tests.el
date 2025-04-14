@@ -38,11 +38,13 @@
   "Set up a temporary buffer with CONTENT and TTS variables.
 VOICE-CHUNKS is a list of (POSITION . VOICE-ID) markers.
 ENGINE defaults to \"ElevenLabs\"."
+  ;; Create a unique, temporary buffer for this test run.
   (let ((buffer (get-buffer-create "*tlon-tts-test-buffer*")))
     (with-current-buffer buffer
-      (erase-buffer)
-      (insert content)
+      (erase-buffer) ; Ensure it's empty
+      (insert content) ; Add the specific text for this test case
       ;; Set necessary buffer-local variables for chunking
+      ;; because `tlon-tts-break-into-chunks' reads them from the current buffer.
       (make-local-variable 'tlon-tts-voice-chunks) ; Voice change markers
       (make-local-variable 'tlon-tts-engine) ; TTS engine name (affects chunking logic)
       ;; Set the values passed to the setup function
