@@ -3855,14 +3855,9 @@ To run the tests:
   2. Run the command =M-x ert-run-tests-interactively RET=.
   3. Press =RET= again at the selector prompt to run all loaded tests, or type =tlon-tts= and =RET= to run only these specific tests.
 
-+ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). You need to explicitly add the necessary directories to the `load-path` using =--eval= *before* loading files. Load the main package file (=tlon.el=) first to set up dependencies before loading the test file. Use full paths for loaded files.
++ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). You need to explicitly add the necessary directories to the `load-path` using a single =--eval= argument containing a =progn= block *before* loading files. Load the main package file (=tlon.el=) first to set up dependencies before loading the test file. Use full paths for loaded files. Run the command as a single line to avoid shell interpretation issues.
   #+begin_src shell
-  emacs --batch \
-    --eval '(add-to-list 'load-path "/path/to/tlon/directory/")' \
-    --eval '(add-to-list 'load-path "/path/to/parent/repos/directory/")' \
-    --load /path/to/tlon/directory/tlon.el \
-    --load /path/to/tlon/directory/tlon-tts-tests.el \
-    --funcall ert-run-tests-batch-and-exit
+  emacs --batch --eval '(progn (add-to-list (quote load-path) "/path/to/tlon/directory/") (add-to-list (quote load-path) "/path/to/parent/repos/directory/"))' --load /path/to/tlon/directory/tlon.el --load /path/to/tlon/directory/tlon-tts-tests.el --funcall ert-run-tests-batch-and-exit
   #+end_src
   Replace =/path/to/tlon/directory/= with the full path to the specific `tlon` package checkout (e.g., =/Users/user/.emacs.d/elpaca/repos/tlon/=). Replace =/path/to/parent/repos/directory/= with the full path to the directory containing *all* package checkouts (e.g., =/Users/user/.emacs.d/elpaca/repos/=). Emacs will exit with status 0 if all tests pass, and non-zero otherwise.
 
