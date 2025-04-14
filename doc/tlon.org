@@ -3590,7 +3590,7 @@ Each supported TTS engine has specific configuration options:
   #+vindex: tlon-openai-model
   + ~tlon-openai-model~ :: Specifies the OpenAI TTS model to use (e.g., "gpt-4o-mini-tts", "tts-1", "tts-1-hd").
   #+vindex: tlon-elevenlabs-model
-  + ~tlon-elevenlabs-model~ :: Specifies the ElevenLabs model (e.g., "eleven_multilingual_v2", "eleven_turbo_v2_5").
+  + ~tlon-elevenlabs-model~ :: Specifies the ElevenLabs model (e.g., "eleven_multilingual_v2", "eleven_turbo_v2_5"). Voice-specific parameters like =stability=, =similarity_boost=, =style=, =use_speaker_boost=, and =speed= defined in ~tlon-elevenlabs-voices~ are automatically included in the API request.
 + *Region* (Amazon Polly):
   #+vindex: tlon-amazon-polly-region
   + ~tlon-amazon-polly-region~ :: Specifies the AWS region for Amazon Polly requests (e.g., "us-east-1").
