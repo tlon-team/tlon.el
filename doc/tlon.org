@@ -3851,17 +3851,17 @@ The file =tlon-tts-tests.el= contains unit tests for the TTS functionality, part
 To run the tests:
 
 + *Interactively*:
-  1. Ensure =tlon-tts-tests.el= is loaded (e.g., =M-x load-file RET tlon-tts-tests.el RET=).
+  1. Ensure =tlon-tts-tests.el= is loaded (e.g., =M-x load-file RET tlon-tts-tests.el RET=). *Make sure all dependencies of =tlon.el= and =tlon-tts.el= are also loaded or available in the `load-path`.*
   2. Run the command =M-x ert-run-tests-interactively RET=.
   3. At the "Run tests matching selector:" prompt, type =t= and press =RET= to run all loaded tests. Alternatively, type =tlon-tts= and =RET= to run only the tests defined in this specific suite.
 
-+ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). Use a single =--eval= argument containing a =progn= block to set up the `load-path`, load the necessary files (`tlon.el` first, then the test file), and finally run the tests. Use full paths for loaded files. Run the command as a single line to avoid shell interpretation issues.
++ *From the Command Line (Batch Mode)*: This is suitable for automated checks (e.g., in scripts or CI pipelines). Use a single =--eval= argument containing a =progn= block to set up the `load-path`, load the necessary files (`tlon.el` first, then the test file), and finally run the tests. Use full paths for loaded files. Run the command as a single line to avoid shell interpretation issues. *Ensure all dependencies are correctly specified in the `load-path`.*
   #+begin_src shell
   emacs --batch --eval '(progn (add-to-list (quote load-path) "/path/to/tlon/directory/") (add-to-list (quote load-path) "/path/to/parent/repos/directory/") (load-file "/path/to/tlon/directory/tlon.el") (load-file "/path/to/tlon/directory/tlon-tts-tests.el") (ert-run-tests-batch-and-exit))'
   #+end_src
   Replace =/path/to/tlon/directory/= with the full path to the specific `tlon` package checkout (e.g., =/Users/user/.emacs.d/elpaca/repos/tlon/=). Replace =/path/to/parent/repos/directory/= with the full path to the directory containing *all* package checkouts (e.g., =/Users/user/.emacs.d/elpaca/repos/=). Emacs will exit with status 0 if all tests pass, and non-zero otherwise.
 
-These tests help verify that chunking behaves correctly under various conditions, including different engine character limits, paragraph-based chunking (for ElevenLabs), and the presence of voice change markers. Adding more tests, especially for edge cases encountered during development, is encouraged to improve robustness.
+These tests help verify that chunking behaves correctly under various conditions, including different engine character limits, paragraph-based chunking (for ElevenLabs), the presence of voice change markers, and handling of SSML break tags. Adding more tests, especially for edge cases encountered during development, is encouraged to improve robustness.
 
 * URL Handling (=tlon-url.el=)
 :PROPERTIES:
