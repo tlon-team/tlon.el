@@ -3053,15 +3053,15 @@ This module provides tools for managing meetings within the Tlön workflow. It f
 + =tlon-forg=
 + =tlon-ai=
 + =transient=
-+ An external diarization script (configurable via ~tlon-meet-diarize-script~).
++ An external diarization script (configurable via ~tlon-meet-whisperx-file~).
 
 ** User Options
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-meet-options
 :END:
 
-#+vindex: tlon-meet-diarize-script
-+ ~tlon-meet-diarize-script~ :: Path to the Python script used for audio diarization (default: ="diarize.py"=).
+#+vindex: tlon-meet-whisperx-file
++ ~tlon-meet-whisperx-file~ :: Path to the Python script used for audio diarization (default: ="diarize.py"=).
 
 #+vindex: tlon-meet-summary-prompt
 + ~tlon-meet-summary-prompt~ :: The prompt template used for generating AI summaries of meeting transcripts. It should contain =%s= which will be replaced by the transcript text.
@@ -3133,7 +3133,7 @@ This section details the interactive commands provided by =tlon-meet.el=.
   2. Prompts the user to optionally specify the processing =DEVICE= (e.g., "cpu", "cuda") for the external script.
   3. Extracts the date from the filename (if possible, using regex) or defaults to the current date.
   4. Creates and displays a "*Diarization Output*" buffer.
-  5. Runs the diarization script specified by ~tlon-meet-diarize-script~ asynchronously on the =AUDIO-FILE=, passing the selected =DEVICE= via the =--device= argument if provided.
+  5. Runs the diarization script specified by ~tlon-meet-whisperx-file~ asynchronously on the =AUDIO-FILE=, passing the selected =DEVICE= via the =--device= argument if provided.
   6. When the script finishes, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension]-transcript.txt=).
   7. If the transcript exists, it calls ~tlon-meet--generate-summary~.
   8. If the script fails or the transcript doesn't exist, it reports an error in the output buffer.
