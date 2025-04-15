@@ -1983,19 +1983,19 @@ audio. CHUNK-INDEX is the index of the current chunk."
                                 ;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
                                 (cons (symbol-name param) ; Use string key
                                       (if (eq param :use_speaker_boost)
-                                          (if value :json-true :json-false) ; Handle boolean conversion
+                                          (if value t nil) ; Use standard Elisp booleans
                                         value))))
                             voice-settings-params)))
-             ;; Define base payload parts as an alist
+             ;; Define base payload parts as an alist with string keys
              (payload-parts
-              `((:text . ,string)
-                (:model_id . ,tlon-elevenlabs-model)
-                ,@(when before-text `((:before_text . ,before-text)))
-                ,@(when after-text `((:after_text . ,after-text)))
+              `(("text" . ,string)
+                ("model_id" . ,tlon-elevenlabs-model)
+                ,@(when before-text `(("before_text" . ,before-text)))
+                ,@(when after-text `(("after_text" . ,after-text)))
                 ;; Add previous_request_ids if available
-                ,@(when previous-chunk-id `((:previous_request_ids . (,previous-chunk-id))))
+                ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
-                (:stitch_audio . ,(if (or before-text after-text previous-chunk-id) :json-true :json-false)))) ; Enable stitch if any context provided
+                ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans
              ;; Add voice settings if they exist
              (final-payload-parts
               (if voice-settings
