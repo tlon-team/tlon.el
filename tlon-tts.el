@@ -1940,19 +1940,20 @@ audio."
 					  (if value :json-true :json-false)
 					value))))
 			    voice-settings-params)))
-	     (payload (json-encode
-		       `(("text" . ,string)
-			 ("model_id" . ,tlon-elevenlabs-model)
-			 ,@(when before-text `(("before_text" . ,before-text)))
-			 ,@(when after-text `(("after_text" . ,after-text)))
-			 ("stitch_audio" . ,(if (or before-text after-text) t :json-false))))
-		      ;; Add voice_settings if they exist
-		      (final-payload-parts
-		       (if voice-settings
-			   (append payload-parts `(("voice_settings" . ,voice-settings)))
-			 payload-parts))
-		      ;; Encode the complete payload
-		      (payload (json-encode final-payload-parts))))
+             ;; Define base payload parts as an alist
+             (payload-parts
+              `(("text" . ,string)
+                ("model_id" . ,tlon-elevenlabs-model)
+                ,@(when before-text `(("before_text" . ,before-text)))
+                ,@(when after-text `(("after_text" . ,after-text)))
+                ("stitch_audio" . ,(if (or before-text after-text) t :json-false))))
+             ;; Add voice settings if they exist
+             (final-payload-parts
+              (if voice-settings
+                  (append payload-parts `(("voice_settings" . ,voice-settings)))
+                payload-parts))
+             ;; Encode the final payload
+             (payload (json-encode final-payload-parts)))
 	(mapconcat 'shell-quote-argument
 		   (list "curl"
 			 "--request" "POST"
