@@ -917,11 +917,9 @@ list of languages, respectively."
   "Read a list of languages from a list of languages.
 By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
-  (let* ((language-candidates (tlon-get-language-candidates babel))
-	 (language-selection (completing-read-multiple "Languages (comma-separated): "
-						       (append '("*all*") language-candidates))))
-    ;; If "*all*" is selected, return the full list of candidates, otherwise return the selection.
-    (if (member "*all*" language-selection) language-candidates language-selection)))
+  (let* ((language-candidates (tlon-get-language-candidates babel)))
+    (completing-read-multiple "Languages (comma-separated, or 'default'): "
+                              (append '("default") language-candidates))))
 
 (defun tlon-get-language-candidates (babel &optional additional-langs excluded-langs)
   "Return a list of language candidates.
@@ -976,7 +974,7 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 ;;;;; JSON editing
 
 (defun tlon-edit-json-mapping (file outer-key-prompt inner-value-prompt)
-  "Edit a JSON file structured as {outer_key: {lang_code: inner_value}}.
+  "Edit a JSON file structured as {outer_key: {lang_code_or_default: inner_value}}.
 Prompts for OUTER-KEY, one or more LANG-CODEs (or \"default\"),
 and INNER-VALUE. Updates FILE accordingly.
 OUTER-KEY-PROMPT is the prompt string for the outer key.
@@ -986,24 +984,28 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
          (outer-keys (tlon-get-keys json-data))
          (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
          (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal)))
-         ;; Prompt for a single language or "default"
-         (chosen-lang (tlon-select-language 'code 'babel "Language (or 'default'): "
-                                            'require-match nil '("default")))
-         (existing-value (when chosen-lang
-                           (gethash chosen-lang inner-alist)))
+         ;; Prompt for multiple languages or "default"
+         (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): "
+                                             'require-match nil '("default") nil 'multiple))
+         ;; Prioritize non-default language for existing value prompt
+         (prompt-lang (or (cl-find-if-not (lambda (l) (equal l "default")) chosen-langs)
+                          (car chosen-langs)))
+         (existing-value (when prompt-lang
+                           (gethash prompt-lang inner-alist)))
          (chosen-inner-value (read-string (format "%s for '%s' in %s: "
                                                   inner-value-prompt
                                                   chosen-outer-key
-                                                  chosen-lang)
+                                                  (string-join chosen-langs ", "))
                                           existing-value)))
-    ;; Update the inner hash-table for the selected language or "default"
-    (puthash chosen-lang chosen-inner-value inner-alist)
+    ;; Update the inner hash-table for all selected languages/keys
+    (dolist (lang chosen-langs)
+      (puthash lang chosen-inner-value inner-alist))
     ;; Update the main data structure
     (puthash chosen-outer-key inner-alist json-data)
     ;; Write back to the file
     (tlon-write-data file json-data)
-    (message "Updated '%s' for key '%s' in language '%s' in %s"
-             chosen-inner-value chosen-outer-key chosen-lang file)))
+    (message "Updated '%s' for key '%s' in language(s)/key(s) %s in %s"
+             chosen-inner-value chosen-outer-key (string-join chosen-langs ", ") file)))
 
 ;;;;; tags
 
