@@ -980,7 +980,8 @@ Prompts for OUTER_KEY, one or more LANG_CODEs (or \"default\"),
 and INNER_VALUE. Updates FILE accordingly.
 OUTER_KEY_PROMPT is the prompt string for the outer key.
 INNER_VALUE_PROMPT is the prompt string for the inner value."
-  (let* ((json-data (or (tlon-read-json file) (make-hash-table :test 'equal))) ; Use hash-table for easier updates
+  (let* ((json-data (or (tlon-read-json file 'hash-table) ; Specify hash-table object type
+                        (make-hash-table :test 'equal)))
          (outer-keys (tlon-get-keys json-data))
          (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
          (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal))) ; Get existing inner data or new hash-table
