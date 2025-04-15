@@ -2005,12 +2005,8 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 payload-parts))
              ;; Manually construct the JSON payload string
              (payload
-              (progn ; Use progn to allow the debug message before the let form
-                ;; --- DEBUG ---
-                (when tlon-debug (message "[DEBUG tlon-tts] Constructed voice-settings alist: %S" voice-settings))
-                ;; --- END DEBUG ---
-                (let ((base-pairs (list (format "\"text\":%s" (json-encode-string string))
-                                        (format "\"model_id\":%s" (json-encode-string tlon-elevenlabs-model))))
+              (let ((base-pairs (list (format "\"text\":%s" (json-encode-string string))
+                                      (format "\"model_id\":%s" (json-encode-string tlon-elevenlabs-model))))
                     (optional-pairs '())
                     (voice-settings-pairs '()))
                 ;; Add optional fields
@@ -2022,10 +2018,11 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ;; Add voice settings if they exist
                 (when voice-settings
                   (dolist (pair voice-settings)
-                    (let ((key (car pair)) ; Already a string
-                          (value (cdr pair)))
+                    (let* ((key-symbol (car pair)) ; This might be a keyword symbol
+                           (key-string (symbol-name key-symbol)) ; Ensure we have a string key
+                           (value (cdr pair)))
                       (push (format "\"%s\":%s"
-                                    key
+                                    key-string ; Use the guaranteed string key
                                     (cond
                                      ((numberp value) (format "%s" value)) ; Number
                                      ((eq value t) "true")                 ; Boolean true
