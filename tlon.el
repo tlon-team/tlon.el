@@ -405,11 +405,11 @@ respectively."
 
 ;;;;; URL correspondences
 
-(declare-function tlon-read-language "tlon-core")
+(declare-function tlon-edit-json-mapping "tlon-core")
 (defun tlon-edit-url-correspondences ()
   "Add or edit a URL correspondence in `tlon-file-url-correspondences`."
   (interactive)
-  (tlon-edit-correspondence tlon-file-url-correspondences))
+  (tlon-edit-json-mapping tlon-file-url-correspondences "Source URL: " "Target URL: "))
 
 (autoload 'magit-save-repository-buffers "magit-mode")
 (autoload 'magit-run-git "magit-process")
