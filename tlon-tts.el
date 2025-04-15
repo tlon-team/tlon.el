@@ -1513,8 +1513,9 @@ Triggers the engine-specific request function and sets up the process sentinel."
       (message "Process %s (chunk %d): Event occurred - %s" (process-name process) chunk-index event)))))
 
 (defun tlon-tts--parse-elevenlabs-request-id (output)
-  "Parse the xi-request-id header from curl OUTPUT."
-  (when (string-match-p "^xi-request-id: \\([a-zA-Z0-9]+\\)" output)
+  "Parse the request-id header from curl OUTPUT."
+  ;; Search for the header anywhere in the output, ignoring case for the header name
+  (when (string-match-p "(?i)\nrequest-id: *\\([a-zA-Z0-9]+\\)" output)
     (match-string 1 output)))
 
 (defun tlon-tts-finish-processing (last-chunk-file)
