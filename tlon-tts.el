@@ -1992,9 +1992,10 @@ audio. CHUNK-INDEX is the index of the current chunk."
 			 "--url" (format tlon-elevenlabs-tts-url voice (car audio))
 			 "--header" "Content-Type: application/json"
 			 "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
-			 ;; Include headers in output
-			 "-i"
+			 ;; Dump headers to stdout for sentinel
+			 "--dump-header" "-"
 			 "--data" payload
+			 ;; Write audio body to destination file
 			 "--output" destination)
 		   " ")))))
 
