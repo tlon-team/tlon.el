@@ -3130,12 +3130,20 @@ This section details the interactive commands provided by =tlon-meet.el=.
 #+findex: tlon-meet-diarize-and-summarize
 + ~tlon-meet-diarize-and-summarize~ :: Processes an audio recording file to generate a transcript and an AI summary.
   1. Prompts the user to select an =AUDIO-FILE=, defaulting to the directory specified by ~tlon-default-conference-app~ (~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~).
-  2. Extracts the date from the filename (if possible, using regex) or defaults to the current date.
-  3. Creates and displays a "*Diarization Output*" buffer.
-  4. Runs the diarization script specified by ~tlon-meet-diarize-script~ asynchronously on the =AUDIO-FILE=.
-  5. When the script finishes, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension]-transcript.txt=).
-  6. If the transcript exists, it calls ~tlon-meet--generate-summary~.
-  7. If the transcript doesn't exist, it reports an error in the output buffer.
+  2. Prompts the user to optionally specify the processing =DEVICE= (e.g., "cpu", "cuda") for the external script.
+  3. Extracts the date from the filename (if possible, using regex) or defaults to the current date.
+  4. Creates and displays a "*Diarization Output*" buffer.
+  5. Runs the diarization script specified by ~tlon-meet-diarize-script~ asynchronously on the =AUDIO-FILE=, passing the selected =DEVICE= via the =--device= argument if provided.
+  6. When the script finishes, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension]-transcript.txt=).
+  7. If the transcript exists, it calls ~tlon-meet--generate-summary~.
+  8. If the script fails or the transcript doesn't exist, it reports an error in the output buffer.
+
+  *Note:* This command relies on an external Python script (~tlon-meet-diarize-script~) and its dependencies (like PyTorch, NeMo). Errors during execution (like the `linalg.eigh` error mentioned previously) often originate from this external script or its environment. If you encounter such errors:
+    - Check the "*Diarization Output*" buffer for detailed error messages from the Python script.
+    - Try running the script manually from your terminal using the command logged in the output buffer (e.g., =python /path/to/diarize.py -a /path/to/audio.m4a --device cpu=).
+    - Ensure the Python environment where the script runs has correctly installed dependencies matching its =requirements.txt=/=constraints.txt=. Pay attention to PyTorch, NeMo, and NumPy versions.
+    - Consider creating a dedicated Python virtual environment for the script.
+    - Look for similar issues reported in the =whisper-diarization= or Nvidia NeMo GitHub repositories, especially regarding CPU execution on macOS.
 
 *** Transient Menu
 :PROPERTIES:
