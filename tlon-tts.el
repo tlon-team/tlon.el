@@ -1987,9 +1987,6 @@ audio. CHUNK-INDEX is the index of the current chunk."
                                           (if value t nil) ; Use standard Elisp booleans t/nil
                                         value))))
                             voice-settings-params)))
-             ;; --- DEBUG ---
-             (when tlon-debug (message "[DEBUG tlon-tts] Constructed voice-settings alist: %S" voice-settings))
-             ;; --- END DEBUG ---
              ;; Define base payload parts as an alist with STRING keys
              (payload-parts
               `(("text" . ,string)
@@ -2008,8 +2005,12 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 payload-parts))
              ;; Manually construct the JSON payload string
              (payload
-              (let ((base-pairs (list (format "\"text\":%s" (json-encode-string string))
-                                      (format "\"model_id\":%s" (json-encode-string tlon-elevenlabs-model))))
+              (progn ; Use progn to allow the debug message before the let form
+                ;; --- DEBUG ---
+                (when tlon-debug (message "[DEBUG tlon-tts] Constructed voice-settings alist: %S" voice-settings))
+                ;; --- END DEBUG ---
+                (let ((base-pairs (list (format "\"text\":%s" (json-encode-string string))
+                                        (format "\"model_id\":%s" (json-encode-string tlon-elevenlabs-model))))
                     (optional-pairs '())
                     (voice-settings-pairs '()))
                 ;; Add optional fields
