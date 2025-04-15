@@ -78,7 +78,7 @@ This variable should not be set manually.")
   (file-name-concat (tlon-repo-lookup :dir :name "babel-es") "dict/")
   "Directory where dictionary files are stored.")
 
-;; TODO: check if this is used anywhere, or needed
+;; TODO: currently unused; consider implementing
 (defvar tlon-file-hyphenation
   "hyphenation.json"
   "File containing hyphenation rules.")
