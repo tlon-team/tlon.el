@@ -1997,17 +1997,13 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
                 ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans t/nil
-             ;; Add voice settings if they exist
+             ;; Add voice settings if they exist, marking the nested alist as a JSON object
              (final-payload-parts
               (if voice-settings
-                  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
-                  (append payload-parts `(("voice_settings" . ,voice-settings)))
+                  (append payload-parts (list (cons "voice_settings" (cons :json-object voice-settings))))
                 payload-parts))
-             ;; Encode the final payload alist (with nested alist) to JSON string
+             ;; Encode the final payload alist (with nested structure marked as :json-object)
              (payload (json-encode final-payload-parts)))
-        ;; --- DEBUGGING START ---
-        (message "[DEBUG tlon-tts] Final JSON Payload String: %s" payload)
-        ;; --- DEBUGGING END ---
         (mapconcat 'shell-quote-argument
                    (list "curl"
                          "--request" "POST"
