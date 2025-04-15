@@ -1978,16 +1978,16 @@ audio. CHUNK-INDEX is the index of the current chunk."
                                            tlon-elevenlabs-voices))
              ;; Extract voice settings if they exist in the definition
              (voice-settings
-              (delq nil ; Remove nil entries from the resulting list
+              ;; Build the voice_settings alist with STRING keys
+              (delq nil
                     (mapcar (lambda (param)
                               (when-let ((value (plist-get voice-definition param)))
-                                ;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
-                                (cons (symbol-name param) ; Use string key
+                                (cons (symbol-name param) ; Ensure string key, e.g., "stability"
                                       (if (eq param :use_speaker_boost)
-                                          (if value t nil) ; Use standard Elisp booleans
+                                          (if value t nil) ; Use standard Elisp booleans t/nil
                                         value))))
                             voice-settings-params)))
-             ;; Define base payload parts as an alist with string keys
+             ;; Define base payload parts as an alist with STRING keys
              (payload-parts
               `(("text" . ,string)
                 ("model_id" . ,tlon-elevenlabs-model)
@@ -1996,13 +1996,14 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ;; Add previous_request_ids if available
                 ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
-                ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans
+                ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans t/nil
              ;; Add voice settings if they exist
              (final-payload-parts
               (if voice-settings
-                  (append payload-parts `(("voice_settings" . ,voice-settings))) ; Use string key and add the voice_settings alist
+                  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
+                  (append payload-parts `(("voice_settings" . ,voice-settings)))
                 payload-parts))
-             ;; Encode the final payload alist to JSON string
+             ;; Encode the final payload alist (with nested alist) to JSON string
              (payload (json-encode final-payload-parts)))
         (mapconcat 'shell-quote-argument
                    (list "curl"
