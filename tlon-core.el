@@ -986,24 +986,24 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
          (outer-keys (tlon-get-keys json-data))
          (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
          (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal)))
-         (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): "
-					     'require-match nil '("default") nil 'multiple))
-         (existing-value (when chosen-langs
-                           (gethash (car chosen-langs) inner-alist)))
+         ;; Prompt for a single language or "default"
+         (chosen-lang (tlon-select-language 'code 'babel "Language (or 'default'): "
+                                            'require-match nil '("default")))
+         (existing-value (when chosen-lang
+                           (gethash chosen-lang inner-alist)))
          (chosen-inner-value (read-string (format "%s for '%s' in %s: "
                                                   inner-value-prompt
                                                   chosen-outer-key
-                                                  (string-join chosen-langs ", "))
+                                                  chosen-lang)
                                           existing-value)))
-    ;; Update the inner alist (now hash-table) for all selected languages
-    (dolist (lang chosen-langs)
-      (puthash lang chosen-inner-value inner-alist))
+    ;; Update the inner hash-table for the selected language or "default"
+    (puthash chosen-lang chosen-inner-value inner-alist)
     ;; Update the main data structure
     (puthash chosen-outer-key inner-alist json-data)
     ;; Write back to the file
     (tlon-write-data file json-data)
-    (message "Updated '%s' for key '%s' in language(s) %s in %s"
-             chosen-inner-value chosen-outer-key (string-join chosen-langs ", ") file)))
+    (message "Updated '%s' for key '%s' in language '%s' in %s"
+             chosen-inner-value chosen-outer-key chosen-lang file)))
 
 ;;;;; tags
 
