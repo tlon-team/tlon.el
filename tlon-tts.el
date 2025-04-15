@@ -1987,6 +1987,8 @@ audio. CHUNK-INDEX is the index of the current chunk."
                                           (if value t nil) ; Use standard Elisp booleans t/nil
                                         value))))
                             voice-settings-params)))
+             ;; Pre-encode the voice_settings alist into its own JSON string
+             (voice-settings-json (when voice-settings (json-encode voice-settings)))
              ;; Define base payload parts as an alist with STRING keys
              (payload-parts
               `(("text" . ,string)
@@ -1997,12 +1999,12 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
                 ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans t/nil
-             ;; Add voice settings if they exist, marking the nested alist as a JSON object
+             ;; Add the pre-encoded voice_settings JSON string using :json-verbatim
              (final-payload-parts
-              (if voice-settings
-                  (append payload-parts (list (cons "voice_settings" (cons :json-object voice-settings))))
+              (if voice-settings-json
+                  (append payload-parts `(("voice_settings" :json-verbatim . ,voice-settings-json)))
                 payload-parts))
-             ;; Encode the final payload alist (with nested structure marked as :json-object)
+             ;; Encode the final payload alist (containing the verbatim JSON string)
              (payload (json-encode final-payload-parts)))
         (mapconcat 'shell-quote-argument
                    (list "curl"
