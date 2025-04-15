@@ -1473,10 +1473,15 @@ Triggers the engine-specific request function and sets up the process sentinel."
          (file (nth 2 chunk-data)))
     (cond
      ((string-match "finished" event) ; Process finished successfully
-      (let ((output (with-current-buffer (process-buffer process) (buffer-string)))
-            (request-id (tlon-tts--parse-elevenlabs-request-id output)))
+      (let* ((process-buf (process-buffer process))
+             ;; Safely get buffer content, default to "" if buffer is gone
+             (output (if (buffer-live-p process-buf)
+                         (with-current-buffer process-buf (buffer-string))
+                       ""))
+             (request-id (tlon-tts--parse-elevenlabs-request-id output)))
 
-        (when tlon-debug (message "Debug: Chunk %d finished. Request ID: %s" chunk-index request-id))
+        (when tlon-debug (message "Debug: Chunk %d finished. Request ID: %s (Output Length: %d)"
+                                  chunk-index request-id (length output)))
 
         ;; Store request ID and mark as completed
         (setf (nth 3 chunk-data) request-id)
