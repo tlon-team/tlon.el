@@ -1005,22 +1005,6 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
     (message "Updated '%s' for key '%s' in language(s) %s in %s"
              chosen-inner-value chosen-outer-key (string-join chosen-langs ", ") file)))
 
-;;;;; correspondences
-;; TODO: Decide if this function is still needed or can be removed/refactored.
-(defun tlon-edit-correspondence (file)
-  "Add or edit a correspondence in FILE."
-  (let* ((json-data (tlon-read-json file))
-         (outer-urls (mapcar #'car json-data))
-         (chosen-outer-url (completing-read "Source: " outer-urls))
-         (inner-alist (alist-get chosen-outer-url json-data nil nil #'string=))
-         (chosen-lang (tlon-select-language 'code 'babel nil nil nil nil '("default")))
-	 (inner-url (alist-get chosen-lang inner-alist nil nil #'string=))
-         (chosen-inner-url (read-string "Target: " inner-url nil nil)))
-    (setf (alist-get chosen-lang inner-alist nil nil #'string=) chosen-inner-url)
-    (setf (alist-get chosen-outer-url json-data nil nil #'string=) inner-alist)
-    (tlon-write-data file json-data)
-    (message "Edited `%s'" file)))
-
 ;;;;; tags
 
 ;; TODO: create pattern directly fro `tlon-tag-specs'
