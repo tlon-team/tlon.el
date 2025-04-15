@@ -1976,19 +1976,17 @@ audio. CHUNK-INDEX is the index of the current chunk."
       ;; Look up the full voice definition using the voice ID
       (let* ((voice-definition (cl-find-if (lambda (entry) (equal (plist-get entry :id) voice))
                                            tlon-elevenlabs-voices))
-             ;; Create a hash table for voice settings
-             (voice-settings-ht (make-hash-table :test 'equal))
-             ;; Populate the hash table with string keys
-             (_ (dolist (param voice-settings-params)
-                  (when-let ((value (plist-get voice-definition param)))
-                    (puthash (symbol-name param) ; String key
-                             (if (eq param :use_speaker_boost)
-                                 (if value t nil) ; Elisp boolean
-                               value)
-                             voice-settings-ht))))
-             ;; Use the hash table if it's not empty, otherwise nil
-             (voice-settings (unless (zerop (hash-table-count voice-settings-ht))
-                               voice-settings-ht))
+             ;; Extract voice settings if they exist in the definition
+             (voice-settings
+              ;; Build the voice_settings alist with STRING keys
+              (delq nil
+                    (mapcar (lambda (param)
+                              (when-let ((value (plist-get voice-definition param)))
+                                (cons (symbol-name param) ; Ensure string key, e.g., "stability"
+                                      (if (eq param :use_speaker_boost)
+                                          (if value t nil) ; Use standard Elisp booleans t/nil
+                                        value))))
+                            voice-settings-params)))
              ;; Define base payload parts as an alist with STRING keys
              (payload-parts
               `(("text" . ,string)
@@ -1999,13 +1997,17 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
                 ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans t/nil
-             ;; Add voice settings hash table if it exists
+             ;; Add voice settings if they exist
              (final-payload-parts
-              (if voice-settings ; voice-settings is now a hash-table or nil
+              (if voice-settings
+                  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
                   (append payload-parts `(("voice_settings" . ,voice-settings)))
                 payload-parts))
-             ;; Encode the final payload alist (with nested hash table) to JSON string
+             ;; Encode the final payload alist (with nested alist) to JSON string
              (payload (json-encode final-payload-parts)))
+        ;; --- DEBUGGING START ---
+        (message "[DEBUG tlon-tts] Final JSON Payload String: %s" payload)
+        ;; --- DEBUGGING END ---
         (mapconcat 'shell-quote-argument
                    (list "curl"
                          "--request" "POST"
