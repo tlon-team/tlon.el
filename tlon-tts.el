@@ -1966,56 +1966,64 @@ audio. CHUNK-INDEX is the index of the current chunk."
                         (nth 0 (nth (1- chunk-index) tlon-tts-chunks))))
          (after-text (when (and (< (1+ chunk-index) (length tlon-tts-chunks)) (null tlon-elevenlabs-char-limit))
                        (nth 0 (nth (1+ chunk-index) tlon-tts-chunks))))
-         ;; Get previous request ID if available
-         (previous-chunk-id (when (> chunk-index 0)
-                              (let ((prev-chunk (nth (1- chunk-index) tlon-tts-chunks)))
-                                (when (eq (nth 4 prev-chunk) 'completed) ; Check status
-                                  (nth 3 prev-chunk))))) ; Get request-id
-         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed))) ; Define params to extract
+         (previous-chunk-id (tlon-tts-get-previous-chunk-id chunk-index))
+         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
     (cl-destructuring-bind (voice audio) vars
       ;; Look up the full voice definition using the voice ID
       (let* ((voice-definition (cl-find-if (lambda (entry) (equal (plist-get entry :id) voice))
                                            tlon-elevenlabs-voices))
-             ;; Extract voice settings if they exist in the definition
-             (voice-settings
-              ;; Build the voice_settings alist with guaranteed STRING keys
-              (delq nil
-                    (mapcar (lambda (param)
-                              (when-let ((value (plist-get voice-definition param)))
-                                (cons (format "%s" (symbol-name param)) ; Force string key, e.g., "stability"
-                                      (if (eq param :use_speaker_boost)
-                                          (if value t nil) ; Use standard Elisp booleans t/nil
-                                        value))))
-                            voice-settings-params)))
-             ;; Define base payload parts as an alist with STRING keys
-             (payload-parts
-              `(("text" . ,string)
-                ("model_id" . ,tlon-elevenlabs-model)
-                ,@(when before-text `(("before_text" . ,before-text)))
-                ,@(when after-text `(("after_text" . ,after-text)))
-                ;; Add previous_request_ids if available
-                ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
-                ;; Note: next_request_ids could be added similarly if needed/available
-                ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans t/nil
+             (voice-settings (tlon-tts-build-voice-settings voice-definition voice-settings-params))
+             (payload-parts (tlon-tts-define-payload-parts string before-text after-text previous-chunk-id))
              ;; Add voice settings if they exist
              (final-payload-parts
               (if voice-settings
-                  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
-                  (append payload-parts `(("voice_settings" . ,voice-settings)))
-                payload-parts))
-             ;; Use json-encode on the alist
+		  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
+		  (append payload-parts `(("voice_settings" . ,voice-settings)))
+		payload-parts))
              (payload (json-encode final-payload-parts)))
-        (mapconcat 'shell-quote-argument
+	(mapconcat 'shell-quote-argument
                    (list "curl"
-                         "--request" "POST"
+			 "--request" "POST"
 			 "--url" (format tlon-elevenlabs-tts-url voice (car audio))
 			 "--header" "Content-Type: application/json"
 			 "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
-                         ;; Include headers in output
-                         "-i"
+			 ;; Include headers in output
+			 "-i"
 			 "--data" payload
 			 "--output" destination)
 		   " ")))))
+
+(defun tlon-tts-get-previous-chunk-id (chunk-index)
+  "Get the ID of the previous chunk for chunk at CHUNK-INDEX."
+  (when (> chunk-index 0)
+    (let ((prev-chunk (nth (1- chunk-index) tlon-tts-chunks)))
+      (when (eq (nth 4 prev-chunk) 'completed) ; Check status
+        (nth 3 prev-chunk)))))
+
+(defun tlon-tts-define-payload-parts (string before-text after-text previous-chunk-id)
+  "Define the payload parts for ElevenLabs API request.
+STRING is the text to be converted to speech. BEFORE-TEXT and AFTER-TEXT are
+optional strings to be added before and after the main text. PREVIOUS-CHUNK-ID
+is the ID of the previous chunk, if available."
+  `(("text" . ,string)
+    ("model_id" . ,tlon-elevenlabs-model)
+    ,@(when before-text `(("before_text" . ,before-text)))
+    ,@(when after-text `(("after_text" . ,after-text)))
+    ;; Add previous_request_ids if available
+    ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
+    ;; Note: next_request_ids could be added similarly if needed/available
+    ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil))))
+
+(defun tlon-tts-build-voice-settings (voice-definition voice-settings-params)
+  "Build the voice settings from the VOICE-DEFINITION and VOICE-SETTINGS-PARAMS."
+  (delq nil
+        (mapcar (lambda (param)
+                  (when-let ((value (plist-get voice-definition param)))
+                    (cons (format "%s" (substring (symbol-name param) 1))
+                          (if (eq param :use_speaker_boost)
+                              (if value t nil) ; Use standard Elisp booleans t/nil
+                            value))))
+                voice-settings-params)))
 
 (declare-function json-mode "json-mode")
 (defun tlon-tts-elevenlabs-get-voices ()
