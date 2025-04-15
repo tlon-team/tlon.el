@@ -66,7 +66,9 @@ ENGINE defaults to \"ElevenLabs\"."
   (let* ((content "Paragraph 1.\n\nParagraph 2.\n\nParagraph 3.")
          (buffer (tlon-tts-test--setup-buffer content nil "ElevenLabs")) ; Engine matters for nil chunk-size
          ;; Define the expected output for this specific input and settings.
-         (expected-chunks '(("Paragraph 1.") ("Paragraph 2.") ("Paragraph 3.")))
+         (expected-chunks '(("Paragraph 1." nil "test-output-001.nil" nil pending)
+                            ("Paragraph 2." nil "test-output-002.nil" nil pending)
+                            ("Paragraph 3." nil "test-output-003.nil" nil pending)))
          ;; Variable to hold the actual result from the function call.
          chunks)
     ;; 2. Act: Run the code being tested within the prepared environment.
@@ -115,8 +117,8 @@ ENGINE defaults to \"ElevenLabs\"."
          (chunk-size 100) ; Use char limit mode for this test
          ;; Actual behavior observed: Applies the new voice to the chunk ending at the marker,
          ;; and creates a new chunk for the content after the marker.
-         (expected-chunks '(("First part with voice A.\n\nSecond part starts here, then voice B takes over." . (tlon-tts-voice . "voiceB"))
-                            ("Final part with voice B." . (tlon-tts-voice . "voiceB"))))
+         (expected-chunks '(("First part with voice A.\n\nSecond part starts here, then voice B takes over." (tlon-tts-voice . "voiceB") "test-output-001.nil" nil pending)
+                            ("Final part with voice B." (tlon-tts-voice . "voiceB") "test-output-002.nil" nil pending)))
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
@@ -134,7 +136,7 @@ ENGINE defaults to \"ElevenLabs\"."
          (buffer (tlon-tts-test--setup-buffer content voice-chunks "Google Cloud"))
          (chunk-size 100)
          ;; Actual behavior observed: Returns a single chunk with the voice applied.
-         (expected-chunks '(("Everything read by voice B.\n\nAnother paragraph." . (tlon-tts-voice . "voiceB"))))
+         (expected-chunks '(("Everything read by voice B.\n\nAnother paragraph." (tlon-tts-voice . "voiceB") "test-output-001.nil" nil pending)))
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
@@ -151,7 +153,10 @@ ENGINE defaults to \"ElevenLabs\"."
          (buffer (tlon-tts-test--setup-buffer content nil "ElevenLabs"))
          (chunk-size 15) ; Choose a chunk size that initially falls right after the break tag.
          ;; Actual behavior observed: The chunker splits within the tag due to the limit.
-         (expected-chunks '(("Paragraph 1.<br") ("eak time=\"0.5s\"") ("/>") ("Paragraph 2.")))
+         (expected-chunks '(("Paragraph 1.<br" nil "test-output-001.nil" nil pending)
+                            ("eak time=\"0.5s\"" nil "test-output-002.nil" nil pending)
+                            ("/>" nil "test-output-003.nil" nil pending)
+                            ("Paragraph 2." nil "test-output-004.nil" nil pending)))
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
