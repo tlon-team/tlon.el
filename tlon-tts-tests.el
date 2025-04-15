@@ -71,8 +71,8 @@ ENGINE defaults to \"ElevenLabs\"."
          chunks)
     ;; 2. Act: Run the code being tested within the prepared environment.
     (with-current-buffer buffer
-      ;; Call the function with chunk-size = nil (for paragraph mode).
-      (setq chunks (tlon-tts-break-into-chunks nil)))
+      ;; Call the function with chunk-size = nil (for paragraph mode) and a dummy destination.
+      (setq chunks (tlon-tts-break-into-chunks nil "test-output")))
     ;; 3. Cleanup: Remove the temporary buffer.
     (tlon-tts-test--teardown-buffer buffer)
     ;; 4. Assert: Check if the actual result matches the expected result.
@@ -90,8 +90,8 @@ ENGINE defaults to \"ElevenLabs\"."
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
-      ;; Call the function with the specified chunk size.
-      (setq chunks (tlon-tts-break-into-chunks chunk-size)))
+      ;; Call the function with the specified chunk size and a dummy destination.
+      (setq chunks (tlon-tts-break-into-chunks chunk-size "test-output")))
     ;; 3. Cleanup
     (tlon-tts-test--teardown-buffer buffer)
     ;; 4. Assert
@@ -120,7 +120,7 @@ ENGINE defaults to \"ElevenLabs\"."
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
-      (setq chunks (tlon-tts-break-into-chunks chunk-size)))
+      (setq chunks (tlon-tts-break-into-chunks chunk-size "test-output")))
     ;; 3. Cleanup
     (tlon-tts-test--teardown-buffer buffer)
     ;; 4. Assert
@@ -138,7 +138,7 @@ ENGINE defaults to \"ElevenLabs\"."
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
-      (setq chunks (tlon-tts-break-into-chunks chunk-size)))
+      (setq chunks (tlon-tts-break-into-chunks chunk-size "test-output")))
     ;; 3. Cleanup
     (tlon-tts-test--teardown-buffer buffer)
     ;; 4. Assert
@@ -155,7 +155,7 @@ ENGINE defaults to \"ElevenLabs\"."
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
-      (setq chunks (tlon-tts-break-into-chunks chunk-size)))
+      (setq chunks (tlon-tts-break-into-chunks chunk-size "test-output")))
     ;; 3. Cleanup
     (tlon-tts-test--teardown-buffer buffer)
     ;; 4. Assert
@@ -171,7 +171,7 @@ ENGINE defaults to \"ElevenLabs\"."
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
-      (setq chunks (tlon-tts-break-into-chunks 100))) ; Use any chunk size
+      (setq chunks (tlon-tts-break-into-chunks 100 "test-output"))) ; Use any chunk size
     ;; 3. Cleanup
     (tlon-tts-test--teardown-buffer buffer)
     ;; 4. Assert
@@ -190,7 +190,7 @@ ENGINE defaults to \"ElevenLabs\"."
          chunks)
     ;; 2. Act
     (with-current-buffer buffer
-      (setq chunks (tlon-tts-break-into-chunks chunk-size)))
+      (setq chunks (tlon-tts-break-into-chunks chunk-size "test-output")))
     ;; 3. Cleanup
     (tlon-tts-test--teardown-buffer buffer)
     ;; 4. Assert
