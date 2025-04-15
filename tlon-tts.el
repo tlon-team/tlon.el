@@ -1484,13 +1484,6 @@ Triggers the engine-specific request function and sets up the process sentinel."
                        ""))
              (request-id (tlon-tts--parse-elevenlabs-request-id output)))
 
-        ;; --- Debugging Start ---
-        (message "Sentinel Debug (Chunk %d): Output received:\n--BEGIN OUTPUT--\n%s\n--END OUTPUT--" chunk-index output)
-        ;; Re-parse request-id here for debugging clarity, though it's already parsed above.
-        (let ((parsed-debug-id (tlon-tts--parse-elevenlabs-request-id output)))
-          (message "Sentinel Debug (Chunk %d): Parsed request-id: %s" chunk-index (or parsed-debug-id "nil")))
-        ;; --- Debugging End ---
-
         ;; Delete the temporary header file
         (when (and header-file (file-exists-p header-file))
           (delete-file header-file))
