@@ -1971,41 +1971,41 @@ audio. CHUNK-INDEX is the index of the current chunk."
                               (let ((prev-chunk (nth (1- chunk-index) tlon-tts-chunks)))
                                 (when (eq (nth 4 prev-chunk) 'completed) ; Check status
                                   (nth 3 prev-chunk))))) ; Get request-id
-         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
+         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed))) ; Define params to extract
     (cl-destructuring-bind (voice audio) vars
-      ;; Look up the full voice definition
+      ;; Look up the full voice definition using the voice ID
       (let* ((voice-definition (tlon-lookup tlon-elevenlabs-voices :id voice))
-             ;; Extract voice settings if they exist
+             ;; Extract voice settings if they exist in the definition
              (voice-settings
-	      (delq nil
-		    (mapcar (lambda (param)
-			      (when-let ((value (plist-get voice-definition param)))
-				;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
-				(cons (symbol-name param)
-				      (if (eq param :use_speaker_boost)
-					  (if value :json-true :json-false)
-					value))))
-			    voice-settings-params)))
+              (delq nil ; Remove nil entries from the resulting list
+                    (mapcar (lambda (param)
+                              (when-let ((value (plist-get voice-definition param)))
+                                ;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
+                                (cons (intern (format ":%s" (symbol-name param))) ; Create keyword symbol for json-encode
+                                      (if (eq param :use_speaker_boost)
+                                          (if value :json-true :json-false) ; Handle boolean conversion
+                                        value))))
+                            voice-settings-params)))
              ;; Define base payload parts as an alist
              (payload-parts
-              `(("text" . ,string)
-                ("model_id" . ,tlon-elevenlabs-model)
-                ,@(when before-text `(("before_text" . ,before-text)))
-                ,@(when after-text `(("after_text" . ,after-text)))
+              `((:text . ,string)
+                (:model_id . ,tlon-elevenlabs-model)
+                ,@(when before-text `((:before_text . ,before-text)))
+                ,@(when after-text `((:after_text . ,after-text)))
                 ;; Add previous_request_ids if available
-                ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
+                ,@(when previous-chunk-id `((:previous_request_ids . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
-                ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t :json-false)))) ; Enable stitch if any context provided
-            ;; Add voice settings if they exist
-            (final-payload-parts
+                (:stitch_audio . ,(if (or before-text after-text previous-chunk-id) :json-true :json-false)))) ; Enable stitch if any context provided
+             ;; Add voice settings if they exist
+             (final-payload-parts
               (if voice-settings
-                  (append payload-parts `(("voice_settings" . ,voice-settings)))
+                  (append payload-parts `((:voice_settings . ,voice-settings))) ; Add the voice_settings alist
                 payload-parts))
-             ;; Encode the final payload
+             ;; Encode the final payload alist to JSON string
              (payload (json-encode final-payload-parts)))
-	(mapconcat 'shell-quote-argument
-		   (list "curl"
-			 "--request" "POST"
+        (mapconcat 'shell-quote-argument
+                   (list "curl"
+                         "--request" "POST"
 			 "--url" (format tlon-elevenlabs-tts-url voice (car audio))
 			 "--header" "Content-Type: application/json"
 			 "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
