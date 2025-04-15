@@ -1950,6 +1950,24 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;;;;;;; ElevenLabs
 
+(defun tlon-tts--format-voice-settings-json (settings-alist)
+  "Manually format SETTINGS-ALIST into a JSON object string.
+Handles numbers, booleans (t/nil -> true/false), and strings."
+  (when settings-alist
+    (let ((pairs (mapcar (lambda (pair)
+                           (let ((key (car pair)) ; Already a string
+                                 (value (cdr pair)))
+                             (format "\"%s\":%s"
+                                     key
+                                     (cond
+                                      ((numberp value) (format "%s" value)) ; Format number directly
+                                      ((eq value t) "true") ; Boolean true
+                                      ((eq value nil) "false") ; Boolean false (for use_speaker_boost)
+                                      ((stringp value) (json-encode-string value)) ; Encode string value
+                                      (t (json-encode-string (format "%s" value))))))) ; Fallback: format and encode as string
+                         settings-alist)))
+      (format "{%s}" (mapconcat 'identity pairs ",")))))
+
 (defun tlon-tts-elevenlabs-make-request (string destination parameters chunk-index)
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
@@ -1987,6 +2005,8 @@ audio. CHUNK-INDEX is the index of the current chunk."
                                           (if value t nil) ; Use standard Elisp booleans t/nil
                                         value))))
                             voice-settings-params)))
+             ;; Manually format the voice settings into a JSON string
+             (voice-settings-json-string (tlon-tts--format-voice-settings-json voice-settings))
              ;; Define base payload parts as an alist with STRING keys
              (payload-parts
               `(("text" . ,string)
@@ -1997,16 +2017,13 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
                 ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans t/nil
-             ;; Add voice settings if they exist
+             ;; Add the manually formatted voice_settings JSON string using :json-verbatim
              (final-payload-parts
-              (if voice-settings
-                  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
-                  (append payload-parts `(("voice_settings" . ,voice-settings)))
+              (if voice-settings-json-string
+                  (append payload-parts `(("voice_settings" :json-verbatim . ,voice-settings-json-string)))
                 payload-parts))
-             ;; Encode the final payload alist (with nested alist) to JSON string
-             ;; Explicitly set json-key-type to 'string to ensure correct key encoding
-             (payload (let ((json-key-type 'string))
-                        (json-encode final-payload-parts))))
+             ;; Encode the final payload alist (now containing the verbatim JSON string)
+             (payload (json-encode final-payload-parts)))
         (mapconcat 'shell-quote-argument
                    (list "curl"
                          "--request" "POST"
