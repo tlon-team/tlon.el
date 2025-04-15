@@ -1469,8 +1469,8 @@ Triggers the engine-specific request function and sets up the process sentinel."
 
 (defun tlon-tts-process-chunk-sentinel (process event chunk-index)
   "Process sentinel for TTS chunk generation at CHUNK-INDEX."
-  (let ((chunk-data (nth chunk-index tlon-tts-chunks))
-        (file (nth 2 chunk-data)))
+  (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
+         (file (nth 2 chunk-data)))
     (cond
      ((string-match "finished" event) ; Process finished successfully
       (let ((output (with-current-buffer (process-buffer process) (buffer-string)))
