@@ -2896,27 +2896,28 @@ This removes the tag but stores its position and the associated voice ID
 
 ;;;;;; Abbreviations
 
+(declare-function tlon-edit-json-mapping "tlon-core")
 ;;;###autoload
 (defun tlon-tts-edit-global-abbreviations ()
-  "Add or edit a URL correspondence in `tlon-file-global-abbreviations'."
+  "Add or edit a global abbreviation in `tlon-file-global-abbreviations'."
   (interactive)
-  (tlon-edit-correspondence tlon-file-global-abbreviations))
+  (tlon-edit-json-mapping tlon-file-global-abbreviations "Abbreviation: " "Spoken form: "))
 
 ;;;;;; Phonetic replacements
 
 ;;;###autoload
 (defun tlon-tts-edit-global-phonetic-replacements ()
-  "Edit phonetic replacements."
+  "Add or edit a global phonetic replacement in `tlon-file-global-phonetic-replacements'."
   (interactive)
-  (tlon-edit-correspondence tlon-file-global-phonetic-replacements))
+  (tlon-edit-json-mapping tlon-file-global-phonetic-replacements "Term to replace: " "Replacement: "))
 
 ;;;;;; Phonetic transcriptions
 
 ;;;###autoload
 (defun tlon-tts-edit-global-phonetic-transcriptions ()
-  "Edit phonetic transcriptions."
+  "Add or edit a global phonetic transcription in `tlon-file-global-phonetic-transcriptions'."
   (interactive)
-  (tlon-edit-correspondence tlon-file-global-phonetic-transcriptions))
+  (tlon-edit-json-mapping tlon-file-global-phonetic-transcriptions "Term to transcribe: " "IPA Transcription: "))
 
 ;;;;; Local
 

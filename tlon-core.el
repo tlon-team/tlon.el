@@ -972,8 +972,35 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
     (maphash (lambda (k _v) (push k keys)) data)
     keys))
 
-;;;;; correspondences
+;;;;; JSON editing
 
+(defun tlon-edit-json-mapping (file outer-key-prompt inner-value-prompt)
+  "Edit a JSON file structured as {OUTER_KEY: {LANG_CODE: INNER_VALUE}}.
+Prompts for OUTER_KEY, one or more LANG_CODEs (or \"default\"),
+and INNER_VALUE. Updates FILE accordingly.
+OUTER_KEY_PROMPT is the prompt string for the outer key.
+INNER_VALUE_PROMPT is the prompt string for the inner value."
+  (let* ((json-data (or (tlon-read-json file) (make-hash-table :test 'equal))) ; Use hash-table for easier updates
+         (outer-keys (tlon-get-keys json-data))
+         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
+         (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal))) ; Get existing inner data or new hash-table
+         (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): " t nil '("default") nil t)) ; multiple=t
+         (chosen-inner-value (read-string (format "%s for '%s' in %s: "
+                                                  inner-value-prompt
+                                                  chosen-outer-key
+                                                  (string-join chosen-langs ", ")))))
+    ;; Update the inner alist (now hash-table) for all selected languages
+    (dolist (lang chosen-langs)
+      (puthash lang chosen-inner-value inner-alist))
+    ;; Update the main data structure
+    (puthash chosen-outer-key inner-alist json-data)
+    ;; Write back to the file
+    (tlon-write-data file json-data)
+    (message "Updated '%s' for key '%s' in language(s) %s in %s"
+             chosen-inner-value chosen-outer-key (string-join chosen-langs ", ") file)))
+
+;;;;; correspondences
+;; TODO: Decide if this function is still needed or can be removed/refactored.
 (defun tlon-edit-correspondence (file)
   "Add or edit a correspondence in FILE."
   (let* ((json-data (tlon-read-json file))
