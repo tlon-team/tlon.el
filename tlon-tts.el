@@ -1410,7 +1410,8 @@ this chunk. DESTINATION is the base output filename."
         (let* ((chunk-index (length chunks)) ; 0-based index for the new chunk
                (filename (tlon-tts-get-chunk-name destination (1+ chunk-index))) ; 1-based for filename
                (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
-               (new-chunk (list trimmed-text voice-params filename nil 'pending))) ; text voice-params filename request-id status
+               ;; Add nil placeholder for header-filename
+               (new-chunk (list trimmed-text voice-params filename nil 'pending nil))) ; text voice-params filename request-id status header-filename
           (push new-chunk chunks)))))
   chunks)
 
