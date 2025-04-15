@@ -1021,11 +1021,14 @@ chunk and the cdr voice to be used to narrate this chunk.")
 
 ;;;;;; Chunk processing
 
-;; TODO: decide if they should be file-local variables
 (defvar tlon-tts-chunks nil
-  "Chunks of text to be narrated.
-The value of this variable is used for debugging purposes. Hence it is not unset
-at the end of the TTS process.")
+  "List of chunks to be narrated.
+Each element is a list: (TEXT VOICE-PARAMS FILENAME REQUEST-ID STATUS).
+- TEXT: The text content of the chunk.
+- VOICE-PARAMS: A cons cell like (tlon-tts-voice . VOICE-ID) or nil.
+- FILENAME: The path to the generated audio file for this chunk.
+- REQUEST-ID: The xi-request-id returned by ElevenLabs (nil otherwise/initially).
+- STATUS: Processing status symbol ('pending, 'running, 'completed, 'failed).")
 
 (defvar tlon-tts-chunks-to-process 0
   "Number of chunks left to process.")
@@ -1263,7 +1266,8 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 For ElevenLabs, if `tlon-elevenlabs-char-limit' is nil, will chunk by paragraph
 regardless of size to work around voice degradation issues."
   (let* ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
-	 (chunks (tlon-tts-read-into-chunks char-limit)))
+         (destination (tlon-tts-set-destination)) ; Get destination filename
+         (chunks (tlon-tts-read-into-chunks char-limit destination))) ; Pass destination
     (setq tlon-tts-chunks chunks)))
 
 (defun tlon-tts-set-destination ()
@@ -1273,11 +1277,12 @@ regardless of size to work around voice degradation issues."
 	 (file-name (file-name-with-extension staged-file extension)))
     (file-name-concat default-directory file-name)))
 
-(defun tlon-tts-read-into-chunks (&optional chunk-size)
+(defun tlon-tts-read-into-chunks (&optional chunk-size destination)
   "Read the current buffer and return its content as a list of chunks.
-If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
+If CHUNK-SIZE is non-nil, split string into chunks no larger than that size.
+DESTINATION is the base output filename."
   (let ((local-vars (tlon-tts-pop-file-local-vars))
-	(chunks (tlon-tts-break-into-chunks chunk-size)))
+        (chunks (tlon-tts-break-into-chunks chunk-size destination))) ; Pass destination
     (save-excursion
       (goto-char (point-max))
       (insert local-vars))
@@ -1293,11 +1298,11 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size."
 	  (delete-region (match-beginning 0) (point-max))
 	  section))))
 
-(defun tlon-tts-break-into-chunks (chunk-size)
+(defun tlon-tts-break-into-chunks (chunk-size destination)
   "Break text in current buffer into chunks.
 If CHUNK-SIZE is non-nil, break text into chunks no larger than CHUNK-SIZE,
 respecting paragraph boundaries. Each chunk will include the maximum number of
-paragraphs that fit within the size limit.
+paragraphs that fit within the size limit. DESTINATION is the base output filename.
 
 If CHUNK-SIZE is nil (specifically for ElevenLabs paragraph mode), each
 paragraph becomes a separate chunk, breaking before voice changes.
@@ -1319,7 +1324,7 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
       ;; Calculate the end position for the current chunk
       (let ((end (tlon-tts--calculate-chunk-end begin chunk-size next-voice-change-pos use-paragraph-chunks)))
 	;; Add the chunk if it's valid
-	(setq chunks (tlon-tts--add-chunk begin end current-voice chunks))
+	(setq chunks (tlon-tts--add-chunk begin end current-voice chunks destination)) ; Pass destination
 	;; --- Prepare for next iteration ---
 	;; Final safety check: If end <= begin here, force minimal progress.
 	(when (and (<= end begin) (< begin (point-max)))
@@ -1387,21 +1392,25 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 	  (setq end adjusted-end))))) ; Update end with the potentially adjusted value
     end))
 
-(defun tlon-tts--add-chunk (begin end current-voice chunks)
+(defun tlon-tts--add-chunk (begin end current-voice chunks destination)
   "Extract text between BEGIN and END, validate it, and add to CHUNKS.
 Returns the updated CHUNKS list. CURRENT-VOICE is the voice to be used for
-this chunk."
+this chunk. DESTINATION is the base output filename."
   (when (> end begin) ; Ensure we made progress
     (let* ((raw-text (buffer-substring-no-properties begin end))
-	   ;; Remove trailing break tag and surrounding whitespace before final trim
-	   (text-no-break (replace-regexp-in-string
-			   (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
-			   "" raw-text))
-	   (trimmed-text (string-trim text-no-break)))
+           ;; Remove trailing break tag and surrounding whitespace before final trim
+           (text-no-break (replace-regexp-in-string
+                           (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
+                           "" raw-text))
+           (trimmed-text (string-trim text-no-break)))
       ;; Only add chunk if trimmed text is not empty AND not just a break tag
       (when (and (not (string-empty-p trimmed-text))
-		 (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
-	(push (cons trimmed-text (when current-voice (cons 'tlon-tts-voice current-voice))) chunks))))
+                 (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
+        (let* ((chunk-index (length chunks)) ; 0-based index for the new chunk
+               (filename (tlon-tts-get-chunk-name destination (1+ chunk-index))) ; 1-based for filename
+               (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
+               (new-chunk (list trimmed-text voice-params filename nil 'pending))) ; text voice-params filename request-id status
+          (push new-chunk chunks)))))
   chunks)
 
 (defun tlon-tts--update-voice-state (begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)
@@ -1422,50 +1431,31 @@ This is to prevent Elevenlabs from inserting weird audio artifacts."
 ;;;;;; Process chunks
 
 (defun tlon-tts-process-chunks ()
-  "Process chunks.
-After processing the chunks, open the relevant Dired buffer."
-  (let ((destination (tlon-tts-set-destination))
-	(nth 1))
-    (setq tlon-tts-chunks-to-process (length tlon-tts-chunks))
-    (dotimes (i (length tlon-tts-chunks))
-      (let* ((string (car (nth i tlon-tts-chunks)))
-	     (voice-data (cdr (nth i tlon-tts-chunks)))
-	     (before-text (when (and (> i 0) (string= tlon-tts-engine "ElevenLabs"))
-			    (car (nth (1- i) tlon-tts-chunks))))
-	     (after-text (when (and (< (1+ i) (length tlon-tts-chunks))
-				    (string= tlon-tts-engine "ElevenLabs"))
-			   (car (nth (1+ i) tlon-tts-chunks))))
-	     ;; Fix: properly create a list of cons cells for parameters
-	     (params (cond
-		      ((string= tlon-tts-engine "ElevenLabs")
-		       (append (delq nil
-				     (list
-				      (when before-text (cons :before-text before-text))
-				      (when after-text (cons :after-text after-text))))
-			       (if voice-data (list voice-data) nil)))
-		      (voice-data
-		       (list voice-data))
-		      (t
-		       nil))))
-	(tlon-tts-generate-audio string (tlon-tts-get-chunk-name destination nth) params)
-	(setq nth (1+ nth))))))
+  "Start processing the first chunk. Subsequent chunks are triggered by the sentinel."
+  (setq tlon-tts-chunks-to-process (length tlon-tts-chunks))
+  (if (>= tlon-tts-chunks-to-process 1)
+      (tlon-tts-generate-audio 0) ; Start with the first chunk (index 0)
+    (message "No TTS chunks to process.")))
 
-(defun tlon-tts-generate-audio (string file &optional parameters)
-  "Generate audio FILE of STRING.
-PARAMETERS is a list of cons cells of parameters to use when generating the
-audio, where the car is the name of the file-local variable the cdr is its
-overriding value."
-  (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
-	 (request (funcall fun string file parameters)))
-    (when tlon-debug (message "Debug: Running command: %s" request))
-    (let ((process (start-process-shell-command "generate audio" nil request)))
+(defun tlon-tts-generate-audio (chunk-index)
+  "Generate audio for the chunk at CHUNK-INDEX.
+Triggers the engine-specific request function and sets up the process sentinel."
+  (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
+         (string (nth 0 chunk-data))
+         (voice-params (nth 1 chunk-data))
+         (file (nth 2 chunk-data))
+         (fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
+         ;; Pass chunk-index to the request function
+         (request (funcall fun string file voice-params chunk-index)))
+
+    ;; Mark chunk as running
+    (setf (nth 4 chunk-data) 'running) ; Update status in the original list structure
+
+    (when tlon-debug (message "Debug: Running command for chunk %d: %s" chunk-index request))
+    (let ((process (start-process-shell-command (format "generate audio %d" chunk-index) nil request)))
       (set-process-sentinel process
-			    (lambda (process event)
-			      (if (string= event "finished\n")
-				  (if (region-active-p)
-				      (tlon-tts-open-file file)
-				    (tlon-tts-process-chunk file))
-				(message "Process %s: Event occurred - %s" (process-name process) event)))))))
+                            (lambda (process event)
+                              (tlon-tts-process-chunk-sentinel process event chunk-index))))))
 
 (defun tlon-tts-get-chunk-name (file nth)
   "Return the name of the NTH chunk of FILE."
@@ -1477,23 +1467,65 @@ overriding value."
   "Open generated TTS FILE."
   (shell-command (format "open %s" file)))
 
-(defun tlon-tts-process-chunk (file)
-  "Process chunk in FILE."
-  (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
-  (when tlon-debug
-    (message "Debug: Chunks left to process: %d" tlon-tts-chunks-to-process))
-  (when (= tlon-tts-chunks-to-process 0)
-    (let ((file (tlon-tts-get-original-filename file))
-	  (dired-listing-switches "-alht"))
-      (when (tlon-tts-append-silence-to-chunks-p file)
-	(tlon-tts-append-silence-to-chunks file))
-      (when tlon-debug
-	(message "Appended silence to chunks."))
-      (tlon-tts-join-chunks file)
-      (when tlon-tts-delete-file-chunks
-	(tlon-tts-delete-chunks-of-file file))
-      (dired (file-name-directory file))
-      (shell-command (format "open '%s'" (tlon-tts-get-original-filename file))))))
+(defun tlon-tts-process-chunk-sentinel (process event chunk-index)
+  "Process sentinel for TTS chunk generation at CHUNK-INDEX."
+  (let ((chunk-data (nth chunk-index tlon-tts-chunks))
+        (file (nth 2 chunk-data)))
+    (cond
+     ((string-match "finished" event) ; Process finished successfully
+      (let ((output (with-current-buffer (process-buffer process) (buffer-string)))
+            (request-id (tlon-tts--parse-elevenlabs-request-id output)))
+
+        (when tlon-debug (message "Debug: Chunk %d finished. Request ID: %s" chunk-index request-id))
+
+        ;; Store request ID and mark as completed
+        (setf (nth 3 chunk-data) request-id)
+        (setf (nth 4 chunk-data) 'completed)
+
+        (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
+        (message "Chunk %d/%d processed successfully." (1+ chunk-index) (length tlon-tts-chunks))
+
+        ;; Trigger next chunk if available
+        (let ((next-chunk-index (1+ chunk-index)))
+          (when (< next-chunk-index (length tlon-tts-chunks))
+            (tlon-tts-generate-audio next-chunk-index)))
+
+        ;; If all chunks are done, finalize
+        (when (= tlon-tts-chunks-to-process 0)
+          (tlon-tts-finish-processing file))))
+
+     ((string-match "exited abnormally" event) ; Process failed
+      (setf (nth 4 chunk-data) 'failed) ; Mark as failed
+      (message "Error processing chunk %d (%s): %s" chunk-index file event)
+      (when-let ((buffer (process-buffer process)))
+        (with-current-buffer buffer
+          (message "Error output for chunk %d:\n%s" chunk-index (buffer-string))))
+      ;; Optionally stop processing further chunks on error
+      ;; (setq tlon-tts-chunks-to-process 0)
+      )
+
+     (t ; Other events (e.g., signal)
+      (message "Process %s (chunk %d): Event occurred - %s" (process-name process) chunk-index event)))))
+
+(defun tlon-tts--parse-elevenlabs-request-id (output)
+  "Parse the xi-request-id header from curl OUTPUT."
+  (when (string-match-p "^xi-request-id: \\([a-zA-Z0-9]+\\)" output)
+    (match-string 1 output)))
+
+(defun tlon-tts-finish-processing (last-chunk-file)
+  "Final steps after all chunks are processed: append silence, join, delete, open."
+  (let ((file (tlon-tts-get-original-filename last-chunk-file))
+        (dired-listing-switches "-alht")) ; Keep this local if only used here
+    (message "All chunks processed. Finalizing...")
+    (when (tlon-tts-append-silence-to-chunks-p file)
+      (tlon-tts-append-silence-to-chunks file)
+      (when tlon-debug (message "Debug: Appended silence to chunks.")))
+    (tlon-tts-join-chunks file)
+    (when tlon-tts-delete-file-chunks
+      (tlon-tts-delete-chunks-of-file file))
+    (dired (file-name-directory file))
+    (shell-command (format "open '%s'" file))
+    (message "TTS narration complete for %s" (file-name-nondirectory file))))
 
 (defun tlon-tts-set-chunk-file (file)
   "Set chunk file based on FILE.
@@ -1913,25 +1945,31 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;;;;;;; ElevenLabs
 
-(defun tlon-tts-elevenlabs-make-request (string destination &optional parameters)
+(defun tlon-tts-elevenlabs-make-request (string destination parameters chunk-index)
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a list of cons cells with parameters to use when generating the
-audio."
+audio. CHUNK-INDEX is the index of the current chunk."
   (let* ((vars (tlon-tts-get-file-local-or-override
-		'(tlon-tts-voice
-		  tlon-tts-audio)
-		parameters))
-	 (before-text-param (assoc :before-text parameters))
-	 (after-text-param (assoc :after-text parameters))
-	 (before-text (when before-text-param (cdr before-text-param)))
-	 (after-text (when after-text-param (cdr after-text-param)))
-	 (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
+                '(tlon-tts-voice
+                  tlon-tts-audio)
+                parameters))
+         ;; Get before/after text from the main chunks list if needed (paragraph mode)
+         (before-text (when (and (> chunk-index 0) (null tlon-elevenlabs-char-limit))
+                        (nth 0 (nth (1- chunk-index) tlon-tts-chunks))))
+         (after-text (when (and (< (1+ chunk-index) (length tlon-tts-chunks)) (null tlon-elevenlabs-char-limit))
+                       (nth 0 (nth (1+ chunk-index) tlon-tts-chunks))))
+         ;; Get previous request ID if available
+         (previous-chunk-id (when (> chunk-index 0)
+                              (let ((prev-chunk (nth (1- chunk-index) tlon-tts-chunks)))
+                                (when (eq (nth 4 prev-chunk) 'completed) ; Check status
+                                  (nth 3 prev-chunk))))) ; Get request-id
+         (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
     (cl-destructuring-bind (voice audio) vars
       ;; Look up the full voice definition
       (let* ((voice-definition (tlon-lookup tlon-elevenlabs-voices :id voice))
-	     ;; Extract voice settings if they exist
-	     (voice-settings
+             ;; Extract voice settings if they exist
+             (voice-settings
 	      (delq nil
 		    (mapcar (lambda (param)
 			      (when-let ((value (plist-get voice-definition param)))
@@ -1947,9 +1985,12 @@ audio."
                 ("model_id" . ,tlon-elevenlabs-model)
                 ,@(when before-text `(("before_text" . ,before-text)))
                 ,@(when after-text `(("after_text" . ,after-text)))
-                ("stitch_audio" . ,(if (or before-text after-text) t :json-false))))
-             ;; Add voice settings if they exist
-             (final-payload-parts
+                ;; Add previous_request_ids if available
+                ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
+                ;; Note: next_request_ids could be added similarly if needed/available
+                ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t :json-false)))) ; Enable stitch if any context provided
+            ;; Add voice settings if they exist
+            (final-payload-parts
               (if voice-settings
                   (append payload-parts `(("voice_settings" . ,voice-settings)))
                 payload-parts))
@@ -1961,6 +2002,8 @@ audio."
 			 "--url" (format tlon-elevenlabs-tts-url voice (car audio))
 			 "--header" "Content-Type: application/json"
 			 "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
+                         ;; Include headers in output
+                         "-i"
 			 "--data" payload
 			 "--output" destination)
 		   " ")))))
