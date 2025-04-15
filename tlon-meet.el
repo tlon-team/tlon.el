@@ -236,17 +236,22 @@ function tried to be a nudge in that direction."
 ;;;;; diarize & summarize
 
 ;;;###autoload
-(defun tlon-meet-diarize-and-summarize (audio-file)
+(defun tlon-meet-diarize-and-summarize (audio-file &optional device)
   "Diarize AUDIO-FILE and create an AI summary of the conversation.
 This function runs the diarization script on the audio file, then uses AI to
 generate a summary of the conversation. The summary is saved in the appropriate
-meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
+meetings repository with the filename format \"yyyy-mm-dd-summary.org\".
+
+Optionally specify the processing DEVICE (e.g., \"cpu\", \"cuda\")
+to pass to the diarization script via the --device argument."
   (interactive
    (let ((default-dir (pcase tlon-default-conference-app
                         ('meet tlon-meet-recordings-directory)
                         ('zoom tlon-zoom-recordings-directory)
-                        (_ default-directory))))
-     (list (read-file-name "Select audio file: " default-dir))))
+                        (_ default-directory)))
+         (audio (read-file-name "Select audio file: " default-dir))
+         (dev (completing-read "Device (leave blank for default, e.g., cpu): " '("cpu" "cuda") nil nil nil nil "cpu"))) ; Offer completion, default to "cpu"
+     (list audio (when (not (string-empty-p dev)) dev))))
   (let* ((default-directory (file-name-directory audio-file))
          (audio-filename (file-name-nondirectory audio-file))
          (date (or (and (string-match "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" audio-filename)
@@ -275,7 +280,8 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
     (make-process
      :name process-name
      :buffer buffer
-     :command (list "python" script-path "-a" audio-file)
+     :command (append (list "python" script-path "-a" audio-file)
+                      (when device (list "--device" device))) ; Add --device if provided
      :sentinel
      (lambda (process event)
        (let ((output-buffer (process-buffer process)))
