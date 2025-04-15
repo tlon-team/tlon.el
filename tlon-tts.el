@@ -1981,7 +1981,7 @@ audio. CHUNK-INDEX is the index of the current chunk."
                     (mapcar (lambda (param)
                               (when-let ((value (plist-get voice-definition param)))
                                 ;; Convert Elisp t/nil to JSON true/false for use_speaker_boost
-                                (cons (intern (format ":%s" (symbol-name param))) ; Create keyword symbol for json-encode
+                                (cons (symbol-name param) ; Use string key
                                       (if (eq param :use_speaker_boost)
                                           (if value :json-true :json-false) ; Handle boolean conversion
                                         value))))
@@ -1999,7 +1999,7 @@ audio. CHUNK-INDEX is the index of the current chunk."
              ;; Add voice settings if they exist
              (final-payload-parts
               (if voice-settings
-                  (append payload-parts `((:voice_settings . ,voice-settings))) ; Add the voice_settings alist
+                  (append payload-parts `(("voice_settings" . ,voice-settings))) ; Use string key and add the voice_settings alist
                 payload-parts))
              ;; Encode the final payload alist to JSON string
              (payload (json-encode final-payload-parts)))
