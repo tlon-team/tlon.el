@@ -66,6 +66,10 @@
   "File containing the jobs.
 This variable should not be set manually.")
 
+(defvar tlon-file-url-correspondences
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs") "url" "url-correspondences.json")
+  "File containing the URL correspondences.")
+
 ;;;; Functions
 
 ;;;;; Job phases
@@ -354,7 +358,104 @@ COMMIT is non-nil, commit the change."
 	(when (string= (org-element-property :raw-value headline) (format "[cite:@%s]" key))
 	  (goto-char (org-element-property :begin headline)))))))
 
-;;;;; Transient
+;;;;; section correspondences
+
+(autoload 'citar-select-refs "citar")
+(defun tlon-section-correspondence-dwim ()
+  "Add a new section correspondence or modify an existing one."
+  (interactive)
+  (let* ((data (tlon-read-json tlon-file-section-correspondences 'hash-table 'list 'symbol))
+	 (selected-key (citar-select-refs)))
+    (tlon-section-correspondence-check selected-key)
+    (let ((default-value (gethash selected-key data))
+	  (new-sectionOriginal (read-string (format "Enter value for key '%s', sectionOriginal: " selected-key)))
+	  (new-sectionSpanish (read-string (format "Enter value for key '%s', sectionSpanish: " selected-key)))
+	  (new-value (make-hash-table)))
+      (puthash "sectionOriginal" new-sectionOriginal new-value)
+      (puthash "sectionSpanish" new-sectionSpanish new-value)
+      (puthash selected-key
+	       (if default-value
+		   (append default-value (list new-value))
+		 (list new-value))
+	       data)
+      (with-temp-file tlon-file-section-correspondences
+	(insert "{\n")
+	(maphash (lambda (k v)
+		   (insert (format "  \"%s\": [\n" k))
+		   (dolist (item v)
+		     (insert (format "    %s,\n" (json-encode item))))
+		   (delete-char -2)
+		   (insert "\n  ],\n"))
+		 data)
+	;; Remove last comma
+	(goto-char (- (point) 2))
+	(delete-char 1)
+	(insert "\n}")
+	(json-pretty-print (point-min) (point-max))
+	(write-file tlon-file-section-correspondences)
+	;; (tlon-url-correspondence-commit)
+	))))
+
+(declare-function ebib-extras-open-key "ebib-extras")
+(declare-function ebib-extras-get-field "ebib-get-field")
+(defun tlon-section-correspondence-check (key)
+  "Check that selected BibTeX KEY is associated with the original work."
+  (save-window-excursion
+    (ebib-extras-open-key key)
+    (let ((langid (ebib-extras-get-field "langid")))
+      (unless (member langid '("english" "american"))
+	(unless (y-or-n-p "The BibTeX entry you selected is not in English. In the `section-correspondences.json' file, you should use the BibTeX entry associated with the original work rather than with its translation. Are you sure you want to proceed?")
+	  (user-error "Aborted"))))))
+
+;;;;; URL correspondences
+
+(declare-function tlon-edit-json-mapping "tlon-core")
+(defun tlon-edit-url-correspondences ()
+  "Add or edit a URL correspondence in `tlon-file-url-correspondences`."
+  (interactive)
+  (tlon-edit-json-mapping tlon-file-url-correspondences "Source URL: " "Target URL: "))
+
+;; TODO: consider adapting `tlon-commit-and-push' instead
+(defun tlon-url-correspondence-commit ()
+  "Commit modifications in `url-correspondences.json'."
+  (let ((default-directory (tlon-repo-lookup :dir :name "babel-es")))
+    ;; save all unsaved files in repo
+    (magit-save-repository-buffers)
+    (call-interactively #'magit-pull-from-upstream nil)
+    ;; if there are staged files, we do not commit or push the changes
+    (unless (magit-staged-files)
+      (tlon-check-branch "main" default-directory)
+      (magit-run-git "add" tlon-file-url-correspondences)
+      (let ((magit-commit-ask-to-stage nil))
+	(magit-commit-create (list "-m" "Update URL correspondences"))))))
+
+(defun tlon-highlight-url-correspondences ()
+  "Highlight source URLs in URL correspondences file."
+  (interactive)
+  ;; Load JSON file
+  (let* ((json-data (tlon-read-json tlon-file-url-correspondences 'hash-table 'vector 'symbol))
+	 (key-urls (tlon-get-keys json-data))
+	 ;; Remove URL prefixes from keys
+	 (search-keywords (mapcar (lambda (url)
+				    (replace-regexp-in-string "^https?://\\(www\\.\\)?" "" url))
+				  key-urls))
+	 ;; Build list of keys
+	 (keywords-regex (regexp-opt search-keywords 'words))
+	 ;; Specify a custom face for highlighting
+	 (highlight-face '(:background "#D3FFD2")))
+
+    ;; Remove the previous highlighting
+    (with-silent-modifications
+      (remove-list-of-text-properties (point-min) (point-max) '(font-lock-face))
+
+      ;; Highlight each occurrence of a key from the JSON file
+      (save-excursion
+	(goto-char (point-min))
+	(while (re-search-forward keywords-regex nil t)
+	  (add-text-properties (match-beginning 0) (match-end 0)
+			       `(font-lock-face ,highlight-face)))))))
+
+;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-jobs-menu "tlon-jobs" nil t)
 (transient-define-prefix tlon-jobs-menu ()
