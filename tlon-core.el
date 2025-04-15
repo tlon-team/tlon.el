@@ -920,7 +920,8 @@ candidates to languages in the Babel project."
   (let* ((language-candidates (tlon-get-language-candidates babel))
 	 (language-selection (completing-read-multiple "Languages (comma-separated): "
 						       (append '("*all*") language-candidates))))
-    (if (member "*all*" language-selection) (mapcar 'car language-candidates) language-selection)))
+    ;; If "*all*" is selected, return the full list of candidates, otherwise return the selection.
+    (if (member "*all*" language-selection) language-candidates language-selection)))
 
 (defun tlon-get-language-candidates (babel &optional additional-langs excluded-langs)
   "Return a list of language candidates.
