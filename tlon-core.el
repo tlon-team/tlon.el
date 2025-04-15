@@ -976,24 +976,25 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 ;;;;; JSON editing
 
 (defun tlon-edit-json-mapping (file outer-key-prompt inner-value-prompt)
-  "Edit a JSON file structured as {OUTER_KEY: {LANG_CODE: INNER_VALUE}}.
-Prompts for OUTER_KEY, one or more LANG_CODEs (or \"default\"),
-and INNER_VALUE. Updates FILE accordingly.
-OUTER_KEY_PROMPT is the prompt string for the outer key.
-INNER_VALUE_PROMPT is the prompt string for the inner value."
-  (let* ((json-data (or (tlon-read-json file 'hash-table) ; Specify hash-table object type
+  "Edit a JSON file structured as {outer_key: {lang_code: inner_value}}.
+Prompts for OUTER-KEY, one or more LANG-CODEs (or \"default\"),
+and INNER-VALUE. Updates FILE accordingly.
+OUTER-KEY-PROMPT is the prompt string for the outer key.
+INNER-VALUE-PROMPT is the prompt string for the inner value."
+  (let* ((json-data (or (tlon-read-json file 'hash-table)
                         (make-hash-table :test 'equal)))
          (outer-keys (tlon-get-keys json-data))
-         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil t nil nil (car outer-keys))) ; Allow creating new keys
-         (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal))) ; Get existing inner data or new hash-table
-         (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): " t nil '("default") nil t)) ; multiple=t
-         (existing-value (when chosen-langs ; Get existing value for the *first* selected language
+         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil t nil nil (car outer-keys)))
+         (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal)))
+         (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): "
+					     'require-match nil '("default") nil 'multiple))
+         (existing-value (when chosen-langs
                            (gethash (car chosen-langs) inner-alist)))
          (chosen-inner-value (read-string (format "%s for '%s' in %s: "
                                                   inner-value-prompt
                                                   chosen-outer-key
                                                   (string-join chosen-langs ", "))
-                                           existing-value))) ; Use existing value as initial input
+                                          existing-value)))
     ;; Update the inner alist (now hash-table) for all selected languages
     (dolist (lang chosen-langs)
       (puthash lang chosen-inner-value inner-alist))
