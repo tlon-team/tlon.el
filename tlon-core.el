@@ -984,13 +984,14 @@ INNER_VALUE_PROMPT is the prompt string for the inner value."
   (let* ((json-data (or (tlon-read-json file 'hash-table) ; Specify hash-table object type
                         (make-hash-table :test 'equal)))
          (outer-keys (tlon-get-keys json-data))
-         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
+         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil t nil nil (car outer-keys))) ; Allow creating new keys
          (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal))) ; Get existing inner data or new hash-table
          (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): " t nil '("default") nil t)) ; multiple=t
+         (existing-value (when chosen-langs ; Get existing value for the *first* selected language
+                           (gethash (car chosen-langs) inner-alist)))
          (chosen-inner-value (read-string (format "%s for '%s' in %s: "
-                                                  inner-value-prompt
-                                                  chosen-outer-key
-                                                  (string-join chosen-langs ", ")))))
+                                                  (string-join chosen-langs ", "))
+                                           existing-value))) ; Use existing value as initial input
     ;; Update the inner alist (now hash-table) for all selected languages
     (dolist (lang chosen-langs)
       (puthash lang chosen-inner-value inner-alist))
