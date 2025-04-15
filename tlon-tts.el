@@ -1525,11 +1525,26 @@ Triggers the engine-specific request function and sets up the process sentinel."
       (message "Process %s (chunk %d): Event occurred - %s" (process-name process) chunk-index event)))))
 
 (defun tlon-tts--parse-elevenlabs-request-id (output)
-  "Parse the request-id header from curl OUTPUT."
-  ;; Use case-insensitive mode (?i). Search anywhere in the string.
-  ;; Capture the alphanumeric ID.
-  (when (string-match-p "(?i)request-id: *\\([a-zA-Z0-9]+\\)" output)
-    (match-string 1 output)))
+  "Parse the request-id header from curl OUTPUT by checking lines."
+  (let (request-id found)
+    (with-temp-buffer
+      (insert output)
+      (goto-char (point-min))
+      ;; Iterate through each line
+      (while (not (eobp))
+        (let* ((line-start (line-beginning-position))
+               (line-end (line-end-position))
+               (line (buffer-substring-no-properties line-start line-end)))
+          ;; Check if line starts with "request-id:", case-insensitive
+          (when (string-match-p (rx-to-string '(seq bol (0+ space) "request-id:" (0+ space)))
+                                line 'case-fold)
+            ;; Extract the value after the colon, trimming whitespace
+            (setq request-id (string-trim (substring line (match-end 0))))
+            ;; Stop searching once found
+            (setq found t)
+            (goto-char (point-max)))) ; Exit loop early
+        (unless found (forward-line 1)))) ; Move to next line if not found
+    request-id)) ; Return the found ID or nil
 
 (defun tlon-tts-finish-processing (last-chunk-file)
   "Final steps after all chunks are processed: append silence, join, delete, open."
