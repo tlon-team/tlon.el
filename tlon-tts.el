@@ -1978,11 +1978,11 @@ audio. CHUNK-INDEX is the index of the current chunk."
                                            tlon-elevenlabs-voices))
              ;; Extract voice settings if they exist in the definition
              (voice-settings
-              ;; Build the voice_settings alist with STRING keys
+              ;; Build the voice_settings alist with guaranteed STRING keys
               (delq nil
                     (mapcar (lambda (param)
                               (when-let ((value (plist-get voice-definition param)))
-                                (cons (symbol-name param) ; Ensure string key, e.g., "stability"
+                                (cons (format "%s" (symbol-name param)) ; Force string key, e.g., "stability"
                                       (if (eq param :use_speaker_boost)
                                           (if value t nil) ; Use standard Elisp booleans t/nil
                                         value))))
@@ -2018,11 +2018,10 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ;; Add voice settings if they exist
                 (when voice-settings
                   (dolist (pair voice-settings)
-                    (let* ((key-symbol (car pair)) ; This might be a keyword symbol
-                           (key-string (symbol-name key-symbol)) ; Ensure we have a string key
-                           (value (cdr pair)))
+                    (let ((key-string (car pair)) ; This is now guaranteed to be a string
+                          (value (cdr pair)))
                       (push (format "\"%s\":%s"
-                                    key-string ; Use the guaranteed string key
+                                    key-string ; Use the string key directly
                                     (cond
                                      ((numberp value) (format "%s" value)) ; Number
                                      ((eq value t) "true")                 ; Boolean true
