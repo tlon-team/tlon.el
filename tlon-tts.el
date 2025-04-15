@@ -2001,14 +2001,14 @@ audio. CHUNK-INDEX is the index of the current chunk."
               (if voice-settings
                   (append payload-parts `(("voice_settings" . ,voice-settings))) ; Use string key and add the voice_settings alist
                 payload-parts))
-             ;; --- DEBUGGING START ---
-             ;; Print the extracted voice settings alist
-             (message "[DEBUG tlon-tts] Voice Settings Alist: %S" voice-settings)
-             ;; Print the final alist structure before JSON encoding
-             (message "[DEBUG tlon-tts] Final Payload Parts Alist: %S" final-payload-parts)
-             ;; --- DEBUGGING END ---
              ;; Encode the final payload alist to JSON string
              (payload (json-encode final-payload-parts)))
+        ;; --- DEBUGGING START ---
+        ;; Print the extracted voice settings alist
+        (message "[DEBUG tlon-tts] Voice Settings Alist: %S" voice-settings)
+        ;; Print the final alist structure before JSON encoding
+        (message "[DEBUG tlon-tts] Final Payload Parts Alist: %S" final-payload-parts)
+        ;; --- DEBUGGING END ---
         (mapconcat 'shell-quote-argument
                    (list "curl"
                          "--request" "POST"
