@@ -25,11 +25,11 @@
 
 ;;; Code:
 
-(require 'ebib)
+(require 'magit)
+(require 'paths)
 (require 'tlon-clock)
 (require 'tlon-core)
 (require 'tlon-forg)
-(require 'tlon-import)
 
 ;;;; Variables
 
@@ -254,6 +254,7 @@ substitute assignee."
   (markdown-preview)
   (read-aloud-buf))
 
+(declare-function files-extras-switch-to-alternate-buffer "files-extras")
 (declare-function jinx--load-dicts "jinx")
 (declare-function jinx--cleanup "jinx")
 (declare-function tlon-log-buffer-latest-user-commit-ediff "tlon")
@@ -276,6 +277,7 @@ substitute assignee."
 
 ;;;;; Job creation
 
+(declare-function tlon-import-document "tlon-import")
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
 (autoload 'tlon-create-translation-file "tlon-yaml")
@@ -293,6 +295,7 @@ IDENTIFIER can be a URL or a PDF file path."
     (tlon-create-translation-file)
     (tlon-create-record-for-job key)))
 
+(autoload 'ebib--get-key-at-point "ebib")
 (declare-function tlon-get-key-in-buffer "tlon")
 (defun tlon-create-record-for-job (&optional key)
   "Create a record based on KEY.
@@ -349,6 +352,9 @@ COMMIT is non-nil, commit the change."
 	    (match-string 2 heading))
       (user-error "I wasn't able to find a key in clocked heading"))))
 
+(autoload 'org-element-map "org-element")
+(autoload 'org-element-parse-buffer "org-element")
+(autoload 'org-element-property "org-element-ast")
 (defun tlon-jobs-goto-heading (key)
   "Move point to the heading in `jobs.org' with KEY."
   (with-current-buffer (or (find-buffer-visiting (tlon-jobs-get-file))
