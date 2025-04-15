@@ -2526,10 +2526,13 @@ Depending on TYPE, also enclose TEXT in listener cues."
 
 ;;;###autoload
 (defun tlon-tts-generate-report ()
-  "Generate a report of TTS issues potentially worth addressing."
+  "Generate a report of TTS issues potentially worth addressing.
+The report checks the content of the current staging buffer."
   (interactive)
+  (unless (tlon-tts-staging-buffer-p)
+    (user-error "Not in a TTS staging buffer"))
   (let ((staging-buffer (current-buffer))
-	(abbreviations (tlon-tts-get-missing-abbreviations))
+	(abbreviations (tlon-tts-get-missing-abbreviations)) ; Called within staging buffer context
 	(chemical-symbols-p (tlon-tts-check-chemical-symols))
 	(emphasis-p (tlon-tts-check-emphasis))
 	(en-dashes-p (tlon-tts-check-en-dashes))
@@ -2558,7 +2561,8 @@ Depending on TYPE, also enclose TEXT in listener cues."
 ;;;;;;; Missing abbreviatios
 
 (defun tlon-tts-get-missing-abbreviations ()
-  "Return list of missing abbreviations present in the staging buffer."
+  "Return list of missing abbreviations present in the current buffer.
+This function is intended to be called from within the staging buffer."
   (let ((abbrevs (append tlon-local-abbreviations-for-session
 			 (tlon-tts-get-global-abbreviations)))
 	(case-fold-search nil)
