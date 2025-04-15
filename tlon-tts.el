@@ -1389,7 +1389,8 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 
 (defun tlon-tts--add-chunk (begin end current-voice chunks)
   "Extract text between BEGIN and END, validate it, and add to CHUNKS.
-Returns the updated CHUNKS list."
+Returns the updated CHUNKS list. CURRENT-VOICE is the voice to be used for
+this chunk."
   (when (> end begin) ; Ensure we made progress
     (let* ((raw-text (buffer-substring-no-properties begin end))
 	   ;; Remove trailing break tag and surrounding whitespace before final trim
