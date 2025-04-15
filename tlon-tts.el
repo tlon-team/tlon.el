@@ -1028,7 +1028,8 @@ Each element is a list: (TEXT VOICE-PARAMS FILENAME REQUEST-ID STATUS).
 - VOICE-PARAMS: A cons cell like (tlon-tts-voice . VOICE-ID) or nil.
 - FILENAME: The path to the generated audio file for this chunk.
 - REQUEST-ID: The xi-request-id returned by ElevenLabs (nil otherwise/initially).
-- STATUS: Processing status symbol ('pending, 'running, 'completed, 'failed).")
+- STATUS: Processing status symbol ('pending, 'running, 'completed, 'failed).
+- HEADER-FILENAME: Path to the temporary file storing curl headers for this chunk.")
 
 (defvar tlon-tts-chunks-to-process 0
   "Number of chunks left to process.")
@@ -1470,13 +1471,15 @@ Triggers the engine-specific request function and sets up the process sentinel."
 (defun tlon-tts-process-chunk-sentinel (process event chunk-index)
   "Process sentinel for TTS chunk generation at CHUNK-INDEX."
   (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
-         (file (nth 2 chunk-data)))
+         (file (nth 2 chunk-data))
+         (header-file (nth 5 chunk-data))) ; Get header filename
     (cond
      ((string-match "finished" event) ; Process finished successfully
-      (let* ((process-buf (process-buffer process))
-             ;; Safely get buffer content, default to "" if buffer is gone
-             (output (if (buffer-live-p process-buf)
-                         (with-current-buffer process-buf (buffer-string))
+      (let* (;; Read headers from the temporary file
+             (output (if (and header-file (file-exists-p header-file))
+                         (with-temp-buffer
+                           (insert-file-contents header-file)
+                           (buffer-string))
                        ""))
              (request-id (tlon-tts--parse-elevenlabs-request-id output)))
 
@@ -1486,6 +1489,10 @@ Triggers the engine-specific request function and sets up the process sentinel."
         (let ((parsed-debug-id (tlon-tts--parse-elevenlabs-request-id output)))
           (message "Sentinel Debug (Chunk %d): Parsed request-id: %s" chunk-index (or parsed-debug-id "nil")))
         ;; --- Debugging End ---
+
+        ;; Delete the temporary header file
+        (when (and header-file (file-exists-p header-file))
+          (delete-file header-file))
 
         ;; Store request ID (parsed earlier) and mark as completed
         (setf (nth 3 chunk-data) request-id)
@@ -1985,15 +1992,20 @@ audio. CHUNK-INDEX is the index of the current chunk."
 		  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
 		  (append payload-parts `(("voice_settings" . ,voice-settings)))
 		payload-parts))
-             (payload (json-encode final-payload-parts)))
+             (payload (json-encode final-payload-parts))
+             ;; Generate temp file for headers
+             (header-file (make-temp-file (format "tts-header-%d-" chunk-index) nil ".txt")))
+        ;; Store header file path in chunk data (index 5)
+        (setf (nth 5 (nth chunk-index tlon-tts-chunks)) header-file)
+        ;; Construct curl command
 	(mapconcat 'shell-quote-argument
                    (list "curl"
 			 "--request" "POST"
 			 "--url" (format tlon-elevenlabs-tts-url voice (car audio))
 			 "--header" "Content-Type: application/json"
 			 "--header" (format "xi-api-key: %s" (tlon-tts-elevenlabs-get-or-set-key))
-			 ;; Dump headers to stdout for sentinel
-			 "--dump-header" "-"
+			 ;; Dump headers to the temporary file
+			 "--dump-header" header-file
 			 "--data" payload
 			 ;; Write audio body to destination file
 			 "--output" destination)
