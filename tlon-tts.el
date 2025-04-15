@@ -1987,8 +1987,6 @@ audio. CHUNK-INDEX is the index of the current chunk."
                                           (if value t nil) ; Use standard Elisp booleans t/nil
                                         value))))
                             voice-settings-params)))
-             ;; Pre-encode the voice_settings alist into its own JSON string
-             (voice-settings-json (when voice-settings (json-encode voice-settings)))
              ;; Define base payload parts as an alist with STRING keys
              (payload-parts
               `(("text" . ,string)
@@ -1999,13 +1997,16 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
                 ;; Note: next_request_ids could be added similarly if needed/available
                 ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil)))) ; Use standard Elisp booleans t/nil
-             ;; Add the pre-encoded voice_settings JSON string using :json-verbatim
+             ;; Add voice settings if they exist
              (final-payload-parts
-              (if voice-settings-json
-                  (append payload-parts `(("voice_settings" :json-verbatim . ,voice-settings-json)))
+              (if voice-settings
+                  ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
+                  (append payload-parts `(("voice_settings" . ,voice-settings)))
                 payload-parts))
-             ;; Encode the final payload alist (containing the verbatim JSON string)
-             (payload (json-encode final-payload-parts)))
+             ;; Encode the final payload alist (with nested alist) to JSON string
+             ;; Explicitly set json-key-type to 'string to ensure correct key encoding
+             (payload (let ((json-key-type 'string))
+                        (json-encode final-payload-parts))))
         (mapconcat 'shell-quote-argument
                    (list "curl"
                          "--request" "POST"
