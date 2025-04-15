@@ -3803,7 +3803,9 @@ This section lists key non-interactive functions, variables, and constants used 
 #+findex: tlon-tts-process-chunks
 + ~tlon-tts-process-chunks~ :: Iterates through the generated ~tlon-tts-chunks~, calling ~tlon-tts-generate-audio~ for each.
 #+findex: tlon-tts-generate-audio
-+ ~tlon-tts-generate-audio~ :: Constructs the API request command using the appropriate engine-specific function (e.g., ~tlon-tts-microsoft-azure-make-request~) and starts the asynchronous process. Sets up the process sentinel to handle completion (~tlon-tts-process-chunk~).
++ ~tlon-tts-generate-audio~ :: Constructs the API request command using the appropriate engine-specific function (e.g., ~tlon-tts-microsoft-azure-make-request~) and starts the asynchronous process. Sets up the process sentinel (~tlon-tts-process-chunk-sentinel~) to handle completion.
+#+findex: tlon-tts-process-chunk-sentinel
++ ~tlon-tts-process-chunk-sentinel~ :: The sentinel function called when an audio generation process for a chunk finishes. It parses the response (including the request ID for ElevenLabs), updates the chunk status, stores the request ID, and triggers the next chunk's generation or finalizes processing if all chunks are done.
 
 *** Engine Request Functions
 :PROPERTIES:
