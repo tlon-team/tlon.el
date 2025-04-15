@@ -2529,7 +2529,7 @@ Depending on TYPE, also enclose TEXT in listener cues."
   "Generate a report of TTS issues potentially worth addressing."
   (interactive)
   (let ((staging-buffer (current-buffer))
-	(acronyms (tlon-tts-get-missing-acronyms))
+	(abbreviations (tlon-tts-get-missing-abbreviations))
 	(chemical-symbols-p (tlon-tts-check-chemical-symols))
 	(emphasis-p (tlon-tts-check-emphasis))
 	(en-dashes-p (tlon-tts-check-en-dashes))
@@ -2538,10 +2538,10 @@ Depending on TYPE, also enclose TEXT in listener cues."
     (with-current-buffer (get-buffer-create tlon-tts-report-buffer-name)
       (setq report-buffer (current-buffer))
       (erase-buffer)
-      (when acronyms
-	(insert "***Missing acronyms***\n\n")
-	(dolist (acronym acronyms)
-	  (insert (format "%s\n" acronym))))
+      (when abbreviations
+	(insert "***Missing abbreviations***\n\n")
+	(dolist (abbreviation abbreviations)
+	  (insert (format "%s\n" abbreviation))))
       (when chemical-symbols-p
 	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’\n"
 			tlon-tts-maybe-chemical-symbol)))
@@ -2555,10 +2555,10 @@ Depending on TYPE, also enclose TEXT in listener cues."
     (other-window 1)
     (switch-to-buffer staging-buffer)))
 
-;;;;;;; Missing acronyms
+;;;;;;; Missing abbreviatios
 
-(defun tlon-tts-get-missing-acronyms ()
-  "Return list of acronyms not found in the local or global list of abbreviations."
+(defun tlon-tts-get-missing-abbreviations ()
+  "Return list of missing abbreviations present in the staging buffer."
   (let ((abbrevs (append tlon-local-abbreviations-for-session
 			 (tlon-tts-get-global-abbreviations)))
 	(case-fold-search nil)
@@ -2573,7 +2573,7 @@ Depending on TYPE, also enclose TEXT in listener cues."
 
 (defun tlon-tts-looking-at-excluded-tag-p ()
   "Return t iff point is looking at an excluded tag.
-An excluded tag is one enclosing text that does not contain acronyms to be
+An excluded tag is one enclosing text that does not contain abbreviatios to be
 processed."
   (seq-some (lambda (tag)
 	      (thing-at-point-looking-at (tlon-md-get-tag-pattern tag)))
