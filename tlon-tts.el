@@ -2003,35 +2003,8 @@ audio. CHUNK-INDEX is the index of the current chunk."
                   ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
                   (append payload-parts `(("voice_settings" . ,voice-settings)))
                 payload-parts))
-             ;; Manually construct the JSON payload string
-             (payload
-              (let ((base-pairs (list (format "\"text\":%s" (json-encode-string string))
-                                      (format "\"model_id\":%s" (json-encode-string tlon-elevenlabs-model))))
-                    (optional-pairs '())
-                    (voice-settings-pairs '()))
-                ;; Add optional fields
-                (when before-text (push (format "\"before_text\":%s" (json-encode-string before-text)) optional-pairs))
-                (when after-text (push (format "\"after_text\":%s" (json-encode-string after-text)) optional-pairs))
-                ;; Ensure previous_request_ids is a JSON array of strings
-                (when previous-chunk-id (push (format "\"previous_request_ids\":[%s]" (json-encode-string previous-chunk-id)) optional-pairs))
-                (push (format "\"stitch_audio\":%s" (if (or before-text after-text previous-chunk-id) "true" "false")) optional-pairs)
-                ;; Add voice settings if they exist
-                (when voice-settings
-                  (dolist (pair voice-settings)
-                    (let ((key-string (car pair)) ; This is now guaranteed to be a string
-                          (value (cdr pair)))
-                      (push (format "\"%s\":%s"
-                                    key-string ; Use the string key directly
-                                    (cond
-                                     ((numberp value) (format "%s" value)) ; Number
-                                     ((eq value t) "true")                 ; Boolean true
-                                     ((eq value nil) "false")                ; Boolean false
-                                     ((stringp value) (json-encode-string value)) ; String
-                                     (t (json-encode-string (format "%s" value))))) ; Fallback
-                            voice-settings-pairs)))
-                  (push (format "\"voice_settings\":{%s}" (mapconcat 'identity (nreverse voice-settings-pairs) ",")) optional-pairs))
-                ;; Combine all parts into the final JSON string
-                (format "{%s}" (mapconcat 'identity (append base-pairs (nreverse optional-pairs)) ",")))))
+             ;; Use json-encode on the alist
+             (payload (json-encode final-payload-parts)))
         (mapconcat 'shell-quote-argument
                    (list "curl"
                          "--request" "POST"
