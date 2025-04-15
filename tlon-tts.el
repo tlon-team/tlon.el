@@ -1535,16 +1535,17 @@ Triggers the engine-specific request function and sets up the process sentinel."
         (let* ((line-start (line-beginning-position))
                (line-end (line-end-position))
                (line (buffer-substring-no-properties line-start line-end)))
-          ;; Check if line starts with "request-id:", case-insensitive
-          (when (string-match-p (rx-to-string '(seq bol (0+ space) "request-id:" (0+ space)))
-                                line 'case-fold)
-            ;; Extract the value after the colon, trimming whitespace
-            (setq request-id (string-trim (substring line (match-end 0))))
-            ;; Stop searching once found
-            (setq found t)
-            (goto-char (point-max)))) ; Exit loop early
-        (unless found (forward-line 1)))) ; Move to next line if not found
-    request-id)) ; Return the found ID or nil
+         ;; Check if line starts with "request-id:", case-insensitive
+         (let ((case-fold-search t)) ; Enable case-insensitive matching for this check
+           (when (string-match-p (rx-to-string '(seq bol (0+ space) "request-id:" (0+ space)))
+                                 line)
+             ;; Extract the value after the colon, trimming whitespace
+             (setq request-id (string-trim (substring line (match-end 0))))
+             ;; Stop searching once found
+             (setq found t)
+             (goto-char (point-max))))) ; Exit loop early
+       (unless found (forward-line 1)))) ; Move to next line if not found
+   request-id)) ; Return the found ID or nil
 
 (defun tlon-tts-finish-processing (last-chunk-file)
   "Final steps after all chunks are processed: append silence, join, delete, open."
