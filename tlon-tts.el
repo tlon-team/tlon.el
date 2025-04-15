@@ -1974,7 +1974,8 @@ audio. CHUNK-INDEX is the index of the current chunk."
          (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed))) ; Define params to extract
     (cl-destructuring-bind (voice audio) vars
       ;; Look up the full voice definition using the voice ID
-      (let* ((voice-definition (tlon-lookup tlon-elevenlabs-voices :id voice))
+      (let* ((voice-definition (cl-find-if (lambda (entry) (equal (plist-get entry :id) voice))
+                                           tlon-elevenlabs-voices))
              ;; Extract voice settings if they exist in the definition
              (voice-settings
               (delq nil ; Remove nil entries from the resulting list
@@ -2003,12 +2004,6 @@ audio. CHUNK-INDEX is the index of the current chunk."
                 payload-parts))
              ;; Encode the final payload alist to JSON string
              (payload (json-encode final-payload-parts)))
-        ;; --- DEBUGGING START ---
-        ;; Print the extracted voice settings alist
-        (message "[DEBUG tlon-tts] Voice Settings Alist: %S" voice-settings)
-        ;; Print the final alist structure before JSON encoding
-        (message "[DEBUG tlon-tts] Final Payload Parts Alist: %S" final-payload-parts)
-        ;; --- DEBUGGING END ---
         (mapconcat 'shell-quote-argument
                    (list "curl"
                          "--request" "POST"
