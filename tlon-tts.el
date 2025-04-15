@@ -1480,8 +1480,11 @@ Triggers the engine-specific request function and sets up the process sentinel."
                        ""))
              (request-id (tlon-tts--parse-elevenlabs-request-id output)))
 
-        (when tlon-debug (message "Debug: Chunk %d finished. Request ID: %s (Output Length: %d)"
-                                  chunk-index request-id (length output)))
+        ;; --- Debugging Start ---
+        (_ (message "Sentinel Debug (Chunk %d): Output received:\n--BEGIN OUTPUT--\n%s\n--END OUTPUT--" chunk-index output))
+        (request-id (tlon-tts--parse-elevenlabs-request-id output))
+        (_ (message "Sentinel Debug (Chunk %d): Parsed request-id: %s" chunk-index (or request-id "nil")))
+        ;; --- Debugging End ---
 
         ;; Store request ID and mark as completed
         (setf (nth 3 chunk-data) request-id)
