@@ -1598,9 +1598,9 @@ number. If no chunks are found, return nil."
 
 (defun tlon-tts-get-file-local-or-override (var-names parameters)
   "Return the values of VAR-NAMES if found in parameters, else the file-local var.
-VAR-NAMES is a list of variable names. PARAMETERS is a cons cell of parameters
-to use when generating the audio, where the car is the name of the file-local
-variable the cdr is its overriding value."
+VAR-NAMES is a list of variable names. PARAMETERS is an alist (list of cons
+cells) where the car is the name of the file-local variable and the cdr is its
+overriding value."
   (let (values)
     (dolist (var-name var-names)
       (if-let ((override (assoc var-name parameters)))
@@ -1950,10 +1950,12 @@ the car is the name of the file-local variable the cdr is its overriding value."
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a list of cons cells with parameters to use when generating the
 audio. CHUNK-INDEX is the index of the current chunk."
-  (let* ((vars (tlon-tts-get-file-local-or-override
+  (let* (;; Ensure parameters is a list for assoc
+         (parameters-alist (if parameters (list parameters) nil))
+         (vars (tlon-tts-get-file-local-or-override
                 '(tlon-tts-voice
                   tlon-tts-audio)
-                parameters))
+                parameters-alist))
          ;; Get before/after text from the main chunks list if needed (paragraph mode)
          (before-text (when (and (> chunk-index 0) (null tlon-elevenlabs-char-limit))
                         (nth 0 (nth (1- chunk-index) tlon-tts-chunks))))
