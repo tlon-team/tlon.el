@@ -1212,7 +1212,6 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 (defun tlon-tts-prepare-staging-buffer ()
   "Prepare the current buffer for audio narration."
   (save-excursion
-    (tlon-tts-generate-report)
     (tlon-tts-ensure-all-images-have-alt-text)
     (tlon-tts-ensure-all-tables-have-alt-text)
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
@@ -1239,7 +1238,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     (tlon-tts-remove-extra-newlines)
     ;; FIXME: this is breaking the SSML tags
     ;; (tlon-tts-escape-xml-special-characters)
-    ))
+    (tlon-tts-generate-report)))
 
 ;;;;; Narrate
 
