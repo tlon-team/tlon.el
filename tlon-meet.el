@@ -35,13 +35,6 @@
   "Manage Tlön meetings."
   :group 'tlon)
 
-(defcustom tlon-meet-diarize-script
-  (file-name-concat paths-dir-external-repos "whisper-diarization/diarize.py")
-  "Path to the diarization script.
-Can be an absolute path or relative to the tlon package directory."
-  :type 'string
-  :group 'tlon-meet)
-
 (defcustom tlon-meet-summary-prompt
   "Please provide a concise summary of the following conversation transcript. Focus on the key points discussed, decisions made, and any action items or follow-up tasks mentioned. Format the summary with bullet points for each main topic, and include a section at the end titled 'Action Items' that lists specific tasks that were assigned or mentioned.\n\n%s"
   "Prompt template for generating meeting summaries.
@@ -236,52 +229,47 @@ function tried to be a nudge in that direction."
 ;;;;; diarize & summarize
 
 ;;;###autoload
-(defun tlon-meet-diarize-and-summarize (audio-file &optional device)
-  "Diarize AUDIO-FILE and create an AI summary of the conversation.
-This function runs the diarization script on the audio file, then uses AI to
-generate a summary of the conversation. The summary is saved in the appropriate
-meetings repository with the filename format \"yyyy-mm-dd-summary.org\".
-
-Optionally specify the processing DEVICE (e.g., \"cpu\", \"cuda\")
-to pass to the diarization script via the --device argument."
+(defun tlon-meet-diarize-and-summarize (audio-file)
+  "Diarize AUDIO-FILE using whisperx and create an AI summary.
+This function runs 'whisperx' on the audio file with diarization enabled
+(language hardcoded to 'es'), then uses AI to generate a summary of the
+conversation. The summary is saved in the appropriate meetings repository
+with the filename format \"yyyy-mm-dd-summary.org\"."
   (interactive
    (let ((default-dir (pcase tlon-default-conference-app
                         ('meet tlon-meet-recordings-directory)
                         ('zoom tlon-zoom-recordings-directory)
-                        (_ default-directory)))
-         (audio (read-file-name "Select audio file: " default-dir))
-         (dev (completing-read "Device (leave blank for default, e.g., cpu): " '("cpu" "cuda") nil nil nil nil "cpu"))) ; Offer completion, default to "cpu"
-     (list audio (when (not (string-empty-p dev)) dev))))
+                        (_ default-directory))))
+     (list (read-file-name "Select audio file: " default-dir))))
   (let* ((default-directory (file-name-directory audio-file))
          (audio-filename (file-name-nondirectory audio-file))
          (date (or (and (string-match "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" audio-filename)
                         (match-string 1 audio-filename))
                    (format-time-string "%Y-%m-%d")))
-         (transcript-file (concat (file-name-sans-extension audio-file) "-transcript.txt"))
+         ;; whisperx outputs [basename].txt by default
+         (transcript-file (concat (file-name-sans-extension audio-file) ".txt"))
          (buffer (get-buffer-create "*Diarization Output*"))
-         (process-name "diarize-process")
-         (script-path (let ((script tlon-meet-diarize-script))
-                        (if (file-name-absolute-p script)
-                            script
-                          (expand-file-name script (file-name-directory (locate-library "tlon.el")))))))
-
-    ;; Check if script exists
-    (unless (file-exists-p script-path)
-      (user-error "Diarization script not found at %s" script-path))
+         (process-name "whisperx-diarize-process")
+         ;; NOTE: Hugging Face token is hardcoded here for simplicity.
+         ;; Consider using auth-source or environment variables for better security.
+         (hf-token (auth-source-pass-get "whisperX" (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL"))))
+         (whisperx-command (list "whisperx" audio-file
+                                 "--diarize"
+                                 "--language" "es"
+                                 "--hf_token" hf-token)))
 
     ;; Show the output buffer
     (display-buffer buffer)
     (with-current-buffer buffer
       (erase-buffer)
-      (insert (format "Starting diarization of %s...\n\n" audio-filename))
-      (insert (format "Running command: python %s -a %s\n\n" (shell-quote-argument script-path) (shell-quote-argument audio-file))))
+      (insert (format "Starting diarization of %s using whisperx...\n\n" audio-filename))
+      (insert (format "Running command: %s\n\n" (string-join whisperx-command " "))))
 
-    ;; Run the diarization script
+    ;; Run the whisperx command
     (make-process
      :name process-name
      :buffer buffer
-     :command (append (list "python" script-path "-a" audio-file)
-                      (when device (list "--device" device))) ; Add --device if provided
+     :command whisperx-command
      :sentinel
      (lambda (process event)
        (let ((output-buffer (process-buffer process)))
