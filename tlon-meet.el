@@ -268,38 +268,52 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
     (display-buffer buffer)
     (with-current-buffer buffer
       (erase-buffer)
-      (insert (format "Starting diarization of %s...\n\n" audio-filename)))
-    
+      (insert (format "Starting diarization of %s...\n\n" audio-filename))
+      (insert (format "Running command: python %s -a %s\n\n" (shell-quote-argument script-path) (shell-quote-argument audio-file))))
+
     ;; Run the diarization script
     (make-process
      :name process-name
      :buffer buffer
      :command (list "python" script-path "-a" audio-file)
      :sentinel
-     (lambda (_process event)
-       (when (string= event "finished\n")
-         (with-current-buffer buffer
-           (goto-char (point-max))
-           (insert "\nDiarization complete. Generating summary...\n"))
-         
-         ;; Check if transcript file exists
-         (if (file-exists-p transcript-file)
-             (tlon-meet--generate-summary transcript-file date)
-           (with-current-buffer buffer
+     (lambda (process event)
+       (let ((output-buffer (process-buffer process)))
+         (cond
+          ((string-match "\\`exited abnormally" event) ;; Check for abnormal exit
+           (with-current-buffer output-buffer
              (goto-char (point-max))
-             (insert (format "\nError: Transcript file %s not found.\n" transcript-file)))))))))
+             (insert (format "\n\nError: Diarization script failed.\nEvent: %s\nSee buffer output above for details." event))))
+          ((string= event "finished\n") ;; Original success condition
+           (with-current-buffer output-buffer
+             (goto-char (point-max))
+             (insert "\nDiarization complete. Checking for transcript...\n"))
+           ;; Check if transcript file exists
+           (if (file-exists-p transcript-file)
+               (progn
+                 (with-current-buffer output-buffer
+                   (goto-char (point-max))
+                   (insert (format "Transcript file found: %s. Generating summary...\n" transcript-file)))
+                 (tlon-meet--generate-summary transcript-file date))
+             (with-current-buffer output-buffer
+               (goto-char (point-max))
+               (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
+          ;; Ignore other events like "sent signal..." or process output lines
+          (t nil)))))))
 
-(defun tlon-meet--generate-summary (transcript-file date)
-  "Generate a summary from TRANSCRIPT-FILE for meeting on DATE."
+(defun tlon-meet--generate-summary (transcript-file date &optional output-buffer)
+  "Generate a summary from TRANSCRIPT-FILE for meeting on DATE.
+Optionally update OUTPUT-BUFFER with progress."
   (with-temp-buffer
     (insert-file-contents transcript-file)
     (let ((transcript (buffer-string))
-          (buffer (get-buffer "*Diarization Output*")))
-      
+          (buffer (or output-buffer (get-buffer "*Diarization Output*")))) ;; Use provided or default buffer
+
       ;; Use AI to generate summary
-      (with-current-buffer buffer
-        (goto-char (point-max))
-        (insert "Reading transcript and generating AI summary...\n"))
+      (when buffer
+        (with-current-buffer buffer
+          (goto-char (point-max))
+          (insert "Reading transcript and generating AI summary...\n")))
       
       (tlon-make-gptel-request
        (format tlon-meet-summary-prompt "%s")
@@ -307,10 +321,11 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
        (lambda (response info)
          (if response
              (tlon-meet--save-summary response transcript date buffer)
-           (with-current-buffer buffer
-             (goto-char (point-max))
-             (insert (format "\nError generating summary: %s\n"
-                             (plist-get info :status))))))))))
+           (when buffer
+             (with-current-buffer buffer
+               (goto-char (point-max))
+               (insert (format "\nError generating summary: %s\n"
+                               (plist-get info :status)))))))))))
 
 (defun tlon-meet--save-summary (summary transcript date output-buffer)
   "Save SUMMARY and TRANSCRIPT for meeting on DATE to appropriate repo.
