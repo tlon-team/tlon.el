@@ -1526,8 +1526,9 @@ Triggers the engine-specific request function and sets up the process sentinel."
 
 (defun tlon-tts--parse-elevenlabs-request-id (output)
   "Parse the request-id header from curl OUTPUT."
-  ;; Search for the header anywhere in the output, ignoring case for the header name
-  (when (string-match-p "(?i)\nrequest-id: *\\([a-zA-Z0-9]+\\)" output)
+  ;; Use multiline mode (?m) so ^ matches start of line. Ignore case (?i).
+  ;; Match optional carriage return (\r?) before end of line ($).
+  (when (string-match-p "(?mi)^request-id: *\\([a-zA-Z0-9]+\\)\\r?$" output)
     (match-string 1 output)))
 
 (defun tlon-tts-finish-processing (last-chunk-file)
