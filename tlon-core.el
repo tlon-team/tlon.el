@@ -990,6 +990,8 @@ INNER_VALUE_PROMPT is the prompt string for the inner value."
          (existing-value (when chosen-langs ; Get existing value for the *first* selected language
                            (gethash (car chosen-langs) inner-alist)))
          (chosen-inner-value (read-string (format "%s for '%s' in %s: "
+                                                  inner-value-prompt
+                                                  chosen-outer-key
                                                   (string-join chosen-langs ", "))
                                            existing-value))) ; Use existing value as initial input
     ;; Update the inner alist (now hash-table) for all selected languages
