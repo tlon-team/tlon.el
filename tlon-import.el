@@ -70,6 +70,7 @@
 ;;;;; General import
 
 (declare-function simple-extras-string-is-url-p "simple-extras")
+;;;###autoload
 (defun tlon-import-document ()
   "Import a new document from a URL or a PDF file."
   (interactive)
