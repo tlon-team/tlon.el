@@ -35,7 +35,8 @@
   "Manage Tlön meetings."
   :group 'tlon)
 
-(defcustom tlon-meet-diarize-script "scripts/diarize.py"
+(defcustom tlon-meet-diarize-script
+  (file-name-concat paths-dir-external-repos "whisper-diarization/diarize.py")
   "Path to the diarization script.
 Can be an absolute path or relative to the tlon package directory."
   :type 'string
