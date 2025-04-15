@@ -984,7 +984,7 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
   (let* ((json-data (or (tlon-read-json file 'hash-table)
                         (make-hash-table :test 'equal)))
          (outer-keys (tlon-get-keys json-data))
-         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil t nil nil (car outer-keys)))
+         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
          (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal)))
          (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): "
 					     'require-match nil '("default") nil 'multiple))
