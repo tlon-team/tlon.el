@@ -2001,7 +2001,8 @@ audio. CHUNK-INDEX is the index of the current chunk."
              (final-payload-parts
               (if voice-settings
                   ;; Ensure the voice_settings alist itself is the value for the "voice_settings" key
-                  (append payload-parts `(("voice_settings" . ,voice-settings)))
+                  ;; Add :json-object hint to force object encoding for the nested alist
+                  (append payload-parts `(("voice_settings" :json-object . ,voice-settings)))
                 payload-parts))
              ;; Encode the final payload alist (with nested alist) to JSON string
              (payload (json-encode final-payload-parts)))
