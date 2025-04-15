@@ -3649,7 +3649,12 @@ This section details the interactive commands provided by =tlon-tts.el=.
 :END:
 
 #+findex: tlon-tts-generate-report
-+ ~tlon-tts-generate-report~ :: Generates a report buffer ("*TTS Report*") highlighting potential issues in the current staging buffer that might affect TTS quality, such as missing acronym definitions, potential chemical symbols, emphasis markers, en dashes, and numbers lacking separators.
++ ~tlon-tts-generate-report~ :: Generates a report buffer ("*TTS Report*") highlighting potential issues in the *current staging buffer* that might affect TTS quality. It checks for:
+  - Missing acronym definitions (acronyms present in the staging buffer but not defined globally or locally).
+  - Potential chemical symbols.
+  - Unprocessed emphasis markers.
+  - Unprocessed en dashes.
+  - Numbers lacking thousands separators.
 
 #+findex: tlon-tts-edit-global-abbreviations
 + ~tlon-tts-edit-global-abbreviations~ :: (Autoloaded) Interactively edits the global abbreviations list stored in =tlon-file-global-abbreviations=.
