@@ -892,12 +892,14 @@ case, the return value will be a list of strings rather than a string."
 SELECTION is either a string or a list of strings representing languages in
 English. FORMAT must be either `code' or `locale'."
   (let* ((property (pcase format ('locale :locale) ('code :code)))
-	 (fun (lambda (language)
-		(tlon-lookup tlon-languages-properties property :name language))))
+         (fun (lambda (language)
+                (if (equal language "default")
+                    "default" ; Return "default" directly if selected
+                  (tlon-lookup tlon-languages-properties property :name language)))))
     (if (listp selection)
-	(mapcar (lambda (language)
-		  (funcall fun language))
-		selection)
+        (mapcar (lambda (language)
+                  (funcall fun language))
+                selection)
       (funcall fun selection))))
 
 ;;;###autoload
