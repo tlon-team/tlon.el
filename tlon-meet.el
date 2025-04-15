@@ -35,8 +35,9 @@
   "Manage Tlön meetings."
   :group 'tlon)
 
-(defcustom tlon-meet-diarize-script "diarize.py"
-  "Path to the diarization script."
+(defcustom tlon-meet-diarize-script "scripts/diarize.py"
+  "Path to the diarization script.
+Can be an absolute path or relative to the tlon package directory."
   :type 'string
   :group 'tlon-meet)
 
@@ -252,8 +253,16 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
                    (format-time-string "%Y-%m-%d")))
          (transcript-file (concat (file-name-sans-extension audio-file) "-transcript.txt"))
          (buffer (get-buffer-create "*Diarization Output*"))
-         (process-name "diarize-process"))
-    
+         (process-name "diarize-process")
+         (script-path (let ((script tlon-meet-diarize-script))
+                        (if (file-name-absolute-p script)
+                            script
+                          (expand-file-name script (file-name-directory (locate-library "tlon.el")))))))
+
+    ;; Check if script exists
+    (unless (file-exists-p script-path)
+      (user-error "Diarization script not found at %s" script-path))
+
     ;; Show the output buffer
     (display-buffer buffer)
     (with-current-buffer buffer
@@ -264,7 +273,7 @@ meetings repository with the filename format \"yyyy-mm-dd-summary.org\"."
     (make-process
      :name process-name
      :buffer buffer
-     :command (list "python" tlon-meet-diarize-script "-a" audio-file)
+     :command (list "python" script-path "-a" audio-file)
      :sentinel
      (lambda (_process event)
        (when (string= event "finished\n")
