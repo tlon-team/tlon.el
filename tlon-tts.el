@@ -3355,7 +3355,7 @@ Reads audio format choices based on the currently selected engine."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
     ("n" "Narrate staged"                          tlon-tts-narrate-staged-content)
-    ("r" "Regenerate paragraph at point"           tlon-tts-regenerate-paragraph-at-point)
+    ("g" "Regenerate paragraph at point"           tlon-tts-regenerate-paragraph-at-point)
     ("e" "Generate report"                         tlon-tts-generate-report)
     ""
     "Narration options"
