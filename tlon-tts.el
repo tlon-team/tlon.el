@@ -1317,8 +1317,11 @@ file, and VOICE-PARAMS are the specific voice parameters for this chunk."
 
     (message "Regenerating paragraph %d with voice %s into %s..."
              paragraph-index
-             (or (cdr (assoc 'tlon-tts-voice voice-params)) "default") ; Log voice used
-             paragraph-index (file-name-nondirectory chunk-filename))
+             ;; Directly check the cons cell, don't use assoc
+             (if (and (consp voice-params) (eq (car voice-params) 'tlon-tts-voice))
+                 (cdr voice-params)
+               "default")
+             (file-name-nondirectory chunk-filename))
     ;; Wait for completion
     (while (process-live-p process)
       (accept-process-output process 0.1))
