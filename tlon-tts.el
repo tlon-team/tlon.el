@@ -2147,10 +2147,11 @@ audio. CHUNK-INDEX is the optional index of the current chunk (used for context)
 		  (append payload-parts `(("voice_settings" . ,voice-settings)))
 		payload-parts))
              (payload (json-encode final-payload-parts))
-             ;; Generate temp file for headers
-             (header-file (make-temp-file (format "tts-header-%d-" chunk-index) nil ".txt")))
-        ;; Store header file path in chunk data (index 5)
-        (setf (nth 5 (nth chunk-index tlon-tts-chunks)) header-file)
+             ;; Generate temp file for headers, use 999 if chunk-index is nil
+             (header-file (make-temp-file (format "tts-header-%d-" (or chunk-index 999)) nil ".txt")))
+        ;; Store header file path in chunk data only if chunk-index is valid
+        (when chunk-index
+          (setf (nth 5 (nth chunk-index tlon-tts-chunks)) header-file))
         ;; Construct curl command
 	(mapconcat 'shell-quote-argument
                    (list "curl"
