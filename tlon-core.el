@@ -99,12 +99,7 @@
 	   :subproject "uqbar"
 	   :abbrev "uqbar"
 	   :type development
-	   :subtype issues ; is this correct?
 	   :key "q q")
-    (:name "web-server"
-	   :project "tlon"
-	   :abbrev "web-server"
-	   :type development)
     (:name "uqbar-audio"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -174,6 +169,10 @@
 	   :language "ja"
 	   :key "q j"
 	   :url "")
+    (:name "web-server"
+	   :project "tlon"
+	   :abbrev "web-server"
+	   :type development)
     (:name "utilitarianism-en"
 	   :project "babel"
 	   :subproject "utilitarianism"
@@ -190,42 +189,13 @@
 	   :language "es"
 	   :key "u s"
 	   :url "https://utilitarismo.net/")
-    (:name "essays-en"
-	   :project "babel"
-	   :subproject "essays"
-	   :abbrev "essays-en"
-	   :type content
-	   :subtype originals
-	   :key "l n")
-    (:name "essays-es"
-	   :project "babel"
-	   :subproject "essays"
-	   :abbrev "essays-es"
-	   :type content
-	   :subtype translations
-	   :language "es"
-	   :key "l s")
-    (:name "ea.news-issues"
+    (:name "ea.news"
 	   :project "other"
 	   :subproject "ea.news"
-	   :abbrev "ean-issues"
+	   :abbrev "ean"
 	   :type development
 	   :subtype issues
-	   :key "e i")
-    (:name "ea.news-front"
-	   :project "other"
-	   :subproject "ea.news"
-	   :abbrev "ean-front"
-	   :type development
-	   :subtype front
-	   :key "f")
-    (:name "ea.news-api"
-	   :project "other"
-	   :subproject "ea.news"
-	   :abbrev "ean-api"
-	   :type development
-	   :subtype api
-	   :key "a")
+	   :key "n n")
     (:name "ea.international"
 	   :project "other"
 	   :subproject "ea.international"
@@ -238,38 +208,30 @@
 	   :abbrev "80k-podcast"
 	   :type content
 	   :key "i")
-    (:name "aea-front"
+    (:name "aea"
 	   :project "other"
 	   :subproject "aea"
-	   :abbrev "aea-front"
+	   :abbrev "aea"
 	   :type development
-	   :subtype front
-	   :key "r f")
+	   :key "r c")
     (:name "aea-content"
 	   :project "other"
 	   :subproject "aea"
 	   :abbrev "aea-content"
-	   :type development
-	   :subtype content
+	   :type content
 	   :key "r c")
-    (:name "bisagra-api"
+    (:name "bisagra"
 	   :project "other"
 	   :subproject "bisagra"
-	   :abbrev "bisagra-api"
+	   :abbrev "bisagra"
 	   :type development
-	   :key "a")
-    (:name "bisagra-front"
-	   :project "other"
-	   :subproject "bisagra"
-	   :abbrev "bisagra-front"
-	   :type development
-	   :key "f")
+	   :key "s s")
     (:name "bisagra-content"
 	   :project "other"
 	   :subproject "bisagra"
 	   :abbrev "bisagra-content"
 	   :type content
-	   :key "c")
+	   :key "s c")
     (:name "boletin"
 	   :project "other"
 	   :subproject "boletin"
@@ -306,19 +268,36 @@
 	   :subproject "docs"
 	   :abbrev "docs"
 	   :type docs)
-    (:name "tlon-front"
+    (:name "tlon"
 	   :project "tlon"
-	   :abbrev "tlon-front"
+	   :abbrev "tlon"
 	   :type development)
     (:name "tlon-content"
 	   :project "tlon"
 	   :abbrev "tlon-content"
-	   :type development)
+	   :type content)
     (:name "tlon.el"
 	   :project "tlon"
 	   :abbrev "tlon.el"
 	   :type development
 	   :subtype emacs)
+    (:name "essays-en"
+	   :project "babel"
+	   :subproject "essays"
+	   :abbrev "essays-en"
+	   :type content
+	   :subtype originals
+	   :inactive t
+	   :key "l n")
+    (:name "essays-es"
+	   :project "babel"
+	   :subproject "essays"
+	   :abbrev "essays-es"
+	   :type content
+	   :subtype translations
+	   :language "es"
+	   :inactive t
+	   :key "l s")
     (:name "sandbox"
 	   :abbrev "sandbox"
 	   :type test))

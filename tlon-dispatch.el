@@ -109,15 +109,15 @@ DIR is the directory where the repo is stored."
 ;;;###autoload (autoload 'tlon-magit-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-magit-repo-menu ()
   "Browse a Tlön repo in Magit."
-  [["Tlon"
-    ("t c" "tlon-content"                 tlon-magit-browse-tlon-content)
-    ("t f" "tlon-front"                   tlon-magit-browse-tlon-front)
-    ("t d" "tlon-docs"                    tlon-magit-browse-docs)
-    ("t e" "tlon.el"                      tlon-magit-browse-tlon.el)]
+  [["Docs"
+    ("d d" "tlon-docs"                    tlon-magit-browse-docs)
+    ""
+    "Tlön site"
+    ("t t" "tlon"                         tlon-magit-browse-tlon)
+    ("t c" "tlon-content"                 tlon-magit-browse-tlon-content)]
    ["Babel"
     ("b c" "babel-core"                   tlon-magit-browse-babel-core)
     ("b f" "babel-refs"                   tlon-magit-browse-babel-refs)
-    ("b i" "babel-issues"                 tlon-magit-browse-babel-issues)
     ""
     ("b d" "babel-de"                     tlon-magit-browse-babel-de)
     ("b s" "babel-es"                     tlon-magit-browse-babel-es)
@@ -144,20 +144,18 @@ DIR is the directory where the repo is stored."
     "80k podcast"
     ("p p" "80k podcast"                  tlon-magit-browse-80k-podcast)]
    ["La bisagra de la historia"
-    ("s a" "bisagra-api"                  tlon-magit-browse-bisagra-api)
-    ("s f" "bisagra-front"                tlon-magit-browse-bisagra-front)
+    ("s s" "bisagra"                      tlon-magit-browse-bisagra)
     ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
     ""
     "Altruismo Eficaz Argentina"
-    ("r f" "aea-front"                    tlon-magit-browse-aea-front)
-    ("r c" "aea-content"                  tlon-magit-browse-aea-content)
+    ("a a" "aea"                          tlon-magit-browse-aea)
+    ("a c" "aea-content"                  tlon-magit-browse-aea-content)
     ""
     "Boletín"
-    ("a a" "boletin"                      tlon-magit-browse-boletin)]
-   ["EA News"
-    ("n i" "ean-issues"                   tlon-magit-browse-ean-issues)
-    ("n f" "ean-front"                    tlon-magit-browse-ean-front)
-    ("n a" "ean-api"                      tlon-magit-browse-ean-api)]
+    ("l l" "boletin"                      tlon-magit-browse-boletin)
+    ""
+    "EA News"
+    ("n n" "ean"                          tlon-magit-browse-ean)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-magit-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-magit-browse-meetings-fede-pablo)
@@ -187,14 +185,14 @@ DIR is the directory where the repo is stored."
 ;;;###autoload (autoload 'tlon-dired-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-dired-repo-menu ()
   "Browse a Tlön repo in Dired."
-  [["Tlon"
-    ("t c" "tlon-content"                 tlon-dired-browse-tlon-content)
-    ("t f" "tlon-front"                   tlon-dired-browse-tlon-front)
-    ("t d" "tlon-docs"                    tlon-dired-browse-docs)
-    ("t e" "tlon.el"                       tlon-dired-browse-tlon.el)]
+  [["Docs"
+    ("d d" "tlon-docs"                    tlon-dired-browse-docs)
+    ""
+    "Tlön site"
+    ("t t" "tlon"                         tlon-dired-browse-tlon)
+    ("t c" "tlon-content"                 tlon-dired-browse-tlon-content)]
    ["Babel"
     ("b c" "babel-core"                   tlon-dired-browse-babel-core)
-    ("b i" "babel-issues"                 tlon-dired-browse-babel-issues)
     ("b f" "babel-refs"                   tlon-dired-browse-babel-refs)
     ""
     ("b d" "babel-de"                     tlon-dired-browse-babel-de)
@@ -217,25 +215,23 @@ DIR is the directory where the repo is stored."
     ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
     ""
     "EA International"
-    ("i i" "ea-international"             tlon-dired-browse-ea-international)
+    ("i i" "ea.international"             tlon-dired-browse-ea-international)
     ""
     "80k podcast"
     ("p p" "80k podcast"                  tlon-dired-browse-80k-podcast)]
    ["La bisagra de la historia"
-    ("s a" "bisagra-api"                  tlon-dired-browse-bisagra-api)
-    ("s f" "bisagra-front"                tlon-dired-browse-bisagra-front)
+    ("s s" "bisagra"                      tlon-dired-browse-bisagra)
     ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
     ""
     "Altruismo Eficaz Argentina"
-    ("r f" "aea-front"                    tlon-dired-browse-aea-front)
-    ("r c" "aea-content"                  tlon-dired-browse-aea-content)
+    ("a a" "aea"                          tlon-dired-browse-aea)
+    ("a c" "aea-content"                  tlon-dired-browse-aea-content)
     ""
     "Boletín"
-    ("a a" "boletin"                      tlon-dired-browse-boletin)]
-   ["EA News"
-    ("n i" "ean-issues"                   tlon-dired-browse-ean-issues)
-    ("n f" "ean-front"                    tlon-dired-browse-ean-front)
-    ("n a" "ean-api"                      tlon-dired-browse-ean-api)]
+    ("l l" "boletin"                      tlon-dired-browse-boletin)
+    ""
+    "EA News"
+    ("n n" "ean"                          tlon-dired-browse-ean)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-dired-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-dired-browse-meetings-fede-pablo)
