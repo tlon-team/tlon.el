@@ -39,7 +39,7 @@
 
 ;;;;; Common
 
-(defcustom tlon-tts-global-engine "Microsoft Azure"
+(defcustom tlon-tts-global-engine "ElevenLabs"
   "The TTS engine to use when creating the staging buffer."
   :group 'tlon-tts
   :type '(choice (const :tag "Microsoft Azure" :azure)
