@@ -1314,7 +1314,8 @@ DESTINATION is the base output filename."
   "Break text in current buffer into chunks.
 If CHUNK-SIZE is non-nil, break text into chunks no larger than CHUNK-SIZE,
 respecting paragraph boundaries. Each chunk will include the maximum number of
-paragraphs that fit within the size limit. DESTINATION is the base output filename.
+paragraphs that fit within the size limit. DESTINATION is the base output
+filename.
 
 If CHUNK-SIZE is nil (specifically for ElevenLabs paragraph mode), each
 paragraph becomes a separate chunk, breaking before voice changes.
@@ -1379,7 +1380,6 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
       (goto-char begin)
       (condition-case nil (forward-paragraph) (error (goto-char (point-max))))
       (setq end (min (point) next-voice-change-pos)))
-
      ;; --- Case 2: Character limit chunking ---
      (t
       (let (potential-end)
