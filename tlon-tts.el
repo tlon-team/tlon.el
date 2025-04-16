@@ -1305,16 +1305,19 @@ Returns a cons cell with the trimmed paragraph text and its bounds."
                               paragraph-index
                               final-extension))))
 
-(defun tlon-tts-execute-regeneration-request (paragraph-index paragraph-text chunk-filename)
+(defun tlon-tts-execute-regeneration-request (paragraph-index paragraph-text chunk-filename voice-params)
   "Execute the TTS request to regenerate PARAGRAPH-TEXT.
-PARAGRAPH-INDEX is used for logging, and CHUNK-FILENAME is the output file."
+PARAGRAPH-INDEX is used for logging and context, CHUNK-FILENAME is the output
+file, and VOICE-PARAMS are the specific voice parameters for this chunk."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
-         (request (funcall fun paragraph-text chunk-filename
-                           `((tlon-tts-voice . ,tlon-tts-voice))))
+         ;; Pass specific voice-params and paragraph-index (as chunk-index)
+         (request (funcall fun paragraph-text chunk-filename voice-params paragraph-index))
          (process-name (format "regenerate audio %d" paragraph-index))
          (process (start-process-shell-command process-name nil request)))
-    
-    (message "Regenerating paragraph %d into %s..."
+
+    (message "Regenerating paragraph %d with voice %s into %s..."
+             paragraph-index
+             (or (cdr (assoc 'tlon-tts-voice voice-params)) "default") ; Log voice used
              paragraph-index (file-name-nondirectory chunk-filename))
     ;; Wait for completion
     (while (process-live-p process)
