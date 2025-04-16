@@ -231,10 +231,10 @@ function tried to be a nudge in that direction."
 ;;;###autoload
 (defun tlon-meet-diarize-and-summarize (audio-file)
   "Diarize AUDIO-FILE using whisperx and create an AI summary.
-This function runs 'whisperx' on the audio file with diarization enabled
-(language hardcoded to 'es'), then uses AI to generate a summary of the
-conversation. The summary is saved in the appropriate meetings repository
-with the filename format \"yyyy-mm-dd-summary.org\"."
+This function runs `whisperx' on the audio file with diarization enabled
+\\=(language hardcoded to \"es\"), then uses AI to generate a summary of the
+conversation. The summary is saved in the appropriate meetings repository with
+the filename format \"yyyy-mm-dd-summary.org\"."
   (interactive
    (let ((default-dir (pcase tlon-default-conference-app
                         ('meet tlon-meet-recordings-directory)
@@ -250,21 +250,17 @@ with the filename format \"yyyy-mm-dd-summary.org\"."
          (transcript-file (concat (file-name-sans-extension audio-file) ".txt"))
          (buffer (get-buffer-create "*Diarization Output*"))
          (process-name "whisperx-diarize-process")
-         ;; NOTE: Hugging Face token is hardcoded here for simplicity.
-         ;; Consider using auth-source or environment variables for better security.
          (hf-token (auth-source-pass-get "whisperX" (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL"))))
          (whisperx-command (list "whisperx" audio-file
                                  "--diarize"
                                  "--language" "es"
                                  "--hf_token" hf-token)))
-
     ;; Show the output buffer
     (display-buffer buffer)
     (with-current-buffer buffer
       (erase-buffer)
       (insert (format "Starting diarization of %s using whisperx...\n\n" audio-filename))
       (insert (format "Running command: %s\n\n" (string-join whisperx-command " "))))
-
     ;; Run the whisperx command
     (make-process
      :name process-name
@@ -302,13 +298,11 @@ Optionally update OUTPUT-BUFFER with progress."
     (insert-file-contents transcript-file)
     (let ((transcript (buffer-string))
           (buffer (or output-buffer (get-buffer "*Diarization Output*")))) ;; Use provided or default buffer
-
       ;; Use AI to generate summary
       (when buffer
         (with-current-buffer buffer
           (goto-char (point-max))
           (insert "Reading transcript and generating AI summary...\n")))
-      
       (tlon-make-gptel-request
        (format tlon-meet-summary-prompt "%s")
        transcript
@@ -328,48 +322,38 @@ Updates OUTPUT-BUFFER with progress messages."
          (repo (tlon-meet--determine-repo date meeting-repos))
          (summary-file (expand-file-name "meeting-summaries.org" repo))
          (transcript-file (expand-file-name (format "%s-transcript.txt" date) repo)))
-    
     (with-current-buffer output-buffer
       (goto-char (point-max))
       (insert (format "\nSaving summary to %s\n" summary-file))
       (insert (format "Saving transcript to %s\n" transcript-file)))
-    
     ;; Create or append to the summaries file
     (with-temp-buffer
       (when (file-exists-p summary-file)
         (insert-file-contents summary-file))
-      
       ;; If file is empty or doesn't exist, add the header
       (when (= (buffer-size) 0)
         (insert "#+TITLE: Meeting Summaries\n")
         (insert "#+OPTIONS: toc:t num:nil\n\n"))
-      
       ;; Go to end of file to append
       (goto-char (point-max))
-      
       ;; Add a section for this meeting
       (insert (format "\n* Meeting on %s\n\n" date))
       (insert summary)
-      
       ;; Save the file
       (write-region (point-min) (point-max) summary-file))
-    
     ;; Save the transcript file
     (with-temp-buffer
       (insert transcript)
       (write-region (point-min) (point-max) transcript-file))
-    
     ;; Commit the changes
     (let ((default-directory repo))
       (with-current-buffer output-buffer
         (goto-char (point-max))
         (insert "Committing changes...\n"))
-      
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory summary-file))
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory transcript-file))
       (call-process "git" nil output-buffer t "commit" "-m"
                     (format "Add AI-generated summary and transcript for meeting on %s" date))
-      
       (with-current-buffer output-buffer
         (goto-char (point-max))
         (insert "\nSummary and transcript added successfully!\n")
