@@ -110,7 +110,7 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-magit-repo-menu ()
   "Browse a Tlön repo in Magit."
   [["Docs"
-    ("d d" "tlon-docs"                    tlon-magit-browse-docs)
+    ("d" "tlon-docs"                    tlon-magit-browse-docs)
     ""
     "Tlön site"
     ("t t" "tlon"                         tlon-magit-browse-tlon)
@@ -134,15 +134,17 @@ DIR is the directory where the repo is stored."
     ("q t" "uqbar-it"                     tlon-magit-browse-uqbar-it)
     ("q j" "uqbar-ja"                     tlon-magit-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)]
-   ["utilitarianism"
-    ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)
+   ["EA News"
+    ("n n" "ean"                          tlon-magit-browse-ean)
     ""
     "EA International"
-    ("i i" "ea.international"             tlon-magit-browse-ea-international)
+    ("i" "ea.international"             tlon-magit-browse-ea-international)
     ""
     "80k podcast"
-    ("p p" "80k podcast"                  tlon-magit-browse-80k-podcast)]
+    ("p" "80k podcast"                  tlon-magit-browse-80k-podcast)
+    ""
+    "Boletín"
+    ("l" "boletin"                      tlon-magit-browse-boletin)]
    ["La bisagra de la historia"
     ("s s" "bisagra"                      tlon-magit-browse-bisagra)
     ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
@@ -151,11 +153,9 @@ DIR is the directory where the repo is stored."
     ("a a" "aea"                          tlon-magit-browse-aea)
     ("a c" "aea-content"                  tlon-magit-browse-aea-content)
     ""
-    "Boletín"
-    ("l l" "boletin"                      tlon-magit-browse-boletin)
-    ""
-    "EA News"
-    ("n n" "ean"                          tlon-magit-browse-ean)]
+    "utilitarianism"
+    ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-magit-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-magit-browse-meetings-fede-pablo)
@@ -186,7 +186,7 @@ DIR is the directory where the repo is stored."
 (transient-define-prefix tlon-dired-repo-menu ()
   "Browse a Tlön repo in Dired."
   [["Docs"
-    ("d d" "tlon-docs"                    tlon-dired-browse-docs)
+    ("d" "tlon-docs"                    tlon-dired-browse-docs)
     ""
     "Tlön site"
     ("t t" "tlon"                         tlon-dired-browse-tlon)
@@ -210,15 +210,17 @@ DIR is the directory where the repo is stored."
     ("q t" "uqbar-it"                     tlon-dired-browse-uqbar-it)
     ("q j" "uqbar-ja"                     tlon-dired-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)]
-   ["utilitarianism"
-    ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
+   ["EA International"
+    ("i" "ea.international"             tlon-dired-browse-ea-international)
     ""
-    "EA International"
-    ("i i" "ea.international"             tlon-dired-browse-ea-international)
+    "EA News"
+    ("n n" "ean"                          tlon-dired-browse-ean)
     ""
     "80k podcast"
-    ("p p" "80k podcast"                  tlon-dired-browse-80k-podcast)]
+    ("p" "80k podcast"                  tlon-dired-browse-80k-podcast)
+    ""
+    "Boletín"
+    ("l" "boletin"                      tlon-dired-browse-boletin)]
    ["La bisagra de la historia"
     ("s s" "bisagra"                      tlon-dired-browse-bisagra)
     ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
@@ -227,11 +229,9 @@ DIR is the directory where the repo is stored."
     ("a a" "aea"                          tlon-dired-browse-aea)
     ("a c" "aea-content"                  tlon-dired-browse-aea-content)
     ""
-    "Boletín"
-    ("l l" "boletin"                      tlon-dired-browse-boletin)
-    ""
-    "EA News"
-    ("n n" "ean"                          tlon-dired-browse-ean)]
+    "utilitarianism"
+    ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-dired-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-dired-browse-meetings-fede-pablo)
