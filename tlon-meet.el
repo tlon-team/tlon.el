@@ -226,7 +226,7 @@ function tried to be a nudge in that direction."
 	     (org-clocking-p))
     (tlon-set-meeting-buffers)))
 
-;;;;; diarize & summarize
+;;;;; transcribe & summarize
 
 (defun tlon-meet--get-audio-file ()
   "Prompt user for an audio file from configured recording directories."
@@ -247,8 +247,8 @@ function tried to be a nudge in that direction."
       (format-time-string "%Y-%m-%d")))
 
 ;;;###autoload
-(defun tlon-meet-diarize (audio-file &optional callback)
-  "Diarize AUDIO-FILE using whisperx.
+(defun tlon-meet-transcribe (audio-file &optional callback)
+  "transcribe AUDIO-FILE using whisperx.
 Run `whisperx' on the audio file with diarization enabled
 \\=(language hardcoded to \"es\"). Saves a [basename].txt file.
 If CALLBACK is provided, call it with the transcript file path on success."
@@ -386,17 +386,17 @@ Updates OUTPUT-BUFFER with progress messages."
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
 ;;;###autoload
-(defun tlon-meet-diarize-and-summarize (audio-file)
-  "Diarize AUDIO-FILE using whisperx and then create an AI summary.
-Runs `tlon-meet-diarize' and, upon success, automatically runs
+(defun tlon-meet-transcribe-and-summarize (audio-file)
+  "transcribe AUDIO-FILE using whisperx and then create an AI summary.
+Runs `tlon-meet-transcribe' and, upon success, automatically runs
 `tlon-meet-summarize-transcript' on the resulting transcript file."
   (interactive (list (tlon-meet--get-audio-file)))
-  (tlon-meet-diarize audio-file
-                     ;; Callback function to run on successful diarization
-                     (lambda (transcript-file)
-                       (message "Diarization successful. Starting summarization for %s" transcript-file)
-                       ;; Call summarize non-interactively
-                       (tlon-meet-summarize-transcript transcript-file))))
+  (tlon-meet-transcribe audio-file
+			;; Callback function to run on successful diarization
+			(lambda (transcript-file)
+			  (message "Diarization successful. Starting summarization for %s" transcript-file)
+			  ;; Call summarize non-interactively
+			  (tlon-meet-summarize-transcript transcript-file))))
 
 (defun tlon-meet--determine-repo (date meeting-repos)
   "Determine which meeting repository to use for DATE.
@@ -423,9 +423,9 @@ MEETING-REPOS is a list of meeting repository directories."
    ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)]
   ["Processing"
    ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
-   ("d"   "diarize audio"              tlon-meet-diarize)
+   ("d"   "transcribe audio"           tlon-meet-transcribe)
    ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
-   ("a"   "diarize & summarize"        tlon-meet-diarize-and-summarize)])
+   ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)])
 
 (provide 'tlon-meet)
 ;;; tlon-meet.el ends here
