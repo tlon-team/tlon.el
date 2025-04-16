@@ -1466,7 +1466,8 @@ operate only on the active region."
 
 (defun tlon-ai-extract-references-callback (response info)
   "Callback for `tlon-ai-extract-references'.
-Displays the found references and copies them to the kill ring."
+Displays the found references and copies them to the kill ring. RESPONSE is the
+AI's response, INFO is the response info."
   (if (not response)
       (tlon-ai-callback-fail info)
     (let* ((references (split-string (string-trim response) "\n" t)) ; Split by newline, remove empty
@@ -1522,7 +1523,7 @@ or an error occurs are left unchanged."
     (when (string-empty-p db-string)
       (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
     (unless references-with-pos
-      (user-error "No non-blank reference lines found in region."))
+      (user-error "No non-blank reference lines found in region"))
 
     ;; Initialize state for the asynchronous process
     (setq tlon-ai--bibkey-state
@@ -1558,7 +1559,8 @@ or an error occurs are left unchanged."
 
 (defun tlon-ai--bibkey-result-handler (response info)
   "Callback function to handle the result of a single bibkey lookup.
-Stores the result (including position) and triggers the next request."
+Stores the result (including position) and triggers the next request. RESPONSE
+is the AI's response, INFO is the response info."
   (let* ((state tlon-ai--bibkey-state)
          (index (plist-get state :index))
          (entry (nth index (plist-get state :references-with-pos)))
@@ -1583,7 +1585,7 @@ Stores the result (including position) and triggers the next request."
     (tlon-ai--process-next-bibkey-reference)))
 
 (defun tlon-ai--apply-bibkey-replacements ()
-  "Applies the BibTeX key replacements in the source buffer."
+  "Apply the BibTeX key replacements in the source buffer."
   (let* ((state tlon-ai--bibkey-state)
          (results (plist-get state :results)) ; List of (start end key)
          (source-buffer (plist-get state :source-buffer))
@@ -2076,16 +2078,15 @@ With prefix argument USE-REGION, operate only on the active region."
 
 (defun tlon-ai--extract-references-exact-callback (response info)
   "Callback for the initial reference extraction.
-Finds positions and starts key lookup."
+Finds positions and starts key lookup. RESPONSE is the AI's response, INFO is
+the response info."
   (if (not response)
       (progn
         (setq tlon-ai--extract-replace-state nil) ; Clean up state
         (tlon-ai-callback-fail info))
-
     (let* ((state tlon-ai--extract-replace-state)
            (extracted-refs (split-string (string-trim response) "\n" t)))
       (setf (plist-get state :extracted-references) extracted-refs)
-
       (message "AI extracted %d potential references. Finding positions..." (length extracted-refs))
       (setf (plist-get state :reference-positions)
             (tlon-ai--find-reference-positions
@@ -2146,7 +2147,9 @@ Returns an alist: (ref-string . list-of-(start . end))."
                                    nil t))))))
 
 (defun tlon-ai--extracted-bibkey-result-handler (reference-text response info)
-  "Callback to handle the result of bibkey lookup for extracted references."
+  "Callback to handle the result of bibkey lookup for extracted references.
+REFERENCE-TEXT is the original reference string, RESPONSE is the AI's response,
+INFO is the response info."
   (let* ((state tlon-ai--extract-replace-state)
          (key-map (plist-get state :key-map))
          (key (if response (string-trim response) "ERROR_AI")))
