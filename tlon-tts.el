@@ -1295,9 +1295,9 @@ within the staging buffer's content."
     ;; Extract paragraph text
     (save-excursion
       (goto-char (point))
-      (beginning-of-paragraph)
+      (backward-paragraph) ; Move to the beginning of the paragraph
       (setq start (point))
-      (end-of-paragraph)
+      (forward-paragraph)  ; Move to the end of the paragraph
       (setq end (point))
       ;; Basic trim, might need more sophisticated cleaning matching the main process
       (setq paragraph-text (string-trim (buffer-substring-no-properties start end))))
