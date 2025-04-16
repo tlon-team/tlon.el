@@ -1411,13 +1411,12 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
 
 (defun tlon-tts--get-content-start-pos ()
   "Return the starting position of narratable content in the current buffer.
-This is typically after the YAML metadata or file-local variables section."
+This is typically after the YAML metadata section, or at the beginning of the
+buffer if only a file-local variables section is present."
   (save-excursion
     (goto-char (point-min))
-    (or (cdr (tlon-get-delimited-region-pos tlon-yaml-delimiter))
-        (when (re-search-forward tlon-tts-local-variables-section-start nil t)
-          (point-max)) ; If local vars found, content ends before them
-        (point-min)))) ; Default to beginning if no delimiters found
+    (or (cdr (tlon-get-delimited-region-pos tlon-yaml-delimiter)) ; After YAML if present
+        (point-min)))) ; Otherwise, start at the beginning
 
 (defun tlon-tts--determine-initial-voice (voice-chunk-list)
   "Determine the initial voice and the remaining VOICE-CHUNK-LIST.
