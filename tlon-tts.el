@@ -27,6 +27,7 @@
 
 (require 'tlon-core)
 (require 'tlon-md)
+(require 'tlon-counterpart) ; For paragraph counting
 (eval-and-compile
   (require 'eieio)
   (require 'transient))
@@ -1271,6 +1272,57 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   "Return t iff the current buffer is a staging buffer."
   (bound-and-true-p tlon-tts-staging-buffer-p))
 
+;;;###autoload
+(defun tlon-tts-regenerate-paragraph-at-point ()
+  "Regenerate audio for the paragraph at point in the TTS staging buffer.
+This overwrites the corresponding chunk file based on the paragraph's index
+within the staging buffer's content."
+  (interactive)
+  (unless (tlon-tts-staging-buffer-p)
+    (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
+
+  (let* ((paragraph-index (tlon-tts--get-paragraph-index-at-point (point)))
+         (destination-base (tlon-tts-set-destination)) ; Get base filename like "my-article.mp3"
+         (chunk-filename (tlon-tts-get-chunk-name destination-base paragraph-index))
+         paragraph-text start end fun request process)
+
+    (unless paragraph-index
+      (user-error "Could not determine paragraph index at point"))
+
+    ;; Extract paragraph text
+    (save-excursion
+      (goto-char (point))
+      (beginning-of-paragraph)
+      (setq start (point))
+      (end-of-paragraph)
+      (setq end (point))
+      ;; Basic trim, might need more sophisticated cleaning matching the main process
+      (setq paragraph-text (string-trim (buffer-substring-no-properties start end))))
+
+    (unless (and paragraph-text (> (length paragraph-text) 0))
+      (user-error "Paragraph at point seems empty"))
+
+    ;; Get engine-specific function and parameters from buffer-local vars
+    (setq fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
+    ;; Note: We pass nil for chunk-index to engine request funcs like elevenlabs
+    ;; to indicate single paragraph regeneration without context.
+    ;; We pass the buffer-local voice directly as a parameter override.
+    (setq request (funcall fun paragraph-text chunk-filename `((tlon-tts-voice . ,tlon-tts-voice))))
+
+    (message "Regenerating paragraph %d into %s..." paragraph-index (file-name-nondirectory chunk-filename))
+
+    ;; Execute the request (synchronously for simplicity, could be async)
+    ;; Using start-process for consistency, but could use shell-command-to-string
+    (setq process (start-process-shell-command (format "regenerate audio %d" paragraph-index) nil request))
+    (while (process-live-p process) (accept-process-output process 0.1)) ; Wait for completion
+
+    (if (= (process-exit-status process) 0)
+        (message "Paragraph %d regenerated successfully into %s." paragraph-index (file-name-nondirectory chunk-filename))
+      (message "Error regenerating paragraph %d. Check *Messages* buffer." paragraph-index)
+      (when-let ((err-buffer (process-buffer process)))
+        (with-current-buffer err-buffer
+          (message "Error output for paragraph %d regeneration:\n%s" paragraph-index (buffer-string)))))))
+
 ;;;;;; Prepare chunks
 
 (defun tlon-tts-prepare-chunks ()
@@ -1354,6 +1406,38 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
 
 ;;;;;; Chunking Helpers
 
+(defun tlon-tts--get-content-start-pos ()
+  "Return the starting position of narratable content in the current buffer.
+This is typically after the YAML metadata or file-local variables section."
+  (save-excursion
+    (goto-char (point-min))
+    (or (cdr (tlon-get-delimited-region-pos tlon-yaml-delimiter))
+        (when (re-search-forward tlon-tts-local-variables-section-start nil t)
+          (point-max)) ; If local vars found, content ends before them
+        (point-min)))) ; Default to beginning if no delimiters found
+
+(defun tlon-tts--get-paragraph-index-at-pos (pos)
+  "Return the 1-based index of the paragraph containing POS.
+Counts paragraphs from the start of narratable content in the current buffer."
+  (save-excursion
+    (goto-char (tlon-tts--get-content-start-pos))
+    (let ((index 0)
+          (content-end (point-max)) ; Assuming local vars are handled elsewhere or not present
+          found)
+      (while (and (not found) (< (point) content-end))
+        (let ((start (point)))
+          (forward-paragraph) ; Use built-in paragraph motion
+          (let ((end (point)))
+            ;; Check if the paragraph is non-empty and contains the target position
+            (when (and (> end start)
+                       (string-match-p "\\S-" (buffer-substring-no-properties start end)))
+              (setq index (1+ index))
+              (when (and (>= pos start) (< pos end))
+                (setq found t)))
+            ;; Ensure progress even if forward-paragraph doesn't move
+            (when (= end start) (forward-char 1))))))
+      (when found index))))
+
 (defun tlon-tts--determine-initial-voice (voice-chunk-list)
   "Determine the initial voice and the remaining VOICE-CHUNK-LIST.
 Returns (cons INITIAL-VOICE REMAINING-VOICE-CHUNK-LIST)."
@@ -1404,10 +1488,11 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 	  (setq end adjusted-end))))) ; Update end with the potentially adjusted value
     end))
 
-(defun tlon-tts--add-chunk (begin end current-voice chunks destination)
+(defun tlon-tts--add-chunk (begin end current-voice chunks destination use-paragraph-chunks)
   "Extract text between BEGIN and END, validate it, and add to CHUNKS.
 Returns the updated CHUNKS list. CURRENT-VOICE is the voice to be used for
-this chunk. DESTINATION is the base output filename."
+this chunk. DESTINATION is the base output filename. USE-PARAGRAPH-CHUNKS
+determines the chunk numbering scheme."
   (when (> end begin) ; Ensure we made progress
     (let* ((raw-text (buffer-substring-no-properties begin end))
            ;; Remove trailing break tag and surrounding whitespace before final trim
@@ -1418,8 +1503,12 @@ this chunk. DESTINATION is the base output filename."
       ;; Only add chunk if trimmed text is not empty AND not just a break tag
       (when (and (not (string-empty-p trimmed-text))
                  (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
-        (let* ((chunk-index (length chunks)) ; 0-based index for the new chunk
-               (filename (tlon-tts-get-chunk-name destination (1+ chunk-index))) ; 1-based for filename
+        (let* ((chunk-number (if use-paragraph-chunks
+                                 (or (tlon-tts--get-paragraph-index-at-pos begin)
+                                     ;; Fallback if paragraph index fails (shouldn't happen)
+                                     (1+ (length chunks)))
+                               (1+ (length chunks)))) ; Sequential 1-based number otherwise
+               (filename (tlon-tts-get-chunk-name destination chunk-number))
                (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
                ;; Add nil placeholder for header-filename
                (new-chunk (list trimmed-text voice-params filename nil 'pending nil))) ; text voice-params filename request-id status header-filename
@@ -2022,30 +2111,32 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;;;;;;; ElevenLabs
 
-(defun tlon-tts-elevenlabs-make-request (string destination parameters chunk-index)
+(defun tlon-tts-elevenlabs-make-request (string destination parameters &optional chunk-index)
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a list of cons cells with parameters to use when generating the
-audio. CHUNK-INDEX is the index of the current chunk."
+audio. CHUNK-INDEX is the optional index of the current chunk (used for context)."
   (let* (;; Ensure parameters is a list for assoc
          (parameters-alist (if parameters (list parameters) nil))
          (vars (tlon-tts-get-file-local-or-override
                 '(tlon-tts-voice
                   tlon-tts-audio)
                 parameters-alist))
-         ;; Get before/after text from the main chunks list if needed (paragraph mode)
-         (before-text (when (and (> chunk-index 0) (null tlon-elevenlabs-char-limit))
+         ;; Get context only if chunk-index is provided and paragraph chunking is active
+         (use-context (and chunk-index (null tlon-elevenlabs-char-limit)))
+         (before-text (when (and use-context (> chunk-index 0))
                         (nth 0 (nth (1- chunk-index) tlon-tts-chunks))))
-         (after-text (when (and (< (1+ chunk-index) (length tlon-tts-chunks)) (null tlon-elevenlabs-char-limit))
+         (after-text (when (and use-context (< (1+ chunk-index) (length tlon-tts-chunks)))
                        (nth 0 (nth (1+ chunk-index) tlon-tts-chunks))))
-         (previous-chunk-id (tlon-tts-get-previous-chunk-id chunk-index))
+         (previous-chunk-id (when use-context (tlon-tts-get-previous-chunk-id chunk-index)))
          (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
     (cl-destructuring-bind (voice audio) vars
       ;; Look up the full voice definition using the voice ID
       (let* ((voice-definition (cl-find-if (lambda (entry) (equal (plist-get entry :id) voice))
                                            tlon-elevenlabs-voices))
              (voice-settings (tlon-tts-build-voice-settings voice-definition voice-settings-params))
-             (payload-parts (tlon-tts-define-payload-parts string before-text after-text previous-chunk-id))
+             ;; Pass use-context to define payload parts
+             (payload-parts (tlon-tts-define-payload-parts string before-text after-text previous-chunk-id use-context))
              ;; Add voice settings if they exist
              (final-payload-parts
               (if voice-settings
@@ -2078,19 +2169,19 @@ audio. CHUNK-INDEX is the index of the current chunk."
       (when (eq (nth 4 prev-chunk) 'completed) ; Check status
         (nth 3 prev-chunk)))))
 
-(defun tlon-tts-define-payload-parts (string before-text after-text previous-chunk-id)
+(defun tlon-tts-define-payload-parts (string before-text after-text previous-chunk-id use-context)
   "Define the payload parts for ElevenLabs API request.
-STRING is the text to be converted to speech. BEFORE-TEXT and AFTER-TEXT are
-optional strings to be added before and after the main text. PREVIOUS-CHUNK-ID
-is the ID of the previous chunk, if available."
+STRING is the text to be converted to speech. BEFORE-TEXT, AFTER-TEXT,
+PREVIOUS-CHUNK-ID, and stitch_audio are only included if USE-CONTEXT is non-nil."
   `(("text" . ,string)
     ("model_id" . ,tlon-elevenlabs-model)
-    ,@(when before-text `(("before_text" . ,before-text)))
-    ,@(when after-text `(("after_text" . ,after-text)))
-    ;; Add previous_request_ids if available
-    ,@(when previous-chunk-id `(("previous_request_ids" . (,previous-chunk-id))))
+    ,@(when (and use-context before-text) `(("before_text" . ,before-text)))
+    ,@(when (and use-context after-text) `(("after_text" . ,after-text)))
+    ;; Add previous_request_ids if available and context is used
+    ,@(when (and use-context previous-chunk-id) `(("previous_request_ids" . (,previous-chunk-id))))
     ;; Note: next_request_ids could be added similarly if needed/available
-    ("stitch_audio" . ,(if (or before-text after-text previous-chunk-id) t nil))))
+    ;; Only enable stitching if context is being used
+    ("stitch_audio" . ,(if use-context t nil))))
 
 (defun tlon-tts-build-voice-settings (voice-definition voice-settings-params)
   "Build the voice settings from the VOICE-DEFINITION and VOICE-SETTINGS-PARAMS."
@@ -3264,6 +3355,7 @@ Reads audio format choices based on the currently selected engine."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
     ("n" "Narrate staged"                          tlon-tts-narrate-staged-content)
+    ("r" "Regenerate paragraph at point"           tlon-tts-regenerate-paragraph-at-point)
     ("e" "Generate report"                         tlon-tts-generate-report)
     ""
     "Narration options"
