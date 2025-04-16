@@ -2150,14 +2150,14 @@ the car is the name of the file-local variable the cdr is its overriding value."
 (defun tlon-tts-elevenlabs-make-request (string destination parameters &optional chunk-index)
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
-PARAMETERS is a list of cons cells with parameters to use when generating the
-audio. CHUNK-INDEX is the optional index of the current chunk (used for
-context)."
-  (let* (;; Use parameters directly as the alist
+PARAMETERS is a cons cell like (tlon-tts-voice . VOICE-ID) or nil, providing
+override values. CHUNK-INDEX is the optional index of the current chunk (used
+for context)."
+  (let* (;; Wrap parameters in a list if non-nil before passing to the override function
          (vars (tlon-tts-get-file-local-or-override
                 '(tlon-tts-voice
                   tlon-tts-audio)
-                parameters)) ; Use parameters directly
+                (if parameters (list parameters) nil))) ; Ensure parameters is a list
          ;; Get context only if chunk-index is provided and paragraph chunking is active
          (use-context (and chunk-index (null tlon-elevenlabs-char-limit)))
          (before-text (when (and use-context (> chunk-index 0))
