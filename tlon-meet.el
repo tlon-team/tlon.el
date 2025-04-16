@@ -228,24 +228,32 @@ function tried to be a nudge in that direction."
 
 ;;;;; diarize & summarize
 
+(defun tlon-meet--get-audio-file ()
+  "Prompt user for an audio file from configured recording directories."
+  (let ((default-dir (pcase tlon-default-conference-app
+                       ('meet tlon-meet-recordings-directory)
+                       ('zoom tlon-zoom-recordings-directory)
+                       (_ default-directory))))
+    (read-file-name "Select audio file: " default-dir)))
+
+(defun tlon-meet--get-transcript-file ()
+  "Prompt user for a transcript file."
+  (read-file-name "Select transcript file: " nil nil t ".txt"))
+
+(defun tlon-meet--get-date-from-filename (filename)
+  "Extract date (YYYY-MM-DD) from FILENAME or return current date."
+  (or (and (string-match "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" filename)
+           (match-string 1 filename))
+      (format-time-string "%Y-%m-%d")))
+
 ;;;###autoload
-(defun tlon-meet-diarize-and-summarize (audio-file)
-  "Diarize AUDIO-FILE using whisperx and create an AI summary.
-This function runs `whisperx' on the audio file with diarization enabled
-\\=(language hardcoded to \"es\"), then uses AI to generate a summary of the
-conversation. The summary is saved in the appropriate meetings repository with
-the filename format \"yyyy-mm-dd-summary.org\"."
-  (interactive
-   (let ((default-dir (pcase tlon-default-conference-app
-                        ('meet tlon-meet-recordings-directory)
-                        ('zoom tlon-zoom-recordings-directory)
-                        (_ default-directory))))
-     (list (read-file-name "Select audio file: " default-dir))))
-  (let* ((default-directory (file-name-directory audio-file))
-         (audio-filename (file-name-nondirectory audio-file))
-         (date (or (and (string-match "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" audio-filename)
-                        (match-string 1 audio-filename))
-                   (format-time-string "%Y-%m-%d")))
+(defun tlon-meet-diarize (audio-file &optional callback)
+  "Diarize AUDIO-FILE using whisperx.
+Run `whisperx' on the audio file with diarization enabled
+\\=(language hardcoded to \"es\"). Saves a [basename].txt file.
+If CALLBACK is provided, call it with the transcript file path on success."
+  (interactive (list (tlon-meet--get-audio-file)))
+  (let* ((audio-filename (file-name-nondirectory audio-file))
          ;; whisperx outputs [basename].txt by default
          (transcript-file (concat (file-name-sans-extension audio-file) ".txt"))
          (buffer (get-buffer-create "*Diarization Output*"))
@@ -283,49 +291,66 @@ the filename format \"yyyy-mm-dd-summary.org\"."
                (progn
                  (with-current-buffer output-buffer
                    (goto-char (point-max))
-                   (insert (format "Transcript file found: %s. Generating summary...\n" transcript-file)))
-                 (tlon-meet--generate-summary transcript-file date))
+                   (insert (format "Transcript file found: %s.\n" transcript-file)))
+                 ;; Call the callback if provided
+                 (when callback
+                   (funcall callback transcript-file)))
              (with-current-buffer output-buffer
                (goto-char (point-max))
                (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
           ;; Ignore other events like "sent signal..." or process output lines
           (t nil)))))))
 
-(defun tlon-meet--generate-summary (transcript-file date &optional output-buffer)
-  "Generate a summary from TRANSCRIPT-FILE for meeting on DATE.
-Optionally update OUTPUT-BUFFER with progress."
+;;;###autoload
+(defun tlon-meet-summarize-transcript (transcript-file)
+  "Generate AI summary for TRANSCRIPT-FILE and save to meeting repo.
+Prompts for the meeting repository, reads the transcript, calls the AI,
+and saves the summary to 'meeting-summaries.org' and the transcript
+to 'YYYY-MM-DD-transcript.txt' in the selected repository."
+  (interactive (list (tlon-meet--get-transcript-file)))
+  (let* ((date (tlon-meet--get-date-from-filename transcript-file))
+         (meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
+         (repo (tlon-meet--determine-repo date meeting-repos))
+         (output-buffer (get-buffer-create "*Meeting Summary Output*")))
+    (display-buffer output-buffer)
+    (with-current-buffer output-buffer
+      (erase-buffer)
+      (insert (format "Generating summary for transcript: %s\n" transcript-file))
+      (insert (format "Meeting Date: %s\n" date))
+      (insert (format "Target Repository: %s\n" repo)))
+    (tlon-meet--generate-and-save-summary transcript-file date repo output-buffer)))
+
+(defun tlon-meet--generate-and-save-summary (transcript-file date repo output-buffer)
+  "Helper to generate summary and save files.
+Reads TRANSCRIPT-FILE, calls AI, saves summary and transcript to REPO
+for meeting on DATE. Updates OUTPUT-BUFFER."
   (with-temp-buffer
     (insert-file-contents transcript-file)
-    (let ((transcript (buffer-string))
-          (buffer (or output-buffer (get-buffer "*Diarization Output*")))) ;; Use provided or default buffer
+    (let ((transcript-content (buffer-string)))
       ;; Use AI to generate summary
-      (when buffer
-        (with-current-buffer buffer
-          (goto-char (point-max))
-          (insert "Reading transcript and generating AI summary...\n")))
+      (with-current-buffer output-buffer
+        (goto-char (point-max))
+        (insert "Reading transcript and generating AI summary...\n"))
       (tlon-make-gptel-request
-       (format tlon-meet-summary-prompt "%s")
-       transcript
+       (format tlon-meet-summary-prompt transcript-content) ; Pass transcript directly
+       nil ; No extra string needed if included in prompt
        (lambda (response info)
          (if response
-             (tlon-meet--save-summary response transcript date buffer)
-           (when buffer
-             (with-current-buffer buffer
-               (goto-char (point-max))
-               (insert (format "\nError generating summary: %s\n"
-                               (plist-get info :status)))))))))))
+             (tlon-meet--save-summary-and-transcript response transcript-content date repo output-buffer)
+           (with-current-buffer output-buffer
+             (goto-char (point-max))
+             (insert (format "\nError generating summary: %s\n"
+                             (plist-get info :status))))))))))
 
-(defun tlon-meet--save-summary (summary transcript date output-buffer)
-  "Save SUMMARY and TRANSCRIPT for meeting on DATE to appropriate repo.
+(defun tlon-meet--save-summary-and-transcript (summary transcript-content date repo output-buffer)
+  "Save SUMMARY and TRANSCRIPT-CONTENT for meeting on DATE to REPO.
 Updates OUTPUT-BUFFER with progress messages."
-  (let* ((meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
-         (repo (tlon-meet--determine-repo date meeting-repos))
-         (summary-file (expand-file-name "meeting-summaries.org" repo))
-         (transcript-file (expand-file-name (format "%s-transcript.txt" date) repo)))
+  (let* ((summary-file (expand-file-name "meeting-summaries.org" repo))
+         (repo-transcript-file (expand-file-name (format "%s-transcript.txt" date) repo)))
     (with-current-buffer output-buffer
       (goto-char (point-max))
       (insert (format "\nSaving summary to %s\n" summary-file))
-      (insert (format "Saving transcript to %s\n" transcript-file)))
+      (insert (format "Saving transcript to %s\n" repo-transcript-file)))
     ;; Create or append to the summaries file
     (with-temp-buffer
       (when (file-exists-p summary-file)
@@ -341,24 +366,37 @@ Updates OUTPUT-BUFFER with progress messages."
       (insert summary)
       ;; Save the file
       (write-region (point-min) (point-max) summary-file))
-    ;; Save the transcript file
+    ;; Save the transcript file to the repo
     (with-temp-buffer
-      (insert transcript)
-      (write-region (point-min) (point-max) transcript-file))
+      (insert transcript-content)
+      (write-region (point-min) (point-max) repo-transcript-file))
     ;; Commit the changes
     (let ((default-directory repo))
       (with-current-buffer output-buffer
         (goto-char (point-max))
         (insert "Committing changes...\n"))
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory summary-file))
-      (call-process "git" nil output-buffer t "add" (file-name-nondirectory transcript-file))
+      (call-process "git" nil output-buffer t "add" (file-name-nondirectory repo-transcript-file))
       (call-process "git" nil output-buffer t "commit" "-m"
                     (format "Add AI-generated summary and transcript for meeting on %s" date))
       (with-current-buffer output-buffer
         (goto-char (point-max))
         (insert "\nSummary and transcript added successfully!\n")
         (insert (format "Summary file: %s\n" summary-file))
-        (insert (format "Transcript file: %s\n" transcript-file))))))
+        (insert (format "Transcript file: %s\n" repo-transcript-file))))))
+
+;;;###autoload
+(defun tlon-meet-diarize-and-summarize (audio-file)
+  "Diarize AUDIO-FILE using whisperx and then create an AI summary.
+Runs `tlon-meet-diarize' and, upon success, automatically runs
+`tlon-meet-summarize-transcript' on the resulting transcript file."
+  (interactive (list (tlon-meet--get-audio-file)))
+  (tlon-meet-diarize audio-file
+                     ;; Callback function to run on successful diarization
+                     (lambda (transcript-file)
+                       (message "Diarization successful. Starting summarization for %s" transcript-file)
+                       ;; Call summarize non-interactively
+                       (tlon-meet-summarize-transcript transcript-file))))
 
 (defun tlon-meet--determine-repo (date meeting-repos)
   "Determine which meeting repository to use for DATE.
@@ -382,9 +420,12 @@ MEETING-REPOS is a list of meeting repository directories."
    ("l p" "Leo-Pablo"                  tlon-create-or-visit-meeting-issue-leo-pablo)
    ("f p" "Fede-Pablo"                 tlon-create-or-visit-meeting-issue-fede-pablo)
    ("f l" "Fede-Leo"                   tlon-create-or-visit-meeting-issue-fede-leo)
-   ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)
+   ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)]
+  ["Processing"
    ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
-   ("d"   "diarize and summarize"      tlon-meet-diarize-and-summarize)])
+   ("d"   "diarize audio"              tlon-meet-diarize)
+   ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
+   ("a"   "diarize & summarize"        tlon-meet-diarize-and-summarize)])
 
 (provide 'tlon-meet)
 ;;; tlon-meet.el ends here
