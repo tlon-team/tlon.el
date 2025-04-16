@@ -1282,30 +1282,6 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   "Return t iff the current buffer is a staging buffer."
   (bound-and-true-p tlon-tts-staging-buffer-p))
 
-(defun tlon-tts-get-paragraph-text-at-point ()
-  "Extract the text of the paragraph at point.
-Returns a cons cell with the trimmed paragraph text and its bounds."
-  (save-excursion
-    (let (start end)
-      (goto-char (point))
-      (backward-paragraph)
-      (setq start (point))
-      (forward-paragraph)
-      (setq end (point))
-      (let ((text (string-trim (buffer-substring-no-properties start end))))
-        (unless (and text (> (length text) 0))
-          (user-error "Paragraph at point seems empty"))
-        (cons text (cons start end))))))
-
-(defun tlon-tts-get-chunk-filename-for-paragraph (paragraph-index)
-  "Get the filename for the audio chunk of PARAGRAPH-INDEX."
-  (let ((final-filename-base (file-name-base tlon-tts-source))
-        (final-extension (cdr tlon-tts-audio)))
-    (file-name-concat default-directory
-                      (format "%s-%03d.%s"
-                              final-filename-base
-                              paragraph-index
-                              final-extension))))
 
 (defun tlon-tts-execute-regeneration-request (paragraph-index paragraph-text chunk-filename voice-params)
   "Execute the TTS request to regenerate PARAGRAPH-TEXT.
