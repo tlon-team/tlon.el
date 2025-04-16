@@ -257,69 +257,6 @@ DIR is the directory where the repo is stored."
 (dolist (repo (tlon-repo-lookup-all :dir))
   (eval `(tlon-generate-open-file-in-repo-commands ,repo)))
 
-;;;###autoload (autoload 'tlon-find-file-in-repo-menu "tlon-dispatch" nil t)
-(transient-define-prefix tlon-find-file-in-repo-menu ()
-  "Interactively open a file from a Tlön repo."
-  [["Tlon"
-    ("t c" "tlon-content"                 tlon-open-file-in-tlon-content)
-    ("t f" "tlon-front"                   tlon-open-file-in-tlon-front)
-    ("t d" "tlon-docs"                    tlon-open-file-in-docs)
-    ("t e" "tlon.el"                      tlon-open-file-in-tlon.el)]
-   ["Babel"
-    ("b c" "babel-core"                   tlon-open-file-in-babel-core)
-    ("b f" "babel-refs"                   tlon-open-file-in-babel-refs)
-    ("b i" "babel-issues"                 tlon-open-file-in-babel-issues)
-    ""
-    ("b d" "babel-de"                     tlon-open-file-in-babel-de)
-    ("b s" "babel-es"                     tlon-open-file-in-babel-es)
-    ("b r" "babel-fr"                     tlon-open-file-in-babel-fr)
-    ("b t" "babel-it"                     tlon-open-file-in-babel-it)]
-   ["Uqbar"
-    ("q q" "uqbar"                        tlon-open-file-in-uqbar)
-    ("q d" "uqbar"                        tlon-open-file-in-uqbar-audio)
-    ""
-    ("q a" "uqbar-ar"                     tlon-open-file-in-uqbar-ar)
-    ("q n" "uqbar-en"                     tlon-open-file-in-uqbar-en)
-    ("q s" "uqbar-es"                     tlon-open-file-in-uqbar-es)
-    ("q r" "uqbar-fr"                     tlon-open-file-in-uqbar-fr)
-    ("q t" "uqbar-it"                     tlon-open-file-in-uqbar-it)
-    ("q j" "uqbar-ja"                     tlon-open-file-in-uqbar-ja)
-    ("q k" "uqbar-ko"                     tlon-open-file-in-uqbar-ko)]
-   ["utilitarianism"
-    ("u n" "utilitarianism-en"            tlon-open-file-in-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-open-file-in-utilitarianism-es)
-    ""
-    "EA International"
-    ("i " "ea-international"              tlon-open-file-in-ea-international)
-    ""
-    "80k podcast"
-    ("i " "80 podcast"                    tlon-open-file-in-80k-podcast)]
-   ["La bisagra de la historia"
-    ("s a" "bisagra-dev"                  tlon-open-file-in-bisagra-api)
-    ("s f" "bisagra-front"                tlon-open-file-in-bisagra-front)
-    ("s c" "bisagra-content"              tlon-open-file-in-bisagra-content)
-    ""
-    "Altruismo Eficaz Argentina"
-    ("r f" "aea-front"                    tlon-open-file-in-aea-front)
-    ("r c" "aea-content"                  tlon-open-file-in-aea-content)
-    ""
-    "Boletín"
-    ("a a" "boletin"                      tlon-open-file-in-boletin)]
-   ["EA News"
-    ("n i" "ean-issues"                   tlon-open-file-in-ean-issues)
-    ("n f" "ean-front"                    tlon-open-file-in-ean-front)
-    ("n a" "ean-api"                      tlon-open-file-in-ean-api)]
-   ["Meetings"
-    ("m l p" "Leo-Pablo"                  tlon-open-file-in-meetings-leo-pablo)
-    ("m f p" "Fede-Pablo"                 tlon-open-file-in-meetings-fede-pablo)
-    ("m f l" "Fede-Leo"                   tlon-open-file-in-meetings-fede-leo)
-    ("m g" "group"                        tlon-open-file-in-meetings-group)
-    ""
-    "Clock"
-    ("c l" "Leo"                          tlon-open-file-in-clock-leo)
-    ("c f" "Fede"                         tlon-open-file-in-clock-fede)
-    ("c p" "Pablo"                        tlon-open-file-in-clock-pablo)]])
-
 ;;;;; Files menu
 
 ;;;###autoload (autoload 'tlon-files-menu "tlon-dispatch" nil t)
@@ -328,7 +265,6 @@ DIR is the directory where the repo is stored."
   :info-manual "(tlon) Files"
   [["Find"
     ("c" "in current repo"                 tlon-find-file-in-repo)
-    ("o" "in another repo"                 tlon-find-file-in-repo-menu)
     ("a" "across repos"                    tlon-open-file-across-repos)]
    ["Open counterpart"
     ("f" "current window"                  tlon-open-counterpart-dwim)
