@@ -388,7 +388,7 @@ Updates OUTPUT-BUFFER with progress messages."
 
 ;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file)
-  "transcribe AUDIO-FILE using whisperx and then create an AI summary.
+  "Transcribe AUDIO-FILE using whisperx and then create an AI summary.
 Runs `tlon-meet-transcribe' and, upon success, automatically runs
 `tlon-meet-summarize-transcript' on the resulting transcript file."
   (interactive (list (tlon-meet--get-audio-file)))
