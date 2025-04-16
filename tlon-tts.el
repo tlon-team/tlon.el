@@ -1351,13 +1351,22 @@ within the staging buffer's content."
     (unless paragraph-index
       (user-error "Could not determine paragraph index at point"))
     
-    (let* ((paragraph-data (tlon-tts-get-paragraph-text-at-point))
+    ;; Assuming paragraph-index is 1-based, get the 0-based chunk index
+    (let* ((chunk-index (1- paragraph-index))
+           (chunk-data (when (>= chunk-index 0) (nth chunk-index tlon-tts-chunks)))
+           (voice-params (when chunk-data (nth 1 chunk-data))) ; Get voice params from chunk
+           (paragraph-data (tlon-tts-get-paragraph-text-at-point))
            (paragraph-text (car paragraph-data))
-           (chunk-filename (tlon-tts-get-chunk-filename-for-paragraph paragraph-index))
-           (process (tlon-tts-execute-regeneration-request
-                     paragraph-index paragraph-text chunk-filename)))
-      
-      (tlon-tts-handle-regeneration-result process paragraph-index chunk-filename))))
+           (chunk-filename (tlon-tts-get-chunk-filename-for-paragraph paragraph-index))) ; Filename uses 1-based index
+
+      (unless chunk-data
+        (user-error "Could not find chunk data for paragraph index %d" paragraph-index))
+
+      ;; Pass the specific voice-params to the execution function
+      (let ((process (tlon-tts-execute-regeneration-request
+                      paragraph-index paragraph-text chunk-filename voice-params)))
+
+        (tlon-tts-handle-regeneration-result process paragraph-index chunk-filename)))))
 
 ;;;;;; Prepare chunks
 
