@@ -1282,12 +1282,15 @@ within the staging buffer's content."
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
 
   (let* ((paragraph-index (tlon-tts--get-paragraph-index-at-point (point)))
-         (destination-base (tlon-tts-set-destination)) ; Get base filename like "my-article.mp3"
-         (chunk-filename (tlon-tts-get-chunk-name destination-base paragraph-index))
-         paragraph-text start end fun request process)
+         destination-base chunk-filename paragraph-text start end fun request process)
 
+    ;; Ensure we have a valid paragraph index before proceeding
     (unless paragraph-index
       (user-error "Could not determine paragraph index at point"))
+
+    ;; Now that we know paragraph-index is valid, calculate destination and chunk filename
+    (setq destination-base (tlon-tts-set-destination)) ; Get base filename like "my-article.mp3"
+    (setq chunk-filename (tlon-tts-get-chunk-name destination-base paragraph-index))
 
     ;; Extract paragraph text
     (save-excursion
