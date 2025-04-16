@@ -91,13 +91,14 @@ The %s will be replaced with the transcript text."
 
 (defun tlon-wait-until-forge-updates ()
   "Wait until Forge is finished updating the repo."
-  (let* ((get-last-updated (lambda () (oref (forge-get-repository :tracked?) updated)))
-	 (last-updated (funcall get-last-updated))
-	 (count 0))
-    (forge-pull)
-    (while (and (< count 25) (string= last-updated (funcall get-last-updated)))
-      (sleep-for 0.1)
-      (setq count (1+ count)))))
+  (when-let ((repo (forge-get-repository :tracked?)))
+    (let* ((get-last-updated (lambda () (oref repo updated)))
+           (last-updated (funcall get-last-updated))
+           (count 0))
+      (forge-pull)
+      (while (and (< count 25) (string= last-updated (funcall get-last-updated)))
+        (sleep-for 0.1)
+        (setq count (1+ count))))))
 
 ;; TODO: generate the next three functions with function
 ;;;###autoload
