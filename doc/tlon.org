@@ -3617,8 +3617,8 @@ This section details the interactive commands provided by =tlon-tts.el=.
 #+findex: tlon-tts-stage-content
 + ~tlon-tts-stage-content~ :: (Autoloaded) Prepares content for narration. Reads the content (from region, specified file, or current buffer), creates a dedicated staging buffer (e.g., =*TTS: filename*=), copies the content, sets up necessary file-local variables (source, language, engine, voice, etc.), and runs the preparation pipeline (~tlon-tts-prepare-staging-buffer~).
 
-#+findex: tlon-tts-narrate-staged-content
-+ ~tlon-tts-narrate-staged-content~ :: (Autoloaded) Narrates the content currently prepared in the staging buffer.
+#+findex: tlon-tts-narrate-staged-buffer
++ ~tlon-tts-narrate-staged-buffer~ :: (Autoloaded) Narrates the content currently prepared in the staging buffer.
   1. Ensures the current buffer is a staging buffer.
   2. Breaks the prepared text into chunks based on engine character limits and voice changes (~tlon-tts-prepare-chunks~).
   3. Iterates through the chunks, calling the appropriate engine's request function (~tlon-tts-generate-audio~) for each chunk, saving the audio to sequentially numbered files (e.g., =filename-001.mp3=).
@@ -3691,7 +3691,7 @@ The command ~tlon-tts-menu~ (Autoloaded) activates a =transient= menu interface 
 It provides the following groups and commands:
 + *Narration*:
   + =s= :: Stage content (~tlon-tts-stage-content~)
-  + =n= :: Narrate staged content (~tlon-tts-narrate-staged-content~)
+  + =n= :: Narrate staged content (~tlon-tts-narrate-staged-buffer~)
   + =e= :: Generate report (~tlon-tts-generate-report~)
   + *Narration options*: (These set the corresponding user options temporarily for the menu session)
     + =-a= :: Paragraph break duration (~tlon-tts-paragraph-break-duration-infix~)

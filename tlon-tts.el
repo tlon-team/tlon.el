@@ -1267,8 +1267,10 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 
 ;;;;; Narrate
 
+;;;;;; Buffer
+
 ;;;###autoload
-(defun tlon-tts-narrate-staged-content ()
+(defun tlon-tts-narrate-staged-buffer ()
   "Narrate the content staged in the current buffer."
   (interactive)
   (unless (tlon-tts-staging-buffer-p)
@@ -3444,7 +3446,7 @@ Reads audio format choices based on the currently selected engine."
   "`tts' menu."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
-    ("n" "Narrate staged"                          tlon-tts-narrate-staged-content)
+    ("n" "Narrate staged"                          tlon-tts-narrate-staged-buffer)
     ("g" "Regenerate paragraph at point"           tlon-tts-regenerate-paragraphs)
     ("e" "Generate report"                         tlon-tts-generate-report)
     ""
