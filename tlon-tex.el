@@ -408,6 +408,7 @@ and sets the value of the field for all entries to `Tlön'."
 
 ;;;;; Cleanup
 
+;;;###autoload
 (defun tlon-auto-clean-entry ()
   "Clean up bibtex entry at point upon saving."
   (when (or (derived-mode-p 'bibtex-mode)
