@@ -1310,8 +1310,9 @@ Returns a cons cell with the trimmed paragraph text and its bounds."
 PARAGRAPH-INDEX is used for logging and context, CHUNK-FILENAME is the output
 file, and VOICE-PARAMS are the specific voice parameters for this chunk."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
-         ;; Pass specific voice-params and paragraph-index (as chunk-index)
-         (request (funcall fun paragraph-text chunk-filename voice-params paragraph-index))
+         (chunk-index (1- paragraph-index)) ; Calculate the 0-based chunk index
+         ;; Pass the 0-based chunk-index to the request function
+         (request (funcall fun paragraph-text chunk-filename voice-params chunk-index))
          (process-name (format "regenerate audio %d" paragraph-index))
          (process (start-process-shell-command process-name nil request)))
 
