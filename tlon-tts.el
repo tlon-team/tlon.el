@@ -1369,7 +1369,7 @@ PARAGRAPH-INDEX is the 1-based index of the paragraph."
       (tlon-tts-handle-regeneration-result process paragraph-index chunk-filename))))
 
 ;;;###autoload
-(defun tlon-tts-regenerate-paragraph-at-point (&optional beg end)
+(defun tlon-tts-regenerate-paragraphs (&optional beg end)
   "Regenerate audio for paragraph(s) in the TTS staging buffer.
 If region is active, regenerate all paragraphs within the region (from BEG to
 END). Otherwise, regenerate the paragraph at point. This overwrites the
@@ -1380,7 +1380,6 @@ buffer's content."
                  (list nil nil)))
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
-
   (if (and beg end)
       ;; Region is active
       (save-excursion
@@ -3446,7 +3445,7 @@ Reads audio format choices based on the currently selected engine."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
     ("n" "Narrate staged"                          tlon-tts-narrate-staged-content)
-    ("g" "Regenerate paragraph at point"           tlon-tts-regenerate-paragraph-at-point)
+    ("g" "Regenerate paragraph at point"           tlon-tts-regenerate-paragraphs)
     ("e" "Generate report"                         tlon-tts-generate-report)
     ""
     "Narration options"
