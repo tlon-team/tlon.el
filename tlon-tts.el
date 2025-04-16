@@ -1389,7 +1389,7 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
       ;; Calculate the end position for the current chunk
       (let ((end (tlon-tts--calculate-chunk-end begin chunk-size next-voice-change-pos use-paragraph-chunks)))
 	;; Add the chunk if it's valid
-	(setq chunks (tlon-tts--add-chunk begin end current-voice chunks destination)) ; Pass destination
+	(setq chunks (tlon-tts--add-chunk begin end current-voice chunks destination use-paragraph-chunks)) ; Pass use-paragraph-chunks
 	;; --- Prepare for next iteration ---
 	;; Final safety check: If end <= begin here, force minimal progress.
 	(when (and (<= end begin) (< begin (point-max)))
