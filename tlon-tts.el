@@ -1272,6 +1272,62 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   "Return t iff the current buffer is a staging buffer."
   (bound-and-true-p tlon-tts-staging-buffer-p))
 
+(defun tlon-tts-get-paragraph-text-at-point ()
+  "Extract the text of the paragraph at point.
+Returns a cons cell with the trimmed paragraph text and its bounds."
+  (save-excursion
+    (let (start end)
+      (goto-char (point))
+      (backward-paragraph)
+      (setq start (point))
+      (forward-paragraph)
+      (setq end (point))
+      (let ((text (string-trim (buffer-substring-no-properties start end))))
+        (unless (and text (> (length text) 0))
+          (user-error "Paragraph at point seems empty"))
+        (cons text (cons start end))))))
+
+(defun tlon-tts-get-chunk-filename-for-paragraph (paragraph-index)
+  "Get the filename for the audio chunk of PARAGRAPH-INDEX."
+  (let ((final-filename-base (file-name-base tlon-tts-source))
+        (final-extension (cdr tlon-tts-audio)))
+    (file-name-concat default-directory
+                      (format "%s-%03d.%s"
+                              final-filename-base
+                              paragraph-index
+                              final-extension))))
+
+(defun tlon-tts-execute-regeneration-request (paragraph-index paragraph-text chunk-filename)
+  "Execute the TTS request to regenerate PARAGRAPH-TEXT.
+PARAGRAPH-INDEX is used for logging, and CHUNK-FILENAME is the output file."
+  (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
+         (request (funcall fun paragraph-text chunk-filename 
+                          `((tlon-tts-voice . ,tlon-tts-voice))))
+         (process-name (format "regenerate audio %d" paragraph-index))
+         (process (start-process-shell-command process-name nil request)))
+    
+    (message "Regenerating paragraph %d into %s..." 
+             paragraph-index (file-name-nondirectory chunk-filename))
+    
+    ;; Wait for completion
+    (while (process-live-p process) 
+      (accept-process-output process 0.1))
+    
+    ;; Return the process for status checking
+    process))
+
+(defun tlon-tts-handle-regeneration-result (process paragraph-index chunk-filename)
+  "Handle the result of the regeneration PROCESS.
+PARAGRAPH-INDEX and CHUNK-FILENAME are used for logging."
+  (if (= (process-exit-status process) 0)
+      (message "Paragraph %d regenerated successfully into %s." 
+               paragraph-index (file-name-nondirectory chunk-filename))
+    (message "Error regenerating paragraph %d. Check *Messages* buffer." paragraph-index)
+    (when-let ((err-buffer (process-buffer process)))
+      (with-current-buffer err-buffer
+        (message "Error output for paragraph %d regeneration:\n%s" 
+                 paragraph-index (buffer-string))))))
+
 ;;;###autoload
 (defun tlon-tts-regenerate-paragraph-at-point ()
   "Regenerate audio for the paragraph at point in the TTS staging buffer.
@@ -1281,57 +1337,18 @@ within the staging buffer's content."
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
 
-  (let* ((paragraph-index (tlon-tts--get-paragraph-index-at-point (point)))
-         ;; Declare other variables needed
-         chunk-filename paragraph-text start end fun request process
-         ;; Variables needed to construct chunk-filename directly
-         (final-filename-base (file-name-base tlon-tts-source))
-         (final-extension (cdr tlon-tts-audio)))
-
+  (let* ((paragraph-index (tlon-tts--get-paragraph-index-at-point (point))))
     ;; Ensure we have a valid paragraph index before proceeding
     (unless paragraph-index
       (user-error "Could not determine paragraph index at point"))
-
-    ;; Construct the chunk filename directly
-    (setq chunk-filename (file-name-concat default-directory
-                                         (format "%s-%03d.%s"
-                                                 final-filename-base
-                                                 paragraph-index
-                                                 final-extension)))
-
-    ;; Extract paragraph text
-    (save-excursion
-      (goto-char (point))
-      (backward-paragraph) ; Move to the beginning of the paragraph
-      (setq start (point))
-      (forward-paragraph)  ; Move to the end of the paragraph
-      (setq end (point))
-      ;; Basic trim, might need more sophisticated cleaning matching the main process
-      (setq paragraph-text (string-trim (buffer-substring-no-properties start end))))
-
-    (unless (and paragraph-text (> (length paragraph-text) 0))
-      (user-error "Paragraph at point seems empty"))
-
-    ;; Get engine-specific function and parameters from buffer-local vars
-    (setq fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
-    ;; Note: We pass nil for chunk-index to engine request funcs like elevenlabs
-    ;; to indicate single paragraph regeneration without context.
-    ;; We pass the buffer-local voice directly as a parameter override.
-    (setq request (funcall fun paragraph-text chunk-filename `((tlon-tts-voice . ,tlon-tts-voice))))
-
-    (message "Regenerating paragraph %d into %s..." paragraph-index (file-name-nondirectory chunk-filename))
-
-    ;; Execute the request (synchronously for simplicity, could be async)
-    ;; Using start-process for consistency, but could use shell-command-to-string
-    (setq process (start-process-shell-command (format "regenerate audio %d" paragraph-index) nil request))
-    (while (process-live-p process) (accept-process-output process 0.1)) ; Wait for completion
-
-    (if (= (process-exit-status process) 0)
-        (message "Paragraph %d regenerated successfully into %s." paragraph-index (file-name-nondirectory chunk-filename))
-      (message "Error regenerating paragraph %d. Check *Messages* buffer." paragraph-index)
-      (when-let ((err-buffer (process-buffer process)))
-        (with-current-buffer err-buffer
-          (message "Error output for paragraph %d regeneration:\n%s" paragraph-index (buffer-string)))))))
+    
+    (let* ((paragraph-data (tlon-tts-get-paragraph-text-at-point))
+           (paragraph-text (car paragraph-data))
+           (chunk-filename (tlon-tts-get-chunk-filename-for-paragraph paragraph-index))
+           (process (tlon-tts-execute-regeneration-request 
+                     paragraph-index paragraph-text chunk-filename)))
+      
+      (tlon-tts-handle-regeneration-result process paragraph-index chunk-filename))))
 
 ;;;;;; Prepare chunks
 
