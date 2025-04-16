@@ -1482,7 +1482,7 @@ determines the chunk numbering scheme."
       (when (and (not (string-empty-p trimmed-text))
                  (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
         (let* ((chunk-number (if use-paragraph-chunks
-                                 (or (tlon-tts--get-paragraph-index-at-pos begin)
+                                 (or (tlon-tts--get-paragraph-index-at-point begin)
                                      ;; Fallback if paragraph index fails (shouldn't happen)
                                      (1+ (length chunks)))
                                (1+ (length chunks)))) ; Sequential 1-based number otherwise
