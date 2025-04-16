@@ -1286,9 +1286,9 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 
 ;;;###autoload
 (defun tlon-tts-narrate-staged-paragraphs (&optional beg end)
-  "Regenerate audio for paragraph(s) in the TTS staging buffer.
-If region is active, regenerate all paragraphs within the region (from BEG to
-END). Otherwise, regenerate the paragraph at point. This overwrites the
+  "Generate audio for paragraph(s) in the TTS staging buffer.
+If region is active, generate all paragraphs within the region (from BEG to
+END). Otherwise, generate the paragraph at point. This overwrites the
 corresponding chunk file(s) based on the paragraph's index within the staging
 buffer's content."
   (interactive (if (region-active-p)
@@ -1300,42 +1300,42 @@ buffer's content."
       ;; Region is active
       (save-excursion
         (goto-char beg)
-        (let ((paragraphs-regenerated 0))
+        (let ((paragraphs-generated 0))
           (while (< (point) end)
             (let* ((current-pos (point))
                    (paragraph-index (tlon-tts--get-paragraph-index-at-point current-pos)))
               (when paragraph-index
-                (message "Regenerating paragraph %d (in region)..." paragraph-index)
-                (tlon-tts--regenerate-single-paragraph paragraph-index)
-                (setq paragraphs-regenerated (1+ paragraphs-regenerated)))
-              ;; Move to the start of the next paragraph to avoid regenerating the same one
+                (message "Generating paragraph %d (in region)..." paragraph-index)
+                (tlon-tts--generate-single-paragraph paragraph-index)
+                (setq paragraphs-generated (1+ paragraphs-generated)))
+              ;; Move to the start of the next paragraph to avoid generating the same one
               (condition-case nil
                   (forward-paragraph)
                 (error (goto-char (point-max)))) ; Go to end if error (e.g., at end of buffer)
               ;; Ensure progress if forward-paragraph didn't move
               (when (= (point) current-pos)
                 (forward-char 1))))
-          (unless (> paragraphs-regenerated 0)
+          (unless (> paragraphs-generated 0)
             (message "No paragraphs found within the selected region."))))
-    ;; No region active, regenerate paragraph at point
+    ;; No region active, generate paragraph at point
     (let ((paragraph-index (tlon-tts--get-paragraph-index-at-point (point))))
       (unless paragraph-index
         (user-error "Could not determine paragraph index at point"))
-      (message "Regenerating paragraph %d (at point)..." paragraph-index)
-      (tlon-tts--regenerate-single-paragraph paragraph-index))))
+      (message "Generating paragraph %d (at point)..." paragraph-index)
+      (tlon-tts--generate-single-paragraph paragraph-index))))
 
-(defun tlon-tts-execute-regeneration-request (paragraph-index paragraph-text chunk-filename voice-params)
-  "Execute the TTS request to regenerate PARAGRAPH-TEXT.
+(defun tlon-tts-execute-generation-request (paragraph-index paragraph-text chunk-filename voice-params)
+  "Execute the TTS request to generate PARAGRAPH-TEXT.
 PARAGRAPH-INDEX is used for logging and context, CHUNK-FILENAME is the output
 file, and VOICE-PARAMS are the specific voice parameters for this chunk."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
          (chunk-index (1- paragraph-index)) ; Calculate the 0-based chunk index
          ;; Pass the 0-based chunk-index to the request function
          (request (funcall fun paragraph-text chunk-filename voice-params chunk-index))
-         (process-name (format "regenerate audio %d" paragraph-index))
+         (process-name (format "generate audio %d" paragraph-index))
          (process (start-process-shell-command process-name nil request)))
 
-    (message "Regenerating paragraph %d with voice %s into %s..."
+    (message "Generating paragraph %d with voice %s into %s..."
              paragraph-index
              ;; Directly check the cons cell, don't use assoc
              (if (and (consp voice-params) (eq (car voice-params) 'tlon-tts-voice))
@@ -1348,20 +1348,20 @@ file, and VOICE-PARAMS are the specific voice parameters for this chunk."
     ;; Return the process for status checking
     process))
 
-(defun tlon-tts-handle-regeneration-result (process paragraph-index chunk-filename)
-  "Handle the result of the regeneration PROCESS.
+(defun tlon-tts-handle-generation-result (process paragraph-index chunk-filename)
+  "Handle the result of the generation PROCESS.
 PARAGRAPH-INDEX and CHUNK-FILENAME are used for logging."
   (if (= (process-exit-status process) 0)
-      (message "Paragraph %d regenerated successfully into %s."
+      (message "Paragraph %d generated successfully into %s."
                paragraph-index (file-name-nondirectory chunk-filename))
-    (message "Error regenerating paragraph %d. Check *Messages* buffer." paragraph-index)
+    (message "Error generating paragraph %d. Check *Messages* buffer." paragraph-index)
     (when-let ((err-buffer (process-buffer process)))
       (with-current-buffer err-buffer
-        (message "Error output for paragraph %d regeneration:\n%s"
+        (message "Error output for paragraph %d generation:\n%s"
                  paragraph-index (buffer-string))))))
 
-(defun tlon-tts--regenerate-single-paragraph (paragraph-index)
-  "Regenerate audio for the paragraph specified by PARAGRAPH-INDEX.
+(defun tlon-tts--generate-single-paragraph (paragraph-index)
+  "Generate audio for the paragraph specified by PARAGRAPH-INDEX.
 PARAGRAPH-INDEX is the 1-based index of the paragraph."
   ;; Ensure we have a valid paragraph index before proceeding
   (unless paragraph-index
@@ -1383,9 +1383,9 @@ PARAGRAPH-INDEX is the 1-based index of the paragraph."
       (user-error "Could not retrieve filename for paragraph index %d" paragraph-index))
 
     ;; Pass the specific voice-params to the execution function
-    (let ((process (tlon-tts-execute-regeneration-request
+    (let ((process (tlon-tts-execute-generation-request
                     paragraph-index paragraph-text chunk-filename voice-params)))
-      (tlon-tts-handle-regeneration-result process paragraph-index chunk-filename))))
+      (tlon-tts-handle-generation-result process paragraph-index chunk-filename))))
 
 ;;;;;; Prepare chunks
 
@@ -3423,8 +3423,8 @@ Reads audio format choices based on the currently selected engine."
   "`tts' menu."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
-    ("n" "Narrate staged"                          tlon-tts-narrate-staged-buffer)
-    ("g" "Regenerate paragraph at point"           tlon-tts-narrate-staged-paragraphs)
+    ("b" "Narrate buffer"                          tlon-tts-narrate-staged-buffer)
+    ("p" "Narrage paragraphs "                     tlon-tts-narrate-staged-paragraphs)
     ("e" "Generate report"                         tlon-tts-generate-report)
     ""
     "Narration options"
