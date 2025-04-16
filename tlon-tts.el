@@ -1282,15 +1282,22 @@ within the staging buffer's content."
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
 
   (let* ((paragraph-index (tlon-tts--get-paragraph-index-at-point (point)))
-         destination-base chunk-filename paragraph-text start end fun request process)
+         ;; Declare other variables needed
+         chunk-filename paragraph-text start end fun request process
+         ;; Variables needed to construct chunk-filename directly
+         (final-filename-base (file-name-base tlon-tts-source))
+         (final-extension (cdr tlon-tts-audio)))
 
     ;; Ensure we have a valid paragraph index before proceeding
     (unless paragraph-index
       (user-error "Could not determine paragraph index at point"))
 
-    ;; Now that we know paragraph-index is valid, calculate destination and chunk filename
-    (setq destination-base (tlon-tts-set-destination)) ; Get base filename like "my-article.mp3"
-    (setq chunk-filename (tlon-tts-get-chunk-name destination-base paragraph-index))
+    ;; Construct the chunk filename directly
+    (setq chunk-filename (file-name-concat default-directory
+                                         (format "%s-%03d.%s"
+                                                 final-filename-base
+                                                 paragraph-index
+                                                 final-extension)))
 
     ;; Extract paragraph text
     (save-excursion
@@ -2119,12 +2126,11 @@ the car is the name of the file-local variable the cdr is its overriding value."
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a list of cons cells with parameters to use when generating the
 audio. CHUNK-INDEX is the optional index of the current chunk (used for context)."
-  (let* (;; Ensure parameters is a list for assoc
-         (parameters-alist (if parameters (list parameters) nil))
+  (let* (;; Use parameters directly as the alist
          (vars (tlon-tts-get-file-local-or-override
                 '(tlon-tts-voice
                   tlon-tts-audio)
-                parameters-alist))
+                parameters)) ; Use parameters directly
          ;; Get context only if chunk-index is provided and paragraph chunking is active
          (use-context (and chunk-index (null tlon-elevenlabs-char-limit)))
          (before-text (when (and use-context (> chunk-index 0))
