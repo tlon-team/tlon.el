@@ -2094,12 +2094,11 @@ the response info."
              (plist-get state :source-buffer)
              (plist-get state :region-start)
              (plist-get state :region-end)))
-
-      (let ((unique-refs (delete-duplicates (mapcar #'car (plist-get state :reference-positions)) :test #'string=)))
+      (let ((unique-refs (cl-delete-duplicates
+			  (mapcar #'car (plist-get state :reference-positions)) :test #'string=)))
         (setf (plist-get state :unique-references) unique-refs)
         (setf (plist-get state :keys-to-fetch) (length unique-refs))
         (setf (plist-get state :key-map) (make-hash-table :test 'equal))
-
         (if (zerop (plist-get state :keys-to-fetch))
             (progn
               (message "No references found or positions located.")
