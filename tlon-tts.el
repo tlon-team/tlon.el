@@ -773,6 +773,17 @@ questions\").")
 
 ;;;;; `ffmpeg'
 
+(defconst tlon-tts-ffmpeg-normalize
+  "ffmpeg -i %s -af loudnorm=I=-16:TP=-1.5:LRA=11 -y %s"
+  "Command to normalize an audio file using ffmpeg loudnorm filter.
+-i: input file
+-af loudnorm: apply the loudness normalization filter
+  I=-16: Integrated loudness target (LUFS)
+  TP=-1.5: True peak target (dBTP)
+  LRA=11: Loudness range target (LU)
+-y: overwrite output file without asking
+First %s is input file, second %s is output file.")
+
 (defconst tlon-tts-ffmpeg-convert
   "ffmpeg -i \"%s\" -acodec libmp3lame -ar 44100 -b:a 128k -ac 1 \"%s\""
   "Command to convert an audio file to MP3 format with settings optimized for tts.
@@ -1576,6 +1587,46 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 			   list-of-files file)))
   (when (derived-mode-p 'dired-mode)
     (revert-buffer)))
+
+(defun tlon-tts-normalize-chunks (&optional file)
+  "Normalize the volume of audio chunks for FILE using ffmpeg loudnorm.
+If FILE is nil, use the file visited by the current buffer, the file at point in
+Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
+  (interactive)
+  (let* ((file (tlon-tts-set-chunk-file file))
+         (chunks (tlon-tts-get-list-of-chunks file))
+         (total-chunks (length chunks))
+         (processed-chunks 0)
+         (failed-chunks 0)
+         (start-time (current-time)))
+    (unless chunks
+      (user-error "No chunk files found for %s" file))
+    (message "Starting normalization for %d chunks of %s..." total-chunks (file-name-nondirectory file))
+    (dolist (chunk-file chunks)
+      (let* ((temp-output-file (make-temp-file "normalized_chunk_" nil ".mp3"))
+             (command (format tlon-tts-ffmpeg-normalize
+                              (shell-quote-argument chunk-file)
+                              (shell-quote-argument temp-output-file)))
+             (output (shell-command-to-string command)))
+        (if (or (string-match-p "Error" output)
+                (not (file-exists-p temp-output-file)))
+            (progn
+              (message "Error normalizing chunk %s: %s" (file-name-nondirectory chunk-file) output)
+              (when (file-exists-p temp-output-file) (delete-file temp-output-file))
+              (setq failed-chunks (1+ failed-chunks)))
+          (progn
+            ;; Replace original chunk with normalized version
+            (rename-file temp-output-file chunk-file t)
+            (setq processed-chunks (1+ processed-chunks))
+            (message "Normalized chunk %d/%d: %s" processed-chunks total-chunks (file-name-nondirectory chunk-file))))))
+    (let ((end-time (current-time))
+          (elapsed-time (time-subtract end-time start-time)))
+      (message "Normalization complete for %s in %s. Processed: %d, Failed: %d."
+               (file-name-nondirectory file)
+               (format-seconds "%Mm %Ss" (float-time elapsed-time))
+               processed-chunks failed-chunks))
+    (when (derived-mode-p 'dired-mode)
+      (revert-buffer))))
 
 (defun tlon-tts-get-list-of-chunks (file)
   "Return a list of the existing file chunks for FILE.
@@ -3228,6 +3279,7 @@ Reads audio format choices based on the currently selected engine."
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["File processing"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
+    ("N" "Normalize file chunks"                   tlon-tts-normalize-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
     ("x" "Truncate audio file"                     tlon-tts-truncate-audio-file)
     ""
