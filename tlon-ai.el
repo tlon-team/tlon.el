@@ -1992,7 +1992,12 @@ If nil, use the default model."
     ""
     "Propagation"
     ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
-    ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)]
+    ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)
+    ""
+    "Bibliography"
+    ("x" "Extract references from buffer/region" tlon-ai-extract-references)
+    ("k" "Get BibKeys for references (region)"   tlon-ai-get-bibkeys-from-references)
+    ("X" "Extract & Replace References (buffer)" tlon-ai-extract-and-replace-references)]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
@@ -2002,6 +2007,8 @@ If nil, use the default model."
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
+    ""
+    "General options"
     ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ""
@@ -2009,22 +2016,7 @@ If nil, use the default model."
     ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("s -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
-    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)]
-   ["Bibliography"
-    ("x" "Extract references from buffer/region" tlon-ai-extract-references)
-    ("k" "Get BibKeys for references (region)"   tlon-ai-get-bibkeys-from-references) ; Clarify it's region-based
-    ("X" "Extract & Replace References (buffer)" tlon-ai-extract-and-replace-references)] ; Add new command
-   ["Misc"
-    ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
-    ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
-    ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
-    ("r" "rewrite"                                    tlon-ai-rewrite)
-    ("l" "translate"                                  tlon-ai-translate)
-    ;; Create command to translate all images
-    ;; TODO: develop this
-    ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
-    ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
-    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)]])
+    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)]])
 
 ;;;;;; Extract and Replace Command
 
