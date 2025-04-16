@@ -398,6 +398,10 @@ and the third group captures the collection ID.")
     (:language "ja" :conjunct "と"))
   "List of language-specific conjunctions for text-to-speech processes.")
 
+(defconst tlon-numerals-sans-separator
+  "\\([ \\$£€][[:digit:]]\\{1,3\\}\\)\\([[:digit:]]\\{3\\}[\\.,:;!\\? ]\\)"
+  "Regular expression matching numerals without thousands separators.")
+
 ;;;;; To sort
 
 (defvar tlon-users

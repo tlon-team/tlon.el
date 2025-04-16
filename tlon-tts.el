@@ -2828,13 +2828,12 @@ processed."
 		      (thing-at-point-looking-at (tlon-md-get-tag-pattern "Cite"))))
 	  (throw 'found t))))))
 
-(defvar tlon-fix-numerals-sans-separator)
 (defun tlon-tts-get-numerals-sans-separator ()
   "Return it iff the current buffer has numerals without thousands separators.
 We need to use separators to get some TTS engines (such as Elevenlabs) to
 pronounce the numbers correctly. This requires manual processing since some
 numbers, such as years, should not be separated."
-  (tlon-tts-check-unprocessed tlon-fix-numerals-sans-separator))
+  (tlon-tts-check-unprocessed tlon-numerals-sans-separator))
 
 (defun tlon-tts-check-chemical-symols ()
   "Return t iff the current buffer appears to have unprocessed chemical symbols."

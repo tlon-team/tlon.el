@@ -146,10 +146,6 @@
     )
   "Alist of language codes and their corresponding fix variable.")
 
-(defconst tlon-fix-numerals-sans-separator
-  "\\([ \\$£€][[:digit:]]\\{1,3\\}\\)\\([[:digit:]]\\{3\\}[\\.,:;!\\? ]\\)"
-  "Regular expression matching numerals without thousands separators.")
-
 ;;;; Functions
 
 ;;;;; autofix
@@ -297,7 +293,7 @@ Unlike `tlon-autofix-replace-thousands-separators', which replaces an existing
 separator, this function adds a separator where it is missing, and has to be run
 manually because some numerals, such as dates, should not be separated."
   (interactive)
-  (tlon-manual-fix `(,tlon-fix-numerals-sans-separator)
+  (tlon-manual-fix `(,tlon-numerals-sans-separator)
 		   "\\1 \\2"))
 
 (defun tlon-manual-fix-narrow-spaces ()
