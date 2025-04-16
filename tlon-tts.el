@@ -1423,20 +1423,21 @@ Counts paragraphs from the start of narratable content in the current buffer."
     (goto-char (tlon-tts--get-content-start-pos))
     (let ((index 0)
           (content-end (point-max)) ; Assuming local vars are handled elsewhere or not present
-          found)
-      (while (and (not found) (< (point) content-end))
+          found-index) ; Store the index when found
+      (while (and (not found-index) (< (point) content-end)) ; Loop until found or end
         (let ((start (point)))
           (forward-paragraph) ; Use built-in paragraph motion
           (let ((end (point)))
-            ;; Check if the paragraph is non-empty and contains the target position
+            ;; Check if the paragraph is non-empty
             (when (and (> end start)
                        (string-match-p "\\S-" (buffer-substring-no-properties start end)))
-              (setq index (1+ index))
+              (setq index (1+ index)) ; Increment for each non-empty paragraph
+              ;; Check if the target position is within this paragraph
               (when (and (>= pos start) (< pos end))
-                (setq found t)))
+                (setq found-index index))) ; Store the index when found
             ;; Ensure progress even if forward-paragraph doesn't move
             (when (= end start) (forward-char 1))))))
-      (when found index))))
+      found-index))) ; Return the stored index (or nil if not found)
 
 (defun tlon-tts--determine-initial-voice (voice-chunk-list)
   "Determine the initial voice and the remaining VOICE-CHUNK-LIST.
