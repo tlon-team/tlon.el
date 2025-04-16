@@ -1036,12 +1036,20 @@ chunk and the cdr voice to be used to narrate this chunk.")
 (defvar tlon-tts-chunks nil
   "List of chunks to be narrated.
 Each element is a list: (TEXT VOICE-PARAMS FILENAME REQUEST-ID STATUS).
+
 - TEXT: The text content of the chunk.
+
 - VOICE-PARAMS: A cons cell like (tlon-tts-voice . VOICE-ID) or nil.
+
 - FILENAME: The path to the generated audio file for this chunk.
-- REQUEST-ID: The xi-request-id returned by ElevenLabs (nil otherwise/initially).
+
+- REQUEST-ID: The xi-request-id returned by ElevenLabs (nil
+  otherwise/initially).
+
 - STATUS: Processing status symbol ('pending, 'running, 'completed, 'failed).
-- HEADER-FILENAME: Path to the temporary file storing curl headers for this chunk.")
+
+- HEADER-FILENAME: Path to the temporary file storing curl headers for this
+  chunk.")
 
 (defvar tlon-tts-chunks-to-process 0
   "Number of chunks left to process.")
@@ -1301,18 +1309,16 @@ Returns a cons cell with the trimmed paragraph text and its bounds."
   "Execute the TTS request to regenerate PARAGRAPH-TEXT.
 PARAGRAPH-INDEX is used for logging, and CHUNK-FILENAME is the output file."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
-         (request (funcall fun paragraph-text chunk-filename 
-                          `((tlon-tts-voice . ,tlon-tts-voice))))
+         (request (funcall fun paragraph-text chunk-filename
+                           `((tlon-tts-voice . ,tlon-tts-voice))))
          (process-name (format "regenerate audio %d" paragraph-index))
          (process (start-process-shell-command process-name nil request)))
     
-    (message "Regenerating paragraph %d into %s..." 
+    (message "Regenerating paragraph %d into %s..."
              paragraph-index (file-name-nondirectory chunk-filename))
-    
     ;; Wait for completion
-    (while (process-live-p process) 
+    (while (process-live-p process)
       (accept-process-output process 0.1))
-    
     ;; Return the process for status checking
     process))
 
@@ -1320,12 +1326,12 @@ PARAGRAPH-INDEX is used for logging, and CHUNK-FILENAME is the output file."
   "Handle the result of the regeneration PROCESS.
 PARAGRAPH-INDEX and CHUNK-FILENAME are used for logging."
   (if (= (process-exit-status process) 0)
-      (message "Paragraph %d regenerated successfully into %s." 
+      (message "Paragraph %d regenerated successfully into %s."
                paragraph-index (file-name-nondirectory chunk-filename))
     (message "Error regenerating paragraph %d. Check *Messages* buffer." paragraph-index)
     (when-let ((err-buffer (process-buffer process)))
       (with-current-buffer err-buffer
-        (message "Error output for paragraph %d regeneration:\n%s" 
+        (message "Error output for paragraph %d regeneration:\n%s"
                  paragraph-index (buffer-string))))))
 
 ;;;###autoload
@@ -1345,7 +1351,7 @@ within the staging buffer's content."
     (let* ((paragraph-data (tlon-tts-get-paragraph-text-at-point))
            (paragraph-text (car paragraph-data))
            (chunk-filename (tlon-tts-get-chunk-filename-for-paragraph paragraph-index))
-           (process (tlon-tts-execute-regeneration-request 
+           (process (tlon-tts-execute-regeneration-request
                      paragraph-index paragraph-text chunk-filename)))
       
       (tlon-tts-handle-regeneration-result process paragraph-index chunk-filename))))
@@ -1560,7 +1566,8 @@ This is to prevent Elevenlabs from inserting weird audio artifacts."
 ;;;;;; Process chunks
 
 (defun tlon-tts-process-chunks ()
-  "Start processing the first chunk. Subsequent chunks are triggered by the sentinel."
+  "Start processing the first chunk.
+Subsequent chunks are triggered by the sentinel."
   (setq tlon-tts-chunks-to-process (length tlon-tts-chunks))
   (if (>= tlon-tts-chunks-to-process 1)
       (tlon-tts-generate-audio 0) ; Start with the first chunk (index 0)
@@ -1597,7 +1604,8 @@ Triggers the engine-specific request function and sets up the process sentinel."
   (shell-command (format "open %s" file)))
 
 (defun tlon-tts-process-chunk-sentinel (process event chunk-index)
-  "Process sentinel for TTS chunk generation at CHUNK-INDEX."
+  "Process sentinel for TTS chunk generation at CHUNK-INDEX.
+PROCESS is the process object, and EVENT is the event string."
   (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
          (file (nth 2 chunk-data))
          (header-file (nth 5 chunk-data))) ; Get header filename
@@ -1668,7 +1676,8 @@ Triggers the engine-specific request function and sets up the process sentinel."
    request-id)) ; Return the found ID or nil
 
 (defun tlon-tts-finish-processing (last-chunk-file)
-  "Final steps after all chunks are processed: append silence, join, delete, open."
+  "Finalalize process: append silence, join, delete, open.
+LAST-CHUNK-FILE is the last chunk file processed."
   (let ((file (tlon-tts-get-original-filename last-chunk-file))
         (dired-listing-switches "-alht")) ; Keep this local if only used here
     (message "All chunks processed. Finalizing...")
@@ -2142,7 +2151,8 @@ the car is the name of the file-local variable the cdr is its overriding value."
   "Make a request to the ElevenLabs text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a list of cons cells with parameters to use when generating the
-audio. CHUNK-INDEX is the optional index of the current chunk (used for context)."
+audio. CHUNK-INDEX is the optional index of the current chunk (used for
+context)."
   (let* (;; Use parameters directly as the alist
          (vars (tlon-tts-get-file-local-or-override
                 '(tlon-tts-voice
@@ -3160,7 +3170,7 @@ This removes the tag but stores its position and the associated voice ID
 (declare-function tlon-edit-json-mapping "tlon-core")
 ;;;###autoload
 (defun tlon-tts-edit-global-abbreviations ()
-  "Add or edit a global abbreviation in `tlon-file-global-abbreviations'."
+  "Add or edit a global abbreviation."
   (interactive)
   (tlon-edit-json-mapping tlon-file-global-abbreviations "Abbreviation: " "Spoken form: "))
 
@@ -3168,7 +3178,7 @@ This removes the tag but stores its position and the associated voice ID
 
 ;;;###autoload
 (defun tlon-tts-edit-global-phonetic-replacements ()
-  "Add or edit a global phonetic replacement in `tlon-file-global-phonetic-replacements'."
+  "Add or edit a global phonetic replacement."
   (interactive)
   (tlon-edit-json-mapping tlon-file-global-phonetic-replacements "Term to replace: " "Replacement: "))
 
@@ -3176,7 +3186,7 @@ This removes the tag but stores its position and the associated voice ID
 
 ;;;###autoload
 (defun tlon-tts-edit-global-phonetic-transcriptions ()
-  "Add or edit a global phonetic transcription in `tlon-file-global-phonetic-transcriptions'."
+  "Add or edit a global phonetic transcription."
   (interactive)
   (tlon-edit-json-mapping tlon-file-global-phonetic-transcriptions "Term to transcribe: " "IPA Transcription: "))
 
