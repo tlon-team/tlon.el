@@ -2836,7 +2836,9 @@ The report checks the content of the current staging buffer."
 	(insert (format "\n***En dashes***\n\nSearch for ‘–’")))
       (when numerals-sans-separator-p
 	(insert (format "\n***Numerals sans separator***\n\nRun ‘M-x tlon-manual-fix-add-thousands-separators’\n"))))
-    (switch-to-buffer report-buffer)
+    (if (= (buffer-size report-buffer) 0)
+	(kill-buffer report-buffer)
+      (switch-to-buffer report-buffer))
     (other-window 1)
     (switch-to-buffer staging-buffer)))
 
