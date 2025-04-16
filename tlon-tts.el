@@ -1618,15 +1618,16 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
             ;; Replace original chunk with normalized version
             (rename-file temp-output-file chunk-file t)
             (setq processed-chunks (1+ processed-chunks))
-            (message "Normalized chunk %d/%d: %s" processed-chunks total-chunks (file-name-nondirectory chunk-file))))))
-    (let ((end-time (current-time))
-          (elapsed-time (time-subtract end-time start-time)))
-      (message "Normalization complete for %s in %s. Processed: %d, Failed: %d."
-               (file-name-nondirectory file)
-               (format-seconds "%Mm %Ss" (float-time elapsed-time))
-               processed-chunks failed-chunks))
-    (when (derived-mode-p 'dired-mode)
-      (revert-buffer))))
+            (message "Normalized chunk %d/%d: %s" processed-chunks total-chunks (file-name-nondirectory chunk-file)))))))
+  ;; Moved the final message block outside the dolist loop
+  (let ((end-time (current-time))
+        (elapsed-time (time-subtract end-time start-time)))
+    (message "Normalization complete for %s in %s. Processed: %d, Failed: %d."
+             (file-name-nondirectory file)
+             (format-seconds "%Mm %Ss" (float-time elapsed-time))
+             processed-chunks failed-chunks))
+  (when (derived-mode-p 'dired-mode)
+    (revert-buffer)))
 
 (defun tlon-tts-get-list-of-chunks (file)
   "Return a list of the existing file chunks for FILE.
