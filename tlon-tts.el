@@ -1436,7 +1436,7 @@ Counts paragraphs from the start of narratable content in the current buffer."
               (when (and (>= pos start) (< pos end))
                 (setq found-index index))) ; Store the index when found
             ;; Ensure progress even if forward-paragraph doesn't move
-            (when (= end start) (forward-char 1))))))
+            (when (= end start) (forward-char 1)))))
       found-index))) ; Return the stored index (or nil if not found)
 
 (defun tlon-tts--determine-initial-voice (voice-chunk-list)
