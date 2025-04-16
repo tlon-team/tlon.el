@@ -6551,7 +6551,7 @@ File: tlon.info,  Node: Core Workflow,  Next: Audio File Management,  Up: Comman
      engine, voice, etc.), and runs the preparation pipeline
      (‘tlon-tts-prepare-staging-buffer’).
 
-‘tlon-tts-narrate-staged-content’
+‘tlon-tts-narrate-staged-buffer’
      (Autoloaded) Narrates the content currently prepared in the staging
      buffer.
        1. Ensures the current buffer is a staging buffer.
