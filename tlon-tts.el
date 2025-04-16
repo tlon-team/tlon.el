@@ -1285,7 +1285,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 ;;;;;; Paragraphs
 
 ;;;###autoload
-(defun tlon-tts-regenerate-paragraphs (&optional beg end)
+(defun tlon-tts-narrate-staged-paragraphs (&optional beg end)
   "Regenerate audio for paragraph(s) in the TTS staging buffer.
 If region is active, regenerate all paragraphs within the region (from BEG to
 END). Otherwise, regenerate the paragraph at point. This overwrites the
@@ -3424,7 +3424,7 @@ Reads audio format choices based on the currently selected engine."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
     ("n" "Narrate staged"                          tlon-tts-narrate-staged-buffer)
-    ("g" "Regenerate paragraph at point"           tlon-tts-regenerate-paragraphs)
+    ("g" "Regenerate paragraph at point"           tlon-tts-narrate-staged-paragraphs)
     ("e" "Generate report"                         tlon-tts-generate-report)
     ""
     "Narration options"
