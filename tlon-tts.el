@@ -1481,8 +1481,11 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
                 (setq chunk-counter (1+ chunk-counter)) ; Increment counter for valid chunk
                 (let* ((filename (tlon-tts-get-chunk-name destination chunk-counter)) ; Use counter for filename
                        (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
-                       ;; Add nil placeholder for header-filename
-                       (new-chunk (list trimmed-text voice-params filename nil 'pending nil))) ; text voice-params filename request-id status header-filename
+                       ;; Store original begin/end markers
+                       (begin-marker (copy-marker begin))
+                       (end-marker (copy-marker end))
+                       ;; text voice-params filename request-id status header-filename begin-marker end-marker
+                       (new-chunk (list trimmed-text voice-params filename nil 'pending nil begin-marker end-marker)))
                   (push new-chunk chunks)))))
           ;; --- Prepare for next iteration ---
           ;; Final safety check: If end <= begin here, force minimal progress.
@@ -1668,6 +1671,23 @@ PROCESS is the process object, and EVENT is the event string."
 
      (t ; Other events (e.g., signal)
       (message "Process %s (chunk %d): Event occurred - %s" (process-name process) chunk-index event)))))
+
+(defun tlon-tts--find-chunk-index-containing-point (point)
+  "Find the 0-based index of the chunk in `tlon-tts-chunks' containing POINT.
+POINT should be a position within the TTS staging buffer.
+Returns the index or nil if no chunk contains the point."
+  (let ((index 0)
+        found-index)
+    (dolist (chunk tlon-tts-chunks)
+      (when (not found-index) ; Stop searching once found
+        (let ((begin-marker (nth 6 chunk)) ; Get begin marker
+              (end-marker (nth 7 chunk)))   ; Get end marker
+          (when (and begin-marker end-marker
+                     (>= point (marker-position begin-marker))
+                     (< point (marker-position end-marker)))
+            (setq found-index index))))
+      (setq index (1+ index)))
+    found-index))
 
 (defun tlon-tts--parse-elevenlabs-request-id (output)
   "Parse the request-id header from curl OUTPUT by checking lines."
