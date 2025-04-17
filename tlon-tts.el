@@ -1689,6 +1689,15 @@ Returns the index or nil if no chunk contains the point."
       (setq index (1+ index)))
     found-index))
 
+(defun tlon-tts--get-chunk-number-from-filename (filename)
+  "Extract the chunk number (as integer) from FILENAME.
+Assumes filename format like 'base-name-001.mp3'. Returns nil if format doesn't match."
+  (when filename
+    (let ((base (file-name-nondirectory filename)))
+      ;; Match '-DDD.ext' at the end of the string
+      (when (string-match "-\\([0-9]+\\)\\.[^.]+\\'" base)
+        (string-to-number (match-string 1 base))))))
+
 (defun tlon-tts--parse-elevenlabs-request-id (output)
   "Parse the request-id header from curl OUTPUT by checking lines."
   (let (request-id found)
