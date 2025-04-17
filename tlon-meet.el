@@ -255,7 +255,7 @@ function tried to be a nudge in that direction."
 
 ;;;###autoload
 (defun tlon-meet-transcribe (audio-file &optional callback)
-  "transcribe AUDIO-FILE using whisperx.
+  "Transcribe AUDIO-FILE using whisperx.
 Run `whisperx' on the audio file with diarization enabled
 \\=(language hardcoded to \"es\"). Saves a [basename].txt file.
 If CALLBACK is provided, call it with the transcript file path on success."
@@ -312,8 +312,8 @@ If CALLBACK is provided, call it with the transcript file path on success."
 (defun tlon-meet-summarize-transcript (transcript-file)
   "Generate AI summary for TRANSCRIPT-FILE and save to meeting repo.
 Prompts for the meeting repository, reads the transcript, calls the AI,
-and saves the summary to 'meeting-summaries.org' and the transcript
-to 'YYYY-MM-DD-transcript.txt' in the selected repository."
+and saves the summary to \"meeting-summaries.org\" and the transcript
+to \"YYYY-MM-DD-transcript.txt\" in the selected repository."
   (interactive (list (tlon-meet--get-transcript-file)))
   (let* ((date (tlon-meet--get-date-from-filename transcript-file))
          (meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
@@ -395,7 +395,7 @@ Updates OUTPUT-BUFFER with progress messages."
 ;;;###autoload
 (defun tlon-meet-format-transcript (transcript-file participants)
   "Generate AI formatted version for TRANSCRIPT-FILE and save as Markdown.
-Reads the transcript, prompts for participants, calls the AI, and saves the
+Read the transcript, prompt for PARTICIPANTS, call the AI, and save the
 formatted result to a Markdown file (.md) with the same base name in the same
 directory."
   (interactive (list (tlon-meet--get-transcript-file)
