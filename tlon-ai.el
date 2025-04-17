@@ -1393,57 +1393,6 @@ If RESPONSE is nil, return INFO."
 	    (insert-file-contents file-name))))
       (write-file output-file))))
 
-;;;;; Get help
-
-(defvar elpaca-repos-directory)
-(defun tlon-ai-get-help ()
-  "Ask a question about the tlon repository using documentation files as context."
-  (interactive)
-  (tlon-warn-if-gptel-context)
-  (let* ((question (read-string "What do you need help with? "))
-         (all-doc-files (tlon-ai--get-documentation-files)) ; Call helper function
-         (existing-doc-files '())
-         (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
-         full-prompt)
-    (unless all-doc-files
-      (user-error "No documentation files found. Check `tlon-ai--get-documentation-files`"))
-    ;; Add all found documentation files to the context
-    (dolist (doc-file all-doc-files)
-      ;; directory-files returns full paths, so file-exists-p check is redundant
-      ;; but kept for safety in case the list is modified elsewhere.
-      (when (file-exists-p doc-file)
-        (message "Adding documentation file to context: %s" (file-name-nondirectory doc-file))
-        (gptel-context-add-file doc-file)
-        (push doc-file existing-doc-files)))
-    ;; Check if any files were actually added (existed)
-    (unless existing-doc-files
-      (user-error "Found documentation file entries, but none exist on disk"))
-    ;; Now format the prompt with the actual number of files added
-    (setq full-prompt (format prompt-template (length existing-doc-files) question))
-    (tlon-make-gptel-request full-prompt nil #'tlon-ai-get-help-callback nil 'no-context-check)
-    (message "Preparing your answer using %d documentation file(s)..." (length existing-doc-files))))
-
-(defun tlon-ai-get-help-callback (response info)
-  "Callback for `tlon-ai-get-help'.
-Displays the RESPONSE in a new buffer. If RESPONSE is nil, return INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((buffer-name (generate-new-buffer-name "*AI Repo Question Answer*"))
-           (buffer (get-buffer-create buffer-name)))
-      (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
-      (gptel-context-remove-all)))) ; Context removal remains the same
-
-(defun tlon-ai--get-documentation-files ()
-  "Return a list of full paths to .org documentation files."
-  (let* ((tlon-repo-dir (tlon-repo-lookup :dir :name "tlon.el"))
-	 (tlon-doc-dir (when tlon-repo-dir (file-name-concat tlon-repo-dir "doc/")))
-	 (extras-doc-dir (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/"))
-	 (tlon-org-files (when (and tlon-doc-dir (file-directory-p tlon-doc-dir))
-			   (directory-files tlon-doc-dir t "\\.org$")))
-	 (extras-org-files (when (file-directory-p extras-doc-dir)
-			     (directory-files extras-doc-dir t "\\.org$"))))
-    (append tlon-org-files extras-org-files)))
-
 ;;;;; Bibliography Extraction
 
 ;;;###autoload
