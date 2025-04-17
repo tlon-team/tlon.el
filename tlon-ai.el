@@ -1113,17 +1113,19 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
       (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
       (gptel-context-remove-all)))) ; Remove context after getting the answer
 
-(defun tlon-ai--get-documentation-files ()
+(defvar elpaca-repos-directory)
+(defun tlon-ai-get-documentation-files ()
   "Return a list of full paths to documentation files.
 Documentation files are `.org` files within the \"doc/\" subdirectories of the
 \"tlon\" and \"dotfiles/emacs/extras\" repositories managed by Elpaca."
   (let ((all-doc-files '())
-        (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
-                        (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
-        (doc-pattern "\\.org\\'"))
+        (doc-dirs (append (list (file-name-concat elpaca-repos-directory "tlon/doc/")
+				(file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/"))
+			  (tlon-lookup-all tlon-repos :dir :help t)))
+	(doc-pattern "\\.md\\|\\.org\\'"))
     (dolist (doc-dir doc-dirs)
       (when (file-directory-p doc-dir)
-        (setq all-doc-files (append all-doc-files
+	(setq all-doc-files (append all-doc-files
                                     (directory-files doc-dir t doc-pattern)))))
     (delete-dups all-doc-files)))
 

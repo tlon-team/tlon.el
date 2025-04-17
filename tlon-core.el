@@ -51,62 +51,71 @@
 	   :subproject "babel"
 	   :abbrev "babel-core"
 	   :type meta
-	   :key "b c")
+	   :key "b c"
+	   :help t)
     (:name "babel-refs"
 	   :project "babel"
 	   :subproject "babel"
 	   :abbrev "babel-refs"
 	   :type meta
 	   :subtype biblio
-	   :key "b r")
+	   :key "b r"
+	   :help t)
     (:name "babel-es"
 	   :project "babel"
 	   :subproject "babel"
 	   :abbrev "babel-es"
 	   :type meta
 	   :language "es"
-	   :key "b s")
+	   :key "b s"
+	   :help t)
     (:name "babel-fr"
 	   :project "babel"
 	   :subproject "babel"
 	   :abbrev "babel-fr"
 	   :type meta
 	   :language "fr"
-	   :key "b f")
+	   :key "b f"
+	   :help t)
     (:name "babel-it"
 	   :project "babel"
 	   :subproject "babel"
 	   :abbrev "babel-it"
 	   :type meta
 	   :language "it"
-	   :key "b t")
+	   :key "b t"
+	   :help t)
     (:name "babel-de"
 	   :project "babel"
 	   :subproject "babel"
 	   :abbrev "babel-de"
 	   :type meta
 	   :language "de"
-	   :key "b d")
+	   :key "b d"
+	   :help t)
     (:name "babel-issues"
 	   :project "babel"
 	   :subproject "babel"
 	   :abbrev "babel-issues"
 	   :type development
 	   :subtype issues
-	   :key "b i")
+	   :key "b i"
+	   :help t)
     (:name "uqbar"
 	   :project "babel"
 	   :subproject "uqbar"
 	   :abbrev "uqbar"
 	   :type development
-	   :key "q q")
+	   :key "q q"
+	   :help t)
     (:name "uqbar-audio"
 	   :project "babel"
 	   :subproject "uqbar"
 	   :abbrev "uqbar-audio"
 	   :type content
 	   :subtype audio
-	   :key "q d")
+	   :key "q d"
+	   :help t)
     (:name "uqbar-ar"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -115,7 +124,8 @@
 	   :subtype translations
 	   :language "ar"
 	   :key "q a"
-	   :url "")
+	   :url ""
+	   :help t)
     (:name "uqbar-en"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -123,7 +133,8 @@
 	   :type content
 	   :subtype originals
 	   :language "en"
-	   :key "q n")
+	   :key "q n"
+	   :help t)
     (:name "uqbar-es"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -132,7 +143,8 @@
 	   :subtype translations
 	   :language "es"
 	   :key "q s"
-	   :url "https://altruismoeficaz.net/")
+	   :url "https://altruismoeficaz.net/"
+	   :help t)
     (:name "uqbar-fr"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -141,7 +153,8 @@
 	   :subtype translations
 	   :language "fr"
 	   :key "q f"
-	   :url "")
+	   :url ""
+	   :help t)
     (:name "uqbar-it"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -150,7 +163,8 @@
 	   :subtype translations
 	   :language "it"
 	   :key "q t"
-	   :url "")
+	   :url ""
+	   :help t)
     (:name "uqbar-ko"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -159,7 +173,8 @@
 	   :subtype translations
 	   :language "ko"
 	   :key "q k"
-	   :url "")
+	   :url ""
+	   :help t)
     (:name "uqbar-ja"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -168,18 +183,21 @@
 	   :subtype translations
 	   :language "ja"
 	   :key "q j"
-	   :url "")
+	   :url ""
+	   :help t)
     (:name "web-server"
 	   :project "tlon"
 	   :abbrev "web-server"
-	   :type development)
+	   :type development
+	   :help t)
     (:name "utilitarianism-en"
 	   :project "babel"
 	   :subproject "utilitarianism"
 	   :abbrev "utilitarianism-en"
 	   :type content
 	   :subtype originals
-	   :key "u n")
+	   :key "u n"
+	   :help t)
     (:name "utilitarianism-es"
 	   :project "babel"
 	   :subproject "utilitarianism"
@@ -188,56 +206,65 @@
 	   :subtype translations
 	   :language "es"
 	   :key "u s"
-	   :url "https://utilitarismo.net/")
+	   :url "https://utilitarismo.net/"
+	   :help t)
     (:name "ea.news"
 	   :project "other"
 	   :subproject "ea.news"
 	   :abbrev "ean"
 	   :type development
 	   :subtype issues
-	   :key "n n")
+	   :key "n n"
+	   :help t)
     (:name "ea.international"
 	   :project "other"
 	   :subproject "ea.international"
 	   :abbrev "ea-international"
 	   :type meta
-	   :key "i")
+	   :key "i"
+	   :help t)
     (:name "80k-podcast"
 	   :project "other"
 	   :subproject "80k-podcast"
 	   :abbrev "80k-podcast"
 	   :type content
-	   :key "i")
+	   :key "i"
+	   :help t)
     (:name "aea"
 	   :project "other"
 	   :subproject "aea"
 	   :abbrev "aea"
 	   :type development
-	   :key "r c")
+	   :key "r c"
+	   :help t)
     (:name "aea-content"
 	   :project "other"
 	   :subproject "aea"
 	   :abbrev "aea-content"
 	   :type content
-	   :key "r c")
+	   :key "r c"
+	   :help t)
     (:name "bisagra"
 	   :project "other"
 	   :subproject "bisagra"
 	   :abbrev "bisagra"
 	   :type development
-	   :key "s s")
+	   :key "s s"
+	   :help t)
     (:name "bisagra-content"
 	   :project "other"
 	   :subproject "bisagra"
 	   :abbrev "bisagra-content"
 	   :type content
-	   :key "s c")
+	   :key "s c"
+	   :help t)
     (:name "boletin"
 	   :project "other"
 	   :subproject "boletin"
 	   :abbrev "boletin"
 	   :type misc
-	   :key "a")
+	   :key "a"
+	   :help t)
     (:name "meetings-leo-pablo"
 	   :abbrev "meetings-leo-pablo"
 	   :subtype meetings
@@ -267,15 +294,18 @@
 	   :project "other"
 	   :subproject "docs"
 	   :abbrev "docs"
-	   :type docs)
+	   :type docs
+	   :help t)
     (:name "tlon"
 	   :project "tlon"
 	   :abbrev "tlon"
-	   :type development)
+	   :type development
+	   :help t)
     (:name "tlon-content"
 	   :project "tlon"
 	   :abbrev "tlon-content"
-	   :type content)
+	   :type content
+	   :help t)
     (:name "tlon.el"
 	   :project "tlon"
 	   :abbrev "tlon.el"
@@ -304,7 +334,10 @@
   "List of repos and associated properties.
 The `:name' property is the full name of the repo, as it appears in the URL. The
 `:abbrev' property is an abbreviated form of the name, used, for example, for
-creating `org-mode' TODOs.")
+creating `org-mode' TODOs.
+
+If `:help' is non-nil, include this repo in the list of directories scanned by
+`tlon-ai-get-documentation-files'.")
 
 (defcustom tlon-email-shared
   "tlon.shared@gmail.com"
