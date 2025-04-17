@@ -1439,10 +1439,11 @@ If CHUNK-SIZE is nil (specifically for ElevenLabs paragraph mode), each
 paragraph becomes a separate chunk, breaking before voice changes.
 
 Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
-  (goto-char (point-min))
-  (let* ((begin (point))
-	 (voice-chunk-list tlon-tts-voice-chunks)
-	 (use-paragraph-chunks (null chunk-size))
+  (save-excursion ; <-- Wrap body to preserve point
+    (goto-char (point-min))
+    (let* ((begin (point))
+           (voice-chunk-list tlon-tts-voice-chunks)
+           (use-paragraph-chunks (null chunk-size))
 	 chunks current-voice next-voice-change-pos next-voice-id
 	 ;; Determine initial voice and update voice-chunk-list
 	 (initial-state (tlon-tts--determine-initial-voice voice-chunk-list)))
@@ -1468,7 +1469,7 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
 	(let ((new-voice-state (tlon-tts--update-voice-state begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)))
 	  (setq current-voice (car new-voice-state)
 		voice-chunk-list (cdr new-voice-state)))))
-    (nreverse chunks)))
+      (nreverse chunks)))) ; <-- Close save-excursion
 
 ;;;;;; Chunking Helpers
 
