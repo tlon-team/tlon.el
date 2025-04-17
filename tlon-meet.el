@@ -393,15 +393,16 @@ Updates OUTPUT-BUFFER with progress messages."
 
 ;;;###autoload
 (defun tlon-meet-format-transcript (transcript-file)
-  "Generate AI formatted version for TRANSCRIPT-FILE and display in a new buffer.
-Reads the transcript, calls the AI, and displays the formatted result."
+  "Generate AI formatted version for TRANSCRIPT-FILE and save as Markdown.
+Reads the transcript, calls the AI, and saves the formatted result to a
+Markdown file (.md) with the same base name in the same directory."
   (interactive (list (tlon-meet--get-transcript-file)))
   (message "Formatting transcript: %s..." transcript-file)
-  (tlon-meet--generate-and-display-formatted-transcript transcript-file))
+  (tlon-meet--generate-and-save-formatted-transcript-md transcript-file))
 
-(defun tlon-meet--generate-and-display-formatted-transcript (transcript-file)
-  "Helper to generate formatted transcript and display it.
-Reads TRANSCRIPT-FILE, calls AI, and displays the result in a new buffer."
+(defun tlon-meet--generate-and-save-formatted-transcript-md (transcript-file)
+  "Helper to generate formatted transcript and save it as Markdown.
+Reads TRANSCRIPT-FILE, calls AI, and saves the result to a .md file."
   (with-temp-buffer
     (insert-file-contents transcript-file)
     (let ((transcript-content (buffer-string)))
@@ -411,13 +412,11 @@ Reads TRANSCRIPT-FILE, calls AI, and displays the result in a new buffer."
        nil ; No extra string needed
        (lambda (response info)
          (if response
-             (let ((output-buffer (get-buffer-create "*Formatted Transcript*")))
-               (with-current-buffer output-buffer
-                 (erase-buffer)
+             (let ((output-file (concat (file-name-sans-extension transcript-file) ".md")))
+               (with-temp-buffer
                  (insert response)
-                 (goto-char (point-min)))
-               (display-buffer output-buffer)
-               (message "Formatted transcript displayed in %s" (buffer-name output-buffer)))
+                 (write-region (point-min) (point-max) output-file))
+               (message "Formatted transcript saved to: %s" output-file))
            (message "Error formatting transcript: %s" (plist-get info :status))))))))
 
 ;;;###autoload
