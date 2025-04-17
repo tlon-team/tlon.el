@@ -1407,6 +1407,16 @@ PARAGRAPH-INDEX is the 1-based index of the paragraph."
                     paragraph-index chunk-index paragraph-text chunk-filename voice-params)))
       (tlon-tts-handle-generation-result process paragraph-index chunk-filename))))
 
+(defun tlon-tts-get-voice-friendly-name (voice-id)
+  "Return the friendly name for VOICE-ID for the current engine.
+If VOICE-ID is nil or not found, return \"default\"."
+  (if voice-id
+      (let* ((voices-var (tlon-lookup tlon-tts-engines :voices-var :name tlon-tts-engine))
+             (voices (when voices-var (symbol-value voices-var)))
+             (name (tlon-lookup voices :name :id voice-id)))
+        (or name voice-id "default")) ; Fallback to ID if name not found, then default
+    "default"))
+
 ;;;;;; Prepare chunks
 
 (defun tlon-tts-prepare-chunks ()
