@@ -254,12 +254,15 @@ function tried to be a nudge in that direction."
       (format-time-string "%Y-%m-%d")))
 
 ;;;###autoload
-(defun tlon-meet-transcribe (audio-file &optional callback)
-  "Transcribe AUDIO-FILE using whisperx.
-Run `whisperx' on the audio file with diarization enabled
-\\=(language hardcoded to \"es\"). Saves a [basename].txt file.
-If CALLBACK is provided, call it with the transcript file path on success."
-  (interactive (list (tlon-meet--get-audio-file)))
+(defun tlon-meet-transcribe (audio-file participants &optional callback)
+  "Transcribe AUDIO-FILE using whisperx and format the result.
+Prompts for PARTICIPANTS. Runs `whisperx' on the audio file with diarization
+enabled (language hardcoded to \"es\"). Saves a [basename].txt file.
+Then, calls `tlon-meet-format-transcript' to generate a formatted Markdown file.
+If CALLBACK is provided, call it with the transcript file path after initiating
+formatting."
+  (interactive (list (tlon-meet--get-audio-file)
+                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
   (let* ((audio-filename (file-name-nondirectory audio-file))
          ;; whisperx outputs [basename].txt by default
          (transcript-file (concat (file-name-sans-extension audio-file) ".txt"))
@@ -298,8 +301,11 @@ If CALLBACK is provided, call it with the transcript file path on success."
                (progn
                  (with-current-buffer output-buffer
                    (goto-char (point-max))
-                   (insert (format "Transcript file found: %s.\n" transcript-file)))
-                 ;; Call the callback if provided
+                   (insert (format "Transcript file found: %s. Starting formatting...\n" transcript-file)))
+                 ;; Call the formatting function
+                 (tlon-meet-format-transcript transcript-file participants)
+                 ;; Call the original callback if provided (e.g., for summarization)
+                 ;; This happens *after* formatting starts, but might finish before formatting does.
                  (when callback
                    (funcall callback transcript-file)))
              (with-current-buffer output-buffer
@@ -392,14 +398,11 @@ Updates OUTPUT-BUFFER with progress messages."
         (insert (format "Summary file: %s\n" summary-file))
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
-;;;###autoload
 (defun tlon-meet-format-transcript (transcript-file participants)
-  "Generate AI formatted version for TRANSCRIPT-FILE and save as Markdown.
-Read the transcript, prompt for PARTICIPANTS, call the AI, and save the
-formatted result to a Markdown file (.md) with the same base name in the same
-directory."
-  (interactive (list (tlon-meet--get-transcript-file)
-                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
+  "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS and save as Markdown.
+Reads the transcript, calls the AI with PARTICIPANTS, and saves the formatted
+result to a Markdown file (.md) with the same base name in the same directory.
+This function is intended to be called programmatically."
   (message "Formatting transcript: %s..." transcript-file)
   (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants))
 
@@ -425,15 +428,17 @@ to a .md file."
            (message "Error formatting transcript: %s" (plist-get info :status))))))))
 
 ;;;###autoload
-(defun tlon-meet-transcribe-and-summarize (audio-file)
-  "Transcribe AUDIO-FILE using whisperx and then create an AI summary.
-Runs `tlon-meet-transcribe' and, upon success, automatically runs
+(defun tlon-meet-transcribe-and-summarize (audio-file participants)
+  "Transcribe AUDIO-FILE, format it, and then create an AI summary.
+Prompts for PARTICIPANTS. Runs `tlon-meet-transcribe' (which handles both
+transcription and formatting) and, upon success, automatically runs
 `tlon-meet-summarize-transcript' on the resulting transcript file."
-  (interactive (list (tlon-meet--get-audio-file)))
-  (tlon-meet-transcribe audio-file
-			;; Callback function to run on successful diarization
+  (interactive (list (tlon-meet--get-audio-file)
+                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
+  (tlon-meet-transcribe audio-file participants
+			;; Callback function to run after transcription and formatting start
 			(lambda (transcript-file)
-			  (message "Diarization successful. Starting summarization for %s" transcript-file)
+			  (message "Transcription successful. Starting summarization for %s" transcript-file)
 			  ;; Call summarize non-interactively
 			  (tlon-meet-summarize-transcript transcript-file))))
 
@@ -462,10 +467,10 @@ MEETING-REPOS is a list of meeting repository directories."
    ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)]
   ["Processing"
    ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
-   ("t"   "transcribe audio"           tlon-meet-transcribe)
-   ("o"   "format transcript"          tlon-meet-format-transcript)
+   ("t"   "transcribe & format"        tlon-meet-transcribe) ; Now includes formatting
+   ("o"   "format transcript only"     tlon-meet-format-transcript-command) ; Standalone formatting
    ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
-   ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)])
+   ("a"   "transcribe, format & summarize" tlon-meet-transcribe-and-summarize)]) ; Now includes formatting
 
 (provide 'tlon-meet)
 ;;; tlon-meet.el ends here
