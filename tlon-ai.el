@@ -1401,22 +1401,37 @@ If RESPONSE is nil, return INFO."
   (interactive)
   (tlon-warn-if-gptel-context)
   (let* ((question (read-string "What do you need help with? "))
-         (tlon-doc-file (file-name-concat (tlon-repo-lookup :dir :name "tlon.el") "doc/tlon.org"))
+         ;; Define documentation directories
+         (tlon-repo-dir (tlon-repo-lookup :dir :name "tlon.el"))
+         (tlon-doc-dir (when tlon-repo-dir (file-name-concat tlon-repo-dir "doc/")))
          (extras-doc-dir (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/"))
-         (extras-doc-files (when (file-directory-p extras-doc-dir)
+         ;; Collect .org files from specified directories
+         (tlon-org-files (when (and tlon-doc-dir (file-directory-p tlon-doc-dir))
+                           (directory-files tlon-doc-dir t "\\.org$")))
+         (extras-org-files (when (file-directory-p extras-doc-dir)
                              (directory-files extras-doc-dir t "\\.org$")))
-         (all-doc-files (cons tlon-doc-file (or extras-doc-files '())))
+         (all-doc-files (append tlon-org-files extras-org-files))
          (existing-doc-files '())
          (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
          full-prompt)
-    (unless (file-exists-p tlon-doc-file)
-      (user-error "Main documentation file not found: %s" tlon-doc-file))
+
+    ;; Check if any documentation files were found
+    (unless all-doc-files
+      (user-error "No documentation files found in %s or %s" tlon-doc-dir extras-doc-dir))
+
     ;; Add all found documentation files to the context
     (dolist (doc-file all-doc-files)
+      ;; directory-files returns full paths, so file-exists-p check is redundant
+      ;; but kept for safety in case the list is modified elsewhere.
       (when (file-exists-p doc-file)
         (message "Adding documentation file to context: %s" (file-name-nondirectory doc-file))
         (gptel-context-add-file doc-file)
-        (push doc-file existing-doc-files))) ; Add to list of existing files
+        (push doc-file existing-doc-files)))
+
+    ;; Check if any files were actually added (existed)
+    (unless existing-doc-files
+      (user-error "Found documentation file entries, but none exist on disk."))
+
     ;; Now format the prompt with the actual number of files added
     (setq full-prompt (format prompt-template (length existing-doc-files) question))
     (tlon-make-gptel-request full-prompt nil #'tlon-ai-get-help-callback nil 'no-context-check)
