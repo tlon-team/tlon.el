@@ -243,9 +243,10 @@ function tried to be a nudge in that direction."
                        (_ default-directory))))
     (read-file-name "Select audio file: " default-dir)))
 
-(defun tlon-meet--get-transcript-file ()
-  "Prompt user for a transcript file."
-  (read-file-name "Select transcript file: " paths-dir-downloads nil t ".txt"))
+(defun tlon-meet--get-transcript-file (&optional extension)
+  "Prompt user for a transcript file.
+Default EXTENSION is \".md\"."
+  (read-file-name "Select transcript file: " paths-dir-downloads nil t (or extension ".md")))
 
 (defun tlon-meet--get-date-from-filename (filename)
   "Extract date (YYYY-MM-DD) from FILENAME or return current date."
@@ -304,10 +305,14 @@ formatting."
                    (insert (format "Transcript file found: %s. Starting formatting...\n" transcript-file)))
                  ;; Call the formatting function
                  (tlon-meet-format-transcript transcript-file participants)
+                 ;; Call the formatting function
+                 (tlon-meet-format-transcript transcript-file participants)
                  ;; Call the original callback if provided (e.g., for summarization)
-                 ;; This happens *after* formatting starts, but might finish before formatting does.
+                 ;; Pass the expected *output* path of the formatted transcript (.md)
                  (when callback
-                   (funcall callback transcript-file)))
+                   (let ((formatted-transcript-file (concat (file-name-sans-extension transcript-file) ".md")))
+                     (funcall callback formatted-transcript-file)))
+                 )
              (with-current-buffer output-buffer
                (goto-char (point-max))
                (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
@@ -316,14 +321,15 @@ formatting."
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
-  "Generate AI summary for TRANSCRIPT-FILE and save to meeting repo.
+  "Generate AI summary for formatted TRANSCRIPT-FILE (.md) and save to meeting repo.
 If PARTICIPANTS (list of nicknames) are provided (e.g., when called from
 `tlon-meet-transcribe-and-summarize'), determine the repository automatically.
 Otherwise, prompt the user to select the meeting repository.
-Reads the transcript, calls the AI, and saves the summary to
-\"meeting-summaries.org\" and the transcript to \"YYYY-MM-DD-transcript.txt\"
-in the determined repository."
-  (interactive (list (tlon-meet--get-transcript-file) nil)) ; Pass nil for participants when called interactively
+Reads the formatted Markdown transcript, calls the AI, and saves the summary to
+\"meeting-summaries.org\" and copies the transcript to
+\"YYYY-MM-DD-transcript.md\" in the determined repository."
+  ;; Prompt for .md file when called interactively
+  (interactive (list (tlon-meet--get-transcript-file ".md") nil))
   (let* ((date (tlon-meet--get-date-from-filename transcript-file))
          (repo (if participants
                    (let* ((full-names (mapcar (lambda (nick) (tlon-user-lookup :name :nickname nick)) participants))
@@ -352,33 +358,36 @@ in the determined repository."
       (insert (format "Target Repository: %s\n" repo)))
     (tlon-meet--generate-and-save-summary transcript-file date repo output-buffer)))
 
-(defun tlon-meet--generate-and-save-summary (transcript-file date repo output-buffer)
+(defun tlon-meet--generate-and-save-summary (transcript-md-file date repo output-buffer)
   "Helper to generate summary and save files.
-Reads TRANSCRIPT-FILE, calls AI, saves summary and transcript to REPO
+Reads TRANSCRIPT-MD-FILE, calls AI, saves summary and copies transcript to REPO
 for meeting on DATE. Updates OUTPUT-BUFFER."
   (with-temp-buffer
-    (insert-file-contents transcript-file)
+    (insert-file-contents transcript-md-file) ; Read the .md file
     (let ((transcript-content (buffer-string)))
       ;; Use AI to generate summary
       (with-current-buffer output-buffer
         (goto-char (point-max))
-        (insert "Reading transcript and generating AI summary...\n"))
+        (insert "Reading formatted transcript and generating AI summary...\n"))
       (tlon-make-gptel-request
-       (format tlon-meet-summarize-transcript-prompt transcript-content) ; Pass transcript directly
-       nil ; No extra string needed if included in prompt
+       (format tlon-meet-summarize-transcript-prompt transcript-content) ; Pass transcript content
+       nil ; No extra string needed
        (lambda (response info)
          (if response
-             (tlon-meet--save-summary-and-transcript response transcript-content date repo output-buffer)
+             ;; Pass the *input* transcript file path to the save function
+             (tlon-meet--save-summary-and-transcript response transcript-md-file date repo output-buffer)
            (with-current-buffer output-buffer
              (goto-char (point-max))
              (insert (format "\nError generating summary: %s\n"
                              (plist-get info :status))))))))))
 
-(defun tlon-meet--save-summary-and-transcript (summary transcript-content date repo output-buffer)
-  "Save SUMMARY and TRANSCRIPT-CONTENT for meeting on DATE to REPO.
-Updates OUTPUT-BUFFER with progress messages."
+(defun tlon-meet--save-summary-and-transcript (summary input-transcript-file date repo output-buffer)
+  "Save SUMMARY and copy INPUT-TRANSCRIPT-FILE for meeting on DATE to REPO.
+Updates OUTPUT-BUFFER with progress messages. INPUT-TRANSCRIPT-FILE should be
+the formatted Markdown (.md) file."
   (let* ((summary-file (expand-file-name "meeting-summaries.org" repo))
-         (repo-transcript-file (expand-file-name (format "%s-transcript.txt" date) repo)))
+         ;; Save the transcript in the repo with a .md extension
+         (repo-transcript-file (expand-file-name (format "%s-transcript.md" date) repo)))
     (with-current-buffer output-buffer
       (goto-char (point-max))
       (insert (format "\nSaving summary to %s\n" summary-file))
@@ -396,12 +405,10 @@ Updates OUTPUT-BUFFER with progress messages."
       ;; Add a section for this meeting
       (insert (format "\n* Meeting on %s\n\n" date))
       (insert summary)
-      ;; Save the file
+      ;; Save the summary file
       (write-region (point-min) (point-max) summary-file))
-    ;; Save the transcript file to the repo
-    (with-temp-buffer
-      (insert transcript-content)
-      (write-region (point-min) (point-max) repo-transcript-file))
+    ;; Copy the input (formatted) transcript file to the repo
+    (copy-file input-transcript-file repo-transcript-file t) ; t = overwrite if exists
     ;; Commit the changes
     (let ((default-directory repo))
       (with-current-buffer output-buffer
@@ -410,10 +417,10 @@ Updates OUTPUT-BUFFER with progress messages."
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory summary-file))
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory repo-transcript-file))
       (call-process "git" nil output-buffer t "commit" "-m"
-                    (format "Add AI-generated summary and transcript for meeting on %s" date))
+                    (format "Add AI summary and formatted transcript for meeting on %s" date))
       (with-current-buffer output-buffer
         (goto-char (point-max))
-        (insert "\nSummary and transcript added successfully!\n")
+        (insert "\nSummary and formatted transcript added successfully!\n")
         (insert (format "Summary file: %s\n" summary-file))
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
@@ -457,17 +464,18 @@ to a .md file."
 ;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file participants)
   "Transcribe AUDIO-FILE, format it, and then create an AI summary.
-Prompts for PARTICIPANTS. Runs `tlon-meet-transcribe' (which handles both
-transcription and formatting) and, upon success, automatically runs
-`tlon-meet-summarize-transcript' on the resulting transcript file."
+Prompts for PARTICIPANTS. Runs `tlon-meet-transcribe' (which handles
+transcription via whisperx and formatting via AI) and, upon success,
+automatically runs `tlon-meet-summarize-transcript' on the resulting
+formatted Markdown (.md) transcript file."
   (interactive (list (tlon-meet--get-audio-file)
                      (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
   (tlon-meet-transcribe audio-file participants
 			;; Callback function to run after transcription and formatting start
-			(lambda (transcript-file)
-			  (message "Transcription successful. Starting summarization for %s" transcript-file)
-			  ;; Call summarize non-interactively, passing participants
-			  (tlon-meet-summarize-transcript transcript-file participants))))
+			(lambda (formatted-transcript-file) ; Receives the .md path
+			  (message "Transcription/Formatting started. Starting summarization for %s" formatted-transcript-file)
+			  ;; Call summarize non-interactively with the .md file and participants
+			  (tlon-meet-summarize-transcript formatted-transcript-file participants))))
 
 ;;;;; Menu
 
