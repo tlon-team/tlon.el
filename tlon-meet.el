@@ -393,7 +393,7 @@ Updates OUTPUT-BUFFER with progress messages."
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
 ;;;###autoload
-(defun tlon-meet-format-transcript (transcript-file)
+(defun tlon-meet-format-transcript (transcript-file participants)
   "Generate AI formatted version for TRANSCRIPT-FILE and save as Markdown.
 Reads the transcript, prompts for participants, calls the AI, and saves the
 formatted result to a Markdown file (.md) with the same base name in the same
