@@ -260,7 +260,7 @@ If CALLBACK is provided, call it with the transcript file path on success."
          (buffer (get-buffer-create "*Diarization Output*"))
          (process-name "whisperx-diarize-process")
          (hf-token (auth-source-pass-get "whisperX" (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL"))))
-         (whisperx-command (list "whisperx" audio-file
+         (whisperx-command (list "whisperx" (expand-file-name audio-file)
                                  "--diarize"
                                  "--language" "es"
                                  "--hf_token" hf-token)))
