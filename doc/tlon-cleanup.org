@@ -14,15 +14,120 @@
 :CUSTOM_ID: h:tlon-cleanup
 :END:
 
-This module provides functions for cleaning up temporary files, states, or configurations related to the Tlön project and associated tools like the Effective Altruism Forum (EAF).
+This module provides functions for cleaning up Markdown buffers after importing content, particularly from external sources like the Effective Altruism Forum (EAF) or via Pandoc conversion. It handles common formatting issues, escaping/unescaping characters, fixing footnote syntax, removing unwanted elements, and consolidating footnotes.
 
-** Commands and Functions
+** Common Cleanup Functions
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-cleanup-commands
+:CUSTOM_ID: h:tlon-cleanup-common-funcs
 :END:
 
+These functions perform general cleanup tasks applicable to most imported Markdown documents, often run together by ~tlon-cleanup-common~.
+
 #+findex: tlon-cleanup-common
-+ ~tlon-cleanup-common~ :: Performs common cleanup tasks relevant to the Tlön workflow. The specific actions (e.g., deleting temporary files, resetting variables) need to be determined from the function's implementation.
++ ~tlon-cleanup-common~ :: Runs a sequence of common cleanup functions on the current buffer. This is typically called after importing content. The sequence includes:
+  - ~tlon-cleanup-unescape-chars~
+  - ~tlon-cleanup-unescape-lines~
+  - ~tlon-cleanup-remove-linebreaks~
+  - ~tlon-cleanup-convert-hyphens~
+  - ~tlon-cleanup-format-heading~
+  - ~tlon-cleanup-set-heading-levels~
+  - ~tlon-cleanup-remove-double-brackets~
+  - ~tlon-cleanup-remove-nonbreaking-spaces~
+  - ~tlon-cleanup-remove-span-elements~
+  Finally, it fills the entire buffer content to the maximum width using `fill-region`.
+
+#+findex: tlon-cleanup-unescape-chars
++ ~tlon-cleanup-unescape-chars~ :: Unescapes specific characters in the current buffer that Pandoc or other tools might unnecessarily escape during conversion. It targets characters like `.`, `[`, `]`, `$` that should not be escaped, and also removes unnecessary escapes before characters like `@`, `"`, `'`, `|`, `>`, `<`, `~`.
+
+#+findex: tlon-cleanup-unescape-lines
++ ~tlon-cleanup-unescape-lines~ :: Removes escaping from consecutive empty lines. Specifically, it replaces occurrences of `\\\n\\\n` with `\n\n`.
+
+#+findex: tlon-cleanup-remove-linebreaks
++ ~tlon-cleanup-remove-linebreaks~ :: Reduces excessive consecutive line breaks in the current buffer, ensuring that no more than two consecutive newlines exist by replacing `\n\n\n` with `\n\n`.
+
+#+findex: tlon-cleanup-format-heading
++ ~tlon-cleanup-format-heading~ :: Removes bold markup (`**`) from within Markdown headings (lines starting with `#` characters). It searches for `^#+ \*\*.*\*\*$` and removes the asterisks around the heading text.
+
+#+findex: tlon-cleanup-convert-hyphens
++ ~tlon-cleanup-convert-hyphens~ :: Converts double (`--`) and triple (`---`) hyphens into typographical en (`–`) and em (`—`) dashes, respectively, throughout the current buffer.
+
+#+findex: tlon-cleanup-set-heading-levels
++ ~tlon-cleanup-set-heading-levels~ :: Adjusts heading levels in the current buffer to ensure a consistent structure, typically starting from level 2 (`##`).
+  - If a level 1 heading (`# `) exists, all headings (`^#+`) are demoted by one level (e.g., `#` becomes `##`, `##` becomes `###`).
+  - If there are no level 2 headings (`## `) but there are level 3 or higher headings, all headings starting from level 3 (`^###+`) are promoted by one level repeatedly until at least one level 2 heading exists.
+
+#+findex: tlon-cleanup-remove-double-brackets
++ ~tlon-cleanup-remove-double-brackets~ :: Removes instances of literal double square brackets (`[[` or `]]`) which might occur as artifacts from conversion processes (e.g., from wiki links).
+
+#+findex: tlon-cleanup-remove-nonbreaking-spaces
++ ~tlon-cleanup-remove-nonbreaking-spaces~ :: Removes specific non-breaking spaces (U+00A0) that might appear incorrectly after periods followed by a space or opening bracket.
+
+#+findex: tlon-cleanup-remove-span-elements
++ ~tlon-cleanup-remove-span-elements~ :: Removes empty Pandoc-style span elements (`{.*?}`) which often contain attributes but no content and are usually unnecessary artifacts.
+
+** EA Forum Specific Cleanup
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-cleanup-eaf-funcs
+:END:
+
+These functions target cleanup tasks specific to content imported from the Effective Altruism Forum, often run together by ~tlon-cleanup-eaf~.
 
 #+findex: tlon-cleanup-eaf
-+ ~tlon-cleanup-eaf~ :: Performs cleanup tasks specifically related to interactions with the Effective Altruism Forum (EAF), such as clearing cached data or temporary files generated during EAF imports (~tlon-import.el~).
++ ~tlon-cleanup-eaf~ :: Runs a sequence of cleanup functions specifically designed for EAF content after initial common cleanup. The sequence is:
+  - ~tlon-cleanup-eaf-replace-urls~
+  - ~tlon-cleanup-fix-footnotes~
+  - ~tlon-cleanup-fix-footnote-references~
+  - ~tlon-cleanup-remove-text~
+
+#+findex: tlon-cleanup-eaf-replace-urls
++ ~tlon-cleanup-eaf-replace-urls~ :: Replaces various forms of EA Forum post URLs found in the buffer (including those within collections or with comment IDs) with their canonical format: `https://forum.effectivealtruism.org/posts/POST_ID(/COMMENT_ID)`. It uses the regexps defined in `tlon-core.el` (~tlon-eaf-url-post-canonical~, ~tlon-eaf-url-post-collection~).
+
+#+findex: tlon-cleanup-eaf-replace-urls-in-repo
++ ~tlon-cleanup-eaf-replace-urls-in-repo~ :: Applies ~tlon-cleanup-eaf-replace-urls~ to all Markdown files (`.md`) found recursively within the current Tlön repository. This is intended for occasional maintenance to ensure URL consistency across the repository.
+
+#+findex: tlon-cleanup-fix-footnotes
++ ~tlon-cleanup-fix-footnotes~ :: Converts EAF-style footnote markers (e.g., `^\[\[1\]\](#fn...) {rev="footnote"}^`) into standard Markdown footnote references (e.g., `[^1]`). It extracts the footnote number (1-3 digits).
+
+#+findex: tlon-cleanup-fix-footnote-references
++ ~tlon-cleanup-fix-footnote-references~ :: Converts EAF-style footnote definitions (e.g., `1. Footnote text [↩︎](#fnref-...)`) into standard Markdown footnote definitions (e.g., `[^1]: Footnote text`). It extracts the number and the footnote text.
+
+#+findex: tlon-cleanup-remove-text
++ ~tlon-cleanup-remove-text~ :: Removes various EAF-specific text fragments and markup artifacts from the buffer, including:
+  - Footnote container markers (`::: footnotes`, `::: {.section .footnotes}`, ` {rev="footnote"} :::`, ` :::`)
+  - Backreference links (`[↩︎](#fnref-...)`, `[↩]`)
+  - Licensing text (`*This work is licensed...*`)
+  - Horizontal separators (`————————————————————————`)
+
+** Footnote Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-cleanup-footnote-manage
+:END:
+
+These functions provide tools for managing and restructuring footnotes within Markdown documents.
+
+#+findex: tlon-cleanup-split-footnotes-into-paragraphs
++ ~tlon-cleanup-split-footnotes-into-paragraphs~ :: Ensures each footnote definition (`[^N]:`) starts on a new paragraph by inserting double newlines before it if needed.
+
+#+findex: tlon-cleanup-consolidate-all-footnotes
++ ~tlon-cleanup-consolidate-all-footnotes~ :: Iterates through all Markdown files (`.md`) in a specified directory DIR and applies ~tlon-cleanup-consolidate-footnotes~ to each file, saving the changes.
+
+#+findex: tlon-cleanup-consolidate-footnotes
++ ~tlon-cleanup-consolidate-footnotes~ :: Finds consecutive footnote references (e.g., `[^1][^2]`) in the buffer. For each pair found:
+  - It retrieves the content of both footnotes using ~tlon-cleanup-get-footnote~ (deleting the original definitions).
+  - It merges the content, consolidating any BibTeX keys using ~tlon-cleanup-consolidate-bibtex-keys~.
+  - It inserts a new footnote using `markdown-insert-footnote` with the merged content.
+  - It replaces the original consecutive references with the single new reference.
+  This process is repeated until no more consecutive footnotes are found.
+
+#+findex: tlon-cleanup-get-footnote
++ ~tlon-cleanup-get-footnote~ :: Retrieves the content of the footnote definition corresponding to number N.
+  - Searches for `[^N]: `.
+  - Extracts the text from that point until the next footnote definition or the end of the buffer.
+  - If DELETE is non-nil, it also removes the footnote definition using ~tlon-cleanup-delete-footnote~.
+  - Returns the extracted footnote content string.
+
+#+findex: tlon-cleanup-delete-footnote
++ ~tlon-cleanup-delete-footnote~ :: Deletes the entire definition block for footnote number N (from `[^N]: ` to the start of the next footnote or end of buffer).
+
+#+findex: tlon-cleanup-consolidate-bibtex-keys
++ ~tlon-cleanup-consolidate-bibtex-keys~ :: Takes a STRING (typically merged footnote content) containing multiple BibTeX citations (e.g., `[@key1]...[@key2]`) and consolidates them into a single citation block using semicolons as separators (e.g., `[@key1; @key2]`). It extracts all `@...` parts within square brackets.
