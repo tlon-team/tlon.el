@@ -1,0 +1,228 @@
+#+title: tlon - DeepL Integration
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* DeepL Integration (=tlon-deepl.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl
+:END:
+
+This module provides functions for interacting with the DeepL API, enabling text translation and management of DeepL glossaries. It relies on an API key stored securely via =auth-source=.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-dependencies
+:END:
+
++ =tlon-glossary=
++ =tlon-core=
++ =url=
++ =auth-source= (for API key retrieval)
++ =transient= (for the menu)
++ =ediff= (for ~tlon-deepl-diff~)
+
+** Configuration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-config
+:END:
+
+*** API Key and URL
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-api-config
+:END:
+#+vindex: tlon-deepl-key
++ ~tlon-deepl-key~ :: The DeepL API key, retrieved from =auth-source= using the entry =tlon/babel/deepl.com/[WORK_EMAIL]=.
+#+vindex: tlon-deepl-url-prefix
++ ~tlon-deepl-url-prefix~ :: The base URL for all DeepL API v2 calls (=https://api.deepl.com/v2/=).
+
+*** API Call Parameters
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-parameters
+:END:
+#+vindex: tlon-deepl-parameters
++ ~tlon-deepl-parameters~ :: An alist defining the specifics for each supported DeepL API call (translate, glossary creation, retrieval, deletion). Each entry maps an API call symbol (e.g., =translate=) to a list containing:
+  1. HTTP Method ("GET", "POST", "DELETE")
+  2. URL Suffix (string or function to generate the specific endpoint)
+  3. Default Callback Function (symbol)
+  4. Optional Encoding Function (symbol, for POST requests)
+
+*** Supported Glossary Languages
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-supported-glossary-languages
+:END:
+#+vindex: tlon-deepl-supported-glossary-languages
++ ~tlon-deepl-supported-glossary-languages~ :: A list of language codes for which DeepL currently supports glossaries.
+
+*** Internal State Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-state-vars
+:END:
+These variables store temporary state during API requests.
+#+vindex: tlon-deepl-glossaries
++ ~tlon-deepl-glossaries~ :: A list holding the glossary data retrieved from the DeepL API via ~tlon-deepl-get-glossaries~. Initialized to nil and populated by the callback.
+#+vindex: tlon-deepl-source-language
++ ~tlon-deepl-source-language~ :: Stores the source language code for the current translation request.
+#+vindex: tlon-deepl-target-language
++ ~tlon-deepl-target-language~ :: Stores the target language code for the current translation or glossary creation request.
+#+vindex: tlon-deepl-text
++ ~tlon-deepl-text~ :: Stores the text to be translated in the current request.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-commands
+:END:
+
+This section details the interactive commands provided by =tlon-deepl.el=.
+
+*** Translation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-translation-commands
+:END:
+
+#+findex: tlon-deepl-translate
++ ~tlon-deepl-translate~ :: Translates text using the DeepL API.
+  1. Prompts for source language (defaulting to "en") using ~tlon-select-language~.
+  2. Prompts for target language using ~tlon-select-language~ (excluding the source language).
+  3. Prompts for the text to translate, defaulting to the active region or the word at point.
+  4. Sets the internal state variables (~tlon-deepl-text~, ~tlon-deepl-source-language~, ~tlon-deepl-target-language~).
+  5. Calls ~tlon-deepl-request-wrapper~ with the =translate= type.
+  6. Uses a default callback that prints the translation and copies it to the kill ring (~tlon-deepl-print-translation 'copy~). Allows specifying a custom =CALLBACK=.
+  7. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
+
+#+findex: tlon-deepl-translate-abstract
++ ~tlon-deepl-translate-abstract~ :: Translates the =abstract= field of a BibTeX entry into all ~tlon-project-target-languages~.
+  1. Determines the BibTeX =KEY= (from Ebib or BibTeX mode, or argument).
+  2. Extracts the =abstract= text from the current buffer or BibTeX entry.
+  3. Determines the =SOURCE-LANG= from the entry's =langid= field.
+  4. If interactive or confirmed by the user, iterates through ~tlon-project-target-languages~:
+     - Skips translation if target language is the same as source.
+     - Calls ~tlon-deepl-translate~ with the abstract text, target language, source language, and a specific callback (~tlon-translate-abstract-callback~) to update the BibTeX entry directly. Passes =no-glossary-ok= to avoid prompts.
+
+*** Glossaries
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-glossary-commands
+:END:
+
+#+findex: tlon-deepl-select-glossary
++ ~tlon-deepl-select-glossary~ :: Interactively selects a DeepL glossary from the locally cached list (~tlon-deepl-glossaries~). Uses ~completing-read~ with formatted glossary names (generated by ~tlon-deepl-get-list-of-glossaries~). Returns the selected glossary ID.
+
+#+findex: tlon-deepl-get-glossaries
++ ~tlon-deepl-get-glossaries~ :: Retrieves the list of available glossaries from the DeepL API. Calls ~tlon-deepl-request-wrapper~ with the =glossary-get= type. The callback (~tlon-deepl-glossary-get-callback~) updates the ~tlon-deepl-glossaries~ variable. This command is also called automatically after glossary creation or deletion, and on module load.
+
+#+findex: tlon-deepl-glossary-create
++ ~tlon-deepl-glossary-create~ :: Creates a new DeepL glossary for a specified language.
+  1. Prompts for the target =LANGUAGE= using ~tlon-select-language~.
+  2. Extracts the glossary data for that language into the appropriate format (TSV for DeepL API) using ~tlon-extract-glossary~.
+  3. Sets the internal ~tlon-deepl-target-language~ variable.
+  4. Calls ~tlon-deepl-request-wrapper~ with the =glossary-create= type. The callback (~tlon-deepl-glossary-create-callback~) refreshes the local glossary list and messages the API response.
+
+#+findex: tlon-deepl-glossary-delete
++ ~tlon-deepl-glossary-delete~ :: Deletes a DeepL glossary.
+  1. Calls ~tlon-deepl-request-wrapper~ with the =glossary-delete= type.
+  2. The URL formatter (~tlon-deepl-glossary-delete-formatter~) prompts the user to select the glossary to delete using ~tlon-deepl-select-glossary~ and constructs the specific API endpoint URL.
+  3. The callback (~tlon-deepl-glossary-delete-callback~) refreshes the local glossary list and messages confirmation.
+
+*** Utility Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-utility-commands
+:END:
+
+#+findex: tlon-deepl-diff
++ ~tlon-deepl-diff~ :: Runs an =ediff= session to compare a local translation file with its corresponding DeepL-generated translation file. Prompts for the DeepL file path if not provided. Defaults to the current buffer's file for the local translation.
+
+#+findex: tlon-deepl-fix-encoding-persistent
++ ~tlon-deepl-fix-encoding-persistent~ :: Attempts to fix common UTF-8 misinterpretation issues (where UTF-8 bytes are treated as ISO-8859-1) within the current buffer (must be BibTeX or JSON mode). Performs a series of search-and-replace operations based on a predefined list of common misinterpretations.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-menu
+:END:
+#+findex: tlon-deepl-menu
+The command ~tlon-deepl-menu~ activates a =transient= menu interface for DeepL operations.
+
+It provides the following groups and commands:
++ *Translate*:
+  + =t= :: Translate text (~tlon-deepl-translate~)
+  + =a= :: Translate abstract (~tlon-deepl-translate-abstract~)
++ *Glossaries*:
+  + =l= :: List/Select glossary (~tlon-deepl-select-glossary~)
+  + =g= :: Retrieve glossaries from API (~tlon-deepl-get-glossaries~)
+  + =c= :: Create glossary (~tlon-deepl-glossary-create~)
+  + =d= :: Delete glossary (~tlon-deepl-glossary-delete~)
++ *Other*:
+  + =e= :: Ediff translations (~tlon-deepl-diff~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-internals
+:END:
+
+This section lists non-interactive functions and variables used internally or potentially useful for advanced customization.
+
+*** API Request Handling
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-api-internals
+:END:
+
+#+findex: tlon-deepl-request-wrapper
++ ~tlon-deepl-request-wrapper~ :: The core function for making DeepL API calls. Takes the API call =TYPE=, an optional =CALLBACK= function, and an optional =NO-GLOSSARY-OK= flag.
+  1. Retrieves parameters (method, URL suffix/function, default callback, encoding function) from ~tlon-deepl-parameters~ based on =TYPE=.
+  2. Constructs the full API =URL=.
+  3. If an encoding function exists, calls it to generate the JSON =PAYLOAD= (passing =NO-GLOSSARY-OK=). Writes the payload to a temporary file.
+  4. Builds the =curl= command string including method, URL, headers (Content-Type, Authorization with ~tlon-deepl-key~), and payload data if applicable.
+  5. Executes the =curl= command using =shell-command-to-string= to get the =RESPONSE=.
+  6. Deletes the temporary payload file if created.
+  7. Inserts the response into a temporary buffer, positions point at the start of the JSON/list, and calls the specified =CALLBACK= function.
+
+*** Callbacks
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-callbacks
+:END:
+
+#+findex: tlon-deepl-print-translation
++ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response, extracts the translated text, decodes it as UTF-8, and either messages it or copies it to the kill ring if =COPY= is non-nil.
+
+#+findex: tlon-deepl-glossary-create-callback
++ ~tlon-deepl-glossary-create-callback~ :: Callback for glossary creation. Resets ~tlon-deepl-target-language~, refreshes the local glossary list using ~tlon-deepl-get-glossaries~, and messages the API response.
+
+#+findex: tlon-deepl-glossary-get-callback
++ ~tlon-deepl-glossary-get-callback~ :: Callback for glossary retrieval. Parses the JSON response and updates the ~tlon-deepl-glossaries~ variable. Messages confirmation.
+
+#+findex: tlon-deepl-glossary-delete-callback
++ ~tlon-deepl-glossary-delete-callback~ :: Callback for glossary deletion. Refreshes the local glossary list using ~tlon-deepl-get-glossaries~ and messages confirmation.
+
+*** Payload Encoders & Formatters
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-encoders
+:END:
+
+#+findex: tlon-deepl-translate-encode
++ ~tlon-deepl-translate-encode~ :: Generates the JSON payload for a translation request. Includes the text (as a vector), source language, target language, and the relevant glossary ID (retrieved via ~tlon-deepl-get-language-glossary~). Handles the =NO-GLOSSARY-OK= logic and potential user abortion if no glossary is found and confirmation is denied.
+
+#+findex: tlon-deepl-glossary-create-encode
++ ~tlon-deepl-glossary-create-encode~ :: Generates the JSON payload for creating a glossary. Determines the glossary file path (~tlon-glossary-make-file~), reads its content (UTF-8 encoded TSV), and includes the glossary name, source language ("en"), target language, entries, and format ("tsv") in the JSON object.
+
+#+findex: tlon-deepl-glossary-delete-formatter
++ ~tlon-deepl-glossary-delete-formatter~ :: Function used by ~tlon-deepl-request-wrapper~ to generate the specific URL for deleting a glossary. It calls ~tlon-deepl-select-glossary~ to get the ID and appends it to the base glossaries endpoint.
+
+*** Helper Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-helpers
+:END:
+
+#+findex: tlon-deepl-get-list-of-glossaries
++ ~tlon-deepl-get-list-of-glossaries~ :: Formats the data in ~tlon-deepl-glossaries~ into a list of strings suitable for display in ~completing-read~ (used by ~tlon-deepl-select-glossary~). Each string includes name, languages, entry count, and ID. Returns a cons cell =(DISPLAY-STRING . ID)=.
+
+#+findex: tlon-deepl-get-language-glossary
++ ~tlon-deepl-get-language-glossary~ :: Finds the glossary ID for a specific target =LANGUAGE= from the cached ~tlon-deepl-glossaries~ list. Returns nil if the source language is not "en" (as current glossaries are EN -> X). Uses ~tlon-lookup~.
+
+#+findex: tlon-deepl-fix-encoding
++ ~tlon-deepl-fix-encoding~ :: Corrects a specific encoding misinterpretation where a UTF-8 string is read as ISO-8859-1. Takes the misencoded =STRING=, re-encodes it as ISO-8859-1, and then decodes it correctly as UTF-8.

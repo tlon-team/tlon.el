@@ -1,0 +1,129 @@
+#+title: tlon - Split Window Alignment
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* Split Window Alignment (=tlon-split.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split
+:END:
+
+This module provides a minor mode, ~tlon-split-mode~, designed to facilitate working with two vertically split windows, typically containing an original document and its translation. Its primary function is to automatically align the content (specifically paragraphs) between the two windows as the user navigates the source window.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-dependencies
+:END:
+
++ =tlon-counterpart=
++ =tlon-md=
++ =transient=
+
+** User Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-options
+:END:
+
+#+vindex: tlon-split-screen-line-threshold
++ ~tlon-split-screen-line-threshold~ :: An integer specifying the minimum number of screen lines the cursor must be below the start of the buffer content for automatic paragraph alignment (~tlon-split-autoalign-paragraphs~) to activate. This prevents alignment attempts when near the top of the buffer where paragraph counting might be less reliable or meaningful. Defaults to 60.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-commands
+:END:
+
+*** Toggle Split Mode
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-mode-cmd
+:END:
+#+findex: tlon-split-mode
+The command ~tlon-split-mode~ toggles the minor mode on or off in the current buffer. When enabled, it activates the automatic paragraph alignment behavior via the `post-command-hook`.
+
+*** Manual Alignment
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-manual-align-cmds
+:END:
+
+#+findex: tlon-split-align-screen-lines
++ ~tlon-split-align-screen-lines~ :: Manually aligns the other window so that its cursor is on the same screen line number as the cursor in the current window. Scrolls the other window up or down as needed.
+
+#+findex: tlon-split-align-paragraphs
++ ~tlon-split-align-paragraphs~ :: Manually aligns the other window based on paragraph count. It calculates the paragraph number the cursor is currently in within the source window (using ~tlon-get-number-of-paragraphs~) and scrolls the other window so that the corresponding paragraph is visible and roughly aligned (using ~recenter~ and ~scroll-down~).
+
+#+findex: tlon-split-align-sentences
++ ~tlon-split-align-sentences~ :: (TODO) Intended to align windows based on sentence count, assuming paragraphs are already aligned. Currently not implemented.
+
+*** Reset Split Mode Hook
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-mode-reset-cmd
+:END:
+#+findex: tlon-split-mode-reset
+The command ~tlon-split-mode-reset~ removes and re-adds the ~tlon-split-autoalign-paragraphs~ function to the `post-command-hook`. This can be useful if the hook's behavior seems incorrect or needs refreshing.
+
+*** Sentence Highlighting (Experimental/Unused)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-highlight-cmds
+:END:
+These commands relate to an experimental feature for highlighting corresponding sentences between windows, which is currently not actively used or fully developed.
+
+#+findex: tlon-highlight-corresponding-sentence
++ ~tlon-highlight-corresponding-sentence~ :: Highlights the sentence in the source window that corresponds (based on sentence count and offset) to the sentence at point in the target window.
+#+findex: tlon-sentence-highlight-offset-set
++ ~tlon-sentence-highlight-offset-set~ :: Calculates and sets the sentence offset (~tlon-sentence-highlight-offset~) between the source and target windows based on the current cursor positions.
+#+findex: tlon-toggle-automatic-highlighting
++ ~tlon-toggle-automatic-highlighting~ :: Toggles the automatic highlighting behavior by adding/removing ~tlon-highlight-corresponding-sentence~ from the `post-command-hook`.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-menu-cmd
+:END:
+#+findex: tlon-split-menu
+The command ~tlon-split-menu~ activates a =transient= menu interface for split mode operations.
+
+It provides the following options under the "Split mode" group:
++ =s= :: Toggle split mode (~tlon-split-mode~)
++ =h= :: Highlight corresponding sentence (~tlon-highlight-corresponding-sentence~)
++ =o= :: Set sentence offset (~tlon-sentence-highlight-offset-set~)
++ =r= :: Reset split mode hook (~tlon-split-mode-reset~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-internals
+:END:
+
+This section lists non-interactive functions and variables used internally.
+
+*** State Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-state-vars
+:END:
+#+vindex: tlon-split-last-screen-line-pos
++ ~tlon-split-last-screen-line-pos~ :: Stores the screen line number of the cursor's last known position. Used by ~tlon-split-screen-line-changed-p~ to detect movement.
+#+vindex: tlon-sentence-highlight-offset
++ ~tlon-sentence-highlight-offset~ :: Stores the calculated sentence offset for the experimental highlighting feature.
+#+vindex: tlon-enable-automatic-highlighting
++ ~tlon-enable-automatic-highlighting~ :: Boolean flag controlling the experimental automatic sentence highlighting.
+
+*** Helper Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-split-helpers
+:END:
+#+findex: tlon-split-screen-line-changed-p
++ ~tlon-split-screen-line-changed-p~ :: Returns non-nil if the cursor has moved to a different screen line since the last check. Updates ~tlon-split-last-screen-line-pos~.
+#+findex: tlon-split-top-of-buffer-visible-p
++ ~tlon-split-top-of-buffer-visible-p~ :: (Unused) Checks if the beginning of the buffer content (after metadata) is visible in the current window.
+#+findex: tlon-split-screen-line-offset
++ ~tlon-split-screen-line-offset~ :: Calculates the difference in screen line numbers between the cursor positions in the current and other windows.
+#+findex: tlon-split-autoalign-paragraphs
++ ~tlon-split-autoalign-paragraphs~ :: The function added to `post-command-hook` when ~tlon-split-mode~ is active. It checks if the mode is enabled, if the screen line has changed, and if the cursor is below the ~tlon-split-screen-line-threshold~. If all conditions are met, it calls ~tlon-split-align-paragraphs~.
+#+findex: tlon-remove-source-overlays
++ ~tlon-remove-source-overlays~ :: Removes sentence highlighting overlays (used by the experimental highlighting feature).
+#+findex: tlon-current-window-line
++ ~tlon-current-window-line~ :: Calculates the current screen line number relative to the top of the window (used by the experimental highlighting feature).
+

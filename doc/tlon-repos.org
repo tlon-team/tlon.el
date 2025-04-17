@@ -1,0 +1,131 @@
+#+title: tlon - Repository Management
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* Repository Management (=tlon-repos.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos
+:END:
+
+This module provides functions for managing Tlön's Git repositories. It integrates with =vc=, =vc-extras=, =forge=, =forge-extras=, and =pass-extras= to offer commands for creating, cloning, deleting, tracking, searching, and interacting with repositories, both locally and remotely (primarily on GitHub under the =tlon-team= organization).
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-dependencies
+:END:
+
++ =forge-core=, =forge-search=, =forge-extras=
++ =shut-up=
++ =tlon-core=
++ =vc=, =vc-extras=
++ =pass-extras=
++ =transient=
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-commands
+:END:
+
+This section details the interactive commands provided by =tlon-repos.el=.
+
+*** Version Control (VC) Operations
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-repos-vc-commands
+:END:
+
+#+findex: tlon-create-repo
++ ~tlon-create-repo~ :: Creates a new repository on GitHub under the =tlon-team= organization. Prompts for the repository =NAME=. Delegates to =vc-extras-create-repo=.
+
+#+findex: tlon-clone-repo
++ ~tlon-clone-repo~ :: Clones an existing Tlön repository from the =tlon-team= organization into the directory specified by =paths-dir-tlon-repos=. Prompts for the repository =NAME= if not provided. Optionally skips adding the repo to the Forge database if =NO-FORGE= is non-nil. Delegates to =vc-extras-clone-repo=.
+
+#+findex: tlon-clone-missing-repos
++ ~tlon-clone-missing-repos~ :: Clones all Tlön repositories defined in the configuration (=tlon-repo-lookup-all :dir=) that do not exist locally. Clones are performed asynchronously and do *not* automatically add the repos to the Forge database (use ~tlon-forge-track-missing-repos~ for that).
+
+#+findex: tlon-delete-local-repo
++ ~tlon-delete-local-repo~ :: Deletes a local copy of a Tlön repository. Prompts the user to select a repository from the intersection of configured Tlön repos and locally existing ones (using ~tlon-get-litellm.APIConnectionError: Error parsing chunk: Expecting property name enclosed in double quotes: line 1 column 2 (char
+1),
+Received chunk: {
+Traceback (most recent call last):
+  File 
+"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
+x_and_google_ai_studio_gemini.py", line 1570, in __next__
+    return self._common_chunk_parsing_logic(chunk=chunk)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
+x_and_google_ai_studio_gemini.py", line 1544, in _common_chunk_parsing_logic
+    return self.handle_valid_json_chunk(chunk=chunk)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
+x_and_google_ai_studio_gemini.py", line 1504, in handle_valid_json_chunk
+    raise e
+  File 
+"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
+x_and_google_ai_studio_gemini.py", line 1496, in handle_valid_json_chunk
+    json_chunk = json.loads(chunk)
+                 ^^^^^^^^^^^^^^^^^
+  File 
+"/opt/homebrew/Cellar/python@3.12/3.12.10/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py", 
+line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/opt/homebrew/Cellar/python@3.12/3.12.10/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line
+338, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/opt/homebrew/Cellar/python@3.12/3.12.10/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line
+354, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ^^^^^^^^^^^^^^^^^^^^^^
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File 
+"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/litellm_core_utils/streamin
+g_handler.py", line 1508, in __next__
+    chunk = next(self.completion_stream)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/Users/pablostafforini/.local/share/uv/tools/aider-chat/lib/python3.12/site-packages/litellm/llms/vertex_ai/gemini/verte
+x_and_google_ai_studio_gemini.py", line 1574, in __next__
+    raise RuntimeError(f"Error parsing chunk: {e},\nReceived chunk: {chunk}")
+RuntimeError: Error parsing chunk: Expecting property name enclosed in double quotes: line 1 column 2 (char 1),
+Received chunk: {
+
+Retrying in 0.2 seconds...
+  C-c C-c
+
+^C again to exit
+
+
+conventions.md
+doc/tlon.org
+> /drop tlon.org
+
+Removed doc/tlon.org from the chat
+
+conventions.md
+> The process failed. I will do it manually, but could you please create just the blank files? E.g. create tlon-ai.org, tlon-meet.org, etc.
+
+Okay, I can create those blank files for you.
+
+Here are the *SEARCH/REPLACE* blocks to create the empty `.org` files in the `doc/` directory:
+
+```org
+doc/tlon-cleanup.org
+<<<<<<< SEARCH
+=======

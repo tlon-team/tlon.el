@@ -424,7 +424,7 @@ MEETING-REPOS is a list of meeting repository directories."
    ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)]
   ["Processing"
    ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
-   ("d"   "transcribe audio"           tlon-meet-transcribe)
+   ("t"   "transcribe audio"           tlon-meet-transcribe)
    ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
    ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)])
 

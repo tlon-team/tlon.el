@@ -1,0 +1,176 @@
+#+title: tlon - Contact Management
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* Contact Management (=tlon-contacts.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts
+:END:
+
+This module provides functionality for managing contacts stored within an Org mode file. It allows creating new contact entries, editing their properties based on predefined roles, and retrieving contact information.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-dependencies
+:END:
+
++ =tlon-core=
++ =transient=
++ =org=
++ =org-id=
++ =org-contacts=
+
+** Configuration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-config
+:END:
+
+*** Constants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-constants
+:END:
+
+#+vindex: tlon-contacts-id
++ ~tlon-contacts-id~ :: The Org mode ID ("F874E332-47AF-436F-997E-1A6791DEE0BE") used to identify the main heading under which contacts are stored. This ID is crucial for locating the contacts section within the Org file.
+
+#+vindex: tlon-contacts-properties
++ ~tlon-contacts-properties~ :: An alist defining the expected Org mode properties associated with different contact roles. The key is the role name (string, e.g., "creator", "translator"), and the value is a list of property names (strings, e.g., "EMAIL", "URL", "GENDER"). This structure dictates which properties are prompted for when editing a contact of a specific role.
+
+#+vindex: tlon-contacts-property-values
++ ~tlon-contacts-property-values~ :: A list defining the properties that can be edited, along with their transient menu shortcuts and potential completion candidates. Each element is a list =(PROPERTY :shortcut SHORTCUT :candidates COMPLETION-LIST)=.
+  + =PROPERTY= (string): The name of the Org property (e.g., "EMAIL", "GENDER").
+  + =SHORTCUT= (string): The single-character key used in the transient menu (~tlon-contacts-menu~) to edit this property.
+  + =COMPLETION-LIST= (list of strings or nil): If a list is provided, ~completing-read~ will be used when editing this property, offering these values as candidates. If nil, ~read-string~ is used. Language candidates are dynamically fetched using ~tlon-get-language-candidates~.
+
+*** Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-variables
+:END:
+
+#+vindex: tlon-contacts-file
++ ~tlon-contacts-file~ :: Holds the path to the Org file containing the contacts. This variable is set dynamically by ~tlon-contacts-get-file~ using the ~tlon-contacts-id~ and should not be set manually by the user.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-commands
+:END:
+
+*** Create Contact
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-create-cmd
+:END:
+#+findex: tlon-contacts-create
+The command ~tlon-contacts-create~ creates a new contact entry in the designated contacts Org file.
+1. Finds or opens the contacts file (~tlon-contacts-get-file~).
+2. Navigates to the main contacts heading using ~tlon-contacts-id~.
+3. Inserts a new level 2 heading at the end of the subtree.
+4. Prompts for the first and last name using ~tlon-contacts-insert-name~ and inserts them.
+5. Calls ~tlon-contacts-edit-properties~ to prompt for the role and set initial properties.
+6. Sorts the contact headings alphabetically within the file using ~tlon-sort-headings~.
+
+*** Edit Contact Properties
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-edit-properties-cmd
+:END:
+#+findex: tlon-contacts-edit-properties
+The command ~tlon-contacts-edit-properties~ allows editing the Org properties of the contact entry at point.
+1. Ensures the buffer is in Org mode.
+2. Retrieves the contact's current "ROLE" property using ~tlon-contacts-get-role~.
+3. If an optional =ROLE= argument is provided, checks if it matches the current role.
+4. If no role exists or no =ROLE= argument is given, prompts the user to select a role using ~tlon-contacts-select-role~. If a role is newly selected, sets the "ROLE" property.
+5. Iterates through the properties defined for the selected role in ~tlon-contacts-properties~.
+6. For each property:
+   - Looks up its definition in ~tlon-contacts-property-values~ to find completion candidates.
+   - Gets the current value using =org-entry-get=.
+   - Prompts the user for the new value using ~completing-read~ (if candidates exist) or ~read-string~.
+   - Sets the property using =org-set-property=.
+7. Saves the buffer.
+
+*** Copy Property Value
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-copy-property-value-cmd
+:END:
+#+findex: tlon-contacts-copy-property-value
+The command ~tlon-contacts-copy-property-value~ copies the value of a specified property for the contact at point to the kill ring.
+1. Calls ~tlon-contacts-get-property-value~, which prompts the user to select a property from the non-empty properties of the current contact.
+2. Copies the retrieved value (or an empty string if nil) to the kill ring using =kill-new=.
+3. Displays a confirmation message.
+
+*** Edit Single Property
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-edit-one-property-cmd
+:END:
+#+findex: tlon-contacts-edit-one-property
+The command ~tlon-contacts-edit-one-property~ provides a way to edit a single, specific property of the contact at point, using completion if available.
+1. Prompts the user to select the =PROPERTY= to edit, offering completion based on the properties defined in ~tlon-contacts-property-values~.
+2. Ensures the buffer is in Org mode.
+3. Looks up the property's definition in ~tlon-contacts-property-values~ to find completion candidates.
+4. Gets the current value using =org-entry-get=.
+5. Prompts the user for the new value using ~completing-read~ (if candidates exist) or ~read-string~.
+6. Sets the property using =org-set-property=.
+7. Saves the buffer and displays a confirmation message.
+
+*** Dynamically Defined Edit Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-dynamic-edit-cmds
+:END:
+#+findex: tlon-contacts-define-property-edit-commands
+The macro ~tlon-contacts-define-property-edit-commands~ automatically generates individual interactive commands for editing each property listed in ~tlon-contacts-property-values~.
+- For each property (e.g., "EMAIL"), it defines a command named ~tlon-contacts-edit-email~ (lowercase).
+- Each generated command simply calls ~tlon-contacts-edit-one-property~ with the corresponding property name.
+- This macro also defines (or redefines) the ~tlon-contacts-menu~ transient prefix.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-menu-cmd
+:END:
+#+findex: tlon-contacts-menu
+The command ~tlon-contacts-menu~ activates a =transient= menu interface for contact management. This menu is defined by the ~tlon-contacts-define-property-edit-commands~ macro.
+
+It typically includes:
++ General commands:
+  + =S= :: Search contacts (=org-contacts=)
+  + =c= :: Create contact (~tlon-contacts-create~)
+  + =e= :: Edit all properties (~tlon-contacts-edit-properties~)
+  + =y= :: Copy property value (~tlon-contacts-copy-property-value~)
++ Edit specific properties:
+  + One entry for each property defined in ~tlon-contacts-property-values~, using the specified =:shortcut= key (e.g., =m= for "email", =g= for "gender"). Each shortcut calls the corresponding dynamically generated edit command (e.g., ~tlon-contacts-edit-email~).
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-contacts-internals
+:END:
+
+This section lists non-interactive functions used internally or potentially useful for advanced customization.
+
+#+findex: tlon-contacts-get-file
++ ~tlon-contacts-get-file~ :: Retrieves the path to the contacts Org file. It uses ~tlon-get-or-set-org-var~ to find the file containing the Org ID ~tlon-contacts-id~ and caches the result in the ~tlon-contacts-file~ variable.
+
+#+findex: tlon-contacts-insert-name
++ ~tlon-contacts-insert-name~ :: Prompts the user for "First name: " and "Last name: ", then inserts the name formatted as "Last name, First name" at point. Saves the buffer afterwards.
+
+#+findex: tlon-contacts-get-property-value
++ ~tlon-contacts-get-property-value~ :: Retrieves the value of a specific =PROP= for the contact entry at point. If =PROP= is nil, it prompts the user to select a property from the list of non-empty properties (obtained via ~tlon-contacts-get-nonempty-properties~). Returns the property value string.
+
+#+findex: tlon-contacts-get-property-value-of-contact
++ ~tlon-contacts-get-property-value-of-contact~ :: Prompts the user to select a contact using =org-contacts=, then calls ~tlon-contacts-get-property-value~ in the context of the selected contact's buffer to retrieve the value of =PROP= (prompting for =PROP= if nil).
+
+#+findex: tlon-contacts-get-nonempty-properties
++ ~tlon-contacts-get-nonempty-properties~ :: Returns an alist of non-empty properties for the contact entry at point. It gets the contact's role, finds the associated properties from ~tlon-contacts-properties~, and retrieves the value for each using =org-entry-get=.
+
+#+findex: tlon-contacts-get-contact-name
++ ~tlon-contacts-get-contact-name~ :: Retrieves the first and last name from the heading of the contact entry at point. Assumes the format "Last, First". Returns a cons cell =(FIRST . LAST)=.
+
+#+findex: tlon-contacts-get-role
++ ~tlon-contacts-get-role~ :: Returns the value of the "ROLE" property for the contact entry at point using =org-entry-get=.
+
+#+findex: tlon-contacts-select-role
++ ~tlon-contacts-select-role~ :: Prompts the user to select a role using completion. The candidates are the keys (roles) from the ~tlon-contacts-properties~ alist. Returns the selected role string.
