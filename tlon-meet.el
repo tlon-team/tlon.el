@@ -398,6 +398,14 @@ Updates OUTPUT-BUFFER with progress messages."
         (insert (format "Summary file: %s\n" summary-file))
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
+;;;###autoload
+(defun tlon-meet-format-transcript-command (transcript-file participants)
+  "Interactively format TRANSCRIPT-FILE using PARTICIPANTS.
+Prompts for transcript file and participants, then calls the AI formatter."
+  (interactive (list (tlon-meet--get-transcript-file)
+                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
+  (tlon-meet-format-transcript transcript-file participants))
+
 (defun tlon-meet-format-transcript (transcript-file participants)
   "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS and save as Markdown.
 Reads the transcript, calls the AI with PARTICIPANTS, and saves the formatted
