@@ -104,6 +104,15 @@ use a different model for fixing the Markdown."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
+(defcustom tlon-ai-help-model
+  '("Gemini" . gemini-2.0-flash-lite-preview-02-05)
+  "Model to use for the AI help command (`tlon-ai-ask-for-help').
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-ai)
+
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -335,6 +344,24 @@ use a different model for fixing the Markdown."
           tlon-ai-string-wrapper)
   "Prompt for extracting bibliographic references exactly as found.")
 
+
+;;;; Helper Functions (Moved from tlon-help)
+
+(defvar elpaca-repos-directory) ; Define if not already globally available
+
+(defun tlon-ai--get-documentation-files ()
+  "Return a list of full paths to documentation files.
+Documentation files are `.org` files within the \"doc/\" subdirectories of the
+\"tlon\" and \"dotfiles/emacs/extras\" repositories managed by Elpaca."
+  (let ((all-doc-files '())
+        (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
+                        (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
+        (doc-pattern "\\.org\\'"))
+    (dolist (doc-dir doc-dirs)
+      (when (file-directory-p doc-dir)
+        (setq all-doc-files (append all-doc-files
+                                    (directory-files doc-dir t doc-pattern)))))
+    (delete-dups all-doc-files)))
 
 ;;;; Functions
 
@@ -1903,6 +1930,12 @@ If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-ai-proofread-reference-article-model)
 
+(transient-define-infix tlon-ai-infix-select-help-model ()
+  "AI model to use for asking for help.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-help-model)
+
 ;;;;;; Main menu
 
 (autoload 'gptel--infix-provider "gptel-transient")
@@ -1947,9 +1980,11 @@ If nil, use the default model."
     ("x" "Extract references from buffer/region" tlon-ai-extract-references)
     ("k" "Get BibKeys for references (region)"   tlon-ai-get-bibkeys-from-references)
     ("X" "Extract & Replace References (buffer)" tlon-ai-extract-and-replace-references)]
-   ["Misc"
-    ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
-    ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
+  ["Help"
+   ("a" "Ask for help"                               tlon-ai-ask-for-help)]
+  ["Misc"
+   ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
+   ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
     ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)
