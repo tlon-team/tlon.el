@@ -1,0 +1,25 @@
+#+title: tlon - Automatic Fixes
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* Automatic Fixes (=tlon-fix.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-fix
+:END:
+
+This module provides functionality for automatically fixing common issues or inconsistencies within Tlön project files or configurations.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-fix-commands
+:END:
+
+#+findex: tlon-autofix-all
++ ~tlon-autofix-all~ :: Executes a series of predefined automatic fixes across the Tlön environment. The specific fixes applied (e.g., correcting metadata inconsistencies, fixing formatting errors, updating links) need to be determined by inspecting the function's implementation or related documentation. This command aims to maintain consistency and correctness within the project files.

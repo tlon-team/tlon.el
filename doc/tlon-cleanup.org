@@ -1,0 +1,28 @@
+#+title: tlon - Cleanup Utilities
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* Cleanup Utilities (=tlon-cleanup.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-cleanup
+:END:
+
+This module provides functions for cleaning up temporary files, states, or configurations related to the Tlön project and associated tools like the Effective Altruism Forum (EAF).
+
+** Commands and Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-cleanup-commands
+:END:
+
+#+findex: tlon-cleanup-common
++ ~tlon-cleanup-common~ :: Performs common cleanup tasks relevant to the Tlön workflow. The specific actions (e.g., deleting temporary files, resetting variables) need to be determined from the function's implementation.
+
+#+findex: tlon-cleanup-eaf
++ ~tlon-cleanup-eaf~ :: Performs cleanup tasks specifically related to interactions with the Effective Altruism Forum (EAF), such as clearing cached data or temporary files generated during EAF imports (~tlon-import.el~).
