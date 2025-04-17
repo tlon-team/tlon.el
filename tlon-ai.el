@@ -1325,24 +1325,6 @@ CONTENT is the content of the `Math' element. If RESPONSE is nil, return INFO.
 	(kill-new response)
 	(message response)))))
 
-;;;;; Docs
-
-;; TODO: develop this
-(defun tlon-ai-docs ()
-  "Docstring."
-  (interactive)
-  (let ((prompt "Included below is an Emacs configuration file of the organization I work for. Please inspect it and tell me how can I search for a yasnippet snippet. Please be brief.\n\n%s")
-	(string (tlon-get-file-as-string
-		 "/Users/pablostafforini/Downloads/ai-docs.org")))
-    (tlon-make-gptel-request prompt string #'tlon-docs-callback)))
-
-(defun tlon-docs-callback (response info)
-  "If RESPONSE is non-nil, take appropriate action based on major mode.
-If RESPONSE is nil, return INFO."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (message response)))
-
 ;;;;; Fix encoding
 
 (defun tlon-ai-fix-encoding-in-string (&optional string language)
