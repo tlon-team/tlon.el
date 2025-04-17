@@ -14,6 +14,102 @@
 :CUSTOM_ID: h:tlon-dispatch
 :END:
 
-This module likely provides central dispatch commands or menus for accessing various Tlön functionalities.
+This module defines the main entry points for accessing Tlön functionalities using the `transient` package, providing hierarchical menus for various commands. It acts as a central hub for navigating and executing Tlön operations.
 
-(Documentation will be added here once the summary or content of =tlon-dispatch.el= is provided.)
+** Main Dispatch Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dispatch-main
+:END:
+
+#+findex: tlon-dispatch
++ ~tlon-dispatch~ :: The primary transient command prefix for all Tlön operations. Invoking this command displays a hierarchical menu.
+  - *Submenus*: Provides access to specialized transient menus for different functional areas:
+    - =a= : AI (~tlon-ai-menu~)
+    - =c= : Clock (~tlon-clock-menu~)
+    - =H-d= : Dictionary (~tlon-dict-menu~)
+    - =f= : Files (~tlon-files-menu~)
+    - =g= : Glossary (~tlon-glossary-menu~)
+    - =i= : Images (~tlon-images-menu~)
+    - =j= : Jobs (~tlon-jobs-menu~)
+    - =k= : Markdown (~tlon-md-menu~)
+    - =l= : DeepL (~tlon-deepl-menu~)
+    - =H-l= : Color (~tlon-color-menu~)
+    - =H-m= : Meetings (~tlon-meet-menu~)
+    - =o= : Counting (~tlon-count-menu~)
+    - =p= : API (~tlon-api-menu~)
+    - =r= : Repositories (~tlon-repos-menu~)
+    - =s= : Search (~tlon-search-menu~)
+    - =S= : Splitting (~tlon-split-menu~)
+    - =t= : Contacts (~tlon-contacts-menu~)
+    - =u= : Counterpart (~tlon-counterpart-menu~)
+    - =v= : URL (~tlon-url-menu~)
+    - =y= : Forge (~tlon-forg-menu~)
+    - =x= : TeX (~tlon-tex-menu~)
+    - =z= : TTS (~tlon-tts-menu~)
+  - *Browse Repo*: Offers quick access to repositories:
+    - =d= : Browse in Dired (~tlon-dired-repo-menu~)
+    - =m= : Browse in Magit (~tlon-magit-repo-menu~)
+  - *Forge*:
+    - =.= : List Forge notifications (~forge-list-notifications~)
+  - *Package Management*:
+    - =H-u= : Update Tlön package and reload (~tlon-update-package-and-reload~)
+    - =H-o= : Open Tlön package files (~tlon-open-package-files~)
+    - =H-c= : Copy Tlön package info (~tlon-copy-package-info~)
+  - *Help & Info*:
+    - =?= : Get AI help (~tlon-ai-get-help~)
+    - =!= : Report a bug (~tlon-report-bug~)
+    - Displays current package version and latest commit hash.
+
+** Repository Browsing Menus
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dispatch-repos
+:END:
+
+These menus provide quick access to Tlön repositories using either Magit or Dired. The commands within them are generated dynamically.
+
+#+findex: tlon-magit-repo-menu
++ ~tlon-magit-repo-menu~ :: A transient menu listing all configured Tlön repositories (~tlon-repos~), grouped by project (Docs, Tlön site, Babel, Uqbar, EA News, etc.). Selecting an entry opens the corresponding repository in Magit using a dynamically generated command like ~tlon-magit-browse-REPO_ABBREV~.
+
+#+findex: tlon-dired-repo-menu
++ ~tlon-dired-repo-menu~ :: Similar to ~tlon-magit-repo-menu~, but opens the selected repository in Dired using dynamically generated commands like ~tlon-dired-browse-REPO_ABBREV~.
+
+** File Operations Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dispatch-files
+:END:
+
+#+findex: tlon-files-menu
++ ~tlon-files-menu~ :: A transient menu for file-related operations:
+  - *Find*:
+    - =c= : Find file in the current repository (~tlon-find-file-in-repo~)
+    - =a= : Find file across all repositories (~tlon-open-file-across-repos~)
+  - *Open Counterpart*:
+    - =f= : Open counterpart in the current window (~tlon-open-counterpart-dwim~)
+    - =H-f= : Open counterpart in another window (~tlon-open-counterpart-in-other-window-dwim~)
+  - *URL<>File*:
+    - =u= : Open the web URL corresponding to the current file (~tlon-browse-file~)
+    - =H-u= : Open the local file corresponding to a web URL (~tlon-find-file-of-url~)
+  - *Issue*:
+    - =i= : Open the Forge issue file associated with the current context (~tlon-open-forge-file~)
+    - =H-i= : Open the counterpart of the Forge issue file (~tlon-open-forge-counterpart~)
+  - *Version Control*:
+    - =l= : Show Magit log for the current file (~magit-log-buffer-file~)
+    - =d= : Show diff since the last commit by the current user (~tlon-log-buffer-latest-user-commit~)
+    - =e= : Run Ediff against the last commit by the current user (~tlon-log-buffer-latest-user-commit-ediff~)
+
+** Internal Helpers and Macros
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dispatch-internals
+:END:
+
+#+findex: tlon-menu-infix-toggle-debug
++ ~tlon-menu-infix-toggle-debug~ :: A transient infix command definition used within menus (like ~tlon-ai-menu~) to provide a toggle for the ~tlon-debug~ variable. It uses ~tlon-transient-toggle-variable-value~ as its reader.
+
+#+findex: tlon-generate-magit-browse-commands
++ ~tlon-generate-magit-browse-commands~ :: A macro used internally at load time. It iterates through ~tlon-repos~ and defines interactive functions named `tlon-magit-browse-REPO_ABBREV` for each repository. Each generated function calls `magit-status` on the repository's directory.
+
+#+findex: tlon-generate-dired-browse-commands
++ ~tlon-generate-dired-browse-commands~ :: A macro used internally at load time. Similar to the Magit version, it defines interactive functions named `tlon-dired-browse-REPO_ABBREV` for each repository, calling `dired` on the repository's directory.
+
+#+findex: tlon-generate-open-file-in-repo-commands
++ ~tlon-generate-open-file-in-repo-commands~ :: A macro used internally at load time. It defines interactive functions named `tlon-open-file-in-REPO_ABBREV` for each repository. Each generated function calls `tlon-find-file-in-repo` for that specific repository.
