@@ -1759,50 +1759,108 @@ If FILE is nil, use the file visited by the current buffer, the file at point in
 Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
   (interactive)
   (let* ((file (tlon-tts-set-chunk-file file))
-	 (files (tlon-tts-get-list-of-chunks file))
-	 (list-of-files (tlon-tts-create-list-of-chunks files)))
-    (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
-			   list-of-files file)))
-  (when (derived-mode-p 'dired-mode)
-    (revert-buffer)))
-
-(defun tlon-tts-normalize-chunks (&optional file)
-  "Normalize the volume of audio chunks for FILE using ffmpeg loudnorm.
-If FILE is nil, use the file visited by the current buffer, the file at point in
-Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
-  (interactive)
-  (let* ((file (tlon-tts-set-chunk-file file))
-         (chunks (tlon-tts-get-list-of-chunks file))
-         (total-chunks (length chunks))
-         (processed-chunks 0)
-         (failed-chunks 0)
-         (start-time (current-time)))
-    (unless chunks
+         (original-chunks (tlon-tts-get-list-of-chunks file))
+         normalized-temp-files list-of-files-for-ffmpeg success)
+    (unless original-chunks
       (user-error "No chunk files found for %s" file))
-    (message "Starting normalization for %d chunks of %s..." total-chunks (file-name-nondirectory file))
-    (dolist (chunk-file chunks)
-      (let* ((temp-output-file (make-temp-file "normalized_chunk_" nil ".mp3"))
-             (command (format tlon-tts-ffmpeg-normalize
-                              (shell-quote-argument chunk-file)
-                              (shell-quote-argument temp-output-file)))
-             (output (shell-command-to-string command)))
-        (if (or (string-match-p "Error" output)
-                (not (file-exists-p temp-output-file)))
-            (progn
-              (message "Error normalizing chunk %s: %s" (file-name-nondirectory chunk-file) output)
-              (when (file-exists-p temp-output-file) (delete-file temp-output-file))
-              (setq failed-chunks (1+ failed-chunks)))
-          (rename-file temp-output-file chunk-file t)
-          (setq processed-chunks (1+ processed-chunks))
-          (message "Normalized chunk %d/%d: %s" processed-chunks total-chunks (file-name-nondirectory chunk-file)))))
-    (let* ((end-time (current-time))
-           (elapsed-time (time-subtract end-time start-time)))
-      (message "Normalization complete for %s in %s. Processed: %d, Failed: %d."
-               (file-name-nondirectory file)
-               (format-seconds "%Mm %Ss" (float-time elapsed-time))
-               processed-chunks failed-chunks))
-    (when (derived-mode-p 'dired-mode)
+
+    ;; Normalize chunks to temporary files
+    (setq normalized-temp-files (tlon-tts--normalize-chunks-to-temp original-chunks))
+
+    (if (and normalized-temp-files (= (length normalized-temp-files) (length original-chunks)))
+        (progn
+          ;; Create the list file for ffmpeg using normalized temp files
+          (setq list-of-files-for-ffmpeg (tlon-tts-create-list-of-chunks normalized-temp-files))
+          (message "Joining %d normalized chunks into %s..."
+                   (length normalized-temp-files) (file-name-nondirectory file))
+          ;; Execute ffmpeg concat command
+          (let ((exit-code (call-process-shell-command
+                            (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
+                                    (shell-quote-argument list-of-files-for-ffmpeg)
+                                    (shell-quote-argument file))
+                            nil nil nil))) ; Run synchronously, discard output
+            (if (= exit-code 0)
+                (progn
+                  (message "Successfully joined chunks into %s." (file-name-nondirectory file))
+                  (setq success t))
+              (message "Error joining chunks (ffmpeg exit code: %d). Check *Messages*." exit-code)
+              (setq success nil)))
+          ;; Clean up the ffmpeg list file
+          (when (and list-of-files-for-ffmpeg (file-exists-p list-of-files-for-ffmpeg))
+            (delete-file list-of-files-for-ffmpeg)))
+      (message "Normalization failed or was incomplete. Aborting join."))
+
+    ;; Clean up temporary normalized files regardless of join success/failure
+    (when normalized-temp-files
+      (message "Cleaning up temporary normalized files...")
+      (dolist (temp-file normalized-temp-files)
+        (when (file-exists-p temp-file)
+          (delete-file temp-file)))
+      (message "Temporary files cleaned up."))
+
+    (when (and success (derived-mode-p 'dired-mode))
       (revert-buffer))))
+
+(defun tlon-tts--normalize-chunks-to-temp (chunk-files)
+  "Normalize volume of CHUNK-FILES to temporary files using ffmpeg loudnorm.
+Returns a list of paths to the successfully normalized temporary files.
+Cleans up temporary files if normalization fails for any chunk."
+  (let ((total-chunks (length chunk-files))
+        (processed-chunks 0)
+        (start-time (current-time))
+        normalized-temp-files
+        all-successful)
+    (message "Starting normalization for %d chunks (using temporary files)..." total-chunks)
+    (unwind-protect
+        (progn
+          (setq normalized-temp-files
+                (mapcar (lambda (chunk-file)
+                          (let* ((temp-copy (make-temp-file "tts_chunk_copy_" nil ".mp3"))
+                                 (temp-normalized-output (make-temp-file "tts_normalized_" nil ".mp3"))
+                                 command exit-code normalized-file-path)
+                            ;; 1. Copy original chunk to a temporary file
+                            (copy-file chunk-file temp-copy t)
+                            ;; 2. Normalize the temporary copy
+                            (setq command (format tlon-tts-ffmpeg-normalize
+                                                  (shell-quote-argument temp-copy)
+                                                  (shell-quote-argument temp-normalized-output)))
+                            (setq exit-code (call-process-shell-command command nil nil nil)) ; Run sync, discard output
+
+                            (if (and (= exit-code 0) (file-exists-p temp-normalized-output))
+                                (progn
+                                  ;; 3. Replace the temp copy with the normalized version
+                                  (delete-file temp-copy) ; Delete the unnormalized copy
+                                  (rename-file temp-normalized-output temp-copy t) ; Rename normalized output back
+                                  (setq processed-chunks (1+ processed-chunks))
+                                  (message "Normalized chunk %d/%d: %s (temp)" processed-chunks total-chunks (file-name-nondirectory chunk-file))
+                                  (setq normalized-file-path temp-copy)) ; Return path to the normalized temp copy
+                              (progn
+                                (message "Error normalizing chunk %s (ffmpeg exit code: %d). Check *Messages*."
+                                         (file-name-nondirectory chunk-file) exit-code)
+                                ;; Clean up temporary files for this failed chunk
+                                (when (file-exists-p temp-copy) (delete-file temp-copy))
+                                (when (file-exists-p temp-normalized-output) (delete-file temp-normalized-output))
+                                (setq normalized-file-path nil))) ; Indicate failure for this chunk
+                            normalized-file-path)) ; Return path or nil
+                        chunk-files))
+          ;; Check if all normalizations were successful
+          (setq all-successful (not (memq nil normalized-temp-files)))
+          (if all-successful
+              (progn
+                (let* ((end-time (current-time))
+                       (elapsed-time (time-subtract end-time start-time)))
+                  (message "Normalization complete for %d chunks in %s."
+                           total-chunks
+                           (format-seconds "%Mm %Ss" (float-time elapsed-time))))
+                normalized-temp-files) ; Return the list of temp files
+            (progn
+              (message "Normalization failed for one or more chunks. Cleaning up...")
+              nil))) ; Return nil to indicate failure
+      ;; Unwind-protect cleanup: Delete any created temp files if something went wrong
+      (unless all-successful
+        (dolist (temp-file normalized-temp-files)
+          (when (and temp-file (file-exists-p temp-file))
+            (delete-file temp-file)))))))
 
 (defun tlon-tts-get-list-of-chunks (file)
   "Return a list of the existing file chunks for FILE.
@@ -3460,7 +3518,6 @@ Reads audio format choices based on the currently selected engine."
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["File processing"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
-    ("N" "Normalize file chunks"                   tlon-tts-normalize-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
     ("x" "Truncate audio file"                     tlon-tts-truncate-audio-file)
     ""
