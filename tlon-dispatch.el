@@ -77,7 +77,7 @@
     ("H-o" "open"                         tlon-open-package-files)
     ("H-c" "copy info"                    tlon-copy-package-info)
     """"""""""
-    ("?" "get help"                       tlon-ai-get-help)
+    ("?" "get help"                       tlon-ai-ask-for-help)
     ("!" "report bug"                     tlon-report-bug)
     ""
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
