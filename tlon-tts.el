@@ -1311,11 +1311,13 @@ buffer's content."
            (let* ((current-pos (point))
                   (chunk-index (tlon-tts--find-chunk-index-containing-point current-pos)))
              (if (and chunk-index (not (member chunk-index generated-indices)))
-                 (let* ((paragraph-index (1+ chunk-index)) ; 1-based for messages
+                 (let* ((paragraph-index (1+ chunk-index)) ; 1-based index for internal use
                         (chunk-data (nth chunk-index tlon-tts-chunks))
+                        (chunk-filename (nth 2 chunk-data))
+                        (chunk-number (tlon-tts--get-chunk-number-from-filename chunk-filename)) ; Number for display
                         (chunk-end-marker (nth 7 chunk-data))
                         (chunk-end-pos (marker-position chunk-end-marker)))
-                   (message "Generating paragraph %d (chunk %d in region)..." paragraph-index chunk-index)
+                   (message "Generating chunk %d (index %d in region)..." chunk-number chunk-index)
                    (tlon-tts--generate-single-paragraph paragraph-index) ; Pass 1-based index
                    (push chunk-index generated-indices)
                    (setq paragraphs-generated (1+ paragraphs-generated))
@@ -1332,8 +1334,11 @@ buffer's content."
           (chunk-index (tlon-tts--find-chunk-index-containing-point current-point)))
      (unless chunk-index
        (user-error "Could not find TTS chunk containing point %d" current-point))
-     (let ((paragraph-index (1+ chunk-index))) ; 1-based for messages
-       (message "Generating paragraph %d (chunk %d at point)..." paragraph-index chunk-index)
+     (let* ((paragraph-index (1+ chunk-index)) ; 1-based index for internal use
+            (chunk-data (nth chunk-index tlon-tts-chunks))
+            (chunk-filename (nth 2 chunk-data))
+            (chunk-number (tlon-tts--get-chunk-number-from-filename chunk-filename))) ; Number for display
+       (message "Generating chunk %d (index %d at point)..." chunk-number chunk-index)
        (tlon-tts--generate-single-paragraph paragraph-index))))) ; Pass 1-based index
 
 (defun tlon-tts-execute-generation-request (paragraph-index chunk-index paragraph-text chunk-filename voice-params)
@@ -1345,11 +1350,12 @@ VOICE-PARAMS are the specific voice parameters for this chunk."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
          ;; Pass the 0-based chunk-index to the request function
          (request (funcall fun paragraph-text chunk-filename voice-params chunk-index))
-         (process-name (format "generate audio %d" paragraph-index))
+         (chunk-number (or (tlon-tts--get-chunk-number-from-filename chunk-filename) paragraph-index)) ; Use paragraph-index as fallback
+         (process-name (format "generate audio %d" chunk-number))
          (process (start-process-shell-command process-name nil request)))
 
-    (message "Generating paragraph %d with voice %s into %s..."
-             paragraph-index
+    (message "Generating chunk %d with voice %s into %s..."
+             chunk-number
              ;; Directly check the cons cell, don't use assoc
              (if (and (consp voice-params) (eq (car voice-params) 'tlon-tts-voice))
                  (cdr voice-params)
@@ -1364,14 +1370,15 @@ VOICE-PARAMS are the specific voice parameters for this chunk."
 (defun tlon-tts-handle-generation-result (process paragraph-index chunk-filename)
   "Handle the result of the generation PROCESS.
 PARAGRAPH-INDEX and CHUNK-FILENAME are used for logging."
-  (if (= (process-exit-status process) 0)
-      (message "Paragraph %d generated successfully into %s."
-               paragraph-index (file-name-nondirectory chunk-filename))
-    (message "Error generating paragraph %d. Check *Messages* buffer." paragraph-index)
-    (when-let ((err-buffer (process-buffer process)))
-      (with-current-buffer err-buffer
-        (message "Error output for paragraph %d generation:\n%s"
-                 paragraph-index (buffer-string))))))
+  (let ((chunk-number (or (tlon-tts--get-chunk-number-from-filename chunk-filename) paragraph-index))) ; Use paragraph-index as fallback
+    (if (= (process-exit-status process) 0)
+        (message "Chunk %d generated successfully into %s."
+                 chunk-number (file-name-nondirectory chunk-filename))
+      (message "Error generating chunk %d. Check *Messages* buffer." chunk-number)
+      (when-let ((err-buffer (process-buffer process)))
+        (with-current-buffer err-buffer
+          (message "Error output for chunk %d generation:\n%s"
+                   chunk-number (buffer-string)))))))
 
 (defun tlon-tts--generate-single-paragraph (paragraph-index)
   "Generate audio for the paragraph specified by PARAGRAPH-INDEX.
