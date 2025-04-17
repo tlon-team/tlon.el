@@ -327,7 +327,7 @@ If PARTICIPANTS (list of nicknames) are provided (e.g., when called from
 Otherwise, prompt the user to select the meeting repository.
 Reads the formatted Markdown transcript, calls the AI, and saves the summary to
 \"meeting-summaries.org\" and copies the transcript to
-\"YYYY-MM-DD-transcript.md\" in the determined repository."
+\"transcripts/YYYY-MM-DD.md\" in the determined repository."
   ;; Prompt for .md file when called interactively
   (interactive (list (tlon-meet--get-transcript-file ".md") nil))
   (let* ((date (tlon-meet--get-date-from-filename transcript-file))
@@ -386,8 +386,11 @@ for meeting on DATE. Updates OUTPUT-BUFFER."
 Updates OUTPUT-BUFFER with progress messages. INPUT-TRANSCRIPT-FILE should be
 the formatted Markdown (.md) file."
   (let* ((summary-file (expand-file-name "meeting-summaries.org" repo))
-         ;; Save the transcript in the repo with a .md extension
-         (repo-transcript-file (expand-file-name (format "%s-transcript.md" date) repo)))
+         ;; Save the transcript in the 'transcripts' subdirectory with YYYY-MM-DD.md format
+         (transcript-dir (expand-file-name "transcripts" repo))
+         (repo-transcript-file (expand-file-name (format "%s.md" date) transcript-dir)))
+    ;; Ensure the transcripts directory exists
+    (make-directory transcript-dir t)
     (with-current-buffer output-buffer
       (goto-char (point-max))
       (insert (format "\nSaving summary to %s\n" summary-file))
@@ -414,13 +417,14 @@ the formatted Markdown (.md) file."
       (with-current-buffer output-buffer
         (goto-char (point-max))
         (insert "Committing changes...\n"))
+      ;; Add both the summary file and the transcript file (relative to repo root)
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory summary-file))
-      (call-process "git" nil output-buffer t "add" (file-name-nondirectory repo-transcript-file))
+      (call-process "git" nil output-buffer t "add" (file-relative-name repo-transcript-file repo))
       (call-process "git" nil output-buffer t "commit" "-m"
-                    (format "Add AI summary and formatted transcript for meeting on %s" date))
+                    (format "Add AI summary and transcript for meeting on %s" date))
       (with-current-buffer output-buffer
         (goto-char (point-max))
-        (insert "\nSummary and formatted transcript added successfully!\n")
+        (insert "\nSummary and transcript added successfully!\n")
         (insert (format "Summary file: %s\n" summary-file))
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
