@@ -1981,73 +1981,6 @@ If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-ai-help-model)
 
-;;;;;; Main menu
-
-(autoload 'gptel--infix-provider "gptel-transient")
-;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
-(transient-define-prefix tlon-ai-menu ()
-  "Menu for `tlon-ai'."
-  :info-manual "(tlon) AI"
-  [["Summarize"
-    ("s s" "get abstract with or without AI"          tlon-get-abstract-with-or-without-ai)
-    ("s n" "get abstract without AI"                  tlon-fetch-and-set-abstract)
-    ("s a" "get abstract with AI"                     tlon-get-abstract-with-ai)
-    ("s h" "get abstract with AI from HTML"           tlon-get-abstract-with-ai-from-html)
-    ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
-    ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
-    ("s h" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
-    ""
-    "Summarize options"
-    ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
-    ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
-    ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
-    ""]
-   ["Images"
-    ("i d" "describe image"                           tlon-ai-describe-image)
-    ("i s" "set alt text"                             tlon-ai-set-image-alt-text)
-    ("i S" "set alt text in buffer"                   tlon-ai-set-image-alt-text-in-buffer)
-    ""
-    "Image options"
-    ("i -o" "overwrite alt text"                      tlon-ai-infix-toggle-overwrite-alt-text)]
-   ["Math"
-    ("c" "convert"                                    tlon-ai-convert-math)
-    ("t" "translate"                                  tlon-ai-translate-math)
-    ""
-    "Reference articles"
-    ("w w" "create reference article"                 tlon-ai-create-reference-article)
-    ("w p" "proofread reference article"              tlon-ai-proofread-reference-article)
-    ""
-    "Propagation"
-    ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
-    ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)
-    ""
-    "Bibliography"
-    ("x" "Extract references from buffer/region" tlon-ai-extract-references)
-    ("k" "Get BibKeys for references (region)"   tlon-ai-get-bibkeys-from-references)
-    ("X" "Extract & Replace References (buffer)" tlon-ai-extract-and-replace-references)]
-  ["Help"
-   ("a" "Ask for help"                               tlon-ai-ask-for-help)]
-  ["Misc"
-   ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
-   ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
-    ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
-    ("r" "rewrite"                                    tlon-ai-rewrite)
-    ("l" "translate"                                  tlon-ai-translate)
-    ;; Create command to translate all images
-    ;; TODO: develop this
-    ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
-    ""
-    "General options"
-    ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
-    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
-    ""
-    "Models"
-    ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
-    ("s -s" "Summarization" tlon-ai-infix-select-summarization-model)
-    ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
-    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
-    ("h -a" "Help model" tlon-ai-infix-select-help-model)]])
-
 ;;;;;; Extract and Replace Command
 
 (defvar tlon-ai--extract-replace-state nil
@@ -2084,15 +2017,15 @@ With prefix argument USE-REGION, operate only on the active region."
     ;; Initialize state
     (setq tlon-ai--extract-replace-state
           `(:source-buffer ,source-buffer
-            :region-start ,beg
-            :region-end ,end
-            :db-string ,db-string
-            :extracted-references () ; List of strings from AI
-            :reference-positions ()  ; Alist: (ref-string . list-of-(start . end))
-            :unique-references ()    ; List of unique ref strings
-            :key-map ()              ; Hash table: ref-string -> key
-            :keys-to-fetch 0
-            :keys-fetched 0))
+			   :region-start ,beg
+			   :region-end ,end
+			   :db-string ,db-string
+			   :extracted-references () ; List of strings from AI
+			   :reference-positions ()  ; Alist: (ref-string . list-of-(start . end))
+			   :unique-references ()    ; List of unique ref strings
+			   :key-map ()              ; Hash table: ref-string -> key
+			   :keys-to-fetch 0
+			   :keys-fetched 0))
 
     (message "Requesting AI to extract exact references...")
     (tlon-make-gptel-request tlon-ai-extract-exact-references-prompt text
@@ -2244,6 +2177,73 @@ INFO is the response info."
     ;; Clean up state variable
     (setq tlon-ai--extract-replace-state nil)))
 
+
+;;;;;; Main menu
+
+(autoload 'gptel--infix-provider "gptel-transient")
+;;;###autoload (autoload 'tlon-ai-menu "tlon-ai" nil t)
+(transient-define-prefix tlon-ai-menu ()
+  "Menu for `tlon-ai'."
+  :info-manual "(tlon) AI"
+  [["Summarize"
+    ("s s" "get abstract with or without AI"          tlon-get-abstract-with-or-without-ai)
+    ("s n" "get abstract without AI"                  tlon-fetch-and-set-abstract)
+    ("s a" "get abstract with AI"                     tlon-get-abstract-with-ai)
+    ("s h" "get abstract with AI from HTML"           tlon-get-abstract-with-ai-from-html)
+    ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
+    ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
+    ("s h" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
+    ""
+    "Summarize options"
+    ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
+    ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
+    ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
+    ""]
+   ["Images"
+    ("i d" "describe image"                           tlon-ai-describe-image)
+    ("i s" "set alt text"                             tlon-ai-set-image-alt-text)
+    ("i S" "set alt text in buffer"                   tlon-ai-set-image-alt-text-in-buffer)
+    ""
+    "Image options"
+    ("i -o" "overwrite alt text"                      tlon-ai-infix-toggle-overwrite-alt-text)]
+   ["Math"
+    ("c" "convert"                                    tlon-ai-convert-math)
+    ("t" "translate"                                  tlon-ai-translate-math)
+    ""
+    "Reference articles"
+    ("w w" "create reference article"                 tlon-ai-create-reference-article)
+    ("w p" "proofread reference article"              tlon-ai-proofread-reference-article)
+    ""
+    "Propagation"
+    ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
+    ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)
+    ""
+    "Bibliography"
+    ("x" "Extract references from buffer/region" tlon-ai-extract-references)
+    ("k" "Get BibKeys for references (region)"   tlon-ai-get-bibkeys-from-references)
+    ("X" "Extract & Replace References (buffer)" tlon-ai-extract-and-replace-references)]
+   ["Help"
+    ("a a" "Ask for help"                               tlon-ai-ask-for-help)]
+   ["Misc"
+    ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
+    ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
+    ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
+    ("r" "rewrite"                                    tlon-ai-rewrite)
+    ("l" "translate"                                  tlon-ai-translate)
+    ;; Create command to translate all images
+    ;; TODO: develop this
+    ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
+    ""
+    "General options"
+    ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
+    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
+    ""
+    "Models"
+    ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
+    ("s -s" "Summarization" tlon-ai-infix-select-summarization-model)
+    ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
+    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
+    ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
