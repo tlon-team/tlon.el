@@ -1,4 +1,4 @@
-#+title: tlon - Reporting Utilities
+#+title: tlon - Clock Reporting and Management
 #+author: Pablo Stafforini
 #+EXCLUDE_TAGS: noexport
 #+language: en
@@ -9,11 +9,145 @@
 #+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
 #+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
 #+texinfo: @insertcopying
-* Reporting Utilities (=tlon-report.el=)
+* Clock Reporting and Management (=tlon-report.el=)
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-report
 :END:
 
-This module likely provides functions for generating reports based on Tlön data or activities.
+This module provides functions for creating, submitting, and generating reports from Org mode clock files, specifically tailored for the Tlön team's time tracking workflow. It assumes each user has a dedicated clock repository managed with Git.
 
-(Documentation will be added here once the summary or content of =tlon-report.el= is provided.)
+** Clock Entry Creation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-report-create
+:END:
+
+These commands facilitate the creation of daily clock entry files.
+
+#+findex: tlon-clock-entry-create
++ ~tlon-clock-entry-create~ :: Creates a new clock entry file for a specific DATE in the current user's clock repository (determined by ~tlon-clock-get-repo~).
+  - Prompts for the DATE if not provided, defaulting to today.
+  - Determines the filename based on the DATE (YYYY-MM-DD.org).
+  - Creates or opens the file.
+  - Erases existing content.
+  - Inserts a `#+TITLE:` line with the DATE.
+  - Inserts an Org clock report for the given DATE using `org-extras-clock-report-insert` (which reads clock data from Org agenda files).
+  - Saves the buffer.
+  - Optionally prompts the user to submit the entry via Git (~tlon-clock-entry-submit-prompt~) unless the SUBMIT argument is `never` (don't submit) or non-nil (submit automatically without prompt).
+
+#+findex: tlon-clock-entry-create-in-range
++ ~tlon-clock-entry-create-in-range~ :: Creates clock entry files for a range of dates between START and END (inclusive).
+  - Interactively prompts for START and END dates using the Org date selector.
+  - Iterates through each date in the range (obtained via `calendar-extras-get-dates-in-range`) and calls ~tlon-clock-entry-create~ for each date, suppressing the submit prompt (`submit` = `never`).
+  - After creating all files, prompts the user whether to submit all newly created entries at once using ~tlon-clock-entry-submit-all~.
+
+** Clock Entry Submission (Git)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-report-submit
+:END:
+
+These commands handle the version control aspect of submitting clock entries.
+
+#+findex: tlon-clock-entry-submit
++ ~tlon-clock-entry-submit~ :: Submits a specific clock entry FILE to the user's clock Git repository.
+  - Interactively prompts for the FILE if not provided, defaulting to today's entry file path within the user's clock repo.
+  - Ensures the file exists.
+  - Tracks the file using `magit-extras-track-file` if it's currently untracked by Git.
+  - Stages the file, commits it with a message like "Add clock entry: YYYY-MM-DD.org", and pushes the changes using `magit-extras-stage-commit-and-push`. The push can be suppressed if NO-PUSH is non-nil.
+
+#+findex: tlon-clock-entry-submit-all
++ ~tlon-clock-entry-submit-all~ :: Submits all unstaged or untracked `.org` files found in the user's clock repository.
+  - Retrieves lists of unstaged and untracked files using `magit-extras-get-unstaged-files` and `magit-untracked-files`.
+  - Calls ~tlon-clock-entry-submit~ for each file in the combined list, suppressing the push (`no-push` = `t`).
+  - Performs a single `magit-push-current-to-pushremote` at the end to push all committed changes.
+
+#+findex: tlon-clock-entry-submit-prompt
++ ~tlon-clock-entry-submit-prompt~ :: Internal helper function. Asks the user "Submit? " and calls ~tlon-clock-entry-submit~ with the provided FILE if the answer is affirmative.
+
+** Clock Report Generation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-report-generate
+:END:
+
+This command aggregates data from multiple daily clock files into a summary report.
+
+#+findex: tlon-clock-report-create
++ ~tlon-clock-report-create~ :: Generates an aggregated clock report for a specified date range (START-DATE to END-DATE).
+  - Interactively prompts for start and end dates (YYYY-MM-DD format).
+  - Collects all relevant `.org` files within the date range from the user's clock repo using ~tlon-clock-collect-clock-files~. Signals an error if no files are found.
+  - Initializes an empty hash table `activities` to store aggregated time per headline.
+  - Iterates through each collected file:
+    - Reads the file content into a temporary buffer.
+    - Searches for `#+BEGIN: clocktable` blocks.
+    - Parses each block using ~tlon-clock-parse-clocktable-block~, extracting headline names and times, and summing the minutes per headline in the `activities` hash table.
+  - Creates or clears a buffer named "*Aggregated Clock Report*".
+  - Inserts a title indicating the date range.
+  - Inserts an Org table header (`| Headline | Time |`).
+  - Sorts the headlines alphabetically.
+  - Iterates through the sorted headlines:
+    - Calculates the total time in minutes for the report.
+    - Inserts a table row for each activity, formatting the time using ~tlon-clock-minutes-to-time-string~ (H:MM).
+  - Inserts a footer row with the grand total time.
+  - Aligns the Org table using `org-table-align`.
+  - Inserts summary statistics (total days, total hours, average hours/day, average hours/week, average hours/workday) using ~tlon-clock-insert-summary-stats~.
+  - Switches the buffer to `org-mode`.
+  - Displays the report buffer.
+
+** Helper Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-report-helpers
+:END:
+
+These functions support the main commands by performing specific tasks like file finding, parsing, and calculation.
+
+#+findex: tlon-clock-collect-clock-files
++ ~tlon-clock-collect-clock-files~ :: Finds all `.org` files in the user's clock repository whose filenames match the "YYYY-MM-DD.org" pattern and fall within the START-DATE and END-DATE range (inclusive, compared using `org-string<=`). Returns a list of matching absolute file paths.
+
+#+findex: tlon-clock-parse-clocktable-block
++ ~tlon-clock-parse-clocktable-block~ :: Parses the text content (BLOCK-TEXT) of an Org clocktable block.
+  - Splits the block into lines.
+  - Processes only table rows (starting with `|`).
+  - Extracts cells, removing leading/trailing whitespace.
+  - Identifies detail rows (empty first column, not containing "Total time" or "/File time/").
+  - Extracts the headline (second column) and time string (third or fourth column).
+  - Converts the time string to minutes using ~tlon-clock-time-string-to-minutes~.
+  - Aggregates the minutes for each headline in the provided ACTIVITIES hash table.
+
+#+findex: tlon-clock-time-string-to-minutes
++ ~tlon-clock-time-string-to-minutes~ :: Converts a time string in "H:MM" format into the total number of minutes. Returns 0 if the string doesn't match the format.
+
+#+findex: tlon-clock-minutes-to-time-string
++ ~tlon-clock-minutes-to-time-string~ :: Converts a total number of MINUTES into a formatted time string "H:MM" (e.g., 90 -> "1:30").
+
+#+findex: tlon-clock-insert-summary-stats
++ ~tlon-clock-insert-summary-stats~ :: Calculates and inserts summary statistics into the current buffer.
+  - Calculates total hours from TOTAL minutes.
+  - Determines the number of days in the range (inclusive) using `org-time-string-to-time` and `time-subtract`.
+  - Calculates average hours per day, per week (assuming 7 days), and per workday (assuming 5 days/week).
+  - Inserts formatted lines displaying these statistics.
+
+#+findex: tlon-clock-get-file-for-date
++ ~tlon-clock-get-file-for-date~ :: Constructs the full path to the expected clock file for a given DATE (YYYY-MM-DD format) within the user's clock repository (~tlon-clock-get-repo~).
+
+#+findex: tlon-clock-get-repo
++ ~tlon-clock-get-repo~ :: Determines the absolute path to the current user's clock repository. It constructs the repository name as "clock-" followed by the user's nickname (obtained via `tlon-user-lookup` based on `user-full-name`) and concatenates it with the base Tlön repositories directory (`paths-dir-tlon-repos`).
+
+#+findex: tlon-clock-open-entry
++ ~tlon-clock-open-entry~ :: Opens the clock entry file for a specific DATE. Prompts for the date using the Org date selector if not provided. Uses ~tlon-clock-get-file-for-date~ to find the file path.
+
+** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-report-menu
+:END:
+
+#+findex: tlon-clock-menu
++ ~tlon-clock-menu~ :: Provides a `transient` menu interface for accessing clock-related commands:
+  - *Create*:
+    - =c= : Create entry (~tlon-clock-entry-create~)
+    - =C= : Create entries in range (~tlon-clock-entry-create-in-range~)
+  - *Submit*:
+    - =s= : Submit entry (~tlon-clock-entry-submit~)
+    - =S= : Submit all entries (~tlon-clock-entry-submit-all~)
+  - *Report*:
+    - =r= : Report (~tlon-clock-report-create~)
+  - *Misc*:
+    - =o= : Open entry (~tlon-clock-open-entry~)
