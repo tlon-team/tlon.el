@@ -1087,6 +1087,51 @@ inserted; if nil, use the current buffer."
 	(message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
       (tlon-ai-batch-continue))))
 
+;;;;; AI Help (Moved from tlon-help)
+
+;;;###autoload
+(defun tlon-ai-ask-for-help ()
+  "Ask a question about the tlon ecosystem using documentation files as context.
+Collects documentation files from the standard tlon and extras doc directories,
+adds them to the AI context, and sends the user's question using the model
+specified in `tlon-ai-help-model'."
+  (interactive)
+  (tlon-warn-if-gptel-context) ; Keep the warning
+  (let* ((question (read-string "What do you need help with? "))
+         (all-doc-files (tlon-ai--get-documentation-files)) ; Use renamed helper
+         (existing-doc-files '())
+         (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
+         full-prompt)
+    (unless all-doc-files
+      (user-error "No documentation files found in standard Elpaca doc directories"))
+    ;; Add all found documentation files to the context
+    (dolist (doc-file all-doc-files)
+      (when (file-exists-p doc-file)
+        (message "Adding documentation file to context: %s" (file-name-nondirectory doc-file))
+        (gptel-context-add-file doc-file)
+        (push doc-file existing-doc-files)))
+    ;; Check if any files were actually added (existed)
+    (unless existing-doc-files
+      (user-error "Found documentation file entries, but none exist on disk"))
+    ;; Now format the prompt with the actual number of files added
+    (setq full-prompt (format prompt-template (length existing-doc-files) question))
+    ;; Use the specific help model
+    (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-for-help-callback tlon-ai-help-model 'no-context-check)
+    (message "Preparing your answer using %d documentation file(s) with model %S..."
+             (length existing-doc-files) (or tlon-ai-help-model gptel-model))))
+
+(defun tlon-ai-ask-for-help-callback (response info)
+  "Callback for `tlon-ai-ask-for-help'.
+Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
+`tlon-ai-callback-fail'. INFO is the context information passed to the request."
+  (if (not response)
+      (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
+    (let* ((buffer-name (generate-new-buffer-name "*AI Help Answer*"))
+           (buffer (get-buffer-create buffer-name)))
+      ;; Use the insert function from tlon-ai
+      (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
+      (gptel-context-remove-all)))) ; Remove context after getting the answer
+
 ;;;;;; BibTeX
 
 (declare-function bibtex-set-field "bibtex")
@@ -2000,7 +2045,8 @@ If nil, use the default model."
     ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("s -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
-    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)]])
+    ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
+    ("h -a" "Help model" tlon-ai-infix-select-help-model)]])
 
 ;;;;;; Extract and Replace Command
 
