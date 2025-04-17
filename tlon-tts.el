@@ -693,7 +693,7 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
     (:name "Mariluz" :id "m1VE7dnwBN0zMer3LcKv" :language "multilingual" :gender "female" :role "main")
     (:name "Ricardo" :id "CoAqFXxZEa3kpJmE7rDr" :language "multilingual" :gender "male" :role "main")
     (:name "Rob Wiblin" :id "t2fWaFXjl9r1VVHfyeK0" :language "multilingual" :gender "main"
-	   :stability 0.40 :similarity_boost 0.80 :style 0 :use_speaker_boost t :speed 1)
+	   :stability 0.45 :similarity_boost 0.80 :style 0 :use_speaker_boost t :speed 1)
     (:name "Nate Silver" :id "IT5b7X3vlpkwXPfi0xBA" :language "multilingual" :gender "main"
 	   :stability 0.40 :similarity_boost 0.80 :style 0 :use_speaker_boost t :speed 1))
   "Preferred ElevenLabs voices for different languages.
