@@ -1,0 +1,125 @@
+#+title: tlon - Document Importing
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* Document Importing (=tlon-import.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import
+:END:
+
+This module provides functions for importing documents from various sources (web URLs, local PDFs, Effective Altruism Forum articles/tags) into the Tlön content structure, including conversion and metadata setup.
+
+** Main Import Command
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-main
+:END:
+
+#+findex: tlon-import-document
++ ~tlon-import-document~ :: The primary command to import a document. It likely orchestrates the process by prompting for the source (URL, file path, EAF identifier) and calling the appropriate specific import function (~tlon-import-html~, ~tlon-import-pdf~, ~tlon-import-eaf-html~).
+
+** Source-Specific Import Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-specific
+:END:
+
+*** Importing HTML
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-html-section
+:END:
+
+#+findex: tlon-import-html
++ ~tlon-import-html~ :: Imports content from a given web URL. It fetches the HTML content, optionally saves it locally (~tlon-import-save-html-to-file~), converts it to Markdown (~tlon-import-convert-html-to-markdown~), and sets up the target file structure and metadata (~tlon-import-set-target~). Accepts an optional TITLE override.
+
+#+findex: tlon-import-save-html-to-file
++ ~tlon-import-save-html-to-file~ :: Saves the fetched HTML content to a temporary file, returning the file path.
+
+#+findex: tlon-import-convert-html-to-markdown
++ ~tlon-import-convert-html-to-markdown~ :: Converts an HTML SOURCE (file path or string) to Markdown format, likely using an external tool like Pandoc. Optionally uses a provided TITLE for metadata.
+
+*** Importing PDF
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-pdf-section
+:END:
+
+#+findex: tlon-import-pdf
++ ~tlon-import-pdf~ :: Imports a document from a local PDF file specified by PATH. It converts the PDF to Markdown (~tlon-convert-pdf~) and sets up the target file structure and metadata (~tlon-import-set-target~). Accepts an optional TITLE override.
+
+#+findex: tlon-convert-pdf
++ ~tlon-convert-pdf~ :: Converts a PDF SOURCE file to Markdown, saving it to DESTINATION if provided, otherwise likely returning the Markdown content or saving to a standard location. Uses an external conversion tool.
+
+*** Importing from Effective Altruism Forum (EAF)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf
+:END:
+
+#+findex: tlon-import-eaf-html
++ ~tlon-import-eaf-html~ :: Imports an article or tag page from the Effective Altruism Forum using its API, identified by ID-OR-SLUG. It fetches the data (~tlon-import-eaf-request~), extracts the HTML content (~tlon-import-eaf-get-article-html~ or ~tlon-import-eaf-get-tag-html~), converts it to Markdown (~tlon-import-convert-html-to-markdown~), and sets up the target file (~tlon-import-set-target~). Accepts an optional TITLE override.
+
+#+findex: tlon-import-eaf-request
++ ~tlon-import-eaf-request~ :: Sends an API request to the EAF GraphQL endpoint for a specific article ID or tag SLUG. Can operate asynchronously (ASYNC non-nil).
+
+#+findex: tlon-import-eaf-article-query
++ ~tlon-import-eaf-article-query~ :: Constructs the GraphQL query string for fetching an EAF article by ID.
+
+#+findex: tlon-import-eaf-tag-query
++ ~tlon-import-eaf-tag-query~ :: Constructs the GraphQL query string for fetching an EAF tag page by SLUG.
+
+#+findex: tlon-import-eaf-get-article-result
++ ~tlon-import-eaf-get-article-result~ :: Extracts the relevant article data portion from the EAF API RESPONSE.
+
+#+findex: tlon-import-eaf-get-article-html
++ ~tlon-import-eaf-get-article-html~ :: Extracts the HTML content string from the EAF article API RESPONSE.
+
+#+findex: tlon-import-eaf-get-article-title
++ ~tlon-import-eaf-get-article-title~ :: Extracts the title string from the EAF article API RESPONSE.
+
+#+findex: tlon-import-eaf-get-tag-result
++ ~tlon-import-eaf-get-tag-result~ :: Extracts the relevant tag data portion from the EAF API RESPONSE.
+
+#+findex: tlon-import-eaf-get-tag-html
++ ~tlon-import-eaf-get-tag-html~ :: Extracts the HTML content string from the EAF tag API RESPONSE.
+
+#+findex: tlon-import-eaf-get-tag-title
++ ~tlon-import-eaf-get-tag-title~ :: Extracts the title string from the EAF tag API RESPONSE.
+
+#+findex: tlon-import-eaf-shorten-title
++ ~tlon-import-eaf-shorten-title~ :: Shortens a potentially long EAF TITLE for use in filenames or metadata.
+
+#+findex: tlon-eaf-base-regexp
++ ~tlon-eaf-base-regexp~ :: Returns a regular expression matching the base URL of the Effective Altruism Forum.
+
+#+findex: tlon-import-eaf-article-id-p
++ ~tlon-import-eaf-article-id-p~ :: Checks if the given IDENTIFIER is likely an EAF article ID.
+
+#+findex: tlon-import-eaf-tag-slug-p
++ ~tlon-import-eaf-tag-slug-p~ :: Checks if the given IDENTIFIER is likely an EAF tag slug.
+
+#+findex: tlon-import-eaf-get-id-or-slug-from-identifier
++ ~tlon-import-eaf-get-id-or-slug-from-identifier~ :: Extracts the EAF article ID or tag slug from a Tlön IDENTIFIER (likely a filename or URL).
+
+#+findex: tlon-import-eaf-get-id-from-identifier
++ ~tlon-import-eaf-get-id-from-identifier~ :: Extracts the EAF article ID specifically from a Tlön IDENTIFIER.
+
+#+findex: tlon-import-eaf-get-slug-from-identifier
++ ~tlon-import-eaf-get-slug-from-identifier~ :: Extracts the EAF tag slug specifically from a Tlön IDENTIFIER.
+
+#+findex: tlon-import-eaf-get-type
++ ~tlon-import-eaf-get-type~ :: Determines whether an ID-OR-SLUG refers to an 'article' or a 'tag'.
+
+** Helper Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-helpers
+:END:
+
+#+findex: tlon-get-import-details-from-ebib
++ ~tlon-get-import-details-from-ebib~ :: Retrieves import details (like URL, title, associated files) from the =ebib= database for the entry at point.
+
+#+findex: tlon-import-set-target
++ ~tlon-import-set-target~ :: Determines the target directory and filename for the imported document, potentially using the provided TITLE and BARE-DIR, and sets up the necessary file structure and initial metadata.
