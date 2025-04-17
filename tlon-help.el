@@ -36,17 +36,17 @@
 
 (defun tlon-help--get-documentation-files ()
   "Return a list of full paths to documentation files.
-Documentation files are `.org` files within the 'doc/' subdirectories of the
-'tlon' and 'dotfiles/emacs/extras' repositories managed by Elpaca."
+Documentation files are `.org` files within the \"doc/\" subdirectories of the
+\"tlon\" and \"dotfiles/emacs/extras\" repositories managed by Elpaca."
   (let ((all-doc-files '())
         (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
                         (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
-        (doc-pattern "\\.org\\'")) ; Match only .org files at the end
+        (doc-pattern "\\.org\\'"))
     (dolist (doc-dir doc-dirs)
       (when (file-directory-p doc-dir)
         (setq all-doc-files (append all-doc-files
                                     (directory-files doc-dir t doc-pattern)))))
-    (delete-dups all-doc-files))) ; Ensure uniqueness
+    (delete-dups all-doc-files)))
 
 ;;;; AI Help Functions (Moved and Renamed)
 
@@ -63,19 +63,16 @@ adds them to the AI context, and sends the user's question."
          (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
          full-prompt)
     (unless all-doc-files
-      (user-error "No documentation files found in standard Elpaca doc directories."))
-
+      (user-error "No documentation files found in standard Elpaca doc directories"))
     ;; Add all found documentation files to the context
     (dolist (doc-file all-doc-files)
       (when (file-exists-p doc-file)
         (message "Adding documentation file to context: %s" (file-name-nondirectory doc-file))
         (gptel-context-add-file doc-file)
         (push doc-file existing-doc-files)))
-
     ;; Check if any files were actually added (existed)
     (unless existing-doc-files
       (user-error "Found documentation file entries, but none exist on disk"))
-
     ;; Now format the prompt with the actual number of files added
     (setq full-prompt (format prompt-template (length existing-doc-files) question))
     (tlon-make-gptel-request full-prompt nil #'tlon-help-ask-ai-callback nil 'no-context-check)
@@ -84,7 +81,7 @@ adds them to the AI context, and sends the user's question."
 (defun tlon-help-ask-ai-callback (response info)
   "Callback for `tlon-help-ask-ai'.
 Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
-`tlon-ai-callback-fail'."
+`tlon-ai-callback-fail'. INFO is the context information passed to the request."
   (if (not response)
       (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
     (let* ((buffer-name (generate-new-buffer-name "*AI Help Answer*"))
@@ -95,7 +92,3 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
 
 (provide 'tlon-help)
 ;;; tlon-help.el ends here
-
-;; Local Variables:
-;; coding: utf-8
-;; End:
