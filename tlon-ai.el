@@ -1401,24 +1401,12 @@ If RESPONSE is nil, return INFO."
   (interactive)
   (tlon-warn-if-gptel-context)
   (let* ((question (read-string "What do you need help with? "))
-         ;; Define documentation directories
-         (tlon-repo-dir (tlon-repo-lookup :dir :name "tlon.el"))
-         (tlon-doc-dir (when tlon-repo-dir (file-name-concat tlon-repo-dir "doc/")))
-         (extras-doc-dir (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/"))
-         ;; Collect .org files from specified directories
-         (tlon-org-files (when (and tlon-doc-dir (file-directory-p tlon-doc-dir))
-                           (directory-files tlon-doc-dir t "\\.org$")))
-         (extras-org-files (when (file-directory-p extras-doc-dir)
-                             (directory-files extras-doc-dir t "\\.org$")))
-         (all-doc-files (append tlon-org-files extras-org-files))
+         (all-doc-files (tlon-ai--get-documentation-files)) ; Call helper function
          (existing-doc-files '())
          (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
          full-prompt)
-
-    ;; Check if any documentation files were found
     (unless all-doc-files
-      (user-error "No documentation files found in %s or %s" tlon-doc-dir extras-doc-dir))
-
+      (user-error "No documentation files found. Check `tlon-ai--get-documentation-files`"))
     ;; Add all found documentation files to the context
     (dolist (doc-file all-doc-files)
       ;; directory-files returns full paths, so file-exists-p check is redundant
@@ -1427,11 +1415,9 @@ If RESPONSE is nil, return INFO."
         (message "Adding documentation file to context: %s" (file-name-nondirectory doc-file))
         (gptel-context-add-file doc-file)
         (push doc-file existing-doc-files)))
-
     ;; Check if any files were actually added (existed)
     (unless existing-doc-files
-      (user-error "Found documentation file entries, but none exist on disk."))
-
+      (user-error "Found documentation file entries, but none exist on disk"))
     ;; Now format the prompt with the actual number of files added
     (setq full-prompt (format prompt-template (length existing-doc-files) question))
     (tlon-make-gptel-request full-prompt nil #'tlon-ai-get-help-callback nil 'no-context-check)
@@ -1446,6 +1432,17 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, return INFO."
            (buffer (get-buffer-create buffer-name)))
       (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
       (gptel-context-remove-all)))) ; Context removal remains the same
+
+(defun tlon-ai--get-documentation-files ()
+  "Return a list of full paths to .org documentation files."
+  (let* ((tlon-repo-dir (tlon-repo-lookup :dir :name "tlon.el"))
+	 (tlon-doc-dir (when tlon-repo-dir (file-name-concat tlon-repo-dir "doc/")))
+	 (extras-doc-dir (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/"))
+	 (tlon-org-files (when (and tlon-doc-dir (file-directory-p tlon-doc-dir))
+			   (directory-files tlon-doc-dir t "\\.org$")))
+	 (extras-org-files (when (file-directory-p extras-doc-dir)
+			     (directory-files extras-doc-dir t "\\.org$"))))
+    (append tlon-org-files extras-org-files)))
 
 ;;;;; Bibliography Extraction
 
