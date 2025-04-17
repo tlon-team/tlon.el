@@ -33,8 +33,8 @@ This module provides tools for managing meetings within the Tlön workflow. It f
 :CUSTOM_ID: h:tlon-meet-options
 :END:
 
-#+vindex: tlon-meet-summary-prompt
-+ ~tlon-meet-summary-prompt~ :: The prompt template used for generating AI summaries of meeting transcripts. It should contain =%s= which will be replaced by the transcript text.
+#+vindex: tlon-meet-summarize-transcript-prompt
++ ~tlon-meet-summarize-transcript-prompt~ :: The prompt template used for generating AI summaries of meeting transcripts. It should contain =%s= which will be replaced by the transcript text.
 
 #+vindex: tlon-meet-recordings-directory
 + ~tlon-meet-recordings-directory~ :: The directory where Google Meet recordings are typically stored (default: =~/My Drive/Meet Recordings/=).
@@ -171,7 +171,7 @@ This section lists non-interactive functions used internally or potentially usef
 :END:
 
 #+findex: tlon-meet--generate-summary
-+ ~tlon-meet--generate-summary~ :: Reads the content of the =TRANSCRIPT-FILE=, formats the AI prompt using ~tlon-meet-summary-prompt~, and sends the request to the AI model via ~tlon-make-gptel-request~. The callback function is ~tlon-meet--save-summary~.
++ ~tlon-meet--generate-summary~ :: Reads the content of the =TRANSCRIPT-FILE=, formats the AI prompt using ~tlon-meet-summarize-transcript-prompt~, and sends the request to the AI model via ~tlon-make-gptel-request~. The callback function is ~tlon-meet--save-summary~.
 
 #+findex: tlon-meet--save-summary
 + ~tlon-meet--save-summary~ :: Saves the generated =SUMMARY= and the original =TRANSCRIPT= to the appropriate meeting repository for the given =DATE=.
