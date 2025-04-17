@@ -28,6 +28,7 @@
 (require 'org)
 (require 'tlon-forg)
 (require 'tlon-ai)
+(require 'tlon-core)
 
 ;;;; Variables
 
@@ -394,21 +395,25 @@ Updates OUTPUT-BUFFER with progress messages."
 ;;;###autoload
 (defun tlon-meet-format-transcript (transcript-file)
   "Generate AI formatted version for TRANSCRIPT-FILE and save as Markdown.
-Reads the transcript, calls the AI, and saves the formatted result to a
-Markdown file (.md) with the same base name in the same directory."
-  (interactive (list (tlon-meet--get-transcript-file)))
+Reads the transcript, prompts for participants, calls the AI, and saves the
+formatted result to a Markdown file (.md) with the same base name in the same
+directory."
+  (interactive (list (tlon-meet--get-transcript-file)
+                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :name))))
   (message "Formatting transcript: %s..." transcript-file)
-  (tlon-meet--generate-and-save-formatted-transcript-md transcript-file))
+  (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants))
 
-(defun tlon-meet--generate-and-save-formatted-transcript-md (transcript-file)
+(defun tlon-meet--generate-and-save-formatted-transcript-md (transcript-file participants)
   "Helper to generate formatted transcript and save it as Markdown.
-Reads TRANSCRIPT-FILE, calls AI, and saves the result to a .md file."
+Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, and saves the result
+to a .md file."
   (with-temp-buffer
     (insert-file-contents transcript-file)
-    (let ((transcript-content (buffer-string)))
+    (let ((transcript-content (buffer-string))
+          (participants-string (tlon-concatenate-list participants)))
       (message "Reading transcript and generating AI formatted version...")
       (tlon-make-gptel-request
-       (format tlon-meet-format-transcript-prompt transcript-content)
+       (format tlon-meet-format-transcript-prompt participants-string transcript-content)
        nil ; No extra string needed
        (lambda (response info)
          (if response
