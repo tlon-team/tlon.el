@@ -255,7 +255,7 @@ Default EXTENSION is \".md\"."
       (format-time-string "%Y-%m-%d")))
 
 ;;;###autoload
-(defun tlon-meet-transcribe (audio-file participants &optional callback)
+(defun tlon-meet-transcribe-audio (audio-file participants &optional callback)
   "Transcribe AUDIO-FILE using whisperx and format the result.
 Prompts for PARTICIPANTS. Runs `whisperx' on the audio file with diarization
 enabled (language hardcoded to \"es\"). Saves a [basename].txt file.
@@ -468,18 +468,18 @@ to a .md file."
 ;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file participants)
   "Transcribe AUDIO-FILE, format it, and then create an AI summary.
-Prompts for PARTICIPANTS. Runs `tlon-meet-transcribe' (which handles
+Prompts for PARTICIPANTS. Runs `tlon-meet-transcribe-audio' (which handles
 transcription via whisperx and formatting via AI) and, upon success,
 automatically runs `tlon-meet-summarize-transcript' on the resulting
 formatted Markdown (.md) transcript file."
   (interactive (list (tlon-meet--get-audio-file)
                      (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
-  (tlon-meet-transcribe audio-file participants
-			;; Callback function to run after transcription and formatting start
-			(lambda (formatted-transcript-file) ; Receives the .md path
-			  (message "Transcription/Formatting started. Starting summarization for %s" formatted-transcript-file)
-			  ;; Call summarize non-interactively with the .md file and participants
-			  (tlon-meet-summarize-transcript formatted-transcript-file participants))))
+  (tlon-meet-transcribe-audio audio-file participants
+			      ;; Callback function to run after transcription and formatting start
+			      (lambda (formatted-transcript-file) ; Receives the .md path
+				(message "Transcription/Formatting started. Starting summarization for %s" formatted-transcript-file)
+				;; Call summarize non-interactively with the .md file and participants
+				(tlon-meet-summarize-transcript formatted-transcript-file participants))))
 
 ;;;;; Menu
 
@@ -493,9 +493,9 @@ formatted Markdown (.md) transcript file."
     ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)]
    ["Processing"
     ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
-    ("t"   "transcribe audio"           tlon-meet-transcribe)
+    ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
-    ("a"   "transcribe, format & summarize" tlon-meet-transcribe-and-summarize)]])
+    ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
 
 (provide 'tlon-meet)
 ;;; tlon-meet.el ends here
