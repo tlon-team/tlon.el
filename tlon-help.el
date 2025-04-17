@@ -30,43 +30,22 @@
 (require 'tlon-ai) ; For tlon-ai-callback-fail, tlon-ai-insert-in-buffer-and-switch-to-it
 (require 'subr-x)  ; For string-join
 
-;;;; Configuration
-
-;; Define your repositories and their paths
-;; Use an alist: (("repo-id" . "/path/to/repo/root") ...)
-;; TODO: User should customize these paths
-(defvar tlon-help-doc-repos
-  '(("tlon.el" . "~/git/tlon/tlon.el") ; Example path
-    ("extras" . "~/git/dotfiles/emacs/extras")) ; Example path
-  "Alist mapping repository identifiers to their root paths for documentation lookup.")
-
-;; Define the extensions for documentation files
-(defvar tlon-help-doc-extensions '("org") ; Changed default to just org based on previous function
-  "List of file extensions considered as documentation.")
-
 (defvar elpaca-repos-directory) ; Define if not already globally available
 
-;;;; Helper Functions (Moved and Renamed)
+;;;; Helper Functions
 
 (defun tlon-help--get-documentation-files ()
   "Return a list of full paths to documentation files.
-Documentation files are identified by `tlon-help-doc-extensions` within the 'doc/'
-subdirectory of repositories defined in `tlon-help-doc-repos`."
-  (let ((all-doc-files '()))
-    (dolist (repo-entry tlon-help-doc-repos)
-      (let* ((repo-path (expand-file-name (cdr repo-entry))) ; Ensure absolute path
-             (doc-dir (file-name-concat repo-path "doc")))
-        (when (file-directory-p doc-dir)
-          (let ((doc-pattern (concat "\\.\\(" (string-join tlon-help-doc-extensions "\\|") "\\)$")))
-            (setq all-doc-files (append all-doc-files
-                                        (directory-files doc-dir t doc-pattern)))))))
-    ;; Add extras dir separately if elpaca-repos-directory is set
-    (when (boundp 'elpaca-repos-directory)
-        (let* ((extras-doc-dir (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/"))
-               (doc-pattern (concat "\\.\\(" (string-join tlon-help-doc-extensions "\\|") "\\)$")))
-          (when (file-directory-p extras-doc-dir)
-            (setq all-doc-files (append all-doc-files
-                                        (directory-files extras-doc-dir t doc-pattern))))))
+Documentation files are `.org` files within the 'doc/' subdirectories of the
+'tlon' and 'dotfiles/emacs/extras' repositories managed by Elpaca."
+  (let ((all-doc-files '())
+        (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
+                        (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
+        (doc-pattern "\\.org\\'")) ; Match only .org files at the end
+    (dolist (doc-dir doc-dirs)
+      (when (file-directory-p doc-dir)
+        (setq all-doc-files (append all-doc-files
+                                    (directory-files doc-dir t doc-pattern)))))
     (delete-dups all-doc-files))) ; Ensure uniqueness
 
 ;;;; AI Help Functions (Moved and Renamed)
@@ -74,9 +53,8 @@ subdirectory of repositories defined in `tlon-help-doc-repos`."
 ;;;###autoload
 (defun tlon-help-ask-ai ()
   "Ask a question about the tlon ecosystem using documentation files as context.
-Collects documentation files based on `tlon-help-doc-repos` and
-`tlon-help-doc-extensions`, adds them to the AI context, and sends the user's
-question."
+Collects documentation files from the standard tlon and extras doc directories,
+adds them to the AI context, and sends the user's question."
   (interactive)
   (tlon-warn-if-gptel-context) ; Keep the warning from tlon-ai
   (let* ((question (read-string "What do you need help with? "))
@@ -85,7 +63,7 @@ question."
          (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
          full-prompt)
     (unless all-doc-files
-      (user-error "No documentation files found. Check `tlon-help-doc-repos` and `tlon-help-doc-extensions`"))
+      (user-error "No documentation files found in standard Elpaca doc directories."))
 
     ;; Add all found documentation files to the context
     (dolist (doc-file all-doc-files)
