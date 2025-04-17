@@ -32,9 +32,9 @@
 ;;;; Variables
 
 (defconst tlon-meet-format-transcript-prompt
-  "Please format the the following conversation transcript. You should replace SPEAKER_nn with the actual speaker name, which you can try to infer from the conversation. It will normally involve Pablo, Fede, and/or Leo, and may or may not involve other people. In addition, break it into paragraphs, in a way that is optimized for reading (the kind of format typical of a newspaper or magazine interview).\n\n%s"
+  "Please format the the following conversation transcript. You should replace SPEAKER_nn with the actual speaker name. In this conversation, the speakers are %s.\n\nIn addition, break the text into paragraphs, in a way that is optimized for reading (the kind of format typical of a newspaper or magazine interview).\n\nPlease process the entire file, not just its beginning. In other word, don't say things like \"The conversation continues for a while\", but rather include the text of all the conversation, properly formatted.\n\n%s"
   "Prompt template for formatting meeting summaries.
-The %s will be replaced with the transcript text.")
+The %s will be replaced with the participant names and the transcript text.")
 
 (defconst tlon-meet-summarize-transcript-prompt
   "Please provide a concise summary of the following conversation transcript. Focus on the key points discussed, decisions made, and any action items or follow-up tasks mentioned. Format the summary with bullet points for each main topic, and include a section at the end titled 'Action Items' that lists specific tasks that were assigned or mentioned.\n\n%s"
