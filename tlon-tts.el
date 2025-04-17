@@ -1296,6 +1296,8 @@ buffer's content."
                  (list nil nil)))
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
+  ;; Ensure chunks are up-to-date with the current buffer content
+  (tlon-tts-prepare-chunks)
   (if (and beg end)
       ;; Region is active
       (save-excursion
