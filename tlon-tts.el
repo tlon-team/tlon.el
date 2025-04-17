@@ -1444,22 +1444,38 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
     (let* ((begin (point))
            (voice-chunk-list tlon-tts-voice-chunks)
            (use-paragraph-chunks (null chunk-size))
-	 chunks current-voice next-voice-change-pos next-voice-id
-	 ;; Determine initial voice and update voice-chunk-list
-	 (initial-state (tlon-tts--determine-initial-voice voice-chunk-list)))
-    (setq current-voice (car initial-state)
-	  voice-chunk-list (cdr initial-state))
-    (while (< begin (point-max))
-      ;; Determine position of the next voice change, if any
-      (setq next-voice-change-pos (if voice-chunk-list (marker-position (caar voice-chunk-list)) most-positive-fixnum)
-	    next-voice-id (when voice-chunk-list (cdar voice-chunk-list)))
-      ;; Calculate the end position for the current chunk
-      (let ((end (tlon-tts--calculate-chunk-end begin chunk-size next-voice-change-pos use-paragraph-chunks)))
-	;; Add the chunk if it's valid
-	(setq chunks (tlon-tts--add-chunk begin end current-voice chunks destination use-paragraph-chunks)) ; Pass use-paragraph-chunks
-	;; --- Prepare for next iteration ---
-	;; Final safety check: If end <= begin here, force minimal progress.
-	(when (and (<= end begin) (< begin (point-max)))
+           (chunk-counter 0) ; Counter for sequential chunk numbering
+           chunks current-voice next-voice-change-pos next-voice-id
+           ;; Determine initial voice and update voice-chunk-list
+           (initial-state (tlon-tts--determine-initial-voice voice-chunk-list)))
+      (setq current-voice (car initial-state)
+            voice-chunk-list (cdr initial-state))
+      (while (< begin (point-max))
+        ;; Determine position of the next voice change, if any
+        (setq next-voice-change-pos (if voice-chunk-list (marker-position (caar voice-chunk-list)) most-positive-fixnum)
+              next-voice-id (when voice-chunk-list (cdar voice-chunk-list)))
+        ;; Calculate the end position for the current chunk
+        (let ((end (tlon-tts--calculate-chunk-end begin chunk-size next-voice-change-pos use-paragraph-chunks)))
+          ;; --- Add chunk ---
+          (when (> end begin) ; Ensure we made progress
+            (let* ((raw-text (buffer-substring-no-properties begin end))
+                   ;; Remove trailing break tag and surrounding whitespace before final trim
+                   (text-no-break (replace-regexp-in-string
+                                   (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
+                                   "" raw-text))
+                   (trimmed-text (string-trim text-no-break)))
+              ;; Only add chunk if trimmed text is not empty AND not just a break tag
+              (when (and (not (string-empty-p trimmed-text))
+                         (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
+                (setq chunk-counter (1+ chunk-counter)) ; Increment counter for valid chunk
+                (let* ((filename (tlon-tts-get-chunk-name destination chunk-counter)) ; Use counter for filename
+                       (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
+                       ;; Add nil placeholder for header-filename
+                       (new-chunk (list trimmed-text voice-params filename nil 'pending nil))) ; text voice-params filename request-id status header-filename
+                  (push new-chunk chunks)))))
+          ;; --- Prepare for next iteration ---
+          ;; Final safety check: If end <= begin here, force minimal progress.
+          (when (and (<= end begin) (< begin (point-max)))
 	  (message "Warning: Forcing minimal progress at position %d due to end <= begin" begin)
 	  (goto-char begin)
 	  (forward-char 1)
@@ -1532,32 +1548,8 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 	  (setq end adjusted-end))))) ; Update end with the potentially adjusted value
     end))
 
-(defun tlon-tts--add-chunk (begin end current-voice chunks destination use-paragraph-chunks)
-  "Extract text between BEGIN and END, validate it, and add to CHUNKS.
-Returns the updated CHUNKS list. CURRENT-VOICE is the voice to be used for
-this chunk. DESTINATION is the base output filename. USE-PARAGRAPH-CHUNKS
-determines the chunk numbering scheme."
-  (when (> end begin) ; Ensure we made progress
-    (let* ((raw-text (buffer-substring-no-properties begin end))
-           ;; Remove trailing break tag and surrounding whitespace before final trim
-           (text-no-break (replace-regexp-in-string
-                           (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
-                           "" raw-text))
-           (trimmed-text (string-trim text-no-break)))
-      ;; Only add chunk if trimmed text is not empty AND not just a break tag
-      (when (and (not (string-empty-p trimmed-text))
-                 (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
-        (let* ((chunk-number (if use-paragraph-chunks
-                                 (or (tlon-tts--get-paragraph-index-at-point begin)
-                                     ;; Fallback if paragraph index fails (shouldn't happen)
-                                     (1+ (length chunks)))
-                               (1+ (length chunks)))) ; Sequential 1-based number otherwise
-               (filename (tlon-tts-get-chunk-name destination chunk-number))
-               (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
-               ;; Add nil placeholder for header-filename
-               (new-chunk (list trimmed-text voice-params filename nil 'pending nil))) ; text voice-params filename request-id status header-filename
-          (push new-chunk chunks)))))
-  chunks)
+;; This function is now effectively part of tlon-tts-break-into-chunks
+;; (defun tlon-tts--add-chunk (begin end current-voice chunks destination use-paragraph-chunks) ...)
 
 (defun tlon-tts--get-paragraph-index-at-point (point)
   "Return the 1-based index of the paragraph containing POINT.
