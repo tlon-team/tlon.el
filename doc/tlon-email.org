@@ -14,6 +14,56 @@
 :CUSTOM_ID: h:tlon-email
 :END:
 
-This module likely provides functions for composing, sending, or interacting with emails within the Tlön workflow.
+This module provides functions for composing and sending emails using predefined templates stored in Org mode files, potentially integrating with contact information from =tlon-contacts.el= and using =mu4e= for composing.
 
-(Documentation will be added here once the summary or content of =tlon-email.el= is provided.)
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-commands
+:END:
+
+#+findex: tlon-email-send
++ ~tlon-email-send~ :: Composes an email based on a selected TEMPLATE.
+  - Interactively prompts the user to select a TEMPLATE file (an Org file) from the directory specified by ~tlon-email-templates-directory~.
+  - Optionally takes a recipient ADDRESS and an ATTACHMENT path as arguments. If ADDRESS is not provided, it attempts to retrieve the "EMAIL" property of a contact selected via ~tlon-contacts-get-property-value-of-contact~.
+  - Sets the sender address using the current user's nickname (looked up via ~tlon-user-lookup~) and appending "@tlon.team".
+  - Extracts the subject and body content from the selected Org TEMPLATE file using ~tlon-email-get-template-content~ (looking for "Subject" and "Body" headings).
+  - Opens a new email composition buffer using `mu4e-compose-new` addressed to the determined recipient.
+  - Inserts the extracted subject.
+  - Uses `org-msg-extras-begin-compose` (likely to enable Org mode features within the email body).
+  - Inserts the extracted body content.
+  - If an ATTACHMENT path was provided, attaches the file using `mml-attach-file`.
+  - *Note:* This command prepares the email in a `mu4e` compose buffer but does *not* automatically send it. The user must review and send the email manually.
+
+** Helper Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-helpers
+:END:
+
+#+findex: tlon-email-get-templates
++ ~tlon-email-get-templates~ :: Returns a list of available email template filenames (Org files ending in `.org`) found within the directory specified by ~tlon-email-templates-directory~. Excludes dotfiles.
+
+#+findex: tlon-email-get-template-content
++ ~tlon-email-get-template-content~ :: Reads the specified TEMPLATE Org file (path constructed using ~tlon-email-templates-directory~) and extracts the content found under the top-level headings "Subject" and "Body". Returns the extracted content as a cons cell `(SUBJECT . BODY)`. Uses ~tlon-email-get-heading-contents~ internally.
+
+#+findex: tlon-email-get-heading-contents
++ ~tlon-email-get-heading-contents~ :: Parses the current Org buffer using `org-element-parse-buffer` and searches for a top-level headline whose raw value matches the specified HEADING string. Returns the content between the headline's `:contents-begin` and `:contents-end` properties, or nil if the heading or content is not found.
+
+#+findex: tlon-email-unset-variables
++ ~tlon-email-unset-variables~ :: Resets the internal variables ~tlon-email-name~ and ~tlon-email-language~ to nil. (Note: These variables appear unused in the current implementation of ~tlon-email-send~).
+
+** Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-email-variables
+:END:
+
+#+vindex: tlon-email-templates-directory
++ ~tlon-email-templates-directory~ :: A constant string specifying the directory path where Org mode email templates are stored. It's constructed by concatenating the path of the `babel-core` repository (obtained via ~tlon-repo-lookup~) with "email-templates/".
+
+#+vindex: tlon-email-name
++ ~tlon-email-name~ :: A variable intended to hold the recipient's name, likely for placeholder replacement within email templates. (Currently unused in ~tlon-email-send~).
+
+#+vindex: tlon-email-language
++ ~tlon-email-language~ :: A variable intended to hold the language, likely for placeholder replacement or template selection. (Currently unused in ~tlon-email-send~).
+
+#+vindex: tlon-email-replacements
++ ~tlon-email-replacements~ :: A constant alist defining placeholder strings (e.g., "name", "language") and the corresponding variables whose values should replace them within email templates. (The replacement logic itself is not implemented in the provided ~tlon-email-send~ function).
