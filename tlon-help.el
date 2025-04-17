@@ -29,8 +29,6 @@
 (require 'tlon-core)
 (require 'tlon-ai) ; For tlon-ai-callback-fail, tlon-ai-insert-in-buffer-and-switch-to-it
 (require 'subr-x)  ; For string-join
-(require 'vterm nil t) ; Optional require for vterm fallback
-(require 'aidermacs nil t) ; Optional require for aidermacs integration
 
 ;;;; Configuration
 
@@ -116,70 +114,6 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
       ;; Use the insert function from tlon-ai
       (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
       (gptel-context-remove-all))))
-
-;;;; Aider Integration
-
-;;;###autoload
-(defun tlon-help-ask-aider-with-external-docs (primary-repo-id)
-  "Launch aider in PRIMARY-REPO-ID's directory using aidermacs or vterm.
-Add documentation files (matching `tlon-help-doc-extensions` in the 'doc/'
-subdirectory) from all *other* repositories defined in `tlon-help-doc-repos`
-using the '--read' command-line argument.
-
-PRIMARY-REPO-ID should be a string matching a key in `tlon-help-doc-repos`."
-  (interactive
-   (list (completing-read "Launch aider in repo: " (mapcar #'car tlon-help-doc-repos) nil t)))
-
-  (let* ((primary-repo-path (cdr (assoc primary-repo-id tlon-help-doc-repos)))
-         (external-repos (remove-if (lambda (repo) (string= (car repo) primary-repo-id))
-                                    tlon-help-doc-repos))
-         (doc-files '())
-         (doc-pattern (concat "\\.\\(" (string-join tlon-help-doc-extensions "\\|") "\\)$")))
-
-    (unless primary-repo-path
-      (error "Primary repository ID '%s' not found in `tlon-help-doc-repos'" primary-repo-id))
-
-    (setq primary-repo-path (expand-file-name primary-repo-path)) ; Ensure absolute path
-
-    ;; Collect documentation files from external repos
-    (dolist (repo external-repos)
-      (let* ((repo-path (expand-file-name (cdr repo))) ; Ensure absolute path
-             (doc-dir (file-name-concat repo-path "doc")))
-        (when (file-directory-p doc-dir)
-          (setq doc-files (append doc-files
-                                  (directory-files doc-dir t doc-pattern))))))
-
-    ;; Construct the aider arguments for --read
-    (let ((aider-args (cl-loop for f in doc-files collect "--read" collect f)))
-
-      (message "Launching aider in %s with %d external doc(s)..."
-               primary-repo-path (length doc-files))
-
-      (cond
-       ;; Option 1: Use aidermacs if available
-       ((fboundp 'aidermacs-start)
-        (message "Using aidermacs...")
-        (aidermacs-start primary-repo-path :args aider-args))
-
-       ;; Option 2: Fallback to vterm
-       ((fboundp 'vterm)
-        (message "aidermacs not found, using vterm...")
-        (let* ((aider-cmd-string (format "aider %s"
-                                         (mapconcat #'shell-quote-argument aider-args " ")))
-               (shell-command (format "cd %s && %s"
-                                      (shell-quote-argument primary-repo-path)
-                                      aider-cmd-string))
-               (vterm-buffer (get-buffer-create "*aider-external-docs*")))
-          (with-current-buffer vterm-buffer
-            (unless (derived-mode-p 'vterm-mode)
-              (call-interactively 'vterm)) ; Start vterm if not already running
-            (vterm-send-string (concat shell-command "\n"))) ; Send the command
-          (display-buffer vterm-buffer)))
-
-       ;; Option 3: Error if neither is available
-       (t
-        (error "Cannot launch aider: Neither 'aidermacs-start' nor 'vterm' function found."))))))
-
 
 (provide 'tlon-help)
 ;;; tlon-help.el ends here
