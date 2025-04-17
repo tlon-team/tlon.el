@@ -1,0 +1,19 @@
+#+title: tlon - Dispatch Commands
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* Dispatch Commands (=tlon-dispatch.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dispatch
+:END:
+
+This module likely provides central dispatch commands or menus for accessing various Tlön functionalities.
+
+(Documentation will be added here once the summary or content of =tlon-dispatch.el= is provided.)
