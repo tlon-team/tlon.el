@@ -399,7 +399,7 @@ Reads the transcript, prompts for participants, calls the AI, and saves the
 formatted result to a Markdown file (.md) with the same base name in the same
 directory."
   (interactive (list (tlon-meet--get-transcript-file)
-                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :name))))
+                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
   (message "Formatting transcript: %s..." transcript-file)
   (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants))
 
