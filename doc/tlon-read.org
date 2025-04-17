@@ -1,4 +1,4 @@
-#+title: tlon - Reading Utilities
+#+title: tlon - Text-to-Speech Control
 #+author: Pablo Stafforini
 #+EXCLUDE_TAGS: noexport
 #+language: en
@@ -9,11 +9,65 @@
 #+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
 #+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
 #+texinfo: @insertcopying
-* Reading Utilities (=tlon-read.el=)
+* Text-to-Speech Control (=tlon-read.el=)
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-read
 :END:
 
-This module provides functions related to reading and processing content within the Tlön environment.
+This module provides integration with the `read-aloud` package to control text-to-speech (TTS) playback, specifically targeting a designated output buffer (typically an EWW buffer displaying a Markdown preview). It defines a minor mode with keybindings for common TTS actions.
 
-(Documentation will be added here once the summary or content of =tlon-read.el= is provided.)
+** Minor Mode
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-read-mode-section
+:END:
+
+#+findex: tlon-read-mode
++ ~tlon-read-mode~ :: A buffer-local minor mode that enables key bindings for controlling TTS playback via the functions in this module. It is intended to be activated in buffers from which TTS control is desired (e.g., the source Markdown buffer).
+  - *Keymap* (~tlon-read-mode-map~):
+    - =H-,= (`tlon-read-backward`): Moves the playback position backward by one chunk in the target TTS buffer.
+    - =H-.= (`tlon-read-forward`): Moves the playback position forward by one chunk in the target TTS buffer.
+    - =H-;= (`tlon-read-target-start-or-stop`): Starts or stops TTS playback in the target buffer.
+    - =H-k= (`read-aloud-extras-increase-rate`): Increases the speech rate (requires `read-aloud-extras`).
+    - =H-l= (`read-aloud-extras-decrease-rate`): Decreases the speech rate (requires `read-aloud-extras`).
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-read-commands
+:END:
+
+These commands are intended to be called interactively, typically via the keybindings provided by ~tlon-read-mode~.
+
+#+findex: tlon-read-target-start-or-stop
++ ~tlon-read-target-start-or-stop~ :: Starts or stops the `read-aloud` playback in the designated target buffer (identified by ~tlon-get-target-buffer~).
+  - Switches focus to the target buffer.
+  - If playback was previously active (`read-aloud--c-bufpos` is set), moves the cursor to the last known playback position.
+  - Toggles playback using `read-aloud-buf`.
+  - Moves the cursor back one "chunk" (sentence or paragraph boundary) using `re-search-backward` to potentially restart from a slightly earlier point if playback was stopped mid-chunk.
+  - Switches focus back to the original buffer.
+
+#+findex: tlon-read-backward
++ ~tlon-read-backward~ :: Moves the playback position backward by one chunk in the target buffer. It calls ~tlon-read-backward-or-forward~ with the 'backward direction.
+
+#+findex: tlon-read-forward
++ ~tlon-read-forward~ :: Moves the playback position forward by one chunk in the target buffer. It calls ~tlon-read-backward-or-forward~ with the 'forward direction.
+
+** Helper Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-read-helpers
+:END:
+
+These functions support the interactive commands.
+
+#+findex: tlon-get-target-buffer
++ ~tlon-get-target-buffer~ :: Identifies the buffer that should be used for TTS playback.
+  - Searches the buffer list for buffers whose names match the pattern `**markdown-output* # eww*` (likely an EWW buffer rendering a Markdown preview).
+  - Signals a user error if zero matching buffers or more than one matching buffer is found.
+  - Returns the single matching buffer object.
+
+#+findex: tlon-read-backward-or-forward
++ ~tlon-read-backward-or-forward~ :: The core logic for moving the playback position within the target buffer.
+  - Takes a DIRECTION argument (`'backward` or `'forward`).
+  - Switches focus to the target buffer (obtained via ~tlon-get-target-buffer~).
+  - Stops any current playback using `read-aloud-buf` if necessary (`read-aloud--c-bufpos` is set).
+  - Uses `re-search-backward` or `re-search-forward` based on DIRECTION to find the next chunk boundary. The boundary is defined by common punctuation marks (`,`, `.`, `:`, `;`, `!`, `?`) or two or more consecutive hyphens or newlines.
+  - Switches focus back to the original buffer.
