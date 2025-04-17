@@ -1,0 +1,369 @@
+#+title: tlon - BibTeX Functionality
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* BibTeX Functionality (=tlon-tex.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex
+:END:
+
+This module provides a wide range of functions for interacting with BibTeX files and related data sources. It covers fetching and managing abstracts, moving entries between different BibTeX files (e.g., fluid vs. stable), adding and updating fields, cleaning entries, generating citation keys (autokey), finding and adding missing URLs, handling translations of abstracts, converting Markdown links to citations, replacing citation keys with formatted citations, and generating reports on BibTeX entries.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-dependencies
+:END:
+
++ =bibtex-extras=
++ =paths=
++ =shut-up=
++ =tlon-core=
++ =transient=
++ =doi-utils= (for ~tlon-fetch-url-from-doi~)
++ =url= (for fetching data)
++ =json= (for parsing API responses and translations)
++ =citar-cache= (for bibliography lookups)
++ =zotra-extras= (for fetching abstracts/fields)
++ =simple-extras= (for URL simplification)
++ =tlon-ai= (for AI-assisted abstract fetching)
++ =tlon-api= (for fetching formatted citations)
++ =tlon-deepl= (for abstract translation)
++ =tlon-md= (for Markdown link/tag handling)
++ =citar-extras= (for opening entries in Ebib)
++ =files-extras= (for writing lists to files)
+
+** User Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-options
+:END:
+
+#+vindex: tlon-abstract-overwrite
++ ~tlon-abstract-overwrite~ :: Controls behavior when fetching an abstract for an entry that already has one.
+  + =always=: Always overwrite the existing abstract.
+  + =never=: Never overwrite the existing abstract.
+  + =ask= (default): Prompt the user whether to overwrite.
+
+** Configuration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-config
+:END:
+
+*** Constants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-constants
+:END:
+
+#+vindex: tlon-file-abstract-translations
++ ~tlon-file-abstract-translations~ :: Path to the JSON file storing abstract translations.
+#+vindex: tlon-tex-excluded-keys-file
++ ~tlon-tex-excluded-keys-file~ :: Path to the Elisp file where excluded BibTeX keys (for abstract reporting) are persisted.
+#+vindex: tlon-locators
++ ~tlon-locators~ :: Alist mapping citation locators (e.g., "page", "chapter") to their abbreviations (e.g., "p.", "chap."). Used for regex generation.
+#+vindex: tlon-tex-pandoc-cite-pattern-long
++ ~tlon-tex-pandoc-cite-pattern-long~ :: Regex for matching "long" Pandoc citation keys (e.g., `[@key]`, `[@key, p. 5]`). Captures key and locator(s).
+#+vindex: tlon-tex-pandoc-cite-pattern-short
++ ~tlon-tex-pandoc-cite-pattern-short~ :: Regex for matching "short" Pandoc citation keys (e.g., `<cite>[@key]</cite>`). Captures key and locator(s).
+#+vindex: tlon-tex-pandoc-cite-pattern
++ ~tlon-tex-pandoc-cite-pattern~ :: Combined regex for matching both long and short Pandoc citation keys.
+#+vindex: tlon-regexp-locator-in-citation
++ ~tlon-regexp-locator-in-citation~ :: Regex fragment specifically matching one or more locators within a citation, based on ~tlon-locators~.
+#+vindex: tlon-regexp-expanded-citation-formatter-with-locators
++ ~tlon-regexp-expanded-citation-formatter-with-locators~ :: (Note: Marked as not working correctly) Formatter string for a regex to match expanded citations, attempting to handle locators.
+#+vindex: tlon-regexp-expanded-citation-formatter
++ ~tlon-regexp-expanded-citation-formatter~ :: Formatter string for a regex to match expanded citations (e.g., "Author, Title (Year) ...").
+#+vindex: tlon-regexp-expanded-citation-with-link
++ ~tlon-regexp-expanded-citation-with-link~ :: Regex derived from ~tlon-regexp-expanded-citation-formatter~ to match an expanded citation where the title is a Tlön-style Markdown link. Captures the title.
+#+vindex: tlon-regexp-expanded-citation-with-no-link
++ ~tlon-regexp-expanded-citation-with-no-link~ :: Regex derived from ~tlon-regexp-expanded-citation-formatter~ to match an expanded citation where the title is enclosed in quotes or asterisks but is not a link. Captures the title.
+#+vindex: tlon-tex-max-abstract-length
++ ~tlon-tex-max-abstract-length~ :: Maximum recommended word count for an abstract. Used in reports.
+#+vindex: tlon-tex-min-abstract-length
++ ~tlon-tex-min-abstract-length~ :: Minimum recommended word count for an abstract. Used in reports.
+#+vindex: tlon-tex-synopsis-length
++ ~tlon-tex-synopsis-length~ :: Maximum recommended word count for a synopsis (generated via AI).
+
+*** Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-variables
+:END:
+
+#+vindex: tlon-tex-excluded-keys
++ ~tlon-tex-excluded-keys~ :: List of BibTeX keys for entries that do not require an abstract. Loaded from ~tlon-tex-excluded-keys-file~ and used by ~tlon-tex-entries-report~.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-commands
+:END:
+
+This section details the interactive commands provided by =tlon-tex.el=.
+
+*** Abstract Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-abstract-commands
+:END:
+
+#+findex: tlon-fetch-and-set-abstract
++ ~tlon-fetch-and-set-abstract~ :: (Autoloaded) Attempts to fetch an abstract for the BibTeX entry at point and set its =abstract= field.
+  1. Checks if proceeding is allowed based on ~tlon-abstract-overwrite~ and existing abstract.
+  2. Retrieves DOI, ISBN, and URL from the entry.
+  3. Tries fetching from CrossRef (using DOI), Google Books (using ISBN), and Zotero/Zotra (using URL/DOI) in that order.
+  4. If an abstract is found, cleans it using ~tlon-abstract-cleanup~ and sets the field using the appropriate mode-specific function (Ebib or BibTeX).
+  5. If no abstract is found via these methods, messages the user.
+  6. Calls ~tlon-ai-batch-continue~ for potential batch processing integration.
+
+#+findex: tlon-translate-abstract
++ ~tlon-translate-abstract~ :: Translates the abstract of the BibTeX entry at point (or specified =KEY=) from its =langid= to a selected =TARGET-LANG= using DeepL.
+  1. Determines the BibTeX key, abstract text, and source language.
+  2. Prompts for the =TARGET-LANG= using ~tlon-select-language~.
+  3. Calls ~tlon-deepl-translate~ with the abstract text and languages.
+  4. Uses the callback ~tlon-translate-abstract-callback~ to save the translation to the JSON file (~tlon-file-abstract-translations~) or a specified variable =VAR=.
+
+#+findex: tlon-translate-abstracts
++ ~tlon-translate-abstracts~ :: Translates abstracts for multiple entries in the current BibTeX buffer. Iterates through entries (up to 2000 times per call), calling ~tlon-translate-abstract~ for each entry that doesn't already have a translation (unless =OVERWRITE= is non-nil). Useful for batch translation, especially when saving to a variable =VAR= to avoid file I/O contention.
+
+*** Entry Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-entry-commands
+:END:
+
+#+findex: tlon-move-entry-to-fluid
++ ~tlon-move-entry-to-fluid~ :: (Autoloaded) Moves the BibTeX entry at point (or specified =KEY=) from its current file to the fluid BibTeX file (~tlon-file-fluid~).
+  1. Determines the key.
+  2. Uses =bibtex-extras-move-entry= to move the entry.
+  3. Adds or updates the =database= field to "Tlön" in the fluid file using ~tlon-add-or-update-tlon-field-in-file~.
+  4. Copies the key to the kill ring.
+
+#+findex: tlon-move-all-fluid-entries-to-stable
++ ~tlon-move-all-fluid-entries-to-stable~ :: (Autoloaded) Moves all entries from the fluid BibTeX file (~tlon-file-fluid~) to the stable BibTeX file (~tlon-file-stable~). Checks for unsaved buffers first.
+
+#+findex: tlon-add-database-field
++ ~tlon-add-database-field~ :: Iterates through all entries in a specified BibTeX =FILE= and adds or updates the =database= field to "Tlön" using ~tlon-add-or-update-tlon-field~. Saves the buffer.
+
+#+findex: tlon-auto-add-database-field
++ ~tlon-auto-add-database-field~ :: Hook function intended for =after-save-hook= in BibTeX mode. Automatically calls ~tlon-add-database-field~ on the fluid BibTeX file (~tlon-file-fluid~) whenever it's saved.
+
+#+findex: tlon-auto-clean-entry
++ ~tlon-auto-clean-entry~ :: Hook function intended for =after-save-hook= in BibTeX mode. Performs cleanup actions on save: removes trailing spaces in fields (~tlon-remove-empty-spaces~), escapes special characters (~bibtex-extras-escape-special-characters~), and runs =bibtex-clean-entry= if point is at the start of an entry.
+
+#+findex: tlon-add-lang-id-to-entries
++ ~tlon-add-lang-id-to-entries~ :: Iterates through entries in the current BibTeX buffer. If an entry lacks a =langid= field, prompts the user to select a language using ~tlon-select-language~ and sets the field.
+
+#+findex: bibtex-extras-escape-special-characters
++ ~bibtex-extras-escape-special-characters~ :: Escapes special characters ($, %, #, &) with a backslash within the current BibTeX buffer, excluding =url= and =file= fields.
+
+*** URL Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-url-commands
+:END:
+
+#+findex: tlon-prompt-to-add-missing-urls
++ ~tlon-prompt-to-add-missing-urls~ :: (Autoloaded) Finds URLs present in the current Markdown buffer but missing from the Tlön bibliography.
+  1. Gets missing URLs using ~tlon-get-missing-urls~.
+  2. Iterates through missing URLs, highlighting each one.
+  3. Prompts the user ("Add? y/n") for each URL.
+  4. Saves the URLs the user wants to add to the file specified by =zotra-extras-add-multiple-urls-filename= using =files-extras-list-to-lines=.
+  5. Messages the user about the saved file and the next step (using =zotra-extras-add-multiple-urls=).
+
+*** Translation Entry Creation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-translation-entry-commands
+:END:
+
+#+findex: tlon-tex-create-translation-entry
++ ~tlon-tex-create-translation-entry~ :: (Autoloaded) Creates a new BibTeX entry representing a translation of the entry currently open in =ebib-entry-mode=.
+  1. Prompts for the target language using ~tlon-select-language~.
+  2. Gathers fields from the original entry (=translation= (original key), =type=, =author=, =database=).
+  3. Prompts for the new =title= and =translator=.
+  4. Sets the =langid= based on the selected language and =date= to the current year.
+  5. Switches to the translations BibTeX database (database 3).
+  6. Creates a new entry (=ebib-add-entry=).
+  7. Sets the gathered/prompted fields in the new entry.
+  8. Generates a citation key for the new entry (=ebib-generate-autokey=).
+
+*** Citation Conversion and Replacement
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-citation-commands
+:END:
+
+#+findex: tlon-convert-links-to-cite
++ ~tlon-convert-links-to-cite~ :: (Autoloaded) Iterates through standard Markdown links in the current buffer. If a link's URL matches a =url= field in the Tlön bibliography (found via ~tlon-bibliography-lookup~), prompts the user to convert the link to a =<Cite>= tag using the corresponding BibTeX key.
+
+#+findex: tlon-convert-bibliography-to-cite
++ ~tlon-convert-bibliography-to-cite~ :: (Autoloaded) Converts plain text bibliography entries (matching ~tlon-regexp-expanded-citation-with-link~ or ~tlon-regexp-expanded-citation-with-no-link~) within the current region/buffer into =<Cite>= tags. Looks up the BibTeX key based on the =title= using ~tlon-bibliography-lookup~. Assumes one work per line and no locators.
+
+#+findex: tlon-tex-replace-keys-with-citations
++ ~tlon-tex-replace-keys-with-citations~ :: Replaces all =<Cite key="..." ...>= tags in a =FILE= (or current buffer) with formatted citations retrieved from the Tlön API.
+  1. Calls ~tlon-tex-do-replace-keys-with-citations~.
+  2. Optionally takes an =AUDIO= flag. If non-nil, requests audio-specific citation styles ('short-audio', 'long-audio') from the API. Otherwise, requests 'short' or 'long' based on the =length= attribute in the =<Cite>= tag.
+
+#+findex: tlon-tex-replace-keys-with-citations-in-dir
++ ~tlon-tex-replace-keys-with-citations-in-dir~ :: Recursively applies ~tlon-tex-replace-keys-with-citations~ to all Markdown files in the current directory. Takes optional =AUDIO= flag.
+
+*** Reporting and Field Finding
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-report-commands
+:END:
+
+#+findex: tlon-tex-entries-report
++ ~tlon-tex-entries-report~ :: (Autoloaded) Generates a report buffer listing BibTeX entries in the current buffer that:
+  - Have no abstract (excluding those in ~tlon-tex-excluded-keys~ or with a =crossref= field).
+  - Have abstracts longer than ~tlon-tex-max-abstract-length~ words.
+  - Have abstracts shorter than ~tlon-tex-min-abstract-length~ words.
+  - Have abstracts with fewer than 10 words.
+  Filters out entries that are translations (have a =translation= field) using ~tlon-text-remove-translated-entries~.
+
+#+findex: tlon-tex-add-to-excluded-keys
++ ~tlon-tex-add-to-excluded-keys~ :: Adds one or more BibTeX keys (provided as a space-separated string) to the ~tlon-tex-excluded-keys~ list and saves the list to ~tlon-tex-excluded-keys-file~.
+
+#+findex: tlon-tex-find-next-entry-with-missing-field
++ ~tlon-tex-find-next-entry-with-missing-field~ :: Moves point to the next BibTeX entry in the buffer that is missing a specified =FIELD= (prompting for the field name with completion). Skips entries that have a =crossref= field.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-menu-cmd
+:END:
+#+findex: tlon-tex-menu
+The command ~tlon-tex-menu~ (Autoloaded) activates a =transient= menu interface for BibTeX-related operations.
+
+It provides the following groups and commands:
++ *Markdown*:
+  + *URLs missing from database*:
+    + =f= :: Find in file (~tlon-prompt-to-add-missing-urls~)
+    + =z= :: Add with Zotra (=zotra-extras-add-multiple-urls=)
+  + *Convert to `Cite`*:
+    + =b= :: Convert bibliography (~tlon-convert-bibliography-to-cite~)
+    + =l= :: Convert links (~tlon-convert-links-to-cite~)
++ *Ebib*:
+  + =a= :: Fetch abstract (~tlon-fetch-and-set-abstract~)
+  + =c= :: Create translation entry (~tlon-tex-create-translation-entry~)
++ *BibTeX*:
+  + *Report*:
+    + =r r= :: Generate report (~tlon-tex-entries-report~)
+    + =r x= :: Add key to exclude from report (~tlon-tex-add-to-excluded-keys~)
+  + *Move*:
+    + =t= :: Move this entry to Tlön database (~tlon-move-entry-to-fluid~)
+    + =s= :: Move all entries to stable (~tlon-move-all-fluid-entries-to-stable~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-internals
+:END:
+
+This section lists non-interactive functions and variables used internally or potentially useful for advanced customization.
+
+*** Abstract Fetching Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-abstract-internals
+:END:
+
+#+findex: tlon-fetch-abstract-with-zotra
++ ~tlon-fetch-abstract-with-zotra~ :: Attempts to fetch the abstract using =zotra-extras-fetch-field= for a given =URL= or =DOI=. Tries both the original URL and the resolved URL from the DOI (via ~tlon-fetch-url-from-doi~). Handles PDF URLs and timeouts.
+#+findex: tlon-fetch-url-from-doi
++ ~tlon-fetch-url-from-doi~ :: Fetches the final redirected URL for a given =DOI= using =curl -ILs=.
+#+findex: tlon-fetch-abstract-from-crossref
++ ~tlon-fetch-abstract-from-crossref~ :: Fetches abstract data from the CrossRef API using a =DOI=. Parses the JSON response.
+#+findex: tlon-fetch-abstract-from-google-books
++ ~tlon-fetch-abstract-from-google-books~ :: Fetches abstract (description) data from the Google Books API using an =ISBN=. Parses the JSON response. Includes a 5-second timeout.
+#+findex: tlon-abstract-may-proceed-p
++ ~tlon-abstract-may-proceed-p~ :: Checks if the abstract fetching/setting process should proceed based on the current mode, the value of ~tlon-abstract-overwrite~, and whether an abstract already exists. Prompts the user if =tlon-abstract-overwrite= is 'ask.
+#+findex: tlon-fetch-field-with-zotra
++ ~tlon-fetch-field-with-zotra~ :: Wrapper around =zotra-extras-fetch-field=, potentially fetching the ID/URL first using =ebib-extras-get-or-fetch-id-or-url=.
+#+findex: tlon-abstract-cleanup
++ ~tlon-abstract-cleanup~ :: Cleans up a raw abstract string by removing XML/HTML tags, specific LaTeX tags, leading "summary" or "abstract" words, and ensuring it ends with a period.
+
+*** Entry Management Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-entry-internals
+:END:
+
+#+findex: tlon-add-or-update-tlon-field
++ ~tlon-add-or-update-tlon-field~ :: Uses =bibtex-extras-add-or-update-field= to set the =database= field to "Tlön" in the current entry.
+#+findex: tlon-add-or-update-tlon-field-in-file
++ ~tlon-add-or-update-tlon-field-in-file~ :: Finds the entry with =KEY= in =FILE= and calls ~tlon-add-or-update-tlon-field~ on it. Saves the buffer.
+#+findex: tlon-remove-empty-spaces
++ ~tlon-remove-empty-spaces~ :: Removes spaces immediately preceding a closing brace =}= within BibTeX fields in the current buffer.
+
+*** Autokey Generation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-autokey-internals
+:END:
+These functions customize the BibTeX autokey generation process, likely used as replacements or advice for standard =bibtex-generate-autokey= behavior.
+
+#+findex: tlon-generate-autokey
++ ~tlon-generate-autokey~ :: Generates a BibTeX key based on =AUTHOR=, =YEAR=, and =TITLE= strings, following customizable BibTeX autokey settings (separators, lengths, etc.). Calls helper functions ~tlon-autokey-get-names~, ~tlon-autokey-get-year~, ~tlon-autokey-get-title~.
+#+findex: tlon-autokey-get-names
++ ~tlon-autokey-get-names~ :: Formats the author =NAME= string according to BibTeX autokey settings (number of names, separator, handling "and").
+#+findex: tlon-autokey-get-year
++ ~tlon-autokey-get-year~ :: Extracts the relevant part of the =YEAR= string based on =bibtex-autokey-year-length=.
+#+findex: tlon-autokey-get-title
++ ~tlon-autokey-get-title~ :: Formats the =TITLE= string according to BibTeX autokey settings (number of words, ignored words, separator, handling terminators).
+
+*** URL and Bibliography Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-url-bib-internals
+:END:
+
+#+findex: tlon-get-missing-urls
++ ~tlon-get-missing-urls~ :: Finds URLs present in a =FILE= (using ~tlon-get-urls-in-file~) but not found in the =url= field of any entry in the Tlön bibliography (using ~tlon-get-field-in-bibliography~). Uses simplified URLs for comparison.
+#+findex: tlon-get-urls-in-file
++ ~tlon-get-urls-in-file~ :: Extracts all unique URLs found within Markdown links (=markdown-regex-link-inline=) in a =FILE= (or current buffer). Uses =ffap-url-p= for validation.
+#+findex: tlon-bibliography-lookup
++ ~tlon-bibliography-lookup~ :: Searches the cached Tlön bibliography (=citar-cache--bibliographies=) for an entry where =FIELD= matches =VALUE= (optionally as a substring). Returns the value of =ASSOC-FIELD= for the matching entry.
+#+findex: tlon-get-field-in-bibliography
++ ~tlon-get-field-in-bibliography~ :: Returns a list of all values for a specific =FIELD= found across all entries in the cached Tlön bibliography.
+
+*** Citation Replacement Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-citation-internals
+:END:
+
+#+findex: tlon-tex-do-replace-keys-with-citations
++ ~tlon-tex-do-replace-keys-with-citations~ :: The core logic for replacing =<Cite>= tags. Iterates through tags, extracts the key and length attribute, determines the required CSL style (based on length and optional =AUDIO= flag), fetches the formatted citation from the API using ~tlon-api-get-citation~, and replaces the tag with the result.
+
+*** Abstract Translation Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-translation-internals
+:END:
+
+#+findex: tlon-read-abstract-translations
++ ~tlon-read-abstract-translations~ :: Reads and parses the JSON data from ~tlon-file-abstract-translations~ using ~tlon-read-json~.
+#+findex: tlon-write-abstract-translations
++ ~tlon-write-abstract-translations~ :: Writes the provided =DATA= (alist) to ~tlon-file-abstract-translations~ using ~tlon-write-data~.
+#+findex: tlon-add-abstract-translation
++ ~tlon-add-abstract-translation~ :: Adds or updates a =TRANSLATION= for a given =KEY= and =TARGET-LANG= in the abstract translations =DATA= (read from file or passed as =VAR=). Handles existing entries and overwriting based on the =OVERWRITE= flag. Writes back to file or updates the variable.
+#+findex: tlon-translate-abstract-callback
++ ~tlon-translate-abstract-callback~ :: Callback function used by ~tlon-translate-abstract~. Takes the DeepL translation result, the =KEY=, =TARGET-LANG=, and optional =OVERWRITE= and =VAR= flags, and calls ~tlon-add-abstract-translation~ to save the result.
+
+*** Reporting Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-report-internals
+:END:
+
+#+findex: tlon-tex-load-excluded-keys
++ ~tlon-tex-load-excluded-keys~ :: Loads the list of excluded keys from ~tlon-tex-excluded-keys-file~ into the ~tlon-tex-excluded-keys~ variable.
+#+findex: tlon-tex-save-excluded-keys
++ ~tlon-tex-save-excluded-keys~ :: Saves the current value of ~tlon-tex-excluded-keys~ back to ~tlon-tex-excluded-keys-file~.
+#+findex: tlon-text-remove-translated-entries
++ ~tlon-text-remove-translated-entries~ :: Filters a =LIST= of BibTeX keys, removing any key that corresponds to an entry having a =translation= field (checked by temporarily opening the entry in Ebib).
+
+*** Field Modification Advice
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-advice-internals
+:END:
+
+#+findex: tlon-tex-field-modified
++ ~tlon-tex-field-modified~ :: Central function called when a BibTeX field is modified. Currently, if the modified =FIELD= is "abstract", it triggers DeepL translation via ~tlon-deepl-translate-abstract~.
+#+findex: tlon-tex-remove-braces
++ ~tlon-tex-remove-braces~ :: Removes curly braces ={} = from a =STRING=. Used before sending abstract text to DeepL.
+#+findex: tlon-tex-bibtex-set-field-advice
++ ~tlon-tex-bibtex-set-field-advice~ :: :around advice for =bibtex-set-field=. Calls the original function and then calls ~tlon-tex-field-modified~ with the field name, value, and entry key.
+#+findex: tlon-tex-ebib-set-field-advice
++ ~tlon-tex-ebib-set-field-advice~ :: :around advice for =ebib-set-field-value=. Calls the original function and then calls ~tlon-tex-field-modified~ with the field name, value, and entry key.
+

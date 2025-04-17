@@ -1,0 +1,440 @@
+#+title: tlon - Forge Integration
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* Forge Integration (=tlon-forg.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg
+:END:
+
+This module provides integration between =forge= (Emacs interface for Git forges like GitHub) and Org mode. It allows capturing GitHub issues as Org TODO items, keeping their state synchronized, navigating between the issue and its corresponding TODO, and managing related metadata like assignees and labels (which map to Org status and tags).
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-dependencies
+:END:
+
++ =forge=
++ =org=
++ =shut-up=
++ =tlon-core=
++ =tlon-dispatch=
++ =org-extras= (optional, for some job-related refiling)
++ =ghub= (for creating issues)
++ =magit= (for creating issues)
++ =closql= (underlying =forge= dependency)
++ =transient= (for the menu)
+
+** User Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-options
+:END:
+
+#+vindex: tlon-when-assignee-is-nil
++ ~tlon-when-assignee-is-nil~ :: Controls behavior when capturing an issue with no assignee. Options:
+  + =prompt= (default): Ask user if they want to be assigned.
+  + =change=: Assign to the current user automatically.
+  + =warn=: Capture as-is, but log a warning.
+  + =capture=: Capture as-is, no warning.
+  + =no-capture= (or any other value): Do not capture the issue.
+  Can be set temporarily via ~tlon-forg-menu~.
+
+#+vindex: tlon-when-assignee-is-someone-else
++ ~tlon-when-assignee-is-someone-else~ :: Controls behavior when capturing an issue assigned to someone else. Options are the same as ~tlon-when-assignee-is-nil~. Note: This option is ignored (treated as =no-capture=) when using ~tlon-capture-all-issues~. Can be set temporarily via ~tlon-forg-menu~.
+
+#+vindex: tlon-forg-when-reconciling
++ ~tlon-forg-when-reconciling~ :: Controls behavior when ~tlon-reconcile-issue-and-todo~ finds discrepancies between the issue and its TODO. Options:
+  + =prompt= (default): Ask user whether to keep the issue's state or the TODO's state.
+  + =issue=: Automatically update the TODO to match the issue.
+  + =todo=: Automatically update the issue to match the TODO (Note: Currently not fully implemented).
+  Can be set temporarily via ~tlon-forg-menu~.
+
+#+vindex: tlon-forg-include-archived
++ ~tlon-forg-include-archived~ :: Boolean flag. If non-nil, archived issues/TODOs are included in capture and reconcile operations. Defaults to nil. Can be toggled temporarily via ~tlon-forg-menu~.
+
+#+vindex: tlon-forg-enforce-user
++ ~tlon-forg-enforce-user~ :: String or nil. If non-nil, forces Tlön to consider this string as the current user's GitHub login, primarily for testing purposes. Defaults to nil.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-commands
+:END:
+
+This section details the interactive commands provided by =tlon-forg.el=.
+
+*** Visiting Issues and TODOs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-visit-cmds
+:END:
+
+#+findex: tlon-visit-issue
++ ~tlon-visit-issue~ :: Visits the GitHub issue associated with the current context. If point is on an =orgit-topic:= link, follows it. Otherwise, tries to extract the issue number and repository from the current Org heading.
+
+#+findex: tlon-visit-todo
++ ~tlon-visit-todo~ :: Visits the Org TODO item associated with the current context (GitHub issue or Org heading). Finds the correct Org file (generic or jobs) and position based on the issue's ID or job title.
+
+#+findex: tlon-visit-todo-or-capture
++ ~tlon-visit-todo-or-capture~ :: Visits the Org TODO associated with the current issue. If no TODO exists yet, it calls ~tlon-capture-issue~ first.
+
+*** Capturing Issues as TODOs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-capture-cmds
+:END:
+
+#+findex: tlon-capture-issue
++ ~tlon-capture-issue~ :: (Autoloaded) Creates a new Org TODO item based on the current Forge issue (or the one specified).
+  1. Checks if the issue is open.
+  2. Handles the assignee based on ~tlon-when-assignee-is-nil~ and ~tlon-when-assignee-is-someone-else~, potentially changing the assignee or skipping capture.
+  3. If the issue is a "Job" (title starts with "Job: "):
+     - Ensures it has a valid phase label (prompting if necessary via ~tlon-capture-handle-phase~).
+     - Stores or refiles the job TODO under its master job heading using ~tlon-store-or-refile-job-todo~.
+  4. If it's a generic issue:
+     - Stores the TODO in the generic file using ~tlon-store-todo~ with the "tbG" template.
+  Only captures if a TODO doesn't already exist for the issue.
+
+#+findex: tlon-capture-all-issues
++ ~tlon-capture-all-issues~ :: (Autoloaded) Captures all open issues in the current repository that are either unassigned or assigned to the current user.
+  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date.
+  2. Iterates through all open issues in the repository (~tlon-get-issues~).
+  3. For each issue, checks if a TODO already exists (~tlon-get-todo-position-from-issue~).
+  4. If no TODO exists and the issue is assigned to the current user or unassigned, calls ~tlon-capture-issue~. (Note: It implicitly uses =no-capture= for ~tlon-when-assignee-is-someone-else~ in this bulk mode).
+
+*** Reconciling Issues and TODOs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-reconcile-cmds
+:END:
+
+#+findex: tlon-reconcile-issue-and-todo
++ ~tlon-reconcile-issue-and-todo~ :: (Autoloaded) Synchronizes the state (title, status, tags) between the current issue and its associated Org TODO, or vice versa. Works whether point is in the issue buffer or on the TODO heading.
+  1. Determines the issue and TODO based on the current context.
+  2. Generates the expected TODO heading string based on the current issue state (~tlon-make-todo-name-from-issue~).
+  3. Compares this with the actual TODO heading string.
+  4. If they differ, it applies the behavior defined by ~tlon-forg-when-reconciling~:
+     - =prompt=: Asks the user whether to update the TODO or the issue.
+     - =issue=: Updates the TODO heading to match the issue state (~tlon-update-todo-from-issue~).
+     - =todo=: Updates the issue state to match the TODO (currently not implemented, signals error).
+
+#+findex: tlon-reconcile-all-issues-and-todos
++ ~tlon-reconcile-all-issues-and-todos~ :: (Autoloaded) Reconciles all Org TODOs in the generic file (~tlon-get-todos-generic-file~) with their corresponding GitHub issues.
+  1. Performs a silent =forge-pull= first (unless called with a prefix argument).
+  2. Iterates through all headings in the generic TODO file.
+  3. For each heading, finds the associated issue (~tlon-get-issue~).
+  4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~.
+
+*** Counterpart Navigation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-counterpart-cmds
+:END:
+
+#+findex: tlon-visit-counterpart
++ ~tlon-visit-counterpart~ :: (Autoloaded) Navigates between an issue and its corresponding TODO. If in an issue buffer, visits the TODO (~tlon-visit-todo~). If on a TODO heading, visits the issue (~tlon-visit-issue~).
+
+#+findex: tlon-visit-counterpart-or-capture
++ ~tlon-visit-counterpart-or-capture~ :: (Autoloaded) Similar to ~tlon-visit-counterpart~, but if navigating from an issue to a non-existent TODO, it captures the issue first (~tlon-visit-todo-or-capture~).
+
+*** Creating Issues and TODOs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-create-cmds
+:END:
+
+#+findex: tlon-create-issue-from-todo
++ ~tlon-create-issue-from-todo~ :: (Autoloaded) Creates a new GitHub issue based on the Org heading at point.
+  1. Ensures the heading doesn't already have an issue number.
+  2. Ensures the heading has a repository tag (prompts to add one via ~tlon-set-repo-in-heading~ if missing).
+  3. Extracts the title, status, and tags from the heading.
+  4. Creates the issue on GitHub using ~tlon-create-issue~.
+  5. Pulls changes until the new issue appears locally.
+  6. Sets the issue number in the Org heading (~tlon-set-issue-number-in-heading~).
+  7. Visits the new issue.
+  8. Sets the assignee to the current user and applies the status and tags from the Org heading as labels (~tlon-set-assignee~, ~tlon-set-labels~).
+  9. Updates the Org heading to include the =orgit-topic:= link using ~tlon-make-todo-name-from-issue~.
+
+#+findex: tlon-create-issue-or-todo
++ ~tlon-create-issue-or-todo~ :: Creates the counterpart if it doesn't exist. If on an Org heading without an issue, calls ~tlon-create-issue-from-todo~. If in an issue buffer without a corresponding TODO, calls ~tlon-capture-issue~.
+
+*** Closing Issues and TODOs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-close-cmds
+:END:
+
+#+findex: tlon-close-issue-and-todo
++ ~tlon-close-issue-and-todo~ :: (Autoloaded) Closes both the GitHub issue and its associated Org TODO. Works from either context.
+  1. Finds the issue number and repository.
+  2. Closes the GitHub issue using ~tlon-close-issue-number~ (which visits the issue and calls ~tlon-close-issue~).
+  3. Visits the corresponding Org TODO (~tlon-visit-todo~).
+  4. Sets the TODO state to "DONE" using =org-todo=.
+
+*** Sorting Org Entries
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-sort-cmds
+:END:
+
+#+findex: tlon-forg-sort-by-tag
++ ~tlon-forg-sort-by-tag~ :: (Autoloaded) Sorts Org entries in the current buffer based on the first tag that matches the pattern defined in ~tlon-forg-sort-by-tags-regexp~. Uses =org-sort-entries= with a custom sorter function (~tlon-forg-tag-sorter~). Entries without a matching tag are sorted to the end.
+
+*** File Handling (Associated with Issues)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-file-cmds
+:END:
+
+#+findex: tlon-open-forge-file
++ ~tlon-open-forge-file~ :: (Autoloaded) Opens the file associated with the current issue. Assumes the issue title contains a BibTeX-like key (e.g., "Job: `key`") and uses ~tlon-get-file-from-issue~ (which calls ~tlon-get-file-from-key~) to find the corresponding file path.
+
+#+findex: tlon-open-forge-counterpart
++ ~tlon-open-forge-counterpart~ :: (Autoloaded) Opens the *counterpart* file associated with the current issue. Finds the issue's file path using ~tlon-get-file-from-issue~ and then calls ~tlon-open-counterpart~ on that path.
+
+*** Miscellaneous
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-misc-cmds
+:END:
+
+#+findex: tlon-report-bug
++ ~tlon-report-bug~ :: (Autoloaded) Creates a new bug report issue specifically in the =tlon.el= repository. Uses ~tlon-create-issue-in-dir~ and prepopulates the buffer with a template using ~tlon-prepopulate-bug-report-buffer~.
+
+#+findex: tlon-list-all-todos
++ ~tlon-list-all-todos~ :: (Autoloaded) Uses =org-roam-extras= to list all Org files within the directory specified by =paths-dir-tlon-todos=.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-menu-cmd
+:END:
+#+findex: tlon-forg-menu
+The command ~tlon-forg-menu~ (Autoloaded) activates a =transient= menu interface for =tlon-forg= operations.
+
+It provides the following groups and commands:
++ *Actions*:
+  + =y= :: dwim (visit counterpart or capture) (~tlon-visit-counterpart-or-capture~)
+  + =v= :: visit counterpart (~tlon-visit-counterpart~)
+  + =p= :: post (create issue from todo) (~tlon-create-issue-from-todo~)
+  + =x= :: close issue and todo (~tlon-close-issue-and-todo~)
+  + =s= :: sort by tag (~tlon-forg-sort-by-tag~)
++ *Capture*:
+  + =c= :: capture issue (~tlon-capture-issue~)
+  + =C= :: capture all issues (~tlon-capture-all-issues~)
++ *Reconcile*:
+  + =r= :: reconcile issue and todo (~tlon-reconcile-issue-and-todo~)
+  + =R= :: reconcile all issues and todos (~tlon-reconcile-all-issues-and-todos~)
++ *Options*: (These set the corresponding user options temporarily for the session)
+  + =-a= :: Include archived (~tlon-infix-toggle-include-archived~)
+  + =-r= :: When reconciling (~tlon-forg-when-reconciling-infix~)
+  + =-n= :: When assignee is nil (~tlon-when-assignee-is-nil-infix~)
+  + =-e= :: When assignee is someone else (~tlon-when-assignee-is-someone-else-infix~)
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-internals
+:END:
+
+This section lists non-interactive functions, variables, and constants used internally or potentially useful for advanced customization.
+
+*** Constants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-constants
+:END:
+#+vindex: tlon-todo-statuses
++ ~tlon-todo-statuses~ :: List of valid Org TODO keywords used by Tlön (e.g., "TODO", "IMPORTANT", "WAITING").
+#+vindex: tlon-todo-tags
++ ~tlon-todo-tags~ :: List of valid Org tags used by Tlön (e.g., "PendingReview", "Later").
+#+vindex: tlon-forg-sort-by-tags-regexp
++ ~tlon-forg-sort-by-tags-regexp~ :: Regexp used by ~tlon-forg-sort-by-tag~ to identify sortable tags.
+#+vindex: tlon-forg-gh-project-query
++ ~tlon-forg-gh-project-query~ :: GraphQL query string for fetching issue details including project fields via the `gh` CLI (experimental).
+#+vindex: tlon-gh-field-ids
++ ~tlon-gh-field-ids~ :: Alist mapping field names (e.g., =:effortid=) to their GitHub ProjectV2 field IDs (experimental).
+
+*** File Path Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-file-paths
+:END:
+#+vindex: tlon-todos-jobs-file
++ ~tlon-todos-jobs-file~ :: Variable holding the path to the Org file containing job-related TODOs. Set dynamically via ~tlon-get-todos-jobs-file~.
+#+vindex: tlon-todos-generic-file
++ ~tlon-todos-generic-file~ :: Variable holding the path to the Org file containing generic TODOs. Set dynamically via ~tlon-get-todos-generic-file~.
+#+findex: tlon-get-todos-jobs-file
++ ~tlon-get-todos-jobs-file~ :: Retrieves the path to the jobs TODO file using its Org ID (=paths-tlon-todos-jobs-id=) and caches it.
+#+findex: tlon-get-todos-generic-file
++ ~tlon-get-todos-generic-file~ :: Retrieves the path to the generic TODO file using its Org ID (=paths-tlon-todos-generic-id=) and caches it.
+#+findex: tlon-get-todos-file-from-issue
++ ~tlon-get-todos-file-from-issue~ :: Returns the appropriate TODO file path (jobs or generic) based on whether the =ISSUE= is a job (~tlon-issue-is-job-p~).
+#+findex: tlon-get-todo-position
++ ~tlon-get-todo-position~ :: Finds the starting position of a heading matching =STRING= in =FILE=. If =SUBSTRING= is non-nil, matches anywhere in the heading; otherwise, requires an exact match. Uses ~org-find-exact-headline-in-buffer~ or ~tlon-find-headline-substring-in-file~.
+#+findex: tlon-find-headline-substring-in-file
++ ~tlon-find-headline-substring-in-file~ :: Helper to find the position of a heading containing =TODO= as a substring within =FILE=.
+#+findex: tlon-get-todo-position-from-issue
++ ~tlon-get-todo-position-from-issue~ :: Finds the position of the TODO associated with =ISSUE=. For jobs, searches for the heading name; for generic issues, searches for the =orgit-topic:= link substring.
+
+*** Issue and TODO Data Retrieval
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-data-retrieval
+:END:
+#+findex: tlon-get-issue
++ ~tlon-get-issue~ :: Retrieves the =forge-topic= object for an issue specified by =NUMBER= and =REPO=, or by extracting these from the current Org heading.
+#+findex: tlon-get-issue-buffer
++ ~tlon-get-issue-buffer~ :: Returns the buffer visiting the specified issue (or the one at point/heading). Uses ~tlon-visit-issue~ internally.
+#+findex: tlon-get-element-from-heading
++ ~tlon-get-element-from-heading~ :: Extracts text matching =REGEXP= from the Org heading at point.
+#+findex: tlon-get-issue-number-from-heading
++ ~tlon-get-issue-number-from-heading~ :: Extracts the issue number (e.g., #123) from the heading.
+#+findex: tlon-get-repo-from-heading
++ ~tlon-get-repo-from-heading~ :: Extracts the repository abbreviation (e.g., [repo-abbrev]) from the heading and looks up the full directory path.
+#+findex: tlon-get-issue-number-from-open-issues
++ ~tlon-get-issue-number-from-open-issues~ :: Prompts the user to select an open issue from the current repository using completion and returns its number.
+#+findex: tlon-get-issues
++ ~tlon-get-issues~ :: Returns a list of all open =forge-issue= objects for the specified =REPO= (or current repo).
+#+findex: tlon-get-latest-issue
++ ~tlon-get-latest-issue~ :: Returns the number and title of the most recently created open issue in the =REPO=.
+#+findex: tlon-count-issues
++ ~tlon-count-issues~ :: Returns the count of open issues in the =REPO=.
+#+findex: tlon-get-labels-of-type
++ ~tlon-get-labels-of-type~ :: Returns labels of a specific =TYPE= ('tag or 'phase) from an =ISSUE=.
+#+findex: tlon-get-status-in-issue
++ ~tlon-get-status-in-issue~ :: Returns the status ("open" or "completed") of an =ISSUE=, optionally =UPCASED=.
+#+findex: tlon-get-status-in-todo
++ ~tlon-get-status-in-todo~ :: Returns the Org TODO state if it's one of ~tlon-todo-statuses~.
+#+findex: tlon-get-phase-in-labels
++ ~tlon-get-phase-in-labels~ :: Finds the unique valid phase label within a list of =LABELS=.
+#+findex: tlon-get-phase-in-issue
++ ~tlon-get-phase-in-issue~ :: Returns the unique valid job phase label for an =ISSUE=.
+#+findex: tlon-get-assignee
++ ~tlon-get-assignee~ :: Returns the login name of the first assignee of an =ISSUE=.
+#+findex: tlon-forg-get-labels
++ ~tlon-forg-get-labels~ :: Returns a list of all label names for an =ISSUE=.
+#+findex: tlon-get-tags-in-todo
++ ~tlon-get-tags-in-todo~ :: Returns the valid Org tags (from ~tlon-todo-tags~) on the heading at point.
+#+findex: tlon-get-element
++ ~tlon-get-element~ :: Generic function to get an =ELEMENT= (slot) from an =ISSUE= object.
+#+findex: tlon-get-first-element
++ ~tlon-get-first-element~ :: Gets the first item from an =ELEMENT= (slot) that holds a list (like assignees, labels).
+#+findex: tlon-get-first-label
++ ~tlon-get-first-label~ :: Returns the name of the first label of an =ISSUE=.
+#+findex: tlon-get-state
++ ~tlon-get-state~ :: Returns the state symbol ('open or 'completed) of an =ISSUE=.
+#+findex: tlon-get-issue-name
++ ~tlon-get-issue-name~ :: Formats the issue name as "#NUMBER TITLE".
+#+findex: tlon-get-issue-link
++ ~tlon-get-issue-link~ :: Creates an Org link string (=orgit-topic:ID=) for an =ISSUE=.
+#+findex: tlon-make-todo-name-from-issue
++ ~tlon-make-todo-name-from-issue~ :: Constructs the full Org heading string for an =ISSUE=, including status, repo abbreviation, optional job action, the issue link, and tags. Handles =NO-ACTION= and =NO-STATUS= flags.
+#+findex: tlon-get-file-from-issue
++ ~tlon-get-file-from-issue~ :: Extracts a key from the issue name and finds the corresponding file path using ~tlon-get-file-from-key~.
+#+findex: tlon-get-parent-todo
++ ~tlon-get-parent-todo~ :: Finds the parent heading of a given =TODO= name within the jobs file.
+
+*** Issue and TODO Modification
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-modification
+:END:
+#+findex: tlon-set-repo-in-heading
++ ~tlon-set-repo-in-heading~ :: Prompts the user to select a repository and inserts its abbreviation tag (e.g., [repo-abbrev]) into the Org heading if not already present.
+#+findex: tlon-set-issue-number-in-heading
++ ~tlon-set-issue-number-in-heading~ :: Inserts the =ISSUE-NUMBER= (e.g., #123) into the Org heading if not already present.
+#+findex: tlon-close-issue
++ ~tlon-close-issue~ :: Sets the state of an =ISSUE= to 'completed using =forge--set-topic-state=.
+#+findex: tlon-close-issue-number
++ ~tlon-close-issue-number~ :: Visits the issue specified by =ISSUE-NUMBER= and =REPO= and then closes it using ~tlon-close-issue~.
+#+findex: tlon-set-labels
++ ~tlon-set-labels~ :: Sets the labels for an =ISSUE=. Can optionally replace existing labels of a specific =TYPE= (status or phase) or simply append new labels. Uses =forge--set-topic-labels=.
+#+findex: tlon-set-job-label
++ ~tlon-set-job-label~ :: Prompts the user to select a valid job label from ~tlon-job-labels~.
+#+findex: tlon-set-status
++ ~tlon-set-status~ :: Prompts the user to select a valid TODO status from ~tlon-todo-statuses~.
+#+findex: tlon-set-assignee
++ ~tlon-set-assignee~ :: Sets the assignee for an =ISSUE= using =forge--set-topic-assignees=. Takes the =ASSIGNEE= login string.
+#+findex: tlon-select-assignee
++ ~tlon-select-assignee~ :: Prompts the user to select a GitHub user (from ~tlon-user-lookup-all~) to be the assignee.
+#+findex: tlon-set-initial-label-and-assignee
++ ~tlon-set-initial-label-and-assignee~ :: Sets the issue label to "Awaiting processing" and assigns it to the current user. Used when creating master job TODOs.
+#+findex: tlon-update-todo-from-issue
++ ~tlon-update-todo-from-issue~ :: Replaces the current Org heading line with the provided =ISSUE-NAME= string during reconciliation.
+#+findex: tlon-update-issue-from-todo
++ ~tlon-update-issue-from-todo~ :: Placeholder function for updating an issue based on a TODO heading during reconciliation (currently signals an error).
+#+findex: tlon-mark-todo-done
++ ~tlon-mark-todo-done~ :: Finds the =TODO= heading in =FILE= and sets its state to "DONE".
+
+*** Capture and Reconciliation Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-capture-helpers
+:END:
+#+findex: tlon-pull-silently
++ ~tlon-pull-silently~ :: Performs a =forge--pull= operation, suppressing output messages, optionally displaying a custom =MESSAGE= and running a =CALLBACK= function upon completion.
+#+findex: tlon-capture-all-issues-after-pull
++ ~tlon-capture-all-issues-after-pull~ :: Callback function for ~tlon-capture-all-issues~ that initiates the capture process after the initial pull completes.
+#+findex: tlon-store-todo
++ ~tlon-store-todo~ :: Uses =org-capture= with a specific =TEMPLATE= ("tbG" or "tbJ") to store a new TODO for the =ISSUE=, unless one already exists. Handles master job TODO creation.
+#+findex: tlon-capture-handle-assignee
++ ~tlon-capture-handle-assignee~ :: Implements the logic defined by ~tlon-when-assignee-is-nil~ and ~tlon-when-assignee-is-someone-else~ during issue capture. Returns =t= if capture should proceed, =nil= otherwise. May call ~tlon-forg-change-assignee~.
+#+findex: tlon-forg-change-assignee
++ ~tlon-forg-change-assignee~ :: Changes the assignee of the =ISSUE= to the current user and waits (pulling silently) until the change is reflected locally.
+#+findex: tlon-capture-handle-phase
++ ~tlon-capture-handle-phase~ :: Ensures an =ISSUE= being captured as a job has a valid phase label, prompting the user to select one if missing.
+#+findex: tlon-issue-is-job-p
++ ~tlon-issue-is-job-p~ :: Returns =t= if the =ISSUE= title starts with "Job: ".
+#+findex: tlon-create-job-todo-from-issue
++ ~tlon-create-job-todo-from-issue~ :: Handles phase checking and calls ~tlon-store-or-refile-job-todo~ for job issues.
+#+findex: tlon-store-master-job-todo
++ ~tlon-store-master-job-todo~ :: Creates the main parent heading for a job if it doesn't exist. Optionally sets the initial issue label and assignee.
+#+findex: tlon-store-or-refile-job-todo
++ ~tlon-store-or-refile-job-todo~ :: Creates a new job TODO using ~tlon-store-todo~ and then refiles it under its corresponding master job heading (found using ~tlon-get-todo-position~). If the master heading doesn't exist, prompts to create it via ~tlon-store-master-job-todo~. Uses =org-extras= functions for refiling.
+#+findex: tlon-reconcile-all-issues-and-todos-after-pull
++ ~tlon-reconcile-all-issues-and-todos-after-pull~ :: Callback function for ~tlon-reconcile-all-issues-and-todos~ that initiates the reconciliation process after the initial pull completes.
+#+findex: tlon-reconcile-issue-and-todo-from-issue
++ ~tlon-reconcile-issue-and-todo-from-issue~ :: Core reconciliation logic called by ~tlon-reconcile-issue-and-todo~. Compares expected and actual TODO names and calls ~tlon-reconcile-issue-and-todo-prompt~ if they differ.
+#+findex: tlon-reconcile-issue-and-todo-prompt
++ ~tlon-reconcile-issue-and-todo-prompt~ :: Handles the user interaction or automatic action based on ~tlon-forg-when-reconciling~ when a discrepancy is found. Calls either ~tlon-update-todo-from-issue~ or ~tlon-update-issue-from-todo~.
+
+*** Validation and Checks
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-validation
+:END:
+#+findex: tlon-assignee-is-current-user-p
++ ~tlon-assignee-is-current-user-p~ :: Returns =t= if the =ISSUE='s assignee matches the current user (or ~tlon-forg-enforce-user~).
+#+findex: tlon-todo-has-valid-status-p
++ ~tlon-todo-has-valid-status-p~ :: Returns =t= if the Org heading at point has a TODO state listed in ~tlon-todo-statuses~.
+#+findex: tlon-check-label-and-assignee
++ ~tlon-check-label-and-assignee~ :: Checks if the label and assignee of the issue associated with the currently clocked task match the clocked action and the current user. Used before starting a job phase.
+
+*** GitHub Project Integration (Experimental)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-gh-project
+:END:
+These functions use the `gh` command-line tool and GraphQL to interact with GitHub Projects (V2). This functionality appears experimental or incomplete.
+
+#+findex: tlon-gh-get-issue-fields
++ ~tlon-gh-get-issue-fields~ :: Executes the GraphQL query defined in ~tlon-forg-gh-project-query~ using `gh api graphql` to fetch project-related fields for a specific issue. Returns the raw JSON response.
+#+findex: tlon-gh-parse-issue-fields
++ ~tlon-gh-parse-issue-fields~ :: Parses the raw JSON list returned by ~tlon-gh-get-issue-fields~ into a structured property list containing title, assignees, labels, effort, and status.
+
+*** Miscellaneous Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-misc-helpers
+:END:
+#+findex: tlon-open-todo
++ ~tlon-open-todo~ :: Helper function to open =FILE= and go to =POSITION=.
+#+findex: tlon-todo-issue-funcall
++ ~tlon-todo-issue-funcall~ :: Calls =TODO-FUN= if in Org mode at a heading, or =ISSUE-FUN= if in a Forge buffer with an issue context. Used by counterpart and reconcile commands.
+#+findex: tlon-forg-tag-sorter
++ ~tlon-forg-tag-sorter~ :: The custom comparison function used by ~tlon-forg-sort-by-tag~. Extracts the first tag matching ~tlon-forg-sort-by-tags-regexp~ or returns "~" for sorting unmatched entries last.
+#+findex: tlon-create-issue
++ ~tlon-create-issue~ :: Creates a GitHub issue using =ghub-post=.
+#+findex: tlon-create-issue-in-dir
++ ~tlon-create-issue-in-dir~ :: Helper for ~tlon-report-bug~, sets up Magit and calls =forge-create-issue=.
+#+findex: tlon-prepopulate-bug-report-buffer
++ ~tlon-prepopulate-bug-report-buffer~ :: Inserts a template into the buffer created by ~tlon-report-bug~.
+#+findex: tlon-symbol-reader
++ ~tlon-symbol-reader~ :: Helper for transient menus to read a symbol choice using completion.
+#+findex: tlon-when-assignee-is-nil-infix
++ ~tlon-when-assignee-is-nil-infix~ :: Transient infix command to set ~tlon-when-assignee-is-nil~.
+#+findex: tlon-when-assignee-is-someone-else-infix
++ ~tlon-when-assignee-is-someone-else-infix~ :: Transient infix command to set ~tlon-when-assignee-is-someone-else~.
+#+findex: tlon-forg-when-reconciling-infix
++ ~tlon-forg-when-reconciling-infix~ :: Transient infix command to set ~tlon-forg-when-reconciling~.
+#+findex: tlon-infix-toggle-include-archived
++ ~tlon-infix-toggle-include-archived~ :: Transient infix command to toggle ~tlon-forg-include-archived~.
