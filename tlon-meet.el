@@ -245,7 +245,7 @@ function tried to be a nudge in that direction."
 
 (defun tlon-meet--get-transcript-file ()
   "Prompt user for a transcript file."
-  (read-file-name "Select transcript file: " nil nil t ".txt"))
+  (read-file-name "Select transcript file: " paths-dir-downloads nil t ".txt"))
 
 (defun tlon-meet--get-date-from-filename (filename)
   "Extract date (YYYY-MM-DD) from FILENAME or return current date."
