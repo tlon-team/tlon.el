@@ -486,17 +486,16 @@ formatted Markdown (.md) transcript file."
 ;;;###autoload (autoload 'tlon-meet-menu "tlon-meet.el" nil t)
 (transient-define-prefix tlon-meet-menu ()
   "`meet' menu."
-  ["Meetings"
-   ("l p" "Leo-Pablo"                  tlon-create-or-visit-meeting-issue-leo-pablo)
-   ("f p" "Fede-Pablo"                 tlon-create-or-visit-meeting-issue-fede-pablo)
-   ("f l" "Fede-Leo"                   tlon-create-or-visit-meeting-issue-fede-leo)
-   ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)]
-  ["Processing"
-   ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
-   ("t"   "transcribe & format"        tlon-meet-transcribe) ; Now includes formatting
-   ("o"   "format transcript only"     tlon-meet-format-transcript-command) ; Standalone formatting
-   ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
-   ("a"   "transcribe, format & summarize" tlon-meet-transcribe-and-summarize)]) ; Now includes formatting
+  [["Meetings"
+    ("l p" "Leo-Pablo"                  tlon-create-or-visit-meeting-issue-leo-pablo)
+    ("f p" "Fede-Pablo"                 tlon-create-or-visit-meeting-issue-fede-pablo)
+    ("f l" "Fede-Leo"                   tlon-create-or-visit-meeting-issue-fede-leo)
+    ("g"   "group"                      tlon-create-or-visit-group-meeting-issue)]
+   ["Processing"
+    ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
+    ("t"   "transcribe audio"           tlon-meet-transcribe)
+    ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
+    ("a"   "transcribe, format & summarize" tlon-meet-transcribe-and-summarize)]])
 
 (provide 'tlon-meet)
 ;;; tlon-meet.el ends here
