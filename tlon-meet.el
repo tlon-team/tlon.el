@@ -315,16 +315,35 @@ formatting."
           (t nil)))))))
 
 ;;;###autoload
-(defun tlon-meet-summarize-transcript (transcript-file)
+(defun tlon-meet-summarize-transcript (transcript-file &optional participants)
   "Generate AI summary for TRANSCRIPT-FILE and save to meeting repo.
-Prompts for the meeting repository, reads the transcript, calls the AI,
-and saves the summary to \"meeting-summaries.org\" and the transcript
-to \"YYYY-MM-DD-transcript.txt\" in the selected repository."
-  (interactive (list (tlon-meet--get-transcript-file)))
+If PARTICIPANTS (list of nicknames) are provided (e.g., when called from
+`tlon-meet-transcribe-and-summarize'), determine the repository automatically.
+Otherwise, prompt the user to select the meeting repository.
+Reads the transcript, calls the AI, and saves the summary to
+\"meeting-summaries.org\" and the transcript to \"YYYY-MM-DD-transcript.txt\"
+in the determined repository."
+  (interactive (list (tlon-meet--get-transcript-file) nil)) ; Pass nil for participants when called interactively
   (let* ((date (tlon-meet--get-date-from-filename transcript-file))
-         (meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
-         (repo (tlon-meet--determine-repo date meeting-repos))
+         (repo (if participants
+                   (let* ((full-names (mapcar (lambda (nick) (tlon-user-lookup :name :nickname nick)) participants))
+                          (num-participants (length full-names)))
+                     (cond
+                      ((= num-participants 2)
+                       (or (tlon-get-meeting-repo (car full-names) (cadr full-names))
+                           (user-error "Could not find meeting repo for participants: %s" (tlon-concatenate-list full-names))))
+                      ((> num-participants 2)
+                       (tlon-repo-lookup :dir :name "meetings-group"))
+                      (t (user-error "Cannot determine meeting repo with %d participants" num-participants))))
+                 ;; Else (no participants provided), prompt the user
+                 (let* ((meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
+                        (repo-choices (mapcar (lambda (r)
+						(cons (file-name-nondirectory (directory-file-name r)) r))
+					      meeting-repos))
+                        (selected-name (completing-read "Select meeting repository: " repo-choices nil t)))
+                   (cdr (assoc selected-name repo-choices)))))
          (output-buffer (get-buffer-create "*Meeting Summary Output*")))
+    (unless repo (user-error "No meeting repository selected or determined"))
     (display-buffer output-buffer)
     (with-current-buffer output-buffer
       (erase-buffer)
@@ -447,21 +466,8 @@ transcription and formatting) and, upon success, automatically runs
 			;; Callback function to run after transcription and formatting start
 			(lambda (transcript-file)
 			  (message "Transcription successful. Starting summarization for %s" transcript-file)
-			  ;; Call summarize non-interactively
-			  (tlon-meet-summarize-transcript transcript-file))))
-
-(defun tlon-meet--determine-repo (date meeting-repos)
-  "Determine which meeting repository to use for DATE.
-MEETING-REPOS is a list of meeting repository directories."
-  ;; For now, just prompt the user to select the appropriate repo
-  ;; This could be enhanced to automatically determine based on calendar data
-  (let* ((repo-names (mapcar (lambda (repo)
-                               (cons (file-name-nondirectory repo) repo))
-                             meeting-repos))
-         (selected (completing-read
-                    (format "Select meeting repository for %s: " date)
-                    repo-names nil t)))
-    (cdr (assoc selected repo-names))))
+			  ;; Call summarize non-interactively, passing participants
+			  (tlon-meet-summarize-transcript transcript-file participants))))
 
 ;;;;; Menu
 
