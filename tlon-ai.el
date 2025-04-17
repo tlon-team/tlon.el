@@ -344,25 +344,6 @@ default `gptel-model'."
           tlon-ai-string-wrapper)
   "Prompt for extracting bibliographic references exactly as found.")
 
-
-;;;; Helper Functions (Moved from tlon-help)
-
-(defvar elpaca-repos-directory) ; Define if not already globally available
-
-(defun tlon-ai--get-documentation-files ()
-  "Return a list of full paths to documentation files.
-Documentation files are `.org` files within the \"doc/\" subdirectories of the
-\"tlon\" and \"dotfiles/emacs/extras\" repositories managed by Elpaca."
-  (let ((all-doc-files '())
-        (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
-                        (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
-        (doc-pattern "\\.org\\'"))
-    (dolist (doc-dir doc-dirs)
-      (when (file-directory-p doc-dir)
-        (setq all-doc-files (append all-doc-files
-                                    (directory-files doc-dir t doc-pattern)))))
-    (delete-dups all-doc-files)))
-
 ;;;; Functions
 
 ;;;;; General
@@ -1087,7 +1068,7 @@ inserted; if nil, use the current buffer."
 	(message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
       (tlon-ai-batch-continue))))
 
-;;;;; AI Help (Moved from tlon-help)
+;;;;; Help
 
 ;;;###autoload
 (defun tlon-ai-ask-for-help ()
@@ -1131,6 +1112,20 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
       ;; Use the insert function from tlon-ai
       (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
       (gptel-context-remove-all)))) ; Remove context after getting the answer
+
+(defun tlon-ai--get-documentation-files ()
+  "Return a list of full paths to documentation files.
+Documentation files are `.org` files within the \"doc/\" subdirectories of the
+\"tlon\" and \"dotfiles/emacs/extras\" repositories managed by Elpaca."
+  (let ((all-doc-files '())
+        (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
+                        (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
+        (doc-pattern "\\.org\\'"))
+    (dolist (doc-dir doc-dirs)
+      (when (file-directory-p doc-dir)
+        (setq all-doc-files (append all-doc-files
+                                    (directory-files doc-dir t doc-pattern)))))
+    (delete-dups all-doc-files)))
 
 ;;;;;; BibTeX
 
