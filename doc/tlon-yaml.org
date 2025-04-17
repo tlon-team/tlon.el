@@ -1,0 +1,167 @@
+#+title: tlon - YAML Metadata Handling
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* YAML Metadata Handling (=tlon-yaml.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml
+:END:
+
+This module provides functions for reading, writing, and manipulating YAML front matter within the Tlön project, particularly for managing metadata associated with content files and their translations.
+
+** Core Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-core
+:END:
+
+*** Parsing and Formatting YAML
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-parsing
+:END:
+
+#+findex: tlon-yaml-to-alist
++ ~tlon-yaml-to-alist~ :: Parses a list of YAML strings (representing lines from a YAML block) into an Emacs Lisp association list (alist).
+
+#+findex: tlon-yaml-format-values-of-alist
++ ~tlon-yaml-format-values-of-alist~ :: Takes an alist (presumably representing YAML data) and formats its values using ~tlon-yaml-format-value~, preparing them for writing back to YAML format.
+
+#+findex: tlon-yaml-format-value
++ ~tlon-yaml-format-value~ :: Formats a single Emacs Lisp value into a string suitable for YAML representation (e.g., quoting strings, handling lists).
+
+#+findex: tlon-yaml-read-until-match
++ ~tlon-yaml-read-until-match~ :: Reads lines from the current buffer starting from point until a line matching the specified DELIMITER regexp is found. Used for extracting YAML blocks.
+
+#+findex: tlon-yaml-convert-list
++ ~tlon-yaml-convert-list~ :: Converts an Emacs Lisp list into a YAML-formatted string representation (e.g., =[item1, item2]=).
+
+*** Retrieving Metadata
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-retrieving
+:END:
+
+#+findex: tlon-metadata-in-repos
++ ~tlon-metadata-in-repos~ :: Retrieves metadata matching specific key-value PAIRS from all configured Tlön repositories. It aggregates results from ~tlon-metadata-in-repo~.
+
+#+findex: tlon-metadata-in-repo
++ ~tlon-metadata-in-repo~ :: Retrieves all metadata from YAML files within a specific Tlön REPO (or the current one if unspecified).
+
+#+findex: tlon-metadata-in-dir
++ ~tlon-metadata-in-dir~ :: Retrieves all metadata from YAML files within a specified directory DIR.
+
+#+findex: tlon-metadata-in-file
++ ~tlon-metadata-in-file~ :: Retrieves metadata from a specific FILE-OR-BUFFER. Alias for ~tlon-yaml-get-metadata~.
+
+#+findex: tlon-yaml-get-metadata
++ ~tlon-yaml-get-metadata~ :: Extracts the YAML front matter from a FILE-OR-BUFFER and returns it as an alist. If RAW is non-nil, returns the raw string content.
+
+#+findex: tlon-yaml-get-metadata2
++ ~tlon-yaml-get-metadata2~ :: (Purpose unclear from name alone, likely an alternative metadata retrieval function. Needs clarification from docstring or code.)
+
+#+findex: tlon-yaml-get-key
++ ~tlon-yaml-get-key~ :: Retrieves the value associated with a specific KEY from the YAML metadata of a FILE-OR-BUFFER.
+
+#+findex: tlon-yaml-get-key-values
++ ~tlon-yaml-get-key-values~ :: Retrieves all possible values associated with a specific KEY across all metadata files (likely within the current repository or context). Used for completion.
+
+#+findex: tlon-yaml-get-valid-keys
++ ~tlon-yaml-get-valid-keys~ :: Returns a list of valid YAML keys expected for a given FILE, potentially based on its TYPE. If NO-CORE is non-nil, core keys might be excluded.
+
+#+findex: tlon-yaml-get-filenames-in-dir
++ ~tlon-yaml-get-filenames-in-dir~ :: Returns a list of filenames within a DIR, optionally filtered by EXTENSION.
+
+#+findex: tlon-yaml-get-field-at-point
++ ~tlon-yaml-get-field-at-point~ :: Determines the YAML key-value pair at the current cursor position within a YAML block.
+
+#+findex: tlon-yaml-get-original-path
++ ~tlon-yaml-get-original-path~ :: Retrieves the value of the =original_path= key from the current buffer's YAML metadata.
+
+#+findex: tlon-metadata-get-values-of-all-types
++ ~tlon-metadata-get-values-of-all-types~ :: (Purpose unclear from name alone. Likely aggregates values for specific keys across different metadata types or files. Needs clarification.)
+
+#+findex: tlon-metadata-get-translators
++ ~tlon-metadata-get-translators~ :: Retrieves a list of translators, presumably from metadata across relevant files.
+
+*** Modifying Metadata
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-modifying
+:END:
+
+#+findex: tlon-yaml-insert-metadata-section
++ ~tlon-yaml-insert-metadata-section~ :: Inserts a complete YAML metadata section (delimiters and fields) into the specified FILE or current buffer, usually at the beginning.
+
+#+findex: tlon-yaml-insert-fields
++ ~tlon-yaml-insert-fields~ :: Inserts a list of YAML FIELDS (key-value pairs) into the current buffer, typically within an existing YAML block.
+
+#+findex: tlon-yaml-insert-field
++ ~tlon-yaml-insert-field~ :: Interactively prompts for a KEY and VALUE and inserts the corresponding field into the YAML metadata.
+
+#+findex: tlon-yaml-insert-key-value
++ ~tlon-yaml-insert-key-value~ :: Inserts a specific VALUE for a given KEY into the YAML metadata. Handles list values appropriately.
+
+#+findex: tlon-yaml-insert-original-path
++ ~tlon-yaml-insert-original-path~ :: Inserts the =original_path= field into the YAML metadata, likely deriving the path from context.
+
+#+findex: tlon-yaml-insert-list
++ ~tlon-yaml-insert-list~ :: Inserts a YAML list value for the key at point, prompting the user to select from CANDIDATES.
+
+#+findex: tlon-yaml-insert-string
++ ~tlon-yaml-insert-string~ :: Inserts a YAML string value for the key at point, prompting the user to select from CANDIDATES.
+
+#+findex: tlon-yaml-set-key
++ ~tlon-yaml-set-key~ :: Sets or modifies the value for a specific KEY in the YAML metadata, prompting the user for the new value.
+
+#+findex: tlon-yaml-set-key-value
++ ~tlon-yaml-set-key-value~ :: Similar to ~tlon-yaml-set-key~, likely with specific handling based on the KEY.
+
+#+findex: tlon-yaml-write-field
++ ~tlon-yaml-write-field~ :: Writes a specific KEY-VALUE pair to the YAML metadata of a FILE, adding or updating the field.
+
+#+findex: tlon-yaml-delete-metadata
++ ~tlon-yaml-delete-metadata~ :: Deletes the entire YAML metadata section from the current buffer.
+
+#+findex: tlon-yaml-delete-field
++ ~tlon-yaml-delete-field~ :: Deletes the field associated with KEY from the YAML metadata of a FILE or the current buffer.
+
+#+findex: tlon-yaml-reorder-metadata
++ ~tlon-yaml-reorder-metadata~ :: Reorders the fields within the YAML metadata block according to a predefined or standard order (likely using ~tlon-yaml-sort-fields~).
+
+#+findex: tlon-yaml-sort-fields
++ ~tlon-yaml-sort-fields~ :: Sorts a list of YAML FIELDS based on a specified list of KEYS. If NO-ERROR is non-nil, it suppresses errors for missing keys.
+
+*** File and Translation Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-file-management
+:END:
+
+#+findex: tlon-create-translation-file
++ ~tlon-create-translation-file~ :: Creates a new translation file for a given source FILE in the specified LANGUAGE. It likely copies the original content and initializes the translation metadata.
+
+#+findex: tlon-initialize-translation-metadata
++ ~tlon-initialize-translation-metadata~ :: Sets up the initial YAML metadata for a new translation FILE based on the ORIGINAL source file's metadata.
+
+#+findex: tlon-name-file-from-title
++ ~tlon-name-file-from-title~ :: Generates a filename based on a given TITLE, likely applying sluggification rules.
+
+#+findex: tlon-set-file-from-title
++ ~tlon-set-file-from-title~ :: Renames the current file based on its TITLE metadata, potentially moving it to a specified DIR.
+
+*** BibTeX Integration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-bibtex
+:END:
+
+#+findex: tlon-get-bibtex-key
++ ~tlon-get-bibtex-key~ :: Prompts the user for a BibTeX key, potentially offering completion based on available BibTeX databases, using INITIAL-INPUT if provided.
+
+#+findex: tlon-yaml-get-bibtex-key-values
++ ~tlon-yaml-get-bibtex-key-values~ :: Retrieves BibTeX keys associated with a specific metadata FIELD (e.g., =bibliography=) across relevant files.
+
+#+findex: tlon-yaml-select-key-values
++ ~tlon-yaml-select-key-values~ :: Prompts the user to select one or more VALUES (likely BibTeX keys) for a given KEY, offering completion.
