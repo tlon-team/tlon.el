@@ -1294,44 +1294,55 @@ buffer's content."
   (interactive (if (region-active-p)
                    (list (region-beginning) (region-end))
                  (list nil nil)))
-  (unless (tlon-tts-staging-buffer-p)
-    (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
-  ;; Ensure chunks are up-to-date with the current buffer content
-  (tlon-tts-prepare-chunks)
-  (if (and beg end)
-      ;; Region is active
-      (save-excursion
-        (goto-char beg)
-        (let ((paragraphs-generated 0))
-          (while (< (point) end)
-            (let* ((current-pos (point))
-                   (paragraph-index (tlon-tts--get-paragraph-index-at-point current-pos)))
-              (when paragraph-index
-                (message "Generating paragraph %d (in region)..." paragraph-index)
-                (tlon-tts--generate-single-paragraph paragraph-index)
-                (setq paragraphs-generated (1+ paragraphs-generated)))
-              ;; Move to the start of the next paragraph to avoid generating the same one
-              (condition-case nil
-                  (forward-paragraph)
-                (error (goto-char (point-max)))) ; Go to end if error (e.g., at end of buffer)
-              ;; Ensure progress if forward-paragraph didn't move
-              (when (= (point) current-pos)
-                (forward-char 1))))
-          (unless (> paragraphs-generated 0)
-            (message "No paragraphs found within the selected region."))))
-    ;; No region active, generate paragraph at point
-    (let ((paragraph-index (tlon-tts--get-paragraph-index-at-point (point))))
-      (unless paragraph-index
-        (user-error "Could not determine paragraph index at point"))
-      (message "Generating paragraph %d (at point)..." paragraph-index)
-      (tlon-tts--generate-single-paragraph paragraph-index))))
+ (unless (tlon-tts-staging-buffer-p)
+   (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
+ ;; Ensure chunks are up-to-date with the current buffer content
+ (tlon-tts-prepare-chunks)
+ (unless tlon-tts-chunks
+   (user-error "No TTS chunks found. Staging buffer might be empty or invalid."))
 
-(defun tlon-tts-execute-generation-request (paragraph-index paragraph-text chunk-filename voice-params)
+ (if (and beg end)
+     ;; --- Region is active ---
+     (save-excursion
+       (goto-char beg)
+       (let ((generated-indices '()) ; Keep track of generated chunk indices
+             (paragraphs-generated 0))
+         (while (< (point) end)
+           (let* ((current-pos (point))
+                  (chunk-index (tlon-tts--find-chunk-index-containing-point current-pos)))
+             (if (and chunk-index (not (member chunk-index generated-indices)))
+                 (let* ((paragraph-index (1+ chunk-index)) ; 1-based for messages
+                        (chunk-data (nth chunk-index tlon-tts-chunks))
+                        (chunk-end-marker (nth 7 chunk-data))
+                        (chunk-end-pos (marker-position chunk-end-marker)))
+                   (message "Generating paragraph %d (chunk %d in region)..." paragraph-index chunk-index)
+                   (tlon-tts--generate-single-paragraph paragraph-index) ; Pass 1-based index
+                   (push chunk-index generated-indices)
+                   (setq paragraphs-generated (1+ paragraphs-generated))
+                   ;; Move point to the end of the processed chunk to avoid reprocessing
+                   (goto-char chunk-end-pos))
+               ;; If no chunk found or already generated, move forward to avoid infinite loop
+               (when (= (point) current-pos)
+                 (forward-char 1))))) ; Minimal progress if stuck
+         (unless (> paragraphs-generated 0)
+           (message "No paragraphs found or generated within the selected region."))))
+
+   ;; --- No region active, generate paragraph at point ---
+   (let* ((current-point (point))
+          (chunk-index (tlon-tts--find-chunk-index-containing-point current-point)))
+     (unless chunk-index
+       (user-error "Could not find TTS chunk containing point %d" current-point))
+     (let ((paragraph-index (1+ chunk-index))) ; 1-based for messages
+       (message "Generating paragraph %d (chunk %d at point)..." paragraph-index chunk-index)
+       (tlon-tts--generate-single-paragraph paragraph-index))))) ; Pass 1-based index
+
+(defun tlon-tts-execute-generation-request (paragraph-index chunk-index paragraph-text chunk-filename voice-params)
   "Execute the TTS request to generate PARAGRAPH-TEXT.
-PARAGRAPH-INDEX is used for logging and context, CHUNK-FILENAME is the output
-file, and VOICE-PARAMS are the specific voice parameters for this chunk."
+PARAGRAPH-INDEX (1-based) is used for logging.
+CHUNK-INDEX (0-based) is used for context calculation in the request function.
+CHUNK-FILENAME is the output file.
+VOICE-PARAMS are the specific voice parameters for this chunk."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
-         (chunk-index (1- paragraph-index)) ; Calculate the 0-based chunk index
          ;; Pass the 0-based chunk-index to the request function
          (request (funcall fun paragraph-text chunk-filename voice-params chunk-index))
          (process-name (format "generate audio %d" paragraph-index))
@@ -1384,9 +1395,9 @@ PARAGRAPH-INDEX is the 1-based index of the paragraph."
     (unless chunk-filename
       (user-error "Could not retrieve filename for paragraph index %d" paragraph-index))
 
-    ;; Pass the specific voice-params to the execution function
+    ;; Pass the specific voice-params and the 0-based chunk-index to the execution function
     (let ((process (tlon-tts-execute-generation-request
-                    paragraph-index paragraph-text chunk-filename voice-params)))
+                    paragraph-index chunk-index paragraph-text chunk-filename voice-params)))
       (tlon-tts-handle-generation-result process paragraph-index chunk-filename))))
 
 ;;;;;; Prepare chunks
@@ -1551,28 +1562,8 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 ;; This function is now effectively part of tlon-tts-break-into-chunks
 ;; (defun tlon-tts--add-chunk (begin end current-voice chunks destination use-paragraph-chunks) ...)
 
-(defun tlon-tts--get-paragraph-index-at-point (point)
-  "Return the 1-based index of the paragraph containing POINT.
-Counts paragraphs from the start of narratable content in the current buffer."
-  (save-excursion
-    (goto-char (tlon-tts--get-content-start-pos))
-    (let ((index 0)
-          (content-end (point-max)) ; Assuming local vars are handled elsewhere or not present
-          found-index) ; Store the index when found
-      (while (and (not found-index) (< (point) content-end)) ; Loop until found or end
-        (let ((start (point)))
-          (forward-paragraph) ; Use built-in paragraph motion
-          (let ((end (point)))
-            ;; Check if the paragraph is non-empty
-            (when (and (> end start)
-                       (string-match-p "\\S-" (buffer-substring-no-properties start end)))
-              (setq index (1+ index)) ; Increment for each non-empty paragraph
-              ;; Check if the target position is within this paragraph
-              (when (and (>= point start) (< point end))
-                (setq found-index index))) ; Store the index when found
-            ;; Ensure progress even if forward-paragraph doesn't move
-            (when (= end start) (forward-char 1)))))
-      found-index))) ; Return the stored index (or nil if not found)
+;; This function is no longer used; replaced by tlon-tts--find-chunk-index-containing-point
+;; (defun tlon-tts--get-paragraph-index-at-point (point) ...)
 
 (defun tlon-tts--update-voice-state (begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)
   "Update current-voice and voice-chunk-list if BEGIN is at a voice change point.
