@@ -1079,7 +1079,7 @@ specified in `tlon-ai-help-model'."
   (interactive)
   (tlon-warn-if-gptel-context) ; Keep the warning
   (let* ((question (read-string "What do you need help with? "))
-         (all-doc-files (tlon-ai--get-documentation-files)) ; Use renamed helper
+         (all-doc-files (tlon-ai-get-documentation-files)) ; Use renamed helper
          (existing-doc-files '())
          (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
          full-prompt)
