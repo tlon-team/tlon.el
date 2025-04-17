@@ -1356,10 +1356,9 @@ VOICE-PARAMS are the specific voice parameters for this chunk."
 
     (message "Generating chunk %d with voice %s into %s..."
              chunk-number
-             ;; Directly check the cons cell, don't use assoc
-             (if (and (consp voice-params) (eq (car voice-params) 'tlon-tts-voice))
-                 (cdr voice-params)
-               "default")
+             (tlon-tts-get-voice-friendly-name
+              (when (and (consp voice-params) (eq (car voice-params) 'tlon-tts-voice))
+                (cdr voice-params)))
              (file-name-nondirectory chunk-filename))
     ;; Wait for completion
     (while (process-live-p process)
