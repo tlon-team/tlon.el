@@ -410,7 +410,6 @@ and the third group captures the collection ID.")
 	   :github "benthamite"
 	   :substitute "worldsaround"
 	   :nickname "Pablo")
-
     (:name "Federico Stafforini"
 	   :git "Federico Stafforini"
 	   :github "fstafforini"
