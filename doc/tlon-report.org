@@ -1,0 +1,19 @@
+#+title: tlon - Reporting Utilities
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* Reporting Utilities (=tlon-report.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-report
+:END:
+
+This module likely provides functions for generating reports based on Tlön data or activities.
+
+(Documentation will be added here once the summary or content of =tlon-report.el= is provided.)
