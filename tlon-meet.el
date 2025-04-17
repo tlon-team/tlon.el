@@ -392,6 +392,71 @@ Updates OUTPUT-BUFFER with progress messages."
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
 ;;;###autoload
+(defun tlon-meet-format-transcript (transcript-file)
+  "Generate AI formatted version for TRANSCRIPT-FILE and save to meeting repo.
+Prompts for the meeting repository, reads the transcript, calls the AI,
+and saves the formatted transcript to 'YYYY-MM-DD-formatted-transcript.txt'
+in the selected repository."
+  (interactive (list (tlon-meet--get-transcript-file)))
+  (let* ((date (tlon-meet--get-date-from-filename transcript-file))
+         (meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
+         (repo (tlon-meet--determine-repo date meeting-repos))
+         (output-buffer (get-buffer-create "*Meeting Format Output*")))
+    (display-buffer output-buffer)
+    (with-current-buffer output-buffer
+      (erase-buffer)
+      (insert (format "Formatting transcript: %s\n" transcript-file))
+      (insert (format "Meeting Date: %s\n" date))
+      (insert (format "Target Repository: %s\n" repo)))
+    (tlon-meet--generate-and-save-formatted-transcript transcript-file date repo output-buffer)))
+
+(defun tlon-meet--generate-and-save-formatted-transcript (transcript-file date repo output-buffer)
+  "Helper to generate formatted transcript and save file.
+Reads TRANSCRIPT-FILE, calls AI, saves formatted transcript to REPO
+for meeting on DATE. Updates OUTPUT-BUFFER."
+  (with-temp-buffer
+    (insert-file-contents transcript-file)
+    (let ((transcript-content (buffer-string)))
+      ;; Use AI to generate formatted transcript
+      (with-current-buffer output-buffer
+        (goto-char (point-max))
+        (insert "Reading transcript and generating AI formatted version...\n"))
+      (tlon-make-gptel-request
+       (format tlon-meet-format-transcript-prompt transcript-content) ; Pass transcript directly
+       nil ; No extra string needed if included in prompt
+       (lambda (response info)
+         (if response
+             (tlon-meet--save-formatted-transcript response date repo output-buffer)
+           (with-current-buffer output-buffer
+             (goto-char (point-max))
+             (insert (format "\nError formatting transcript: %s\n"
+                             (plist-get info :status))))))))))
+
+(defun tlon-meet--save-formatted-transcript (formatted-transcript date repo output-buffer)
+  "Save FORMATTED-TRANSCRIPT for meeting on DATE to REPO.
+Updates OUTPUT-BUFFER with progress messages."
+  (let* ((formatted-file (expand-file-name (format "%s-formatted-transcript.txt" date) repo)))
+    (with-current-buffer output-buffer
+      (goto-char (point-max))
+      (insert (format "\nSaving formatted transcript to %s\n" formatted-file)))
+    ;; Save the formatted transcript file to the repo
+    (with-temp-buffer
+      (insert formatted-transcript)
+      (write-region (point-min) (point-max) formatted-file))
+    ;; Commit the changes
+    (let ((default-directory repo))
+      (with-current-buffer output-buffer
+        (goto-char (point-max))
+        (insert "Committing changes...\n"))
+      (call-process "git" nil output-buffer t "add" (file-name-nondirectory formatted-file))
+      (call-process "git" nil output-buffer t "commit" "-m"
+                    (format "Add AI-formatted transcript for meeting on %s" date))
+      (with-current-buffer output-buffer
+        (goto-char (point-max))
+        (insert "\nFormatted transcript added successfully!\n")
+        (insert (format "Formatted transcript file: %s\n" formatted-file))))))
+
+;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file)
   "Transcribe AUDIO-FILE using whisperx and then create an AI summary.
 Runs `tlon-meet-transcribe' and, upon success, automatically runs
