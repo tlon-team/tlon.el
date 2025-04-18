@@ -434,18 +434,19 @@ Prompts for transcript file and participants, then calls the AI formatter."
   (interactive (tlon-meet--get-file-and-participants))
   (tlon-meet-format-transcript transcript-file participants))
 
-(defun tlon-meet-format-transcript (transcript-file participants)
+(defun tlon-meet-format-transcript (transcript-file participants &optional callback)
   "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS.
 Reads the transcript, calls the AI with PARTICIPANTS, and saves the formatted
 result to a Markdown file (.md) with the same base name in the same directory.
-This function is intended to be called programmatically."
+If CALLBACK is provided, call it with the path to the formatted .md file and
+PARTICIPANTS after successful saving."
   (message "Formatting transcript: %s..." transcript-file)
-  (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants))
+  (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants callback))
 
-(defun tlon-meet--generate-and-save-formatted-transcript-md (transcript-file participants)
+(defun tlon-meet--generate-and-save-formatted-transcript-md (transcript-file participants &optional callback)
   "Helper to generate formatted transcript and save it as Markdown.
-Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, and saves the result
-to a .md file."
+Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
+.md file, and calls CALLBACK if provided."
   (with-temp-buffer
     (insert-file-contents transcript-file)
     (let ((transcript-content (buffer-string))
@@ -460,7 +461,10 @@ to a .md file."
                (with-temp-buffer
                  (insert response)
                  (write-region (point-min) (point-max) output-file))
-               (message "Formatted transcript saved to: %s" output-file))
+               (message "Formatted transcript saved to: %s" output-file)
+               ;; If a callback was provided, call it now with the output file path and participants
+               (when callback
+                 (funcall callback output-file participants)))
            (message "Error formatting transcript: %s" (plist-get info :status))))))))
 
 ;;;###autoload
