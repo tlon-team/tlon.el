@@ -59,8 +59,8 @@ If VOICE-ID is nil, ElevenLabs might use a default or clone the original voice.
 Returns the JSON response from the API, typically containing the `dubbing_id'."
   (interactive
    (list (read-file-name "Source file: ")
-         (tlon-read-language nil "Source language: " t t)
-         (tlon-read-language nil "Target language: " t t)
+         (tlon-read-language nil "Source language: " t nil) ; Changed t to nil
+         (tlon-read-language nil "Target language: " t nil) ; Changed t to nil
          (read-string "Project name: ")
          (completing-read "Voice ID (optional, press RET for default): "
                           (mapcar (lambda (v) (plist-get v :id)) tlon-elevenlabs-voices)
