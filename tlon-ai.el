@@ -1082,11 +1082,11 @@ Collects documentation files from the standard tlon and extras doc directories,
 adds them to the AI context, and sends the user's question using the model
 specified in `tlon-ai-help-model'."
   (interactive)
-  (tlon-warn-if-gptel-context) ; Keep the warning
+  (tlon-warn-if-gptel-context)
   (let* ((question (read-string "What do you need help with? "))
-         (all-doc-files (tlon-ai-get-documentation-files)) ; Use renamed helper
+         (all-doc-files (tlon-ai-get-documentation-files))
          (existing-doc-files '())
-         (prompt-template "Here is the documentation for all processes and programs within the Tlön organization. They range from project readme files to docs for all the Emacs functionality used by this organization (including extensions for common Emacs packages or features (‘extras’), modules that provide new functionality within the comprehensive ‘tlon’ package, and a detailed configuration file (‘config.org’). An employee has asked a question that may relate to any of these processes, and I want you to answer it to the best of your ability. Here is the question:\n\n%s")
+         (prompt-template (format "Here is the documentation for all processes and programs within the Tlön organization. They range from project readme files to docs for all the Emacs functionality used by this organization (including extensions for common Emacs packages or features (‘extras’), modules that provide new functionality within the comprehensive ‘tlon’ package, and a detailed configuration file (‘config.org’). An employee has asked a question that may relate to any of these processes, and I want you to answer it to the best of your ability. Please format your answer using %S syntax. Here is the question:\n\n%%s" gptel-default-mode))
          full-prompt)
     (unless all-doc-files
       (user-error "No documentation files found in standard Elpaca doc directories"))
@@ -1129,6 +1129,8 @@ request. QUESTION is the original user question."
         (funcall gptel-default-mode)
         (gptel-mode 1)
         (setq buffer-read-only nil)
+        (when (eq gptel-default-mode 'org-mode)
+          (org-show-all)) ; Ensure content under heading is visible
         (goto-char (point-max))) ; Move point to end for follow-up
       (switch-to-buffer buffer)
       ;; Ask about clearing context
