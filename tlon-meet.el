@@ -33,12 +33,12 @@
 ;;;; Variables
 
 (defconst tlon-meet-format-transcript-prompt
-  "Please format the the following conversation transcript. You should replace SPEAKER_nn with the actual speaker name. In this conversation, the speakers are %s.\n\nIn addition, break the text into paragraphs, in a way that is optimized for reading (the kind of format typical of a newspaper or magazine interview).\n\nPlease process the entire file, not just its beginning. In other word, don't say things like \"The conversation continues for a while\", but rather include the text of all the conversation, properly formatted.\n\n%s"
+  "Please format the following conversation transcript. You should replace SPEAKER_nn with the actual speaker name. In this conversation, the speakers are %s.\n\nIn addition, break the text into paragraphs, in a way that is optimized for reading (the kind of format typical of a newspaper or magazine interview).\n\nPlease process the entire file, not just its beginning. In other words, don't say things like \"The conversation continues for a while\", but rather include the text of all the conversation, properly formatted.\n\nIMPORTANT: Do not include any introductory or concluding remarks like 'Okay, here is the formatted transcript...'. Just return the formatted transcript itself, starting directly with the content.\n\n%s"
   "Prompt template for formatting meeting summaries.
 The %s will be replaced with the participant names and the transcript text.")
 
 (defconst tlon-meet-summarize-transcript-prompt
-  "Please provide a concise summary of the following conversation transcript. Focus on the key points discussed, decisions made, and any action items or follow-up tasks mentioned. Format the summary with bullet points for each main topic, and include a section at the end titled 'Action Items' that lists specific tasks that were assigned or mentioned.\n\nUse org-mode syntax: ‘-’ for the bullet points and asterisks for the headings. Use leading two asterisks for the heading with the meeting date, and three leading asterisks for the subheading with the action items (note that the asterisks go only at the beginning; i.e. do not put asterisks at the end of the heading as well).\n\n%s"
+  "Please provide a concise summary of the following conversation transcript. Focus on the key points discussed, decisions made, and any action items or follow-up tasks mentioned. Format the summary with bullet points for each main topic, and include a section at the end titled 'Action Items' that lists specific tasks that were assigned or mentioned.\n\nUse org-mode syntax: ‘-’ for the bullet points and asterisks for the headings. Use leading two asterisks for the heading with the meeting date, and three leading asterisks for the subheading with the action items (note that the asterisks go only at the beginning; i.e. do not put asterisks at the end of the heading as well).\n\nIMPORTANT: Do not wrap your response in ```org blocks or any other code fences. Just provide the Org-mode content directly, starting with the `** Meeting on YYYY-MM-DD` heading (replace YYYY-MM-DD with the actual date).\n\n%s"
   "Prompt template for generating meeting summaries.
 The %s will be replaced with the transcript text.")
 
@@ -273,8 +273,9 @@ formatting."
                                  "--diarize"
                                  "--language" "es"
                                  "--hf_token" hf-token)))
-    ;; Show the output buffer
-    (display-buffer buffer)
+    ;; Show the output buffer only if called interactively
+    (when (called-interactively-p 'any)
+      (display-buffer buffer))
     (with-current-buffer buffer
       (erase-buffer)
       (insert (format "Starting diarization of %s using whisperx...\n\n" audio-filename))
@@ -411,11 +412,22 @@ the formatted Markdown (.md) file."
       ;; Add both the summary file and the transcript file (relative to repo root)
       (call-process "git" nil output-buffer t "add" (file-name-nondirectory summary-file))
       (call-process "git" nil output-buffer t "add" (file-relative-name repo-transcript-file repo))
-      (call-process "git" nil output-buffer t "commit" "-m"
-                    (format "Add AI summary and transcript for meeting on %s" date))
+      ;; Commit
+      (let ((commit-success (= 0 (call-process "git" nil output-buffer t "commit" "-m"
+                                                (format "Add AI summary and transcript for meeting on %s" date)))))
+        (with-current-buffer output-buffer
+          (goto-char (point-max))
+          (if commit-success
+              (progn
+                (insert "\nCommit successful. Pushing changes...\n")
+                ;; Push changes
+                (if (= 0 (call-process "git" nil output-buffer t "push"))
+                    (insert "Push successful.\n")
+                  (insert "Error: Push failed. See buffer output.\n")))
+            (insert "\nError: Commit failed. See buffer output.\n"))))
       (with-current-buffer output-buffer
         (goto-char (point-max))
-        (insert "\nSummary and transcript added successfully!\n")
+        (insert "\nSummary and transcript processing complete.\n")
         (insert (format "Summary file: %s\n" summary-file))
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
