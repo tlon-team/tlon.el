@@ -177,11 +177,13 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
          (url (format (concat tlon-dub-api-base-url tlon-dub-get-project-metadata-endpoint)
                       dubbing-id))
-         (command (format "curl -s --request GET '%s' \
---header 'accept: application/json' \
---header 'xi-api-key: %s'"
-                          url
-                          api-key)))
+         ;; Build the argument list for curl
+         (args (list "curl" "-s"
+                     "--request" "GET"
+                     "--url" url
+                     "--header" "accept: application/json"
+                     "--header" (format "xi-api-key: %s" api-key)))
+         (command (mapconcat #'shell-quote-argument args " ")))
     (message "Getting metadata for dubbing project %s..." dubbing-id)
     (when tlon-debug (message "Debug: Running command: %s" command))
     (let ((response (shell-command-to-string command)))
@@ -203,12 +205,14 @@ LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired tran
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
          (url (format (concat tlon-dub-api-base-url tlon-dub-get-transcript-endpoint)
                       dubbing-id language-code))
+         ;; Build the argument list for curl
          ;; Use -L to follow redirects, as this endpoint might return a temporary URL for the transcript file
-         (command (format "curl -s -L --request GET '%s' \
---header 'accept: application/json' \
---header 'xi-api-key: %s'"
-                          url
-                          api-key)))
+         (args (list "curl" "-s" "-L"
+                     "--request" "GET"
+                     "--url" url
+                     "--header" "accept: application/json" ; VTT is text-based, JSON accept might be ignored or fine
+                     "--header" (format "xi-api-key: %s" api-key)))
+         (command (mapconcat #'shell-quote-argument args " ")))
     (message "Getting transcript for dubbing project %s (language: %s)..." dubbing-id language-code)
     (when tlon-debug (message "Debug: Running command: %s" command))
     (let ((response (shell-command-to-string command)))
@@ -245,11 +249,13 @@ This endpoint might provide detailed structure including resource, speaker, and 
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
          (url (format (concat tlon-dub-api-base-url tlon-dub-get-resource-data-endpoint)
                       dubbing-id))
-         (command (format "curl -s --request GET '%s' \
---header 'accept: application/json' \
---header 'xi-api-key: %s'"
-                          url
-                          api-key)))
+         ;; Build the argument list for curl
+         (args (list "curl" "-s"
+                     "--request" "GET"
+                     "--url" url
+                     "--header" "accept: application/json"
+                     "--header" (format "xi-api-key: %s" api-key)))
+         (command (mapconcat #'shell-quote-argument args " ")))
     (message "Getting resource data for dubbing project %s..." dubbing-id)
     (when tlon-debug (message "Debug: Running command: %s" command))
     (let ((response (shell-command-to-string command)))
