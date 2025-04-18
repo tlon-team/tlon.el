@@ -78,7 +78,7 @@ Shares with 'editor' role using the email in `tlon-email-shared'."
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
 		      resource-id))
 	 (user-email tlon-email-shared) ; Assuming this holds the relevant email
-	 (payload-alist `(("resource_type" . "dubbing_project") ; Add the required resource_type
+	 (payload-alist `(("resource_type" . "dubbing") ; Use "dubbing" as the resource_type
 			  ("principals" . [((principal_type . "user") (principal_id . ,user-email))])
 			  ("role" . "editor")))
 	 (payload (json-encode payload-alist))
