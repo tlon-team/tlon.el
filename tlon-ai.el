@@ -1086,21 +1086,20 @@ specified in `tlon-ai-help-model'."
   (let* ((question (read-string "What do you need help with? "))
          (all-doc-files (tlon-ai-get-documentation-files)) ; Use renamed helper
          (existing-doc-files '())
-         (prompt-template "Here is the documentation for the tlon Emacs package and related tools, found in %d file(s). Please answer the following question based *only* on this documentation:\n\n%s")
+         (prompt-template "Here is the documentation for all processes and programs within the Tlön organization. They range from project readme files to docs for all the Emacs functionality used by this organization (including extensions for common Emacs packages or features (‘extras’), modules that provide new functionality within the comprehensive ‘tlon’ package, and a detailed configuration file (‘config.org’). An employee has asked a question that may relate to any of these processes, and I want you to answer it to the best of your ability. Here is the question:\n\n%s")
          full-prompt)
     (unless all-doc-files
       (user-error "No documentation files found in standard Elpaca doc directories"))
     ;; Add all found documentation files to the context
     (dolist (doc-file all-doc-files)
       (when (file-exists-p doc-file)
-        (message "Adding documentation file to context: %s" (file-name-nondirectory doc-file))
-        (gptel-context-add-file doc-file)
+        (shut-up (gptel-context-add-file doc-file))
         (push doc-file existing-doc-files)))
     ;; Check if any files were actually added (existed)
     (unless existing-doc-files
       (user-error "Found documentation file entries, but none exist on disk"))
     ;; Now format the prompt with the actual number of files added
-    (setq full-prompt (format prompt-template (length existing-doc-files) question))
+    (setq full-prompt (format prompt-template question))
     ;; Use the specific help model
     (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-for-help-callback tlon-ai-help-model 'no-context-check)
     (message "Preparing your answer using %d documentation file(s) with model %S..."
@@ -1135,14 +1134,12 @@ Documentation files are collected from:
          (repos (tlon-lookup-all tlon-repos :dir :help t))
          (readme-patterns '("readme.org" "readme.md"))
          ;; 3. Specific individual files
-         (files (list (file-name-concat (paths-dir-dotemacs) "config.org"))))
-
+         (files (list (file-name-concat paths-dir-dotemacs "config.org"))))
     ;; Collect files from doc-dirs
     (dolist (doc-dir doc-dirs)
       (when (file-directory-p doc-dir)
         (setq all-doc-files (append all-doc-files
                                     (directory-files doc-dir t doc-pattern)))))
-
     ;; Collect readme files from repos
     (dolist (repo-dir repos)
       (when (file-directory-p repo-dir)
@@ -1150,12 +1147,10 @@ Documentation files are collected from:
           (let ((readme-file (file-name-concat repo-dir pattern)))
             (when (file-exists-p readme-file)
               (push readme-file all-doc-files))))))
-
     ;; Collect individual files
     (dolist (file files)
       (when (file-exists-p file)
         (push file all-doc-files)))
-
     ;; Remove duplicates and return
     (delete-dups all-doc-files)))
 
