@@ -67,23 +67,24 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
                           nil nil nil nil ""))) ; Allow empty input for optional voice
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
          (url (concat tlon-dub-api-base-url tlon-dub-start-project-endpoint))
-         ;; Construct the multipart/form-data command
-         (command (format "curl -s --request POST '%s' \
+         ;; Construct the multipart/form-data command, ensuring values are shell-quoted
+         (command (format "curl -s --request POST %s \
 --header 'accept: application/json' \
 --header 'xi-api-key: %s' \
---form 'mode=\"automatic\"' \
---form 'file=@\"%s\"' \
---form 'name=\"%s\"' \
---form 'source_lang=\"%s\"' \
---form 'target_lang=\"%s\"%s"
-                          url
-                          api-key
-                          source-file
-                          project-name
-                          source-lang
-                          target-lang
+--form mode=automatic \
+--form file=@%s \
+--form name=%s \
+--form source_lang=%s \
+--form target_lang=%s%s"
+                          (shell-quote-argument url)
+                          (shell-quote-argument api-key)
+                          (shell-quote-argument source-file) ; Quote the file path
+                          (shell-quote-argument project-name) ; Quote the project name
+                          (shell-quote-argument source-lang)
+                          (shell-quote-argument target-lang)
                           (if (and voice-id (not (string-empty-p voice-id)))
-                              (format " --form 'voice_id=\"%s\"'" voice-id)
+                              ;; Also quote the voice_id if provided
+                              (format " --form voice_id=%s" (shell-quote-argument voice-id))
                             ""))))
     (message "Starting dubbing project '%s' for %s..." project-name (file-name-nondirectory source-file))
     (when tlon-debug (message "Debug: Running command: %s" command))
