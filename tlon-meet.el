@@ -431,7 +431,7 @@ the formatted Markdown (.md) file."
 (defun tlon-meet-format-transcript-command (transcript-file participants)
   "Interactively format TRANSCRIPT-FILE using PARTICIPANTS.
 Prompts for transcript file and participants, then calls the AI formatter."
-  (interactive ((tlon-meet--get-file-and-participants)))
+  (interactive (tlon-meet--get-file-and-participants))
   (tlon-meet-format-transcript transcript-file participants))
 
 (defun tlon-meet-format-transcript (transcript-file participants)
