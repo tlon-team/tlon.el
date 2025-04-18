@@ -72,15 +72,16 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
      (t nil)))) ; Unsupported type
 
 (defun tlon-dub--share-project-with-self (resource-id)
-  "Share the workspace RESOURCE-ID (dubbing_id) with the current API key.
-Shares with 'editor' role using the top-level `workspace_api_key_id` field."
+  "Share the workspace RESOURCE-ID (dubbing_id) with the user associated with the API key.
+Shares with 'editor' role using the top-level `user_email` field."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
 		      resource-id))
-	 ;; Construct payload using workspace_api_key_id at the top level
-	 (payload-alist `(("resource_type" . "dubbing")
-			  ("workspace_api_key_id" . ,api-key) ; Top-level API key ID
-			  ("role" . "editor")))
+	 (user-email tlon-email-shared) ; Use the user email associated with the API key
+	 ;; Revert to using user_email at the top level, matching successful curl structure
+	 (payload-alist `(("resource_type" . "dubbing") ; Correct type for dubbing
+			  ("user_email" . ,user-email)    ; Top-level user email
+			  ("role" . "editor")))           ; Desired role
 	 (payload (json-encode payload-alist))
 	 ;; Build the argument list for curl
 	 (args (list "curl" "-s"
@@ -91,7 +92,7 @@ Shares with 'editor' role using the top-level `workspace_api_key_id` field."
 		     "--header" (format "xi-api-key: %s" api-key)
 		     "--data" payload))
 	 (command (mapconcat #'shell-quote-argument args " ")))
-    (message "Sharing resource %s with workspace API key (role: editor)..." resource-id) ; Message reflects API key sharing
+    (message "Sharing resource %s with %s (role: editor)..." resource-id user-email) ; Revert message to use user-email
     (when tlon-debug (message "Debug: Running share command: %s" command))
     (let ((response (shell-command-to-string command)))
       ;; Check response - success might be empty or a simple confirmation
