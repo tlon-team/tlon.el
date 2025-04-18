@@ -65,6 +65,39 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
      ;; Add other supported types as needed
      (t nil)))) ; Unsupported type
 
+(defun tlon-dub--parse-vtt (vtt-string)
+  "Parse VTT-STRING and return a list of segments.
+Each segment is a plist with :start, :end, and :text keys."
+  (let ((lines (split-string vtt-string "\n"))
+        segments current-segment text-buffer)
+    ;; Basic state machine: expecting timestamp or text
+    (dolist (line lines (nreverse segments))
+      (cond
+       ;; Skip WEBVTT header and empty lines
+       ((or (string-prefix-p "WEBVTT" line) (string-blank-p line))
+        nil) ; Do nothing
+       ;; Skip NOTE comments
+       ((string-prefix-p "NOTE" line)
+        nil) ; Do nothing
+       ;; Match timestamp line (e.g., 00:00:00.000 --> 00:00:05.000 ...)
+       ((string-match "^\\([0-9:]+\\.[0-9]+\\)[ \t]+-->[ \t]+\\([0-9:]+\\.[0-9]+\\)" line)
+        ;; If we were collecting text, finalize the previous segment
+        (when text-buffer
+          (setf (plist-put current-segment :text) (string-trim text-buffer))
+          (push current-segment segments)
+          (setq text-buffer nil))
+        ;; Start a new segment
+        (setq current-segment (list :start (match-string 1 line) :end (match-string 2 line))
+              text-buffer "")) ; Initialize text buffer for the new segment
+       ;; Assume it's text payload if a segment has been started
+       (current-segment
+        (setq text-buffer (concat text-buffer (if (string-empty-p text-buffer) "" "\n") line)))))
+    ;; Add the last segment if text was collected
+    (when text-buffer
+      (setf (plist-put current-segment :text) (string-trim text-buffer))
+      (push current-segment segments))
+    (nreverse segments)))
+
 ;;;; Functions
 
 ;;;###autoload
@@ -176,16 +209,29 @@ LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired tran
     (message "Getting transcript for dubbing project %s (language: %s)..." dubbing-id language-code)
     (when tlon-debug (message "Debug: Running command: %s" command))
     (let ((response (shell-command-to-string command)))
-      ;; The response is expected to be the transcript file content itself (e.g., VTT or SRT)
-      ;; It's not typically JSON, so we don't parse it here.
       (message "Transcript received.")
-      ;; Display in a new buffer for inspection
-      (with-current-buffer (get-buffer-create (format "*Dub Transcript: %s (%s)*" dubbing-id language-code))
-        (erase-buffer)
-        (insert response)
-        (goto-char (point-min))
-        (switch-to-buffer (current-buffer)))
-      response))) ; Return the raw transcript string
+      ;; Parse the VTT response
+      (let ((segments (tlon-dub--parse-vtt response)))
+        (if segments
+            (progn
+              (message "Parsed %d segments." (length segments))
+              ;; Display parsed segments in a new buffer
+              (with-current-buffer (get-buffer-create (format "*Dub Segments: %s (%s)*" dubbing-id language-code))
+                (erase-buffer)
+                (insert ";; Parsed Segments:\n")
+                (pp segments (current-buffer)) ; Pretty-print the list
+                (goto-char (point-min))
+                (switch-to-buffer (current-buffer)))
+              segments) ; Return the parsed list
+          (progn
+            (message "Could not parse transcript. Displaying raw response.")
+            ;; Display raw response if parsing failed
+            (with-current-buffer (get-buffer-create (format "*Dub Transcript (Raw): %s (%s)*" dubbing-id language-code))
+              (erase-buffer)
+              (insert response)
+              (goto-char (point-min))
+              (switch-to-buffer (current-buffer)))
+            response))))) ; Return raw response on parsing failure
 
 (provide 'tlon-dub)
 
