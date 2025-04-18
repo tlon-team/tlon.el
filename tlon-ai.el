@@ -370,7 +370,6 @@ non-nil, bypass this check."
 	(prompt (tlon-ai-maybe-edit-prompt prompt)))
     (cl-destructuring-bind (backend . model) full-model
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	     (gptel-model full-model)
 	     (full-prompt (if string (format prompt string) prompt))
 	     (request (lambda () (gptel-request full-prompt :callback callback))))
 	(if tlon-ai-batch-fun
