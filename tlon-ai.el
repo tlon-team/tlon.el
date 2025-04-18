@@ -1565,7 +1565,8 @@ or an error occurs are left unchanged."
       (message "Starting batch BibTeX key lookup for %d references in region..."
                (length references-with-pos))
       ;; Make the single batch request
-      (tlon-make-gptel-request prompt nil #'tlon-ai--batch-bibkey-result-handler nil t)))) ; Bypass context check
+      (tlon-make-gptel-request prompt nil #'tlon-ai--batch-bibkey-result-handler nil t) ; Bypass context check
+      (message "AI request sent. Waiting for BibTeX keys...")))
 
 (defun tlon-ai--batch-bibkey-result-handler (response info)
   "Callback function to handle the result of a batch bibkey lookup.
@@ -1641,8 +1642,204 @@ and triggers replacements. RESPONSE is the AI's response, INFO is the response i
              replacements-made errors-occurred)
     ;; Clean up state variable
     (setq tlon-ai--bibkey-state nil)))
-
-
+ 
+;;;;;; Extract and Replace Command
+ 
+(defvar tlon-ai--extract-replace-state nil
+  "Internal state variable for asynchronous reference extraction and replacement.")
+ 
+;;;###autoload
+(defun tlon-ai-extract-and-replace-references (&optional use-region)
+  "Extract references in buffer/region, get BibKeys, and replace with <Cite> tags.
+Uses AI to find references, then AI again to find BibKeys against
+`tlon-file-bare-bibliography`. Replaces the *first found occurrence* (searching
+backwards) of each *exact* reference string with a <Cite> tag.
+ 
+WARNING: Relies on AI returning exact reference strings. May fail or replace
+incorrectly if the AI modifies the string or if the same reference appears
+multiple times.
+ 
+With prefix argument USE-REGION, operate only on the active region."
+  (interactive "P")
+  (unless (file-exists-p tlon-file-bare-bibliography)
+    (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
+ 
+  (let* ((beg (if use-region (region-beginning) (point-min)))
+         (end (if use-region (region-end) (point-max)))
+         (text (buffer-substring-no-properties beg end))
+         (db-string (with-temp-buffer
+                      (insert-file-contents tlon-file-bare-bibliography)
+                      (buffer-string)))
+         (source-buffer (current-buffer)))
+    (when (string-empty-p text)
+      (user-error "Buffer or region is empty"))
+    (when (string-empty-p db-string)
+      (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
+ 
+    ;; Initialize state
+    (setq tlon-ai--extract-replace-state
+          `(:source-buffer ,source-buffer
+			   :region-start ,beg
+			   :region-end ,end
+			   :db-string ,db-string
+			   :extracted-references () ; List of strings from AI
+			   :reference-positions ()  ; Alist: (ref-string . list-of-(start . end))
+			   :unique-references ()    ; List of unique ref strings
+			   :key-map ()              ; Hash table: ref-string -> key
+			   :keys-to-fetch 0
+			   :keys-fetched 0))
+ 
+    (message "Requesting AI to extract exact references...")
+    (tlon-make-gptel-request tlon-ai-extract-exact-references-prompt text
+                             #'tlon-ai--extract-references-exact-callback)))
+ 
+(defun tlon-ai--extract-references-exact-callback (response info)
+  "Callback for the initial reference extraction.
+Finds positions and starts key lookup. RESPONSE is the AI's response, INFO is
+the response info."
+  (if (not response)
+      (progn
+        (setq tlon-ai--extract-replace-state nil) ; Clean up state
+        (tlon-ai-callback-fail info))
+    (let* ((state tlon-ai--extract-replace-state)
+           (extracted-refs (split-string (string-trim response) "\n" t)))
+      (setf (plist-get state :extracted-references) extracted-refs)
+      (message "AI extracted %d potential references. Finding positions..." (length extracted-refs))
+      (setf (plist-get state :reference-positions)
+            (tlon-ai--find-reference-positions
+             extracted-refs
+             (plist-get state :source-buffer)
+             (plist-get state :region-start)
+             (plist-get state :region-end)))
+      (let ((unique-refs (cl-delete-duplicates
+			  (mapcar #'car (plist-get state :reference-positions)) :test #'string=)))
+        (setf (plist-get state :unique-references) unique-refs)
+        (setf (plist-get state :keys-to-fetch) (length unique-refs))
+        (setf (plist-get state :key-map) (make-hash-table :test 'equal))
+        (if (zerop (plist-get state :keys-to-fetch))
+            (progn
+              (message "No references found or positions located.")
+              (setq tlon-ai--extract-replace-state nil)) ; Clean up
+          (message "Found positions for %d unique references. Requesting BibTeX keys..." (plist-get state :keys-to-fetch))
+          (tlon-ai--get-keys-for-extracted-references)))))) ; Start key lookup
+ 
+(defun tlon-ai--find-reference-positions (references buffer beg end)
+  "Search for occurrences of REFERENCES strings within BUFFER between BEG and END.
+Returns an alist: (ref-string . list-of-(start . end))."
+  (let ((positions-alist '()))
+    (with-current-buffer buffer
+      (dolist (ref references positions-alist)
+        (let ((ref-positions '()))
+          (save-excursion
+            (goto-char end) ; Start searching backwards from the end
+            (while (search-backward ref beg t)
+              (let* ((match-start (match-beginning 0))
+                     (match-end (match-end 0))
+                     (line-start (line-beginning-position))
+                     (adjusted-start match-start))
+                ;; Check if the match is preceded by a footnote marker at line start
+                (save-excursion
+                  (goto-char match-start)
+                  (when (and (= (point) line-start) ; Ensure match starts exactly at line beginning
+                             (looking-at "\\[\\^[0-9]+\\]: "))
+                    ;; If marker found, adjust start position past the marker
+                    (setq adjusted-start (match-end 0))))
+                (push (cons adjusted-start match-end) ref-positions))))
+          (when ref-positions
+            (push (cons ref ref-positions) positions-alist)))))))
+ 
+(defun tlon-ai--get-keys-for-extracted-references ()
+  "Initiate requests to get BibTeX keys for unique extracted references."
+  (let* ((state tlon-ai--extract-replace-state)
+         (unique-refs (plist-get state :unique-references))
+         (db-string (plist-get state :db-string)))
+    (dolist (ref unique-refs)
+      (let ((prompt (format tlon-ai-get-bibkeys-prompt ref db-string)))
+        ;; Make the async request for each unique reference
+        (let ((gptel-stream nil)) ; Force non-streaming
+          (tlon-make-gptel-request prompt nil
+                                   (lambda (response info) ; Wrap callback
+                                     (tlon-ai--extracted-bibkey-result-handler ref response info))
+                                   nil t))))))
+ 
+(defun tlon-ai--extracted-bibkey-result-handler (reference-text response info)
+  "Callback to handle the result of bibkey lookup for extracted references.
+REFERENCE-TEXT is the original reference string, RESPONSE is the AI's response,
+INFO is the response info."
+  (let* ((state tlon-ai--extract-replace-state)
+         (key-map (plist-get state :key-map))
+         (key (if response (string-trim response) "ERROR_AI")))
+ 
+    (unless response
+      (message "AI key lookup failed for reference: %s. Status: %s"
+               (substring reference-text 0 (min 50 (length reference-text)))
+               (plist-get info :status)))
+ 
+    ;; Store the result in the hash map
+    (puthash reference-text key key-map)
+ 
+    ;; Check if all keys have been fetched
+    (cl-incf (plist-get state :keys-fetched))
+    (message "Fetched key %d/%d..." (plist-get state :keys-fetched) (plist-get state :keys-to-fetch))
+ 
+    (when (= (plist-get state :keys-fetched) (plist-get state :keys-to-fetch))
+      (message "All keys fetched. Applying replacements...")
+      (tlon-ai--apply-extracted-reference-replacements))))
+ 
+(defun tlon-ai--apply-extracted-reference-replacements ()
+  "Apply the BibTeX key replacements in the source buffer for extracted references."
+  (let* ((state tlon-ai--extract-replace-state)
+         (source-buffer (plist-get state :source-buffer))
+         (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
+         (key-map (plist-get state :key-map))
+         (replacements '()) ; List of (start end replacement-text)
+         (replacements-made 0)
+         (errors-occurred 0)
+         (not-found-count 0))
+ 
+    (unless (buffer-live-p source-buffer)
+      (message "Source buffer is no longer live. Aborting replacements.")
+      (setq tlon-ai--extract-replace-state nil)
+      (cl-return-from tlon-ai--apply-extracted-reference-replacements))
+ 
+    ;; Build the list of replacements
+    (dolist (pos-entry ref-positions)
+      (let* ((ref-string (car pos-entry))
+             (positions (cdr pos-entry))
+             (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
+ 
+        (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+            (progn
+              (when (string= key "NOT_FOUND") (cl-incf not-found-count))
+              (when (string= key "ERROR_AI") (cl-incf errors-occurred))
+              ;; Don't add to replacements list
+              )
+          ;; Valid key found, create replacement entries for all found positions
+          (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+            (dolist (pos positions)
+              (push (list (car pos) (cdr pos) replacement-text) replacements))))))
+ 
+    ;; Sort replacements by start position in REVERSE order
+    (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
+ 
+    ;; Apply replacements
+    (with-current-buffer source-buffer
+      (dolist (replacement replacements)
+        (let ((start (nth 0 replacement))
+              (end (nth 1 replacement))
+              (text (nth 2 replacement)))
+          ;; Check if the region still contains the expected text? (Might be too complex/slow)
+          (goto-char start)
+          (delete-region start end)
+          (insert text)
+          (cl-incf replacements-made))))
+ 
+    (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
+             replacements-made not-found-count errors-occurred)
+    ;; Clean up state variable
+    (setq tlon-ai--extract-replace-state nil)))
+ 
+ 
 ;;;;; Change propagation
 
 ;;;;;; Change Propagation Command
