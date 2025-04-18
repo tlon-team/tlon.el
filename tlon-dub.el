@@ -72,7 +72,7 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 --header 'accept: application/json' \
 --header 'xi-api-key: %s' \
 --form mode=automatic \
---form file=@%s \
+--form file=@%s;type=video/webm \
 --form name=%s \
 --form source_lang=%s \
 --form target_lang=%s%s"
