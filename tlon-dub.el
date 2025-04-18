@@ -225,29 +225,29 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 		   response-string)))))) ; Return raw response string on error
 
 ;;;###autoload
-  (defun tlon-dub-get-project-metadata (dubbing-id)
-    "Get metadata for the ElevenLabs dubbing project with DUBBING-ID."
-    (interactive (list (read-string "Dubbing ID: ")))
-    (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-	   (url (format (concat tlon-dub-api-base-url tlon-dub-get-project-metadata-endpoint)
-			dubbing-id))
-	   ;; Build the argument list for curl
-	   (args (list "curl" "-s"
-		       "--request" "GET"
-		       "--url" url
-		       "--header" "accept: application/json"
-		       "--header" (format "xi-api-key: %s" api-key)))
-	   (command (mapconcat #'shell-quote-argument args " ")))
-      (message "Getting metadata for dubbing project %s..." dubbing-id)
-      (when tlon-debug (message "Debug: Running command: %s" command))
-      (let ((response (shell-command-to-string command)))
-	(message "Metadata received. Response:\n%s" response)
-	;; Optionally parse the JSON response
-	(condition-case err
-	    (json-parse-string response :object-type 'alist)
-	  (error (progn
-		   (message "Error parsing JSON response: %s" err)
-		   response)))))))
+(defun tlon-dub-get-project-metadata (dubbing-id)
+  "Get metadata for the ElevenLabs dubbing project with DUBBING-ID."
+  (interactive (list (read-string "Dubbing ID: ")))
+  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-project-metadata-endpoint)
+		      dubbing-id))
+	 ;; Build the argument list for curl
+	 (args (list "curl" "-s"
+		     "--request" "GET"
+		     "--url" url
+		     "--header" "accept: application/json"
+		     "--header" (format "xi-api-key: %s" api-key)))
+	 (command (mapconcat #'shell-quote-argument args " ")))
+    (message "Getting metadata for dubbing project %s..." dubbing-id)
+    (when tlon-debug (message "Debug: Running command: %s" command))
+    (let ((response (shell-command-to-string command)))
+      (message "Metadata received. Response:\n%s" response)
+      ;; Optionally parse the JSON response
+      (condition-case err
+	  (json-parse-string response :object-type 'alist)
+	(error (progn
+		 (message "Error parsing JSON response: %s" err)
+		 response))))))
 
 ;;;###autoload
 (defun tlon-dub-get-transcript (dubbing-id language-code)
