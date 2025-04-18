@@ -48,6 +48,9 @@
 (defconst tlon-dub-get-transcript-endpoint "/dubbing/%s/transcript/%s"
   "API endpoint format for getting the transcript for a dubbing project. Requires dubbing_id and language_code.")
 
+(defconst tlon-dub-get-resource-data-endpoint "/dubbing/resource/%s"
+  "API endpoint format for getting dubbing resource data. Requires dubbing_id.")
+
 ;;;; Helper Functions
 
 (defun tlon-dub--get-content-type (filename)
@@ -233,6 +236,44 @@ LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired tran
               (switch-to-buffer (current-buffer)))
 	    ;; Return raw response on parsing failure
             response))))))
+
+;;;###autoload
+(defun tlon-dub-get-resource-data (dubbing-id)
+  "Get resource data for the ElevenLabs dubbing project with DUBBING-ID.
+This endpoint might provide detailed structure including resource, speaker, and segment IDs."
+  (interactive (list (read-string "Dubbing ID: ")))
+  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+         (url (format (concat tlon-dub-api-base-url tlon-dub-get-resource-data-endpoint)
+                      dubbing-id))
+         (command (format "curl -s --request GET '%s' \
+--header 'accept: application/json' \
+--header 'xi-api-key: %s'"
+                          url
+                          api-key)))
+    (message "Getting resource data for dubbing project %s..." dubbing-id)
+    (when tlon-debug (message "Debug: Running command: %s" command))
+    (let ((response (shell-command-to-string command)))
+      (message "Resource data received. Response:\n%s" response)
+      ;; Attempt to parse the JSON response
+      (condition-case err
+          (let ((parsed-json (json-parse-string response :object-type 'alist)))
+            ;; Display parsed JSON in a new buffer for inspection
+            (with-current-buffer (get-buffer-create (format "*Dub Resource Data: %s*" dubbing-id))
+              (erase-buffer)
+              (insert ";; Parsed Resource Data:\n")
+              (pp parsed-json (current-buffer)) ; Pretty-print the list
+              (goto-char (point-min))
+              (switch-to-buffer (current-buffer)))
+            parsed-json) ; Return the parsed alist
+        (error (progn
+                 (message "Error parsing JSON response: %s. Displaying raw." err)
+                 ;; Display raw response if parsing failed
+                 (with-current-buffer (get-buffer-create (format "*Dub Resource Data (Raw): %s*" dubbing-id))
+                   (erase-buffer)
+                   (insert response)
+                   (goto-char (point-min))
+                   (switch-to-buffer (current-buffer)))
+                 response)))))) ; Return raw response on error
 
 (provide 'tlon-dub)
 
