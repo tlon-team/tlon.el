@@ -1101,7 +1101,11 @@ specified in `tlon-ai-help-model'."
     ;; Now format the prompt with the actual number of files added
     (setq full-prompt (format prompt-template question))
     ;; Use the specific help model
-    (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-for-help-callback tlon-ai-help-model 'no-context-check)
+    (tlon-make-gptel-request full-prompt nil
+                             ;; Pass question to the callback via closure
+                             (lambda (response info)
+                               (tlon-ai-ask-for-help-callback response info question))
+                             tlon-ai-help-model 'no-context-check)
     (message "Preparing your answer using %d documentation file(s) with model %S..."
              (length existing-doc-files) (or tlon-ai-help-model gptel-model))))
 
@@ -1115,7 +1119,10 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
            (buffer (get-buffer-create buffer-name)))
       ;; Use the insert function from tlon-ai
       (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
-      (gptel-context-remove-all)))) ; Remove context after getting the answer
+      (let ((clear-context (y-or-n-p "Clear the gptel context (recommended)? ")))
+        (if clear-context
+            (gptel-context-remove-all)
+          (message "Context not cleared. Remember to clear it manually with `M-x gptel-context-remove-all` when finished."))))))
 
 (declare-function paths-dir-dotemacs "tlon-paths")
 (defvar elpaca-repos-directory)
