@@ -67,7 +67,8 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
 ;;;; Functions
 
 ;;;###autoload
-(defun tlon-dub-start-project (source-file source-lang target-lang project-name &optional voice-id)
+(defun tlon-dub-start-project (source-file source-lang target-lang project-name
+                               &optional voice-id dubbing-studio num-speakers)
   "Start an ElevenLabs dubbing project for SOURCE-FILE.
 SOURCE-FILE is the path to the audio or video file to dub.
 SOURCE-LANG is the ISO code of the source language (e.g., \"en\").
@@ -75,6 +76,8 @@ TARGET-LANG is the ISO code of the target language (e.g., \"es\").
 PROJECT-NAME is a name for the dubbing project.
 VOICE-ID is the optional ID of the ElevenLabs voice to use for the dubbing.
 If VOICE-ID is nil, ElevenLabs might use a default or clone the original voice.
+DUBBING-STUDIO, if non-nil, creates the project in Dubbing Studio mode (adjustable).
+NUM-SPEAKERS, if > 0, specifies the expected number of speakers.
 
 Returns the JSON response from the API, typically containing the `dubbing_id'."
   (interactive
@@ -84,7 +87,10 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
          (read-string "Project name: ")
          (completing-read "Voice ID (optional, press RET for default): "
                           (mapcar (lambda (v) (plist-get v :id)) tlon-elevenlabs-voices)
-                          nil nil nil nil ""))) ; Allow empty input for optional voice
+                          nil nil nil nil "") ; Allow empty input for optional voice
+         (y-or-n-p "Create in Dubbing Studio mode (adjustable)? ")
+         (let ((num-str (read-string "Number of speakers (optional, press RET for auto): ")))
+           (if (string-empty-p num-str) 0 (string-to-number num-str)))))
   (let* ((content-type (tlon-dub--get-content-type source-file)))
     ;; Check for supported file type before proceeding
     (unless content-type
@@ -104,12 +110,18 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
                      "--form" (format "name=%s" project-name)
                      "--form" (format "source_lang=%s" source-lang)
                      "--form" (format "target_lang=%s" target-lang)))
-         ;; Conditionally add voice_id form parameter
-         (command (mapconcat #'shell-quote-argument
-                             (if (and voice-id (not (string-empty-p voice-id)))
-                                 (append args (list "--form" (format "voice_id=%s" voice-id)))
-                               args)
-                             " ")))
+         ;; Conditionally add optional form parameters
+         (final-args (cond-> args
+                       ;; Add voice_id if provided
+                       (and voice-id (not (string-empty-p voice-id)))
+                       (append (list "--form" (format "voice_id=%s" voice-id)))
+                       ;; Add dubbing_studio if true
+                       dubbing-studio
+                       (append (list "--form" "dubbing_studio=true"))
+                       ;; Add num_speakers if > 0
+                       (and num-speakers (> num-speakers 0))
+                       (append (list "--form" (format "num_speakers=%d" num-speakers)))))
+         (command (mapconcat #'shell-quote-argument final-args " ")))
     (message "Starting dubbing project '%s' for %s..." project-name (file-name-nondirectory source-file))
     (when tlon-debug (message "Debug: Running command: %s" command))
     (let ((response (shell-command-to-string command)))
