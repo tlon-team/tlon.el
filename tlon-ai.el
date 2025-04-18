@@ -1102,9 +1102,9 @@ specified in `tlon-ai-help-model'."
     (setq full-prompt (format prompt-template question))
     ;; Use the specific help model
     (tlon-make-gptel-request full-prompt nil
-                             ;; Pass question to the callback via closure
+                             ;; The callback extracts the question from INFO
                              (lambda (response info)
-                               (tlon-ai-ask-for-help-callback response info question))
+                               (tlon-ai-ask-for-help-callback response info))
                              tlon-ai-help-model 'no-context-check)
     (message "Preparing your answer using %d documentation file(s) with model %S..."
              (length existing-doc-files) (or tlon-ai-help-model gptel-model))))
