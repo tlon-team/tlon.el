@@ -344,6 +344,12 @@ default `gptel-model'."
           tlon-ai-string-wrapper)
   "Prompt for extracting bibliographic references exactly as found.")
 
+(defconst tlon-ai-get-bibkeys-batch-prompt
+  "You are an expert bibliographic database lookup tool. You will be given a list of 'Input References' (one per line) and a 'Database' in JSON format containing bibliographic entries.\n\nYour task is to find the *single best matching entry* in the Database for *each* Input Reference. The match should be based on semantic similarity (author, title, year), even if the strings are not identical.\n\nReturn a list of keys, one per line, corresponding *exactly* to the order of the Input References. For each Input Reference:\n- If you find a good match, return the value of the 'key' field for that entry.\n- If you cannot find a reasonably good match, return the exact string 'NOT_FOUND'.\n\nDo not return anything else - no explanations, no numbering, just the list of keys (or 'NOT_FOUND'), one per line.\n\nInput References:\n```\n%s\n```\n\nDatabase:\n```json\n%s\n```\n\nKeys:"
+  ;; %s will be the newline-separated list of input references
+  ;; %s will be the JSON database string
+  "Prompt for finding BibTeX keys for multiple references against a JSON database.")
+
 ;;;; Functions
 
 ;;;;; General
@@ -1509,15 +1515,16 @@ AI's response, INFO is the response info."
 (defun tlon-ai-get-bibkeys-from-references (beg end)
   "Replace bibliographic references in region with <Cite> tags using AI.
 Scans each line in the active region (BEG END), treats it as a reference,
-and asks the AI to find the corresponding BibTeX key in
-`tlon-file-bare-bibliography`. Replaces the original reference line with
-`<Cite bibKey=\"KEY\" />` if a key is found. Lines where no key is found
+and asks the AI in a *single batch request* to find the corresponding BibTeX
+keys in `tlon-file-bare-bibliography`. Replaces each original reference line
+with `<Cite bibKey=\"KEY\" />` if a key is found. Lines where no key is found
 or an error occurs are left unchanged."
   (interactive "r") ; Require region
   (unless (file-exists-p tlon-file-bare-bibliography)
     (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
 
-  (let* ((references-with-pos '())
+  (let* ((references-with-pos '()) ; List of (text start end)
+         (reference-texts '())     ; List of just the text strings
          (db-string (with-temp-buffer
                       (insert-file-contents tlon-file-bare-bibliography)
                       (buffer-string)))
@@ -1533,10 +1540,14 @@ or an error occurs are left unchanged."
                (actual-end (min line-end end))
                (line-text (buffer-substring-no-properties line-start actual-end)))
           (unless (string-blank-p line-text)
-            (push (list (string-trim line-text) line-start actual-end) references-with-pos)))
+            (let ((trimmed-text (string-trim line-text)))
+              (push (list trimmed-text line-start actual-end) references-with-pos)
+              (push trimmed-text reference-texts))))
         (forward-line 1)))
 
-    (setq references-with-pos (nreverse references-with-pos)) ; Maintain original order
+    ;; Reverse lists to maintain original order
+    (setq references-with-pos (nreverse references-with-pos))
+    (setq reference-texts (nreverse reference-texts))
 
     (when (string-empty-p db-string)
       (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
@@ -1545,62 +1556,54 @@ or an error occurs are left unchanged."
 
     ;; Initialize state for the asynchronous process
     (setq tlon-ai--bibkey-state
-          `(:references-with-pos ,references-with-pos
+          `(:references-with-pos ,references-with-pos ; List of (text start end)
             :db-string ,db-string
-            :index 0
             :results () ; Will store (start . end . key)
-            :source-buffer ,source-buffer
-            :total ,(length references-with-pos)))
+            :source-buffer ,source-buffer))
 
-    (message "Starting asynchronous BibTeX key lookup for %d references in region..."
-             (plist-get tlon-ai--bibkey-state :total))
-    ;; Start the first request
-    (tlon-ai--process-next-bibkey-reference)))
+    (let* ((references-block (mapconcat #'identity reference-texts "\n"))
+           (prompt (format tlon-ai-get-bibkeys-batch-prompt references-block db-string)))
+      (message "Starting batch BibTeX key lookup for %d references in region..."
+               (length references-with-pos))
+      ;; Make the single batch request
+      (tlon-make-gptel-request prompt nil #'tlon-ai--batch-bibkey-result-handler nil t)))) ; Bypass context check
 
-(defun tlon-ai--process-next-bibkey-reference ()
-  "Processes the next reference in the `tlon-ai--bibkey-state` list."
+(defun tlon-ai--batch-bibkey-result-handler (response info)
+  "Callback function to handle the result of a batch bibkey lookup.
+Parses the newline-separated keys, associates them with original references,
+and triggers replacements. RESPONSE is the AI's response, INFO is the response info."
   (let* ((state tlon-ai--bibkey-state)
-         (index (plist-get state :index))
-         (total (plist-get state :total)))
-    (if (< index total)
-        (let* ((entry (nth index (plist-get state :references-with-pos)))
-               (reference-text (nth 0 entry))
-               (db-string (plist-get state :db-string))
-               (prompt (format tlon-ai-get-bibkeys-prompt reference-text db-string)))
-          (message "Requesting key for reference %d/%d: %s..."
-                   (1+ index) total (substring reference-text 0 (min 50 (length reference-text))))
-          ;; Make the async request, passing the handler as callback
-          ;; Use a low-temp model if possible, maybe define a specific one?
-          (tlon-make-gptel-request prompt nil #'tlon-ai--bibkey-result-handler nil t)) ; Bypass context check
-      ;; All references processed, apply replacements
-      (tlon-ai--apply-bibkey-replacements))))
-
-(defun tlon-ai--bibkey-result-handler (response info)
-  "Callback function to handle the result of a single bibkey lookup.
-Stores the result (including position) and triggers the next request. RESPONSE
-is the AI's response, INFO is the response info."
-  (let* ((state tlon-ai--bibkey-state)
-         (index (plist-get state :index))
-         (entry (nth index (plist-get state :references-with-pos)))
-         (reference-text (nth 0 entry))
-         (start-pos (nth 1 entry))
-         (end-pos (nth 2 entry))
-         (key (if response (string-trim response) "ERROR_AI"))) ; Keep error markers
+         (references-with-pos (plist-get state :references-with-pos))
+         (num-references (length references-with-pos))
+         (results '())) ; Build the results list here
 
     (unless response
-      (message "AI request failed for reference %d: %s. Status: %s"
-               (1+ index) reference-text (plist-get info :status)))
+      (message "AI batch request failed. Status: %s" (plist-get info :status))
+      (setq tlon-ai--bibkey-state nil) ; Clean up state
+      (cl-return-from tlon-ai--batch-bibkey-result-handler))
 
-    ;; Store the result as (start . end . key)
-    (setf (plist-get state :results)
-          (cons (list start-pos end-pos key) (plist-get state :results)))
+    (let ((returned-keys (split-string (string-trim response) "\n" t)))
+      (unless (= (length returned-keys) num-references)
+        (message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
+                 (length returned-keys) num-references)
+        (message "AI Response:\n%s" response) ; Log response for debugging
+        (setq tlon-ai--bibkey-state nil) ; Clean up state
+        (cl-return-from tlon-ai--batch-bibkey-result-handler))
 
-    ;; Increment index and update state
-    (setf (plist-get state :index) (1+ index))
-    (setq tlon-ai--bibkey-state state)
+      ;; Associate keys with positions
+      (dotimes (i num-references)
+        (let* ((entry (nth i references-with-pos))
+               (start-pos (nth 1 entry))
+               (end-pos (nth 2 entry))
+               (key (nth i returned-keys)))
+          (push (list start-pos end-pos key) results)))
 
-    ;; Process the next reference
-    (tlon-ai--process-next-bibkey-reference)))
+      ;; Store the final results (reversed to match original order implicitly)
+      (setf (plist-get state :results) (nreverse results))
+      (setq tlon-ai--bibkey-state state) ; Update state with results
+
+      ;; All references processed, apply replacements
+      (tlon-ai--apply-bibkey-replacements))))
 
 (defun tlon-ai--apply-bibkey-replacements ()
   "Apply the BibTeX key replacements in the source buffer."
