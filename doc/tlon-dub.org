@@ -44,6 +44,9 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 #+findex: tlon-dub-get-project-metadata
 + ~tlon-dub-get-project-metadata~ :: (Autoloaded) Retrieves metadata for an existing ElevenLabs dubbing project. Prompts for the =dubbing_id= of the project. It sends a GET request to the API and displays the JSON response containing project details like status, languages, etc.
 
+#+findex: tlon-dub-get-transcript
++ ~tlon-dub-get-transcript~ :: (Autoloaded) Retrieves the transcript file (likely VTT or SRT format) for a specific language within an ElevenLabs dubbing project. Prompts for the =dubbing_id= and the desired =language_code= (e.g., "en", "es"). It displays the retrieved transcript content in a new buffer.
+
 ** Internal Functions and Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-internals
@@ -66,3 +69,5 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + ~tlon-dub-start-project-endpoint~ :: The specific API endpoint used for creating a new dubbing project ("/dubbing").
 #+vindex: tlon-dub-get-project-metadata-endpoint
 + ~tlon-dub-get-project-metadata-endpoint~ :: The API endpoint format string used for retrieving metadata about a specific dubbing project ("/dubbing/%s"). Requires the =dubbing_id= to be formatted into the string.
+#+vindex: tlon-dub-get-transcript-endpoint
++ ~tlon-dub-get-transcript-endpoint~ :: The API endpoint format string used for retrieving the transcript of a dubbing project for a specific language ("/dubbing/%s/transcript/%s"). Requires the =dubbing_id= and =language_code= to be formatted into the string.
