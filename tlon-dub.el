@@ -220,7 +220,7 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
                   parsed-response))) ; Return the parsed response anyway
           (error (progn ; Handle JSON parsing error
                    (message "Error parsing project creation JSON response: %s" err)
-                   response-string)))))))) ; Return raw response string on error
+                   response-string)))))) ; Return raw response string on error
 
 ;;;###autoload
 (defun tlon-dub-get-project-metadata (dubbing-id)
