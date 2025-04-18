@@ -68,7 +68,7 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
 
 ;;;###autoload
 (defun tlon-dub-start-project (source-file source-lang target-lang project-name
-                               &optional voice-id dubbing-studio num-speakers)
+					   &optional voice-id dubbing-studio num-speakers)
   "Start an ElevenLabs dubbing project for SOURCE-FILE.
 SOURCE-FILE is the path to the audio or video file to dub.
 SOURCE-LANG is the ISO code of the source language (e.g., \"en\").
@@ -94,44 +94,44 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
   (let* ((content-type (tlon-dub--get-content-type source-file)))
     ;; Check for supported file type before proceeding
     (unless content-type
-      (user-error "Unsupported file type for dubbing: %s. Please provide an audio or video file."
+      (user-error "Unsupported file type for dubbing: %s. Please provide an audio or video file"
                   (file-name-extension source-file)))
     (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
            (url (concat tlon-dub-api-base-url tlon-dub-start-project-endpoint))
            ;; Build the argument list for curl
            (args (list "curl" "-s"
-                     "--request" "POST"
-                     "--url" url
-                     "--header" "accept: application/json"
-                     "--header" (format "xi-api-key: %s" api-key)
-                     "--form" "mode=automatic"
-                     ;; Use the determined content-type
-                     "--form" (format "file=@%s;type=%s" source-file content-type)
-                     "--form" (format "name=%s" project-name)
-                     "--form" (format "source_lang=%s" source-lang)
-                     "--form" (format "target_lang=%s" target-lang)))
-         ;; Conditionally add optional form parameters
-         (final-args (cond-> args
-                       ;; Add voice_id if provided
-                       (and voice-id (not (string-empty-p voice-id)))
-                       (append (list "--form" (format "voice_id=%s" voice-id)))
-                       ;; Add dubbing_studio if true
-                       dubbing-studio
-                       (append (list "--form" "dubbing_studio=true"))
-                       ;; Add num_speakers if > 0
-                       (and num-speakers (> num-speakers 0))
-                       (append (list "--form" (format "num_speakers=%d" num-speakers)))))
-         (command (mapconcat #'shell-quote-argument final-args " ")))
-    (message "Starting dubbing project '%s' for %s..." project-name (file-name-nondirectory source-file))
-    (when tlon-debug (message "Debug: Running command: %s" command))
-    (let ((response (shell-command-to-string command)))
-      (message "Dubbing project started. Response:\n%s" response)
-      ;; Optionally parse the JSON response
-      (condition-case err
-          (json-parse-string response :object-type 'alist)
-        (error (progn
-                 (message "Error parsing JSON response: %s" err)
-                 response))))))) ; Return raw response on error
+                       "--request" "POST"
+                       "--url" url
+                       "--header" "accept: application/json"
+                       "--header" (format "xi-api-key: %s" api-key)
+                       "--form" "mode=automatic"
+                       ;; Use the determined content-type
+                       "--form" (format "file=@%s;type=%s" source-file content-type)
+                       "--form" (format "name=%s" project-name)
+                       "--form" (format "source_lang=%s" source-lang)
+                       "--form" (format "target_lang=%s" target-lang)))
+           ;; Conditionally add optional form parameters
+           (final-args (cond-> args
+			       ;; Add voice_id if provided
+			       (and voice-id (not (string-empty-p voice-id)))
+			       (append (list "--form" (format "voice_id=%s" voice-id)))
+			       ;; Add dubbing_studio if true
+			       dubbing-studio
+			       (append (list "--form" "dubbing_studio=true"))
+			       ;; Add num_speakers if > 0
+			       (and num-speakers (> num-speakers 0))
+			       (append (list "--form" (format "num_speakers=%d" num-speakers)))))
+           (command (mapconcat #'shell-quote-argument final-args " ")))
+      (message "Starting dubbing project '%s' for %s..." project-name (file-name-nondirectory source-file))
+      (when tlon-debug (message "Debug: Running command: %s" command))
+      (let ((response (shell-command-to-string command)))
+	(message "Dubbing project started. Response:\n%s" response)
+	;; Optionally parse the JSON response
+	(condition-case err
+            (json-parse-string response :object-type 'alist)
+          (error (progn
+                   (message "Error parsing JSON response: %s" err)
+                   response))))))) ; Return raw response on error
 
 ;;;###autoload
 (defun tlon-dub-get-project-metadata (dubbing-id)
