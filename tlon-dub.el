@@ -96,6 +96,29 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
                  (message "Error parsing JSON response: %s" err)
                  response)))))) ; Return raw response on error
 
+;;;###autoload
+(defun tlon-dub-get-project-metadata (dubbing-id)
+  "Get metadata for the ElevenLabs dubbing project with DUBBING-ID."
+  (interactive (list (read-string "Dubbing ID: ")))
+  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+         (url (format (concat tlon-dub-api-base-url tlon-dub-get-project-metadata-endpoint)
+                      dubbing-id))
+         (command (format "curl --request GET '%s' \
+--header 'accept: application/json' \
+--header 'xi-api-key: %s'"
+                          url
+                          api-key)))
+    (message "Getting metadata for dubbing project %s..." dubbing-id)
+    (when tlon-debug (message "Debug: Running command: %s" command))
+    (let ((response (shell-command-to-string command)))
+      (message "Metadata received. Response:\n%s" response)
+      ;; Optionally parse the JSON response
+      (condition-case err
+          (json-parse-string response :object-type 'alist)
+        (error (progn
+                 (message "Error parsing JSON response: %s" err)
+                 response)))))) ; Return raw response on error
+
 (provide 'tlon-dub)
 
 ;;; tlon-dub.el ends here
