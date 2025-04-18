@@ -1130,7 +1130,7 @@ request. QUESTION is the original user question."
         (gptel-mode 1)
         (setq buffer-read-only nil)
         (when (eq gptel-default-mode 'org-mode)
-          (org-show-all)) ; Ensure content under heading is visible
+          (org-fold-show-all)) ; Ensure content under heading is visible
         (goto-char (point-max))) ; Move point to end for follow-up
       (switch-to-buffer buffer)
       ;; Ask about clearing context
@@ -1619,8 +1619,8 @@ precise replacement."
 
 (defun tlon-ai--batch-bibkey-result-handler (response info)
   "Callback function to handle the result of a batch bibkey lookup.
-Parses the newline-separated keys, associates them with original references,
-and triggers replacements. RESPONSE is the AI's response, INFO is the response info."
+Parses the newline-separated keys, associates them with original references, and
+triggers replacements. RESPONSE is the AI's response, INFO is the response info."
   (let* ((state tlon-ai--bibkey-state)
          (references-with-pos (plist-get state :references-with-pos))
          (num-references (length references-with-pos))
@@ -1798,7 +1798,7 @@ Returns an alist: (ref-string . list-of-(start . end))."
             (push (cons ref ref-positions) positions-alist)))))))
  
 (defun tlon-ai--get-keys-for-extracted-references ()
-  "Initiate a *single batch request* to get BibTeX keys for unique extracted references."
+  "Initiate a single batch request to get BibTeX keys for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
          (unique-refs (plist-get state :unique-references))
          (db-string (plist-get state :db-string)))
@@ -1813,13 +1813,13 @@ Returns an alist: (ref-string . list-of-(start . end))."
  
 (defun tlon-ai--extracted-batch-bibkey-result-handler (response info)
   "Callback to handle the result of batch bibkey lookup for extracted references.
-Parses the newline-separated keys, populates the key-map, and triggers replacements.
-RESPONSE is the AI's response, INFO is the response info."
+Parses the newline-separated keys, populates the key-map, and triggers
+replacements. RESPONSE is the AI's response, INFO is the response info."
   (let* ((state tlon-ai--extract-replace-state)
          (unique-refs (plist-get state :unique-references))
          (key-map (plist-get state :key-map)) ; Hash table: ref-string -> key
          (num-references (length unique-refs)))
- 
+    
     (if response
         ;; Process valid response
         (let ((returned-keys (split-string (string-trim response) "\n" t)))
@@ -1841,7 +1841,7 @@ RESPONSE is the AI's response, INFO is the response info."
       ;; Handle failed AI request
       (message "AI batch key lookup request failed. Status: %s" (plist-get info :status))
       (setq tlon-ai--extract-replace-state nil)))) ; Clean up state
- 
+
 (defun tlon-ai--apply-extracted-reference-replacements ()
   "Apply the BibTeX key replacements in the source buffer for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
@@ -1858,52 +1858,21 @@ RESPONSE is the AI's response, INFO is the response info."
       (message "Source buffer is no longer live. Aborting replacements.")
       (setq tlon-ai--extract-replace-state nil)
       (cl-return-from tlon-ai--apply-extracted-reference-replacements))
-    ;; Build the list of replacements
-    (dotimes (i num-references)
-      (let ((ref-string (nth i unique-refs))
-            (key (nth i returned-keys)))
-        (puthash ref-string key key-map)))
-    (message "All keys fetched via batch request. Applying replacements...")
-    (tlon-ai--apply-extracted-reference-replacements))) ; Proceed to replacements
- 
-(defun tlon-ai--apply-extracted-reference-replacements ()
-  "Apply the BibTeX key replacements in the source buffer for extracted references."
-  (let* ((state tlon-ai--extract-replace-state)
-         ;; Check if state is nil (might have been cleaned up due to error)
-         (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
-         (source-buffer (plist-get state :source-buffer))
-         (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
-         (key-map (plist-get state :key-map))
-         (replacements '()) ; List of (start end replacement-text)
-         (replacements-made 0)
-         (errors-occurred 0)
-         (not-found-count 0))
-    
-    (unless (buffer-live-p source-buffer)
-      (message "Source buffer is no longer live. Aborting replacements.")
-      (setq tlon-ai--extract-replace-state nil)
-      (cl-return-from tlon-ai--apply-extracted-reference-replacements))
-    
     ;; Build the list of replacements
     (dolist (pos-entry ref-positions)
       (let* ((ref-string (car pos-entry))
              (positions (cdr pos-entry))
              (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
-	
         (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
             (progn
               (when (string= key "NOT_FOUND") (cl-incf not-found-count))
-              (when (string= key "ERROR_AI") (cl-incf errors-occurred))
-              ;; Don't add to replacements list
-              )
+              (when (string= key "ERROR_AI") (cl-incf errors-occurred)))
           ;; Valid key found, create replacement entries for all found positions
           (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
             (dolist (pos positions)
               (push (list (car pos) (cdr pos) replacement-text) replacements))))))
-    
     ;; Sort replacements by start position in REVERSE order
     (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
-    
     ;; Apply replacements
     (with-current-buffer source-buffer
       (dolist (replacement replacements)
@@ -1915,13 +1884,11 @@ RESPONSE is the AI's response, INFO is the response info."
           (delete-region start end)
           (insert text)
           (cl-incf replacements-made))))
-    
     (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
              replacements-made not-found-count errors-occurred)
     ;; Clean up state variable
     (setq tlon-ai--extract-replace-state nil)))
- 
- 
+
 ;;;;; Change propagation
 
 ;;;;;; Change Propagation Command
