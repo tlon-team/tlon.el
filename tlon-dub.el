@@ -44,6 +44,23 @@
 (defconst tlon-dub-get-project-metadata-endpoint "/dubbing/%s"
   "API endpoint format for getting dubbing project metadata. Requires dubbing_id.")
 
+;;;; Helper Functions
+
+(defun tlon-dub--get-content-type (filename)
+  "Return the MIME content type based on FILENAME's extension.
+Returns nil if the extension is not recognized or unsupported for dubbing."
+  (let ((extension (downcase (file-name-extension filename))))
+    (cond
+     ((string= extension "mp3") "audio/mpeg")
+     ((string= extension "wav") "audio/wav")
+     ((string= extension "mp4") "video/mp4")
+     ((string= extension "webm") "video/webm")
+     ((string= extension "flac") "audio/flac")
+     ((string= extension "ogg") "audio/ogg") ; Common container for opus/vorbis
+     ((string= extension "opus") "audio/opus")
+     ;; Add other supported types as needed
+     (t nil)))) ; Unsupported type
+
 ;;;; Functions
 
 ;;;###autoload
@@ -65,16 +82,22 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
          (completing-read "Voice ID (optional, press RET for default): "
                           (mapcar (lambda (v) (plist-get v :id)) tlon-elevenlabs-voices)
                           nil nil nil nil ""))) ; Allow empty input for optional voice
-  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-         (url (concat tlon-dub-api-base-url tlon-dub-start-project-endpoint))
-         ;; Build the argument list for curl
-         (args (list "curl" "-s"
+  (let* ((content-type (tlon-dub--get-content-type source-file)))
+    ;; Check for supported file type before proceeding
+    (unless content-type
+      (user-error "Unsupported file type for dubbing: %s. Please provide an audio or video file."
+                  (file-name-extension source-file)))
+    (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+           (url (concat tlon-dub-api-base-url tlon-dub-start-project-endpoint))
+           ;; Build the argument list for curl
+           (args (list "curl" "-s"
                      "--request" "POST"
                      "--url" url
                      "--header" "accept: application/json"
                      "--header" (format "xi-api-key: %s" api-key)
                      "--form" "mode=automatic"
-                     "--form" (format "file=@%s;type=video/webm" source-file)
+                     ;; Use the determined content-type
+                     "--form" (format "file=@%s;type=%s" source-file content-type)
                      "--form" (format "name=%s" project-name)
                      "--form" (format "source_lang=%s" source-lang)
                      "--form" (format "target_lang=%s" target-lang)))
@@ -93,7 +116,7 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
           (json-parse-string response :object-type 'alist)
         (error (progn
                  (message "Error parsing JSON response: %s" err)
-                 response)))))) ; Return raw response on error
+                 response))))))) ; Return raw response on error
 
 ;;;###autoload
 (defun tlon-dub-get-project-metadata (dubbing-id)
