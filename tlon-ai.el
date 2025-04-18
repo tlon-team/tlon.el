@@ -1109,16 +1109,29 @@ specified in `tlon-ai-help-model'."
     (message "Preparing your answer using %d documentation file(s) with model %S..."
              (length existing-doc-files) (or tlon-ai-help-model gptel-model))))
 
-(defun tlon-ai-ask-for-help-callback (response info)
+(declare-function gptel-mode "gptel")
+(defvar gptel-default-mode)
+(defun tlon-ai-ask-for-help-callback (response info question)
   "Callback for `tlon-ai-ask-for-help'.
-Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
-`tlon-ai-callback-fail'. INFO is the context information passed to the request."
+Displays the QUESTION and RESPONSE in a new `gptel-mode' buffer. If RESPONSE is
+nil, use `tlon-ai-callback-fail'. INFO is the context information passed to the
+request. QUESTION is the original user question."
   (if (not response)
       (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
     (let* ((buffer-name (generate-new-buffer-name "*AI Help Answer*"))
            (buffer (get-buffer-create buffer-name)))
-      ;; Use the insert function from tlon-ai
-      (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
+      (with-current-buffer buffer
+        (erase-buffer)
+        ;; Insert question and answer
+        (insert (format "*** %s\n\n" question))
+        (insert response)
+        ;; Set mode, enable gptel-mode, make writable
+        (funcall gptel-default-mode)
+        (gptel-mode 1)
+        (setq buffer-read-only nil)
+        (goto-char (point-max))) ; Move point to end for follow-up
+      (switch-to-buffer buffer)
+      ;; Ask about clearing context
       (let ((clear-context (y-or-n-p "Clear the gptel context (recommended)? ")))
         (if clear-context
             (gptel-context-remove-all)
