@@ -41,6 +41,9 @@
 (defconst tlon-dub-start-project-endpoint "/dubbing"
   "API endpoint for starting a dubbing project.")
 
+(defconst tlon-dub-get-project-metadata-endpoint "/dubbing/%s"
+  "API endpoint format for getting dubbing project metadata. Requires dubbing_id.")
+
 ;;;; Functions
 
 ;;;###autoload
