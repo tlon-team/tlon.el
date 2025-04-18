@@ -68,7 +68,7 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
          (url (concat tlon-dub-api-base-url tlon-dub-start-project-endpoint))
          ;; Construct the multipart/form-data command
-         (command (format "curl --request POST '%s' \
+         (command (format "curl -s --request POST '%s' \
 --header 'accept: application/json' \
 --header 'xi-api-key: %s' \
 --form 'mode=\"automatic\"' \
@@ -103,7 +103,7 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
          (url (format (concat tlon-dub-api-base-url tlon-dub-get-project-metadata-endpoint)
                       dubbing-id))
-         (command (format "curl --request GET '%s' \
+         (command (format "curl -s --request GET '%s' \
 --header 'accept: application/json' \
 --header 'xi-api-key: %s'"
                           url
