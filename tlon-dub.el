@@ -28,6 +28,7 @@
 (require 'tlon-core)
 (require 'tlon-tts)
 (require 'json)
+(require 'threads) ; For cond->
 
 (defgroup tlon-dub ()
   "Dubbing functionality using ElevenLabs."
