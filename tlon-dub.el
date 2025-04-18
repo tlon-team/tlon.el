@@ -46,7 +46,8 @@
   "API endpoint format for getting dubbing project metadata. Requires dubbing_id.")
 
 (defconst tlon-dub-get-dubbing-endpoint "/dubbing/%s/transcript/%s"
-  "API endpoint format for getting the transcript for a dubbing project. Requires dubbing_id and language_code.")
+  "API endpoint format for getting the transcript for a dubbing project.
+Requires `dubbing_id' and `language_code'.")
 
 (defconst tlon-dub-get-resource-data-endpoint "/dubbing/resource/%s"
   "API endpoint format for getting dubbing resource data. Requires dubbing_id.")
@@ -72,7 +73,7 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
      (t nil)))) ; Unsupported type
 
 (defun tlon-dub--share-project-with-self (resource-id)
-  "Share the workspace RESOURCE-ID (dubbing_id) with the user associated with the API key.
+  "Share the workspace RESOURCE-ID with the user associated with the API key.
 Shares with 'editor' role using the top-level `user_email` field."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
@@ -104,7 +105,7 @@ Shares with 'editor' role using the top-level `user_email` field."
 	(progn
 	  (message "Failed to share resource %s. Response:\n%s" resource-id response)
 	  ;; Try to parse potential error JSON
-	  (condition-case err
+	  (condition-case _err
 	      (json-parse-string response :object-type 'alist)
 	    (error response)) ; Return raw response or parsed error
 	  nil))))) ; Indicate failure
@@ -148,14 +149,25 @@ Each segment is a plist with :start, :end, and :text keys."
 (defun tlon-dub-start-project (source-file source-lang target-lang project-name
 					   &optional voice-id dubbing-studio num-speakers)
   "Start an ElevenLabs dubbing project for SOURCE-FILE.
-SOURCE-FILE is the path to the audio or video file to dub.
-SOURCE-LANG is the ISO code of the source language (e.g., \"en\").
-TARGET-LANG is the ISO code of the target language (e.g., \"es\").
-PROJECT-NAME is a name for the dubbing project.
-VOICE-ID is the optional ID of the ElevenLabs voice to use for the dubbing.
+
+- SOURCE-FILE is the path to the audio or video file to dub.
+
+
+- SOURCE-LANG is the ISO code of the source language (e.g., \"en\").
+
+
+- TARGET-LANG is the ISO code of the target language (e.g., \"es\").
+
+
+- PROJECT-NAME is a name for the dubbing project.
+
+
+- VOICE-ID is the optional ID of the ElevenLabs voice to use for the dubbing.
+
 If VOICE-ID is nil, ElevenLabs might use a default or clone the original voice.
-DUBBING-STUDIO, if non-nil, creates the project in Dubbing Studio mode (adjustable).
-NUM-SPEAKERS, if > 0, specifies the expected number of speakers.
+DUBBING-STUDIO, if non-nil, creates the project in Dubbing Studio
+mode (adjustable). NUM-SPEAKERS, if > 0, specifies the expected number of
+speakers.
 
 Returns the JSON response from the API, typically containing the `dubbing_id'."
   (interactive
@@ -252,7 +264,8 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 ;;;###autoload
 (defun tlon-dub-get-dubbing (dubbing-id language-code)
   "Get the dubbing for the project DUBBING-ID in LANGUAGE-CODE.
-LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired transcript."
+LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired
+transcript."
   (interactive
    (list (read-string "Dubbing ID: ")
 	 (tlon-get-iso-code (tlon-read-language nil "Language code for transcript: " t nil))))
@@ -298,7 +311,8 @@ LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired tran
 ;;;###autoload
 (defun tlon-dub-get-resource-data (dubbing-id)
   "Get resource data for the ElevenLabs dubbing project with DUBBING-ID.
-This endpoint might provide detailed structure including resource, speaker, and segment IDs."
+This endpoint might provide detailed structure including resource, speaker, and
+segment IDs."
   (interactive (list (read-string "Dubbing ID: ")))
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-resource-data-endpoint)
