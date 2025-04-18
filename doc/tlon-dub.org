@@ -41,6 +41,9 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 #+findex: tlon-dub-start-project
 + ~tlon-dub-start-project~ :: (Autoloaded) Initiates a new dubbing project with ElevenLabs. Prompts for the source audio/video file, source language, target language, a name for the project, and optionally, a specific ElevenLabs voice ID to use for the dubbing. It sends the request to the ElevenLabs API and displays the response, which typically includes the =dubbing_id= for the newly created project.
 
+#+findex: tlon-dub-get-project-metadata
++ ~tlon-dub-get-project-metadata~ :: (Autoloaded) Retrieves metadata for an existing ElevenLabs dubbing project. Prompts for the =dubbing_id= of the project. It sends a GET request to the API and displays the JSON response containing project details like status, languages, etc.
+
 ** Internal Functions and Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-internals
@@ -54,3 +57,5 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + ~tlon-dub-api-base-url~ :: The base URL for the ElevenLabs v1 API ("https://api.elevenlabs.io/v1").
 #+vindex: tlon-dub-start-project-endpoint
 + ~tlon-dub-start-project-endpoint~ :: The specific API endpoint used for creating a new dubbing project ("/dubbing").
+#+vindex: tlon-dub-get-project-metadata-endpoint
++ ~tlon-dub-get-project-metadata-endpoint~ :: The API endpoint format string used for retrieving metadata about a specific dubbing project ("/dubbing/%s"). Requires the =dubbing_id= to be formatted into the string.
