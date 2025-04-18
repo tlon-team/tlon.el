@@ -262,8 +262,7 @@ enabled (language hardcoded to \"es\"). Saves a [basename].txt file.
 Then, calls `tlon-meet-format-transcript' to generate a formatted Markdown file.
 If CALLBACK is provided, call it with the transcript file path after initiating
 formatting."
-  (interactive (list (tlon-meet--get-audio-file)
-                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
+  (interactive (tlon-meet--get-file-and-participants))
   (let* ((audio-filename (file-name-nondirectory audio-file))
          ;; whisperx outputs [basename].txt by default
          (transcript-file (concat (file-name-sans-extension audio-file) ".txt"))
@@ -432,8 +431,7 @@ the formatted Markdown (.md) file."
 (defun tlon-meet-format-transcript-command (transcript-file participants)
   "Interactively format TRANSCRIPT-FILE using PARTICIPANTS.
 Prompts for transcript file and participants, then calls the AI formatter."
-  (interactive (list (tlon-meet--get-transcript-file)
-                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
+  (interactive ((tlon-meet--get-file-and-participants)))
   (tlon-meet-format-transcript transcript-file participants))
 
 (defun tlon-meet-format-transcript (transcript-file participants)
@@ -472,14 +470,18 @@ Prompts for PARTICIPANTS. Runs `tlon-meet-transcribe-audio' (which handles
 transcription via whisperx and formatting via AI) and, upon success,
 automatically runs `tlon-meet-summarize-transcript' on the resulting
 formatted Markdown (.md) transcript file."
-  (interactive (list (tlon-meet--get-audio-file)
-                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
+  (interactive (tlon-meet--get-file-and-participants))
   (tlon-meet-transcribe-audio audio-file participants
 			      ;; Callback function to run after transcription and formatting start
 			      (lambda (formatted-transcript-file) ; Receives the .md path
 				(message "Transcription/Formatting started. Starting summarization for %s" formatted-transcript-file)
 				;; Call summarize non-interactively with the .md file and participants
 				(tlon-meet-summarize-transcript formatted-transcript-file participants))))
+
+(defun tlon-meet--get-file-and-participants ()
+  "Prompt user for a file and participants."
+  (list (tlon-meet--get-audio-file)
+        (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
 
 ;;;;; Menu
 
