@@ -165,9 +165,9 @@ default `gptel-model'."
 
 ;; TODO: instruct the model to use `Cite' tags in Chicago-style citations
 (defconst tlon-ai-write-reference-article-prompt
-  `((:prompt "You are an encyclopedia writer, and are currently writing a series of articles for an encyclopedia of effective altruism. Please write an entry on the topic of ‘%1$s’.\n\nYou should write the article *primarily* based on the text files attached, though you may also rely on your general knowledge of the topic. Each of these articles discusses the topic of the entry. So you should inspect each of these files closely and make an effort to understand what they claim thoroughly. Then, once you have inspected and understood the contents of all of these files, make a synthesis of the topic (%1$s) and write the article based on this synthesis.\n\nWrite the article in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing an article for a reputable encyclopedia, such as the Encyclopaedia Britannica (but remember that this is not a general encyclopedia, but specifically an encyclopdia of effective altruism, so it should be written from that perspective).\n\nWhen you make a claim traceable to a specific source, please credit this source in a footnote. Do not include a references section at the end."
+  `((:prompt "You are an encyclopedia writer, and are currently writing a series of articles for an encyclopedia of effective altruism. Please write an entry on the topic of ‘%1$s’.\n\nYou should write the article *primarily* based on the text files attached, though you may also rely on your general knowledge of the topic. Each of these articles discusses the topic of the entry. So you should inspect each of these files closely and make an effort to understand what they claim thoroughly. Then, once you have inspected and understood the contents of all of these files, make a synthesis of the topic (%1$s) and write the article based on this synthesis.\n\nWrite the article in a sober, objective tone, avoiding cliches, excessive praise and unnecessary flourishes. In other words, draft it as if you were writing an article for a reputable encyclopedia, such as the Encyclopaedia Britannica (but remember that this is not a general encyclopedia, but specifically an encyclopdia of effective altruism, so it should be written from that perspective).\n\nWhen you make a claim traceable to a specific source, please credit this source in a footnote. In general, try not to have more than one footnote per paragraph, though you may include multiple references in a given footnote. Do not include a references section at the end. Use Markdown for composing the article."
 	     :language "en")
-    (:prompt "Eres un escritor de enciclopedias y estás escribiendo una serie de artículos para una enciclopedia sobre el altruismo eficaz. Por favor, escribe una entrada sobre el tema ‘%1$s’.\n\nDebes escribir el artículo *principalmente* basándote en los archivos de texto adjuntos, aunque también puedes tener en cuenta tu conocimiento general del tema. Cada uno de estos artículos trata el tema de la entrada. Por lo tanto, debes examinar detenidamente cada uno de estos archivos y esforzarte por comprender a fondo lo que sostiene. Luego, una vez que hayas inspeccionado y comprendido el contenido de todos estos archivos, haz una síntesis del tema (%1$s) y escribe el artículo basándote en esta síntesis.\n\nAdjunto también un glosario sobre terminología relacionada con el altruismo eficaz. Procura utilizar estos términos para vertir al castellano expresiones peculiares de ese movimiento.\n\nEscribe el artículo en un tono sobrio y objetivo, evitando clichés, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo un artículo para una enciclopedia de prestigio, como la Encyclopaedia Britannica (pero recuerda que no se trata de una enciclopedia general, sino específicamente de una enciclopedia aobre el altruismo eficaz, por lo que debe redactarse desde esa perspectiva).\n\nCuando hagas una afirmación que pueda atribuirse a una fuente específica, menciona dicha fuente en una nota al pie. No incluyas una sección de referencias al final."
+    (:prompt "Eres un escritor de enciclopedias y estás escribiendo una serie de artículos para una enciclopedia sobre el altruismo eficaz. Por favor, escribe una entrada sobre el tema ‘%1$s’.\n\nDebes escribir el artículo *principalmente* basándote en los archivos de texto adjuntos, aunque también puedes tener en cuenta tu conocimiento general del tema. Cada uno de estos artículos trata el tema de la entrada. Por lo tanto, debes examinar detenidamente cada uno de estos archivos y esforzarte por comprender a fondo lo que sostiene. Luego, una vez que hayas inspeccionado y comprendido el contenido de todos estos archivos, haz una síntesis del tema (%1$s) y escribe el artículo basándote en esta síntesis.\n\nAdjunto también un glosario sobre terminología relacionada con el altruismo eficaz. Procura utilizar estos términos para vertir al castellano expresiones peculiares de ese movimiento.\n\nEscribe el artículo en un tono sobrio y objetivo, evitando clichés, elogios excesivos y florituras innecesarias. En otras palabras, redáctalo como si estuvieras escribiendo un artículo para una enciclopedia de prestigio, como la Encyclopaedia Britannica (pero recuerda que no se trata de una enciclopedia general, sino específicamente de una enciclopedia aobre el altruismo eficaz, por lo que debe redactarse desde esa perspectiva).\n\nCuando hagas una afirmación que pueda atribuirse a una fuente específica, menciona dicha fuente en una nota al pie. En general, procure que no haya más de una nota a pie de página por párrafo, aunque puede incluir varias referencias en una misma nota. No incluyas una sección de referencias al final. Utiliza Markdown para redactar el artículo."
 	     :language "es"))
   "Prompt for writing a reference article.")
 
@@ -1804,7 +1804,7 @@ RESPONSE is the AI's response, INFO is the response info."
   "Apply the BibTeX key replacements in the source buffer for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
          ;; Check if state is nil (might have been cleaned up due to error)
-         (_ (unless state (user-error "State lost, likely due to previous error. Aborting.")))
+         (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
          (source-buffer (plist-get state :source-buffer))
          (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
          (key-map (plist-get state :key-map))
@@ -1812,26 +1812,23 @@ RESPONSE is the AI's response, INFO is the response info."
          (replacements-made 0)
          (errors-occurred 0)
          (not-found-count 0))
- 
     (unless (buffer-live-p source-buffer)
       (message "Source buffer is no longer live. Aborting replacements.")
       (setq tlon-ai--extract-replace-state nil)
       (cl-return-from tlon-ai--apply-extracted-reference-replacements))
- 
     ;; Build the list of replacements
-      (dotimes (i num-references)
-        (let ((ref-string (nth i unique-refs))
-              (key (nth i returned-keys)))
-          (puthash ref-string key key-map)))
- 
-      (message "All keys fetched via batch request. Applying replacements...")
-      (tlon-ai--apply-extracted-reference-replacements)))) ; Proceed to replacements
+    (dotimes (i num-references)
+      (let ((ref-string (nth i unique-refs))
+            (key (nth i returned-keys)))
+        (puthash ref-string key key-map)))
+    (message "All keys fetched via batch request. Applying replacements...")
+    (tlon-ai--apply-extracted-reference-replacements))) ; Proceed to replacements
  
 (defun tlon-ai--apply-extracted-reference-replacements ()
   "Apply the BibTeX key replacements in the source buffer for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
          ;; Check if state is nil (might have been cleaned up due to error)
-         (_ (unless state (user-error "State lost, likely due to previous error. Aborting.")))
+         (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
          (source-buffer (plist-get state :source-buffer))
          (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
          (key-map (plist-get state :key-map))
@@ -1839,18 +1836,18 @@ RESPONSE is the AI's response, INFO is the response info."
          (replacements-made 0)
          (errors-occurred 0)
          (not-found-count 0))
- 
+    
     (unless (buffer-live-p source-buffer)
       (message "Source buffer is no longer live. Aborting replacements.")
       (setq tlon-ai--extract-replace-state nil)
       (cl-return-from tlon-ai--apply-extracted-reference-replacements))
- 
+    
     ;; Build the list of replacements
     (dolist (pos-entry ref-positions)
       (let* ((ref-string (car pos-entry))
              (positions (cdr pos-entry))
              (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
- 
+	
         (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
             (progn
               (when (string= key "NOT_FOUND") (cl-incf not-found-count))
@@ -1861,10 +1858,10 @@ RESPONSE is the AI's response, INFO is the response info."
           (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
             (dolist (pos positions)
               (push (list (car pos) (cdr pos) replacement-text) replacements))))))
- 
+    
     ;; Sort replacements by start position in REVERSE order
     (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
- 
+    
     ;; Apply replacements
     (with-current-buffer source-buffer
       (dolist (replacement replacements)
@@ -1876,7 +1873,7 @@ RESPONSE is the AI's response, INFO is the response info."
           (delete-region start end)
           (insert text)
           (cl-incf replacements-made))))
- 
+    
     (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
              replacements-made not-found-count errors-occurred)
     ;; Clean up state variable
