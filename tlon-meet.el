@@ -342,7 +342,9 @@ Reads the formatted Markdown transcript, calls the AI, and saves the summary to
                    (cdr (assoc selected-name repo-choices)))))
          (output-buffer (get-buffer-create "*Meeting Summary Output*")))
     (unless repo (user-error "No meeting repository selected or determined"))
-    (display-buffer output-buffer)
+    ;; Show the output buffer only if called interactively
+    (when (called-interactively-p 'any)
+      (display-buffer output-buffer))
     (with-current-buffer output-buffer
       (erase-buffer)
       (insert (format "Generating summary for transcript: %s\n" transcript-file))
