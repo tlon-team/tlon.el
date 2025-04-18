@@ -2198,7 +2198,7 @@ If nil, use the default model."
     ("s h" "get abstract with AI from HTML"           tlon-get-abstract-with-ai-from-html)
     ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
     ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
-    ("s h" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
+    ("s S" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai) ; Changed key to s S
     ""
     "Summarize options"
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
@@ -2246,10 +2246,10 @@ If nil, use the default model."
     ""
     "Models"
     ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
-    ("s -s" "Summarization" tlon-ai-infix-select-summarization-model)
+    ("m -s" "Summarization" tlon-ai-infix-select-summarization-model) ; Changed key to m -s
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
-    ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
+    ("a -a" "Help model" tlon-ai-infix-select-help-model)]) ; Removed extra ]
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
