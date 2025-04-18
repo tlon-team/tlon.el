@@ -26,8 +26,8 @@
 ;;; Code:
 
 (require 'tlon-core)
-(require 'tlon-tts) ; For API key and potentially other helpers
-(require 'json)     ; For parsing responses
+(require 'tlon-tts)
+(require 'json)
 
 (defgroup tlon-dub ()
   "Dubbing functionality using ElevenLabs."
