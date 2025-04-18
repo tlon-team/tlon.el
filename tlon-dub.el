@@ -77,9 +77,10 @@ Shares with 'editor' role using the email in `tlon-email-shared'."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
 		      resource-id))
-	 (user-email tlon-email-shared) ; Assuming this holds the relevant email
+	 ;; Try sharing with the API key itself instead of the user email
 	 (payload-alist `(("resource_type" . "dubbing")
-			  ("principals" . [((user_email . ,user-email))]) ; Use "user_email" as the key
+			  ;; Use workspace_api_key_id with the API key string
+			  ("principals" . [((workspace_api_key_id . ,api-key))])
 			  ("role" . "editor")))
 	 (payload (json-encode payload-alist))
 	 ;; Build the argument list for curl
