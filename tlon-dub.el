@@ -45,7 +45,7 @@
 (defconst tlon-dub-get-project-metadata-endpoint "/dubbing/%s"
   "API endpoint format for getting dubbing project metadata. Requires dubbing_id.")
 
-(defconst tlon-dub-get-transcript-endpoint "/dubbing/%s/transcript/%s"
+(defconst tlon-dub-get-dubbing-endpoint "/dubbing/%s/transcript/%s"
   "API endpoint format for getting the transcript for a dubbing project. Requires dubbing_id and language_code.")
 
 (defconst tlon-dub-get-resource-data-endpoint "/dubbing/resource/%s"
@@ -222,7 +222,7 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 		  parsed-response))) ; Return the parsed response anyway
 	  (error (progn ; Handle JSON parsing error
 		   (message "Error parsing project creation JSON response: %s" err)
-		   response-string)))))) ; Return raw response string on error
+		   response-string))))))) ; Return raw response string on error
 
 ;;;###autoload
 (defun tlon-dub-get-project-metadata (dubbing-id)
@@ -250,14 +250,14 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
 		 response))))))
 
 ;;;###autoload
-(defun tlon-dub-get-transcript (dubbing-id language-code)
-  "Get the transcript for the ElevenLabs dubbing project DUBBING-ID in LANGUAGE-CODE.
+(defun tlon-dub-get-dubbing (dubbing-id language-code)
+  "Get the dubbing for the project DUBBING-ID in LANGUAGE-CODE.
 LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired transcript."
   (interactive
    (list (read-string "Dubbing ID: ")
 	 (tlon-get-iso-code (tlon-read-language nil "Language code for transcript: " t nil))))
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
-	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-transcript-endpoint)
+	 (url (format (concat tlon-dub-api-base-url tlon-dub-get-dubbing-endpoint)
 		      dubbing-id language-code))
 	 ;; Build the argument list for curl
 	 ;; Use -L to follow redirects, as this endpoint might return a temporary URL for the transcript file
