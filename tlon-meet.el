@@ -320,7 +320,7 @@ formatting."
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
-  "Generate AI summary for formatted TRANSCRIPT-FILE (.md) and save to meeting repo.
+  "Generate AI summary for formatted TRANSCRIPT-FILE and save to meetings repo.
 If PARTICIPANTS (list of nicknames) are provided (e.g., when called from
 `tlon-meet-transcribe-and-summarize'), determine the repository automatically.
 Otherwise, prompt the user to select the meeting repository.
@@ -435,7 +435,7 @@ Prompts for transcript file and participants, then calls the AI formatter."
   (tlon-meet-format-transcript transcript-file participants))
 
 (defun tlon-meet-format-transcript (transcript-file participants)
-  "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS and save as Markdown.
+  "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS.
 Reads the transcript, calls the AI with PARTICIPANTS, and saves the formatted
 result to a Markdown file (.md) with the same base name in the same directory.
 This function is intended to be called programmatically."
