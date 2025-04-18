@@ -40,7 +40,7 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 :END:
 
 #+findex: tlon-dub-start-project
-+ ~tlon-dub-start-project~ :: (Autoloaded) Initiates a new dubbing project with ElevenLabs. Prompts for the source *audio/video file*, source language (ISO code), target language (ISO code), a name for the project, and optionally: a specific ElevenLabs voice ID, whether to create in *Dubbing Studio mode* (allows adjustments via the web UI), and the expected *number of speakers*. The function checks if the source file has a supported audio/video extension (e.g., mp3, wav, mp4, webm) before proceeding. It sends the request to the ElevenLabs API and displays the response, which typically includes the =dubbing_id= for the newly created project. Signals an error if the file type is not supported.
++ ~tlon-dub-start-project~ :: (Autoloaded) Initiates a new dubbing project with ElevenLabs. Prompts for the source *audio/video file*, source language (ISO code), target language (ISO code), a name for the project, and optionally: a specific ElevenLabs voice ID, whether to create in *Dubbing Studio mode* (allows adjustments via the web UI), and the expected *number of speakers*. The function checks if the source file has a supported audio/video extension (e.g., mp3, wav, mp4, webm) before proceeding. It sends the request to the ElevenLabs API and displays the response, which typically includes the =dubbing_id=. *After successful creation, it automatically attempts to share the project with the current API key's user (using =tlon-email-shared=) with 'editor' permissions to enable further API interactions.* Signals an error if the file type is not supported or if project creation fails. Logs a warning if sharing fails.
 
 #+findex: tlon-dub-get-project-metadata
 + ~tlon-dub-get-project-metadata~ :: (Autoloaded) Retrieves metadata for an existing ElevenLabs dubbing project. Prompts for the =dubbing_id= of the project. It sends a GET request to the API and displays the JSON response containing project details like status, languages, etc.
@@ -62,8 +62,9 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 :END:
 #+findex: tlon-dub--get-content-type
 + ~tlon-dub--get-content-type~ :: Takes a filename and returns the corresponding MIME content type string (e.g., ="audio/mpeg"=, ="video/webm"=) based on its file extension. Returns =nil= if the extension is not recognized or not suitable for the dubbing API (e.g., text files).
-#+findex: tlon-dub--parse-vtt
-+ ~tlon-dub--parse-vtt~ :: Parses a string containing VTT transcript data. Returns a list of plists, where each plist represents a segment and contains =:start= (string), =:end= (string), and =:text= (string) keys. Returns nil or an incomplete list if parsing fails.
+#+findex: tlon-dub--parse-vtt~ :: Parses a string containing VTT transcript data. Returns a list of plists, where each plist represents a segment and contains =:start= (string), =:end= (string), and =:text= (string) keys. Returns nil or an incomplete list if parsing fails.
+#+findex: tlon-dub--share-project-with-self
++ ~tlon-dub--share-project-with-self~ :: (Internal) Shares a given resource ID (dubbing project ID) with the user associated with the current API key (using the email in =tlon-email-shared=) granting the "editor" role. Called automatically after project creation. Returns =t= on success, =nil= on failure.
 
 *** Constants
 :PROPERTIES:
@@ -79,3 +80,5 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + ~tlon-dub-get-transcript-endpoint~ :: The API endpoint format string used for retrieving the transcript of a dubbing project for a specific language ("/dubbing/%s/transcript/%s"). Requires the =dubbing_id= and =language_code= to be formatted into the string.
 #+vindex: tlon-dub-get-resource-data-endpoint
 + ~tlon-dub-get-resource-data-endpoint~ :: The API endpoint format string used for retrieving the detailed resource structure of a dubbing project ("/dubbing/resource/%s"). Requires the =dubbing_id= to be formatted into the string.
+#+vindex: tlon-dub-share-resource-endpoint
++ ~tlon-dub-share-resource-endpoint~ :: The API endpoint format string used for sharing a workspace resource ("/workspace/resources/%s/share"). Requires the =resource_id= (which is the =dubbing_id= for dubbing projects) to be formatted into the string.
