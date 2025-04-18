@@ -51,6 +51,9 @@
 (defconst tlon-dub-get-resource-data-endpoint "/dubbing/resource/%s"
   "API endpoint format for getting dubbing resource data. Requires dubbing_id.")
 
+(defconst tlon-dub-share-resource-endpoint "/workspace/resources/%s/share"
+  "API endpoint format for sharing a workspace resource. Requires resource_id.")
+
 ;;;; Helper Functions
 
 (defun tlon-dub--get-content-type (filename)
@@ -67,6 +70,42 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
      ((string= extension "opus") "audio/opus")
      ;; Add other supported types as needed
      (t nil)))) ; Unsupported type
+
+(defun tlon-dub--share-project-with-self (resource-id)
+  "Share the workspace RESOURCE-ID (dubbing_id) with the current user (API key).
+Shares with 'editor' role using the email in `tlon-email-shared'."
+  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+         (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
+                      resource-id))
+         (user-email tlon-email-shared) ; Assuming this holds the relevant email
+         (payload-alist `(("principals" . [((principal_type . "user") (principal_id . ,user-email))])
+                           ("role" . "editor")))
+         (payload (json-encode payload-alist))
+         ;; Build the argument list for curl
+         (args (list "curl" "-s"
+                     "--request" "POST"
+                     "--url" url
+                     "--header" "accept: application/json"
+                     "--header" "Content-Type: application/json"
+                     "--header" (format "xi-api-key: %s" api-key)
+                     "--data" payload))
+         (command (mapconcat #'shell-quote-argument args " ")))
+    (message "Sharing resource %s with %s (role: editor)..." resource-id user-email)
+    (when tlon-debug (message "Debug: Running share command: %s" command))
+    (let ((response (shell-command-to-string command)))
+      ;; Check response - success might be empty or a simple confirmation
+      (if (or (string-empty-p response)
+              (string-match-p "success" response)) ; Adjust if API returns specific success JSON
+          (progn
+            (message "Successfully shared resource %s." resource-id)
+            t) ; Indicate success
+        (progn
+          (message "Failed to share resource %s. Response:\n%s" resource-id response)
+          ;; Try to parse potential error JSON
+          (condition-case err
+              (json-parse-string response :object-type 'alist)
+            (error response)) ; Return raw response or parsed error
+          nil))))) ; Indicate failure
 
 (defun tlon-dub--parse-vtt (vtt-string)
   "Parse VTT-STRING and return a list of segments.
@@ -161,14 +200,27 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
            (command (mapconcat #'shell-quote-argument final-args " ")))
       (message "Starting dubbing project '%s' for %s..." project-name (file-name-nondirectory source-file))
       (when tlon-debug (message "Debug: Running command: %s" command))
-      (let ((response (shell-command-to-string command)))
-	(message "Dubbing project started. Response:\n%s" response)
-	;; Optionally parse the JSON response
-	(condition-case err
-            (json-parse-string response :object-type 'alist)
-          (error (progn
-                   (message "Error parsing JSON response: %s" err)
-                   response))))))) ; Return raw response on error
+      (let ((response-string (shell-command-to-string command)))
+        (message "Dubbing project started. Response:\n%s" response-string)
+        ;; Attempt to parse the JSON response
+        (condition-case err
+            (let* ((parsed-response (json-parse-string response-string :object-type 'alist))
+                   (dubbing-id (cdr (assoc 'dubbing_id parsed-response))))
+              ;; If parsing succeeded and we got a dubbing_id, try to share it
+              (if dubbing-id
+                  (if (tlon-dub--share-project-with-self dubbing-id)
+                      parsed-response ; Return original parsed response if sharing succeeds
+                    ;; If sharing fails, maybe return the original response but log error?
+                    (progn
+                      (message "Warning: Project created (%s) but failed to share automatically." dubbing-id)
+                      parsed-response)) ; Still return the creation response
+                ;; If no dubbing_id found in response
+                (progn
+                  (message "Could not find dubbing_id in response.")
+                  parsed-response))) ; Return the parsed response anyway
+          (error (progn ; Handle JSON parsing error
+                   (message "Error parsing project creation JSON response: %s" err)
+                   response-string)))))))) ; Return raw response string on error
 
 ;;;###autoload
 (defun tlon-dub-get-project-metadata (dubbing-id)
