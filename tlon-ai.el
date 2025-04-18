@@ -1513,11 +1513,18 @@ AI's response, INFO is the response info."
 ;;;###autoload
 (defun tlon-ai-get-bibkeys-from-references (beg end)
   "Replace bibliographic references in region with <Cite> tags using AI.
-Scans each line in the active region (BEG END), treats it as a reference,
-and asks the AI in a *single batch request* to find the corresponding BibTeX
-keys in `tlon-file-bare-bibliography`. Replaces each original reference line
-with `<Cite bibKey=\"KEY\" />` if a key is found. Lines where no key is found
-or an error occurs are left unchanged."
+Scans each *non-blank line* in the active region (BEG END), treats the
+*entire line* as a single reference, and asks the AI in a *single batch
+request* to find the corresponding BibTeX keys in
+`tlon-file-bare-bibliography`. Replaces each original reference line with
+`<Cite bibKey=\"KEY\" />` if a key is found. Lines where no key is found or an
+error occurs are left unchanged.
+
+WARNING: This function replaces the *entire line*. If a line contains text
+other than the reference (e.g., footnote markers) or multiple references, the
+replacement might be incorrect. Consider using
+`tlon-ai-extract-and-replace-references` (bound to `X` in the menu) for more
+precise replacement."
   (interactive "r") ; Require region
   (unless (file-exists-p tlon-file-bare-bibliography)
     (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
@@ -2416,8 +2423,8 @@ INFO is the response info."
     ""
     "Bibliography"
     ("x" "Extract references from buffer/region" tlon-ai-extract-references)
-    ("k" "Get BibKeys for references (region)"   tlon-ai-get-bibkeys-from-references)
-    ("X" "Extract & Replace References (buffer)" tlon-ai-extract-and-replace-references)]
+    ("k" "Get BibKeys for references (region - line based)"   tlon-ai-get-bibkeys-from-references)
+    ("X" "Extract & Replace References (buffer/region - precise)" tlon-ai-extract-and-replace-references)]
    ["Help"
     ("a a" "Ask for help"                               tlon-ai-ask-for-help)]
    ["Misc"
