@@ -672,6 +672,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	(let ((text (tlon-get-string-dwim (car pdf-files)))
 	      (file (make-temp-file "pdf-to-text-")))
 	  (with-temp-buffer
+	    (insert (format "Please cite this work as ‘<Cite bibKey=\"%s\" />’\n\n" key))
 	    (insert text)
 	    (write-region (point-min) (point-max) file))
 	  (gptel-context-add-file file)))
