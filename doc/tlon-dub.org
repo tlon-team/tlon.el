@@ -46,7 +46,7 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + ~tlon-dub-get-project-metadata~ :: (Autoloaded) Retrieves metadata for an existing ElevenLabs dubbing project. Prompts for the =dubbing_id= of the project. It sends a GET request to the API and displays the JSON response containing project details like status, languages, etc.
 
 #+findex: tlon-dub-get-transcript
-+ ~tlon-dub-get-transcript~ :: (Autoloaded) Retrieves the transcript file (likely VTT or SRT format) for a specific language within an ElevenLabs dubbing project. Prompts for the =dubbing_id= and the desired =language_code= (e.g., "en", "es"). It displays the retrieved transcript content in a new buffer.
++ ~tlon-dub-get-transcript~ :: (Autoloaded) Retrieves and parses the transcript (expected VTT format) for a specific language within an ElevenLabs dubbing project. Prompts for the =dubbing_id= and the desired =language_code= (e.g., "en", "es"). It attempts to parse the VTT file into a list of segments (plists with =:start=, =:end=, =:text=). Displays the parsed segments (pretty-printed) in a new buffer or the raw transcript if parsing fails. Returns the list of segments or the raw transcript string.
 
 ** Internal Functions and Variables
 :PROPERTIES:
@@ -59,6 +59,8 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 :END:
 #+findex: tlon-dub--get-content-type
 + ~tlon-dub--get-content-type~ :: Takes a filename and returns the corresponding MIME content type string (e.g., ="audio/mpeg"=, ="video/webm"=) based on its file extension. Returns =nil= if the extension is not recognized or not suitable for the dubbing API (e.g., text files).
+#+findex: tlon-dub--parse-vtt
++ ~tlon-dub--parse-vtt~ :: Parses a string containing VTT transcript data. Returns a list of plists, where each plist represents a segment and contains =:start= (string), =:end= (string), and =:text= (string) keys. Returns nil or an incomplete list if parsing fails.
 
 *** Constants
 :PROPERTIES:
