@@ -302,20 +302,12 @@ formatting."
                  (with-current-buffer output-buffer
                    (goto-char (point-max))
                    (insert (format "Transcript file found: %s. Starting formatting...\n" transcript-file)))
-                 ;; Call the formatting function
-                 (tlon-meet-format-transcript transcript-file participants)
-                 ;; Call the formatting function
-                 (tlon-meet-format-transcript transcript-file participants)
-                 ;; Call the original callback if provided (e.g., for summarization)
-                 ;; Pass the expected *output* path of the formatted transcript (.md)
-                 (when callback
-                   (let ((formatted-transcript-file (concat (file-name-sans-extension transcript-file) ".md")))
-                     (funcall callback formatted-transcript-file)))
-                 )
+                 ;; Call the formatting function, passing the original callback along
+                 (tlon-meet-format-transcript transcript-file participants callback))
              (with-current-buffer output-buffer
                (goto-char (point-max))
                (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
-          ;; Ignore other events like "sent signal..." or process output lines
+          ;; Ignore other events like "sent signal..."
           (t nil)))))))
 
 ;;;###autoload
