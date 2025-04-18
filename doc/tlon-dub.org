@@ -40,7 +40,7 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 :END:
 
 #+findex: tlon-dub-start-project
-+ ~tlon-dub-start-project~ :: (Autoloaded) Initiates a new dubbing project with ElevenLabs. Prompts for the source *audio/video file*, source language (ISO code), target language (ISO code), a name for the project, and optionally: a specific ElevenLabs voice ID, whether to create in *Dubbing Studio mode* (allows adjustments via the web UI), and the expected *number of speakers*. The function checks if the source file has a supported audio/video extension (e.g., mp3, wav, mp4, webm) before proceeding. It sends the request to the ElevenLabs API and displays the response, which typically includes the =dubbing_id=. *After successful creation, it automatically attempts to share the project with the current API key (using the top-level =workspace_api_key_id= field) with 'editor' permissions to enable further API interactions.* Signals an error if the file type is not supported or if project creation fails. Logs a warning if sharing fails.
++ ~tlon-dub-start-project~ :: (Autoloaded) Initiates a new dubbing project with ElevenLabs. Prompts for the source *audio/video file*, source language (ISO code), target language (ISO code), a name for the project, and optionally: a specific ElevenLabs voice ID, whether to create in *Dubbing Studio mode* (allows adjustments via the web UI), and the expected *number of speakers*. The function checks if the source file has a supported audio/video extension (e.g., mp3, wav, mp4, webm) before proceeding. It sends the request to the ElevenLabs API and displays the response, which typically includes the =dubbing_id=. *After successful creation, it automatically attempts to share the project with the user associated with the current API key (using the top-level =user_email= field and =tlon-email-shared=) with 'editor' permissions to enable further API interactions.* Signals an error if the file type is not supported or if project creation fails. Logs a warning if sharing fails.
 
 #+findex: tlon-dub-get-project-metadata
 + ~tlon-dub-get-project-metadata~ :: (Autoloaded) Retrieves metadata for an existing ElevenLabs dubbing project. Prompts for the =dubbing_id= of the project. It sends a GET request to the API and displays the JSON response containing project details like status, languages, etc.
@@ -65,7 +65,7 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 #+findex: tlon-dub--parse-vtt
 + ~tlon-dub--parse-vtt~ :: Parses a string containing VTT transcript data. Returns a list of plists, where each plist represents a segment and contains =:start= (string), =:end= (string), and =:text= (string) keys. Returns nil or an incomplete list if parsing fails.
 #+findex: tlon-dub--share-project-with-self
-+ ~tlon-dub--share-project-with-self~ :: (Internal) Shares a given resource ID (dubbing project ID) with the *current API key* (using the top-level =workspace_api_key_id= field in the JSON payload) granting the "editor" role. Called automatically after project creation. Returns =t= on success, =nil= on failure.
++ ~tlon-dub--share-project-with-self~ :: (Internal) Shares a given resource ID (dubbing project ID) with the *user associated with the current API key* (using the top-level =user_email= field in the JSON payload and the email stored in =tlon-email-shared=) granting the "editor" role. Called automatically after project creation. Returns =t= on success, =nil= on failure.
 
 *** Constants
 :PROPERTIES:
