@@ -1111,14 +1111,15 @@ specified in `tlon-ai-help-model'."
 
 (declare-function gptel-mode "gptel")
 (defvar gptel-default-mode)
-(defun tlon-ai-ask-for-help-callback (response info question)
+(defun tlon-ai-ask-for-help-callback (response info)
   "Callback for `tlon-ai-ask-for-help'.
 Displays the QUESTION and RESPONSE in a new `gptel-mode' buffer. If RESPONSE is
 nil, use `tlon-ai-callback-fail'. INFO is the context information passed to the
-request. QUESTION is the original user question."
+request. The original user question is extracted from INFO."
   (if (not response)
       (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
-    (let* ((buffer-name (generate-new-buffer-name "*AI Help Answer*"))
+    (let* ((question (tlon-ai--extract-question-from-info info)) ; Extract question here
+           (buffer-name (generate-new-buffer-name "*AI Help Answer*"))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
         (erase-buffer)
