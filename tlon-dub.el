@@ -79,7 +79,7 @@ Shares with 'editor' role using the email in `tlon-email-shared'."
 		      resource-id))
 	 (user-email tlon-email-shared) ; Assuming this holds the relevant email
 	 (payload-alist `(("resource_type" . "dubbing") ; Use "dubbing" as the resource_type
-			  ("principals" . [((principal_type . "user") (principal_id . ,user-email))])
+			  ("principals" . [((principal_type . "user") (email . ,user-email))]) ; Use "email" instead of "principal_id"
 			  ("role" . "editor")))
 	 (payload (json-encode payload-alist))
 	 ;; Build the argument list for curl
