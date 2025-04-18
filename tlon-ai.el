@@ -1118,23 +1118,45 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
       (tlon-ai-insert-in-buffer-and-switch-to-it response buffer)
       (gptel-context-remove-all)))) ; Remove context after getting the answer
 
+(declare-function paths-dir-dotemacs "tlon-paths")
 (defvar elpaca-repos-directory)
 (defun tlon-ai-get-documentation-files ()
   "Return a list of full paths to documentation files.
-Documentation files are `.org` files within the \"doc/\" subdirectories of the
-\"tlon\" and \"dotfiles/emacs/extras\" repositories managed by Elpaca."
-  (let ((all-doc-files '())
-        (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
-			(file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
-	(doc-pattern "\\.org\\'")
-	(repos (tlon-lookup-all tlon-repos :dir :help t))
-	(files (list (file-name-concat paths-dir-dotemacs "config.org"))))
+Documentation files are collected from:
+1. `.org` files within the \"doc/\" subdirectories of specified Elpaca repos.
+2. `readme.org` or `readme.md` files in specified Elpaca repos.
+3. Specific individual files."
+  (let* ((all-doc-files '())
+         ;; 1. Directories containing .org documentation files
+         (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
+                         (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
+         (doc-pattern "\\.org\\'")
+         ;; 2. Repositories to check for readme files
+         (repos (tlon-lookup-all tlon-repos :dir :help t))
+         (readme-patterns '("readme.org" "readme.md"))
+         ;; 3. Specific individual files
+         (files (list (file-name-concat (paths-dir-dotemacs) "config.org"))))
+
+    ;; Collect files from doc-dirs
     (dolist (doc-dir doc-dirs)
       (when (file-directory-p doc-dir)
-	(setq all-doc-files (append all-doc-files
+        (setq all-doc-files (append all-doc-files
                                     (directory-files doc-dir t doc-pattern)))))
-    ;; add all org or md files in repos that are named ‘readme’
 
+    ;; Collect readme files from repos
+    (dolist (repo-dir repos)
+      (when (file-directory-p repo-dir)
+        (dolist (pattern readme-patterns)
+          (let ((readme-file (file-name-concat repo-dir pattern)))
+            (when (file-exists-p readme-file)
+              (push readme-file all-doc-files))))))
+
+    ;; Collect individual files
+    (dolist (file files)
+      (when (file-exists-p file)
+        (push file all-doc-files)))
+
+    ;; Remove duplicates and return
     (delete-dups all-doc-files)))
 
 ;;;;;; BibTeX
