@@ -1124,14 +1124,17 @@ Displays the RESPONSE in a new buffer. If RESPONSE is nil, use
 Documentation files are `.org` files within the \"doc/\" subdirectories of the
 \"tlon\" and \"dotfiles/emacs/extras\" repositories managed by Elpaca."
   (let ((all-doc-files '())
-        (doc-dirs (append (list (file-name-concat elpaca-repos-directory "tlon/doc/")
-				(file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/"))
-			  (tlon-lookup-all tlon-repos :dir :help t)))
-	(doc-pattern "\\.md\\|\\.org\\'"))
+        (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
+			(file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
+	(doc-pattern "\\.org\\'")
+	(repos (tlon-lookup-all tlon-repos :dir :help t))
+	(files (list (file-name-concat paths-dir-dotemacs "config.org"))))
     (dolist (doc-dir doc-dirs)
       (when (file-directory-p doc-dir)
 	(setq all-doc-files (append all-doc-files
                                     (directory-files doc-dir t doc-pattern)))))
+    ;; add all org or md files in repos that are named ‘readme’
+
     (delete-dups all-doc-files)))
 
 ;;;;;; BibTeX
