@@ -80,7 +80,8 @@ Shares with 'editor' role using the `workspace_api_key_id` principal type."
 	 ;; Try sharing with the API key itself instead of the user email
 	 (payload-alist `(("resource_type" . "dubbing")
 			  ;; Use workspace_api_key_id with the API key string
-			  ("principals" . [((workspace_api_key_id . ,api-key))])
+			  ;; Structure: list containing one alist
+			  ("principals" . ,(list (list (cons 'workspace_api_key_id api-key))))
 			  ("role" . "editor")))
 	 (payload (json-encode payload-alist))
 	 ;; Build the argument list for curl
