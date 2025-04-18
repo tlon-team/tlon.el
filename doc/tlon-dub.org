@@ -24,6 +24,7 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + =tlon-core=
 + =tlon-tts= (for API key retrieval and language selection)
 + =json= (for parsing API responses)
++ =threads= (for the =cond->= macro)
 + External tools: =curl= (for API requests).
 
 ** User Options
