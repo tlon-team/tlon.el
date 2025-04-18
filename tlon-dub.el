@@ -44,6 +44,9 @@
 (defconst tlon-dub-get-project-metadata-endpoint "/dubbing/%s"
   "API endpoint format for getting dubbing project metadata. Requires dubbing_id.")
 
+(defconst tlon-dub-get-transcript-endpoint "/dubbing/%s/transcript/%s"
+  "API endpoint format for getting the transcript for a dubbing project. Requires dubbing_id and language_code.")
+
 ;;;; Helper Functions
 
 (defun tlon-dub--get-content-type (filename)
@@ -140,6 +143,36 @@ Returns the JSON response from the API, typically containing the `dubbing_id'."
         (error (progn
                  (message "Error parsing JSON response: %s" err)
                  response)))))) ; Return raw response on error
+
+;;;###autoload
+(defun tlon-dub-get-transcript (dubbing-id language-code)
+  "Get the transcript for the ElevenLabs dubbing project DUBBING-ID in LANGUAGE-CODE.
+LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired transcript."
+  (interactive
+   (list (read-string "Dubbing ID: ")
+         (tlon-get-iso-code (tlon-read-language nil "Language code for transcript: " t nil))))
+  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+         (url (format (concat tlon-dub-api-base-url tlon-dub-get-transcript-endpoint)
+                      dubbing-id language-code))
+         ;; Use -L to follow redirects, as this endpoint might return a temporary URL for the transcript file
+         (command (format "curl -s -L --request GET '%s' \
+--header 'accept: application/json' \
+--header 'xi-api-key: %s'"
+                          url
+                          api-key)))
+    (message "Getting transcript for dubbing project %s (language: %s)..." dubbing-id language-code)
+    (when tlon-debug (message "Debug: Running command: %s" command))
+    (let ((response (shell-command-to-string command)))
+      ;; The response is expected to be the transcript file content itself (e.g., VTT or SRT)
+      ;; It's not typically JSON, so we don't parse it here.
+      (message "Transcript received.")
+      ;; Display in a new buffer for inspection
+      (with-current-buffer (get-buffer-create (format "*Dub Transcript: %s (%s)*" dubbing-id language-code))
+        (erase-buffer)
+        (insert response)
+        (goto-char (point-min))
+        (switch-to-buffer (current-buffer)))
+      response))) ; Return the raw transcript string
 
 (provide 'tlon-dub)
 
