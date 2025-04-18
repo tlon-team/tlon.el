@@ -231,7 +231,8 @@ LANGUAGE-CODE should be the ISO code (e.g., \"en\", \"es\") for the desired tran
               (insert response)
               (goto-char (point-min))
               (switch-to-buffer (current-buffer)))
-            response))))) ; Return raw response on parsing failure
+	    ;; Return raw response on parsing failure
+            response))))))
 
 (provide 'tlon-dub)
 
