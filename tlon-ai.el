@@ -1140,6 +1140,22 @@ request. The original user question is extracted from INFO."
             (gptel-context-remove-all)
           (message "Context not cleared. Remember to clear it manually with `M-x gptel-context-remove-all` when finished."))))))
 
+(defun tlon-ai--extract-question-from-info (info)
+  "Extract the original user question from the INFO plist.
+INFO is the plist provided to the `gptel' callback."
+  (let* ((data (plist-get info :data))
+         (contents (plist-get data :contents))
+         (user-part (when contents (car (last contents)))) ; Assuming user is last
+         (text-parts (when (eq (plist-get user-part :role) 'user)
+                       (plist-get user-part :parts)))
+         (full-prompt (when text-parts (plist-get (car text-parts) :text)))
+         (question-marker "Here is the question:\n\n"))
+    (if (and full-prompt (string-match question-marker full-prompt))
+        (substring full-prompt (match-end 0))
+      (progn
+        (message "Warning: Could not extract question from `info' plist.")
+        "Unknown Question")))) ; Fallback question
+
 (declare-function paths-dir-dotemacs "tlon-paths")
 (defvar elpaca-repos-directory)
 (defun tlon-ai-get-documentation-files ()
