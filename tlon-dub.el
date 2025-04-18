@@ -72,8 +72,8 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
      (t nil)))) ; Unsupported type
 
 (defun tlon-dub--share-project-with-self (resource-id)
-  "Share the workspace RESOURCE-ID (dubbing_id) with the current user (API key).
-Shares with 'editor' role using the email in `tlon-email-shared'."
+  "Share the workspace RESOURCE-ID (dubbing_id) with the current API key.
+Shares with 'editor' role using the `workspace_api_key_id` principal type."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
 		      resource-id))
@@ -92,7 +92,7 @@ Shares with 'editor' role using the email in `tlon-email-shared'."
 		     "--header" (format "xi-api-key: %s" api-key)
 		     "--data" payload))
 	 (command (mapconcat #'shell-quote-argument args " ")))
-    (message "Sharing resource %s with %s (role: editor)..." resource-id user-email)
+    (message "Sharing resource %s with workspace API key (role: editor)..." resource-id) ; Updated message
     (when tlon-debug (message "Debug: Running share command: %s" command))
     (let ((response (shell-command-to-string command)))
       ;; Check response - success might be empty or a simple confirmation
