@@ -1044,13 +1044,31 @@ content is the note minus the marker that precedes it."
 
 (defun tlon-md-get-note-end ()
   "Return the end of the note at point."
-  (let ((note-start (format tlon-md-footnote-start "[[:digit:]]+"))
-	(point (point)))
-    (save-excursion
-      (re-search-forward note-start nil t)
-      (while (<= (match-beginning 0) point)
-	(re-search-forward note-start nil t))
-      (1- (tlon-md-get-note-beginning)))))
+  (save-excursion
+    ;; Find the start of the current footnote definition.
+    (goto-char (tlon-md-get-note-beginning))
+    (let ((next-boundary most-positive-fixnum))
+      ;; Find start of the next footnote definition
+      (save-excursion
+        ;; Search from end of current footnote line to avoid matching current footnote
+        (end-of-line)
+        (when (re-search-forward (format tlon-md-footnote-start "[[:digit:]]+") nil t)
+          (setq next-boundary (min next-boundary (match-beginning 0)))))
+      ;; Find start of local variables section
+      (when-let ((lv-start (tlon-md-beginning-of-local-variables)))
+        (setq next-boundary (min next-boundary lv-start)))
+      ;; Consider buffer end
+      (setq next-boundary (min next-boundary (point-max)))
+      ;; The end is right before the next boundary, skipping trailing whitespace.
+      (goto-char next-boundary)
+      ;; If the boundary is the start of another section (footnote/local vars),
+      ;; move back one char unless already at buffer start.
+      (when (and (/= next-boundary (point-max)) (> (point) (point-min)))
+        (backward-char 1))
+      ;; Skip backward over whitespace characters (space, tab, newline)
+      (skip-chars-backward " \t\n")
+      ;; Ensure point is not before the start of the note
+      (max (point) (tlon-md-get-note-beginning)))))
 
 ;;;;; Note classification
 
