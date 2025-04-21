@@ -1057,19 +1057,27 @@ inserted; if nil, use the current buffer."
     (if (not response)
 	(tlon-ai-callback-fail info)
       (with-current-buffer (or buffer (current-buffer))
-	(pcase type
-	  ('synopsis
-	   (kill-new response)
-	   (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))
-	  (_ (pcase major-mode
-	       ((or 'bibtex-mode 'ebib-entry-mode)
-		(when tlon-debug
-		  (message "`tlon-get-abstract-callback' is setting `%s' to `%s'"
-			   key (when response (substring response 0 (min (length response) 100)))))
-		(tlon-ai-summarize-set-bibtex-abstract response key))
-	       ;; ('markdown-mode) ; TODO: set `description' YAML field to it
-	       (_ (kill-new response)
-		  (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
+	(cond
+	 ;; If a key was captured, we assume it's for a BibTeX entry.
+	 (key
+	  (pcase type
+	    ('synopsis ; Synopses are just copied, not added to BibTeX entry
+	     (kill-new response)
+	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
+	    (_ ; Default is abstract, set it in the BibTeX entry
+	     (when tlon-debug
+	       (message "`tlon-get-abstract-callback' is setting abstract for key `%s' to `%s...'"
+			key (when response (substring response 0 (min (length response) 100)))))
+	     (tlon-ai-summarize-set-bibtex-abstract response key))))
+	 ;; If no key, handle based on type (likely summarizing region/buffer)
+	 (t
+	  (pcase type
+	    ('synopsis
+	     (kill-new response)
+	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
+	    (_ ; Default is abstract, just copy to kill ring
+	     (kill-new response)
+	     (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
       (when tlon-debug
 	(message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
       (tlon-ai-batch-continue))))
