@@ -969,6 +969,19 @@ Includes entries even if some fields are missing (value will be null)."
     (tlon-write-data tlon-file-bare-bibliography (reverse bibliography-data)) ; Reverse to maintain original order
     (find-file tlon-file-bare-bibliography)))
 
+;;;;; Misc
+
+(declare-function files-extras-lines-to-list "file-extras")
+(declare-function zotra-extras-add-multiple-urls "zotra-extras")
+(defun tlon-tex-add-multiple-urls-from-file (file)
+  "Prompt user for FILE with a list of URLs and add each to `tlon-file-fluid'."
+  (let* ((urls (delete-dups (files-extras-lines-to-list file)))
+	 (missing-urls (mapcar (lambda (url)
+				 (unless (tlon-bibliography-lookup "url" url)
+				   url))
+			       urls)))
+    (zotra-extras-add-multiple-urls missing-urls tlon-file-fluid)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
