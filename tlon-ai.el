@@ -1143,19 +1143,27 @@ request. The original user question is extracted from INFO."
 
 (defun tlon-ai--extract-question-from-info (info)
   "Extract the original user question from the INFO plist.
-INFO is the plist provided to the `gptel' callback."
+INFO is the plist provided to the `gptel' callback. Handles potential variations
+in the :data structure."
   (let* ((data (plist-get info :data))
-         (contents (plist-get data :contents))
-         (user-part (when contents (car (last contents)))) ; Assuming user is last
-         (text-parts (when (eq (plist-get user-part :role) 'user)
+         (contents (if (plistp data) (plist-get data :contents) data))
+         (user-part (when (and (seqp contents) (> (length contents) 0))
+                      (elt contents (1- (length contents))))) ; Use elt for list/vector
+         (text-parts (when (and (plistp user-part) (eq (plist-get user-part :role) 'user))
                        (plist-get user-part :parts)))
-         (full-prompt (when text-parts (plist-get (car text-parts) :text)))
+         (first-part (when (and (seqp text-parts) (> (length text-parts) 0))
+                       (elt text-parts 0))) ; Use elt for list/vector
+         (full-prompt (when (plistp first-part)
+                        (plist-get first-part :text)))
          (question-marker "Here is the question:\n\n"))
-    (if (and full-prompt (string-match question-marker full-prompt))
+    (if (and full-prompt (stringp full-prompt) ; Add stringp check
+             (string-match question-marker full-prompt))
         (substring full-prompt (match-end 0))
       (progn
-        (message "Warning: Could not extract question from `info' plist.")
-        "Unknown Question")))) ; Fallback question
+        (message "Warning: Could not extract question from `info' plist. Relevant data: %S"
+                 ;; Log relevant parts for debugging
+                 `(:data ,data :contents ,contents :user-part ,user-part :text-parts ,text-parts :first-part ,first-part))
+        "Unknown Question"))))
 
 (declare-function paths-dir-dotemacs "tlon-paths")
 (defvar elpaca-repos-directory)
