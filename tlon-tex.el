@@ -977,10 +977,9 @@ Includes entries even if some fields are missing (value will be null)."
 (defun tlon-tex-add-multiple-urls-from-file (file)
   "Prompt user for FILE with a list of URLs and add each to `tlon-file-fluid'."
   (let* ((urls (delete-dups (files-extras-lines-to-list file)))
-	 (missing-urls (mapcar (lambda (url)
-				 (unless (tlon-bibliography-lookup "url" url)
-				   url))
-			       urls)))
+         (missing-urls (seq-filter (lambda (url)
+                                     (not (tlon-bibliography-lookup "url" url)))
+                                   urls)))
     (zotra-extras-add-multiple-urls missing-urls tlon-file-fluid)))
 
 ;;;;; Menu
