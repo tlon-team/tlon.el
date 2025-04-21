@@ -28,6 +28,7 @@
 
 (require 'bibtex-extras)
 (require 'paths)
+(require 'seq)
 (require 'shut-up)
 (require 'tlon-core)
 (require 'transient)
