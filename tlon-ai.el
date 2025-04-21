@@ -1217,18 +1217,26 @@ Documentation files are collected from:
 (declare-function ebib-extras-get-file-of-key "ebib-extras")
 (defun tlon-ai-summarize-set-bibtex-abstract (abstract key)
   "Set the `abstract' field of entry with KEY entry to ABSTRACT."
-  ;; This assumes KEY is in the current buffer. Maybe relax this assumption.
-  (let* ((set-field (pcase major-mode
-		      ('bibtex-mode #'bibtex-set-field)
-		      ('ebib-entry-mode #'ebib-extras-set-field))))
-    (with-current-buffer (find-file-noselect (ebib-extras-get-file-of-key key))
-      (save-excursion
-	(bibtex-search-entry key)
-	(shut-up
-	  (funcall set-field "abstract" abstract))))
-    (message "Set abstract of `%s'" key)
-    (when (derived-mode-p 'bibtex-mode)
-      (save-buffer))))
+  (let ((bib-file (ebib-extras-get-file-of-key key)))
+    (unless bib-file
+      (error "Could not find BibTeX file for key %s" key))
+    (with-current-buffer (find-file-noselect bib-file)
+      ;; Determine the correct set-field function based on the BibTeX buffer's mode
+      (let ((set-field (pcase major-mode
+                         ('bibtex-mode #'bibtex-set-field)
+                         ;; Add other relevant modes if necessary, e.g., ebib-mode
+                         (_ (error "Unsupported major mode in BibTeX file: %s" major-mode)))))
+        (save-excursion
+          (goto-char (point-min)) ; Ensure search starts from beginning
+          (when (bibtex-search-entry key) ; Check if entry is found
+            (shut-up
+             (funcall set-field "abstract" abstract))
+            (message "Set abstract of `%s' in %s" key (buffer-name))
+            ;; Save the buffer if it's in bibtex-mode
+            (when (derived-mode-p 'bibtex-mode)
+              (save-buffer)))
+          (unless (bibtex-search-entry key) ; Error if entry wasn't found
+            (error "Could not find entry for key %s in buffer %s" key (buffer-name))))))))
 
 ;;;;; Language detection
 
