@@ -276,8 +276,15 @@ The command ~tlon-ai-join-files~ concatenates the content of chunk files (e.g., 
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-ai-get-help
 :END:
-#+findex: tlon-ai-get-help
-The command ~tlon-ai-get-help~ asks a question about the tlon repository and related tools, using documentation files as context. It prompts the user for a question, finds relevant =.org= files in the main =tlon.el= documentation directory (=doc/=) and the =dotfiles/emacs/extras/doc/= directory, adds these files to the =gptel= context, and sends the request to the AI. The answer is displayed in a new buffer.
+#+findex: tlon-ai-ask-for-help
+The command ~tlon-ai-ask-for-help~ allows asking questions about the Tlön ecosystem, using a collection of relevant documentation files as context for the AI.
+
+It prompts the user for a question. It then gathers documentation files from various standard locations using the internal function ~tlon-ai-get-documentation-files~. This typically includes:
++ =.org= files within the =doc/= subdirectories of the main =tlon= Elpaca repository and the =dotfiles/emacs/extras= repository.
++ =readme.org= or =readme.md= files from Tlön-related repositories marked for help context (see ~tlon-repos~).
++ Specific configuration files like the user's Emacs =config.org=.
+
+These collected files are added to the =gptel= context. The user's question, along with the context, is sent to the AI model specified by ~tlon-ai-help-model~ (or the default =gptel= model if nil). The AI's answer is then displayed in a new =gptel= buffer, formatted according to ~gptel-default-mode~. After displaying the answer, the user is prompted to clear the =gptel= context.
 
 *** Propagating Changes Across Repositories
 :PROPERTIES:
@@ -304,7 +311,7 @@ This command relies heavily on accurate metadata (=original_path=) and consisten
 :CUSTOM_ID: h:tlon-ai-menu
 :END:
 #+findex: tlon-ai-menu
-The command ~tlon-ai-menu~ displays a =transient= menu interface, providing quick access to most of the AI-related commands and options described above. It allows toggling options like =tlon-ai-overwrite-alt-text= and =tlon-ai-edit-prompt=, selecting models for specific tasks, setting batch functions, and invoking the various AI operations (summarization, image description, translation, etc.).
+The command ~tlon-ai-menu~ displays a =transient= menu interface, providing quick access to most of the AI-related commands and options described above. It allows toggling options like =tlon-ai-overwrite-alt-text= and =tlon-ai-edit-prompt=, selecting models for specific tasks, setting batch functions, and invoking the various AI operations (summarization, image description, translation, help, etc.).
 
 ** Internal Functions and Variables
 :PROPERTIES:
