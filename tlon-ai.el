@@ -456,10 +456,7 @@ INFO is the response info."
 			     (bibtex-extras-get-key))
 	       ('ebib-entry-mode (ebib-extras-next-entry)
 				 (ebib--get-key-at-point))))
-    ;; Temporarily increase max eval depth for batch processing to prevent
-    ;; excessive-lisp-nesting errors when skipping many items consecutively.
-    (let ((max-lisp-eval-depth (* max-lisp-eval-depth 10)))
-      (funcall tlon-ai-batch-fun))))
+    (funcall tlon-ai-batch-fun)))
 
 (defun tlon-ai-try-try-try-again (original-fun)
   "Call ORIGINAL-FUN up to three times if it its response is nil, then give up."
