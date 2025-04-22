@@ -447,15 +447,21 @@ INFO is the response info."
 (declare-function bibtex-extras-get-key "bibtex-extras")
 (autoload 'ebib-extras-next-entry "ebib-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
+(declare-function ebib--get-key-at-point "ebib")
 (defun tlon-ai-batch-continue ()
-  "Move to the next entry and call `tlon-ai-batch-fun''."
+  "Move to the next entry and call `tlon-ai-batch-fun'."
   (when tlon-ai-batch-fun
-    (message "Moving point to `%s'."
-	     (pcase major-mode
-	       ('bibtex-mode (bibtex-next-entry)
-			     (bibtex-extras-get-key))
-	       ('ebib-entry-mode (ebib-extras-next-entry)
-				 (ebib--get-key-at-point))))
+    (let ((next-key-info "N/A")) ; Default message part
+      (pcase major-mode
+        ('bibtex-mode
+         (bibtex-next-entry)
+         (setq next-key-info (or (bibtex-extras-get-key) "N/A")))
+        ('ebib-entry-mode
+         (ebib-extras-next-entry)
+         (setq next-key-info (or (ebib--get-key-at-point) "N/A"))))
+      ;; Always message, even if mode didn't match or key is nil
+      (message "Moving point to next entry (key: %s)." next-key-info))
+    ;; Always call the batch function if set
     (funcall tlon-ai-batch-fun)))
 
 (defun tlon-ai-try-try-try-again (original-fun)
@@ -506,18 +512,21 @@ Otherwise,
 (autoload 'shr-render-buffer "shr")
 (autoload 'tlon-convert-pdf "tlon-import")
 (defun tlon-get-file-as-string (file)
-  "Get the contents of FILE as a string."
+  "Get the contents of FILE as a string.
+If FILE is a PDF, convert it to Markdown first. If FILE is HTML, render it to
+text using `shr-render-buffer'."
   (with-temp-buffer
-    (when (string= (file-name-extension file) "pdf")
-      (let ((markdown (make-temp-file "pdf-to-markdown-")))
-	(tlon-convert-pdf file markdown)
-	(setq file markdown)))
-    (insert-file-contents file)
-    (when (string= (file-name-extension file) "html")
-      (shr-render-buffer (current-buffer)))
-    (let ((result (buffer-substring-no-properties (point-min) (point-max))))
-      (kill-buffer)
-      result)))
+    (let ((original-file file)) ; Keep track of original file name
+      (when (string= (file-name-extension file) "pdf")
+        (let ((markdown (make-temp-file "pdf-to-markdown-")))
+          (tlon-convert-pdf file markdown)
+          (setq file markdown)))
+      (insert-file-contents file)
+      (when (string= (file-name-extension original-file) "html") ; Check original extension
+        ;; Prevent shr-render-buffer from switching windows
+        (save-selected-window
+          (shr-render-buffer (current-buffer))))
+      (buffer-substring-no-properties (point-min) (point-max)))))
 
 ;;;;; Translation
 
@@ -960,10 +969,12 @@ TYPE is either `abstract' or `synopsis'."
 	  (tlon-ai-get-abstract-in-language file language type)
 	(tlon-ai-detect-language-in-file
 	 file (tlon-ai-get-abstract-from-detected-language file)))
-    (when tlon-debug
-      (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
-    ;; Use a timer to avoid deep recursion in batch mode when skipping many items
-    (run-with-idle-timer 0 nil #'tlon-ai-batch-continue)))
+    ;; Else branch: if not proceeding
+    (progn
+      (when tlon-debug
+        (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
+      ;; Use a timer to avoid deep recursion in batch mode when skipping many items
+      (run-with-idle-timer 0 nil #'tlon-ai-batch-continue))))
 
 (defun tlon-shorten-abstract-with-ai ()
   "Shorten the abstract at point so that does not exceed word threshold."
@@ -1056,31 +1067,31 @@ appropriate for an abstract. BUFFER is the buffer where the abstract should be
 inserted; if nil, use the current buffer."
   (lambda (response info)
     (if (not response)
-	(tlon-ai-callback-fail info)
+        (tlon-ai-callback-fail info)
       (with-current-buffer (or buffer (current-buffer))
-	(cond
-	 ;; If a key was captured, we assume it's for a BibTeX entry.
+        (cond
+         ;; If a key was captured, we assume it's for a BibTeX entry.
 	 (key
 	  (pcase type
 	    ('synopsis ; Synopses are just copied, not added to BibTeX entry
 	     (kill-new response)
 	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
-	    (_ ; Default is abstract, set it in the BibTeX entry
-	     (when tlon-debug
-	       (message "`tlon-get-abstract-callback' is setting abstract for key `%s' to `%s...'"
-			key (when response (substring response 0 (min (length response) 100)))))
-	     (tlon-ai-summarize-set-bibtex-abstract response key))))
-	 ;; If no key, handle based on type (likely summarizing region/buffer)
-	 (t
-	  (pcase type
+            (_ ; Default is abstract, set it in the BibTeX entry
+             (when tlon-debug
+               (message "`tlon-get-abstract-callback' is setting abstract for key `%s' to `%s...'"
+                        key (when response (substring response 0 (min (length response) 100)))))
+             (tlon-ai-summarize-set-bibtex-abstract response key))))
+           ;; If no key, handle based on type (likely summarizing region/buffer)
+           (t
+            (pcase type
 	    ('synopsis
 	     (kill-new response)
 	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
-	    (_ ; Default is abstract, just copy to kill ring
-	     (kill-new response)
-	     (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
+            (_ ; Default is abstract, just copy to kill ring
+             (kill-new response)
+             (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
       (when tlon-debug
-	(message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
+        (message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
       (tlon-ai-batch-continue))))
 
 ;;;;; Help
@@ -1221,23 +1232,24 @@ Documentation files are collected from:
   (let ((bib-file (ebib-extras-get-file-of-key key)))
     (unless bib-file
       (error "Could not find BibTeX file for key %s" key))
-    (with-current-buffer (find-file-noselect bib-file)
-      ;; Determine the correct set-field function based on the BibTeX buffer's mode
-      (let ((set-field (pcase major-mode
-                         ('bibtex-mode #'bibtex-set-field)
-                         ;; Add other relevant modes if necessary, e.g., ebib-mode
-                         (_ (error "Unsupported major mode in BibTeX file: %s" major-mode)))))
-        (save-excursion
-          (goto-char (point-min)) ; Ensure search starts from beginning
-          (when (bibtex-search-entry key) ; Check if entry is found
-            (shut-up
-             (funcall set-field "abstract" abstract))
-            (message "Set abstract of `%s' in %s" key (buffer-name))
-            ;; Save the buffer if it's in bibtex-mode
-            (when (derived-mode-p 'bibtex-mode)
-              (save-buffer)))
-          (unless (bibtex-search-entry key) ; Error if entry wasn't found
-            (error "Could not find entry for key %s in buffer %s" key (buffer-name))))))))
+    (let ((target-buffer (find-file-noselect bib-file)))
+      (with-current-buffer target-buffer
+        ;; Determine the correct set-field function based on the BibTeX buffer's mode
+        (let ((set-field (pcase major-mode
+                           ('bibtex-mode #'bibtex-set-field)
+                           ;; Add other relevant modes if necessary, e.g., ebib-mode
+                           (_ (error "Unsupported major mode in BibTeX file: %s" major-mode)))))
+          (save-excursion
+            (goto-char (point-min)) ; Ensure search starts from beginning
+            (when (bibtex-search-entry key) ; Check if entry is found
+              (shut-up
+               (funcall set-field "abstract" abstract))
+              (message "Set abstract of `%s' in %s" key (buffer-name))
+              ;; Save the buffer if it's in bibtex-mode
+              (when (derived-mode-p 'bibtex-mode)
+                (save-buffer)))
+            (unless (bibtex-search-entry key) ; Error if entry wasn't found
+              (error "Could not find entry for key %s in buffer %s" key (buffer-name)))))))))
 
 ;;;;; Language detection
 
