@@ -964,8 +964,9 @@ TYPE is either `abstract' or `synopsis'."
 	(tlon-ai-detect-language-in-file
 	 file (tlon-ai-get-abstract-from-detected-language file)))
     (when tlon-debug
-      (message "`%s' now calls `tlon-ai-batch-continue'." "tlon-get-abstract-with-ai"))
-    (tlon-ai-batch-continue)))
+      (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
+    ;; Use a timer to avoid deep recursion in batch mode when skipping many items
+    (run-with-idle-timer 0 nil #'tlon-ai-batch-continue)))
 
 (defun tlon-shorten-abstract-with-ai ()
   "Shorten the abstract at point so that does not exceed word threshold."
