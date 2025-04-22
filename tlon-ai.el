@@ -514,7 +514,7 @@ Otherwise,
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string.
 If FILE is a PDF, convert it to Markdown first. If FILE is HTML, render it to
-text using `shr-render-buffer', without displaying the rendering buffer."
+text using `shr-render-buffer', preventing focus switch and killing the render buffer."
   (with-temp-buffer
     (let ((original-file file)) ; Keep track of original file name
       (when (string= (file-name-extension file) "pdf")
