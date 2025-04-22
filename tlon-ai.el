@@ -522,11 +522,11 @@ text using `shr-render-buffer', without displaying the rendering buffer."
           (tlon-convert-pdf file markdown)
           (setq file markdown)))
       (insert-file-contents file)
-      (when (string= (file-name-extension original-file) "html") ; Check original extension
-        ;; Prevent shr-render-buffer from switching windows
-        (save-selected-window
-          (shr-render-buffer (current-buffer))))
-      (buffer-substring-no-properties (point-min) (point-max)))))
+       (when (string= (file-name-extension original-file) "html") ; Check original extension
+         ;; Prevent shr-render-buffer from switching windows or displaying buffer
+         (save-selected-window
+           (shr-render-buffer (current-buffer) #'ignore))) ; Pass #'ignore to prevent display
+       (buffer-substring-no-properties (point-min) (point-max)))))
 
 ;;;;; Translation
 
