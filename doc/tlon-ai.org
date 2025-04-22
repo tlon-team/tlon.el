@@ -324,7 +324,7 @@ This section lists some non-interactive functions and variables used internally 
 + ~tlon-ai-maybe-edit-prompt~: Conditionally allows editing the prompt based on ~tlon-ai-edit-prompt~.
 + ~tlon-warn-if-gptel-context~: Checks if the =gptel= context is empty and warns the user if not.
 + Callback functions (e.g., ~tlon-ai-callback-return~, ~tlon-ai-callback-copy~, ~tlon-ai-callback-save~, ~tlon-ai-callback-insert~, ~tlon-ai-callback-fail~): Handle responses from AI requests in various ways (returning value, copying, saving, inserting, error handling).
-+ ~tlon-ai-batch-continue~: Helper for batch processing, moves to the next item and calls the batch function.
++ ~tlon-ai-batch-continue~: Helper for batch processing, moves to the next item and calls the batch function (often scheduled via a timer to prevent deep recursion).
 + ~tlon-get-string-dwim~: Retrieves text content from various sources (file, region, buffer, PDF/HTML associated with BibTeX entry) for AI processing.
 + ~tlon-get-file-as-string~: Reads the content of a file (handling PDF conversion) into a string.
 + Prompt constants (e.g., ~tlon-ai-detect-language-prompt~, ~tlon-ai-translate-prompt~, ~tlon-ai-write-reference-article-prompt~, etc.): Store the various prompt templates used for different AI tasks, often including language-specific versions.
