@@ -332,15 +332,16 @@ translation, or nil if any required piece is missing."
       (list key text source-lang-code))))
 
 ;;;###autoload
-(defun tlon-deepl-translate-abstract (&optional abstract key)
-  "Translate the ABSTRACT of entry KEY into relevant languages.
-Handles interactive and non-interactive calls. See `doc/tlon-deepl.org'."
+(defun tlon-deepl-translate-abstract (&optional abstract key langs)
+  "Translate the ABSTRACT of entry KEY into LANGS.
+LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
+nil, use `tlon-project-target-languages'."
   (interactive)
   (when-let ((context (tlon-deepl--get-abstract-context abstract key)))
     (cl-destructuring-bind (key text source-lang-code) context
       (if (called-interactively-p 'any)
           (tlon-deepl--translate-abstract-interactive key text source-lang-code)
-        (tlon-deepl--translate-abstract-non-interactive key text source-lang-code)))))
+        (tlon-deepl--translate-abstract-non-interactive key text source-lang-code langs)))))
 
 (defun tlon-deepl--translate-abstract-interactive (key text source-lang-code)
   "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE."
@@ -353,8 +354,10 @@ Handles interactive and non-interactive calls. See `doc/tlon-deepl.org'."
                               (tlon-translate-abstract-callback key target-lang 'overwrite))
                             nil))))
 
-(defun tlon-deepl--translate-abstract-non-interactive (key text source-lang-code)
-  "Handle non-interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE."
+(defun tlon-deepl--translate-abstract-non-interactive (key text source-lang-code langs)
+  "Handle non-interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
+LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
+nil, use `tlon-project-target-languages'."
   (message "Checking abstract translations for %s..." key)
   (let ((initiated-langs '()))
     (mapc (lambda (language)
@@ -364,57 +367,61 @@ Handles interactive and non-interactive calls. See `doc/tlon-deepl.org'."
                   (push language initiated-langs)
                   (message "Initiating DeepL translation for %s -> %s" key target-lang)
                   (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang-code
-                                        (lambda ()
-                                          (tlon-translate-abstract-callback key target-lang 'overwrite))
-                                        'no-glossary-ok))))) ; no-glossary-ok for batch/advice
-          tlon-project-target-languages)
+                                        (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite)))))))
+          (or langs tlon-project-target-languages))
     (when initiated-langs
       (message "Finished initiating translations for abstract of `%s' into: %s"
                key (string-join (reverse initiated-langs) ", ")))))
 
 ;;;###autoload
-(defun tlon-deepl-translate-missing-abstracts ()
-  "Translate abstracts for BibTeX entries missing translations.
-Iterates through all keys in `tlon-file-fluid' and `tlon-file-stable'. For
-each key, checks if abstract translations are missing for any language in
-`tlon-project-target-languages'. If missing, calls
-`tlon-deepl-translate-abstract' for that key in batch mode (no prompts)."
+(defun tlon-deepl-translate-missing-abstracts (&optional langs)
+  "Translate abstracts for BibTeX entries missing translations into LANGS.
+Iterate through all keys in `tlon-file-fluid' and `tlon-file-stable'. For each
+key, check if abstract translations are missing for any language in LANGS. LANGS
+is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is nil, use
+`tlon-project-target-languages'. When a translation in a language is missing,
+call `tlon-deepl-translate-abstract' for that key."
   (interactive)
   (let* ((keys (seq-uniq (append (tlon-tex-get-keys-in-file tlon-file-fluid)
-                                 ;; (tlon-tex-get-keys-in-file tlon-file-stable) ; commet out while testing
-				 )))
-         (total (length keys)) ; Calculate total after keys is bound
+                                 (tlon-tex-get-keys-in-file tlon-file-stable))))
+	 (translations (tlon-read-abstract-translations))
+         (total (length keys))
          (count 0)
          (processed 0))
     (message "Checking %d BibTeX entries for missing abstract translations..." total)
     (dolist (key keys)
       (setq processed (1+ processed))
-      (when (tlon-deepl--abstract-translation-missing-p key)
+      (when (tlon-deepl--abstract-translation-missing-p key langs translations)
         (message "Processing key (missing translations): %s (%d/%d)" key processed total)
         (setq count (1+ count))
         (let ((abstract (tlon-bibliography-lookup "=key=" key "abstract")))
-          (tlon-deepl-translate-abstract abstract key))))
+          (tlon-deepl-translate-abstract abstract key langs))))
     (message "Finished checking %d entries. Initiated translation for %d entries." total count)))
 
-(defun tlon-deepl--abstract-translation-missing-p (key)
-  "Return t if abstract translation for KEY is missing for any target language.
-Checks if the source language and abstract exist, then iterates through
-`tlon-project-target-languages'. Returns t if any target language (that is not
-the source language) lacks a non-empty \"abstract-<lang>\" field."
+(declare-function tlon-get-abstract-translation "tlon-tex")
+(defun tlon-deepl--abstract-translation-missing-p (key &optional langs translations)
+  "Return t iff abstract translation for KEY is missing for any language in LANGS.
+Check if the source language and abstract exist, then iterate through
+`tlon-project-target-languages' and return t if any language in LANGS (that is
+not the source language) lacks a non-empty entry. LANGS is a list of languages,
+such as `(\"spanish\" \"french\")'. If LANGS is nil, use
+`tlon-project-target-languages'.
+
+If TRANSLATIONS is nil, get them from `tlon-read-abstract-translations'."
   (let* ((source-lang-name (tlon-bibliography-lookup "=key=" key "langid"))
          (source-lang-code (when source-lang-name
                              (tlon-lookup tlon-languages-properties :code :name source-lang-name)))
          (abstract (tlon-bibliography-lookup "=key=" key "abstract"))
          missing-translation)
     (when (and abstract source-lang-code) ; Need abstract and source lang to translate
-      (dolist (target-lang-name tlon-project-target-languages)
+      (dolist (target-lang-name (or langs tlon-project-target-languages))
         (unless missing-translation ; Stop checking once one missing is found
           (let* ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name))
-                 (translated-field (format "abstract-%s" target-lang-code))
                  ;; Use the reliable file search function (now reverted to single field)
-                 (translated-abstract (tlon-bibliography-lookup "=key=" key translated-field)))
+                 (translated-abstract (tlon-get-abstract-translation key target-lang-code translations)))
             (unless (or (string= source-lang-code target-lang-code) ; Don't need translation to source lang
-                        (and translated-abstract (> (length (string-trim translated-abstract)) 0))) ; Check if non-empty
+                        (and translated-abstract
+			     (> (length (string-trim translated-abstract)) 0))) ; Check if non-empty
               (setq missing-translation t)))))) ; Set flag if *any* translation is missing
     missing-translation))
 
