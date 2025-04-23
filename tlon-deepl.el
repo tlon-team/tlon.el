@@ -254,8 +254,10 @@ found."
 	(or id
 	    no-glossary-ok
 	    (not (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
-	    (y-or-n-p (format "No glossary found for %s. Proceed anyway? "
-			      tlon-deepl-target-language)))
+	    (y-or-n-p (concat (if (string= "en" tlon-deepl-source-language)
+				  (format "No \"en-%s\" glossary found." tlon-deepl-target-language)
+				"Glossaries for source languages other than English are not currently supported.")
+			      " Translate anyway?")))
       (user-error "Aborted"))
     (json-encode `(("text" . ,text)
                    ("source_lang" . ,tlon-deepl-source-language)
