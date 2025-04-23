@@ -295,11 +295,11 @@ when the source language is not English."
 (defvar tlon-project-target-languages)
 (defvar tlon-ai-batch-fun)
 
-(defun tlon-deepl--get-abstract-context (&optional abstract key)
+(defun tlon-deepl--get-abstract-context (&optional abstract key interactive-call-p)
   "Prepare context for abstract translation via DeepL.
 Collect necessary information for translating bibliographic entry abstracts.
-When called interactively, determine KEY from context (entry at point in Ebib or
-BibTeX modes). For non-interactive calls, KEY must be provided.
+If INTERACTIVE-CALL-P is non-nil, determine KEY from context (entry at point in
+Ebib or BibTeX modes). For non-interactive calls, KEY must be provided.
 
 ABSTRACT, if provided, is used directly. Otherwise, the abstract is retrieved
 based on KEY from the current entry or bibliography database.
@@ -307,7 +307,7 @@ based on KEY from the current entry or bibliography database.
 Returns a list (key text source-lang-code) with all information needed for
 translation, or nil if any required piece is missing."
   (let* ((key (or key
-                  (if (called-interactively-p 'any)
+                  (if interactive-call-p
                       (pcase major-mode
                         ('ebib-entry-mode (ebib--get-key-at-point))
                         ('bibtex-mode (bibtex-extras-get-key))
@@ -315,18 +315,18 @@ translation, or nil if any required piece is missing."
                     (user-error "KEY argument must be provided when called non-interactively"))))
          (text (or abstract
                    (when key
-                     (or (when (and (called-interactively-p 'any)
+                     (or (when (and interactive-call-p
 				    (derived-mode-p 'ebib-entry-mode)
 				    (string= key (ebib--get-key-at-point)))
                            (ebib-extras-get-field "abstract"))
                          (tlon-bibliography-lookup "=key=" key "abstract")))
-                   (when (called-interactively-p 'any)
+                   (when interactive-call-p
                      (pcase major-mode
                        ('text-mode (buffer-string))
                        ('ebib-entry-mode (unless key (ebib-extras-get-field "abstract")))
                        ('bibtex-mode (unless key (bibtex-extras-get-field "abstract")))))))
          (source-lang-name (when key
-                             (or (when (and (called-interactively-p 'any)
+                             (or (when (and interactive-call-p
 					    (derived-mode-p 'ebib-entry-mode)
 					    (string= key (ebib--get-key-at-point)))
                                    (ebib-extras-get-field "langid"))
@@ -337,14 +337,15 @@ translation, or nil if any required piece is missing."
       (list key text source-lang-code))))
 
 ;;;###autoload
-(defun tlon-deepl-translate-abstract (&optional abstract key langs)
+(defun tlon-deepl-translate-abstract (&optional abstract key langs interactive-call-p)
   "Translate the ABSTRACT of entry KEY into LANGS.
 LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
-nil, use `tlon-project-target-languages'."
-  (interactive)
-  (when-let ((context (tlon-deepl--get-abstract-context abstract key)))
+nil, use `tlon-project-target-languages'. INTERACTIVE-CALL-P indicates if the
+function was called interactively."
+  (interactive "P")
+  (when-let ((context (tlon-deepl--get-abstract-context abstract key interactive-call-p)))
     (cl-destructuring-bind (key text source-lang-code) context
-      (if (called-interactively-p 'any)
+      (if interactive-call-p
           (tlon-deepl--translate-abstract-interactive key text source-lang-code)
         (tlon-deepl--translate-abstract-non-interactive key text source-lang-code langs)))))
 
