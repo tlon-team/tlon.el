@@ -140,6 +140,9 @@ non-nil, don't ask for confirmation when no glossary is found."
 	(when payload (delete-file temp-file))
         (with-temp-buffer
           (insert response)
+          ;; Ensure Emacs interprets the inserted response as UTF-8
+          (set-buffer-multibyte t)
+          (set-buffer-file-coding-system 'utf-8-unix)
           (goto-char (point-min))
           ;; Ensure to handle proper response beginnings
           (when (re-search-forward "^{\\|\\[{" nil t)
@@ -181,7 +184,7 @@ If COPY is non-nil, copy the translation to the kill ring instead."
          (json-key-type 'string)
          (json (cadar (json-read)))
          (translation (alist-get "text" json nil nil #'string=))
-         (decoded (decode-coding-string translation 'utf-8)))
+         (decoded translation)) ; String should be correctly decoded by json-read now
     (when copy
       (kill-new decoded))
     (message (concat (when copy "Copied to kill ring: ") (replace-regexp-in-string "%" "%%" decoded)))))
