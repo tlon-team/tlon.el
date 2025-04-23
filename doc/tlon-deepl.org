@@ -188,16 +188,16 @@ This section lists non-interactive functions and variables used internally or po
   4. Builds the =curl= command string including method, URL, headers (Content-Type, Authorization with ~tlon-deepl-key~), and payload data if applicable.
   5. Executes the =curl= command using =shell-command-to-string= to get the =RESPONSE=.
   6. Deletes the temporary payload file if created.
-  7. Inserts the response into a temporary buffer, positions point at the start of the JSON/list, and calls the specified =CALLBACK= function.
-
+  7. Inserts the response into a temporary buffer, explicitly sets the buffer's coding system to UTF-8, positions point at the start of the JSON/list, and calls the specified =CALLBACK= function.
+ 
 *** Callbacks
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-callbacks
 :END:
-
+ 
 #+findex: tlon-deepl-print-translation
-+ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response, extracts the translated text, decodes it as UTF-8, and either messages it or copies it to the kill ring if =COPY= is non-nil.
-
++ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response (assuming the buffer content is UTF-8), extracts the translated text, and either messages it or copies it to the kill ring if =COPY= is non-nil.
+ 
 #+findex: tlon-deepl-glossary-create-callback
 + ~tlon-deepl-glossary-create-callback~ :: Callback for glossary creation. Resets ~tlon-deepl-target-language~, refreshes the local glossary list using ~tlon-deepl-get-glossaries~, and messages the API response.
 
