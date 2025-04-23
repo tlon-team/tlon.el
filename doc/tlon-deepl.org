@@ -98,10 +98,10 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   7. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
 
 #+findex: tlon-deepl-translate-abstract
-+ ~tlon-deepl-translate-abstract~ :: Translates the =abstract= field of a BibTeX entry =KEY= into relevant languages.
-  - Determines context (key, abstract text, source language code) using ~tlon-deepl--get-abstract-context~.
-  - If called interactively, delegates to ~tlon-deepl--translate-abstract-interactive~ which prompts for a single target language and translates.
-  - If called non-interactively, delegates to ~tlon-deepl--translate-abstract-non-interactive~ which iterates through all target languages, checks for existing translations in the JSON file, and translates missing ones.
++ ~tlon-deepl-translate-abstract~ :: Translates the =abstract= field of a BibTeX entry =KEY= into relevant languages. Takes optional =ABSTRACT=, =KEY=, =LANGS= (list of target language names), and =INTERACTIVE-CALL-P=.
+  - Determines context (key, abstract text, source language code) using ~tlon-deepl--get-abstract-context~ (passing =INTERACTIVE-CALL-P=).
+  - If =INTERACTIVE-CALL-P= is non-nil, delegates to ~tlon-deepl--translate-abstract-interactive~ which prompts for a single target language and translates.
+  - If =INTERACTIVE-CALL-P= is nil, delegates to ~tlon-deepl--translate-abstract-non-interactive~ which iterates through target languages specified in =LANGS= (or ~tlon-project-target-languages~ if =LANGS= is nil), checks for existing translations in the JSON file, and translates missing ones.
 
 #+findex: tlon-deepl-translate-missing-abstracts
 + ~tlon-deepl-translate-missing-abstracts~ :: Iterates through all BibTeX keys found in ~tlon-file-fluid~ and ~tlon-file-stable~ and translates abstracts that are missing translations for any language specified in ~tlon-project-target-languages~.
@@ -237,7 +237,7 @@ This section lists non-interactive functions and variables used internally or po
 #+findex: tlon-deepl--get-existing-translation
 + ~tlon-deepl--get-existing-translation~ :: Internal helper function used by ~tlon-deepl--translate-abstract-non-interactive~. Takes a BibTeX =KEY= and a =TARGET-LANG= code. Reads the abstract translations JSON file (~tlon-file-abstract-translations~) using ~tlon-read-abstract-translations~ and returns the translation string if found for the given key and language, and if it's non-empty. Returns =nil= otherwise.
 #+findex: tlon-deepl--get-abstract-context
-+ ~tlon-deepl--get-abstract-context~ :: Internal helper for ~tlon-deepl-translate-abstract~. Determines the BibTeX key, abstract text, and source language code based on arguments and interactive context. Returns a list =(KEY TEXT SOURCE-LANG-CODE)= or nil.
++ ~tlon-deepl--get-abstract-context~ :: Internal helper for ~tlon-deepl-translate-abstract~. Takes optional =ABSTRACT=, =KEY=, and =INTERACTIVE-CALL-P=. Determines the BibTeX key, abstract text, and source language code based on arguments and context (using =INTERACTIVE-CALL-P= to check if called interactively). Returns a list =(KEY TEXT SOURCE-LANG-CODE)= or nil.
 #+findex: tlon-deepl--translate-abstract-interactive
 + ~tlon-deepl--translate-abstract-interactive~ :: Internal helper for ~tlon-deepl-translate-abstract~. Handles the interactive translation flow: prompts for target language, calls ~tlon-deepl-translate~.
 #+findex: tlon-deepl--translate-abstract-non-interactive
