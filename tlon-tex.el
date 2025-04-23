@@ -787,6 +787,15 @@ is not present, add a new entry for this KEY."
 	(set var data)
       (tlon-write-abstract-translations data))))
 
+(defun tlon-get-abstract-translation (bibkey code)
+  "Return the translated abstract for BIBKEY in language CODE.
+Reads the data from `tlon-file-abstract-translations'. Returns nil if BIBKEY or
+CODE is not found."
+  (when-let* ((data (tlon-read-abstract-translations))
+	      (key-entry (assoc bibkey data)))
+    (when-let ((translations (cdr key-entry)))
+      (alist-get code translations nil nil #'string=))))
+
 (declare-function tlon-deepl-translate "tlon-deepl")
 (declare-function tlon-deepl-print-translation "tlon-deepl")
 ;; TODO: include BibTeX entry as context so that DeepL can use correct genders, plurals, etc.
