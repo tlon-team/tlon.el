@@ -251,10 +251,10 @@ The encoding in misinterpreted as ISO-8859-1 when it's actually UTF-8."
   "Return a JSON representation of the text to be translated to language.
 If NO-GLOSSARY-OK is non-nil, don't ask for confirmation when no glossary is
 found."
-  (let ((id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
+  (let ((glossary-id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
         (text (vector tlon-deepl-text)))
     (unless
-	(or id
+	(or glossary-id
 	    no-glossary-ok
 	    (not (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
 	    (y-or-n-p (concat (if (string= "en" tlon-deepl-source-language)
@@ -265,7 +265,7 @@ found."
     (json-encode `(("text" . ,text)
                    ("source_lang" . ,tlon-deepl-source-language)
                    ("target_lang" . ,tlon-deepl-target-language)
-                   ("glossary_id" . ,id)))))
+                   ("glossary_id" . ,glossary-id)))))
 
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
