@@ -32,6 +32,7 @@
 (require 'shut-up)
 (require 'tlon-core)
 (require 'transient)
+(require 'citar-cache)
 
 ;;;; User options
 
@@ -690,6 +691,15 @@ value contains VALUE as a substring."
 			  entries)))
 	     citar-cache--bibliographies)
     fields))
+
+(declare-function citar-cache--get-bibliography "citar-cache")
+(defun tlon-tex-get-keys-in-file (file)
+  "Return a list of all BibTeX keys in FILE, using the citar cache.
+FILE should be the absolute path to the BibTeX file.
+Ensures the file is cached by citar if not already."
+  (let* ((bib (citar-cache--get-bibliography (file-truename file))) ; Get/cache bibliography
+         (entries (citar-cache--bibliography-entries bib)))
+    (map-keys entries)))
 
 (defun tlon-tex-replace-keys-with-citations (&optional file audio)
   "Replace all BibTeX keys in FILE with CSL-defined citations.
