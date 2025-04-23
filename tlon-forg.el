@@ -27,6 +27,7 @@
 
 (require 'forge)
 (require 'org)
+(require 'org-refile)
 (require 'shut-up)
 (require 'tlon-core)
 (require 'tlon-dispatch)
@@ -202,7 +203,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 Before initiating the capture process, this command performs a full pull of the
 current repo to ensure that it reflects its remote state. The window
 configuration active before the command was called will be restored after
-completion.
+completion. This command clears the `org-refile' cache upon completion.
 
 Pull all issues from forge before initiating the capture process. If called with
 a prefix ARG, omit this initial pull."
@@ -230,7 +231,9 @@ window configuration that was active before the pull started."
   (let* ((repo (forge-get-repository :tracked)))
     (dolist (issue (tlon-get-issues repo))
       (unless (tlon-get-todo-position-from-issue issue)
-	(tlon-capture-issue issue)))))
+	(tlon-capture-issue issue)))
+    (org-refile-cache-clear)
+    (message "Finished capturing issues. Refile cache cleared.")))
 
 (defun tlon-store-todo (template &optional no-action issue)
   "Store a new TODO using TEMPLATE.
@@ -354,7 +357,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 Before initiating the reconciliation process, this command performs a full pull
 of the current repo to ensure that local data reflects the remote state. The
 window configuration active before the command was called will be restored after
-completion.
+completion. This command clears the `org-refile' cache upon completion.
 
 Pull all issues from forge before initiating the reconciliation process. If
 called with a prefix ARG, omit this initial pull."
@@ -376,7 +379,9 @@ called with a prefix ARG, omit this initial pull."
               (when-let ((issue (tlon-get-issue)))
 		(when (or (not (member org-archive-tag (org-get-tags)))
                           tlon-forg-include-archived)
-                  (tlon-reconcile-issue-and-todo-from-issue issue))))))))))
+                  (tlon-reconcile-issue-and-todo-from-issue issue)))))
+	(org-refile-cache-clear)
+        (message "Finished reconciling issues and TODOs. Refile cache cleared.")))))
 
 (defun tlon-reconcile-issue-and-todo-from-issue (&optional issue)
   "Reconcile ISSUE and associated TODO.

@@ -106,6 +106,7 @@ This section details the interactive commands provided by =tlon-forg.el=.
   2. Iterates through all open issues in the repository (~tlon-get-issues~).
   3. For each issue, checks if a TODO already exists (~tlon-get-todo-position-from-issue~).
   4. If no TODO exists and the issue is assigned to the current user or unassigned, calls ~tlon-capture-issue~. (Note: It implicitly uses =no-capture= for ~tlon-when-assignee-is-someone-else~ in this bulk mode).
+  5. Clears the =org-refile= cache upon completion.
 
 *** Reconciling Issues and TODOs
 :PROPERTIES:
@@ -128,6 +129,7 @@ This section details the interactive commands provided by =tlon-forg.el=.
   2. Iterates through all headings in the generic TODO file.
   3. For each heading, finds the associated issue (~tlon-get-issue~).
   4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~.
+  5. Clears the =org-refile= cache upon completion.
 
 *** Counterpart Navigation
 :PROPERTIES:
