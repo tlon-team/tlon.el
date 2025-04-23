@@ -148,8 +148,8 @@ These functions provide convenient wrappers for looking up data within specific 
 + ~tlon-read-json~ :: Reads and parses JSON data from a FILE. Optional arguments control the expected type (object, array) and key type for parsing.
 
 #+findex: tlon-write-data
-+ ~tlon-write-data~ :: Writes Emacs Lisp DATA to a FILE in JSON format.
-
++ ~tlon-write-data~ :: Writes Emacs Lisp DATA to a FILE in JSON format, ensuring UTF-8 encoding.
+ 
 #+findex: tlon-get-keys
 + ~tlon-get-keys~ :: Extracts the keys from a JSON DATA structure (likely an alist).
 
