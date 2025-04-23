@@ -952,7 +952,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
     (apply orig-fun args)
     (tlon-tex-field-modified field value (bibtex-extras-get-key))))
 
-(advice-add 'bibtex-set-field :around #'tlon-tex-bibtex-set-field-advice)
+;; (advice-add 'bibtex-set-field :around #'tlon-tex-bibtex-set-field-advice)
 
 (defun tlon-tex-ebib-set-field-advice (orig-fun &rest args)
   "Advice to catch modifications to BibTeX fields in `ebib-entry-mode'.
@@ -962,7 +962,7 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
     (apply orig-fun args)
     (tlon-tex-field-modified field value (ebib--get-key-at-point))))
 
-(advice-add 'ebib-set-field-value :around #'tlon-tex-ebib-set-field-advice)
+;; (advice-add 'ebib-set-field-value :around #'tlon-tex-ebib-set-field-advice)
 
 ;;;;; Bare Bibliography
 
