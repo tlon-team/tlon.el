@@ -102,7 +102,7 @@ This section details the interactive commands provided by =tlon-forg.el=.
 
 #+findex: tlon-capture-all-issues
 + ~tlon-capture-all-issues~ :: (Autoloaded) Captures all open issues in the current repository that are either unassigned or assigned to the current user.
-  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date.
+  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
   2. Iterates through all open issues in the repository (~tlon-get-issues~).
   3. For each issue, checks if a TODO already exists (~tlon-get-todo-position-from-issue~).
   4. If no TODO exists and the issue is assigned to the current user or unassigned, calls ~tlon-capture-issue~. (Note: It implicitly uses =no-capture= for ~tlon-when-assignee-is-someone-else~ in this bulk mode).
@@ -124,7 +124,7 @@ This section details the interactive commands provided by =tlon-forg.el=.
 
 #+findex: tlon-reconcile-all-issues-and-todos
 + ~tlon-reconcile-all-issues-and-todos~ :: (Autoloaded) Reconciles all Org TODOs in the generic file (~tlon-get-todos-generic-file~) with their corresponding GitHub issues.
-  1. Performs a silent =forge-pull= first (unless called with a prefix argument).
+  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
   2. Iterates through all headings in the generic TODO file.
   3. For each heading, finds the associated issue (~tlon-get-issue~).
   4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~.
@@ -364,7 +364,7 @@ This section lists non-interactive functions, variables, and constants used inte
 :CUSTOM_ID: h:tlon-forg-capture-helpers
 :END:
 #+findex: tlon-pull-silently
-+ ~tlon-pull-silently~ :: Performs a =forge--pull= operation, suppressing output messages, optionally displaying a custom =MESSAGE= and running a =CALLBACK= function upon completion.
++ ~tlon-pull-silently~ :: Performs a =forge--pull= operation, suppressing output messages. Optionally displays a custom =MESSAGE=. If a =CALLBACK= function is provided, it is executed after the pull completes, and the window configuration active before the pull is restored afterwards.
 #+findex: tlon-capture-all-issues-after-pull
 + ~tlon-capture-all-issues-after-pull~ :: Callback function for ~tlon-capture-all-issues~ that initiates the capture process after the initial pull completes.
 #+findex: tlon-store-todo
