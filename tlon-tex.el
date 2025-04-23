@@ -787,12 +787,13 @@ is not present, add a new entry for this KEY."
 	(set var data)
       (tlon-write-abstract-translations data))))
 
-(defun tlon-get-abstract-translation (bibkey code)
+;;;###autoload
+(defun tlon-get-abstract-translation (bibkey code &optional translations)
   "Return the translated abstract for BIBKEY in language CODE.
-Reads the data from `tlon-file-abstract-translations'. Returns nil if BIBKEY or
-CODE is not found."
-  (when-let* ((data (tlon-read-abstract-translations))
-	      (key-entry (assoc bibkey data)))
+If TRANSLATIONS is nil, reads it from `tlon-file-abstract-translations'. Returns
+nil if BIBKEY or CODE is not found."
+  (when-let* ((translations (or translations (tlon-read-abstract-translations)))
+	      (key-entry (assoc bibkey translations)))
     (when-let ((translations (cdr key-entry)))
       (alist-get code translations nil nil #'string=))))
 
