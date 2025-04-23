@@ -199,8 +199,10 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 ;;;###autoload
 (defun tlon-capture-all-issues (arg)
   "Capture all issues in the current repo not assigned to another user.
-Before initiating the capture process, we do a full pull of the current repo, to
-ensure that it reflects its remote state.
+Before initiating the capture process, this command performs a full pull of the
+current repo to ensure that it reflects its remote state. The window
+configuration active before the command was called will be restored after
+completion.
 
 Pull all issues from forge before initiating the capture process. If called with
 a prefix ARG, omit this initial pull."
@@ -210,11 +212,18 @@ a prefix ARG, omit this initial pull."
     (tlon-pull-silently "Pulling issues..." #'tlon-capture-all-issues-after-pull)))
 
 (defun tlon-pull-silently (&optional message callback)
-  "Pull all issues from forge before.
-If MESSAGE is non-nil while the process is ongoing. If CALLBACK if non-nil, call
-it after the process completes."
+  "Pull all issues from forge.
+If MESSAGE is non-nil, display it while the process is ongoing.
+If CALLBACK is non-nil, call it after the process completes, restoring the
+window configuration that was active before the pull started."
   (when message (message message))
-  (shut-up (forge--pull (forge-get-repository :tracked) callback)))
+  (let ((original-window-config (current-window-configuration))) ; Save config before pull
+    (shut-up
+      (forge--pull (forge-get-repository :tracked)
+                   (lambda () ; New callback wrapper
+                     (unwind-protect ; Ensure restoration even on error in callback
+                         (when callback (funcall callback))
+                       (set-window-configuration original-window-config))))))) ; Restore config after callback
 
 (defun tlon-capture-all-issues-after-pull ()
   "Capture all issues in the current repo after `forge-pull' is finished."
@@ -342,8 +351,13 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 ;;;###autoload
 (defun tlon-reconcile-all-issues-and-todos (arg)
   "Reconcile all TODOs with their issues.
-Pull all issues from forge before initiating the capture process. If called with
-a prefix ARG, omit this initial pull."
+Before initiating the reconciliation process, this command performs a full pull
+of the current repo to ensure that local data reflects the remote state. The
+window configuration active before the command was called will be restored after
+completion.
+
+Pull all issues from forge before initiating the reconciliation process. If
+called with a prefix ARG, omit this initial pull."
   (interactive "P")
   (if arg
       (tlon-reconcile-all-issues-and-todos-after-pull)
