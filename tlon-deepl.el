@@ -291,9 +291,17 @@ when the source language is not English."
 (defvar tlon-ai-batch-fun)
 
 (defun tlon-deepl--get-abstract-context (&optional abstract key)
-  "Determine KEY, TEXT, and SOURCE-LANG-CODE for abstract translation.
-Handles interactive vs non-interactive calls and data fetching.
-Returns a list (KEY TEXT SOURCE-LANG-CODE) or nil if info is incomplete."
+  "Prepare context for abstract translation via DeepL.
+  
+Collects necessary information for translating bibliographic entry abstracts.
+When called interactively, determines KEY from context (entry at point in
+Ebib or BibTeX modes). For non-interactive calls, KEY must be provided.
+
+ABSTRACT, if provided, is used directly. Otherwise, the abstract is retrieved
+based on KEY from the current entry or bibliography database.
+
+Returns a list (key text source-lang-code) with all information needed for
+translation, or nil if any required piece is missing."
   (let* ((key (or key
                   (if (called-interactively-p 'any)
                       (pcase major-mode
@@ -303,7 +311,9 @@ Returns a list (KEY TEXT SOURCE-LANG-CODE) or nil if info is incomplete."
                     (user-error "KEY argument must be provided when called non-interactively"))))
          (text (or abstract
                    (when key
-                     (or (when (and (called-interactively-p 'any) (derived-mode-p 'ebib-entry-mode) (string= key (ebib--get-key-at-point)))
+                     (or (when (and (called-interactively-p 'any)
+				    (derived-mode-p 'ebib-entry-mode)
+				    (string= key (ebib--get-key-at-point)))
                            (ebib-extras-get-field "abstract"))
                          (tlon-bibliography-lookup "=key=" key "abstract")))
                    (when (called-interactively-p 'any)
@@ -312,7 +322,9 @@ Returns a list (KEY TEXT SOURCE-LANG-CODE) or nil if info is incomplete."
                        ('ebib-entry-mode (unless key (ebib-extras-get-field "abstract")))
                        ('bibtex-mode (unless key (bibtex-extras-get-field "abstract")))))))
          (source-lang-name (when key
-                             (or (when (and (called-interactively-p 'any) (derived-mode-p 'ebib-entry-mode) (string= key (ebib--get-key-at-point)))
+                             (or (when (and (called-interactively-p 'any)
+					    (derived-mode-p 'ebib-entry-mode)
+					    (string= key (ebib--get-key-at-point)))
                                    (ebib-extras-get-field "langid"))
                                  (tlon-bibliography-lookup "=key=" key "langid"))))
          (source-lang-code (when source-lang-name
