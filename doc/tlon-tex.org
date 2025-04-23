@@ -340,6 +340,8 @@ These functions customize the BibTeX autokey generation process, likely used as 
 + ~tlon-write-abstract-translations~ :: Writes the provided =DATA= (alist) to ~tlon-file-abstract-translations~ using ~tlon-write-data~.
 #+findex: tlon-add-abstract-translation
 + ~tlon-add-abstract-translation~ :: Adds or updates a =TRANSLATION= for a given =KEY= and =TARGET-LANG= in the abstract translations =DATA= (read from file or passed as =VAR=). Handles existing entries and overwriting based on the =OVERWRITE= flag. Writes back to file or updates the variable.
+#+findex: tlon-get-abstract-translation
++ ~tlon-get-abstract-translation~ :: Retrieves the translated abstract for a specific =BIBKEY= and language =CODE= from the JSON file defined by ~tlon-file-abstract-translations~. Returns the translation string or nil if not found.
 #+findex: tlon-translate-abstract-callback
 + ~tlon-translate-abstract-callback~ :: Callback function used by ~tlon-translate-abstract~. Takes the DeepL translation result, the =KEY=, =TARGET-LANG=, and optional =OVERWRITE= and =VAR= flags, and calls ~tlon-add-abstract-translation~ to save the result.
 
