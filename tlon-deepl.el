@@ -347,7 +347,7 @@ Handles interactive and non-interactive calls. See `doc/tlon-deepl.org'."
   (let* ((excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang-code)))
          (target-lang (tlon-select-language 'code 'babel "Target language: " 'require-match nil nil excluded-lang)))
     (when target-lang
-      (message "--> Initiating DeepL translation for %s -> %s" key target-lang)
+      (message "Initiating DeepL translation for %s -> %s" key target-lang)
       (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang-code
                             (lambda ()
                               (tlon-translate-abstract-callback key target-lang 'overwrite))
@@ -362,7 +362,7 @@ Handles interactive and non-interactive calls. See `doc/tlon-deepl.org'."
               (unless (string= source-lang-code target-lang)
                 (unless (tlon-deepl--get-existing-translation key target-lang)
                   (push language initiated-langs)
-                  (message "--> Initiating DeepL translation for %s -> %s" key target-lang)
+                  (message "Initiating DeepL translation for %s -> %s" key target-lang)
                   (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang-code
                                         (lambda ()
                                           (tlon-translate-abstract-callback key target-lang 'overwrite))
