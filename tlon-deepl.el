@@ -292,10 +292,9 @@ when the source language is not English."
 
 (defun tlon-deepl--get-abstract-context (&optional abstract key)
   "Prepare context for abstract translation via DeepL.
-  
-Collects necessary information for translating bibliographic entry abstracts.
-When called interactively, determines KEY from context (entry at point in
-Ebib or BibTeX modes). For non-interactive calls, KEY must be provided.
+Collect necessary information for translating bibliographic entry abstracts.
+When called interactively, determine KEY from context (entry at point in Ebib or
+BibTeX modes). For non-interactive calls, KEY must be provided.
 
 ABSTRACT, if provided, is used directly. Otherwise, the abstract is retrieved
 based on KEY from the current entry or bibliography database.
