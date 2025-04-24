@@ -379,7 +379,7 @@ called with a prefix ARG, omit this initial pull."
               (when-let ((issue (tlon-get-issue)))
 		(when (or (not (member org-archive-tag (org-get-tags)))
                           tlon-forg-include-archived)
-                  (tlon-reconcile-issue-and-todo-from-issue issue)))))
+                  (tlon-reconcile-issue-and-todo-from-issue issue))))))
 	(org-refile-cache-clear)
         (message "Finished reconciling issues and TODOs. Refile cache cleared.")))))
 
