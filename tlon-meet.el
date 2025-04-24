@@ -267,8 +267,8 @@ Prompts for PARTICIPANTS. Runs `whisperx' on the audio file with diarization
 enabled (language hardcoded to \"es\"). Saves a [basename].txt file in the
 same directory as AUDIO-FILE, deleting other output files (.vtt, .srt, .tsv,
 .json). Then, calls `tlon-meet-format-transcript' to generate a formatted
-Markdown file. If CALLBACK is provided, call it with the transcript file path
-after initiating formatting."
+Markdown file. If CALLBACK is provided, call it with the path to the final
+cleaned transcript file after the formatting and cleanup steps are complete."
   (interactive (tlon-meet--get-file-and-participants))
   (let* ((audio-dir (file-name-directory (expand-file-name audio-file)))
          (audio-filename (file-name-nondirectory audio-file))
@@ -335,8 +335,8 @@ after initiating formatting."
   "Clean up TRANSCRIPT-MD-FILE using AI and PARTICIPANTS for context.
 Reads the formatted Markdown transcript, sends it to the AI with a cleanup
 prompt, and overwrites the file with the corrected version. If CALLBACK is
-provided, call it with the path to the cleaned .md file and PARTICIPANTS
-after successful saving."
+provided, call it with the path to the cleaned .md file after successful
+saving."
   (message "Cleaning up transcript: %s..." transcript-md-file)
   (with-temp-buffer
     (insert-file-contents transcript-md-file)
@@ -352,13 +352,13 @@ after successful saving."
                  (insert response)
                  (write-region (point-min) (point-max) transcript-md-file)) ; Overwrite original
                (message "Transcript cleaned up and saved to: %s" transcript-md-file)
-               ;; If a callback was provided, call it now with the cleaned file path and participants
+               ;; If a callback was provided, call it now with the cleaned file path
                (when callback
-                 (funcall callback transcript-md-file participants)))
-           (message "Error cleaning up transcript: %s. Proceeding with uncleaned version." (plist-get info :status))
-           ;; Call callback even on error, so subsequent steps (like summarization) can proceed
-           (when callback
-             (funcall callback transcript-md-file participants))))))))
+                 (funcall callback transcript-md-file)))
+          (message "Error cleaning up transcript: %s. Proceeding with uncleaned version." (plist-get info :status))
+          ;; Call callback even on error, passing the uncleaned file path
+          (when callback
+            (funcall callback transcript-md-file))))))))
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
@@ -488,7 +488,7 @@ Reads the transcript (.txt), calls the AI with PARTICIPANTS, saves the formatted
 result to a Markdown file (.md), deletes the original .txt file, then calls
 `tlon-meet-cleanup-transcript' to refine the .md file using AI. If CALLBACK is
 provided, it's called after the cleanup step with the path to the cleaned .md
-file and PARTICIPANTS."
+file."
   (message "Formatting transcript: %s..." transcript-file)
   (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants callback))
 
