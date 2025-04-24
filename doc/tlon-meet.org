@@ -124,12 +124,6 @@ This section details the interactive commands provided by =tlon-meet.el=.
     - Verify your Hugging Face token is valid and has the required permissions.
     - Consult the =whisperx= documentation for troubleshooting.
 
-#+findex: tlon-meet-format-transcript-command
-+ ~tlon-meet-format-transcript-command~ :: Interactively prompts for a transcript file (=.txt=) and participants, then calls the AI to format it, saving the result as a Markdown file (=.md=), deleting the original =.txt= file, and finally running the AI cleanup step on the =.md= file. This is useful if you already have a raw transcript and just need to format and clean it.
-
-#+findex: tlon-meet-cleanup-transcript-command
-+ ~tlon-meet-cleanup-transcript-command~ :: Interactively prompts for a formatted transcript file (=.md=) and participants, then calls the AI to clean up potential transcription errors, overwriting the file with the result.
-
 #+findex: tlon-meet-summarize-transcript
 + ~tlon-meet-summarize-transcript~ :: Generates an AI summary for a *formatted and cleaned* Markdown transcript file (=.md=).
   1. Prompts the user to select a =.md= transcript file.
@@ -163,8 +157,8 @@ It provides the following groups and commands:
    ["Processing"
     ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
     ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
-    ("f"   "format transcript"          tlon-meet-format-transcript-command)
-    ("c"   "cleanup transcript"         tlon-meet-cleanup-transcript-command)
+    ;; ("f"   "format transcript"          tlon-meet-format-transcript-command) ; Removed
+    ;; ("c"   "cleanup transcript"         tlon-meet-cleanup-transcript-command) ; Removed
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
     ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]
 
@@ -215,7 +209,7 @@ This section lists non-interactive functions used internally or potentially usef
 + ~tlon-meet--get-date-from-filename~ :: Extracts a YYYY-MM-DD date from a filename string or returns the current date.
 
 #+findex: tlon-meet-format-transcript
-+ ~tlon-meet-format-transcript~ :: Internal function called by ~tlon-meet-transcribe-audio~ and ~tlon-meet-format-transcript-command~. Takes a raw transcript file (=.txt=) and participants, calls the AI formatter, saves the result to a =.md= file, deletes the original =.txt= file, then calls ~tlon-meet-cleanup-transcript~, and finally calls the optional callback function after cleanup.
++ ~tlon-meet-format-transcript~ :: Internal function called by ~tlon-meet-transcribe-audio~. Takes a raw transcript file (=.txt=) and participants, calls the AI formatter, saves the result to a =.md= file, deletes the original =.txt= file, then calls ~tlon-meet-cleanup-transcript~, and finally calls the optional callback function after cleanup.
 
 #+findex: tlon-meet--generate-and-save-formatted-transcript-md
 + ~tlon-meet--generate-and-save-formatted-transcript-md~ :: Helper for ~tlon-meet-format-transcript~. Reads the =.txt= file, calls the AI formatter, saves the initial =.md= file, deletes the =.txt= file, and then calls ~tlon-meet-cleanup-transcript~, passing the original callback along.
