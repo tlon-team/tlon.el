@@ -38,6 +38,11 @@
 The first %s will be replaced with the participant names, the second %s with the
 transcript text.")
 
+(defconst tlon-meet-cleanup-transcript-prompt
+  "Please review the following conversation transcript, which was automatically generated and may contain errors. Correct any mistakes you find, paying attention to context to ensure the meaning is accurate. For example, if the transcript says 'Perdón por la demográfica' in Spanish, but the context suggests 'Perdón por la demora' (Sorry for the delay), please make the correction. Maintain the original speaker attributions (e.g., 'Pablo Stafforini:') and the overall paragraph structure.\n\nIMPORTANT: Do not add any introductory or concluding remarks like 'Here is the corrected transcript...'. Just return the corrected transcript content itself.\n\n%s"
+  "Prompt template for cleaning up meeting transcripts.
+The %s will be replaced with the formatted transcript text.")
+
 (defconst tlon-meet-summarize-transcript-prompt
   "Please provide a concise summary of the following conversation transcript. Focus on the key points discussed, decisions made, and any action items or follow-up tasks mentioned. Format the summary with bullet points for each main topic, and include a section at the end titled 'Action Items' that lists specific tasks that were assigned or mentioned.\n\nUse org-mode syntax: ‘-’ for the bullet points and asterisks for the headings. Use leading two asterisks for the heading with the meeting date, and three leading asterisks for the subheading with the action items (note that the asterisks go only at the beginning; i.e. do not put asterisks at the end of the heading as well).\n\nIMPORTANT: Do not wrap your response in ```org blocks or any other code fences. Just provide the Org-mode content directly, starting with the `** Meeting on YYYY-MM-DD` heading (replace YYYY-MM-DD with the actual date).\n\n%s"
   "Prompt template for generating meeting summaries.
@@ -326,6 +331,35 @@ after initiating formatting."
               ;; Ignore other events like "sent signal..."
               (t nil))))))))) ; Close lambda, make-process, inner let, outer let
 
+(defun tlon-meet-cleanup-transcript (transcript-md-file participants &optional callback)
+  "Clean up TRANSCRIPT-MD-FILE using AI and PARTICIPANTS for context.
+Reads the formatted Markdown transcript, sends it to the AI with a cleanup
+prompt, and overwrites the file with the corrected version. If CALLBACK is
+provided, call it with the path to the cleaned .md file and PARTICIPANTS
+after successful saving."
+  (message "Cleaning up transcript: %s..." transcript-md-file)
+  (with-temp-buffer
+    (insert-file-contents transcript-md-file)
+    (let ((transcript-content (buffer-string)))
+      (message "Reading formatted transcript and requesting AI cleanup...")
+      (tlon-make-gptel-request
+       (format tlon-meet-cleanup-transcript-prompt transcript-content)
+       nil ; No extra string needed
+       (lambda (response info)
+         (if response
+             (progn
+               (with-temp-buffer
+                 (insert response)
+                 (write-region (point-min) (point-max) transcript-md-file)) ; Overwrite original
+               (message "Transcript cleaned up and saved to: %s" transcript-md-file)
+               ;; If a callback was provided, call it now with the cleaned file path and participants
+               (when callback
+                 (funcall callback transcript-md-file participants)))
+           (message "Error cleaning up transcript: %s. Proceeding with uncleaned version." (plist-get info :status))
+           ;; Call callback even on error, so subsequent steps (like summarization) can proceed
+           (when callback
+             (funcall callback transcript-md-file participants))))))))
+
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
   "Generate AI summary for formatted TRANSCRIPT-FILE and save to meetings repo.
@@ -458,11 +492,20 @@ Prompts for transcript file and participants, then calls the AI formatter."
 (defun tlon-meet-format-transcript (transcript-file participants &optional callback)
   "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS.
 Reads the transcript (.txt), calls the AI with PARTICIPANTS, saves the formatted
-result to a Markdown file (.md) with the same base name in the same directory,
-and deletes the original .txt file. If CALLBACK is provided, call it with the
-path to the formatted .md file and PARTICIPANTS after successful saving."
+result to a Markdown file (.md), deletes the original .txt file, then calls
+`tlon-meet-cleanup-transcript' to refine the .md file using AI. If CALLBACK is
+provided, it's called after the cleanup step with the path to the cleaned .md
+file and PARTICIPANTS."
   (message "Formatting transcript: %s..." transcript-file)
   (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants callback))
+
+;;;###autoload
+(defun tlon-meet-cleanup-transcript-command (transcript-file participants)
+  "Interactively clean up TRANSCRIPT-FILE (.md) using AI.
+Prompts for transcript file and participants, then calls the AI cleanup."
+  (interactive (list (tlon-meet--get-transcript-file ".md")
+                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
+  (tlon-meet-cleanup-transcript transcript-file participants))
 
 (defun tlon-meet--generate-and-save-formatted-transcript-md (transcript-file participants &optional callback)
   "Helper to generate formatted transcript and save it as Markdown.
@@ -486,10 +529,13 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
                ;; Delete the original .txt file
                (ignore-errors (delete-file transcript-file))
                (message "Deleted original transcript file: %s" transcript-file)
-               ;; If a callback was provided, call it now with the output file path and participants
-               (when callback
-                 (funcall callback output-file participants)))
-           (message "Error formatting transcript: %s" (plist-get info :status))))))))
+               ;; Call the cleanup function, passing the original callback along
+               (tlon-meet-cleanup-transcript output-file participants callback))
+          (message "Error formatting transcript: %s" (plist-get info :status))
+          ;; If formatting failed, but a callback exists, call it anyway?
+          ;; Or maybe not, as there's no formatted file to process.
+          ;; Let's stick to only calling callback on success for now.
+          ))))))
 
 ;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file participants)
