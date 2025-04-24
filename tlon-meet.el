@@ -456,10 +456,10 @@ Prompts for transcript file and participants, then calls the AI formatter."
 
 (defun tlon-meet-format-transcript (transcript-file participants &optional callback)
   "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS.
-Reads the transcript, calls the AI with PARTICIPANTS, and saves the formatted
-result to a Markdown file (.md) with the same base name in the same directory.
-If CALLBACK is provided, call it with the path to the formatted .md file and
-PARTICIPANTS after successful saving."
+Reads the transcript (.txt), calls the AI with PARTICIPANTS, saves the formatted
+result to a Markdown file (.md) with the same base name in the same directory,
+and deletes the original .txt file. If CALLBACK is provided, call it with the
+path to the formatted .md file and PARTICIPANTS after successful saving."
   (message "Formatting transcript: %s..." transcript-file)
   (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants callback))
 
@@ -482,6 +482,9 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
                  (insert response)
                  (write-region (point-min) (point-max) output-file))
                (message "Formatted transcript saved to: %s" output-file)
+               ;; Delete the original .txt file
+               (ignore-errors (delete-file transcript-file))
+               (message "Deleted original transcript file: %s" transcript-file)
                ;; If a callback was provided, call it now with the output file path and participants
                (when callback
                  (funcall callback output-file participants)))
