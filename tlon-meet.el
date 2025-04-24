@@ -258,36 +258,44 @@ Default EXTENSION is \".md\"."
 (defun tlon-meet-transcribe-audio (audio-file participants &optional callback)
   "Transcribe AUDIO-FILE using whisperx and format the result.
 Prompts for PARTICIPANTS. Runs `whisperx' on the audio file with diarization
-enabled (language hardcoded to \"es\"). Saves a [basename].txt file.
-Then, calls `tlon-meet-format-transcript' to generate a formatted Markdown file.
-If CALLBACK is provided, call it with the transcript file path after initiating
-formatting."
+enabled (language hardcoded to \"es\"). Saves a [basename].txt file in the
+same directory as AUDIO-FILE. Then, calls `tlon-meet-format-transcript' to
+generate a formatted Markdown file. If CALLBACK is provided, call it with the
+transcript file path after initiating formatting."
   (interactive (tlon-meet--get-file-and-participants))
-  (let* ((audio-filename (file-name-nondirectory audio-file))
-         ;; whisperx outputs [basename].txt by default
-         (transcript-file (concat (file-name-sans-extension audio-file) ".txt"))
+  (let* ((audio-dir (file-name-directory (expand-file-name audio-file)))
+         (audio-filename (file-name-nondirectory audio-file))
+         ;; whisperx outputs [basename].txt by default in the same directory as the audio file
+         (transcript-file (concat (file-name-sans-extension (expand-file-name audio-file)) ".txt"))
          (buffer (get-buffer-create "*Diarization Output*"))
          (process-name "whisperx-diarize-process")
-         (hf-token (auth-source-pass-get "whisperX" (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL"))))
-         (whisperx-command (list "whisperx" (expand-file-name audio-file)
-                                 "--diarize"
-                                 "--language" "es"
-                                 "--hf_token" hf-token)))
+         (hf-token (auth-source-pass-get "whisperX" (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL")))))
+         ;; Note: transcript-file path calculation remains above, assuming output lands in audio-dir
     ;; Show the output buffer only if called interactively
     (when (called-interactively-p 'any)
       (display-buffer buffer))
     (with-current-buffer buffer
       (erase-buffer)
-      (insert (format "Starting diarization of %s using whisperx...\n\n" audio-filename))
-      (insert (format "Running command: %s\n\n" (string-join whisperx-command " "))))
-    ;; Run the whisperx command
-    (make-process
-     :name process-name
-     :buffer buffer
-     :command whisperx-command
-     :sentinel
-     (lambda (process event)
-       (let ((output-buffer (process-buffer process)))
+      (insert (format "Starting diarization of %s using whisperx...\n\n" audio-filename)))
+    ;; Run the whisperx command, ensuring output goes to audio-dir by setting CWD
+    (let ((default-directory audio-dir)) ; Set CWD for the process
+      ;; Define command inside let, so paths/args are relative to CWD if needed
+      (let ((whisperx-command (list "whisperx" (expand-file-name audio-file) ; Absolute path for input
+                                    "--diarize"
+                                    "--language" "es"
+                                    "--hf_token" hf-token
+                                    "--output_dir" "."))) ; Output to CWD (which is audio-dir)
+        ;; Log the actual command being run
+        (with-current-buffer buffer
+          (insert (format "Running command in %s: %s\n\n" default-directory (string-join whisperx-command " "))))
+        ;; Start the process
+        (make-process
+         :name process-name
+         :buffer buffer
+         :command whisperx-command
+         :sentinel
+         (lambda (process event)
+           (let ((output-buffer (process-buffer process)))
          (cond
           ((string-match "\\`exited abnormally" event) ;; Check for abnormal exit
            (with-current-buffer output-buffer
