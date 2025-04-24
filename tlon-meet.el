@@ -514,8 +514,9 @@ formatted Markdown (.md) transcript file."
    ["Processing"
     ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
     ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
+    ("f"   "format transcript"          tlon-meet-format-transcript-command) ; Added missing command
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
-    ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
+    ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]]) ; Added missing parenthesis here
 
 (provide 'tlon-meet)
 ;;; tlon-meet.el ends here
