@@ -26,6 +26,9 @@
 ;;; Code:
 
 (require 'tlon)
+(require 'tlon-ai) ; Added for AI functions
+(require 'tlon-core) ; Added for tlon-write-data, tlon-read-json, etc.
+(require 'json) ; Added for json-read-from-string
 (require 'transient)
 
 ;;;; Variables
@@ -143,6 +146,139 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 						 action term explanation))))))
   (call-interactively #'magit-push-current-to-pushremote))
 
+;;;;; AI Glossary Generation
+
+;;;###autoload
+(defun tlon-ai-create-glossary-language ()
+  "Use AI to generate translations for MISSING terms for a language in the glossary.
+Prompts for a target language, identifies terms missing a translation for that
+language, sends only those terms to an AI model, and merges the AI-generated
+translations back into the glossary file. Can be run iteratively."
+  (interactive)
+  (let* ((new-lang-code (tlon-select-language 'code 'babel "Select target language code"))
+         (new-lang-name (tlon-lookup tlon-languages-properties :name :code new-lang-code))
+         (glossary-data (tlon-parse-glossary))
+         ;; Filter entries missing the target language
+         (missing-entries (cl-remove-if (lambda (entry) (assoc new-lang-code entry))
+                                        glossary-data))
+         ;; Extract English terms from missing entries
+         (missing-en-terms (mapcar (lambda (entry) (cdr (assoc "en" entry)))
+                                   missing-entries)))
+
+    (unless missing-en-terms
+      (message "All terms already have a translation for %s (%s)." new-lang-name new-lang-code)
+      (cl-return-from tlon-ai-create-glossary-language))
+
+    ;; Format missing terms as a simple newline-separated string for the prompt
+    (let* ((missing-terms-text (mapconcat #'identity missing-en-terms "\n"))
+           (prompt (format tlon-ai-create-glossary-language-prompt
+                           new-lang-name missing-terms-text new-lang-name))) ; Pass lang name twice
+
+      (message "Requesting AI to generate %d missing translations for %s (%s)..."
+               (length missing-en-terms) new-lang-name new-lang-code)
+      (tlon-make-gptel-request prompt nil
+                               (lambda (response info)
+                                 ;; Pass missing terms and full glossary data
+                                 (tlon-ai-create-glossary-language-callback
+                                  response info new-lang-code glossary-data missing-en-terms))
+                               tlon-ai-glossary-model ; Use specific glossary model
+                               t)))) ; Bypass context check
+
+(defun tlon-ai-create-glossary-language-callback (raw-response info new-lang-code full-glossary-data missing-en-terms)
+  "Callback function for `tlon-ai-create-glossary-language'.
+Receives the RAW-RESPONSE from the first AI (translation generation).
+Initiates a second AI call for verification and cleaning."
+  (if (not raw-response)
+      (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
+    (let* ((num-expected (length missing-en-terms))
+           (target-lang-name (tlon-lookup tlon-languages-properties :name :code new-lang-code))
+           ;; Define temp file path for raw response
+           (raw-response-file (file-name-concat paths-dir-downloads
+                                                (format "ai-glossary-%s-raw-temp.txt" new-lang-code)))
+           (verify-prompt (format tlon-ai-verify-glossary-translations-prompt
+                                  target-lang-name num-expected raw-response num-expected)))
+      ;; Save the raw response before verification
+      (with-temp-file raw-response-file
+        (insert raw-response))
+      (message "Received initial translations (saved to %s). Requesting AI verification/cleaning..."
+               (file-name-nondirectory raw-response-file))
+      (tlon-make-gptel-request verify-prompt nil
+                               (lambda (verified-response verify-info)
+                                 ;; Pass temp file path and other data to the final processing callback
+                                 (tlon-ai-process-verified-translations-callback
+                                  verified-response verify-info new-lang-code full-glossary-data missing-en-terms raw-response-file))
+                               tlon-ai-glossary-verify-model ; Use specific verify model
+                               t)))) ; Bypass context check
+
+(defun tlon-ai-process-verified-translations-callback (verified-response info new-lang-code full-glossary-data missing-en-terms raw-response-file)
+  "Callback function to process the VERIFIED-RESPONSE from the cleaning AI.
+Parses the cleaned list, merges translations, writes the updated glossary,
+and deletes RAW-RESPONSE-FILE on success."
+  (if (not verified-response)
+      (progn
+        (message "AI verification/cleaning step failed. Raw response kept at: %s" raw-response-file)
+        (tlon-ai-callback-fail info))
+    (condition-case err
+        (let* (;; Clean response: remove potential markdown fences (should be less likely now)
+               (lines (split-string verified-response "\n" t))
+               (fence-pattern (rx-to-string '(seq bol (* space) "```" (opt (one-or-more nonl)) (* space) eol)))
+               (filtered-lines (cl-remove-if (lambda (line) (string-match-p fence-pattern line)) lines))
+               (clean-response (string-trim (mapconcat #'identity filtered-lines "\n")))
+               ;; Parse response - expecting newline-separated plain text translations
+               (received-translations (split-string clean-response "\n" t))
+               (num-received (length received-translations))
+               (num-expected (length missing-en-terms))
+               (translation-pairs '())
+               (updated-count 0)
+               (glossary-copy (copy-sequence full-glossary-data)))
+
+          ;; Informative check for length mismatch after verification, but don't error
+          (when (/= num-received num-expected)
+            (message "Warning: Verification AI returned %d translation lines, but %d were expected. Processing the %d available..."
+                     num-received num-expected (min num-received num-expected)))
+
+          ;; Reconstruct pairs: Loop up to the minimum of expected and received
+          (dotimes (i (min num-received num-expected))
+            (let* ((en-term (elt missing-en-terms i)) ; Get the i-th English term that was sent
+                   (translation (elt received-translations i))) ; Get the i-th verified translation received
+              (unless (stringp translation)
+                (error "Invalid non-string translation format in verified AI response line %d: %S" (1+ i) translation))
+              ;; Only add the pair if the translation is not the placeholder
+              (unless (string= translation "[TRANSLATION_UNAVAILABLE]")
+                (push (list en-term translation) translation-pairs))))
+          (setq translation-pairs (nreverse translation-pairs)) ; Maintain original order
+
+          ;; Merge valid (non-placeholder) translations
+          (dolist (pair translation-pairs)
+            (let ((en-term (elt pair 0))
+                  (translation (elt pair 1)))
+              (let ((entry-to-update (cl-find-if (lambda (entry)
+                                                   (string= (cdr (assoc "en" entry)) en-term))
+                                                 glossary-copy)))
+                (when entry-to-update
+                  (if (assoc new-lang-code entry-to-update)
+                      (setcdr (assoc new-lang-code entry-to-update) translation)
+                    (setcdr (last entry-to-update)
+                            (append (cdr (last entry-to-update))
+                                    (list (cons new-lang-code translation)))))
+                  (cl-incf updated-count)))))
+
+          ;; Set the actual count of pairs to be merged (excluding placeholders)
+          (setq updated-count (length translation-pairs))
+
+          ;; Write the updated data
+          (tlon-write-data tlon-file-glossary-source glossary-copy)
+          (message "Successfully merged %d non-placeholder verified AI translations for '%s' into %s"
+                   updated-count new-lang-code (file-name-nondirectory tlon-file-glossary-source))
+          ;; Delete the temporary raw response file on success
+          (when (file-exists-p raw-response-file)
+            (delete-file raw-response-file)
+            (message "Deleted temporary raw response file: %s" (file-name-nondirectory raw-response-file))))
+      (error
+       (message "Error processing verified AI response: %s. Raw response kept at: %s"
+                (error-message-string err) raw-response-file)
+       (message "Verified Response was: %s" verified-response)))))
+
 ;;;;; Extraction
 
 ;;;###autoload
@@ -220,9 +356,12 @@ or via the API.)"
 ;;;###autoload (autoload 'tlon-glossary-menu "tlon-glossary" nil t)
 (transient-define-prefix tlon-glossary-menu ()
   "Menu for glossary functions."
-  [("e" "edit"              tlon-edit-glossary)
-   ("x" "extract"           tlon-extract-glossary)
-   ("s" "share"             tlon-share-glossary)])
+  [["Glossary Actions"
+    ("e" "Edit entry"              tlon-edit-glossary)
+    ("x" "Extract glossary"        tlon-extract-glossary)
+    ("s" "Share glossary"          tlon-share-glossary)]
+   ["AI Actions"
+    ("a" "AI Create Language"    tlon-ai-create-glossary-language)]])
 
 (provide 'tlon-glossary)
 ;;; tlon-glossary.el ends here
