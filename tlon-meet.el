@@ -308,15 +308,20 @@ after initiating formatting."
 		 (insert "\nDiarization complete. Checking for transcript...\n"))
                ;; Check if transcript file exists
                (if (file-exists-p transcript-file)
-		   (progn
-                     (with-current-buffer output-buffer
-                       (goto-char (point-max))
-                       (insert (format "Transcript file found: %s. Starting formatting...\n" transcript-file)))
-                     ;; Call the formatting function, passing the original callback along
-                     (tlon-meet-format-transcript transcript-file participants callback))
-		 (with-current-buffer output-buffer
-		   (goto-char (point-max))
-		   (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
+                   (progn ; Transcript file exists
+                     (let ((base-name (file-name-sans-extension transcript-file)))
+                       ;; Delete unwanted files, ignoring errors if they don't exist
+                       (dolist (ext '(".vtt" ".srt" ".tsv" ".json"))
+                         (ignore-errors (delete-file (concat base-name ext))))
+                       (with-current-buffer output-buffer
+                         (goto-char (point-max))
+                         (insert (format "Transcript file found: %s. Cleaned up other formats. Starting formatting...\n" transcript-file)))
+                       ;; Call the formatting function, passing the original callback along
+                       (tlon-meet-format-transcript transcript-file participants callback)))
+                 ;; Else (transcript file not found)
+                 (with-current-buffer output-buffer
+                   (goto-char (point-max))
+                   (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
               ;; Ignore other events like "sent signal..."
               (t nil))))))))) ; Close lambda, make-process, inner let, outer let
 
