@@ -482,13 +482,6 @@ the formatted Markdown (.md) file."
         (insert (format "Summary file: %s\n" summary-file))
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
 
-;;;###autoload
-(defun tlon-meet-format-transcript-command (transcript-file participants)
-  "Interactively format TRANSCRIPT-FILE using PARTICIPANTS.
-Prompts for transcript file and participants, then calls the AI formatter."
-  (interactive (tlon-meet--get-file-and-participants))
-  (tlon-meet-format-transcript transcript-file participants))
-
 (defun tlon-meet-format-transcript (transcript-file participants &optional callback)
   "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS.
 Reads the transcript (.txt), calls the AI with PARTICIPANTS, saves the formatted
@@ -562,8 +555,6 @@ formatted Markdown (.md) transcript file."
    ["Processing"
     ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
     ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
-    ;; ("f"   "format transcript"          tlon-meet-format-transcript-command) ; Removed interactive command
-    ;; ("c"   "cleanup transcript"         tlon-meet-cleanup-transcript-command) ; Removed interactive command
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
     ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
 
