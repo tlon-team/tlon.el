@@ -270,7 +270,7 @@ transcript file path after initiating formatting."
          (buffer (get-buffer-create "*Diarization Output*"))
          (process-name "whisperx-diarize-process")
          (hf-token (auth-source-pass-get "whisperX" (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL")))))
-         ;; Note: transcript-file path calculation remains above, assuming output lands in audio-dir
+    ;; Note: transcript-file path calculation remains above, assuming output lands in audio-dir
     ;; Show the output buffer only if called interactively
     (when (called-interactively-p 'any)
       (display-buffer buffer))
@@ -296,28 +296,28 @@ transcript file path after initiating formatting."
          :sentinel
          (lambda (process event)
            (let ((output-buffer (process-buffer process)))
-         (cond
-          ((string-match "\\`exited abnormally" event) ;; Check for abnormal exit
-           (with-current-buffer output-buffer
-             (goto-char (point-max))
-             (insert (format "\n\nError: Diarization script failed.\nEvent: %s\nSee buffer output above for details." event))))
-          ((string= event "finished\n") ;; Original success condition
-           (with-current-buffer output-buffer
-             (goto-char (point-max))
-             (insert "\nDiarization complete. Checking for transcript...\n"))
-           ;; Check if transcript file exists
-           (if (file-exists-p transcript-file)
-               (progn
-                 (with-current-buffer output-buffer
-                   (goto-char (point-max))
-                   (insert (format "Transcript file found: %s. Starting formatting...\n" transcript-file)))
-                 ;; Call the formatting function, passing the original callback along
-                 (tlon-meet-format-transcript transcript-file participants callback))
-             (with-current-buffer output-buffer
-               (goto-char (point-max))
-               (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
-          ;; Ignore other events like "sent signal..."
-          (t nil)))))))) ; Close lambda, make-process, inner let, outer let
+             (cond
+              ((string-match "\\`exited abnormally" event) ;; Check for abnormal exit
+               (with-current-buffer output-buffer
+		 (goto-char (point-max))
+		 (insert (format "\n\nError: Diarization script failed.\nEvent: %s\nSee buffer output above for details." event))))
+              ((string= event "finished\n") ;; Original success condition
+               (with-current-buffer output-buffer
+		 (goto-char (point-max))
+		 (insert "\nDiarization complete. Checking for transcript...\n"))
+               ;; Check if transcript file exists
+               (if (file-exists-p transcript-file)
+		   (progn
+                     (with-current-buffer output-buffer
+                       (goto-char (point-max))
+                       (insert (format "Transcript file found: %s. Starting formatting...\n" transcript-file)))
+                     ;; Call the formatting function, passing the original callback along
+                     (tlon-meet-format-transcript transcript-file participants callback))
+		 (with-current-buffer output-buffer
+		   (goto-char (point-max))
+		   (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
+              ;; Ignore other events like "sent signal..."
+              (t nil))))))))) ; Close lambda, make-process, inner let, outer let
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
