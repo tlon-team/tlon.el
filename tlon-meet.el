@@ -337,6 +337,11 @@ Reads the formatted Markdown transcript, sends it to the AI with a cleanup
 prompt, and overwrites the file with the corrected version. If CALLBACK is
 provided, call it with the path to the cleaned .md file after successful
 saving."
+  (let ((output-buffer (get-buffer "*Diarization Output*"))) ; Get the output buffer
+    (when output-buffer
+      (with-current-buffer output-buffer
+        (goto-char (point-max))
+        (insert (format "Initiating AI cleanup for: %s\n" transcript-md-file)))))
   (message "Cleaning up transcript: %s..." transcript-md-file)
   (with-temp-buffer
     (insert-file-contents transcript-md-file)
@@ -348,17 +353,38 @@ saving."
        (lambda (response info)
          (if response
              (progn
+               (let ((output-buffer (get-buffer "*Diarization Output*"))) ; Log success
+                 (when output-buffer
+                   (with-current-buffer output-buffer
+                     (goto-char (point-max))
+                     (insert "AI cleanup successful. Saving cleaned file...\n"))))
                (with-temp-buffer
                  (insert response)
                  (write-region (point-min) (point-max) transcript-md-file)) ; Overwrite original
                (message "Transcript cleaned up and saved to: %s" transcript-md-file)
                ;; If a callback was provided, call it now with the cleaned file path
                (when callback
+                 (let ((output-buffer (get-buffer "*Diarization Output*"))) ; Log before final callback
+                   (when output-buffer
+                     (with-current-buffer output-buffer
+                       (goto-char (point-max))
+                       (insert "Cleanup complete. Triggering next step (e.g., summarization)...\n"))))
                  (funcall callback transcript-md-file)))
-          (message "Error cleaning up transcript: %s. Proceeding with uncleaned version." (plist-get info :status))
-          ;; Call callback even on error, passing the uncleaned file path
-          (when callback
-            (funcall callback transcript-md-file))))))))
+           (progn
+             (let ((output-buffer (get-buffer "*Diarization Output*"))) ; Log failure
+               (when output-buffer
+                 (with-current-buffer output-buffer
+                   (goto-char (point-max))
+                   (insert (format "Error during AI cleanup: %s. Proceeding with uncleaned file...\n" (plist-get info :status))))))
+             (message "Error cleaning up transcript: %s. Proceeding with uncleaned version." (plist-get info :status))
+             ;; Call callback even on error, passing the uncleaned file path
+             (when callback
+               (let ((output-buffer (get-buffer "*Diarization Output*"))) ; Log before final callback (on error)
+                 (when output-buffer
+                   (with-current-buffer output-buffer
+                     (goto-char (point-max))
+                     (insert "Cleanup failed. Triggering next step (e.g., summarization) with uncleaned file...\n"))))
+               (funcall callback transcript-md-file))))))))))
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
