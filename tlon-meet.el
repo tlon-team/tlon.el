@@ -384,7 +384,7 @@ saving."
                    (with-current-buffer output-buffer
                      (goto-char (point-max))
                      (insert "Cleanup failed. Triggering next step (e.g., summarization) with uncleaned file...\n"))))
-               (funcall callback transcript-md-file))))))))))
+               (funcall callback transcript-md-file)))))))))
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
