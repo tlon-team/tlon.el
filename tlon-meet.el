@@ -317,7 +317,7 @@ transcript file path after initiating formatting."
                (goto-char (point-max))
                (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
           ;; Ignore other events like "sent signal..."
-          (t nil)))))))
+          (t nil)))))))) ; Close lambda, make-process, inner let, outer let
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)

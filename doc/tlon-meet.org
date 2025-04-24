@@ -97,25 +97,46 @@ This section details the interactive commands provided by =tlon-meet.el=.
 :CUSTOM_ID: h:tlon-meet-recording-commands
 :END:
 
-#+findex: tlon-meet-diarize-and-summarize
-+ ~tlon-meet-diarize-and-summarize~ :: Processes an audio recording file using =whisperx= to generate a transcript with speaker diarization, and then creates an AI summary.
+#+findex: tlon-meet-transcribe-audio
++ ~tlon-meet-transcribe-audio~ :: Transcribes an =AUDIO-FILE= using =whisperx= with diarization and then formats the transcript using AI.
   1. Prompts the user to select an =AUDIO-FILE=, defaulting to the directory specified by ~tlon-default-conference-app~ (~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~).
-  2. Extracts the date from the filename (if possible, using regex) or defaults to the current date.
+  2. Prompts the user for the meeting =PARTICIPANTS= (nicknames).
   3. Creates and displays a "*Diarization Output*" buffer.
   4. Runs the =whisperx= command asynchronously on the =AUDIO-FILE= with the following arguments:
      - =--diarize= (enables speaker diarization)
      - =--language es= (sets the language to Spanish)
-     - =--hf_token [YOUR_TOKEN]= (uses a hardcoded Hugging Face token - *see note below*)
-  5. When the =whisperx= command finishes, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension].txt=).
-  6. If the transcript exists, it calls ~tlon-meet--generate-summary~.
+     - =--hf_token [YOUR_TOKEN]= (uses a Hugging Face token retrieved via =auth-source= - *see note below*)
+     - =--output_dir .= (ensures output goes to the audio file's directory)
+  5. When the =whisperx= command finishes successfully, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension].txt= in the same directory as the audio file).
+  6. If the transcript exists, it calls ~tlon-meet-format-transcript~ to generate a formatted Markdown file (=.md=) using the AI.
   7. If the command fails or the transcript doesn't exist, it reports an error in the output buffer.
 
-  *Note:* This command relies on the external =whisperx= command-line tool and its dependencies being installed and available in the system's PATH. It also requires a Hugging Face token with access to the necessary models (like =pyannote/speaker-diarization=). The token is currently hardcoded in the Elisp function for simplicity; consider storing it more securely (e.g., via environment variables or Emacs' =auth-source=) and modifying the code accordingly. If you encounter errors:
+  *Note:* This command relies on the external =whisperx= command-line tool and its dependencies being installed and available in the system's PATH. It also requires a Hugging Face token with access to the necessary models (like =pyannote/speaker-diarization=). The token is retrieved using Emacs' =auth-source=. If you encounter errors:
     - Check the "*Diarization Output*" buffer for detailed error messages from =whisperx=.
     - Try running the =whisperx= command manually from your terminal using the command logged in the output buffer (e.g., =whisperx /path/to/audio.m4a --diarize --language es --hf_token ...=).
     - Ensure =whisperx= and its dependencies (PyTorch, etc.) are correctly installed in your Python environment.
     - Verify your Hugging Face token is valid and has the required permissions.
     - Consult the =whisperx= documentation for troubleshooting.
+
+#+findex: tlon-meet-format-transcript-command
++ ~tlon-meet-format-transcript-command~ :: Interactively prompts for a transcript file (=.txt=) and participants, then calls the AI to format it, saving the result as a Markdown file (=.md=). This is useful if you already have a raw transcript and just need to format it.
+
+#+findex: tlon-meet-summarize-transcript
++ ~tlon-meet-summarize-transcript~ :: Generates an AI summary for a *formatted* Markdown transcript file (=.md=).
+  1. Prompts the user to select a =.md= transcript file.
+  2. Extracts the date from the filename.
+  3. Prompts the user to select the target meeting repository (unless participants were provided internally, e.g., by ~tlon-meet-transcribe-and-summarize~).
+  4. Creates and displays a "*Meeting Summary Output*" buffer.
+  5. Reads the =.md= transcript content.
+  6. Sends the content to the AI using ~tlon-meet-summarize-transcript-prompt~.
+  7. On success, calls ~tlon-meet--save-summary-and-transcript~ to save the summary to =meeting-summaries.org= and copy the =.md= transcript to =transcripts/YYYY-MM-DD.md= in the selected repository, then commits and pushes the changes.
+  8. Reports progress and errors in the output buffer.
+
+#+findex: tlon-meet-transcribe-and-summarize
++ ~tlon-meet-transcribe-and-summarize~ :: The main command to process a new audio recording from start to finish.
+  1. Prompts for the =AUDIO-FILE= and =PARTICIPANTS=.
+  2. Calls ~tlon-meet-transcribe-audio~ to perform transcription and AI formatting.
+  3. Sets up a callback function that, once the formatted =.md= transcript is ready, automatically calls ~tlon-meet-summarize-transcript~ to generate the summary and save everything to the appropriate repository.
 
 *** Transient Menu
 :PROPERTIES:
@@ -129,9 +150,13 @@ It provides the following groups and commands:
   + =l p= :: Leo-Pablo meeting (~tlon-create-or-visit-meeting-issue-leo-pablo~)
   + =f p= :: Fede-Pablo meeting (~tlon-create-or-visit-meeting-issue-fede-pablo~)
   + =f l= :: Fede-Leo meeting (~tlon-create-or-visit-meeting-issue-fede-leo~)
-  + =g= :: Group meeting (~tlon-create-or-visit-group-meeting-issue~)
-  + =i= :: Discuss issue in meeting (~tlon-discuss-issue-in-meeting~)
-  + =d= :: Diarize and summarize (~tlon-meet-diarize-and-summarize~)
+  + =g= :: Group meeting (~tlon-create-or-visit-group-meeting-issue~)]
+   ["Processing"
+    ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
+    ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
+    ("f"   "format transcript"          tlon-meet-format-transcript-command)
+    ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
+    ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]
 
 ** Org Mode Integration
 :PROPERTIES:
@@ -165,26 +190,34 @@ This section lists non-interactive functions used internally or potentially usef
 #+findex: tlon-create-and-visit-issue
 + ~tlon-create-and-visit-issue~ :: Creates a new Forge issue with the given =TITLE= in the specified =DIR= using ~tlon-create-issue~, pulls changes, waits for the issue to appear locally, and then visits it.
 
-*** Diarize and Summarize Helpers
+*** Transcript Processing Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-meet-diarize-helpers
+:CUSTOM_ID: h:tlon-meet-transcript-helpers
 :END:
 
-#+findex: tlon-meet--generate-summary
-+ ~tlon-meet--generate-summary~ :: Reads the content of the =TRANSCRIPT-FILE=, formats the AI prompt using ~tlon-meet-summarize-transcript-prompt~, and sends the request to the AI model via ~tlon-make-gptel-request~. The callback function is ~tlon-meet--save-summary~.
+#+findex: tlon-meet--get-audio-file
++ ~tlon-meet--get-audio-file~ :: Prompts the user to select an audio file, defaulting to the directory configured via ~tlon-default-conference-app~.
 
-#+findex: tlon-meet--save-summary
-+ ~tlon-meet--save-summary~ :: Saves the generated =SUMMARY= and the original =TRANSCRIPT= to the appropriate meeting repository for the given =DATE=.
-  1. Determines the target repository by prompting the user via ~tlon-meet--determine-repo~.
-  2. Defines the output filenames: =meeting-summaries.org= and =[date]-transcript.txt=.
-  3. Appends the summary to =meeting-summaries.org= under a new heading for the date, creating the file and adding a title/options header if it doesn't exist.
-  4. Saves the transcript to =[date]-transcript.txt=.
-  5. Stages both files using =git add=.
-  6. Commits the changes using =git commit= with a message indicating the meeting date.
-  7. Updates the "*Diarization Output*" buffer with progress and final file paths.
+#+findex: tlon-meet--get-transcript-file
++ ~tlon-meet--get-transcript-file~ :: Prompts the user to select a transcript file (used interactively by ~tlon-meet-summarize-transcript~), defaulting to =.md= extension.
 
-#+findex: tlon-meet--determine-repo
-+ ~tlon-meet--determine-repo~ :: Prompts the user to select the correct meeting repository directory from a list of all repositories with =subtype= 'meetings. Takes the =DATE= for context in the prompt. Returns the selected directory path.
+#+findex: tlon-meet--get-date-from-filename
++ ~tlon-meet--get-date-from-filename~ :: Extracts a YYYY-MM-DD date from a filename string or returns the current date.
+
+#+findex: tlon-meet-format-transcript
++ ~tlon-meet-format-transcript~ :: Internal function called by ~tlon-meet-transcribe-audio~ and ~tlon-meet-format-transcript-command~. Takes a raw transcript file (=.txt=) and participants, calls the AI formatter, saves the result to a =.md= file, and optionally calls a callback function.
+
+#+findex: tlon-meet--generate-and-save-formatted-transcript-md
++ ~tlon-meet--generate-and-save-formatted-transcript-md~ :: Helper for ~tlon-meet-format-transcript~. Reads the =.txt= file, calls the AI, saves the formatted =.md= file, and handles the callback.
+
+#+findex: tlon-meet--generate-and-save-summary
++ ~tlon-meet--generate-and-save-summary~ :: Helper for ~tlon-meet-summarize-transcript~. Reads the formatted =.md= transcript, calls the AI summarizer, and passes the result and necessary info to ~tlon-meet--save-summary-and-transcript~.
+
+#+findex: tlon-meet--save-summary-and-transcript
++ ~tlon-meet--save-summary-and-transcript~ :: Saves the generated AI =SUMMARY= to =meeting-summaries.org= and copies the input formatted transcript (=INPUT-TRANSCRIPT-FILE=, which is a =.md= file) to =transcripts/[date].md= within the specified =REPO=. It handles file creation/appending, directory creation, git staging, committing, and pushing. Updates the =OUTPUT-BUFFER= with progress.
+
+#+findex: tlon-meet--get-file-and-participants
++ ~tlon-meet--get-file-and-participants~ :: Interactive helper used by commands like ~tlon-meet-transcribe-audio~ to prompt for the audio file and participant nicknames. Returns a list containing the file path and the list of nicknames.
 
 *** Repository and User Helpers
 :PROPERTIES:
