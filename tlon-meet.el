@@ -570,6 +570,8 @@ formatted Markdown (.md) transcript file."
    ["Processing"
     ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
     ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
+    ("f"   "format transcript"          tlon-meet-format-transcript-command) ; Keep existing format command
+    ("c"   "cleanup transcript"         tlon-meet-cleanup-transcript-command) ; Add cleanup command
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
     ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
 
