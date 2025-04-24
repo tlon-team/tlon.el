@@ -499,14 +499,6 @@ file and PARTICIPANTS."
   (message "Formatting transcript: %s..." transcript-file)
   (tlon-meet--generate-and-save-formatted-transcript-md transcript-file participants callback))
 
-;;;###autoload
-(defun tlon-meet-cleanup-transcript-command (transcript-file participants)
-  "Interactively clean up TRANSCRIPT-FILE (.md) using AI.
-Prompts for transcript file and participants, then calls the AI cleanup."
-  (interactive (list (tlon-meet--get-transcript-file ".md")
-                     (completing-read-multiple "Participants: " (tlon-user-lookup-all :nickname))))
-  (tlon-meet-cleanup-transcript transcript-file participants))
-
 (defun tlon-meet--generate-and-save-formatted-transcript-md (transcript-file participants &optional callback)
   "Helper to generate formatted transcript and save it as Markdown.
 Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
@@ -570,8 +562,8 @@ formatted Markdown (.md) transcript file."
    ["Processing"
     ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
     ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
-    ("f"   "format transcript"          tlon-meet-format-transcript-command) ; Keep existing format command
-    ("c"   "cleanup transcript"         tlon-meet-cleanup-transcript-command) ; Add cleanup command
+    ;; ("f"   "format transcript"          tlon-meet-format-transcript-command) ; Removed interactive command
+    ;; ("c"   "cleanup transcript"         tlon-meet-cleanup-transcript-command) ; Removed interactive command
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
     ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
 
