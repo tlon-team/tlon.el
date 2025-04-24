@@ -259,9 +259,10 @@ Default EXTENSION is \".md\"."
   "Transcribe AUDIO-FILE using whisperx and format the result.
 Prompts for PARTICIPANTS. Runs `whisperx' on the audio file with diarization
 enabled (language hardcoded to \"es\"). Saves a [basename].txt file in the
-same directory as AUDIO-FILE. Then, calls `tlon-meet-format-transcript' to
-generate a formatted Markdown file. If CALLBACK is provided, call it with the
-transcript file path after initiating formatting."
+same directory as AUDIO-FILE, deleting other output files (.vtt, .srt, .tsv,
+.json). Then, calls `tlon-meet-format-transcript' to generate a formatted
+Markdown file. If CALLBACK is provided, call it with the transcript file path
+after initiating formatting."
   (interactive (tlon-meet--get-file-and-participants))
   (let* ((audio-dir (file-name-directory (expand-file-name audio-file)))
          (audio-filename (file-name-nondirectory audio-file))
