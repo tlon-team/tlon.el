@@ -107,6 +107,38 @@ The command ~tlon-glossary-menu~ activates a =transient= menu interface providin
 + =e= :: Edit glossary entry (~tlon-edit-glossary~)
 + =x= :: Extract glossary (~tlon-extract-glossary~)
 + =s= :: Share glossary (~tlon-share-glossary~)
++ =a= :: AI Create Language (~tlon-ai-create-glossary-language~)
+
+*** AI Glossary Generation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-create-glossary-language
+:END:
+#+findex: tlon-ai-create-glossary-language
+The command ~tlon-ai-create-glossary-language~ uses an AI model to generate translations for *missing* terms for a specified target language in the glossary. This command can be run iteratively to gradually complete a language's glossary.
+
+1. It prompts the user to select the target language code (e.g., "de") using ~tlon-select-language~.
+2. It reads the current glossary data from ~tlon-file-glossary-source~.
+3. It filters the glossary to find entries that *do not* have a translation for the selected target language.
+4. It extracts the English terms (=en= value) from these missing entries.
+5. If no terms are missing for the target language, it informs the user and exits.
+6. It formats a prompt (~tlon-ai-create-glossary-language-prompt~) instructing the first AI (model defined by ~tlon-ai-glossary-model~) to generate translations for the provided list of English terms into the target language. The prompt asks the AI to return *only* the plain text translations, one per line.
+7. It sends the request (containing the missing English terms as a newline-separated plain text list) to the first AI using ~tlon-make-gptel-request~.
+8. The first callback function (~tlon-ai-create-glossary-language-callback~) receives the raw response from the first AI.
+9. It saves this raw response to a temporary file in the downloads directory (e.g., =ai-glossary-fr-raw-temp.txt=).
+10. This callback then formats a *second* prompt (~tlon-ai-verify-glossary-translations-prompt~) instructing a second AI (model defined by ~tlon-ai-glossary-verify-model~) to clean and verify the raw response. This prompt asks the AI to ensure the output is a plain text list with exactly the expected number of lines, removing any extraneous text or formatting and using placeholders if necessary.
+11. It sends the verification request to the second AI.
+12. The second callback function (~tlon-ai-process-verified-translations-callback~) handles the response from the verification AI:
+    - It cleans the verified response (removes potential markdown fences).
+    - It splits the cleaned response string into a list of translation strings using newlines as delimiters (=received-translations=).
+    - It checks if the number of translation lines received matches the number of English terms originally sent (=missing-en-terms=). If not, it issues a warning message but *continues processing*.
+    - It reconstructs the list of pairs by combining the original =missing-en-terms= list with the verified =received-translations=, processing only up to the minimum of the number expected and the number received. *Crucially, it skips any translation that is exactly the string =\"[TRANSLATION_UNAVAILABLE]\"=.*
+    - It iterates through the reconstructed (and filtered) =["en_term", "translation"]= pairs:
+      - It finds the corresponding entry in the *full* glossary data where the English term matches =en_term=.
+      - If found, it adds the new language key-value pair (e.g., =("de" . "translation")=) to that entry (or updates it if it somehow already existed).
+    - It writes the *entire updated glossary data structure* back to ~tlon-file-glossary-source~ using ~tlon-write-data~.
+    - It reports the number of *non-placeholder* translations successfully merged.
+    - *On success*, it deletes the temporary raw response file saved earlier.
+    - If any step fails (AI error in either step, invalid format in verified response), it reports an error, logs the relevant AI response, and *leaves the temporary raw response file* in the downloads directory for inspection.
 
 ** Internal Functions and Variables
 :PROPERTIES:
