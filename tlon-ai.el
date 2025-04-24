@@ -549,7 +549,8 @@ Otherwise,
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string.
 If FILE is a PDF, convert it to Markdown first. If FILE is HTML, render it to
-text using `shr-render-buffer', preventing focus switch and killing the render buffer."
+text using `shr-render-buffer', preventing focus switch and killing the render
+buffer."
   (with-temp-buffer
     (let ((original-file file)) ; Keep track of original file name
       (when (string= (file-name-extension file) "pdf")
@@ -557,14 +558,14 @@ text using `shr-render-buffer', preventing focus switch and killing the render b
           (tlon-convert-pdf file markdown)
           (setq file markdown)))
       (insert-file-contents file)
-        (when (string= (file-name-extension original-file) "html") ; Check original extension
-          ;; Prevent shr-render-buffer from switching windows
-          (save-selected-window
-            (shr-render-buffer (current-buffer)))) ; Render without display arg
-        ;; Kill the *html* buffer if it was created and is still alive
-        (when-let ((html-buffer (get-buffer "*html*")))
-          (kill-buffer html-buffer))
-        (buffer-substring-no-properties (point-min) (point-max)))))
+      (when (string= (file-name-extension original-file) "html") ; Check original extension
+        ;; Prevent shr-render-buffer from switching windows
+        (save-selected-window
+          (shr-render-buffer (current-buffer)))) ; Render without display arg
+      ;; Kill the *html* buffer if it was created and is still alive
+      (when-let ((html-buffer (get-buffer "*html*")))
+        (kill-buffer html-buffer))
+      (buffer-substring-no-properties (point-min) (point-max)))))
 
 ;;;;; Translation
 
@@ -1574,9 +1575,7 @@ If RESPONSE is nil, return INFO."
 	(message (format "file: %s ; begins: %s" (+ 14 i) point))
 	(setq point (car cons))
 	(unless (file-exists-p file)
-	  (tlon-make-gptel-request prompt string (tlon-ai-callback-save file))
-	  (when tlon-ai-use-summarization-model
-	    tlon-ai-summarization-model))))))
+	  (tlon-make-gptel-request prompt string (tlon-ai-callback-save file)))))))
 
 (defun tlon-ai-get-json-chunk (begin size)
   "In current buffer, get the longest possible string less than SIZE from BEGIN."
