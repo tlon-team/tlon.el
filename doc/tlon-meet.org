@@ -108,7 +108,7 @@ This section details the interactive commands provided by =tlon-meet.el=.
      - =--hf_token [YOUR_TOKEN]= (uses a Hugging Face token retrieved via =auth-source= - *see note below*)
      - =--output_dir .= (ensures output goes to the audio file's directory)
   5. When the =whisperx= command finishes successfully, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension].txt= in the same directory as the audio file).
-  6. If the transcript exists, it calls ~tlon-meet-format-transcript~ to generate a formatted Markdown file (=.md=) using the AI.
+  6. If the transcript exists, it deletes other generated files (=.vtt=, =.srt=, =.tsv=, =.json=) and then calls ~tlon-meet-format-transcript~ to generate a formatted Markdown file (=.md=) using the AI.
   7. If the command fails or the transcript doesn't exist, it reports an error in the output buffer.
 
   *Note:* This command relies on the external =whisperx= command-line tool and its dependencies being installed and available in the system's PATH. It also requires a Hugging Face token with access to the necessary models (like =pyannote/speaker-diarization=). The token is retrieved using Emacs' =auth-source=. If you encounter errors:
