@@ -225,7 +225,7 @@ This section lists non-interactive functions used internally or potentially usef
 + ~tlon-meet--generate-and-save-formatted-transcript-md~ :: Helper for ~tlon-meet-format-transcript~. Reads the =.txt= file, calls the AI formatter, saves the initial =.md= file, deletes the =.txt= file, and then calls ~tlon-meet-cleanup-transcript~, passing the original callback along.
 
 #+findex: tlon-meet-cleanup-transcript
-+ ~tlon-meet-cleanup-transcript~ :: Internal function called after formatting. Takes a formatted transcript file (=.md=) and participants, calls the AI cleanup prompt, overwrites the =.md= file with the cleaned result. If an optional =CALLBACK= function is provided, it is called with a single argument: the path to the (now potentially cleaned) =.md= file. The callback is also called if the AI cleanup fails, passing the path to the uncleaned file.
++ ~tlon-meet-cleanup-transcript~ :: Internal function called after formatting. Takes a formatted transcript file (=.md=), calls the AI cleanup prompt, overwrites the =.md= file with the cleaned result. If an optional =CALLBACK= function is provided, it is called with a single argument: the path to the (now potentially cleaned) =.md= file. The callback is also called if the AI cleanup fails, passing the path to the uncleaned file.
 
 #+findex: tlon-meet--generate-and-save-summary
 + ~tlon-meet--generate-and-save-summary~ :: Helper for ~tlon-meet-summarize-transcript~. Reads the formatted =.md= transcript, calls the AI summarizer, and passes the result and necessary info to ~tlon-meet--save-summary-and-transcript~.

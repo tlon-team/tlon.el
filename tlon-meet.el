@@ -369,8 +369,8 @@ inference for initial participant suggestion."
               ;; Ignore other events like "sent signal..."
               (t nil))))))))) ; Close lambda, make-process, inner let, outer let
 
-(defun tlon-meet-cleanup-transcript (transcript-md-file participants &optional callback)
-  "Clean up TRANSCRIPT-MD-FILE using AI and PARTICIPANTS for context.
+(defun tlon-meet-cleanup-transcript (transcript-md-file &optional callback)
+  "Clean up TRANSCRIPT-MD-FILE using AI.
 Reads the formatted Markdown transcript, sends it to the AI with a cleanup
 prompt, and overwrites the file with the corrected version. If CALLBACK is
 provided, call it with the path to the cleaned .md file after successful
@@ -604,7 +604,7 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
                (ignore-errors (delete-file transcript-file))
                (message "Deleted original transcript file: %s" transcript-file)
                ;; Call the cleanup function, passing the original callback along
-               (tlon-meet-cleanup-transcript output-file participants callback))
+               (tlon-meet-cleanup-transcript output-file callback))
           (message "Error formatting transcript: %s" (plist-get info :status))
           ;; If formatting failed, but a callback exists, call it anyway?
           ;; Or maybe not, as there's no formatted file to process.
