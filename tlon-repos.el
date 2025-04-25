@@ -100,6 +100,15 @@ reported by `tlon-repo-lookup-all' and the local repositories (as determined by
   (let ((name (or name (tlon-get-local-repos))))
     (vc-extras-delete-local-repo name "tlon-team")))
 
+;;;;;; Pull changes
+
+(declare-function magit-extra-async-pull "magit-extra")
+(defun tlon-repos-pull-babel-refs ()
+  "Asynchronously pull from `babel-refs'."
+  (magit-extra-async-pull (tlon-repo-lookup :dir :name "babel-refs")))
+
+(run-with-idle-timer (* 5 60) t #'tlon-repos-pull-babel-refs)
+
 ;;;;; Forge
 ;;;;;; Track repos
 
