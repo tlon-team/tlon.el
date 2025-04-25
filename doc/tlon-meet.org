@@ -15,7 +15,7 @@
 :CUSTOM_ID: h:tlon-meet
 :END:
 
-This module provides tools for managing meetings within the Tlön workflow. It focuses on creating and accessing dedicated Forge issues for meetings (both individual and group), linking discussions to these issues, and processing meeting recordings (diarization and AI summarization).
+This module provides tools for managing meetings within the Tlön workflow. It focuses on creating and accessing dedicated Forge issues for meetings (both individual and group), linking discussions to these issues, processing meeting recordings (transcription, formatting, cleanup, summarization), and optionally monitoring recording directories for automatic processing.
 
 ** Dependencies
 :PROPERTIES:
@@ -108,11 +108,12 @@ This section details the interactive commands provided by =tlon-meet.el=.
   4. Runs the =whisperx= command asynchronously on the =AUDIO-FILE= with the following arguments:
      - =--diarize= (enables speaker diarization)
      - =--language es= (sets the language to Spanish)
-     - =--hf_token [YOUR_TOKEN]= (uses a Hugging Face token retrieved via =auth-source= - *see note below*)
+     - =--hf_token [YOUR_TOKEN]= (uses a Hugging Face token retrieved via =auth-source=)
      - =--output_dir .= (ensures output goes to the audio file's directory)
-  5. When the =whisperx= command finishes successfully, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension].txt= in the same directory as the audio file).
-  6. If the transcript exists, it deletes other generated files (=.vtt=, =.srt=, =.tsv=, =.json=) and then calls ~tlon-meet-format-transcript~. This function:
-     a. Generates an initial formatted Markdown file (=.md=) using the AI.
+  5. *Participant Handling*: Interactively, it prompts for participants using ~tlon-meet--get-file-and-participants~, which attempts to infer participants from the filename (e.g., "Leo<>Pablo - YYYY MM DD...") and uses them as the initial suggestion in the prompt. The confirmed list of participants is then used for formatting.
+  6. When the =whisperx= command finishes successfully, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension].txt= in the same directory as the audio file).
+  7. If the transcript exists, it deletes other generated files (=.vtt=, =.srt=, =.tsv=, =.json=) and then calls ~tlon-meet-format-transcript~ using the provided participant list. This function:
+     a. Generates an initial formatted Markdown file (=.md=) using the AI and participant context.
      b. Deletes the original =.txt= file.
      c. Calls ~tlon-meet-cleanup-transcript~ to ask the AI to correct errors in the =.md= file, overwriting it with the cleaned version.
      d. If a callback function was provided (e.g., by ~tlon-meet-transcribe-and-summarize~), it is called *after* the cleanup step with the path to the final, cleaned =.md= file.
@@ -126,21 +127,29 @@ This section details the interactive commands provided by =tlon-meet.el=.
     - Consult the =whisperx= documentation for troubleshooting.
 
 #+findex: tlon-meet-summarize-transcript
-+ ~tlon-meet-summarize-transcript~ :: Generates an AI summary for a *formatted and cleaned* Markdown transcript file (=.md=).
++ ~tlon-meet-summarize-transcript~ :: Generates an AI summary for a *formatted and cleaned* Markdown transcript file (=.md=) and saves results to the appropriate meeting repository.
   1. Prompts the user to select a =.md= transcript file.
-  2. Extracts the date from the filename.
-  3. Prompts the user to select the target meeting repository (unless participants were provided internally, e.g., by ~tlon-meet-transcribe-and-summarize~).
+  2. *Participant/Repo Handling*:
+     - Interactively, it attempts to infer participants from the filename using ~tlon-meet--infer-details-from-filename~. It then prompts the user to confirm/correct these participants, using the inferred list as the default.
+     - If participants are successfully determined (either interactively or passed non-interactively), it uses them to find the correct meeting repository (~tlon-get-meeting-repo~ or the group repo).
+     - If participants cannot be determined or the user clears the selection, it falls back to prompting the user to manually select the target meeting repository.
+  3. Extracts the date (using inference first, then fallback).
   4. Creates and displays a "*Meeting Summary Output*" buffer.
   5. Reads the =.md= transcript content.
   6. Sends the content to the AI using ~tlon-meet-summarize-transcript-prompt~.
-  7. On success, calls ~tlon-meet--save-summary-and-transcript~ to save the summary to =meeting-summaries.org= and copy the =.md= transcript to =transcripts/YYYY-MM-DD.md= in the selected repository, then commits and pushes the changes.
+  7. On success, calls ~tlon-meet--save-summary-and-transcript~ which:
+     - Saves the summary to =meeting-summaries.org= in the determined repository.
+     - Copies the =.md= transcript to =transcripts/YYYY-MM-DD.md= in the repository.
+     - Commits and pushes both files.
+     - *Deletes the original input =.md= transcript file* from its source location.
   8. Reports progress and errors in the output buffer.
 
 #+findex: tlon-meet-transcribe-and-summarize
-+ ~tlon-meet-transcribe-and-summarize~ :: The main command to process a new audio recording from start to finish.
-  1. Prompts for the =AUDIO-FILE= and =PARTICIPANTS=.
-  2. Calls ~tlon-meet-transcribe-audio~ which performs transcription (whisperx), AI formatting, and AI cleanup.
-  3. Sets up a callback function that, once the cleaned =.md= transcript is ready, automatically calls ~tlon-meet-summarize-transcript~ to generate the summary and save everything to the appropriate repository.
++ ~tlon-meet-transcribe-and-summarize~ :: The main command to process a new audio recording from start to finish. Can be called interactively or non-interactively (e.g., by the file monitor).
+  1. Takes =AUDIO-FILE= and =PARTICIPANTS= as arguments.
+  2. Interactively, prompts for the =AUDIO-FILE= and =PARTICIPANTS= using ~tlon-meet--get-file-and-participants~, which attempts inference from the filename for the participant prompt.
+  3. Calls ~tlon-meet-transcribe-audio~ with the file and participants. This performs transcription (whisperx), AI formatting, and AI cleanup.
+  4. Sets up a callback function that, once the cleaned =.md= transcript is ready (passed via the callback from ~tlon-meet-transcribe-audio~), automatically calls ~tlon-meet-summarize-transcript~ non-interactively with the cleaned transcript path and the original participant list to generate the summary and save everything to the appropriate repository (including deleting the source =.md= file).
 
 *** Transient Menu
 :PROPERTIES:
@@ -224,8 +233,11 @@ This section lists non-interactive functions used internally or potentially usef
 #+findex: tlon-meet--save-summary-and-transcript
 + ~tlon-meet--save-summary-and-transcript~ :: Saves the generated AI =SUMMARY= to =meeting-summaries.org=, copies the input formatted transcript (=INPUT-TRANSCRIPT-FILE=, which is a =.md= file) to =transcripts/[date].md= within the specified =REPO=, commits and pushes the changes, and *then deletes the original* =INPUT-TRANSCRIPT-FILE=. It handles file creation/appending, directory creation, git staging, committing, and pushing. Updates the =OUTPUT-BUFFER= with progress.
  
+#+findex: tlon-meet--infer-details-from-filename
++ ~tlon-meet--infer-details-from-filename~ :: Attempts to parse a filename (e.g., "Leo<>Pablo - 2025 04 25 ...") to extract participant names and the date. Looks up nicknames based on names found. Returns a plist like =(:participants ("leo" "pablo") :date "2025-04-25")= or =nil=.
+
 #+findex: tlon-meet--get-file-and-participants
-+ ~tlon-meet--get-file-and-participants~ :: Interactive helper used by commands like ~tlon-meet-transcribe-audio~ to prompt for the audio file and participant nicknames. Returns a list containing the file path and the list of nicknames.
++ ~tlon-meet--get-file-and-participants~ :: Interactive helper used by commands like ~tlon-meet-transcribe-audio~ and ~tlon-meet-transcribe-and-summarize~. Prompts for the audio file, then attempts to infer participants using ~tlon-meet--infer-details-from-filename~. It then prompts the user to confirm/edit the participants, using the inferred list as the initial input. Returns a list containing the selected file path and the confirmed list of participant nicknames.
 
 *** Repository and User Helpers
 :PROPERTIES:
@@ -237,3 +249,22 @@ This section lists non-interactive functions used internally or potentially usef
 
 #+findex: tlon-get-meeting-repo
 + ~tlon-get-meeting-repo~ :: Finds the directory (:dir) of the meeting repository shared by =PARTICIPANT1= and =PARTICIPANT2=. It iterates through ~tlon-repos~, looking for a repo with =subtype= 'meetings that includes both participants in its =:participants= list.
+
+** File Monitoring
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-meet-monitoring
+:END:
+
+This module includes functionality to monitor a directory for new meeting recordings and automatically trigger the transcription and summarization process.
+
+#+findex: tlon-meet-watch-recordings
++ ~tlon-meet-watch-recordings~ :: Starts monitoring the directory specified by ~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~ (based on ~tlon-default-conference-app~). Uses Emacs' file notification system (`file-notify`). When a new file is created in the directory, it calls ~tlon-meet--handle-new-recording~.
+
+#+findex: tlon-meet-unwatch-recordings
++ ~tlon-meet-unwatch-recordings~ :: Stops the file monitoring started by ~tlon-meet-watch-recordings~.
+
+#+findex: tlon-meet--handle-new-recording
++ ~tlon-meet--handle-new-recording~ :: The internal callback function triggered by file notifications. It checks if the event is a file creation. If so, it attempts to infer participants and date from the new file's name using ~tlon-meet--infer-details-from-filename~. If successful, it calls ~tlon-meet-transcribe-and-summarize~ non-interactively with the filename and inferred participants. If inference fails, it logs a message indicating manual processing is needed.
+
+#+vindex: tlon-meet--recording-watch-descriptor
++ ~tlon-meet--recording-watch-descriptor~ :: Internal variable holding the descriptor for the active file notification watch, used by the watch/unwatch functions.
