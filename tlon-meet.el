@@ -249,10 +249,9 @@ function tried to be a nudge in that direction."
 
 (defun tlon-meet--infer-details-from-filename (filename)
   "Attempt to infer participants and date from FILENAME.
-Filename is expected to be like 'Person1<>Person2 - YYYY MM DD ...' or
-'Group - YYYY MM DD ...'.
-Returns a plist (:participants (\"nick1\" \"nick2\") :date \"YYYY-MM-DD\")
-or nil if inference fails."
+Filename is expected to be like \"Person1<>Person2 - YYYY MM DD ...\" or \"Group
+- YYYY MM DD ...\". Returns a plist `(:participants (\"nick1\" \"nick2\") :date
+\"YYYY-MM-DD\")' or nil if inference fails."
   (let* ((basename (file-name-nondirectory filename))
          (participants nil)
          (date nil))
@@ -260,11 +259,9 @@ or nil if inference fails."
      ;; Case 1: Person1<>Person2 format
      ((string-match "^\\(.*?\\)<>\\(.*?\\) +- +\\([0-9]\\{4\\}\\)[ -]\\([0-9]\\{2\\}\\)[ -]\\([0-9]\\{2\\}\\)" basename)
       (let* ((name1 (string-trim (match-string 1 basename)))
-             (name2 (string-trim (match-string 2 basename)))
-             (nick1 (tlon-user-lookup :nickname :name name1))
-             (nick2 (tlon-user-lookup :nickname :name name2)))
-        (when (and nick1 nick2)
-          (setq participants (list nick1 nick2))
+             (name2 (string-trim (match-string 2 basename))))
+        (when (and name1 name2)
+          (setq participants (list name1 name2))
           (setq date (format "%s-%s-%s" (match-string 3 basename) (match-string 4 basename) (match-string 5 basename))))))
      ;; Case 2: Group format (assuming "Group" or similar indicates group meeting)
      ;; Add more specific group indicators if needed
