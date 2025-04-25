@@ -451,9 +451,11 @@ for meeting on DATE. Updates OUTPUT-BUFFER."
                              (plist-get info :status))))))))))
 
 (defun tlon-meet--save-summary-and-transcript (summary input-transcript-file date repo output-buffer)
-  "Save SUMMARY and copy INPUT-TRANSCRIPT-FILE for meeting on DATE to REPO.
-Updates OUTPUT-BUFFER with progress messages. INPUT-TRANSCRIPT-FILE should be
-the formatted Markdown (.md) file."
+  "Save SUMMARY, copy INPUT-TRANSCRIPT-FILE to REPO, and delete original.
+Saves SUMMARY to `meeting-summaries.org`, copies INPUT-TRANSCRIPT-FILE (the
+formatted .md file) to `transcripts/[date].md` in REPO, commits/pushes changes,
+and then deletes the original INPUT-TRANSCRIPT-FILE. Updates OUTPUT-BUFFER
+with progress messages."
   (let* ((summary-file (expand-file-name "meeting-summaries.org" repo))
          ;; Save the transcript in the 'transcripts' subdirectory with YYYY-MM-DD.md format
          (transcript-dir (expand-file-name "transcripts" repo))
@@ -499,7 +501,11 @@ the formatted Markdown (.md) file."
                 (insert "\nCommit successful. Pushing changes...\n")
                 ;; Push changes
                 (if (= 0 (call-process "git" nil output-buffer t "push"))
-                    (insert "Push successful.\n")
+                    (progn
+                      (insert "Push successful.\n")
+                      ;; Delete the original input transcript file after successful commit and push
+                      (ignore-errors (delete-file input-transcript-file))
+                      (insert (format "Deleted original transcript file: %s\n" input-transcript-file)))
                   (insert "Error: Push failed. See buffer output.\n")))
             (insert "\nError: Commit failed. See buffer output.\n"))))
       (with-current-buffer output-buffer

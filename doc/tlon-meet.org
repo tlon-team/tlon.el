@@ -222,8 +222,8 @@ This section lists non-interactive functions used internally or potentially usef
 + ~tlon-meet--generate-and-save-summary~ :: Helper for ~tlon-meet-summarize-transcript~. Reads the formatted =.md= transcript, calls the AI summarizer, and passes the result and necessary info to ~tlon-meet--save-summary-and-transcript~.
 
 #+findex: tlon-meet--save-summary-and-transcript
-+ ~tlon-meet--save-summary-and-transcript~ :: Saves the generated AI =SUMMARY= to =meeting-summaries.org= and copies the input formatted transcript (=INPUT-TRANSCRIPT-FILE=, which is a =.md= file) to =transcripts/[date].md= within the specified =REPO=. It handles file creation/appending, directory creation, git staging, committing, and pushing. Updates the =OUTPUT-BUFFER= with progress.
-
++ ~tlon-meet--save-summary-and-transcript~ :: Saves the generated AI =SUMMARY= to =meeting-summaries.org=, copies the input formatted transcript (=INPUT-TRANSCRIPT-FILE=, which is a =.md= file) to =transcripts/[date].md= within the specified =REPO=, commits and pushes the changes, and *then deletes the original* =INPUT-TRANSCRIPT-FILE=. It handles file creation/appending, directory creation, git staging, committing, and pushing. Updates the =OUTPUT-BUFFER= with progress.
+ 
 #+findex: tlon-meet--get-file-and-participants
 + ~tlon-meet--get-file-and-participants~ :: Interactive helper used by commands like ~tlon-meet-transcribe-audio~ to prompt for the audio file and participant nicknames. Returns a list containing the file path and the list of nicknames.
 
