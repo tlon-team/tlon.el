@@ -673,13 +673,11 @@ from the filename, and if successful, calls
              0 nil #'tlon-meet-transcribe-and-summarize filename participants))
         (message "New file detected: %s. Could not infer meeting details. Manual processing required." filename)))))
 
-;;;###autoload
 (defun tlon-meet-watch-recordings ()
   "Start monitoring the default recording directory for new files.
 Uses `file-notify-add-watch' to monitor the directory specified by
 `tlon-default-conference-app'. When a new file is created, attempts
 to automatically process it using `tlon-meet-transcribe-and-summarize'."
-  (interactive)
   (if tlon-meet--recording-watch-descriptor
       (message "Already monitoring recordings directory.")
     (let ((dir-to-watch (pcase tlon-default-conference-app
@@ -696,10 +694,8 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
       (unless dir-to-watch
         (message "Could not determine or access directory to watch.")))))
 
-;;;###autoload
 (defun tlon-meet-unwatch-recordings ()
   "Stop monitoring the recording directory for new files."
-  (interactive)
   (if tlon-meet--recording-watch-descriptor
       (progn
         (message "Stopping monitoring for recordings...")
@@ -723,9 +719,10 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
     ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
     ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]
-   ["Monitoring"
-    ("w"   "watch recordings dir"       tlon-meet-watch-recordings)
-    ("u"   "unwatch recordings dir"     tlon-meet-unwatch-recordings)]])
+   ]])
+
+(when (string= (system-name) "Pablos-MacBook-Pro.local")
+  (tlon-meet-watch-recordings))
 
 (provide 'tlon-meet)
 ;;; tlon-meet.el ends here

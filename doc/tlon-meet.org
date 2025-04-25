@@ -258,10 +258,10 @@ This section lists non-interactive functions used internally or potentially usef
 This module includes functionality to monitor a directory for new meeting recordings and automatically trigger the transcription and summarization process.
 
 #+findex: tlon-meet-watch-recordings
-+ ~tlon-meet-watch-recordings~ :: Starts monitoring the directory specified by ~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~ (based on ~tlon-default-conference-app~). Uses Emacs' file notification system (`file-notify`). When a new file is created in the directory, it calls ~tlon-meet--handle-new-recording~.
++ ~tlon-meet-watch-recordings~ :: Internal function that starts monitoring the directory specified by ~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~ (based on ~tlon-default-conference-app~). It is automatically invoked when the package loads on Pablo's machine (=system-name= \"Pablos-MacBook-Pro.local\"). Uses Emacs' file notification system (`file-notify`). When a new file is created in the directory, it calls ~tlon-meet--handle-new-recording~.
 
 #+findex: tlon-meet-unwatch-recordings
-+ ~tlon-meet-unwatch-recordings~ :: Stops the file monitoring started by ~tlon-meet-watch-recordings~.
++ ~tlon-meet-unwatch-recordings~ :: Internal function that stops the file monitoring started by ~tlon-meet-watch-recordings~.
 
 #+findex: tlon-meet--handle-new-recording
 + ~tlon-meet--handle-new-recording~ :: The internal callback function triggered by file notifications. It checks if the event is a file creation. If so, it attempts to infer participants and date from the new file's name using ~tlon-meet--infer-details-from-filename~. If successful, it calls ~tlon-meet-transcribe-and-summarize~ non-interactively with the filename and inferred participants. If inference fails, it logs a message indicating manual processing is needed.
