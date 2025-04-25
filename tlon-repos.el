@@ -127,7 +127,7 @@ those repos, use `tlon-clone-missing-repos'."
 	    (sleep-for 1))))))
   (message "Added all missing repos to the Forge database."))
 
-;;;;;; Pull issues
+;;;;;; Pull GitHub issues
 
 (defun tlon-pull-issues-in-repo (&optional dir)
   "Pull issues in repository located at DIR.
