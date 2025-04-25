@@ -298,16 +298,15 @@ Default EXTENSION is \".md\"."
 
 ;;;###autoload
 (defun tlon-meet-transcribe-audio (audio-file participants &optional callback)
-  "Transcribe AUDIO-FILE (audio or video) using whisperx and format the result for PARTICIPANTS.
-Runs `whisperx' on the audio/video file with diarization enabled (language hardcoded
-to \"es\"). Saves a [basename].txt file in the same directory as AUDIO-FILE,
-deleting other output files (.vtt, .srt, .tsv, .json). Then, calls
+  "Transcribe AUDIO-FILE using whisperx and format the result for PARTICIPANTS.
+Runs `whisperx' on the audio/video file with diarization enabled (language
+hardcoded to \"es\"). Saves a [basename].txt file in the same directory as
+AUDIO-FILE, deleting other output files (.vtt, .srt, .tsv, .json). Then, calls
 `tlon-meet-format-transcript' to generate a formatted Markdown file using the
 provided PARTICIPANTS list. If CALLBACK is provided, call it with the path to
 the final cleaned transcript file after the formatting and cleanup steps are
-complete.
-Interactively, prompts for AUDIO-FILE (audio or video) and PARTICIPANTS, using filename
-inference for initial participant suggestion."
+complete. Interactively, prompts for AUDIO-FILE (audio or video) and
+PARTICIPANTS, using filename inference for initial participant suggestion."
   (interactive (tlon-meet--get-file-and-participants)) ; Gets file and confirmed participants
   (let* ((audio-dir (file-name-directory (expand-file-name audio-file)))
          (audio-filename (file-name-nondirectory audio-file))
@@ -620,14 +619,14 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
 
 ;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file participants)
-  "Transcribe AUDIO-FILE (audio or video), format it, clean it, and create an AI summary.
+  "Transcribe AUDIO-FILE, format it, clean it, and create an AI summary.
 Runs `tlon-meet-transcribe-audio' (which handles transcription via whisperx, AI
 formatting, and AI cleanup) using the provided PARTICIPANTS list. Upon success
 \\=(after cleanup), automatically runs `tlon-meet-summarize-transcript' on the
 resulting formatted and cleaned Markdown (.md) transcript file, using the same
 PARTICIPANTS list to determine the repository. Interactively, prompts for
-AUDIO-FILE (audio or video) and PARTICIPANTS, using filename inference for initial participant
-suggestion."
+AUDIO-FILE (audio or video) and PARTICIPANTS, using filename inference for
+initial participant suggestion."
   (interactive (tlon-meet--get-file-and-participants)) ; Gets file and confirmed participants
   (message "Starting transcription and summarization for %s with participants: %s"
            audio-file (mapconcat #'identity participants ", "))
