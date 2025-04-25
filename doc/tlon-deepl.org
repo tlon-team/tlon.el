@@ -93,9 +93,10 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   2. Prompts for target language using ~tlon-select-language~ (excluding the source language).
   3. Prompts for the text to translate, defaulting to the active region or the word at point.
   4. Sets the internal state variables (~tlon-deepl-text~, ~tlon-deepl-source-language~, ~tlon-deepl-target-language~).
-  5. Calls ~tlon-deepl-request-wrapper~ with the =translate= type.
-  6. Uses a default callback that prints the translation and copies it to the kill ring (~tlon-deepl-print-translation 'copy~). Allows specifying a custom =CALLBACK=.
-  7. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
+  5. If a callback is provided, calls ~tlon-deepl-request-wrapper~ with the =translate= type.
+  6. Otherwise, uses a direct approach with curl to get the translation, which is more reliable for all languages.
+  7. Returns the translated text as a string.
+  8. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
 
 #+findex: tlon-deepl-translate-abstract
 + ~tlon-deepl-translate-abstract~ :: Translates the =abstract= field of a BibTeX entry =KEY= into relevant languages. Takes optional =ABSTRACT=, =KEY=, =LANGS= (list of target language names), and =INTERACTIVE-CALL-P=.
@@ -196,7 +197,7 @@ This section lists non-interactive functions and variables used internally or po
 :END:
  
 #+findex: tlon-deepl-print-translation
-+ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response (assuming the buffer content is UTF-8), extracts the translated text, and either messages it or copies it to the kill ring if =COPY= is non-nil.
++ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response (assuming the buffer content is UTF-8), extracts the translated text, and either messages it or copies it to the kill ring if =COPY= is non-nil. Returns the translation string for potential use by callers.
  
 #+findex: tlon-deepl-glossary-create-callback
 + ~tlon-deepl-glossary-create-callback~ :: Callback for glossary creation. Resets ~tlon-deepl-target-language~, refreshes the local glossary list using ~tlon-deepl-get-glossaries~, and messages the API response.
