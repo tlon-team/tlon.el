@@ -262,7 +262,8 @@ Filename is expected to be like \"Person1<>Person2 - YYYY MM DD ...\" or \"Group
              (name2 (string-trim (match-string 2 basename))))
         (when (and name1 name2)
           (setq participants (list name1 name2))
-          (setq date (format "%s-%s-%s" (match-string 3 basename) (match-string 4 basename) (match-string 5 basename))))))
+          (setq date (format "%s-%s-%s"
+			     (match-string 3 basename) (match-string 4 basename) (match-string 5 basename))))))
      ;; Case 2: Group format (assuming "Group" or similar indicates group meeting)
      ;; Add more specific group indicators if needed
      ((string-match "^\\(Group\\|Grupo\\) +- +\\([0-9]\\{4\\}\\)[ -]\\([0-9]\\{2\\}\\)[ -]\\([0-9]\\{2\\}\\)" basename)
@@ -345,7 +346,8 @@ inference for initial participant suggestion."
               ((string-match "\\`exited abnormally" event) ;; Check for abnormal exit
                (with-current-buffer output-buffer
 		 (goto-char (point-max))
-		 (insert (format "\n\nError: Diarization script failed.\nEvent: %s\nSee buffer output above for details." event))))
+		 (insert (format "\n\nError: Diarization failed.\nEvent: %s\nSee buffer output above for details."
+				 event))))
               ((string= event "finished\n") ;; Original success condition
                (with-current-buffer output-buffer
 		 (goto-char (point-max))
@@ -359,7 +361,8 @@ inference for initial participant suggestion."
                          (ignore-errors (delete-file (concat base-name ext))))
                        (with-current-buffer output-buffer
                          (goto-char (point-max))
-                         (insert (format "Transcript file found: %s. Cleaned up other formats. Starting formatting...\n" transcript-file)))
+                         (insert (format "Transcript file found: %s. Cleaned up other formats. Starting formatting...\n"
+					 transcript-file)))
                        ;; Call the formatting function, passing the original callback along
                        (tlon-meet-format-transcript transcript-file participants callback)))
                  ;; Else (transcript file not found)
@@ -413,7 +416,8 @@ saving."
                (when output-buffer
                  (with-current-buffer output-buffer
                    (goto-char (point-max))
-                   (insert (format "Error during AI cleanup: %s. Proceeding with uncleaned file...\n" (plist-get info :status))))))
+                   (insert (format "Error during AI cleanup: %s. Proceeding with uncleaned file...\n"
+				   (plist-get info :status))))))
              (message "Error cleaning up transcript: %s. Proceeding with uncleaned version." (plist-get info :status))
              ;; Call callback even on error, passing the uncleaned file path
              (when callback
@@ -453,18 +457,21 @@ and deletes the original transcript file."
                    (tlon-meet--get-date-from-filename transcript-file))) ; Fallback date extraction
          (repo (if participants
                    (let* ((is-group (equal participants '("group"))) ; Check for special group marker
-                          (full-names (unless is-group (mapcar (lambda (nick) (tlon-user-lookup :name :nickname nick)) participants)))
+                          (full-names (unless is-group
+					(mapcar (lambda (nick) (tlon-user-lookup :name :nickname nick)) participants)))
                           (num-participants (length full-names))) ; Will be 0 if is-group is true
                      (cond
                       (is-group ; Handle the 'group' marker
                        (tlon-repo-lookup :dir :name "meetings-group"))
                       ((= num-participants 2)
                        (or (tlon-get-meeting-repo (car full-names) (cadr full-names))
-                           (user-error "Could not find meeting repo for participants: %s" (mapconcat #'identity participants ", "))))
+                           (user-error "Could not find meeting repo for participants: %s"
+				       (mapconcat #'identity participants ", "))))
                       ((> num-participants 2) ; Assumed group meeting if > 2 explicit participants
                        (tlon-repo-lookup :dir :name "meetings-group"))
                       ;; Handle cases like 0 or 1 participant if needed, or error
-                      (t (user-error "Cannot determine meeting repo for participants: %s" (mapconcat #'identity participants ", ")))))
+                      (t (user-error "Cannot determine meeting repo for participants: %s"
+				     (mapconcat #'identity participants ", ")))))
                  ;; Else (no participants provided), prompt the user
                  (let* ((meeting-repos (tlon-lookup-all tlon-repos :dir :subtype 'meetings))
                         (repo-choices (mapcar (lambda (r)
@@ -627,7 +634,8 @@ suggestion."
   (tlon-meet-transcribe-audio audio-file participants
                               ;; Callback function to run after transcription, formatting, AND cleanup
                               (lambda (cleaned-transcript-file) ; Receives the cleaned .md path
-                                (message "Transcription/Formatting/Cleanup complete. Starting summarization for %s" cleaned-transcript-file)
+                                (message "Transcription/Formatting/Cleanup complete. Starting summarization for %s"
+					 cleaned-transcript-file)
                                 ;; Call summarize non-interactively with the .md file and participants
                                 (tlon-meet-summarize-transcript cleaned-transcript-file participants))))
 
