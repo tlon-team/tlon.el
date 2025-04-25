@@ -29,7 +29,7 @@
 (require 'tlon-forg)
 (require 'tlon-ai)
 (require 'tlon-core)
-(require 'file-notify)
+(require 'filenotify)
 
 ;;;; Variables
 
