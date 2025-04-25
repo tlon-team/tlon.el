@@ -662,12 +662,12 @@ successful, calls `tlon-meet-transcribe-and-summarize' non-interactively."
       (let ((details (tlon-meet--infer-details-from-filename filename)))
         (if details
             (let ((participants (plist-get details :participants)))
-            (message "New recording detected: %s. Participants: %s. Starting processing..."
-                     filename (mapconcat #'identity participants ", "))
-            ;; Run the processing slightly delayed to ensure file is fully written
-            (run-with-idle-timer
-             0 nil #'tlon-meet-transcribe-and-summarize filename participants))
-        (message "New file detected: %s. Could not infer meeting details. Manual processing required." filename)))))
+              (message "New recording detected: %s. Participants: %s. Starting processing..."
+                       filename (mapconcat #'identity participants ", "))
+              ;; Run the processing slightly delayed to ensure file is fully written
+              (run-with-idle-timer
+               0 nil #'tlon-meet-transcribe-and-summarize filename participants))
+          (message "New file detected: %s. Could not infer meeting details. Manual processing required." filename))))))
 
 (defun tlon-meet-watch-recordings ()
   "Start monitoring the default recording directory for new files.
