@@ -51,6 +51,9 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 #+findex: tlon-dub-get-resource-data
 + ~tlon-dub-get-resource-data~ :: (Autoloaded) Retrieves the detailed resource structure for an ElevenLabs dubbing project. Prompts for the =dubbing_id=. This endpoint is expected to return JSON containing resource, speaker, and segment IDs needed for modification. Displays the parsed JSON response (pretty-printed) in a new buffer or the raw response if parsing fails.
 
+#+findex: tlon-dub-add-speaker-segment
++ ~tlon-dub-add-speaker-segment~ :: (Autoloaded) Adds a new segment for a specific speaker within an ElevenLabs dubbing project. Prompts for the =dubbing_id=, =speaker_id=, segment =start_time= (float, seconds), =end_time= (float, seconds), and the segment =text=. Sends a POST request to the API and displays the response.
+
 ** Internal Functions and Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-internals
@@ -83,3 +86,5 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + ~tlon-dub-get-resource-data-endpoint~ :: The API endpoint format string used for retrieving the detailed resource structure of a dubbing project ("/dubbing/resource/%s"). Requires the =dubbing_id= to be formatted into the string.
 #+vindex: tlon-dub-share-resource-endpoint
 + ~tlon-dub-share-resource-endpoint~ :: The API endpoint format string used for sharing a workspace resource ("/workspace/resources/%s/share"). Requires the =resource_id= (which is the =dubbing_id= for dubbing projects) to be formatted into the string.
+#+vindex: tlon-dub-add-speaker-segment-endpoint
++ ~tlon-dub-add-speaker-segment-endpoint~ :: The API endpoint format string used for adding a segment to a specific speaker within a dubbing project ("/dubbing/resource/%s/speaker/%s/segment"). Requires the =dubbing_id= and =speaker_id= to be formatted into the string.
