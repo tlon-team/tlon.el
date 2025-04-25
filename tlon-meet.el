@@ -652,14 +652,16 @@ Returns a list: (AUDIO-FILE SELECTED-PARTICIPANTS)."
 (defun tlon-meet--handle-new-recording (event)
   "Handle file creation events in the recording directory.
 This function is intended as a callback for `file-notify-add-watch'.
-It checks if the EVENT is a file creation, attempts to infer details
-from the filename, and if successful, calls
-`tlon-meet-transcribe-and-summarize' non-interactively."
-  (when (eq (file-notify-event-type event) :created)
-    (let* ((filename (file-notify-event-path event))
-           (details (tlon-meet--infer-details-from-filename filename)))
-      (if details
-          (let ((participants (plist-get details :participants)))
+It checks if the EVENT list indicates a file creation (`created` action),
+attempts to infer details from the filename (third element of EVENT), and if
+successful, calls `tlon-meet-transcribe-and-summarize' non-interactively."
+  ;; EVENT is (DESCRIPTOR ACTION FILE [FILE1])
+  (let ((action (cadr event))
+        (filename (caddr event)))
+    (when (and (eq action 'created) filename) ; Check for 'created' action and non-nil filename
+      (let ((details (tlon-meet--infer-details-from-filename filename)))
+        (if details
+            (let ((participants (plist-get details :participants)))
             (message "New recording detected: %s. Participants: %s. Starting processing..."
                      filename (mapconcat #'identity participants ", "))
             ;; Run the processing slightly delayed to ensure file is fully written
@@ -680,11 +682,15 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
                           (_ (progn (message "Unknown conference app type.") nil)))))
       (when (and dir-to-watch (file-directory-p dir-to-watch))
         (message "Starting to monitor %s for new recordings..." dir-to-watch)
-        (setq tlon-meet--recording-watch-descriptor
-              (file-notify-add-watch dir-to-watch
-                                     '(file-notify-event-type :created)
-                                     #'tlon-meet--handle-new-recording))
-        (message "Monitoring started for %s." dir-to-watch))
+        (condition-case err
+            (setq tlon-meet--recording-watch-descriptor
+                  (file-notify-add-watch dir-to-watch
+                                         '(change) ; Watch for creation/deletion/change
+                                         #'tlon-meet--handle-new-recording))
+          (file-notify-error (message "Error starting file monitor: %s" err)))
+        (if tlon-meet--recording-watch-descriptor
+            (message "Monitoring started for %s." dir-to-watch)
+          (message "Failed to start monitoring for %s." dir-to-watch)))
       (unless dir-to-watch
         (message "Could not determine or access directory to watch.")))))
 
@@ -693,7 +699,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
   (if tlon-meet--recording-watch-descriptor
       (progn
         (message "Stopping monitoring for recordings...")
-        (file-notify-remove-watch tlon-meet--recording-watch-descriptor)
+        (file-notify-rm-watch tlon-meet--recording-watch-descriptor) ; Use rm-watch
         (setq tlon-meet--recording-watch-descriptor nil)
         (message "Monitoring stopped."))
     (message "Not currently monitoring recordings directory.")))
