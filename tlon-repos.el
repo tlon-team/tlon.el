@@ -130,7 +130,7 @@ those repos, use `tlon-clone-missing-repos'."
 ;;;;;; Pull issues
 
 (defun tlon-pull-issues-in-repo (&optional dir)
-  "Pull repository in DIR.
+  "Pull issues in repository located at DIR.
 If DIR is nil, use the current directory."
   (interactive)
   (when-let ((default-directory (or dir default-directory))
