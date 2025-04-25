@@ -712,8 +712,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
     ("i"   "discuss issue in meeting"   tlon-discuss-issue-in-meeting)
     ("t"   "transcribe audio"           tlon-meet-transcribe-audio)
     ("s"   "summarize transcript"       tlon-meet-summarize-transcript)
-    ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]
-   ]])
+    ("a"   "transcribe & summarize"     tlon-meet-transcribe-and-summarize)]])
 
 (when (string= (system-name) "Pablos-MacBook-Pro.local")
   (tlon-meet-watch-recordings))
