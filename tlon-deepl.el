@@ -199,9 +199,9 @@ Returns the translated text as a string."
           (let ((response-content (buffer-substring-no-properties (point-min) (point-max))))
             (when (string-match "\"text\":\\s-*\"\\([^\"]+\\)\"" response-content)
               (setq translation (match-string 1 response-content))
-              (when (called-interactively-p 'any)
-                (kill-new translation)
-                (message "Translation copied to kill ring")))))
+              (kill-new translation)
+              (message "Translation copied to kill ring: %s" 
+                       (replace-regexp-in-string "%" "%%" translation)))))
         
         (delete-file temp-file)
         (kill-buffer output-buffer)
