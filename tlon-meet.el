@@ -278,12 +278,12 @@ Filename is expected to be like \"Person1<>Person2 - YYYY MM DD ...\" or \"Group
       (list :participants participants :date date))))
 
 (defun tlon-meet--get-audio-file ()
-  "Prompt user for an audio file from configured recording directories."
+  "Prompt user for an audio or video file from configured recording directories."
   (let ((default-dir (pcase tlon-default-conference-app
                        ('meet tlon-meet-recordings-directory)
                        ('zoom tlon-zoom-recordings-directory)
                        (_ default-directory))))
-    (read-file-name "Select audio file: " default-dir)))
+    (read-file-name "Select audio/video file: " default-dir)))
 
 (defun tlon-meet--get-transcript-file (&optional extension)
   "Prompt user for a transcript file.
@@ -298,15 +298,15 @@ Default EXTENSION is \".md\"."
 
 ;;;###autoload
 (defun tlon-meet-transcribe-audio (audio-file participants &optional callback)
-  "Transcribe AUDIO-FILE using whisperx and format the result for PARTICIPANTS.
-Runs `whisperx' on the audio file with diarization enabled (language hardcoded
+  "Transcribe AUDIO-FILE (audio or video) using whisperx and format the result for PARTICIPANTS.
+Runs `whisperx' on the audio/video file with diarization enabled (language hardcoded
 to \"es\"). Saves a [basename].txt file in the same directory as AUDIO-FILE,
 deleting other output files (.vtt, .srt, .tsv, .json). Then, calls
 `tlon-meet-format-transcript' to generate a formatted Markdown file using the
 provided PARTICIPANTS list. If CALLBACK is provided, call it with the path to
 the final cleaned transcript file after the formatting and cleanup steps are
 complete.
-Interactively, prompts for AUDIO-FILE and PARTICIPANTS, using filename
+Interactively, prompts for AUDIO-FILE (audio or video) and PARTICIPANTS, using filename
 inference for initial participant suggestion."
   (interactive (tlon-meet--get-file-and-participants)) ; Gets file and confirmed participants
   (let* ((audio-dir (file-name-directory (expand-file-name audio-file)))
@@ -620,13 +620,13 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
 
 ;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file participants)
-  "Transcribe AUDIO-FILE, format it, clean it, and create an AI summary.
+  "Transcribe AUDIO-FILE (audio or video), format it, clean it, and create an AI summary.
 Runs `tlon-meet-transcribe-audio' (which handles transcription via whisperx, AI
 formatting, and AI cleanup) using the provided PARTICIPANTS list. Upon success
 \\=(after cleanup), automatically runs `tlon-meet-summarize-transcript' on the
 resulting formatted and cleaned Markdown (.md) transcript file, using the same
 PARTICIPANTS list to determine the repository. Interactively, prompts for
-AUDIO-FILE and PARTICIPANTS, using filename inference for initial participant
+AUDIO-FILE (audio or video) and PARTICIPANTS, using filename inference for initial participant
 suggestion."
   (interactive (tlon-meet--get-file-and-participants)) ; Gets file and confirmed participants
   (message "Starting transcription and summarization for %s with participants: %s"
@@ -640,7 +640,7 @@ suggestion."
                                 (tlon-meet-summarize-transcript cleaned-transcript-file participants))))
 
 (defun tlon-meet--get-file-and-participants ()
-  "Prompt user for audio file and participants, inferring participants first.
+  "Prompt user for audio/video file and participants, inferring participants first.
 Returns a list: (AUDIO-FILE SELECTED-PARTICIPANTS)."
   (let* ((audio-file (tlon-meet--get-audio-file))
          (details (tlon-meet--infer-details-from-filename audio-file))
@@ -660,22 +660,25 @@ Returns a list: (AUDIO-FILE SELECTED-PARTICIPANTS)."
 (defun tlon-meet--handle-new-recording (event)
   "Handle file creation events in the recording directory.
 This function is intended as a callback for `file-notify-add-watch'.
-It checks if the EVENT list indicates a file creation (`created` action),
-attempts to infer details from the filename (third element of EVENT), and if
-successful, calls `tlon-meet-transcribe-and-summarize' non-interactively."
+It checks if the EVENT list indicates a file creation (`created` action) for a
+file *without* an extension. If so, it attempts to infer details from the
+filename (third element of EVENT), and if successful, calls
+`tlon-meet-transcribe-and-summarize' non-interactively. This prevents
+triggering on intermediate .txt or .md files."
   ;; EVENT is (DESCRIPTOR ACTION FILE [FILE1])
   (let ((action (cadr event))
         (filename (caddr event)))
-    (when (and (eq action 'created) filename) ; Check for 'created' action and non-nil filename
+    ;; Only proceed if created, filename exists, AND has no extension
+    (when (and (eq action 'created) filename (null (file-name-extension filename)))
       (let ((details (tlon-meet--infer-details-from-filename filename)))
         (if details
             (let ((participants (plist-get details :participants)))
-              (message "New recording detected: %s. Participants: %s. Starting processing..."
+              (message "New audio/video recording detected: %s. Participants: %s. Starting processing..."
                        filename (mapconcat #'identity participants ", "))
               ;; Run the processing slightly delayed to ensure file is fully written
               (run-with-idle-timer
                0 nil #'tlon-meet-transcribe-and-summarize filename participants))
-          (message "New file detected: %s. Could not infer meeting details. Manual processing required." filename))))))
+          (message "New audio/video file detected: %s. Could not infer meeting details. Manual processing required." filename))))))
 
 (defun tlon-meet-watch-recordings ()
   "Start monitoring the default recording directory for new files.
@@ -693,7 +696,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
         (condition-case err
             (setq tlon-meet--recording-watch-descriptor
                   (file-notify-add-watch dir-to-watch
-                                         '(change) ; Watch for creation/deletion/change
+                                         '(created) ; Watch specifically for creation
                                          #'tlon-meet--handle-new-recording))
           (file-notify-error (message "Error starting file monitor: %s" err)))
         (if tlon-meet--recording-watch-descriptor

@@ -101,11 +101,11 @@ This section details the interactive commands provided by =tlon-meet.el=.
 :END:
 
 #+findex: tlon-meet-transcribe-audio
-+ ~tlon-meet-transcribe-audio~ :: Transcribes an =AUDIO-FILE= using =whisperx= with diarization and then formats the transcript using AI.
-  1. Prompts the user to select an =AUDIO-FILE=, defaulting to the directory specified by ~tlon-default-conference-app~ (~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~).
++ ~tlon-meet-transcribe-audio~ :: Transcribes an =AUDIO-FILE= (audio or video) using =whisperx= with diarization and then formats the transcript using AI.
+  1. Prompts the user to select an =AUDIO-FILE= (audio or video), defaulting to the directory specified by ~tlon-default-conference-app~ (~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~) and filtering for common audio/video extensions.
   2. Prompts the user for the meeting =PARTICIPANTS= (nicknames).
   3. Creates and displays a "*Diarization Output*" buffer.
-  4. Runs the =whisperx= command asynchronously on the =AUDIO-FILE= with the following arguments:
+  4. Runs the =whisperx= command asynchronously on the =AUDIO-FILE= (audio or video) with the following arguments:
      - =--diarize= (enables speaker diarization)
      - =--language es= (sets the language to Spanish)
      - =--hf_token [YOUR_TOKEN]= (uses a Hugging Face token retrieved via =auth-source=)
@@ -145,9 +145,9 @@ This section details the interactive commands provided by =tlon-meet.el=.
   8. Reports progress and errors in the output buffer.
 
 #+findex: tlon-meet-transcribe-and-summarize
-+ ~tlon-meet-transcribe-and-summarize~ :: The main command to process a new audio recording from start to finish. Can be called interactively or non-interactively (e.g., by the file monitor).
-  1. Takes =AUDIO-FILE= and =PARTICIPANTS= as arguments.
-  2. Interactively, prompts for the =AUDIO-FILE= and =PARTICIPANTS= using ~tlon-meet--get-file-and-participants~, which attempts inference from the filename for the participant prompt.
++ ~tlon-meet-transcribe-and-summarize~ :: The main command to process a new audio/video recording from start to finish. Can be called interactively or non-interactively (e.g., by the file monitor).
+  1. Takes =AUDIO-FILE= (audio or video) and =PARTICIPANTS= as arguments.
+  2. Interactively, prompts for the =AUDIO-FILE= (filtering for audio/video types) and =PARTICIPANTS= using ~tlon-meet--get-file-and-participants~, which attempts inference from the filename for the participant prompt.
   3. Calls ~tlon-meet-transcribe-audio~ with the file and participants. This performs transcription (whisperx), AI formatting, and AI cleanup.
   4. Sets up a callback function that, once the cleaned =.md= transcript is ready (passed via the callback from ~tlon-meet-transcribe-audio~), automatically calls ~tlon-meet-summarize-transcript~ non-interactively with the cleaned transcript path and the original participant list to generate the summary and save everything to the appropriate repository (including deleting the source =.md= file).
 
@@ -210,7 +210,7 @@ This section lists non-interactive functions used internally or potentially usef
 :END:
 
 #+findex: tlon-meet--get-audio-file
-+ ~tlon-meet--get-audio-file~ :: Prompts the user to select an audio file, defaulting to the directory configured via ~tlon-default-conference-app~.
++ ~tlon-meet--get-audio-file~ :: Prompts the user to select an audio or video file, defaulting to the directory configured via ~tlon-default-conference-app~. Does not filter by extension.
 
 #+findex: tlon-meet--get-transcript-file
 + ~tlon-meet--get-transcript-file~ :: Prompts the user to select a transcript file (used interactively by ~tlon-meet-summarize-transcript~), defaulting to =.md= extension.
@@ -237,7 +237,7 @@ This section lists non-interactive functions used internally or potentially usef
 + ~tlon-meet--infer-details-from-filename~ :: Attempts to parse a filename (e.g., "Leo<>Pablo - 2025 04 25 ...") to extract participant names and the date. Looks up nicknames based on names found. Returns a plist like =(:participants ("leo" "pablo") :date "2025-04-25")= or =nil=.
 
 #+findex: tlon-meet--get-file-and-participants
-+ ~tlon-meet--get-file-and-participants~ :: Interactive helper used by commands like ~tlon-meet-transcribe-audio~ and ~tlon-meet-transcribe-and-summarize~. Prompts for the audio file, then attempts to infer participants using ~tlon-meet--infer-details-from-filename~. It then prompts the user to confirm/edit the participants, using the inferred list as the initial input. Returns a list containing the selected file path and the confirmed list of participant nicknames.
++ ~tlon-meet--get-file-and-participants~ :: Interactive helper used by commands like ~tlon-meet-transcribe-audio~ and ~tlon-meet-transcribe-and-summarize~. Prompts for the audio/video file (using ~tlon-meet--get-audio-file~ which does *not* filter extensions), then attempts to infer participants using ~tlon-meet--infer-details-from-filename~. It then prompts the user to confirm/edit the participants, using the inferred list as the initial input. Returns a list containing the selected file path and the confirmed list of participant nicknames.
 
 *** Repository and User Helpers
 :PROPERTIES:
@@ -258,13 +258,13 @@ This section lists non-interactive functions used internally or potentially usef
 This module includes functionality to monitor a directory for new meeting recordings and automatically trigger the transcription and summarization process.
 
 #+findex: tlon-meet-watch-recordings
-+ ~tlon-meet-watch-recordings~ :: Internal function that starts monitoring the directory specified by ~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~ (based on ~tlon-default-conference-app~). It is automatically invoked when the package loads on Pablo's machine (=system-name= \"Pablos-MacBook-Pro.local\"). Uses Emacs' file notification system (`file-notify-add-watch`) with the =change= flag. When a file event occurs, it calls ~tlon-meet--handle-new-recording~.
++ ~tlon-meet-watch-recordings~ :: Internal function that starts monitoring the directory specified by ~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~ (based on ~tlon-default-conference-app~). It is automatically invoked when the package loads on Pablo's machine (=system-name= \"Pablos-MacBook-Pro.local\"). Uses Emacs' file notification system (`file-notify-add-watch`) with the =created= flag. When a file creation event occurs, it calls ~tlon-meet--handle-new-recording~.
 
 #+findex: tlon-meet-unwatch-recordings
 + ~tlon-meet-unwatch-recordings~ :: Internal function that stops the file monitoring started by ~tlon-meet-watch-recordings~ using `file-notify-rm-watch`.
 
 #+findex: tlon-meet--handle-new-recording
-+ ~tlon-meet--handle-new-recording~ :: The internal callback function triggered by file notifications. It receives an =EVENT= list of the form =(DESCRIPTOR ACTION FILE [FILE1])=. It checks if =ACTION= is =created=. If so, it attempts to infer participants and date from =FILE= using ~tlon-meet--infer-details-from-filename~. If successful, it calls ~tlon-meet-transcribe-and-summarize~ non-interactively with =FILE= and inferred participants. If inference fails, it logs a message indicating manual processing is needed.
++ ~tlon-meet--handle-new-recording~ :: The internal callback function triggered by file creation notifications (from `file-notify-add-watch` using the =created= flag). It receives an =EVENT= list of the form =(DESCRIPTOR ACTION FILE [FILE1])=. It checks if =ACTION= is =created=, if =FILE= is not nil, and crucially, if =FILE= *has no file extension* (using =null (file-name-extension FILE)=). If all these conditions are true, it attempts to infer participants and date from =FILE= using ~tlon-meet--infer-details-from-filename~. If successful, it calls ~tlon-meet-transcribe-and-summarize~ non-interactively with =FILE= and inferred participants after a short idle delay (to help ensure the file is fully written). If inference fails, it logs a message indicating manual processing is needed. This check prevents the callback from triggering on intermediate =.txt= or =.md= files created during processing.
 
 #+vindex: tlon-meet--recording-watch-descriptor
 + ~tlon-meet--recording-watch-descriptor~ :: Internal variable holding the descriptor returned by `file-notify-add-watch`, used by the watch/unwatch functions.
