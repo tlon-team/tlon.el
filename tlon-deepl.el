@@ -129,25 +129,28 @@ non-nil, don't ask for confirmation when no glossary is found."
       (when payload
 	(with-temp-file temp-file
           (insert payload)))
-      (let* ((curl-command
-              (concat (format "curl -s -X %s %s \
--H \"Content-Type: application/json\" \
--H \"Authorization: DeepL-Auth-Key %s\""
-			      method url tlon-deepl-key)
-		      (when payload (format " --data @%s" temp-file))))
-             (response (shell-command-to-string curl-command)))
-        ;; Cleanup temp file
-	(when payload (delete-file temp-file))
-        (with-temp-buffer
-          (insert response)
-          ;; Ensure Emacs interprets the inserted response as UTF-8
-          (set-buffer-multibyte t)
-          (set-buffer-file-coding-system 'utf-8-unix)
-          (goto-char (point-min))
-          ;; Ensure to handle proper response beginnings
-          (when (re-search-forward "^{\\|\\[{" nil t)
-            (goto-char (match-beginning 0)))
-          (funcall callback))))))
+      
+      (with-temp-buffer
+        (set-buffer-multibyte t)
+        (set-buffer-file-coding-system 'utf-8)
+        
+        (let ((args (list "-s" "-X" method url
+                         "-H" "Content-Type: application/json"
+                         "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key))))
+          (when payload
+            (setq args (append args (list "--data" (concat "@" temp-file)))))
+          (apply #'call-process "curl" nil t nil args))
+        
+        (when payload (delete-file temp-file))
+        
+        (goto-char (point-min))
+        (when (re-search-forward "^{\\|\\[{" nil t)
+          (goto-char (match-beginning 0)))
+        
+        (condition-case err
+            (funcall callback)
+          (error
+           (message "Error in DeepL callback: %S" err)))))))
 
 ;;;;; Translation
 
@@ -156,7 +159,9 @@ non-nil, don't ask for confirmation when no glossary is found."
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK.
 If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
 `tlon-deepl-print-translation'. If NO-GLOSSARY-OK is non-nil, don't ask for
-confirmation when no glossary is found."
+confirmation when no glossary is found.
+
+Returns the translated text as a string."
   (interactive)
   (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
 	 (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
@@ -168,30 +173,73 @@ confirmation when no glossary is found."
 				      (buffer-substring-no-properties (region-beginning) (region-end)))
 				    (thing-at-point 'word))))))
     (setq tlon-deepl-text text
-	  tlon-deepl-source-language source-lang
-	  tlon-deepl-target-language target-lang)
-    (tlon-deepl-request-wrapper 'translate
-				(or callback
-				    (lambda ()
-				      (tlon-deepl-print-translation 'copy)))
-				no-glossary-ok)))
+          tlon-deepl-source-language source-lang
+          tlon-deepl-target-language target-lang)
+    
+    (if callback
+        (tlon-deepl-request-wrapper 'translate callback no-glossary-ok)
+      (let ((temp-file (make-temp-file "deepl-direct-" nil ".json"))
+            (payload (json-encode `(("text" . ,(vector text))
+                                   ("source_lang" . ,source-lang)
+                                   ("target_lang" . ,target-lang))))
+            (output-buffer (generate-new-buffer " *deepl-output*"))
+            translation)
+        (with-temp-file temp-file
+          (insert payload))
+        
+        (call-process "curl" nil output-buffer nil
+                      "-s" "-X" "POST" 
+                      (concat tlon-deepl-url-prefix "translate")
+                      "-H" "Content-Type: application/json"
+                      "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key)
+                      "--data" (concat "@" temp-file))
+        
+        (with-current-buffer output-buffer
+          (goto-char (point-min))
+          (let ((response-content (buffer-substring-no-properties (point-min) (point-max))))
+            (when (string-match "\"text\":\\s-*\"\\([^\"]+\\)\"" response-content)
+              (setq translation (match-string 1 response-content))
+              (when (called-interactively-p 'any)
+                (kill-new translation)
+                (message "Translation copied to kill ring")))))
+        
+        (delete-file temp-file)
+        (kill-buffer output-buffer)
+        
+        translation))))
+
 
 (defun tlon-deepl-print-translation (&optional copy)
   "Print the translated text.
 If COPY is non-nil, copy the translation to the kill ring instead."
   (goto-char (point-min))
-  (let* ((json-array-type 'list)
-         (json-key-type 'string)
-         (json (cadar (json-read)))
-         (translation (alist-get "text" json nil nil #'string=))
-         (decoded translation)) ; String should be correctly decoded by json-read now
-    (when copy
-      (kill-new decoded))
-    (message (concat (when copy "Copied to kill ring: ") (replace-regexp-in-string "%" "%%" decoded)))))
+  (let ((buffer-content (buffer-substring-no-properties (point-min) (point-max)))
+        translation)
+    (if (string-match "\"text\":\\s-*\"\\([^\"]+\\)\"" buffer-content)
+        (setq translation (match-string 1 buffer-content))
+      (goto-char (point-min))
+      (condition-case nil
+          (let* ((json-array-type 'list)
+                 (json-key-type 'string)
+                 (json-object-type 'alist)
+                 (json-data (json-read))
+                 (translations (alist-get 'translations json-data))
+                 (first-translation (car translations)))
+            (when first-translation
+              (setq translation (alist-get 'text first-translation))))
+        (error nil)))
+    
+    (when translation
+      (when copy
+        (kill-new translation))
+      (message (concat (when copy "Copied to kill ring: ") 
+                       (replace-regexp-in-string "%" "%%" translation))))
+    
+    translation))
 
 (defun tlon-deepl-fix-encoding (string)
   "Fix encoding in STRING.
-The encoding in misinterpreted as ISO-8859-1 when it's actually UTF-8."
+The encoding is misinterpreted as ISO-8859-1 when it's actually UTF-8."
   (decode-coding-string (encode-coding-string string 'iso-8859-1) 'utf-8))
 
 (defun tlon-deepl-fix-encoding-persistent ()
@@ -262,10 +310,14 @@ found."
 				"Glossaries for source languages other than English are not currently supported.")
 			      " Translate anyway?")))
       (user-error "Aborted"))
-    (json-encode `(("text" . ,text)
-                   ("source_lang" . ,tlon-deepl-source-language)
-                   ("target_lang" . ,tlon-deepl-target-language)
-                   ("glossary_id" . ,glossary-id)))))
+    (let ((json-encoding-pretty-print nil)
+          (json-encoding-default-indentation "")
+          (json-encoding-lisp-style-closings nil)
+          (json-encoding-object-sort-predicate nil))
+      (json-encode `(("text" . ,text)
+                     ("source_lang" . ,tlon-deepl-source-language)
+                     ("target_lang" . ,tlon-deepl-target-language)
+                     ("glossary_id" . ,glossary-id))))))
 
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
@@ -538,3 +590,4 @@ otherwise return nil."
 
 (provide 'tlon-deepl)
 ;;; tlon-deepl.el ends here
+
