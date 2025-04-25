@@ -55,6 +55,9 @@ Requires `dubbing_id' and `language_code'.")
 (defconst tlon-dub-share-resource-endpoint "/workspace/resources/%s/share"
   "API endpoint format for sharing a workspace resource. Requires resource_id.")
 
+(defconst tlon-dub-add-speaker-segment-endpoint "/dubbing/resource/%s/speaker/%s/segment"
+  "API endpoint format for adding a speaker segment. Requires dubbing_id and speaker_id.")
+
 ;;;; Helper Functions
 
 (defun tlon-dub--get-content-type (filename)
@@ -348,6 +351,49 @@ segment IDs."
 		   (goto-char (point-min))
 		   (switch-to-buffer (current-buffer)))
 		 response)))))) ; Return raw response on error
+
+;;;###autoload
+(defun tlon-dub-add-speaker-segment (dubbing-id speaker-id start-time end-time text)
+  "Add a new segment for SPEAKER-ID within DUBBING-ID.
+
+- DUBBING-ID is the ID of the dubbing project.
+- SPEAKER-ID is the ID of the speaker within the project.
+- START-TIME is the start time of the segment in seconds (float).
+- END-TIME is the end time of the segment in seconds (float).
+- TEXT is the text content of the segment."
+  (interactive
+   (list (read-string "Dubbing ID: ")
+	 (read-string "Speaker ID: ")
+	 (read-number "Start time (seconds): ")
+	 (read-number "End time (seconds): ")
+	 (read-string "Segment text: ")))
+  (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
+	 (url (format (concat tlon-dub-api-base-url tlon-dub-add-speaker-segment-endpoint)
+		      dubbing-id speaker-id))
+	 ;; Construct the JSON payload
+	 (payload-alist `(("start_time" . ,start-time)
+			  ("end_time" . ,end-time)
+			  ("text" . ,text)))
+	 (payload (json-encode payload-alist))
+	 ;; Build the argument list for curl
+	 (args (list "curl" "-s"
+		     "--request" "POST"
+		     "--url" url
+		     "--header" "accept: application/json"
+		     "--header" "Content-Type: application/json"
+		     "--header" (format "xi-api-key: %s" api-key)
+		     "--data" payload))
+	 (command (mapconcat #'shell-quote-argument args " ")))
+    (message "Adding segment for speaker %s in project %s..." speaker-id dubbing-id)
+    (when tlon-debug (message "Debug: Running command: %s" command))
+    (let ((response (shell-command-to-string command)))
+      (message "Segment addition response:\n%s" response)
+      ;; Attempt to parse the JSON response
+      (condition-case err
+	  (json-parse-string response :object-type 'alist)
+	(error (progn
+		 (message "Error parsing JSON response: %s" err)
+		 response))))))
 
 (provide 'tlon-dub)
 
