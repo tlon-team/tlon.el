@@ -511,8 +511,8 @@ for meeting on DATE. Updates OUTPUT-BUFFER."
   "Save SUMMARY, copy INPUT-TRANSCRIPT-FILE to REPO, and delete original.
 Saves SUMMARY to `meeting-summaries.org`, copies INPUT-TRANSCRIPT-FILE (the
 formatted .md file) to `transcripts/[date].md` in REPO, commits/pushes changes,
-and then deletes the original INPUT-TRANSCRIPT-FILE. Updates OUTPUT-BUFFER
-with progress messages."
+and then deletes the original INPUT-TRANSCRIPT-FILE. DATE is the meeting date.
+Updates OUTPUT-BUFFER with progress messages."
   (let* ((summary-file (expand-file-name "meeting-summaries.org" repo))
          ;; Save the transcript in the 'transcripts' subdirectory with YYYY-MM-DD.md format
          (transcript-dir (expand-file-name "transcripts" repo))
@@ -616,11 +616,11 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
   "Transcribe AUDIO-FILE, format it, clean it, and create an AI summary.
 Runs `tlon-meet-transcribe-audio' (which handles transcription via whisperx, AI
 formatting, and AI cleanup) using the provided PARTICIPANTS list. Upon success
-(after cleanup), automatically runs `tlon-meet-summarize-transcript' on the
+\\=(after cleanup), automatically runs `tlon-meet-summarize-transcript' on the
 resulting formatted and cleaned Markdown (.md) transcript file, using the same
-PARTICIPANTS list to determine the repository.
-Interactively, prompts for AUDIO-FILE and PARTICIPANTS, using filename
-inference for initial participant suggestion."
+PARTICIPANTS list to determine the repository. Interactively, prompts for
+AUDIO-FILE and PARTICIPANTS, using filename inference for initial participant
+suggestion."
   (interactive (tlon-meet--get-file-and-participants)) ; Gets file and confirmed participants
   (message "Starting transcription and summarization for %s with participants: %s"
            audio-file (mapconcat #'identity participants ", "))
