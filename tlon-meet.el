@@ -630,9 +630,6 @@ inference for initial participant suggestion."
                                 (message "Transcription/Formatting/Cleanup complete. Starting summarization for %s" cleaned-transcript-file)
                                 ;; Call summarize non-interactively with the .md file and participants
                                 (tlon-meet-summarize-transcript cleaned-transcript-file participants))))
-				(message "Transcription/Formatting started. Starting summarization for %s" formatted-transcript-file)
-				;; Call summarize non-interactively with the .md file and participants
-				(tlon-meet-summarize-transcript formatted-transcript-file participants))))
 
 (defun tlon-meet--get-file-and-participants ()
   "Prompt user for audio file and participants, inferring participants first.
