@@ -178,12 +178,16 @@ Returns the translated text as a string."
     
     (if callback
         (tlon-deepl-request-wrapper 'translate callback no-glossary-ok)
-      (let ((temp-file (make-temp-file "deepl-direct-" nil ".json"))
-            (payload (json-encode `(("text" . ,(vector text))
-                                   ("source_lang" . ,source-lang)
-                                   ("target_lang" . ,target-lang))))
-            (output-buffer (generate-new-buffer " *deepl-output*"))
-            translation)
+      (let* ((temp-file (make-temp-file "deepl-direct-" nil ".json"))
+             (glossary-id (tlon-deepl-get-language-glossary target-lang))
+             (payload (json-encode
+                       (append `(("text" . ,(vector text))
+                                 ("source_lang" . ,source-lang)
+                                 ("target_lang" . ,target-lang))
+                               (when glossary-id
+                                 `(("glossary_id" . ,glossary-id))))))
+             (output-buffer (generate-new-buffer " *deepl-output*"))
+             translation)
         (with-temp-file temp-file
           (insert payload))
         
