@@ -179,30 +179,26 @@ Returns the translated text as a string."
           tlon-deepl-target-language target-lang)
     (tlon-deepl-request-wrapper 'translate callback no-glossary-ok)))
 
-(defun tlon-deepl-print-translation (&optional copy)
-  "Print the translated text parsed from the current buffer's JSON content.
-If COPY is non-nil, copy the translation to the kill ring instead.
+(defun tlon-deepl-print-translation ()
+  "Print the translated text and copy it to the kill ring.
 Returns the translated text as a string, or nil if parsing fails."
   (goto-char (point-min))
   (let (translation)
-    ;; Always use json-read for robust parsing
     (condition-case err
         (let* ((json-array-type 'list)
                (json-key-type 'string)
                (json-object-type 'alist)
                (json-data (json-read))
-               (translations (alist-get "translations" json-data nil nil #'string=)) ; Use string= for keys
+               (translations (alist-get "translations" json-data nil nil #'string=))
                (first-translation (car translations)))
           (when first-translation
-            (setq translation (alist-get "text" first-translation nil nil #'string=)))) ; Use string= for keys
+            (setq translation (alist-get "text" first-translation nil nil #'string=))))
       (error (message "Error parsing DeepL JSON response: %s" err)
-             nil)) ; Ensure translation remains nil on error
-
+             nil))
     (when translation
-      (when copy
-        (kill-new translation))
-      (message (concat (when copy "Copied to kill ring: ")
-                       (replace-regexp-in-string "%" "%%" translation))))
+      (kill-new translation)
+      (message (concat "Copied to kill ring: "
+		       (replace-regexp-in-string "%" "%%" translation))))
     translation))
 
 (defun tlon-deepl-translate-encode (&optional no-glossary-ok)
@@ -228,7 +224,9 @@ found."
                      ("source_lang" . ,tlon-deepl-source-language)
                      ("target_lang" . ,tlon-deepl-target-language)
                      ("glossary_id" . ,glossary-id)
-		     ("model_type" . "quality_optimized"))))))
+		     ;; disabled because it fails to respect newlines
+		     ;; ("model_type" . "quality_optimized")
+		     )))))
 
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
