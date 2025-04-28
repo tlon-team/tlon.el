@@ -592,19 +592,18 @@ After successful deletion, execute CALLBACK (if non-nil)."
 ;;;###autoload (autoload 'tlon-deepl-menu "tlon-deepl" nil t)
 (transient-define-prefix tlon-deepl-menu ()
   "DeepL menu."
-  ["Translate"
-   ("t" "Translate text" tlon-deepl-translate)
-   ("a" "Translate abstract (current)" tlon-deepl-translate-abstract)
-   ("m" "Translate missing abstracts" tlon-deepl-translate-missing-abstracts)
-   ""
-   "Glossaries"
-   ("l" "List" tlon-deepl-select-glossary)
-   ("g" "Retrieve" tlon-deepl-get-glossaries)
-   ("c" "Create" tlon-deepl-glossary-create)
-   ("u" "Update" tlon-deepl-glossary-update)
-   ("d" "Delete" tlon-deepl-glossary-delete)
-   ""
-   ("e" "Ediff" tlon-deepl-diff)])
+  [["Translate"
+    ("t" "Translate text" tlon-deepl-translate)
+    ("a" "Translate abstract (current)" tlon-deepl-translate-abstract)
+    ("m" "Translate missing abstracts" tlon-deepl-translate-missing-abstracts)]
+   ["Glossaries"
+    ("s" "Select" tlon-deepl-select-glossary)
+    ("r" "Retrieve" tlon-deepl-get-glossaries)
+    ("c" "Create" tlon-deepl-glossary-create)
+    ("u" "Update" tlon-deepl-glossary-update)
+    ("d" "Delete" tlon-deepl-glossary-delete)
+    ""
+    ("e" "Ediff" tlon-deepl-diff)]])
 
 (provide 'tlon-deepl)
 ;;; tlon-deepl.el ends here
