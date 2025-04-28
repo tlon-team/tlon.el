@@ -175,43 +175,7 @@ Returns the translated text as a string."
     (setq tlon-deepl-text text
           tlon-deepl-source-language source-lang
           tlon-deepl-target-language target-lang)
-    
-    (if callback
-        (tlon-deepl-request-wrapper 'translate callback no-glossary-ok)
-      (let* ((temp-file (make-temp-file "deepl-direct-" nil ".json"))
-             (glossary-id (tlon-deepl-get-language-glossary target-lang))
-             (payload (json-encode
-                       (append `(("text" . ,(vector text))
-                                 ("source_lang" . ,source-lang)
-                                 ("target_lang" . ,target-lang))
-                               (when glossary-id
-                                 `(("glossary_id" . ,glossary-id))))))
-             (output-buffer (generate-new-buffer " *deepl-output*"))
-             translation)
-        (with-temp-file temp-file
-          (insert payload))
-        
-        (call-process "curl" nil output-buffer nil
-                      "-s" "-X" "POST" 
-                      (concat tlon-deepl-url-prefix "translate")
-                      "-H" "Content-Type: application/json"
-                      "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key)
-                      "--data" (concat "@" temp-file))
-        
-        (with-current-buffer output-buffer
-          (goto-char (point-min))
-          (let ((response-content (buffer-substring-no-properties (point-min) (point-max))))
-            (when (string-match "\"text\":\\s-*\"\\([^\"]+\\)\"" response-content)
-              (setq translation (match-string 1 response-content))
-              (kill-new translation)
-              (message "Translation copied to kill ring: %s" 
-                       (replace-regexp-in-string "%" "%%" translation)))))
-        
-        (delete-file temp-file)
-        (kill-buffer output-buffer)
-        
-        translation))))
-
+    (tlon-deepl-request-wrapper 'translate callback no-glossary-ok)))
 
 (defun tlon-deepl-print-translation (&optional copy)
   "Print the translated text.
