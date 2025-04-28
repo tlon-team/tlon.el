@@ -225,7 +225,7 @@ This section lists non-interactive functions and variables used internally or po
 + ~tlon-deepl-translate-encode~ :: Generates the JSON payload for a translation request. Includes the text (as a vector), source language, target language, and the relevant glossary ID (retrieved via ~tlon-deepl-get-language-glossary~). Handles the =NO-GLOSSARY-OK= logic and potential user abortion if no glossary is found and confirmation is denied.
 
 #+findex: tlon-deepl-glossary-create-encode
-+ ~tlon-deepl-glossary-create-encode~ :: Generates the JSON payload for creating a glossary. Determines the glossary file path (~tlon-glossary-make-file~), reads its content (UTF-8 encoded TSV), and includes the glossary name, source language ("en"), target language, entries, and format ("tsv") in the JSON object.
++ ~tlon-deepl-glossary-create-encode~ :: Generates the JSON payload for creating a glossary. Determines the glossary file path (~tlon-glossary-make-file~), reads its content (as a UTF-8 string), and includes the glossary name, source language ("en"), target language, the raw entries string, and format ("tsv") in the JSON object. ~json-encode~ handles the necessary escaping for the entries string.
 
 #+findex: tlon-deepl-glossary-delete-formatter
 + ~tlon-deepl-glossary-delete-formatter~ :: Function used by ~tlon-deepl-request-wrapper~ to generate the specific URL for deleting a glossary. It calls ~tlon-deepl-select-glossary~ to get the ID and appends it to the base glossaries endpoint.
