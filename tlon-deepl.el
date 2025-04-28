@@ -538,7 +538,7 @@ even if the caller passes data."
   (setq tlon-deepl-target-language language)
   (tlon-deepl-request-wrapper 'glossary-create))
 
-(defun tlon-deepl-glossary-create-encode ()
+(defun tlon-deepl-glossary-create-encode (&rest _)
   "Return a JSON representation of the glossary to be created."
   (let* ((extension "tsv")
 	 (file (tlon-glossary-make-file (upcase tlon-deepl-target-language) extension))
