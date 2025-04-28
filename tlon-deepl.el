@@ -72,6 +72,13 @@ The cdr of each cons cell is a list of the form
 (defvar tlon-deepl-text nil
   "The text to be translated in the current API request.")
 
+(defvar tlon-deepl--override-glossary-id nil
+  "When non-nil, force `tlon-deepl-glossary-delete-formatter' to use this ID.
+
+This is a dynamically-bound helper set by `tlon-deepl-glossary-delete'
+so the formatter can build the proper endpoint without re-prompting
+the user.")
+
 (defconst tlon-deepl-supported-glossary-languages
   '("da" "de" "en" "es" "fr" "it" "ja" "ko" "nb" "nl" "pl" "pt" "ro" "ru" "sv" "zh")
   "A list of the languages for which glossaries are currently supported.
@@ -507,43 +514,15 @@ even if the caller passes data."
 
 ;;;###autoload
 (defun tlon-deepl-glossary-update (language)
-  "Update a DeepL glossary for LANGUAGE by deleting and recreating it."
+  "Update a DeepL glossary for LANGUAGE by deleting and recreating it.
+
+The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
+`tlon-deepl-glossary-create'."
   (interactive (list (tlon-select-language 'code 'babel)))
-  (let ((target-lang-code language)
-        glossary-id)
-    ;; Find glossary ID for the target language
-    (dolist (glossary tlon-deepl-glossaries)
-      (when (string= target-lang-code (alist-get "target_lang" glossary nil nil #'string=))
-        (setq glossary-id (alist-get "glossary_id" glossary nil nil #'string=))))
-    
-    (if glossary-id
-        (progn
-          (message "Updating glossary for %s..." target-lang-code)
-          ;; Extract glossary data first so it's ready for recreation
-          (tlon-extract-glossary target-lang-code 'deepl-api)
-          ;; Define our custom callback for after deletion
-          (let ((create-glossary-fn
-                 (lambda ()
-                   (message "Creating new glossary for %s..." target-lang-code)
-                   (setq tlon-deepl-target-language target-lang-code)
-                   (tlon-deepl-request-wrapper 'glossary-create))))
-            ;; Use a direct URL to avoid prompting the user
-            (let ((url (concat tlon-deepl-url-prefix "glossaries/" glossary-id))
-                  (temp-buffer (generate-new-buffer " *temp*")))
-              (unwind-protect
-                  (progn
-                    (call-process "curl" nil temp-buffer nil
-                                  "-s" "-X" "DELETE" url
-                                  "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key))
-                    (message "Deleted glossary for %s" target-lang-code)
-                    ;; Wait a moment for the API to process the deletion
-                    (sit-for 1)
-                    ;; Now create the new glossary
-                    (funcall create-glossary-fn))
-                (kill-buffer temp-buffer)))))
-      ;; If no glossary exists, just create a new one
-      (message "No existing glossary found for %s. Creating new glossary..." target-lang-code)
-      (tlon-deepl-glossary-create target-lang-code))))
+  (tlon-deepl-glossary-delete
+   language
+   (lambda ()
+     (tlon-deepl-glossary-create language))))
 
 (defun tlon-deepl-glossary-create-encode (&rest _)
   "Return a JSON representation of the glossary to be created."
@@ -571,23 +550,37 @@ even if the caller passes data."
 ;;;;;; Delete glossary
 
 ;;;###autoload
-(defun tlon-deepl-glossary-delete (&optional glossary-id callback)
-  "Delete a DeepL glossary with GLOSSARY-ID.
-If GLOSSARY-ID is nil, prompt for one. If CALLBACK is non-nil,
-call it after deletion is complete."
+(defun tlon-deepl-glossary-delete (&optional language-or-id callback)
+  "Delete a DeepL glossary.
+
+If called interactively, prompt the user to choose a glossary unless
+LANGUAGE-OR-ID is supplied.  Programmatically, supply either a target
+language code (≤ 3 chars, e.g., \"es\") or a glossary ID.
+
+After successful deletion, execute CALLBACK (if non-nil)."
   (interactive)
-  (let ((tlon-deepl-glossary-delete-callback
-         (if callback
-             (lambda () 
-               (tlon-deepl-get-glossaries)
-               (message "Deleted glossary.")
-               (funcall callback))
-           #'tlon-deepl-glossary-delete-callback)))
-    (tlon-deepl-request-wrapper 'glossary-delete)))
+  (let* ((id
+          (cond
+           ((not language-or-id) nil)
+           ;; language code supplied
+           ((and (stringp language-or-id)
+		 (<= (length language-or-id) 3))
+            (tlon-deepl-get-language-glossary language-or-id))
+           ;; id supplied directly
+           ((stringp language-or-id) language-or-id))))
+    (let ((tlon-deepl--override-glossary-id id))
+      (tlon-deepl-request-wrapper
+       'glossary-delete
+       (lambda ()
+	 (tlon-deepl-glossary-delete-callback)
+	 (when callback (funcall callback)))))))
 
 (defun tlon-deepl-glossary-delete-formatter ()
   "URL formatter for `tlon-deepl-glossary-delete'."
-  (concat tlon-deepl-url-prefix "glossaries/" (tlon-deepl-select-glossary)))
+  (concat tlon-deepl-url-prefix
+	  "glossaries/"
+	  (or tlon-deepl--override-glossary-id
+	      (tlon-deepl-select-glossary))))
 
 (defun tlon-deepl-glossary-delete-callback ()
   "Callback for `tlon-deepl-glossary-delete'."
