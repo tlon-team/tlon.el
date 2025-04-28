@@ -510,12 +510,16 @@ otherwise return nil."
   (interactive)
   (tlon-deepl-request-wrapper 'glossary-get))
 
-(defun tlon-deepl-glossary-get-callback ()
-  "Callback for `tlon-deepl-get-glossaries'."
+(defun tlon-deepl-glossary-get-callback (&rest _)
+  "Callback for `tlon-deepl-get-glossaries'.
+
+Accepts and ignores any extra arguments so it can be safely called
+even if the caller passes data."
   (goto-char (point-min))
   (let ((json-array-type 'list)
-	(json-key-type 'string))
-    (setq tlon-deepl-glossaries (cdar (tlon-read-json))))
+        (json-key-type 'string))
+    (setq tlon-deepl-glossaries
+          (alist-get "glossaries" (tlon-read-json) nil nil #'string=)))
   (message "Read glossaries from DeepL API."))
 
 (tlon-deepl-get-glossaries)
