@@ -227,7 +227,8 @@ found."
       (json-encode `(("text" . ,text)
                      ("source_lang" . ,tlon-deepl-source-language)
                      ("target_lang" . ,tlon-deepl-target-language)
-                     ("glossary_id" . ,glossary-id))))))
+                     ("glossary_id" . ,glossary-id)
+		     ("model_type" . "quality_optimized"))))))
 
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
