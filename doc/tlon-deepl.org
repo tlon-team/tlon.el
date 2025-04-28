@@ -132,6 +132,14 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   3. Sets the internal ~tlon-deepl-target-language~ variable.
   4. Calls ~tlon-deepl-request-wrapper~ with the =glossary-create= type. The callback (~tlon-deepl-glossary-create-callback~) refreshes the local glossary list and messages the API response.
 
+#+findex: tlon-deepl-glossary-update
++ ~tlon-deepl-glossary-update~ :: Updates a DeepL glossary for a specified language by deleting and recreating it.
+  1. Prompts for the target =LANGUAGE= using ~tlon-select-language~.
+  2. Searches for an existing glossary with the target language.
+  3. If found, deletes the existing glossary and then creates a new one with updated content.
+  4. If no existing glossary is found, simply creates a new one.
+  5. Provides progress messages throughout the process.
+
 #+findex: tlon-deepl-glossary-delete
 + ~tlon-deepl-glossary-delete~ :: Deletes a DeepL glossary.
   1. Calls ~tlon-deepl-request-wrapper~ with the =glossary-delete= type.
@@ -165,6 +173,7 @@ It provides the following groups and commands:
   + =l= :: List/Select glossary (~tlon-deepl-select-glossary~)
   + =g= :: Retrieve glossaries from API (~tlon-deepl-get-glossaries~)
   + =c= :: Create glossary (~tlon-deepl-glossary-create~)
+  + =u= :: Update glossary (~tlon-deepl-glossary-update~)
   + =d= :: Delete glossary (~tlon-deepl-glossary-delete~)
 + *Other*:
   + =e= :: Ediff translations (~tlon-deepl-diff~)

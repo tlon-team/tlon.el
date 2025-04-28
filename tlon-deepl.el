@@ -538,6 +538,30 @@ even if the caller passes data."
   (setq tlon-deepl-target-language language)
   (tlon-deepl-request-wrapper 'glossary-create))
 
+;;;###autoload
+(defun tlon-deepl-glossary-update (language)
+  "Update a DeepL glossary for LANGUAGE by deleting and recreating it."
+  (interactive (list (tlon-select-language 'code 'babel)))
+  (let ((glossaries (tlon-deepl-get-list-of-glossaries))
+        (target-lang-code language)
+        glossary-id)
+    ;; Find glossary ID for the target language
+    (dolist (glossary tlon-deepl-glossaries)
+      (when (string= target-lang-code (alist-get "target_lang" glossary nil nil #'string=))
+        (setq glossary-id (alist-get "glossary_id" glossary nil nil #'string=))))
+    
+    (if glossary-id
+        (progn
+          (message "Updating glossary for %s..." target-lang-code)
+          ;; Delete the glossary first, then create a new one with the callback
+          (let ((create-callback (lambda ()
+                                   (message "Creating new glossary for %s..." target-lang-code)
+                                   (tlon-deepl-glossary-create target-lang-code))))
+            (tlon-deepl-glossary-delete glossary-id create-callback)))
+      ;; If no glossary exists, just create a new one
+      (message "No existing glossary found for %s. Creating new glossary..." target-lang-code)
+      (tlon-deepl-glossary-create target-lang-code))))
+
 (defun tlon-deepl-glossary-create-encode (&rest _)
   "Return a JSON representation of the glossary to be created."
   (let* ((extension "tsv")
@@ -564,10 +588,19 @@ even if the caller passes data."
 ;;;;;; Delete glossary
 
 ;;;###autoload
-(defun tlon-deepl-glossary-delete ()
-  "Delete a DeepL glossary."
+(defun tlon-deepl-glossary-delete (&optional glossary-id callback)
+  "Delete a DeepL glossary with GLOSSARY-ID.
+If GLOSSARY-ID is nil, prompt for one. If CALLBACK is non-nil,
+call it after deletion is complete."
   (interactive)
-  (tlon-deepl-request-wrapper 'glossary-delete))
+  (let ((tlon-deepl-glossary-delete-callback 
+         (if callback
+             (lambda () 
+               (tlon-deepl-get-glossaries)
+               (message "Deleted glossary.")
+               (funcall callback))
+           #'tlon-deepl-glossary-delete-callback)))
+    (tlon-deepl-request-wrapper 'glossary-delete)))
 
 (defun tlon-deepl-glossary-delete-formatter ()
   "URL formatter for `tlon-deepl-glossary-delete'."
@@ -592,6 +625,7 @@ even if the caller passes data."
    ("l" "List" tlon-deepl-select-glossary)
    ("g" "Retrieve" tlon-deepl-get-glossaries)
    ("c" "Create" tlon-deepl-glossary-create)
+   ("u" "Update" tlon-deepl-glossary-update)
    ("d" "Delete" tlon-deepl-glossary-delete)
    ""
    ("e" "Ediff" tlon-deepl-diff)])
