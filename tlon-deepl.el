@@ -456,8 +456,10 @@ The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
 	 (name (file-name-base file))
 	 entries)
     (with-temp-buffer
-      (insert-file-contents file)
-      (setq entries (encode-coding-string (buffer-string) 'utf-8))
+      (insert-file-contents file) ; Assumes file is UTF-8
+      ;; Pass the raw buffer string directly to json-encode.
+      ;; json-encode handles JSON string escaping correctly.
+      (setq entries (buffer-string))
       (json-encode `(("name" . ,name)
 		     ("source_lang" . "en")
 		     ("target_lang" . ,tlon-deepl-target-language)
