@@ -542,8 +542,7 @@ even if the caller passes data."
 (defun tlon-deepl-glossary-update (language)
   "Update a DeepL glossary for LANGUAGE by deleting and recreating it."
   (interactive (list (tlon-select-language 'code 'babel)))
-  (let ((glossaries (tlon-deepl-get-list-of-glossaries))
-        (target-lang-code language)
+  (let ((target-lang-code language)
         glossary-id)
     ;; Find glossary ID for the target language
     (dolist (glossary tlon-deepl-glossaries)
@@ -553,11 +552,28 @@ even if the caller passes data."
     (if glossary-id
         (progn
           (message "Updating glossary for %s..." target-lang-code)
-          ;; Delete the glossary first, then create a new one with the callback
-          (let ((create-callback (lambda ()
-                                   (message "Creating new glossary for %s..." target-lang-code)
-                                   (tlon-deepl-glossary-create target-lang-code))))
-            (tlon-deepl-glossary-delete glossary-id create-callback)))
+          ;; Extract glossary data first so it's ready for recreation
+          (tlon-extract-glossary target-lang-code 'deepl-api)
+          ;; Define our custom callback for after deletion
+          (let ((create-glossary-fn 
+                 (lambda ()
+                   (message "Creating new glossary for %s..." target-lang-code)
+                   (setq tlon-deepl-target-language target-lang-code)
+                   (tlon-deepl-request-wrapper 'glossary-create))))
+            ;; Use a direct URL to avoid prompting the user
+            (let ((url (concat tlon-deepl-url-prefix "glossaries/" glossary-id))
+                  (temp-buffer (generate-new-buffer " *temp*")))
+              (unwind-protect
+                  (progn
+                    (call-process "curl" nil temp-buffer nil
+                                  "-s" "-X" "DELETE" url
+                                  "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key))
+                    (message "Deleted glossary for %s" target-lang-code)
+                    ;; Wait a moment for the API to process the deletion
+                    (sit-for 1)
+                    ;; Now create the new glossary
+                    (funcall create-glossary-fn))
+                (kill-buffer temp-buffer)))))
       ;; If no glossary exists, just create a new one
       (message "No existing glossary found for %s. Creating new glossary..." target-lang-code)
       (tlon-deepl-glossary-create target-lang-code))))
