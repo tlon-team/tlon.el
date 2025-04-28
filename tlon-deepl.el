@@ -196,13 +196,11 @@ If COPY is non-nil, copy the translation to the kill ring instead."
             (when first-translation
               (setq translation (alist-get 'text first-translation))))
         (error nil)))
-    
     (when translation
       (when copy
         (kill-new translation))
-      (message (concat (when copy "Copied to kill ring: ") 
+      (message (concat (when copy "Copied to kill ring: ")
                        (replace-regexp-in-string "%" "%%" translation))))
-    
     translation))
 
 (defun tlon-deepl-fix-encoding (string)
