@@ -99,7 +99,7 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   8. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
 
 #+findex: tlon-deepl-translate-abstract
-+ ~tlon-deepl-translate-abstract~ :: Translates the =abstract= field of a BibTeX entry =KEY= into relevant languages. Takes optional =ABSTRACT=, =KEY=, =LANGS= (list of target language names), and =INTERACTIVE-CALL-P=.
++ ~tlon-deepl-translate-abstract~ :: Translates the =abstract= field of a BibTeX entry =KEY= into specified languages. Takes optional =ABSTRACT=, =KEY=, =LANGS= (list of target language names), and =INTERACTIVE-CALL-P=.
   - Determines context (key, abstract text, source language code) using ~tlon-deepl--get-abstract-context~ (passing =INTERACTIVE-CALL-P=).
   - If =INTERACTIVE-CALL-P= is non-nil, delegates to ~tlon-deepl--translate-abstract-interactive~ which prompts for a single target language and translates.
   - If =INTERACTIVE-CALL-P= is nil, delegates to ~tlon-deepl--translate-abstract-non-interactive~ which iterates through target languages specified in =LANGS= (or ~tlon-project-target-languages~ if =LANGS= is nil), checks for existing translations in the JSON file, and translates missing ones.
@@ -107,12 +107,11 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 #+findex: tlon-deepl-translate-missing-abstracts
 + ~tlon-deepl-translate-missing-abstracts~ :: Iterates through all BibTeX keys found in ~tlon-file-fluid~ and ~tlon-file-stable~ and translates abstracts that are missing translations for any language specified in ~tlon-project-target-languages~.
   1. Gets a unique list of all keys from the specified bibliography files using ~tlon-tex-get-keys-in-file~.
-  2. For each =KEY=, calls the internal helper ~tlon-deepl--abstract-translation-missing-p~.
-  3. The helper checks if the entry has a =langid= and =abstract= field.
-  4. It then iterates through ~tlon-project-target-languages~. If a target language is different from the source language and the corresponding =abstract-<lang>= field is missing or empty, the helper returns =t=.
-  5. If the helper returns =t= (meaning *at least one* translation is missing), it messages that it is processing the key and calls ~tlon-deepl-translate-abstract~ for that =KEY= (passing =tlon-ai-batch-fun= as t).
-  6. ~tlon-deepl-translate-abstract~ then handles the check for *each specific* target language and only initiates translation for those actually missing.
-  7. Provides progress messages during the process.
+  2. For each =KEY=, retrieves its abstract and source language using ~tlon-deepl--get-abstract-context~.
+  3. Iterates through the target languages specified in =LANGS= (or ~tlon-project-target-languages~ if =LANGS= is nil).
+  4. For each target language (that is not the source language), it checks if a translation already exists in the JSON file using ~tlon-deepl--get-existing-translation~.
+  5. If any translations are missing for the current =KEY=, it calls ~tlon-deepl-translate-abstract~ non-interactively, passing the =KEY=, the abstract text, and the list of *specifically missing* languages for that key.
+  6. Provides progress messages during the process.
 
 *** Glossaries
 :PROPERTIES:
@@ -195,19 +194,19 @@ This section lists non-interactive functions and variables used internally or po
   1. Retrieves parameters (method, URL suffix/function, default callback, encoding function) from ~tlon-deepl-parameters~ based on =TYPE=.
   2. Constructs the full API =URL=.
   3. If an encoding function exists, calls it to generate the JSON =PAYLOAD= (passing =NO-GLOSSARY-OK=). Writes the payload to a temporary file.
-  4. Builds the =curl= command string including method, URL, headers (Content-Type, Authorization with ~tlon-deepl-key~), and payload data if applicable.
-  5. Executes the =curl= command using =shell-command-to-string= to get the =RESPONSE=.
+  4. Builds the =curl= command arguments list including method, URL, headers (Content-Type, Authorization with ~tlon-deepl-key~), and payload data if applicable.
+  5. Executes the =curl= command using =call-process=, directing output to a temporary buffer.
   6. Deletes the temporary payload file if created.
-  7. Inserts the response into a temporary buffer, explicitly sets the buffer's coding system to UTF-8, positions point at the start of the JSON/list, and calls the specified =CALLBACK= function.
- 
+  7. In the temporary buffer, sets multibyte mode and UTF-8 coding system, positions point at the start of the JSON/list, and calls the specified =CALLBACK= function. Handles errors during callback execution.
+
 *** Callbacks
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-callbacks
 :END:
- 
+
 #+findex: tlon-deepl-print-translation
-+ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response (assuming the buffer content is UTF-8), extracts the translated text, and either messages it or copies it to the kill ring if =COPY= is non-nil. Returns the translation string for potential use by callers.
- 
++ ~tlon-deepl-print-translation~ :: Default callback for translation requests. Parses the JSON response from the current buffer using ~json-read~, extracts the translated text, and either messages it or copies it to the kill ring if =COPY= is non-nil. Returns the translation string or nil if parsing fails.
+
 #+findex: tlon-deepl-glossary-create-callback
 + ~tlon-deepl-glossary-create-callback~ :: Callback for glossary creation. Resets ~tlon-deepl-target-language~, refreshes the local glossary list using ~tlon-deepl-get-glossaries~, and messages the API response.
 
@@ -242,16 +241,11 @@ This section lists non-interactive functions and variables used internally or po
 #+findex: tlon-deepl-get-language-glossary
 + ~tlon-deepl-get-language-glossary~ :: Finds the glossary ID for a specific target =LANGUAGE= from the cached ~tlon-deepl-glossaries~ list. Returns nil if the source language is not "en" (as current glossaries are EN -> X). Uses ~tlon-lookup~.
 
-#+findex: tlon-deepl--abstract-translation-missing-p
-+ ~tlon-deepl--abstract-translation-missing-p~ :: Internal helper function for ~tlon-deepl-translate-missing-abstracts~. Takes a BibTeX =KEY= and returns =t= if the entry has an abstract and source language (checked via ~tlon-bibliography-lookup~), but is missing a non-empty abstract translation field (e.g., =abstract-es=) for *any* target language defined in ~tlon-project-target-languages~ (excluding the source language itself). This check uses ~tlon-bibliography-lookup~ against the BibTeX files/cache. *Note*: This function only determines if *any* translation might be missing; the actual check for a *specific* language's existence in the JSON file happens later within ~tlon-deepl-translate-abstract~.
 #+findex: tlon-deepl--get-existing-translation
-+ ~tlon-deepl--get-existing-translation~ :: Internal helper function used by ~tlon-deepl--translate-abstract-non-interactive~. Takes a BibTeX =KEY= and a =TARGET-LANG= code. Reads the abstract translations JSON file (~tlon-file-abstract-translations~) using ~tlon-read-abstract-translations~ and returns the translation string if found for the given key and language, and if it's non-empty. Returns =nil= otherwise.
++ ~tlon-deepl--get-existing-translation~ :: Internal helper function used by ~tlon-deepl--translate-abstract-non-interactive~ and ~tlon-deepl-translate-missing-abstracts~. Takes a BibTeX =KEY= and a =TARGET-LANG= code. Reads the abstract translations JSON file (~tlon-file-abstract-translations~) using ~tlon-read-abstract-translations~ and returns the translation string if found for the given key and language, and if it's non-empty. Returns =nil= otherwise.
 #+findex: tlon-deepl--get-abstract-context
-+ ~tlon-deepl--get-abstract-context~ :: Internal helper for ~tlon-deepl-translate-abstract~. Takes optional =ABSTRACT=, =KEY=, and =INTERACTIVE-CALL-P=. Determines the BibTeX key, abstract text, and source language code based on arguments and context (using =INTERACTIVE-CALL-P= to check if called interactively). Returns a list =(KEY TEXT SOURCE-LANG-CODE)= or nil.
++ ~tlon-deepl--get-abstract-context~ :: Internal helper for ~tlon-deepl-translate-abstract~ and ~tlon-deepl-translate-missing-abstracts~. Takes optional =ABSTRACT=, =KEY=, and =INTERACTIVE-CALL-P=. Determines the BibTeX key, abstract text, and source language code based on arguments and context (using =INTERACTIVE-CALL-P= to check if called interactively). Returns a list =(KEY TEXT SOURCE-LANG-CODE)= or nil.
 #+findex: tlon-deepl--translate-abstract-interactive
 + ~tlon-deepl--translate-abstract-interactive~ :: Internal helper for ~tlon-deepl-translate-abstract~. Handles the interactive translation flow: prompts for target language, calls ~tlon-deepl-translate~.
 #+findex: tlon-deepl--translate-abstract-non-interactive
-+ ~tlon-deepl--translate-abstract-non-interactive~ :: Internal helper for ~tlon-deepl-translate-abstract~. Handles the non-interactive translation flow: iterates through target languages, checks JSON for existing translations via ~tlon-deepl--get-existing-translation~, calls ~tlon-deepl-translate~ for missing ones.
-
-#+findex: tlon-deepl-fix-encoding
-+ ~tlon-deepl-fix-encoding~ :: Corrects a specific encoding misinterpretation where a UTF-8 string is read as ISO-8859-1. Takes the misencoded =STRING=, re-encodes it as ISO-8859-1, and then decodes it correctly as UTF-8.
++ ~tlon-deepl--translate-abstract-non-interactive~ :: Internal helper for ~tlon-deepl-translate-abstract~. Handles the non-interactive translation flow: iterates through target languages specified in =LANGS=, checks JSON for existing translations via ~tlon-deepl--get-existing-translation~, calls ~tlon-deepl-translate~ for missing ones.
