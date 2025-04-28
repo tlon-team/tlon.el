@@ -522,7 +522,7 @@ even if the caller passes data."
           ;; Extract glossary data first so it's ready for recreation
           (tlon-extract-glossary target-lang-code 'deepl-api)
           ;; Define our custom callback for after deletion
-          (let ((create-glossary-fn 
+          (let ((create-glossary-fn
                  (lambda ()
                    (message "Creating new glossary for %s..." target-lang-code)
                    (setq tlon-deepl-target-language target-lang-code)
@@ -576,7 +576,7 @@ even if the caller passes data."
 If GLOSSARY-ID is nil, prompt for one. If CALLBACK is non-nil,
 call it after deletion is complete."
   (interactive)
-  (let ((tlon-deepl-glossary-delete-callback 
+  (let ((tlon-deepl-glossary-delete-callback
          (if callback
              (lambda () 
                (tlon-deepl-get-glossaries)
