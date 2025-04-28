@@ -203,6 +203,42 @@ If COPY is non-nil, copy the translation to the kill ring instead."
                        (replace-regexp-in-string "%" "%%" translation))))
     translation))
 
+(defun tlon-deepl-translate-encode (&optional no-glossary-ok)
+  "Return a JSON representation of the text to be translated to language.
+If NO-GLOSSARY-OK is non-nil, don't ask for confirmation when no glossary is
+found."
+  (let ((glossary-id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
+        (text (vector tlon-deepl-text)))
+    (unless
+	(or glossary-id
+	    no-glossary-ok
+	    (not (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
+	    (y-or-n-p (concat (if (string= "en" tlon-deepl-source-language)
+				  (format "No \"en-%s\" glossary found." tlon-deepl-target-language)
+				"Glossaries for source languages other than English are not currently supported.")
+			      " Translate anyway?")))
+      (user-error "Aborted"))
+    (let ((json-encoding-pretty-print nil)
+          (json-encoding-default-indentation "")
+          (json-encoding-lisp-style-closings nil)
+          (json-encoding-object-sort-predicate nil))
+      (json-encode `(("text" . ,text)
+                     ("source_lang" . ,tlon-deepl-source-language)
+                     ("target_lang" . ,tlon-deepl-target-language)
+                     ("glossary_id" . ,glossary-id))))))
+
+(defun tlon-deepl-get-language-glossary (language)
+  "Return the glossary ID for LANGUAGE.
+Since we only have glossaries for English as the source language, return nil
+when the source language is not English."
+  (when (string= "en" tlon-deepl-source-language)
+    (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
+
+;;;;;; Fix encoding
+
+;; These functions are no longer used. Delete them when you are done revising
+;; the relevant functionality.
+
 (defun tlon-deepl-fix-encoding (string)
   "Fix encoding in STRING.
 The encoding is misinterpreted as ISO-8859-1 when it's actually UTF-8."
@@ -260,37 +296,6 @@ The encoding is misinterpreted as ISO-8859-1 when it's actually UTF-8."
 	    (replace (cdr cons)))
 	(while (re-search-forward search nil t)
 	  (replace-match replace t t))))))
-
-(defun tlon-deepl-translate-encode (&optional no-glossary-ok)
-  "Return a JSON representation of the text to be translated to language.
-If NO-GLOSSARY-OK is non-nil, don't ask for confirmation when no glossary is
-found."
-  (let ((glossary-id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
-        (text (vector tlon-deepl-text)))
-    (unless
-	(or glossary-id
-	    no-glossary-ok
-	    (not (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
-	    (y-or-n-p (concat (if (string= "en" tlon-deepl-source-language)
-				  (format "No \"en-%s\" glossary found." tlon-deepl-target-language)
-				"Glossaries for source languages other than English are not currently supported.")
-			      " Translate anyway?")))
-      (user-error "Aborted"))
-    (let ((json-encoding-pretty-print nil)
-          (json-encoding-default-indentation "")
-          (json-encoding-lisp-style-closings nil)
-          (json-encoding-object-sort-predicate nil))
-      (json-encode `(("text" . ,text)
-                     ("source_lang" . ,tlon-deepl-source-language)
-                     ("target_lang" . ,tlon-deepl-target-language)
-                     ("glossary_id" . ,glossary-id))))))
-
-(defun tlon-deepl-get-language-glossary (language)
-  "Return the glossary ID for LANGUAGE.
-Since we only have glossaries for English as the source language, return nil
-when the source language is not English."
-  (when (string= "en" tlon-deepl-source-language)
-    (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
 
 ;;;;;; Tex
 
