@@ -136,24 +136,19 @@ non-nil, don't ask for confirmation when no glossary is found."
       (when payload
 	(with-temp-file temp-file
           (insert payload)))
-      
       (with-temp-buffer
         (set-buffer-multibyte t)
         (set-buffer-file-coding-system 'utf-8)
-        
         (let ((args (list "-s" "-X" method url
-                         "-H" "Content-Type: application/json"
-                         "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key))))
+                          "-H" "Content-Type: application/json"
+                          "-H" (concat "Authorization: DeepL-Auth-Key " tlon-deepl-key))))
           (when payload
             (setq args (append args (list "--data" (concat "@" temp-file)))))
           (apply #'call-process "curl" nil t nil args))
-        
         (when payload (delete-file temp-file))
-        
         (goto-char (point-min))
         (when (re-search-forward "^{\\|\\[{" nil t)
           (goto-char (match-beginning 0)))
-        
         (condition-case err
             (funcall callback)
           (error
@@ -240,7 +235,6 @@ Since we only have glossaries for English as the source language, return nil
 when the source language is not English."
   (when (string= "en" tlon-deepl-source-language)
     (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
-
 
 ;;;;;; Tex
 
