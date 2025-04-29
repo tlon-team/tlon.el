@@ -696,7 +696,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
         (condition-case err
             (setq tlon-meet--recording-watch-descriptor
                   (file-notify-add-watch dir-to-watch
-                                         '(created) ; Watch specifically for creation
+                                         '(change)
                                          #'tlon-meet--handle-new-recording))
           (file-notify-error (message "Error starting file monitor: %s" err)))
         (if tlon-meet--recording-watch-descriptor
