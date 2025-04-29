@@ -1159,8 +1159,8 @@ specified in `tlon-ai-help-model'."
                              (lambda (response info)
                                (tlon-ai-ask-for-help-callback response info))
                              tlon-ai-help-model 'no-context-check)
-    (message "Preparing your answer using %d documentation file(s) with model %S..."
-             (length existing-doc-files) (or tlon-ai-help-model gptel-model))))
+    (message "Preparing your answer using %d documentation files with model %S..."
+             (length existing-doc-files) (cdr tlon-ai-help-model))))
 
 (defun tlon-ai-add-existing-doc-files (doc-files)
   "Add existing DOC-FILES to GPTel context and return a list of files that exist."
