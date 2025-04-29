@@ -1579,12 +1579,6 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 	  (setq end adjusted-end))))) ; Update end with the potentially adjusted value
     end))
 
-;; This function is now effectively part of tlon-tts-break-into-chunks
-;; (defun tlon-tts--add-chunk (begin end current-voice chunks destination use-paragraph-chunks) ...)
-
-;; This function is no longer used; replaced by tlon-tts--find-chunk-index-containing-point
-;; (defun tlon-tts--get-paragraph-index-at-point (point) ...)
-
 (defun tlon-tts--update-voice-state (begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)
   "Update current-voice and voice-chunk-list if BEGIN is at a voice change point.
 CURRENT-VOICE is the current voice, VOICE-CHUNK-LIST is the list of voice
