@@ -308,6 +308,12 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 	     :language "de"))
   "Prompts for synopsis.")
 
+;;;;; Help
+
+(defconst tlon-ai-help-prompt-template
+  (format "Here is the documentation for all processes and programs within the Tlön organization. They range from project readme files to docs for all the Emacs functionality used by this organization (including extensions for common Emacs packages or features ('extras'), modules that provide new functionality within the comprehensive 'tlon' package, and a detailed configuration file ('config.org'). An employee has asked a question that may relate to any of these processes, and I want you to answer it to the best of your ability. Please format your answer using %S syntax. Here is the question:\n\n%%s" gptel-default-mode)
+  "Template for AI help prompt using documentation files as context.")
+
 ;;;;; Phonetic transcription
 
 (defconst tlon-ai-transcribe-phonetically-prompt
@@ -1120,9 +1126,9 @@ inserted; if nil, use the current buffer."
                (message "`tlon-get-abstract-callback' is setting abstract for key `%s' to `%s...'"
                         key (when response (substring response 0 (min (length response) 100)))))
              (tlon-ai-summarize-set-bibtex-abstract response key))))
-           ;; If no key, handle based on type (likely summarizing region/buffer)
-           (t
-            (pcase type
+         ;; If no key, handle based on type (likely summarizing region/buffer)
+         (t
+          (pcase type
 	    ('synopsis
 	     (kill-new response)
 	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
@@ -1145,31 +1151,28 @@ specified in `tlon-ai-help-model'."
   (tlon-warn-if-gptel-context)
   (let* ((question (read-string "What do you need help with? "))
          (all-doc-files (tlon-ai-get-documentation-files))
-         (existing-doc-files '())
-         (prompt-template (format "Here is the documentation for all processes and programs within the Tlön organization. They range from project readme files to docs for all the Emacs functionality used by this organization (including extensions for common Emacs packages or features (‘extras’), modules that provide new functionality within the comprehensive ‘tlon’ package, and a detailed configuration file (‘config.org’). An employee has asked a question that may relate to any of these processes, and I want you to answer it to the best of your ability. Please format your answer using %S syntax. Here is the question:\n\n%%s" gptel-default-mode))
-         full-prompt)
-    (unless all-doc-files
-      (user-error "No documentation files found in standard Elpaca doc directories"))
-    ;; Add all found documentation files to the context
-    (dolist (doc-file all-doc-files)
-      (when (file-exists-p doc-file)
-        (shut-up (gptel-context-add-file doc-file))
-        (push doc-file existing-doc-files)))
-    ;; Check if any files were actually added (existed)
+         (existing-doc-files (tlon-ai-add-existing-doc-files all-doc-files))
+         (full-prompt (format tlon-ai-help-prompt-template question)))
     (unless existing-doc-files
-      (user-error "Found documentation file entries, but none exist on disk"))
-    ;; Now format the prompt with the actual number of files added
-    (setq full-prompt (format prompt-template question))
-    ;; Use the specific help model
+      (user-error "No documentation files found in standard Elpaca doc directories or none exist on disk"))
     (tlon-make-gptel-request full-prompt nil
-                             ;; The callback extracts the question from INFO
                              (lambda (response info)
                                (tlon-ai-ask-for-help-callback response info))
                              tlon-ai-help-model 'no-context-check)
     (message "Preparing your answer using %d documentation file(s) with model %S..."
              (length existing-doc-files) (or tlon-ai-help-model gptel-model))))
 
+(defun tlon-ai-add-existing-doc-files (doc-files)
+  "Add existing DOC-FILES to GPTel context and return a list of files that exist."
+  (let ((existing-doc-files '()))
+    (dolist (doc-file doc-files)
+      (when (file-exists-p doc-file)
+        (shut-up (gptel-context-add-file doc-file))
+        (push doc-file existing-doc-files)))
+    existing-doc-files))
+
 (declare-function gptel-mode "gptel")
+(declare-function gptel-extras-set-backend-and-model "gptel-extras")
 (defvar gptel-default-mode)
 (defun tlon-ai-ask-for-help-callback (response info)
   "Callback for `tlon-ai-ask-for-help'.
@@ -1177,28 +1180,28 @@ Displays the QUESTION and RESPONSE in a new `gptel-mode' buffer. If RESPONSE is
 nil, use `tlon-ai-callback-fail'. INFO is the context information passed to the
 request. The original user question is extracted from INFO."
   (if (not response)
-      (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
-    (let* ((question (tlon-ai--extract-question-from-info info)) ; Extract question here
+      (tlon-ai-callback-fail info)
+    (let* ((question (tlon-ai--extract-question-from-info info))
            (buffer-name (generate-new-buffer-name "*AI Help Answer*"))
-           (buffer (get-buffer-create buffer-name)))
+           (buffer (get-buffer-create buffer-name))
+	   (model (cdr tlon-ai-help-model))
+	   (backend (car tlon-ai-help-model)))
       (with-current-buffer buffer
         (erase-buffer)
-        ;; Insert question and answer
         (insert (format "*** %s\n\n" question))
         (insert response)
-        ;; Set mode, enable gptel-mode, make writable
         (funcall gptel-default-mode)
         (gptel-mode 1)
+	(gptel-extras-set-backend-and-model backend model)
         (setq buffer-read-only nil)
         (when (eq gptel-default-mode 'org-mode)
-          (org-fold-show-all)) ; Ensure content under heading is visible
-        (goto-char (point-max))) ; Move point to end for follow-up
+          (org-fold-show-all))
+        (goto-char (point-max)))
       (switch-to-buffer buffer)
-      ;; Ask about clearing context
-      (let ((clear-context (y-or-n-p "Clear the gptel context (recommended)? ")))
+      (let ((clear-context (y-or-n-p "Clear the gptel context (if you have no follow-up questions)? ")))
         (if clear-context
             (gptel-context-remove-all)
-          (message "Context not cleared. Remember to clear it manually with `M-x gptel-context-remove-all` when finished."))))))
+          (message "Context not cleared. Clear it manually with `M-x gptel-context-remove-all` when finished."))))))
 
 (defun tlon-ai--extract-question-from-info (info)
   "Extract the original user question from the INFO plist.
