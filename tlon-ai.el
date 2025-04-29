@@ -1252,15 +1252,15 @@ Documentation files are collected from:
          (repos (append (tlon-lookup-all tlon-repos :dir :help t)
 			(mapcar (lambda (subdir)
 				  (file-name-concat elpaca-repos-directory subdir))
-				'("gptel-plus"
-				  "init"
-				  "annas-archive"
+				'("annas-archive"
 				  "bib"
 				  "gdrive"
-				  "pdf-tools-pages"
 				  "goldendict-ng"
+				  "gptel-plus"
+				  "init"
 				  "macos"
 				  "mullvad"
+				  "pdf-tools-pages"
 				  "pomodoro-centile"
 				  "scihub"))))
          (readme-patterns '("readme.org" "readme.md"))
