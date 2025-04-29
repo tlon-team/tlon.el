@@ -3399,10 +3399,10 @@ PROMPT is used as the prompt string, _INITIAL and _HISTORY are ignored."
    (custom-value :initarg :custom-value
 		 :initform nil
 		 :type t
-		 :documentation "Custom value for the setting."))
+   :documentation "Custom value for the setting."))
   "Infix class for setting engine settings.")
 
-(cl-defmethod transient-infix-read ((obj tlon-tts-global-engine-settings-infix))
+(cl-defmethod transient-infix-read ((_obj tlon-tts-global-engine-settings-infix))
   "Read the value for engine settings infix OBJ."
   (tlon-tts-global-engine-settings-reader nil nil nil))
 
@@ -3426,7 +3426,7 @@ Reads audio format choices based on the currently selected engine."
 	(setf (slot-value object 'custom-value) (symbol-value variable)))
       (symbol-value variable))))
 
-(cl-defmethod transient-infix-set ((object tlon-tts-global-engine-settings-infix) value)
+(cl-defmethod transient-infix-set ((_object tlon-tts-global-engine-settings-infix) value)
   "Set the value of the infix OBJECT to VALUE."
   (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
 	 (variable (and variable-name (intern-soft variable-name))))
@@ -3434,7 +3434,7 @@ Reads audio format choices based on the currently selected engine."
       (set variable value)
       value)))
 
-(cl-defmethod transient-format-value ((object tlon-tts-global-engine-settings-infix))
+(cl-defmethod transient-format-value ((_object tlon-tts-global-engine-settings-infix))
   "Format the value of the infix OBJECT."
   (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
 	 (variable (and variable-name (intern-soft variable-name)))
