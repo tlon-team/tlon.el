@@ -1206,25 +1206,27 @@ request. The original user question is extracted from INFO."
 (defun tlon-ai--extract-question-from-info (info)
   "Extract the original user question from the INFO plist.
 INFO is the plist provided to the `gptel' callback. Handles potential variations
-in the :data structure."
+in the :data structure, including Gemini's format."
   (let* ((data (plist-get info :data))
-         (contents (if (plistp data) (plist-get data :contents) data))
-         (user-part (when (and (seqp contents) (> (length contents) 0))
-                      (elt contents (1- (length contents))))) ; Use elt for list/vector
-         (text-parts (when (and (plistp user-part) (eq (plist-get user-part :role) 'user))
-                       (plist-get user-part :parts)))
-         (first-part (when (and (seqp text-parts) (> (length text-parts) 0))
-                       (elt text-parts 0))) ; Use elt for list/vector
-         (full-prompt (when (plistp first-part)
-                        (plist-get first-part :text)))
+         (contents (when (plistp data) (plist-get data :contents)))
+         ;; Find the user message part in the contents list
+         (user-part (when (listp contents)
+                      (cl-find-if (lambda (part)
+                                    (and (plistp part)
+                                         (string= (plist-get part :role) "user")))
+                                  contents)))
+         (text-parts (when (plistp user-part) (plist-get user-part :parts)))
+         ;; The actual text seems to be in the first element of the parts list
+         (first-part (when (listp text-parts) (car text-parts)))
+         (full-prompt (when (plistp first-part) (plist-get first-part :text)))
          (question-marker "Here is the question:\n\n"))
-    (if (and full-prompt (stringp full-prompt) ; Add stringp check
+    (if (and full-prompt (stringp full-prompt)
              (string-match question-marker full-prompt))
         (substring full-prompt (match-end 0))
       (progn
         (message "Warning: Could not extract question from `info' plist. Relevant data: %S"
                  ;; Log relevant parts for debugging
-                 `(:data ,data :contents ,contents :user-part ,user-part :text-parts ,text-parts :first-part ,first-part))
+                 `(:data ,data :contents ,contents :user-part ,user-part :text-parts ,text-parts :first-part ,first-part :full-prompt ,full-prompt))
         "Unknown Question"))))
 
 (declare-function paths-dir-dotemacs "tlon-paths")
