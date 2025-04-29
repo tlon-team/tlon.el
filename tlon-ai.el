@@ -1237,17 +1237,32 @@ in the :data structure, including Gemini's format (which may use vectors)."
 (defun tlon-ai-get-documentation-files ()
   "Return a list of full paths to documentation files.
 Documentation files are collected from:
-1. `.org` files within the \"doc/\" subdirectories of specified Elpaca repos.
-2. `readme.org` or `readme.md` files in specified Elpaca repos.
+1. \".org\" files within the \"doc/\" subdirectories of specified Elpaca repos.
+2. \"readme.org\" or \"readme.md\" files in specified Elpaca repos.
 3. Specific individual files."
   (let* ((all-doc-files '())
          ;; 1. Directories containing .org documentation files
-         (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
-                         (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")
-			 (tlon-repo-lookup :dir :name "tlon-docs")))
+	 (doc-dirs (append (list (tlon-repo-lookup :dir :name "tlon-docs"))
+			   (mapcar (lambda (subdir)
+				     (file-name-concat elpaca-repos-directory subdir))
+				   '("tlon/doc/"
+				     "dotfiles/emacs/extras/doc/"))))
          (doc-pattern "\\.org\\'")
          ;; 2. Repositories to check for readme files
-         (repos (tlon-lookup-all tlon-repos :dir :help t))
+         (repos (append (tlon-lookup-all tlon-repos :dir :help t)
+			(mapcar (lambda (subdir)
+				  (file-name-concat elpaca-repos-directory subdir))
+				'("gptel-plus"
+				  "init"
+				  "annas-archive"
+				  "bib"
+				  "gdrive"
+				  "pdf-tools-pages"
+				  "goldendict-ng"
+				  "macos"
+				  "mullvad"
+				  "pomodoro-centile"
+				  "scihub"))))
          (readme-patterns '("readme.org" "readme.md"))
          ;; 3. Specific individual files
          (files (list (file-name-concat paths-dir-dotemacs "config.org"))))
