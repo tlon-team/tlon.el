@@ -62,6 +62,8 @@ This module provides a wide range of functions for interacting with BibTeX files
 
 #+vindex: tlon-file-abstract-translations
 + ~tlon-file-abstract-translations~ :: Path to the JSON file storing abstract translations.
+#+vindex: tlon-file-bare-bibliography
++ ~tlon-file-bare-bibliography~ :: Path to the JSON file containing the bare bibliography (author, date, title, key).
 #+vindex: tlon-tex-excluded-keys-file
 + ~tlon-tex-excluded-keys-file~ :: Path to the Elisp file where excluded BibTeX keys (for abstract reporting) are persisted.
 #+vindex: tlon-locators
@@ -224,6 +226,14 @@ This section details the interactive commands provided by =tlon-tex.el=.
 
 #+findex: tlon-tex-find-next-entry-with-missing-field
 + ~tlon-tex-find-next-entry-with-missing-field~ :: Moves point to the next BibTeX entry in the buffer that is missing a specified =FIELD= (prompting for the field name with completion). Skips entries that have a =crossref= field.
+
+*** Bibliography Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-bibliography-commands
+:END:
+
+#+findex: tlon-tex-create-bare-bibliography
++ ~tlon-tex-create-bare-bibliography~ :: Creates a JSON file (~tlon-file-bare-bibliography~) containing a simplified representation (author, date, title, key) of all entries found in the BibTeX files listed in ~tlon-bibliography-files~. It retrieves the path for the 'babel-refs' repository using ~tlon-repo-lookup~. Entries are included even if some of these fields are missing (the corresponding JSON value will be null). After writing the data, it opens the generated JSON file.
 
 *** Transient Menu
 :PROPERTIES:
