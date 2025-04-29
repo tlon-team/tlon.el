@@ -43,20 +43,24 @@
   "API endpoint for starting a dubbing project.")
 
 (defconst tlon-dub-get-project-metadata-endpoint "/dubbing/%s"
-  "API endpoint format for getting dubbing project metadata. Requires dubbing_id.")
+  "API endpoint format for getting dubbing project metadata.
+Requires dubbing_id.")
 
 (defconst tlon-dub-get-dubbing-endpoint "/dubbing/%s/transcript/%s"
   "API endpoint format for getting the transcript for a dubbing project.
 Requires `dubbing_id' and `language_code'.")
 
 (defconst tlon-dub-get-resource-data-endpoint "/dubbing/resource/%s"
-  "API endpoint format for getting dubbing resource data. Requires dubbing_id.")
+  "API endpoint format for getting dubbing resource data.
+Requires dubbing_id.")
 
 (defconst tlon-dub-share-resource-endpoint "/workspace/resources/%s/share"
-  "API endpoint format for sharing a workspace resource. Requires resource_id.")
+  "API endpoint format for sharing a workspace resource.
+Requires resource_id.")
 
 (defconst tlon-dub-add-speaker-segment-endpoint "/dubbing/resource/%s/speaker/%s/segment"
-  "API endpoint format for adding a speaker segment. Requires dubbing_id and speaker_id.")
+  "API endpoint format for adding a speaker segment.
+Requires dubbing_id and speaker_id.")
 
 ;;;; Helper Functions
 
@@ -77,7 +81,7 @@ Returns nil if the extension is not recognized or unsupported for dubbing."
 
 (defun tlon-dub--share-project-with-self (resource-id)
   "Share the workspace RESOURCE-ID with the user associated with the API key.
-Shares with 'editor' role using the top-level `user_email` field."
+Shares with \"editor\" role using the top-level \"user_email\" field."
   (let* ((api-key (tlon-tts-elevenlabs-get-or-set-key))
 	 (url (format (concat tlon-dub-api-base-url tlon-dub-share-resource-endpoint)
 		      resource-id))
@@ -119,7 +123,7 @@ Each segment is a plist with :start, :end, and :text keys."
   (let ((lines (split-string vtt-string "\n"))
 	segments current-segment text-buffer)
     ;; Basic state machine: expecting timestamp or text
-    (dolist (line lines (nreverse segments))
+    (dolist (line lines)
       (cond
        ;; Skip WEBVTT header and empty lines
        ((or (string-prefix-p "WEBVTT" line) (string-blank-p line))
