@@ -1039,14 +1039,15 @@ Each element is a list: (TEXT VOICE-PARAMS FILENAME REQUEST-ID STATUS).
 
 - TEXT: The text content of the chunk.
 
-- VOICE-PARAMS: A cons cell like (tlon-tts-voice . VOICE-ID) or nil.
+- VOICE-PARAMS: A cons cell like `(tlon-tts-voice . VOICE-ID)' or nil.
 
 - FILENAME: The path to the generated audio file for this chunk.
 
 - REQUEST-ID: The xi-request-id returned by ElevenLabs (nil
   otherwise/initially).
 
-- STATUS: Processing status symbol ('pending, 'running, 'completed, 'failed).
+- STATUS: Processing status symbol (\\='pending, \\='running, \\='completed,
+  \\='failed).
 
 - HEADER-FILENAME: Path to the temporary file storing curl headers for this
   chunk.")
@@ -1586,7 +1587,9 @@ USE-PARAGRAPH-CHUNKS is a boolean indicating whether to use paragraph chunking."
 
 (defun tlon-tts--update-voice-state (begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)
   "Update current-voice and voice-chunk-list if BEGIN is at a voice change point.
-Returns (cons NEW-CURRENT-VOICE NEW-VOICE-CHUNK-LIST)."
+CURRENT-VOICE is the current voice, VOICE-CHUNK-LIST is the list of voice
+changes, NEXT-VOICE-CHANGE-POS is the position of the next voice change, and
+NEXT-VOICE-ID is the ID of the next voice."
   (if (= begin next-voice-change-pos)
       (cons next-voice-id (cdr voice-chunk-list))
     (cons current-voice voice-chunk-list)))
@@ -1707,7 +1710,8 @@ Returns the index or nil if no chunk contains the point."
 
 (defun tlon-tts--get-chunk-number-from-filename (filename)
   "Extract the chunk number (as integer) from FILENAME.
-Assumes filename format like 'base-name-001.mp3'. Returns nil if format doesn't match."
+Assumes filename format like \"base-name-001.mp3\". Returns nil if format
+doesn't match."
   (when filename
     (let ((base (file-name-nondirectory filename)))
       ;; Match '-DDD.ext' at the end of the string

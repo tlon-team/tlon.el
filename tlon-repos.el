@@ -32,7 +32,6 @@
 (require 'tlon-core)
 (require 'vc)
 (require 'vc-extras)
-(require 'pass-extras)
 
 ;;;; Variables
 
@@ -249,10 +248,11 @@ If REPOS is nil, search in all tracked repos."
 
 ;;;;; git-crypt
 
+(autoload 'password-store-list "password-store")
 (defun tlon--get-git-crypt-repos ()
   "Return a list of Tlön repo names that use git-crypt.
-This list is derived from entries stored under 'tlon/core/git-crypt/'
-in the password store."
+This list is derived from entries stored under \"tlon/core/git-crypt/\" in the
+password store."
   (let* ((base-path "tlon/core/git-crypt/")
          (base-path-len (length base-path))
          (entries (password-store-list base-path)))
@@ -262,9 +262,9 @@ in the password store."
 
 (autoload 'pass-extras-git-crypt-unlock "pass-extras")
 (defun tlon-git-crypt-unlock ()
-  "Unlock a Tlön repository that uses git-crypt.
-Prompts the user to select a repository from the list derived
-from entries under 'tlon/core/git-crypt/' in the password store."
+  "Unlock a Tlön repository using `git-crypt'.
+Prompts the user to select a repository from the list derived from entries under
+\"tlon/core/git-crypt/\" in the password store."
   (interactive)
   (let* ((repo-names (tlon--get-git-crypt-repos))
          (repo-name (completing-read "Repo: " repo-names nil t))
