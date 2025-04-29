@@ -1207,18 +1207,20 @@ request. The original user question is extracted from INFO."
 (defun tlon-ai--extract-question-from-info (info)
   "Extract the original user question from the INFO plist.
 INFO is the plist provided to the `gptel' callback. Handles potential variations
-in the :data structure, including Gemini's format."
+in the :data structure, including Gemini's format (which may use vectors)."
   (let* ((data (plist-get info :data))
          (contents (when (plistp data) (plist-get data :contents)))
-         ;; Find the user message part in the contents list
-         (user-part (when (listp contents)
+         ;; Find the user message part in the contents sequence (list or vector)
+         (user-part (when (seqp contents) ; Use seqp for list or vector
                       (cl-find-if (lambda (part)
                                     (and (plistp part)
-                                         (string= (plist-get part :role) "user")))
+                                         ;; Ensure :role exists and is the string "user"
+                                         (equal (plist-get part :role) "user")))
                                   contents)))
          (text-parts (when (plistp user-part) (plist-get user-part :parts)))
-         ;; The actual text seems to be in the first element of the parts list
-         (first-part (when (listp text-parts) (car text-parts)))
+         ;; The actual text seems to be in the first element of the parts sequence
+         (first-part (when (and (seqp text-parts) (> (length text-parts) 0)) ; Check sequence and non-empty
+                       (elt text-parts 0))) ; Use elt for list or vector
          (full-prompt (when (plistp first-part) (plist-get first-part :text)))
          (question-marker "Here is the question:\n\n"))
     (if (and full-prompt (stringp full-prompt)
