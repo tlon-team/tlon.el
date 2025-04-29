@@ -1164,6 +1164,7 @@ specified in `tlon-ai-help-model'."
 
 (defun tlon-ai-add-existing-doc-files (doc-files)
   "Add existing DOC-FILES to GPTel context and return a list of files that exist."
+  (message "Adding doc files to context...")
   (let ((existing-doc-files '()))
     (dolist (doc-file doc-files)
       (when (file-exists-p doc-file)
