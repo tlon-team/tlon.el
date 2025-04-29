@@ -37,8 +37,8 @@ This module provides tools for managing meetings within the Tlön workflow. It f
 + ~tlon-meet-cleanup-transcript-prompt~ :: The prompt template used for asking the AI to clean up potential errors in a formatted transcript. It should contain =%s= which will be replaced by the transcript text.
 
 #+vindex: tlon-meet-summarize-transcript-prompt
-+ ~tlon-meet-summarize-transcript-prompt~ :: The prompt template used for generating AI summaries of meeting transcripts. It should contain =%s= which will be replaced by the transcript text.
-
++ ~tlon-meet-summarize-transcript-prompt~ :: The prompt template used for generating AI summaries of meeting transcripts. It should contain =%s= which will be replaced by the transcript text. The AI is instructed to start the output with `** Meeting summary`.
+ 
 #+vindex: tlon-meet-recordings-directory
 + ~tlon-meet-recordings-directory~ :: The directory where Google Meet recordings are typically stored (default: =~/My Drive/Meet Recordings/=).
 
