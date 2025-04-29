@@ -16,6 +16,7 @@
 ;;                   (gptel-extras "0.1")
 ;;                   (markdown-mode-extras "0.1")
 ;;                   (paths "0.1")
+;;                   (pass-extras "0.1")
 ;;                   (read-aloud "0.0.2")
 ;;                   (request "0.3.3")
 ;;                   (reverso "0.1")

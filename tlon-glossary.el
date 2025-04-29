@@ -150,7 +150,7 @@ conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
 
 ;;;###autoload
 (defun tlon-ai-create-glossary-language ()
-  "Use AI to generate translations for MISSING terms for a language in the glossary.
+  "Use AI to generate translations for MISSING glossary terms in language.
 Prompts for a target language, identifies terms missing a translation for that
 language, sends only those terms to an AI model, and merges the AI-generated
 translations back into the glossary file. Can be run iteratively."
