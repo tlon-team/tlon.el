@@ -1243,7 +1243,8 @@ Documentation files are collected from:
   (let* ((all-doc-files '())
          ;; 1. Directories containing .org documentation files
          (doc-dirs (list (file-name-concat elpaca-repos-directory "tlon/doc/")
-                         (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")))
+                         (file-name-concat elpaca-repos-directory "dotfiles/emacs/extras/doc/")
+			 (tlon-repo-lookup :dir :name "tlon-docs")))
          (doc-pattern "\\.org\\'")
          ;; 2. Repositories to check for readme files
          (repos (tlon-lookup-all tlon-repos :dir :help t))
