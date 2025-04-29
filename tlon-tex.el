@@ -56,6 +56,11 @@
 		    "bib" "abstract-translations.json")
   "The JSON file containing the abstract translations.")
 
+(defconst tlon-file-bare-bibliography
+  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs")
+		    "bib" "bare-bibliography.json")
+  "The JSON file containing the bare bibliography (author, date, title, key).")
+
 (defconst tlon-tex-excluded-keys-file
   (file-name-concat tlon-package-dir "tlon-excluded-keys.el")
   "File where the excluded keys are persisted.")
@@ -970,12 +975,13 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
   "Create a JSON file with author, date, and title from `tlon-bibliography-files'.
 Includes entries even if some fields are missing (value will be null)."
   (interactive)
-  (let ((bibliography-data '()))
-    (unless output-dir
+  (let ((bibliography-data '())
+        (babel-refs-dir (tlon-repo-lookup :dir :name "babel-refs"))) ; Get the directory
+    (unless babel-refs-dir ; Check if the directory was found
       (user-error "Could not find directory for 'babel-refs' repository"))
     (dolist (bib-file tlon-bibliography-files)
       (with-current-buffer (find-file-noselect bib-file)
-	(save-excursion
+        (save-excursion
 	  (goto-char (point-min))
 	  (bibtex-map-entries
 	   (lambda (_key start _end)
