@@ -1315,7 +1315,9 @@ buffer's content."
   ;; Capture point *before* preparing chunks, as prepare-chunks modifies the buffer
   (let ((current-point (point)))
     ;; Ensure chunks are up-to-date with the current buffer content
-    (tlon-tts-prepare-chunks)
+    ;; Wrap in save-excursion to restore point after buffer modifications
+    (save-excursion
+      (tlon-tts-prepare-chunks))
     (unless tlon-tts-chunks
       (user-error "No TTS chunks found. Staging buffer might be empty or invalid"))
 
