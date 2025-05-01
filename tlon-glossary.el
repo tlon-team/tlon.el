@@ -217,69 +217,109 @@ NEW-LANG-CODE is the target language code. FULL-GLOSSARY-DATA is the original
 glossary data. MISSING-EN-TERMS is the list of English terms that were sent to
 the AI."
   (if (not verified-response)
-      (progn
-        (message "AI verification/cleaning step failed. Raw response kept at: %s" raw-response-file)
-        (tlon-ai-callback-fail info))
+      (tlon-ai--handle-verification-failure info raw-response-file)
     (condition-case err
-        (let* (;; Clean response: remove potential markdown fences (should be less likely now)
-               (lines (split-string verified-response "\n" t))
-               (fence-pattern (rx-to-string '(seq bol (* space) "```" (opt (one-or-more nonl)) (* space) eol)))
-               (filtered-lines (cl-remove-if (lambda (line) (string-match-p fence-pattern line)) lines))
-               (clean-response (string-trim (mapconcat #'identity filtered-lines "\n")))
-               ;; Parse response - expecting newline-separated plain text translations
-               (received-translations (split-string clean-response "\n" t))
-               (num-received (length received-translations))
-               (num-expected (length missing-en-terms))
-               (translation-pairs '())
-               (updated-count 0)
-               (glossary-copy (copy-sequence full-glossary-data)))
-
-          ;; Informative check for length mismatch after verification, but don't error
-          (when (/= num-received num-expected)
-            (message "Warning: Verification AI returned %d translation lines, but %d were expected. Processing the %d available..."
-                     num-received num-expected (min num-received num-expected)))
-
-          ;; Reconstruct pairs: Loop up to the minimum of expected and received
-          (dotimes (i (min num-received num-expected))
-            (let* ((en-term (elt missing-en-terms i)) ; Get the i-th English term that was sent
-                   (translation (elt received-translations i))) ; Get the i-th verified translation received
-              (unless (stringp translation)
-                (error "Invalid non-string translation format in verified AI response line %d: %S" (1+ i) translation))
-              ;; Only add the pair if the translation is not the placeholder
-              (unless (string= translation "[TRANSLATION_UNAVAILABLE]")
-                (push (list en-term translation) translation-pairs))))
-          (setq translation-pairs (nreverse translation-pairs)) ; Maintain original order
-
-          ;; Merge valid (non-placeholder) translations
-          (dolist (pair translation-pairs)
-            (let ((en-term (elt pair 0))
-                  (translation (elt pair 1)))
-              (let ((entry-to-update (cl-find-if (lambda (entry)
-                                                   (string= (cdr (assoc "en" entry)) en-term))
-                                                 glossary-copy)))
-                (when entry-to-update
-                  (if (assoc new-lang-code entry-to-update)
-                      (setcdr (assoc new-lang-code entry-to-update) translation)
-                    (setcdr (last entry-to-update)
-                            (append (cdr (last entry-to-update))
-                                    (list (cons new-lang-code translation)))))
-                  (cl-incf updated-count)))))
-
-          ;; Set the actual count of pairs to be merged (excluding placeholders)
-          (setq updated-count (length translation-pairs))
-
-          ;; Write the updated data
-          (tlon-write-data tlon-file-glossary-source glossary-copy)
-          (message "Successfully merged %d non-placeholder verified AI translations for '%s' into %s"
-                   updated-count new-lang-code (file-name-nondirectory tlon-file-glossary-source))
-          ;; Delete the temporary raw response file on success
-          (when (file-exists-p raw-response-file)
-            (delete-file raw-response-file)
-            (message "Deleted temporary raw response file: %s" (file-name-nondirectory raw-response-file))))
+        (let* ((clean-response (tlon-ai--clean-verified-response verified-response))
+               (received-translations (tlon-ai--parse-verified-translations clean-response))
+               (validated-translations (tlon-ai--validate-translation-list received-translations missing-en-terms))
+               (translation-pairs (tlon-ai--create-translation-pairs validated-translations missing-en-terms))
+               (glossary-copy (copy-sequence full-glossary-data))
+               (updated-count (tlon-ai--merge-translations-into-glossary translation-pairs new-lang-code glossary-copy)))
+          (tlon-ai--handle-verification-success glossary-copy updated-count new-lang-code raw-response-file))
       (error
-       (message "Error processing verified AI response: %s. Raw response kept at: %s"
-                (error-message-string err) raw-response-file)
-       (message "Verified Response was: %s" verified-response)))))
+       (tlon-ai--handle-processing-error err verified-response raw-response-file)))))
+
+(defun tlon-ai--clean-verified-response (verified-response)
+  "Clean the VERIFIED-RESPONSE string by removing markdown fences and trimming."
+  (let* ((lines (split-string verified-response "\n" t))
+         (fence-pattern (rx-to-string '(seq bol (* space) "```" (opt (one-or-more nonl)) (* space) eol)))
+         (filtered-lines (cl-remove-if (lambda (line) (string-match-p fence-pattern line)) lines)))
+    (string-trim (mapconcat #'identity filtered-lines "\n"))))
+
+(defun tlon-ai--parse-verified-translations (clean-response)
+  "Parse the CLEAN-RESPONSE string into a list of translation strings."
+  (split-string clean-response "\n" t))
+
+(defun tlon-ai--validate-translation-list (received-translations missing-en-terms)
+  "Validate RECEIVED-TRANSLATIONS against MISSING-EN-TERMS.
+Warns if lengths differ but proceeds with the minimum available.
+Returns the potentially truncated list of RECEIVED-TRANSLATIONS."
+  (let ((num-received (length received-translations))
+        (num-expected (length missing-en-terms)))
+    (when (/= num-received num-expected)
+      (message "Warning: Verification AI returned %d translation lines, but %d were expected. Processing the %d available..."
+               num-received num-expected (min num-received num-expected)))
+    ;; Return the list truncated to the minimum length to avoid errors later
+    (seq-subseq received-translations 0 (min num-received num-expected)))) ; Maintain original order
+
+(defun tlon-ai--create-translation-pairs (validated-translations missing-en-terms)
+  "Create a list of (EN-TERM . TRANSLATION) pairs.
+VALIDATED-TRANSLATIONS is the list of translation strings.
+MISSING-EN-TERMS is the corresponding list of English terms.
+Filters out pairs where the translation is '[TRANSLATION_UNAVAILABLE]'.
+Ensures translations are strings."
+  (let ((translation-pairs '())
+        (num-pairs (length validated-translations))) ; Use length of validated list
+    (dotimes (i num-pairs)
+      (let* ((en-term (elt missing-en-terms i))
+             (translation (elt validated-translations i)))
+        (unless (stringp translation)
+          (error "Invalid non-string translation format in verified AI response line %d: %S" (1+ i) translation))
+        (unless (string= translation "[TRANSLATION_UNAVAILABLE]")
+          (push (cons en-term translation) translation-pairs))))
+    (nreverse translation-pairs)))
+
+(defun tlon-ai--update-glossary-entry (entry new-lang-code translation)
+  "Update a single glossary ENTRY (alist) with TRANSLATION for NEW-LANG-CODE.
+Modifies ENTRY in place."
+  (if (assoc new-lang-code entry)
+      (setcdr (assoc new-lang-code entry) translation)
+    ;; Append to the end of the alist
+    (setcdr (last entry)
+            (append (cdr (last entry))
+                    (list (cons new-lang-code translation))))))
+
+(defun tlon-ai--merge-translations-into-glossary (translation-pairs new-lang-code glossary-data)
+  "Merge TRANSLATION-PAIRS into GLOSSARY-DATA for NEW-LANG-CODE.
+Returns the number of entries successfully merged."
+  (let ((updated-count 0))
+    (dolist (pair translation-pairs)
+      (let* ((en-term (car pair))
+             (translation (cdr pair))
+             (entry-to-update (cl-find-if (lambda (entry)
+                                            (string= (cdr (assoc "en" entry)) en-term))
+                                          glossary-data)))
+        (when entry-to-update
+          (tlon-ai--update-glossary-entry entry-to-update new-lang-code translation)
+          (cl-incf updated-count))))
+    updated-count))
+
+(defun tlon-ai--handle-verification-success (updated-glossary updated-count new-lang-code raw-response-file)
+  "Handle successful processing: write glossary, log success, delete raw file.
+UPDATED-GLOSSARY is the modified glossary data. UPDATED-COUNT is the number of
+entries updated. NEW-LANG-CODE is the target language code. RAW-RESPONSE-FILE is
+the path to the temporary file containing the raw AI response."
+  (tlon-write-data tlon-file-glossary-source updated-glossary)
+  (message "Successfully merged %d non-placeholder verified AI translations for '%s' into %s"
+           updated-count new-lang-code (file-name-nondirectory tlon-file-glossary-source))
+  (when (file-exists-p raw-response-file)
+    (delete-file raw-response-file)
+    (message "Deleted temporary raw response file: %s" (file-name-nondirectory raw-response-file))))
+
+(defun tlon-ai--handle-processing-error (err verified-response raw-response-file)
+  "Handle errors during processing: log error and keep raw response.
+ERR is the error object. VERIFIED-RESPONSE is the AI response. RAW-RESPONSE-FILE
+is the path to the raw response file."
+  (message "Error processing verified AI response: %s. Raw response kept at: %s"
+           (error-message-string err) raw-response-file)
+  (message "Verified Response was: %s" verified-response))
+
+(defun tlon-ai--handle-verification-failure (info raw-response-file)
+  "Handle failure reported by the verification AI itself.
+INFO contains the request information. RAW-RESPONSE-FILE is the path to the raw
+response file."
+  (message "AI verification/cleaning step failed. Raw response kept at: %s" raw-response-file)
+  (tlon-ai-callback-fail info))
 
 ;;;;; Extraction
 
