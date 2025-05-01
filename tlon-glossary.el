@@ -164,25 +164,21 @@ translations back into the glossary file. Can be run iteratively."
          ;; Extract English terms from missing entries
          (missing-en-terms (mapcar (lambda (entry) (cdr (assoc "en" entry)))
                                    missing-entries)))
-
     (unless missing-en-terms
       (message "All terms already have a translation for %s (%s)." new-lang-name new-lang-code)
       (cl-return-from tlon-ai-create-glossary-language))
-
     ;; Format missing terms as a simple newline-separated string for the prompt
     (let* ((missing-terms-text (mapconcat #'identity missing-en-terms "\n"))
            (prompt (format tlon-ai-create-glossary-language-prompt
                            new-lang-name missing-terms-text new-lang-name))) ; Pass lang name twice
-
       (message "Requesting AI to generate %d missing translations for %s (%s)..."
                (length missing-en-terms) new-lang-name new-lang-code)
       (tlon-make-gptel-request prompt nil
                                (lambda (response info)
-                                 ;; Pass missing terms and full glossary data
                                  (tlon-ai-create-glossary-language-callback
                                   response info new-lang-code glossary-data missing-en-terms))
-                               tlon-ai-glossary-model ; Use specific glossary model
-                               t)))) ; Bypass context check
+                               tlon-ai-glossary-model
+                               'no-context-check))))
 
 (defun tlon-ai-create-glossary-language-callback (raw-response info new-lang-code full-glossary-data missing-en-terms)
   "Callback function for `tlon-ai-create-glossary-language'.
@@ -208,7 +204,7 @@ Initiates a second AI call for verification and cleaning."
                                  (tlon-ai-process-verified-translations-callback
                                   verified-response verify-info new-lang-code full-glossary-data missing-en-terms raw-response-file))
                                tlon-ai-glossary-verify-model ; Use specific verify model
-                               t)))) ; Bypass context check
+                               'no-context-check))))
 
 (defun tlon-ai-process-verified-translations-callback (verified-response info new-lang-code full-glossary-data missing-en-terms raw-response-file)
   "Callback function to process the VERIFIED-RESPONSE from the cleaning AI.
