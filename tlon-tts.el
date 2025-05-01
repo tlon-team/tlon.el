@@ -59,6 +59,14 @@
   :group 'tlon-tts
   :type 'boolean)
 
+(defcustom tlon-tts-narrate-only-missing-chunks t
+  "Whether `tlon-tts-narrate-staged-buffer' should only process missing chunks.
+If non-nil, narration will start from the first chunk whose audio file does not
+exist. If nil, all chunks will be processed, potentially overwriting existing
+audio files."
+  :group 'tlon-tts
+  :type 'boolean)
+
 ;; TODO: it looks like this is not being used; decide what to do about it
 (defcustom tlon-tts-prompt
   nil
@@ -1033,24 +1041,30 @@ chunk and the cdr voice to be used to narrate this chunk.")
 
 ;;;;;; Chunk processing
 
+;;;;;; Chunk data structure indices
+(defconst tlon-tts-chunk-index-text 0 "Index for the text content in a chunk.")
+(defconst tlon-tts-chunk-index-voice-params 1 "Index for voice parameters in a chunk.")
+(defconst tlon-tts-chunk-index-filename 2 "Index for the audio filename in a chunk.")
+(defconst tlon-tts-chunk-index-request-id 3 "Index for the ElevenLabs request ID in a chunk.")
+(defconst tlon-tts-chunk-index-status 4 "Index for the processing status in a chunk.")
+(defconst tlon-tts-chunk-index-staging-buffer-name 5 "Index for the staging buffer name in a chunk.")
+(defconst tlon-tts-chunk-index-header-filename 6 "Index for the header filename in a chunk.")
+(defconst tlon-tts-chunk-index-begin-marker 7 "Index for the begin marker in a chunk.")
+(defconst tlon-tts-chunk-index-end-marker 8 "Index for the end marker in a chunk.")
+
+
 (defvar tlon-tts-chunks nil
   "List of chunks to be narrated.
-Each element is a list: (TEXT VOICE-PARAMS FILENAME REQUEST-ID STATUS).
-
+Each element is a list accessed using `tlon-tts-chunk-index-*' constants:
 - TEXT: The text content of the chunk.
-
 - VOICE-PARAMS: A cons cell like `(tlon-tts-voice . VOICE-ID)' or nil.
-
 - FILENAME: The path to the generated audio file for this chunk.
-
-- REQUEST-ID: The xi-request-id returned by ElevenLabs (nil
-  otherwise/initially).
-
-- STATUS: Processing status symbol (\\='pending, \\='running, \\='completed,
-  \\='failed).
-
-- HEADER-FILENAME: Path to the temporary file storing curl headers for this
-  chunk.")
+- REQUEST-ID: The xi-request-id returned by ElevenLabs (nil otherwise/initially).
+- STATUS: Processing status symbol (\\='pending, \\='running, \\='completed, \\='failed).
+- STAGING-BUFFER-NAME: The name of the staging buffer this chunk belongs to.
+- HEADER-FILENAME: Path to the temporary file storing curl headers for this chunk.
+- BEGIN-MARKER: Marker for the beginning of the chunk's text in the staging buffer.
+- END-MARKER: Marker for the end of the chunk's text in the staging buffer.")
 
 (defvar tlon-tts-chunks-to-process 0
   "Number of chunks left to process.")
@@ -1297,14 +1311,17 @@ buffer's content."
                  (list nil nil)))
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
-  ;; Ensure chunks are up-to-date with the current buffer content
-  (tlon-tts-prepare-chunks)
-  (unless tlon-tts-chunks
-    (user-error "No TTS chunks found. Staging buffer might be empty or invalid"))
 
-  (if (and beg end)
-      ;; --- Region is active ---
-      (save-excursion
+  ;; Capture point *before* preparing chunks, as prepare-chunks modifies the buffer
+  (let ((current-point (point)))
+    ;; Ensure chunks are up-to-date with the current buffer content
+    (tlon-tts-prepare-chunks)
+    (unless tlon-tts-chunks
+      (user-error "No TTS chunks found. Staging buffer might be empty or invalid"))
+
+    (if (and beg end)
+        ;; --- Region is active ---
+        (save-excursion
 	(goto-char beg)
 	(let ((generated-indices '()) ; Keep track of generated chunk indices
               (paragraphs-generated 0))
@@ -1316,10 +1333,10 @@ buffer's content."
                          (chunk-data (nth chunk-index tlon-tts-chunks))
                          (chunk-filename (nth 2 chunk-data))
                          (chunk-number (tlon-tts--get-chunk-number-from-filename chunk-filename)) ; Number for display
-                         (chunk-end-marker (nth 7 chunk-data))
+                         (chunk-end-marker (nth 8 chunk-data)) ; Index updated
                          (chunk-end-pos (marker-position chunk-end-marker)))
-                    (message "Generating chunk %d (index %d in region)..." chunk-number chunk-index)
-                    (tlon-tts--generate-single-paragraph paragraph-index) ; Pass 1-based index
+                   (message "Generating chunk %d (index %d in region)..." chunk-number chunk-index)
+                   (tlon-tts--generate-single-paragraph paragraph-index) ; Pass 1-based index
                     (push chunk-index generated-indices)
                     (setq paragraphs-generated (1+ paragraphs-generated))
                     ;; Move point to the end of the processed chunk to avoid reprocessing
@@ -1328,19 +1345,19 @@ buffer's content."
 		(when (= (point) current-pos)
                   (forward-char 1))))) ; Minimal progress if stuck
           (unless (> paragraphs-generated 0)
-            (message "No paragraphs found or generated within the selected region."))))
+              (message "No paragraphs found or generated within the selected region."))))
 
-    ;; --- No region active, generate paragraph at point ---
-    (let* ((current-point (point))
-           (chunk-index (tlon-tts--find-chunk-index-containing-point current-point)))
-      (unless chunk-index
-	(user-error "Could not find TTS chunk containing point %d" current-point))
+      ;; --- No region active, generate paragraph at point ---
+      (let* (;; Use the captured point from before prepare-chunks
+             (chunk-index (tlon-tts--find-chunk-index-containing-point current-point)))
+        (unless chunk-index
+          (user-error "Could not find TTS chunk containing point %d" current-point))
       (let* ((paragraph-index (1+ chunk-index)) ; 1-based index for internal use
              (chunk-data (nth chunk-index tlon-tts-chunks))
              (chunk-filename (nth 2 chunk-data))
              (chunk-number (tlon-tts--get-chunk-number-from-filename chunk-filename))) ; Number for display
-	(message "Generating chunk %d (index %d at point)..." chunk-number chunk-index)
-	(tlon-tts--generate-single-paragraph paragraph-index))))) ; Pass 1-based index
+          (message "Generating chunk %d (index %d at point)..." chunk-number chunk-index)
+          (tlon-tts--generate-single-paragraph paragraph-index)))))) ; Pass 1-based index
 
 (defun tlon-tts-execute-generation-request (paragraph-index chunk-index paragraph-text chunk-filename voice-params)
   "Execute the TTS request to generate PARAGRAPH-TEXT.
@@ -1391,9 +1408,9 @@ PARAGRAPH-INDEX is the 1-based index of the paragraph."
   (let* ((chunk-index (1- paragraph-index))
          (chunk-data (when (and (>= chunk-index 0) (< chunk-index (length tlon-tts-chunks)))
                        (nth chunk-index tlon-tts-chunks)))
-         (voice-params (when chunk-data (nth 1 chunk-data))) ; Get voice params from chunk
-         (paragraph-text (when chunk-data (nth 0 chunk-data))) ; Get text from chunk data
-         (chunk-filename (when chunk-data (nth 2 chunk-data)))) ; Get filename from chunk data
+         (voice-params (when chunk-data (nth tlon-tts-chunk-index-voice-params chunk-data)))
+         (paragraph-text (when chunk-data (nth tlon-tts-chunk-index-text chunk-data)))
+         (chunk-filename (when chunk-data (nth tlon-tts-chunk-index-filename chunk-data))))
 
     (unless chunk-data
       (user-error "Could not find chunk data for paragraph index %d" paragraph-index))
@@ -1441,9 +1458,9 @@ If CHUNK-SIZE is non-nil, split string into chunks no larger than that size.
 DESTINATION is the base output filename."
   (let ((local-vars (tlon-tts-pop-file-local-vars))
         (chunks (tlon-tts-break-into-chunks chunk-size destination))) ; Pass destination
-    (save-excursion
-      (goto-char (point-max))
-      (insert local-vars))
+    ;; Re-insert local variables section at the end without save-excursion
+    (goto-char (point-max))
+    (insert local-vars)
     chunks))
 
 (defun tlon-tts-pop-file-local-vars ()
@@ -1467,10 +1484,11 @@ If CHUNK-SIZE is nil (specifically for ElevenLabs paragraph mode), each
 paragraph becomes a separate chunk, breaking before voice changes.
 
 Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
-  (save-excursion ; <-- Wrap body to preserve point
-    (goto-char (point-min))
-    (let* ((begin (point))
-           (voice-chunk-list tlon-tts-voice-chunks)
+  ;; No save-excursion needed here; point management is internal to chunking.
+  (goto-char (point-min))
+  (let* ((begin (point))
+         (staging-buffer-name (tlon-tts-get-staging-buffer-name destination)) ; Calculate once
+         (voice-chunk-list tlon-tts-voice-chunks)
            (use-paragraph-chunks (null chunk-size))
            (chunk-counter 0) ; Counter for sequential chunk numbering
            chunks current-voice next-voice-change-pos next-voice-id
@@ -1501,8 +1519,16 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
                        ;; Store original begin/end markers
                        (begin-marker (copy-marker begin))
                        (end-marker (copy-marker end))
-                       ;; text voice-params filename request-id status header-filename begin-marker end-marker
-                       (new-chunk (list trimmed-text voice-params filename nil 'pending nil begin-marker end-marker)))
+                       ;; Create chunk using defined indices for clarity, though order matters here.
+                       (new-chunk (list trimmed-text        ; tlon-tts-chunk-index-text
+                                          voice-params       ; tlon-tts-chunk-index-voice-params
+                                          filename           ; tlon-tts-chunk-index-filename
+                                          nil                ; tlon-tts-chunk-index-request-id
+                                          'pending           ; tlon-tts-chunk-index-status
+                                          staging-buffer-name ; tlon-tts-chunk-index-staging-buffer-name
+                                          nil                ; tlon-tts-chunk-index-header-filename
+                                          begin-marker       ; tlon-tts-chunk-index-begin-marker
+                                          end-marker)))      ; tlon-tts-chunk-index-end-marker
                   (push new-chunk chunks)))))
           ;; --- Prepare for next iteration ---
           ;; Final safety check: If end <= begin here, force minimal progress.
@@ -1516,7 +1542,7 @@ Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break."
 	(let ((new-voice-state (tlon-tts--update-voice-state begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)))
 	  (setq current-voice (car new-voice-state)
 		voice-chunk-list (cdr new-voice-state)))))
-      (nreverse chunks)))) ; <-- Close save-excursion
+    (nreverse chunks)))
 
 ;;;;;; Chunking Helpers
 
@@ -1599,20 +1625,43 @@ This is to prevent Elevenlabs from inserting weird audio artifacts."
 ;;;;;; Process chunks
 
 (defun tlon-tts-process-chunks ()
-  "Start processing the first chunk.
+  "Start processing chunks based on `tlon-tts-narrate-only-missing-chunks'.
+If `tlon-tts-narrate-only-missing-chunks' is non-nil, starts from the first
+chunk whose audio file doesn't exist. Otherwise, starts from the first chunk.
 Subsequent chunks are triggered by the sentinel."
-  (setq tlon-tts-chunks-to-process (length tlon-tts-chunks))
-  (if (>= tlon-tts-chunks-to-process 1)
-      (tlon-tts-generate-audio 0) ; Start with the first chunk (index 0)
-    (message "No TTS chunks to process.")))
+  (let ((total-chunks (length tlon-tts-chunks))
+        (start-index 0))
+    (when (and tlon-tts-narrate-only-missing-chunks (> total-chunks 0))
+      ;; Find the first chunk index whose file does not exist
+      (let ((found-missing nil)
+            (current-index 0))
+        (while (and (not found-missing) (< current-index total-chunks))
+          (let ((chunk-file (nth tlon-tts-chunk-index-filename (nth current-index tlon-tts-chunks))))
+            (unless (file-exists-p chunk-file)
+              (setq start-index current-index
+                    found-missing t)))
+          (setq current-index (1+ current-index)))
+        ;; If all files exist and we only process missing, set start index beyond total
+        (unless found-missing
+          (setq start-index total-chunks))))
+
+    (setq tlon-tts-chunks-to-process (- total-chunks start-index))
+
+    (if (> tlon-tts-chunks-to-process 0)
+        (progn
+          (message "Starting TTS processing from chunk %d/%d." (1+ start-index) total-chunks)
+          (tlon-tts-generate-audio start-index)) ; Start from the determined index
+      (if tlon-tts-narrate-only-missing-chunks
+          (message "All %d chunk audio files already exist. Nothing to process." total-chunks)
+        (message "No TTS chunks to process.")))))
 
 (defun tlon-tts-generate-audio (chunk-index)
   "Generate audio for the chunk at CHUNK-INDEX.
 Triggers the engine-specific request function and sets up the process sentinel."
   (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
-         (string (nth 0 chunk-data))
-         (voice-params (nth 1 chunk-data))
-         (file (nth 2 chunk-data))
+         (string (nth tlon-tts-chunk-index-text chunk-data))
+         (voice-params (nth tlon-tts-chunk-index-voice-params chunk-data))
+         (file (nth tlon-tts-chunk-index-filename chunk-data))
          (fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
          ;; Pass chunk-index to the request function
          (request (funcall fun string file voice-params chunk-index)))
@@ -1640,40 +1689,55 @@ Triggers the engine-specific request function and sets up the process sentinel."
   "Process sentinel for TTS chunk generation at CHUNK-INDEX.
 PROCESS is the process object, and EVENT is the event string."
   (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
-         (file (nth 2 chunk-data))
-         (header-file (nth 5 chunk-data))) ; Get header filename
+         (file (nth tlon-tts-chunk-index-filename chunk-data)) ; Use constant
+         (staging-buffer-name (nth tlon-tts-chunk-index-staging-buffer-name chunk-data)) ; Use constant
+         (header-file (nth tlon-tts-chunk-index-header-filename chunk-data))) ; Use constant
     (cond
      ((string-match "finished" event) ; Process finished successfully
-      (let* (;; Read headers from the temporary file
-             (output (if (and header-file (file-exists-p header-file))
-                         (with-temp-buffer
-                           (insert-file-contents header-file)
-                           (buffer-string))
-                       ""))
-             (request-id (tlon-tts--parse-elevenlabs-request-id output)))
+      ;; Staging buffer name already retrieved using constant above
+      (let* ((staging-buffer (get-buffer staging-buffer-name)))
+        ;; Check if the staging buffer still exists
+        (unless staging-buffer
+          (message "Error: Staging buffer '%s' not found for chunk %d. Aborting."
+                   staging-buffer-name chunk-index)
+          (setf (nth tlon-tts-chunk-index-status chunk-data) 'failed) ; Use constant
+          ;; Decrement remaining count as this one failed
+          (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
+          ;; Signal an error to halt immediately
+          (error "Staging buffer %s missing for chunk %d" staging-buffer-name chunk-index))
 
-        ;; Delete the temporary header file
-        (when (and header-file (file-exists-p header-file))
-          (delete-file header-file))
+        ;; Ensure we are in the correct buffer context when handling success
+        (with-current-buffer staging-buffer ; Use the existing buffer
+          (let* (;; Read headers from the temporary file
+                 (output (if (and header-file (file-exists-p header-file))
+                             (with-temp-buffer
+			       (insert-file-contents header-file)
+			       (buffer-string))
+                           ""))
+                 (request-id (tlon-tts--parse-elevenlabs-request-id output)))
 
-        ;; Store request ID (parsed earlier) and mark as completed
-        (setf (nth 3 chunk-data) request-id)
-        (setf (nth 4 chunk-data) 'completed)
+            ;; Delete the temporary header file
+            (when (and header-file (file-exists-p header-file))
+	      (delete-file header-file))
 
-        (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
-        (message "Chunk %d/%d processed successfully." (1+ chunk-index) (length tlon-tts-chunks))
+            ;; Store request ID (parsed earlier) and mark as completed
+            (setf (nth tlon-tts-chunk-index-request-id chunk-data) request-id)
+            (setf (nth tlon-tts-chunk-index-status chunk-data) 'completed)
 
-        ;; Trigger next chunk if available
-        (let ((next-chunk-index (1+ chunk-index)))
-          (when (< next-chunk-index (length tlon-tts-chunks))
-            (tlon-tts-generate-audio next-chunk-index)))
+            (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
+            (message "Chunk %d/%d processed successfully." (1+ chunk-index) (length tlon-tts-chunks))
 
-        ;; If all chunks are done, finalize
-        (when (= tlon-tts-chunks-to-process 0)
-          (tlon-tts-finish-processing file))))
+            ;; Trigger next chunk if available (now within correct context)
+            (let ((next-chunk-index (1+ chunk-index)))
+	      (when (< next-chunk-index (length tlon-tts-chunks))
+                (tlon-tts-generate-audio next-chunk-index)))
 
+            ;; If all chunks are done, finalize (now within correct context)
+            (when (= tlon-tts-chunks-to-process 0)
+	      (tlon-tts-finish-processing file))))))
      ((string-match "exited abnormally" event) ; Process failed
-      (setf (nth 4 chunk-data) 'failed) ; Mark as failed
+      ;; No buffer-local access needed here, but keep chunk data update
+      (setf (nth tlon-tts-chunk-index-status chunk-data) 'failed) ; Mark as failed
       (message "Error processing chunk %d (%s): %s" chunk-index file event)
       (when-let ((buffer (process-buffer process)))
         (with-current-buffer buffer
@@ -1690,11 +1754,11 @@ PROCESS is the process object, and EVENT is the event string."
 POINT should be a position within the TTS staging buffer.
 Returns the index or nil if no chunk contains the point."
   (let ((index 0)
-        found-index)
+	found-index)
     (dolist (chunk tlon-tts-chunks)
       (when (not found-index) ; Stop searching once found
-        (let ((begin-marker (nth 6 chunk)) ; Get begin marker
-              (end-marker (nth 7 chunk)))   ; Get end marker
+	(let ((begin-marker (nth tlon-tts-chunk-index-begin-marker chunk))
+              (end-marker (nth tlon-tts-chunk-index-end-marker chunk)))
           (when (and begin-marker end-marker
                      (>= point (marker-position begin-marker))
                      (< point (marker-position end-marker)))
@@ -2302,7 +2366,8 @@ for context)."
              (header-file (make-temp-file (format "tts-header-%d-" (or chunk-index 999)) nil ".txt")))
         ;; Store header file path in chunk data only if chunk-index is valid
         (when chunk-index
-          (setf (nth 5 (nth chunk-index tlon-tts-chunks)) header-file))
+          ;; Use the correct constant for the header filename index (6)
+          (setf (nth tlon-tts-chunk-index-header-filename (nth chunk-index tlon-tts-chunks)) header-file))
         ;; Construct curl command
 	(mapconcat 'shell-quote-argument
                    (list "curl"
@@ -2321,8 +2386,8 @@ for context)."
   "Get the ID of the previous chunk for chunk at CHUNK-INDEX."
   (when (> chunk-index 0)
     (let ((prev-chunk (nth (1- chunk-index) tlon-tts-chunks)))
-      (when (eq (nth 4 prev-chunk) 'completed) ; Check status
-        (nth 3 prev-chunk)))))
+      (when (eq (nth tlon-tts-chunk-index-status prev-chunk) 'completed) ; Check status
+        (nth tlon-tts-chunk-index-request-id prev-chunk)))))
 
 (defun tlon-tts-define-payload-parts (string before-text after-text previous-chunk-id use-context)
   "Define the payload parts for ElevenLabs API request.
@@ -3503,6 +3568,18 @@ Reads audio format choices based on the currently selected engine."
   "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks'."
   (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
 
+;;;;;;; Narrate only missing chunks
+
+(transient-define-infix tlon-tts-menu-infix-toggle-narrate-only-missing-chunks ()
+  "Toggle the value of `tlon-tts-narrate-only-missing-chunks' in `tts' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-narrate-only-missing-chunks
+  :reader 'tlon-tts-narrate-only-missing-chunks-reader)
+
+(defun tlon-tts-narrate-only-missing-chunks-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-narrate-only-missing-chunks'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-narrate-only-missing-chunks))
+
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
@@ -3521,6 +3598,7 @@ Reads audio format choices based on the currently selected engine."
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
     ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
+    ("-m" "Narrate missing only"                   tlon-tts-menu-infix-toggle-narrate-only-missing-chunks)
     ""
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["File processing"
