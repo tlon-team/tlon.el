@@ -182,8 +182,11 @@ translations back into the glossary file. Can be run iteratively."
 
 (defun tlon-ai-create-glossary-language-callback (raw-response info new-lang-code full-glossary-data missing-en-terms)
   "Callback function for `tlon-ai-create-glossary-language'.
-Receives the RAW-RESPONSE from the first AI (translation generation).
-Initiates a second AI call for verification and cleaning."
+Receives the RAW-RESPONSE from the first AI (translation generation). Initiates
+a second AI call for verification and cleaning. INFO contains the request
+information. NEW-LANG-CODE is the target language code. FULL-GLOSSARY-DATA is
+the original glossary data. MISSING-EN-TERMS is the list of English terms that
+were sent to the AI."
   (if (not raw-response)
       (tlon-ai-callback-fail info) ; Use the fail callback from tlon-ai
     (let* ((num-expected (length missing-en-terms))
@@ -208,8 +211,11 @@ Initiates a second AI call for verification and cleaning."
 
 (defun tlon-ai-process-verified-translations-callback (verified-response info new-lang-code full-glossary-data missing-en-terms raw-response-file)
   "Callback function to process the VERIFIED-RESPONSE from the cleaning AI.
-Parses the cleaned list, merges translations, writes the updated glossary,
-and deletes RAW-RESPONSE-FILE on success."
+Parses the cleaned list, merges translations, writes the updated glossary, and
+deletes RAW-RESPONSE-FILE on success. INFO contains the request information.
+NEW-LANG-CODE is the target language code. FULL-GLOSSARY-DATA is the original
+glossary data. MISSING-EN-TERMS is the list of English terms that were sent to
+the AI."
   (if (not verified-response)
       (progn
         (message "AI verification/cleaning step failed. Raw response kept at: %s" raw-response-file)
