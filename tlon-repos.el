@@ -266,11 +266,12 @@ password store."
 Prompts the user to select a repository from the list derived from entries under
 \"tlon/core/git-crypt/\" in the password store."
   (interactive)
-  (let* ((repo-names (tlon--get-git-crypt-repos))
-         (repo-name (completing-read "Repo: " repo-names nil t))
-         (repo-dir (file-name-concat paths-dir-tlon-repos repo-name))
-         (entry (concat "tlon/core/git-crypt/" repo-name)))
-    (pass-extras-git-crypt-unlock repo-dir entry)))
+  (if-let* ((repo-names (tlon--get-git-crypt-repos))
+            (repo-name (completing-read "Repo: " repo-names nil t))
+            (repo-dir (file-name-concat paths-dir-tlon-repos repo-name))
+            (entry (concat "tlon/core/git-crypt/" repo-name)))
+      (pass-extras-git-crypt-unlock repo-dir entry)
+    (user-error "Repo for the selected git-crypt entry not found")))
 
 ;;;;; Menu
 
