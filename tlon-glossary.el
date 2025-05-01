@@ -155,7 +155,7 @@ Prompts for a target language, identifies terms missing a translation for that
 language, sends only those terms to an AI model, and merges the AI-generated
 translations back into the glossary file. Can be run iteratively."
   (interactive)
-  (let* ((new-lang-code (tlon-select-language 'code 'babel "Select target language code"))
+  (let* ((new-lang-code (tlon-select-language 'code 'babel "Target language: "))
          (new-lang-name (tlon-lookup tlon-languages-properties :name :code new-lang-code))
          (glossary-data (tlon-parse-glossary))
          ;; Filter entries missing the target language
