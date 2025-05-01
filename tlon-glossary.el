@@ -110,42 +110,6 @@
     (setq glossary (append glossary (list entry))))
   glossary)
 
-;; TODO: this is currently not used; fix it
-(defun tlon-glossary-prompt-for-explanation ()
-  "Prompt the user for an explanation of the translation."
-  (read-string (format
-		"Explanation (optional; please write it in the translation language [%s]): "
-		tlon-translation-language)))
-
-;; TODO: this is currently not used; fix it
-(defvar magit-commit-ask-to-stage)
-(declare-function magit-save-repository-buffers "magit-mode")
-(declare-function magit-pull-from-upstream "magit-pull")
-(declare-function magit-push-current-to-pushremote "magit-push")
-(declare-function magit-staged-files "magit-git")
-(declare-function magit-run-git "magit-process")
-(declare-function magit-commit-create "magit-commit")
-(defun tlon-glossary-commit (action term &optional explanation)
-  "Commit glossary modifications.
-ACTION describes the action (\"add\" or \"modify\") performed on the glossary.
-TERM refers to the English glossary term to which this action was performed.
-These two variables are used to construct a commit message of the form
-\='Glossary: ACTION \"TERM\"\=', such as \='Glossary: add \"repugnant
-conclusion\"\='. Optionally, EXPLANATION provides an explanation of the change."
-  (let ((default-directory (tlon-repo-lookup :dir :name "babel-es"))
-	(explanation (if explanation (concat "\n\n" explanation) "")))
-    ;; save all unsaved files in repo
-    (magit-save-repository-buffers)
-    (call-interactively #'magit-pull-from-upstream nil)
-    ;; if there are staged files, we do not commit or push the changes
-    (unless (magit-staged-files)
-      (tlon-check-branch "main" default-directory)
-      (magit-run-git "add" tlon-file-glossary-source)
-      (let ((magit-commit-ask-to-stage nil))
-	(magit-commit-create (list "-m" (format  "Glossary: %s \"%s\"%s"
-						 action term explanation))))))
-  (call-interactively #'magit-push-current-to-pushremote))
-
 ;;;;; AI Glossary Generation
 
 ;;;###autoload
