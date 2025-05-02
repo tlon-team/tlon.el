@@ -59,6 +59,14 @@
   :group 'tlon-tts
   :type 'boolean)
 
+(defcustom tlon-tts-narrate-sidenotes nil
+  "Whether to narrate sidenotes.
+If non-nil, the content of sidenotes will be read aloud, typically repositioned
+to the end of the sentence containing the reference. If nil (the default),
+sidenotes will be removed like footnotes."
+  :group 'tlon-tts
+  :type 'boolean)
+
 (defcustom tlon-tts-narrate-only-missing-chunks t
   "Whether `tlon-tts-narrate-staged-buffer' should only process missing chunks.
 If non-nil, narration will start from the first chunk whose audio file does not
@@ -2503,12 +2511,13 @@ citation key, format. Hence, it must be run *before*
       (when (not (string-empty-p note))
 	(unless (looking-back (concat "\\.\\|" markdown-regex-footnote) (line-beginning-position))
 	  (setq reposition t))
-	(when (eq (tlon-get-note-type note) 'sidenote)
-	  (when reposition
-	    (forward-sentence)
-	    (while (thing-at-point-looking-at tlon-md-blockquote)
-	      (forward-sentence) (forward-char) (forward-char)))
-	  (insert (tlon-tts-handle-note note)))))))
+(when (and (eq (tlon-get-note-type note) 'sidenote)
+	   tlon-tts-narrate-sidenotes) ; Only insert if option is non-nil
+  (when reposition
+    (forward-sentence)
+    (while (thing-at-point-looking-at tlon-md-blockquote)
+      (forward-sentence) (forward-char) (forward-char)))
+  (insert (tlon-tts-handle-note note)))))))
 
 (defun tlon-tts-get-note ()
   "Return the note at point."
@@ -3602,6 +3611,18 @@ Reads audio format choices based on the currently selected engine."
   "Reader for `tlon-tts-menu-infix-toggle-narrate-only-missing-chunks'."
   (tlon-transient-toggle-variable-value 'tlon-tts-narrate-only-missing-chunks))
 
+;;;;;;; Narrate sidenotes
+
+(transient-define-infix tlon-tts-menu-infix-toggle-narrate-sidenotes ()
+  "Toggle the value of `tlon-tts-narrate-sidenotes' in `tts' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-narrate-sidenotes
+  :reader 'tlon-tts-narrate-sidenotes-reader)
+
+(defun tlon-tts-narrate-sidenotes-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-narrate-sidenotes'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-narrate-sidenotes))
+
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
@@ -3620,6 +3641,7 @@ Reads audio format choices based on the currently selected engine."
     ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
     ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
+    ("-n" "Narrate sidenotes"                      tlon-tts-menu-infix-toggle-narrate-sidenotes)
     ("-m" "Narrate missing only"                   tlon-tts-menu-infix-toggle-narrate-only-missing-chunks)
     ""
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]

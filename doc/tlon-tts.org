@@ -55,6 +55,9 @@ This module provides comprehensive text-to-speech (TTS) functionality, integrati
 #+vindex: tlon-tts-listener-cue-break-duration
 + ~tlon-tts-listener-cue-break-duration~ :: String specifying the duration of the pause inserted before and after listener cues (e.g., "0.5s").
 
+#+vindex: tlon-tts-narrate-sidenotes
++ ~tlon-tts-narrate-sidenotes~ :: Boolean. If non-nil, the content of sidenotes will be read aloud. If nil (the default), sidenotes are removed like footnotes.
+
 #+vindex: tlon-tts-narrate-only-missing-chunks
 + ~tlon-tts-narrate-only-missing-chunks~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` will only generate audio for chunks whose corresponding files do not already exist, effectively resuming an interrupted process. If nil, it will regenerate all chunks.
 
@@ -172,6 +175,7 @@ It provides the following groups and commands:
     + =-s= :: Engine Settings (~tlon-tts-menu-infix-set-engine-settings~)
     + =-p= :: Prompt (Currently unused) (~tlon-tts-menu-infix-set-prompt~)
     + =-v= :: Use alternate voice (~tlon-tts-menu-infix-toggle-alternate-voice~)
+    + =-n= :: Narrate sidenotes (~tlon-tts-menu-infix-toggle-narrate-sidenotes~)
     + =-m= :: Narrate missing only (~tlon-tts-menu-infix-toggle-narrate-only-missing-chunks~)
     + =-D= :: Debug mode (~tlon-menu-infix-toggle-debug~)
 + *File processing*:
