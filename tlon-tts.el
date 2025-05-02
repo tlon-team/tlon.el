@@ -2723,36 +2723,41 @@ The time length of the pause is determined by
   "Replace abbreviations of TYPE with their spoken equivalent."
   (let ((case-fold-search nil)) ; Default to case-sensitive for standalone abbrev replacement
     (dolist (entry (pcase type
-		     ('local tlon-local-abbreviations-for-session)
-		     ('global (tlon-tts-get-global-abbreviations))))
+                     ('local tlon-local-abbreviations-for-session)
+                     ('global (tlon-tts-get-global-abbreviations))))
       (cl-destructuring-bind (abbrev . expansion) entry
-	(let ((abbrev-introduced-pattern
-	       (format (concat "\\(?:" ; Non-capturing group for alternation
-			       ;; Expansion (Abbrev) or Expansion [Abbrev]
-			       "\\(?1:%s\\)[ \t]*([ \t]*\\(?2:%s\\)[ \t]*)\\|"
-			       "\\(?1:%s\\)[ \t]*\\[[ \t]*\\(?2:%s\\)[ \t]*\\]\\|"
-			       ;; Abbrev (Expansion) or Abbrev [Expansion]
-			       "\\(?2:%s\\)[ \t]*([ \t]*\\(?1:%s\\)[ \t]*)\\|"
-			       "\\(?2:%s\\)[ \t]*\\[[ \t]*\\(?1:%s\\)[ \t]*\\]"
-			       "\\)") ; Close non-capturing group
-		       (regexp-quote expansion) (regexp-quote abbrev)
-		       (regexp-quote expansion) (regexp-quote abbrev)
-		       (regexp-quote abbrev) (regexp-quote expansion)
-		       (regexp-quote abbrev) (regexp-quote expansion)))
-	      (abbrev-pattern (format "\\b%s\\b" (regexp-quote abbrev)))) ; Pattern for the abbreviation itself
+        (let* ((abbrev-is-regex-p (string-match-p "[\\\\\\[\\(\\|\\?\\*\\+\\{\\.\\^\\$]" abbrev))
+               (abbrev-pattern (if abbrev-is-regex-p
+                                   abbrev ; Use raw string as regex pattern
+                                 (format "\\b%s\\b" (regexp-quote abbrev))))) ; Quote and add word boundaries
 
-	  ;; First, replace the full introduction (case-insensitive search)
-	  (goto-char (point-min))
-	  (let ((case-fold-search t)) ; Bind locally for this search only
-	    (while (re-search-forward abbrev-introduced-pattern nil t)
-	      ;; Replace with the matched expansion (group 1) to preserve original capitalization
-	      (replace-match (match-string 1) t t)))
+          ;; Skip introduction pattern check if abbrev is a regex
+          (unless abbrev-is-regex-p
+            (let ((abbrev-introduced-pattern
+                   (format (concat "\\(?:" ; Non-capturing group for alternation
+                                   ;; Expansion (Abbrev) or Expansion [Abbrev]
+                                   "\\(?1:%s\\)[ \t]*([ \t]*\\(?2:%s\\)[ \t]*)\\|"
+                                   "\\(?1:%s\\)[ \t]*\\[[ \t]*\\(?2:%s\\)[ \t]*\\]\\|"
+                                   ;; Abbrev (Expansion) or Abbrev [Expansion]
+                                   "\\(?2:%s\\)[ \t]*([ \t]*\\(?1:%s\\)[ \t]*)\\|"
+                                   "\\(?2:%s\\)[ \t]*\\[[ \t]*\\(?1:%s\\)[ \t]*\\]"
+                                   "\\)") ; Close non-capturing group
+                           (regexp-quote expansion) (regexp-quote abbrev)
+                           (regexp-quote expansion) (regexp-quote abbrev)
+                           (regexp-quote abbrev) (regexp-quote expansion)
+                           (regexp-quote abbrev) (regexp-quote expansion))))
+              ;; Replace the full introduction (case-insensitive search)
+              (goto-char (point-min))
+              (let ((case-fold-search t)) ; Bind locally for this search only
+                (while (re-search-forward abbrev-introduced-pattern nil t)
+                  ;; Replace with the matched expansion (group 1) to preserve original capitalization
+                  (replace-match (match-string 1) t t)))))
 
-	  ;; Then, replace remaining occurrences of the abbreviation itself (case-sensitive search)
-	  (goto-char (point-min))
-	  (while (re-search-forward abbrev-pattern nil t)
-	    ;; Pass the expansion to the replacement function
-	    (tlon-tts-punctuate-abbrev-replacement expansion)))))))
+          ;; Replace remaining occurrences of the abbreviation itself (case-sensitive search)
+          (goto-char (point-min))
+          (while (re-search-forward abbrev-pattern nil t)
+            ;; Pass the expansion to the replacement function
+            (tlon-tts-punctuate-abbrev-replacement expansion)))))))
 
 (defun tlon-tts-punctuate-abbrev-replacement (replacement)
   "When processing abbreviations, replace match with REPLACEMENT.
