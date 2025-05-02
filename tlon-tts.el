@@ -67,7 +67,7 @@ sidenotes will be removed like footnotes."
   :group 'tlon-tts
   :type 'boolean)
 
-(defcustom tlon-tts-narrate-only-missing-chunks t
+(defcustom tlon-tts-generate-missing-chunks-only t
   "Whether `tlon-tts-narrate-staged-buffer' should only process missing chunks.
 If non-nil, narration will start from the first chunk whose audio file does not
 exist. If nil, all chunks will be processed, potentially overwriting existing
@@ -1635,13 +1635,13 @@ This is to prevent Elevenlabs from inserting weird audio artifacts."
 ;;;;;; Process chunks
 
 (defun tlon-tts-process-chunks ()
-  "Start processing chunks based on `tlon-tts-narrate-only-missing-chunks'.
-If `tlon-tts-narrate-only-missing-chunks' is non-nil, starts from the first
+  "Start processing chunks based on `tlon-tts-generate-missing-chunks-only'.
+If `tlon-tts-generate-missing-chunks-only' is non-nil, starts from the first
 chunk whose audio file doesn't exist. Otherwise, starts from the first chunk.
 Subsequent chunks are triggered by the sentinel."
   (let ((total-chunks (length tlon-tts-chunks))
         (start-index 0))
-    (when (and tlon-tts-narrate-only-missing-chunks (> total-chunks 0))
+    (when (and tlon-tts-generate-missing-chunks-only (> total-chunks 0))
       ;; Find the first chunk index whose file does not exist
       (let ((found-missing nil)
             (current-index 0))
@@ -1661,7 +1661,7 @@ Subsequent chunks are triggered by the sentinel."
         (progn
           (message "Starting TTS processing from chunk %d/%d." (1+ start-index) total-chunks)
           (tlon-tts-generate-audio start-index)) ; Start from the determined index
-      (if tlon-tts-narrate-only-missing-chunks
+      (if tlon-tts-generate-missing-chunks-only
           (message "All %d chunk audio files already exist. Nothing to process." total-chunks)
         (message "No TTS chunks to process.")))))
 
@@ -3599,17 +3599,17 @@ Reads audio format choices based on the currently selected engine."
   "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks'."
   (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
 
-;;;;;;; Narrate only missing chunks
+;;;;;;; Generate missing chunks only
 
-(transient-define-infix tlon-tts-menu-infix-toggle-narrate-only-missing-chunks ()
-  "Toggle the value of `tlon-tts-narrate-only-missing-chunks' in `tts' menu."
+(transient-define-infix tlon-tts-menu-infix-toggle-generate-missing-chunks-only ()
+  "Toggle the value of `tlon-tts-generate-missing-chunks-only' in `tts' menu."
   :class 'transient-lisp-variable
-  :variable 'tlon-tts-narrate-only-missing-chunks
-  :reader 'tlon-tts-narrate-only-missing-chunks-reader)
+  :variable 'tlon-tts-generate-missing-chunks-only
+  :reader 'tlon-tts-generate-missing-chunks-only-reader)
 
-(defun tlon-tts-narrate-only-missing-chunks-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-toggle-narrate-only-missing-chunks'."
-  (tlon-transient-toggle-variable-value 'tlon-tts-narrate-only-missing-chunks))
+(defun tlon-tts-generate-missing-chunks-only-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-generate-missing-chunks-only'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-generate-missing-chunks-only))
 
 ;;;;;;; Narrate sidenotes
 
