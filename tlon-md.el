@@ -261,7 +261,7 @@ in this tag and pass the URL as the value of the `src' attribute.")
 	  :self-closing nil
 	  :doc "")
     (:tag "ReplaceAudio"
-	  :attributes ((:name "text" :required t :valued t :group 3 :prompt "Audio text: ")
+	  :attributes ((:name "text" :required nil :valued t :group 3 :prompt "Audio text: ") ; Allow empty string
 		       (:name "role" :required nil :valued t :group 5 :prompt "Role: " :reader tlon-md-replace-audio-voice-reader))
 	  :type mdx
 	  :self-closing nil
