@@ -1260,6 +1260,16 @@ PARAGRAPH-INDEX is 0-based. Assumes the current buffer is a TTS staging buffer."
         (forward-paragraph))
     (end-of-buffer (goto-char (point-max))))) ; Go to end if index is too large
 
+(defun tlon-tts--get-paragraph-number-before-pos (pos)
+  "Return the paragraph number *N* from the comment preceding POS.
+Searches backward from POS for \"<!-- Paragraph N -->\".
+Returns the number N as an integer, or nil if not found."
+  (save-excursion
+    (goto-char pos)
+    (let ((comment-regex "^<!-- Paragraph \\([0-9]+\\) -->"))
+      (when (re-search-backward comment-regex nil t)
+        (string-to-number (match-string 1))))))
+
 (defun tlon-tts-get-paragraph-number-at-point ()
   "Return the paragraph number *N* recorded in the comment that precedes point.
 If no such comment is found, return nil."
