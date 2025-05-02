@@ -643,7 +643,8 @@ VALUES. If `get-placeholders', return it filled with placeholders."
 		      (pcase format
 			('get-match-string (tlon-make-attribute-pattern-searchable format-string group required-p))
 			((or 'get-values 'insert-values 'insert-prompt)
-			 (when string ; don't insert nil values (typically optional attributes)
+			 ;; Don't insert nil or empty string values
+			 (when (and string (not (string-empty-p string)))
 			   (format format-string string)))
 			('get-placeholders format-string))))))))
 
