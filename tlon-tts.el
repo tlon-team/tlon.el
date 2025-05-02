@@ -3708,7 +3708,7 @@ Reads audio format choices based on the currently selected engine."
 If ORIG-FUN errors out because it received a nil FILE, count the
 paragraphs between START (first arg) and POS (second arg) inside the
 current buffer. ARGS are the arguments passed to ORIG-FUN."
-  (condition-case err
+  (condition-case _err
       (apply orig-fun args)
     (wrong-type-argument
      (let* ((start (or (nth 0 args) (point-min)))
@@ -3721,6 +3721,7 @@ current buffer. ARGS are the arguments passed to ORIG-FUN."
              (when (<= (point) pos)
                (setq count (1+ count))))
            count))))))
+
 ;; Install the advice once `tlon-counterpart' (which defines the original
 ;; function) is loaded.
 (eval-after-load 'tlon-counterpart
