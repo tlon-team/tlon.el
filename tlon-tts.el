@@ -2652,7 +2652,7 @@ Whether slashes are replaced, and by what character, depends on the TTS engine."
   "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
   (goto-char (point-min))
   (while (re-search-forward (tlon-md-get-tag-pattern "ReplaceAudio") nil t)
-    (let* ((text (match-string 4))
+    (let* ((text (or (match-string 4) "")) ; Default to empty string if attribute missing
 	   (role (match-string 6))
 	   replacement voice)
       (save-match-data
