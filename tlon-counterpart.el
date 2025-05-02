@@ -191,11 +191,14 @@ If called with a prefix ARG, open the counterpart in the other window."
   "Execute FN for each paragraph in FILE.
 If RETURN-POSITIONS is non-nil, return list of (start . end) positions.
 Otherwise, return list of FN's results for each paragraph.
-If FILE is nil, use the current buffer's file."
-  (with-current-buffer (find-file-noselect (if (stringp file) file (buffer-file-name)))
-    (save-excursion
-      (goto-char (or (cdr (tlon-get-delimited-region-pos
-                           tlon-yaml-delimiter))
+If FILE is nil, use the current buffer."
+  (let ((buffer-to-use (if (stringp file)
+                           (find-file-noselect file)
+                         (current-buffer)))) ; Use current buffer if file is nil or buffer object
+    (with-current-buffer buffer-to-use
+      (save-excursion
+        (goto-char (or (cdr (tlon-get-delimited-region-pos
+                             tlon-yaml-delimiter))
                      (point-min)))
       (let ((content-end (or (car (tlon-get-delimited-region-pos
                                    tlon-md-local-variables-line-start
