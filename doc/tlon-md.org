@@ -88,7 +88,7 @@ These commands insert or edit specific tags at point or around the selected regi
   #+findex: tlon-mdx-insert-embedded
   + ~tlon-mdx-insert-embedded~ :: Inserts/edits =<Embedded>= tags (self-closing). Prompts for chart URL (=src=), alt text (=alt=), and height (=height=).
   #+findex: tlon-mdx-insert-replace-audio
-  + ~tlon-mdx-insert-replace-audio~ :: Inserts/edits =<ReplaceAudio>= tags. Prompts for the audio text (=text=) and optional voice role (=role=) using ~tlon-md-replace-audio-voice-reader~.
+  + ~tlon-mdx-insert-replace-audio~ :: Inserts/edits =<ReplaceAudio>= tags. Prompts for the audio text (=text=, which can be empty) and optional voice role (=role=) using ~tlon-md-replace-audio-voice-reader~. An empty role selection defaults to inheriting the surrounding voice.
   #+findex: tlon-mdx-insert-romantlon-insert-mdx-roman
   + ~tlon-mdx-insert-romantlon-insert-mdx-roman~ :: Inserts/edits =<Roman>= tags (for Roman numerals in small caps with correct TTS).
   #+findex: tlon-mdx-insert-small-caps
@@ -250,7 +250,7 @@ These functions are used by ~tlon-md-format-tag-with-attributes~ when prompting 
 #+findex: tlon-md-phoneme-alphabet-reader
 + ~tlon-md-phoneme-alphabet-reader~ :: Reads =alphabet= for =<phoneme>= using completion against ~tlon-md-ssml-phoneme-alphabets~.
 #+findex: tlon-md-replace-audio-voice-reader
-+ ~tlon-md-replace-audio-voice-reader~ :: Reads =role= for =<ReplaceAudio>= or =<VoiceRole>= using completion against a predefined list of roles.
++ ~tlon-md-replace-audio-voice-reader~ :: Reads =role= for =<ReplaceAudio>= or =<VoiceRole>= using completion against a predefined list of roles. Allows an empty selection, which defaults to inheriting the surrounding voice context.
 #+findex: tlon-md-say-as-interpret-as-reader
 + ~tlon-md-say-as-interpret-as-reader~ :: Reads =interpret-as= for =<say-as>= using completion against ~tlon-md-ssml-interpret-as-values~.
 #+findex: tlon-md-simple-table-include-reader
