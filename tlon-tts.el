@@ -1260,6 +1260,15 @@ PARAGRAPH-INDEX is 0-based. Assumes the current buffer is a TTS staging buffer."
         (forward-paragraph))
     (end-of-buffer (goto-char (point-max))))) ; Go to end if index is too large
 
+(defun tlon-tts-get-paragraph-number-at-point ()
+  "Return the paragraph number *N* recorded in the comment
+\"<!-- Paragraph N -->\" that precedes point.
+If no such comment is found, return nil."
+  (save-excursion
+    (let ((comment-regex "^<!-- Paragraph \\([0-9]+\\) -->"))
+      (when (re-search-backward comment-regex nil t)
+        (string-to-number (match-string 1)))))
+
 ;; MAYBE: make it work with non-file-visiting buffers
 (defun tlon-tts-get-content (&optional content file)
   "Return the content to be read.
@@ -1374,7 +1383,7 @@ number (e.g., `basename-paragraph-005.mp3`)."
           (let (current-paragraph-number)
             (while (< (point) end)
               ;; Calculate paragraph number at current position
-              (setq current-paragraph-number (1+ (tlon-get-number-of-paragraphs content-start (point))))
+              (setq current-paragraph-number (tlon-tts-get-paragraph-number-at-point))
               ;; Add to list if not already present
               (cl-pushnew current-paragraph-number paragraphs-to-generate)
               ;; Move to the start of the next paragraph
@@ -1387,7 +1396,7 @@ number (e.g., `basename-paragraph-005.mp3`)."
           (setq paragraphs-to-generate (nreverse paragraphs-to-generate))) ; Maintain order
       ;; --- No region active, generate paragraph at point ---
       (setq paragraphs-to-generate
-            (list (1+ (tlon-get-number-of-paragraphs content-start (point))))))
+            (list (tlon-tts-get-paragraph-number-at-point))))
     ;; --- Generate audio for selected paragraphs ---
     (if paragraphs-to-generate
         (dolist (paragraph-number paragraphs-to-generate)
