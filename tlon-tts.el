@@ -1563,8 +1563,13 @@ Each chunk stores the 1-based paragraph number where it begins."
               ;; Only add chunk if trimmed text is not empty AND not just a break tag
               (when (and (not (string-empty-p trimmed-text))
                          (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
-                ;; Calculate paragraph number (1-based) at the beginning of this chunk
-                (let* ((paragraph-number (1+ (tlon-get-number-of-paragraphs content-start begin))) ; +1 for 1-based index
+                ;; Determine paragraph number directly from the comment that
+                ;; precedes THIS paragraph – the single source of truth.
+                (let* ((paragraph-number (save-excursion
+                                           (goto-char begin)
+                                           (or (tlon-tts-get-paragraph-number-at-point)
+                                               ;; Fallback (shouldn't happen)
+                                               (1+ (tlon-get-number-of-paragraphs content-start begin))))) ; Prefer comment number
 		       (filename (tlon-tts-get-chunk-name destination paragraph-number)) ; Use paragraph number for filename
 		       (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
 		       ;; Store original begin/end markers
