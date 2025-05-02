@@ -1370,7 +1370,7 @@ number (e.g., `basename-paragraph-005.mp3`)."
                     ;; Ensure we don't get stuck if forward-paragraph doesn't move
                     (when (and (= (point) beg) (< beg end)) (forward-char 1)))
                 (error (goto-char end))))) ; Move to end if error (e.g., end of buffer)
-            (setq paragraphs-to-generate (nreverse paragraphs-to-generate)))) ; Maintain order
+          (setq paragraphs-to-generate (nreverse paragraphs-to-generate))) ; Maintain order
       ;; --- No region active, generate paragraph at point ---
       (setq paragraphs-to-generate
             (list (1+ (tlon-get-number-of-paragraphs content-start (point))))))
