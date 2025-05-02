@@ -786,26 +786,22 @@ the value of TEXT will be used instead."
   (tlon-md-insert-or-edit-tag "ReplaceAudio"))
 
 (defun tlon-md-replace-audio-voice-reader ()
-  "Prompt the user to select the `voice' attribute value for a `ReplaceAudio' tag.
+  "Prompt the user to select the `role' attribute value for `ReplaceAudio' or `VoiceRole'.
 
-- `\"inherit\"' is the voice with which the text surrounding the `ReplaceAudio'
-  tag is read.
+Allows an empty selection, which defaults to inheriting the surrounding voice context.
 
-- `\"main\"' is the voice used for reading the text body.
-
-- `\"alternate\"' is the voice used for reading textual elements that are not
-  part of the main body, such as notes, quotes, and asides, as well as for
-  reading listener cues (such as cues introducing headings, images, and tables.
-  It is a voice of the same gender as the main voice.
-
-- `\"male\"' and `\"female\"' are, respectively, male and female voices
-  different from the main voice. These voice roles may be used for reading text
-  that is attributed to people of a particular gender (e.g. quotes). The voice
-  is the same as the alternate voice of that gender.
-
-- `\"alternate gender\"' is a voice of the gender other than that of the main
-  voice."
-  (completing-read "`voice': " '("inherit" "main" "alternate" "male" "female" "alternate gender") nil t))
+Available roles:
+- `\"\"` (empty string): Inherit the surrounding voice context (default).
+- `\"inherit\"': Explicitly inherit the voice of the surrounding text.
+- `\"main\"': Use the main text body voice.
+- `\"alternate\"': Use the alternate voice (same gender as main) for elements
+  like notes, quotes, asides, and listener cues.
+- `\"male\"' / `\"female\"': Use a specific gender voice different from the main
+  voice (matches the alternate voice of that gender). Useful for attributed quotes.
+- `\"alternate gender\"': Use a voice of the opposite gender to the main voice."
+  (completing-read "Role (leave empty for default): "
+		   '("" "inherit" "main" "alternate" "male" "female" "alternate gender")
+		   nil nil)) ; Allow empty input (require-match is nil)
 
 ;;;###autoload
 (defun tlon-mdx-insert-romantlon-insert-mdx-roman ()
