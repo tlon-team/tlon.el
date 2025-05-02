@@ -3633,26 +3633,27 @@ Reads audio format choices based on the currently selected engine."
     ("b" "Narrate buffer"                          tlon-tts-narrate-staged-buffer)
     ("p" "Narrate paragraphs "                     tlon-tts-narrate-staged-paragraphs)
     ("e" "Generate report"                         tlon-tts-generate-report)
-    ""
+    """"
     "Narration options"
-    ("-a" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
-    ("-d" "Delete file chunks"                     tlon-tts-menu-infix-toggle-delete-file-chunks)
-    ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
-    ("-s" "Settings"                               tlon-tts-menu-infix-set-engine-settings)
+    ("-b" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
     ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
+    ("-s" "Narrate sidenotes"                      tlon-tts-menu-infix-toggle-narrate-sidenotes)
     ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
-    ("-n" "Narrate sidenotes"                      tlon-tts-menu-infix-toggle-narrate-sidenotes)
-    ("-m" "Narrate missing only"                   tlon-tts-menu-infix-toggle-narrate-only-missing-chunks)
+    ""
+    ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
+    ("-t" "Engine settings"                        tlon-tts-menu-infix-set-engine-settings)
     ""
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["File processing"
     ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
     ("x" "Truncate audio file"                     tlon-tts-truncate-audio-file)
+    ("o" "Open audio dir"                          tlon-tts-open-audio-directory)
+    ("m" "Move file to audio dir"                  tlon-tts-move-file-to-audio-server)
     ""
-    "Audio repo"
-    ("o" "Open"                                    tlon-tts-open-audio-directory)
-    ("m" "Move file to"                            tlon-tts-move-file-to-audio-server)]
+    "File processing options"
+    ("-m" "Generate missing chunks only"           tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
+    ("-d" "Delete file chunks"                     tlon-tts-menu-infix-toggle-delete-file-chunks)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                            tlon-tts-edit-global-abbreviations)
