@@ -1575,9 +1575,9 @@ Each chunk stores the 1-based paragraph number where it begins."
 		       (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
 		       ;; Store original begin/end markers
 		       (begin-marker (copy-marker begin))
-		       (end-marker (copy-marker end))
-		       ;; Create chunk using defined indices
-		       (new-chunk (list trimmed-text        ; tlon-tts-chunk-index-text
+                       (end-marker (copy-marker end))
+                       ;; Create chunk using defined indices
+                       (new-chunk (list trimmed-text        ; tlon-tts-chunk-index-text
                                         voice-params       ; tlon-tts-chunk-index-voice-params
                                         filename           ; tlon-tts-chunk-index-filename
                                         nil                ; tlon-tts-chunk-index-request-id
@@ -1587,7 +1587,9 @@ Each chunk stores the 1-based paragraph number where it begins."
                                         begin-marker       ; tlon-tts-chunk-index-begin-marker
                                         end-marker         ; tlon-tts-chunk-index-end-marker
                                         paragraph-number))) ; tlon-tts-chunk-index-paragraph-number
-                  (push new-chunk chunks))))) ; Corrected closing parens here
+                  ;; Only add the chunk if we got a valid paragraph number and filename
+                  (when filename
+                    (push new-chunk chunks)))))) ; Corrected closing parens here
           ;; --- Prepare for next iteration ---
           ;; Final safety check: If end <= begin here, force minimal progress.
           (when (and (<= end begin) (< begin (point-max)))

@@ -288,7 +288,7 @@ This section lists key non-interactive functions, variables, and constants used 
 #+findex: tlon-tts-process-chunk-sentinel
 + ~tlon-tts-process-chunk-sentinel~ :: The sentinel function called when an audio generation process for a chunk finishes. It parses the response (including the request ID for ElevenLabs), updates the chunk status, stores the request ID, and triggers the next chunk's generation or finalizes processing (normalization, joining, cleanup) if all chunks are done.
 #+findex: tlon-tts--generate-single-paragraph-by-number
-+ ~tlon-tts--generate-single-paragraph-by-number~ :: Internal function called by ~tlon-tts-narrate-staged-paragraphs~. Takes a 1-based paragraph number, finds the corresponding chunk data in ~tlon-tts-chunks~, and calls ~tlon-tts-execute-generation-request~ to generate the audio for that specific paragraph.
++ ~tlon-tts--generate-single-paragraph-by-number~ :: Internal function called by ~tlon-tts-narrate-staged-paragraphs~. Takes a 1-based paragraph number (read from the comment), finds the corresponding chunk data in ~tlon-tts-chunks~ (matching based on the paragraph number stored within the chunk), and calls ~tlon-tts-execute-generation-request~ to generate the audio for that specific chunk's text.
 
 *** Engine Request Functions
 :PROPERTIES:
