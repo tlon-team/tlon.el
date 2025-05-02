@@ -3716,10 +3716,18 @@ current buffer. ARGS are the arguments passed to ORIG-FUN."
        (save-excursion
          (goto-char start)
          (let ((count 0))
+           ;; Loop while the current position (start of a paragraph block) is before pos
            (while (< (point) pos)
+             ;; Increment count for the paragraph block starting at the current point
+             (setq count (1+ count))
+             ;; Move past the paragraph block (content + break tag)
              (forward-paragraph)
-             (when (<= (point) pos)
-               (setq count (1+ count))))
+             ;; Skip any separating blank lines, but don't go past pos
+             (while (and (< (point) pos) (looking-at "\n"))
+               (forward-char 1)))
+           ;; The loop counts paragraphs *starting* before pos.
+           ;; If pos is exactly at the start of a paragraph, that paragraph is not counted.
+           ;; This correctly returns the number of paragraphs before pos.
            count))))))
 
 ;; Install the advice once `tlon-counterpart' (which defines the original
