@@ -3307,28 +3307,38 @@ Signals an error if the name is not found."
 ;; functions will change positions of their predecessors
 (defun tlon-tts-chunkify-unsupported-ssml-tags (tags)
   "Chunkify unsupported SSML TAGS.
-This removes the tag but stores its position and the associated voice ID
-\\=(looked up from the friendly name in the tag's `name' attribute) in
-`tlon-tts-voice-chunks'."
+This removes the tag but stores its position and the associated voice ID in
+`tlon-tts-voice-chunks'. It handles cases where the tag's `name' attribute
+contains either a friendly name or a voice ID."
   (tlon-tts-reposition-closing-voice-tag)
   (setq tlon-tts-voice-chunks '())
   (dolist (tag tags)
     (let ((cons (tlon-tts-get-cons-for-unsupported-ssml-tags tag))
-	  voice-name voice-id replacement)
+	  extracted-name-or-id voice-id replacement)
       (goto-char (point-min))
       (while (re-search-forward (car cons) nil t)
-	;; Get friendly name from tag attribute
-	(setq voice-name (match-string-no-properties 4))
-	;; Look up the corresponding voice ID
-	(setq voice-id (tlon-tts-get-voice-id-from-name voice-name))
-	;; Get the replacement text (usually the content inside the tag)
-	(setq replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons))
-	;; Replace the tag with its content
-	(replace-match replacement t t)
-	;; Store the position and the looked-up voice ID
-	(goto-char (match-beginning 0)) ; Point is now at the start of the replaced content
-	;; (tlon-tts-move-point-before-break-tag) ; This call was misplaced here
-	(push (cons (point-marker) voice-id) tlon-tts-voice-chunks))))
+	;; Get value from tag attribute (group 4) - could be name or ID
+	(setq extracted-name-or-id (match-string-no-properties 4))
+	;; Try to look up the extracted value as a friendly name
+	(setq voice-id (ignore-errors (tlon-tts-get-voice-id-from-name extracted-name-or-id)))
+	;; If lookup failed, assume the extracted value was already the ID
+	(unless voice-id
+	  (setq voice-id extracted-name-or-id))
+        ;; Check if we actually got a valid ID (might still be nil if tag was malformed)
+        (unless voice-id
+          (warn "Could not determine voice ID for tag at position %d. Skipping chunk marker." (match-beginning 0))
+          ;; Skip adding to tlon-tts-voice-chunks if ID is invalid
+          (setq replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons))
+          (replace-match replacement t t))
+        ;; If we have a valid voice ID
+        (when voice-id
+          ;; Get the replacement text (usually the content inside the tag)
+          (setq replacement (tlon-tts-get-replacement-for-unsupported-ssml-tags cons))
+          ;; Replace the tag with its content
+          (replace-match replacement t t)
+          ;; Store the position and the determined voice ID
+          (goto-char (match-beginning 0)) ; Point is now at the start of the replaced content
+          (push (cons (point-marker) voice-id) tlon-tts-voice-chunks)))))
   (setq tlon-tts-voice-chunks (nreverse tlon-tts-voice-chunks)))
 
 (defun tlon-tts-reposition-closing-voice-tag ()
