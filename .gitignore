@@ -1,5 +1,6 @@
 ## aider
 .aider*
+!.aider.conf.yml
 repo-map.md
 
 ## doc
