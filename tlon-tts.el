@@ -1065,15 +1065,29 @@ chunk and the cdr voice to be used to narrate this chunk.")
 (defvar tlon-tts-chunks nil
   "List of chunks to be narrated.
 Each element is a list accessed using `tlon-tts-chunk-index-*' constants:
+
 - TEXT: The text content of the chunk.
+
 - VOICE-PARAMS: A cons cell like `(tlon-tts-voice . VOICE-ID)' or nil.
+
 - FILENAME: The path to the generated audio file for this chunk.
-- REQUEST-ID: The xi-request-id returned by ElevenLabs (nil otherwise/initially).
-- STATUS: Processing status symbol (\\='pending, \\='running, \\='completed, \\='failed).
+
+- REQUEST-ID: The xi-request-id returned by ElevenLabs (nil
+  otherwise/initially).
+
+- STATUS: Processing status symbol (\\='pending, \\='running, \\='completed,
+  \\='failed).
+
 - STAGING-BUFFER-NAME: The name of the staging buffer this chunk belongs to.
-- HEADER-FILENAME: Path to the temporary file storing curl headers for this chunk.
-- BEGIN-MARKER: Marker for the beginning of the chunk's text in the staging buffer.
+
+- HEADER-FILENAME: Path to the temporary file storing curl headers for this
+  chunk.
+
+- BEGIN-MARKER: Marker for the beginning of the chunk's text in the staging
+  buffer.
+
 - END-MARKER: Marker for the end of the chunk's text in the staging buffer.
+
 - PARAGRAPH-NUMBER: The 1-based paragraph number where this chunk starts.")
 
 (defvar tlon-tts-chunks-to-process 0
@@ -1346,13 +1360,11 @@ number (e.g., `basename-paragraph-005.mp3`)."
                  (list nil nil)))
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
-
   ;; Ensure chunks are prepared to map paragraphs to chunk data
   (save-excursion
     (tlon-tts-prepare-chunks))
   (unless tlon-tts-chunks
     (user-error "No TTS chunks found. Staging buffer might be empty or invalid"))
-
   (let ((content-start (tlon-tts--get-content-start-pos))
         paragraphs-to-generate)
     (if (and beg end)
@@ -1376,7 +1388,6 @@ number (e.g., `basename-paragraph-005.mp3`)."
       ;; --- No region active, generate paragraph at point ---
       (setq paragraphs-to-generate
             (list (1+ (tlon-get-number-of-paragraphs content-start (point))))))
-
     ;; --- Generate audio for selected paragraphs ---
     (if paragraphs-to-generate
         (dolist (paragraph-number paragraphs-to-generate)
@@ -1829,9 +1840,9 @@ Dired, or prompt the user for a file (removing the chunk numbers if necessary)."
 
 (defun tlon-tts-join-chunks (&optional file)
   "Normalize, then join chunks of FILE back into a single file.
-Normalization uses ffmpeg loudnorm. Joining uses ffmpeg concat.
-If FILE is nil, use the file visited by the current buffer, the file at point in
-Dired, or prompt the user for a file (removing the paragraph numbers if necessary)."
+Normalization uses ffmpeg loudnorm. Joining uses ffmpeg concat. If FILE is nil,
+use the file visited by the current buffer, the file at point in Dired, or
+prompt the user for a file (removing the paragraph numbers if necessary)."
   (interactive)
   (let* ((file (tlon-tts-set-chunk-file file))
          (original-chunks (tlon-tts-get-list-of-chunks file))
@@ -3694,10 +3705,9 @@ Reads audio format choices based on the currently selected engine."
 ;; non-existent file.
 (defun tlon-tts--get-number-of-paragraphs-fallback (orig-fun &rest args)
   "Fallback wrapper around `tlon-get-number-of-paragraphs'.
-
 If ORIG-FUN errors out because it received a nil FILE, count the
 paragraphs between START (first arg) and POS (second arg) inside the
-current buffer."
+current buffer. ARGS are the arguments passed to ORIG-FUN."
   (condition-case err
       (apply orig-fun args)
     (wrong-type-argument
