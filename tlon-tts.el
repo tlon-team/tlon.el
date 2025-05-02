@@ -3750,19 +3750,19 @@ The comment is placed on its own line immediately before the
 paragraph so it becomes part of the same paragraph and does not
 disturb paragraph counting."
   (save-excursion
-    (let ((content-start (tlon-tts--get-content-start-pos))
-          (index 1))
+    (let ((content-start (tlon-tts--get-content-start-pos)))
       (goto-char content-start)
       (while (< (point) (point-max))
-        ;; Only insert if a comment is not already present
-        (unless (looking-at "<!-- Paragraph [0-9]+ -->")
-          (insert (format "<!-- Paragraph %d -->\n" index)))
-        ;; Move to end of current paragraph
+        ;; Calcular el número real de párrafos antes del punto actual
+        (let ((para-num (1+ (tlon-get-number-of-paragraphs content-start (point)))))
+          ;; Insertar solo si no existe ya un comentario con ese número
+          (unless (looking-at "<!-- Paragraph [0-9]+ -->")
+            (insert (format "<!-- Paragraph %d -->\n" para-num))))
+        ;; Avanzar al final del párrafo actual
         (forward-paragraph)
-        ;; Skip blank lines between paragraphs
+        ;; Saltar líneas en blanco entre párrafos
         (while (and (not (eobp)) (looking-at "\n"))
-          (forward-char 1))
-        (setq index (1+ index)))))
+          (forward-char 1)))))
   nil)
 
 (provide 'tlon-tts)
