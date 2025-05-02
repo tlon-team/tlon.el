@@ -199,25 +199,25 @@ If FILE is nil, use the current buffer."
       (save-excursion
         (goto-char (or (cdr (tlon-get-delimited-region-pos
                              tlon-yaml-delimiter))
-                     (point-min)))
-      (let ((content-end (or (car (tlon-get-delimited-region-pos
-                                   tlon-md-local-variables-line-start
-                                   tlon-md-local-variables-line-end))
-                             (point-max)))
-            result)
-        (while (and (< (point) content-end)
-                    (not (looking-at-p tlon-md-local-variables-line-start)))
-          (let ((start (point)))
-            (markdown-forward-paragraph)
-            (let ((end (min (point) content-end)))
-              (when (and (> end start)
-                         (string-match-p "[^\s\n]"
-					 (buffer-substring-no-properties start end)))
-                (push (if return-positions
-                          (cons start end)
-			(funcall fn start end))
-                      result)))))
-        (nreverse result)))))
+                       (point-min)))
+	(let ((content-end (or (car (tlon-get-delimited-region-pos
+                                     tlon-md-local-variables-line-start
+                                     tlon-md-local-variables-line-end))
+                               (point-max)))
+              result)
+          (while (and (< (point) content-end)
+                      (not (looking-at-p tlon-md-local-variables-line-start)))
+            (let ((start (point)))
+              (markdown-forward-paragraph)
+              (let ((end (min (point) content-end)))
+		(when (and (> end start)
+                           (string-match-p "[^\s\n]"
+					   (buffer-substring-no-properties start end)))
+                  (push (if return-positions
+                            (cons start end)
+			  (funcall fn start end))
+			result)))))
+          (nreverse result))))))
 
 (defun tlon-get-number-of-paragraphs (&optional start end)
   "Return the number of paragraphs between START and END.
