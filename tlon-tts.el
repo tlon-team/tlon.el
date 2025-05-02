@@ -1556,7 +1556,7 @@ Each chunk stores the 1-based paragraph number where it begins."
                                           begin-marker       ; tlon-tts-chunk-index-begin-marker
                                           end-marker         ; tlon-tts-chunk-index-end-marker
                                           paragraph-number))) ; tlon-tts-chunk-index-paragraph-number
-                  (push new-chunk chunks)))))
+                  (push new-chunk chunks)))))) ; Corrected closing parens here
           ;; --- Prepare for next iteration ---
           ;; Final safety check: If end <= begin here, force minimal progress.
           (when (and (<= end begin) (< begin (point-max)))
