@@ -1542,35 +1542,35 @@ Each chunk stores the 1-based paragraph number where it begins."
                          (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
                 ;; Calculate paragraph number (1-based) at the beginning of this chunk
                 (let* ((paragraph-number (1+ (tlon-get-number-of-paragraphs content-start begin))) ; +1 for 1-based index
-                       (filename (tlon-tts-get-chunk-name destination paragraph-number)) ; Use paragraph number for filename
-                       (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
-                       ;; Store original begin/end markers
-                       (begin-marker (copy-marker begin))
-                       (end-marker (copy-marker end))
-                       ;; Create chunk using defined indices
-                       (new-chunk (list trimmed-text        ; tlon-tts-chunk-index-text
-                                          voice-params       ; tlon-tts-chunk-index-voice-params
-                                          filename           ; tlon-tts-chunk-index-filename
-                                          nil                ; tlon-tts-chunk-index-request-id
-                                          'pending           ; tlon-tts-chunk-index-status
-                                          staging-buffer-name ; tlon-tts-chunk-index-staging-buffer-name
-                                          nil                ; tlon-tts-chunk-index-header-filename
-                                          begin-marker       ; tlon-tts-chunk-index-begin-marker
-                                          end-marker         ; tlon-tts-chunk-index-end-marker
-                                          paragraph-number))) ; tlon-tts-chunk-index-paragraph-number
-                  (push new-chunk chunks)))))) ; Corrected closing parens here
+		       (filename (tlon-tts-get-chunk-name destination paragraph-number)) ; Use paragraph number for filename
+		       (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
+		       ;; Store original begin/end markers
+		       (begin-marker (copy-marker begin))
+		       (end-marker (copy-marker end))
+		       ;; Create chunk using defined indices
+		       (new-chunk (list trimmed-text        ; tlon-tts-chunk-index-text
+                                        voice-params       ; tlon-tts-chunk-index-voice-params
+                                        filename           ; tlon-tts-chunk-index-filename
+                                        nil                ; tlon-tts-chunk-index-request-id
+                                        'pending           ; tlon-tts-chunk-index-status
+                                        staging-buffer-name ; tlon-tts-chunk-index-staging-buffer-name
+                                        nil                ; tlon-tts-chunk-index-header-filename
+                                        begin-marker       ; tlon-tts-chunk-index-begin-marker
+                                        end-marker         ; tlon-tts-chunk-index-end-marker
+                                        paragraph-number))) ; tlon-tts-chunk-index-paragraph-number
+                  (push new-chunk chunks))))) ; Corrected closing parens here
           ;; --- Prepare for next iteration ---
           ;; Final safety check: If end <= begin here, force minimal progress.
           (when (and (<= end begin) (< begin (point-max)))
-	  (message "Warning: Forcing minimal progress at position %d due to end <= begin" begin)
-	  (goto-char begin)
-	  (forward-char 1)
-	  (setq end (point)))
-	(setq begin end) ; Update begin for the next loop iteration
-	;; Update voice state if we reached a voice change point
-	(let ((new-voice-state (tlon-tts--update-voice-state begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)))
-	  (setq current-voice (car new-voice-state)
-		voice-chunk-list (cdr new-voice-state)))))
+	    (message "Warning: Forcing minimal progress at position %d due to end <= begin" begin)
+	    (goto-char begin)
+	    (forward-char 1)
+	    (setq end (point)))
+	  (setq begin end) ; Update begin for the next loop iteration
+	  ;; Update voice state if we reached a voice change point
+	  (let ((new-voice-state (tlon-tts--update-voice-state begin next-voice-change-pos next-voice-id current-voice voice-chunk-list)))
+	    (setq current-voice (car new-voice-state)
+		  voice-chunk-list (cdr new-voice-state))))))
     (nreverse chunks)))
 
 ;;;;;; Chunking Helpers
