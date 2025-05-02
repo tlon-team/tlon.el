@@ -106,7 +106,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
      - Opens the final audio file using the system's default player.
 
 #+findex: tlon-tts-narrate-staged-paragraphs
-+ ~tlon-tts-narrate-staged-paragraphs~ :: Generates audio for specific paragraph(s) in the TTS staging buffer. If a region is active, it generates audio for all paragraphs starting within that region. Otherwise, it generates audio for the paragraph at the current cursor position. This command overwrites existing audio files for the targeted paragraphs (e.g., =filename-paragraph-005.mp3=). It identifies paragraphs by their number in the buffer, making it robust against changes within a paragraph (like adding/removing SSML tags) that don't alter the paragraph count.
++ ~tlon-tts-narrate-staged-paragraphs~ :: Generates audio for specific paragraph(s) in the TTS staging buffer. If a region is active, it generates audio for all paragraphs starting within that region. Otherwise, it generates audio for the paragraph at the current cursor position. This command overwrites existing audio files for the targeted paragraphs (e.g., =filename-paragraph-005.mp3=). It identifies paragraphs by reading the number =N= from the =<!-- Paragraph N -->= comment preceding the paragraph start. It then finds the corresponding audio chunk data and generates the audio for that chunk's text, saving it to the file named after the comment's paragraph number.
 
 *** Audio File Management
 :PROPERTIES:
@@ -280,7 +280,7 @@ This section lists key non-interactive functions, variables, and constants used 
 #+findex: tlon-tts-read-into-chunks
 + ~tlon-tts-read-into-chunks~ :: Reads the staging buffer content (excluding local variables section) and splits it into chunks using ~tlon-tts-break-into-chunks~.
 #+findex: tlon-tts-break-into-chunks
-+ ~tlon-tts-break-into-chunks~ :: Core logic for splitting text into chunks based on paragraph boundaries, engine character limits, and voice changes specified by =tlon-tts-voice-chunks=. Stores the starting paragraph number (1-based) with each chunk.
++ ~tlon-tts-break-into-chunks~ :: Core logic for splitting text into chunks based on paragraph boundaries, engine character limits, and voice changes specified by =tlon-tts-voice-chunks=. It reads the paragraph number =N= from the =<!-- Paragraph N -->= comment preceding the start of each chunk's text and stores this number in the chunk data. This ensures the paragraph number used for filenames and internal processing matches the visible comment.
 #+findex: tlon-tts-process-chunks
 + ~tlon-tts-process-chunks~ :: Iterates through the generated ~tlon-tts-chunks~, calling ~tlon-tts-generate-audio~ for each, potentially skipping existing files based on ~tlon-tts-generate-missing-chunks-only~.
 #+findex: tlon-tts-generate-audio
@@ -327,7 +327,7 @@ This section lists key non-interactive functions, variables, and constants used 
 :CUSTOM_ID: h:tlon-tts-audio-internals
 :END:
 #+findex: tlon-tts-get-chunk-name
-+ ~tlon-tts-get-chunk-name~ :: Generates the filename for an audio chunk based on the original filename and the paragraph number (e.g., =basename-paragraph-XXX.ext=).
++ ~tlon-tts-get-chunk-name~ :: Generates the filename for an audio chunk based on the original filename and the paragraph number stored in the chunk data (e.g., =basename-paragraph-XXX.ext=). This number originates from the =<!-- Paragraph N -->= comment.
 #+findex: tlon-tts-get-list-of-chunks
 + ~tlon-tts-get-list-of-chunks~ :: Finds all chunk files matching a base filename pattern (e.g., =basename-paragraph-*.ext=) and sorts them numerically by paragraph number.
 #+findex: tlon-tts-create-list-of-chunks
