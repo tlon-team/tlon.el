@@ -1364,7 +1364,7 @@ number (e.g., `basename-paragraph-005.mp3`)."
               ;; Calculate paragraph number at current position
               (setq current-paragraph-number (1+ (tlon-get-number-of-paragraphs content-start (point))))
               ;; Add to list if not already present
-              (pushnew current-paragraph-number paragraphs-to-generate)
+              (cl-pushnew current-paragraph-number paragraphs-to-generate)
               ;; Move to the start of the next paragraph
               (condition-case nil
                   (progn
