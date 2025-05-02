@@ -58,8 +58,8 @@ This module provides comprehensive text-to-speech (TTS) functionality, integrati
 #+vindex: tlon-tts-narrate-sidenotes
 + ~tlon-tts-narrate-sidenotes~ :: Boolean. If non-nil, the content of sidenotes will be read aloud. If nil (the default), sidenotes are removed like footnotes.
 
-#+vindex: tlon-tts-narrate-only-missing-chunks
-+ ~tlon-tts-narrate-only-missing-chunks~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` will only generate audio for chunks whose corresponding files do not already exist, effectively resuming an interrupted process. If nil, it will regenerate all chunks.
+#+vindex: tlon-tts-generate-missing-chunks-only
++ ~tlon-tts-generate-missing-chunks-only~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` will only generate audio for chunks whose corresponding files do not already exist, effectively resuming an interrupted process. If nil, it will regenerate all chunks.
 
 *** Engine-Specific Settings
 :PROPERTIES:
@@ -176,7 +176,7 @@ It provides the following groups and commands:
     + =-p= :: Prompt (Currently unused) (~tlon-tts-menu-infix-set-prompt~)
     + =-v= :: Use alternate voice (~tlon-tts-menu-infix-toggle-alternate-voice~)
     + =-n= :: Narrate sidenotes (~tlon-tts-menu-infix-toggle-narrate-sidenotes~)
-    + =-m= :: Narrate missing only (~tlon-tts-menu-infix-toggle-narrate-only-missing-chunks~)
+    + =-m= :: Narrate missing only (~tlon-tts-menu-infix-toggle-generate-missing-chunks-only~)
     + =-D= :: Debug mode (~tlon-menu-infix-toggle-debug~)
 + *File processing*:
   + =j= :: Join file chunks (~tlon-tts-join-chunks~)
