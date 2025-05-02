@@ -3679,6 +3679,44 @@ Reads audio format choices based on the currently selected engine."
     ("A" "Abbreviation"                            tlon-add-local-abbreviation)
     ("R" "Replacement"                             tlon-add-local-replacement)]])
 
+;; ---------------------------------------------------------------------------
+;; Compatibility fix for paragraph counting in staging buffers
+;; ---------------------------------------------------------------------------
+;;
+;; `tlon-get-number-of-paragraphs' may be called with a nil FILE argument from
+;; within the TTS staging buffer.  The original implementation then tries to
+;; open the file and signals the error
+;;   (wrong-type-argument stringp nil)
+;; We wrap the function so that, when FILE is nil, the paragraph number is
+;; computed directly in the current buffer instead of attempting to visit a
+;; non-existent file.
+(defun tlon-tts--get-number-of-paragraphs-fallback (orig-fun &rest args)
+  "Fallback wrapper around `tlon-get-number-of-paragraphs'.
+
+If ORIG-FUN errors out because it received a nil FILE, count the
+paragraphs between START (first arg) and POS (second arg) inside the
+current buffer."
+  (condition-case err
+      (apply orig-fun args)
+    (wrong-type-argument
+     (let* ((start (or (nth 0 args) (point-min)))
+            (pos   (or (nth 1 args) (point))))
+       (save-excursion
+         (goto-char start)
+         (let ((count 0))
+           (while (< (point) pos)
+             (forward-paragraph)
+             (when (<= (point) pos)
+               (setq count (1+ count))))
+           count))))))
+;; Install the advice once `tlon-counterpart' (which defines the original
+;; function) is loaded.
+(eval-after-load 'tlon-counterpart
+  '(unless (advice-member-p #'tlon-tts--get-number-of-paragraphs-fallback
+                            'tlon-get-number-of-paragraphs)
+     (advice-add 'tlon-get-number-of-paragraphs :around
+                 #'tlon-tts--get-number-of-paragraphs-fallback)))
+
 (provide 'tlon-tts)
 
 ;;; tlon-tts.el ends here
