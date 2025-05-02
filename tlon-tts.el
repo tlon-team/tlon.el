@@ -3419,26 +3419,32 @@ contains either a friendly name or a voice ID."
 
 (defun tlon-tts-insert-paragraph-comments ()
   "Insert \"<!-- Paragraph N -->\" comments before each paragraph.
-
 The counter N starts at 1 from the beginning of narratable content.
 The comment is placed on its own line immediately before the
-paragraph so it becomes part of the same paragraph and does not
-disturb paragraph counting."
+paragraph."
   (save-excursion
-    (let ((content-start (tlon-tts--get-content-start-pos)))
+    (let ((content-start (tlon-tts--get-content-start-pos))
+          (para-num 0)) ; Start counter at 0
       (goto-char content-start)
       (while (< (point) (point-max))
-        ;; Calcular el número real de párrafos antes del punto actual
-        (let ((para-num (1+ (tlon-get-number-of-paragraphs content-start (point)))))
-          ;; Insertar solo si no existe ya un comentario con ese número
+        ;; Check if we are at the start of actual content (skip initial blank lines if any)
+        (unless (looking-at "^\\s-*$")
+          (setq para-num (1+ para-num)) ; Increment counter for this paragraph
+          ;; Insert comment if it doesn't exist
           (unless (looking-at "<!-- Paragraph [0-9]+ -->")
             (insert (format "<!-- Paragraph %d -->\n" para-num))))
-        ;; Avanzar al final del párrafo actual
-        (forward-paragraph)
-        ;; Saltar líneas en blanco entre párrafos
-        (while (and (not (eobp)) (looking-at "\n"))
-          (forward-char 1)))))
-  nil)
+
+        ;; Move to the beginning of the next paragraph
+        (condition-case nil
+            (forward-paragraph)
+          ;; Handle error (e.g., end of buffer reached during forward-paragraph)
+          (error (goto-char (point-max))))
+
+        ;; Skip any blank lines between paragraphs to position at the start of the next one
+        (while (and (< (point) (point-max)) (looking-at "^\\s-*$"))
+          (forward-line 1))))
+    ;; No explicit return value needed
+    ))
 
 ;;;;; Global
 
