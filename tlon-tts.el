@@ -2559,7 +2559,7 @@ citation key, format. Hence, it must be run *before*
   (let ((clean-note (replace-regexp-in-string (tlon-md-get-tag-pattern "Sidenote") "" note)))
     (format "\n\n%s\n" (tlon-tts-listener-cue-full-enclose 'note clean-note))))
 
-;;;;;;;; Formatting
+;;;;;; Formatting
 
 ;;;;;;; General
 
@@ -3415,6 +3415,31 @@ contains either a friendly name or a voice ID."
 				("'" "&apos;")))
 			    text))
 
+;;;;;; Paragraph comments
+
+(defun tlon-tts-insert-paragraph-comments ()
+  "Insert \"<!-- Paragraph N -->\" comments before each paragraph.
+
+The counter N starts at 1 from the beginning of narratable content.
+The comment is placed on its own line immediately before the
+paragraph so it becomes part of the same paragraph and does not
+disturb paragraph counting."
+  (save-excursion
+    (let ((content-start (tlon-tts--get-content-start-pos)))
+      (goto-char content-start)
+      (while (< (point) (point-max))
+        ;; Calcular el número real de párrafos antes del punto actual
+        (let ((para-num (1+ (tlon-get-number-of-paragraphs content-start (point)))))
+          ;; Insertar solo si no existe ya un comentario con ese número
+          (unless (looking-at "<!-- Paragraph [0-9]+ -->")
+            (insert (format "<!-- Paragraph %d -->\n" para-num))))
+        ;; Avanzar al final del párrafo actual
+        (forward-paragraph)
+        ;; Saltar líneas en blanco entre párrafos
+        (while (and (not (eobp)) (looking-at "\n"))
+          (forward-char 1)))))
+  nil)
+
 ;;;;; Global
 
 ;;;;;; Abbreviations
@@ -3700,79 +3725,5 @@ Reads audio format choices based on the currently selected engine."
     ("A" "Abbreviation"                            tlon-add-local-abbreviation)
     ("R" "Replacement"                             tlon-add-local-replacement)]])
 
-;; ---------------------------------------------------------------------------
-;; Compatibility fix for paragraph counting in staging buffers
-;; ---------------------------------------------------------------------------
-;;
-;; `tlon-get-number-of-paragraphs' may be called with a nil FILE argument from
-;; within the TTS staging buffer.  The original implementation then tries to
-;; open the file and signals the error
-;;   (wrong-type-argument stringp nil)
-;; We wrap the function so that, when FILE is nil, the paragraph number is
-;; computed directly in the current buffer instead of attempting to visit a
-;; non-existent file.
-(defun tlon-tts--get-number-of-paragraphs-fallback (orig-fun &rest args)
-  "Fallback wrapper around `tlon-get-number-of-paragraphs'.
-If ORIG-FUN errors out because it received a nil FILE, count the
-paragraphs between START (first arg) and POS (second arg) inside the
-current buffer. ARGS are the arguments passed to ORIG-FUN."
-  (condition-case _err
-      (apply orig-fun args)
-    (wrong-type-argument
-     (let* ((start (or (nth 0 args) (point-min)))
-            (pos   (or (nth 1 args) (point))))
-       (save-excursion
-         (goto-char start)
-         (let ((count 0))
-           ;; Loop while the current position (start of a paragraph block) is before pos
-           (while (< (point) pos)
-             ;; Increment count for the paragraph block starting at the current point
-             (setq count (1+ count))
-             ;; Move past the paragraph block (content + break tag)
-             (forward-paragraph)
-             ;; Skip any separating blank lines, but don't go past pos
-             (while (and (< (point) pos) (looking-at "\n"))
-               (forward-char 1)))
-           ;; The loop counts paragraphs *starting* before pos.
-           ;; If pos is exactly at the start of a paragraph, that paragraph is not counted.
-           ;; This correctly returns the number of paragraphs before pos.
-           count))))))
-
-;; Install the advice once `tlon-counterpart' (which defines the original
-;; function) is loaded.
-(eval-after-load 'tlon-counterpart
-  '(unless (advice-member-p #'tlon-tts--get-number-of-paragraphs-fallback
-                            'tlon-get-number-of-paragraphs)
-     (advice-add 'tlon-get-number-of-paragraphs :around
-                 #'tlon-tts--get-number-of-paragraphs-fallback)))
-
-;; ---------------------------------------------------------------------------
-;; Paragraph comments
-;; ---------------------------------------------------------------------------
-
-(defun tlon-tts-insert-paragraph-comments ()
-  "Insert \"<!-- Paragraph N -->\" comments before each paragraph.
-
-The counter N starts at 1 from the beginning of narratable content.
-The comment is placed on its own line immediately before the
-paragraph so it becomes part of the same paragraph and does not
-disturb paragraph counting."
-  (save-excursion
-    (let ((content-start (tlon-tts--get-content-start-pos)))
-      (goto-char content-start)
-      (while (< (point) (point-max))
-        ;; Calcular el número real de párrafos antes del punto actual
-        (let ((para-num (1+ (tlon-get-number-of-paragraphs content-start (point)))))
-          ;; Insertar solo si no existe ya un comentario con ese número
-          (unless (looking-at "<!-- Paragraph [0-9]+ -->")
-            (insert (format "<!-- Paragraph %d -->\n" para-num))))
-        ;; Avanzar al final del párrafo actual
-        (forward-paragraph)
-        ;; Saltar líneas en blanco entre párrafos
-        (while (and (not (eobp)) (looking-at "\n"))
-          (forward-char 1)))))
-  nil)
-
 (provide 'tlon-tts)
-
 ;;; tlon-tts.el ends here
