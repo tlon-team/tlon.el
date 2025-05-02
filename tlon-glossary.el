@@ -51,16 +51,37 @@
   (interactive)
   (let* ((glossary (tlon-parse-glossary))
          (english-terms (tlon-get-english-terms glossary))
-         (selected-term (completing-read "Choose or add a term: " english-terms nil nil))
-         (existing-entry (tlon-find-entry-by-term glossary selected-term)))
-    (unless existing-entry
-      (let ((type (tlon-select-term-type)))
-        (setq existing-entry (tlon-create-entry selected-term type))))
-    (unless (and (assoc "type" existing-entry)
-		 (string= (cdr (assoc "type" existing-entry)) "invariant"))
-      (setq existing-entry (tlon-edit-translation-in-entry existing-entry selected-term)))
-    (setq glossary (tlon-update-glossary glossary existing-entry selected-term))
-    (tlon-write-data tlon-file-glossary-source glossary)))
+         ;; Allow user to type new term or select existing (case-insensitive match)
+         (input-term (completing-read "Choose or add a term: " english-terms nil nil ""))
+         ;; Check if input matches an existing term case-insensitively
+         (matched-term (seq-find (lambda (et) (string-equal input-term et)) english-terms))
+         ;; Declare variables for the term to use and the entry to save/modify
+         term-to-use
+         entry-to-save)
+    ;; Determine term-to-use and entry-to-save based on whether a match was found
+    (if matched-term
+        ;; Case 1: Existing term selected (potentially with different casing)
+        (progn
+          (setq term-to-use matched-term) ; Use the correctly cased term from glossary
+          ;; Find the existing entry using the correctly cased term (guaranteed to exist)
+          (setq entry-to-save (tlon-find-entry-by-term glossary term-to-use)))
+      ;; Case 2: Genuinely new term entered
+      (progn
+        (setq term-to-use input-term) ; Use the user's input casing
+        ;; Prompt for type and create the new entry structure
+        (let ((type (tlon-select-term-type)))
+          (setq entry-to-save (tlon-create-entry term-to-use type)))))
+    ;; Now entry-to-save holds either the existing entry or the newly created one
+    ;; Ensure entry-to-save is valid before proceeding (should always be unless error)
+    (when entry-to-save
+      ;; Edit translations unless it's an invariant term
+      (let ((type (cdr (assoc "type" entry-to-save))))
+        (unless (and type (string= type "invariant"))
+          (setq entry-to-save (tlon-edit-translation-in-entry entry-to-save term-to-use))))
+      ;; Update the main glossary list using the final entry state and correct term
+      (setq glossary (tlon-update-glossary glossary entry-to-save term-to-use))
+      ;; Save the updated glossary
+      (tlon-write-data tlon-file-glossary-source glossary))))
 
 (defun tlon-parse-glossary ()
   "Parse the glossary file into Emacs Lisp."
@@ -102,13 +123,22 @@
     entry))
 
 (defun tlon-update-glossary (glossary entry term)
-  "Update GLOSSARY with a new or modified ENTRY for a TERM."
-  (if (tlon-find-entry-by-term glossary term)
-      ;; Update existing entry
-      (setf (car (seq-filter (lambda (e) (equal (assoc "en" e) (cons "en" term))) glossary)) entry)
-    ;; Append new entry
-    (setq glossary (append glossary (list entry))))
-  glossary)
+  "Update GLOSSARY with a new or modified ENTRY for a TERM.
+Returns a new glossary list with the updated or appended entry."
+  (let ((result nil)
+        (found nil))
+    ;; Build the list in reverse, replacing the target entry if found
+    (dolist (e glossary)
+      (if (and (not found) (equal (assoc "en" e) (cons "en" term)))
+          (progn
+            (push entry result) ; Push the new/modified entry instead of e
+            (setq found t))
+        (push e result))) ; Push the original entry
+    ;; If not found after iterating, add the new entry (it will be first after nreverse)
+    (unless found
+      (push entry result))
+    ;; Reverse the final list to restore original order (or append new entry)
+    (nreverse result)))
 
 ;;;;; AI Glossary Generation
 
