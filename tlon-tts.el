@@ -1205,21 +1205,44 @@ Each element is a list accessed using `tlon-tts-chunk-index-*' constants:
 ;;;;; Stage
 
 (declare-function flycheck-mode "flycheck")
+(declare-function tlon-get-number-of-paragraphs "tlon-counterpart")
 ;;;###autoload
 (defun tlon-tts-stage-content (&optional content file)
   "Stage the content to be narrated.
 If CONTENT is nil, read the region if selected, FILE if non-nil, or the file
-visited by the current buffer otherwise."
+visited by the current buffer otherwise. Preserves the relative paragraph
+position of the cursor from the source buffer."
   (interactive)
-  (let* ((file (or file (buffer-file-name)))
-	 (content (or content (tlon-tts-get-content nil file))))
+  (let* (;; Store original position only if content is not explicitly provided
+         (source-buffer (unless content (current-buffer)))
+         (source-point (unless content (point)))
+         (paragraph-index (when source-buffer
+                            (require 'tlon-counterpart) ; Ensure function is loaded
+                            (with-current-buffer source-buffer
+                              (tlon-get-number-of-paragraphs (point-min) source-point))))
+         (file (or file (buffer-file-name)))
+         (content (or content (tlon-tts-get-content nil file))))
     (with-current-buffer (get-buffer-create (tlon-tts-get-staging-buffer-name file))
-      (markdown-mode)
-      (flycheck-mode -1)
-      (erase-buffer)
-      (insert content)
+      (let ((inhibit-read-only t)) ; Allow modification even if buffer was read-only
+        (erase-buffer)
+        (insert content)
+        (markdown-mode) ; Set mode early
+        (flycheck-mode -1)) ; Disable flycheck
       (tlon-tts-set-file-local-vars file)
-      (tlon-tts-prepare-staging-buffer))))
+      (tlon-tts-prepare-staging-buffer)
+      ;; Restore position if we captured it, adjusting for metadata paragraphs
+      (when paragraph-index
+        (tlon-tts-goto-paragraph (+ paragraph-index 2))))))
+
+(defun tlon-tts-goto-paragraph (paragraph-index)
+  "Move point to the beginning of the PARAGRAPH-INDEX'th paragraph.
+PARAGRAPH-INDEX is 0-based. Assumes the current buffer is a TTS staging buffer."
+  (interactive "nParagraph index (0-based): ")
+  (goto-char (tlon-tts--get-content-start-pos)) ; Move to start of narratable content
+  (condition-case nil
+      (dotimes (_ paragraph-index)
+        (forward-paragraph))
+    (end-of-buffer (goto-char (point-max))))) ; Go to end if index is too large
 
 ;; MAYBE: make it work with non-file-visiting buffers
 (defun tlon-tts-get-content (&optional content file)

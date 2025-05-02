@@ -90,7 +90,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
 :END:
 
 #+findex: tlon-tts-stage-content
-+ ~tlon-tts-stage-content~ :: (Autoloaded) Prepares content for narration. Reads the content (from region, specified file, or current buffer), creates a dedicated staging buffer (e.g., =*TTS: filename*=), copies the content, sets up necessary file-local variables (source, language, engine, voice, etc.), and runs the preparation pipeline (~tlon-tts-prepare-staging-buffer~).
++ ~tlon-tts-stage-content~ :: (Autoloaded) Prepares content for narration. Reads the content (from region, specified file, or current buffer), creates a dedicated staging buffer (e.g., =*TTS: filename*=), copies the content, sets up necessary file-local variables (source, language, engine, voice, etc.), runs the preparation pipeline (~tlon-tts-prepare-staging-buffer~), and attempts to place the cursor in the staging buffer at the paragraph corresponding to the cursor's position in the original buffer.
 
 #+findex: tlon-tts-narrate-staged-buffer
 + ~tlon-tts-narrate-staged-buffer~ :: (Autoloaded) Narrates the content currently prepared in the staging buffer.
