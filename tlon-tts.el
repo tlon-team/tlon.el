@@ -1309,6 +1309,8 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     ;; priority because Elevenlabs does not support this tag anyway.
     (tlon-tts-process-unsupported-ssml-tags)
     (tlon-tts-remove-extra-newlines)
+    ;; Add an HTML comment before each paragraph showing its number
+    (tlon-tts-insert-paragraph-comments)
     ;; FIXME: this is breaking the SSML tags
     ;; (tlon-tts-escape-xml-special-characters)
     (tlon-tts-generate-report)))
@@ -3716,6 +3718,33 @@ current buffer."
                             'tlon-get-number-of-paragraphs)
      (advice-add 'tlon-get-number-of-paragraphs :around
                  #'tlon-tts--get-number-of-paragraphs-fallback)))
+
+;; ---------------------------------------------------------------------------
+;; Paragraph comments
+;; ---------------------------------------------------------------------------
+
+(defun tlon-tts-insert-paragraph-comments ()
+  "Insert \"<!-- Paragraph N -->\" comments before each paragraph.
+
+The counter N starts at 1 from the beginning of narratable content.
+The comment is placed on its own line immediately before the
+paragraph so it becomes part of the same paragraph and does not
+disturb paragraph counting."
+  (save-excursion
+    (let ((content-start (tlon-tts--get-content-start-pos))
+          (index 1))
+      (goto-char content-start)
+      (while (< (point) (point-max))
+        ;; Only insert if a comment is not already present
+        (unless (looking-at "<!-- Paragraph [0-9]+ -->")
+          (insert (format "<!-- Paragraph %d -->\n" index)))
+        ;; Move to end of current paragraph
+        (forward-paragraph)
+        ;; Skip blank lines between paragraphs
+        (while (and (not (eobp)) (looking-at "\n"))
+          (forward-char 1))
+        (setq index (1+ index)))))
+  nil)
 
 (provide 'tlon-tts)
 
