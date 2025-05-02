@@ -245,56 +245,9 @@ function tried to be a nudge in that direction."
 	     (org-clocking-p))
     (tlon-set-meeting-buffers)))
 
-;;;;; Transcription, Formatting, Summarization
+;;;;; transcribe, summarize, format
 
-(defun tlon-meet--infer-details-from-filename (filename)
-  "Attempt to infer participants and date from FILENAME.
-Filename is expected to be like \"Person1<>Person2 - YYYY MM DD ...\" or \"Group
-- YYYY MM DD ...\". Returns a plist `(:participants (\"nick1\" \"nick2\") :date
-\"YYYY-MM-DD\")' or nil if inference fails."
-  (let* ((basename (file-name-nondirectory filename))
-         (participants nil)
-         (date nil))
-    (cond
-     ;; Case 1: Person1<>Person2 format
-     ((string-match "^\\(.*?\\)<>\\(.*?\\) +- +\\([0-9]\\{4\\}\\)[ -]\\([0-9]\\{2\\}\\)[ -]\\([0-9]\\{2\\}\\)" basename)
-      (let* ((name1 (string-trim (match-string 1 basename)))
-             (name2 (string-trim (match-string 2 basename))))
-        (when (and name1 name2)
-          (setq participants (list name1 name2))
-          (setq date (format "%s-%s-%s"
-			     (match-string 3 basename) (match-string 4 basename) (match-string 5 basename))))))
-     ;; Case 2: Group format (assuming "Group" or similar indicates group meeting)
-     ;; Add more specific group indicators if needed
-     ((string-match "^\\(Group\\|Grupo\\) +- +\\([0-9]\\{4\\}\\)[ -]\\([0-9]\\{2\\}\\)[ -]\\([0-9]\\{2\\}\\)" basename)
-      ;; For group meetings, we might not know all participants from the filename.
-      ;; We can infer it's a group meeting and the date.
-      ;; The function calling this might need special handling for 'group'.
-      ;; For now, let's return 'group' as a special participant marker.
-      (setq participants '("group")) ; Special marker
-      (setq date (format "%s-%s-%s" (match-string 2 basename) (match-string 3 basename) (match-string 4 basename)))))
-    ;; Return plist if successful
-    (when (and participants date)
-      (list :participants participants :date date))))
-
-(defun tlon-meet--get-audio-file ()
-  "Prompt user for an audio or video file from configured recording directories."
-  (let ((default-dir (pcase tlon-default-conference-app
-                       ('meet tlon-meet-recordings-directory)
-                       ('zoom tlon-zoom-recordings-directory)
-                       (_ default-directory))))
-    (read-file-name "Select audio/video file: " default-dir)))
-
-(defun tlon-meet--get-transcript-file (&optional extension)
-  "Prompt user for a transcript file.
-Default EXTENSION is \".md\"."
-  (read-file-name "Select transcript file: " paths-dir-downloads nil t (or extension ".md")))
-
-(defun tlon-meet--get-date-from-filename (filename)
-  "Extract date (YYYY-MM-DD) from FILENAME or return current date."
-  (or (and (string-match "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" filename)
-           (match-string 1 filename))
-      (format-time-string "%Y-%m-%d")))
+;;;;;; transcribe
 
 ;;;###autoload
 (defun tlon-meet-transcribe-audio (audio-file participants &optional callback)
@@ -369,7 +322,25 @@ PARTICIPANTS, using filename inference for initial participant suggestion."
                    (goto-char (point-max))
                    (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
               ;; Ignore other events like "sent signal..."
-              (t nil))))))))) ; Close lambda, make-process, inner let, outer let
+              (t nil)))))))))
+
+(defun tlon-meet--get-file-and-participants ()
+  "Prompt user for audio/video file and participants, inferring participants first.
+Returns a list: (AUDIO-FILE SELECTED-PARTICIPANTS)."
+  (let* ((audio-file (tlon-meet--get-audio-file))
+         (details (tlon-meet--infer-details-from-filename audio-file))
+         (inferred-participants (plist-get details :participants))
+         (all-nicknames (tlon-user-lookup-all :nickname))
+         (prompt "Participants: ")
+         (selected-participants
+          (if inferred-participants
+              ;; If inferred, use as initial input, allow confirmation/correction
+              (completing-read-multiple prompt all-nicknames nil t inferred-participants nil inferred-participants)
+            ;; If not inferred, prompt normally
+            (completing-read-multiple prompt all-nicknames nil t))))
+    (list audio-file selected-participants)))
+
+;;;;;; cleanup
 
 (defun tlon-meet-cleanup-transcript (transcript-md-file &optional callback)
   "Clean up TRANSCRIPT-MD-FILE using AI.
@@ -427,6 +398,16 @@ saving."
                      (goto-char (point-max))
                      (insert "Cleanup failed. Triggering next step (e.g., summarization) with uncleaned file...\n"))))
                (funcall callback transcript-md-file)))))))))
+
+;;;;;; summarize
+
+(defconst tlon-meet--date-regexp-part
+  " +- +\\([0-9]\\{4\\}\\)[ -]\\([0-9]\\{2\\}\\)[ -]\\([0-9]\\{2\\}\\)"
+  "Regexp part for matching the date YYYY MM DD with flexible separators.")
+
+(defconst tlon-meet--date-regexp-strict
+  "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)"
+  "Regexp part for matching the date YYYY-MM-DD strictly.")
 
 ;;;###autoload
 (defun tlon-meet-summarize-transcript (transcript-file &optional participants)
@@ -490,6 +471,49 @@ and deletes the original transcript file."
       (insert (format "Meeting Date: %s\n" date))
       (insert (format "Target Repository: %s\n" repo)))
     (tlon-meet--generate-and-save-summary transcript-file date repo output-buffer)))
+
+(defun tlon-meet--infer-details-from-filename (filename)
+  "Attempt to infer participants and date from FILENAME.
+Filename is expected to be like \"Person1<>Person2 - YYYY MM DD ...\" or \"Group
+- YYYY MM DD ...\". Returns a plist `(:participants (\"nick1\" \"nick2\") :date
+\"YYYY-MM-DD\")' or nil if inference fails."
+  (let ((basename (file-name-nondirectory filename)))
+    (or (tlon-meet--infer-details-person-to-person basename)
+        (tlon-meet--infer-details-group basename))))
+
+(defun tlon-meet--infer-details-person-to-person (basename)
+  "Infer details for Person1<>Person2 format from BASENAME.
+Returns plist `(:participants (\"p1\" \"p2\") :date \"YYYY-MM-DD\")` or nil."
+  (let ((regexp (concat "^\\(.*?\\)<>\\(.*?\\)" tlon-meet--date-regexp-part)))
+    (when (string-match regexp basename)
+      (let* ((name1 (string-trim (match-string 1 basename)))
+             (name2 (string-trim (match-string 2 basename)))
+             (participants (when (and name1 name2) (list name1 name2)))
+             (date (format "%s-%s-%s"
+                           (match-string 3 basename) ; Year
+                           (match-string 4 basename) ; Month
+                           (match-string 5 basename)))) ; Day
+        (when (and participants date)
+          (list :participants participants :date date))))))
+
+(defun tlon-meet--infer-details-group (basename)
+  "Infer details for Group format from BASENAME.
+Returns plist `(:participants (\"group\") :date \"YYYY-MM-DD\")` or nil."
+  (let ((regexp (concat "^\\(Group\\|Grupo\\)" tlon-meet--date-regexp-part)))
+    (when (string-match regexp basename)
+      (let* ((participants '("group")) ; Special marker
+             (date (format "%s-%s-%s"
+                           (match-string 2 basename) ; Year
+                           (match-string 3 basename) ; Month
+                           (match-string 4 basename)))) ; Day
+        (when (and participants date)
+          (list :participants participants :date date))))))
+
+(defun tlon-meet--get-date-from-filename (filename)
+  "Extract date (YYYY-MM-DD) from FILENAME or return current date."
+  (or (and (string-match tlon-meet--date-regexp-strict filename)
+           (match-string 1 filename))
+      (format-time-string "%Y-%m-%d")))
 
 (defun tlon-meet--generate-and-save-summary (transcript-md-file date repo output-buffer)
   "Helper to generate summary and save files.
@@ -557,7 +581,7 @@ Updates OUTPUT-BUFFER with progress messages."
       (call-process "git" nil output-buffer t "add" (file-relative-name repo-transcript-file repo))
       ;; Commit
       (let ((commit-success (= 0 (call-process "git" nil output-buffer t "commit" "-m"
-                                                (format "Add AI summary and transcript for meeting on %s" date)))))
+                                               (format "Add AI summary and transcript for meeting on %s" date)))))
         (with-current-buffer output-buffer
           (goto-char (point-max))
           (if commit-success
@@ -577,6 +601,21 @@ Updates OUTPUT-BUFFER with progress messages."
         (insert "\nSummary and transcript processing complete.\n")
         (insert (format "Summary file: %s\n" summary-file))
         (insert (format "Transcript file: %s\n" repo-transcript-file))))))
+
+(defun tlon-meet--get-transcript-file (&optional extension)
+  "Prompt user for a transcript file.
+Default EXTENSION is \".md\"."
+  (read-file-name "Select transcript file: " paths-dir-downloads nil t (or extension ".md")))
+
+(defun tlon-meet--get-audio-file ()
+  "Prompt user for an audio or video file from configured recording directories."
+  (let ((default-dir (pcase tlon-default-conference-app
+                       ('meet tlon-meet-recordings-directory)
+                       ('zoom tlon-zoom-recordings-directory)
+                       (_ default-directory))))
+    (read-file-name "Select audio/video file: " default-dir)))
+
+;;;;;; format
 
 (defun tlon-meet-format-transcript (transcript-file participants &optional callback)
   "Generate AI formatted version for TRANSCRIPT-FILE using PARTICIPANTS.
@@ -612,11 +651,9 @@ Reads TRANSCRIPT-FILE, uses PARTICIPANTS list, calls AI, saves the result to a
                (message "Deleted original transcript file: %s" transcript-file)
                ;; Call the cleanup function, passing the original callback along
                (tlon-meet-cleanup-transcript output-file callback))
-          (message "Error formatting transcript: %s" (plist-get info :status))
-          ;; If formatting failed, but a callback exists, call it anyway?
-          ;; Or maybe not, as there's no formatted file to process.
-          ;; Let's stick to only calling callback on success for now.
-          ))))))
+           (message "Error formatting transcript: %s" (plist-get info :status))))))))
+
+;;;;;; transcribe & summarize
 
 ;;;###autoload
 (defun tlon-meet-transcribe-and-summarize (audio-file participants)
@@ -638,22 +675,6 @@ initial participant suggestion."
 					 cleaned-transcript-file)
                                 ;; Call summarize non-interactively with the .md file and participants
                                 (tlon-meet-summarize-transcript cleaned-transcript-file participants))))
-
-(defun tlon-meet--get-file-and-participants ()
-  "Prompt user for audio/video file and participants, inferring participants first.
-Returns a list: (AUDIO-FILE SELECTED-PARTICIPANTS)."
-  (let* ((audio-file (tlon-meet--get-audio-file))
-         (details (tlon-meet--infer-details-from-filename audio-file))
-         (inferred-participants (plist-get details :participants))
-         (all-nicknames (tlon-user-lookup-all :nickname))
-         (prompt "Participants: ")
-         (selected-participants
-          (if inferred-participants
-              ;; If inferred, use as initial input, allow confirmation/correction
-              (completing-read-multiple prompt all-nicknames nil t inferred-participants nil inferred-participants)
-            ;; If not inferred, prompt normally
-            (completing-read-multiple prompt all-nicknames nil t))))
-    (list audio-file selected-participants)))
 
 ;;;;; File Monitoring
 
