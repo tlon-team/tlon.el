@@ -88,7 +88,7 @@ These commands insert or edit specific tags at point or around the selected regi
   #+findex: tlon-mdx-insert-embedded
   + ~tlon-mdx-insert-embedded~ :: Inserts/edits =<Embedded>= tags (self-closing). Prompts for chart URL (=src=), alt text (=alt=), and height (=height=).
   #+findex: tlon-mdx-insert-replace-audio
-  + ~tlon-mdx-insert-replace-audio~ :: Inserts/edits =<ReplaceAudio>= tags. Prompts for the audio text (=text=, which can be empty) and optional voice role (=role=) using ~tlon-md-replace-audio-voice-reader~. An empty role selection defaults to inheriting the surrounding voice.
+  + ~tlon-mdx-insert-replace-audio~ :: Inserts/edits =<ReplaceAudio>= tags. Prompts for the audio text (=text=, which can be empty) and optional voice role (=role=) using ~tlon-md-replace-audio-voice-reader~. An empty role selection defaults to inheriting the surrounding voice. If the =text= attribute is empty or omitted, the content enclosed by the tag will be removed during TTS preparation.
   #+findex: tlon-mdx-insert-romantlon-insert-mdx-roman
   + ~tlon-mdx-insert-romantlon-insert-mdx-roman~ :: Inserts/edits =<Roman>= tags (for Roman numerals in small caps with correct TTS).
   #+findex: tlon-mdx-insert-small-caps

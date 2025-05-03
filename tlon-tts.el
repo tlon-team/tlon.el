@@ -2676,18 +2676,34 @@ Whether slashes are replaced, and by what character, depends on the TTS engine."
 	(replace-match (concat (match-string 1) replacement (match-string 2)))))))
 
 (defun tlon-tts-process-replace-audio ()
-  "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
-  (goto-char (point-min))
-  (while (re-search-forward (tlon-md-get-tag-pattern "ReplaceAudio") nil t)
-    (let* ((text (or (match-string 4) "")) ; Default to empty string if attribute missing
-	   (role (match-string 6))
-	   replacement voice)
-      (save-match-data
-	(setq voice (tlon-tts-get-voice-of-role role))
-	(setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
-			      text
-			    (tlon-tts-enclose-in-voice-tag text voice))))
-      (replace-match replacement t t))))
+  "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute. Uses a two-pass approach."
+  (let ((replacements '()) ; List to store (start end replacement-string)
+        (pattern (tlon-md-get-tag-pattern "ReplaceAudio")))
+    ;; Pass 1: Collect replacements
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward pattern nil t)
+        (let* ((start (match-beginning 0))
+               (end (match-end 0))
+               (text (or (match-string 4) "")) ; Default to empty string
+               (role (match-string 6))
+               replacement voice)
+          (save-match-data ; Crucial inside the loop if using functions that might change match data
+            (setq voice (tlon-tts-get-voice-of-role role))
+            (if (string-empty-p text)
+                (setq replacement "")
+              (setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
+                                    text
+                                  (tlon-tts-enclose-in-voice-tag text voice)))))
+          ;; Store replacement info (start end replacement)
+          (push (list start end replacement) replacements))))
+
+    ;; Pass 2: Apply replacements in reverse buffer order (list is already reversed due to push)
+    (dolist (replacement-info replacements)
+      (cl-destructuring-bind (start end replacement-string) replacement-info
+        (delete-region start end)
+        (goto-char start)
+        (insert replacement-string)))))
 
 (defun tlon-tts-process-voice-role ()
   "Replace text enclosed in a `VoiceRole' MDX tag with a SMML `voice' tag."
