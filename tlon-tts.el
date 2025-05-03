@@ -1271,12 +1271,16 @@ Returns the number N as an integer, or nil if not found."
         (string-to-number (match-string 1))))))
 
 (defun tlon-tts-get-paragraph-number-at-point ()
-  "Return the paragraph number *N* recorded in the comment that precedes point.
-If no such comment is found, return nil."
+  "Return the paragraph number *N* recorded in the comment that precedes point
+or that is on the current line.  If no such comment is found, return nil."
   (save-excursion
     (let ((comment-regex "^<!-- Paragraph \\([0-9]+\\) -->"))
-      (when (re-search-backward comment-regex nil t)
-        (string-to-number (match-string 1))))))
+      (beginning-of-line)
+      (cond
+       ((looking-at comment-regex)
+        (string-to-number (match-string 1)))
+       ((re-search-backward comment-regex nil t)
+        (string-to-number (match-string 1)))))))
 
 ;; MAYBE: make it work with non-file-visiting buffers
 (defun tlon-tts-get-content (&optional content file)
@@ -1449,17 +1453,35 @@ PARAGRAPH-NUMBER and CHUNK-FILENAME are used for logging."
         (message "Error output for paragraph %d generation:\n%s"
                  paragraph-number (buffer-string))))))
 
+(defun tlon-tts--get-chunk-index-for-paragraph (paragraph-number)
+  "Return the index of the chunk that contains PARAGRAPH-NUMBER.
+A chunk *contains* the paragraph if its starting paragraph number is
+less than or equal to PARAGRAPH-NUMBER and either it is the last
+chunk or the next chunk starts after PARAGRAPH-NUMBER."
+  (let* ((i 0)
+         (len (length tlon-tts-chunks))
+         found)
+    (while (and (< i len) (not found))
+      (let* ((current-start (nth tlon-tts-chunk-index-paragraph-number
+                                 (nth i tlon-tts-chunks)))
+             (next-start   (when (< (1+ i) len)
+                             (nth tlon-tts-chunk-index-paragraph-number
+                                  (nth (1+ i) tlon-tts-chunks)))))
+        (when (and (>= paragraph-number current-start)
+                   (or (null next-start) (< paragraph-number next-start)))
+          (setq found i))
+        (setq i (1+ i))))
+    found))
+
 (defun tlon-tts--generate-single-paragraph-by-number (paragraph-number)
   "Generate audio for the paragraph specified by PARAGRAPH-NUMBER.
 PARAGRAPH-NUMBER is the 1-based index of the paragraph."
   (unless paragraph-number
     (user-error "Invalid paragraph number provided"))
 
-  ;; Find the chunk corresponding to the paragraph number
-  (let* ((chunk-info (cl-find-if (lambda (chunk)
-                                   (= (nth tlon-tts-chunk-index-paragraph-number chunk) paragraph-number))
-                                 tlon-tts-chunks))
-         (chunk-index (when chunk-info (cl-position chunk-info tlon-tts-chunks))) ; Get 0-based index
+  ;; Find the chunk that *contains* the requested paragraph number
+  (let* ((chunk-index (tlon-tts--get-chunk-index-for-paragraph paragraph-number)) ; 0-based
+         (chunk-info  (and chunk-index (nth chunk-index tlon-tts-chunks)))
          (voice-params (when chunk-info (nth tlon-tts-chunk-index-voice-params chunk-info)))
          (paragraph-text (when chunk-info (nth tlon-tts-chunk-index-text chunk-info)))
          (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
@@ -1569,8 +1591,13 @@ Each chunk stores the 1-based paragraph number where it begins."
               ;; Only add chunk if trimmed text is not empty AND not just a break tag
               (when (and (not (string-empty-p trimmed-text))
                          (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
-                ;; Calculate paragraph number (1-based) at the beginning of this chunk
-                (let* ((paragraph-number (1+ (tlon-get-number-of-paragraphs content-start begin))) ; +1 for 1-based index
+                ;; Determine paragraph number directly from the comment that
+                ;; precedes THIS paragraph – the single source of truth.
+                (let* ((paragraph-number (save-excursion
+                                           (goto-char begin)
+                                           (or (tlon-tts-get-paragraph-number-at-point)
+                                               ;; Fallback (shouldn't happen)
+                                               (1+ (tlon-get-number-of-paragraphs content-start begin))))) ; Prefer comment number
 		       (filename (tlon-tts-get-chunk-name destination paragraph-number)) ; Use paragraph number for filename
 		       (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
 		       ;; Store original begin/end markers
@@ -2661,18 +2688,34 @@ Whether slashes are replaced, and by what character, depends on the TTS engine."
 	(replace-match (concat (match-string 1) replacement (match-string 2)))))))
 
 (defun tlon-tts-process-replace-audio ()
-  "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute."
-  (goto-char (point-min))
-  (while (re-search-forward (tlon-md-get-tag-pattern "ReplaceAudio") nil t)
-    (let* ((text (or (match-string 4) "")) ; Default to empty string if attribute missing
-	   (role (match-string 6))
-	   replacement voice)
-      (save-match-data
-	(setq voice (tlon-tts-get-voice-of-role role))
-	(setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
-			      text
-			    (tlon-tts-enclose-in-voice-tag text voice))))
-      (replace-match replacement t t))))
+  "Replace text enclosed in a `ReplaceAudio' MDX tag with its `text' attribute. Uses a two-pass approach."
+  (let ((replacements '()) ; List to store (start end replacement-string)
+        (pattern (tlon-md-get-tag-pattern "ReplaceAudio")))
+    ;; Pass 1: Collect replacements
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward pattern nil t)
+        (let* ((start (match-beginning 0))
+               (end (match-end 0))
+               (text (or (match-string 4) "")) ; Default to empty string
+               (role (match-string 6))
+               replacement voice)
+          (save-match-data ; Crucial inside the loop if using functions that might change match data
+            (setq voice (tlon-tts-get-voice-of-role role))
+            (if (string-empty-p text)
+                (setq replacement "")
+              (setq replacement (if (string= voice (tlon-tts-get-voice-at-point))
+                                    text
+                                  (tlon-tts-enclose-in-voice-tag text voice)))))
+          ;; Store replacement info (start end replacement)
+          (push (list start end replacement) replacements))))
+
+    ;; Pass 2: Apply replacements in reverse buffer order (list is already reversed due to push)
+    (dolist (replacement-info replacements)
+      (cl-destructuring-bind (start end replacement-string) replacement-info
+        (delete-region start end)
+        (goto-char start)
+        (insert replacement-string)))))
 
 (defun tlon-tts-process-voice-role ()
   "Replace text enclosed in a `VoiceRole' MDX tag with a SMML `voice' tag."
