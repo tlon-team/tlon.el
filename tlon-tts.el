@@ -1443,17 +1443,35 @@ PARAGRAPH-NUMBER and CHUNK-FILENAME are used for logging."
         (message "Error output for paragraph %d generation:\n%s"
                  paragraph-number (buffer-string))))))
 
+(defun tlon-tts--get-chunk-index-for-paragraph (paragraph-number)
+  "Return the index of the chunk that contains PARAGRAPH-NUMBER.
+A chunk *contains* the paragraph if its starting paragraph number is
+less than or equal to PARAGRAPH-NUMBER and either it is the last
+chunk or the next chunk starts after PARAGRAPH-NUMBER."
+  (let* ((i 0)
+         (len (length tlon-tts-chunks))
+         found)
+    (while (and (< i len) (not found))
+      (let* ((current-start (nth tlon-tts-chunk-index-paragraph-number
+                                 (nth i tlon-tts-chunks)))
+             (next-start   (when (< (1+ i) len)
+                             (nth tlon-tts-chunk-index-paragraph-number
+                                  (nth (1+ i) tlon-tts-chunks)))))
+        (when (and (>= paragraph-number current-start)
+                   (or (null next-start) (< paragraph-number next-start)))
+          (setq found i))
+        (setq i (1+ i))))
+    found))
+
 (defun tlon-tts--generate-single-paragraph-by-number (paragraph-number)
   "Generate audio for the paragraph specified by PARAGRAPH-NUMBER.
 PARAGRAPH-NUMBER is the 1-based index of the paragraph."
   (unless paragraph-number
     (user-error "Invalid paragraph number provided"))
 
-  ;; Find the chunk corresponding to the paragraph number
-  (let* ((chunk-info (cl-find-if (lambda (chunk)
-                                   (= (nth tlon-tts-chunk-index-paragraph-number chunk) paragraph-number))
-                                 tlon-tts-chunks))
-         (chunk-index (when chunk-info (cl-position chunk-info tlon-tts-chunks))) ; Get 0-based index
+  ;; Find the chunk that *contains* the requested paragraph number
+  (let* ((chunk-index (tlon-tts--get-chunk-index-for-paragraph paragraph-number)) ; 0-based
+         (chunk-info  (and chunk-index (nth chunk-index tlon-tts-chunks)))
          (voice-params (when chunk-info (nth tlon-tts-chunk-index-voice-params chunk-info)))
          (paragraph-text (when chunk-info (nth tlon-tts-chunk-index-text chunk-info)))
          (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
