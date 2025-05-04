@@ -283,25 +283,11 @@ LANGUAGE. Returns nil if `tlon-deepl-source-language' is not \"en\"."
 
 ;;;;;; Tex
 
+(declare-function tlon-bibliography-lookup "tlon-tex")
 (declare-function ebib--get-key-at-point "ebib")
-(declare-function bibtex-extras-get-field "bibtex-extras") ; Needed for interactive fallback
-(declare-function ebib-extras-get-field "ebib-extras") ; Needed for lookup by key
-;; `citar-extras-open-in-ebib' removed
-;; `ebib-extras-get-file-of-key' removed
-(declare-function tlon-tex-remove-braces "tlon-tex")
-(declare-function tlon-translate-abstract-callback "tlon-tex")
+(declare-function ebib-extras-get-field "ebib-extras")
 (declare-function bibtex-extras-get-key "bibtex-extras")
-(declare-function bibtex-extras-get-field "bibtex-extras") ; Needed for interactive fallback in tlon-deepl-translate-abstract
-(declare-function ebib-extras-get-field "ebib-extras") ; Needed for interactive fallback in tlon-deepl-translate-abstract
-(declare-function tlon-tex-get-keys-in-file "tlon-tex")
-(declare-function tlon-bibliography-lookup "tlon-tex") ; Used by tlon-deepl--get-abstract-context
-
-;; Assume these are defined elsewhere
-(defvar tlon-file-fluid)
-(defvar tlon-file-stable)
-(defvar tlon-project-target-languages)
-(defvar tlon-ai-batch-fun)
-
+(declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-deepl--get-abstract-context (&optional abstract key interactive-call-p)
   "Prepare context for abstract translation via DeepL.
 Collect necessary information for translating bibliographic entry abstracts.
@@ -356,6 +342,8 @@ function was called interactively."
           (tlon-deepl--translate-abstract-interactive key text source-lang-code)
         (tlon-deepl--translate-abstract-non-interactive key text source-lang-code langs)))))
 
+(declare-function tlon-tex-remove-braces "tlon-tex")
+(declare-function tlon-translate-abstract-callback "tlon-tex")
 (defun tlon-deepl--translate-abstract-interactive (key text source-lang-code)
   "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE."
   (let* ((excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang-code)))
@@ -367,6 +355,7 @@ function was called interactively."
                               (tlon-translate-abstract-callback key target-lang 'overwrite))
                             nil))))
 
+(defvar tlon-project-target-languages)
 (defun tlon-deepl--translate-abstract-non-interactive (key text source-lang-code langs)
   "Handle non-interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
 LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
@@ -386,6 +375,9 @@ nil, use `tlon-project-target-languages'."
       (message "Finished initiating translations for abstract of `%s' into: %s"
                key (string-join (reverse initiated-langs) ", ")))))
 
+(defvar tlon-file-fluid)
+(defvar tlon-file-stable)
+(declare-function tlon-tex-get-keys-in-file "tlon-tex")
 ;;;###autoload
 (defun tlon-deepl-translate-missing-abstracts (&optional langs)
   "Translate abstracts for BibTeX entries missing translations into LANGS.
