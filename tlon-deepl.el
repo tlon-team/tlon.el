@@ -204,18 +204,34 @@ Returns the translated text as a string, or nil if parsing fails."
 (defun tlon-deepl-translate-encode (&optional no-glossary-ok)
   "Return a JSON representation of the text to be translated to language.
 If NO-GLOSSARY-OK is non-nil, don't ask for confirmation when no glossary is
-found."
-  (let ((glossary-id (tlon-deepl-get-language-glossary tlon-deepl-target-language))
-        (text (vector tlon-deepl-text)))
-    (unless
-	(or glossary-id
-	    no-glossary-ok
-	    (not (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
-	    (y-or-n-p (concat (if (string= "en" tlon-deepl-source-language)
-				  (format "No \"en-%s\" glossary found." tlon-deepl-target-language)
-				"Glossaries for source languages other than English are not currently supported.")
-			      " Translate anyway?")))
-      (user-error "Aborted"))
+found or applicable.
+
+Glossaries are only used if the source language is \"en\" and a matching
+glossary for the target language exists in `tlon-deepl-glossaries'."
+  (let* ((source-is-en (string= "en" tlon-deepl-source-language))
+         (glossary-id (when source-is-en ; Only lookup if source is English
+                        (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" tlon-deepl-target-language)))
+         (text (vector tlon-deepl-text))
+         (target-supports-glossary (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
+         (proceed nil))
+
+    ;; Determine if we should proceed without a glossary or prompt the user
+    (setq proceed
+          (or glossary-id ; Glossary found and will be used
+              no-glossary-ok ; Caller allows no glossary
+              (not target-supports-glossary) ; Target language doesn't support glossaries anyway
+              ;; Prompt needed: Glossary applicable but not found, or source not "en"
+              (let ((prompt-message
+                     (cond
+                      ((not source-is-en) ; Source language issue
+                       "Glossaries require English source language.")
+                      (target-supports-glossary ; Source is EN, target supports, but lookup failed
+                       (format "No \"en-%s\" glossary found in local cache." tlon-deepl-target-language))
+                      (t ; Should not happen due to (not target-supports-glossary) check above
+                       "Glossary not applicable."))))
+                (y-or-n-p (concat prompt-message " Translate anyway?")))))
+    (unless proceed
+      (user-error "Aborted: Glossary required or confirmation denied"))
     (let ((json-encoding-pretty-print nil)
           (json-encoding-default-indentation "")
           (json-encoding-lisp-style-closings nil)
@@ -223,15 +239,16 @@ found."
       (json-encode `(("text" . ,text)
                      ("source_lang" . ,tlon-deepl-source-language)
                      ("target_lang" . ,tlon-deepl-target-language)
-                     ("glossary_id" . ,glossary-id)
+                     ;; Include glossary_id only if it was found and source is "en"
+                     ,@(when glossary-id `(("glossary_id" . ,glossary-id)))
 		     ;; disabled because it fails to respect newlines
 		     ;; ("model_type" . "quality_optimized")
 		     )))))
 
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
-Since we only have glossaries for English as the source language, return nil
-when the source language is not English."
+Looks up the glossary ID in `tlon-deepl-glossaries' based on the target
+LANGUAGE. Returns nil if `tlon-deepl-source-language' is not \"en\"."
   (when (string= "en" tlon-deepl-source-language)
     (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
 
