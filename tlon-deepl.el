@@ -559,7 +559,7 @@ After successful deletion, execute CALLBACK (if non-nil)."
   "DeepL menu."
   [["Translate"
     ("t" "Translate text" tlon-deepl-translate)
-    ("a" "Translate abstract (current)" (lambda () (interactive) (tlon-deepl-translate-abstract nil nil nil t)))
+    ("a" "Translate current abstract" (lambda () (interactive) (tlon-deepl-translate-abstract nil nil nil t)))
     ("m" "Translate missing abstracts" tlon-deepl-translate-missing-abstracts)]
    ["Glossaries"
     ("s" "Select" tlon-deepl-select-glossary)
