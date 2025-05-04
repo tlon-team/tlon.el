@@ -697,46 +697,70 @@ RESPONSE is the response from the AI model and INFO is the response info."
 
 (autoload 'markdown-narrow-to-subtree "markdown-mode")
 (declare-function tlon-md-get-tag-section "tlon-md")
-(defun tlon-ai-get-keys-in-section ()
-  "Return a list of BibTeX keys in the \"Further reading\" section."
+(declare-function tlon-md-get-tag-pattern "tlon-md")
+(defun tlon-ai-get-citations-in-section ()
+  "Return a list of (KEY . CITE-TAG-STRING) pairs from \"Further reading\"."
   (let* ((lang (tlon-get-language-in-file nil 'error))
-	 (section (tlon-md-get-tag-section "Further reading" lang))
-	 keys)
+         (section (tlon-md-get-tag-section "Further reading" lang))
+         (citations '()))
     (save-excursion
       (save-restriction
-	(goto-char (point-min))
-	(re-search-forward (format "^#\\{1,\\} %s" section))
-	(markdown-narrow-to-subtree)
-	(while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
-	  (push (match-string-no-properties 3) keys))
-	keys))))
+        (goto-char (point-min))
+        (when (re-search-forward (format "^#\\{1,\\} %s" section) nil t)
+          (markdown-narrow-to-subtree)
+          (goto-char (point-min)) ; Start search within the narrowed section
+          (while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
+            (let ((key (match-string-no-properties 3)) ; Group 3 is bibKey value
+                  (tag-string (match-string-no-properties 0))) ; Full tag match
+              (push (cons key tag-string) citations))))))
+    (nreverse citations))) ; Return in order of appearance
 
 (declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
-(defun tlon-ai-add-source-to-context (key)
-  "Add the PDF file associated with KEY to the context."
-  (if-let ((field (bibtex-extras-get-entry-as-string key "file")))
-      (let* ((files (split-string field ";"))
-	     (pdf-files (seq-filter (lambda (file)
-				      (string-match-p "\\.pdf$" file))
-				    files)))
-	(tlon-ai-ensure-one-file key pdf-files)
-	;; we convert to text because some AI models limit the number or pages
-	;; of PDF files
-	(let ((text (tlon-get-string-dwim (car pdf-files)))
-	      (file (make-temp-file "pdf-to-text-")))
-	  (with-temp-buffer
-	    (insert (format "Please cite this work as ‘<Cite bibKey=\"%s\" />’\n\n" key))
-	    (insert text)
-	    (write-region (point-min) (point-max) file))
-	  (gptel-context-add-file file)))
-    (user-error "No `file' field found in entry %s" key)))
+(defun tlon-ai-add-source-to-context (key cite-tag-string)
+  "Add the relevant PDF content associated with KEY to the context.
+If CITE-TAG-STRING (the full <Cite .../> tag from the buffer) contains a
+`locator' attribute, prompt the user for the path to the PDF containing only
+that section. Otherwise, add the full PDF associated with KEY from the BibTeX
+entry."
+  (let (pdf-path locator)
+    ;; Check if the cite tag has a locator
+    (when (string-match (tlon-md-get-tag-pattern "Cite") cite-tag-string)
+      (setq locator (match-string-no-properties 5 cite-tag-string))) ; Group 5 is locator value
+
+    (if (and locator (not (string-empty-p locator)))
+        ;; Locator found, prompt user for specific file
+        (setq pdf-path (read-file-name (format "Select PDF for %s (%s): " key locator)))
+      ;; No locator, get the full PDF from BibTeX entry
+      (if-let ((field (bibtex-extras-get-entry-as-string key "file")))
+          (let* ((files (split-string field ";"))
+                 (pdf-files (seq-filter (lambda (file)
+                                          (string-match-p "\\.pdf$" file))
+                                        files)))
+            (tlon-ai-ensure-one-file key pdf-files)
+            (setq pdf-path (car pdf-files)))
+        (user-error "No `file' field found in entry %s" key)))
+
+    ;; Proceed with the determined pdf-path (either full or section)
+    (when pdf-path
+      ;; we convert to text because some AI models limit the number or pages
+      ;; of PDF files
+      (let ((text (tlon-get-string-dwim pdf-path))
+            (file (make-temp-file "pdf-to-text-")))
+        (with-temp-buffer
+          (insert (format "Please cite this work as ‘%s’\n\n" cite-tag-string)) ; Use full tag string
+          (insert text)
+          (write-region (point-min) (point-max) file))
+        (gptel-context-add-file file)))))
 
 (defun tlon-add-add-sources-to-context ()
-  "Add all PDF files in the current buffer to the context."
-  (mapc (lambda (key)
-	  (tlon-ai-add-source-to-context key))
-	(tlon-ai-get-keys-in-section))
-  (message "Added all PDF files of the keys in the current buffer to the `gptel' context."))
+  "Add relevant PDF content for each citation in the buffer to the context.
+Checks for `locator' attributes in <Cite> tags."
+  (mapc (lambda (citation-pair)
+          (let ((key (car citation-pair))
+                (tag-string (cdr citation-pair)))
+            (tlon-ai-add-source-to-context key tag-string)))
+        (tlon-ai-get-citations-in-section))
+  (message "Added relevant PDF content for citations in the buffer to the `gptel' context."))
 
 (declare-function tlon-extract-glossary "tlon-glossary")
 (declare-function tlon-glossary-target-path "tlon-glossary")
