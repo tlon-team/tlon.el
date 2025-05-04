@@ -130,9 +130,11 @@ The command ~tlon-ai-translate~ prompts for text and returns ten alternative Spa
 #+findex: tlon-ai-create-reference-article
 The command ~tlon-ai-create-reference-article~ generates a new encyclopedia-style article based on the current buffer's content and linked sources.
 
-It extracts the title from the buffer's front matter (=title= key). It determines the language of the article from the current file. It constructs a prompt using ~tlon-ai-write-reference-article-prompt~, instructing the AI to synthesize information primarily from attached source files (added to the =gptel= context via ~tlon-add-add-sources-to-context~) and an optional glossary (added via ~tlon-add-glossary-to-context~).
+It extracts the title from the buffer's front matter (=title= key). It determines the language of the article from the current file. It constructs a prompt using ~tlon-ai-write-reference-article-prompt~, instructing the AI to synthesize information primarily from attached source files and an optional glossary.
 
-The AI response (the generated article) is placed in a new buffer. If the user confirms, it can then be proofread using ~tlon-ai-proofread-reference-article~. The model used can be customized via ~tlon-ai-create-reference-article-model~.
+Source files are added to the =gptel= context via the internal function ~tlon-add-add-sources-to-context~, which iterates through =<Cite>= tags in the "Further reading" section. Crucially, if a =<Cite>= tag includes a =locator= attribute (e.g., =<Cite bibKey="Key" locator="chap. 17" />=), the system *does not* add the full PDF associated with ="Key"=. Instead, it *prompts the user* to select the specific PDF file containing only the content specified by the locator (e.g., the PDF for chapter 17). If no locator is present, the full PDF linked in the BibTeX entry for the key is added (after conversion to text). The glossary for the target language is added via ~tlon-add-glossary-to-context~.
+
+The AI response (the generated article) is placed in a new buffer. If the user confirms (or if ~tlon-ai-auto-proofread~ is non-nil), it can then be proofread using ~tlon-ai-proofread-reference-article~. The model used for generation can be customized via ~tlon-ai-create-reference-article-model~.
 
 *** Proofreading Reference Articles
 :PROPERTIES:
