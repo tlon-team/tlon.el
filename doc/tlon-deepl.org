@@ -171,7 +171,8 @@ It provides the following groups and commands:
   + =c= :: Create glossary (~tlon-deepl-glossary-create~)
   + =u= :: Update glossary (~tlon-deepl-glossary-update~)
   + =d= :: Delete glossary (~tlon-deepl-glossary-delete~)
-+ *Other*:
++ *Options*:
+  + =m= :: Select Model Type (~tlon-deepl-model-type-infix~) - Select the DeepL model type ("latency_optimized", "quality_optimized", or "prefer_quality_optimized"). Uses standard transient variable selection with a custom reader.
   + =e= :: Ediff translations (~tlon-deepl-diff~)
 
 ** Internal Functions and Variables
