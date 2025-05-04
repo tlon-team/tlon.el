@@ -13,6 +13,7 @@
 * DeepL Integration (=tlon-deepl.el=)
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl
+:ID:       57E59108-8877-4E17-9638-2E29EB6E28B9
 :END:
 
 This module provides functions for interacting with the DeepL API, enabling text translation and management of DeepL glossaries. It relies on an API key stored securely via =auth-source=.
@@ -20,6 +21,7 @@ This module provides functions for interacting with the DeepL API, enabling text
 ** Dependencies
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-dependencies
+:ID:       4F59ABC2-A848-4A61-8AF6-5EEE6D6A643F
 :END:
 
 + =tlon-glossary=
@@ -32,11 +34,13 @@ This module provides functions for interacting with the DeepL API, enabling text
 ** Configuration
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-config
+:ID:       28D3029C-D61B-4651-A605-F689A0BE5FFA
 :END:
 
 *** API Key and URL
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-api-config
+:ID:       597E3DD0-595F-439C-BFFB-66D54BA82BDB
 :END:
 #+vindex: tlon-deepl-key
 + ~tlon-deepl-key~ :: The DeepL API key, retrieved from =auth-source= using the entry =tlon/babel/deepl.com/[WORK_EMAIL]=.
@@ -46,6 +50,7 @@ This module provides functions for interacting with the DeepL API, enabling text
 *** API Call Parameters
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-parameters
+:ID:       2503BFD5-5E80-401D-A892-98882A6CCBB2
 :END:
 #+vindex: tlon-deepl-parameters
 + ~tlon-deepl-parameters~ :: An alist defining the specifics for each supported DeepL API call (translate, glossary creation, retrieval, deletion). Each entry maps an API call symbol (e.g., =translate=) to a list containing:
@@ -57,6 +62,7 @@ This module provides functions for interacting with the DeepL API, enabling text
 *** Supported Glossary Languages
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-supported-glossary-languages
+:ID:       5BA8EC1A-5B70-40FE-81FE-B953728E9365
 :END:
 #+vindex: tlon-deepl-supported-glossary-languages
 + ~tlon-deepl-supported-glossary-languages~ :: A list of language codes for which DeepL currently supports glossaries.
@@ -64,6 +70,7 @@ This module provides functions for interacting with the DeepL API, enabling text
 *** Internal State Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-state-vars
+:ID:       2A3AB7E6-DDBE-43DF-982C-A3583B87DDC3
 :END:
 These variables store temporary state during API requests.
 #+vindex: tlon-deepl-glossaries
@@ -78,6 +85,7 @@ These variables store temporary state during API requests.
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-commands
+:ID:       CE13BD22-93AF-4ECD-8752-39D5BFA73360
 :END:
 
 This section details the interactive commands provided by =tlon-deepl.el=.
@@ -85,6 +93,7 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 *** Translation
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-translation-commands
+:ID:       D7A91B3C-B45C-4526-943C-CA527D30294D
 :END:
 
 #+findex: tlon-deepl-translate
@@ -116,6 +125,7 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 *** Glossaries
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-glossary-commands
+:ID:       22E51A04-5097-4422-B793-DABE27F70E20
 :END:
 
 #+findex: tlon-deepl-select-glossary
@@ -148,6 +158,7 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 *** Utility Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-utility-commands
+:ID:       33EC7833-2A03-4EA9-B95D-4258A893E150
 :END:
 
 #+findex: tlon-deepl-diff
@@ -156,6 +167,7 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-menu
+:ID:       89366575-2FD5-45D0-965C-96E07ECFEDFD
 :END:
 #+findex: tlon-deepl-menu
 The command ~tlon-deepl-menu~ activates a =transient= menu interface for DeepL operations.
@@ -178,6 +190,7 @@ It provides the following groups and commands:
 ** Internal Functions and Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-internals
+:ID:       E4A78399-3C3C-48AE-9B18-35A7D2E03BB6
 :END:
 
 This section lists non-interactive functions and variables used internally or potentially useful for advanced customization.
@@ -185,6 +198,7 @@ This section lists non-interactive functions and variables used internally or po
 *** API Request Handling
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-api-internals
+:ID:       40E0C0D5-95CA-437F-966F-541799008F9E
 :END:
 
 #+findex: tlon-deepl-request-wrapper
@@ -200,6 +214,7 @@ This section lists non-interactive functions and variables used internally or po
 *** Callbacks
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-callbacks
+:ID:       C531F405-7390-408F-AC20-E8A9005FF306
 :END:
 
 #+findex: tlon-deepl-print-translation
@@ -217,6 +232,7 @@ This section lists non-interactive functions and variables used internally or po
 *** Payload Encoders & Formatters
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-encoders
+:ID:       14B630E3-0294-449C-B9A7-7B4463F3D704
 :END:
 
 #+findex: tlon-deepl-translate-encode
@@ -232,6 +248,7 @@ This section lists non-interactive functions and variables used internally or po
 *** Helper Functions
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-helpers
+:ID:       65933045-D7A8-48E9-B887-B99A3B4BC755
 :END:
 
 #+findex: tlon-deepl-get-list-of-glossaries
