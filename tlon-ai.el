@@ -2354,6 +2354,7 @@ If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-ai-glossary-verify-model)
 
+
 ;;;;;; Main menu
 
 (autoload 'gptel--infix-provider "gptel-transient")

@@ -26,8 +26,9 @@
 
 ;;; Code:
 
-(require 'tlon-glossary)
+(require 'tlon-ai) ; For tlon-simple-model-selection-infix
 (require 'tlon-core)
+(require 'tlon-glossary)
 (require 'url)
 (require 'seq) ; For seq-uniq
 
@@ -512,6 +513,37 @@ The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
     (tlon-deepl-get-glossaries)
     (message "Response: %s" response)))
 
+;;;;;; Model Type Selection
+
+(defconst tlon-deepl--model-choices
+  '(("Latency optimized" . "latency_optimized")
+    ("Quality optimized" . "quality_optimized")
+    ("Prefer quality optimized" . "prefer_quality_optimized"))
+  "Alist of DeepL model display names and their API values.
+See `tlon-deepl-model-type' for details.")
+
+(defun tlon-deepl-model-type-reader (prompt _initval _arg)
+  "PROMPT the user to select a DeepL model type.
+Returns the selected model string value."
+  (let* ((current-value tlon-deepl-model-type)
+         (current-label (or (car (rassoc current-value tlon-deepl--model-choices))
+                            (format "%s (Unknown)" current-value)))
+         (prompt (format "%s (current: %s): " prompt current-label))
+         (selection (completing-read prompt tlon-deepl--model-choices nil t)))
+    (cdr (assoc selection tlon-deepl--model-choices))))
+
+(defun tlon-deepl-model-type-formatter (value)
+  "Formatter function to display the label for the DeepL model VALUE."
+  (or (car (rassoc value tlon-deepl--model-choices))
+      (format "%s (Unknown)" value)))
+
+(transient-define-infix tlon-deepl-model-type-infix ()
+  "Select the DeepL model type (`tlon-deepl-model-type')."
+  :class 'transient-lisp-variable
+  :variable 'tlon-deepl-model-type
+  :reader 'tlon-deepl-model-type-reader
+  :prompt "DeepL Model Type: ")
+
 ;;;;;; Delete glossary
 
 ;;;###autoload
@@ -560,15 +592,16 @@ After successful deletion, execute CALLBACK (if non-nil)."
   [["Translate"
     ("t" "Translate text" tlon-deepl-translate)
     ("a" "Translate current abstract" (lambda () (interactive) (tlon-deepl-translate-abstract nil nil nil t)))
-    ("m" "Translate missing abstracts" tlon-deepl-translate-missing-abstracts)]
+    ("m" "Translate missing abstracts" tlon-deepl-translate-missing-abstracts)
+    ("e" "Ediff translation" tlon-deepl-diff)]
    ["Glossaries"
     ("s" "Select" tlon-deepl-select-glossary)
     ("r" "Retrieve" tlon-deepl-get-glossaries)
     ("c" "Create" tlon-deepl-glossary-create)
     ("u" "Update" tlon-deepl-glossary-update)
-    ("d" "Delete" tlon-deepl-glossary-delete)
-    ""
-    ("e" "Ediff" tlon-deepl-diff)]])
+    ("d" "Delete" tlon-deepl-glossary-delete)]
+   ["Options"
+    ("-m" "Model type" tlon-deepl-model-type-infix)]])
 
 (provide 'tlon-deepl)
 ;;; tlon-deepl.el ends here
