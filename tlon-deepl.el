@@ -31,6 +31,35 @@
 (require 'url)
 (require 'seq) ; For seq-uniq
 
+;;;; User options
+
+(defgroup tlon-deepl nil
+  "DeepL functionality for Tlön."
+  :group 'tlon)
+
+(defcustom tlon-deepl-model-type "latency_optimized"
+  "Model type for DeepL translation.
+Possible values are:
+
+- `latency_optimized' (uses lower latency “classic” translation models, which
+  support all language pairs; default value)
+
+- `quality_optimized' (uses higher latency, improved quality “next-gen”
+  translation models, which support only a subset of language pairs; if a
+  language pair that is not supported by next-gen models is included in the
+  request, it will fail. Consider using prefer_quality_optimized instead.)
+
+- `prefer_quality_optimized' (prioritizes use of higher latency, improved
+  quality “next-gen” translation models, which support only a subset of DeepL
+  languages; if a request includes a language pair not supported by next-gen
+  models, the request will fall back to latency_optimized classic models)
+
+See <https://developers.deepl.com/docs/api-reference/translate#request-body-descriptions>."
+  :group 'tlon-deepl
+  :type '(choice (const :tag "Latency Optimized" "latency_optimized")
+		 (const :tag "Quality Optimized" "quality_optimized")
+		 (const :tag "Prefer Quality Optimized" "prefer_quality_optimized")))
+
 ;;;; Variables
 
 (defconst tlon-deepl-key
@@ -242,8 +271,7 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
                      ;; Include glossary_id only if it was found and source is "en"
                      ,@(when glossary-id `(("glossary_id" . ,glossary-id)))
 		     ;; disabled because it fails to respect newlines
-		     ;; ("model_type" . "quality_optimized")
-		     )))))
+		     ("model_type" . ,tlon-deepl-model-type))))))
 
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
