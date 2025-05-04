@@ -153,9 +153,6 @@ This section details the interactive commands provided by =tlon-deepl.el=.
 #+findex: tlon-deepl-diff
 + ~tlon-deepl-diff~ :: Runs an =ediff= session to compare a local translation file with its corresponding DeepL-generated translation file. Prompts for the DeepL file path if not provided. Defaults to the current buffer's file for the local translation.
 
-#+findex: tlon-deepl-fix-encoding-persistent
-+ ~tlon-deepl-fix-encoding-persistent~ :: Attempts to fix common UTF-8 misinterpretation issues (where UTF-8 bytes are treated as ISO-8859-1) within the current buffer (must be BibTeX or JSON mode). Performs a series of search-and-replace operations based on a predefined list of common misinterpretations.
-
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-deepl-menu
