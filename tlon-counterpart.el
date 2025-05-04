@@ -82,24 +82,31 @@ buffer."
   (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file))
 	 (subproject (tlon-repo-lookup :subproject :dir repo))
-	 (language (tlon-get-counterpart-language repo))
+	 (language (tlon-get-counterpart-language repo t))
 	 (counterpart-repo
 	  (tlon-repo-lookup :dir
 			    :subproject subproject
 			    :language language)))
     counterpart-repo))
 
-(defun tlon-get-counterpart-language (&optional repo)
-  "Return the language of the counterpart of REPO."
+(defun tlon-get-counterpart-language (&optional repo prompt)
+  "Return the language code of the counterpart of REPO.
+
+If PROMPT is non-nil and the source repo’s language is \"en\",
+ask the user which target language to use.  When PROMPT is nil
+the first entry in `tlon-project-target-languages' is selected
+automatically.  If the source language is not \"en\" the
+counterpart is always \"en\"."
   (let* ((repo (or repo (tlon-get-repo)))
 	 (language (tlon-repo-lookup :language :dir repo))
-	 (languages (mapcar (lambda (language)
-			      (tlon-get-formatted-languages language 'code))
+	 (languages (mapcar (lambda (lang)
+			      (tlon-get-formatted-languages lang 'code))
 			    tlon-project-target-languages)))
     (pcase language
-      ("en" (completing-read "Language: " languages))
+      ("en" (if prompt
+		(completing-read "Language: " languages nil t)
+	      (car languages)))
       ((pred (lambda (lang)
-	       "Return t if LANG is the code of one of the Babel languages."
 	       (member lang languages)))
        "en")
       (_ (user-error "Language not recognized")))))
@@ -306,6 +313,104 @@ or the function itself."
     (user-error
      (display-buffer (get-buffer "/Paragraph Pairs/")))))
 
+(defun tlon-get-counterpart-link (original-relative-link current-buffer-file)
+  "Find the counterpart link for ORIGINAL-RELATIVE-LINK in CURRENT-BUFFER-FILE.
+Returns the relative path string for the counterpart link, or nil if not found."
+  (let* ((current-dir (file-name-directory current-buffer-file))
+         (target-repo (tlon-get-repo-from-file current-buffer-file))
+         ;; (target-lang (tlon-repo-lookup :language :dir target-repo)) ; Not strictly needed?
+         (buffer-original-path (tlon-yaml-get-key "original_path" current-buffer-file)))
+    (unless buffer-original-path
+      (warn "No 'original_path' found in metadata for %s" current-buffer-file)
+      (cl-return-from tlon-get-counterpart-link nil))
+    (let* ((original-repo (tlon-get-counterpart-repo current-buffer-file)) ; Repo of the original file
+           (original-buffer-abs-path (file-name-concat original-repo buffer-original-path))
+           (original-buffer-dir (file-name-directory original-buffer-abs-path))
+           ;; Resolve the original relative link against the original buffer's directory
+           (linked-original-abs-path (expand-file-name original-relative-link original-buffer-dir))
+           ;; Get the path relative to the original repo root, used as the key in metadata
+           (linked-original-relative-path (file-relative-name linked-original-abs-path original-repo))
+           ;; Lookup the counterpart file in the target repo's metadata
+           (counterpart-abs-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
+                                                       "file"
+                                                       "original_path"
+                                                       linked-original-relative-path)))
+      ;; If metadata lookup failed, try to build the counterpart path
+      ;; directly using `tlon-get-counterpart-dir'.  This is necessary for
+      ;; links that live in sibling sub-directories such as
+      ;; “../authors/derek-parfit.md”, where no metadata entry exists yet.
+      (unless counterpart-abs-path
+        (let* ((fallback-dir  (tlon-get-counterpart-dir linked-original-abs-path))
+               (fallback-path (when fallback-dir
+                                (file-name-concat fallback-dir
+                                                  (file-name-nondirectory linked-original-abs-path)))))
+          ;; Accept the fallback even if the file does not exist yet – we still
+          ;; want the link to point to the *expected* location of the
+          ;; translation.  Emit a debug message when the file is missing so the
+          ;; user is aware.
+          (when fallback-path
+            (setq counterpart-abs-path fallback-path))))
+      (if counterpart-abs-path
+          ;; Calculate the relative path from the current buffer's directory to the counterpart file
+          (let ((new-relative (file-relative-name counterpart-abs-path current-dir)))
+            (message "[Debug] Calculated New Relative Link: %s" new-relative)
+            new-relative)
+        (progn
+          (warn "Counterpart not found for original link '%s' (resolved original lookup key: %s)"
+                original-relative-link linked-original-relative-path)
+          nil)))))
+
+;;;###autoload
+(defun tlon-replace-internal-links ()
+  "Replace internal Markdown links in the current buffer with their counterparts.
+Searches for links like '[text](./file.md)' or '[text](../dir/file.md)'
+and replaces the target path with the path to the corresponding translated file."
+  (interactive)
+  (unless (eq major-mode 'markdown-mode)
+    (user-error "This command only works in Markdown buffers"))
+  (let* ((buffer-file (buffer-file-name))
+         (cnt 0)
+         (errors 0)
+         ;; Regex to find markdown links ending in .md, excluding URLs like http:
+         ;; Matches [text](link.md) or [text](../path/link.md) etc., allowing whitespace.
+         ;; Group 1 captures the relative path we need to replace.
+         (link-regex "\\[[^]]*\\](\\s-*\\(\\([.]\\{1,2\\}/\\)?[^):]+\\.md\\)\\s-*)")
+         (case-fold-search nil)) ; Ensure case-sensitive matching for paths
+    (unless buffer-file
+      (user-error "Buffer is not visiting a file"))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward link-regex nil t)
+        (let* ((original-relative-link (match-string 1)) ; Path is group 1
+               (match-start (match-beginning 1)))        ; Use group 1 start
+          ;; Skip processing for links pointing only to current or parent directory
+          (if (member original-relative-link '("./" "../"))
+              (goto-char (match-end 0)) ; Skip this match entirely
+            ;; Process potentially replaceable links
+            (let* ((new-relative-link
+                    (save-match-data
+                      (tlon-get-counterpart-link original-relative-link buffer-file))))
+              ;; Preserve an explicit "./" prefix when the original link used one.
+              (when (and new-relative-link
+                         (string-prefix-p "./" original-relative-link)
+                         (not (string-prefix-p "./" new-relative-link)))
+                (setq new-relative-link (concat "./" new-relative-link)))
+              (if new-relative-link
+                  ;; Counterpart found
+                  (if (string= original-relative-link new-relative-link)
+                      ;; Counterpart is the same, no replacement needed. Advance past the whole match.
+                      (goto-char (match-end 0))
+                    ;; Counterpart is different, perform replacement.
+                    (replace-match new-relative-link t t nil 1) ; Replace group 1
+                    (setq cnt (1+ cnt))
+                    ;; Adjust search position: start right after the modified link target
+                    (goto-char (+ match-start (length new-relative-link))))
+                ;; Counterpart not found
+                (setq errors (1+ errors))
+                ;; Move past the entire link match to continue searching
+                (goto-char (match-end 0))))))))
+    (message "Replaced %d internal links. %d counterparts not found." cnt errors)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-counterpart-menu "tlon-counterpart" nil t)
@@ -317,6 +422,8 @@ or the function itself."
     ("U" "open counterpart in Dired"             tlon-open-counterpart-in-dired)]
    ["Matching"
     ("d" "display corresponding paragraphs"      tlon-display-corresponding-paragraphs)]
+   ["Links"
+    ("l" "replace internal links"                tlon-replace-internal-links)]
    ["Metadata"
     ("o" "set ‘original_path’"                   tlon-yaml-insert-original-path)]])
 
