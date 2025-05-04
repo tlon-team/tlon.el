@@ -549,7 +549,6 @@ Returns the selected model string value."
 ;;;###autoload
 (defun tlon-deepl-glossary-delete (&optional language-or-id callback)
   "Delete a DeepL glossary.
-
 If called interactively, prompt the user to choose a glossary unless
 LANGUAGE-OR-ID is supplied.  Programmatically, supply either a target
 language code (≤ 3 chars, e.g., \"es\") or a glossary ID.
