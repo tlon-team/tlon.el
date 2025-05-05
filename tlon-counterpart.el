@@ -362,7 +362,10 @@ Returns the relative path string for the counterpart link, or nil if not found."
 
 ;;;###autoload
 (defun tlon-replace-internal-links ()
-  "Replace internal Markdown links in the current buffer with their counterparts.
+  "Replace internal Markdown links with their counterparts.
+If a region is active, operate only within the region. Otherwise, operate on
+the entire buffer.
+
 Searches for links like '[text](./file.md)' or '[text](../dir/file.md)'
 and replaces the target path with the path to the corresponding translated file."
   (interactive)
@@ -371,6 +374,9 @@ and replaces the target path with the path to the corresponding translated file.
   (let* ((buffer-file (buffer-file-name))
          (cnt 0)
          (errors 0)
+         (region-active (region-active-p))
+         (start (if region-active (region-beginning) (point-min)))
+         (end (if region-active (region-end) (point-max)))
          ;; Regex to find markdown links ending in .md, excluding URLs like http:
          ;; Matches [text](link.md) or [text](../path/link.md) etc., allowing whitespace.
          ;; Group 1 captures the relative path we need to replace.
@@ -379,8 +385,8 @@ and replaces the target path with the path to the corresponding translated file.
     (unless buffer-file
       (user-error "Buffer is not visiting a file"))
     (save-excursion
-      (goto-char (point-min))
-      (while (re-search-forward link-regex nil t)
+      (goto-char start)
+      (while (re-search-forward link-regex end t)
         (let* ((original-relative-link (match-string 1)) ; Path is group 1
                (match-start (match-beginning 1)))        ; Use group 1 start
           ;; Skip processing for links pointing only to current or parent directory
