@@ -117,6 +117,8 @@ It provides the following groups and commands:
   + =U= :: Open counterpart in Dired (~tlon-open-counterpart-in-dired~)
 + *Matching*:
   + =d= :: Display corresponding paragraphs (~tlon-display-corresponding-paragraphs~)
++ *Links*:
+  + =l= :: replace internal links                (~tlon-replace-internal-links~)
 + *Metadata*:
   + =o= :: Set ‘original_path’ (~tlon-yaml-insert-original-path~)
 
