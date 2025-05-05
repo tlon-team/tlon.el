@@ -313,6 +313,8 @@ or the function itself."
     (user-error
      (display-buffer (get-buffer "/Paragraph Pairs/")))))
 
+;;;;; Translate links
+
 (defun tlon-get-counterpart-link (original-relative-link current-buffer-file)
   "Find the counterpart link for ORIGINAL-RELATIVE-LINK in CURRENT-BUFFER-FILE.
 Returns the relative path string for the counterpart link, or nil if not found."
@@ -351,9 +353,7 @@ Returns the relative path string for the counterpart link, or nil if not found."
           (when fallback-path
             (setq counterpart-abs-path fallback-path))))
       (if counterpart-abs-path
-          ;; Calculate the relative path from the current buffer's directory to the counterpart file
           (let ((new-relative (file-relative-name counterpart-abs-path current-dir)))
-            (message "[Debug] Calculated New Relative Link: %s" new-relative)
             new-relative)
         (progn
           (warn "Counterpart not found for original link '%s' (resolved original lookup key: %s)"
