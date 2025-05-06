@@ -110,40 +110,57 @@ TITLE optionally specifies the title of the file to be imported."
 ;; TODO: make it also work with LessWrong
 (declare-function tlon-set-file-from-title "tlon")
 ;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
+
+(defun _tlon-import-eaf--common-processing (entity-title bare-dir-name html-content entity-type)
+  "Common logic to process EAF entity HTML content.
+ENTITY-TITLE is the title for the document.
+BARE-DIR-NAME is the target subdirectory (e.g., \"articles\", \"tags\").
+HTML-CONTENT is the raw HTML string.
+ENTITY-TYPE is the symbol 'article or 'tag."
+  (let* ((target (tlon-import-set-target entity-title bare-dir-name))
+         (html-file (tlon-import-save-html-to-file html-content)))
+    (shell-command
+     (format tlon-pandoc-convert-from-file html-file target))
+    (with-current-buffer (find-file-noselect target)
+      (tlon-cleanup-common)
+      (tlon-cleanup-eaf)
+      (tlon-autofix-all)
+      ;; (delete-tlon-yaml-insert-field "type" (symbol-name entity-type))
+      (save-buffer))
+    (find-file target)))
+
+(defun tlon-import-eaf--process-article (response &optional title)
+  "Process an EAF article from API RESPONSE. Optional TITLE override."
+  (let ((article-title (or title (tlon-import-eaf-get-article-title response))))
+    (if-let ((contents (tlon-import-eaf-get-article-contents response))) ; Articles have 'contents'
+        (let ((html (tlon-import-eaf-get-article-html response)))
+          (_tlon-import-eaf--common-processing article-title "articles" html 'article))
+      (if (y-or-n-p "EAF API returned no contents for article. Import as normal URL?")
+          (let ((url (tlon-import-eaf-get-article-url response)))
+            (tlon-import-convert-html-to-markdown url article-title))
+        (message "Aborted.")))))
+
+(defun tlon-import-eaf--process-tag (response &optional title)
+  "Process an EAF tag from API RESPONSE. Optional TITLE override."
+  (let ((tag-title (or title (tlon-import-eaf-get-tag-title response))))
+    (if-let ((html (tlon-import-eaf-get-tag-html response))) ; Tags have HTML in description
+        (_tlon-import-eaf--common-processing tag-title "tags" html 'tag)
+      (if (y-or-n-p "EAF API returned no HTML description for tag. Import as normal URL?")
+          (let ((url (tlon-import-eaf-get-tag-url response))) ; Ensure tlon-import-eaf-get-tag-url exists and is correct
+            (tlon-import-convert-html-to-markdown url tag-title))
+        (message "Aborted.")))))
+
 (defun tlon-import-eaf-html (id-or-slug &optional title)
-  "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
-TITLE optionally specifies the title of the entity to be imported."
-  (if-let* ((response (tlon-import-eaf-request id-or-slug))
-	    (type (tlon-import-eaf-get-type id-or-slug))
-	    (title (or title (pcase type
-			       ('article (tlon-import-eaf-get-article-title response))
-			       ('tag (tlon-import-eaf-get-tag-title response))))))
-      (if-let* ((contents (pcase type
-			    ('article (tlon-import-eaf-get-article-contents response))
-			    ('tag (tlon-import-eaf-get-tag-contents response)))))
-	  (let* ((target (tlon-import-set-target title (pcase type
-							 ('article "articles")
-							 ('tag "tags"))))
-		 (html (pcase type
-			 ('article (tlon-import-eaf-get-article-html response))
-			 ('tag (tlon-import-eaf-get-tag-html response))))
-		 (html-file (tlon-import-save-html-to-file html)))
-	    (shell-command
-	     (format tlon-pandoc-convert-from-file html-file target))
-	    (with-current-buffer (find-file-noselect target)
-	      (tlon-cleanup-common)
-	      (tlon-cleanup-eaf)
-	      (tlon-autofix-all)
-	      ;; (delete-tlon-yaml-insert-field "type" (symbol-name type))
-	      (save-buffer))
-	    (find-file target))
-	(if (y-or-n-p "EAF API returned no contents. Import as normal URL?")
-	    (let ((url (pcase type
-			 ('article (tlon-import-eaf-get-article-url response))
-			 ('tag (tlon-import-eaf-get-tag-url response)))))
-	      (tlon-import-convert-html-to-markdown url title))
-	  (message "Aborted.")))
-    (user-error"EAF API returned no response")))
+  "Import the HTML of EAF entity with ID-OR-SLUG and convert it to MD.
+TITLE optionally specifies the title of the entity to be imported.
+Delegates to specific handlers for articles and tags."
+  (if-let* ((response (tlon-import-eaf-request id-or-slug)))
+      (let ((type (tlon-import-eaf-get-type id-or-slug)))
+        (pcase type
+          ('article (tlon-import-eaf--process-article response title))
+          ('tag (tlon-import-eaf--process-tag response title))
+          (_ (user-error "Unknown EAF entity type: %S" type))))
+    (user-error "EAF API returned no response")))
 
 (defun tlon-import-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
