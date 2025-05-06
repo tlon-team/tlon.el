@@ -111,34 +111,39 @@ TITLE optionally specifies the title of the file to be imported."
 (declare-function tlon-set-file-from-title "tlon")
 ;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
 (defun tlon-import-eaf-html (id-or-slug &optional title)
-  "Import the HTML of EAF entity with ID-OR-SLUG and convert it to MD.
+  "Import the HTML of EAF entity with ID-OR-SLUG to TARGET and convert it to MD.
 TITLE optionally specifies the title of the entity to be imported."
-  (let* ((response (tlon-import-eaf-request id-or-slug))
-	 (type (tlon-import-eaf-get-type id-or-slug))
-	 (html (pcase type
-		 ('article (tlon-import-eaf-get-article-html response))
-		 ('tag (tlon-import-eaf-get-tag-html response)))))
-    (unless html
-      (user-error "Failed to retrieve HTML content for EAF entity: %s (type: %s). API Response: %S"
-		  id-or-slug type response))
-    (let* ((final-title (or title
-			    (pcase type
-			      ('article (tlon-import-eaf-get-article-title response))
-			      ('tag (tlon-import-eaf-get-tag-title response)))))
-	   (target-bare-dir (pcase type
-			      ('article "articles")
-			      ('tag "tags")))
-	   (target (tlon-import-set-target final-title target-bare-dir))
-	   (html-file (tlon-import-save-html-to-file html)))
-      (shell-command
-       (format tlon-pandoc-convert-from-file html-file target))
-      (with-current-buffer (find-file-noselect target)
-	(tlon-cleanup-common)
-	(tlon-cleanup-eaf)
-	(tlon-autofix-all)
-	;; (delete-tlon-yaml-insert-field "type" (symbol-name type))
-	(save-buffer))
-      (find-file target)))))
+  (if-let* ((response (tlon-import-eaf-request id-or-slug))
+	    (type (tlon-import-eaf-get-type id-or-slug))
+	    (title (or title (pcase type
+			       ('article (tlon-import-eaf-get-article-title response))
+			       ('tag (tlon-import-eaf-get-tag-title response))))))
+      (if-let* ((contents (pcase type
+			    ('article (tlon-import-eaf-get-article-contents response))
+			    ('tag (tlon-import-eaf-get-tag-contents response)))))
+	  (let* ((target (tlon-import-set-target title (pcase type
+							 ('article "articles")
+							 ('tag "tags"))))
+		 (html (pcase type
+			 ('article (tlon-import-eaf-get-article-html response))
+			 ('tag (tlon-import-eaf-get-tag-html response))))
+		 (html-file (tlon-import-save-html-to-file html)))
+	    (shell-command
+	     (format tlon-pandoc-convert-from-file html-file target))
+	    (with-current-buffer (find-file-noselect target)
+	      (tlon-cleanup-common)
+	      (tlon-cleanup-eaf)
+	      (tlon-autofix-all)
+	      ;; (delete-tlon-yaml-insert-field "type" (symbol-name type))
+	      (save-buffer))
+	    (find-file target))
+	(if (y-or-n-p "EAF API returned no contents. Import as normal URL?")
+	    (let ((url (pcase type
+			 ('article (tlon-import-eaf-get-article-url response))
+			 ('tag (tlon-import-eaf-get-tag-url response)))))
+	      (tlon-import-convert-html-to-markdown url title))
+	  (message "Aborted.")))
+    (user-error"EAF API returned no response")))
 
 (defun tlon-import-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
@@ -251,6 +256,18 @@ If ASYNC is t, run the request asynchronously."
 	 (result (cdr (assoc 'result article))))
     result))
 
+(defun tlon-import-eaf-get-article-contents (response)
+  "Get article contents from EA Forum API RESPONSE."
+  (let* ((article (cdr (assoc 'post response)))
+	 (contents (cdr (assoc 'contents article))))
+    contents))
+
+(defun tlon-import-eaf-get-article-url (response)
+  "Get article URL from EA Forum API RESPONSE."
+  (let* ((article (cdr (assoc 'post response)))
+	 (contents (cdr (assoc 'pageUrl article))))
+    contents))
+
 (defun tlon-import-eaf-get-article-html (response)
   "Get article HTML from EA Forum API RESPONSE."
   (let* ((result (tlon-import-eaf-get-article-result response))
@@ -268,6 +285,18 @@ If ASYNC is t, run the request asynchronously."
   (let* ((tag (cdr (assoc 'tag response)))
 	 (result (cdr (assoc 'result tag))))
     result))
+
+(defun tlon-import-eaf-get-tag-contents (response)
+  "Get tag contents from EA Forum API RESPONSE."
+  (let* ((tag (cdr (assoc 'tag response)))
+	 (contents (cdr (assoc 'contents tag))))
+    contents))
+
+(defun tlon-import-eaf-get-tag-url (response)
+  "Get tag URL from EA Forum API RESPONSE."
+  (let* ((tag (cdr (assoc 'tag response)))
+	 (url (cdr (assoc 'pageUrl tag))))
+    url))
 
 (defun tlon-import-eaf-get-tag-html (response)
   "Get tag HTML from EA Forum API RESPONSE."
