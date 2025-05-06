@@ -145,7 +145,7 @@ HTML-CONTENT is the raw HTML string."
 (defun tlon-import-eaf--process-article (response &optional title)
   "Process an EAF article from API RESPONSE. Optional TITLE override."
   (let ((article-title (or title (tlon-import-eaf-get-article-title response))))
-    (if-let ((contents (tlon-import-eaf-get-article-contents response))) ; Articles have 'contents'
+    (if-let ((contents (tlon-import-eaf-get-article-contents response)))
         (let ((html (tlon-import-eaf-get-article-html response)))
           (tlon-import-eaf--common-processing article-title "articles" html))
       (if (y-or-n-p "EAF API returned no contents for article. Import as normal URL?")
@@ -156,10 +156,10 @@ HTML-CONTENT is the raw HTML string."
 (defun tlon-import-eaf--process-tag (response &optional title)
   "Process an EAF tag from API RESPONSE. Optional TITLE override."
   (let ((tag-title (or title (tlon-import-eaf-get-tag-title response))))
-    (if-let ((html (tlon-import-eaf-get-tag-html response))) ; Tags have HTML in description
-        (tlon-import-eaf--common-processing tag-title "tags" html)
+    (if-let ((html (tlon-import-eaf-get-tag-html response)))
+	(tlon-import-eaf--common-processing tag-title "tags" html)
       (if (y-or-n-p "EAF API returned no HTML description for tag. Import as normal URL?")
-          (let ((url (tlon-import-eaf-get-tag-url response))) ; Ensure tlon-import-eaf-get-tag-url exists and is correct
+          (let ((url (tlon-import-eaf-get-tag-url response)))
             (tlon-import-convert-html-to-markdown url tag-title))
         (message "Aborted.")))))
 
