@@ -60,7 +60,7 @@ This module provides functions for importing documents from various sources (web
 :END:
 
 #+findex: tlon-import-eaf-html
-+ ~tlon-import-eaf-html~ :: Imports an article or tag page from the Effective Altruism Forum using its API, identified by ID-OR-SLUG. It fetches the data (~tlon-import-eaf-request~), extracts the HTML content (~tlon-import-eaf-get-article-html~ or ~tlon-import-eaf-get-tag-html~), converts it to Markdown (~tlon-import-convert-html-to-markdown~), and sets up the target file (~tlon-import-set-target~). Accepts an optional TITLE override.
++ ~tlon-import-eaf-html~ :: Imports an article or tag page from the Effective Altruism Forum using its API, identified by ID-OR-SLUG. It fetches the EAF data and then delegates to specific internal handlers for processing articles or tags. These handlers extract HTML content, convert it to Markdown, and set up the target file. Accepts an optional TITLE override.
 
 #+findex: tlon-import-eaf-request
 + ~tlon-import-eaf-request~ :: Sends an API request to the EAF GraphQL endpoint for a specific article ID or tag SLUG. Can operate asynchronously (ASYNC non-nil).
