@@ -342,15 +342,15 @@ The URL is constructed using the tag's slug."
 
 (defun tlon-eaf-base-regexp (url)
   "Return t if URL is an EAF URL, nil otherwise."
-  (not (not (string-match tlon-eaf-base-regexp url))))
+  (not (null (string-match tlon-eaf-base-regexp url))))
 
 (defun tlon-import-eaf-article-id-p (identifier)
   "Return t if IDENTIFIER is a post ID, nil otherwise."
-  (not (not (string-match (format "^%s$" tlon-eaf-id-regexp) identifier))))
+  (not (null (string-match (format "^%s$" tlon-eaf-id-regexp) identifier))))
 
 (defun tlon-import-eaf-tag-slug-p (identifier)
   "Return t if IDENTIFIER is a tag slug, nil otherwise."
-  (not (not (string-match (format "^%s$" tlon-eaf-tag-slug-regexp) identifier))))
+  (not (null (string-match (format "^%s$" tlon-eaf-tag-slug-regexp) identifier))))
 
 (defun tlon-import-eaf-get-id-or-slug-from-identifier (identifier)
   "Return the EAF post ID or tag slug from IDENTIFIER, if found.
