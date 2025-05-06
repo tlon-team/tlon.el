@@ -314,10 +314,13 @@ If ASYNC is t, run the request asynchronously."
     contents))
 
 (defun tlon-import-eaf-get-tag-url (response)
-  "Get tag URL from EA Forum API RESPONSE."
-  (let* ((tag (cdr (assoc 'tag response)))
-	 (url (cdr (assoc 'pageUrl tag))))
-    url))
+  "Construct tag URL from EA Forum API RESPONSE.
+The URL is constructed using the tag's slug."
+  (let* ((result (tlon-import-eaf-get-tag-result response))
+         (slug (cdr (assoc 'slug result))))
+    (if slug
+        (format "https://forum.effectivealtruism.org/topics/%s" slug)
+      nil)))
 
 (defun tlon-import-eaf-get-tag-html (response)
   "Get tag HTML from EA Forum API RESPONSE."
