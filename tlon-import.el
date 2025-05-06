@@ -281,15 +281,13 @@ If ASYNC is t, run the request asynchronously."
 
 (defun tlon-import-eaf-get-article-contents (response)
   "Get article contents from EA Forum API RESPONSE."
-  (let* ((article (cdr (assoc 'post response)))
-	 (contents (cdr (assoc 'contents article))))
-    contents))
+  (let* ((result-data (tlon-import-eaf-get-article-result response)))
+    (cdr (assoc 'contents result-data))))
 
 (defun tlon-import-eaf-get-article-url (response)
   "Get article URL from EA Forum API RESPONSE."
-  (let* ((article (cdr (assoc 'post response)))
-	 (contents (cdr (assoc 'pageUrl article))))
-    contents))
+  (let* ((result-data (tlon-import-eaf-get-article-result response)))
+    (cdr (assoc 'pageUrl result-data))))
 
 (defun tlon-import-eaf-get-article-html (response)
   "Get article HTML from EA Forum API RESPONSE."
