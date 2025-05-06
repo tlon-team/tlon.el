@@ -111,12 +111,11 @@ TITLE optionally specifies the title of the file to be imported."
 (declare-function tlon-set-file-from-title "tlon")
 ;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
 
-(defun _tlon-import-eaf--common-processing (entity-title bare-dir-name html-content entity-type)
+(defun _tlon-import-eaf--common-processing (entity-title bare-dir-name html-content)
   "Common logic to process EAF entity HTML content.
 ENTITY-TITLE is the title for the document.
 BARE-DIR-NAME is the target subdirectory (e.g., \"articles\", \"tags\").
-HTML-CONTENT is the raw HTML string.
-ENTITY-TYPE is the symbol 'article or 'tag."
+HTML-CONTENT is the raw HTML string."
   (let* ((target (tlon-import-set-target entity-title bare-dir-name))
          (html-file (tlon-import-save-html-to-file html-content)))
     (shell-command
@@ -125,7 +124,7 @@ ENTITY-TYPE is the symbol 'article or 'tag."
       (tlon-cleanup-common)
       (tlon-cleanup-eaf)
       (tlon-autofix-all)
-      ;; (delete-tlon-yaml-insert-field "type" (symbol-name entity-type))
+      ;; (delete-tlon-yaml-insert-field "type" (substring bare-dir-name 0 -1)) ;; Use bare-dir-name if type is needed
       (save-buffer))
     (find-file target)))
 
@@ -134,7 +133,7 @@ ENTITY-TYPE is the symbol 'article or 'tag."
   (let ((article-title (or title (tlon-import-eaf-get-article-title response))))
     (if-let ((contents (tlon-import-eaf-get-article-contents response))) ; Articles have 'contents'
         (let ((html (tlon-import-eaf-get-article-html response)))
-          (_tlon-import-eaf--common-processing article-title "articles" html 'article))
+          (_tlon-import-eaf--common-processing article-title "articles" html))
       (if (y-or-n-p "EAF API returned no contents for article. Import as normal URL?")
           (let ((url (tlon-import-eaf-get-article-url response)))
             (tlon-import-convert-html-to-markdown url article-title))
@@ -144,7 +143,7 @@ ENTITY-TYPE is the symbol 'article or 'tag."
   "Process an EAF tag from API RESPONSE. Optional TITLE override."
   (let ((tag-title (or title (tlon-import-eaf-get-tag-title response))))
     (if-let ((html (tlon-import-eaf-get-tag-html response))) ; Tags have HTML in description
-        (_tlon-import-eaf--common-processing tag-title "tags" html 'tag)
+        (_tlon-import-eaf--common-processing tag-title "tags" html)
       (if (y-or-n-p "EAF API returned no HTML description for tag. Import as normal URL?")
           (let ((url (tlon-import-eaf-get-tag-url response))) ; Ensure tlon-import-eaf-get-tag-url exists and is correct
             (tlon-import-convert-html-to-markdown url tag-title))
