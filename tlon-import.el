@@ -35,11 +35,17 @@
 
 (defconst tlon-import-eaf-api-url
   "https://forum.effectivealtruism.org/graphql"
-  "URL for the EAF GraphQL API endpoint.")
+  "URL for the EA Forum GraphQL API endpoint.")
 
 (defconst tlon-import-eaf-objects
   '(post tag)
   "List of entities supported by the EAF GraphQL API.")
+
+;;;;; LessWrong API
+
+(defconst tlon-import-lw-api-url
+  "https://lesswrong.com/graphql"
+  "URL for the LessWrong GraphQL API endpoint.")
 
 ;;;;; Pandoc
 
