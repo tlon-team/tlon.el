@@ -86,6 +86,9 @@ This module provides functions for importing documents from various sources (web
 #+findex: tlon-import-eaf-get-tag-html
 + ~tlon-import-eaf-get-tag-html~ :: Extracts the HTML content string from the EAF tag API RESPONSE.
 
+#+findex: tlon-import-eaf-get-tag-url
++ ~tlon-import-eaf-get-tag-url~ :: Constructs the tag's URL from the EAF API RESPONSE using its slug.
+
 #+findex: tlon-import-eaf-get-tag-title
 + ~tlon-import-eaf-get-tag-title~ :: Extracts the title string from the EAF tag API RESPONSE.
 
