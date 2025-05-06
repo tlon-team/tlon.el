@@ -118,10 +118,9 @@ TITLE optionally specifies the title of the entity to be imported.
 Delegates to specific handlers for articles and tags."
   (if-let* ((response (tlon-import-eaf-request id-or-slug)))
       (let ((type (tlon-import-eaf-get-type id-or-slug)))
-        (pcase type
-          ('article (tlon-import-eaf--process-article response title))
-          ('tag (tlon-import-eaf--process-tag response title))
-          (_ (user-error "Unknown EAF entity type: %S" type))))
+        (pcase-exhaustive type
+	  ('article (tlon-import-eaf--process-article response title))
+	  ('tag (tlon-import-eaf--process-tag response title))))
     (user-error "EAF API returned no response")))
 
 ;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
@@ -252,10 +251,9 @@ If DESTINATION is nil, return the Markdown string."
   "Run an EAF request for ID-OR-SLUG.
 If ASYNC is t, run the request asynchronously."
   (let* ((type (tlon-import-eaf-get-type id-or-slug))
-	 (fun (pcase type
+	 (fun (pcase-exhaustive type
 		('article 'tlon-import-eaf-article-query)
-		('tag 'tlon-import-eaf-tag-query)
-		(_ (error "Invalid type: %S" type))))
+		('tag 'tlon-import-eaf-tag-query)))
 	 (query (funcall fun id-or-slug))
 	 response)
     (request
