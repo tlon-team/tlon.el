@@ -100,6 +100,8 @@
 fields, which are needed to create a new job: `url' or `file',
 `title' and `key'"))))
 
+;;;;;; HTML import
+
 (defun tlon-import-html (url &optional title)
   "Import the HTML in URL and convert it to Markdown.
 TITLE optionally specifies the title of the file to be imported."
@@ -107,11 +109,23 @@ TITLE optionally specifies the title of the file to be imported."
       (tlon-import-eaf-html id-or-slug title)
     (tlon-import-convert-html-to-markdown url title)))
 
-;; TODO: make it also work with LessWrong
-(declare-function tlon-set-file-from-title "tlon")
-;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
+;;;;;;; EAF
 
-(defun _tlon-import-eaf--common-processing (entity-title bare-dir-name html-content)
+;; TODO: make it also work with LessWrong
+(defun tlon-import-eaf-html (id-or-slug &optional title)
+  "Import the HTML of EAF entity with ID-OR-SLUG and convert it to MD.
+TITLE optionally specifies the title of the entity to be imported.
+Delegates to specific handlers for articles and tags."
+  (if-let* ((response (tlon-import-eaf-request id-or-slug)))
+      (let ((type (tlon-import-eaf-get-type id-or-slug)))
+        (pcase type
+          ('article (tlon-import-eaf--process-article response title))
+          ('tag (tlon-import-eaf--process-tag response title))
+          (_ (user-error "Unknown EAF entity type: %S" type))))
+    (user-error "EAF API returned no response")))
+
+;; (declare-function delete-tlon-yaml-insert-field "tlon-yaml")
+(defun tlon-import-eaf--common-processing (entity-title bare-dir-name html-content)
   "Common logic to process EAF entity HTML content.
 ENTITY-TITLE is the title for the document.
 BARE-DIR-NAME is the target subdirectory (e.g., \"articles\", \"tags\").
@@ -133,7 +147,7 @@ HTML-CONTENT is the raw HTML string."
   (let ((article-title (or title (tlon-import-eaf-get-article-title response))))
     (if-let ((contents (tlon-import-eaf-get-article-contents response))) ; Articles have 'contents'
         (let ((html (tlon-import-eaf-get-article-html response)))
-          (_tlon-import-eaf--common-processing article-title "articles" html))
+          (tlon-import-eaf--common-processing article-title "articles" html))
       (if (y-or-n-p "EAF API returned no contents for article. Import as normal URL?")
           (let ((url (tlon-import-eaf-get-article-url response)))
             (tlon-import-convert-html-to-markdown url article-title))
@@ -143,23 +157,13 @@ HTML-CONTENT is the raw HTML string."
   "Process an EAF tag from API RESPONSE. Optional TITLE override."
   (let ((tag-title (or title (tlon-import-eaf-get-tag-title response))))
     (if-let ((html (tlon-import-eaf-get-tag-html response))) ; Tags have HTML in description
-        (_tlon-import-eaf--common-processing tag-title "tags" html)
+        (tlon-import-eaf--common-processing tag-title "tags" html)
       (if (y-or-n-p "EAF API returned no HTML description for tag. Import as normal URL?")
           (let ((url (tlon-import-eaf-get-tag-url response))) ; Ensure tlon-import-eaf-get-tag-url exists and is correct
             (tlon-import-convert-html-to-markdown url tag-title))
         (message "Aborted.")))))
 
-(defun tlon-import-eaf-html (id-or-slug &optional title)
-  "Import the HTML of EAF entity with ID-OR-SLUG and convert it to MD.
-TITLE optionally specifies the title of the entity to be imported.
-Delegates to specific handlers for articles and tags."
-  (if-let* ((response (tlon-import-eaf-request id-or-slug)))
-      (let ((type (tlon-import-eaf-get-type id-or-slug)))
-        (pcase type
-          ('article (tlon-import-eaf--process-article response title))
-          ('tag (tlon-import-eaf--process-tag response title))
-          (_ (user-error "Unknown EAF entity type: %S" type))))
-    (user-error "EAF API returned no response")))
+;;;;;;; non-EAF
 
 (defun tlon-import-save-html-to-file (html)
   "Save the HTML string HTML to a temporary file."
@@ -187,6 +191,7 @@ for one."
       )
     (find-file target)))
 
+(declare-function tlon-set-file-from-title "tlon")
 (defun tlon-import-set-target (&optional title bare-dir)
   "Set the target file path for the imported document.
 If TITLE is nil, prompt the user for one. BARE-DIR specifies the bare-dir of
@@ -194,6 +199,8 @@ entity being imported (e.g., article or tag)."
   (let* ((dir (tlon-repo-lookup :dir :name "uqbar-en")))
     (read-string "Save file in: "
 		 (tlon-set-file-from-title title (file-name-concat dir bare-dir)))))
+
+;;;;;; PDF import
 
 ;; TODO: cleanup two functions below
 (defun tlon-import-pdf (path &optional title)
