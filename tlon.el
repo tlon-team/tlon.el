@@ -462,10 +462,5 @@ Return the path of the temporary file created."
 	 (file (file-name-concat tlon-package-dir (file-name-with-extension selection "el"))))
     (find-file file)))
 
-;;;;; Meet
-
-(declare-function tlon-set-meeting-buffers "tlon-core")
-;; (advice-add 'org-clock-in :after #'tlon-set-meeting-buffers)
-
 (provide 'tlon)
 ;;; tlon.el ends here
