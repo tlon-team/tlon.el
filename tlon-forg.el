@@ -1177,8 +1177,8 @@ The first argument is the repo name, and the second is the issue number.")
 
 (declare-function org-roam-extras-node-find-special "org-roam-extras")
 ;;;###autoload
-(defun tlon-list-all-todos ()
-  "List all todos in the \"tlon-todos\" directory sorted by priority."
+(defun tlon-node-find ()
+  "Prompt the user to select a Tlön TODO in a list sorted by priority."
   (interactive)
   (org-roam-extras-node-find-special `(:dir ,paths-dir-tlon-todos)))
 
