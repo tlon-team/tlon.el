@@ -817,16 +817,23 @@ it instead."
          (language (tlon-get-language-in-file file))
          (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
          (custom-callback (lambda (response info)
-                            (when callback
-                              (funcall callback response info))
-                            (unless callback
-                              (if response
-                                  (message response)
-                                (user-error "Error: %s" (plist-get info :status))))
-                            (setq gptel-context--alist previous-context))))
+                            (tlon-ai-describe-image-callback response info callback previous-context))))
     (gptel-context-remove-all)
     (gptel-context-add-file file)
     (tlon-make-gptel-request default-prompt nil custom-callback nil 'no-context-check)))
+
+(defun tlon-ai-describe-image-callback (response info original-callback previous-context)
+  "Handle the response from `tlon-ai-describe-image'.
+If ORIGINAL-CALLBACK is non-nil, call it with RESPONSE and INFO.
+Otherwise, message RESPONSE or an error based on INFO.
+Finally, restore `gptel-context--alist' to PREVIOUS-CONTEXT."
+  (when original-callback
+    (funcall original-callback response info))
+  (unless original-callback
+    (if response
+        (message response)
+      (user-error "Error: %s" (plist-get info :status))))
+  (setq gptel-context--alist previous-context))
 
 (autoload 'tlon-get-tag-attribute-values "tlon-md")
 (autoload 'tlon-md-insert-attribute-value "tlon-md")

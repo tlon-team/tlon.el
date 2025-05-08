@@ -346,7 +346,7 @@ This section lists some non-interactive functions and variables used internally 
 + ~tlon-make-gptel-request~: Core function for sending requests to the AI model via =gptel=. Handles prompt formatting, model selection, context checks, and callbacks.
 + ~tlon-ai-maybe-edit-prompt~: Conditionally allows editing the prompt based on ~tlon-ai-edit-prompt~.
 + ~tlon-warn-if-gptel-context~: Checks if the =gptel= context is empty and warns the user if not.
-+ Callback functions (e.g., ~tlon-ai-callback-return~, ~tlon-ai-callback-copy~, ~tlon-ai-callback-save~, ~tlon-ai-callback-insert~, ~tlon-ai-callback-fail~): Handle responses from AI requests in various ways (returning value, copying, saving, inserting, error handling).
++ Callback functions (e.g., ~tlon-ai-callback-return~, ~tlon-ai-callback-copy~, ~tlon-ai-callback-save~, ~tlon-ai-callback-insert~, ~tlon-ai-callback-fail~, ~tlon-ai-describe-image-callback~): Handle responses from AI requests in various ways (returning value, copying, saving, inserting, error handling).
 + ~tlon-ai-batch-continue~: Helper for batch processing, moves to the next item and calls the batch function (often scheduled via a timer to prevent deep recursion).
 + ~tlon-get-string-dwim~: Retrieves text content from various sources (file, region, buffer, PDF/HTML associated with BibTeX entry) for AI processing.
 + ~tlon-get-file-as-string~: Reads the content of a file into a string. Handles PDF conversion (to Markdown) and HTML rendering (to text using =shr=, preventing focus switch and killing the temporary =*html*= buffer) internally.
