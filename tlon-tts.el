@@ -1502,10 +1502,32 @@ If VOICE-ID is nil or not found, return \"default\"."
   "Prepare the list of chunks.
 For ElevenLabs, if `tlon-elevenlabs-char-limit' is nil, will chunk by paragraph
 regardless of size to work around voice degradation issues."
-  (let* ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
-         (destination (tlon-tts-set-destination)) ; Get destination filename
-         (chunks (tlon-tts-read-into-chunks char-limit destination))) ; Pass destination
-    (setq tlon-tts-chunks chunks)))
+  (let ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
+        (destination (tlon-tts-set-destination))) ; Get destination filename
+    ;; Temporarily remove chunk comments from the current buffer to ensure clean chunking.
+    ;; `tlon-tts-read-into-chunks` will operate on this modified buffer.
+    ;; The `tlon-tts-insert-chunk-comments` call that follows (either in
+    ;; `tlon-tts-stage-content` or `tlon-tts-narrate-staged-buffer`)
+    ;; will restore/create the correct comments based on the newly computed `tlon-tts-chunks`.
+    (let ((buffer-is-read-only read-only)
+          chunks)
+      (unwind-protect
+          (progn
+            (when buffer-is-read-only (setq-local read-only nil)) ; Temporarily allow modification
+
+            (save-excursion ; Preserve point around comment removal
+              (save-restriction ; Process the whole buffer for comment removal
+                (widen)
+                (goto-char (point-min))
+                ;; Remove only OUR chunk/paragraph comments. Other comments should be preserved.
+                (while (re-search-forward "^<!-- \\(?:Chunk\\|Paragraph\\) [0-9]+ -->\n?" nil t)
+                  (replace-match "" t t))))
+
+            ;; Now, the buffer is clean of our specific comments. Proceed with chunking.
+            (setq chunks (tlon-tts-read-into-chunks char-limit destination)))
+        ;; Ensure read-only status is restored even if an error occurs
+        (when buffer-is-read-only (setq-local read-only t)))
+      (setq tlon-tts-chunks chunks))))
 
 (defun tlon-tts-set-destination ()
   "Set the path where the audio file will be saved."
