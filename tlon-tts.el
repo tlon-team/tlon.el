@@ -2592,12 +2592,19 @@ PREVIOUS-CHUNK-ID, and stitch_audio are only included if USE-CONTEXT is non-nil.
 
 ;;;###autoload
 (defun tlon-tts-move-file-to-audio-server (&optional file)
-  "Upload audio FILE to the audio repo."
+  "Upload audio FILE to the audio repo.
+The language is inferred from the parent directory of FILE."
   (interactive)
   (let* ((file (files-extras-read-file file))
-	 (lang (tlon-tts-get-current-language))
+         (file-dir (file-name-directory file))
+         ;; Assuming the language is the name of the parent directory of the file
+         ;; e.g., if file is /path/to/project/es/audio.mp3, lang is "es"
+         (lang (file-name-nondirectory (directory-file-name file-dir)))
 	 (destination (file-name-concat (tlon-tts-get-audio-directory lang)
 					(file-name-nondirectory file))))
+    (unless (and lang (tlon-validate-language lang))
+      (user-error "Could not determine a valid language from the file path: %s (derived lang: %s)" file lang))
+    
     (rename-file file destination 0)
     (message "Moved `%s' to `%s'." file destination)))
 
