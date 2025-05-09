@@ -1960,9 +1960,15 @@ TEMP-SILENCE-APPENDED-FILES-TO-CLEANUP are temporary files created by appending 
                                                files-to-normalize))
          (commands (mapconcat
                     (lambda (pair)
-                      (format tlon-tts-ffmpeg-normalize
-                              (shell-quote-argument (car pair))  ; input file for normalization
-                              (shell-quote-argument (cdr pair)))) ; temp normalized output file
+                      (let ((input-file (car pair))
+                            (output-file (cdr pair)))
+                        (unless (stringp input-file)
+                          (error "Invalid input file in normalization pair: %S (output: %S)" input-file output-file))
+                        (unless (stringp output-file)
+                          (error "Invalid output file (temp normalized) in normalization pair: %S (input: %S)" output-file input-file))
+                        (format tlon-tts-ffmpeg-normalize
+                                (shell-quote-argument input-file)
+                                (shell-quote-argument output-file))))
                     (cl-mapcar #'list files-to-normalize temp-normalized-output-files)
                     " && "))) ; Chain commands with &&
 
