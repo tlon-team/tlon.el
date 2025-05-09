@@ -58,8 +58,8 @@ This module provides comprehensive text-to-speech (TTS) functionality, integrati
 #+vindex: tlon-tts-narrate-sidenotes
 + ~tlon-tts-narrate-sidenotes~ :: Boolean. If non-nil, the content of sidenotes will be read aloud. If nil (the default), sidenotes are removed like footnotes.
 
-#+vindex: tlon-tts-skip-existing-chunks-when-narrating-buffer
-+ ~tlon-tts-skip-existing-chunks-when-narrating-buffer~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` and `tlon-tts-narrate-staged-chunks` will only generate audio for chunks whose corresponding files do not already exist. This allows resuming an interrupted process or selectively regenerating only missing parts. If nil, all selected/implicated chunks will be regenerated.
+#+vindex: tlon-tts-generate-missing-chunks-only
++ ~tlon-tts-generate-missing-chunks-only~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` will only generate audio for chunks whose corresponding audio file does not already exist. This allows resuming an interrupted process. If nil, all chunks implicated by the full buffer narration will be regenerated. This option does *not* affect `tlon-tts-narrate-staged-chunks`, which always attempts to generate the chunks explicitly selected by the user.
 
 *** Engine-Specific Settings
 :PROPERTIES:
@@ -107,7 +107,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
      - Opens the final audio file using the system's default player.
 
 #+findex: tlon-tts-narrate-staged-chunks
-+ ~tlon-tts-narrate-staged-chunks~ :: Asynchronously generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command overwrites existing audio files for the targeted chunks (e.g., =filename-chunk-005.mp3=) if `tlon-tts-skip-existing-chunks-when-narrating-buffer` is nil or the files don't exist. It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment. *Important:* This command only generates the individual chunk audio files; it does *not* perform the final silence appending, normalization, or joining steps. Use ~tlon-tts-finalize-audio-processing~ for that.
++ ~tlon-tts-narrate-staged-chunks~ :: Asynchronously generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command *always attempts* to generate the selected chunks, overwriting existing audio files if necessary. It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment. *Important:* This command only generates the individual chunk audio files; it does *not* perform the final silence appending, normalization, or joining steps. Use ~tlon-tts-finalize-audio-processing~ for that.
 
 *** Audio File Management
 :PROPERTIES:
@@ -187,6 +187,9 @@ It provides the following groups and commands:
   + *Audio repo*:
     + =o= :: Open audio directory (~tlon-tts-open-audio-directory~)
     + =m= :: Move file to audio server (~tlon-tts-move-file-to-audio-server~)
+  + *File processing options*:
+    + =-m= :: Generate missing chunks only (for narrate buffer) (~tlon-tts-menu-infix-toggle-generate-missing-chunks-only~)
+    + =-d= :: Delete chunks after finalizing (~tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing~)
 + *Edit*:
   + *global*:
     + =a= :: Abbreviation (~tlon-tts-edit-global-abbreviations~)

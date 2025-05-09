@@ -68,11 +68,13 @@ sidenotes will be removed like footnotes."
   :group 'tlon-tts
   :type 'boolean)
 
-(defcustom tlon-tts-skip-existing-chunks-when-narrating-buffer t
+(defcustom tlon-tts-generate-missing-chunks-only t
   "Whether `tlon-tts-narrate-staged-buffer' should only process missing chunks.
-If non-nil, narration will start from the first chunk whose audio file does not
-exist. If nil, all chunks will be processed, potentially overwriting existing
-audio files."
+If non-nil (the default), narration will start from the first chunk whose audio
+file does not exist. If nil, all chunks will be processed, potentially
+overwriting existing audio files. This option does *not* affect
+`tlon-tts-narrate-staged-chunks', which always attempts to generate the selected
+chunks."
   :group 'tlon-tts
   :type 'boolean)
 
@@ -1434,29 +1436,15 @@ number (e.g., `basename-chunk-005.mp3`)."
     ;; --- Generate audio for selected chunks ---
     (if chunks-to-generate
         (let ((selected-indices ; Convert 1-based chunk numbers to 0-based indices
-               (delq nil
-                     (mapcar (lambda (chunk-number)
-                               (let* ((chunk-index (1- chunk-number))
-                                      (chunk-info (if (and (>= chunk-index 0) (< chunk-index (length tlon-tts-chunks)))
-                                                      (nth chunk-index tlon-tts-chunks)
-                                                    nil))
-                                      (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
-                                 (if (and tlon-tts-skip-existing-chunks-when-narrating-buffer
-                                          chunk-filename
-                                          (file-exists-p chunk-filename))
-                                     (progn
-                                       (message "Skipping chunk %d, audio file %s already exists."
-                                                chunk-number (file-name-nondirectory chunk-filename))
-                                       nil) ; Exclude this chunk
-                                   chunk-index))) ; Include this 0-based index
-                             chunks-to-generate))))
+               (mapcar (lambda (chunk-number) (1- chunk-number))
+                       chunks-to-generate)))
           (if selected-indices
               (progn
                 (setq tlon-tts-user-selected-chunks-to-process selected-indices)
                 (message "Queueing generation for %d selected chunk(s)..." (length selected-indices))
                 ;; Start processing the first selected chunk
                 (tlon-tts-generate-audio (car tlon-tts-user-selected-chunks-to-process)))
-            (message "No new chunks to generate based on selection and existing files.")))
+            (message "No chunks selected for generation."))) ; Should not happen if chunks-to-generate is non-nil
       (unless chunks-to-generate (message "No chunks identified in the selection.")))))
 
 (defun tlon-tts-execute-generation-request (chunk-number chunk-index chunk-text chunk-filename voice-params)
@@ -1763,7 +1751,7 @@ the first chunk whose audio file doesn't exist. Otherwise, start from the first
 chunk. Subsequent chunks are triggered by the sentinel."
   (let ((total-chunks (length tlon-tts-chunks))
         (start-index 0))
-    (when (and tlon-tts-skip-existing-chunks-when-narrating-buffer (> total-chunks 0))
+    (when (and tlon-tts-generate-missing-chunks-only (> total-chunks 0))
       ;; Find the first chunk index whose file does not exist
       (let ((found-missing nil)
             (current-index 0))
@@ -1783,7 +1771,7 @@ chunk. Subsequent chunks are triggered by the sentinel."
         (progn
           (message "Starting TTS processing from chunk %d/%d." (1+ start-index) total-chunks)
           (tlon-tts-generate-audio start-index)) ; Start from the determined index
-      (if tlon-tts-skip-existing-chunks-when-narrating-buffer
+      (if tlon-tts-generate-missing-chunks-only
           (message "All %d chunk audio files already exist. Nothing to process." total-chunks)
         (message "No TTS chunks to process.")))))
 
@@ -3861,15 +3849,15 @@ Reads audio format choices based on the currently selected engine."
 
 ;;;;;;; Generate missing chunks only
 
-(transient-define-infix tlon-tts-menu-infix-toggle-skip-existing-chunks-when-narrating-buffer ()
-  "Toggle the value of `tlon-tts-skip-existing-chunks-when-narrating-buffer' in `tts' menu."
+(transient-define-infix tlon-tts-menu-infix-toggle-generate-missing-chunks-only ()
+  "Toggle the value of `tlon-tts-generate-missing-chunks-only' in `tts' menu."
   :class 'transient-lisp-variable
-  :variable 'tlon-tts-skip-existing-chunks-when-narrating-buffer
-  :reader 'tlon-tts-skip-existing-chunks-when-narrating-buffer-reader)
+  :variable 'tlon-tts-generate-missing-chunks-only
+  :reader 'tlon-tts-generate-missing-chunks-only-reader)
 
-(defun tlon-tts-skip-existing-chunks-when-narrating-buffer-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-toggle-skip-existing-chunks-when-narrating-buffer'."
-  (tlon-transient-toggle-variable-value 'tlon-tts-skip-existing-chunks-when-narrating-buffer))
+(defun tlon-tts-generate-missing-chunks-only-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-generate-missing-chunks-only'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-generate-missing-chunks-only))
 
 ;;;;;;; Narrate sidenotes
 
@@ -3912,7 +3900,7 @@ Reads audio format choices based on the currently selected engine."
     ("m" "Move file to audio dir"                      tlon-tts-move-file-to-audio-server)
     ""
     "File processing options"
-    ("-m" "Skip existing chunks when narrating buffer" tlon-tts-menu-infix-toggle-skip-existing-chunks-when-narrating-buffer)
+    ("-m" "Generate missing chunks only"               tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
     ("-d" "Delete chunks after finalizing"             tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)]
    ["Edit"
     "global"
