@@ -2328,7 +2328,7 @@ format used by `mp3split'."
   "Create a mono silence file of DURATION seconds with the name FILE."
   ;; TODO: the audio parameters are hard-coded; they should be obtained from the
   ;; relevant `audio-settings' variable
-  (shell-command (format "ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t %s -b:a 128k %s"
+  (shell-command (format "ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=mono -t %s -b:a 128k %s"
 			 duration
 			 (shell-quote-argument file))))
 
@@ -2342,10 +2342,12 @@ with the simpler version were not recognized by some audio players."
       (insert (format "file '%s'\nfile '%s'\n"
 		      (shell-quote-argument input-file)
 		      (shell-quote-argument silence-file))))
-    (shell-command (format "ffmpeg -f concat -safe 0 -i %s -c copy -f mpegts %s"
+    ;; Add -y to overwrite intermediate file if it exists
+    (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy -f mpegts %s"
 			   (shell-quote-argument concat-file)
 			   (shell-quote-argument intermediate-file)))
-    (shell-command (format "ffmpeg -i %s -c copy %s"
+    ;; Add -y to overwrite output file if it exists
+    (shell-command (format "ffmpeg -y -i %s -c copy %s"
 			   (shell-quote-argument intermediate-file)
 			   (shell-quote-argument output-file)))
     (delete-file concat-file)
