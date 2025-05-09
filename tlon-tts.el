@@ -1245,10 +1245,15 @@ position of the cursor from the source buffer."
         (markdown-mode) ; Set mode early
         (flycheck-mode -1)) ; Disable flycheck
       (tlon-tts-set-file-local-vars file)
-      (tlon-tts-prepare-staging-buffer)
+      (tlon-tts-prepare-staging-buffer) ; This populates tlon-tts-voice-chunks if applicable
+      (tlon-tts-prepare-chunks)         ; This uses tlon-tts-voice-chunks to populate tlon-tts-chunks
+      (tlon-tts-insert-chunk-comments)  ; This uses tlon-tts-chunks to insert comments
       ;; Restore position if we captured it, adjusting for metadata paragraphs
       (when paragraph-index
-        (tlon-tts-goto-paragraph (+ paragraph-index 2))))))
+        ;; paragraph-index is 0-based index of content paragraph in source.
+        ;; Metadata (title, author) are usually chunks 1 and 2.
+        ;; So, the first content paragraph corresponds to chunk 3 (1-based).
+        (tlon-tts-goto-chunk (+ paragraph-index 3))))))
 
 (defun tlon-tts-goto-chunk (chunk-number)
   "Move point to the beginning of the CHUNK-NUMBER'th chunk.
