@@ -95,18 +95,19 @@ This section details the interactive commands provided by =tlon-tts.el=.
 #+findex: tlon-tts-narrate-staged-buffer
 + ~tlon-tts-narrate-staged-buffer~ :: (Autoloaded) Narrates the content currently prepared in the staging buffer.
   1. Ensures the current buffer is a staging buffer.
-  2. Breaks the prepared text into chunks based on engine character limits and voice changes (~tlon-tts-prepare-chunks~).
-  3. Iterates through the chunks (which correspond to one or more paragraphs), calling the appropriate engine's request function (~tlon-tts-generate-audio~) for each chunk, saving the audio to files named by paragraph number (e.g., =filename-paragraph-001.mp3=).
-  4. Monitors the asynchronous audio generation processes.
-  5. Once all chunks are generated:
+  2. Breaks the prepared text into chunks based on engine character limits and voice changes (~tlon-tts-prepare-chunks~). This populates the internal `tlon-tts-chunks` list.
+  3. Inserts `<!-- Chunk N -->` comments into the staging buffer based on the prepared chunks (~tlon-tts-insert-chunk-comments~).
+  4. Iterates through the chunks, calling the appropriate engine's request function (~tlon-tts-generate-audio~) for each chunk, saving the audio to files named by chunk number (e.g., =filename-chunk-001.mp3=).
+  5. Monitors the asynchronous audio generation processes.
+  6. Once all chunks are generated:
      - Appends silence to chunks if needed (e.g., for ElevenLabs).
      - Normalizes and joins the audio chunks into a single output file (~tlon-tts-join-chunks~).
      - Optionally deletes the chunk files (~tlon-tts-delete-chunks-of-file~).
      - Opens the directory containing the final audio file in Dired.
      - Opens the final audio file using the system's default player.
 
-#+findex: tlon-tts-narrate-staged-paragraphs
-+ ~tlon-tts-narrate-staged-paragraphs~ :: Generates audio for specific paragraph(s) in the TTS staging buffer. If a region is active, it generates audio for all paragraphs starting within that region. Otherwise, it generates audio for the paragraph at the current cursor position. This command overwrites existing audio files for the targeted paragraphs (e.g., =filename-paragraph-005.mp3=). It identifies paragraphs by reading the number =N= from the =<!-- Paragraph N -->= comment preceding the paragraph start. It then finds the corresponding audio chunk data and generates the audio for that chunk's text, saving it to the file named after the comment's paragraph number.
+#+findex: tlon-tts-narrate-staged-chunks
++ ~tlon-tts-narrate-staged-chunks~ :: Generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command overwrites existing audio files for the targeted chunks (e.g., =filename-chunk-005.mp3=). It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment preceding the chunk's start. It then uses this chunk number to find the corresponding audio chunk data from the `tlon-tts-chunks` list and generates the audio for that chunk's text, saving it to the file named after the chunk number.
 
 *** Audio File Management
 :PROPERTIES:
@@ -114,10 +115,10 @@ This section details the interactive commands provided by =tlon-tts.el=.
 :END:
 
 #+findex: tlon-tts-join-chunks
-+ ~tlon-tts-join-chunks~ :: Normalizes the volume of audio chunk files (e.g., =file-paragraph-001.mp3=, =file-paragraph-002.mp3=) using =ffmpeg loudnorm= and then joins them into a single output file (e.g., =file.mp3=) using =ffmpeg concat=. Operates on the file at point in Dired or prompts for a file. Normalization happens first on temporary files, which are then concatenated.
++ ~tlon-tts-join-chunks~ :: Normalizes the volume of audio chunk files (e.g., =file-chunk-001.mp3=, =file-chunk-002.mp3=) using =ffmpeg loudnorm= and then joins them into a single output file (e.g., =file.mp3=) using =ffmpeg concat=. Operates on the file at point in Dired or prompts for a file. Normalization happens first on temporary files, which are then concatenated.
 
 #+findex: tlon-tts-delete-chunks-of-file
-+ ~tlon-tts-delete-chunks-of-file~ :: Deletes all audio chunk files associated with a base filename (e.g., =file-paragraph-*.mp3=). Also kills the corresponding staging buffer if it exists. Operates on the file at point in Dired or prompts for a file.
++ ~tlon-tts-delete-chunks-of-file~ :: Deletes all audio chunk files associated with a base filename (e.g., =file-chunk-*.mp3=). Also kills the corresponding staging buffer if it exists. Operates on the file at point in Dired or prompts for a file.
 
 #+findex: tlon-tts-truncate-audio-file
 + ~tlon-tts-truncate-audio-file~ :: Removes a specified number of milliseconds from the *end* of an audio file using =mp3splt=. Prompts for the file and the duration to remove.
@@ -167,7 +168,7 @@ It provides the following groups and commands:
 + *Narration*:
   + =s= :: Stage content (~tlon-tts-stage-content~)
   + =b= :: Narrate buffer (~tlon-tts-narrate-staged-buffer~)
-  + =p= :: Narrate paragraphs (~tlon-tts-narrate-staged-paragraphs~)
+  + =c= :: Narrate chunks (~tlon-tts-narrate-staged-chunks~)
   + =e= :: Generate report (~tlon-tts-generate-report~)
   + *Narration options*: (These set the corresponding user options temporarily for the menu session)
     + =-b= :: Paragraph break duration (~tlon-tts-paragraph-break-duration-infix~)
@@ -280,15 +281,17 @@ This section lists key non-interactive functions, variables, and constants used 
 #+findex: tlon-tts-read-into-chunks
 + ~tlon-tts-read-into-chunks~ :: Reads the staging buffer content (excluding local variables section) and splits it into chunks using ~tlon-tts-break-into-chunks~.
 #+findex: tlon-tts-break-into-chunks
-+ ~tlon-tts-break-into-chunks~ :: Core logic for splitting text into chunks based on paragraph boundaries, engine character limits, and voice changes specified by =tlon-tts-voice-chunks=. It reads the paragraph number =N= from the =<!-- Paragraph N -->= comment preceding the start of each chunk's text and stores this number in the chunk data. This ensures the paragraph number used for filenames and internal processing matches the visible comment.
++ ~tlon-tts-break-into-chunks~ :: Core logic for splitting text into chunks based on paragraph boundaries, engine character limits, and voice changes specified by =tlon-tts-voice-chunks=. It assigns a 1-based chunk number to each generated chunk and stores this in the chunk data. This chunk number is then used for filenames.
+#+findex: tlon-tts-insert-chunk-comments
++ ~tlon-tts-insert-chunk-comments~ :: After chunks are prepared by ~tlon-tts-prepare-chunks~ (which calls ~tlon-tts-break-into-chunks~), this function is called by ~tlon-tts-narrate-staged-buffer~. It iterates through the `tlon-tts-chunks` list and inserts `<!-- Chunk N -->` comments at the beginning of each chunk's text in the staging buffer, using the `begin-marker` and `chunk-number` stored in each chunk's data.
 #+findex: tlon-tts-process-chunks
 + ~tlon-tts-process-chunks~ :: Iterates through the generated ~tlon-tts-chunks~, calling ~tlon-tts-generate-audio~ for each, potentially skipping existing files based on ~tlon-tts-generate-missing-chunks-only~.
 #+findex: tlon-tts-generate-audio
 + ~tlon-tts-generate-audio~ :: Constructs the API request command using the appropriate engine-specific function (e.g., ~tlon-tts-microsoft-azure-make-request~) and starts the asynchronous process for a specific chunk index. Sets up the process sentinel (~tlon-tts-process-chunk-sentinel~) to handle completion.
 #+findex: tlon-tts-process-chunk-sentinel
 + ~tlon-tts-process-chunk-sentinel~ :: The sentinel function called when an audio generation process for a chunk finishes. It parses the response (including the request ID for ElevenLabs), updates the chunk status, stores the request ID, and triggers the next chunk's generation or finalizes processing (normalization, joining, cleanup) if all chunks are done.
-#+findex: tlon-tts--generate-single-paragraph-by-number
-+ ~tlon-tts--generate-single-paragraph-by-number~ :: Internal function called by ~tlon-tts-narrate-staged-paragraphs~. Takes a 1-based paragraph number (read from the comment), finds the corresponding chunk data in ~tlon-tts-chunks~ (matching based on the paragraph number stored within the chunk), and calls ~tlon-tts-execute-generation-request~ to generate the audio for that specific chunk's text.
+#+findex: tlon-tts--generate-single-chunk-by-number
++ ~tlon-tts--generate-single-chunk-by-number~ :: Internal function called by ~tlon-tts-narrate-staged-chunks~. Takes a 1-based chunk number (read from the `<!-- Chunk N -->` comment), retrieves the corresponding chunk data from `tlon-tts-chunks` (using `chunk-number - 1` as the list index), and calls ~tlon-tts-execute-generation-request~ to generate the audio for that specific chunk's text.
 
 *** Engine Request Functions
 :PROPERTIES:
@@ -327,9 +330,9 @@ This section lists key non-interactive functions, variables, and constants used 
 :CUSTOM_ID: h:tlon-tts-audio-internals
 :END:
 #+findex: tlon-tts-get-chunk-name
-+ ~tlon-tts-get-chunk-name~ :: Generates the filename for an audio chunk based on the original filename and the paragraph number stored in the chunk data (e.g., =basename-paragraph-XXX.ext=). This number originates from the =<!-- Paragraph N -->= comment.
++ ~tlon-tts-get-chunk-name~ :: Generates the filename for an audio chunk based on the original filename and the 1-based chunk number (e.g., =basename-chunk-XXX.ext=). This number is assigned sequentially as chunks are created.
 #+findex: tlon-tts-get-list-of-chunks
-+ ~tlon-tts-get-list-of-chunks~ :: Finds all chunk files matching a base filename pattern (e.g., =basename-paragraph-*.ext=) and sorts them numerically by paragraph number.
++ ~tlon-tts-get-list-of-chunks~ :: Finds all chunk files matching a base filename pattern (e.g., =basename-chunk-*.ext=) and sorts them numerically by chunk number.
 #+findex: tlon-tts-create-list-of-chunks
 + ~tlon-tts-create-list-of-chunks~ :: Creates a temporary text file listing chunk filenames (typically normalized temporary files), required by =ffmpeg= for concatenation.
 #+findex: tlon-tts--normalize-chunks-to-temp
