@@ -1573,14 +1573,8 @@ Each chunk stores its 1-based chunk number."
               ;; Only add chunk if trimmed text is not empty AND not just a break tag
               (when (and (not (string-empty-p trimmed-text))
                          (not (string-match-p (format "^%s$" (tlon-md-get-tag-pattern "break")) trimmed-text)))
-                ;; Determine paragraph number directly from the comment that
-                ;; precedes THIS paragraph – the single source of truth.
-                (let* ((paragraph-number (save-excursion
-                                           (goto-char begin)
-                                           (or (tlon-tts-get-paragraph-number-at-point)
-                                               ;; Fallback (shouldn't happen)
-                                               (1+ (tlon-get-number-of-paragraphs content-start begin))))) ; Prefer comment number
-		       (filename (tlon-tts-get-chunk-name destination paragraph-number)) ; Use paragraph number for filename
+                (setq chunk-number-counter (1+ chunk-number-counter)) ; Increment chunk number
+                (let* ((filename (tlon-tts-get-chunk-name destination chunk-number-counter)) ; Use chunk number for filename
 		       (voice-params (when current-voice (cons 'tlon-tts-voice current-voice)))
 		       ;; Store original begin/end markers
 		       (begin-marker (copy-marker begin))
@@ -1595,10 +1589,10 @@ Each chunk stores its 1-based chunk number."
                                         nil                ; tlon-tts-chunk-index-header-filename
                                         begin-marker       ; tlon-tts-chunk-index-begin-marker
                                         end-marker         ; tlon-tts-chunk-index-end-marker
-                                        paragraph-number))) ; tlon-tts-chunk-index-paragraph-number
-                  ;; Only add the chunk if we got a valid paragraph number and filename
+                                        chunk-number-counter))) ; tlon-tts-chunk-index-chunk-number
+                  ;; Only add the chunk if we got a valid filename
                   (when filename
-                    (push new-chunk chunks)))))) ; Corrected closing parens here
+                    (push new-chunk chunks))))))
           ;; --- Prepare for next iteration ---
           ;; Final safety check: If end <= begin here, force minimal progress.
           (when (and (<= end begin) (< begin (point-max)))
