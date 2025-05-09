@@ -27,12 +27,12 @@
 ;;; Code:
 
 (require 'bibtex-extras)
+(require 'citar-cache)
 (require 'paths)
 (require 'seq)
 (require 'shut-up)
 (require 'tlon-core)
 (require 'transient)
-(require 'citar-cache)
 
 ;;;; User options
 
