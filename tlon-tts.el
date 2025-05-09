@@ -68,7 +68,7 @@ sidenotes will be removed like footnotes."
   :group 'tlon-tts
   :type 'boolean)
 
-(defcustom tlon-tts-generate-missing-chunks-only t
+(defcustom tlon-tts-skip-existing-chunks-when-narrating-buffer t
   "Whether `tlon-tts-narrate-staged-buffer' should only process missing chunks.
 If non-nil, narration will start from the first chunk whose audio file does not
 exist. If nil, all chunks will be processed, potentially overwriting existing
@@ -1443,7 +1443,7 @@ number (e.g., `basename-chunk-005.mp3`)."
                                                       (nth chunk-index tlon-tts-chunks)
                                                     nil))
                                       (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
-                                 (if (and tlon-tts-generate-missing-chunks-only
+                                 (if (and tlon-tts-skip-existing-chunks-when-narrating-buffer
                                           chunk-filename
                                           (file-exists-p chunk-filename))
                                      (progn
@@ -1759,13 +1759,13 @@ This is to prevent Elevenlabs from inserting weird audio artifacts."
 ;;;;;; Process chunks
 
 (defun tlon-tts-process-chunks ()
-  "Start processing chunks based on `tlon-tts-generate-missing-chunks-only'.
-If `tlon-tts-generate-missing-chunks-only' is non-nil, starts from the first
+  "Start processing chunks based on `tlon-tts-skip-existing-chunks-when-narrating-buffer'.
+If `tlon-tts-skip-existing-chunks-when-narrating-buffer' is non-nil, starts from the first
 chunk whose audio file doesn't exist. Otherwise, starts from the first chunk.
 Subsequent chunks are triggered by the sentinel."
   (let ((total-chunks (length tlon-tts-chunks))
         (start-index 0))
-    (when (and tlon-tts-generate-missing-chunks-only (> total-chunks 0))
+    (when (and tlon-tts-skip-existing-chunks-when-narrating-buffer (> total-chunks 0))
       ;; Find the first chunk index whose file does not exist
       (let ((found-missing nil)
             (current-index 0))
@@ -1785,7 +1785,7 @@ Subsequent chunks are triggered by the sentinel."
         (progn
           (message "Starting TTS processing from chunk %d/%d." (1+ start-index) total-chunks)
           (tlon-tts-generate-audio start-index)) ; Start from the determined index
-      (if tlon-tts-generate-missing-chunks-only
+      (if tlon-tts-skip-existing-chunks-when-narrating-buffer
           (message "All %d chunk audio files already exist. Nothing to process." total-chunks)
         (message "No TTS chunks to process.")))))
 
@@ -3830,27 +3830,27 @@ Reads audio format choices based on the currently selected engine."
 
 ;;;;;;; Delete chunks
 
-(transient-define-infix tlon-tts-menu-infix-toggle-delete-file-chunks ()
+(transient-define-infix tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing ()
   "Toggle the value of `tlon-tts-delete-file-chunks' in `tts' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-tts-delete-file-chunks
   :reader 'tlon-tts-delete-file-chunks-reader)
 
 (defun tlon-tts-delete-file-chunks-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks'."
+  "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing'."
   (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
 
 ;;;;;;; Generate missing chunks only
 
-(transient-define-infix tlon-tts-menu-infix-toggle-generate-missing-chunks-only ()
-  "Toggle the value of `tlon-tts-generate-missing-chunks-only' in `tts' menu."
+(transient-define-infix tlon-tts-menu-infix-toggle-skip-existing-chunks-when-narrating-buffer ()
+  "Toggle the value of `tlon-tts-skip-existing-chunks-when-narrating-buffer' in `tts' menu."
   :class 'transient-lisp-variable
-  :variable 'tlon-tts-generate-missing-chunks-only
-  :reader 'tlon-tts-generate-missing-chunks-only-reader)
+  :variable 'tlon-tts-skip-existing-chunks-when-narrating-buffer
+  :reader 'tlon-tts-skip-existing-chunks-when-narrating-buffer-reader)
 
-(defun tlon-tts-generate-missing-chunks-only-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-toggle-generate-missing-chunks-only'."
-  (tlon-transient-toggle-variable-value 'tlon-tts-generate-missing-chunks-only))
+(defun tlon-tts-skip-existing-chunks-when-narrating-buffer-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-skip-existing-chunks-when-narrating-buffer'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-skip-existing-chunks-when-narrating-buffer))
 
 ;;;;;;; Narrate sidenotes
 
@@ -3870,40 +3870,40 @@ Reads audio format choices based on the currently selected engine."
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
   [["Narration"
-    ("s" "Stage content"                           tlon-tts-stage-content)
-    ("b" "Narrate buffer"                          tlon-tts-narrate-staged-buffer)
-    ("c" "Narrate chunks"                          tlon-tts-narrate-staged-chunks)
-    ("e" "Generate report"                         tlon-tts-generate-report)
+    ("s" "Stage content"                               tlon-tts-stage-content)
+    ("b" "Narrate buffer"                              tlon-tts-narrate-staged-buffer)
+    ("c" "Narrate chunks"                              tlon-tts-narrate-staged-chunks)
+    ("e" "Generate report"                             tlon-tts-generate-report)
     """"
     "Narration options"
-    ("-b" "Paragraph break duration"               tlon-tts-paragraph-break-duration-infix)
-    ("-p" "Prompt"                                 tlon-tts-menu-infix-set-prompt)
-    ("-s" "Narrate sidenotes"                      tlon-tts-menu-infix-toggle-narrate-sidenotes)
-    ("-v" "Use alternate voice"                    tlon-tts-menu-infix-toggle-alternate-voice)
+    ("-b" "Paragraph break duration"                   tlon-tts-paragraph-break-duration-infix)
+    ("-p" "Prompt"                                     tlon-tts-menu-infix-set-prompt)
+    ("-s" "Narrate sidenotes"                          tlon-tts-menu-infix-toggle-narrate-sidenotes)
+    ("-v" "Use alternate voice"                        tlon-tts-menu-infix-toggle-alternate-voice)
     ""
-    ("-e" "Engine"                                 tlon-tts-menu-infix-set-engine)
-    ("-t" "Engine settings"                        tlon-tts-menu-infix-set-engine-settings)
+    ("-e" "Engine"                                     tlon-tts-menu-infix-set-engine)
+    ("-t" "Engine settings"                            tlon-tts-menu-infix-set-engine-settings)
     ""
-    ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
+    ("-D" "Debug"                                      tlon-menu-infix-toggle-debug)]
    ["File processing"
-    ("F" "Finalize audio processing"               tlon-tts-finalize-audio-processing)
-    ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
-    ("x" "Truncate audio file"                     tlon-tts-truncate-audio-file)
-    ("o" "Open audio dir"                          tlon-tts-open-audio-directory)
-    ("m" "Move file to audio dir"                  tlon-tts-move-file-to-audio-server)
+    ("F" "Finalize audio processing"                   tlon-tts-finalize-audio-processing)
+    ("d" "Delete file chunks"                          tlon-tts-delete-chunks-of-file)
+    ("x" "Truncate audio file"                         tlon-tts-truncate-audio-file)
+    ("o" "Open audio dir"                              tlon-tts-open-audio-directory)
+    ("m" "Move file to audio dir"                      tlon-tts-move-file-to-audio-server)
     ""
     "File processing options"
-    ("-m" "Generate missing chunks only"           tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
-    ("-d" "Delete file chunks"                     tlon-tts-menu-infix-toggle-delete-file-chunks)]
+    ("-m" "Skip existing chunks when narrating buffer" tlon-tts-menu-infix-toggle-skip-existing-chunks-when-narrating-buffer)
+    ("-d" "Delete chunks after finalizing"             tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)]
    ["Edit"
     "global"
-    ("a" "Abbreviation"                            tlon-tts-edit-global-abbreviations)
-    ("r" "Replacement"                             tlon-tts-edit-global-phonetic-replacements)
-    ("t" "Transcription"                           tlon-tts-edit-global-phonetic-transcriptions)
+    ("a" "Abbreviation"                                tlon-tts-edit-global-abbreviations)
+    ("r" "Replacement"                                 tlon-tts-edit-global-phonetic-replacements)
+    ("t" "Transcription"                               tlon-tts-edit-global-phonetic-transcriptions)
     ""
     "local"
-    ("A" "Abbreviation"                            tlon-add-local-abbreviation)
-    ("R" "Replacement"                             tlon-add-local-replacement)]])
+    ("A" "Abbreviation"                                tlon-add-local-abbreviation)
+    ("R" "Replacement"                                 tlon-add-local-replacement)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
