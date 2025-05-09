@@ -1091,7 +1091,11 @@ Each element is a list accessed using `tlon-tts-chunk-index-*' constants:
 - CHUNK-NUMBER: The 1-based number of this chunk.")
 
 (defvar tlon-tts-chunks-to-process 0
-  "Number of chunks left to process.")
+  "Number of chunks left to process for full buffer narration.")
+
+(defvar-local tlon-tts-user-selected-chunks-to-process nil
+  "List of 0-based indices of user-selected chunks to process.
+This is used by `tlon-tts-narrate-staged-chunks` for asynchronous processing.")
 
 ;;;;;; Local abbrevs
 
@@ -1366,6 +1370,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (interactive)
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a staging buffer"))
+  (setq tlon-tts-user-selected-chunks-to-process nil) ; Ensure we are in full buffer mode
   ;; If tlon-tts-chunks is not populated, it means initial staging
   ;; might not have completed or this is a fresh call.
   ;; In this case, prepare chunks and insert comments.
@@ -1429,21 +1434,31 @@ number (e.g., `basename-chunk-005.mp3`)."
           (setq chunks-to-generate (list chunk-at-point)))))
     ;; --- Generate audio for selected chunks ---
     (if chunks-to-generate
-        (dolist (chunk-number chunks-to-generate)
-          (let* ((chunk-index (1- chunk-number))
-                 (chunk-info (if (and (>= chunk-index 0) (< chunk-index (length tlon-tts-chunks)))
-                                 (nth chunk-index tlon-tts-chunks)
-                               nil))
-                 (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
-            (if (and tlon-tts-generate-missing-chunks-only
-                     chunk-filename
-                     (file-exists-p chunk-filename))
-                (message "Skipping chunk %d, audio file %s already exists."
-                         chunk-number (file-name-nondirectory chunk-filename))
+        (let ((selected-indices ; Convert 1-based chunk numbers to 0-based indices
+               (delq nil
+                     (mapcar (lambda (chunk-number)
+                               (let* ((chunk-index (1- chunk-number))
+                                      (chunk-info (if (and (>= chunk-index 0) (< chunk-index (length tlon-tts-chunks)))
+                                                      (nth chunk-index tlon-tts-chunks)
+                                                    nil))
+                                      (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
+                                 (if (and tlon-tts-generate-missing-chunks-only
+                                          chunk-filename
+                                          (file-exists-p chunk-filename))
+                                     (progn
+                                       (message "Skipping chunk %d, audio file %s already exists."
+                                                chunk-number (file-name-nondirectory chunk-filename))
+                                       nil) ; Exclude this chunk
+                                   chunk-index))) ; Include this 0-based index
+                             chunks-to-generate))))
+          (if selected-indices
               (progn
-                (message "Queueing generation for chunk %d..." chunk-number)
-                (tlon-tts--generate-single-chunk-by-number chunk-number)))))
-      (message "No chunks identified for generation."))))
+                (setq tlon-tts-user-selected-chunks-to-process selected-indices)
+                (message "Queueing generation for %d selected chunk(s)..." (length selected-indices))
+                ;; Start processing the first selected chunk
+                (tlon-tts-generate-audio (car tlon-tts-user-selected-chunks-to-process)))
+            (message "No new chunks to generate based on selection and existing files.")))
+      (unless chunks-to-generate (message "No chunks identified in the selection."))))
 
 (defun tlon-tts-execute-generation-request (chunk-number chunk-index chunk-text chunk-filename voice-params)
   "Execute the TTS request to generate CHUNK-TEXT.
@@ -1843,17 +1858,32 @@ PROCESS is the process object, and EVENT is the event string."
             (setf (nth tlon-tts-chunk-index-request-id chunk-data) request-id)
             (setf (nth tlon-tts-chunk-index-status chunk-data) 'completed)
 
-            (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
-            (message "Chunk %d/%d processed successfully." (1+ chunk-index) (length tlon-tts-chunks))
+            (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process)) ; Decrement general counter
+            (message "Chunk %d processed successfully. (%s)"
+                     (1+ chunk-index) ; Display 1-based chunk number
+                     (if tlon-tts-user-selected-chunks-to-process "selected" "full buffer"))
 
-            ;; Trigger next chunk if available (now within correct context)
-            (let ((next-chunk-index (1+ chunk-index)))
-	      (when (< next-chunk-index (length tlon-tts-chunks))
-                (tlon-tts-generate-audio next-chunk-index)))
-
-            ;; If all chunks are done, finalize (now within correct context)
-            (when (= tlon-tts-chunks-to-process 0)
-	      (tlon-tts-finish-processing file))))))
+            ;; Determine next action based on whether we are processing a user-selected list
+            (if tlon-tts-user-selected-chunks-to-process
+                (progn
+                  ;; Remove the processed chunk from the user-selected list
+                  (setq tlon-tts-user-selected-chunks-to-process (cdr tlon-tts-user-selected-chunks-to-process))
+                  (if tlon-tts-user-selected-chunks-to-process
+                      ;; If there are more user-selected chunks, process the next one
+                      (tlon-tts-generate-audio (car tlon-tts-user-selected-chunks-to-process))
+                    ;; All user-selected chunks are done
+                    (progn
+                      (message "All selected chunks processed.")
+                      (tlon-tts-finish-processing file)))) ; Finalize
+              ;; --- Not processing a user-selected list (i.e., full buffer narration) ---
+              (let ((next-chunk-index (1+ chunk-index)))
+                (if (and (> tlon-tts-chunks-to-process 0) ; Still chunks left in full buffer mode
+                         (< next-chunk-index (length tlon-tts-chunks)))
+                    (tlon-tts-generate-audio next-chunk-index) ; Trigger next in sequence
+                  ;; All chunks for full buffer narration are done (or no more to process)
+                  (when (<= tlon-tts-chunks-to-process 0) ; Ensure counter is accurate
+                    (message "All buffer chunks processed.")
+                    (tlon-tts-finish-processing file))))))))))
      ((string-match "exited abnormally" event) ; Process failed
       ;; No buffer-local access needed here, but keep chunk data update
       (setf (nth tlon-tts-chunk-index-status chunk-data) 'failed) ; Mark as failed
