@@ -1879,12 +1879,13 @@ CAPTURED-STAGING-BUFFER-NAME is the name of the buffer this process belongs to."
                   (progn
                     (setq tlon-tts-user-selected-chunks-to-process (cdr tlon-tts-user-selected-chunks-to-process))
                     (if tlon-tts-user-selected-chunks-to-process
+                        ;; If more user-selected chunks, process the next one
                         (tlon-tts-generate-audio (car tlon-tts-user-selected-chunks-to-process))
-                      (progn
-                        (message "All selected chunks processed.")
-                        (tlon-tts-finish-processing file))))
+                      ;; All user-selected chunks are done. Do NOT finalize here.
+                      (message "All selected chunks processed.")))
+                ;; --- Not processing a user-selected list (i.e., full buffer narration) ---
                 (let ((next-chunk-index (1+ chunk-index)))
-                  (if (and (> tlon-tts-chunks-to-process 0)
+                  (if (and (> tlon-tts-chunks-to-process 0) ; Still chunks left in full buffer mode
                            (< next-chunk-index (length tlon-tts-chunks)))
                       (tlon-tts-generate-audio next-chunk-index)
                     (when (<= tlon-tts-chunks-to-process 0)
@@ -2057,6 +2058,20 @@ TEMP-SILENCE-APPENDED-FILES-TO-CLEANUP are temporary files created by appending 
     (when (and success (derived-mode-p 'dired-mode) (string= (buffer-file-name) (file-name-directory final-output-file)))
       (revert-buffer))))
 
+;;;###autoload
+(defun tlon-tts-finalize-audio-processing (&optional file)
+  "Manually trigger final audio processing for FILE.
+This includes appending silence (if applicable), normalizing, and joining chunks.
+Prompts for FILE if not provided or determinable from context."
+  (interactive)
+  (let* ((base-file (tlon-tts-get-base-audio-file-interactive file))
+         (chunks (tlon-tts-get-list-of-chunks base-file))
+         (first-chunk-file (car chunks)))
+    (unless first-chunk-file
+      (user-error "No chunk files found for %s to finalize." base-file))
+    (message "Manually starting final audio processing for %s..." (file-name-nondirectory base-file))
+    (tlon-tts-finish-processing first-chunk-file)))
+
 (defun tlon-tts-get-list-of-chunks (file)
   "Return a list of the existing file chunks for FILE.
 The file chunks are the files in the same directory as FILE that have the same
@@ -2075,12 +2090,25 @@ If no chunks are found, return nil."
                         (n2 (string-to-number (replace-regexp-in-string ".*-chunk-\\([0-9]+\\)\\..*" "\\1" f2))))
                     (< n1 n2))))))
 
+(defun tlon-tts-get-base-audio-file-interactive (&optional file-hint)
+  "Return the base audio file path for operations.
+If FILE-HINT is nil, use the file visited by the current buffer, the file at
+point in Dired, or prompt the user for a file (removing chunk numbers if
+necessary)."
+  (let ((file (or file-hint
+                  (buffer-file-name)
+                  (and (derived-mode-p 'dired-mode) (dired-get-filename))
+                  (read-file-name "Base audio file: "))))
+    (if (string-match-p "-chunk-[0-9]+\\." file)
+        (tlon-tts-get-original-filename file)
+      file)))
+
 (defun tlon-tts-delete-chunks-of-file (&optional file)
   "Delete the chunks of FILE. Also delete the staging buffer."
   (interactive)
-  (let* ((file (tlon-tts-set-chunk-file file))
-	 (buffer-name (tlon-tts-get-staging-buffer-name file)))
-    (dolist (chunk-file (tlon-tts-get-list-of-chunks file))
+  (let* ((base-file (tlon-tts-get-base-audio-file-interactive file))
+	 (buffer-name (tlon-tts-get-staging-buffer-name base-file)))
+    (dolist (chunk-file (tlon-tts-get-list-of-chunks base-file))
       (delete-file chunk-file 'trash))
     (when (get-buffer buffer-name)
       (kill-buffer buffer-name))
@@ -3858,6 +3886,7 @@ Reads audio format choices based on the currently selected engine."
     ""
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["File processing"
+    ("F" "Finalize audio processing"               tlon-tts-finalize-audio-processing)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
     ("x" "Truncate audio file"                     tlon-tts-truncate-audio-file)
     ("o" "Open audio dir"                          tlon-tts-open-audio-directory)
