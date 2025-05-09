@@ -1062,8 +1062,8 @@ chunk and the cdr voice to be used to narrate this chunk.")
 (defconst tlon-tts-chunk-index-chunk-number 9 "Index for the 1-based chunk number.")
 
 
-(defvar tlon-tts-chunks nil
-  "List of chunks to be narrated.
+(defvar-local tlon-tts-chunks nil
+  "List of chunks to be narrated. Buffer-local to the staging buffer.
 Each element is a list accessed using `tlon-tts-chunk-index-*' constants:
 
 - TEXT: The text content of the chunk.
