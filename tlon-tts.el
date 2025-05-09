@@ -28,6 +28,7 @@
 (require 'tlon-core)
 (require 'tlon-md)
 (require 'tlon-counterpart) ; For paragraph counting
+(autoload 'magit-extras-stage-commit-and-push "magit-extra")
 (eval-and-compile
   (require 'eieio)
   (require 'transient))
@@ -2592,21 +2593,31 @@ PREVIOUS-CHUNK-ID, and stitch_audio are only included if USE-CONTEXT is non-nil.
 
 ;;;###autoload
 (defun tlon-tts-move-file-to-audio-server (&optional file)
-  "Upload audio FILE to the audio repo.
+  "Move audio FILE to the audio repo, then stage, commit, and push the change.
 The language is inferred from the parent directory of FILE."
   (interactive)
   (let* ((file (files-extras-read-file file))
          (file-dir (file-name-directory file))
-         ;; Assuming the language is the name of the parent directory of the file
-         ;; e.g., if file is /path/to/project/es/audio.mp3, lang is "es"
          (lang (file-name-nondirectory (directory-file-name file-dir)))
-	 (destination (file-name-concat (tlon-tts-get-audio-directory lang)
-					(file-name-nondirectory file))))
+         (audio-repo-dir (tlon-repo-lookup :dir :name "uqbar-audio"))
+         (destination-dir (tlon-tts-get-audio-directory lang)) ; This already uses uqbar-audio
+         (destination-file-name (file-name-nondirectory file))
+	 (destination (file-name-concat destination-dir destination-file-name))
+         (commit-message (format "Add/Update audio: %s/%s" lang destination-file-name)))
+
     (unless (and lang (tlon-validate-language lang))
       (user-error "Could not determine a valid language from the file path: %s (derived lang: %s)" file lang))
-    
+    (unless audio-repo-dir
+      (user-error "Could not find the 'uqbar-audio' repository directory."))
+    (unless (file-directory-p destination-dir)
+      (make-directory destination-dir t)) ; Create directory if it doesn't exist
+
     (rename-file file destination 0)
-    (message "Moved `%s' to `%s'." file destination)))
+    (message "Moved `%s' to `%s'." file destination)
+
+    (let ((default-directory audio-repo-dir))
+      (magit-extras-stage-commit-and-push commit-message destination)
+      (message "Committed and pushed `%s' to audio server." destination-file-name))))
 
 (defun tlon-tts-get-audio-directory (&optional lang)
   "Return the directory where audio files are stored for LANG.
