@@ -114,9 +114,6 @@ This section details the interactive commands provided by =tlon-tts.el=.
 :CUSTOM_ID: h:tlon-tts-audio-mgmt-cmds
 :END:
 
-#+findex: tlon-tts-join-chunks
-+ ~tlon-tts-join-chunks~ :: Normalizes the volume of audio chunk files (e.g., =file-chunk-001.mp3=, =file-chunk-002.mp3=) using =ffmpeg loudnorm= and then joins them into a single output file (e.g., =file.mp3=) using =ffmpeg concat=. Operates on the file at point in Dired or prompts for a file. Normalization happens first on temporary files, which are then concatenated.
-
 #+findex: tlon-tts-delete-chunks-of-file
 + ~tlon-tts-delete-chunks-of-file~ :: Deletes all audio chunk files associated with a base filename (e.g., =file-chunk-*.mp3=). Also kills the corresponding staging buffer if it exists. Operates on the file at point in Dired or prompts for a file.
 
@@ -181,7 +178,6 @@ It provides the following groups and commands:
     + ""
     + =-D= :: Debug mode (~tlon-menu-infix-toggle-debug~)
 + *File processing*:
-  + =j= :: Join file chunks (~tlon-tts-join-chunks~)
   + =d= :: Delete file chunks (~tlon-tts-delete-chunks-of-file~)
   + =x= :: Truncate audio file (~tlon-tts-truncate-audio-file~)
   + *Audio repo*:
@@ -334,11 +330,9 @@ This section lists key non-interactive functions, variables, and constants used 
 #+findex: tlon-tts-get-list-of-chunks
 + ~tlon-tts-get-list-of-chunks~ :: Finds all chunk files matching a base filename pattern (e.g., =basename-chunk-*.ext=) and sorts them numerically by chunk number.
 #+findex: tlon-tts-create-list-of-chunks
-+ ~tlon-tts-create-list-of-chunks~ :: Creates a temporary text file listing chunk filenames (typically normalized temporary files), required by =ffmpeg= for concatenation.
-#+findex: tlon-tts--normalize-chunks-to-temp
-+ ~tlon-tts--normalize-chunks-to-temp~ :: Internal helper used by ~tlon-tts-join-chunks~. Takes a list of chunk files, normalizes each to a temporary file using =ffmpeg loudnorm=, and returns a list of the paths to these temporary normalized files. Cleans up temporary files if any normalization step fails.
++ ~tlon-tts-create-list-of-chunks~ :: Creates a temporary text file listing chunk filenames (typically normalized temporary files), required by =ffmpeg= for concatenation. This is used internally by the asynchronous joining process.
 #+findex: tlon-tts-append-silence-to-chunks
-+ ~tlon-tts-append-silence-to-chunks~ :: Appends silence to each chunk file using =ffmpeg=, necessary for some engines like ElevenLabs.
++ ~tlon-tts-append-silence-to-chunks~ :: Appends silence to each chunk file using =ffmpeg=, necessary for some engines like ElevenLabs. This is called synchronously by ~tlon-tts-finish-processing~ before the asynchronous normalization and joining steps.
 #+findex: tlon-tts-append-silence-to-chunks-p
 + ~tlon-tts-append-silence-to-chunks-p~ :: Determines if silence should be appended based on the TTS engine used for the file.
 

@@ -3831,7 +3831,6 @@ Reads audio format choices based on the currently selected engine."
     ""
     ("-D" "Debug"                                  tlon-menu-infix-toggle-debug)]
    ["File processing"
-    ("j" "Join file chunks"                        tlon-tts-join-chunks)
     ("d" "Delete file chunks"                      tlon-tts-delete-chunks-of-file)
     ("x" "Truncate audio file"                     tlon-tts-truncate-audio-file)
     ("o" "Open audio dir"                          tlon-tts-open-audio-directory)
