@@ -1366,8 +1366,15 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (interactive)
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a staging buffer"))
-  (tlon-tts-prepare-chunks) ; Populates tlon-tts-chunks
-  (tlon-tts-insert-chunk-comments) ; Insert comments based on populated chunks
+  ;; If tlon-tts-chunks is not populated, it means initial staging
+  ;; might not have completed or this is a fresh call.
+  ;; In this case, prepare chunks and insert comments.
+  (unless tlon-tts-chunks
+    (tlon-tts-prepare-chunks)      ; Populates tlon-tts-chunks
+    (tlon-tts-insert-chunk-comments)) ; Insert comments based on populated chunks
+  ;; Now, tlon-tts-chunks should be populated, and the comments in the
+  ;; buffer should be in sync with it (either because they were just
+  ;; inserted, or because they were already there and the block above was skipped).
   (tlon-tts-process-chunks))
 
 (defun tlon-tts-staging-buffer-p ()
@@ -1503,11 +1510,43 @@ If VOICE-ID is nil or not found, return \"default\"."
 
 (defun tlon-tts-prepare-chunks ()
   "Prepare the list of chunks based on the current buffer content.
+This function ensures that chunking logic operates on text free of
+pre-existing `<!-- Chunk N -->` or `<!-- Paragraph N -->` comments by
+temporarily removing them before `tlon-tts-read-into-chunks` is called.
 For ElevenLabs, if `tlon-elevenlabs-char-limit' is nil, will chunk by paragraph
 regardless of size to work around voice degradation issues."
-  (let* ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
-         (destination (tlon-tts-set-destination)) ; Get destination filename
-         (chunks (tlon-tts-read-into-chunks char-limit destination))) ; Pass destination
+  (let ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
+        (destination (tlon-tts-set-destination))
+        chunks)
+    (let ((buffer-is-read-only read-only)
+          (original-point (point))) ; Save current point
+      (unwind-protect
+          (progn
+            (when buffer-is-read-only (setq-local read-only nil)) ; Allow modification
+
+            ;; Temporarily remove chunk/paragraph comments from the narratable content.
+            ;; This ensures `tlon-tts-read-into-chunks` (and thereby `tlon-tts-break-into-chunks`)
+            ;; operates on clean text.
+            (save-excursion
+              (save-restriction
+                (widen) ; Consider the whole buffer for determining the limit
+                (let ((limit (save-excursion ; Determine end of content before local vars
+                               (goto-char (point-min))
+                               (if (re-search-forward tlon-tts-local-variables-section-start nil t)
+                                   (match-beginning 0)
+                                 (point-max)))))
+                  (goto-char (point-min)) ; Start search from beginning of buffer
+                  ;; Remove comments only within the content area (up to 'limit')
+                  (while (re-search-forward "^<!-- \\(?:Chunk\\|Paragraph\\) [0-9]+ -->\n?" limit t)
+                    (replace-match "" t t)))))
+            
+            ;; `tlon-tts-read-into-chunks` will now process the buffer.
+            ;; It internally pops the local variables section, calls `tlon-tts-break-into-chunks`
+            ;; on the (now comment-free) content, and then re-inserts the local variables.
+            (setq chunks (tlon-tts-read-into-chunks char-limit destination)))
+        ;; Ensure read-only status and original point are restored
+        (when buffer-is-read-only (setq-local read-only t))
+        (goto-char original-point)))
     (setq tlon-tts-chunks chunks)))
 
 (defun tlon-tts-set-destination ()
