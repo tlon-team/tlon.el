@@ -107,12 +107,15 @@ This section details the interactive commands provided by =tlon-tts.el=.
      - Opens the final audio file using the system's default player.
 
 #+findex: tlon-tts-narrate-staged-chunks
-+ ~tlon-tts-narrate-staged-chunks~ :: Generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command overwrites existing audio files for the targeted chunks (e.g., =filename-chunk-005.mp3=). It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment preceding the chunk's start. It then uses this chunk number to find the corresponding audio chunk data from the `tlon-tts-chunks` list and generates the audio for that chunk's text, saving it to the file named after the chunk number.
++ ~tlon-tts-narrate-staged-chunks~ :: Asynchronously generates audio for specific chunk(s) in the TTS staging buffer. If a region is active, it generates audio for all chunks starting within that region. Otherwise, it generates audio for the chunk at the current cursor position. This command overwrites existing audio files for the targeted chunks (e.g., =filename-chunk-005.mp3=) if `tlon-tts-generate-missing-chunks-only` is nil or the files don't exist. It identifies chunks by reading the number =N= from the =<!-- Chunk N -->= comment. *Important:* This command only generates the individual chunk audio files; it does *not* perform the final silence appending, normalization, or joining steps. Use ~tlon-tts-finalize-audio-processing~ for that.
 
 *** Audio File Management
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-tts-audio-mgmt-cmds
 :END:
+
+#+findex: tlon-tts-finalize-audio-processing
++ ~tlon-tts-finalize-audio-processing~ :: (Autoloaded) Manually triggers the final audio processing steps for a given base audio file. This includes appending silence (if applicable for the engine), normalizing all chunk audio files, and joining them into the final output file (e.g., =filename.mp3=). It also handles deleting original chunk files if ~tlon-tts-delete-file-chunks~ is set, and opens Dired and the final audio file. This command is useful after selectively regenerating chunks with ~tlon-tts-narrate-staged-chunks~.
 
 #+findex: tlon-tts-delete-chunks-of-file
 + ~tlon-tts-delete-chunks-of-file~ :: Deletes all audio chunk files associated with a base filename (e.g., =file-chunk-*.mp3=). Also kills the corresponding staging buffer if it exists. Operates on the file at point in Dired or prompts for a file.
@@ -178,6 +181,7 @@ It provides the following groups and commands:
     + ""
     + =-D= :: Debug mode (~tlon-menu-infix-toggle-debug~)
 + *File processing*:
+  + =F= :: Finalize audio processing (~tlon-tts-finalize-audio-processing~)
   + =d= :: Delete file chunks (~tlon-tts-delete-chunks-of-file~)
   + =x= :: Truncate audio file (~tlon-tts-truncate-audio-file~)
   + *Audio repo*:
