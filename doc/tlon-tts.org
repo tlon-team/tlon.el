@@ -59,7 +59,7 @@ This module provides comprehensive text-to-speech (TTS) functionality, integrati
 + ~tlon-tts-narrate-sidenotes~ :: Boolean. If non-nil, the content of sidenotes will be read aloud. If nil (the default), sidenotes are removed like footnotes.
 
 #+vindex: tlon-tts-generate-missing-chunks-only
-+ ~tlon-tts-generate-missing-chunks-only~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` will only generate audio for chunks whose corresponding files do not already exist, effectively resuming an interrupted process. If nil, it will regenerate all chunks.
++ ~tlon-tts-generate-missing-chunks-only~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` and `tlon-tts-narrate-staged-chunks` will only generate audio for chunks whose corresponding files do not already exist. This allows resuming an interrupted process or selectively regenerating only missing parts. If nil, all selected/implicated chunks will be regenerated.
 
 *** Engine-Specific Settings
 :PROPERTIES:

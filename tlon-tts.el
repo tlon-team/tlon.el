@@ -1430,8 +1430,19 @@ number (e.g., `basename-chunk-005.mp3`)."
     ;; --- Generate audio for selected chunks ---
     (if chunks-to-generate
         (dolist (chunk-number chunks-to-generate)
-          (message "Queueing generation for chunk %d..." chunk-number)
-          (tlon-tts--generate-single-chunk-by-number chunk-number))
+          (let* ((chunk-index (1- chunk-number))
+                 (chunk-info (if (and (>= chunk-index 0) (< chunk-index (length tlon-tts-chunks)))
+                                 (nth chunk-index tlon-tts-chunks)
+                               nil))
+                 (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
+            (if (and tlon-tts-generate-missing-chunks-only
+                     chunk-filename
+                     (file-exists-p chunk-filename))
+                (message "Skipping chunk %d, audio file %s already exists."
+                         chunk-number (file-name-nondirectory chunk-filename))
+              (progn
+                (message "Queueing generation for chunk %d..." chunk-number)
+                (tlon-tts--generate-single-chunk-by-number chunk-number)))))
       (message "No chunks identified for generation."))))
 
 (defun tlon-tts-execute-generation-request (chunk-number chunk-index chunk-text chunk-filename voice-params)
