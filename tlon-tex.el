@@ -1016,7 +1016,6 @@ Includes entries even if some fields are missing (value will be null)."
   [["Markdown"
     "URLs missing from database"
     ("f" "Find in file"                        tlon-prompt-to-add-missing-urls)
-    ("z" "Add with Zotra"                      zotra-extras-add-multiple-urls)
     ""
     "Convert to `Cite'"
     ("b" "Convert bibliography"                tlon-convert-bibliography-to-cite)
