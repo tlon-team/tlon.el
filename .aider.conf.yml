@@ -4,3 +4,4 @@ commit-prompt: |
   - Continue with ": " followed by a brief description of the change. The word after the colon should be in lowercase. For example, if you are refactoring a function in `tlon-tts-el`, your commit message should look like this: `tts: refactor function name`.
 read:
   - conventions.md
+  - ~/Dropbox/dotfiles/aider/global_conventions.md
