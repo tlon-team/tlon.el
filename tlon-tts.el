@@ -1960,8 +1960,8 @@ TEMP-SILENCE-APPENDED-FILES-TO-CLEANUP are temporary files created by appending 
                                                files-to-normalize))
          (commands (mapconcat
                     (lambda (pair)
-                      (let ((input-file (car pair))
-                            (output-file (cdr pair)))
+                      (let ((input-file (nth 0 pair))  ; First element of the sublist
+                            (output-file (nth 1 pair))) ; Second element of the sublist
                         (unless (stringp input-file)
                           (error "Invalid input file in normalization pair: %S (output: %S)" input-file output-file))
                         (unless (stringp output-file)
