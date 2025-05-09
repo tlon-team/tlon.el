@@ -3830,7 +3830,7 @@ Reads audio format choices based on the currently selected engine."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
     ("b" "Narrate buffer"                          tlon-tts-narrate-staged-buffer)
-    ("c" "Narrate chunks "                         tlon-tts-narrate-staged-chunks) ; Changed "p" to "c" and name
+    ("c" "Narrate chunks"                          tlon-tts-narrate-staged-chunks)
     ("e" "Generate report"                         tlon-tts-generate-report)
     """"
     "Narration options"
