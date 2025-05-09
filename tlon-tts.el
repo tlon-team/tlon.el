@@ -1803,10 +1803,12 @@ Triggers the engine-specific request function and sets up the process sentinel."
     (setf (nth 4 chunk-data) 'running) ; Update status in the original list structure
 
     (when tlon-debug (message "Debug: Running command for chunk %d: %s" chunk-index request))
-    (let ((process (start-process-shell-command (format "generate audio %d" chunk-index) nil request)))
+    (let ((process (start-process-shell-command (format "generate audio %d" chunk-index) nil request))
+          (originating-buffer-name (buffer-name))) ; Capture the name of the current (staging) buffer
       (set-process-sentinel process
                             (lambda (process event)
-                              (tlon-tts-process-chunk-sentinel process event chunk-index))))))
+                              ;; Pass the captured buffer name to the sentinel handler
+                              (tlon-tts-process-chunk-sentinel process event chunk-index originating-buffer-name))))))
 
 (defun tlon-tts-get-chunk-name (file chunk-number)
   "Return the name of the chunk file for CHUNK-NUMBER of FILE.
@@ -1819,84 +1821,83 @@ CHUNK-NUMBER is 1-based."
   "Open generated TTS FILE."
   (shell-command (format "open %s" file)))
 
-(defun tlon-tts-process-chunk-sentinel (process event chunk-index)
+(defun tlon-tts-process-chunk-sentinel (process event chunk-index captured-staging-buffer-name)
   "Process sentinel for TTS chunk generation at CHUNK-INDEX.
-PROCESS is the process object, and EVENT is the event string."
-  (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
-         (file (nth tlon-tts-chunk-index-filename chunk-data)) ; Use constant
-         (staging-buffer-name (nth tlon-tts-chunk-index-staging-buffer-name chunk-data)) ; Use constant
-         (header-file (nth tlon-tts-chunk-index-header-filename chunk-data))) ; Use constant
-    (cond
-     ((string-match "finished" event) ; Process finished successfully
-      ;; Staging buffer name already retrieved using constant above
-      (let* ((staging-buffer (get-buffer staging-buffer-name)))
-        ;; Check if the staging buffer still exists
-        (unless staging-buffer
-          (message "Error: Staging buffer '%s' not found for chunk %d. Aborting."
-                   staging-buffer-name chunk-index)
-          (setf (nth tlon-tts-chunk-index-status chunk-data) 'failed) ; Use constant
-          ;; Decrement remaining count as this one failed
-          (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
-          ;; Signal an error to halt immediately
-          (error "Staging buffer %s missing for chunk %d" staging-buffer-name chunk-index))
+PROCESS is the process object, EVENT is the event string, and
+CAPTURED-STAGING-BUFFER-NAME is the name of the buffer this process belongs to."
+  (let ((target-buffer (get-buffer captured-staging-buffer-name)))
+    (if (not (buffer-live-p target-buffer)) ; Check if buffer is live
+        (progn
+          (message "Error: Staging buffer '%s' no longer exists or is dead. Cannot process sentinel for chunk %d."
+                   captured-staging-buffer-name chunk-index)
+          ;; Attempt to gracefully stop further processing if possible, though state might be inconsistent.
+          (setq tlon-tts-chunks-to-process 0) ; Stop further full-buffer processing
+          (setq tlon-tts-user-selected-chunks-to-process nil) ; Stop further selected-chunk processing
+          (error "Staging buffer %s for chunk %d sentinel processing is missing or dead"
+                 captured-staging-buffer-name chunk-index))
+      ;; --- Buffer exists and is live, proceed within its context ---
+      (with-current-buffer target-buffer
+        (let* ((chunk-data (nth chunk-index tlon-tts-chunks)) ; tlon-tts-chunks is now correctly resolved
+               (file (when chunk-data (nth tlon-tts-chunk-index-filename chunk-data)))
+               (staging-buffer-name-from-chunk (when chunk-data (nth tlon-tts-chunk-index-staging-buffer-name chunk-data)))
+               (header-file (when chunk-data (nth tlon-tts-chunk-index-header-filename chunk-data))))
 
-        ;; Ensure we are in the correct buffer context when handling success
-        (with-current-buffer staging-buffer ; Use the existing buffer
-          (let* (;; Read headers from the temporary file
-                 (output (if (and header-file (file-exists-p header-file))
-                             (with-temp-buffer
-			       (insert-file-contents header-file)
-			       (buffer-string))
-                           ""))
-                 (request-id (tlon-tts--parse-elevenlabs-request-id output)))
+          ;; If chunk_data is nil (e.g. tlon-tts-chunks was cleared or chunk-index is out of bounds)
+          (unless chunk-data
+            (message "Error: Could not retrieve chunk data for chunk %d in buffer '%s'. Sentinel cannot proceed."
+                     chunk-index captured-staging-buffer-name)
+            (error "Missing chunk data for chunk %d in sentinel" chunk-index)
+            (cl-return-from tlon-tts-process-chunk-sentinel)) ; Exit sentinel
 
-            ;; Delete the temporary header file
-            (when (and header-file (file-exists-p header-file))
-	      (delete-file header-file))
+          ;; Defensive check
+          (unless (equal staging-buffer-name-from-chunk captured-staging-buffer-name)
+            (error "Sentinel context mismatch: captured '%s', chunk data '%s' for chunk %d"
+                   captured-staging-buffer-name staging-buffer-name-from-chunk chunk-index))
 
-            ;; Store request ID (parsed earlier) and mark as completed
-            (setf (nth tlon-tts-chunk-index-request-id chunk-data) request-id)
-            (setf (nth tlon-tts-chunk-index-status chunk-data) 'completed)
+          (cond
+           ((string-match "finished" event) ; Process finished successfully
+            (let* (;; Read headers from the temporary file
+                   (output (if (and header-file (file-exists-p header-file))
+                               (with-temp-buffer
+                                 (insert-file-contents header-file)
+                                 (buffer-string))
+                             ""))
+                   (request-id (tlon-tts--parse-elevenlabs-request-id output)))
 
-            (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process)) ; Decrement general counter
-            (message "Chunk %d processed successfully. (%s)"
-                     (1+ chunk-index) ; Display 1-based chunk number
-                     (if tlon-tts-user-selected-chunks-to-process "selected" "full buffer"))
+              (when (and header-file (file-exists-p header-file))
+                (delete-file header-file))
 
-            ;; Determine next action based on whether we are processing a user-selected list
-            (if tlon-tts-user-selected-chunks-to-process
-                (progn
-                  ;; Remove the processed chunk from the user-selected list
-                  (setq tlon-tts-user-selected-chunks-to-process (cdr tlon-tts-user-selected-chunks-to-process))
-                  (if tlon-tts-user-selected-chunks-to-process
-                      ;; If there are more user-selected chunks, process the next one
-                      (tlon-tts-generate-audio (car tlon-tts-user-selected-chunks-to-process))
-                    ;; All user-selected chunks are done
-                    (progn
-                      (message "All selected chunks processed.")
-                      (tlon-tts-finish-processing file)))) ; Finalize
-              ;; --- Not processing a user-selected list (i.e., full buffer narration) ---
-              (let ((next-chunk-index (1+ chunk-index)))
-                (if (and (> tlon-tts-chunks-to-process 0) ; Still chunks left in full buffer mode
-                         (< next-chunk-index (length tlon-tts-chunks)))
-                    (tlon-tts-generate-audio next-chunk-index) ; Trigger next in sequence
-                  ;; All chunks for full buffer narration are done (or no more to process)
-                  (when (<= tlon-tts-chunks-to-process 0) ; Ensure counter is accurate
-                    (message "All buffer chunks processed.")
-                    (tlon-tts-finish-processing file))))))))))
-     ((string-match "exited abnormally" event) ; Process failed
-      ;; No buffer-local access needed here, but keep chunk data update
-      (setf (nth tlon-tts-chunk-index-status chunk-data) 'failed) ; Mark as failed
-      (message "Error processing chunk %d (%s): %s" chunk-index file event)
-      (when-let ((buffer (process-buffer process)))
-        (with-current-buffer buffer
-          (message "Error output for chunk %d:\n%s" chunk-index (buffer-string))))
-      ;; Optionally stop processing further chunks on error
-      ;; (setq tlon-tts-chunks-to-process 0)
-      )
+              (setf (nth tlon-tts-chunk-index-request-id chunk-data) request-id)
+              (setf (nth tlon-tts-chunk-index-status chunk-data) 'completed)
+              (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
+              (message "Chunk %d processed successfully. (%s)"
+                       (1+ chunk-index)
+                       (if tlon-tts-user-selected-chunks-to-process "selected" "full buffer"))
 
-     (t ; Other events (e.g., signal)
-      (message "Process %s (chunk %d): Event occurred - %s" (process-name process) chunk-index event)))))
+              (if tlon-tts-user-selected-chunks-to-process
+                  (progn
+                    (setq tlon-tts-user-selected-chunks-to-process (cdr tlon-tts-user-selected-chunks-to-process))
+                    (if tlon-tts-user-selected-chunks-to-process
+                        (tlon-tts-generate-audio (car tlon-tts-user-selected-chunks-to-process))
+                      (progn
+                        (message "All selected chunks processed.")
+                        (tlon-tts-finish-processing file))))
+                (let ((next-chunk-index (1+ chunk-index)))
+                  (if (and (> tlon-tts-chunks-to-process 0)
+                           (< next-chunk-index (length tlon-tts-chunks)))
+                      (tlon-tts-generate-audio next-chunk-index)
+                    (when (<= tlon-tts-chunks-to-process 0)
+                      (message "All buffer chunks processed.")
+                      (tlon-tts-finish-processing file)))))))
+
+           ((string-match "exited abnormally" event)
+            (setf (nth tlon-tts-chunk-index-status chunk-data) 'failed)
+            (message "Error processing chunk %d (%s): %s" chunk-index file event)
+            (when-let ((buffer (process-buffer process)))
+              (with-current-buffer buffer
+                (message "Error output for chunk %d:\n%s" chunk-index (buffer-string)))))
+           (t
+            (message "Process %s (chunk %d): Event occurred - %s" (process-name process) chunk-index event))))))))
 
 (defun tlon-tts--parse-elevenlabs-request-id (output)
   "Parse the request-id header from curl OUTPUT by checking lines."
