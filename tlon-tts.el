@@ -1813,9 +1813,10 @@ The text for the chunk is read live from the buffer using its markers."
           (setf (nth tlon-tts-chunk-index-status chunk-data) 'running)
           (when tlon-debug (message "Debug: Running command for chunk %d: %s" chunk-index request))
           (let ((process (start-process-shell-command (format "generate audio %d" chunk-index) nil request))
-                (originating-buffer-name (buffer-name)))
+                (originating-buffer-name (buffer-name))) ; Capture the name of the current (staging) buffer
             (set-process-sentinel process
                                   (lambda (process event)
+                                    ;; Pass the captured buffer name to the sentinel handler
                                     (tlon-tts-process-chunk-sentinel process event chunk-index originating-buffer-name)))))
       ;; If string was nil or empty, mark as completed (or failed) and trigger next if in full buffer mode
       (progn
@@ -1832,14 +1833,6 @@ The text for the chunk is read live from the buffer using its markers."
               (when (<= tlon-tts-chunks-to-process 0)
                 (message "All buffer chunks processed (or skipped).")
                 (when file (tlon-tts-finish-processing file))))))))))
-
-    (when tlon-debug (message "Debug: Running command for chunk %d: %s" chunk-index request))
-    (let ((process (start-process-shell-command (format "generate audio %d" chunk-index) nil request))
-          (originating-buffer-name (buffer-name))) ; Capture the name of the current (staging) buffer
-      (set-process-sentinel process
-                            (lambda (process event)
-                              ;; Pass the captured buffer name to the sentinel handler
-                              (tlon-tts-process-chunk-sentinel process event chunk-index originating-buffer-name))))))
 
 (defun tlon-tts-get-chunk-name (file chunk-number)
   "Return the name of the chunk file for CHUNK-NUMBER of FILE.
