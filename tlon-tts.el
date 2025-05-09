@@ -1408,7 +1408,7 @@ number (e.g., `basename-chunk-005.mp3`)."
       (tlon-tts-prepare-chunks)      ; Populates tlon-tts-chunks
       (tlon-tts-insert-chunk-comments))) ; Reflects it in buffer comments
   (unless tlon-tts-chunks
-    (user-error "No TTS chunks found. Staging buffer might be empty or invalid, or `tlon-tts-prepare-chunks` failed."))
+    (user-error "No TTS chunks found. Staging buffer might be empty or invalid, or `tlon-tts-prepare-chunks` failed"))
   (let (chunks-to-generate)
     (if (and beg end)
         ;; --- Region is active ---
