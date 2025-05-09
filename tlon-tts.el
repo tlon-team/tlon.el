@@ -1059,7 +1059,7 @@ chunk and the cdr voice to be used to narrate this chunk.")
 (defconst tlon-tts-chunk-index-header-filename 6 "Index for the header filename in a chunk.")
 (defconst tlon-tts-chunk-index-begin-marker 7 "Index for the begin marker in a chunk.")
 (defconst tlon-tts-chunk-index-end-marker 8 "Index for the end marker in a chunk.")
-(defconst tlon-tts-chunk-index-paragraph-number 9 "Index for the 1-based paragraph number where the chunk starts.")
+(defconst tlon-tts-chunk-index-chunk-number 9 "Index for the 1-based chunk number.")
 
 
 (defvar tlon-tts-chunks nil
@@ -1088,7 +1088,7 @@ Each element is a list accessed using `tlon-tts-chunk-index-*' constants:
 
 - END-MARKER: Marker for the end of the chunk's text in the staging buffer.
 
-- PARAGRAPH-NUMBER: The 1-based paragraph number where this chunk starts.")
+- CHUNK-NUMBER: The 1-based number of this chunk.")
 
 (defvar tlon-tts-chunks-to-process 0
   "Number of chunks left to process.")
@@ -1250,37 +1250,37 @@ position of the cursor from the source buffer."
       (when paragraph-index
         (tlon-tts-goto-paragraph (+ paragraph-index 2))))))
 
-(defun tlon-tts-goto-paragraph (paragraph-index)
-  "Move point to the beginning of the PARAGRAPH-INDEX'th paragraph.
-PARAGRAPH-INDEX is 0-based. Assumes the current buffer is a TTS staging buffer."
-  (interactive "nParagraph index (0-based): ")
-  (goto-char (tlon-tts--get-content-start-pos)) ; Move to start of narratable content
-  (condition-case nil
-      (dotimes (_ paragraph-index)
-        (forward-paragraph))
-    (end-of-buffer (goto-char (point-max))))) ; Go to end if index is too large
+(defun tlon-tts-goto-chunk (chunk-number)
+  "Move point to the beginning of the CHUNK-NUMBER'th chunk.
+CHUNK-NUMBER is 1-based. Assumes the current buffer is a TTS staging buffer
+with `<!-- Chunk N -->` comments."
+  (interactive "nChunk number (1-based): ")
+  (goto-char (point-min)) ; Start search from the beginning of the buffer
+  (let ((chunk-found nil)
+        (current-chunk 1))
+    (while (and (not chunk-found) (re-search-forward "^<!-- Chunk \\([0-9]+\\) -->" nil t))
+      (let ((num-in-comment (string-to-number (match-string 1))))
+        (when (= num-in-comment chunk-number)
+          (goto-char (match-beginning 0)) ; Go to the start of the comment line
+          (setq chunk-found t))))
+    (unless chunk-found
+      (message "Chunk %d not found." chunk-number)
+      (goto-char (point-max))))) ; Go to end if not found
 
-(defun tlon-tts--get-paragraph-number-before-pos (pos)
-  "Return the paragraph number *N* from the comment preceding POS.
-Searches backward from POS for \"<!-- Paragraph N -->\".
-Returns the number N as an integer, or nil if not found."
+(defun tlon-tts-get-chunk-number-at-point ()
+  "Return the chunk number *N* recorded in the `<!-- Chunk N -->` comment
+that precedes point or is on the current line. If no such comment is found,
+return nil."
   (save-excursion
-    (goto-char pos)
-    (let ((comment-regex "^<!-- Paragraph \\([0-9]+\\) -->"))
-      (when (re-search-backward comment-regex nil t)
-        (string-to-number (match-string 1))))))
-
-(defun tlon-tts-get-paragraph-number-at-point ()
-  "Return the paragraph number *N* recorded in the comment that precedes point
-or that is on the current line.  If no such comment is found, return nil."
-  (save-excursion
-    (let ((comment-regex "^<!-- Paragraph \\([0-9]+\\) -->"))
+    (let ((comment-regex "^<!-- Chunk \\([0-9]+\\) -->"))
       (beginning-of-line)
       (cond
        ((looking-at comment-regex)
         (string-to-number (match-string 1)))
+       ;; Search backward from current line start, but not beyond buffer start
        ((re-search-backward comment-regex nil t)
-        (string-to-number (match-string 1)))))))
+        (string-to-number (match-string 1)))
+       (t nil)))))
 
 ;; MAYBE: make it work with non-file-visiting buffers
 (defun tlon-tts-get-content (&optional content file)
@@ -1345,8 +1345,8 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     ;; priority because Elevenlabs does not support this tag anyway.
     (tlon-tts-process-unsupported-ssml-tags)
     (tlon-tts-remove-extra-newlines)
-    ;; Add an HTML comment before each paragraph showing its number
-    (tlon-tts-insert-paragraph-comments)
+    ;; Chunk comments will be inserted by `tlon-tts-narrate-staged-buffer`
+    ;; after chunks are prepared.
     ;; FIXME: this is breaking the SSML tags
     ;; (tlon-tts-escape-xml-special-characters)
     (tlon-tts-generate-report)))
@@ -1361,76 +1361,78 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (interactive)
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a staging buffer"))
-  (tlon-tts-prepare-chunks)
+  (tlon-tts-prepare-chunks) ; Populates tlon-tts-chunks
+  (tlon-tts-insert-chunk-comments) ; Insert comments based on populated chunks
   (tlon-tts-process-chunks))
 
 (defun tlon-tts-staging-buffer-p ()
   "Return t iff the current buffer is a staging buffer."
   (bound-and-true-p tlon-tts-staging-buffer-p))
 
-;;;;;; Paragraphs
+;;;;;; Chunks
 
 ;;;###autoload
-(defun tlon-tts-narrate-staged-paragraphs (&optional beg end)
-  "Generate audio for paragraph(s) in the TTS staging buffer.
-If region is active, generate audio for all paragraphs starting within the
-region (from BEG to END). Otherwise, generate audio for the paragraph at point.
-This overwrites the corresponding audio file(s) named using the paragraph
-number (e.g., `basename-paragraph-005.mp3`)."
+(defun tlon-tts-narrate-staged-chunks (&optional beg end)
+  "Generate audio for chunk(s) in the TTS staging buffer.
+If region is active, generate audio for all chunks starting within the
+region (from BEG to END). Otherwise, generate audio for the chunk at point.
+This overwrites the corresponding audio file(s) named using the chunk
+number (e.g., `basename-chunk-005.mp3`)."
   (interactive (if (region-active-p)
                    (list (region-beginning) (region-end))
                  (list nil nil)))
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
-  ;; Ensure chunks are prepared to map paragraphs to chunk data
+  ;; Ensure chunks are prepared so tlon-tts-chunks is populated
   (save-excursion
-    (tlon-tts-prepare-chunks))
+    (unless tlon-tts-chunks (tlon-tts-prepare-chunks)))
   (unless tlon-tts-chunks
-    (user-error "No TTS chunks found. Staging buffer might be empty or invalid"))
-  (let ((content-start (tlon-tts--get-content-start-pos))
-        paragraphs-to-generate)
+    (user-error "No TTS chunks found. Staging buffer might be empty or invalid, or `tlon-tts-prepare-chunks` failed."))
+  (let (chunks-to-generate)
     (if (and beg end)
         ;; --- Region is active ---
         (save-excursion
           (goto-char beg)
-          (let (current-paragraph-number)
+          (let (current-chunk-number)
             (while (< (point) end)
-              ;; Calculate paragraph number at current position
-              (setq current-paragraph-number (tlon-tts-get-paragraph-number-at-point))
-              ;; Add to list if not already present
-              (cl-pushnew current-paragraph-number paragraphs-to-generate)
-              ;; Move to the start of the next paragraph
+              ;; Calculate chunk number at current position
+              (setq current-chunk-number (tlon-tts-get-chunk-number-at-point))
+              ;; Add to list if not already present and valid
+              (when current-chunk-number
+                (cl-pushnew current-chunk-number chunks-to-generate))
+              ;; Move to the start of the next line to check for next chunk comment
               (condition-case nil
                   (progn
-                    (forward-paragraph)
-                    ;; Ensure we don't get stuck if forward-paragraph doesn't move
+                    (forward-line 1)
+                    ;; Ensure we don't get stuck if forward-line doesn't move
                     (when (and (= (point) beg) (< beg end)) (forward-char 1)))
                 (error (goto-char end))))) ; Move to end if error (e.g., end of buffer)
-          (setq paragraphs-to-generate (nreverse paragraphs-to-generate))) ; Maintain order
-      ;; --- No region active, generate paragraph at point ---
-      (setq paragraphs-to-generate
-            (list (tlon-tts-get-paragraph-number-at-point))))
-    ;; --- Generate audio for selected paragraphs ---
-    (if paragraphs-to-generate
-        (dolist (paragraph-number paragraphs-to-generate)
-          (message "Queueing generation for paragraph %d..." paragraph-number)
-          (tlon-tts--generate-single-paragraph-by-number paragraph-number))
-      (message "No paragraphs identified for generation."))))
+          (setq chunks-to-generate (nreverse chunks-to-generate))) ; Maintain order
+      ;; --- No region active, generate chunk at point ---
+      (let ((chunk-at-point (tlon-tts-get-chunk-number-at-point)))
+        (when chunk-at-point
+          (setq chunks-to-generate (list chunk-at-point)))))
+    ;; --- Generate audio for selected chunks ---
+    (if chunks-to-generate
+        (dolist (chunk-number chunks-to-generate)
+          (message "Queueing generation for chunk %d..." chunk-number)
+          (tlon-tts--generate-single-chunk-by-number chunk-number))
+      (message "No chunks identified for generation."))))
 
-(defun tlon-tts-execute-generation-request (paragraph-number chunk-index paragraph-text chunk-filename voice-params)
-  "Execute the TTS request to generate PARAGRAPH-TEXT.
-PARAGRAPH-NUMBER (1-based) is used for logging and filename.
+(defun tlon-tts-execute-generation-request (chunk-number chunk-index chunk-text chunk-filename voice-params)
+  "Execute the TTS request to generate CHUNK-TEXT.
+CHUNK-NUMBER (1-based) is used for logging and filename.
 CHUNK-INDEX (0-based) is used for context calculation in the request function.
 CHUNK-FILENAME is the output file.
 VOICE-PARAMS are the specific voice parameters for this chunk."
   (let* ((fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
          ;; Pass the 0-based chunk-index to the request function
-         (request (funcall fun paragraph-text chunk-filename voice-params chunk-index))
-         (process-name (format "generate audio paragraph %d" paragraph-number))
+         (request (funcall fun chunk-text chunk-filename voice-params chunk-index))
+         (process-name (format "generate audio chunk %d" chunk-number))
          (process (start-process-shell-command process-name nil request)))
 
-    (message "Generating paragraph %d with voice %s into %s..."
-             paragraph-number
+    (message "Generating chunk %d with voice %s into %s..."
+             chunk-number
              (tlon-tts-get-voice-friendly-name
               (when (and (consp voice-params) (eq (car voice-params) 'tlon-tts-voice))
                 (cdr voice-params)))
@@ -1441,64 +1443,43 @@ VOICE-PARAMS are the specific voice parameters for this chunk."
     ;; Return the process for status checking
     process))
 
-(defun tlon-tts-handle-generation-result (process paragraph-number chunk-filename)
+(defun tlon-tts-handle-generation-result (process chunk-number chunk-filename)
   "Handle the result of the generation PROCESS.
-PARAGRAPH-NUMBER and CHUNK-FILENAME are used for logging."
+CHUNK-NUMBER and CHUNK-FILENAME are used for logging."
   (if (= (process-exit-status process) 0)
-      (message "Paragraph %d generated successfully into %s."
-               paragraph-number (file-name-nondirectory chunk-filename))
-    (message "Error generating paragraph %d. Check *Messages* buffer." paragraph-number)
+      (message "Chunk %d generated successfully into %s."
+               chunk-number (file-name-nondirectory chunk-filename))
+    (message "Error generating chunk %d. Check *Messages* buffer." chunk-number)
     (when-let ((err-buffer (process-buffer process)))
       (with-current-buffer err-buffer
-        (message "Error output for paragraph %d generation:\n%s"
-                 paragraph-number (buffer-string))))))
+        (message "Error output for chunk %d generation:\n%s"
+                 chunk-number (buffer-string))))))
 
-(defun tlon-tts--get-chunk-index-for-paragraph (paragraph-number)
-  "Return the index of the chunk that contains PARAGRAPH-NUMBER.
-A chunk *contains* the paragraph if its starting paragraph number is
-less than or equal to PARAGRAPH-NUMBER and either it is the last
-chunk or the next chunk starts after PARAGRAPH-NUMBER."
-  (let* ((i 0)
-         (len (length tlon-tts-chunks))
-         found)
-    (while (and (< i len) (not found))
-      (let* ((current-start (nth tlon-tts-chunk-index-paragraph-number
-                                 (nth i tlon-tts-chunks)))
-             (next-start   (when (< (1+ i) len)
-                             (nth tlon-tts-chunk-index-paragraph-number
-                                  (nth (1+ i) tlon-tts-chunks)))))
-        (when (and (>= paragraph-number current-start)
-                   (or (null next-start) (< paragraph-number next-start)))
-          (setq found i))
-        (setq i (1+ i))))
-    found))
+(defun tlon-tts--generate-single-chunk-by-number (chunk-number)
+  "Generate audio for the chunk specified by CHUNK-NUMBER.
+CHUNK-NUMBER is the 1-based index of the chunk."
+  (unless (and chunk-number (> chunk-number 0))
+    (user-error "Invalid chunk number provided: %s" chunk-number))
 
-(defun tlon-tts--generate-single-paragraph-by-number (paragraph-number)
-  "Generate audio for the paragraph specified by PARAGRAPH-NUMBER.
-PARAGRAPH-NUMBER is the 1-based index of the paragraph."
-  (unless paragraph-number
-    (user-error "Invalid paragraph number provided"))
-
-  ;; Find the chunk that *contains* the requested paragraph number
-  (let* ((chunk-index (tlon-tts--get-chunk-index-for-paragraph paragraph-number)) ; 0-based
-         (chunk-info  (and chunk-index (nth chunk-index tlon-tts-chunks)))
+  (let* ((chunk-index (1- chunk-number)) ; 0-based index for list access
+         (chunk-info  (if (< chunk-index (length tlon-tts-chunks))
+                          (nth chunk-index tlon-tts-chunks)
+                        nil))
          (voice-params (when chunk-info (nth tlon-tts-chunk-index-voice-params chunk-info)))
-         (paragraph-text (when chunk-info (nth tlon-tts-chunk-index-text chunk-info)))
+         (chunk-text (when chunk-info (nth tlon-tts-chunk-index-text chunk-info)))
          (chunk-filename (when chunk-info (nth tlon-tts-chunk-index-filename chunk-info))))
 
     (unless chunk-info
-      (user-error "Could not find chunk data for paragraph number %d" paragraph-number))
-    (unless paragraph-text
-      (user-error "Could not retrieve text for paragraph number %d" paragraph-number))
+      (user-error "Could not find chunk data for chunk number %d (index %d)" chunk-number chunk-index))
+    (unless chunk-text
+      (user-error "Could not retrieve text for chunk number %d" chunk-number))
     (unless chunk-filename
-      (user-error "Could not retrieve filename for paragraph number %d" paragraph-number))
-    (unless chunk-index
-      (user-error "Could not determine chunk index for paragraph number %d" paragraph-number))
+      (user-error "Could not retrieve filename for chunk number %d" chunk-number))
 
     ;; Pass the specific voice-params and the 0-based chunk-index to the execution function
     (let ((process (tlon-tts-execute-generation-request
-                    paragraph-number chunk-index paragraph-text chunk-filename voice-params)))
-      (tlon-tts-handle-generation-result process paragraph-number chunk-filename))))
+                    chunk-number chunk-index chunk-text chunk-filename voice-params)))
+      (tlon-tts-handle-generation-result process chunk-number chunk-filename))))
 
 (defun tlon-tts-get-voice-friendly-name (voice-id)
   "Return the friendly name for VOICE-ID for the current engine.
@@ -1561,13 +1542,14 @@ paragraph becomes a separate chunk, breaking before voice changes.
 
 Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break.
 
-Each chunk stores the 1-based paragraph number where it begins."
+Each chunk stores its 1-based chunk number."
   ;; No save-excursion needed here; point management is internal to chunking.
   (let* ((content-start (tlon-tts--get-content-start-pos))
          (staging-buffer-name (tlon-tts-get-staging-buffer-name destination)) ; Calculate once
          (voice-chunk-list tlon-tts-voice-chunks)
          (use-paragraph-chunks (null chunk-size))
          chunks current-voice next-voice-change-pos next-voice-id
+         (chunk-number-counter 0) ; Initialize 1-based chunk counter
          ;; Determine initial voice and update voice-chunk-list
          (initial-state (tlon-tts--determine-initial-voice voice-chunk-list)))
     (setq current-voice (car initial-state)
@@ -1762,12 +1744,12 @@ Triggers the engine-specific request function and sets up the process sentinel."
                             (lambda (process event)
                               (tlon-tts-process-chunk-sentinel process event chunk-index))))))
 
-(defun tlon-tts-get-chunk-name (file paragraph-number)
-  "Return the name of the chunk file for PARAGRAPH-NUMBER of FILE.
-PARAGRAPH-NUMBER is 1-based."
+(defun tlon-tts-get-chunk-name (file chunk-number)
+  "Return the name of the chunk file for CHUNK-NUMBER of FILE.
+CHUNK-NUMBER is 1-based."
   (let ((extension (file-name-extension file))
         (file-name-sans-extension (file-name-sans-extension file)))
-    (format "%s-paragraph-%03d.%s" file-name-sans-extension paragraph-number extension)))
+    (format "%s-chunk-%03d.%s" file-name-sans-extension chunk-number extension)))
 
 (defun tlon-tts-open-file (file)
   "Open generated TTS FILE."
@@ -2000,19 +1982,19 @@ Cleans up temporary files if normalization fails for any chunk."
 (defun tlon-tts-get-list-of-chunks (file)
   "Return a list of the existing file chunks for FILE.
 The file chunks are the files in the same directory as FILE that have the same
-base name and extension as FILE, but with '-paragraph-NNN' appended to the base
-name before the extension. The list is sorted numerically by paragraph number.
+base name and extension as FILE, but with '-chunk-NNN' appended to the base
+name before the extension. The list is sorted numerically by chunk number.
 If no chunks are found, return nil."
   (let* ((dir (file-name-directory file))
          (base-name (file-name-base file))
          (extension (file-name-extension file))
-         ;; Match base-paragraph-DDD.ext
-         (pattern (concat "^" (regexp-quote base-name) "-paragraph-[0-9]+\\." (regexp-quote extension) "$"))
+         ;; Match base-chunk-DDD.ext
+         (pattern (concat "^" (regexp-quote base-name) "-chunk-[0-9]+\\." (regexp-quote extension) "$"))
          (files (directory-files dir t pattern)))
-    ;; Sort numerically based on the paragraph number extracted from the filename
+    ;; Sort numerically based on the chunk number extracted from the filename
     (sort files (lambda (f1 f2)
-                  (let ((n1 (string-to-number (replace-regexp-in-string ".*-paragraph-\\([0-9]+\\)\\..*" "\\1" f1)))
-                        (n2 (string-to-number (replace-regexp-in-string ".*-paragraph-\\([0-9]+\\)\\..*" "\\1" f2))))
+                  (let ((n1 (string-to-number (replace-regexp-in-string ".*-chunk-\\([0-9]+\\)\\..*" "\\1" f1)))
+                        (n2 (string-to-number (replace-regexp-in-string ".*-chunk-\\([0-9]+\\)\\..*" "\\1" f2))))
                     (< n1 n2))))))
 
 (defun tlon-tts-delete-chunks-of-file (&optional file)
@@ -2042,10 +2024,10 @@ If no chunks are found, return nil."
 
 (defun tlon-tts-get-original-filename (file)
   "Return the filename from which chunk FILE derives.
-Removes the '-paragraph-NNN' part."
+Removes the '-chunk-NNN' part."
   (let* ((base-name (file-name-sans-extension file))
          (extension (file-name-extension file))
-         (original-base-name (replace-regexp-in-string "-paragraph-[0-9]+\\'" "" base-name)))
+         (original-base-name (replace-regexp-in-string "-chunk-[0-9]+\\'" "" base-name)))
     (format "%s.%s" original-base-name extension)))
 
 ;;;;;; Set file-local variables
@@ -3470,36 +3452,31 @@ contains either a friendly name or a voice ID."
 				("'" "&apos;")))
 			    text))
 
-;;;;;; Paragraph comments
+;;;;;; Chunk comments
 
-(defun tlon-tts-insert-paragraph-comments ()
-  "Insert \"<!-- Paragraph N -->\" comments before each paragraph.
-The counter N starts at 1 from the beginning of narratable content.
-The comment is placed on its own line immediately before the
-paragraph."
-  (save-excursion
-    (let ((content-start (tlon-tts--get-content-start-pos))
-          (para-num 0)) ; Start counter at 0
-      (goto-char content-start)
-      (while (< (point) (point-max))
-        ;; Check if we are at the start of actual content (skip initial blank lines if any)
-        (unless (looking-at "^\\s-*$")
-          (setq para-num (1+ para-num)) ; Increment counter for this paragraph
-          ;; Insert comment if it doesn't exist
-          (unless (looking-at "<!-- Paragraph [0-9]+ -->")
-            (insert (format "<!-- Paragraph %d -->\n" para-num))))
+(defun tlon-tts-insert-chunk-comments ()
+  "Insert \"<!-- Chunk N -->\" comments before each chunk in the staging buffer.
+This function iterates over `tlon-tts-chunks`, using the `begin-marker`
+and `chunk-number` from each chunk's data. It assumes `tlon-tts-chunks`
+is populated and the current buffer is the staging buffer."
+  (when (tlon-tts-staging-buffer-p)
+    (save-excursion
+      ;; First, remove any existing chunk or paragraph comments to avoid duplicates
+      (goto-char (point-min))
+      (while (re-search-forward "^<!-- \\(?:Chunk\\|Paragraph\\) [0-9]+ -->\n?" nil t)
+        (replace-match "" t t))
 
-        ;; Move to the beginning of the next paragraph
-        (condition-case nil
-            (forward-paragraph)
-          ;; Handle error (e.g., end of buffer reached during forward-paragraph)
-          (error (goto-char (point-max))))
-
-        ;; Skip any blank lines between paragraphs to position at the start of the next one
-        (while (and (< (point) (point-max)) (looking-at "^\\s-*$"))
-          (forward-line 1))))
-    ;; No explicit return value needed
-    ))
+      ;; Then, insert new chunk comments
+      (dolist (chunk-data tlon-tts-chunks)
+        (let ((chunk-number (nth tlon-tts-chunk-index-chunk-number chunk-data))
+              (begin-marker (nth tlon-tts-chunk-index-begin-marker chunk-data)))
+          (when (and chunk-number begin-marker (marker-buffer begin-marker))
+            (goto-char begin-marker)
+            ;; Ensure we are at the beginning of a line, otherwise, insert a newline.
+            ;; This is important if the chunk doesn't start on a new line naturally.
+            (unless (bolp)
+              (insert "\n"))
+            (insert (format "<!-- Chunk %d -->\n" chunk-number))))))))
 
 ;;;;; Global
 
@@ -3753,7 +3730,7 @@ Reads audio format choices based on the currently selected engine."
   [["Narration"
     ("s" "Stage content"                           tlon-tts-stage-content)
     ("b" "Narrate buffer"                          tlon-tts-narrate-staged-buffer)
-    ("p" "Narrate paragraphs "                     tlon-tts-narrate-staged-paragraphs)
+    ("c" "Narrate chunks "                         tlon-tts-narrate-staged-chunks) ; Changed "p" to "c" and name
     ("e" "Generate report"                         tlon-tts-generate-report)
     """"
     "Narration options"
