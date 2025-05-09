@@ -3379,7 +3379,9 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
 	(goto-char (point-min))
 	(while (re-search-forward pattern nil t)
 	  (let* ((amount (match-string-no-properties 1))
-		 (number (tlon-string-to-number amount tlon-default-thousands-separator))
+		 (number (tlon-string-to-number amount
+                                                tlon-default-thousands-separator
+                                                (tlon-get-decimal-separator lang)))
 		 (words (if (= number 1) (car pair) (cdr pair)))
 		 (replacement (format "%s %s" amount words)))
 	    (replace-match replacement t t)))))))
