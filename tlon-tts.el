@@ -1509,6 +1509,22 @@ CHUNK-NUMBER is the 1-based index of the chunk."
                     chunk-number chunk-index chunk-text chunk-filename voice-params)))
       (tlon-tts-handle-generation-result process chunk-number chunk-filename))))
 
+(defun tlon-tts--get-processed-text-from-markers (begin-marker end-marker)
+  "Read text from buffer between BEGIN-MARKER and END-MARKER, process and trim it.
+Processing involves removing a trailing break tag and then trimming whitespace.
+Returns the processed text, or nil if markers are invalid or region is empty."
+  (when (and begin-marker (marker-buffer begin-marker)
+             end-marker (marker-buffer end-marker)
+             (marker-position begin-marker) ; Ensure markers are valid
+             (marker-position end-marker)
+             (< (marker-position begin-marker) (marker-position end-marker)))
+    (let* ((raw-text (buffer-substring-no-properties begin-marker end-marker))
+           ;; Remove trailing break tag and surrounding whitespace before final trim
+           (text-no-break (replace-regexp-in-string
+                           (format "[ \t\n]*%s[ \t\n]*\\'" (tlon-md-get-tag-pattern "break"))
+                           "" raw-text)))
+      (string-trim text-no-break))))
+
 (defun tlon-tts-get-voice-friendly-name (voice-id)
   "Return the friendly name for VOICE-ID for the current engine.
 If VOICE-ID is nil or not found, return \"default\"."
@@ -1777,17 +1793,45 @@ chunk. Subsequent chunks are triggered by the sentinel."
 
 (defun tlon-tts-generate-audio (chunk-index)
   "Generate audio for the chunk at CHUNK-INDEX.
-Triggers the engine-specific request function and sets up the process sentinel."
+Triggers the engine-specific request function and sets up the process sentinel.
+The text for the chunk is read live from the buffer using its markers."
   (let* ((chunk-data (nth chunk-index tlon-tts-chunks))
-         (string (nth tlon-tts-chunk-index-text chunk-data))
+         (begin-marker (nth tlon-tts-chunk-index-begin-marker chunk-data))
+         (end-marker (nth tlon-tts-chunk-index-end-marker chunk-data))
+         (string (tlon-tts--get-processed-text-from-markers begin-marker end-marker))
          (voice-params (nth tlon-tts-chunk-index-voice-params chunk-data))
          (file (nth tlon-tts-chunk-index-filename chunk-data))
          (fun (tlon-lookup tlon-tts-engines :request-fun :name tlon-tts-engine))
          ;; Pass chunk-index to the request function
-         (request (funcall fun string file voice-params chunk-index)))
+         (request (if (and string (not (string-empty-p string))) ; Only proceed if text is non-empty
+                      (funcall fun string file voice-params chunk-index)
+                    nil))) ; No request if string is nil or empty
 
-    ;; Mark chunk as running
-    (setf (nth 4 chunk-data) 'running) ; Update status in the original list structure
+    (if request
+        (progn
+          ;; Mark chunk as running
+          (setf (nth tlon-tts-chunk-index-status chunk-data) 'running)
+          (when tlon-debug (message "Debug: Running command for chunk %d: %s" chunk-index request))
+          (let ((process (start-process-shell-command (format "generate audio %d" chunk-index) nil request))
+                (originating-buffer-name (buffer-name)))
+            (set-process-sentinel process
+                                  (lambda (process event)
+                                    (tlon-tts-process-chunk-sentinel process event chunk-index originating-buffer-name)))))
+      ;; If string was nil or empty, mark as completed (or failed) and trigger next if in full buffer mode
+      (progn
+        (message "Skipping chunk %d as its content is empty after processing." (1+ chunk-index))
+        (setf (nth tlon-tts-chunk-index-status chunk-data) 'completed) ; Or 'skipped
+        ;; Manually trigger sentinel logic for next chunk if in full buffer mode
+        ;; This mimics parts of tlon-tts-process-chunk-sentinel's "finished" branch
+        (unless tlon-tts-user-selected-chunks-to-process ; Only if in full buffer mode
+          (setq tlon-tts-chunks-to-process (1- tlon-tts-chunks-to-process))
+          (let ((next-chunk-index (1+ chunk-index)))
+            (if (and (> tlon-tts-chunks-to-process 0)
+                     (< next-chunk-index (length tlon-tts-chunks)))
+                (tlon-tts-generate-audio next-chunk-index)
+              (when (<= tlon-tts-chunks-to-process 0)
+                (message "All buffer chunks processed (or skipped).")
+                (when file (tlon-tts-finish-processing file))))))))))
 
     (when tlon-debug (message "Debug: Running command for chunk %d: %s" chunk-index request))
     (let ((process (start-process-shell-command (format "generate audio %d" chunk-index) nil request))
@@ -2513,9 +2557,15 @@ for context)."
          ;; Get context only if chunk-index is provided and paragraph chunking is active
          (use-context (and chunk-index (null tlon-elevenlabs-char-limit)))
          (before-text (when (and use-context (> chunk-index 0))
-                        (nth 0 (nth (1- chunk-index) tlon-tts-chunks))))
+                        (let* ((prev-chunk-data (nth (1- chunk-index) tlon-tts-chunks))
+                               (prev-begin-marker (nth tlon-tts-chunk-index-begin-marker prev-chunk-data))
+                               (prev-end-marker (nth tlon-tts-chunk-index-end-marker prev-chunk-data)))
+                          (tlon-tts--get-processed-text-from-markers prev-begin-marker prev-end-marker))))
          (after-text (when (and use-context (< (1+ chunk-index) (length tlon-tts-chunks)))
-                       (nth 0 (nth (1+ chunk-index) tlon-tts-chunks))))
+                       (let* ((next-chunk-data (nth (1+ chunk-index) tlon-tts-chunks))
+                              (next-begin-marker (nth tlon-tts-chunk-index-begin-marker next-chunk-data))
+                              (next-end-marker (nth tlon-tts-chunk-index-end-marker next-chunk-data)))
+                         (tlon-tts--get-processed-text-from-markers next-begin-marker next-end-marker))))
          (previous-chunk-id (when use-context (tlon-tts-get-previous-chunk-id chunk-index)))
          (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
     (cl-destructuring-bind (voice audio) vars
