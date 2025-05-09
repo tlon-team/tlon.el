@@ -3521,10 +3521,21 @@ is populated and the current buffer is the staging buffer."
               (begin-marker (nth tlon-tts-chunk-index-begin-marker chunk-data)))
           (when (and chunk-number begin-marker (marker-buffer begin-marker))
             (goto-char begin-marker)
-            ;; Ensure we are at the beginning of a line, otherwise, insert a newline.
-            ;; This is important if the chunk doesn't start on a new line naturally.
+            ;; Ensure the comment itself will start on a new line.
             (unless (bolp)
               (insert "\n"))
+
+            ;; For chunks after the first one, ensure a blank line *before* this comment line.
+            ;; Point is currently at the beginning of the line where the comment will be inserted.
+            (when (> chunk-number 1)
+              (save-excursion
+                ;; Move to the end of the previous line.
+                (backward-char 1)
+                ;; If the character at the end of the previous line is not a newline
+                ;; (i.e., the previous line was not already blank), insert one.
+                (unless (eq (char-before) ?\n)
+                  (insert "\n"))))
+            
             (insert (format "<!-- Chunk %d -->\n" chunk-number))))))))
 
 ;;;;; Global
