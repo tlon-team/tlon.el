@@ -1458,7 +1458,7 @@ number (e.g., `basename-chunk-005.mp3`)."
                 ;; Start processing the first selected chunk
                 (tlon-tts-generate-audio (car tlon-tts-user-selected-chunks-to-process)))
             (message "No new chunks to generate based on selection and existing files.")))
-      (unless chunks-to-generate (message "No chunks identified in the selection."))))
+      (unless chunks-to-generate (message "No chunks identified in the selection.")))))
 
 (defun tlon-tts-execute-generation-request (chunk-number chunk-index chunk-text chunk-filename voice-params)
   "Execute the TTS request to generate CHUNK-TEXT.
