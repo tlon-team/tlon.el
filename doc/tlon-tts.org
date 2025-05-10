@@ -126,7 +126,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
 + ~tlon-tts-truncate-audio-file~ :: Removes a specified number of milliseconds from the *end* of an audio file using =mp3splt=. Prompts for the file and the duration to remove.
 
 #+findex: tlon-tts-move-file-to-audio-server
-+ ~tlon-tts-move-file-to-audio-server~ :: (Autoloaded) Moves a generated audio file to the designated audio repository directory (=uqbar-audio=). It then prompts the user whether to stage, commit (with a message like "Add/Update audio: lang/filename.ext"), and push the change. The language is inferred from the parent directory of the audio file being moved. If audio chunks for the moved file exist, it will also prompt whether to delete them. Prompts for the file to move.
++ ~tlon-tts-move-file-to-audio-server~ :: (Autoloaded) Moves a generated audio file to the designated audio repository directory, under a path like =uqbar-audio/lang/bare-dir/filename.ext=. The language and `bare-dir` (e.g., "articulos", "temas") are inferred from the source audio file's path. It then prompts the user whether to stage, commit (with a message like "Add lang/bare-dir/filename.ext"), and push the change. If audio chunks for the moved file exist, it will also prompt whether to delete them. Prompts for the file to move.
 
 #+findex: tlon-tts-open-audio-directory
 + ~tlon-tts-open-audio-directory~ :: (Autoloaded) Opens the audio repository directory for the current language (or prompts for one) in Dired.

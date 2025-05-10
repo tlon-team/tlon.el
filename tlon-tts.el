@@ -2742,18 +2742,23 @@ PREVIOUS-CHUNK-ID, and stitch_audio are only included if USE-CONTEXT is non-nil.
 ;;;###autoload
 (defun tlon-tts-move-file-to-audio-server (&optional file)
   "Move audio FILE to the audio repo, then stage, commit, and push the change.
-The language is inferred from the parent directory of FILE."
+The language and bare directory (e.g., 'articulos', 'temas') are inferred from
+the source FILE's path. The file will be moved to a path like
+'uqbar-audio/lang/bare-dir/filename.ext'."
   (interactive)
   (let* ((file (files-extras-read-file file))
          (repo (tlon-get-repo-from-file file))
 	 (lang (tlon-repo-lookup :language :dir repo))
+         (bare-dir (tlon-get-bare-dir file)) ; Get bare-dir from the source audio file
          (audio-repo-dir (tlon-repo-lookup :dir :name "uqbar-audio"))
-         (destination-dir (tlon-tts-get-audio-directory lang))
+         (destination-dir (tlon-tts-get-audio-directory lang bare-dir)) ; Pass bare-dir
          (destination-file-name (file-name-nondirectory file))
 	 (destination (file-name-concat destination-dir destination-file-name))
-         (commit-message (format "Add %s/%s" lang destination-file-name)))
+         (commit-message (format "Add %s/%s/%s" lang bare-dir destination-file-name)))
     (unless lang
       (user-error "Could not determine a valid language from the file path: %s (derived lang: %s)" file lang))
+    (unless bare-dir
+      (user-error "Could not determine bare-dir for %s" file))
     (unless audio-repo-dir
       (user-error "Could not find the 'uqbar-audio' repository directory"))
     (unless (file-directory-p destination-dir)
@@ -2771,12 +2776,17 @@ The language is inferred from the parent directory of FILE."
 	  (tlon-tts-delete-chunks-of-file file)
 	(message "Audio chunks for %s were not deleted." (file-name-nondirectory file))))))
 
-(defun tlon-tts-get-audio-directory (&optional lang)
+(defun tlon-tts-get-audio-directory (&optional lang bare-dir)
   "Return the directory where audio files are stored for LANG.
+If BARE-DIR is provided, return the subdirectory for that bare-dir within the
+language directory (e.g., 'uqbar-audio/lang/bare-dir/'). If BARE-DIR is nil,
+return the language root directory (e.g., 'uqbar-audio/lang/').
 If LANG is nil, get it from the current language process."
-  (let ((dir (tlon-repo-lookup :dir :name "uqbar-audio"))
-	(lang (tlon-tts-get-current-language lang)))
-    (file-name-concat dir lang)))
+  (let ((audio-root (tlon-repo-lookup :dir :name "uqbar-audio"))
+	(current-lang (tlon-tts-get-current-language lang)))
+    (if bare-dir
+        (file-name-concat audio-root current-lang bare-dir)
+      (file-name-concat audio-root current-lang))))
 
 ;;;###autoload
 (defun tlon-tts-open-audio-directory (&optional lang)
