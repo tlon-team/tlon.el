@@ -4047,6 +4047,7 @@ Reads audio format choices based on the currently selected engine."
     ("s" "Stage content"                                        tlon-tts-stage-content)
     ("b" "Narrate buffer"                                       tlon-tts-narrate-staged-buffer)
     ("c" "Narrate chunks"                                       tlon-tts-narrate-staged-chunks)
+    ""
     ("e" "Generate report"                                      tlon-tts-generate-report)
     """"
     "Narration options"
@@ -4061,15 +4062,16 @@ Reads audio format choices based on the currently selected engine."
     ("-D" "Debug"                                               tlon-menu-infix-toggle-debug)]
    ["File processing"
     ("f" "Finalize audio processing"                            tlon-tts-finalize-audio-processing)
+    ("m" "Move file to audio dir"                               tlon-tts-move-file-to-audio-server)
+    ""
     ("d" "Delete file chunks"                                   tlon-tts-delete-chunks-of-file)
     ("x" "Truncate audio file"                                  tlon-tts-truncate-audio-file)
     ("o" "Open audio dir"                                       tlon-tts-open-audio-directory)
-    ("m" "Move file to audio dir"                               tlon-tts-move-file-to-audio-server)
     ""
     "File processing options"
+    ("-n" "Normalize audio during finalization"                 tlon-tts-menu-infix-toggle-normalize-audio)
     ("-d" "Delete file chunks after finalizing"                 tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
-    ("-k" "When narrating buffer, generate missing chunks only" tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
-    ("-n" "Normalize audio during finalization"                 tlon-tts-menu-infix-toggle-normalize-audio)]
+    ("-k" "When narrating buffer, generate missing chunks only" tlon-tts-menu-infix-toggle-generate-missing-chunks-only)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                                         tlon-tts-edit-global-abbreviations)
