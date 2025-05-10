@@ -2670,17 +2670,28 @@ for context)."
       (when (eq (nth tlon-tts-chunk-index-status prev-chunk) 'completed) ; Check status
         (nth tlon-tts-chunk-index-request-id prev-chunk)))))
 
-(defun tlon-tts-define-payload-parts (string before-text after-text previous-chunk-id use-context)
+(defun tlon-tts-get-next-chunk-id (chunk-index)
+  "Get the ID of the next chunk for chunk at CHUNK-INDEX."
+  (let ((next-chunk-idx (1+ chunk-index)))
+    (when (< next-chunk-idx (length tlon-tts-chunks))
+      (let ((next-chunk (nth next-chunk-idx tlon-tts-chunks)))
+        ;; Only pass if the next chunk is completed (e.g., re-generating a middle chunk)
+        (when (eq (nth tlon-tts-chunk-index-status next-chunk) 'completed)
+          (nth tlon-tts-chunk-index-request-id next-chunk))))))
+
+(defun tlon-tts-define-payload-parts (string before-text after-text previous-chunk-id next-chunk-id use-context)
   "Define the payload parts for ElevenLabs API request.
 STRING is the text to be converted to speech. BEFORE-TEXT, AFTER-TEXT,
-PREVIOUS-CHUNK-ID, and stitch_audio are only included if USE-CONTEXT is non-nil."
+PREVIOUS-CHUNK-ID, NEXT-CHUNK-ID, and stitch_audio are only included if
+USE-CONTEXT is non-nil."
   `(("text" . ,string)
     ("model_id" . ,tlon-elevenlabs-model)
     ,@(when (and use-context before-text) `(("before_text" . ,before-text)))
     ,@(when (and use-context after-text) `(("after_text" . ,after-text)))
     ;; Add previous_request_ids if available and context is used
     ,@(when (and use-context previous-chunk-id) `(("previous_request_ids" . (,previous-chunk-id))))
-    ;; Note: next_request_ids could be added similarly if needed/available
+    ;; Add next_request_ids if available and context is used
+    ,@(when (and use-context next-chunk-id) `(("next_request_ids" . (,next-chunk-id))))
     ;; Only enable stitching if context is being used
     ("stitch_audio" . ,(if use-context t nil))))
 
