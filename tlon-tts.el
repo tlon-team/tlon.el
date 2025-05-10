@@ -86,6 +86,13 @@ chunks."
   :group 'tlon-tts
   :type 'boolean)
 
+(defcustom tlon-tts-normalize-audio nil
+  "Whether to normalize audio chunks during final processing.
+If non-nil, an ffmpeg loudness normalization filter will be applied to each
+chunk before joining. If nil (the default), this step is skipped."
+  :group 'tlon-tts
+  :type 'boolean)
+
 ;; TODO: it looks like this is not being used; decide what to do about it
 (defcustom tlon-tts-prompt
   nil
@@ -1988,18 +1995,31 @@ LAST-CHUNK-FILE is the last chunk file processed."
              (file-name-nondirectory final-output-file))
     (if (not api-generated-chunks)
         (user-error "No API-generated chunk files found for %s" final-output-file)
-      (if (tlon-tts-append-silence-to-chunks-p final-output-file)
-          (progn
-            (setq temp-silence-appended-files-to-cleanup (tlon-tts-append-silence-to-chunks api-generated-chunks))
-            (setq files-to-normalize temp-silence-appended-files-to-cleanup))
-        (setq files-to-normalize api-generated-chunks))
+      (let (files-for-next-step input-files-are-temporary-p)
+        (if (tlon-tts-append-silence-to-chunks-p final-output-file)
+            (progn
+              (setq temp-silence-appended-files-to-cleanup (tlon-tts-append-silence-to-chunks api-generated-chunks))
+              (setq files-for-next-step temp-silence-appended-files-to-cleanup)
+              (setq input-files-are-temporary-p t)) ; Silence-appended files are temporary
+          (setq files-for-next-step api-generated-chunks)
+          (setq input-files-are-temporary-p nil)) ; Original API chunks are not considered temp here
 
-      (if files-to-normalize
-          (tlon-tts-async-start-normalization files-to-normalize
+        (if files-for-next-step
+            (if tlon-tts-normalize-audio
+                (progn
+                  (message "Normalization enabled. Starting normalization for %s..." (file-name-nondirectory final-output-file))
+                  (tlon-tts-async-start-normalization files-for-next-step
+                                                      final-output-file
+                                                      api-generated-chunks
+                                                      temp-silence-appended-files-to-cleanup))
+              (progn
+                (message "Normalization skipped. Proceeding to join %s..." (file-name-nondirectory final-output-file))
+                (tlon-tts-async-start-joining files-for-next-step
                                               final-output-file
                                               api-generated-chunks
-                                              temp-silence-appended-files-to-cleanup)
-        (user-error "No chunk files available for %s to start normalization" final-output-file)))))
+                                              temp-silence-appended-files-to-cleanup
+                                              input-files-are-temporary-p))) ; Pass flag
+          (user-error "No chunk files available for %s to process" final-output-file))))))
 
 (defun tlon-tts-async-start-normalization (files-to-normalize final-output-file api-generated-chunk-files temp-silence-appended-files-to-cleanup)
   "Asynchronously normalize FILES-TO-NORMALIZE to temporary files.
@@ -2036,9 +2056,10 @@ created by appending silence, if any."
        (lambda (proc event)
          (tlon-tts-normalization-sentinel proc event
                                           final-output-file
-                                          temp-normalized-output-files
+                                          temp-normalized-output-files ; These are the files to join
                                           api-generated-chunk-files
-                                          temp-silence-appended-files-to-cleanup))))))
+                                          temp-silence-appended-files-to-cleanup
+                                          t)))))) ; Normalized files are temporary
 
 (defun tlon-tts-normalization-sentinel (process event final-output-file temp-normalized-output-files api-generated-chunk-files temp-silence-appended-files-to-cleanup)
   "Sentinel for the asynchronous normalization PROCESS.
@@ -2050,7 +2071,11 @@ silence."
   (cond
    ((string-match "finished" event)
     (message "Normalization finished. Starting asynchronous joining...")
-    (tlon-tts-async-start-joining temp-normalized-output-files final-output-file api-generated-chunk-files temp-silence-appended-files-to-cleanup))
+    (tlon-tts-async-start-joining temp-normalized-output-files ; Files to join
+                                  final-output-file
+                                  api-generated-chunk-files
+                                  temp-silence-appended-files-to-cleanup
+                                  t)) ; Input files (normalized ones) are temporary
    ((string-match "exited abnormally" event)
     (message "Error during asynchronous normalization: %s" event)
     (when-let ((buffer (process-buffer process)))
@@ -2060,18 +2085,20 @@ silence."
     (dolist (temp-file temp-normalized-output-files)
       (when (file-exists-p temp-file) (delete-file temp-file)))
     ;; Also clean up silence-appended files if they exist and normalization failed
+    ;; Also clean up silence-appended files if they exist and normalization failed
     (when temp-silence-appended-files-to-cleanup
       (dolist (temp-file temp-silence-appended-files-to-cleanup)
         (when (file-exists-p temp-file) (delete-file temp-file))))
-    (message "Normalization failed. Temporary files cleaned up."))
+    (message "Normalization failed. All temporary files related to normalization cleaned up."))
    (t (message "Normalization process event: %s" event))))
 
-(defun tlon-tts-async-start-joining (temp-normalized-input-files final-output-file api-generated-chunk-files temp-silence-appended-files-to-cleanup)
-  "Asynchronously join TEMP-NORMALIZED-INPUT-FILES into FINAL-OUTPUT-FILE.
+(defun tlon-tts-async-start-joining (files-to-join-input final-output-file api-generated-chunk-files temp-silence-appended-files-if-any input-files-are-temporary-p)
+  "Asynchronously join FILES-TO-JOIN-INPUT into FINAL-OUTPUT-FILE.
 API-GENERATED-CHUNK-FILES are the original files from the TTS engine.
-TEMP-SILENCE-APPENDED-FILES-TO-CLEANUP are temporary files created by appending
-silence, if any."
-  (let* ((ffmpeg-list-file (tlon-tts-create-list-of-chunks temp-normalized-input-files))
+TEMP-SILENCE-APPENDED-FILES-IF-ANY are temporary files created by appending
+silence, if any. INPUT-FILES-ARE-TEMPORARY-P indicates if
+FILES-TO-JOIN-INPUT should be cleaned up."
+  (let* ((ffmpeg-list-file (tlon-tts-create-list-of-chunks files-to-join-input))
         (command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy %s"
                          (shell-quote-argument ffmpeg-list-file)
                          (shell-quote-argument final-output-file))))
@@ -2085,26 +2112,27 @@ silence, if any."
        (lambda (proc event)
          (tlon-tts-joining-sentinel proc event
                                     final-output-file
-                                    temp-normalized-input-files
+                                    files-to-join-input ; Pass the files that were joined
                                     ffmpeg-list-file
-                                    temp-silence-appended-files-to-cleanup))))))
+                                    api-generated-chunk-files ; Pass original API chunks
+                                    temp-silence-appended-files-if-any
+                                    input-files-are-temporary-p)))))) ; Pass the flag
 
-(defun tlon-tts-joining-sentinel (process event final-output-file temp-normalized-files ffmpeg-list-file temp-silence-appended-files-to-cleanup)
+(defun tlon-tts-joining-sentinel (process event final-output-file files-that-were-joined ffmpeg-list-file original-api-chunks temp-silence-appended-files-if-any joined_files_were_temporary_p)
   "Sentinel for the asynchronous joining PROCESS.
-EVENT is the event string, FINAL-OUTPUT-FILE is the final output file path,
-TEMP-NORMALIZED-FILES are the normalized files, FFMPEG-LIST-FILE is the list
-file, API-GENERATED-CHUNK-FILES are the original files from the TTS engine, and
-TEMP-SILENCE-APPENDED-FILES-TO-CLEANUP are temporary files created by appending
-silence, if any."
+EVENT is the event string.
+FINAL-OUTPUT-FILE is the final output file path.
+FILES-THAT-WERE-JOINED are the files directly input to the ffmpeg concat command.
+FFMPEG-LIST-FILE is the temporary list file used by ffmpeg.
+ORIGINAL-API-CHUNKS are the initial chunk files from the TTS engine.
+TEMP-SILENCE-APPENDED-FILES-IF-ANY are temporary files created by appending silence.
+JOINED_FILES_WERE_TEMPORARY_P indicates if FILES-THAT-WERE-JOINED should be cleaned up."
   (let (success)
     (cond
      ((string-match "finished" event)
       (message "Successfully joined chunks into %s." (file-name-nondirectory final-output-file))
       (setq success t)
-      (when tlon-tts-delete-file-chunks
-        (message "Deleting original API-generated chunk files...")
-        ;; This deletes files matching final-output-file's basename (i.e., the API chunks)
-        (tlon-tts-delete-chunks-of-file final-output-file))
+      ;; Deletion of original API chunks is handled below, based on tlon-tts-delete-file-chunks
       (dired (file-name-directory final-output-file))
       (shell-command (format "open '%s'" final-output-file))
       (message "TTS narration complete for %s" (file-name-nondirectory final-output-file)))
@@ -2115,15 +2143,36 @@ silence, if any."
           (message "Joining error output:\n%s" (buffer-string))))
       (setq success nil))
      (t (message "Joining process event: %s" event)))
-    ;; Clean up all temporary files
+
+    ;; Clean up temporary files
     (message "Cleaning up temporary files...")
-    (dolist (temp-file temp-normalized-files) ; These are the outputs of normalization
-      (when (file-exists-p temp-file) (delete-file temp-file)))
-    (when temp-silence-appended-files-to-cleanup ; These are outputs of silence appending (if any)
-      (dolist (temp-file temp-silence-appended-files-to-cleanup)
-        (when (file-exists-p temp-file) (delete-file temp-file))))
-    (when (file-exists-p ffmpeg-list-file) (delete-file ffmpeg-list-file))
-    (message "All temporary files cleaned up.")
+    (when joined_files_were_temporary_p
+      (dolist (temp-file files-that-were-joined)
+        (when (file-exists-p temp-file)
+          (message "Deleting joined temporary file: %s" temp-file)
+          (delete-file temp-file))))
+
+    (when temp-silence-appended-files-if-any
+      (dolist (temp-file temp-silence-appended-files-if-any)
+        ;; Avoid deleting twice if files-that-were-joined were the silence-appended files
+        (unless (and joined_files_were_temporary_p (member temp-file files-that-were-joined))
+          (when (file-exists-p temp-file)
+            (message "Deleting temporary silence-appended file: %s" temp-file)
+            (delete-file temp-file)))))
+
+    (when (file-exists-p ffmpeg-list-file)
+      (message "Deleting ffmpeg list file: %s" ffmpeg-list-file)
+      (delete-file ffmpeg-list-file))
+
+    ;; Delete original API-generated chunk files if the user option is set
+    (when (and success tlon-tts-delete-file-chunks)
+      (message "Deleting original API-generated chunk files as per user option...")
+      (dolist (chunk-file original-api-chunks)
+        (when (file-exists-p chunk-file)
+          (message "Deleting original API chunk: %s" chunk-file)
+          (delete-file chunk-file))))
+    
+    (message "Temporary file cleanup finished.")
 
     (when (and success (derived-mode-p 'dired-mode) (string= (buffer-file-name) (file-name-directory final-output-file)))
       (revert-buffer))))
@@ -3992,6 +4041,18 @@ Reads audio format choices based on the currently selected engine."
   "Reader for `tlon-tts-menu-infix-toggle-narrate-sidenotes'."
   (tlon-transient-toggle-variable-value 'tlon-tts-narrate-sidenotes))
 
+;;;;;;; Normalize audio
+
+(transient-define-infix tlon-tts-menu-infix-toggle-normalize-audio ()
+  "Toggle the value of `tlon-tts-normalize-audio' in `tts' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-normalize-audio
+  :reader 'tlon-tts-normalize-audio-reader)
+
+(defun tlon-tts-normalize-audio-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-normalize-audio'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-normalize-audio))
+
 ;;;;;; Main menu
 
 ;;;###autoload (autoload 'tlon-tts-menu "tlon-tts" nil t)
@@ -4023,6 +4084,7 @@ Reads audio format choices based on the currently selected engine."
     "File processing options"
     ("-d" "Delete file chunks after finalizing"                 tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
     ("-k" "When narrating buffer, generate missing chunks only" tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
+    ("-n" "Normalize audio during finalization"                 tlon-tts-menu-infix-toggle-normalize-audio)
     ("-P" "Commit & push moved audio"                           tlon-tts-menu-infix-toggle-commit-and-push-moved-audio)]
    ["Edit"
     "global"
