@@ -2769,6 +2769,7 @@ the source FILE's path. The file will be moved to a path like
       (revert-buffer nil t t))
     (when (y-or-n-p (format "Commit and push %s to audio server?" destination-file-name))
       (let ((default-directory audio-repo-dir))
+        (magit-stage-files (list destination)) ; Ensure the file is staged
         (magit-extras-stage-commit-and-push commit-message destination)
         (message "Committed and pushed `%s' to audio server." destination-file-name)))
     (when-let ((chunks (tlon-tts-get-list-of-chunks file)))
