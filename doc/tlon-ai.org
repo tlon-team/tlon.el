@@ -221,6 +221,22 @@ These commands generate summaries of documents using AI.
 #+findex: tlon-get-abstract-with-ai-from-html
 + ~tlon-get-abstract-with-ai-from-html~ :: A convenience command that specifically targets the HTML file associated with the BibTeX entry at point and calls ~tlon-get-abstract-with-ai~ on it.
 
+*** Generating Meta Descriptions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-create-meta-description
+:END:
+#+findex: tlon-ai-create-meta-description
+The command ~tlon-ai-create-meta-description~ generates a concise and compelling meta description for the article in the current buffer and sets it as the =meta= field in the YAML front matter.
+
+It retrieves the main content of the current buffer (using ~tlon-md-read-content~) and sends it to the AI with the prompt defined in ~tlon-ai-create-meta-description-prompt~. This prompt instructs the AI to create a meta description that is:
+- Approximately 150-160 characters long.
+- An accurate summary of the article's main topic.
+- Inclusive of primary subjects/keywords.
+- Engaging for search engine users.
+- Highlighting the key takeaway or unique value.
+
+The AI's response is then inserted as the value for the =meta= key in the front matter using ~tlon-yaml-insert-field~. If a =meta= field already exists, the user will be prompted to confirm its replacement.
+
 *** Setting Language in BibTeX Entries
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-ai-set-language-bibtex
