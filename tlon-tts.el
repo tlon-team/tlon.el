@@ -60,14 +60,6 @@
   :group 'tlon-tts
   :type 'boolean)
 
-(defcustom tlon-tts-commit-and-push-moved-audio t
-  "Whether `tlon-tts-move-file-to-audio-server' should stage, commit, and push.
-If non-nil (the default), after moving the audio file to the audio server
-repository, the command will also stage the change, commit it, and push to the
-remote. If nil, only the file move will be performed."
-  :group 'tlon-tts
-  :type 'boolean)
-
 (defcustom tlon-tts-narrate-sidenotes nil
   "Whether to narrate sidenotes.
 If non-nil, the content of sidenotes will be read aloud, typically repositioned
@@ -2770,11 +2762,16 @@ The language is inferred from the parent directory of FILE."
     (rename-file file destination 0)
     (message "Moved `%s' to `%s'." file destination)
 
-    (if tlon-tts-commit-and-push-moved-audio
-        (let ((default-directory audio-repo-dir))
-          (magit-extras-stage-commit-and-push commit-message destination)
-          (message "Committed and pushed `%s' to audio server." destination-file-name))
-      (message "Skipping commit and push for %s as per `tlon-tts-commit-and-push-moved-audio'." destination-file-name))))
+    (when (y-or-n-p (format "Commit and push %s to audio server?" destination-file-name))
+      (let ((default-directory audio-repo-dir))
+        (magit-extras-stage-commit-and-push commit-message destination)
+        (message "Committed and pushed `%s' to audio server." destination-file-name)))
+
+    (let ((chunks (tlon-tts-get-list-of-chunks file))) ; Check for chunks of the original file
+      (when chunks
+        (if (y-or-n-p (format "Delete %d audio chunk(s) for %s?" (length chunks) (file-name-nondirectory file)))
+            (tlon-tts-delete-chunks-of-file file) ; Pass original file path
+          (message "Audio chunks for %s were not deleted." (file-name-nondirectory file)))))))
 
 (defun tlon-tts-get-audio-directory (&optional lang)
   "Return the directory where audio files are stored for LANG.
@@ -4005,18 +4002,6 @@ Reads audio format choices based on the currently selected engine."
   "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing'."
   (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
 
-;;;;;;; Commit and push moved audio
-
-(transient-define-infix tlon-tts-menu-infix-toggle-commit-and-push-moved-audio ()
-  "Toggle the value of `tlon-tts-commit-and-push-moved-audio' in `tts' menu."
-  :class 'transient-lisp-variable
-  :variable 'tlon-tts-commit-and-push-moved-audio
-  :reader 'tlon-tts-commit-and-push-moved-audio-reader)
-
-(defun tlon-tts-commit-and-push-moved-audio-reader (_ _ _)
-  "Reader for `tlon-tts-menu-infix-toggle-commit-and-push-moved-audio'."
-  (tlon-transient-toggle-variable-value 'tlon-tts-commit-and-push-moved-audio))
-
 ;;;;;;; Generate missing chunks only
 
 (transient-define-infix tlon-tts-menu-infix-toggle-generate-missing-chunks-only ()
@@ -4084,8 +4069,7 @@ Reads audio format choices based on the currently selected engine."
     "File processing options"
     ("-d" "Delete file chunks after finalizing"                 tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
     ("-k" "When narrating buffer, generate missing chunks only" tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
-    ("-n" "Normalize audio during finalization"                 tlon-tts-menu-infix-toggle-normalize-audio)
-    ("-P" "Commit & push moved audio"                           tlon-tts-menu-infix-toggle-commit-and-push-moved-audio)]
+    ("-n" "Normalize audio during finalization"                 tlon-tts-menu-infix-toggle-normalize-audio)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                                         tlon-tts-edit-global-abbreviations)
