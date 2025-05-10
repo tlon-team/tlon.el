@@ -3294,9 +3294,18 @@ This function is intended to be called from within the staging buffer."
 	missing)
     (goto-char (point-min))
     (while (re-search-forward "\\b\\(?:[A-Z]\\{2,\\}\\(?:\\. ?\\)?\\)+\\.?\\b" nil t)
-      (let ((found-abbrev-in-buffer (match-string-no-properties 0)))
-        ;; Check if the exact found-abbrev-in-buffer is a key in the known abbrevs list
-        (unless (or (assoc-default found-abbrev-in-buffer abbrevs #'string=)
+      (let ((found-abbrev-in-buffer (match-string-no-properties 0))
+            (is-known nil))
+        ;; Iterate through known abbreviations to see if any match the found string
+        (dolist (known-abbrev-pair abbrevs)
+          (let ((known-abbrev-pattern (car known-abbrev-pair)))
+            ;; Assume known-abbrev-pattern is a string that represents a regex.
+            ;; We check if this regex fully matches the found-abbrev-in-buffer.
+            (when (string-match-p (format "\\`%s\\'" known-abbrev-pattern) found-abbrev-in-buffer)
+              (setq is-known t)
+              (cl-return)))) ; Exit dolist early if a match is found
+        
+        (unless (or is-known
                     (tlon-tts-looking-at-excluded-tag-p))
           (push found-abbrev-in-buffer missing))))
     (delete-dups missing)))
