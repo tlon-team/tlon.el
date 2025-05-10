@@ -3989,41 +3989,41 @@ Reads audio format choices based on the currently selected engine."
 (transient-define-prefix tlon-tts-menu ()
   "`tts' menu."
   [["Narration"
-    ("s" "Stage content"                               tlon-tts-stage-content)
-    ("b" "Narrate buffer"                              tlon-tts-narrate-staged-buffer)
-    ("c" "Narrate chunks"                              tlon-tts-narrate-staged-chunks)
-    ("e" "Generate report"                             tlon-tts-generate-report)
+    ("s" "Stage content"                                        tlon-tts-stage-content)
+    ("b" "Narrate buffer"                                       tlon-tts-narrate-staged-buffer)
+    ("c" "Narrate chunks"                                       tlon-tts-narrate-staged-chunks)
+    ("e" "Generate report"                                      tlon-tts-generate-report)
     """"
     "Narration options"
-    ("-b" "Paragraph break duration"                   tlon-tts-paragraph-break-duration-infix)
-    ("-p" "Prompt"                                     tlon-tts-menu-infix-set-prompt)
-    ("-s" "Narrate sidenotes"                          tlon-tts-menu-infix-toggle-narrate-sidenotes)
-    ("-v" "Use alternate voice"                        tlon-tts-menu-infix-toggle-alternate-voice)
+    ("-b" "Paragraph break duration"                            tlon-tts-paragraph-break-duration-infix)
+    ("-p" "Prompt"                                              tlon-tts-menu-infix-set-prompt)
+    ("-s" "Narrate sidenotes"                                   tlon-tts-menu-infix-toggle-narrate-sidenotes)
+    ("-v" "Use alternate voice"                                 tlon-tts-menu-infix-toggle-alternate-voice)
     ""
-    ("-e" "Engine"                                     tlon-tts-menu-infix-set-engine)
-    ("-t" "Engine settings"                            tlon-tts-menu-infix-set-engine-settings)
+    ("-e" "Engine"                                              tlon-tts-menu-infix-set-engine)
+    ("-t" "Engine settings"                                     tlon-tts-menu-infix-set-engine-settings)
     ""
-    ("-D" "Debug"                                      tlon-menu-infix-toggle-debug)]
+    ("-D" "Debug"                                               tlon-menu-infix-toggle-debug)]
    ["File processing"
-    ("f" "Finalize audio processing"                   tlon-tts-finalize-audio-processing)
-    ("d" "Delete file chunks"                          tlon-tts-delete-chunks-of-file)
-    ("x" "Truncate audio file"                         tlon-tts-truncate-audio-file)
-    ("o" "Open audio dir"                              tlon-tts-open-audio-directory)
-    ("m" "Move file to audio dir"                      tlon-tts-move-file-to-audio-server)
+    ("f" "Finalize audio processing"                            tlon-tts-finalize-audio-processing)
+    ("d" "Delete file chunks"                                   tlon-tts-delete-chunks-of-file)
+    ("x" "Truncate audio file"                                  tlon-tts-truncate-audio-file)
+    ("o" "Open audio dir"                                       tlon-tts-open-audio-directory)
+    ("m" "Move file to audio dir"                               tlon-tts-move-file-to-audio-server)
     ""
     "File processing options"
-    ("-m" "Generate missing chunks only"               tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
-    ("-d" "Delete chunks after finalizing"             tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
-    ("-P" "Commit & push moved audio"                  tlon-tts-menu-infix-toggle-commit-and-push-moved-audio)]
+    ("-d" "Delete file chunks after finalizing"                 tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
+    ("-k" "When narrating buffer, generate missing chunks only" tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
+    ("-P" "Commit & push moved audio"                           tlon-tts-menu-infix-toggle-commit-and-push-moved-audio)]
    ["Edit"
     "global"
-    ("a" "Abbreviation"                                tlon-tts-edit-global-abbreviations)
-    ("r" "Replacement"                                 tlon-tts-edit-global-phonetic-replacements)
-    ("t" "Transcription"                               tlon-tts-edit-global-phonetic-transcriptions)
+    ("a" "Abbreviation"                                         tlon-tts-edit-global-abbreviations)
+    ("r" "Replacement"                                          tlon-tts-edit-global-phonetic-replacements)
+    ("t" "Transcription"                                        tlon-tts-edit-global-phonetic-transcriptions)
     ""
     "local"
-    ("A" "Abbreviation"                                tlon-add-local-abbreviation)
-    ("R" "Replacement"                                 tlon-add-local-replacement)]])
+    ("A" "Abbreviation"                                         tlon-add-local-abbreviation)
+    ("R" "Replacement"                                          tlon-add-local-replacement)]])
 
 (provide 'tlon-tts)
 ;;; tlon-tts.el ends here
