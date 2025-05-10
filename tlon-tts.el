@@ -1372,16 +1372,12 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     (tlon-tex-replace-keys-with-citations nil 'audio) ; should be before `tlon-tts-escape-xml-special-characters'
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
+    (tlon-tts-process-all-abbreviations)
     (tlon-tts-process-formatting) ; should be before `tlon-tts-process-paragraphs'
     (tlon-tts-process-paragraphs)
     (tlon-tts-process-currencies) ; should be before `tlon-tts-process-numerals'
     (tlon-tts-process-numerals)
     (tlon-tts-remove-final-break-tag)
-    (tlon-tts-process-local-abbreviations)
-    (tlon-tts-process-global-abbreviations)
-    (tlon-tts-process-local-phonetic-replacements)
-    (tlon-tts-process-global-phonetic-replacements)
-    (tlon-tts-process-global-phonetic-transcriptions)
     ;; FIXME: the below is not working properly.
     ;; `tlon-tts-get-replacement-for-unsupported-ssml-tags' is not returning the
     ;; correct value when run with the `phoneme' tag. Fixing it is not a
@@ -3003,6 +2999,14 @@ The time length of the pause is determined by
           (while (re-search-forward abbrev-pattern nil t)
             ;; Pass the expansion to the replacement function
             (tlon-tts-punctuate-abbrev-replacement expansion)))))))
+
+(defun tlon-tts-process-all-abbreviations ()
+  "Process all abbreviations."
+  (tlon-tts-process-local-abbreviations)
+  (tlon-tts-process-global-abbreviations)
+  (tlon-tts-process-local-phonetic-replacements)
+  (tlon-tts-process-global-phonetic-replacements)
+  (tlon-tts-process-global-phonetic-transcriptions))
 
 (defun tlon-tts-punctuate-abbrev-replacement (replacement)
   "When processing abbreviations, replace match with REPLACEMENT.
