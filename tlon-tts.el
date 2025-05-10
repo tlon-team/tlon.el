@@ -3495,7 +3495,7 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
     (dolist (currency-spec tlon-tts-currencies)
       (let* ((currency-symbol-str (car currency-spec))
              (currency-symbol-re (regexp-quote currency-symbol-str))
-             (number-pattern-core (tlon-get-number-separator-pattern lang tlon-default-thousands-separator)) ; Group 1 is number
+             (number-pattern-core (tlon-get-number-separator-pattern lang tlon-default-thousands-separator))
              (lang-units (alist-get lang tlon-tts-currency-units))
              (unit-pattern-optional-group
               (if lang-units
@@ -3505,23 +3505,21 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
              (full-pattern (format "%s%s%s" currency-symbol-re number-pattern-core unit-pattern-optional-group))
              (currency-words-pair (alist-get lang (cdr currency-spec) nil nil #'string=)))
 
-        (when currency-words-pair ; Ensure currency words are defined for the language
+        (when currency-words-pair
           (goto-char (point-min))
           (while (re-search-forward full-pattern nil t)
             (let* ((amount-str (match-string-no-properties 1))
-                   (unit-str (match-string-no-properties 2)) ; May be nil
+                   (unit-str (match-string-no-properties 2))
                    (number (tlon-string-to-number amount-str
                                                   tlon-default-thousands-separator
                                                   (tlon-get-decimal-separator lang)))
                    (currency-word (if (= number 1) (car currency-words-pair) (cdr currency-words-pair)))
                    replacement)
-
               (if unit-str
                   (let* ((lang-prepositions (alist-get lang tlon-tts-currency-unit-prepositions))
                          (preposition (or (alist-get unit-str lang-prepositions nil nil #'string=)
-                                          (alist-get t lang-prepositions)))) ; Default preposition
+                                          (alist-get t lang-prepositions))))
                     (setq replacement (format "%s %s%s%s" amount-str unit-str preposition currency-word)))
-                ;; No unit string captured
                 (setq replacement (format "%s %s" amount-str currency-word)))
               (replace-match replacement t t))))))))
 
