@@ -398,6 +398,10 @@ The first placeholder is for the asterisks enclosing the buffer name, which may
 or may not need to be escaped. The second placeholder is for the base of the
 file name.")
 
+(defconst tlon-tts-chunk-comment-regex
+  "^<!-- Chunk \\([0-9]+\\) -->"
+  "Regular expression to match chunk comments in the staging buffer.")
+
 ;;;;;; Local variables
 
 (defvar tlon-tts-source)
@@ -1300,7 +1304,7 @@ with `<!-- Chunk N -->` comments."
   (interactive "nChunk number (1-based): ")
   (goto-char (point-min))
   (let ((chunk-found nil))
-    (while (and (not chunk-found) (re-search-forward "^<!-- Chunk \\([0-9]+\\) -->" nil t))
+    (while (and (not chunk-found) (re-search-forward tlon-tts-chunk-comment-regex nil t))
       (let ((num-in-comment (string-to-number (match-string 1))))
         (when (= num-in-comment chunk-number)
           (goto-char (match-beginning 0))
@@ -1313,7 +1317,7 @@ with `<!-- Chunk N -->` comments."
   "Return the chunk number *N* recorded in the `<!-- Chunk N -->` comment.
 If no such comment is found, return nil."
   (save-excursion
-    (let ((comment-regex "^<!-- Chunk \\([0-9]+\\) -->"))
+    (let ((comment-regex tlon-tts-chunk-comment-regex))
       (beginning-of-line)
       (cond
        ((looking-at comment-regex)
