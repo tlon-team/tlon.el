@@ -218,7 +218,8 @@ A subheading is defined as any heading that is not top-level.")
 	  :doc "")
     (:tag "Figure"
 	  :attributes ((:name "src" :required t :valued t  :group 3 :prompt "Image URL: ")
-		       (:name "alt" :required nil :valued t :group 5 :prompt "Alt text: "))
+		       (:name "alt" :required nil :valued t :group 5 :prompt "Alt text: ")
+		       (:name "ignore-content" :required nil :valued nil :group 7 :reader tlon-md-figure-ignore-content-reader))
 	  :type mdx
 	  :self-closing nil)
     (:tag "Footnote"
@@ -734,6 +735,13 @@ prompting the user until a non-empty string is entered."
   "Prompt the user to set the length of the `Cite' tag."
   (let ((length (completing-read "Type? " '("short" "long") nil t)))
     (if (string= length "short") " short" "")))
+
+(defun tlon-md-figure-ignore-content-reader ()
+  "Prompt the user whether to ignore the content of the `Figure' tag for TTS.
+Returns \" ignore-content\" if yes, nil otherwise."
+  (if (y-or-n-p "Ignore content for TTS? ")
+      " ignore-content"
+    nil))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()

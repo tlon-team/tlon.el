@@ -78,7 +78,7 @@ These commands insert or edit specific tags at point or around the selected regi
   #+findex: tlon-mdx-insert-cite
   + ~tlon-mdx-insert-cite~ :: Inserts/edits =<Cite>= tags. Prompts for BibTeX key (=bibKey=), locator, and length (short/long) using custom readers (~tlon-md-cite-bibkey-reader~, ~tlon-md-cite-locator-reader~, ~tlon-md-cite-length-reader~).
   #+findex: tlon-mdx-insert-figure
-  + ~tlon-mdx-insert-figure~ :: Inserts/edits =<Figure>= tags. Prompts for image URL (=src=) and alt text (=alt=).
+  + ~tlon-mdx-insert-figure~ :: Inserts/edits =<Figure>= tags. Prompts for image URL (=src=), alt text (=alt=), and whether to ignore the tag's content for TTS (=ignore-content= using ~tlon-md-figure-ignore-content-reader~).
   #+findex: tlon-mdx-insert-language
   + ~tlon-mdx-insert-language~ :: Inserts/edits =<Language>= tags. Prompts for language ID (=id=).
   #+findex: tlon-mdx-insert-literal-link
@@ -241,6 +241,8 @@ These functions are used by ~tlon-md-format-tag-with-attributes~ when prompting 
 + ~tlon-md-cite-locator-reader~ :: Reads =locator= using completion against ~tlon-locators~.
 #+findex: tlon-md-cite-length-reader
 + ~tlon-md-cite-length-reader~ :: Reads citation length ("short" or "long") and returns the appropriate attribute string (" short" or "").
+#+findex: tlon-md-figure-ignore-content-reader
++ ~tlon-md-figure-ignore-content-reader~ :: Prompts the user whether to ignore the content of the =<Figure>= tag for TTS. Returns =" ignore-content"= if yes, =nil= otherwise.
 #+findex: tlon-md-emphasis-level-reader
 + ~tlon-md-emphasis-level-reader~ :: Reads =level= for =<emphasis>= using completion against ~tlon-md-ssml-emphasis-levels~.
 #+findex: tlon-md-lang-reader

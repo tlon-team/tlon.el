@@ -3318,18 +3318,27 @@ Depending on TYPE, also enclose TEXT in listener cues."
   (tlon-tts-add-listener-cues 'subheading))
 
 (defun tlon-tts-process-images ()
-  "Add listener cues for text enclosed in tags of TYPE."
+  "Add listener cues for `Figure` tags.
+If the `ignore-content` attribute is present in the `Figure` tag, only the
+`alt` text is used. Otherwise, the `alt` text, a caption cue, and the
+tag's content (caption) are used."
   (goto-char (point-min))
   (while (re-search-forward (tlon-md-get-tag-pattern "Figure") nil t)
-    (if-let* ((alt (match-string-no-properties 6)))
-	(let ((caption (match-string-no-properties 2))
-	      caption-cue text)
-	  (unless (string-empty-p caption)
-	    (setq caption-cue (alist-get (tlon-tts-get-current-language)
-					 (alist-get 'image-caption tlon-tts-listener-cues)
-					 nil nil #'string=)))
-	  (setq text (concat alt (when caption (concat caption-cue caption))))
-	  (replace-match (tlon-tts-listener-cue-full-enclose 'image (string-chop-newline text)) t t))
+    (if-let* ((alt (match-string-no-properties 6))) ; Alt text is in group 6
+        (let* ((raw-caption (match-string-no-properties 2)) ; Tag content (caption) is in group 2
+               (ignore-content-flag (match-string-no-properties 7)) ; ignore-content attribute is group 7
+               caption-cue
+               text)
+          (if ignore-content-flag
+              (setq text alt) ; Only use alt text if ignore-content is present
+            ;; If ignore-content is not present, use alt text, cue, and caption
+            (setq text alt) ; Start with alt text
+            (unless (string-empty-p raw-caption)
+              (setq caption-cue (alist-get (tlon-tts-get-current-language)
+                                           (alist-get 'image-caption tlon-tts-listener-cues)
+                                           nil nil #'string=))
+              (setq text (concat text (or caption-cue "") raw-caption)))) ; Append cue (if any) and caption
+          (replace-match (tlon-tts-listener-cue-full-enclose 'image (string-chop-newline text)) t t))
       (user-error "Missing alt text; match: %s" alt))))
 
 (defun tlon-tts-ensure-all-images-have-alt-text ()
