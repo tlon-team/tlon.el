@@ -2628,14 +2628,15 @@ for context)."
                               (next-end-marker (nth tlon-tts-chunk-index-end-marker next-chunk-data)))
                          (tlon-tts--get-processed-text-from-markers next-begin-marker next-end-marker))))
          (previous-chunk-id (when use-context (tlon-tts-get-previous-chunk-id chunk-index)))
+         (next-chunk-id (when use-context (tlon-tts-get-next-chunk-id chunk-index)))
          (voice-settings-params '(:stability :similarity_boost :style :use_speaker_boost :speed)))
     (cl-destructuring-bind (voice audio) vars
       ;; Look up the full voice definition using the voice ID
       (let* ((voice-definition (cl-find-if (lambda (entry) (equal (plist-get entry :id) voice))
                                            tlon-elevenlabs-voices))
              (voice-settings (tlon-tts-build-voice-settings voice-definition voice-settings-params))
-             ;; Pass use-context to define payload parts
-             (payload-parts (tlon-tts-define-payload-parts string before-text after-text previous-chunk-id use-context))
+             ;; Pass use-context and chunk IDs to define payload parts
+             (payload-parts (tlon-tts-define-payload-parts string before-text after-text previous-chunk-id next-chunk-id use-context))
              ;; Add voice settings if they exist
              (final-payload-parts
               (if voice-settings
@@ -2688,11 +2689,8 @@ USE-CONTEXT is non-nil."
     ("model_id" . ,tlon-elevenlabs-model)
     ,@(when (and use-context before-text) `(("before_text" . ,before-text)))
     ,@(when (and use-context after-text) `(("after_text" . ,after-text)))
-    ;; Add previous_request_ids if available and context is used
     ,@(when (and use-context previous-chunk-id) `(("previous_request_ids" . (,previous-chunk-id))))
-    ;; Add next_request_ids if available and context is used
     ,@(when (and use-context next-chunk-id) `(("next_request_ids" . (,next-chunk-id))))
-    ;; Only enable stitching if context is being used
     ("stitch_audio" . ,(if use-context t nil))))
 
 (defun tlon-tts-build-voice-settings (voice-definition voice-settings-params)
