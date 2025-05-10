@@ -1017,6 +1017,26 @@ TTS engine pronounces the numbers correctly.")
 	    ("es" . ("dólar" . "dólares")))))
   "Currency symbols and their associated three-letter codes.")
 
+(defconst tlon-tts-currency-units
+  '(("es" . ("millones" "millón" "mil" "billones" "billón" "trillones" "trillón"))
+    ("en" . ("trillion" "billion" "million" "thousand")))
+  "List of currency unit words by language.
+Order longer units before shorter ones if they share prefixes, for correct regex matching.")
+
+(defconst tlon-tts-currency-unit-prepositions
+  '(("es" . (("millones" . " de ")
+             ("millón" . " de ")
+             ("billones" . " de ")
+             ("billón" . " de ")
+             ("trillones" . " de ")
+             ("trillón" . " de ")
+             ("mil" . " ") ; e.g., "siete mil dólares"
+             (t . " ")))  ; Default preposition (a space) if unit present but not listed
+    ("en" . ((t . " ")))) ; Default for English (e.g., "seven million dollars")
+  "Prepositions to use between currency unit and currency name, by language.
+The car of each sub-alist entry is the unit word (or t for default),
+and the cdr is the preposition string (often including leading/trailing spaces as needed).")
+
 ;;;;; Tag sections
 
 (defconst tlon-tts-tag-section-names
@@ -3472,20 +3492,38 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
 (defun tlon-tts-process-currencies ()
   "Format currency with appropriate SSML tags."
   (let ((lang (tlon-tts-get-current-language)))
-    (dolist (cons tlon-tts-currencies)
-      (let* ((pair (alist-get lang (cdr cons) nil nil #'string=))
-	     (symbol (regexp-quote (car cons)))
-	     (pattern (format "\\(?4:%s\\)%s" symbol
-			      (tlon-get-number-separator-pattern lang tlon-default-thousands-separator))))
-	(goto-char (point-min))
-	(while (re-search-forward pattern nil t)
-	  (let* ((amount (match-string-no-properties 1))
-		 (number (tlon-string-to-number amount
-                                                tlon-default-thousands-separator
-                                                (tlon-get-decimal-separator lang)))
-		 (words (if (= number 1) (car pair) (cdr pair)))
-		 (replacement (format "%s %s" amount words)))
-	    (replace-match replacement t t)))))))
+    (dolist (currency-spec tlon-tts-currencies)
+      (let* ((currency-symbol-str (car currency-spec))
+             (currency-symbol-re (regexp-quote currency-symbol-str))
+             (number-pattern-core (tlon-get-number-separator-pattern lang tlon-default-thousands-separator)) ; Group 1 is number
+             (lang-units (alist-get lang tlon-tts-currency-units))
+             (unit-pattern-optional-group
+              (if lang-units
+                  (format "\\(?:[ \t\n]+\\(%s\\)\\)?" ; Group 2 for unit
+                          (mapconcat 'regexp-quote lang-units "\\|"))
+                ""))
+             (full-pattern (format "%s%s%s" currency-symbol-re number-pattern-core unit-pattern-optional-group))
+             (currency-words-pair (alist-get lang (cdr currency-spec) nil nil #'string=)))
+
+        (when currency-words-pair ; Ensure currency words are defined for the language
+          (goto-char (point-min))
+          (while (re-search-forward full-pattern nil t)
+            (let* ((amount-str (match-string-no-properties 1))
+                   (unit-str (match-string-no-properties 2)) ; May be nil
+                   (number (tlon-string-to-number amount-str
+                                                  tlon-default-thousands-separator
+                                                  (tlon-get-decimal-separator lang)))
+                   (currency-word (if (= number 1) (car currency-words-pair) (cdr currency-words-pair)))
+                   replacement)
+
+              (if unit-str
+                  (let* ((lang-prepositions (alist-get lang tlon-tts-currency-unit-prepositions))
+                         (preposition (or (alist-get unit-str lang-prepositions nil nil #'string=)
+                                          (alist-get t lang-prepositions)))) ; Default preposition
+                    (setq replacement (format "%s %s%s%s" amount-str unit-str preposition currency-word)))
+                ;; No unit string captured
+                (setq replacement (format "%s %s" amount-str currency-word)))
+              (replace-match replacement t t))))))))
 
 ;;;;;; Process unsupported SSML tags
 
