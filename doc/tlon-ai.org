@@ -228,7 +228,7 @@ These commands generate summaries of documents using AI.
 #+findex: tlon-ai-create-meta-description
 The command ~tlon-ai-create-meta-description~ generates a concise and compelling meta description for the article in the current buffer and sets it as the =meta= field in the YAML front matter.
 
-It retrieves the main content of the current buffer (using ~tlon-md-read-content~) and sends it to the AI with the prompt defined in ~tlon-ai-create-meta-description-prompt~. This prompt instructs the AI to create a meta description that is:
+It retrieves the main content of the current buffer (using ~tlon-md-read-content~). It determines the language from the current file (or prompts the user if necessary using ~tlon-select-language~) and selects the appropriate language-specific prompt from the alist ~tlon-ai-create-meta-description-prompt~. This prompt instructs the AI to create a meta description that is:
 - Approximately 150-160 characters long.
 - An accurate summary of the article's main topic.
 - Inclusive of primary subjects/keywords.
