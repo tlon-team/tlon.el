@@ -2704,7 +2704,7 @@ The language is inferred from the parent directory of FILE."
          (destination-dir (tlon-tts-get-audio-directory lang))
          (destination-file-name (file-name-nondirectory file))
 	 (destination (file-name-concat destination-dir destination-file-name))
-         (commit-message (format "Add/Update audio: %s/%s" lang destination-file-name)))
+         (commit-message (format "Add %s/%s" lang destination-file-name)))
     (unless lang
       (user-error "Could not determine a valid language from the file path: %s (derived lang: %s)" file lang))
     (unless audio-repo-dir
