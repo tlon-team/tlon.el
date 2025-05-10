@@ -63,6 +63,8 @@ This module provides comprehensive text-to-speech (TTS) functionality, integrati
 
 #+vindex: tlon-tts-generate-missing-chunks-only
 + ~tlon-tts-generate-missing-chunks-only~ :: Boolean. If non-nil (the default), `tlon-tts-narrate-staged-buffer` will only generate audio for chunks whose corresponding audio file does not already exist. This allows resuming an interrupted process. If nil, all chunks implicated by the full buffer narration will be regenerated. This option does *not* affect `tlon-tts-narrate-staged-chunks`, which always attempts to generate the chunks explicitly selected by the user.
+#+vindex: tlon-tts-normalize-audio
++ ~tlon-tts-normalize-audio~ :: Boolean. If non-nil, audio chunks will be normalized using an =ffmpeg= loudness filter before being joined during the final processing stage. If nil (the default), this normalization step is skipped.
 
 *** Engine-Specific Settings
 :PROPERTIES:
@@ -104,7 +106,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
   5. Monitors the asynchronous audio generation processes.
   6. Once all chunks are generated:
      - Appends silence to chunks if needed (e.g., for ElevenLabs).
-     - Normalizes and joins the audio chunks into a single output file (~tlon-tts-join-chunks~).
+     - Optionally normalizes (if ~tlon-tts-normalize-audio~ is non-nil) and then joins the audio chunks into a single output file.
      - Optionally deletes the chunk files (~tlon-tts-delete-chunks-of-file~).
      - Opens the directory containing the final audio file in Dired.
      - Opens the final audio file using the system's default player.
@@ -118,7 +120,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
 :END:
 
 #+findex: tlon-tts-finalize-audio-processing
-+ ~tlon-tts-finalize-audio-processing~ :: (Autoloaded) Manually triggers the final audio processing steps for a given base audio file. This includes appending silence (if applicable for the engine), normalizing all chunk audio files, and joining them into the final output file (e.g., =filename.mp3=). It also handles deleting original chunk files if ~tlon-tts-delete-file-chunks~ is set, and opens Dired and the final audio file. This command is useful after selectively regenerating chunks with ~tlon-tts-narrate-staged-chunks~.
++ ~tlon-tts-finalize-audio-processing~ :: (Autoloaded) Manually triggers the final audio processing steps for a given base audio file. This includes appending silence (if applicable for the engine), optionally normalizing chunk audio files (if ~tlon-tts-normalize-audio~ is non-nil), and joining them into the final output file (e.g., =filename.mp3=). It also handles deleting original chunk files if ~tlon-tts-delete-file-chunks~ is set, and opens Dired and the final audio file. This command is useful after selectively regenerating chunks with ~tlon-tts-narrate-staged-chunks~.
 
 #+findex: tlon-tts-delete-chunks-of-file
 + ~tlon-tts-delete-chunks-of-file~ :: Deletes all audio chunk files associated with a base filename (e.g., =file-chunk-*.mp3=). Also kills the corresponding staging buffer if it exists. Operates on the file at point in Dired or prompts for a file.
@@ -192,6 +194,7 @@ It provides the following groups and commands:
     + =m= :: Move file to audio server (~tlon-tts-move-file-to-audio-server~)
   + *File processing options*:
     + =-m= :: Generate missing chunks only (for narrate buffer) (~tlon-tts-menu-infix-toggle-generate-missing-chunks-only~)
+    + =-n= :: Normalize audio during finalization (~tlon-tts-menu-infix-toggle-normalize-audio~)
     + =-d= :: Delete chunks after finalizing (~tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing~)
     + =-P= :: Commit & Push moved audio (~tlon-tts-menu-infix-toggle-commit-and-push-moved-audio~)
 + *Edit*:
