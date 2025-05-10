@@ -335,6 +335,13 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
     (:prompt ,(format "Por favor, convierte esta cadena en LaTeX%sNo incluyas los delimitadores de LaTeX" tlon-ai-string-wrapper)
 	     :language "es")))
 
+;;;;; Meta Description
+
+(defconst tlon-ai-create-meta-description-prompt
+  (format "Given the following article content:%sGenerate a concise and compelling meta description for this article. The meta description should:\n\n1.  Be approximately 150-160 characters in length.\n2.  Accurately summarize the main topic of the article.\n3.  Naturally incorporate the primary subject/keywords (e.g., for an article about \"Derek Parfit,\" ensure \"Derek Parfit\" or related terms are present).\n4.  Be engaging and entice users to click from a search engine results page.\n5.  Highlight the key takeaway or unique value of the article."
+          tlon-ai-string-wrapper)
+  "Prompt for creating a meta description for an article.")
+
 ;;;;; Encoding
 
 (defconst tlon-ai-fix-encoding-prompt
@@ -622,6 +629,7 @@ FILE is the file to translate."
 ;;;;;; Reference article
 
 (declare-function tlon-yaml-get-key "tlon-yaml")
+(declare-function tlon-yaml-insert-field "tlon-yaml")
 (defun tlon-ai-create-reference-article ()
   "Create a new reference article using AI."
   (interactive)
@@ -2035,6 +2043,30 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
     ;; Clean up state variable
     (setq tlon-ai--extract-replace-state nil)))
 
+;;;;; Meta Description Generation
+
+(defun tlon-ai-create-meta-description-callback (response info)
+  "Callback for `tlon-ai-create-meta-description'.
+If RESPONSE is valid, insert it as the 'meta' field in the YAML front matter.
+Otherwise, call `tlon-ai-callback-fail'."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (tlon-yaml-insert-field "meta" response)
+    (message "Meta description set.")))
+
+;;;###autoload
+(defun tlon-ai-create-meta-description ()
+  "Generate and set the 'meta' description field in the YAML front matter.
+Uses AI to generate a meta description based on the current buffer's content."
+  (interactive)
+  (let ((article-content (tlon-md-read-content)))
+    (if (string-empty-p (string-trim article-content))
+        (user-error "Article content is empty. Cannot generate meta description.")
+      (message "Requesting AI to generate meta description...")
+      (tlon-make-gptel-request tlon-ai-create-meta-description-prompt
+                               article-content
+                               #'tlon-ai-create-meta-description-callback))))
+
 ;;;;; Change propagation
 
 ;;;;;; Change Propagation Command
@@ -2437,6 +2469,7 @@ If nil, use the default model."
     ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)
+    ("m d" "create meta description"                  tlon-ai-create-meta-description)
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
