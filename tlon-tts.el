@@ -60,6 +60,14 @@
   :group 'tlon-tts
   :type 'boolean)
 
+(defcustom tlon-tts-commit-and-push-moved-audio t
+  "Whether `tlon-tts-move-file-to-audio-server' should stage, commit, and push.
+If non-nil (the default), after moving the audio file to the audio server
+repository, the command will also stage the change, commit it, and push to the
+remote. If nil, only the file move will be performed."
+  :group 'tlon-tts
+  :type 'boolean)
+
 (defcustom tlon-tts-narrate-sidenotes nil
   "Whether to narrate sidenotes.
 If non-nil, the content of sidenotes will be read aloud, typically repositioned
@@ -3934,6 +3942,18 @@ Reads audio format choices based on the currently selected engine."
   "Reader for `tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing'."
   (tlon-transient-toggle-variable-value 'tlon-tts-delete-file-chunks))
 
+;;;;;;; Commit and push moved audio
+
+(transient-define-infix tlon-tts-menu-infix-toggle-commit-and-push-moved-audio ()
+  "Toggle the value of `tlon-tts-commit-and-push-moved-audio' in `tts' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-tts-commit-and-push-moved-audio
+  :reader 'tlon-tts-commit-and-push-moved-audio-reader)
+
+(defun tlon-tts-commit-and-push-moved-audio-reader (_ _ _)
+  "Reader for `tlon-tts-menu-infix-toggle-commit-and-push-moved-audio'."
+  (tlon-transient-toggle-variable-value 'tlon-tts-commit-and-push-moved-audio))
+
 ;;;;;;; Generate missing chunks only
 
 (transient-define-infix tlon-tts-menu-infix-toggle-generate-missing-chunks-only ()
@@ -3988,7 +4008,8 @@ Reads audio format choices based on the currently selected engine."
     ""
     "File processing options"
     ("-m" "Generate missing chunks only"               tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
-    ("-d" "Delete chunks after finalizing"             tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)]
+    ("-d" "Delete chunks after finalizing"             tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
+    ("-P" "Commit & Push moved audio"                  tlon-tts-menu-infix-toggle-commit-and-push-moved-audio)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                                tlon-tts-edit-global-abbreviations)

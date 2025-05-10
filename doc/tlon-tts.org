@@ -49,6 +49,9 @@ This module provides comprehensive text-to-speech (TTS) functionality, integrati
 #+vindex: tlon-tts-delete-file-chunks
 + ~tlon-tts-delete-file-chunks~ :: Boolean. If non-nil, automatically deletes the individual audio chunk files after they have been successfully merged into the final output file.
 
+#+vindex: tlon-tts-commit-and-push-moved-audio
++ ~tlon-tts-commit-and-push-moved-audio~ :: Boolean. If non-nil (the default), `tlon-tts-move-file-to-audio-server` will also stage, commit, and push the moved audio file to the remote repository. If nil, only the file move is performed.
+
 #+vindex: tlon-tts-paragraph-break-duration
 + ~tlon-tts-paragraph-break-duration~ :: String specifying the duration of the pause (SSML =<break time="...">=) inserted after each paragraph (e.g., "0.8s").
 
@@ -190,6 +193,7 @@ It provides the following groups and commands:
   + *File processing options*:
     + =-m= :: Generate missing chunks only (for narrate buffer) (~tlon-tts-menu-infix-toggle-generate-missing-chunks-only~)
     + =-d= :: Delete chunks after finalizing (~tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing~)
+    + =-P= :: Commit & Push moved audio (~tlon-tts-menu-infix-toggle-commit-and-push-moved-audio~)
 + *Edit*:
   + *global*:
     + =a= :: Abbreviation (~tlon-tts-edit-global-abbreviations~)
