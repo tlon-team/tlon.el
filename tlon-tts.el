@@ -2966,7 +2966,6 @@ The time length of the pause is determined by
                 (while (re-search-forward abbrev-introduced-pattern nil t)
                   ;; Replace with the matched expansion (group 1) to preserve original capitalization
                   (replace-match (match-string 1) t t)))))
-
           ;; Replace remaining occurrences of the abbreviation itself (case-sensitive search)
           (goto-char (point-min))
           (while (re-search-forward abbrev-pattern nil t)
