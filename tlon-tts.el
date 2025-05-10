@@ -1280,15 +1280,18 @@ position of the cursor from the source buffer."
         (markdown-mode) ; Set mode early
         (flycheck-mode -1))
       (tlon-tts-set-file-local-vars file)
-      ;; Restore position if we captured it, adjusting for metadata paragraphs
-      (when paragraph-index
-        ;; paragraph-index is 0-based index of content paragraph in source.
-        ;; Metadata (title, author) are usually chunks 1 and 2.
-        ;; So, the first content paragraph corresponds to chunk 3 (1-based).
-        (tlon-tts-goto-chunk (+ paragraph-index 3))))))
       (tlon-tts-prepare-staging-buffer)
       (tlon-tts-prepare-chunks)
       (tlon-tts-insert-chunk-comments)
+      (tlon-tts-restore-position paragraph-index))))
+
+(defun tlon-tts-restore-position (paragraph-index)
+  "Restore point position in the staging buffer.
+PARAGRAPH-INDEX is 0-based index of content paragraph in source.
+Metadata (title, author) are usually chunks 1 and 2. So, the first content
+paragraph corresponds to chunk 3 (1-based)."
+  (when paragraph-index
+    (tlon-tts-goto-chunk (+ paragraph-index 3))))
 
 (defun tlon-tts-goto-chunk (chunk-number)
   "Move point to the beginning of the CHUNK-NUMBER'th chunk.
