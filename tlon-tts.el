@@ -3292,22 +3292,26 @@ The report checks the content of the current staging buffer."
     (with-current-buffer (get-buffer-create tlon-tts-report-buffer-name)
       (setq report-buffer (current-buffer))
       (erase-buffer)
+      (org-mode)
+      (insert "* TTS Report")
       (when abbreviations
-	(insert "***Missing abbreviations***\n\n")
+	(insert "** Missing abbreviations\n\n")
 	(dolist (abbreviation abbreviations)
-	  (insert (format "%s\n" abbreviation))))
+	  (insert (format "- %s\n" abbreviation))))
       (when chemical-symbols-p
-	(insert (format "\n***Chemical symbols***\n\nSearch for ‘%s’\n"
+	(insert (format "\n** Chemical symbols\n\nSearch for ‘%s’\n"
 			tlon-tts-maybe-chemical-symbol)))
       (when emphasis-p
-	(insert (format "\n***Emphasis***\n\nRun ‘M-x tlon-manual-fixe-emphasis’\n")))
+	(insert (format "\n** Emphasis\n\nRun =M-x tlon-manual-fixe-emphasis=\n")))
       (when en-dashes-p
-	(insert (format "\n***En dashes***\n\nSearch for ‘–’")))
+	(insert (format "\n** En dashes\n\nSearch for ‘–’\n")))
       (when numerals-sans-separator-p
-	(insert (format "\n***Numerals sans separator***\n\nRun ‘M-x tlon-manual-fix-add-thousands-separators’\n"))))
+	(insert (format "\n** Numerals sans separator\n\nRun =M-x tlon-manual-fix-add-thousands-separators=\n"))))
     (if (= (buffer-size report-buffer) 0)
 	(kill-buffer report-buffer)
-      (switch-to-buffer report-buffer))
+      (progn
+        (switch-to-buffer report-buffer)
+        (goto-char (point-min))))
     (other-window 1)
     (switch-to-buffer staging-buffer)))
 
