@@ -3294,10 +3294,11 @@ This function is intended to be called from within the staging buffer."
 	missing)
     (goto-char (point-min))
     (while (re-search-forward "\\b\\(?:[A-Z]\\{2,\\}\\(?:\\. ?\\)?\\)+\\.?\\b" nil t)
-      (let ((match (match-string-no-properties 0)))
-	(unless (or (string-match (mapconcat 'car abbrevs "\\|") match)
-		    (tlon-tts-looking-at-excluded-tag-p))
-	  (push match missing))))
+      (let ((found-abbrev-in-buffer (match-string-no-properties 0)))
+        ;; Check if the exact found-abbrev-in-buffer is a key in the known abbrevs list
+        (unless (or (assoc-default found-abbrev-in-buffer abbrevs #'string=)
+                    (tlon-tts-looking-at-excluded-tag-p))
+          (push found-abbrev-in-buffer missing))))
     (delete-dups missing)))
 
 (defun tlon-tts-looking-at-excluded-tag-p ()
