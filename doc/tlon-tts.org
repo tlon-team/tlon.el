@@ -47,10 +47,7 @@ This module provides comprehensive text-to-speech (TTS) functionality, integrati
 + ~tlon-tts-use-alternate-voice~ :: Boolean. If non-nil, uses a designated alternate voice (per engine configuration) for reading elements like notes, asides, blockquotes, etc., marked with listener cues.
 
 #+vindex: tlon-tts-delete-file-chunks
-+ ~tlon-tts-delete-file-chunks~ :: Boolean. If non-nil, automatically deletes the individual audio chunk files after they have been successfully merged into the final output file.
-
-#+vindex: tlon-tts-commit-and-push-moved-audio
-+ ~tlon-tts-commit-and-push-moved-audio~ :: Boolean. If non-nil (the default), `tlon-tts-move-file-to-audio-server` will also stage, commit, and push the moved audio file to the remote repository. If nil, only the file move is performed.
++ ~tlon-tts-delete-file-chunks~ :: Boolean. If non-nil, automatically deletes the individual audio chunk files after they have been successfully merged into the final output file. This option is primarily used by the finalization process after narrating a full buffer. The command `tlon-tts-move-file-to-audio-server` will prompt separately whether to delete chunks.
 
 #+vindex: tlon-tts-paragraph-break-duration
 + ~tlon-tts-paragraph-break-duration~ :: String specifying the duration of the pause (SSML =<break time="...">=) inserted after each paragraph (e.g., "0.8s").
@@ -129,7 +126,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
 + ~tlon-tts-truncate-audio-file~ :: Removes a specified number of milliseconds from the *end* of an audio file using =mp3splt=. Prompts for the file and the duration to remove.
 
 #+findex: tlon-tts-move-file-to-audio-server
-+ ~tlon-tts-move-file-to-audio-server~ :: (Autoloaded) Moves a generated audio file to the designated audio repository directory (=uqbar-audio=), then stages, commits (with a message like "Add/Update audio: lang/filename.ext"), and pushes the change. The language is inferred from the parent directory of the audio file being moved. Prompts for the file to move.
++ ~tlon-tts-move-file-to-audio-server~ :: (Autoloaded) Moves a generated audio file to the designated audio repository directory (=uqbar-audio=). It then prompts the user whether to stage, commit (with a message like "Add/Update audio: lang/filename.ext"), and push the change. The language is inferred from the parent directory of the audio file being moved. If audio chunks for the moved file exist, it will also prompt whether to delete them. Prompts for the file to move.
 
 #+findex: tlon-tts-open-audio-directory
 + ~tlon-tts-open-audio-directory~ :: (Autoloaded) Opens the audio repository directory for the current language (or prompts for one) in Dired.
@@ -196,7 +193,6 @@ It provides the following groups and commands:
     + =-m= :: Generate missing chunks only (for narrate buffer) (~tlon-tts-menu-infix-toggle-generate-missing-chunks-only~)
     + =-n= :: Normalize audio during finalization (~tlon-tts-menu-infix-toggle-normalize-audio~)
     + =-d= :: Delete chunks after finalizing (~tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing~)
-    + =-P= :: Commit & Push moved audio (~tlon-tts-menu-infix-toggle-commit-and-push-moved-audio~)
 + *Edit*:
   + *global*:
     + =a= :: Abbreviation (~tlon-tts-edit-global-abbreviations~)
