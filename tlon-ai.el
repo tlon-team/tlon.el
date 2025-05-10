@@ -2049,12 +2049,19 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
 
 (defun tlon-ai-create-meta-description-callback (response info)
   "Callback for `tlon-ai-create-meta-description'.
-If RESPONSE is valid, insert it as the 'meta' field in the YAML front matter.
-Otherwise, call `tlon-ai-callback-fail'."
+If RESPONSE is valid, insert it as the 'meta' field in the YAML front matter
+of the original buffer. Otherwise, call `tlon-ai-callback-fail'."
   (if (not response)
       (tlon-ai-callback-fail info)
-    (tlon-yaml-insert-field "meta" response)
-    (message "Meta description set.")))
+    (let* ((original-buffer (plist-get info :buffer))
+           (original-file-name (if (buffer-live-p original-buffer)
+                                   (buffer-file-name original-buffer)
+                                 nil)))
+      (if (not original-file-name)
+          (user-error "Original buffer for meta description is not visiting a file or is no longer live.")
+        (with-current-buffer original-buffer ;; Ensure context for tlon-yaml-insert-field
+          (tlon-yaml-insert-field "meta" response)
+          (message "Meta description set for %s." (file-name-nondirectory original-file-name)))))))
 
 ;;;###autoload
 (defun tlon-ai-create-meta-description ()
@@ -2068,11 +2075,12 @@ Uses AI to generate a meta description based on the current buffer's content."
         (user-error "Article content is empty. Cannot generate meta description.")
       (if-let ((prompt (tlon-lookup tlon-ai-create-meta-description-prompt :prompt :language language)))
           (progn
-            (message "Requesting AI to generate meta description in %s..." (tlon-validate-language language 'name))
+            (message "Requesting AI to generate meta description in %s..."
+                     (or (tlon-validate-language language 'name) language))
             (tlon-make-gptel-request prompt
                                      article-content
                                      #'tlon-ai-create-meta-description-callback))
-        (user-error "No meta description prompt found for language: %s" (tlon-validate-language language 'name))))))
+        (user-error "No meta description prompt found for language: %s" (or (tlon-validate-language language 'name) language))))))
 
 ;;;;; Change propagation
 
