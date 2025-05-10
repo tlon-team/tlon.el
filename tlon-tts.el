@@ -2721,9 +2721,12 @@ The language is inferred from the parent directory of FILE."
       (make-directory destination-dir t))
     (rename-file file destination 0)
     (message "Moved `%s' to `%s'." file destination)
-    (let ((default-directory audio-repo-dir))
-      (magit-extras-stage-commit-and-push commit-message destination)
-      (message "Committed and pushed `%s' to audio server." destination-file-name))))
+
+    (if tlon-tts-commit-and-push-moved-audio
+        (let ((default-directory audio-repo-dir))
+          (magit-extras-stage-commit-and-push commit-message destination)
+          (message "Committed and pushed `%s' to audio server." destination-file-name))
+      (message "Skipping commit and push for %s as per `tlon-tts-commit-and-push-moved-audio'." destination-file-name))))
 
 (defun tlon-tts-get-audio-directory (&optional lang)
   "Return the directory where audio files are stored for LANG.
@@ -4009,7 +4012,7 @@ Reads audio format choices based on the currently selected engine."
     "File processing options"
     ("-m" "Generate missing chunks only"               tlon-tts-menu-infix-toggle-generate-missing-chunks-only)
     ("-d" "Delete chunks after finalizing"             tlon-tts-menu-infix-toggle-delete-file-chunks-after-finalizing)
-    ("-P" "Commit & Push moved audio"                  tlon-tts-menu-infix-toggle-commit-and-push-moved-audio)]
+    ("-P" "Commit & push moved audio"                  tlon-tts-menu-infix-toggle-commit-and-push-moved-audio)]
    ["Edit"
     "global"
     ("a" "Abbreviation"                                tlon-tts-edit-global-abbreviations)
