@@ -3499,7 +3499,8 @@ Bizarrely, the TTS engine reads 80000 as \"eight thousand\", at least in Spanish
              (lang-units (alist-get lang tlon-tts-currency-units))
              (unit-pattern-optional-group
               (if lang-units
-                  (format "\\(?:[ \t\n]+\\(%s\\)\\)?" ; Group 2 for unit
+                  ;; Use [[:space:]]* to match zero or more whitespace characters
+                  (format "\\(?:[[:space:]]*\\(%s\\)\\)?" ; Group 2 for unit
                           (mapconcat 'regexp-quote lang-units "\\|"))
                 ""))
              (full-pattern (format "%s%s%s" currency-symbol-re number-pattern-core unit-pattern-optional-group))
