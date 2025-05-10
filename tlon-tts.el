@@ -1278,29 +1278,29 @@ position of the cursor from the source buffer."
         (erase-buffer)
         (insert content)
         (markdown-mode) ; Set mode early
-        (flycheck-mode -1)) ; Disable flycheck
+        (flycheck-mode -1))
       (tlon-tts-set-file-local-vars file)
-      (tlon-tts-prepare-staging-buffer) ; This populates tlon-tts-voice-chunks if applicable
-      (tlon-tts-prepare-chunks)         ; This uses tlon-tts-voice-chunks to populate tlon-tts-chunks
-      (tlon-tts-insert-chunk-comments)  ; This uses tlon-tts-chunks to insert comments
       ;; Restore position if we captured it, adjusting for metadata paragraphs
       (when paragraph-index
         ;; paragraph-index is 0-based index of content paragraph in source.
         ;; Metadata (title, author) are usually chunks 1 and 2.
         ;; So, the first content paragraph corresponds to chunk 3 (1-based).
         (tlon-tts-goto-chunk (+ paragraph-index 3))))))
+      (tlon-tts-prepare-staging-buffer)
+      (tlon-tts-prepare-chunks)
+      (tlon-tts-insert-chunk-comments)
 
 (defun tlon-tts-goto-chunk (chunk-number)
   "Move point to the beginning of the CHUNK-NUMBER'th chunk.
 CHUNK-NUMBER is 1-based. Assumes the current buffer is a TTS staging buffer
 with `<!-- Chunk N -->` comments."
   (interactive "nChunk number (1-based): ")
-  (goto-char (point-min)) ; Start search from the beginning of the buffer
+  (goto-char (point-min))
   (let ((chunk-found nil))
     (while (and (not chunk-found) (re-search-forward "^<!-- Chunk \\([0-9]+\\) -->" nil t))
       (let ((num-in-comment (string-to-number (match-string 1))))
         (when (= num-in-comment chunk-number)
-          (goto-char (match-beginning 0)) ; Go to the start of the comment line
+          (goto-char (match-beginning 0))
           (setq chunk-found t))))
     (unless chunk-found
       (message "Chunk %d not found." chunk-number)
