@@ -2411,11 +2411,9 @@ with the simpler version were not recognized by some audio players."
       (insert (format "file '%s'\nfile '%s'\n"
 		      (shell-quote-argument input-file)
 		      (shell-quote-argument silence-file))))
-    ;; Add -y to overwrite intermediate file if it exists
     (shell-command (format "ffmpeg -y -f concat -safe 0 -i %s -c copy -f mpegts %s"
 			   (shell-quote-argument concat-file)
 			   (shell-quote-argument intermediate-file)))
-    ;; Add -y to overwrite output file if it exists
     (shell-command (format "ffmpeg -y -i %s -c copy %s"
 			   (shell-quote-argument intermediate-file)
 			   (shell-quote-argument output-file)))
