@@ -1082,9 +1082,8 @@ and the cdr is the preposition string (often including leading/trailing spaces a
 Each element is a cons cell where the car is the begin position of the voice
 chunk and the cdr voice to be used to narrate this chunk.")
 
-;;;;;; Chunk processing
-
 ;;;;;; Chunk data structure indices
+
 (defconst tlon-tts-chunk-index-text 0 "Index for the text content in a chunk.")
 (defconst tlon-tts-chunk-index-voice-params 1 "Index for voice parameters in a chunk.")
 (defconst tlon-tts-chunk-index-filename 2 "Index for the audio filename in a chunk.")
@@ -1095,7 +1094,6 @@ chunk and the cdr voice to be used to narrate this chunk.")
 (defconst tlon-tts-chunk-index-begin-marker 7 "Index for the begin marker in a chunk.")
 (defconst tlon-tts-chunk-index-end-marker 8 "Index for the end marker in a chunk.")
 (defconst tlon-tts-chunk-index-chunk-number 9 "Index for the 1-based chunk number.")
-
 
 (defvar-local tlon-tts-chunks nil
   "List of chunks to be narrated. Buffer-local to the staging buffer.
@@ -1311,7 +1309,7 @@ with `<!-- Chunk N -->` comments."
           (setq chunk-found t))))
     (unless chunk-found
       (message "Chunk %d not found." chunk-number)
-      (goto-char (point-max))))) ; Go to end if not found
+      (goto-char (point-max)))))
 
 (defun tlon-tts-get-chunk-number-at-point ()
   "Return the chunk number *N* recorded in the `<!-- Chunk N -->` comment.
