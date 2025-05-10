@@ -2745,7 +2745,6 @@ PREVIOUS-CHUNK-ID, and stitch_audio are only included if USE-CONTEXT is non-nil.
 The language is inferred from the parent directory of FILE."
   (interactive)
   (let* ((file (files-extras-read-file file))
-         (file-dir (file-name-directory file))
          (repo (tlon-get-repo-from-file file))
 	 (lang (tlon-repo-lookup :language :dir repo))
          (audio-repo-dir (tlon-repo-lookup :dir :name "uqbar-audio"))
@@ -2761,17 +2760,16 @@ The language is inferred from the parent directory of FILE."
       (make-directory destination-dir t))
     (rename-file file destination 0)
     (message "Moved `%s' to `%s'." file destination)
-
+    (when (derived-mode-p 'dired-mode)
+      (revert-buffer nil t t))
     (when (y-or-n-p (format "Commit and push %s to audio server?" destination-file-name))
       (let ((default-directory audio-repo-dir))
         (magit-extras-stage-commit-and-push commit-message destination)
         (message "Committed and pushed `%s' to audio server." destination-file-name)))
-
-    (let ((chunks (tlon-tts-get-list-of-chunks file))) ; Check for chunks of the original file
-      (when chunks
-        (if (y-or-n-p (format "Delete %d audio chunk(s) for %s?" (length chunks) (file-name-nondirectory file)))
-            (tlon-tts-delete-chunks-of-file file) ; Pass original file path
-          (message "Audio chunks for %s were not deleted." (file-name-nondirectory file)))))))
+    (when-let ((chunks (tlon-tts-get-list-of-chunks file)))
+      (if (y-or-n-p (format "Delete %d audio chunk(s) for %s?" (length chunks) (file-name-nondirectory file)))
+	  (tlon-tts-delete-chunks-of-file file)
+	(message "Audio chunks for %s were not deleted." (file-name-nondirectory file))))))
 
 (defun tlon-tts-get-audio-directory (&optional lang)
   "Return the directory where audio files are stored for LANG.
