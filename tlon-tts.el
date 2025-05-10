@@ -2698,23 +2698,21 @@ The language is inferred from the parent directory of FILE."
   (interactive)
   (let* ((file (files-extras-read-file file))
          (file-dir (file-name-directory file))
-         (lang (file-name-nondirectory (directory-file-name file-dir)))
+         (repo (tlon-get-repo-from-file file))
+	 (lang (tlon-repo-lookup :language :dir repo))
          (audio-repo-dir (tlon-repo-lookup :dir :name "uqbar-audio"))
-         (destination-dir (tlon-tts-get-audio-directory lang)) ; This already uses uqbar-audio
+         (destination-dir (tlon-tts-get-audio-directory lang))
          (destination-file-name (file-name-nondirectory file))
 	 (destination (file-name-concat destination-dir destination-file-name))
          (commit-message (format "Add/Update audio: %s/%s" lang destination-file-name)))
-
-    (unless (and lang (tlon-validate-language lang))
+    (unless lang
       (user-error "Could not determine a valid language from the file path: %s (derived lang: %s)" file lang))
     (unless audio-repo-dir
       (user-error "Could not find the 'uqbar-audio' repository directory"))
     (unless (file-directory-p destination-dir)
-      (make-directory destination-dir t)) ; Create directory if it doesn't exist
-
+      (make-directory destination-dir t))
     (rename-file file destination 0)
     (message "Moved `%s' to `%s'." file destination)
-
     (let ((default-directory audio-repo-dir))
       (magit-extras-stage-commit-and-push commit-message destination)
       (message "Committed and pushed `%s' to audio server." destination-file-name))))
