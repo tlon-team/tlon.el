@@ -1595,7 +1595,7 @@ regardless of size to work around voice degradation issues."
                          (point-max)))))
           (goto-char (point-min)) ; Start search from beginning of buffer
           ;; Remove comments only within the content area (up to 'limit')
-          (while (re-search-forward "^<!-- \\(?:Chunk\\|Paragraph\\) [0-9]+ -->\n?" limit t)
+          (while (re-search-forward "^<!-- Chunk [0-9]+ -->\n?" limit t)
             (replace-match "" t t)))))
     
     ;; `tlon-tts-read-into-chunks` will now process the buffer.
@@ -3704,9 +3704,9 @@ and `chunk-number` from each chunk's data. It assumes `tlon-tts-chunks`
 is populated and the current buffer is the staging buffer."
   (when (tlon-tts-staging-buffer-p)
     (save-excursion
-      ;; First, remove any existing chunk or paragraph comments to avoid duplicates
+      ;; First, remove any existing chunk comments to avoid duplicates
       (goto-char (point-min))
-      (while (re-search-forward "^<!-- \\(?:Chunk\\|Paragraph\\) [0-9]+ -->\n?" nil t)
+      (while (re-search-forward "^<!-- Chunk [0-9]+ -->\n?" nil t)
         (replace-match "" t t))
 
       ;; Then, insert new chunk comments
