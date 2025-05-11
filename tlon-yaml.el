@@ -417,15 +417,41 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
                                         ((stringp value) value)
                                         (t (format "%s" value)))))
                   (format "%-20s %s" (concat key ":") formatted-value))))
-             (target-pos (cl-position key candidates :test #'string=)))
-        (goto-char (point-min))
-        (forward-line)
-        ;; Only try to find next key if target-pos is not nil
-        (when target-pos 
-          (when-let ((next-key (nth (1+ target-pos) candidates)))
-            (when (search-forward-regexp (format "^%s:" next-key) nil t)
-              (beginning-of-line))))
-        (insert new-field "\n")))))
+             (target-pos (cl-position key candidates :test #'string=))) ; target-pos is nil if key not in candidates
+        (goto-char (point-min)) ; Go to start of buffer
+        (unless (looking-at-p tlon-yaml-delimiter)
+          (user-error "YAML opening delimiter not found before insertion logic"))
+        (forward-line) ; Point is now after the opening "---"
+
+        (if (string= key "meta")
+            ;; For "meta" key, insert just before the closing delimiter
+            (progn
+              (unless (re-search-forward (regexp-quote tlon-yaml-delimiter) nil t)
+                (user-error "Could not find closing YAML delimiter for meta insertion"))
+              (goto-char (match-beginning 0)) ; Go to the start of the closing "---"
+              (insert new-field "\n"))
+          ;; For other keys, use refined existing logic for ordered insertion
+          (progn
+            (when target-pos ; Key is in the ordered list of candidates
+              (when-let ((next-key (nth (1+ target-pos) candidates)))
+                ;; Try to find the line where next-key starts, to insert before it.
+                ;; Search from current point up to the closing delimiter.
+                (let ((boundary-for-search
+                       (save-excursion ; Calculate boundary without moving main point
+                         (unless (re-search-forward (regexp-quote tlon-yaml-delimiter) nil t)
+                           (user-error "Closing YAML delimiter not found for search boundary"))
+                         (match-beginning 0))))
+                  (if (search-forward-regexp (format "^%s:" next-key) boundary-for-search t)
+                      (goto-char (match-beginning 0)) ; Found next-key, point is at its start
+                    ;; Else: next-key not found in the YAML block. Point remains where it was.
+                    nil))))
+            ;; Point is now:
+            ;; 1. After opening "---" (if key not in candidates, or key is last in candidates,
+            ;;    or its next-key from candidates was not found in the file).
+            ;; 2. At the start of next-key's line (if key in candidates and next-key was found).
+            (insert new-field "\n"))))
+        ;; (tlon-yaml-reorder-metadata) ; This would re-sort; not called here directly.
+        ))))
 
 ;;;###autoload
 (defun tlon-yaml-insert-original-path ()
