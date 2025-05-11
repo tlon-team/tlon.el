@@ -1664,6 +1664,37 @@ If RESPONSE is nil, return INFO."
 	    (insert-file-contents file-name))))
       (write-file output-file))))
 
+;;;;; Meta Description Generation Helper
+
+(defun tlon-ai--generate-and-insert-meta-description-for-file (file-path &optional for-interactive-command)
+  "Generate and insert meta description for FILE-PATH.
+Non-interactive helper. If FOR-INTERACTIVE-COMMAND is non-nil and language
+cannot be determined from the file, prompt the user. Otherwise, error."
+  (with-current-buffer (find-file-noselect file-path) ; Makes the buffer current temporarily
+    (let* ((article-content (tlon-md-read-content)) ; Reads from current buffer (which is file-path)
+           (language
+            (or (tlon-get-language-in-file nil) ; nil means current buffer
+                (if for-interactive-command
+                    (tlon-select-language 'code)
+                  (user-error "Cannot determine language for %s." (file-name-nondirectory file-path))))))
+      (unless language ; If tlon-select-language was used and user aborted, language is nil
+        (user-error "Language selection aborted for %s." (file-name-nondirectory file-path)))
+
+      (if (string-empty-p (string-trim article-content))
+          (message "Skipping %s: Article content is empty." (file-name-nondirectory file-path))
+        (if-let ((prompt (tlon-lookup tlon-ai-create-meta-description-prompt :prompt :language language)))
+            (progn
+              (message "Requesting AI meta description for %s (lang: %s)..."
+                       (file-name-nondirectory file-path)
+                       (or (tlon-validate-language language 'name) language))
+              (tlon-make-gptel-request prompt
+                                       article-content
+                                       #'tlon-ai-create-meta-description-callback
+                                       tlon-ai-summarization-model))
+          (message "Skipping %s: No meta description prompt for language %s."
+                   (file-name-nondirectory file-path)
+                   (or (tlon-validate-language language 'name) language)))))))
+
 ;;;;; Bibliography Extraction
 
 ;;;###autoload
@@ -2051,21 +2082,10 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
   "Generate and set the \"meta\" description field in the YAML front matter.
 Uses AI to generate a meta description based on the current buffer's content."
   (interactive)
-  (let* ((article-content (tlon-md-read-content))
-         (language (or (tlon-get-language-in-file nil)
-                       (tlon-select-language 'code))))
-    (if (string-empty-p (string-trim article-content))
-        (user-error "Article content is empty. Cannot generate meta description")
-      (if-let ((prompt (tlon-lookup tlon-ai-create-meta-description-prompt :prompt :language language)))
-          (progn
-            (message "Requesting AI to generate meta description in %s..."
-                     (or (tlon-validate-language language 'name) language))
-            (tlon-make-gptel-request prompt
-                                     article-content
-                                     #'tlon-ai-create-meta-description-callback
-                                     tlon-ai-summarization-model))
-        (user-error "No meta description prompt found for language: %s"
-		    (or (tlon-validate-language language 'name) language))))))
+  (let ((current-file (buffer-file-name)))
+    (unless current-file
+      (user-error "Current buffer is not visiting a file."))
+    (tlon-ai--generate-and-insert-meta-description-for-file current-file t))) ; Pass t for interactive behavior
 
 (defun tlon-ai-create-meta-description-callback (response info)
   "Callback for `tlon-ai-create-meta-description'.
@@ -2083,6 +2103,30 @@ response INFO."
         (with-current-buffer original-buffer ;; Ensure context for tlon-yaml-insert-field
           (tlon-yaml-insert-field "meta" response)
           (message "Meta description set for %s." (file-name-nondirectory original-file-name)))))))
+
+(defun tlon-ai-create-meta-descriptions-in-directory (directory)
+  "Iterate over Markdown files in DIRECTORY, creating AI meta descriptions.
+Skips files that already have a meta description or if language cannot be determined."
+  (interactive "DDirectory: ")
+  (let ((md-files (directory-files-recursively directory "\\.md$")))
+    (unless md-files
+      (message "No Markdown files found in %s" directory)
+      (cl-return-from tlon-ai-create-meta-descriptions-in-directory))
+
+    (message "Found %d Markdown files. Starting meta description generation..." (length md-files))
+    (dolist (file md-files)
+      (message "Processing %s..." (file-name-nondirectory file))
+      (if (tlon-yaml-get-key "meta" file)
+          (message "Skipping %s: meta description already exists." (file-name-nondirectory file))
+        (condition-case err
+            ;; Call the helper, not for interactive command (nil for second arg)
+            (tlon-ai--generate-and-insert-meta-description-for-file file nil)
+          (user-error ; Catch user-errors from helper (e.g., language issues)
+           (message "Skipping %s: %s" (file-name-nondirectory file) (error-message-string err)))
+          (error ; Catch other unexpected errors
+           (message "Error processing %s: %s" (file-name-nondirectory file) (error-message-string err)))))
+      (sit-for 0.5)) ; Allow messages to display and avoid overwhelming services
+    (message "Finished processing all files in %s." directory)))
 
 ;;;;; Change propagation
 
