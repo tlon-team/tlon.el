@@ -338,9 +338,8 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 ;;;;; Meta Description
 
 (defconst tlon-ai-create-meta-description-prompt
-  `((:prompt ,(format "Given the following article content:%sGenerate a concise and compelling meta description for this article. The meta description should:\n\n1.  Be approximately 150-160 characters in length.\n2.  Accurately summarize the main topic of the article.\n3.  Naturally incorporate the primary subject/keywords (e.g., for an article about \"Derek Parfit,\" ensure \"Derek Parfit\" or related terms are present).\n\nReturn *only* the meta description text itself, without any introductory phrases, comments, or Markdown formatting." tlon-ai-string-wrapper)
-	     :language "en")
-    (:prompt ,(format "Dado el siguiente contenido de artículo:%sGenera una meta descripción concisa y convincente para este artículo. La meta descripción debe:\n\n1. Tener una longitud aproximada de 150-160 caracteres.\n2. Resumir con exactitud el tema principal del artículo.\n3. Incorporar de forma natural el tema principal/palabras clave (por ejemplo, para un artículo sobre \"Derek Parfit\", asegúrate de que \"Derek Parfit\" o términos relacionados estén presentes). Devuelve *sólo* el texto de la meta descripción en sí, sin frases introductorias, comentarios u formato Markdown." tlon-ai-string-wrapper)
+  `(
+    (:prompt ,(format "Tu tarea es generar un texto breve optimizado para el atributo \"meta\" del elemento HTML \"meta\" basado en el contenido del artículo informativo que se incluye a continuación: %s. El texto debe consistir en una sola oración no supere los 160 caracteres, resuma adecuadamente el tema principal del artículo, e incorpore de forma natural el tema principal/palabras clave. Devuelve *sólo* el texto de la meta descripción en sí, sin frases introductorias, comentarios o formato Markdown." tlon-ai-string-wrapper)
 	     :language "es"))
   "Prompts for creating a meta description for an article.")
 
@@ -2047,32 +2046,16 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
 
 ;;;;; Meta Description Generation
 
-(defun tlon-ai-create-meta-description-callback (response info)
-  "Callback for `tlon-ai-create-meta-description'.
-If RESPONSE is valid, insert it as the 'meta' field in the YAML front matter
-of the original buffer. Otherwise, call `tlon-ai-callback-fail'."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((original-buffer (plist-get info :buffer))
-           (original-file-name (if (buffer-live-p original-buffer)
-                                   (buffer-file-name original-buffer)
-                                 nil)))
-      (if (not original-file-name)
-          (user-error "Original buffer for meta description is not visiting a file or is no longer live.")
-        (with-current-buffer original-buffer ;; Ensure context for tlon-yaml-insert-field
-          (tlon-yaml-insert-field "meta" response)
-          (message "Meta description set for %s." (file-name-nondirectory original-file-name)))))))
-
 ;;;###autoload
 (defun tlon-ai-create-meta-description ()
-  "Generate and set the 'meta' description field in the YAML front matter.
+  "Generate and set the \"meta\" description field in the YAML front matter.
 Uses AI to generate a meta description based on the current buffer's content."
   (interactive)
   (let* ((article-content (tlon-md-read-content))
          (language (or (tlon-get-language-in-file nil)
                        (tlon-select-language 'code))))
     (if (string-empty-p (string-trim article-content))
-        (user-error "Article content is empty. Cannot generate meta description.")
+        (user-error "Article content is empty. Cannot generate meta description")
       (if-let ((prompt (tlon-lookup tlon-ai-create-meta-description-prompt :prompt :language language)))
           (progn
             (message "Requesting AI to generate meta description in %s..."
@@ -2081,7 +2064,25 @@ Uses AI to generate a meta description based on the current buffer's content."
                                      article-content
                                      #'tlon-ai-create-meta-description-callback
                                      tlon-ai-summarization-model))
-        (user-error "No meta description prompt found for language: %s" (or (tlon-validate-language language 'name) language))))))
+        (user-error "No meta description prompt found for language: %s"
+		    (or (tlon-validate-language language 'name) language))))))
+
+(defun tlon-ai-create-meta-description-callback (response info)
+  "Callback for `tlon-ai-create-meta-description'.
+If RESPONSE is valid, insert it as the \"meta\" field in the YAML front matter
+of the original buffer. Otherwise, call `tlon-ai-callback-fail' with the
+response INFO."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let* ((original-buffer (plist-get info :buffer))
+           (original-file-name (if (buffer-live-p original-buffer)
+                                   (buffer-file-name original-buffer)
+                                 nil)))
+      (if (not original-file-name)
+          (user-error "Original buffer for meta description is not visiting a file or is no longer live")
+        (with-current-buffer original-buffer ;; Ensure context for tlon-yaml-insert-field
+          (tlon-yaml-insert-field "meta" response)
+          (message "Meta description set for %s." (file-name-nondirectory original-file-name)))))))
 
 ;;;;; Change propagation
 
