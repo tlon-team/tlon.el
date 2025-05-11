@@ -2079,7 +2079,8 @@ Uses AI to generate a meta description based on the current buffer's content."
                      (or (tlon-validate-language language 'name) language))
             (tlon-make-gptel-request prompt
                                      article-content
-                                     #'tlon-ai-create-meta-description-callback))
+                                     #'tlon-ai-create-meta-description-callback
+                                     tlon-ai-summarization-model))
         (user-error "No meta description prompt found for language: %s" (or (tlon-validate-language language 'name) language))))))
 
 ;;;;; Change propagation
@@ -2447,6 +2448,7 @@ If nil, use the default model."
     ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
     ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
     ("s S" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
+    ("s M" "create meta description"                  tlon-ai-create-meta-description)
     ""
     "Summarize options"
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
@@ -2484,7 +2486,6 @@ If nil, use the default model."
     ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)
-    ("m d" "create meta description"                  tlon-ai-create-meta-description)
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
