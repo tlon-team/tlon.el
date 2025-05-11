@@ -451,7 +451,7 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
             ;; 2. At the start of next-key's line (if key in candidates and next-key was found).
             (insert new-field "\n"))))
         ;; (tlon-yaml-reorder-metadata) ; This would re-sort; not called here directly.
-        ))))
+        )))
 
 ;;;###autoload
 (defun tlon-yaml-insert-original-path ()
