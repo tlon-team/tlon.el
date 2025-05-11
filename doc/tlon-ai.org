@@ -235,7 +235,7 @@ It retrieves the main content of the current buffer (using ~tlon-md-read-content
 - Engaging for search engine users.
 - Highlighting the key takeaway or unique value.
 
-The AI's response is then inserted as the value for the =meta= key in the front matter using ~tlon-yaml-insert-field~. If a =meta= field already exists, the user will be prompted to confirm its replacement.
+The AI's response is then inserted as the value for the =meta= key in the front matter using ~tlon-yaml-insert-field~. If a =meta= field already exists, the user will be prompted to confirm its replacement. The model used for generation can be customized via ~tlon-ai-summarization-model~.
 
 *** Setting Language in BibTeX Entries
 :PROPERTIES:
