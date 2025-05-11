@@ -538,15 +538,35 @@ is `translation_key', return the BibTeX key of the translation"
   "Delete the YAML field with KEY in FILE."
   (let ((key (or key (completing-read "Field: " (tlon-yaml-get-valid-keys))))
 	(file (or file (buffer-file-name))))
-    (if-let ((metadata (tlon-yaml-get-metadata file)))
-	(if (assoc key metadata)
+    (if-let ((metadata (tlon-yaml-get-metadata file))) ; Check if metadata section exists
+	(if (assoc key metadata) ; Check if key exists in parsed metadata
 	    (with-current-buffer (find-file-noselect file)
-	      (goto-char (point-min))
-	      (re-search-forward (format "%s:.*\n" key))
-	      (delete-region (match-beginning 0) (match-end 0))
-	      (save-buffer))
-	  (user-error "Key `%s' not found in file `%s'" key file))
-      (user-error "File does not appear to contain a metadata section"))))
+	      (save-excursion ; Preserve point if called interactively
+                (goto-char (point-min))
+                (if (re-search-forward (format "^%s:[ \t]*" key) nil t) ; Find "key:" possibly followed by spaces/tabs
+                    (let ((field-start (match-beginning 0))
+                          field-end)
+                      ;; Determine the end of the field
+                      (goto-char (line-end-position)) ; Go to end of the "key: ..." line
+                      (forward-line 1) ; Move to the beginning of the next line
+
+                      ;; Loop to consume indented lines (for block scalars like 'meta: >')
+                      ;; The loop continues as long as the current line is indented
+                      ;; AND it's not the closing YAML delimiter.
+                      (while (and (not (eobp))
+                                  (looking-at "[ \t]") ; Current line starts with space/tab (is indented)
+                                  (not (looking-at-p (regexp-quote tlon-yaml-delimiter)))) ; And not the YAML delimiter
+                        (forward-line 1))
+                      ;; After the loop, point is at the beginning of the first line
+                      ;; that is NOT part of the multi-line value (or at eobp, or at '---').
+                      (setq field-end (point))
+                      (delete-region field-start field-end)
+                      (save-buffer))
+                  ;; This case should ideally not be reached if `(assoc key metadata)` was true,
+                  ;; indicating an inconsistency between parsed metadata and file content.
+                  (user-error "Key `%s' was in parsed metadata but regex search failed in file `%s'." key file))))
+	  (user-error "Key `%s' not found in metadata of file `%s'" key file))
+      (user-error "File `%s' does not appear to contain a metadata section" file))))
 
 ;; TODO: Handle multiline fields, specifically `description’
 ;; TODO: make it throw an error unless looking at metadata
