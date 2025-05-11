@@ -394,21 +394,29 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
 	(if (y-or-n-p (format "Field '%s' already exists; replace?" key))
 	    (tlon-yaml-delete-field key)
 	  (user-error "Aborted")))
-      (let* ((value (or value
+      (let* ((value (or value ;; This `value` is the raw string from AI or user input.
 			(completing-read (format "%s: " key)
 					 (tlon-yaml-get-key-values key))))
-	     (formatted-value (cond
-			       ((or (vectorp value) (listp value))
-				(format "[%s]"
-					(mapconcat (lambda (item)
-						     (format "\"%s\"" item))
-						   (if (vectorp value)
-						       (append value nil)
-						     value)
-						   ", ")))
-                               ((stringp value) value)
-                               (t (format "%s" value))))
-             (new-field (format "%-20s %s" (concat key ":") formatted-value))
+             (new-field
+              (if (string= key "meta") ;; Check if the key is "meta"
+                  ;; Format for "meta" using literal block scalar style.
+                  ;; (string-trim value) removes potential leading/trailing newlines from AI.
+                  ;; (replace-regexp-in-string "\n" "\n  " ...) ensures subsequent lines are indented.
+                  (format "%s: >\n%s" key
+                          (concat "  " (replace-regexp-in-string "\n" "\n  " (string-trim value))))
+                ;; Original formatting logic for other keys
+                (let ((formatted-value (cond
+                                        ((or (vectorp value) (listp value))
+                                         (format "[%s]"
+                                                 (mapconcat (lambda (item)
+                                                              (format "\"%s\"" item))
+                                                            (if (vectorp value)
+                                                                (append value nil)
+                                                              value)
+                                                            ", ")))
+                                        ((stringp value) value)
+                                        (t (format "%s" value)))))
+                  (format "%-20s %s" (concat key ":") formatted-value))))
              (target-pos (cl-position key candidates :test #'string=)))
         (goto-char (point-min))
         (forward-line)
