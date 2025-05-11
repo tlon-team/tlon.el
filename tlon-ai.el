@@ -2448,7 +2448,7 @@ If nil, use the default model."
     ("s p" "get abstract with AI from PDF"            tlon-get-abstract-with-ai-from-pdf)
     ("s y" "get synopsis with AI"                     tlon-get-synopsis-with-ai)
     ("s S" "shorten abstract with AI"                 tlon-shorten-abstract-with-ai)
-    ("s M" "create meta description"                  tlon-ai-create-meta-description)
+    ("s m" "create meta description"                  tlon-ai-create-meta-description)
     ""
     "Summarize options"
     ("s -b" "batch"                                   tlon-ai-batch-fun-infix)
