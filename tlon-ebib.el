@@ -71,7 +71,7 @@ defaults to `tlon-ebib-api-base-url'."
               (forward-char) ; Move past the empty line separating headers and body
               (setq entries-text (buffer-substring (point) (point-max))))
           (user-error "Could not parse response from API"))
-        (kill-buffer buffer)))
+        (kill-buffer response-buffer)))
     (if entries-text
         (with-current-buffer (get-buffer-create "*EA Entries*")
           (erase-buffer)
