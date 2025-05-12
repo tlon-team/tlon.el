@@ -53,12 +53,12 @@
 
 (defun tlon-ebib-get-entries (&optional base-url)
   "Retrieve entries from the EA International API.
-Optional BASE-URL specifies the API endpoint base URL.
-If not provided, defaults to https://local-dev.ea.international."
+Optional BASE-URL specifies the API endpoint base URL. If not provided,
+defaults to `tlon-ebib-api-base-url'."
   (interactive)
   (let* ((url-request-method "GET")
          (url-request-extra-headers '(("accept" . "text/plain")))
-         (base (or base-url "https://local-dev.ea.international"))
+         (base (or base-url tlon-ebib-api-base-url))
          (endpoint "/api/entries")
          (url (concat base endpoint))
          (buffer (url-retrieve-synchronously url t)))
@@ -107,7 +107,7 @@ Returns the authentication token or nil if authentication failed."
         (kill-buffer)))
     (when auth-data
       (setq tlon-ebib-auth-token (gethash "access_token" auth-data))
-      ;; Set token expiry to 30 minutes from now (typical JWT expiry)
+      ;; Set token expiry to 30 minutes from now (typical JWT expiry).
       (setq tlon-ebib-auth-token-expiry (time-add (current-time) (seconds-to-time (* 30 60))))
       tlon-ebib-auth-token)))
 
@@ -171,11 +171,11 @@ Returns the token or nil if authentication failed."
           (kill-buffer response-buffer)))
       response-data)))
 
-(defun ea-check-or-insert-name (name)
+(defun tlon-ebib-check-or-insert-name (name)
   "Check if NAME exists in the database, and insert it if unambiguous.
-If the name doesn't exist and there are no similar names, it will be inserted.
-Otherwise, it will report whether the name matches exactly or is similar to
-existing names."
+If the name doesn't exist and there are no similar names, it will be
+inserted. Otherwise, it will report whether the name matches exactly or is
+similar to existing names."
   (interactive "sName to check or insert: ")
   (unless (tlon-ebib-ensure-auth)
     (error "Authentication failed"))
@@ -246,8 +246,10 @@ existing names."
 ;;;###autoload (autoload 'tlon-ebib-menu "tlon-ebib" nil t)
 (transient-define-prefix tlon-ebib-menu ()
   "Menu for `ebib' functions."
-  ;; TODO: create menu
-  )
+  ["Ebib Actions"
+   ("g" "Get entries" tlon-ebib-get-entries)
+   ("c" "Check name" tlon-ebib-check-name)
+   ("i" "Check or insert name" tlon-ebib-check-or-insert-name)])
 
 (provide 'tlon-ebib)
 ;;; tlon-ebib.el ends here
