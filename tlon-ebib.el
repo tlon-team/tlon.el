@@ -140,10 +140,9 @@ Returns the token or nil if authentication failed."
           (setq response-data (tlon-ebib--parse-json-response response-buffer))
         (message "Error checking name: HTTP status %d" status-code))
       (kill-buffer response-buffer))
-    (tlon-ebib--display-result-buffer "*EA Name Check*"
-                                      (format "Name check result for: %s" name)
-                                      #'tlon-ebib--format-check-name-result
-                                      response-data)
+    (tlon-ebib--display-result-buffer (format "Name check result for: %s" name)
+				      #'tlon-ebib--format-check-name-result
+				      response-data)
     response-data))
 
 (defun tlon-ebib-check-or-insert-name (name)
@@ -165,10 +164,9 @@ similar to existing names."
       ;; Parse response even on error, as it might contain details
       (setq response-data (tlon-ebib--parse-json-response response-buffer))
       (kill-buffer response-buffer))
-    (tlon-ebib--display-result-buffer "*EA Name Check/Insert*"
-                                      (format "Name check/insert result for: %s" name)
-                                      #'tlon-ebib--format-check-insert-name-result
-                                      (list :status status-code :data response-data))
+    (tlon-ebib--display-result-buffer (format "Name check/insert result for: %s" name)
+				      #'tlon-ebib--format-check-insert-name-result
+				      (list :status status-code :data response-data))
     (list :status status-code :data response-data)))
 
 ;;;;; Internal Helpers
@@ -220,12 +218,11 @@ Returns the parsed data (hash-table) or nil on error."
               (json-read)
             (error (message "Error parsing JSON response: %s" err) nil)))))))
 
-(defun tlon-ebib--display-result-buffer (buffer-name title formatter-fn data)
+(defun tlon-ebib--display-result-buffer (title formatter-fn data)
   "Write TITLE and formatted DATA (via FORMATTER-FN) to `tlon-ebib-file-temp`.
-The BUFFER-NAME argument is ignored. Opens `tlon-ebib-file-temp` after writing.
-TITLE is the initial title string for the file content.
-FORMATTER-FN is a function that takes DATA and inserts formatted content into the
-current buffer for writing."
+Opens `tlon-ebib-file-temp` after writing. TITLE is the initial title string for
+the file content. FORMATTER-FN is a function that takes DATA and inserts
+formatted content into the current buffer for writing."
   (with-temp-buffer
     (let ((inhibit-read-only t)) ; Ensure buffer is modifiable
       ;; Content will be written to a fresh temp buffer, so erase is not needed.
