@@ -44,6 +44,7 @@
     ("a" "AI"                             tlon-ai-menu)
     ("c" "clock"                          tlon-clock-menu)
     ("H-d" "dict"                         tlon-dict-menu)
+    ("e" "ebib"                           tlon-ebib-menu)
     ("f" "files"                          tlon-files-menu)
     ("g" "glossary"                       tlon-glossary-menu)
     ("i" "images"                         tlon-images-menu)
