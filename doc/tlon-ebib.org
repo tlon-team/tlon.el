@@ -57,7 +57,7 @@ This section lists non-interactive functions and variables used internally.
 :END:
 
 #+findex: tlon-ebib-authenticate
-+ ~tlon-ebib-authenticate~ :: Performs authentication against the API using credentials (~tlon-ebib-api-username~, ~tlon-ebib-api-password~) fetched via =auth-source=. Stores the obtained access token in ~tlon-ebib-auth-token~ and sets its expiry time in ~tlon-ebib-auth-token-expiry~. Returns the token on success, =nil= otherwise.
++ ~tlon-ebib-authenticate~ :: Performs authentication against the API using credentials (~tlon-ebib-api-username~, ~tlon-ebib-api-password~) fetched via =auth-source=. Uses ~tlon-ebib--make-request~ and ~tlon-ebib--parse-json-response~. Stores the obtained access token in ~tlon-ebib-auth-token~ and sets its expiry time in ~tlon-ebib-auth-token-expiry~. Returns the token on success, =nil= otherwise.
 
 #+findex: tlon-ebib-ensure-auth
 + ~tlon-ebib-ensure-auth~ :: Checks if the current authentication token (~tlon-ebib-auth-token~) is valid and not expired. If not, it calls ~tlon-ebib-authenticate~ to refresh it. Returns the valid token or =nil= if authentication fails. This function is called by commands requiring authentication.
@@ -76,3 +76,31 @@ This section lists non-interactive functions and variables used internally.
 
 #+vindex: tlon-ebib-api-password
 + ~tlon-ebib-api-password~ :: The password for API authentication. Retrieved securely using =auth-source-pass-get= based on the API URL and username.
+
+*** API Request Handling
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib-api-internals
+:END:
+
+#+findex: tlon-ebib--make-request
++ ~tlon-ebib--make-request~ :: Central helper function for making HTTP requests to the API. Handles URL construction, setting request method, data, headers (including authentication token if =AUTH-REQUIRED= is non-nil), and calling =url-retrieve-synchronously=. Returns the response buffer or signals an error.
+
+#+findex: tlon-ebib--get-response-status-code
++ ~tlon-ebib--get-response-status-code~ :: Extracts the HTTP status code from the first line of a response =BUFFER=.
+
+#+findex: tlon-ebib--parse-json-response
++ ~tlon-ebib--parse-json-response~ :: Parses the JSON content found after the headers in a response =BUFFER=. Returns a hash-table or =nil= on error.
+
+*** Result Display
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib-display-internals
+:END:
+
+#+findex: tlon-ebib--display-result-buffer
++ ~tlon-ebib--display-result-buffer~ :: Creates or reuses a buffer named =BUFFER-NAME=, inserts a =TITLE=, calls =FORMATTER-FN= with =DATA= to populate the buffer content, and displays it.
+
+#+findex: tlon-ebib--format-check-name-result
++ ~tlon-ebib--format-check-name-result~ :: Formatter function used by ~tlon-ebib--display-result-buffer~ to display the results from ~tlon-ebib-check-name~. Takes the parsed JSON =DATA= (hash-table).
+
+#+findex: tlon-ebib--format-check-insert-name-result
++ ~tlon-ebib--format-check-insert-name-result~ :: Formatter function used by ~tlon-ebib--display-result-buffer~ to display the results from ~tlon-ebib-check-or-insert-name~. Takes a plist =RESULT= containing =:status= and =:data=. Handles different HTTP status codes (200, 409, 422, etc.) and formats the output accordingly.
