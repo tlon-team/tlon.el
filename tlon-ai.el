@@ -338,7 +338,8 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 ;;;;; Meta Description
 
 (defconst tlon-ai-create-meta-description-prompt
-  `(
+  `((:prompt ,(format "Your task is to generate a short text optimized for the 'meta' attribute of the HTML 'meta' element based on the content of the informative article included below: %s. The text should consist of a single sentence that does not exceed 160 characters, adequately summarizes the main topic of the article, and naturally incorporates the main topic/keywords. Return *only* the text of the meta description itself, without introductory phrases, comments, or Markdown formatting." tlon-ai-string-wrapper)
+	     :language "en")
     (:prompt ,(format "Tu tarea es generar un texto breve optimizado para el atributo \"meta\" del elemento HTML \"meta\" basado en el contenido del artículo informativo que se incluye a continuación: %s. El texto debe consistir en una sola oración no supere los 160 caracteres, resuma adecuadamente el tema principal del artículo, e incorpore de forma natural el tema principal/palabras clave. Devuelve *sólo* el texto de la meta descripción en sí, sin frases introductorias, comentarios o formato Markdown." tlon-ai-string-wrapper)
 	     :language "es"))
   "Prompts for creating a meta description for an article.")
