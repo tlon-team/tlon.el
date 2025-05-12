@@ -161,7 +161,7 @@ Returns the token or nil if authentication failed."
                                 (insert "Conflicts: "
                                         (mapconcat #'identity
                                                    (gethash "conflicts" response-data)
-                                                   ", ") 
+                                                   ", ")
                                         "\n")))
                           (insert "No data returned"))
                         (display-buffer (current-buffer))))
