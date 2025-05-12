@@ -110,13 +110,7 @@ DIR is the directory where the repo is stored."
 ;;;###autoload (autoload 'tlon-magit-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-magit-repo-menu ()
   "Browse a Tlön repo in Magit."
-  [["Docs"
-    ("d" "tlon-docs"                    tlon-magit-browse-docs)
-    ""
-    "Tlön site"
-    ("t t" "tlon"                         tlon-magit-browse-tlon)
-    ("t c" "tlon-content"                 tlon-magit-browse-tlon-content)]
-   ["Babel"
+  [["Babel"
     ("b c" "babel-core"                   tlon-magit-browse-babel-core)
     ("b f" "babel-refs"                   tlon-magit-browse-babel-refs)
     ""
@@ -136,7 +130,7 @@ DIR is the directory where the repo is stored."
     ("q j" "uqbar-ja"                     tlon-magit-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)]
    ["EA News"
-    ("n n" "ean"                          tlon-magit-browse-ean)
+    ("n" "ean"                          tlon-magit-browse-ean)
     ""
     "EA International"
     ("i" "ea.international"             tlon-magit-browse-ea-international)
@@ -156,7 +150,11 @@ DIR is the directory where the repo is stored."
     ""
     "utilitarianism"
     ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)]
+    ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)
+    ""
+    "Tlön site"
+    ("t t" "tlon"                         tlon-magit-browse-tlon)
+    ("t c" "tlon-content"                 tlon-magit-browse-tlon-content)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-magit-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-magit-browse-meetings-fede-pablo)
@@ -166,7 +164,10 @@ DIR is the directory where the repo is stored."
     "Clock"
     ("c l" "Leo"                          tlon-magit-browse-clock-leo)
     ("c f" "Fede"                         tlon-magit-browse-clock-fede)
-    ("c p" "Pablo"                        tlon-magit-browse-clock-pablo)]])
+    ("c p" "Pablo"                        tlon-magit-browse-clock-pablo)
+    ""
+    "Docs"
+    ("d" "tlon-docs"                    tlon-magit-browse-docs)]])
 
 ;;;;; Browse repo in Dired
 
@@ -186,13 +187,7 @@ DIR is the directory where the repo is stored."
 ;;;###autoload (autoload 'tlon-dired-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-dired-repo-menu ()
   "Browse a Tlön repo in Dired."
-  [["Docs"
-    ("d" "tlon-docs"                    tlon-dired-browse-docs)
-    ""
-    "Tlön site"
-    ("t t" "tlon"                         tlon-dired-browse-tlon)
-    ("t c" "tlon-content"                 tlon-dired-browse-tlon-content)]
-   ["Babel"
+  [["Babel"
     ("b c" "babel-core"                   tlon-dired-browse-babel-core)
     ("b f" "babel-refs"                   tlon-dired-browse-babel-refs)
     ""
@@ -215,7 +210,7 @@ DIR is the directory where the repo is stored."
     ("i" "ea.international"             tlon-dired-browse-ea-international)
     ""
     "EA News"
-    ("n n" "ean"                          tlon-dired-browse-ean)
+    ("n" "ean"                          tlon-dired-browse-ean)
     ""
     "80k podcast"
     ("p" "80k podcast"                  tlon-dired-browse-80k-podcast)
@@ -232,7 +227,11 @@ DIR is the directory where the repo is stored."
     ""
     "utilitarianism"
     ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)]
+    ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
+    ""
+    "Tlön site"
+    ("t t" "tlon"                         tlon-dired-browse-tlon)
+    ("t c" "tlon-content"                 tlon-dired-browse-tlon-content)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-dired-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-dired-browse-meetings-fede-pablo)
@@ -242,7 +241,10 @@ DIR is the directory where the repo is stored."
     "Clock"
     ("c l" "Leo"                          tlon-dired-browse-clock-leo)
     ("c f" "Fede"                         tlon-dired-browse-clock-fede)
-    ("c p" "Pablo"                        tlon-dired-browse-clock-pablo)]])
+    ("c p" "Pablo"                        tlon-dired-browse-clock-pablo)
+    ""
+    "Docs"
+    ("d" "tlon-docs"                    tlon-dired-browse-docs)]])
 
 ;;;;; Open file in repo
 
