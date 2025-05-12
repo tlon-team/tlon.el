@@ -51,60 +51,51 @@
 
 ;;;; Functions
 
+;;;;; Public API
+
 (defun tlon-ebib-get-entries (&optional base-url)
   "Retrieve entries from the EA International API.
 Optional BASE-URL specifies the API endpoint base URL. If not provided,
 defaults to `tlon-ebib-api-base-url'."
   (interactive)
-  (let* ((url-request-method "GET")
-         (url-request-extra-headers '(("accept" . "text/plain")))
-         (base (or base-url tlon-ebib-api-base-url))
-         (endpoint "/api/entries")
-         (url (concat base endpoint))
-         (buffer (url-retrieve-synchronously url t)))
-    (if buffer
-        (with-current-buffer buffer
+  (let* ((response-buffer (tlon-ebib--make-request "GET" "/api/entries" nil
+                                                   '(("accept" . "text/plain"))
+                                                   nil ; No auth required
+                                                   base-url))
+         entries-text)
+    (when response-buffer
+      (with-current-buffer response-buffer
+        (goto-char (point-min))
+        (if (search-forward-regexp "^$" nil t)
+            (progn
+              (forward-char) ; Move past the empty line separating headers and body
+              (setq entries-text (buffer-substring (point) (point-max))))
+          (user-error "Could not parse response from API"))
+        (kill-buffer buffer)))
+    (if entries-text
+        (with-current-buffer (get-buffer-create "*EA Entries*")
+          (erase-buffer)
+          (insert entries-text)
+          (bibtex-mode)
           (goto-char (point-min))
-          (if (search-forward-regexp "^$" nil t)
-              (progn
-                (forward-char)
-                (let ((entries-text (buffer-substring (point) (point-max))))
-                  (kill-buffer buffer)
-                  (with-current-buffer (get-buffer-create "*EA Entries*")
-                    (erase-buffer)
-                    (insert entries-text)
-                    (bibtex-mode)
-                    (goto-char (point-min))
-                    (display-buffer (current-buffer))
-                    (message "Retrieved %d entries"
-                             (how-many "@\\w+{" (point-min) (point-max))))))
-            (user-error "Error: Could not parse response")
-            (kill-buffer buffer)))
-      (user-error "Error: Could not connect to API"))))
+          (display-buffer (current-buffer))
+          (message "Retrieved %d entries"
+                   (how-many "@\\w+{" (point-min) (point-max))))
+      (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib-authenticate ()
   "Authenticate with the EA International API.
 Returns the authentication token or nil if authentication failed."
   (interactive)
-  (let* ((url-request-method "POST")
-         (url-request-extra-headers
-          '(("Content-Type" . "application/x-www-form-urlencoded")))
-         (url-request-data
-          (concat "grant_type=password"
-                  "&username=" (url-hexify-string tlon-ebib-api-username)
-                  "&password=" (url-hexify-string tlon-ebib-api-password)))
-         (auth-url (concat tlon-ebib-api-base-url "/api/auth/token"))
-         (response-buffer (url-retrieve-synchronously auth-url t))
+  (let* ((data (concat "grant_type=password"
+                       "&username=" (url-hexify-string tlon-ebib-api-username)
+                       "&password=" (url-hexify-string tlon-ebib-api-password)))
+         (headers '(("Content-Type" . "application/x-www-form-urlencoded")))
+         (response-buffer (tlon-ebib--make-request "POST" "/api/auth/token" data headers nil))
          auth-data)
     (when response-buffer
-      (with-current-buffer response-buffer
-        (goto-char (point-min))
-        (when (search-forward-regexp "^$" nil t)
-          (let ((json-object-type 'hash-table)
-                (json-array-type 'list)
-                (json-key-type 'string))
-            (setq auth-data (json-read))))
-        (kill-buffer)))
+      (setq auth-data (tlon-ebib--parse-json-response response-buffer))
+      (kill-buffer response-buffer))
     (when auth-data
       (setq tlon-ebib-auth-token (gethash "access_token" auth-data))
       ;; Set token expiry to 30 minutes from now (typical JWT expiry).
@@ -124,52 +115,24 @@ Returns the token or nil if authentication failed."
   "Check if NAME exists in the EA International database."
   (interactive "sName to check: ")
   (unless (tlon-ebib-ensure-auth)
-    (error "Authentication failed"))
-  (let* ((url-request-method "POST")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("accept" . "application/json")
-            ("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token))))
-         (url-request-data
-          (json-encode `(("name" . ,name))))
-         (check-url (concat tlon-ebib-api-base-url "/api/names/check"))
-         (response-buffer (url-retrieve-synchronously check-url t))
-         response-data)
+    (user-error "Authentication failed"))
+  (let* ((data (json-encode `(("name" . ,name))))
+         (headers '(("Content-Type" . "application/json")
+                    ("accept" . "application/json")))
+         (response-buffer (tlon-ebib--make-request "POST" "/api/names/check" data headers t))
+         response-data
+         status-code)
     (when response-buffer
-      (with-current-buffer response-buffer
-        (goto-char (point-min))
-        (let ((status-line (buffer-substring (point) (line-end-position))))
-          (if (string-match "HTTP/[0-9.]+ \\([0-9]+\\)" status-line)
-              (let ((status-code (string-to-number (match-string 1 status-line))))
-                (if (= status-code 200)
-                    (progn
-                      (when (search-forward-regexp "^$" nil t)
-                        (let ((json-object-type 'hash-table)
-                              (json-array-type 'list)
-                              (json-key-type 'string))
-                          (setq response-data (json-read))))
-                      (kill-buffer)
-                      (with-current-buffer (get-buffer-create "*EA Name Check*")
-                        (erase-buffer)
-                        (insert "Name check result for: " name "\n\n")
-                        (if response-data
-                            (progn
-                              (insert "Name: " (gethash "name" response-data) "\n")
-                              (when (gethash "exists" response-data)
-                                (insert "Exists: Yes\n"))
-                              (when (gethash "conflicts" response-data)
-                                (insert "Conflicts: "
-                                        (mapconcat #'identity
-                                                   (gethash "conflicts" response-data)
-                                                   ", ")
-                                        "\n")))
-                          (insert "No data returned"))
-                        (display-buffer (current-buffer))))
-                  (progn
-                    (kill-buffer response-buffer)
-                    (message "Error: HTTP status %d" status-code)))))
-          (kill-buffer response-buffer)))
-      response-data)))
+      (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+      (if (= status-code 200)
+          (setq response-data (tlon-ebib--parse-json-response response-buffer))
+        (message "Error checking name: HTTP status %d" status-code))
+      (kill-buffer response-buffer))
+    (tlon-ebib--display-result-buffer "*EA Name Check*"
+                                      (format "Name check result for: %s" name)
+                                      #'tlon-ebib--format-check-name-result
+                                      response-data)
+    response-data))
 
 (defun tlon-ebib-check-or-insert-name (name)
   "Check if NAME exists in the database, and insert it if unambiguous.
@@ -178,68 +141,142 @@ inserted. Otherwise, it will report whether the name matches exactly or is
 similar to existing names."
   (interactive "sName to check or insert: ")
   (unless (tlon-ebib-ensure-auth)
-    (error "Authentication failed"))
-  (let* ((url-request-method "POST")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("accept" . "application/json")
-            ("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token))))
-         (url-request-data
-          (json-encode `(("name" . ,name))))
-         (check-insert-url (concat tlon-ebib-api-base-url "/api/names/check-insert"))
-         (response-buffer (url-retrieve-synchronously check-insert-url t))
+    (user-error "Authentication failed"))
+  (let* ((data (json-encode `(("name" . ,name))))
+         (headers '(("Content-Type" . "application/json")
+                    ("accept" . "application/json")))
+         (response-buffer (tlon-ebib--make-request "POST" "/api/names/check-insert" data headers t))
          response-data
          status-code)
     (when response-buffer
-      (with-current-buffer response-buffer
-        (goto-char (point-min))
-        (let ((status-line (buffer-substring (point) (line-end-position))))
-          (if (string-match "HTTP/[0-9.]+ \\([0-9]+\\)" status-line)
-              (setq status-code (string-to-number (match-string 1 status-line)))
-            (setq status-code 0))
-          (when (search-forward-regexp "^$" nil t)
-            (let ((json-object-type 'hash-table)
-                  (json-array-type 'list)
-                  (json-key-type 'string))
-              (condition-case nil
-                  (setq response-data (json-read))
-                (error nil))))
-          (kill-buffer)))
-      (with-current-buffer (get-buffer-create "*EA Name Check/Insert*")
-        (erase-buffer)
-        (insert "Name check/insert result for: " name "\n\n")
-        (cond
-         ;; Success - name was inserted or matched exactly
-         ((= status-code 200)
-          (insert "Status: Success\n")
-          (when response-data
-            (when (gethash "name" response-data)
-              (insert "Name: " (gethash "name" response-data) "\n"))
-            (when (gethash "message" response-data)
-              (insert "Message: " (gethash "message" response-data) "\n"))))
-         ;; Conflict - name is similar to existing names
-         ((= status-code 409)
-          (insert "Status: Conflict - Name not inserted\n")
-          (when response-data
-            (when (gethash "message" response-data)
-              (insert "Message: " (gethash "message" response-data) "\n"))
-            (when (gethash "similar_names" response-data)
-              (insert "Similar names:\n")
-              (dolist (similar-name (gethash "similar_names" response-data))
-                (insert "  - " similar-name "\n")))))
-         ;; Validation error
-         ((= status-code 422)
-          (insert "Status: Validation Error\n")
-          (when (and response-data (gethash "detail" response-data))
-            (insert "Details:\n")
-            (dolist (detail (gethash "detail" response-data))
-              (when (hash-table-p detail)
-                (insert "  - " (gethash "msg" detail "") "\n")))))
-         ;; Other error
-         (t
-          (insert "Status: Error (HTTP " (number-to-string status-code) ")\n")))
-        (display-buffer (current-buffer))))
+      (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+      ;; Parse response even on error, as it might contain details
+      (setq response-data (tlon-ebib--parse-json-response response-buffer))
+      (kill-buffer response-buffer))
+    (tlon-ebib--display-result-buffer "*EA Name Check/Insert*"
+                                      (format "Name check/insert result for: %s" name)
+                                      #'tlon-ebib--format-check-insert-name-result
+                                      (list :status status-code :data response-data))
     (list :status status-code :data response-data)))
+
+;;;;; Internal Helpers
+
+(defun tlon-ebib--make-request (method endpoint data headers &optional auth-required base-url)
+  "Make an HTTP request to the EA International API.
+METHOD is the HTTP method (e.g., \"GET\", \"POST\").
+ENDPOINT is the API endpoint path (e.g., \"/api/entries\").
+DATA is the request body data (string or nil).
+HEADERS is an alist of extra request headers.
+AUTH-REQUIRED non-nil means authentication token will be added.
+Optional BASE-URL overrides `tlon-ebib-api-base-url'."
+  (let* ((url-request-method method)
+         (url-request-data data)
+         (url-request-extra-headers headers)
+         (base (or base-url tlon-ebib-api-base-url))
+         (url (concat base endpoint))
+         response-buffer)
+    (when auth-required
+      (unless (tlon-ebib-ensure-auth)
+        (user-error "Authentication required but failed"))
+      (add-to-list 'url-request-extra-headers
+                   `("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token)) t))
+    (setq response-buffer (url-retrieve-synchronously url t))
+    (unless response-buffer
+      (user-error "Could not connect to API at %s" url))
+    response-buffer))
+
+(defun tlon-ebib--get-response-status-code (buffer)
+  "Extract HTTP status code from response BUFFER."
+  (with-current-buffer buffer
+    (goto-char (point-min))
+    (let ((status-line (buffer-substring-no-properties (point) (line-end-position))))
+      (if (string-match "HTTP/[0-9.]+ \\([0-9]+\\)" status-line)
+          (string-to-number (match-string 1 status-line))
+        (user-error "Could not parse HTTP status line: %s" status-line)))))
+
+(defun tlon-ebib--parse-json-response (buffer)
+  "Parse JSON data from response BUFFER.
+Returns the parsed data (hash-table) or nil on error."
+  (when buffer
+    (with-current-buffer buffer
+      (goto-char (point-min))
+      (when (search-forward-regexp "^$" nil t) ; Move past headers
+        (let ((json-object-type 'hash-table)
+              (json-array-type 'list)
+              (json-key-type 'string))
+          (condition-case err
+              (json-read)
+            (error (message "Error parsing JSON response: %s" err) nil)))))))
+
+(defun tlon-ebib--display-result-buffer (buffer-name title formatter-fn data)
+  "Display DATA in BUFFER-NAME using FORMATTER-FN.
+TITLE is the initial title string for the buffer.
+FORMATTER-FN is a function that takes DATA and inserts formatted content."
+  (with-current-buffer (get-buffer-create buffer-name)
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (insert title "\n\n")
+      (funcall formatter-fn data)
+      (goto-char (point-min)))
+    (display-buffer (current-buffer))))
+
+(defun tlon-ebib--format-check-name-result (data)
+  "Format the result DATA from `tlon-ebib-check-name` for display."
+  (if data
+      (progn
+        (insert "Name: " (gethash "name" data "<unknown>") "\n")
+        (if (gethash "exists" data)
+            (insert "Exists: Yes\n")
+          (insert "Exists: No\n"))
+        (when (gethash "conflicts" data)
+          (insert "Conflicts: "
+                  (mapconcat #'identity (gethash "conflicts" data) ", ")
+                  "\n")))
+    (insert "No data returned or error occurred.")))
+
+(defun tlon-ebib--format-check-insert-name-result (result)
+  "Format the RESULT from `tlon-ebib-check-or-insert-name` for display.
+RESULT is a plist like (:status CODE :data DATA)."
+  (let ((status-code (plist-get result :status))
+        (response-data (plist-get result :data)))
+    (cond
+     ;; Success - name was inserted or matched exactly
+     ((= status-code 200)
+      (insert "Status: Success\n")
+      (when response-data
+        (when (gethash "name" response-data)
+          (insert "Name: " (gethash "name" response-data) "\n"))
+        (when (gethash "message" response-data)
+          (insert "Message: " (gethash "message" response-data) "\n"))))
+     ;; Conflict - name is similar to existing names
+     ((= status-code 409)
+      (insert "Status: Conflict - Name not inserted\n")
+      (when response-data
+        (when (gethash "message" response-data)
+          (insert "Message: " (gethash "message" response-data) "\n"))
+        (when (gethash "similar_names" response-data)
+          (insert "Similar names:\n")
+          (dolist (similar-name (gethash "similar_names" response-data))
+            (insert "  - " similar-name "\n")))))
+     ;; Validation error
+     ((= status-code 422)
+      (insert "Status: Validation Error\n")
+      (when (and response-data (gethash "detail" response-data))
+        (insert "Details:\n")
+        (dolist (detail (gethash "detail" response-data))
+          (if (hash-table-p detail) ; Handle FastAPI validation error structure
+              (insert (format "  - Field: %s, Error: %s\n"
+                              (mapconcat #'identity (gethash "loc" detail) ".")
+                              (gethash "msg" detail "")))
+            (insert (format "  - %s\n" detail)))))) ; Handle simpler error messages
+     ;; Other error
+     (t
+      (insert "Status: Error (HTTP " (number-to-string (or status-code 0)) ")\n")
+      (when response-data ; Display any message if available
+        (when (gethash "message" response-data)
+          (insert "Message: " (gethash "message" response-data) "\n"))
+        (when (gethash "detail" response-data) ; Handle FastAPI detail string
+          (insert "Detail: " (gethash "detail" response-data) "\n")))))))
 
 ;;;;; Menu
 
