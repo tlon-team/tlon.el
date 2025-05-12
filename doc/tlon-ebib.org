@@ -1,0 +1,78 @@
+#+title: tlon - Ebib Integration
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* Ebib Integration (=tlon-ebib.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib
+:END:
+
+This module provides functionality for interacting with an external bibliographic database API (referred to as EA International API in the code), primarily focused on retrieving BibTeX entries and managing author names. It handles authentication and provides commands to check for existing names and insert new ones if they are unambiguous.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib-dependencies
+:END:
+
++ =tlon-core=
++ =transient=
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib-commands
+:END:
+
+This section details the interactive commands provided by =tlon-ebib.el=.
+
+#+findex: tlon-ebib-get-entries
++ ~tlon-ebib-get-entries~ :: Retrieves all BibTeX entries from the configured API endpoint (~tlon-ebib-api-base-url~). Displays the retrieved entries in a new buffer named =*EA Entries*= in =bibtex-mode=.
+
+#+findex: tlon-ebib-check-name
++ ~tlon-ebib-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. Displays the results (existence, conflicts) in a buffer named =*EA Name Check*=.
+
+#+findex: tlon-ebib-check-or-insert-name
++ ~tlon-ebib-check-or-insert-name~ :: Checks if a given =NAME= exists. If it doesn't exist and there are no similar conflicting names found by the API, it inserts the name. Otherwise, it reports the status (success, conflict, validation error) and any relevant details (messages, similar names) in a buffer named =*EA Name Check/Insert*=. Requires authentication.
+
+#+findex: tlon-ebib-menu
++ ~tlon-ebib-menu~ :: Activates a =transient= menu interface providing quick access to the commands in this module.
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib-internals
+:END:
+
+This section lists non-interactive functions and variables used internally.
+
+*** Authentication
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib-auth-internals
+:END:
+
+#+findex: tlon-ebib-authenticate
++ ~tlon-ebib-authenticate~ :: Performs authentication against the API using credentials (~tlon-ebib-api-username~, ~tlon-ebib-api-password~) fetched via =auth-source=. Stores the obtained access token in ~tlon-ebib-auth-token~ and sets its expiry time in ~tlon-ebib-auth-token-expiry~. Returns the token on success, =nil= otherwise.
+
+#+findex: tlon-ebib-ensure-auth
++ ~tlon-ebib-ensure-auth~ :: Checks if the current authentication token (~tlon-ebib-auth-token~) is valid and not expired. If not, it calls ~tlon-ebib-authenticate~ to refresh it. Returns the valid token or =nil= if authentication fails. This function is called by commands requiring authentication.
+
+#+vindex: tlon-ebib-auth-token
++ ~tlon-ebib-auth-token~ :: Stores the current authentication token obtained from the API.
+
+#+vindex: tlon-ebib-auth-token-expiry
++ ~tlon-ebib-auth-token-expiry~ :: Stores the calculated expiry time for the current authentication token.
+
+#+vindex: tlon-ebib-api-base-url
++ ~tlon-ebib-api-base-url~ :: The base URL for the EA International API endpoint. Defaults to ="https://local-dev.ea.international"=.
+
+#+vindex: tlon-ebib-api-username
++ ~tlon-ebib-api-username~ :: The username for API authentication. Derived from the user's full name via ~tlon-user-lookup~.
+
+#+vindex: tlon-ebib-api-password
++ ~tlon-ebib-api-password~ :: The password for API authentication. Retrieved securely using =auth-source-pass-get= based on the API URL and username.
