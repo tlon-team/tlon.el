@@ -80,14 +80,11 @@ defaults to `tlon-ebib-api-base-url'."
 	  (user-error "Could not parse response from API"))
 	(kill-buffer response-buffer)))
     (if entries-text
-        (let ((num-entries 0))
-          (with-temp-buffer
-            (insert entries-text)
-            (goto-char (point-min))
-            (setq num-entries (how-many "@\\w+{" (point-min) (point-max)))
-            (write-file tlon-ebib-file-temp nil nil 'iso-8859-1)) ; Specify coding system
-          (find-file tlon-ebib-file-temp)
-          (message "Retrieved %d entries and saved to %s" num-entries tlon-ebib-file-temp))
+        (with-temp-buffer
+          (insert entries-text)
+          (goto-char (point-min))
+          (write-file tlon-ebib-file-temp nil nil 'iso-8859-1)) ; Specify coding system
+      (ebib-open-bibtex-file tlon-ebib-file-temp)
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib-authenticate ()
