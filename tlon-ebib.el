@@ -49,6 +49,12 @@
 (defvar tlon-ebib-api-password
   (auth-source-pass-get 'secret (concat "tlon/core/ea.international/" tlon-ebib-api-username)))
 
+;;;;; Files
+
+(defvar tlon-ebib-file-temp
+  (file-name-concat tlon-bibtex-dir "temp.bib")
+  "File containing the temporary bibliography.")
+
 ;;;; Functions
 
 ;;;;; Public API
