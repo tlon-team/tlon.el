@@ -46,7 +46,8 @@
 (defvar tlon-ebib-api-username
   (tlon-user-lookup :github :name user-full-name))
 
-(defvar tlon-ebib-api-password (auth-source-pass-get 'secret (concat "tlon/core/ea.international/" tlon-ebib-api-username)))
+(defvar tlon-ebib-api-password
+  (auth-source-pass-get 'secret (concat "tlon/core/ea.international/" tlon-ebib-api-username)))
 
 ;;;; Functions
 
@@ -170,12 +171,11 @@ Returns the token or nil if authentication failed."
           (kill-buffer response-buffer)))
       response-data)))
 
-(defun ea-check-or-insert-name (name &optional)
+(defun ea-check-or-insert-name (name)
   "Check if NAME exists in the database, and insert it if unambiguous.
 If the name doesn't exist and there are no similar names, it will be inserted.
 Otherwise, it will report whether the name matches exactly or is similar to
-existing names. Optional USERNAME and PASSWORD for authentication if not already
-authenticated."
+existing names."
   (interactive "sName to check or insert: ")
   (unless (tlon-ebib-ensure-auth)
     (error "Authentication failed"))
@@ -197,7 +197,6 @@ authenticated."
           (if (string-match "HTTP/[0-9.]+ \\([0-9]+\\)" status-line)
               (setq status-code (string-to-number (match-string 1 status-line)))
             (setq status-code 0))
-          
           (when (search-forward-regexp "^$" nil t)
             (let ((json-object-type 'hash-table)
                   (json-array-type 'list)
