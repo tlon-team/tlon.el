@@ -78,9 +78,9 @@ defaults to `tlon-ebib-api-base-url'."
                     (display-buffer (current-buffer))
                     (message "Retrieved %d entries"
                              (how-many "@\\w+{" (point-min) (point-max))))))
-            (message "Error: Could not parse response")
+            (user-error "Error: Could not parse response")
             (kill-buffer buffer)))
-      (message "Error: Could not connect to API"))))
+      (user-error "Error: Could not connect to API"))))
 
 (defun tlon-ebib-authenticate ()
   "Authenticate with the EA International API.
