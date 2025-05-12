@@ -92,10 +92,15 @@ Returns the authentication token or nil if authentication failed."
                        "&password=" (url-hexify-string tlon-ebib-api-password)))
          (headers '(("Content-Type" . "application/x-www-form-urlencoded")))
          (response-buffer (tlon-ebib--make-request "POST" "/api/auth/token" data headers nil))
-         auth-data)
+         auth-data status-code)
     (when response-buffer
-      (setq auth-data (tlon-ebib--parse-json-response response-buffer))
-      (kill-buffer response-buffer))
+      (unwind-protect
+          (progn
+            (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+            (if (= status-code 200)
+                (setq auth-data (tlon-ebib--parse-json-response response-buffer))
+              (user-error "Authentication failed: HTTP status %d" status-code)))
+        (kill-buffer response-buffer))) ; Ensure buffer is killed
     (when auth-data
       (setq tlon-ebib-auth-token (gethash "access_token" auth-data))
       ;; Set token expiry to 30 minutes from now (typical JWT expiry).
