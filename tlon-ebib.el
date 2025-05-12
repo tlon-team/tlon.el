@@ -58,29 +58,28 @@
 Optional BASE-URL specifies the API endpoint base URL. If not provided,
 defaults to `tlon-ebib-api-base-url'."
   (interactive)
-  (let* ((response-buffer (tlon-ebib--make-request "GET" "/api/entries" nil
-                                                   '(("accept" . "text/plain"))
-                                                   nil ; No auth required
-                                                   base-url))
-         entries-text)
-    (when response-buffer
+  (let (entries-text)
+    (when-let* ((response-buffer (tlon-ebib--make-request "GET" "/api/entries" nil
+							  '(("accept" . "text/plain"))
+							  nil ; No auth required
+							  base-url)))
       (with-current-buffer response-buffer
-        (goto-char (point-min))
-        (if (search-forward-regexp "^$" nil t)
-            (progn
-              (forward-char) ; Move past the empty line separating headers and body
-              (setq entries-text (buffer-substring (point) (point-max))))
-          (user-error "Could not parse response from API"))
-        (kill-buffer response-buffer)))
+	(goto-char (point-min))
+	(if (search-forward-regexp "^$" nil t)
+	    (progn
+	      (forward-char) ; Move past the empty line separating headers and body
+	      (setq entries-text (buffer-substring (point) (point-max))))
+	  (user-error "Could not parse response from API"))
+	(kill-buffer response-buffer)))
     (if entries-text
-        (with-current-buffer (get-buffer-create "*EA Entries*")
-          (erase-buffer)
-          (insert entries-text)
-          (bibtex-mode)
-          (goto-char (point-min))
-          (display-buffer (current-buffer))
-          (message "Retrieved %d entries"
-                   (how-many "@\\w+{" (point-min) (point-max))))
+	(with-current-buffer (get-buffer-create "*EA Entries*")
+	  (erase-buffer)
+	  (insert entries-text)
+	  (bibtex-mode)
+	  (goto-char (point-min))
+	  (display-buffer (current-buffer))
+	  (message "Retrieved %d entries"
+		   (how-many "@\\w+{" (point-min) (point-max))))
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib-authenticate ()
