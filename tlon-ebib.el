@@ -78,14 +78,14 @@ defaults to `tlon-ebib-api-base-url'."
 	  (user-error "Could not parse response from API"))
 	(kill-buffer response-buffer)))
     (if entries-text
-	(with-current-buffer (get-buffer-create "*EA Entries*")
-	  (erase-buffer)
-	  (insert entries-text)
-	  (bibtex-mode)
-	  (goto-char (point-min))
-	  (display-buffer (current-buffer))
-	  (message "Retrieved %d entries"
-		   (how-many "@\\w+{" (point-min) (point-max))))
+        (let ((num-entries 0))
+          (with-temp-buffer
+            (insert entries-text)
+            (goto-char (point-min))
+            (setq num-entries (how-many "@\\w+{" (point-min) (point-max)))
+            (write-file tlon-ebib-file-temp nil))
+          (find-file tlon-ebib-file-temp)
+          (message "Retrieved %d entries and saved to %s" num-entries tlon-ebib-file-temp))
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib-authenticate ()
@@ -219,16 +219,18 @@ Returns the parsed data (hash-table) or nil on error."
             (error (message "Error parsing JSON response: %s" err) nil)))))))
 
 (defun tlon-ebib--display-result-buffer (buffer-name title formatter-fn data)
-  "Display DATA in BUFFER-NAME using FORMATTER-FN.
-TITLE is the initial title string for the buffer.
-FORMATTER-FN is a function that takes DATA and inserts formatted content."
-  (with-current-buffer (get-buffer-create buffer-name)
-    (let ((inhibit-read-only t))
-      (erase-buffer)
+  "Write TITLE and formatted DATA (via FORMATTER-FN) to `tlon-ebib-file-temp`.
+The BUFFER-NAME argument is ignored. Opens `tlon-ebib-file-temp` after writing.
+TITLE is the initial title string for the file content.
+FORMATTER-FN is a function that takes DATA and inserts formatted content into the
+current buffer for writing."
+  (with-temp-buffer
+    (let ((inhibit-read-only t)) ; Ensure buffer is modifiable
+      ;; Content will be written to a fresh temp buffer, so erase is not needed.
       (insert title "\n\n")
       (funcall formatter-fn data)
-      (goto-char (point-min)))
-    (display-buffer (current-buffer))))
+      (write-file tlon-ebib-file-temp nil)) ; Write temp buffer contents to the file
+    (find-file tlon-ebib-file-temp))) ; Open the file
 
 (defun tlon-ebib--format-check-name-result (data)
   "Format the result DATA from `tlon-ebib-check-name` for display."
