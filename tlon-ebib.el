@@ -27,6 +27,8 @@
 
 ;;; Code:
 
+(require 'bibtex)
+(require 'ebib)
 (require 'tlon-core)
 (require 'transient)
 
