@@ -83,7 +83,7 @@ defaults to `tlon-ebib-api-base-url'."
             (insert entries-text)
             (goto-char (point-min))
             (setq num-entries (how-many "@\\w+{" (point-min) (point-max)))
-            (write-file tlon-ebib-file-temp nil))
+            (write-file tlon-ebib-file-temp nil nil 'iso-8859-1)) ; Specify coding system
           (find-file tlon-ebib-file-temp)
           (message "Retrieved %d entries and saved to %s" num-entries tlon-ebib-file-temp))
       (user-error "Failed to retrieve entries"))))
@@ -229,7 +229,7 @@ current buffer for writing."
       ;; Content will be written to a fresh temp buffer, so erase is not needed.
       (insert title "\n\n")
       (funcall formatter-fn data)
-      (write-file tlon-ebib-file-temp nil)) ; Write temp buffer contents to the file
+      (write-file tlon-ebib-file-temp nil nil 'iso-8859-1)) ; Specify coding system, write temp buffer contents to the file
     (find-file tlon-ebib-file-temp))) ; Open the file
 
 (defun tlon-ebib--format-check-name-result (data)
