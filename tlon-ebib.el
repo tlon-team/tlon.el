@@ -80,11 +80,11 @@ defaults to `tlon-ebib-api-base-url'."
 	  (user-error "Could not parse response from API"))
 	(kill-buffer response-buffer)))
     (if entries-text
-        (with-temp-buffer
-          (insert entries-text)
-          (goto-char (point-min))
-          (write-file tlon-ebib-file-temp nil nil 'iso-8859-1)) ; Specify coding system
-      (ebib-open-bibtex-file tlon-ebib-file-temp)
+        (let ((coding-system-for-write 'utf-8-unix))
+          (with-temp-buffer
+            (insert entries-text)
+            (write-file tlon-ebib-file-temp)
+	    (bibtex-count-entries)))
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib-authenticate ()
@@ -221,12 +221,12 @@ Opens `tlon-ebib-file-temp` after writing. TITLE is the initial title string for
 the file content. FORMATTER-FN is a function that takes DATA and inserts
 formatted content into the current buffer for writing."
   (with-temp-buffer
-    (let ((inhibit-read-only t)) ; Ensure buffer is modifiable
-      ;; Content will be written to a fresh temp buffer, so erase is not needed.
+    (let ((coding-system-for-write 'utf-8-unix)
+	  (inhibit-read-only t)) ; Ensure buffer is modifiable
       (insert title "\n\n")
       (funcall formatter-fn data)
-      (write-file tlon-ebib-file-temp nil nil 'iso-8859-1)) ; Specify coding system, write temp buffer contents to the file
-    (find-file tlon-ebib-file-temp))) ; Open the file
+      (write-file tlon-ebib-file-temp)))
+  (find-file tlon-ebib-file-temp))
 
 (defun tlon-ebib--format-check-name-result (data)
   "Format the result DATA from `tlon-ebib-check-name` for display."
