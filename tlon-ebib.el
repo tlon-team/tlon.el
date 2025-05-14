@@ -190,48 +190,28 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (let* ((file-content (with-temp-buffer
                          (insert-file-contents-literally tlon-ebib-file-temp)
                          (buffer-string)))
-         ;; Encode the string to UTF-8 for safe transport.
          (encoded-file-content (encode-coding-string file-content 'utf-8))
-         (headers `(("Content-Type" . "text/plain; charset=utf-8") ;; Specify charset
+         (headers `(("Content-Type" . "text/plain; charset=utf-8")
                     ("accept" . "text/plain")))
-         response-buffer
-         response-data ; For JSON in 422
-         raw-response-text ; For text in 200 or other errors
-         status-code)
-
+         response-buffer response-data raw-response-text status-code)
     (setq response-buffer (tlon-ebib--make-request "POST" "/api/entries" encoded-file-content headers t))
-
     (if (not response-buffer)
-        (progn
-          (setq status-code nil) ; Indicate error
-          (setq raw-response-text "--- TLON-EBIB DEBUG: Failed to make request to /api/entries. No response buffer received. ---"))
+        (setq status-code nil)
       (unwind-protect
           (progn
-            ;; Capture the full raw response (headers + body)
             (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
-
-            ;; Now, try to get status code and process further
-            (condition-case err
-                (setq status-code (tlon-ebib--get-response-status-code response-buffer))
-              (error ; If status code parsing fails, log it but continue with raw_response_text
-               (message "--- TLON-EBIB DEBUG: Error parsing status code: %s ---" (error-message-string err))
-               (setq status-code nil))) ; Set status-code to nil to indicate parsing failure
-
-            ;; Process response data if necessary (e.g., for 422 errors)
-            ;; raw-response-text already holds the full response for display.
+            (condition-case _err
+		(setq status-code (tlon-ebib--get-response-status-code response-buffer))
+              (error
+               (setq status-code nil)))
             (cond
              ((and status-code (= status-code 422))
-              (setq response-data (tlon-ebib--parse-json-response response-buffer)))
-             ;; For status 200 or other errors, response-data remains nil.
-             ;; raw-response-text is already set to the full response.
-             ))
-        (when response-buffer (kill-buffer response-buffer))))
-
+              (setq response-data (tlon-ebib--parse-json-response response-buffer)))))
+	(when response-buffer (kill-buffer response-buffer))))
     (tlon-ebib--display-result-buffer
      (format "Post entries result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
      #'tlon-ebib--format-post-entries-result
      `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
-    ;; Return a meaningful value, e.g., the status code or response data
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
 ;;;;; Internal Helpers
