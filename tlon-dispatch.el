@@ -78,6 +78,8 @@
     ("H-o" "open"                         tlon-open-package-files)
     ("H-c" "copy info"                    tlon-copy-package-info)
     """"""""""
+    ""
+    ("-D" "Debug"                         tlon-menu-infix-toggle-debug)
     ("?" "get help"                       tlon-ai-ask-for-help)
     ("!" "report bug"                     tlon-report-bug)
     ""

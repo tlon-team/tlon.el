@@ -4084,9 +4084,7 @@ Reads audio format choices based on the currently selected engine."
     ("-v" "Use alternate voice"                                 tlon-tts-menu-infix-toggle-alternate-voice)
     ""
     ("-e" "Engine"                                              tlon-tts-menu-infix-set-engine)
-    ("-t" "Engine settings"                                     tlon-tts-menu-infix-set-engine-settings)
-    ""
-    ("-D" "Debug"                                               tlon-menu-infix-toggle-debug)]
+    ("-t" "Engine settings"                                     tlon-tts-menu-infix-set-engine-settings)]
    ["File processing"
     ("f" "Finalize audio processing"                            tlon-tts-finalize-audio-processing)
     ("m" "Move file to audio dir"                               tlon-tts-move-file-to-audio-server)
