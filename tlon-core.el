@@ -1162,6 +1162,7 @@ repository."
       t)))
 
 (declare-function tlon-get-clock-key "tlon-clock")
+(declare-function tlon-metadata-in-repo "tlon-yaml")
 (defun tlon-check-file (&optional original)
   "Throw an error unless current file matches file in clock.
 If ORIGINAL is non-nil, check that current file matches original; otherwise,
@@ -1198,6 +1199,7 @@ FILE is excluded from the check."
       (let ((repo-name (tlon-repo-lookup :name :dir (tlon-get-repo-from-file file))))
 	(user-error "There are uncommitted changes in repo `%s'" repo-name)))))
 
+(declare-function tlon-yaml-get-key "tlon-yaml")
 (declare-function simple-extras-slugify "simple-extras")
 (defun tlon-check-file-title-match  (&optional file)
   "Check that FILE matches its title.
