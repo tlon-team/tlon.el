@@ -74,6 +74,11 @@ Set to t to enable verbose logging from url.el.")
 
 ;;;; Functions
 
+(defun tlon-ebib-initialize ()
+  "Initialize the `tlon-ebib' package."
+  (tlon-ebib-get-entries)
+  (append paths-files-bibliography-all (list tlon-ebib-file-db)))
+
 ;;;;; Public API
 
 (defun tlon-ebib-get-entries (&optional base-url)
