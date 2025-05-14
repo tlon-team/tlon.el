@@ -243,7 +243,8 @@ Optional BASE-URL overrides `tlon-ebib-api-base-url'."
          (base (or base-url tlon-ebib-api-base-url))
          (url (concat base endpoint))
          response-buffer
-         (lisp-error-occurred nil)) ; Flag to track Lisp errors during the request
+         (lisp-error-occurred nil) ; Flag to track Lisp errors during the request
+         (lisp-error-message nil)) ; To store the actual Lisp error message string
 
     (when auth-required
       (unless (tlon-ebib-ensure-auth)
@@ -253,10 +254,11 @@ Optional BASE-URL overrides `tlon-ebib-api-base-url'."
       (add-to-list 'url-request-extra-headers
                    `("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token)) t))
 
-    (condition-case err
+    (condition-case err ; `err` is bound here if a Lisp error occurs in the protected form
         (setq response-buffer (url-retrieve-synchronously url t))
-      (error
+      (error ; This handler is invoked if an error occurs; `err` contains the error condition
        (setq lisp-error-occurred t)
+       (setq lisp-error-message (error-message-string err)) ; Capture the message from `err`
        (setq response-buffer nil))) ; Ensure response-buffer is nil on Lisp error
 
     (unless response-buffer
@@ -272,7 +274,7 @@ Optional BASE-URL overrides `tlon-ebib-api-base-url'."
     ;; If, after all attempts, response-buffer is still nil, then it's a genuine failure.
     (unless response-buffer
       (if lisp-error-occurred
-          (user-error "Could not connect to API at %s or request failed critically due to a Lisp error during the request: %s" url (error-message-string err))
+          (user-error "Could not connect to API at %s or request failed critically due to a Lisp error: %s" url lisp-error-message)
         (user-error "Could not connect to API at %s or request failed critically. HTTP Status: %s, Message: %s"
                     url url-request-status url-request-error-message)))
     response-buffer))
