@@ -179,8 +179,8 @@ similar to existing names."
     (list :status status-code :data response-data)))
 
 (defun tlon-ebib-post-entries ()
-  "Post entries from `tlon-ebib-file-temp` to the EA International API.
-The content of `tlon-ebib-file-temp` is sent as 'text/plain'.
+  "Post entries from \"tlon-ebib-file-temp\" to the EA International API.
+The content of `tlon-ebib-file-temp` is sent as \"text/plain\".
 Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (unless (tlon-ebib-ensure-auth)
