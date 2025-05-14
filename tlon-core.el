@@ -1201,7 +1201,11 @@ FILE is excluded from the check."
 (declare-function simple-extras-slugify "simple-extras")
 (defun tlon-check-file-title-match  (&optional file)
   "Check that FILE matches its title.
-If FILE is nil, check the current buffer."
+If FILE is nil, check the current buffer.
+
+NOTE: This function is no longer run automatically, since its functionality is
+now performed by the backend, which provides more comprehensive and robust
+logging."
   (when-let* ((file (or file (buffer-file-name)))
 	      (base (file-name-base file))
 	      (title (tlon-yaml-get-key "title" file))
