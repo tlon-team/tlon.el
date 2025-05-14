@@ -63,9 +63,6 @@
   "Dynamically bound by url.el to control debug output.
 Set to t to enable verbose logging from url.el.")
 
-(defvar tlon-debug nil
-  "When non-nil, enable more verbose output for tlon modules, like showing result buffers on success.")
-
 ;;;;; Files
 
 (defvar tlon-ebib-file-temp
