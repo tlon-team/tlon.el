@@ -66,7 +66,7 @@ Set to t to enable verbose logging from url.el.")
 ;;;;; Files
 
 (defvar tlon-ebib-file-db
-  (file-name-concat tlon-bibtex-dir "temp.bib")
+  (file-name-concat tlon-bibtex-dir "db.bib")
   "File containing the temporary bibliography.")
 
 (defconst tlon-ebib--result-buffer-name "*Ebib API Result*"
