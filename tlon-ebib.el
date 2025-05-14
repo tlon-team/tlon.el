@@ -174,52 +174,45 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
   (unless (file-exists-p tlon-ebib-file-temp)
-    (user-error "File not found: %s. Use 'Get entries' first or ensure it exists." tlon-ebib-file-temp))
-
+    (user-error "File not found: %s. Use 'Get entries' first or ensure it exists" tlon-ebib-file-temp))
   (let* ((file-content (with-temp-buffer
                          (insert-file-contents-literally tlon-ebib-file-temp)
                          (buffer-string)))
-         (headers '(("Content-Type" . "text/plain")
+         ;; Encode the string to UTF-8 for safe transport.
+         (encoded-file-content (encode-coding-string file-content 'utf-8))
+         (headers `(("Content-Type" . "text/plain; charset=utf-8") ;; Specify charset
                     ("accept" . "text/plain")))
          response-buffer
          response-data ; For JSON in 422
          raw-response-text ; For text in 200 or other errors
          status-code)
 
-    (when (string-empty-p file-content)
-      (message "File %s is empty. Posting empty content." tlon-ebib-file-temp))
-
-    (setq response-buffer (tlon-ebib--make-request "POST" "/api/entries" file-content headers t))
+    (setq response-buffer (tlon-ebib--make-request "POST" "/api/entries" encoded-file-content headers t))
 
     (if (not response-buffer)
         (progn
           (setq status-code nil) ; Indicate error
-          (setq raw-response-text "Failed to make request to /api/entries. No response buffer received."))
+          (setq raw-response-text "--- TLON-EBIB DEBUG: Failed to make request to /api/entries. No response buffer received. ---"))
       (unwind-protect
           (progn
-            (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+            ;; Capture the full raw response (headers + body)
+            (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
+
+            ;; Now, try to get status code and process further
+            (condition-case err
+                (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+              (error ; If status code parsing fails, log it but continue with raw_response_text
+               (message "--- TLON-EBIB DEBUG: Error parsing status code: %s ---" (error-message-string err))
+               (setq status-code nil))) ; Set status-code to nil to indicate parsing failure
+
+            ;; Process response data if necessary (e.g., for 422 errors)
+            ;; raw-response-text already holds the full response for display.
             (cond
-             ((= status-code 200)
-              (with-current-buffer response-buffer
-                (goto-char (point-min))
-                (if (search-forward-regexp "^$" nil t)
-                    (setq raw-response-text (buffer-substring-no-properties (point) (point-max)))
-                  (setq raw-response-text "Could not parse 200 response body (no header/body separator)."))))
-             ((= status-code 422)
-              (setq response-data (tlon-ebib--parse-json-response response-buffer))
-              ;; Also capture raw text for 422 in case JSON parsing fails or for more info
-              (with-current-buffer response-buffer
-                (goto-char (point-min))
-                (if (search-forward-regexp "^$" nil t)
-                    (setq raw-response-text (buffer-substring-no-properties (point) (point-max)))
-                  (setq raw-response-text "Could not parse 422 response body (no header/body separator)."))))
-             (t ; Other errors
-              (with-current-buffer response-buffer
-                (goto-char (point-min))
-                (if (search-forward-regexp "^$" nil t)
-                    (setq raw-response-text (buffer-substring-no-properties (point) (point-max)))
-                  (setq raw-response-text (format "Could not parse %s response body (no header/body separator)."
-                                                  (if status-code (number-to-string status-code) "unknown"))))))))
+             ((and status-code (= status-code 422))
+              (setq response-data (tlon-ebib--parse-json-response response-buffer)))
+             ;; For status 200 or other errors, response-data remains nil.
+             ;; raw-response-text is already set to the full response.
+             ))
         (when response-buffer (kill-buffer response-buffer))))
 
     (tlon-ebib--display-result-buffer
@@ -239,20 +232,49 @@ DATA is the request body data (string or nil).
 HEADERS is an alist of extra request headers.
 AUTH-REQUIRED non-nil means authentication token will be added.
 Optional BASE-URL overrides `tlon-ebib-api-base-url'."
-  (let* ((url-request-method method)
+  ;; Declare special variables from url.el to satisfy linters and ensure correct dynamic binding.
+  (declare (special url-request-method url-request-data url-request-extra-headers
+                    url-request-status url-request-error-message url-http-response-buffer url-debug))
+  (let* (;; Variables for url.el
+         (url-request-method method)
          (url-request-data data)
-         (url-request-extra-headers headers)
+         (url-request-extra-headers (copy-alist headers)) ; Initialize with a copy
+         ;; Other local variables
          (base (or base-url tlon-ebib-api-base-url))
          (url (concat base endpoint))
-         response-buffer)
+         response-buffer
+         (lisp-error-occurred nil)) ; Flag to track Lisp errors during the request
+
     (when auth-required
       (unless (tlon-ebib-ensure-auth)
         (user-error "Authentication required but failed"))
+      ;; Add the Authorization header to the let-bound url-request-extra-headers.
+      ;; add-to-list modifies the symbol's value.
       (add-to-list 'url-request-extra-headers
                    `("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token)) t))
-    (setq response-buffer (url-retrieve-synchronously url t))
+
+    (condition-case err
+        (setq response-buffer (url-retrieve-synchronously url t))
+      (error
+       (setq lisp-error-occurred t)
+       (setq response-buffer nil))) ; Ensure response-buffer is nil on Lisp error
+
     (unless response-buffer
-      (user-error "Could not connect to API at %s" url))
+      ;; response-buffer is nil. Check if it was due to a Lisp error or url-retrieve-synchronously returning nil.
+      (unless lisp-error-occurred
+        ;; No Lisp error, so url-retrieve-synchronously returned nil (HTTP error).
+        ;; Try to use url-http-response-buffer which might contain the error response body.
+        (when (and (boundp 'url-http-response-buffer) ; Check if var is bound
+                   url-http-response-buffer
+                   (buffer-live-p url-http-response-buffer))
+          (setq response-buffer url-http-response-buffer))))
+
+    ;; If, after all attempts, response-buffer is still nil, then it's a genuine failure.
+    (unless response-buffer
+      (if lisp-error-occurred
+          (user-error "Could not connect to API at %s or request failed critically due to a Lisp error during the request: %s" url (error-message-string err))
+        (user-error "Could not connect to API at %s or request failed critically. HTTP Status: %s, Message: %s"
+                    url url-request-status url-request-error-message)))
     response-buffer))
 
 (defun tlon-ebib--get-response-status-code (buffer)
