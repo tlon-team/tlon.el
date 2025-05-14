@@ -244,49 +244,35 @@ DATA is the request body data (string or nil).
 HEADERS is an alist of extra request headers.
 AUTH-REQUIRED non-nil means authentication token will be added.
 Optional BASE-URL overrides `tlon-ebib-api-base-url'."
-  ;; Declare special variables from url.el to satisfy linters and ensure correct dynamic binding.
-  (declare (special url-request-method url-request-data url-request-extra-headers
-                    url-request-status url-request-error-message url-http-response-buffer url-debug))
-  (let* (;; Variables for url.el
-         (url-request-method method)
-         (url-request-data data)
-         (url-request-extra-headers (copy-alist headers)) ; Initialize with a copy
-         ;; Other local variables
-         (base (or base-url tlon-ebib-api-base-url))
-         (url (concat base endpoint))
-         response-buffer
-         (lisp-error-occurred nil) ; Flag to track Lisp errors during the request
-         (lisp-error-message nil)) ; To store the actual Lisp error message string
-
+  (let* ((url-request-method method)
+	 (url-request-data data)
+	 (url-request-extra-headers (copy-alist headers))
+	 (base (or base-url tlon-ebib-api-base-url))
+	 (url (concat base endpoint))
+	 (lisp-error-occurred nil)
+	 (lisp-error-message nil)
+	 response-buffer url-request-status url-request-error-message url-http-response-buffer url-debug)
     (when auth-required
       (unless (tlon-ebib-ensure-auth)
         (user-error "Authentication required but failed"))
-      ;; Add the Authorization header to the let-bound url-request-extra-headers.
-      ;; add-to-list modifies the symbol's value.
       (add-to-list 'url-request-extra-headers
                    `("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token)) t))
-
-    (condition-case err ; `err` is bound here if a Lisp error occurs in the protected form
+    (condition-case err
         (setq response-buffer (url-retrieve-synchronously url t))
-      (error ; This handler is invoked if an error occurs; `err` contains the error condition
-       (setq lisp-error-occurred t)
-       (setq lisp-error-message (error-message-string err)) ; Capture the message from `err`
-       (setq response-buffer nil))) ; Ensure response-buffer is nil on Lisp error
-
+      (error
+       (setq lisp-error-occurred t
+             lisp-error-message (error-message-string err)
+	     response-buffer nil)))
     (unless response-buffer
-      ;; response-buffer is nil. Check if it was due to a Lisp error or url-retrieve-synchronously returning nil.
       (unless lisp-error-occurred
-        ;; No Lisp error, so url-retrieve-synchronously returned nil (HTTP error).
-        ;; Try to use url-http-response-buffer which might contain the error response body.
-        (when (and (boundp 'url-http-response-buffer) ; Check if var is bound
+        (when (and (boundp 'url-http-response-buffer)
                    url-http-response-buffer
                    (buffer-live-p url-http-response-buffer))
           (setq response-buffer url-http-response-buffer))))
-
-    ;; If, after all attempts, response-buffer is still nil, then it's a genuine failure.
     (unless response-buffer
       (if lisp-error-occurred
-          (user-error "Could not connect to API at %s or request failed critically due to a Lisp error: %s" url lisp-error-message)
+          (user-error "Could not connect to API at %s or request failed critically due to a Lisp error: %s"
+		      url lisp-error-message)
         (user-error "Could not connect to API at %s or request failed critically. HTTP Status: %s, Message: %s"
                     url url-request-status url-request-error-message)))
     response-buffer))
