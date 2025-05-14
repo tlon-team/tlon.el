@@ -64,22 +64,22 @@
     ("v" "url"                            tlon-url-menu)
     ("y" "forg"                           tlon-forg-menu)
     ("x" "tex"                            tlon-tex-menu)
-    ("z" "tts"                            tlon-tts-menu)]
+    ("z" "tts"                            tlon-tts-menu)
+    ("." "notifications"                  forge-list-notifications)]
    [""
     "Browse repo"
     ("d" "in Dired"                       tlon-dired-repo-menu)
-    ("m" "in Magit"                       tlon-magit-repo-menu)
-    ""
-    ("." "notifications"                  forge-list-notifications)
-    ""]
+    ("m" "in Magit"                       tlon-magit-repo-menu)]
    [""
     "Package"
     ("H-u" "update & reload"              tlon-update-package-and-reload)
     ("H-o" "open"                         tlon-open-package-files)
     ("H-c" "copy info"                    tlon-copy-package-info)
-    """"""""""
+    ""
+    
     ""
     ("-D" "Debug"                         tlon-menu-infix-toggle-debug)
+    ""
     ("?" "get help"                       tlon-ai-ask-for-help)
     ("!" "report bug"                     tlon-report-bug)
     ""
