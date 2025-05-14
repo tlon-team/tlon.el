@@ -291,12 +291,14 @@ FORMATTER-FN is a function that takes DATA and inserts formatted content
 into the current buffer."
   (let ((result-buffer (get-buffer-create tlon-ebib--result-buffer-name)))
     (with-current-buffer result-buffer
-      (let ((inhibit-read-only nil)) ; Ensure buffer is modifiable
+      (let ((was-read-only buffer-read-only)) ; Store original read-only state
+        (when was-read-only
+          (setq buffer-read-only nil)) ; Make writable if it was read-only
         (erase-buffer)
         (insert title "\n\n")
         (funcall formatter-fn data)
         (fundamental-mode) ; Or any other simple mode
-        (setq buffer-read-only t)))
+        (setq buffer-read-only t))) ; Set back to read-only
     (display-buffer result-buffer)))
 
 (defun tlon-ebib--format-check-name-result (data)
