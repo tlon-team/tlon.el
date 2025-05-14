@@ -69,6 +69,9 @@ Set to t to enable verbose logging from url.el.")
   (file-name-concat tlon-bibtex-dir "temp.bib")
   "File containing the temporary bibliography.")
 
+(defconst tlon-ebib--result-buffer-name "*Ebib API Result*"
+  "Name of the buffer used to display API call results.")
+
 ;;;; Functions
 
 ;;;;; Public API
@@ -281,17 +284,20 @@ Returns the parsed data (hash-table) or nil on error."
             (error (message "Error parsing JSON response: %s" err) nil)))))))
 
 (defun tlon-ebib--display-result-buffer (title formatter-fn data)
-  "Write TITLE and formatted DATA (via FORMATTER-FN) to `tlon-ebib-file-temp`.
-Opens `tlon-ebib-file-temp` after writing. TITLE is the initial title string for
-the file content. FORMATTER-FN is a function that takes DATA and inserts
-formatted content into the current buffer for writing."
-  (with-temp-buffer
-    (let ((coding-system-for-write 'utf-8-unix)
-	  (inhibit-read-only t)) ; Ensure buffer is modifiable
-      (insert title "\n\n")
-      (funcall formatter-fn data)
-      (write-file tlon-ebib-file-temp)))
-  (find-file tlon-ebib-file-temp))
+  "Display TITLE and formatted DATA (via FORMATTER-FN) in a dedicated buffer.
+The buffer is named by `tlon-ebib--result-buffer-name`.
+TITLE is the initial title string for the buffer content.
+FORMATTER-FN is a function that takes DATA and inserts formatted content
+into the current buffer."
+  (let ((result-buffer (get-buffer-create tlon-ebib--result-buffer-name)))
+    (with-current-buffer result-buffer
+      (let ((inhibit-read-only nil)) ; Ensure buffer is modifiable
+        (erase-buffer)
+        (insert title "\n\n")
+        (funcall formatter-fn data)
+        (fundamental-mode) ; Or any other simple mode
+        (setq buffer-read-only t)))
+    (display-buffer result-buffer)))
 
 (defun tlon-ebib--format-check-name-result (data)
   "Format the result DATA from `tlon-ebib-check-name` for display."
