@@ -166,6 +166,69 @@ similar to existing names."
 				      (list :status status-code :data response-data))
     (list :status status-code :data response-data)))
 
+(defun tlon-ebib-post-entries ()
+  "Post entries from `tlon-ebib-file-temp` to the EA International API.
+The content of `tlon-ebib-file-temp` is sent as 'text/plain'.
+Handles 200 (Success) and 422 (Validation Error) responses."
+  (interactive)
+  (unless (tlon-ebib-ensure-auth)
+    (user-error "Authentication failed"))
+  (unless (file-exists-p tlon-ebib-file-temp)
+    (user-error "File not found: %s. Use 'Get entries' first or ensure it exists." tlon-ebib-file-temp))
+
+  (let* ((file-content (with-temp-buffer
+                         (insert-file-contents-literally tlon-ebib-file-temp)
+                         (buffer-string)))
+         (headers '(("Content-Type" . "text/plain")
+                    ("accept" . "text/plain")))
+         response-buffer
+         response-data ; For JSON in 422
+         raw-response-text ; For text in 200 or other errors
+         status-code)
+
+    (when (string-empty-p file-content)
+      (message "File %s is empty. Posting empty content." tlon-ebib-file-temp))
+
+    (setq response-buffer (tlon-ebib--make-request "POST" "/api/entries" file-content headers t))
+
+    (if (not response-buffer)
+        (progn
+          (setq status-code nil) ; Indicate error
+          (setq raw-response-text "Failed to make request to /api/entries. No response buffer received."))
+      (unwind-protect
+          (progn
+            (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+            (cond
+             ((= status-code 200)
+              (with-current-buffer response-buffer
+                (goto-char (point-min))
+                (if (search-forward-regexp "^$" nil t)
+                    (setq raw-response-text (buffer-substring-no-properties (point) (point-max)))
+                  (setq raw-response-text "Could not parse 200 response body (no header/body separator)."))))
+             ((= status-code 422)
+              (setq response-data (tlon-ebib--parse-json-response response-buffer))
+              ;; Also capture raw text for 422 in case JSON parsing fails or for more info
+              (with-current-buffer response-buffer
+                (goto-char (point-min))
+                (if (search-forward-regexp "^$" nil t)
+                    (setq raw-response-text (buffer-substring-no-properties (point) (point-max)))
+                  (setq raw-response-text "Could not parse 422 response body (no header/body separator)."))))
+             (t ; Other errors
+              (with-current-buffer response-buffer
+                (goto-char (point-min))
+                (if (search-forward-regexp "^$" nil t)
+                    (setq raw-response-text (buffer-substring-no-properties (point) (point-max)))
+                  (setq raw-response-text (format "Could not parse %s response body (no header/body separator)."
+                                                  (if status-code (number-to-string status-code) "unknown"))))))))
+        (when response-buffer (kill-buffer response-buffer))))
+
+    (tlon-ebib--display-result-buffer
+     (format "Post entries result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+     #'tlon-ebib--format-post-entries-result
+     `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
+    ;; Return a meaningful value, e.g., the status code or response data
+    (list :status status-code :data response-data :raw-text raw-response-text)))
+
 ;;;;; Internal Helpers
 
 (defun tlon-ebib--make-request (method endpoint data headers &optional auth-required base-url)
@@ -288,6 +351,44 @@ RESULT is a plist like (:status CODE :data DATA)."
         (when (gethash "detail" response-data) ; Handle FastAPI detail string
           (insert "Detail: " (gethash "detail" response-data) "\n")))))))
 
+(defun tlon-ebib--format-post-entries-result (result)
+  "Format the RESULT from `tlon-ebib-post-entries` for display.
+RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
+  (let ((status-code (plist-get result :status))
+        (response-data (plist-get result :data))  ; Parsed JSON for 422
+        (raw-response-text (plist-get result :raw-text))) ; Raw text for 200 or other errors
+    (cond
+     ((null status-code) ; Error before or during request
+      (insert "Status: Request Failed\n")
+      (insert (or raw-response-text "No specific error message.")))
+     ((= status-code 200)
+      (insert "Status: Success (200)\n")
+      (insert "Response from server:\n")
+      (insert (or raw-response-text "No content returned.")))
+     ((= status-code 422)
+      (insert "Status: Validation Error (422)\n")
+      (if response-data
+          (progn
+            (insert "Details (from JSON response):\n")
+            (let ((detail (gethash "detail" response-data)))
+              (if (listp detail) ; Standard FastAPI validation error structure
+                  (dolist (item detail)
+                    (if (hash-table-p item)
+                        (insert (format "  - Location: %s, Message: %s, Type: %s\n"
+                                        (mapconcat #'identity (gethash "loc" item) " -> ")
+                                        (gethash "msg" item "")
+                                        (gethash "type" item "")))
+                      (insert (format "  - %s\n" item)))) ; Non-standard detail item
+                (insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
+        (insert "No specific validation error details found in parsed JSON response.\n"))
+      (when raw-response-text
+        (insert "\nRaw server response (text/plain or other):\n")
+        (insert raw-response-text)))
+     (t
+      (insert (format "Status: Error (HTTP %d)\n" status-code))
+      (insert "Response from server:\n")
+      (insert (or raw-response-text "No content or error message returned."))))))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-ebib-menu "tlon-ebib" nil t)
@@ -295,6 +396,7 @@ RESULT is a plist like (:status CODE :data DATA)."
   "Menu for `ebib' functions."
   ["Ebib Actions"
    ("g" "Get entries" tlon-ebib-get-entries)
+   ("p" "Post entries" tlon-ebib-post-entries)
    ("c" "Check name" tlon-ebib-check-name)
    ("i" "Check or insert name" tlon-ebib-check-or-insert-name)])
 
