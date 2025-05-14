@@ -130,8 +130,11 @@ Returns the token or nil if authentication failed."
                     ("accept" . "application/json")))
          (response-buffer (tlon-ebib--make-request "POST" "/api/names/check" data headers t))
          response-data
-         status-code)
+         status-code
+         raw-response-text)
     (when response-buffer
+      (with-current-buffer response-buffer
+        (setq raw-response-text (buffer-string)))
       (setq status-code (tlon-ebib--get-response-status-code response-buffer))
       (if (= status-code 200)
           (setq response-data (tlon-ebib--parse-json-response response-buffer))
@@ -139,7 +142,8 @@ Returns the token or nil if authentication failed."
       (kill-buffer response-buffer))
     (tlon-ebib--display-result-buffer (format "Name check result for: %s" name)
 				      #'tlon-ebib--format-check-name-result
-				      response-data)
+				      response-data
+				      raw-response-text)
     response-data))
 
 (defun tlon-ebib-check-or-insert-name (name)
@@ -215,15 +219,24 @@ Returns the parsed data (hash-table) or nil on error."
               (json-read)
             (error (message "Error parsing JSON response: %s" err) nil)))))))
 
-(defun tlon-ebib--display-result-buffer (title formatter-fn data)
+(defun tlon-ebib--display-result-buffer (title formatter-fn data &optional raw-response-text)
   "Write TITLE and formatted DATA (via FORMATTER-FN) to `tlon-ebib-file-temp`.
+If RAW-RESPONSE-TEXT is provided, it is inserted before the formatted data.
 Opens `tlon-ebib-file-temp` after writing. TITLE is the initial title string for
 the file content. FORMATTER-FN is a function that takes DATA and inserts
-formatted content into the current buffer for writing."
+formatted content into the current buffer for writing. RAW-RESPONSE-TEXT is the
+optional raw string content of the HTTP response."
   (with-temp-buffer
     (let ((coding-system-for-write 'utf-8-unix)
-	  (inhibit-read-only t)) ; Ensure buffer is modifiable
+          (inhibit-read-only t)) ; Ensure buffer is modifiable
       (insert title "\n\n")
+      (when raw-response-text
+        (insert "Raw Response:\n")
+        (insert "---------------\n")
+        (insert raw-response-text)
+        (insert "\n---------------\n\n")
+        (insert "Formatted Data:\n")
+        (insert "---------------\n"))
       (funcall formatter-fn data)
       (write-file tlon-ebib-file-temp)))
   (find-file tlon-ebib-file-temp))
