@@ -33,10 +33,10 @@ This module provides functionality for interacting with an external bibliographi
 This section details the interactive commands provided by =tlon-ebib.el=.
 
 #+findex: tlon-ebib-get-entries
-+ ~tlon-ebib-get-entries~ :: Retrieves all BibTeX entries from the configured API endpoint (~tlon-ebib-api-base-url~). Saves the retrieved entries to the file specified by ~tlon-ebib-file-temp~ (using =utf-8-unix= encoding) and opens it. The file will be in =bibtex-mode= due to its =.bib= extension.
++ ~tlon-ebib-get-entries~ :: Retrieves all BibTeX entries from the configured API endpoint (~tlon-ebib-api-base-url~). Saves the retrieved entries to the file specified by ~tlon-ebib-file-db~ (using =utf-8-unix= encoding) and opens it. The file will be in =bibtex-mode= due to its =.bib= extension.
 
 #+findex: tlon-ebib-post-entries
-+ ~tlon-ebib-post-entries~ :: Posts the content of the file specified by ~tlon-ebib-file-temp~ to the =/api/entries= endpoint. Requires authentication. The content is sent as =text/plain=. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
++ ~tlon-ebib-post-entries~ :: Posts the content of the file specified by ~tlon-ebib-file-db~ to the =/api/entries= endpoint. Requires authentication. The content is sent as =text/plain=. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
 
 #+findex: tlon-ebib-check-name
 + ~tlon-ebib-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the results in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.

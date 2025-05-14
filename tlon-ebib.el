@@ -65,7 +65,7 @@ Set to t to enable verbose logging from url.el.")
 
 ;;;;; Files
 
-(defvar tlon-ebib-file-temp
+(defvar tlon-ebib-file-db
   (file-name-concat tlon-bibtex-dir "temp.bib")
   "File containing the temporary bibliography.")
 
@@ -98,7 +98,7 @@ defaults to `tlon-ebib-api-base-url'."
         (let ((coding-system-for-write 'utf-8-unix))
           (with-temp-buffer
             (insert entries-text)
-            (write-file tlon-ebib-file-temp)
+            (write-file tlon-ebib-file-db)
 	    (bibtex-count-entries)))
       (user-error "Failed to retrieve entries"))))
 
@@ -186,16 +186,16 @@ similar to existing names."
     (list :status status-code :data response-data)))
 
 (defun tlon-ebib-post-entries ()
-  "Post entries from \"tlon-ebib-file-temp\" to the EA International API.
-The content of `tlon-ebib-file-temp` is sent as \"text/plain\".
+  "Post entries from \"tlon-ebib-file-db\" to the EA International API.
+The content of `tlon-ebib-file-db` is sent as \"text/plain\".
 Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
-  (unless (file-exists-p tlon-ebib-file-temp)
-    (user-error "File not found: %s. Use 'Get entries' first or ensure it exists" tlon-ebib-file-temp))
+  (unless (file-exists-p tlon-ebib-file-db)
+    (user-error "File not found: %s. Use 'Get entries' first or ensure it exists" tlon-ebib-file-db))
   (let* ((file-content (with-temp-buffer
-                         (insert-file-contents-literally tlon-ebib-file-temp)
+                         (insert-file-contents-literally tlon-ebib-file-db)
                          (buffer-string)))
          (encoded-file-content (encode-coding-string file-content 'utf-8))
          (headers `(("Content-Type" . "text/plain; charset=utf-8")
