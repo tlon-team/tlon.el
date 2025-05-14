@@ -63,6 +63,9 @@
   "Dynamically bound by url.el to control debug output.
 Set to t to enable verbose logging from url.el.")
 
+(defvar tlon-debug nil
+  "When non-nil, enable more verbose output for tlon modules, like showing result buffers on success.")
+
 ;;;;; Files
 
 (defvar tlon-ebib-file-temp
@@ -150,11 +153,13 @@ Returns the token or nil if authentication failed."
       (setq status-code (tlon-ebib--get-response-status-code response-buffer))
       (if (= status-code 200)
           (setq response-data (tlon-ebib--parse-json-response response-buffer))
-        (message "Error checking name: HTTP status %d" status-code))
+        (message "Error checking name: HTTP status %d" status-code)) ; This message might be redundant if buffer is shown
       (kill-buffer response-buffer))
-    (tlon-ebib--display-result-buffer (format "Name check result for: %s" name)
-				      #'tlon-ebib--format-check-name-result
-				      response-data)
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-ebib--display-result-buffer (format "Name check result for: %s" name)
+                                          #'tlon-ebib--format-check-name-result
+                                          response-data)
+      (message "Name check for '%s': OK." name))
     response-data))
 
 (defun tlon-ebib-check-or-insert-name (name)
@@ -176,9 +181,11 @@ similar to existing names."
       ;; Parse response even on error, as it might contain details
       (setq response-data (tlon-ebib--parse-json-response response-buffer))
       (kill-buffer response-buffer))
-    (tlon-ebib--display-result-buffer (format "Name check/insert result for: %s" name)
-				      #'tlon-ebib--format-check-insert-name-result
-				      (list :status status-code :data response-data))
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-ebib--display-result-buffer (format "Name check/insert result for: %s" name)
+                                          #'tlon-ebib--format-check-insert-name-result
+                                          (list :status status-code :data response-data))
+      (message "Name check/insert for '%s': OK." name))
     (list :status status-code :data response-data)))
 
 (defun tlon-ebib-post-entries ()
@@ -211,10 +218,12 @@ Handles 200 (Success) and 422 (Validation Error) responses."
              ((and status-code (= status-code 422))
               (setq response-data (tlon-ebib--parse-json-response response-buffer)))))
 	(when response-buffer (kill-buffer response-buffer))))
-    (tlon-ebib--display-result-buffer
-     (format "Post entries result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
-     #'tlon-ebib--format-post-entries-result
-     `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-ebib--display-result-buffer
+         (format "Post entries result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+         #'tlon-ebib--format-post-entries-result
+         `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
+      (message "Entries posted successfully."))
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
 ;;;;; Internal Helpers
