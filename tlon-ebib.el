@@ -51,6 +51,18 @@
 (defvar tlon-ebib-api-password
   (auth-source-pass-get 'secret (concat "tlon/core/ea.international/" tlon-ebib-api-username)))
 
+;;;;; External Special Variables (from url.el)
+
+(defvar url-request-status nil
+  "Dynamically bound by url.el to the HTTP status of the last request.")
+(defvar url-request-error-message nil
+  "Dynamically bound by url.el to the HTTP error message of the last request.")
+(defvar url-http-response-buffer nil
+  "Dynamically bound by url.el to the buffer containing the HTTP response.")
+(defvar url-debug nil
+  "Dynamically bound by url.el to control debug output.
+Set to t to enable verbose logging from url.el.")
+
 ;;;;; Files
 
 (defvar tlon-ebib-file-temp
