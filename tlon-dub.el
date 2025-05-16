@@ -169,25 +169,21 @@ Each segment is a plist with :start, :end, and :text keys."
 SOURCE-FILE is the path to the VTT file in the complex format, which includes
 headers, blank lines, tagged text lines, and duplicated timestamp/text entries.
 
-OUTPUT-FILE-PATH is the optional path for the converted VTT file. If nil, it
-defaults to SOURCE-FILE with \"-converted\" suffix and the same extension (or
-\".vtt\" if none).
+OUTPUT-FILE-PATH is the optional path for the converted CSV file. If nil, it
+defaults to SOURCE-FILE with its extension changed to \".csv\".
 
-The output format consists of single lines:
+The CSV file starts with a header line:
+  speaker,start_time,end_time,transcription,translation
 
-  \"HH:MM:SS,mmm\",\"HH:MM:SS,mmm\",\"Caption text\"
+Subsequent data lines have the format:
+  \"\",\"HH:MM:SS,mmm\",\"HH:MM:SS,mmm\",\"Caption text\",\"\"
 
-It does not include \"WEBVTT\" headers or blank lines between entries.
+This format is intended for Elevenlabs, as detailed here:
+<https://elevenlabs.io/docs/product-guides/products/dubbing/dubbing-studio#example-csv-files>
 
-Returns the path to the OUTPUT-FILE-PATH.
-
-The Elevenlabs format is defined here:
-
-<https://elevenlabs.io/docs/product-guides/products/dubbing/dubbing-studio#example-csv-files>"
+Returns the path to the OUTPUT-FILE-PATH."
   (unless output-file-path
-    (setq output-file-path (concat (file-name-sans-extension source-file)
-                                   "-converted."
-                                   (or (file-name-extension source-file) "vtt"))))
+    (setq output-file-path (concat (file-name-sans-extension source-file) ".csv")))
 
   (let ((collected-lines '()))
     (with-temp-buffer
@@ -239,12 +235,17 @@ The Elevenlabs format is defined here:
                     (when intermediate-text-parts
 		      (setq caption-text-final (string-join (nreverse intermediate-text-parts) " "))))
                   ;; Combine stored timestamp and determined caption text, then push to collected-lines.
-                  (push (format "%s,\"%s\"" formatted-timestamp caption-text-final) collected-lines)))
+                  ;; Format: "", "start_time", "end_time", "transcription", ""
+                  (push (format "\"\",%s,\"%s\",\"\""
+                                formatted-timestamp caption-text-final) collected-lines)))
             (progn ; Line was not a Main Timestamp as expected, skip it to find next block
               (forward-line 1))))))
     (if collected-lines
         (progn
-          (write-region (string-join (nreverse collected-lines) "\n") nil output-file-path nil 'silent)
+          (let* ((header "speaker,start_time,end_time,transcription,translation")
+                 (data-string (string-join (nreverse collected-lines) "\n"))
+                 (final-content (concat header "\n" data-string)))
+            (write-region final-content nil output-file-path nil 'silent))
           output-file-path)
       (user-error "No VTT segments found or processed in %s. Output file not created" source-file))))
 
