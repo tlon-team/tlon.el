@@ -165,20 +165,19 @@ Each segment is a plist with :start, :end, and :text keys."
     (nreverse segments)))
 
 (defun tlon-dub-convert-vtt-source-to-dest-format (source-file &optional output-file-path)
-  "Convert VTT file from 'source.vtt' example format to 'dest.vtt' example format.
+  "Convert VTT file from \"source.vtt\" format to \"dest.vtt\" example format.
+SOURCE-FILE is the path to the VTT file in the complex format, which includes
+headers, blank lines, tagged text lines, and duplicated timestamp/text entries.
 
-SOURCE-FILE is the path to the VTT file in the complex format,
-which includes headers, blank lines, tagged text lines, and
-duplicated timestamp/text entries.
-
-OUTPUT-FILE-PATH is the optional path for the converted VTT file.
-If nil, it defaults to SOURCE-FILE with \"-converted\" suffix and
-the same extension (or \".vtt\" if none).
+OUTPUT-FILE-PATH is the optional path for the converted VTT file. If nil, it
+defaults to SOURCE-FILE with \"-converted\" suffix and the same extension (or
+\".vtt\" if none).
 
 The output format consists of single lines:
+
   \"HH:MM:SS,mmm\",\"HH:MM:SS,mmm\",\"Caption text\"
 
-It does not include 'WEBVTT' headers or blank lines between entries.
+It does not include \"WEBVTT\" headers or blank lines between entries.
 
 Returns the path to the OUTPUT-FILE-PATH."
   (unless output-file-path
@@ -193,7 +192,6 @@ Returns the path to the OUTPUT-FILE-PATH."
       ;; Skip header lines (WEBVTT, Kind, Language, empty lines)
       (while (and (not (eobp)) (looking-at-p "^WEBVTT\\|^Kind:\\|^Language:\\|\\s-*$"))
         (forward-line 1))
-
       (while (not (eobp))
         (let ((current-line-text (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
           ;; 1. Expect Main Timestamp Line
@@ -203,58 +201,48 @@ Returns the path to the OUTPUT-FILE-PATH."
                              (replace-regexp-in-string "\\." "," (match-string 1 current-line-text))
                              (replace-regexp-in-string "\\." "," (match-string 2 current-line-text)))))
                 (forward-line 1) ; Consume the timestamp line
-
                 ;; 2. Skip one empty line after MainTS (if present)
                 (when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex)) (forward-line 1))
-
                 ;; 3. Collect Intermediate Text lines (potential "Tagged Text") until SecondaryTS or EOF
                 ;;    and determine the final caption text.
                 (let ((intermediate-text-parts '())
                       (caption-text-final "")) ; Initialize final caption text
                   (while (and (not (eobp)) (not (looking-at-p tlon-dub--vtt-timestamp-marker-regex)))
-                    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) intermediate-text-parts)
+                    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position))
+			  intermediate-text-parts)
                     (forward-line 1))
-
                   (if (looking-at-p tlon-dub--vtt-timestamp-marker-regex) ; Found SecondaryTS
                       (progn
                         ;; 4. We are at SecondaryTS. Skip it.
                         (forward-line 1)
-
                         ;; 5. Skip one empty line after SecondaryTS (if present)
                         (when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex)) (forward-line 1))
-
                         ;; 6. Collect Clean Text lines (this is the actual caption)
                         (let ((clean-text-parts '()))
                           (while (and (not (eobp))
                                       (not (looking-at-p tlon-dub--vtt-blank-line-regex))
                                       (not (looking-at-p tlon-dub--vtt-timestamp-marker-regex)))
-                            (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) clean-text-parts)
+                            (push (buffer-substring-no-properties (line-beginning-position) (line-end-position))
+				  clean-text-parts)
                             (forward-line 1))
-                          (if clean-text-parts
-                              (setq caption-text-final (string-join (nreverse clean-text-parts) " "))
-                            ;; If no clean text, caption-text-final remains "", which is intended.
-                            ))
-
+                          (when clean-text-parts
+                            (setq caption-text-final (string-join (nreverse clean-text-parts) " "))))
                         ;; 7. Skip one empty line after CleanText (if present) - crucial for loop progression.
                         (when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex))
                           (forward-line 1)))
                     ;; Else (EOF reached, or non-TS line that breaks the pattern before a SecondaryTS)
                     ;; Use the collected intermediate-text-parts as the caption.
-                    (progn
-                      (if intermediate-text-parts
-                          (setq caption-text-final (string-join (nreverse intermediate-text-parts) " "))
-                        ;; If no intermediate text, caption-text-final remains "", which is intended.
-                        )))
+                    (when intermediate-text-parts
+		      (setq caption-text-final (string-join (nreverse intermediate-text-parts) " "))))
                   ;; Combine stored timestamp and determined caption text, then push to collected-lines.
                   (push (format "%s,\"%s\"" formatted-timestamp caption-text-final) collected-lines)))
             (progn ; Line was not a Main Timestamp as expected, skip it to find next block
               (forward-line 1))))))
-
     (if collected-lines
         (progn
           (write-region (string-join (nreverse collected-lines) "\n") nil output-file-path nil 'silent)
           output-file-path)
-      (user-error "No VTT segments found or processed in %s. Output file not created." source-file))))
+      (user-error "No VTT segments found or processed in %s. Output file not created" source-file))))
 
 ;;;; Functions
 
