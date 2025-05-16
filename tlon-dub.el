@@ -498,22 +498,45 @@ segment IDs."
 
 ;;;###autoload
 (defun tlon-dub-transcribe-with-whisperx (audio-file)
-  "Generate a transcript for AUDIO-FILE using whisperx.
+  "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
 The transcript files (.txt, .srt, .vtt) will be saved in the same
-directory as AUDIO-FILE. Uses --compute_type float32 by default."
+directory as AUDIO-FILE. Uses --compute_type float32 by default.
+A message will be displayed upon completion."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
   (let* ((output-dir (file-name-directory audio-file))
-         (command (format "whisperx %s --compute_type float32 --output_dir %s"
-                          (shell-quote-argument audio-file)
-                          (shell-quote-argument output-dir))))
-    (message "Running whisperx on %s..." audio-file)
-    (message "Output will be in %s" output-dir)
-    (message "Executing: %s" command)
-    ;; Consider using start-process for asynchronous execution if whisperx takes a long time
-    ;; For simplicity, using shell-command which will block Emacs.
-    (shell-command command)
-    (message "whisperx processing finished for %s. Check %s for output files."
-             audio-file output-dir)))
+         (process-name (format "whisperx-%s" (file-name-nondirectory audio-file)))
+         (output-buffer (format "*%s-output*" process-name))
+         (command-parts (list "whisperx"
+                              audio-file
+                              "--compute_type" "float32"
+                              "--output_dir" output-dir)))
+    (message "Starting whisperx transcription for %s..." audio-file)
+    (message "Output will be in %s. Check %s for progress/errors." output-dir output-buffer)
+
+    (let ((process (apply #'start-process process-name output-buffer command-parts)))
+      (set-process-sentinel
+       process
+       (lambda (proc event)
+         (let ((status (process-status proc)))
+           (with-current-buffer (process-buffer proc)
+             (message "Whisperx process '%s' for '%s' finished with status: %s. Output in %s and buffer %s"
+                      (process-name proc)
+                      audio-file
+                      status
+                      output-dir
+                      (buffer-name (process-buffer proc))))
+           (if (memq status '(exit signal)) ; Check if process actually exited or was signaled
+               (cond
+                ((string-match "exited abnormally" event)
+                 (message "Whisperx process for %s exited abnormally. Check buffer %s for details."
+                          audio-file (buffer-name (process-buffer proc)))
+                 (display-buffer (process-buffer proc)))
+                ((string-match "finished" event) ; Normal finish
+                 (message "Whisperx transcription for %s completed successfully. Output in %s."
+                          audio-file output-dir))
+                (t ; Other signals or unknown event string parts
+                 (message "Whisperx process for %s event: %s. Output in %s. Check buffer %s."
+                          audio-file event output-dir (buffer-name (process-buffer proc))))))))))))
 
 (provide 'tlon-dub)
 
