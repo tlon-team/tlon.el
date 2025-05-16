@@ -151,6 +151,95 @@ Each segment is a plist with :start, :end, and :text keys."
       (push current-segment segments))
     (nreverse segments)))
 
+(defun tlon-dub-convert-vtt-source-to-dest-format (source-file &optional output-file-path)
+  "Convert VTT file from 'source.vtt' example format to 'dest.vtt' example format.
+
+SOURCE-FILE is the path to the VTT file in the complex format,
+which includes headers, blank lines, tagged text lines, and
+duplicated timestamp/text entries.
+
+OUTPUT-FILE-PATH is the optional path for the converted VTT file.
+If nil, it defaults to SOURCE-FILE with \"-converted\" suffix and
+the same extension (or \".vtt\" if none).
+
+The output format consists of pairs of lines:
+  HH:MM:SS.mmm --> HH:MM:SS.mmm
+  Caption text
+
+It does not include 'WEBVTT' headers or blank lines between entries.
+
+Returns the path to the OUTPUT-FILE-PATH."
+  (unless output-file-path
+    (setq output-file-path (concat (file-name-sans-extension source-file)
+                                   "-converted."
+                                   (or (file-name-extension source-file) "vtt"))))
+
+  (let ((collected-lines '())
+        (timestamp-regex "^\\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]\\) --> \\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]\\)")
+        (timestamp-marker-regex "^[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9] -->")
+        (blank-line-regex "^\\s-*$"))
+    (with-temp-buffer
+      (insert-file-contents source-file)
+      (goto-char (point-min))
+      ;; Skip header lines (WEBVTT, Kind, Language, empty lines)
+      (while (and (not (eobp)) (looking-at-p "^WEBVTT\\|^Kind:\\|^Language:\\|\\s-*$"))
+        (if (looking-at-p blank-line-regex)
+            ;; If it's a blank line and there's non-blank content after, consume it.
+            ;; Otherwise, if it's multiple blank lines before content, this handles them.
+            ;; If it's blank lines at EOF, (eobp) will catch it.
+            (let ((start (point)))
+              (forward-line 1)
+              (if (and (eobp) (string-blank-p (buffer-substring-no-properties start (point))))
+                  ;; Reached EOF and it was all blank, break.
+                  (goto-char (point-max))
+                (goto-char start))) ; revert if not just blank lines or if content follows
+          (forward-line 1)))
+
+      (while (not (eobp))
+        (let ((current-line-text (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+          ;; 1. Expect Main Timestamp Line
+          (if (string-match timestamp-regex current-line-text)
+              (progn
+                (push (format "%s --> %s" (match-string 1 current-line-text) (match-string 2 current-line-text)) collected-lines)
+                (forward-line 1)
+
+                ;; 2. Skip one empty line after MainTS (if present)
+                (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
+
+                ;; 3. Skip Tagged Text lines until SecondaryTS
+                (while (and (not (eobp)) (not (looking-at-p timestamp-marker-regex)))
+                  (forward-line 1))
+
+                (if (eobp)
+                    (user-error "Unexpected EOF while looking for Secondary Timestamp in %s" source-file)
+                  ;; 4. We are at SecondaryTS. Skip it.
+                  (forward-line 1)
+
+                  ;; 5. Skip one empty line after SecondaryTS (if present)
+                  (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
+
+                  ;; 6. Collect Clean Text lines
+                  (let ((clean-text-parts '()))
+                    (while (and (not (eobp))
+                                (not (looking-at-p blank-line-regex))
+                                (not (looking-at-p timestamp-marker-regex)))
+                      (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) clean-text-parts)
+                      (forward-line 1))
+                    (when clean-text-parts
+                      (push (string-join (nreverse clean-text-parts) " ") collected-lines)))
+
+                  ;; 7. Skip one empty line after CleanText (if present)
+                  (when (and (not (eobp)) (looking-at-p blank-line-regex))
+                    (forward-line 1))))
+            (progn ; Line was not a Main Timestamp as expected, skip it to find next block
+              (forward-line 1))))))
+
+    (if collected-lines
+        (progn
+          (write-region (string-join (nreverse collected-lines) "\n") nil output-file-path nil 'silent)
+          output-file-path)
+      (user-error "No VTT segments found or processed in %s. Output file not created." source-file))))
+
 ;;;; Functions
 
 ;;;###autoload
