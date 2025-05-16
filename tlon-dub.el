@@ -604,16 +604,16 @@ The result, a VTT-like transcript, is saved to a new file specified by the user.
 			      (insert-file-contents human-transcript-file)
 			      (buffer-string))))
     (if (or (string-empty-p whisperx-content) (string-empty-p human-text-content))
-        (user-error "One or both input files are empty.")
-                            whisperx-content
-                            human-text-content)))
-        (message "Requesting AI to propagate timestamps...")
-        (tlon-make-gptel-request prompt nil
-                                 (lambda (response info) ; Wrap callback
-                                   (tlon-dub--propagate-timestamps-callback response info human-transcript-file))
-                                 tlon-dub-propagation-model
-                                 t))))) ; no-context-check = t
+	(user-error "One or both input files are empty")
       (let ((prompt (format tlon-dub-propagate-timestamps-prompt-template
+			    whisperx-content
+			    human-text-content)))
+	(message "Requesting AI to propagate timestamps...")
+	(tlon-make-gptel-request prompt nil
+				 (lambda (response info) ; Wrap callback
+				   (tlon-dub--propagate-timestamps-callback response info human-transcript-file))
+				 tlon-dub-propagation-model
+				 t))))) ; no-context-check = t
 
 ;;;; Menu
 
