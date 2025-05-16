@@ -54,7 +54,7 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 #+findex: tlon-dub-add-speaker-segment
 + ~tlon-dub-add-speaker-segment~ :: (Autoloaded) Adds a new segment for a specific speaker within an ElevenLabs dubbing project. Prompts for the =dubbing_id=, =speaker_id=, segment =start_time= (float, seconds), =end_time= (float, seconds), and the segment =text=. Sends a POST request to the API and displays the response.
 #+findex: tlon-dub-transcribe-with-whisperx
-+ ~tlon-dub-transcribe-with-whisperx~ :: (Autoloaded) Generates a transcript for a given audio or video file using the `whisperx` command-line tool. Prompts the user to select an =audio-file=. The command then runs `whisperx` with `--compute_type float32` and specifies the output directory (`--output_dir`) to be the same as the input file's directory. Output files (e.g., `.txt`, `.srt`, `.vtt`) are created by `whisperx` in that directory.
++ ~tlon-dub-transcribe-with-whisperx~ :: (Autoloaded) Generates a transcript for a given audio or video file *asynchronously* using the `whisperx` command-line tool. Prompts the user to select an =audio-file=. The command then runs `whisperx` with `--compute_type float32` and specifies the output directory (`--output_dir`) to be the same as the input file's directory. Output files (e.g., `.txt`, `.srt`, `.vtt`) are created by `whisperx` in that directory. A message is displayed in the echo area upon completion, and an output buffer (e.g., `*whisperx-filename.mp4-output*`) is created to show `whisperx`'s stdout/stderr.
 
 ** Internal Functions and Variables
 :PROPERTIES:
