@@ -1677,9 +1677,9 @@ cannot be determined from the file, prompt the user. Otherwise, error."
             (or (tlon-get-language-in-file nil) ; nil means current buffer
                 (if for-interactive-command
                     (tlon-select-language 'code)
-                  (user-error "Cannot determine language for %s." (file-name-nondirectory file-path))))))
+                  (user-error "Cannot determine language for %s" (file-name-nondirectory file-path))))))
       (unless language ; If tlon-select-language was used and user aborted, language is nil
-        (user-error "Language selection aborted for %s." (file-name-nondirectory file-path)))
+        (user-error "Language selection aborted for %s" (file-name-nondirectory file-path)))
 
       (if (string-empty-p (string-trim article-content))
           (message "Skipping %s: Article content is empty." (file-name-nondirectory file-path))
@@ -2085,7 +2085,7 @@ Uses AI to generate a meta description based on the current buffer's content."
   (interactive)
   (let ((current-file (buffer-file-name)))
     (unless current-file
-      (user-error "Current buffer is not visiting a file."))
+      (user-error "Current buffer is not visiting a file"))
     (tlon-ai--generate-and-insert-meta-description-for-file current-file t))) ; Pass t for interactive behavior
 
 (defun tlon-ai-create-meta-description-callback (response info)
@@ -2107,7 +2107,8 @@ response INFO."
 
 (defun tlon-ai-create-meta-descriptions-in-directory (directory)
   "Iterate over Markdown files in DIRECTORY, creating AI meta descriptions.
-Skips files that already have a meta description or if language cannot be determined."
+Skips files that already have a meta description or if language cannot be
+determined."
   (interactive "DDirectory: ")
   (let ((md-files (directory-files-recursively directory "\\.md$")))
     (unless md-files
