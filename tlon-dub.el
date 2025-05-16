@@ -189,18 +189,19 @@ Returns the path to the OUTPUT-FILE-PATH."
         (let ((current-line-text (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
           ;; 1. Expect Main Timestamp Line
           (if (string-match timestamp-regex current-line-text)
-              (progn
-                (push (format "\"%s\",\"%s\""
-                              (replace-regexp-in-string "\\." "," (match-string 1 current-line-text))
-                              (replace-regexp-in-string "\\." "," (match-string 2 current-line-text)))
-                      collected-lines)
-                (forward-line 1)
+              (let ((formatted-timestamp ; Store the formatted timestamp
+                     (format "\"%s\",\"%s\""
+                             (replace-regexp-in-string "\\." "," (match-string 1 current-line-text))
+                             (replace-regexp-in-string "\\." "," (match-string 2 current-line-text)))))
+                (forward-line 1) ; Consume the timestamp line
 
                 ;; 2. Skip one empty line after MainTS (if present)
                 (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
 
                 ;; 3. Collect Intermediate Text lines (potential "Tagged Text") until SecondaryTS or EOF
-                (let ((intermediate-text-parts '()))
+                ;;    and determine the final caption text.
+                (let ((intermediate-text-parts '())
+                      (caption-text-final "")) ; Initialize final caption text
                   (while (and (not (eobp)) (not (looking-at-p timestamp-marker-regex)))
                     (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) intermediate-text-parts)
                     (forward-line 1))
@@ -221,18 +222,22 @@ Returns the path to the OUTPUT-FILE-PATH."
                             (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) clean-text-parts)
                             (forward-line 1))
                           (if clean-text-parts
-                              (push (string-join (nreverse clean-text-parts) " ") collected-lines)
-                            (push "" collected-lines))) ; Push empty string if no clean text
+                              (setq caption-text-final (string-join (nreverse clean-text-parts) " "))
+                            ;; If no clean text, caption-text-final remains "", which is intended.
+                            ))
 
-                        ;; 7. Skip one empty line after CleanText (if present)
+                        ;; 7. Skip one empty line after CleanText (if present) - crucial for loop progression.
                         (when (and (not (eobp)) (looking-at-p blank-line-regex))
                           (forward-line 1)))
                     ;; Else (EOF reached, or non-TS line that breaks the pattern before a SecondaryTS)
                     ;; Use the collected intermediate-text-parts as the caption.
                     (progn
                       (if intermediate-text-parts
-                          (push (string-join (nreverse intermediate-text-parts) " ") collected-lines)
-                        (push "" collected-lines)))))) ; Push empty if no intermediate text either
+                          (setq caption-text-final (string-join (nreverse intermediate-text-parts) " "))
+                        ;; If no intermediate text, caption-text-final remains "", which is intended.
+                        )))
+                  ;; Combine stored timestamp and determined caption text, then push to collected-lines.
+                  (push (format "%s,\"%s\"" formatted-timestamp caption-text-final) collected-lines)))
             (progn ; Line was not a Main Timestamp as expected, skip it to find next block
               (forward-line 1))))))
 
