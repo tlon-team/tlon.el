@@ -63,6 +63,19 @@ Requires resource_id.")
   "API endpoint format for adding a speaker segment.
 Requires dubbing_id and speaker_id.")
 
+(defconst tlon-dub--vtt-timestamp-regex
+  "^\\([[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}\\.[[:digit:]]\\{3\\}\\) --> \\([[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}\\.[[:digit:]]\\{3\\}\\)"
+  "Regexp to match a VTT timestamp line and capture start and end times.
+Example: 00:00:00.240 --> 00:00:01.750")
+
+(defconst tlon-dub--vtt-timestamp-marker-regex
+  "^[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}\\.[[:digit:]]\\{3\\} -->"
+  "Regexp to identify the beginning of a VTT timestamp line.")
+
+(defconst tlon-dub--vtt-blank-line-regex
+  "^\\s-*$"
+  "Regexp to match a blank or whitespace-only line.")
+
 ;;;; Helper Functions
 
 (defun tlon-dub--get-content-type (filename)
@@ -173,10 +186,7 @@ Returns the path to the OUTPUT-FILE-PATH."
                                    "-converted."
                                    (or (file-name-extension source-file) "vtt"))))
 
-  (let ((collected-lines '())
-        (timestamp-regex "^\\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]\\) --> \\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]\\)")
-        (timestamp-marker-regex "^[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9] -->")
-        (blank-line-regex "^\\s-*$"))
+  (let ((collected-lines '()))
     (with-temp-buffer
       (insert-file-contents source-file)
       (goto-char (point-min))
@@ -187,7 +197,7 @@ Returns the path to the OUTPUT-FILE-PATH."
       (while (not (eobp))
         (let ((current-line-text (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
           ;; 1. Expect Main Timestamp Line
-          (if (string-match timestamp-regex current-line-text)
+          (if (string-match tlon-dub--vtt-timestamp-regex current-line-text)
               (let ((formatted-timestamp ; Store the formatted timestamp
                      (format "\"%s\",\"%s\""
                              (replace-regexp-in-string "\\." "," (match-string 1 current-line-text))
@@ -195,29 +205,29 @@ Returns the path to the OUTPUT-FILE-PATH."
                 (forward-line 1) ; Consume the timestamp line
 
                 ;; 2. Skip one empty line after MainTS (if present)
-                (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
+                (when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex)) (forward-line 1))
 
                 ;; 3. Collect Intermediate Text lines (potential "Tagged Text") until SecondaryTS or EOF
                 ;;    and determine the final caption text.
                 (let ((intermediate-text-parts '())
                       (caption-text-final "")) ; Initialize final caption text
-                  (while (and (not (eobp)) (not (looking-at-p timestamp-marker-regex)))
+                  (while (and (not (eobp)) (not (looking-at-p tlon-dub--vtt-timestamp-marker-regex)))
                     (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) intermediate-text-parts)
                     (forward-line 1))
 
-                  (if (looking-at-p timestamp-marker-regex) ; Found SecondaryTS
+                  (if (looking-at-p tlon-dub--vtt-timestamp-marker-regex) ; Found SecondaryTS
                       (progn
                         ;; 4. We are at SecondaryTS. Skip it.
                         (forward-line 1)
 
                         ;; 5. Skip one empty line after SecondaryTS (if present)
-                        (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
+                        (when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex)) (forward-line 1))
 
                         ;; 6. Collect Clean Text lines (this is the actual caption)
                         (let ((clean-text-parts '()))
                           (while (and (not (eobp))
-                                      (not (looking-at-p blank-line-regex))
-                                      (not (looking-at-p timestamp-marker-regex)))
+                                      (not (looking-at-p tlon-dub--vtt-blank-line-regex))
+                                      (not (looking-at-p tlon-dub--vtt-timestamp-marker-regex)))
                             (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) clean-text-parts)
                             (forward-line 1))
                           (if clean-text-parts
@@ -226,7 +236,7 @@ Returns the path to the OUTPUT-FILE-PATH."
                             ))
 
                         ;; 7. Skip one empty line after CleanText (if present) - crucial for loop progression.
-                        (when (and (not (eobp)) (looking-at-p blank-line-regex))
+                        (when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex))
                           (forward-line 1)))
                     ;; Else (EOF reached, or non-TS line that breaks the pattern before a SecondaryTS)
                     ;; Use the collected intermediate-text-parts as the caption.

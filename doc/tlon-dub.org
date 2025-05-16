@@ -88,3 +88,9 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + ~tlon-dub-share-resource-endpoint~ :: The API endpoint format string used for sharing a workspace resource ("/workspace/resources/%s/share"). Requires the =resource_id= (which is the =dubbing_id= for dubbing projects) to be formatted into the string.
 #+vindex: tlon-dub-add-speaker-segment-endpoint
 + ~tlon-dub-add-speaker-segment-endpoint~ :: The API endpoint format string used for adding a segment to a specific speaker within a dubbing project ("/dubbing/resource/%s/speaker/%s/segment"). Requires the =dubbing_id= and =speaker_id= to be formatted into the string.
+#+vindex: tlon-dub--vtt-timestamp-regex
++ ~tlon-dub--vtt-timestamp-regex~ :: Regexp to match a VTT timestamp line and capture start and end times (e.g., "00:00:00.240 --> 00:00:01.750"). Uses POSIX character classes.
+#+vindex: tlon-dub--vtt-timestamp-marker-regex
++ ~tlon-dub--vtt-timestamp-marker-regex~ :: Regexp to identify the beginning of a VTT timestamp line (e.g., "00:00:00.240 -->"). Uses POSIX character classes.
+#+vindex: tlon-dub--vtt-blank-line-regex
++ ~tlon-dub--vtt-blank-line-regex~ :: Regexp to match a blank or whitespace-only line.
