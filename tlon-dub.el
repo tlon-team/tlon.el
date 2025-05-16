@@ -503,43 +503,37 @@ The transcript file (.json) will be saved in the same directory as AUDIO-FILE.
 Uses --compute_type float32 and --output_format json by default.
 A message will be displayed upon completion."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
-  (let* ((expanded-audio-file (expand-file-name audio-file)) ; Expand the path
-         (output-dir (file-name-directory expanded-audio-file))
-         (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
-         (output-buffer (format "*%s-output*" process-name))
-         (command-parts (list "whisperx"
-                              expanded-audio-file ; Use the expanded path
-                              "--compute_type" "float32"
-                              "--output_format" "json" ; Specify JSON output
-                              "--output_dir" output-dir)))
+  (let* ((expanded-audio-file (expand-file-name audio-file))
+	 (output-dir (file-name-directory expanded-audio-file))
+	 (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
+	 (output-buffer (format "*%s-output*" process-name))
+	 (command-parts (list "whisperx"
+			      expanded-audio-file
+			      "--compute_type" "float32"
+			      "--output_format" "json"
+			      "--output_dir" output-dir)))
     (message "Starting whisperx JSON transcription for %s..." audio-file)
     (message "Output JSON file will be in %s. Check %s for progress/errors." output-dir output-buffer)
-
     (let ((process (apply #'start-process process-name output-buffer command-parts)))
       (set-process-sentinel
        process
        (lambda (proc event)
-         (let ((status (process-status proc)))
-           (with-current-buffer (process-buffer proc)
-             (message "Whisperx process '%s' for '%s' finished with status: %s. Output in %s and buffer %s"
-                      (process-name proc)
-                      expanded-audio-file ; Use expanded path in message
-                      status
-                      output-dir
-                      (buffer-name (process-buffer proc))))
-           (if (memq status '(exit signal)) ; Check if process actually exited or was signaled
-               (cond
-                ((string-match "exited abnormally" event)
-                 (message "Whisperx process for %s exited abnormally. Check buffer %s for details."
-                          expanded-audio-file (buffer-name (process-buffer proc))) ; Use expanded path
-                 (display-buffer (process-buffer proc)))
-                ((string-match "finished" event) ; Normal finish
-                 (message "Whisperx transcription for %s completed successfully. Output in %s."
-                          expanded-audio-file output-dir)) ; Use expanded path
-                (t ; Other signals or unknown event string parts
-                 (message "Whisperx process for %s event: %s. Output in %s. Check buffer %s."
-                          expanded-audio-file event output-dir (buffer-name (process-buffer proc)))))))))))) ; Use expanded path
+	 (let ((status (process-status proc)))
+	   (with-current-buffer (process-buffer proc)
+	     (message "Whisperx process '%s' for '%s' finished with status: %s. Output in %s and buffer %s"
+		      (process-name proc) expanded-audio-file status output-dir (buffer-name (process-buffer proc))))
+	   (when (memq status '(exit signal))
+	     (cond
+	      ((string-match "exited abnormally" event)
+	       (message "Whisperx process for %s exited abnormally. Check buffer %s for details."
+			expanded-audio-file (buffer-name (process-buffer proc)))
+	       (display-buffer (process-buffer proc)))
+	      ((string-match "finished" event)
+	       (message "Whisperx transcription for %s completed successfully. Output in %s."
+			expanded-audio-file output-dir))
+	      (t
+	       (message "Whisperx process for %s event: %s. Output in %s. Check buffer %s."
+			expanded-audio-file event output-dir (buffer-name (process-buffer proc))))))))))))
 
 (provide 'tlon-dub)
-
 ;;; tlon-dub.el ends here
