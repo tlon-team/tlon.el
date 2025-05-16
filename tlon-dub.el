@@ -32,8 +32,6 @@
 (eval-when-compile (require 'threads))
 (require 'tlon-ai)
 (require 'transient)
-(require 'gptel) ; For gptel--known-backends
-(require 'gptel-core) ; For gptel-backend-models, gptel--model-name
 
 (defgroup tlon-dub ()
   "Dubbing functionality using ElevenLabs."
