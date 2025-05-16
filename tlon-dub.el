@@ -658,10 +658,8 @@ If nil, use the default `gptel-model'."
     ("g" "Get Dubbing Transcript (VTT)" tlon-dub-get-dubbing)
     ("r" "Get Resource Data" tlon-dub-get-resource-data)
     ("a" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
-   ["Utilities"
-    ("c" "Convert VTT to CSV (ElevenLabs)" tlon-dub-convert-vtt-to-csv)]
-   ["Model Selection"
-    ("M" "Propagation Model" tlon-dub-infix-select-propagation-model)]])
+   ["Options"
+    ("-m" "Propagation Model" tlon-dub-infix-select-propagation-model)]])
 
 (provide 'tlon-dub)
 ;;; tlon-dub.el ends here
