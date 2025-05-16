@@ -42,6 +42,7 @@
   [["Main menu"
     "Submenus"
     ("a" "AI"                             tlon-ai-menu)
+    ("b" "dub"                            tlon-dub-menu)
     ("c" "clock"                          tlon-clock-menu)
     ("H-d" "dict"                         tlon-dict-menu)
     ("e" "ebib"                           tlon-ebib-menu)
