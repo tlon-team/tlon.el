@@ -27,6 +27,19 @@ This module provides functionality to interact with the ElevenLabs Dubbing API, 
 + =threads= (for the =cond->= macro)
 + External tools: =curl= (for API requests).
 
+** Standard Workflow
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-dub-workflow
+:END:
+
+This workflow presupposes that we already have (1) the original audio and video files, (2) a human-edited transcript and (3) a translation into the target language made from that transcript.
+
+1. Generate a new transcript with =whisperx= from the original audio file using ~tlon-dub-transcribe-with-whisperx~. This will produce a JSON file with timestamps.
+2. Propagate the timestamps from the =whisperx=-generated JSON file to the human-edited transcript. (This step currently requires external tooling or manual effort, potentially aided by AI.)
+3. Propagate the timestamps from the human-edited transcript (now with timestamps) to the translation into the target language. (This step also currently requires external tooling or manual effort.)
+4. Create a CSV file from the timestamped human-edited transcript and the timestamped translation. The CSV should be in the format required by ElevenLabs (speaker, start_time, end_time, transcription, translation). The function ~tlon-dub-convert-vtt-to-csv~ can be adapted or used as a reference if your timestamped transcripts are in VTT format.
+5. Go to [[https://elevenlabs.io/app/dubbing]] and create a new manual dubbing project, uploading the original audio/video files and the CSV file created in the previous step.
+
 ** User Options
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-options
