@@ -163,7 +163,7 @@ If nil, it defaults to SOURCE-FILE with \"-converted\" suffix and
 the same extension (or \".vtt\" if none).
 
 The output format consists of pairs of lines:
-  "HH:MM:SS,mmm","HH:MM:SS,mmm"
+  \"HH:MM:SS,mmm\",\"HH:MM:SS,mmm\"
   Caption text
 
 It does not include 'WEBVTT' headers or blank lines between entries.
