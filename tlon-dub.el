@@ -163,7 +163,7 @@ If nil, it defaults to SOURCE-FILE with \"-converted\" suffix and
 the same extension (or \".vtt\" if none).
 
 The output format consists of pairs of lines:
-  HH:MM:SS.mmm --> HH:MM:SS.mmm
+  "HH:MM:SS,mmm","HH:MM:SS,mmm"
   Caption text
 
 It does not include 'WEBVTT' headers or blank lines between entries.
@@ -190,7 +190,10 @@ Returns the path to the OUTPUT-FILE-PATH."
           ;; 1. Expect Main Timestamp Line
           (if (string-match timestamp-regex current-line-text)
               (progn
-                (push (format "%s --> %s" (match-string 1 current-line-text) (match-string 2 current-line-text)) collected-lines)
+                (push (format "\"%s\",\"%s\""
+                              (replace-regexp-in-string "\\." "," (match-string 1 current-line-text))
+                              (replace-regexp-in-string "\\." "," (match-string 2 current-line-text)))
+                      collected-lines)
                 (forward-line 1)
 
                 ;; 2. Skip one empty line after MainTS (if present)
