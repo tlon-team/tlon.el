@@ -496,6 +496,25 @@ segment IDs."
 		 (message "Error parsing JSON response: %s" err)
 		 response))))))
 
+;;;###autoload
+(defun tlon-dub-generate-transcript-with-whisperx (audio-file)
+  "Generate a transcript for AUDIO-FILE using whisperx.
+The transcript files (.txt, .srt, .vtt) will be saved in the same
+directory as AUDIO-FILE. Uses --compute_type float32 by default."
+  (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
+  (let* ((output-dir (file-name-directory audio-file))
+         (command (format "whisperx %s --compute_type float32 --output_dir %s"
+                          (shell-quote-argument audio-file)
+                          (shell-quote-argument output-dir))))
+    (message "Running whisperx on %s..." audio-file)
+    (message "Output will be in %s" output-dir)
+    (message "Executing: %s" command)
+    ;; Consider using start-process for asynchronous execution if whisperx takes a long time
+    ;; For simplicity, using shell-command which will block Emacs.
+    (shell-command command)
+    (message "whisperx processing finished for %s. Check %s for output files."
+             audio-file output-dir)))
+
 (provide 'tlon-dub)
 
 ;;; tlon-dub.el ends here
