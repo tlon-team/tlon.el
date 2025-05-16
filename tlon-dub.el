@@ -196,31 +196,40 @@ Returns the path to the OUTPUT-FILE-PATH."
                 ;; 2. Skip one empty line after MainTS (if present)
                 (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
 
-                ;; 3. Skip Tagged Text lines until SecondaryTS
-                (while (and (not (eobp)) (not (looking-at-p timestamp-marker-regex)))
-                  (forward-line 1))
+                ;; 3. Collect Intermediate Text lines (potential "Tagged Text") until SecondaryTS or EOF
+                (let ((intermediate-text-parts '()))
+                  (while (and (not (eobp)) (not (looking-at-p timestamp-marker-regex)))
+                    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) intermediate-text-parts)
+                    (forward-line 1))
 
-                (if (eobp)
-                    (user-error "Unexpected EOF while looking for Secondary Timestamp in %s" source-file)
-                  ;; 4. We are at SecondaryTS. Skip it.
-                  (forward-line 1)
+                  (if (looking-at-p timestamp-marker-regex) ; Found SecondaryTS
+                      (progn
+                        ;; 4. We are at SecondaryTS. Skip it.
+                        (forward-line 1)
 
-                  ;; 5. Skip one empty line after SecondaryTS (if present)
-                  (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
+                        ;; 5. Skip one empty line after SecondaryTS (if present)
+                        (when (and (not (eobp)) (looking-at-p blank-line-regex)) (forward-line 1))
 
-                  ;; 6. Collect Clean Text lines
-                  (let ((clean-text-parts '()))
-                    (while (and (not (eobp))
-                                (not (looking-at-p blank-line-regex))
-                                (not (looking-at-p timestamp-marker-regex)))
-                      (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) clean-text-parts)
-                      (forward-line 1))
-                    (when clean-text-parts
-                      (push (string-join (nreverse clean-text-parts) " ") collected-lines)))
+                        ;; 6. Collect Clean Text lines (this is the actual caption)
+                        (let ((clean-text-parts '()))
+                          (while (and (not (eobp))
+                                      (not (looking-at-p blank-line-regex))
+                                      (not (looking-at-p timestamp-marker-regex)))
+                            (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) clean-text-parts)
+                            (forward-line 1))
+                          (if clean-text-parts
+                              (push (string-join (nreverse clean-text-parts) " ") collected-lines)
+                            (push "" collected-lines))) ; Push empty string if no clean text
 
-                  ;; 7. Skip one empty line after CleanText (if present)
-                  (when (and (not (eobp)) (looking-at-p blank-line-regex))
-                    (forward-line 1))))
+                        ;; 7. Skip one empty line after CleanText (if present)
+                        (when (and (not (eobp)) (looking-at-p blank-line-regex))
+                          (forward-line 1)))
+                    ;; Else (EOF reached, or non-TS line that breaks the pattern before a SecondaryTS)
+                    ;; Use the collected intermediate-text-parts as the caption.
+                    (progn
+                      (if intermediate-text-parts
+                          (push (string-join (nreverse intermediate-text-parts) " ") collected-lines)
+                        (push "" collected-lines)))))) ; Push empty if no intermediate text either
             (progn ; Line was not a Main Timestamp as expected, skip it to find next block
               (forward-line 1))))))
 
