@@ -571,17 +571,17 @@ HUMAN-TRANSCRIPT-FILE is the path to the original human-edited transcript file."
   (if (not response)
       (tlon-ai-callback-fail info) ; Use the failure callback from tlon-ai
     (let* ((default-output-name (concat (file-name-sans-extension human-transcript-file)
-                                        "-timestamped.vtt"))
-           (output-file (read-file-name "Save timestamped transcript as: "
-                                        (file-name-directory human-transcript-file)
-                                        default-output-name nil default-output-name)))
+					"-timestamped.vtt"))
+	   (output-file (read-file-name "Save timestamped transcript as: "
+					(file-name-directory human-transcript-file)
+					default-output-name nil default-output-name)))
       (if output-file
-          (progn
-            (with-temp-buffer
-              (insert response)
-              (write-file output-file))
-            (message "Timestamped transcript saved to: %s" output-file))
-        (message "Timestamp propagation cancelled by user (no output file selected).")))))
+	  (progn
+	    (with-temp-buffer
+	      (insert response)
+	      (write-file output-file))
+	    (message "Timestamped transcript saved to: %s" output-file))
+	(message "Timestamp propagation cancelled by user (no output file selected).")))))
 
 ;;;###autoload
 (defun tlon-dub-propagate-timestamps-from-whisperx (whisperx-json-file human-transcript-file)
@@ -591,18 +591,18 @@ WhisperX JSON output with the (human-edited) plain text transcript.
 The result, a VTT-like transcript, is saved to a new file specified by the user."
   (interactive
    (list (read-file-name "WhisperX JSON transcript file: " nil nil t)
-         (read-file-name "Human-edited plain text transcript file: " nil nil t)))
+	 (read-file-name "Human-edited plain text transcript file: " nil nil t)))
   (unless (file-exists-p whisperx-json-file)
     (user-error "WhisperX JSON file not found: %s" whisperx-json-file))
   (unless (file-exists-p human-transcript-file)
     (user-error "Human-edited transcript file not found: %s" human-transcript-file))
 
   (let ((whisperx-content (with-temp-buffer
-                            (insert-file-contents whisperx-json-file)
-                            (buffer-string)))
-        (human-text-content (with-temp-buffer
-                              (insert-file-contents human-transcript-file)
-                              (buffer-string))))
+			    (insert-file-contents whisperx-json-file)
+			    (buffer-string)))
+	(human-text-content (with-temp-buffer
+			      (insert-file-contents human-transcript-file)
+			      (buffer-string))))
     (if (or (string-empty-p whisperx-content) (string-empty-p human-text-content))
         (user-error "One or both input files are empty.")
                             whisperx-content
@@ -620,21 +620,21 @@ The result, a VTT-like transcript, is saved to a new file specified by the user.
 (defun tlon-dub-propagation-model-reader (prompt _ _)
   "Reader function for selecting the AI model for timestamp propagation."
   (let* ((choices
-          (append
-           '(("Default model" . nil)) ; Option to use gptel-model
-           (cl-loop for (backend-name . backend) in gptel--known-backends
-                    append (cl-loop for model in (gptel-backend-models backend)
-                                    collect (cons (format "%s: %s"
-                                                          backend-name
-                                                          (gptel--model-name model))
-                                                  (cons backend-name model))))))
-         (current-value (symbol-value 'tlon-dub-propagation-model))
-         (current-label (if current-value
-                            (format "%s: %s" (car current-value) (cdr current-value))
-                          "Default model"))
-         (selection (completing-read
-                     (format "%s (current: %s): " prompt current-label)
-                     choices nil t)))
+	  (append
+	   '(("Default model" . nil)) ; Option to use gptel-model
+	   (cl-loop for (backend-name . backend) in gptel--known-backends
+		    append (cl-loop for model in (gptel-backend-models backend)
+				    collect (cons (format "%s: %s"
+							  backend-name
+							  (gptel--model-name model))
+						  (cons backend-name model))))))
+	 (current-value (symbol-value 'tlon-dub-propagation-model))
+	 (current-label (if current-value
+			    (format "%s: %s" (car current-value) (cdr current-value))
+			  "Default model"))
+	 (selection (completing-read
+		     (format "%s (current: %s): " prompt current-label)
+		     choices nil t)))
     (cdr (assoc selection choices))))
 
 (transient-define-infix tlon-dub-infix-select-propagation-model ()
