@@ -2136,10 +2136,10 @@ Skips files that already have a meta description or if language cannot be determ
 ;;;###autoload
 (defun tlon-ai-propagate-changes ()
   "Propagate modifications from the latest commit of the current file.
-Gets the diff of the latest commit affecting the current file in its repository.
+Get the diff of the latest commit affecting the current file in its repository.
 Then, for each corresponding file in other \"uqbar\" content
-repositories (originals and translations), asks the AI to apply the semantically
-equivalent changes. Finally, commits the changes made by the AI in each target
+repositories (originals and translations), ask the AI to apply the semantically
+equivalent changes. Finally, commit the changes made by the AI in each target
 repository."
   (interactive)
   (let* ((source-file (buffer-file-name))
