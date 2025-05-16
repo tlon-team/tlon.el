@@ -503,11 +503,12 @@ The transcript files (.txt, .srt, .vtt) will be saved in the same
 directory as AUDIO-FILE. Uses --compute_type float32 by default.
 A message will be displayed upon completion."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
-  (let* ((output-dir (file-name-directory audio-file))
-         (process-name (format "whisperx-%s" (file-name-nondirectory audio-file)))
+  (let* ((expanded-audio-file (expand-file-name audio-file)) ; Expand the path
+         (output-dir (file-name-directory expanded-audio-file))
+         (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
          (output-buffer (format "*%s-output*" process-name))
          (command-parts (list "whisperx"
-                              audio-file
+                              expanded-audio-file ; Use the expanded path
                               "--compute_type" "float32"
                               "--output_dir" output-dir)))
     (message "Starting whisperx transcription for %s..." audio-file)
@@ -521,7 +522,7 @@ A message will be displayed upon completion."
            (with-current-buffer (process-buffer proc)
              (message "Whisperx process '%s' for '%s' finished with status: %s. Output in %s and buffer %s"
                       (process-name proc)
-                      audio-file
+                      expanded-audio-file ; Use expanded path in message
                       status
                       output-dir
                       (buffer-name (process-buffer proc))))
@@ -529,14 +530,14 @@ A message will be displayed upon completion."
                (cond
                 ((string-match "exited abnormally" event)
                  (message "Whisperx process for %s exited abnormally. Check buffer %s for details."
-                          audio-file (buffer-name (process-buffer proc)))
+                          expanded-audio-file (buffer-name (process-buffer proc))) ; Use expanded path
                  (display-buffer (process-buffer proc)))
                 ((string-match "finished" event) ; Normal finish
                  (message "Whisperx transcription for %s completed successfully. Output in %s."
-                          audio-file output-dir))
+                          expanded-audio-file output-dir)) ; Use expanded path
                 (t ; Other signals or unknown event string parts
                  (message "Whisperx process for %s event: %s. Output in %s. Check buffer %s."
-                          audio-file event output-dir (buffer-name (process-buffer proc))))))))))))
+                          expanded-audio-file event output-dir (buffer-name (process-buffer proc)))))))))))) ; Use expanded path
 
 (provide 'tlon-dub)
 
