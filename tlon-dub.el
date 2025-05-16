@@ -164,8 +164,8 @@ Each segment is a plist with :start, :end, and :text keys."
       (push current-segment segments))
     (nreverse segments)))
 
-(defun tlon-dub-convert-vtt-source-to-dest-format (source-file &optional output-file-path)
-  "Convert VTT file from \"source.vtt\" format to \"dest.vtt\" example format.
+(defun tlon-dub-convert-vtt-to-csv (source-file &optional output-file-path)
+  "Convert VTT file to a CSV file in the format required by Elevenlabs.
 SOURCE-FILE is the path to the VTT file in the complex format, which includes
 headers, blank lines, tagged text lines, and duplicated timestamp/text entries.
 
@@ -179,7 +179,11 @@ The output format consists of single lines:
 
 It does not include \"WEBVTT\" headers or blank lines between entries.
 
-Returns the path to the OUTPUT-FILE-PATH."
+Returns the path to the OUTPUT-FILE-PATH.
+
+The Elevenlabs format is defined here:
+
+<https://elevenlabs.io/docs/product-guides/products/dubbing/dubbing-studio#example-csv-files>"
   (unless output-file-path
     (setq output-file-path (concat (file-name-sans-extension source-file)
                                    "-converted."
