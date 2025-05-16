@@ -183,17 +183,7 @@ Returns the path to the OUTPUT-FILE-PATH."
       (goto-char (point-min))
       ;; Skip header lines (WEBVTT, Kind, Language, empty lines)
       (while (and (not (eobp)) (looking-at-p "^WEBVTT\\|^Kind:\\|^Language:\\|\\s-*$"))
-        (if (looking-at-p blank-line-regex)
-            ;; If it's a blank line and there's non-blank content after, consume it.
-            ;; Otherwise, if it's multiple blank lines before content, this handles them.
-            ;; If it's blank lines at EOF, (eobp) will catch it.
-            (let ((start (point)))
-              (forward-line 1)
-              (if (and (eobp) (string-blank-p (buffer-substring-no-properties start (point))))
-                  ;; Reached EOF and it was all blank, break.
-                  (goto-char (point-max))
-                (goto-char start))) ; revert if not just blank lines or if content follows
-          (forward-line 1)))
+        (forward-line 1))
 
       (while (not (eobp))
         (let ((current-line-text (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
