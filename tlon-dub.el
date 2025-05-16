@@ -497,7 +497,7 @@ segment IDs."
 		 response))))))
 
 ;;;###autoload
-(defun tlon-dub-generate-transcript-with-whisperx (audio-file)
+(defun tlon-dub-transcribe-with-whisperx (audio-file)
   "Generate a transcript for AUDIO-FILE using whisperx.
 The transcript files (.txt, .srt, .vtt) will be saved in the same
 directory as AUDIO-FILE. Uses --compute_type float32 by default."
