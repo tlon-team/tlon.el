@@ -498,9 +498,9 @@ segment IDs."
 
 ;;;###autoload
 (defun tlon-dub-transcribe-with-whisperx (audio-file)
-  "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
-The transcript files (.txt, .srt, .vtt) will be saved in the same
-directory as AUDIO-FILE. Uses --compute_type float32 by default.
+  "Generate a JSON transcript for AUDIO-FILE asynchronously using whisperx.
+The transcript file (.json) will be saved in the same directory as AUDIO-FILE.
+Uses --compute_type float32 and --output_format json by default.
 A message will be displayed upon completion."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
   (let* ((expanded-audio-file (expand-file-name audio-file)) ; Expand the path
@@ -510,9 +510,10 @@ A message will be displayed upon completion."
          (command-parts (list "whisperx"
                               expanded-audio-file ; Use the expanded path
                               "--compute_type" "float32"
+                              "--output_format" "json" ; Specify JSON output
                               "--output_dir" output-dir)))
-    (message "Starting whisperx transcription for %s..." audio-file)
-    (message "Output will be in %s. Check %s for progress/errors." output-dir output-buffer)
+    (message "Starting whisperx JSON transcription for %s..." audio-file)
+    (message "Output JSON file will be in %s. Check %s for progress/errors." output-dir output-buffer)
 
     (let ((process (apply #'start-process process-name output-buffer command-parts)))
       (set-process-sentinel
