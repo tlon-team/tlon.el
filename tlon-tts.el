@@ -2054,13 +2054,14 @@ created by appending silence, if any."
                                           temp-silence-appended-files-to-cleanup
                                           t)))))) ; Normalized files are temporary
 
-(defun tlon-tts-normalization-sentinel (process event final-output-file temp-normalized-output-files api-generated-chunk-files temp-silence-appended-files-to-cleanup)
+(defun tlon-tts-normalization-sentinel (process event final-output-file temp-normalized-output-files api-generated-chunk-files temp-silence-appended-files-to-cleanup normalized-files-are-temporary-p)
   "Sentinel for the asynchronous normalization PROCESS.
 EVENT is the event string, FINAL-OUTPUT-FILE is the final output file path,
 TEMP-NORMALIZED-OUTPUT-FILES are the normalized files, API-GENERATED-CHUNK-FILES
-are the original files from the TTS engine, and
+are the original files from the TTS engine,
 TEMP-SILENCE-APPENDED-FILES-TO-CLEANUP are temporary files created by appending
-silence."
+silence, and NORMALIZED-FILES-ARE-TEMPORARY-P is a boolean indicating if the
+normalized files are temporary and should be cleaned up after joining."
   (cond
    ((string-match "finished" event)
     (message "Normalization finished. Starting asynchronous joining...")
@@ -2068,7 +2069,7 @@ silence."
                                   final-output-file
                                   api-generated-chunk-files
                                   temp-silence-appended-files-to-cleanup
-                                  t)) ; Input files (normalized ones) are temporary
+                                  normalized-files-are-temporary-p)) ; Pass the flag
    ((string-match "exited abnormally" event)
     (message "Error during asynchronous normalization: %s" event)
     (when-let ((buffer (process-buffer process)))
