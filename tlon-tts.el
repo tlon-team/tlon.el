@@ -1032,7 +1032,8 @@ TTS engine pronounces the numbers correctly.")
   '(("es" . ("millones" "millón" "mil" "billones" "billón" "trillones" "trillón"))
     ("en" . ("trillion" "billion" "million" "thousand")))
   "List of currency unit words by language.
-Order longer units before shorter ones if they share prefixes, for correct regex matching.")
+Order longer units before shorter ones if they share prefixes, for correct regex
+matching.")
 
 (defconst tlon-tts-currency-unit-prepositions
   '(("es" . (("millones" . " de ")
@@ -1045,8 +1046,8 @@ Order longer units before shorter ones if they share prefixes, for correct regex
              (t . " ")))  ; Default preposition (a space) if unit present but not listed
     ("en" . ((t . " ")))) ; Default for English (e.g., "seven million dollars")
   "Prepositions to use between currency unit and currency name, by language.
-The car of each sub-alist entry is the unit word (or t for default),
-and the cdr is the preposition string (often including leading/trailing spaces as needed).")
+The car of each sub-alist entry is the unit word (or t for default), and the cdr
+is the preposition string (often including leading/trailing spaces as needed).")
 
 ;;;;; Tag sections
 
@@ -2752,8 +2753,8 @@ USE-CONTEXT is non-nil."
 ;;;###autoload
 (defun tlon-tts-move-file-to-audio-server (&optional file)
   "Move audio FILE to the audio repo, then stage, commit, and push the change.
-The language and bare directory (e.g., \"articulos\", \"temas\") are inferred from
-the source FILE's path. The file will be moved to a path like
+The language and bare directory (e.g., \"articulos\", \"temas\") are inferred
+from the source FILE's path. The file will be moved to a path like
 \"uqbar-audio/lang/bare-dir/filename.ext\"."
   (interactive)
   (let* ((file (files-extras-read-file file))
