@@ -95,6 +95,10 @@ Example: \"00:00:00.240 --> 00:00:01.750\"")
   "^\\s-*$"
   "Regexp to match a blank or whitespace-only line.")
 
+(defconst tlon-dub-csv-header
+  "speaker,start_time,end_time,transcription,translation"
+  "Header for the ElevenLabs CSV file.")
+
 (defconst tlon-dub-propagate-machine-timestamps-prompt
   "You will be given two inputs:
 
@@ -257,10 +261,8 @@ headers, blank lines, tagged text lines, and duplicated timestamp/text entries.
 OUTPUT-FILE-PATH is the optional path for the converted CSV file. If nil, it
 defaults to SOURCE-FILE with its extension changed to \".csv\".
 
-The CSV file starts with a header line:
-  speaker,start_time,end_time,transcription,translation
-
-Subsequent data lines have the format:
+  The CSV file starts with the header line specified in `tlon-dub-csv-header'.
+  Subsequent data lines have the format:
   \"\",\"HH:MM:SS,mmm\",\"HH:MM:SS,mmm\",\"Caption text\",\"\"
 
 This format is intended for Elevenlabs, as detailed here:
@@ -325,9 +327,8 @@ Returns the path to the OUTPUT-FILE-PATH."
 				formatted-timestamp caption-text-final) collected-lines)))
 	    (forward-line 1)))))
     (if collected-lines
-	(let* ((header "speaker,start_time,end_time,transcription,translation")
-	       (data-string (string-join (nreverse collected-lines) "\n"))
-	       (final-content (concat header "\n" data-string)))
+	(let* ((data-string (string-join (nreverse collected-lines) "\n"))
+	       (final-content (concat tlon-dub-csv-header "\n" data-string)))
 	  (write-region final-content nil output-file-path nil 'silent)
 	  output-file-path)
       (user-error "No VTT segments found or processed in %s. Output file not created" source-file))))
@@ -762,37 +763,32 @@ Returns nil if parsing fails or file is empty."
   (format "\"%s\"" (replace-regexp-in-string "\"" "\"\"" str)))
 
 ;;;###autoload
-(defun tlon-dub-convert-srt-to-csv (english-srt-file translated-srt-file &optional output-csv-file)
+(defun tlon-dub-convert-srt-to-csv (english-srt-file translated-srt-file)
   "Convert English and Translated SRT files to a CSV file for ElevenLabs.
 ENGLISH-SRT-FILE is the path to the timestamped English SRT file.
 TRANSLATED-SRT-FILE is the path to the timestamped translated SRT file.
 OUTPUT-CSV-FILE is the optional path for the output CSV. If nil, it defaults
 to a CSV file named after the ENGLISH-SRT-FILE in the same directory.
 
-The CSV format is: speaker,start_time,end_time,transcription,translation
+The CSV file starts with the header line specified in `tlon-dub-csv-header'.
 
 The function will raise an error if the number of segments in the two SRT
 files does not match, or if any corresponding segments have differing start or
 end timestamps."
   (interactive
    (list (read-file-name "English SRT file: " nil nil t ".srt")
-	 (read-file-name "Translated SRT file: " nil nil t ".srt")
-	 (let ((default-name (concat (file-name-sans-extension (read-file-name "English SRT file (for output name): " nil nil t ".srt")) ".csv")))
-	   (read-file-name "Output CSV file: " (file-name-directory default-name) default-name nil nil))))
+	 (read-file-name "Translated SRT file: " nil nil t ".srt")))
   (let ((english-segments (tlon-dub--parse-srt-file english-srt-file))
 	(translated-segments (tlon-dub--parse-srt-file translated-srt-file)))
     (unless english-segments
       (user-error "Could not parse English SRT file, or it is empty: %s" english-srt-file))
     (unless translated-segments
       (user-error "Could not parse translated SRT file, or it is empty: %s" translated-srt-file))
-
     (unless (= (length english-segments) (length translated-segments))
       (user-error "Mismatch in number of segments: English SRT has %d, Translated SRT has %d"
 		  (length english-segments) (length translated-segments)))
-
-    (let ((csv-lines '("speaker,start_time,end_time,transcription,translation"))
-	  (output-path (or output-csv-file
-			   (concat (file-name-sans-extension english-srt-file) ".csv"))))
+    (let ((csv-lines (list tlon-dub-csv-header))
+	  (output-path (concat (file-name-sans-extension english-srt-file) ".csv")))
       (dotimes (i (length english-segments))
 	(let* ((eng-seg (nth i english-segments))
 	       (trans-seg (nth i translated-segments))
