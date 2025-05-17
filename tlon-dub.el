@@ -132,7 +132,7 @@ Example: \"00:00:00,240 --> 00:00:01,750\"")
 (defconst tlon-dub-propagate-machine-timestamps-prompt
   "You will be given two inputs:
 
-1. A machine-generated JSON transcript with timestamps.
+1. A machine-generated JSON transcript with timestamps. This JSON transcript primarily provides 'start' and 'end' timestamps for words or segments. The 'text' or 'word' fields provide the transcribed content. Other per-word details, like 'score' (transcription confidence), might be present in the JSON but are not essential for your main task of timestamp alignment with the human-edited transcript.
 
 2. A human-edited Markdown transcript of the same audio.
 
