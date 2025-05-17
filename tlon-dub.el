@@ -634,33 +634,11 @@ HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
 
 ;;;; Menu
 
-(defun tlon-dub-propagation-model-reader (prompt _ _)
-  "Reader function for selecting the AI model for timestamp propagation."
-  (let* ((choices
-	  (append
-	   '(("Default model" . nil)) ; Option to use gptel-model
-	   (cl-loop for (backend-name . backend) in gptel--known-backends
-		    append (cl-loop for model in (gptel-backend-models backend)
-				    collect (cons (format "%s: %s"
-							  backend-name
-							  (gptel--model-name model))
-						  (cons backend-name model))))))
-	 (current-value (symbol-value 'tlon-dub-propagation-model))
-	 (current-label (if current-value
-			    (format "%s: %s" (car current-value) (cdr current-value))
-			  "Default model"))
-	 (selection (completing-read
-		     (format "%s (current: %s): " prompt current-label)
-		     choices nil t)))
-    (cdr (assoc selection choices))))
-
 (transient-define-infix tlon-dub-infix-select-propagation-model ()
   "AI model to use for propagating timestamps.
 If nil, use the default `gptel-model'."
-  :class 'transient-lisp-variable
-  :variable 'tlon-dub-propagation-model
-  :reader 'tlon-dub-propagation-model-reader
-  :prompt "Propagation Model: ")
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-dub-propagation-model)
 
 ;;;###autoload (autoload 'tlon-dub-menu "tlon-dub" nil t)
 (transient-define-prefix tlon-dub-menu ()
