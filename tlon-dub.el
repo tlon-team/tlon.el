@@ -131,13 +131,11 @@ Example: \"00:00:00,240 --> 00:00:01,750\"")
 (defconst tlon-dub-propagate-machine-timestamps-prompt
   "You will be given two inputs:
 
-1. A machine-generated JSON transcript with timestamps.
+1. A machine-generated srt transcript with timestamps.
 
 2. A human-edited Markdown transcript of the same audio.
 
 The human-edited transcript is more accurate in terms of wording, but has no timestamps.
-
-Your task is to create a new SRT file that combines the timestamps in the WhisperX JSON file with the contents of the human-edited transcript. For each paragraph in the human-edited transcript, determine its start and end times based on the JSON timestamps, and then format this as an SRT segment.
 
 Here is the Machine-generated JSON file:
 
@@ -151,15 +149,37 @@ And here is the human-edited transcript file (plain text or Markdown):
 %s
 ```
 
-Return only the contents of the new SRT file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Do not add paragraph numbers before the timestamps. Here’s an example:
+Your task is to create a new SRT file that keeps the timestamps in the srt file but repalces the machine-generated transcript with the human-edited transcript. For each sentence in the machine-generated transcript, locate the corresponding part in the human-edited file and use that.
+
+Note that, occasionally, the sentence in the srt file won't have a sentence counterpart in the Markdown file. In these cases, you should change the punctuation in the Markdown file to make the two sentences match. For example, say you have this in the srt file:
 
 ```
 00:00:00,031 --> 00:00:04,360
-An element of Douglas Allen’s argument that I didn’t expand on was the British Navy. He has a separate paper called “The British Navy Rules” that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827 (i.e. for most of the age of fighting sail).
+An element of Douglas Allens argument that, er, I didn’t expand on was the british navy.
 
-00:00:04,180 --> 00:00:13,910
-In the Seven Years’ War (1756–1763) the British had a 7-to-1 casualty difference in single-ship actions. During the French Revolutionary and Napoleonic Wars (1793–1815) the British had a 5-to-1 difference in captured/destroyed ships, and a 30-to-1 difference for ships of the line—the largest and most powerful ships. By the 1800s, contemporary accounts expected British ships to defeat opponents that had 50 percent greater gunpower and crew.
-```"
+00:00:04,770 --> 00:00:08,990
+He has, eh, a separate paper called The British Navy Rules that goes in more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
+```
+
+and this in the Markdown file:
+
+```
+An element of Douglas Allen’s argument that I didn’t expand on was the British Navy; he has a separate paper called “The British Navy Rules” that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
+```
+
+In this example, you should return
+
+```
+00:00:00,031 --> 00:00:04,360
+An element of Douglas Allen’s argument that I didn’t expand on was the British Navy
+
+00:00:04,770 --> 00:00:08,990
+He has a separate paper called “The British Navy Rules” that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
+```
+
+As you can see, we use the text from the Markdown file, with the exception that we replace the semicolon with a period to make the sentences in this file match the sentences in the SRT file. This is very important because we always want the timestamps to be accurate.
+
+Return only the contents of the new timestamped translated SRT file, without any additional commentary (such as \"Here is the text you requested.\"). Do not enclose these contents in a code block such as \"```srt\"."
   "Prompt for timestamp propagation.")
 
 (defconst tlon-dub-propagate-english-timestamps-prompt
@@ -169,7 +189,7 @@ In the Seven Years’ War (1756–1763) the British had a 7-to-1 casualty differ
 
 2. A plain text or Markdown file with the translation of that transcript into another language. This translation does not have timestamps.
 
-Your task is to create a new SRT file that combines the timestamps from the English SRT file with the content of the translated file. Each segment in the output SRT file should use the timestamps from the corresponding English segment and the text from the translated file.
+Your task is to create a new SRT file that zcombines the timestamps from the English SRT file with the content of the translated file. Each segment in the output SRT file should use the timestamps from the corresponding English segment and the text from the translated file.
 
 English SRT file with timestamps:
 
@@ -183,14 +203,14 @@ Translated plain text/Markdown file without timestamps:
 %s
 ```
 
-Return only the contents of the new timestamped translated SRT file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Here is an example of how a segment of the output SRT file should look:
+Return only the contents of the new timestamped translated SRT file, without any additional commentary (such as \"Here is the text you requested.\"). Do not enclose these contents in a code block such as \"```srt\". Here is an example of how a segment of the output SRT file should look:
 
 ```
-00:00:00,031  --> 00:00:06,360
-La gente piensa que el tilt es lo que ocurre, y suele ocurrir, cuando estás en una racha perdedora o pierdes la partida a pesar de tener una buena mano. Y puedes tener diferentes reacciones: puedes intentar recuperar tus pérdidas, o a menudo la gente se vuelve demasiado indecisa y muestra aversión al riesgo.
+00:00:00,031 --> 00:00:12,360
+Un elemento del argumento de Douglas Allen sobre el que no me explayé fue la Armada británica. Tiene otro artículo titulado \"The British Navy Rules\" en el que explica con más detalle por qué cree que los incentivos institucionales hicieron que tuvieran éxito entre 1670 y 1827 (es decir, durante la mayor parte de la era de la vela de combate).
 
-00:00:06,380 --> 00:00:10,740
-Pero la inclinación de los ganadores puede ser igual de negativa, ¿no? Si haces un par de apuestas seguidas que salen bien, especialmente si son apuestas contra tendencia, como en el caso de Elon Musk o Peter Thiel, por ejemplo... si haces un par de apuestas contra tendencia y salen bien, es realmente satisfactorio obtener un rendimiento financiero. Demostrar que se equivocan todos te da mucho placer. Y si consigues ambas cosas a la vez, es como un cóctel de drogas, la verdad. Produce un efecto tremendo.
+00:00:12,440 --> 00:00:23,910
+En la Guerra de los Siete Años (1756-1763) los británicos tenían una diferencia de 7 a 1 en bajas en acciones con un solo barco. Durante las guerras revolucionarias francesa y napoleónica (1793-1815), los británicos tenían una diferencia de 5 a 1 en barcos capturados/destruidos, y de 30 a 1 en barcos de línea, los más grandes y poderosos. En la década de 1800, los relatos contemporáneos esperaban que los barcos británicos derrotaran a oponentes que tenían un 50 por ciento más de potencia de cañón y tripulación.
 ```"
   "Prompt for propagating timestamps from English to a translated file.")
 
@@ -615,13 +635,13 @@ segment IDs."
 (defun tlon-dub-transcribe-with-whisperx (audio-file &optional format)
   "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
 The transcript file will be saved in the same directory as AUDIO-FILE, in the
-specified FORMAT. If FORMAT is nil, use \"json\"."
+specified FORMAT. If FORMAT is nil, use \"srt\"."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
   (let* ((expanded-audio-file (expand-file-name audio-file))
 	 (output-dir (file-name-directory expanded-audio-file))
 	 (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
 	 (output-buffer (format "*%s-output*" process-name))
-	 (format (or format "json"))
+	 (format (or format "srt"))
 	 (command-parts (list "whisperx"
 			      expanded-audio-file
 			      "--compute_type" "float32"
@@ -658,12 +678,12 @@ specified FORMAT. If FORMAT is nil, use \"json\"."
 (defun tlon-dub-propagate-machine-timestamps (machine-transcript human-transcript)
   "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
-WhisperX JSON output with the (human-edited) Markdown transcript. The result, an
+WhisperX SRT output with the (human-edited) Markdown transcript. The result, an
 SRT file with the contents of the human-edited transcript and the timestamps
 from the machine-generated transcript, is saved to a new file specified by the
 user."
   (interactive
-   (list (read-file-name "Machine-generated transcript: " nil nil t ".json")
+   (list (read-file-name "Machine-generated transcript: " nil nil t ".srt")
 	 (read-file-name "Human-edited transcript: " nil nil t ".md")))
   (let ((whisperx-content (with-temp-buffer
 			    (insert-file-contents machine-transcript)
@@ -762,8 +782,8 @@ end timestamps."
   (interactive
    (list (read-file-name "English SRT file: " nil nil t ".srt")
 	 (read-file-name "Translated SRT file: " nil nil t ".srt")))
-  (let ((english-segments (tlon-dub--parse-srt-file english-srt-file))
-	(translated-segments (tlon-dub--parse-srt-file translated-srt-file)))
+  (let ((english-segments (tlon-dub--parse-srt english-srt-file))
+	(translated-segments (tlon-dub--parse-srt translated-srt-file)))
     (unless english-segments
       (user-error "Could not parse English SRT file, or it is empty: %s" english-srt-file))
     (unless translated-segments
@@ -798,7 +818,7 @@ end timestamps."
       (message "CSV file created at %s" output-path)
       output-path)))
 
-(defun tlon-dub--parse-srt-file (file)
+(defun tlon-dub--parse-srt (file)
   "Parse SRT FILE and return a list of segments.
 Each segment is a plist with :start, :end, and :text keys.
 Handles optional segment numbers, optional paragraph numbers preceding
@@ -819,26 +839,25 @@ file is empty."
 		    ;; Skip optional segment number line (first numeric line)
 		    (when (and (not (eobp)) (looking-at "^[0-9]+\\s-*$"))
 		      (forward-line 1))
-		    ;; Skip optional paragraph number line (second numeric line, if it exists and current is not eobp)
-		    (when (and (not (eobp)) (looking-at "^[0-9]+\\s-*$"))
-		      (forward-line 1))
 		    ;; Expect timestamp line (allow optional leading whitespace)
-		    (let ((timestamp-regex (concat "\\s-*" tlon-dub--srt-timestamp-line)))
-		      (if (looking-at timestamp-regex)
+		    (if (looking-at tlon-dub--srt-timestamp-line)
 			(progn
 			  (setq start-time (match-string 1)
 				end-time (match-string 2))
 			  (forward-line 1)
 			  ;; Collect remaining lines as text
 			  (while (not (eobp))
-			    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) text-lines)
+			    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position))
+				  text-lines)
 			    (forward-line 1))
 			  (when text-lines
-			    (push (list :start start-time :end end-time :text (string-join (nreverse text-lines) "\n"))
+			    (push (list :start start-time
+					:end end-time
+					:text (string-join (nreverse text-lines) "\n"))
 				  segments)))
-		      (warn "Could not parse SRT block in %s (timestamp line not found after potential segment/paragraph numbers): %s" file block)))))))
+		      (warn "Could not parse SRT block in %s: %s" file block))))))
 	    (nreverse segments))))
-    (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
+    (user-error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
 
 (defun tlon-dub--csv-escape-string (str)
   "Escape STR for CSV by doubling quotes and enclosing in quotes."
@@ -856,9 +875,9 @@ If nil, use the default `gptel-model'."
 (transient-define-prefix tlon-dub-menu ()
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
   :info-manual "(tlon) Dubbing"
-  [["Transcription & Timestamps (SRT)"
-    ("t" "Transcribe with WhisperX (Audio -> JSON)" tlon-dub-transcribe-with-whisperx)
-    ("m" "Propagate Machine Timestamps (JSON + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
+  [["Transcription & Timestamps (srt)"
+    ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
+    ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
     ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)]
    ["ElevenLabs API"
