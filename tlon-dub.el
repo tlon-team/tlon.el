@@ -816,13 +816,12 @@ file is empty."
 		  (with-temp-buffer
 		    (insert block)
 		    (goto-char (point-min))
-		    ;; Skip optional segment number line
-		    (when (looking-at "^[0-9]+\\s-*$")
+		    ;; Skip optional segment number line (first numeric line)
+		    (when (and (not (eobp)) (looking-at "^[0-9]+\\s-*$"))
 		      (forward-line 1))
-		    ;; Skip optional paragraph number line if current line is not a timestamp
-		    (unless (looking-at tlon-dub--srt-timestamp-line)
-		      (when (looking-at "^[0-9]+\\s-*$")
-			(forward-line 1)))
+		    ;; Skip optional paragraph number line (second numeric line, if it exists and current is not eobp)
+		    (when (and (not (eobp)) (looking-at "^[0-9]+\\s-*$"))
+		      (forward-line 1))
 		    ;; Expect timestamp line
 		    (if (looking-at tlon-dub--srt-timestamp-line)
 			(progn
