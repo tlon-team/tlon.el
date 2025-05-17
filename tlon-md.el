@@ -795,18 +795,25 @@ the value of TEXT will be used instead."
   (tlon-md-insert-or-edit-tag "ReplaceAudio"))
 
 (defun tlon-md-replace-audio-voice-reader ()
-  "Prompt the user to select the `role' attribute value for `ReplaceAudio' or `VoiceRole'.
-
-Allows an empty selection, which defaults to inheriting the surrounding voice context.
+  "Prompt user to select \"role\" attribute value for `ReplaceAudio', `VoiceRole'.
+Allows an empty selection, which defaults to inheriting the surrounding voice
+context.
 
 Available roles:
+
 - `\"\"` (empty string): Inherit the surrounding voice context (default).
+
 - `\"inherit\"': Explicitly inherit the voice of the surrounding text.
+
 - `\"main\"': Use the main text body voice.
+
 - `\"alternate\"': Use the alternate voice (same gender as main) for elements
   like notes, quotes, asides, and listener cues.
+
 - `\"male\"' / `\"female\"': Use a specific gender voice different from the main
-  voice (matches the alternate voice of that gender). Useful for attributed quotes.
+  voice (matches the alternate voice of that gender). Useful for attributed
+  quotes.
+
 - `\"alternate gender\"': Use a voice of the opposite gender to the main voice."
   (completing-read "Role (leave empty for default): "
 		   '("" "inherit" "main" "alternate" "male" "female" "alternate gender")

@@ -2748,12 +2748,13 @@ USE-CONTEXT is non-nil."
 
 ;;;;; File uploading
 
+(declare-function magit-stage-files "magit-apply")
 ;;;###autoload
 (defun tlon-tts-move-file-to-audio-server (&optional file)
   "Move audio FILE to the audio repo, then stage, commit, and push the change.
-The language and bare directory (e.g., 'articulos', 'temas') are inferred from
+The language and bare directory (e.g., \"articulos\", \"temas\") are inferred from
 the source FILE's path. The file will be moved to a path like
-'uqbar-audio/lang/bare-dir/filename.ext'."
+\"uqbar-audio/lang/bare-dir/filename.ext\"."
   (interactive)
   (let* ((file (files-extras-read-file file))
          (repo (tlon-get-repo-from-file file))
@@ -2789,8 +2790,8 @@ the source FILE's path. The file will be moved to a path like
 (defun tlon-tts-get-audio-directory (&optional lang bare-dir)
   "Return the directory where audio files are stored for LANG.
 If BARE-DIR is provided, return the subdirectory for that bare-dir within the
-language directory (e.g., 'uqbar-audio/lang/bare-dir/'). If BARE-DIR is nil,
-return the language root directory (e.g., 'uqbar-audio/lang/').
+language directory (e.g., \"uqbar-audio/lang/bare-dir/\"). If BARE-DIR is nil,
+return the language root directory (e.g., \"uqbar-audio/lang/\").
 If LANG is nil, get it from the current language process."
   (let ((audio-root (tlon-repo-lookup :dir :name "uqbar-audio"))
 	(current-lang (tlon-tts-get-current-language lang)))
