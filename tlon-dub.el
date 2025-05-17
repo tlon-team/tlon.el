@@ -214,6 +214,52 @@ En la Guerra de los Siete Años (1756-1763) los británicos tenían una diferenc
 ```"
   "Prompt for propagating timestamps from English to a translated file.")
 
+(defconst tlon-dub-align-punctuation-prompt
+  "You will be given two inputs:
+
+1. A text file (possibly an SRT file without timestamps) with a transcript.
+
+2. A Markdown file with the same content but possibly different punctuation.
+
+Your task is to create a new Markdown file that is just like the original Markdown file except that its punctuation is revised so that every sentence in the Markdown file corresponds to a sentence in the text file.
+
+For example, if the text file has this:
+
+```
+An element of Douglas Allens argument that, er, I didn't expand on was the british navy.
+
+He has, eh, a separate paper called The British Navy Rules that goes in more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
+```
+
+and the Markdown file has this:
+
+```
+An element of Douglas Allen's argument that I didn't expand on was the British Navy; he has a separate paper called \"The British Navy Rules\" that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
+```
+
+You should return:
+
+```
+An element of Douglas Allen's argument that I didn't expand on was the British Navy.
+
+He has a separate paper called \"The British Navy Rules\" that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
+```
+
+Text file:
+
+```
+%s
+```
+
+Markdown file:
+
+```
+%s
+```
+
+Return only the contents of the new Markdown file with aligned punctuation, without any additional commentary. Do not enclose these contents in a code block."
+  "Prompt for aligning punctuation between a text file and a Markdown file.")
+
 ;;;; Helper Functions
 
 (defun tlon-dub--get-content-type (filename)
@@ -764,6 +810,46 @@ TRANSLATED-FILE is the path to the original non-timestamped translated file."
 	(write-file output-file))
       (message "Timestamped translated SRT transcript saved to \"%s\"" output-file))))
 
+;;;###autoload
+(defun tlon-dub-align-punctuation (text-file markdown-file)
+  "Align punctuation between TEXT-FILE and MARKDOWN-FILE using AI.
+Both files contain transcripts of the same audio, but may differ in punctuation.
+The AI will revise the Markdown file so that its sentence boundaries match
+those in the text file. The result is saved to a new file with '-aligned' suffix."
+  (interactive
+   (list (read-file-name "Text file: " nil nil t ".txt")
+         (read-file-name "Markdown file: " nil nil t ".md")))
+  (let ((text-content (with-temp-buffer
+                        (insert-file-contents text-file)
+                        (buffer-string)))
+        (markdown-content (with-temp-buffer
+                            (insert-file-contents markdown-file)
+                            (buffer-string))))
+    (if (or (string-empty-p text-content) (string-empty-p markdown-content))
+        (user-error "One or both input files are empty")
+      (let ((prompt (format tlon-dub-align-punctuation-prompt
+                            text-content
+                            markdown-content)))
+        (message "Requesting AI to align punctuation between files...")
+        (tlon-make-gptel-request prompt nil
+                                 (lambda (response info)
+                                   (tlon-dub--align-punctuation-callback response info markdown-file))
+                                 tlon-dub-propagation-model
+                                 'no-context-check)))))
+
+(defun tlon-dub--align-punctuation-callback (response info markdown-file)
+  "Callback for `tlon-dub-align-punctuation'.
+RESPONSE is the AI's response. INFO is the response info.
+MARKDOWN-FILE is the path to the original Markdown file."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let* ((output-file (concat (file-name-sans-extension markdown-file)
+                                "-aligned.md")))
+      (with-temp-buffer
+        (insert response)
+        (write-file output-file))
+      (message "Aligned Markdown file saved to \"%s\"" output-file))))
+
 ;;;;; SRT to CSV Conversion
 
 ;;;###autoload
@@ -879,7 +965,8 @@ If nil, use the default `gptel-model'."
     ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
     ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
     ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
-    ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)]
+    ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
+    ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("d" "Get Project Metadata" tlon-dub-get-project-metadata) ; Changed key from "m" to "d" to avoid conflict
