@@ -92,37 +92,33 @@ Example: 00:00:00.240 --> 00:00:01.750")
 (defconst tlon-dub-propagate-machine-timestamps-prompt
   "You will be given two inputs:
 
-1. A machine-generated srt transcript with timestamps.
+1. A machine-generated JSON transcript with timestamps.
 
 2. A human-edited Markdown transcript of the same audio.
 
 The human-edited transcript is more accurate in terms of wording, but has no timestamps.
 
-Your task is to propagate the timestamps from the WhisperX srt file to the human-edited Markdown file.
+Your task is to create a new srt file that combines the timestamps in the WhisperX JSON file with the contents of the human-edited Markdown file. More concretely, for each paragraph in the human-edited Markdown transcript, you should determine when the paragraph begins and ends based on the timestamps in the JSON file, and then insert, in the new srt files, those timestamps followed by the paragraph contents.
 
-Output the contents of a new Markdown file consisting of the the human-edited transcript with the timestamps of the srt file. Insert the timestamps using the same HH:MM:SS,mmm format found in the srt file.
-
-Machine-generated srt file:
+Here is the Machine-generated JSON file:
 
 ```
 %s
 ```
 
-Human-edited Markdown file:
+And here is the human-edited Markdown file:
 
 ```
 %s
 ```
 
-Return only the contents of the new file, without any additional commentary. Also, do not enclose these contents in a code block such as \"```markdown\". Here is an example of the beginning of a file as it should look after timestamp propagation:
+Return only the contents of the new srt file, without any additional commentary. Also, do not enclose these contents in a code block such as \"```srt\". Here is an example of the beginning of a srt file as it should look after timestamp propagation:
 
 ```
-00:00:00,031
-
+00:00:00,031  --> 00:00:06,360
 People think of tilt as what happens, and it often does, when you're on a losing streak or you lose the game despite having a good hand. And you can have different reactions: you can try to recoup your losses, or often people become too hesitant and show risk aversion.
 
-00:00:06,380
-
+00:00:06,380 --> 00:00:10,740
 But the winners' tilt can be just as negative, can't it? If you make a couple of bets in a row that come out right, especially if they're countertrend bets, as in the case of Elon Musk or Peter Thiel, for example... if you make a couple of countertrend bets and they come out right, it's really satisfying to get a financial return. Proving them all wrong gives you a lot of pleasure. And if you get both at the same time, it's like a drug cocktail, really. It produces a tremendous effect.
 ```"
   "Prompt for timestamp propagation.")
@@ -130,32 +126,32 @@ But the winners' tilt can be just as negative, can't it? If you make a couple of
 (defconst tlon-dub-propagate-english-timestamps-prompt
   "You will be given two inputs:
 
-1. An English Markdown transcript with timestamps. Each timestamp is on its own line.
+1. An srt file of an English transcript.
 
-2. A translation of that transcript into another language. This translation does not have timestamps.
+2. A Markdown file with the translation of that transcript into some language.
 
-Your task is to propagate the timestamps from the English transcript to the translated transcript. The timestamps should be placed on their own lines, just before the corresponding translated text segment, mirroring the structure of the English timestamped input.
+Your task is to create a new srt file that combines the timestamps in the English file with the contents of the translation.
 
-Output the contents of the translated transcript with the timestamps accurately placed. Ensure the output format is Markdown, preserving the original translation's text and structure, only adding the timestamps.
+English srt file with timestamps:
 
-English transcript with timestamps:
-
-```markdown
+```
 %s
 ```
 
-Translated transcript without timestamps:
+Translated Markdown file without timestamps:
 
-```markdown
+```
 %s
 ```
 
-Return only the contents of the new timestamped translated file, without any additional commentary. Do not enclose these contents in a code block such as \"```markdown\". Here is an example of how a segment of the output should look:
+Return only the contents of the new timestamped translated file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Here is an example of how a segment of the output should look:
 
 ```
-00:00:06,380
+00:00:00,031  --> 00:00:06,360
+La gente piensa que el tilt es lo que ocurre, y suele ocurrir, cuando estás en una racha perdedora o pierdes la partida a pesar de tener una buena mano. Y puedes tener diferentes reacciones: puedes intentar recuperar tus pérdidas, o a menudo la gente se vuelve demasiado indecisa y muestra aversión al riesgo.
 
-[Translated text corresponding to the English segment that started at 00:00:06,380]
+00:00:06,380 --> 00:00:10,740
+Pero la inclinación de los ganadores puede ser igual de negativa, ¿no? Si haces un par de apuestas seguidas que salen bien, especialmente si son apuestas contra tendencia, como en el caso de Elon Musk o Peter Thiel, por ejemplo... si haces un par de apuestas contra tendencia y salen bien, es realmente satisfactorio obtener un rendimiento financiero. Demostrar que se equivocan todos te da mucho placer. Y si consigues ambas cosas a la vez, es como un cóctel de drogas, la verdad. Produce un efecto tremendo.
 ```"
   "Prompt for propagating timestamps from English to a translated file.")
 
@@ -583,13 +579,13 @@ segment IDs."
 (defun tlon-dub-transcribe-with-whisperx (audio-file &optional format)
   "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
 The transcript file will be saved in the same directory as AUDIO-FILE, in the
-specified FORMAT. If FORMAT is nil, use \"srt\"."
+specified FORMAT. If FORMAT is nil, use \"json\"."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
   (let* ((expanded-audio-file (expand-file-name audio-file))
 	 (output-dir (file-name-directory expanded-audio-file))
 	 (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
 	 (output-buffer (format "*%s-output*" process-name))
-	 (format (or format "srt"))
+	 (format (or format "json"))
 	 (command-parts (list "whisperx"
 			      expanded-audio-file
 			      "--compute_type" "float32"
@@ -626,7 +622,7 @@ specified FORMAT. If FORMAT is nil, use \"srt\"."
 (defun tlon-dub-propagate-machine-timestamps (machine-transcript human-transcript)
   "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
-WhisperX srt output with the (human-edited) Markdown transcript. The result, a
+WhisperX JSON output with the (human-edited) Markdown transcript. The result, a
 Markdown file with the contents of the human-edited transcript and the
 timestamps from the machine-generated transcript, is saved to a new file
 specified by the user."
@@ -725,9 +721,9 @@ If nil, use the default `gptel-model'."
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
   :info-manual "(tlon) Dubbing"
   [["WhisperX & Timestamps"
-    ("t" "Transcribe with WhisperX (-> srt)" tlon-dub-transcribe-with-whisperx)
-    ("m" "Propagate Machine Timestamps (srt -> en.md)" tlon-dub-propagate-machine-timestamps)
-    ("e" "Propagate English Timestamps (en.md -> lang.md)" tlon-dub-propagate-english-timestamps)]
+    ("t" "Transcribe with WhisperX (-> JSON)" tlon-dub-transcribe-with-whisperx)
+    ("m" "Propagate Machine Timestamps (JSON -> en.md)" tlon-dub-propagate-machine-timestamps)
+    ("e" "Propagate English Timestamps (en.md -> <lang>.md)" tlon-dub-propagate-english-timestamps)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("m" "Get Project Metadata" tlon-dub-get-project-metadata)
