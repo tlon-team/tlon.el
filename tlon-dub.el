@@ -763,7 +763,11 @@ TRANSLATED-SRT-FILE is the path to the timestamped translated SRT file.
 OUTPUT-CSV-FILE is the optional path for the output CSV. If nil, it defaults
 to a CSV file named after the ENGLISH-SRT-FILE in the same directory.
 
-The CSV format is: speaker,start_time,end_time,transcription,translation"
+The CSV format is: speaker,start_time,end_time,transcription,translation
+
+The function will raise an error if the number of segments in the two SRT
+files does not match, or if any corresponding segments have differing start or
+end timestamps."
   (interactive
    (list (read-file-name "English SRT file: " nil nil t ".srt")
 	 (read-file-name "Translated SRT file: " nil nil t ".srt")
@@ -786,13 +790,21 @@ The CSV format is: speaker,start_time,end_time,transcription,translation"
       (dotimes (i (length english-segments))
 	(let* ((eng-seg (nth i english-segments))
 	       (trans-seg (nth i translated-segments))
-	       (start-time (plist-get eng-seg :start))
-	       (end-time (plist-get eng-seg :end))
+	       (eng-start-time (plist-get eng-seg :start))
+	       (eng-end-time (plist-get eng-seg :end))
+	       (trans-start-time (plist-get trans-seg :start))
+	       (trans-end-time (plist-get trans-seg :end))
 	       (eng-text (plist-get eng-seg :text))
 	       (trans-text (plist-get trans-seg :text)))
+	  ;; Verify that timestamps match for the current segment
+	  (unless (and (string= eng-start-time trans-start-time)
+		       (string= eng-end-time trans-end-time))
+	    (user-error "Timestamp mismatch in segment %d:\nEnglish: %s --> %s\nTranslated: %s --> %s"
+			(1+ i) eng-start-time eng-end-time trans-start-time trans-end-time))
+	  ;; Timestamps match, proceed to format CSV line using English timestamps
 	  (push (format "\"\",%s,%s,%s,%s" ; Speaker is empty
-			(tlon-dub--csv-escape-string start-time)
-			(tlon-dub--csv-escape-string end-time)
+			(tlon-dub--csv-escape-string eng-start-time)
+			(tlon-dub--csv-escape-string eng-end-time)
 			(tlon-dub--csv-escape-string eng-text)
 			(tlon-dub--csv-escape-string trans-text))
 		csv-lines)))

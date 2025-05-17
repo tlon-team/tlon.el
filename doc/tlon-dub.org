@@ -77,7 +77,7 @@ This workflow presupposes that we already have (1) the original audio and video 
 #+findex: tlon-dub-propagate-english-timestamps
 + ~tlon-dub-propagate-english-timestamps~ :: (Autoloaded) Propagates timestamps from a timestamped English SRT file to a translated plain text/Markdown file (which lacks timestamps) using an AI model. Prompts for the =english-timestamped-file= (SRT, typically the output of ~tlon-dub-propagate-machine-timestamps~) and the =translated-file= (text/Markdown). The AI attempts to align the timestamps from the English SRT file with the translated text. The resulting timestamped translated transcript is saved as a new SRT file (e.g., =translated-file-timestamped.srt=). The AI model used can be configured via ~tlon-dub-propagation-model~.
 #+findex: tlon-dub-convert-srt-to-csv
-+ ~tlon-dub-convert-srt-to-csv~ :: (Autoloaded) Converts a pair of timestamped English and translated SRT files into a CSV file formatted for ElevenLabs. Prompts for the =english-srt-file=, the =translated-srt-file=, and an =output-csv-file= path. The output CSV has columns: =speaker,start_time,end_time,transcription,translation=.
++ ~tlon-dub-convert-srt-to-csv~ :: (Autoloaded) Converts a pair of timestamped English and translated SRT files into a CSV file formatted for ElevenLabs. Prompts for the =english-srt-file=, the =translated-srt-file=, and an =output-csv-file= path. The output CSV has columns: =speaker,start_time,end_time,transcription,translation=. The function validates that both SRT files have the same number of segments and that corresponding segments share identical start and end timestamps; it raises an error if these conditions are not met.
 
 ** Menu
 :PROPERTIES:
