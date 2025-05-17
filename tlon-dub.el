@@ -722,46 +722,6 @@ TRANSLATED-FILE is the path to the original non-timestamped translated file."
   "Regexp to match an SRT timestamp line and capture start and end times.
 Example: 00:00:00,031 --> 00:00:06,360")
 
-(defun tlon-dub--parse-srt-file (file)
-  "Parse SRT FILE and return a list of segments.
-Each segment is a plist with :start, :end, and :text keys.
-Returns nil if parsing fails or file is empty."
-  (condition-case err
-      (with-temp-buffer
-	(insert-file-contents file)
-	(let ((content (replace-regexp-in-string "\r" "" (buffer-string))) ; Remove CR characters
-	      segments)
-	  (unless (string-blank-p content)
-	    (let ((srt-blocks (split-string content "\n\\s-*\n+" t "[ \t\n]+")))
-	      (dolist (block srt-blocks)
-		(let (start-time end-time text-lines)
-		  (with-temp-buffer
-		    (insert block)
-		    (goto-char (point-min))
-		    ;; Skip optional segment number
-		    (when (looking-at "^[0-9]+\\s-*$")
-		      (forward-line 1))
-		    ;; Expect timestamp line
-		    (if (looking-at tlon-dub--srt-timestamp-regex)
-			(progn
-			  (setq start-time (match-string 1)
-				end-time (match-string 2))
-			  (forward-line 1)
-			  ;; Collect remaining lines as text
-			  (while (not (eobp))
-			    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) text-lines)
-			    (forward-line 1))
-			  (when text-lines
-			    (push (list :start start-time :end end-time :text (string-join (nreverse text-lines) "\n"))
-				  segments)))
-		      (warn "Could not parse SRT block in %s: %s" file block))))))
-	    (nreverse segments))))
-    (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
-
-(defun tlon-dub--csv-escape-string (str)
-  "Escape STR for CSV by doubling quotes and enclosing in quotes."
-  (format "\"%s\"" (replace-regexp-in-string "\"" "\"\"" str)))
-
 ;;;###autoload
 (defun tlon-dub-convert-srt-to-csv (english-srt-file translated-srt-file)
   "Convert English and Translated SRT files to a CSV file for ElevenLabs.
@@ -813,6 +773,46 @@ end timestamps."
       (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
       (message "CSV file created at %s" output-path)
       output-path)))
+
+(defun tlon-dub--parse-srt-file (file)
+  "Parse SRT FILE and return a list of segments.
+Each segment is a plist with :start, :end, and :text keys.
+Returns nil if parsing fails or file is empty."
+  (condition-case err
+      (with-temp-buffer
+	(insert-file-contents file)
+	(let ((content (replace-regexp-in-string "\r" "" (buffer-string))) ; Remove CR characters
+	      segments)
+	  (unless (string-blank-p content)
+	    (let ((srt-blocks (split-string content "\n\\s-*\n+" t "[ \t\n]+")))
+	      (dolist (block srt-blocks)
+		(let (start-time end-time text-lines)
+		  (with-temp-buffer
+		    (insert block)
+		    (goto-char (point-min))
+		    ;; Skip optional segment number
+		    (when (looking-at "^[0-9]+\\s-*$")
+		      (forward-line 1))
+		    ;; Expect timestamp line
+		    (if (looking-at tlon-dub--srt-timestamp-regex)
+			(progn
+			  (setq start-time (match-string 1)
+				end-time (match-string 2))
+			  (forward-line 1)
+			  ;; Collect remaining lines as text
+			  (while (not (eobp))
+			    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) text-lines)
+			    (forward-line 1))
+			  (when text-lines
+			    (push (list :start start-time :end end-time :text (string-join (nreverse text-lines) "\n"))
+				  segments)))
+		      (warn "Could not parse SRT block in %s: %s" file block))))))
+	    (nreverse segments))))
+    (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
+
+(defun tlon-dub--csv-escape-string (str)
+  "Escape STR for CSV by doubling quotes and enclosing in quotes."
+  (format "\"%s\"" (replace-regexp-in-string "\"" "\"\"" str)))
 
 ;;;; Menu
 
