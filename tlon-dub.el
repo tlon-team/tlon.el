@@ -584,24 +584,23 @@ HUMAN-TRANSCRIPT-FILE is the path to the original human-edited transcript file."
 	(message "Timestamp propagation cancelled by user (no output file selected).")))))
 
 ;;;###autoload
-(defun tlon-dub-propagate-timestamps-from-whisperx (whisperx-json-file human-transcript-file)
-  "Propagate timestamps from WHISPERX-JSON-FILE to HUMAN-TRANSCRIPT-FILE using AI.
+(defun tlon-dub-propagate-timestamps-from-whisperx (machine-transcript human-transcript)
+  "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
 WhisperX JSON output with the (human-edited) plain text transcript.
-The result, a VTT-like transcript, is saved to a new file specified by the user."
+The result, an srt-like transcript, is saved to a new file specified by the user."
   (interactive
-   (list (read-file-name "WhisperX JSON transcript file: " nil nil t)
-	 (read-file-name "Human-edited plain text transcript file: " nil nil t)))
-  (unless (file-exists-p whisperx-json-file)
-    (user-error "WhisperX JSON file not found: %s" whisperx-json-file))
-  (unless (file-exists-p human-transcript-file)
-    (user-error "Human-edited transcript file not found: %s" human-transcript-file))
-
+   (list (read-file-name "Machine-generated transcript: " nil nil t)
+	 (read-file-name "Human-edited transcript: " nil nil t)))
+  (unless (file-exists-p machine-transcript)
+    (user-error "Machine-generated transcript file not found: %s" machine-transcript))
+  (unless (file-exists-p human-transcript)
+    (user-error "Human-edited transcript file not found: %s" human-transcript))
   (let ((whisperx-content (with-temp-buffer
-			    (insert-file-contents whisperx-json-file)
+			    (insert-file-contents machine-transcript)
 			    (buffer-string)))
 	(human-text-content (with-temp-buffer
-			      (insert-file-contents human-transcript-file)
+			      (insert-file-contents human-transcript)
 			      (buffer-string))))
     (if (or (string-empty-p whisperx-content) (string-empty-p human-text-content))
 	(user-error "One or both input files are empty")
