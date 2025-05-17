@@ -565,31 +565,12 @@ specified FORMAT. If FORMAT is nil, use \"srt\"."
 
 ;;;;; Timestamp Propagation
 
-(defun tlon-dub--propagate-timestamps-callback (response info human-transcript-file)
-  "Callback for `tlon-dub-propagate-timestamps-from-whisperx'.
-RESPONSE is the AI's response. INFO is the response info.
-HUMAN-TRANSCRIPT-FILE is the path to the original human-edited transcript file."
-  (if (not response)
-      (tlon-ai-callback-fail info) ; Use the failure callback from tlon-ai
-    (let* ((default-output-name (concat (file-name-sans-extension human-transcript-file)
-					"-timestamped.vtt"))
-	   (output-file (read-file-name "Save timestamped transcript as: "
-					(file-name-directory human-transcript-file)
-					default-output-name nil default-output-name)))
-      (if output-file
-	  (progn
-	    (with-temp-buffer
-	      (insert response)
-	      (write-file output-file))
-	    (message "Timestamped transcript saved to: %s" output-file))
-	(message "Timestamp propagation cancelled by user (no output file selected).")))))
-
 ;;;###autoload
 (defun tlon-dub-propagate-timestamps (machine-transcript human-transcript)
   "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
-WhisperX JSON output with the (human-edited) plain text transcript.
-The result, an srt-like transcript, is saved to a new file specified by the user."
+WhisperX JSON output with the (human-edited) plain text transcript. The result,
+an srt-like transcript, is saved to a new file specified by the user."
   (interactive
    (list (read-file-name "Machine-generated transcript: " nil nil t)
 	 (read-file-name "Human-edited transcript: " nil nil t)))
@@ -614,6 +595,25 @@ The result, an srt-like transcript, is saved to a new file specified by the user
 				   (tlon-dub--propagate-timestamps-callback response info human-transcript))
 				 tlon-dub-propagation-model
 				 t))))) ; no-context-check = t
+
+(defun tlon-dub--propagate-timestamps-callback (response info human-transcript-file)
+  "Callback for `tlon-dub-propagate-timestamps'.
+RESPONSE is the AI's response. INFO is the response info.
+HUMAN-TRANSCRIPT-FILE is the path to the original human-edited transcript file."
+  (if (not response)
+      (tlon-ai-callback-fail info) ; Use the failure callback from tlon-ai
+    (let* ((default-output-name (concat (file-name-sans-extension human-transcript-file)
+					"-timestamped.vtt"))
+	   (output-file (read-file-name "Save timestamped transcript as: "
+					(file-name-directory human-transcript-file)
+					default-output-name nil default-output-name)))
+      (if output-file
+	  (progn
+	    (with-temp-buffer
+	      (insert response)
+	      (write-file output-file))
+	    (message "Timestamped transcript saved to: %s" output-file))
+	(message "Timestamp propagation cancelled by user (no output file selected).")))))
 
 ;;;; Menu
 
