@@ -585,7 +585,7 @@ HUMAN-TRANSCRIPT-FILE is the path to the original human-edited transcript file."
 	(message "Timestamp propagation cancelled by user (no output file selected).")))))
 
 ;;;###autoload
-(defun tlon-dub-propagate-timestamps-from-whisperx (machine-transcript human-transcript)
+(defun tlon-dub-propagate-timestamps (machine-transcript human-transcript)
   "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
 WhisperX JSON output with the (human-edited) plain text transcript.
@@ -651,7 +651,7 @@ If nil, use the default `gptel-model'."
   :info-manual "(tlon) Dubbing"
   [["WhisperX"
     ("t" "Transcribe with WhisperX" tlon-dub-transcribe-with-whisperx)
-    ("p" "Propagate Timestamps from WhisperX" tlon-dub-propagate-timestamps-from-whisperx)]
+    ("p" "Propagate Timestamps from WhisperX" tlon-dub-propagate-timestamps)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("m" "Get Project Metadata" tlon-dub-get-project-metadata)
