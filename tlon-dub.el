@@ -47,6 +47,14 @@ itself. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-dub)
 
+(defcustom tlon-dub-alignment-model
+  '("ChatGPT" . 'o4-mini)
+  "Model to use for aligning sentences.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. If nil, use the default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-dub)
+
 ;;;; Constants
 
 (defconst tlon-dub-api-base-url "https://api.elevenlabs.io/v1"
@@ -215,22 +223,20 @@ En la Guerra de los Siete Años (1756-1763) los británicos tenían una diferenc
   "Prompt for propagating timestamps from English to a translated file.")
 
 (defconst tlon-dub-align-punctuation-prompt
-  "You will be given two inputs:
+  "You will be given two files:
 
-1. A text file (possibly an SRT file without timestamps) with a transcript.
+1. A TXT file with a machine-generated transcript of an audio file.
 
-2. A Markdown file with the same content but possibly different punctuation.
+2. A Markdown file with a human-edited transcript of that same audio file.
 
-Your task is to create a new Markdown file that is just like the original Markdown file except that its punctuation is revised so that every sentence in the Markdown file corresponds to a sentence in the text file.
+Your task is to create a new Markdown file that is just like the original human-edited Markdown file except that its punctuation is revised to make every sentence correspond to a sentence in the machine-generated file.
 
-IMPORTANT: Pay careful attention to paragraph boundaries. If the text file has sentences that span across multiple paragraphs in the Markdown file, you must adjust the punctuation accordingly, even if it means changing punctuation between paragraphs.
-
-For example, if the text file has this:
+For example, if the TXT file has this:
 
 ```
 An element of Douglas Allens argument that, er, I didn't expand on was the british navy.
 
-He has, eh, a separate paper called The British Navy Rules that goes in more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
+He has, eh, a separate paper called The British Navy Rules that goes, eh, in more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
 ```
 
 and the Markdown file has this:
@@ -247,36 +253,15 @@ An element of Douglas Allen's argument that I didn't expand on was the British N
 He has a separate paper called \"The British Navy Rules\" that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
 ```
 
-Another example: if the text file has:
+Notice that you always keep the text from the Markdown file and only deviate in order to make the punctuation match the text in the machine-generated file.
 
-```
-People think of tilt as what happens, which it often does when you're on losing streak or take a bad beat, and therefore you can have different reactions, right?
-You can either try to chase your losses, just as often people come way too tentative and risk averse, but like winners tilt can be just as bad, right?
-```
-
-And the Markdown file has:
-
-```
-People think of tilt as what happens, which it often does, when you're on a losing streak or take a bad beat. And therefore, you can have different reactions: you can either try to chase your losses, or just as often people become way too tentative and risk averse.
-
-But winners' tilt can be just as bad, right?
-```
-
-You should return:
-
-```
-People think of tilt as what happens, which it often does when you're on a losing streak or take a bad beat, and therefore you can have different reactions, right? You can either try to chase your losses, or just as often people become way too tentative and risk averse, but like winners' tilt can be just as bad, right?
-```
-
-Notice how in this example, we had to join paragraphs and adjust punctuation between them to match the sentence structure in the text file.
-
-Text file:
+Here's the machine-generated TXT file:
 
 ```
 %s
 ```
 
-Markdown file:
+And here's the human-edited Markdown file:
 
 ```
 %s
@@ -859,7 +844,7 @@ those in the text file. The result is saved to a new file with '-aligned' suffix
         (tlon-make-gptel-request prompt nil
                                  (lambda (response info)
                                    (tlon-dub--align-punctuation-callback response info markdown-file))
-                                 tlon-dub-propagation-model
+                                 tlon-dub-alignment-model
                                  'no-context-check)))))
 
 (defun tlon-dub--align-punctuation-callback (response info markdown-file)
@@ -997,7 +982,7 @@ If nil, use the default `gptel-model'."
     ("d" "Get Project Metadata" tlon-dub-get-project-metadata) ; Changed key from "m" to "d" to avoid conflict
     ("g" "Get Dubbing Transcript (VTT)" tlon-dub-get-dubbing)
     ("r" "Get Resource Data" tlon-dub-get-resource-data)
-    ("a" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
+    ("A" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
    ["Options"
     ("-m" "Propagation Model" tlon-dub-infix-select-propagation-model)]])
 
