@@ -89,7 +89,7 @@ Example: 00:00:00.240 --> 00:00:01.750")
   "^\\s-*$"
   "Regexp to match a blank or whitespace-only line.")
 
-(defconst tlon-dub-propagate-timestamps-prompt
+(defconst tlon-dub-propagate-machine-timestamps-prompt
   "You will be given two inputs:
 
 1. A machine-generated srt transcript with timestamps.
@@ -119,11 +119,11 @@ Return only the contents of the new file, without any additional commentary. Als
 ```
 00:00:00,031
 
-La gente piensa en el tilt como lo que sucede, y a menudo es así, cuando estás en una racha perdedora o pierdes la jugada a pesar de tener una buena mano. Y puedes tener diferentes reacciones: puedes intentar recuperar tus pérdidas, o a menudo la gente se vuelve demasiado indecisa y muestra aversión al riesgo.
+People think of tilt as what happens, and it often does, when you're on a losing streak or you lose the game despite having a good hand. And you can have different reactions: you can try to recoup your losses, or often people become too hesitant and show risk aversion.
 
 00:00:06,380
 
-Pero el tilt de los ganadores puede ser igual de negativo, ¿no? Si haces un par de apuestas seguidas que salen bien, sobre todo si son apuestas a contracorriente, como en el caso de Elon Musk o Peter Thiel, por ejemplo... si haces un par de apuestas a contracorriente y salen bien, es realmente satisfactorio obtener un rédito económico. Demostrarles a todos que estaban equivocados da mucho placer. Y si consigues ambas cosas a la vez, es como un cóctel de drogas, en serio. Produce un efecto tremendo.
+But the winners' tilt can be just as negative, can't it? If you make a couple of bets in a row that come out right, especially if they're countertrend bets, as in the case of Elon Musk or Peter Thiel, for example... if you make a couple of countertrend bets and they come out right, it's really satisfying to get a financial return. Proving them all wrong gives you a lot of pleasure. And if you get both at the same time, it's like a drug cocktail, really. It produces a tremendous effect.
 ```"
   "Prompt for timestamp propagation.")
 
@@ -588,8 +588,10 @@ specified FORMAT. If FORMAT is nil, use \"srt\"."
 
 ;;;;; Timestamp propagation
 
+;;;;;; Machine timestamps
+
 ;;;###autoload
-(defun tlon-dub-propagate-timestamps (machine-transcript human-transcript)
+(defun tlon-dub-propagate-machine-timestamps (machine-transcript human-transcript)
   "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
 WhisperX srt output with the (human-edited) Markdown transcript. The result, a
@@ -607,18 +609,18 @@ specified by the user."
 			      (buffer-string))))
     (if (or (string-empty-p whisperx-content) (string-empty-p human-text-content))
 	(user-error "One or both input files are empty")
-      (let ((prompt (format tlon-dub-propagate-timestamps-prompt
+      (let ((prompt (format tlon-dub-propagate-machine-timestamps-prompt
 			    whisperx-content
 			    human-text-content)))
 	(message "Requesting AI to propagate timestamps...")
 	(tlon-make-gptel-request prompt nil
 				 (lambda (response info)
-				   (tlon-dub--propagate-timestamps-callback response info human-transcript))
+				   (tlon-dub--propagate-machine-timestamps-callback response info human-transcript))
 				 tlon-dub-propagation-model
 				 'no-context-check)))))
 
-(defun tlon-dub--propagate-timestamps-callback (response info human-transcript)
-  "Callback for `tlon-dub-propagate-timestamps'.
+(defun tlon-dub--propagate-machine-timestamps-callback (response info human-transcript)
+  "Callback for `tlon-dub-propagate-machine-timestamps'.
 RESPONSE is the AI's response. INFO is the response info.
 HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
   (if (not response)
@@ -631,6 +633,9 @@ HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
 	(insert response)
 	(write-file output-file))
       (message "Timestamped transcript saved to \"%s\"" output-file))))
+
+;;;;;; English timestamps
+
 
 ;;;; Menu
 
@@ -646,7 +651,7 @@ If nil, use the default `gptel-model'."
   :info-manual "(tlon) Dubbing"
   [["WhisperX"
     ("t" "Transcribe with WhisperX" tlon-dub-transcribe-with-whisperx)
-    ("p" "Propagate Timestamps from WhisperX" tlon-dub-propagate-timestamps)]
+    ("p" "Propagate Timestamps from WhisperX" tlon-dub-propagate-machine-timestamps)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("m" "Get Project Metadata" tlon-dub-get-project-metadata)
