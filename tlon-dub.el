@@ -534,7 +534,7 @@ specified FORMAT. If FORMAT is nil, use \"srt\"."
 	 (output-dir (file-name-directory expanded-audio-file))
 	 (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
 	 (output-buffer (format "*%s-output*" process-name))
-	 (format "srt")
+	 (format (or format "srt"))
 	 (command-parts (list "whisperx"
 			      expanded-audio-file
 			      "--compute_type" "float32"
