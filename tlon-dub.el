@@ -668,6 +668,49 @@ HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
 
 ;;;;;; English timestamps
 
+;;;###autoload
+(defun tlon-dub-propagate-english-timestamps (english-timestamped-file translated-file)
+  "Propagate timestamps from ENGLISH-TIMESTAMPED-FILE to TRANSLATED-FILE using AI.
+The AI will attempt to align the timestamps from the (timestamped)
+English Markdown file with the (non-timestamped) translated Markdown file.
+The result, a Markdown file with the contents of the translated transcript and
+the timestamps from the English file, is saved to a new file specified by the
+user."
+  (interactive
+   (list (read-file-name "Timestamped English Markdown file: " nil nil t)
+	 (read-file-name "Translated Markdown file (no timestamps): " nil nil t)))
+  (let ((english-content (with-temp-buffer
+			   (insert-file-contents english-timestamped-file)
+			   (buffer-string)))
+	(translated-content (with-temp-buffer
+			      (insert-file-contents translated-file)
+			      (buffer-string))))
+    (if (or (string-empty-p english-content) (string-empty-p translated-content))
+	(user-error "One or both input files are empty")
+      (let ((prompt (format tlon-dub-propagate-english-timestamps-prompt
+			    english-content
+			    translated-content)))
+	(message "Requesting AI to propagate English timestamps to translated file...")
+	(tlon-make-gptel-request prompt nil
+				 (lambda (response info)
+				   (tlon-dub--propagate-english-timestamps-callback response info translated-file))
+				 tlon-dub-propagation-model
+				 'no-context-check)))))
+
+(defun tlon-dub--propagate-english-timestamps-callback (response info translated-file)
+  "Callback for `tlon-dub-propagate-english-timestamps'.
+RESPONSE is the AI's response. INFO is the response info.
+TRANSLATED-FILE is the path to the original non-timestamped translated file."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let* ((output-file (file-name-with-extension
+			 (concat (file-name-sans-extension translated-file)
+				 "-timestamped")
+			 (file-name-extension translated-file t)))) ; Keep original extension
+      (with-temp-buffer
+	(insert response)
+	(write-file output-file))
+      (message "Timestamped translated transcript saved to \"%s\"" output-file))))
 
 ;;;; Menu
 
