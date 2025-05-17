@@ -801,7 +801,9 @@ end timestamps."
 (defun tlon-dub--parse-srt-file (file)
   "Parse SRT FILE and return a list of segments.
 Each segment is a plist with :start, :end, and :text keys.
-Returns nil if parsing fails or file is empty."
+Handles optional segment numbers, optional paragraph numbers preceding
+the timestamp, and CR/LF line endings. Returns =nil= if parsing fails or
+file is empty."
   (condition-case err
       (with-temp-buffer
 	(insert-file-contents file)
@@ -814,9 +816,13 @@ Returns nil if parsing fails or file is empty."
 		  (with-temp-buffer
 		    (insert block)
 		    (goto-char (point-min))
-		    ;; Skip optional segment number
+		    ;; Skip optional segment number line
 		    (when (looking-at "^[0-9]+\\s-*$")
 		      (forward-line 1))
+		    ;; Skip optional paragraph number line if current line is not a timestamp
+		    (unless (looking-at tlon-dub--srt-timestamp-line)
+		      (when (looking-at "^[0-9]+\\s-*$")
+			(forward-line 1)))
 		    ;; Expect timestamp line
 		    (if (looking-at tlon-dub--srt-timestamp-line)
 			(progn
@@ -830,7 +836,7 @@ Returns nil if parsing fails or file is empty."
 			  (when text-lines
 			    (push (list :start start-time :end end-time :text (string-join (nreverse text-lines) "\n"))
 				  segments)))
-		      (warn "Could not parse SRT block in %s: %s" file block))))))
+		      (warn "Could not parse SRT block in %s (timestamp line not found after potential segment/paragraph numbers): %s" file block))))))
 	    (nreverse segments))))
     (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
 
