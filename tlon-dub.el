@@ -132,7 +132,7 @@ Example: \"00:00:00,240 --> 00:00:01,750\"")
 (defconst tlon-dub-propagate-machine-timestamps-prompt
   "You will be given two inputs:
 
-1. A machine-generated JSON transcript with timestamps. This JSON transcript primarily provides 'start' and 'end' timestamps for words or segments. The 'text' or 'word' fields provide the transcribed content. Other per-word details, like 'score' (transcription confidence), might be present in the JSON but are not essential for your main task of timestamp alignment with the human-edited transcript.
+1. A machine-generated JSON transcript with timestamps.
 
 2. A human-edited Markdown transcript of the same audio.
 
@@ -664,8 +664,8 @@ SRT file with the contents of the human-edited transcript and the timestamps
 from the machine-generated transcript, is saved to a new file specified by the
 user."
   (interactive
-   (list (read-file-name "Machine-generated transcript: " nil nil t)
-	 (read-file-name "Human-edited transcript: " nil nil t)))
+   (list (read-file-name "Machine-generated transcript: " nil nil t ".json")
+	 (read-file-name "Human-edited transcript: " nil nil t ".md")))
   (let ((whisperx-content (with-temp-buffer
 			    (insert-file-contents machine-transcript)
 			    (buffer-string)))
@@ -710,8 +710,8 @@ The result, a Markdown file with the contents of the translated transcript and
 the timestamps from the English file, is saved to a new file specified by the
 user."
   (interactive
-   (list (read-file-name "Timestamped English Markdown file: " nil nil t)
-	 (read-file-name "Translated Markdown file (no timestamps): " nil nil t)))
+   (list (read-file-name "English transcript: " nil nil t ".srt")
+	 (read-file-name "Translation: " nil nil t ".md")))
   (let ((english-content (with-temp-buffer
 			   (insert-file-contents english-timestamped-file)
 			   (buffer-string)))
