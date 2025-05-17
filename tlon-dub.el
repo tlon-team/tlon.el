@@ -127,6 +127,38 @@ But the winners' tilt can be just as negative, can't it? If you make a couple of
 ```"
   "Prompt for timestamp propagation.")
 
+(defconst tlon-dub-propagate-english-timestamps-prompt
+  "You will be given two inputs:
+
+1. An English Markdown transcript with timestamps. Each timestamp is on its own line.
+
+2. A translation of that transcript into another language. This translation does not have timestamps.
+
+Your task is to propagate the timestamps from the English transcript to the translated transcript. The timestamps should be placed on their own lines, just before the corresponding translated text segment, mirroring the structure of the English timestamped input.
+
+Output the contents of the translated transcript with the timestamps accurately placed. Ensure the output format is Markdown, preserving the original translation's text and structure, only adding the timestamps.
+
+English transcript with timestamps:
+
+```markdown
+%s
+```
+
+Translated transcript without timestamps:
+
+```markdown
+%s
+```
+
+Return only the contents of the new timestamped translated file, without any additional commentary. Do not enclose these contents in a code block such as \"```markdown\". Here is an example of how a segment of the output should look:
+
+```
+00:00:06,380
+
+[Translated text corresponding to the English segment that started at 00:00:06,380]
+```"
+  "Prompt for propagating timestamps from English to a translated file.")
+
 ;;;; Helper Functions
 
 (defun tlon-dub--get-content-type (filename)
@@ -649,9 +681,10 @@ If nil, use the default `gptel-model'."
 (transient-define-prefix tlon-dub-menu ()
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
   :info-manual "(tlon) Dubbing"
-  [["WhisperX"
-    ("t" "Transcribe with WhisperX" tlon-dub-transcribe-with-whisperx)
-    ("p" "Propagate Timestamps from WhisperX" tlon-dub-propagate-machine-timestamps)]
+  [["WhisperX & Timestamps"
+    ("t" "Transcribe with WhisperX (-> srt)" tlon-dub-transcribe-with-whisperx)
+    ("m" "Propagate Machine Timestamps (srt -> en.md)" tlon-dub-propagate-machine-timestamps)
+    ("e" "Propagate English Timestamps (en.md -> lang.md)" tlon-dub-propagate-english-timestamps)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("m" "Get Project Metadata" tlon-dub-get-project-metadata)
