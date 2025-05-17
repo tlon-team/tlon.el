@@ -708,6 +708,98 @@ TRANSLATED-FILE is the path to the original non-timestamped translated file."
 	(write-file output-file))
       (message "Timestamped translated SRT transcript saved to \"%s\"" output-file))))
 
+;;;;; SRT to CSV Conversion
+
+(defconst tlon-dub--srt-timestamp-regex
+  "^\\([0-9]\\{2\\}:[0-9]\\{2\\}:[0-9]\\{2\\},[0-9]\\{3\\}\\) --> \\([0-9]\\{2\\}:[0-9]\\{2\\}:[0-9]\\{2\\},[0-9]\\{3\\}\\)$"
+  "Regexp to match an SRT timestamp line and capture start and end times.
+Example: 00:00:00,031 --> 00:00:06,360")
+
+(defun tlon-dub--parse-srt-file (file)
+  "Parse SRT FILE and return a list of segments.
+Each segment is a plist with :start, :end, and :text keys.
+Returns nil if parsing fails or file is empty."
+  (condition-case err
+      (with-temp-buffer
+	(insert-file-contents file)
+	(let ((content (replace-regexp-in-string "\r" "" (buffer-string))) ; Remove CR characters
+	      segments)
+	  (unless (string-blank-p content)
+	    (let ((srt-blocks (split-string content "\n\\s-*\n+" t "[ \t\n]+")))
+	      (dolist (block srt-blocks)
+		(let (start-time end-time text-lines)
+		  (with-temp-buffer
+		    (insert block)
+		    (goto-char (point-min))
+		    ;; Skip optional segment number
+		    (when (looking-at "^[0-9]+\\s-*$")
+		      (forward-line 1))
+		    ;; Expect timestamp line
+		    (if (looking-at tlon-dub--srt-timestamp-regex)
+			(progn
+			  (setq start-time (match-string 1)
+				end-time (match-string 2))
+			  (forward-line 1)
+			  ;; Collect remaining lines as text
+			  (while (not (eobp))
+			    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position)) text-lines)
+			    (forward-line 1))
+			  (when text-lines
+			    (push (list :start start-time :end end-time :text (string-join (nreverse text-lines) "\n"))
+				  segments)))
+		      (warn "Could not parse SRT block in %s: %s" file block))))))
+	      (nreverse segments)))))
+    (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
+
+(defun tlon-dub--csv-escape-string (str)
+  "Escape STR for CSV by doubling quotes and enclosing in quotes."
+  (format "\"%s\"" (replace-regexp-in-string "\"" "\"\"" str)))
+
+;;;###autoload
+(defun tlon-dub-convert-srt-to-csv (english-srt-file translated-srt-file &optional output-csv-file)
+  "Convert English and Translated SRT files to a CSV file for ElevenLabs.
+ENGLISH-SRT-FILE is the path to the timestamped English SRT file.
+TRANSLATED-SRT-FILE is the path to the timestamped translated SRT file.
+OUTPUT-CSV-FILE is the optional path for the output CSV. If nil, it defaults
+to a CSV file named after the ENGLISH-SRT-FILE in the same directory.
+
+The CSV format is: speaker,start_time,end_time,transcription,translation"
+  (interactive
+   (list (read-file-name "English SRT file: " nil nil t ".srt")
+	 (read-file-name "Translated SRT file: " nil nil t ".srt")
+	 (let ((default-name (concat (file-name-sans-extension (read-file-name "English SRT file (for output name): " nil nil t ".srt")) ".csv")))
+	   (read-file-name "Output CSV file: " (file-name-directory default-name) default-name nil nil))))
+  (let ((english-segments (tlon-dub--parse-srt-file english-srt-file))
+	(translated-segments (tlon-dub--parse-srt-file translated-srt-file)))
+    (unless english-segments
+      (user-error "Could not parse English SRT file, or it is empty: %s" english-srt-file))
+    (unless translated-segments
+      (user-error "Could not parse translated SRT file, or it is empty: %s" translated-srt-file))
+
+    (unless (= (length english-segments) (length translated-segments))
+      (user-error "Mismatch in number of segments: English SRT has %d, Translated SRT has %d"
+		  (length english-segments) (length translated-segments)))
+
+    (let ((csv-lines '("speaker,start_time,end_time,transcription,translation"))
+	  (output-path (or output-csv-file
+			   (concat (file-name-sans-extension english-srt-file) ".csv"))))
+      (dotimes (i (length english-segments))
+	(let* ((eng-seg (nth i english-segments))
+	       (trans-seg (nth i translated-segments))
+	       (start-time (plist-get eng-seg :start))
+	       (end-time (plist-get eng-seg :end))
+	       (eng-text (plist-get eng-seg :text))
+	       (trans-text (plist-get trans-seg :text)))
+	  (push (format "\"\",%s,%s,%s,%s" ; Speaker is empty
+			(tlon-dub--csv-escape-string start-time)
+			(tlon-dub--csv-escape-string end-time)
+			(tlon-dub--csv-escape-string eng-text)
+			(tlon-dub--csv-escape-string trans-text))
+		csv-lines)))
+      (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
+      (message "CSV file created at %s" output-path)
+      output-path)))
+
 ;;;; Menu
 
 (transient-define-infix tlon-dub-infix-select-propagation-model ()
