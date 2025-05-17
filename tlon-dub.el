@@ -227,7 +227,7 @@ En la Guerra de los Siete Años (1756-1763) los británicos tenían una diferenc
 
 1. A TXT file with a machine-generated transcript of an audio file.
 
-2. A Markdown file with a human-edited transcript of that same audio file.
+2. A Markdown file with a human-edited transcript of that same audio file. I have preprocessed this file so that each sentence is on its own line.
 
 Your task is to create a new Markdown file that is just like the original human-edited Markdown file except that its punctuation is revised to make every sentence correspond to a sentence in the machine-generated file.
 
@@ -239,7 +239,7 @@ An element of Douglas Allens argument that, er, I didn't expand on was the briti
 He has, eh, a separate paper called The British Navy Rules that goes, eh, in more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
 ```
 
-and the Markdown file has this:
+and the Markdown file has this (with one sentence per line):
 
 ```
 An element of Douglas Allen's argument that I didn't expand on was the British Navy; he has a separate paper called \"The British Navy Rules\" that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
@@ -261,13 +261,13 @@ Here's the machine-generated TXT file:
 %s
 ```
 
-And here's the human-edited Markdown file:
+And here's the human-edited Markdown file (with one sentence per line):
 
 ```
 %s
 ```
 
-Return only the contents of the new Markdown file with aligned punctuation, without any additional commentary. Do not enclose these contents in a code block."
+Return only the contents of the new Markdown file with aligned punctuation, without any additional commentary. Do not enclose these contents in a code block. You can format the output with proper paragraph breaks as needed - it doesn't need to have one sentence per line."
   "Prompt for aligning punctuation between a text file and a Markdown file.")
 
 ;;;; Helper Functions
@@ -837,9 +837,11 @@ those in the text file. The result is saved to a new file with '-aligned' suffix
                             (buffer-string))))
     (if (or (string-empty-p text-content) (string-empty-p markdown-content))
         (user-error "One or both input files are empty")
-      (let ((prompt (format tlon-dub-align-punctuation-prompt
-                            text-content
-                            markdown-content)))
+      ;; Preprocess the markdown content to have one sentence per line
+      (let* ((preprocessed-markdown (tlon-dub--split-into-sentences markdown-content))
+             (prompt (format tlon-dub-align-punctuation-prompt
+                             text-content
+                             preprocessed-markdown)))
         (message "Requesting AI to align punctuation between files...")
         (tlon-make-gptel-request prompt nil
                                  (lambda (response info)
@@ -958,6 +960,25 @@ file is empty."
 (defun tlon-dub--csv-escape-string (str)
   "Escape STR for CSV by doubling quotes and enclosing in quotes."
   (format "\"%s\"" (replace-regexp-in-string "\"" "\"\"" str)))
+
+(defun tlon-dub--split-into-sentences (text)
+  "Split TEXT into sentences, one per line.
+Attempts to handle common sentence-ending punctuation patterns."
+  (let ((sentence-end-regex "\\([.!?][]\"')}]*\\($\\|[ \t\n]\\)\\)")
+        (result "")
+        (start 0))
+    (while (string-match sentence-end-regex text start)
+      (let ((end (match-end 0)))
+        (setq result (concat result 
+                             (if (string-empty-p result) "" "\n")
+                             (string-trim (substring text start end))))
+        (setq start end)))
+    ;; Add any remaining text as a final sentence
+    (when (< start (length text))
+      (setq result (concat result 
+                           (if (string-empty-p result) "" "\n")
+                           (string-trim (substring text start)))))
+    result))
 
 ;;;; Menu
 
