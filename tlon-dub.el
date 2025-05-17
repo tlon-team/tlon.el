@@ -822,8 +822,13 @@ file is empty."
 		    ;; Skip optional paragraph number line (second numeric line, if it exists and current is not eobp)
 		    (when (and (not (eobp)) (looking-at "^[0-9]+\\s-*$"))
 		      (forward-line 1))
-		    ;; Expect timestamp line
-		    (if (looking-at tlon-dub--srt-timestamp-line)
+		    ;; Expect timestamp line (allow optional leading whitespace)
+		    (let ((timestamp-regex
+		           (concat "\\s-*"
+		                   tlon-dub--srt-timestamp-element
+		                   "[ \t]*-->[ \t]*"
+		                   tlon-dub--srt-timestamp-element)))
+		      (if (looking-at timestamp-regex)
 			(progn
 			  (setq start-time (match-string 1)
 				end-time (match-string 2))
@@ -835,7 +840,7 @@ file is empty."
 			  (when text-lines
 			    (push (list :start start-time :end end-time :text (string-join (nreverse text-lines) "\n"))
 				  segments)))
-		      (warn "Could not parse SRT block in %s (timestamp line not found after potential segment/paragraph numbers): %s" file block))))))
+		      (warn "Could not parse SRT block in %s (timestamp line not found after potential segment/paragraph numbers): %s" file block)))))))
 	    (nreverse segments))))
     (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
 
