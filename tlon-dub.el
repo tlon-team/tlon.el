@@ -581,7 +581,8 @@ specified by the user."
 	(tlon-make-gptel-request prompt nil
 				 (lambda (response info)
 				   (tlon-dub--propagate-timestamps-callback response info human-transcript))
-				 tlon-dub-propagation-model)))))
+				 tlon-dub-propagation-model
+				 'no-context-check)))))
 
 (defun tlon-dub--propagate-timestamps-callback (response info human-transcript)
   "Callback for `tlon-dub-propagate-timestamps'.
