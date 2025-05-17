@@ -596,16 +596,16 @@ an srt-like transcript, is saved to a new file specified by the user."
 				 tlon-dub-propagation-model
 				 t))))) ; no-context-check = t
 
-(defun tlon-dub--propagate-timestamps-callback (response info human-transcript-file)
+(defun tlon-dub--propagate-timestamps-callback (response info human-transcript)
   "Callback for `tlon-dub-propagate-timestamps'.
 RESPONSE is the AI's response. INFO is the response info.
-HUMAN-TRANSCRIPT-FILE is the path to the original human-edited transcript file."
+HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
   (if (not response)
       (tlon-ai-callback-fail info) ; Use the failure callback from tlon-ai
-    (let* ((default-output-name (concat (file-name-sans-extension human-transcript-file)
+    (let* ((default-output-name (concat (file-name-sans-extension human-transcript)
 					"-timestamped.vtt"))
 	   (output-file (read-file-name "Save timestamped transcript as: "
-					(file-name-directory human-transcript-file)
+					(file-name-directory human-transcript)
 					default-output-name nil default-output-name)))
       (if output-file
 	  (progn
