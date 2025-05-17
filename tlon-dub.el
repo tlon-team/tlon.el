@@ -524,23 +524,23 @@ segment IDs."
 		 response))))))
 
 ;;;###autoload
-(defun tlon-dub-transcribe-with-whisperx (audio-file)
-  "Generate a JSON transcript for AUDIO-FILE asynchronously using whisperx.
-The transcript file (.json) will be saved in the same directory as AUDIO-FILE.
-Uses --compute_type float32 and --output_format json by default.
-A message will be displayed upon completion."
+(defun tlon-dub-transcribe-with-whisperx (audio-file &optional format)
+  "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
+The transcript file will be saved in the same directory as AUDIO-FILE, in the
+specified FORMAT. If FORMAT is nil, use \"srt\"."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
   (let* ((expanded-audio-file (expand-file-name audio-file))
 	 (output-dir (file-name-directory expanded-audio-file))
 	 (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
 	 (output-buffer (format "*%s-output*" process-name))
+	 (format "srt")
 	 (command-parts (list "whisperx"
 			      expanded-audio-file
 			      "--compute_type" "float32"
-			      "--output_format" "json"
+			      "--output_format" format
 			      "--output_dir" output-dir)))
-    (message "Starting whisperx JSON transcription for %s..." audio-file)
-    (message "Output JSON file will be in %s. Check %s for progress/errors." output-dir output-buffer)
+    (message "Starting whisperx %s transcription for %s..." format audio-file)
+    (message "Output %s file will be in %s. Check %s for progress/errors." format output-dir output-buffer)
     (let ((process (apply #'start-process process-name output-buffer command-parts)))
       (set-process-sentinel
        process
@@ -610,7 +610,7 @@ The result, an srt-like transcript, is saved to a new file specified by the user
 	(message "Requesting AI to propagate timestamps...")
 	(tlon-make-gptel-request prompt nil
 				 (lambda (response info) ; Wrap callback
-				   (tlon-dub--propagate-timestamps-callback response info human-transcript-file))
+				   (tlon-dub--propagate-timestamps-callback response info human-transcript))
 				 tlon-dub-propagation-model
 				 t))))) ; no-context-check = t
 
