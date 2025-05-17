@@ -569,8 +569,10 @@ specified FORMAT. If FORMAT is nil, use \"srt\"."
 (defun tlon-dub-propagate-timestamps (machine-transcript human-transcript)
   "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
-WhisperX JSON output with the (human-edited) plain text transcript. The result,
-an srt-like transcript, is saved to a new file specified by the user."
+WhisperX srt output with the (human-edited) Markdown transcript. The result, a
+Markdown file with the contents of the human-edited transcript and the
+timestamps from the machine-generated transcript, is saved to a new file
+specified by the user."
   (interactive
    (list (read-file-name "Machine-generated transcript: " nil nil t)
 	 (read-file-name "Human-edited transcript: " nil nil t)))
