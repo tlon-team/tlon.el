@@ -659,10 +659,10 @@ specified FORMAT. If FORMAT is nil, use \"json\"."
 (defun tlon-dub-propagate-machine-timestamps (machine-transcript human-transcript)
   "Propagate timestamps from MACHINE-TRANSCRIPT to HUMAN-TRANSCRIPT using AI.
 The AI will attempt to align the timestamps from the (machine-generated)
-WhisperX JSON output with the (human-edited) Markdown transcript. The result, a
-Markdown file with the contents of the human-edited transcript and the
-timestamps from the machine-generated transcript, is saved to a new file
-specified by the user."
+WhisperX JSON output with the (human-edited) Markdown transcript. The result, an
+SRT file with the contents of the human-edited transcript and the timestamps
+from the machine-generated transcript, is saved to a new file specified by the
+user."
   (interactive
    (list (read-file-name "Machine-generated transcript: " nil nil t)
 	 (read-file-name "Human-edited transcript: " nil nil t)))
@@ -693,7 +693,7 @@ HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
     (let* ((output-file (file-name-with-extension
 			 (concat (file-name-sans-extension human-transcript)
 				 "-timestamped")
-			 "srt"))) ; Output SRT file
+			 "srt")))
       (with-temp-buffer
 	(insert response)
 	(write-file output-file))
@@ -853,8 +853,8 @@ If nil, use the default `gptel-model'."
   :info-manual "(tlon) Dubbing"
   [["Transcription & Timestamps (SRT)"
     ("t" "Transcribe with WhisperX (Audio -> JSON)" tlon-dub-transcribe-with-whisperx)
-    ("m" "Propagate Machine Timestamps (JSON + en.txt -> en.srt)" tlon-dub-propagate-machine-timestamps)
-    ("e" "Propagate English Timestamps (en.srt + lang.txt -> lang.srt)" tlon-dub-propagate-english-timestamps)
+    ("m" "Propagate Machine Timestamps (JSON + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
+    ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
