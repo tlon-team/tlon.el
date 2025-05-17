@@ -40,11 +40,10 @@
 ;;;; User Options
 
 (defcustom tlon-dub-propagation-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
+  '("Claude" . 'claude-3-7-sonnet-20250219)
   "Model to use for propagating timestamps.
 The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, use the
-default `gptel-model'."
+itself. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-dub)
 
