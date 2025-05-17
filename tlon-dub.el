@@ -151,14 +151,14 @@ And here is the human-edited transcript file (plain text or Markdown):
 %s
 ```
 
-Return only the contents of the new SRT file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Here is an example of the beginning of an SRT file as it should look after timestamp propagation:
+Return only the contents of the new SRT file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Do not add paragraph numbers before the timestamps. Here’s an example:
 
 ```
-00:00:00,031  --> 00:00:06,360
-People think of tilt as what happens, and it often does, when you're on a losing streak or you lose the game despite having a good hand. And you can have different reactions: you can try to recoup your losses, or often people become too hesitant and show risk aversion.
+00:00:00,031 --> 00:00:04,360
+An element of Douglas Allen’s argument that I didn’t expand on was the British Navy. He has a separate paper called “The British Navy Rules” that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827 (i.e. for most of the age of fighting sail).
 
-00:00:06,380 --> 00:00:10,740
-But the winners' tilt can be just as negative, can't it? If you make a couple of bets in a row that come out right, especially if they're countertrend bets, as in the case of Elon Musk or Peter Thiel, for example... if you make a couple of countertrend bets and they come out right, it's really satisfying to get a financial return. Proving them all wrong gives you a lot of pleasure. And if you get both at the same time, it's like a drug cocktail, really. It produces a tremendous effect.
+00:00:04,180 --> 00:00:13,910
+In the Seven Years’ War (1756–1763) the British had a 7-to-1 casualty difference in single-ship actions. During the French Revolutionary and Napoleonic Wars (1793–1815) the British had a 5-to-1 difference in captured/destroyed ships, and a 30-to-1 difference for ships of the line—the largest and most powerful ships. By the 1800s, contemporary accounts expected British ships to defeat opponents that had 50 percent greater gunpower and crew.
 ```"
   "Prompt for timestamp propagation.")
 
