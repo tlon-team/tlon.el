@@ -223,6 +223,8 @@ En la Guerra de los Siete Años (1756-1763) los británicos tenían una diferenc
 
 Your task is to create a new Markdown file that is just like the original Markdown file except that its punctuation is revised so that every sentence in the Markdown file corresponds to a sentence in the text file.
 
+IMPORTANT: Pay careful attention to paragraph boundaries. If the text file has sentences that span across multiple paragraphs in the Markdown file, you must adjust the punctuation accordingly, even if it means changing punctuation between paragraphs.
+
 For example, if the text file has this:
 
 ```
@@ -244,6 +246,29 @@ An element of Douglas Allen's argument that I didn't expand on was the British N
 
 He has a separate paper called \"The British Navy Rules\" that goes into more detail on why he thinks institutional incentives made them successful from 1670 and 1827.
 ```
+
+Another example: if the text file has:
+
+```
+People think of tilt as what happens, which it often does when you're on losing streak or take a bad beat, and therefore you can have different reactions, right?
+You can either try to chase your losses, just as often people come way too tentative and risk averse, but like winners tilt can be just as bad, right?
+```
+
+And the Markdown file has:
+
+```
+People think of tilt as what happens, which it often does, when you're on a losing streak or take a bad beat. And therefore, you can have different reactions: you can either try to chase your losses, or just as often people become way too tentative and risk averse.
+
+But winners' tilt can be just as bad, right?
+```
+
+You should return:
+
+```
+People think of tilt as what happens, which it often does when you're on a losing streak or take a bad beat, and therefore you can have different reactions, right? You can either try to chase your losses, or just as often people become way too tentative and risk averse, but like winners' tilt can be just as bad, right?
+```
+
+Notice how in this example, we had to join paragraphs and adjust punctuation between them to match the sentence structure in the text file.
 
 Text file:
 
