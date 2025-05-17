@@ -2112,13 +2112,13 @@ FILES-TO-JOIN-INPUT should be cleaned up."
 
 (defun tlon-tts-joining-sentinel (process event final-output-file files-that-were-joined ffmpeg-list-file original-api-chunks temp-silence-appended-files-if-any joined_files_were_temporary_p)
   "Sentinel for the asynchronous joining PROCESS.
-EVENT is the event string.
-FINAL-OUTPUT-FILE is the final output file path.
-FILES-THAT-WERE-JOINED are the files directly input to the ffmpeg concat command.
-FFMPEG-LIST-FILE is the temporary list file used by ffmpeg.
+EVENT is the event string. FINAL-OUTPUT-FILE is the final output file path.
+FILES-THAT-WERE-JOINED are the files directly input to the ffmpeg concat
+command. FFMPEG-LIST-FILE is the temporary list file used by ffmpeg.
 ORIGINAL-API-CHUNKS are the initial chunk files from the TTS engine.
-TEMP-SILENCE-APPENDED-FILES-IF-ANY are temporary files created by appending silence.
-JOINED_FILES_WERE_TEMPORARY_P indicates if FILES-THAT-WERE-JOINED should be cleaned up."
+TEMP-SILENCE-APPENDED-FILES-IF-ANY are temporary files created by appending
+silence. JOINED_FILES_WERE_TEMPORARY_P indicates if FILES-THAT-WERE-JOINED
+should be cleaned up."
   (let (success)
     (cond
      ((string-match "finished" event)
