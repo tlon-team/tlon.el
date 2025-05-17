@@ -558,7 +558,7 @@ specified FORMAT. If FORMAT is nil, use \"srt\"."
 	       (message "Whisperx process for %s event: %s. Output in %s. Check buffer %s."
 			expanded-audio-file event output-dir (buffer-name (process-buffer proc))))))))))))
 
-;;;;; Timestamp Propagation
+;;;;; Timestamp propagation
 
 ;;;###autoload
 (defun tlon-dub-propagate-timestamps (machine-transcript human-transcript)
@@ -571,10 +571,6 @@ specified by the user."
   (interactive
    (list (read-file-name "Machine-generated transcript: " nil nil t)
 	 (read-file-name "Human-edited transcript: " nil nil t)))
-  (unless (file-exists-p machine-transcript)
-    (user-error "Machine-generated transcript file not found: %s" machine-transcript))
-  (unless (file-exists-p human-transcript)
-    (user-error "Human-edited transcript file not found: %s" human-transcript))
   (let ((whisperx-content (with-temp-buffer
 			    (insert-file-contents machine-transcript)
 			    (buffer-string)))
@@ -588,10 +584,9 @@ specified by the user."
 			    human-text-content)))
 	(message "Requesting AI to propagate timestamps...")
 	(tlon-make-gptel-request prompt nil
-				 (lambda (response info) ; Wrap callback
+				 (lambda (response info)
 				   (tlon-dub--propagate-timestamps-callback response info human-transcript))
-				 tlon-dub-propagation-model
-				 t))))) ; no-context-check = t
+				 tlon-dub-propagation-model)))))
 
 (defun tlon-dub--propagate-timestamps-callback (response info human-transcript)
   "Callback for `tlon-dub-propagate-timestamps'.
@@ -599,18 +594,14 @@ RESPONSE is the AI's response. INFO is the response info.
 HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
   (if (not response)
       (tlon-ai-callback-fail info) ; Use the failure callback from tlon-ai
-    (let* ((default-output-name (concat (file-name-sans-extension human-transcript)
-					"-timestamped.vtt"))
-	   (output-file (read-file-name "Save timestamped transcript as: "
-					(file-name-directory human-transcript)
-					default-output-name nil default-output-name)))
-      (if output-file
-	  (progn
-	    (with-temp-buffer
-	      (insert response)
-	      (write-file output-file))
-	    (message "Timestamped transcript saved to: %s" output-file))
-	(message "Timestamp propagation cancelled by user (no output file selected).")))))
+    (let* ((output-file (file-name-extension
+			 (concat (file-name-sans-extension human-transcript)
+				 "-timestamped")
+			 "md")))
+      (with-temp-buffer
+	(insert response)
+	(write-file output-file))
+      (message "Timestamped transcript saved to \"%s\"" output-file))))
 
 ;;;; Menu
 
