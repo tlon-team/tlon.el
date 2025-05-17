@@ -823,11 +823,7 @@ file is empty."
 		    (when (and (not (eobp)) (looking-at "^[0-9]+\\s-*$"))
 		      (forward-line 1))
 		    ;; Expect timestamp line (allow optional leading whitespace)
-		    (let ((timestamp-regex
-		           (concat "\\s-*"
-		                   tlon-dub--srt-timestamp-element
-		                   "[ \t]*-->[ \t]*"
-		                   tlon-dub--srt-timestamp-element)))
+		    (let ((timestamp-regex (concat "\\s-*" tlon-dub--srt-timestamp-line)))
 		      (if (looking-at timestamp-regex)
 			(progn
 			  (setq start-time (match-string 1)
