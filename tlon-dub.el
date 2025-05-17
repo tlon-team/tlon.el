@@ -964,18 +964,17 @@ file is empty."
 (defun tlon-dub--split-into-sentences (text)
   "Split TEXT into sentences, one per line.
 Attempts to handle common sentence-ending punctuation patterns."
-  (let ((sentence-end-regex "\\([.!?][]\"')}]*\\($\\|[ \t\n]\\)\\)")
-        (result "")
-        (start 0))
-    (while (string-match sentence-end-regex text start)
+  (let ((result "")
+	(start 0))
+    (while (string-match sentence-end-base text start)
       (let ((end (match-end 0)))
-        (setq result (concat result 
+        (setq result (concat result
                              (if (string-empty-p result) "" "\n")
                              (string-trim (substring text start end))))
         (setq start end)))
     ;; Add any remaining text as a final sentence
     (when (< start (length text))
-      (setq result (concat result 
+      (setq result (concat result
                            (if (string-empty-p result) "" "\n")
                            (string-trim (substring text start)))))
     result))
