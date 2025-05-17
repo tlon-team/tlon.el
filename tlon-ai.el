@@ -1195,10 +1195,7 @@ specified in `tlon-ai-help-model'."
          (full-prompt (format tlon-ai-help-prompt-template question)))
     (unless existing-doc-files
       (user-error "No documentation files found in standard Elpaca doc directories or none exist on disk"))
-    (tlon-make-gptel-request full-prompt nil
-                             (lambda (response info)
-                               (tlon-ai-ask-for-help-callback response info))
-                             tlon-ai-help-model 'no-context-check)
+    (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-for-help-callback tlon-ai-help-model 'no-context-check)
     (message "Preparing your answer using %d documentation files with model %S..."
              (length existing-doc-files) (cdr tlon-ai-help-model))))
 
