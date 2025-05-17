@@ -98,7 +98,7 @@ Example: 00:00:00.240 --> 00:00:01.750")
 
 The human-edited transcript is more accurate in terms of wording, but has no timestamps.
 
-Your task is to create a new srt file that combines the timestamps in the WhisperX JSON file with the contents of the human-edited Markdown file. More concretely, for each paragraph in the human-edited Markdown transcript, you should determine when the paragraph begins and ends based on the timestamps in the JSON file, and then insert, in the new srt files, those timestamps followed by the paragraph contents.
+Your task is to create a new SRT file that combines the timestamps in the WhisperX JSON file with the contents of the human-edited transcript. For each paragraph in the human-edited transcript, determine its start and end times based on the JSON timestamps, and then format this as an SRT segment.
 
 Here is the Machine-generated JSON file:
 
@@ -106,13 +106,13 @@ Here is the Machine-generated JSON file:
 %s
 ```
 
-And here is the human-edited Markdown file:
+And here is the human-edited transcript file (plain text or Markdown):
 
 ```
 %s
 ```
 
-Return only the contents of the new srt file, without any additional commentary. Also, do not enclose these contents in a code block such as \"```srt\". Here is an example of the beginning of a srt file as it should look after timestamp propagation:
+Return only the contents of the new SRT file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Here is an example of the beginning of an SRT file as it should look after timestamp propagation:
 
 ```
 00:00:00,031  --> 00:00:06,360
@@ -126,25 +126,25 @@ But the winners' tilt can be just as negative, can't it? If you make a couple of
 (defconst tlon-dub-propagate-english-timestamps-prompt
   "You will be given two inputs:
 
-1. An srt file of an English transcript.
+1. An English SRT file with timestamps.
 
-2. A Markdown file with the translation of that transcript into some language.
+2. A plain text or Markdown file with the translation of that transcript into another language. This translation does not have timestamps.
 
-Your task is to create a new srt file that combines the timestamps in the English file with the contents of the translation.
+Your task is to create a new SRT file that combines the timestamps from the English SRT file with the content of the translated file. Each segment in the output SRT file should use the timestamps from the corresponding English segment and the text from the translated file.
 
-English srt file with timestamps:
-
-```
-%s
-```
-
-Translated Markdown file without timestamps:
+English SRT file with timestamps:
 
 ```
 %s
 ```
 
-Return only the contents of the new timestamped translated file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Here is an example of how a segment of the output should look:
+Translated plain text/Markdown file without timestamps:
+
+```
+%s
+```
+
+Return only the contents of the new timestamped translated SRT file, without any additional commentary. Do not enclose these contents in a code block such as \"```srt\". Here is an example of how a segment of the output SRT file should look:
 
 ```
 00:00:00,031  --> 00:00:06,360
@@ -656,11 +656,11 @@ HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
     (let* ((output-file (file-name-with-extension
 			 (concat (file-name-sans-extension human-transcript)
 				 "-timestamped")
-			 "md")))
+			 "srt"))) ; Output SRT file
       (with-temp-buffer
 	(insert response)
 	(write-file output-file))
-      (message "Timestamped transcript saved to \"%s\"" output-file))))
+      (message "Timestamped SRT transcript saved to \"%s\"" output-file))))
 
 ;;;;;; English timestamps
 
@@ -702,11 +702,11 @@ TRANSLATED-FILE is the path to the original non-timestamped translated file."
     (let* ((output-file (file-name-with-extension
 			 (concat (file-name-sans-extension translated-file)
 				 "-timestamped")
-			 (file-name-extension translated-file t)))) ; Keep original extension
+			 "srt"))) ; Output SRT file
       (with-temp-buffer
 	(insert response)
 	(write-file output-file))
-      (message "Timestamped translated transcript saved to \"%s\"" output-file))))
+      (message "Timestamped translated SRT transcript saved to \"%s\"" output-file))))
 
 ;;;; Menu
 
@@ -720,13 +720,14 @@ If nil, use the default `gptel-model'."
 (transient-define-prefix tlon-dub-menu ()
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
   :info-manual "(tlon) Dubbing"
-  [["WhisperX & Timestamps"
-    ("t" "Transcribe with WhisperX (-> JSON)" tlon-dub-transcribe-with-whisperx)
-    ("m" "Propagate Machine Timestamps (JSON -> en.md)" tlon-dub-propagate-machine-timestamps)
-    ("e" "Propagate English Timestamps (en.md -> <lang>.md)" tlon-dub-propagate-english-timestamps)]
+  [["Transcription & Timestamps (SRT)"
+    ("t" "Transcribe with WhisperX (Audio -> JSON)" tlon-dub-transcribe-with-whisperx)
+    ("m" "Propagate Machine Timestamps (JSON + en.txt -> en.srt)" tlon-dub-propagate-machine-timestamps)
+    ("e" "Propagate English Timestamps (en.srt + lang.txt -> lang.srt)" tlon-dub-propagate-english-timestamps)
+    ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
-    ("m" "Get Project Metadata" tlon-dub-get-project-metadata)
+    ("d" "Get Project Metadata" tlon-dub-get-project-metadata) ; Changed key from "m" to "d" to avoid conflict
     ("g" "Get Dubbing Transcript (VTT)" tlon-dub-get-dubbing)
     ("r" "Get Resource Data" tlon-dub-get-resource-data)
     ("a" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
