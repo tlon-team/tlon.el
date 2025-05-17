@@ -748,7 +748,7 @@ Returns nil if parsing fails or file is empty."
 			    (push (list :start start-time :end end-time :text (string-join (nreverse text-lines) "\n"))
 				  segments)))
 		      (warn "Could not parse SRT block in %s: %s" file block))))))
-	      (nreverse segments)))))
+	    (nreverse segments))))
     (error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
 
 (defun tlon-dub--csv-escape-string (str)
