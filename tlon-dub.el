@@ -80,7 +80,7 @@ Requires dubbing_id and speaker_id.")
 ;;;;;; Common
 
 (defconst tlon-dub--common-timestamp-element
-  "\\([[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}\\%s[[:digit:]]\\{3\\}\\)"
+  "\\([[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}%s[[:digit:]]\\{3\\}\\)"
   "Regexp to match a common timestamp element.
 The placeholder %s is replaced with either \\. or , depending on the format.")
 
@@ -112,12 +112,12 @@ Example: \"00:00:00.240 --> 00:00:01.750\"")
 ;;;;;; srt
 
 (defconst tlon-dub--srt-timestamp-element
-  (format tlon-dub--common-timestamp-element "\\,")
+  (format tlon-dub--common-timestamp-element ",")
   "Regexp to match an SRT timestamp element.
 Example: \"00:00:00,240\"")
 
 (defconst tlon-dub--srt-timestamp-marker
-  (concat "^" tlon-dub--srt-timestamp-element " -->")
+  (concat "^" tlon-dub--srt-timestamp-element " --> ")
   "Regexp to identify the beginning of an SRT timestamp line.
 Example: \"00:00:00,240 -->\"")
 
@@ -824,10 +824,10 @@ file is empty."
 		      (forward-line 1))
 		    ;; Expect timestamp line (allow optional leading whitespace)
 		    (let ((timestamp-regex
-		           (concat "\\s-*" ; Handle leading whitespace for the line
-		                   (substring tlon-dub--srt-timestamp-marker 1) ; Use marker (E1 " -->"), strip ^
-		                   "\\s-*" ; Allow spaces after "-->" before E2
-		                   tlon-dub--srt-timestamp-element))) ; E2
+		           (concat "\\s-*"
+		                   tlon-dub--srt-timestamp-element
+		                   "[ \t]*-->[ \t]*"
+		                   tlon-dub--srt-timestamp-element)))
 		      (if (looking-at timestamp-regex)
 			(progn
 			  (setq start-time (match-string 1)
