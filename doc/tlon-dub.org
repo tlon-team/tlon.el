@@ -101,7 +101,7 @@ This workflow presupposes that we already have (1) the original audio and video 
 #+findex: tlon-dub--parse-vtt
 + ~tlon-dub--parse-vtt~ :: Parses a string containing VTT transcript data. Returns a list of plists, where each plist represents a segment and contains =:start= (string), =:end= (string), and =:text= (string) keys. Returns nil or an incomplete list if parsing fails.
 #+findex: tlon-dub--parse-srt-file
-+ ~tlon-dub--parse-srt-file~ :: Parses an SRT =file= and returns a list of segments. Each segment is a plist with =:start= (string, "HH:MM:SS,mmm"), =:end= (string, "HH:MM:SS,mmm"), and =:text= (string) keys. Handles optional segment numbers and CR/LF line endings. Returns =nil= if parsing fails or the file is empty.
++ ~tlon-dub--parse-srt-file~ :: Parses an SRT =file= and returns a list of segments. Each segment is a plist with =:start= (string, "HH:MM:SS,mmm"), =:end= (string, "HH:MM:SS,mmm"), and =:text= (string) keys. Handles optional segment numbers, optional paragraph numbers that may precede the timestamp line, and CR/LF line endings. Returns =nil= if parsing fails or the file is empty.
 #+findex: tlon-dub--csv-escape-string
 + ~tlon-dub--csv-escape-string~ :: Escapes a =str= for CSV output by doubling any internal double quotes and then enclosing the entire string in double quotes.
 #+findex: tlon-dub--share-project-with-self
