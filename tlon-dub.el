@@ -824,10 +824,10 @@ file is empty."
 		      (forward-line 1))
 		    ;; Expect timestamp line (allow optional leading whitespace)
 		    (let ((timestamp-regex
-		           (concat "\\s-*"
-		                   tlon-dub--srt-timestamp-element
-		                   "[ \t]*-->[ \t]*"
-		                   tlon-dub--srt-timestamp-element)))
+		           (concat "\\s-*" ; Handle leading whitespace for the line
+		                   (substring tlon-dub--srt-timestamp-marker 1) ; Use marker (E1 " -->"), strip ^
+		                   "\\s-*" ; Allow spaces after "-->" before E2
+		                   tlon-dub--srt-timestamp-element))) ; E2
 		      (if (looking-at timestamp-regex)
 			(progn
 			  (setq start-time (match-string 1)
