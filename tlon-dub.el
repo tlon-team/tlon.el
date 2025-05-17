@@ -588,7 +588,7 @@ specified by the user."
 RESPONSE is the AI's response. INFO is the response info.
 HUMAN-TRANSCRIPT is the path to the original human-edited transcript file."
   (if (not response)
-      (tlon-ai-callback-fail info) ; Use the failure callback from tlon-ai
+      (tlon-ai-callback-fail info)
     (let* ((output-file (file-name-with-extension
 			 (concat (file-name-sans-extension human-transcript)
 				 "-timestamped")
