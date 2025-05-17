@@ -129,8 +129,8 @@ This workflow presupposes that we already have (1) the original audio and video 
 + ~tlon-dub--vtt-timestamp-line~ :: Regexp to match a VTT timestamp line and capture start and end times (e.g., "00:00:00.240 --> 00:00:01.750"). Uses POSIX character classes.
 #+vindex: tlon-dub--vtt-timestamp-marker
 + ~tlon-dub--vtt-timestamp-marker~ :: Regexp to identify the beginning of a VTT timestamp line (e.g., "00:00:00.240 -->"). Uses POSIX character classes.
-#+vindex: tlon-dub--vtt-blank-line-regex
-+ ~tlon-dub--vtt-blank-line-regex~ :: Regexp to match a blank or whitespace-only line.
+#+vindex: tlon-dub--blank-line-regex
++ ~tlon-dub--blank-line-regex~ :: Regexp to match a blank or whitespace-only line.
 #+vindex: tlon-dub-propagate-machine-timestamps-prompt
 + ~tlon-dub-propagate-machine-timestamps-prompt~ :: The prompt template used to instruct an AI model on how to propagate timestamps from a WhisperX JSON transcript to a human-edited plain text/Markdown transcript, outputting an SRT file.
 #+vindex: tlon-dub-propagate-english-timestamps-prompt

@@ -76,8 +76,27 @@ Requires resource_id.")
   "API endpoint format for adding a speaker segment.
 Requires dubbing_id and speaker_id.")
 
+;;;;; Regexps
+
+;;;;;; Common
+
+(defconst tlon-dub--common-timestamp-element
+  "\\([[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}\\%s[[:digit:]]\\{3\\}\\)"
+  "Regexp to match a common timestamp element.
+The placeholder %s is replaced with either \\. or , depending on the format.")
+
+(defconst tlon-dub--blank-line-regex
+  "^\\s-*$"
+  "Regexp to match a blank or whitespace-only line.")
+
+(defconst tlon-dub-csv-header
+  "speaker,start_time,end_time,transcription,translation"
+  "Header for the ElevenLabs CSV file.")
+
+;;;;;; vtt
+
 (defconst tlon-dub--vtt-timestamp-element
-  "\\([[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}:[[:digit:]]\\{2\\}\\.[[:digit:]]\\{3\\}\\)"
+  (format tlon-dub--common-timestamp-element "\\.")
   "Regexp to match a VTT timestamp element.
 Example: \"00:00:00.240\"")
 
@@ -91,13 +110,24 @@ Example: \"00:00:00.240 -->\"")
   "Regexp to match a VTT timestamp line and capture start and end times.
 Example: \"00:00:00.240 --> 00:00:01.750\"")
 
-(defconst tlon-dub--vtt-blank-line-regex
-  "^\\s-*$"
-  "Regexp to match a blank or whitespace-only line.")
+;;;;;; srt
 
-(defconst tlon-dub-csv-header
-  "speaker,start_time,end_time,transcription,translation"
-  "Header for the ElevenLabs CSV file.")
+(defconst tlon-dub--srt-timestamp-element
+  (format tlon-dub--common-timestamp-element "\\,")
+  "Regexp to match an SRT timestamp element.
+Example: \"00:00:00,240\"")
+
+(defconst tlon-dub--srt-timestamp-marker
+  (concat "^" tlon-dub--srt-timestamp-element " -->")
+  "Regexp to identify the beginning of an SRT timestamp line.
+Example: \"00:00:00,240 -->\"")
+
+(defconst tlon-dub--srt-timestamp-line
+  (concat tlon-dub--srt-timestamp-marker tlon-dub--srt-timestamp-element)
+  "Regexp to match an SRT timestamp line and capture start and end times.
+Example: \"00:00:00,240 --> 00:00:01,750\"")
+
+;;;;; Propagation
 
 (defconst tlon-dub-propagate-machine-timestamps-prompt
   "You will be given two inputs:
@@ -289,7 +319,7 @@ Returns the path to the OUTPUT-FILE-PATH."
 			     (replace-regexp-in-string "\\." "," (match-string 2 current-line-text)))))
 		(forward-line 1) ; Consume the timestamp line
 		;; 2. Skip one empty line after MainTS (if present)
-		(when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex)) (forward-line 1))
+		(when (and (not (eobp)) (looking-at-p tlon-dub--blank-line-regex)) (forward-line 1))
 		;; 3. Collect Intermediate Text lines (potential "Tagged Text") until SecondaryTS or EOF
 		;;    and determine the final caption text.
 		(let ((intermediate-text-parts '())
@@ -303,11 +333,11 @@ Returns the path to the OUTPUT-FILE-PATH."
 			;; 4. We are at SecondaryTS. Skip it.
 			(forward-line 1)
 			;; 5. Skip one empty line after SecondaryTS (if present)
-			(when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex)) (forward-line 1))
+			(when (and (not (eobp)) (looking-at-p tlon-dub--blank-line-regex)) (forward-line 1))
 			;; 6. Collect Clean Text lines (this is the actual caption)
 			(let ((clean-text-parts '()))
 			  (while (and (not (eobp))
-				      (not (looking-at-p tlon-dub--vtt-blank-line-regex))
+				      (not (looking-at-p tlon-dub--blank-line-regex))
 				      (not (looking-at-p tlon-dub--vtt-timestamp-marker)))
 			    (push (buffer-substring-no-properties (line-beginning-position) (line-end-position))
 				  clean-text-parts)
@@ -315,7 +345,7 @@ Returns the path to the OUTPUT-FILE-PATH."
 			  (when clean-text-parts
 			    (setq caption-text-final (string-join (nreverse clean-text-parts) " "))))
 			;; 7. Skip one empty line after CleanText (if present) - crucial for loop progression.
-			(when (and (not (eobp)) (looking-at-p tlon-dub--vtt-blank-line-regex))
+			(when (and (not (eobp)) (looking-at-p tlon-dub--blank-line-regex))
 			  (forward-line 1)))
 		    ;; Else (EOF reached, or non-TS line that breaks the pattern before a SecondaryTS)
 		    ;; Use the collected intermediate-text-parts as the caption.
@@ -717,11 +747,6 @@ TRANSLATED-FILE is the path to the original non-timestamped translated file."
 
 ;;;;; SRT to CSV Conversion
 
-(defconst tlon-dub--srt-timestamp-regex
-  "^\\([0-9]\\{2\\}:[0-9]\\{2\\}:[0-9]\\{2\\},[0-9]\\{3\\}\\) --> \\([0-9]\\{2\\}:[0-9]\\{2\\}:[0-9]\\{2\\},[0-9]\\{3\\}\\)$"
-  "Regexp to match an SRT timestamp line and capture start and end times.
-Example: 00:00:00,031 --> 00:00:06,360")
-
 ;;;###autoload
 (defun tlon-dub-convert-srt-to-csv (english-srt-file translated-srt-file)
   "Convert English and Translated SRT files to a CSV file for ElevenLabs.
@@ -794,7 +819,7 @@ Returns nil if parsing fails or file is empty."
 		    (when (looking-at "^[0-9]+\\s-*$")
 		      (forward-line 1))
 		    ;; Expect timestamp line
-		    (if (looking-at tlon-dub--srt-timestamp-regex)
+		    (if (looking-at tlon-dub--srt-timestamp-line)
 			(progn
 			  (setq start-time (match-string 1)
 				end-time (match-string 2))
