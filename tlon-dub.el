@@ -916,12 +916,15 @@ If nil, defaults to 1.2 (20% longer)."
     (if segments-to-optimize
         (progn
           (setq segments-to-optimize (nreverse segments-to-optimize))
-          (message "Found %d segments exceeding threshold. Processing..."
+          (message "Found %d segments exceeding threshold. Starting asynchronous processing..." 
                    (length segments-to-optimize))
-          ;; Process each segment that needs optimization
-          (tlon-dub--process-segments-to-optimize
-           segments-to-optimize english-segments translated-segments
-           threshold output-file))
+          
+          ;; Process segments asynchronously
+          (tlon-dub--process-segments-to-optimize 
+           segments-to-optimize english-segments translated-segments 
+           threshold output-file)
+          (message "Optimization started. Results will be saved to %s when complete" output-file))
+      
       ;; No segments to optimize, just copy the file
       (copy-file translated-srt-file output-file t)
       (message "No segments exceed the threshold. Created copy at %s" output-file))))
@@ -931,31 +934,66 @@ If nil, defaults to 1.2 (20% longer)."
 SEGMENTS-TO-OPTIMIZE is a list of cons cells (index . ratio).
 ENGLISH-SEGMENTS and TRANSLATED-SEGMENTS are the parsed SRT segments.
 THRESHOLD is the maximum allowed ratio."
-  (let ((total-to-optimize (length segments-to-optimize))
-        (processed 0)
-        (optimized-segments (copy-sequence translated-segments)))
-    ;; Process each segment sequentially
-    (dolist (segment-info segments-to-optimize)
-      (let* ((index (car segment-info))
+  (let* ((total-to-optimize (length segments-to-optimize))
+         (pending-segments (copy-list segments-to-optimize))
+         (optimized-segments (copy-sequence translated-segments))
+         (state (list :pending pending-segments
+                      :optimized-segments optimized-segments
+                      :total total-to-optimize
+                      :processed 0
+                      :output-file output-file)))
+    
+    ;; Start processing the first segment
+    (tlon-dub--process-next-segment state english-segments translated-segments threshold)))
+
+(defun tlon-dub--process-next-segment (state english-segments translated-segments threshold)
+  "Process the next segment in the optimization queue.
+STATE is a plist containing the processing state.
+ENGLISH-SEGMENTS and TRANSLATED-SEGMENTS are the parsed SRT segments.
+THRESHOLD is the maximum allowed ratio."
+  (let* ((pending (plist-get state :pending))
+         (optimized-segments (plist-get state :optimized-segments))
+         (total (plist-get state :total))
+         (processed (plist-get state :processed))
+         (output-file (plist-get state :output-file)))
+    
+    (if (null pending)
+        ;; All segments processed, write the file
+        (progn
+          (tlon-dub--write-srt-file optimized-segments output-file)
+          (message "Optimization complete. %d segments processed. Result saved to %s" 
+                   processed output-file))
+      
+      ;; Process the next segment
+      (let* ((segment-info (car pending))
+             (index (car segment-info))
              (ratio (cdr segment-info))
              (trans-seg (nth index translated-segments))
              (trans-text (plist-get trans-seg :text))
              (reduction-percent (round (* 100 (- 1 (/ threshold ratio)))))
-             (prompt (format tlon-dub-shorten-translation-prompt
+             (prompt (format tlon-dub-shorten-translation-prompt 
                              reduction-percent trans-text reduction-percent)))
-        (message "Optimizing segment %d/%d (needs %d%% reduction)..."
-                 (1+ processed) total-to-optimize reduction-percent)
-        ;; Make synchronous request to AI
-        (let* ((response (tlon-make-gptel-request prompt nil nil tlon-dub-alignment-model 'no-context-check))
-               (optimized-text (if response response trans-text)))
-          ;; Update the segment with optimized text
-          (setf (nth index optimized-segments)
-                (plist-put (nth index optimized-segments) :text optimized-text))
-          (setq processed (1+ processed)))))
-    ;; Write the optimized segments to file
-    (tlon-dub--write-srt-file optimized-segments output-file)
-    (message "Optimization complete. %d segments processed. Result saved to %s"
-             processed output-file)))
+        
+        (message "Optimizing segment %d/%d (needs %d%% reduction)..." 
+                 (1+ processed) total reduction-percent)
+        
+        ;; Make asynchronous request to AI with callback
+        (tlon-make-gptel-request 
+         prompt nil
+         (lambda (response info)
+           (let ((optimized-text (if response response trans-text)))
+             ;; Update the segment with optimized text
+             (setf (nth index optimized-segments)
+                   (plist-put (nth index optimized-segments) :text optimized-text))
+             
+             ;; Update state and process next segment
+             (let ((new-state (list :pending (cdr pending)
+                                    :optimized-segments optimized-segments
+                                    :total total
+                                    :processed (1+ processed)
+                                    :output-file output-file)))
+               (tlon-dub--process-next-segment new-state english-segments translated-segments threshold))))
+         tlon-dub-alignment-model 'no-context-check)))))
 
 (defun tlon-dub--write-srt-file (segments file)
   "Write SRT SEGMENTS to FILE.
