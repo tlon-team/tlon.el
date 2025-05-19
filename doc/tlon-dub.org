@@ -82,6 +82,9 @@ This workflow presupposes that we already have (1) the original audio and video 
 #+findex: tlon-dub-align-punctuation
 + ~tlon-dub-align-punctuation~ :: (Autoloaded) Aligns punctuation between a text file and a Markdown file using AI. Both files contain transcripts of the same audio, but may differ in their punctuation. The AI will revise the Markdown file so that its sentence boundaries match those in the text file. Prompts for the =text-file= and the =markdown-file=. The resulting aligned Markdown file is saved with a "-aligned" suffix. The AI model used can be configured via ~tlon-dub-propagation-model~.
 
+#+findex: tlon-dub-optimize-translation-length
++ ~tlon-dub-optimize-translation-length~ :: (Autoloaded) Optimizes translation length by shortening paragraphs that exceed a specified threshold. Prompts for an =english-srt-file=, a =translated-srt-file=, and a =threshold= ratio (default 1.2, meaning translations can be up to 20% longer than the English text). The function compares each segment's length between the English and translated files, identifies segments where the translation is too long, and uses AI to shorten those segments while preserving meaning. The result is saved to a new SRT file with "-optimized" suffix. The AI model used can be configured via ~tlon-dub-alignment-model~.
+
 ** Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-menu
@@ -140,5 +143,7 @@ This workflow presupposes that we already have (1) the original audio and video 
 + ~tlon-dub-propagate-english-timestamps-prompt~ :: The prompt template used to instruct an AI model on how to propagate timestamps from a timestamped English SRT file to a non-timestamped translated plain text/Markdown file, outputting an SRT file.
 #+vindex: tlon-dub-align-punctuation-prompt
 + ~tlon-dub-align-punctuation-prompt~ :: The prompt template used to instruct an AI model on how to align punctuation between a text file and a Markdown file, ensuring that sentence boundaries in the Markdown file match those in the text file.
+#+vindex: tlon-dub-shorten-translation-prompt
++ ~tlon-dub-shorten-translation-prompt~ :: The prompt template used to instruct an AI model on how to shorten a translated paragraph by a specified percentage while preserving its meaning and maintaining natural flow.
 #+vindex: tlon-dub--srt-timestamp-regex
 + ~tlon-dub--srt-timestamp-regex~ :: Regexp to match an SRT timestamp line (e.g., "00:00:00,031 --> 00:00:06,360") and capture start and end times.
