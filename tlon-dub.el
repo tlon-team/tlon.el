@@ -864,6 +864,112 @@ MARKDOWN-FILE is the path to the original Markdown file."
         (write-file output-file))
       (message "Aligned Markdown file saved to \"%s\"" output-file))))
 
+;;;###autoload
+(defun tlon-dub-optimize-translation-length (english-srt-file translated-srt-file &optional threshold)
+  "Optimize translation length by shortening paragraphs that exceed THRESHOLD.
+ENGLISH-SRT-FILE is the path to the English SRT file.
+TRANSLATED-SRT-FILE is the path to the translated SRT file.
+THRESHOLD is the maximum allowed ratio of translation length to English length.
+If nil, defaults to 1.2 (20% longer)."
+  (interactive
+   (list (read-file-name "English SRT file: " nil nil t ".srt")
+         (read-file-name "Translated SRT file: " nil nil t ".srt")
+         (read-number "Length threshold ratio (default 1.2): " 1.2)))
+  (let* ((threshold (or threshold 1.2))
+         (english-segments (tlon-dub--parse-srt english-srt-file))
+         (translated-segments (tlon-dub--parse-srt translated-srt-file))
+         (output-file (concat (file-name-sans-extension translated-srt-file) "-optimized.srt"))
+         (segments-to-optimize nil)
+         (total-segments (length english-segments)))
+    
+    ;; Check if both files have the same number of segments
+    (unless (= (length english-segments) (length translated-segments))
+      (user-error "Files have different number of segments: English has %d, Translation has %d"
+                  (length english-segments) (length translated-segments)))
+    
+    ;; Identify segments that exceed the threshold
+    (dotimes (i total-segments)
+      (let* ((eng-seg (nth i english-segments))
+             (trans-seg (nth i translated-segments))
+             (eng-text (plist-get eng-seg :text))
+             (trans-text (plist-get trans-seg :text))
+             (eng-length (length eng-text))
+             (trans-length (length trans-text))
+             (ratio (if (> eng-length 0) (/ (float trans-length) eng-length) 1.0)))
+        (when (> ratio threshold)
+          (push (cons i ratio) segments-to-optimize))))
+    
+    (if segments-to-optimize
+        (progn
+          (setq segments-to-optimize (nreverse segments-to-optimize))
+          (message "Found %d segments exceeding threshold. Processing..." 
+                   (length segments-to-optimize))
+          
+          ;; Process each segment that needs optimization
+          (tlon-dub--process-segments-to-optimize 
+           segments-to-optimize english-segments translated-segments 
+           threshold output-file))
+      
+      ;; No segments to optimize, just copy the file
+      (copy-file translated-srt-file output-file t)
+      (message "No segments exceed the threshold. Created copy at %s" output-file))))
+
+(defun tlon-dub--process-segments-to-optimize (segments-to-optimize english-segments translated-segments threshold output-file)
+  "Process segments that need optimization and save results to OUTPUT-FILE.
+SEGMENTS-TO-OPTIMIZE is a list of cons cells (index . ratio).
+ENGLISH-SEGMENTS and TRANSLATED-SEGMENTS are the parsed SRT segments.
+THRESHOLD is the maximum allowed ratio."
+  (let ((total-to-optimize (length segments-to-optimize))
+        (processed 0)
+        (optimized-segments (copy-sequence translated-segments)))
+    
+    ;; Process each segment sequentially
+    (dolist (segment-info segments-to-optimize)
+      (let* ((index (car segment-info))
+             (ratio (cdr segment-info))
+             (trans-seg (nth index translated-segments))
+             (trans-text (plist-get trans-seg :text))
+             (reduction-percent (round (* 100 (- 1 (/ threshold ratio)))))
+             (prompt (format tlon-dub-shorten-translation-prompt 
+                             reduction-percent trans-text reduction-percent)))
+        
+        (message "Optimizing segment %d/%d (needs %d%% reduction)..." 
+                 (1+ processed) total-to-optimize reduction-percent)
+        
+        ;; Make synchronous request to AI
+        (let* ((response (tlon-make-gptel-request prompt nil nil tlon-dub-alignment-model 'no-context-check))
+               (optimized-text (if response response trans-text)))
+          
+          ;; Update the segment with optimized text
+          (setf (nth index optimized-segments)
+                (plist-put (nth index optimized-segments) :text optimized-text))
+          
+          (setq processed (1+ processed)))))
+    
+    ;; Write the optimized segments to file
+    (tlon-dub--write-srt-file optimized-segments output-file)
+    (message "Optimization complete. %d segments processed. Result saved to %s" 
+             processed output-file)))
+
+(defun tlon-dub--write-srt-file (segments file)
+  "Write SRT SEGMENTS to FILE.
+Each segment in SEGMENTS should be a plist with :start, :end, and :text keys."
+  (with-temp-buffer
+    (let ((segment-num 1))
+      (dolist (segment segments)
+        ;; Write segment number
+        (insert (format "%d\n" segment-num))
+        ;; Write timestamp
+        (insert (format "%s --> %s\n" 
+                        (plist-get segment :start) 
+                        (plist-get segment :end)))
+        ;; Write text
+        (insert (plist-get segment :text))
+        ;; Add blank line between segments
+        (insert "\n\n")
+        (setq segment-num (1+ segment-num))))
+    (write-file file)))
+
 ;;;;; SRT to CSV Conversion
 
 ;;;###autoload
@@ -998,7 +1104,8 @@ If nil, use the default `gptel-model'."
     ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
     ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
-    ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)]
+    ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
+    ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("d" "Get Project Metadata" tlon-dub-get-project-metadata) ; Changed key from "m" to "d" to avoid conflict
