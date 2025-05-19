@@ -898,12 +898,10 @@ If nil, defaults to 1.2 (20% longer)."
          (output-file (concat (file-name-sans-extension translated-srt-file) "-optimized.srt"))
          (segments-to-optimize nil)
          (total-segments (length english-segments)))
-    
     ;; Check if both files have the same number of segments
     (unless (= (length english-segments) (length translated-segments))
       (user-error "Files have different number of segments: English has %d, Translation has %d"
                   (length english-segments) (length translated-segments)))
-    
     ;; Identify segments that exceed the threshold
     (dotimes (i total-segments)
       (let* ((eng-seg (nth i english-segments))
@@ -915,18 +913,15 @@ If nil, defaults to 1.2 (20% longer)."
              (ratio (if (> eng-length 0) (/ (float trans-length) eng-length) 1.0)))
         (when (> ratio threshold)
           (push (cons i ratio) segments-to-optimize))))
-    
     (if segments-to-optimize
         (progn
           (setq segments-to-optimize (nreverse segments-to-optimize))
-          (message "Found %d segments exceeding threshold. Processing..." 
+          (message "Found %d segments exceeding threshold. Processing..."
                    (length segments-to-optimize))
-          
           ;; Process each segment that needs optimization
-          (tlon-dub--process-segments-to-optimize 
-           segments-to-optimize english-segments translated-segments 
+          (tlon-dub--process-segments-to-optimize
+           segments-to-optimize english-segments translated-segments
            threshold output-file))
-      
       ;; No segments to optimize, just copy the file
       (copy-file translated-srt-file output-file t)
       (message "No segments exceed the threshold. Created copy at %s" output-file))))
@@ -939,7 +934,6 @@ THRESHOLD is the maximum allowed ratio."
   (let ((total-to-optimize (length segments-to-optimize))
         (processed 0)
         (optimized-segments (copy-sequence translated-segments)))
-    
     ;; Process each segment sequentially
     (dolist (segment-info segments-to-optimize)
       (let* ((index (car segment-info))
@@ -947,25 +941,20 @@ THRESHOLD is the maximum allowed ratio."
              (trans-seg (nth index translated-segments))
              (trans-text (plist-get trans-seg :text))
              (reduction-percent (round (* 100 (- 1 (/ threshold ratio)))))
-             (prompt (format tlon-dub-shorten-translation-prompt 
+             (prompt (format tlon-dub-shorten-translation-prompt
                              reduction-percent trans-text reduction-percent)))
-        
-        (message "Optimizing segment %d/%d (needs %d%% reduction)..." 
+        (message "Optimizing segment %d/%d (needs %d%% reduction)..."
                  (1+ processed) total-to-optimize reduction-percent)
-        
         ;; Make synchronous request to AI
         (let* ((response (tlon-make-gptel-request prompt nil nil tlon-dub-alignment-model 'no-context-check))
                (optimized-text (if response response trans-text)))
-          
           ;; Update the segment with optimized text
           (setf (nth index optimized-segments)
                 (plist-put (nth index optimized-segments) :text optimized-text))
-          
           (setq processed (1+ processed)))))
-    
     ;; Write the optimized segments to file
     (tlon-dub--write-srt-file optimized-segments output-file)
-    (message "Optimization complete. %d segments processed. Result saved to %s" 
+    (message "Optimization complete. %d segments processed. Result saved to %s"
              processed output-file)))
 
 (defun tlon-dub--write-srt-file (segments file)
@@ -977,8 +966,8 @@ Each segment in SEGMENTS should be a plist with :start, :end, and :text keys."
         ;; Write segment number
         (insert (format "%d\n" segment-num))
         ;; Write timestamp
-        (insert (format "%s --> %s\n" 
-                        (plist-get segment :start) 
+        (insert (format "%s --> %s\n"
+                        (plist-get segment :start)
                         (plist-get segment :end)))
         ;; Write text
         (insert (plist-get segment :text))
