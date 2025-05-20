@@ -1054,12 +1054,10 @@ TYPE is either `abstract' or `synopsis'."
 	  (tlon-ai-get-abstract-in-language file language type)
 	(tlon-ai-detect-language-in-file
 	 file (tlon-ai-get-abstract-from-detected-language file)))
-    ;; Else branch: if not proceeding
-    (progn
-      (when tlon-debug
-        (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
-      ;; Use a timer to avoid deep recursion in batch mode when skipping many items
-      (run-with-idle-timer 0 nil #'tlon-ai-batch-continue))))
+    (when tlon-debug
+      (message "`%s' is scheduling `tlon-ai-batch-continue' via timer." "tlon-get-abstract-with-ai"))
+    ;; Use a timer to avoid deep recursion in batch mode when skipping many items
+    (run-with-idle-timer 0 nil #'tlon-ai-batch-continue)))
 
 (defun tlon-shorten-abstract-with-ai ()
   "Shorten the abstract at point so that does not exceed word threshold."
@@ -1155,7 +1153,6 @@ inserted; if nil, use the current buffer."
         (tlon-ai-callback-fail info)
       (with-current-buffer (or buffer (current-buffer))
         (cond
-         ;; If a key was captured, we assume it's for a BibTeX entry.
 	 (key
 	  (pcase type
 	    ('synopsis ; Synopses are just copied, not added to BibTeX entry
@@ -1334,21 +1331,18 @@ Documentation files are collected from:
       (error "Could not find BibTeX file for key %s" key))
     (let ((target-buffer (find-file-noselect bib-file)))
       (with-current-buffer target-buffer
-        ;; Determine the correct set-field function based on the BibTeX buffer's mode
         (let ((set-field (pcase major-mode
                            ('bibtex-mode #'bibtex-set-field)
-                           ;; Add other relevant modes if necessary, e.g., ebib-mode
                            (_ (error "Unsupported major mode in BibTeX file: %s" major-mode)))))
           (save-excursion
-            (goto-char (point-min)) ; Ensure search starts from beginning
-            (when (bibtex-search-entry key) ; Check if entry is found
+            (goto-char (point-min))
+            (when (bibtex-search-entry key)
               (shut-up
-               (funcall set-field "abstract" abstract))
+		(funcall set-field "abstract" abstract))
               (message "Set abstract of `%s' in %s" key (buffer-name))
-              ;; Save the buffer if it's in bibtex-mode
               (when (derived-mode-p 'bibtex-mode)
                 (save-buffer)))
-            (unless (bibtex-search-entry key) ; Error if entry wasn't found
+            (unless (bibtex-search-entry key)
               (error "Could not find entry for key %s in buffer %s" key (buffer-name)))))))))
 
 ;;;;; Language detection
