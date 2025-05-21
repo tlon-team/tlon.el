@@ -403,7 +403,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 
 ;;;;; General
 
-(defun tlon-make-gptel-request (prompt &optional string callback full-model no-context-check)
+(defun tlon-make-gptel-request (prompt &optional string callback full-model no-context-check request-buffer)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
 When STRING is non-nil, PROMPT is a formatting string containing the prompt and
 a slot for a string, which is the variable part of the prompt (e.g. the text to
@@ -412,7 +412,8 @@ is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
 car is the backend and whose cdr is the model.
 
 By default, warn the user if the context is not empty. If NO-CONTEXT-CHECK is
-non-nil, bypass this check."
+non-nil, bypass this check.
+REQUEST-BUFFER if non-nil, is the buffer to use for the gptel request."
   (unless tlon-ai-batch-fun
     (tlon-warn-if-gptel-context no-context-check))
   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
@@ -420,7 +421,9 @@ non-nil, bypass this check."
     (cl-destructuring-bind (backend . model) full-model
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
 	     (full-prompt (if string (format prompt string) prompt))
-	     (request (lambda () (gptel-request full-prompt :callback callback))))
+	     (request (lambda () (gptel-request full-prompt
+                                            :callback callback
+                                            :buffer (or request-buffer (current-buffer))))))
 	(if tlon-ai-batch-fun
 	    (condition-case nil
 		(funcall request)
@@ -2183,11 +2186,15 @@ repository."
               (message "Requesting AI to update %s (lang: %s) in repo %s..."
                        (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
               ;; Make the request - the callback handles writing and committing
-              (tlon-make-gptel-request prompt nil
-                                       (lambda (response info) ; Wrap callback to pass context
-                                         (tlon-ai--propagate-changes-callback response info target-file target-repo source-repo-name latest-commit)) ; Pass source-repo-name
-                                       nil ; Use default model for now, consider a custom one
-                                       t)) ; Bypass context check as we manage context implicitly
+              (with-temp-buffer
+                (fundamental-mode) ; Ensure a neutral mode
+                (let ((gptel-track-media nil)) ; Ensure media tracking is off for this specific request's context
+                  (tlon-make-gptel-request prompt nil
+                                           (lambda (response info) ; Wrap callback to pass context
+                                             (tlon-ai--propagate-changes-callback response info target-file target-repo source-repo-name latest-commit)) ; Pass source-repo-name
+                                           nil ; Use default model for now, consider a custom one
+                                           t   ; Bypass context check as we manage context implicitly
+                                           (current-buffer)))) ; Pass this temp buffer as the request-buffer
           ;; Message is now handled inside tlon-ai--find-target-file
           )))
     (message "AI change propagation requests initiated for all target repositories.")))
