@@ -574,13 +574,11 @@ Otherwise,
 	    (t
 	     (buffer-substring-no-properties (point-min) (point-max)))))))
 
-(autoload 'shr-render-buffer "shr")
 (autoload 'tlon-convert-pdf "tlon-import")
 (defun tlon-get-file-as-string (file)
   "Get the contents of FILE as a string.
-If FILE is a PDF, convert it to Markdown first. If FILE is HTML, render it to
-text using `shr-render-buffer', preventing focus switch and killing the render
-buffer."
+If FILE is a PDF, convert it to Markdown first. If FILE is an HTML file, render
+it first."
   (with-temp-buffer
     (let ((original-file file)) ; Keep track of original file name
       (when (string= (file-name-extension file) "pdf")
@@ -588,14 +586,15 @@ buffer."
 	  (tlon-convert-pdf file markdown)
 	  (setq file markdown)))
       (insert-file-contents file)
-      (when (string= (file-name-extension original-file) "html") ; Check original extension
-	;; Prevent shr-render-buffer from switching windows
-	(save-selected-window
-	  (shr-render-buffer (current-buffer)))) ; Render without display arg
-      ;; Kill the *html* buffer if it was created and is still alive
-      (when-let ((html-buffer (get-buffer "*html*")))
-	(kill-buffer html-buffer))
-      (buffer-substring-no-properties (point-min) (point-max)))))
+      (when (string= (file-name-extension original-file) "html")
+	(let ((html-buffer (buffer-name))
+	      (browse-url-handlers nil)
+	      (browse-url-browser-function #'eww-browse-url))
+	  (browse-url-of-buffer)
+	  (buffer-substring-no-properties (point-min) (point-max))
+	  (kill-buffer html-buffer)))
+      (when (string= (file-name-extension file) "pdf")
+	(buffer-substring-no-properties (point-min) (point-max))))))
 
 ;;;;; Translation
 
