@@ -360,7 +360,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 
 (defconst tlon-ai-extract-references-prompt
   (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference on a new line. Do not include any commentary, numbering, or bullet points, just the references themselves. Examples of references might look like 'Author (Year) Title', 'Author, A. B. (Year). Title of work.', etc."
-          tlon-ai-string-wrapper)
+	  tlon-ai-string-wrapper)
   "Prompt for extracting bibliographic references from text.")
 
 (defconst tlon-ai-get-bibkeys-prompt
@@ -372,7 +372,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 
 (defconst tlon-ai-extract-exact-references-prompt
   (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference *exactly* as it appears in the text, including all original punctuation and spacing. Each reference should be on a new line. Do not include any commentary, numbering, or bullet points, just the exact reference strings themselves."
-          tlon-ai-string-wrapper)
+	  tlon-ai-string-wrapper)
   "Prompt for extracting bibliographic references exactly as found.")
 
 (defconst tlon-ai-get-bibkeys-batch-prompt
@@ -435,8 +435,8 @@ REQUEST-BUFFER if non-nil, is the buffer to use for the gptel request."
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
 	     (full-prompt (if string (format prompt string) prompt))
 	     (request (lambda () (gptel-request full-prompt
-                                            :callback callback
-                                            :buffer (or request-buffer (current-buffer))))))
+				   :callback callback
+				   :buffer (or request-buffer (current-buffer))))))
 	(if tlon-ai-batch-fun
 	    (condition-case nil
 		(funcall request)
@@ -518,12 +518,12 @@ INFO is the response info."
   (when tlon-ai-batch-fun
     (let ((next-key-info "N/A")) ; Default message part
       (pcase major-mode
-        ('bibtex-mode
-         (bibtex-next-entry)
-         (setq next-key-info (or (bibtex-extras-get-key) "N/A")))
-        ('ebib-entry-mode
-         (ebib-extras-next-entry)
-         (setq next-key-info (or (ebib--get-key-at-point) "N/A"))))
+	('bibtex-mode
+	 (bibtex-next-entry)
+	 (setq next-key-info (or (bibtex-extras-get-key) "N/A")))
+	('ebib-entry-mode
+	 (ebib-extras-next-entry)
+	 (setq next-key-info (or (ebib--get-key-at-point) "N/A"))))
       ;; Always message, even if mode didn't match or key is nil
       (message "Moving point to next entry (key: %s)." next-key-info))
     ;; Always call the batch function if set
@@ -584,17 +584,17 @@ buffer."
   (with-temp-buffer
     (let ((original-file file)) ; Keep track of original file name
       (when (string= (file-name-extension file) "pdf")
-        (let ((markdown (make-temp-file "pdf-to-markdown-")))
-          (tlon-convert-pdf file markdown)
-          (setq file markdown)))
+	(let ((markdown (make-temp-file "pdf-to-markdown-")))
+	  (tlon-convert-pdf file markdown)
+	  (setq file markdown)))
       (insert-file-contents file)
       (when (string= (file-name-extension original-file) "html") ; Check original extension
-        ;; Prevent shr-render-buffer from switching windows
-        (save-selected-window
-          (shr-render-buffer (current-buffer)))) ; Render without display arg
+	;; Prevent shr-render-buffer from switching windows
+	(save-selected-window
+	  (shr-render-buffer (current-buffer)))) ; Render without display arg
       ;; Kill the *html* buffer if it was created and is still alive
       (when-let ((html-buffer (get-buffer "*html*")))
-        (kill-buffer html-buffer))
+	(kill-buffer html-buffer))
       (buffer-substring-no-properties (point-min) (point-max)))))
 
 ;;;;; Translation
@@ -706,10 +706,10 @@ RESPONSE is the response from the AI model and INFO is the response info."
   (if (not response)
       (tlon-ai-callback-fail info)
     (let* ((title (tlon-ai-get-reference-article-title response))
-           (buffer-name (if title
-                            (generate-new-buffer-name (format "Comments on %s" title))
-                          (generate-new-buffer-name "*Comments on article*")))
-           (buffer (get-buffer-create buffer-name)))
+	   (buffer-name (if title
+			    (generate-new-buffer-name (format "Comments on %s" title))
+			  (generate-new-buffer-name "*Comments on article*")))
+	   (buffer (get-buffer-create buffer-name)))
       (tlon-ai-insert-in-buffer-and-switch-to-it response buffer))))
 
 (defun tlon-ai-insert-in-buffer-and-switch-to-it (response buffer)
@@ -727,18 +727,18 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (defun tlon-ai-get-citations-in-section ()
   "Return a list of (KEY . CITE-TAG-STRING) pairs from \"Further reading\"."
   (let* ((lang (tlon-get-language-in-file nil 'error))
-         (section (tlon-md-get-tag-section "Further reading" lang))
-         (citations '()))
+	 (section (tlon-md-get-tag-section "Further reading" lang))
+	 (citations '()))
     (save-excursion
       (save-restriction
-        (goto-char (point-min))
-        (when (re-search-forward (format "^#\\{1,\\} %s" section) nil t)
-          (markdown-narrow-to-subtree)
-          (goto-char (point-min)) ; Start search within the narrowed section
-          (while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
-            (let ((key (match-string-no-properties 3)) ; Group 3 is bibKey value
-                  (tag-string (match-string-no-properties 0))) ; Full tag match
-              (push (cons key tag-string) citations))))))
+	(goto-char (point-min))
+	(when (re-search-forward (format "^#\\{1,\\} %s" section) nil t)
+	  (markdown-narrow-to-subtree)
+	  (goto-char (point-min)) ; Start search within the narrowed section
+	  (while (re-search-forward (tlon-md-get-tag-pattern "Cite") nil t)
+	    (let ((key (match-string-no-properties 3)) ; Group 3 is bibKey value
+		  (tag-string (match-string-no-properties 0))) ; Full tag match
+	      (push (cons key tag-string) citations))))))
     (nreverse citations))) ; Return in order of appearance
 
 (declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
@@ -754,38 +754,38 @@ entry."
       (setq locator (match-string-no-properties 5 cite-tag-string))) ; Group 5 is locator value
 
     (if (and locator (not (string-empty-p locator)))
-        ;; Locator found, prompt user for specific file
-        (setq pdf-path (read-file-name (format "Select PDF for %s (%s): " key locator)))
+	;; Locator found, prompt user for specific file
+	(setq pdf-path (read-file-name (format "Select PDF for %s (%s): " key locator)))
       ;; No locator, get the full PDF from BibTeX entry
       (if-let ((field (bibtex-extras-get-entry-as-string key "file")))
-          (let* ((files (split-string field ";"))
-                 (pdf-files (seq-filter (lambda (file)
-                                          (string-match-p "\\.pdf$" file))
-                                        files)))
-            (tlon-ai-ensure-one-file key pdf-files)
-            (setq pdf-path (car pdf-files)))
-        (user-error "No `file' field found in entry %s" key)))
+	  (let* ((files (split-string field ";"))
+		 (pdf-files (seq-filter (lambda (file)
+					  (string-match-p "\\.pdf$" file))
+					files)))
+	    (tlon-ai-ensure-one-file key pdf-files)
+	    (setq pdf-path (car pdf-files)))
+	(user-error "No `file' field found in entry %s" key)))
 
     ;; Proceed with the determined pdf-path (either full or section)
     (when pdf-path
       ;; we convert to text because some AI models limit the number or pages
       ;; of PDF files
       (let ((text (tlon-get-string-dwim pdf-path))
-            (file (make-temp-file "pdf-to-text-")))
-        (with-temp-buffer
-          (insert (format "Please cite this work as ‘%s’\n\n" cite-tag-string)) ; Use full tag string
-          (insert text)
-          (write-region (point-min) (point-max) file))
-        (gptel-context-add-file file)))))
+	    (file (make-temp-file "pdf-to-text-")))
+	(with-temp-buffer
+	  (insert (format "Please cite this work as ‘%s’\n\n" cite-tag-string)) ; Use full tag string
+	  (insert text)
+	  (write-region (point-min) (point-max) file))
+	(gptel-context-add-file file)))))
 
 (defun tlon-add-add-sources-to-context ()
   "Add relevant PDF content for each citation in the buffer to the context.
 Checks for `locator' attributes in <Cite> tags."
   (mapc (lambda (citation-pair)
-          (let ((key (car citation-pair))
-                (tag-string (cdr citation-pair)))
-            (tlon-ai-add-source-to-context key tag-string)))
-        (tlon-ai-get-citations-in-section))
+	  (let ((key (car citation-pair))
+		(tag-string (cdr citation-pair)))
+	    (tlon-ai-add-source-to-context key tag-string)))
+	(tlon-ai-get-citations-in-section))
   (message "Added relevant PDF content for citations in the buffer to the `gptel' context."))
 
 (declare-function tlon-extract-glossary "tlon-glossary")
@@ -839,11 +839,11 @@ it instead."
   ;; check downstream must be bypassed via `no-context-check'
   (tlon-warn-if-gptel-context)
   (let* ((previous-context gptel-context--alist)
-         (file (tlon-ai-read-image-file file))
-         (language (tlon-get-language-in-file file))
-         (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
-         (custom-callback (lambda (response info)
-                            (tlon-ai-describe-image-callback response info callback previous-context))))
+	 (file (tlon-ai-read-image-file file))
+	 (language (tlon-get-language-in-file file))
+	 (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
+	 (custom-callback (lambda (response info)
+			    (tlon-ai-describe-image-callback response info callback previous-context))))
     (gptel-context-remove-all)
     (gptel-context-add-file file)
     (tlon-make-gptel-request default-prompt nil custom-callback nil 'no-context-check)))
@@ -857,7 +857,7 @@ Finally, restore `gptel-context--alist' to PREVIOUS-CONTEXT."
     (funcall original-callback response info))
   (unless original-callback
     (if response
-        (message response)
+	(message response)
       (user-error "Error: %s" (plist-get info :status))))
   (setq gptel-context--alist previous-context))
 
@@ -942,88 +942,88 @@ If `tlon-ai-use-markdown-fix-model' is non-nil, use the model specified in
 Messages refer to paragraphs with one-based numbering."
   (interactive)
   (let* ((file (or file (buffer-file-name) (read-file-name "File to fix: ")))
-         (original-file (tlon-get-counterpart file))
-         (original-lang (tlon-get-language-in-file original-file))
-         (translation-lang (tlon-get-language-in-file file))
-         (prompt (tlon-ai-maybe-edit-prompt
-                  (tlon-lookup tlon-ai-fix-markdown-format-prompt
-                               :prompt :language "en")))
-         (pairs (tlon-get-corresponding-paragraphs file original-file))
-         (all-pairs-count (length pairs))
-         (results (make-vector all-pairs-count nil))
-         (completed 0)
-         (active-requests 0)
-         (max-concurrent 3)           ; lower concurrency helps avoid rate limiting
-         (retry-table (make-hash-table :test 'equal))
-         (abort-flag nil)
-         ;; Define ISSUE-REQUEST: use the fix model if defined.
-         (issue-request
-          (lambda (full-prompt callback)
-            (if tlon-ai-markdown-fix-model
-                (tlon-make-gptel-request full-prompt nil callback tlon-ai-markdown-fix-model)
-              (gptel-request full-prompt :callback callback)))))
+	 (original-file (tlon-get-counterpart file))
+	 (original-lang (tlon-get-language-in-file original-file))
+	 (translation-lang (tlon-get-language-in-file file))
+	 (prompt (tlon-ai-maybe-edit-prompt
+		  (tlon-lookup tlon-ai-fix-markdown-format-prompt
+			       :prompt :language "en")))
+	 (pairs (tlon-get-corresponding-paragraphs file original-file))
+	 (all-pairs-count (length pairs))
+	 (results (make-vector all-pairs-count nil))
+	 (completed 0)
+	 (active-requests 0)
+	 (max-concurrent 3)           ; lower concurrency helps avoid rate limiting
+	 (retry-table (make-hash-table :test 'equal))
+	 (abort-flag nil)
+	 ;; Define ISSUE-REQUEST: use the fix model if defined.
+	 (issue-request
+	  (lambda (full-prompt callback)
+	    (if tlon-ai-markdown-fix-model
+		(tlon-make-gptel-request full-prompt nil callback tlon-ai-markdown-fix-model)
+	      (gptel-request full-prompt :callback callback)))))
     (cl-labels
-        ;; CHECK-COMPLETION: When all paragraphs are done, write the file.
-        ((check-completion ()
-           (when (and (= completed all-pairs-count)
-                      (= active-requests 0)
-                      (not abort-flag))
-             (write-fixed-file)))
-         ;; WRITE-FIXED-FILE: Write the fixed content.
-         (write-fixed-file ()
-           (message "Processing complete. Writing fixed file...")
-           (let ((fixed-file-path (concat (file-name-sans-extension file)
-                                          "--fixed.md")))
-             (with-temp-buffer
-               (dotimes (i all-pairs-count)
-                 (insert (or (aref results i) "") "\n\n"))
-               (write-region (point-min) (point-max) fixed-file-path))
-             (find-file fixed-file-path)
-             (when (y-or-n-p "Done! Run ediff session? ")
-               (ediff-files file fixed-file-path))))
-         ;; PROCESS-SINGLE-PARAGRAPH: Process one paragraph (i is zero-based, but messages show i+1).
-         (process-single-paragraph (i)
-           (while (>= active-requests max-concurrent)
-             (sleep-for 0.1))
-           (let* ((pair (nth i pairs))
-                  (formatted-prompt
-                   (format prompt
-                           (cdr pair)
-                           (tlon-lookup tlon-languages-properties :standard :code original-lang)
-                           (car pair)
-                           (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
-             (cl-incf active-requests)
-             (funcall issue-request
-                      formatted-prompt
-                      (lambda (response info)
-                        (cl-decf active-requests)
-                        (if response
-                            (progn
-                              (aset results i response)
-                              (cl-incf completed)
-                              (message "Processed paragraph %d (%d%%)"
-                                       (1+ i)
-                                       (round (* 100 (/ (float completed)
-                                                        all-pairs-count))))
-                              (check-completion))
-                          (let* ((status (plist-get info :status))
-                                 (retry-count (or (gethash i retry-table) 0)))
-                            (if (< retry-count 3)
-                                (progn
-                                  (puthash i (1+ retry-count) retry-table)
-                                  (message "Paragraph %d failed with %S; retrying attempt %d of 3..."
-                                           (1+ i) status (1+ retry-count))
-                                  ;; Exponential backoff: wait longer on subsequent failures.
-                                  (run-with-timer (* 2 (1+ retry-count)) nil
-                                                  (lambda ()
-                                                    (process-single-paragraph i))))
-                              (setq abort-flag t)
-                              (error "Aborting: Paragraph %d permanently failed after 3 attempts. Status: %S, info: %S"
-                                     (1+ i) status info)))))))))
+	;; CHECK-COMPLETION: When all paragraphs are done, write the file.
+	((check-completion ()
+	   (when (and (= completed all-pairs-count)
+		      (= active-requests 0)
+		      (not abort-flag))
+	     (write-fixed-file)))
+	 ;; WRITE-FIXED-FILE: Write the fixed content.
+	 (write-fixed-file ()
+	   (message "Processing complete. Writing fixed file...")
+	   (let ((fixed-file-path (concat (file-name-sans-extension file)
+					  "--fixed.md")))
+	     (with-temp-buffer
+	       (dotimes (i all-pairs-count)
+		 (insert (or (aref results i) "") "\n\n"))
+	       (write-region (point-min) (point-max) fixed-file-path))
+	     (find-file fixed-file-path)
+	     (when (y-or-n-p "Done! Run ediff session? ")
+	       (ediff-files file fixed-file-path))))
+	 ;; PROCESS-SINGLE-PARAGRAPH: Process one paragraph (i is zero-based, but messages show i+1).
+	 (process-single-paragraph (i)
+	   (while (>= active-requests max-concurrent)
+	     (sleep-for 0.1))
+	   (let* ((pair (nth i pairs))
+		  (formatted-prompt
+		   (format prompt
+			   (cdr pair)
+			   (tlon-lookup tlon-languages-properties :standard :code original-lang)
+			   (car pair)
+			   (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
+	     (cl-incf active-requests)
+	     (funcall issue-request
+		      formatted-prompt
+		      (lambda (response info)
+			(cl-decf active-requests)
+			(if response
+			    (progn
+			      (aset results i response)
+			      (cl-incf completed)
+			      (message "Processed paragraph %d (%d%%)"
+				       (1+ i)
+				       (round (* 100 (/ (float completed)
+							all-pairs-count))))
+			      (check-completion))
+			  (let* ((status (plist-get info :status))
+				 (retry-count (or (gethash i retry-table) 0)))
+			    (if (< retry-count 3)
+				(progn
+				  (puthash i (1+ retry-count) retry-table)
+				  (message "Paragraph %d failed with %S; retrying attempt %d of 3..."
+					   (1+ i) status (1+ retry-count))
+				  ;; Exponential backoff: wait longer on subsequent failures.
+				  (run-with-timer (* 2 (1+ retry-count)) nil
+						  (lambda ()
+						    (process-single-paragraph i))))
+			      (setq abort-flag t)
+			      (error "Aborting: Paragraph %d permanently failed after 3 attempts. Status: %S, info: %S"
+				     (1+ i) status info)))))))))
       (message "Fixing format of `%s' (%d paragraphs)..."
-               (file-name-nondirectory file) all-pairs-count)
+	       (file-name-nondirectory file) all-pairs-count)
       (dotimes (i all-pairs-count)
-        (process-single-paragraph i)))))
+	(process-single-paragraph i)))))
 
 ;;;;; Summarization
 
@@ -1166,30 +1166,30 @@ appropriate for an abstract. BUFFER is the buffer where the abstract should be
 inserted; if nil, use the current buffer."
   (lambda (response info)
     (if (not response)
-        (tlon-ai-callback-fail info)
+	(tlon-ai-callback-fail info)
       (with-current-buffer (or buffer (current-buffer))
-        (cond
+	(cond
 	 (key
 	  (pcase type
 	    ('synopsis ; Synopses are just copied, not added to BibTeX entry
 	     (kill-new response)
 	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
-            (_ ; Default is abstract, set it in the BibTeX entry
-             (when tlon-debug
-               (message "`tlon-get-abstract-callback' is setting abstract for key `%s' to `%s...'"
-                        key (when response (substring response 0 (min (length response) 100)))))
-             (tlon-ai-summarize-set-bibtex-abstract response key))))
-         ;; If no key, handle based on type (likely summarizing region/buffer)
-         (t
-          (pcase type
+	    (_ ; Default is abstract, set it in the BibTeX entry
+	     (when tlon-debug
+	       (message "`tlon-get-abstract-callback' is setting abstract for key `%s' to `%s...'"
+			key (when response (substring response 0 (min (length response) 100)))))
+	     (tlon-ai-summarize-set-bibtex-abstract response key))))
+	 ;; If no key, handle based on type (likely summarizing region/buffer)
+	 (t
+	  (pcase type
 	    ('synopsis
 	     (kill-new response)
 	     (message "Copied AI-generated synopsis to the kill ring:\n\n%s" response))
-            (_ ; Default is abstract, just copy to kill ring
-             (kill-new response)
-             (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
+	    (_ ; Default is abstract, just copy to kill ring
+	     (kill-new response)
+	     (message "Copied AI-generated abstract to the kill ring:\n\n%s" response))))))
       (when tlon-debug
-        (message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
+	(message "`%s' now calls `tlon-ai-batch-continue'" "tlon-get-abstract-callback"))
       (tlon-ai-batch-continue))))
 
 ;;;;; Help
@@ -1203,14 +1203,14 @@ specified in `tlon-ai-help-model'."
   (interactive)
   (tlon-warn-if-gptel-context)
   (let* ((question (read-string "What do you need help with? "))
-         (all-doc-files (tlon-ai-get-documentation-files))
-         (existing-doc-files (tlon-ai-add-existing-doc-files all-doc-files))
-         (full-prompt (format tlon-ai-help-prompt-template question)))
+	 (all-doc-files (tlon-ai-get-documentation-files))
+	 (existing-doc-files (tlon-ai-add-existing-doc-files all-doc-files))
+	 (full-prompt (format tlon-ai-help-prompt-template question)))
     (unless existing-doc-files
       (user-error "No documentation files found in standard Elpaca doc directories or none exist on disk"))
     (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-for-help-callback tlon-ai-help-model 'no-context-check)
     (message "Preparing your answer using %d documentation files with model %S..."
-             (length existing-doc-files) (cdr tlon-ai-help-model))))
+	     (length existing-doc-files) (cdr tlon-ai-help-model))))
 
 (defun tlon-ai-add-existing-doc-files (doc-files)
   "Add existing DOC-FILES to GPTel context and return a list of files that exist."
@@ -1218,8 +1218,8 @@ specified in `tlon-ai-help-model'."
   (let ((existing-doc-files '()))
     (dolist (doc-file doc-files)
       (when (file-exists-p doc-file)
-        (shut-up (gptel-context-add-file doc-file))
-        (push doc-file existing-doc-files)))
+	(shut-up (gptel-context-add-file doc-file))
+	(push doc-file existing-doc-files)))
     existing-doc-files))
 
 (declare-function gptel-mode "gptel")
@@ -1233,54 +1233,54 @@ request. The original user question is extracted from INFO."
   (if (not response)
       (tlon-ai-callback-fail info)
     (let* ((question (tlon-ai--extract-question-from-info info))
-           (buffer-name (generate-new-buffer-name "*AI Help Answer*"))
-           (buffer (get-buffer-create buffer-name))
+	   (buffer-name (generate-new-buffer-name "*AI Help Answer*"))
+	   (buffer (get-buffer-create buffer-name))
 	   (model (cdr tlon-ai-help-model))
 	   (backend (car tlon-ai-help-model)))
       (with-current-buffer buffer
-        (erase-buffer)
-        (insert (format "*** %s\n\n" question))
-        (insert response)
-        (funcall gptel-default-mode)
-        (gptel-mode 1)
+	(erase-buffer)
+	(insert (format "*** %s\n\n" question))
+	(insert response)
+	(funcall gptel-default-mode)
+	(gptel-mode 1)
 	(gptel-extras-set-backend-and-model backend model)
-        (setq buffer-read-only nil)
-        (when (eq gptel-default-mode 'org-mode)
-          (org-fold-show-all))
-        (goto-char (point-max)))
+	(setq buffer-read-only nil)
+	(when (eq gptel-default-mode 'org-mode)
+	  (org-fold-show-all))
+	(goto-char (point-max)))
       (switch-to-buffer buffer)
       (let ((clear-context (y-or-n-p "Clear the gptel context (if you have no follow-up questions)? ")))
-        (if clear-context
-            (gptel-context-remove-all)
-          (message "Context not cleared. Clear it manually with `M-x gptel-context-remove-all` when finished."))))))
+	(if clear-context
+	    (gptel-context-remove-all)
+	  (message "Context not cleared. Clear it manually with `M-x gptel-context-remove-all` when finished."))))))
 
 (defun tlon-ai--extract-question-from-info (info)
   "Extract the original user question from the INFO plist.
 INFO is the plist provided to the `gptel' callback. Handles potential variations
 in the :data structure, including Gemini's format (which may use vectors)."
   (let* ((data (plist-get info :data))
-         (contents (when (plistp data) (plist-get data :contents)))
-         ;; Find the user message part in the contents sequence (list or vector)
-         (user-part (when (seqp contents) ; Use seqp for list or vector
-                      (cl-find-if (lambda (part)
-                                    (and (plistp part)
-                                         ;; Ensure :role exists and is the string "user"
-                                         (equal (plist-get part :role) "user")))
-                                  contents)))
-         (text-parts (when (plistp user-part) (plist-get user-part :parts)))
-         ;; The actual text seems to be in the first element of the parts sequence
-         (first-part (when (and (seqp text-parts) (> (length text-parts) 0)) ; Check sequence and non-empty
-                       (elt text-parts 0))) ; Use elt for list or vector
-         (full-prompt (when (plistp first-part) (plist-get first-part :text)))
-         (question-marker "Here is the question:\n\n"))
+	 (contents (when (plistp data) (plist-get data :contents)))
+	 ;; Find the user message part in the contents sequence (list or vector)
+	 (user-part (when (seqp contents) ; Use seqp for list or vector
+		      (cl-find-if (lambda (part)
+				    (and (plistp part)
+					 ;; Ensure :role exists and is the string "user"
+					 (equal (plist-get part :role) "user")))
+				  contents)))
+	 (text-parts (when (plistp user-part) (plist-get user-part :parts)))
+	 ;; The actual text seems to be in the first element of the parts sequence
+	 (first-part (when (and (seqp text-parts) (> (length text-parts) 0)) ; Check sequence and non-empty
+		       (elt text-parts 0))) ; Use elt for list or vector
+	 (full-prompt (when (plistp first-part) (plist-get first-part :text)))
+	 (question-marker "Here is the question:\n\n"))
     (if (and full-prompt (stringp full-prompt)
-             (string-match question-marker full-prompt))
-        (substring full-prompt (match-end 0))
+	     (string-match question-marker full-prompt))
+	(substring full-prompt (match-end 0))
       (progn
-        (message "Warning: Could not extract question from `info' plist. Relevant data: %S"
-                 ;; Log relevant parts for debugging
-                 `(:data ,data :contents ,contents :user-part ,user-part :text-parts ,text-parts :first-part ,first-part :full-prompt ,full-prompt))
-        "Unknown Question"))))
+	(message "Warning: Could not extract question from `info' plist. Relevant data: %S"
+		 ;; Log relevant parts for debugging
+		 `(:data ,data :contents ,contents :user-part ,user-part :text-parts ,text-parts :first-part ,first-part :full-prompt ,full-prompt))
+	"Unknown Question"))))
 
 (declare-function paths-dir-dotemacs "tlon-paths")
 (defvar elpaca-repos-directory)
@@ -1291,15 +1291,15 @@ Documentation files are collected from:
 2. \"readme.org\" or \"readme.md\" files in specified Elpaca repos.
 3. Specific individual files."
   (let* ((all-doc-files '())
-         ;; 1. Directories containing .org documentation files
+	 ;; 1. Directories containing .org documentation files
 	 (doc-dirs (append (list (tlon-repo-lookup :dir :name "tlon-docs"))
 			   (mapcar (lambda (subdir)
 				     (file-name-concat elpaca-repos-directory subdir))
 				   '("tlon/doc/"
 				     "dotfiles/emacs/extras/doc/"))))
-         (doc-pattern "\\.org\\'")
-         ;; 2. Repositories to check for readme files
-         (repos (append (tlon-lookup-all tlon-repos :dir :help t)
+	 (doc-pattern "\\.org\\'")
+	 ;; 2. Repositories to check for readme files
+	 (repos (append (tlon-lookup-all tlon-repos :dir :help t)
 			(mapcar (lambda (subdir)
 				  (file-name-concat elpaca-repos-directory subdir))
 				'("annas-archive"
@@ -1313,25 +1313,25 @@ Documentation files are collected from:
 				  "pdf-tools-pages"
 				  "pomodoro-centile"
 				  "scihub"))))
-         (readme-patterns '("readme.org" "readme.md"))
-         ;; 3. Specific individual files
-         (files (list (file-name-concat paths-dir-dotemacs "config.org"))))
+	 (readme-patterns '("readme.org" "readme.md"))
+	 ;; 3. Specific individual files
+	 (files (list (file-name-concat paths-dir-dotemacs "config.org"))))
     ;; Collect files from doc-dirs
     (dolist (doc-dir doc-dirs)
       (when (file-directory-p doc-dir)
-        (setq all-doc-files (append all-doc-files
-                                    (directory-files doc-dir t doc-pattern)))))
+	(setq all-doc-files (append all-doc-files
+				    (directory-files doc-dir t doc-pattern)))))
     ;; Collect readme files from repos
     (dolist (repo-dir repos)
       (when (file-directory-p repo-dir)
-        (dolist (pattern readme-patterns)
-          (let ((readme-file (file-name-concat repo-dir pattern)))
-            (when (file-exists-p readme-file)
-              (push readme-file all-doc-files))))))
+	(dolist (pattern readme-patterns)
+	  (let ((readme-file (file-name-concat repo-dir pattern)))
+	    (when (file-exists-p readme-file)
+	      (push readme-file all-doc-files))))))
     ;; Collect individual files
     (dolist (file files)
       (when (file-exists-p file)
-        (push file all-doc-files)))
+	(push file all-doc-files)))
     ;; Remove duplicates and return
     (delete-dups all-doc-files)))
 
@@ -1347,19 +1347,19 @@ Documentation files are collected from:
       (error "Could not find BibTeX file for key %s" key))
     (let ((target-buffer (find-file-noselect bib-file)))
       (with-current-buffer target-buffer
-        (let ((set-field (pcase major-mode
-                           ('bibtex-mode #'bibtex-set-field)
-                           (_ (error "Unsupported major mode in BibTeX file: %s" major-mode)))))
-          (save-excursion
-            (goto-char (point-min))
-            (when (bibtex-search-entry key)
-              (shut-up
+	(let ((set-field (pcase major-mode
+			   ('bibtex-mode #'bibtex-set-field)
+			   (_ (error "Unsupported major mode in BibTeX file: %s" major-mode)))))
+	  (save-excursion
+	    (goto-char (point-min))
+	    (when (bibtex-search-entry key)
+	      (shut-up
 		(funcall set-field "abstract" abstract))
-              (message "Set abstract of `%s' in %s" key (buffer-name))
-              (when (derived-mode-p 'bibtex-mode)
-                (save-buffer)))
-            (unless (bibtex-search-entry key)
-              (error "Could not find entry for key %s in buffer %s" key (buffer-name)))))))))
+	      (message "Set abstract of `%s' in %s" key (buffer-name))
+	      (when (derived-mode-p 'bibtex-mode)
+		(save-buffer)))
+	    (unless (bibtex-search-entry key)
+	      (error "Could not find entry for key %s in buffer %s" key (buffer-name)))))))))
 
 ;;;;; Language detection
 
@@ -1509,12 +1509,12 @@ the transcript string on success, or nil if no transcript is available or an
 error occurs."
   (interactive "fChoose audio file: ")
   (let* ((api-key (tlon-tts-openai-get-or-set-key))
-         (endpoint "https://api.openai.com/v1/audio/transcriptions"))
+	 (endpoint "https://api.openai.com/v1/audio/transcriptions"))
     (unless api-key
       (error "Could not retrieve API key"))
     (message "Uploading %s to OpenAI via curl asynchronously..." file)
     (let* ((output-buffer (generate-new-buffer "/openai-transcribe-output/"))
-           (args (list "-s" "-X" "POST"
+	   (args (list "-s" "-X" "POST"
 		       endpoint
 		       "-H" (concat "Authorization: Bearer " api-key)
 		       "-F" "model=whisper-1"
@@ -1680,28 +1680,28 @@ Non-interactive helper. If FOR-INTERACTIVE-COMMAND is non-nil and language
 cannot be determined from the file, prompt the user. Otherwise, error."
   (with-current-buffer (find-file-noselect file-path) ; Makes the buffer current temporarily
     (let* ((article-content (tlon-md-read-content)) ; Reads from current buffer (which is file-path)
-           (language
-            (or (tlon-get-language-in-file nil) ; nil means current buffer
-                (if for-interactive-command
-                    (tlon-select-language 'code)
-                  (user-error "Cannot determine language for %s" (file-name-nondirectory file-path))))))
+	   (language
+	    (or (tlon-get-language-in-file nil) ; nil means current buffer
+		(if for-interactive-command
+		    (tlon-select-language 'code)
+		  (user-error "Cannot determine language for %s" (file-name-nondirectory file-path))))))
       (unless language ; If tlon-select-language was used and user aborted, language is nil
-        (user-error "Language selection aborted for %s" (file-name-nondirectory file-path)))
+	(user-error "Language selection aborted for %s" (file-name-nondirectory file-path)))
 
       (if (string-empty-p (string-trim article-content))
-          (message "Skipping %s: Article content is empty." (file-name-nondirectory file-path))
-        (if-let ((prompt (tlon-lookup tlon-ai-create-meta-description-prompt :prompt :language language)))
-            (progn
-              (message "Requesting AI meta description for %s (lang: %s)..."
-                       (file-name-nondirectory file-path)
-                       (or (tlon-validate-language language 'name) language))
-              (tlon-make-gptel-request prompt
-                                       article-content
-                                       #'tlon-ai-create-meta-description-callback
-                                       tlon-ai-summarization-model))
-          (message "Skipping %s: No meta description prompt for language %s."
-                   (file-name-nondirectory file-path)
-                   (or (tlon-validate-language language 'name) language)))))))
+	  (message "Skipping %s: Article content is empty." (file-name-nondirectory file-path))
+	(if-let ((prompt (tlon-lookup tlon-ai-create-meta-description-prompt :prompt :language language)))
+	    (progn
+	      (message "Requesting AI meta description for %s (lang: %s)..."
+		       (file-name-nondirectory file-path)
+		       (or (tlon-validate-language language 'name) language))
+	      (tlon-make-gptel-request prompt
+				       article-content
+				       #'tlon-ai-create-meta-description-callback
+				       tlon-ai-summarization-model))
+	  (message "Skipping %s: No meta description prompt for language %s."
+		   (file-name-nondirectory file-path)
+		   (or (tlon-validate-language language 'name) language)))))))
 
 ;;;;; Bibliography Extraction
 
@@ -1713,15 +1713,15 @@ them (newline-separated) to the kill ring. With prefix argument USE-REGION,
 operate only on the active region."
   (interactive "P")
   (let ((text (if use-region
-                  (if (region-active-p)
-                      (buffer-substring-no-properties (region-beginning) (region-end))
-                    (user-error "Region not active"))
-                (buffer-string))))
+		  (if (region-active-p)
+		      (buffer-substring-no-properties (region-beginning) (region-end))
+		    (user-error "Region not active"))
+		(buffer-string))))
     (when (string-empty-p text)
       (user-error "Buffer or region is empty"))
     (message "Requesting AI to extract references...")
     (tlon-make-gptel-request tlon-ai-extract-references-prompt text
-                             #'tlon-ai-extract-references-callback)))
+			     #'tlon-ai-extract-references-callback)))
 
 (defun tlon-ai-extract-references-callback (response info)
   "Callback for `tlon-ai-extract-references'.
@@ -1730,16 +1730,16 @@ AI's response, INFO is the response info."
   (if (not response)
       (tlon-ai-callback-fail info)
     (let* ((references (split-string (string-trim response) "\n" t)) ; Split by newline, remove empty
-           (count (length references)))
+	   (count (length references)))
       (kill-new (mapconcat #'identity references "\n"))
       (message "AI found %d potential reference(s). Copied to kill ring." count)
       ;; Optionally display the references (might be long)
       (when (> count 0)
-        (message "References:\n%s%s"
-                 (mapconcat (lambda (ref) (concat "- " ref))
-                            (seq-take references (min count 10)) ; Show first 10
-                            "\n")
-                 (if (> count 10) "\n..." ""))))))
+	(message "References:\n%s%s"
+		 (mapconcat (lambda (ref) (concat "- " ref))
+			    (seq-take references (min count 10)) ; Show first 10
+			    "\n")
+		 (if (> count 10) "\n..." ""))))))
 
 ;;;;;; Bibkey Lookup Command and Helpers
 
@@ -1766,26 +1766,26 @@ precise replacement."
     (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
 
   (let* ((references-with-pos '()) ; List of (text start end)
-         (reference-texts '())     ; List of just the text strings
-         (db-string (with-temp-buffer
-                      (insert-file-contents tlon-file-bare-bibliography)
-                      (buffer-string)))
-         (source-buffer (current-buffer))) ; Store the buffer where the command was invoked
+	 (reference-texts '())     ; List of just the text strings
+	 (db-string (with-temp-buffer
+		      (insert-file-contents tlon-file-bare-bibliography)
+		      (buffer-string)))
+	 (source-buffer (current-buffer))) ; Store the buffer where the command was invoked
 
     ;; Parse region line by line, storing text and positions
     (save-excursion
       (goto-char beg)
       (while (< (point) end)
-        (let* ((line-start (line-beginning-position))
-               (line-end (line-end-position))
-               ;; Ensure we don't go past the original region end
-               (actual-end (min line-end end))
-               (line-text (buffer-substring-no-properties line-start actual-end)))
-          (unless (string-blank-p line-text)
-            (let ((trimmed-text (string-trim line-text)))
-              (push (list trimmed-text line-start actual-end) references-with-pos)
-              (push trimmed-text reference-texts))))
-        (forward-line 1)))
+	(let* ((line-start (line-beginning-position))
+	       (line-end (line-end-position))
+	       ;; Ensure we don't go past the original region end
+	       (actual-end (min line-end end))
+	       (line-text (buffer-substring-no-properties line-start actual-end)))
+	  (unless (string-blank-p line-text)
+	    (let ((trimmed-text (string-trim line-text)))
+	      (push (list trimmed-text line-start actual-end) references-with-pos)
+	      (push trimmed-text reference-texts))))
+	(forward-line 1)))
 
     ;; Reverse lists to maintain original order
     (setq references-with-pos (nreverse references-with-pos))
@@ -1798,15 +1798,15 @@ precise replacement."
 
     ;; Initialize state for the asynchronous process
     (setq tlon-ai--bibkey-state
-          `(:references-with-pos ,references-with-pos ; List of (text start end)
+	  `(:references-with-pos ,references-with-pos ; List of (text start end)
 				 :db-string ,db-string
 				 :results () ; Will store (start . end . key)
 				 :source-buffer ,source-buffer))
 
     (let* ((references-block (mapconcat #'identity reference-texts "\n"))
-           (prompt (format tlon-ai-get-bibkeys-batch-prompt references-block db-string)))
+	   (prompt (format tlon-ai-get-bibkeys-batch-prompt references-block db-string)))
       (message "Starting batch BibTeX key lookup for %d references in region..."
-               (length references-with-pos))
+	       (length references-with-pos))
       ;; Make the single batch request
       (tlon-make-gptel-request prompt nil #'tlon-ai--batch-bibkey-result-handler nil t) ; Bypass context check
       (message "AI request sent. Waiting for BibTeX keys..."))))
@@ -1816,9 +1816,9 @@ precise replacement."
 Parses the newline-separated keys, associates them with original references, and
 triggers replacements. RESPONSE is the AI's response, INFO is the response info."
   (let* ((state tlon-ai--bibkey-state)
-         (references-with-pos (plist-get state :references-with-pos))
-         (num-references (length references-with-pos))
-         (results '())) ; Build the results list here
+	 (references-with-pos (plist-get state :references-with-pos))
+	 (num-references (length references-with-pos))
+	 (results '())) ; Build the results list here
 
     (unless response
       (message "AI batch request failed. Status: %s" (plist-get info :status))
@@ -1827,19 +1827,19 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
 
     (let ((returned-keys (split-string (string-trim response) "\n" t)))
       (unless (= (length returned-keys) num-references)
-        (message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
-                 (length returned-keys) num-references)
-        (message "AI Response:\n%s" response) ; Log response for debugging
-        (setq tlon-ai--bibkey-state nil) ; Clean up state
-        (cl-return-from tlon-ai--batch-bibkey-result-handler))
+	(message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
+		 (length returned-keys) num-references)
+	(message "AI Response:\n%s" response) ; Log response for debugging
+	(setq tlon-ai--bibkey-state nil) ; Clean up state
+	(cl-return-from tlon-ai--batch-bibkey-result-handler))
 
       ;; Associate keys with positions
       (dotimes (i num-references)
-        (let* ((entry (nth i references-with-pos))
-               (start-pos (nth 1 entry))
-               (end-pos (nth 2 entry))
-               (key (nth i returned-keys)))
-          (push (list start-pos end-pos key) results)))
+	(let* ((entry (nth i references-with-pos))
+	       (start-pos (nth 1 entry))
+	       (end-pos (nth 2 entry))
+	       (key (nth i returned-keys)))
+	  (push (list start-pos end-pos key) results)))
 
       ;; Store the final results (reversed to match original order implicitly)
       (setf (plist-get state :results) (nreverse results))
@@ -1851,10 +1851,10 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
 (defun tlon-ai--apply-bibkey-replacements ()
   "Apply the BibTeX key replacements in the source buffer."
   (let* ((state tlon-ai--bibkey-state)
-         (results (plist-get state :results)) ; List of (start end key)
-         (source-buffer (plist-get state :source-buffer))
-         (replacements-made 0)
-         (errors-occurred 0))
+	 (results (plist-get state :results)) ; List of (start end key)
+	 (source-buffer (plist-get state :source-buffer))
+	 (replacements-made 0)
+	 (errors-occurred 0))
 
     (unless (buffer-live-p source-buffer)
       (message "Source buffer is no longer live. Aborting replacements.")
@@ -1866,62 +1866,62 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
 
     (with-current-buffer source-buffer
       (dolist (result results)
-        (let ((start (nth 0 result))
-              (end (nth 1 result))
-              (key (nth 2 result)))
-          ;; Check if key is valid (not an error marker)
-          (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
-              (progn
-                (message "No valid key found for text at %d-%d (Result: %s). Skipping." start end key)
-                (cl-incf errors-occurred))
-            ;; Perform replacement
-            (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
-              (goto-char start) ; Go to start before deleting
-              (delete-region start end)
-              (insert replacement-text)
-              (cl-incf replacements-made))))))
+	(let ((start (nth 0 result))
+	      (end (nth 1 result))
+	      (key (nth 2 result)))
+	  ;; Check if key is valid (not an error marker)
+	  (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+	      (progn
+		(message "No valid key found for text at %d-%d (Result: %s). Skipping." start end key)
+		(cl-incf errors-occurred))
+	    ;; Perform replacement
+	    (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+	      (goto-char start) ; Go to start before deleting
+	      (delete-region start end)
+	      (insert replacement-text)
+	      (cl-incf replacements-made))))))
 
     (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
-             replacements-made errors-occurred)
+	     replacements-made errors-occurred)
     ;; Clean up state variable
     (setq tlon-ai--bibkey-state nil)))
- 
+
 ;;;;;; Extract and Replace Command
- 
+
 (defvar tlon-ai--extract-replace-state nil
   "Internal state variable for asynchronous reference extraction and replacement.")
- 
+
 ;;;###autoload
 (defun tlon-ai-extract-and-replace-references (&optional use-region)
   "Extract references in buffer/region, get BibKeys, and replace with <Cite> tags.
 Uses AI to find references, then AI again to find BibKeys against
 `tlon-file-bare-bibliography`. Replaces the *first found occurrence* (searching
 backwards) of each *exact* reference string with a <Cite> tag.
- 
+
 WARNING: Relies on AI returning exact reference strings. May fail or replace
 incorrectly if the AI modifies the string or if the same reference appears
 multiple times.
- 
+
 With prefix argument USE-REGION, operate only on the active region."
   (interactive "P")
   (unless (file-exists-p tlon-file-bare-bibliography)
     (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
- 
+
   (let* ((beg (if use-region (region-beginning) (point-min)))
-         (end (if use-region (region-end) (point-max)))
-         (text (buffer-substring-no-properties beg end))
-         (db-string (with-temp-buffer
-                      (insert-file-contents tlon-file-bare-bibliography)
-                      (buffer-string)))
-         (source-buffer (current-buffer)))
+	 (end (if use-region (region-end) (point-max)))
+	 (text (buffer-substring-no-properties beg end))
+	 (db-string (with-temp-buffer
+		      (insert-file-contents tlon-file-bare-bibliography)
+		      (buffer-string)))
+	 (source-buffer (current-buffer)))
     (when (string-empty-p text)
       (user-error "Buffer or region is empty"))
     (when (string-empty-p db-string)
       (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
- 
+
     ;; Initialize state
     (setq tlon-ai--extract-replace-state
-          `(:source-buffer ,source-buffer
+	  `(:source-buffer ,source-buffer
 			   :region-start ,beg
 			   :region-end ,end
 			   :db-string ,db-string
@@ -1931,107 +1931,107 @@ With prefix argument USE-REGION, operate only on the active region."
 			   :key-map ()              ; Hash table: ref-string -> key
 			   :keys-to-fetch 0
 			   :keys-fetched 0))
- 
+
     (message "Requesting AI to extract exact references...")
     (tlon-make-gptel-request tlon-ai-extract-exact-references-prompt text
-                             #'tlon-ai--extract-references-exact-callback)))
- 
+			     #'tlon-ai--extract-references-exact-callback)))
+
 (defun tlon-ai--extract-references-exact-callback (response info)
   "Callback for the initial reference extraction.
 Finds positions and starts key lookup. RESPONSE is the AI's response, INFO is
 the response info."
   (if (not response)
       (progn
-        (setq tlon-ai--extract-replace-state nil) ; Clean up state
-        (tlon-ai-callback-fail info))
+	(setq tlon-ai--extract-replace-state nil) ; Clean up state
+	(tlon-ai-callback-fail info))
     (let* ((state tlon-ai--extract-replace-state)
-           (extracted-refs (split-string (string-trim response) "\n" t)))
+	   (extracted-refs (split-string (string-trim response) "\n" t)))
       (setf (plist-get state :extracted-references) extracted-refs)
       (message "AI extracted %d potential references. Finding positions..." (length extracted-refs))
       (setf (plist-get state :reference-positions)
-            (tlon-ai--find-reference-positions
-             extracted-refs
-             (plist-get state :source-buffer)
-             (plist-get state :region-start)
-             (plist-get state :region-end)))
+	    (tlon-ai--find-reference-positions
+	     extracted-refs
+	     (plist-get state :source-buffer)
+	     (plist-get state :region-start)
+	     (plist-get state :region-end)))
       (let ((unique-refs (cl-delete-duplicates
 			  (mapcar #'car (plist-get state :reference-positions)) :test #'string=)))
-        (setf (plist-get state :unique-references) unique-refs)
-        (setf (plist-get state :keys-to-fetch) (length unique-refs))
-        (setf (plist-get state :key-map) (make-hash-table :test 'equal))
-        (if (zerop (plist-get state :keys-to-fetch))
-            (progn
-              (message "No references found or positions located.")
-              (setq tlon-ai--extract-replace-state nil)) ; Clean up
-          (message "Found positions for %d unique references. Requesting BibTeX keys in batch..." (length unique-refs))
-          (tlon-ai--get-keys-for-extracted-references)))))) ; Start batch key lookup
- 
+	(setf (plist-get state :unique-references) unique-refs)
+	(setf (plist-get state :keys-to-fetch) (length unique-refs))
+	(setf (plist-get state :key-map) (make-hash-table :test 'equal))
+	(if (zerop (plist-get state :keys-to-fetch))
+	    (progn
+	      (message "No references found or positions located.")
+	      (setq tlon-ai--extract-replace-state nil)) ; Clean up
+	  (message "Found positions for %d unique references. Requesting BibTeX keys in batch..." (length unique-refs))
+	  (tlon-ai--get-keys-for-extracted-references)))))) ; Start batch key lookup
+
 (defun tlon-ai--find-reference-positions (references buffer beg end)
   "Search for occurrences of REFERENCES strings within BUFFER between BEG and END.
 Returns an alist: (ref-string . list-of-(start . end))."
   (let ((positions-alist '()))
     (with-current-buffer buffer
       (dolist (ref references positions-alist)
-        (let ((ref-positions '()))
-          (save-excursion
-            (goto-char end) ; Start searching backwards from the end
-            (while (search-backward ref beg t)
-              (let* ((match-start (match-beginning 0))
-                     (match-end (match-end 0))
-                     (line-start (line-beginning-position))
-                     (adjusted-start match-start))
-                ;; Check if the match is preceded by a footnote marker at line start
-                (save-excursion
-                  (goto-char match-start)
-                  (when (and (= (point) line-start) ; Ensure match starts exactly at line beginning
-                             (looking-at "\\[\\^[0-9]+\\]: "))
-                    ;; If marker found, adjust start position past the marker
-                    (setq adjusted-start (match-end 0))))
-                (push (cons adjusted-start match-end) ref-positions))))
-          (when ref-positions
-            (push (cons ref ref-positions) positions-alist)))))))
- 
+	(let ((ref-positions '()))
+	  (save-excursion
+	    (goto-char end) ; Start searching backwards from the end
+	    (while (search-backward ref beg t)
+	      (let* ((match-start (match-beginning 0))
+		     (match-end (match-end 0))
+		     (line-start (line-beginning-position))
+		     (adjusted-start match-start))
+		;; Check if the match is preceded by a footnote marker at line start
+		(save-excursion
+		  (goto-char match-start)
+		  (when (and (= (point) line-start) ; Ensure match starts exactly at line beginning
+			     (looking-at "\\[\\^[0-9]+\\]: "))
+		    ;; If marker found, adjust start position past the marker
+		    (setq adjusted-start (match-end 0))))
+		(push (cons adjusted-start match-end) ref-positions))))
+	  (when ref-positions
+	    (push (cons ref ref-positions) positions-alist)))))))
+
 (defun tlon-ai--get-keys-for-extracted-references ()
   "Initiate a single batch request to get BibTeX keys for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
-         (unique-refs (plist-get state :unique-references))
-         (db-string (plist-get state :db-string)))
+	 (unique-refs (plist-get state :unique-references))
+	 (db-string (plist-get state :db-string)))
     (if (null unique-refs)
-        (progn
-          (message "No unique references to look up keys for.")
-          (setq tlon-ai--extract-replace-state nil)) ; Clean up state
+	(progn
+	  (message "No unique references to look up keys for.")
+	  (setq tlon-ai--extract-replace-state nil)) ; Clean up state
       (let* ((references-block (mapconcat #'identity unique-refs "\n"))
-             (prompt (format tlon-ai-get-bibkeys-batch-prompt references-block db-string)))
-        ;; Make the single batch request
-        (tlon-make-gptel-request prompt nil #'tlon-ai--extracted-batch-bibkey-result-handler nil t))))) ; Use new batch callback
- 
+	     (prompt (format tlon-ai-get-bibkeys-batch-prompt references-block db-string)))
+	;; Make the single batch request
+	(tlon-make-gptel-request prompt nil #'tlon-ai--extracted-batch-bibkey-result-handler nil t))))) ; Use new batch callback
+
 (defun tlon-ai--extracted-batch-bibkey-result-handler (response info)
   "Callback to handle the result of batch bibkey lookup for extracted references.
 Parses the newline-separated keys, populates the key-map, and triggers
 replacements. RESPONSE is the AI's response, INFO is the response info."
   (let* ((state tlon-ai--extract-replace-state)
-         (unique-refs (plist-get state :unique-references))
-         (key-map (plist-get state :key-map)) ; Hash table: ref-string -> key
-         (num-references (length unique-refs)))
-    
+	 (unique-refs (plist-get state :unique-references))
+	 (key-map (plist-get state :key-map)) ; Hash table: ref-string -> key
+	 (num-references (length unique-refs)))
+
     (if response
-        ;; Process valid response
-        (let ((returned-keys (split-string (string-trim response) "\n" t)))
-          (if (= (length returned-keys) num-references)
-              ;; Correct number of keys returned
-              (progn
-                ;; Populate the key-map hash table
-                (dotimes (i num-references)
-                  (let ((ref-string (nth i unique-refs))
-                        (key (nth i returned-keys)))
-                    (puthash ref-string key key-map)))
-                (message "All keys fetched via batch request. Applying replacements...")
-                (tlon-ai--apply-extracted-reference-replacements)) ; Proceed to replacements
-            ;; Incorrect number of keys returned
-            (message "Error: AI returned %d keys, but %d unique references were sent. Aborting replacements."
-                     (length returned-keys) num-references)
-            (message "AI Response:\n%s" response) ; Log response for debugging
-            (setq tlon-ai--extract-replace-state nil))) ; Clean up state
+	;; Process valid response
+	(let ((returned-keys (split-string (string-trim response) "\n" t)))
+	  (if (= (length returned-keys) num-references)
+	      ;; Correct number of keys returned
+	      (progn
+		;; Populate the key-map hash table
+		(dotimes (i num-references)
+		  (let ((ref-string (nth i unique-refs))
+			(key (nth i returned-keys)))
+		    (puthash ref-string key key-map)))
+		(message "All keys fetched via batch request. Applying replacements...")
+		(tlon-ai--apply-extracted-reference-replacements)) ; Proceed to replacements
+	    ;; Incorrect number of keys returned
+	    (message "Error: AI returned %d keys, but %d unique references were sent. Aborting replacements."
+		     (length returned-keys) num-references)
+	    (message "AI Response:\n%s" response) ; Log response for debugging
+	    (setq tlon-ai--extract-replace-state nil))) ; Clean up state
       ;; Handle failed AI request
       (message "AI batch key lookup request failed. Status: %s" (plist-get info :status))
       (setq tlon-ai--extract-replace-state nil)))) ; Clean up state
@@ -2039,15 +2039,15 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
 (defun tlon-ai--apply-extracted-reference-replacements ()
   "Apply the BibTeX key replacements in the source buffer for extracted references."
   (let* ((state tlon-ai--extract-replace-state)
-         ;; Check if state is nil (might have been cleaned up due to error)
-         (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
-         (source-buffer (plist-get state :source-buffer))
-         (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
-         (key-map (plist-get state :key-map))
-         (replacements '()) ; List of (start end replacement-text)
-         (replacements-made 0)
-         (errors-occurred 0)
-         (not-found-count 0))
+	 ;; Check if state is nil (might have been cleaned up due to error)
+	 (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
+	 (source-buffer (plist-get state :source-buffer))
+	 (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
+	 (key-map (plist-get state :key-map))
+	 (replacements '()) ; List of (start end replacement-text)
+	 (replacements-made 0)
+	 (errors-occurred 0)
+	 (not-found-count 0))
     (unless (buffer-live-p source-buffer)
       (message "Source buffer is no longer live. Aborting replacements.")
       (setq tlon-ai--extract-replace-state nil)
@@ -2055,31 +2055,31 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
     ;; Build the list of replacements
     (dolist (pos-entry ref-positions)
       (let* ((ref-string (car pos-entry))
-             (positions (cdr pos-entry))
-             (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
-        (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
-            (progn
-              (when (string= key "NOT_FOUND") (cl-incf not-found-count))
-              (when (string= key "ERROR_AI") (cl-incf errors-occurred)))
-          ;; Valid key found, create replacement entries for all found positions
-          (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
-            (dolist (pos positions)
-              (push (list (car pos) (cdr pos) replacement-text) replacements))))))
+	     (positions (cdr pos-entry))
+	     (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
+	(if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+	    (progn
+	      (when (string= key "NOT_FOUND") (cl-incf not-found-count))
+	      (when (string= key "ERROR_AI") (cl-incf errors-occurred)))
+	  ;; Valid key found, create replacement entries for all found positions
+	  (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+	    (dolist (pos positions)
+	      (push (list (car pos) (cdr pos) replacement-text) replacements))))))
     ;; Sort replacements by start position in REVERSE order
     (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
     ;; Apply replacements
     (with-current-buffer source-buffer
       (dolist (replacement replacements)
-        (let ((start (nth 0 replacement))
-              (end (nth 1 replacement))
-              (text (nth 2 replacement)))
-          ;; Check if the region still contains the expected text? (Might be too complex/slow)
-          (goto-char start)
-          (delete-region start end)
-          (insert text)
-          (cl-incf replacements-made))))
+	(let ((start (nth 0 replacement))
+	      (end (nth 1 replacement))
+	      (text (nth 2 replacement)))
+	  ;; Check if the region still contains the expected text? (Might be too complex/slow)
+	  (goto-char start)
+	  (delete-region start end)
+	  (insert text)
+	  (cl-incf replacements-made))))
     (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
-             replacements-made not-found-count errors-occurred)
+	     replacements-made not-found-count errors-occurred)
     ;; Clean up state variable
     (setq tlon-ai--extract-replace-state nil)))
 
@@ -2103,14 +2103,14 @@ response INFO."
   (if (not response)
       (tlon-ai-callback-fail info)
     (let* ((original-buffer (plist-get info :buffer))
-           (original-file-name (if (buffer-live-p original-buffer)
-                                   (buffer-file-name original-buffer)
-                                 nil)))
+	   (original-file-name (if (buffer-live-p original-buffer)
+				   (buffer-file-name original-buffer)
+				 nil)))
       (if (not original-file-name)
-          (user-error "Original buffer for meta description is not visiting a file or is no longer live")
-        (with-current-buffer original-buffer ;; Ensure context for tlon-yaml-insert-field
-          (tlon-yaml-insert-field "meta" response)
-          (message "Meta description set for %s." (file-name-nondirectory original-file-name)))))))
+	  (user-error "Original buffer for meta description is not visiting a file or is no longer live")
+	(with-current-buffer original-buffer ;; Ensure context for tlon-yaml-insert-field
+	  (tlon-yaml-insert-field "meta" response)
+	  (message "Meta description set for %s." (file-name-nondirectory original-file-name)))))))
 
 (defun tlon-ai-create-meta-descriptions-in-directory (directory)
   "Iterate over Markdown files in DIRECTORY, creating AI meta descriptions.
@@ -2126,14 +2126,14 @@ determined."
     (dolist (file md-files)
       (message "Processing %s..." (file-name-nondirectory file))
       (if (tlon-yaml-get-key "meta" file)
-          (message "Skipping %s: meta description already exists." (file-name-nondirectory file))
-        (condition-case err
-            ;; Call the helper, not for interactive command (nil for second arg)
-            (tlon-ai--generate-and-insert-meta-description-for-file file nil)
-          (user-error ; Catch user-errors from helper (e.g., language issues)
-           (message "Skipping %s: %s" (file-name-nondirectory file) (error-message-string err)))
-          (error ; Catch other unexpected errors
-           (message "Error processing %s: %s" (file-name-nondirectory file) (error-message-string err)))))
+	  (message "Skipping %s: meta description already exists." (file-name-nondirectory file))
+	(condition-case err
+	    ;; Call the helper, not for interactive command (nil for second arg)
+	    (tlon-ai--generate-and-insert-meta-description-for-file file nil)
+	  (user-error ; Catch user-errors from helper (e.g., language issues)
+	   (message "Skipping %s: %s" (file-name-nondirectory file) (error-message-string err)))
+	  (error ; Catch other unexpected errors
+	   (message "Error processing %s: %s" (file-name-nondirectory file) (error-message-string err)))))
       (sit-for 0.5)) ; Allow messages to display and avoid overwhelming services
     (message "Finished processing all files in %s." directory)))
 
@@ -2153,46 +2153,43 @@ repository."
   (when (magit-extras-repo-is-dirty-p)
     (user-error "This command propagates the contents of the most recent commit, but you have uncommited changes"))
   (let* ((source-file (buffer-file-name))
-         (_ (unless source-file (user-error "Current buffer is not visiting a file")))
-         (source-repo (tlon-get-repo-from-file source-file 'no-prompt))
-         (_ (unless source-repo (user-error "Could not determine repository for %s" source-file)))
-         (source-repo-name (tlon-repo-lookup :name :dir source-repo)) ; Get the repo name
-         (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
-         (source-lang (tlon-repo-lookup :language :dir source-repo))
-         (latest-commit (tlon-latest-user-commit-in-file source-file))
-         (_ (unless latest-commit (user-error "Could not find latest commit for %s" source-file)))
-         (diff (tlon-ai--get-commit-diff latest-commit source-file source-repo))
-         (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
-                                    (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
-         (target-repos (remove source-repo all-content-repos)))
+	 (_ (unless source-file (user-error "Current buffer is not visiting a file")))
+	 (source-repo (tlon-get-repo-from-file source-file 'no-prompt))
+	 (_ (unless source-repo (user-error "Could not determine repository for %s" source-file)))
+	 (source-repo-name (tlon-repo-lookup :name :dir source-repo)) ; Get the repo name
+	 (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
+	 (source-lang (tlon-repo-lookup :language :dir source-repo))
+	 (latest-commit (tlon-latest-user-commit-in-file source-file))
+	 (_ (unless latest-commit (user-error "Could not find latest commit for %s" source-file)))
+	 (diff (tlon-ai--get-commit-diff latest-commit source-file source-repo))
+	 (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
+				    (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
+	 (target-repos (remove source-repo all-content-repos)))
     (unless diff
       (user-error "No changes found in commit %s for file %s. Aborting" latest-commit source-file))
     (unless target-repos
       (user-error "No target repositories found to propagate changes to"))
     (message "Found commit %s for %s in %s. Propagating changes..."
-             (substring latest-commit 0 7) (file-name-nondirectory source-file) source-repo-name)
+	     (substring latest-commit 0 7) (file-name-nondirectory source-file) source-repo-name)
     (dolist (target-repo target-repos)
       (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
-             (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
-        (if target-file
-            (let* ((target-content (with-temp-buffer
-                                     (insert-file-contents target-file)
-                                     (buffer-string)))
-                   (prompt (format tlon-ai-propagate-changes-prompt
-                                   source-lang
-                                   (file-relative-name source-file source-repo)
-                                   diff
-                                   target-lang
-                                   target-content)))
-              (message "Requesting AI to update %s (lang: %s) in repo %s..."
-                       (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
-              (with-temp-buffer
-                (let ((gptel-track-media nil))
-                  (tlon-make-gptel-request prompt nil
-                                           (lambda (response info)
-                                             (tlon-ai--propagate-changes-callback
+	     (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
+	(if target-file
+	    (let* ((target-content (with-temp-buffer
+				     (insert-file-contents target-file)
+				     (buffer-string)))
+		   (prompt (format tlon-ai-propagate-changes-prompt source-lang
+				   (file-relative-name source-file source-repo)
+				   diff target-lang target-content)))
+	      (message "Requesting AI to update %s (lang: %s) in repo %s..."
+		       (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
+	      (with-temp-buffer
+		(let ((gptel-track-media nil))
+		  (tlon-make-gptel-request prompt nil
+					   (lambda (response info)
+					     (tlon-ai--propagate-changes-callback
 					      response info target-file target-repo source-repo-name latest-commit))
-                                           nil 'no-context-check (current-buffer))))))))
+					   nil 'no-context-check (current-buffer))))))))
     (message "AI change propagation requests initiated for all target repositories.")))
 
 ;;;;;; Helper functions
@@ -2202,65 +2199,65 @@ repository."
 Returns the diff string or nil if no changes or error."
   (when (and commit file repo-path)
     (let* ((default-directory repo-path) ; Ensure git runs in the correct repo
-           (relative-file (file-relative-name file repo-path))
-           (command (format "git show %s -- %s"
-                            (shell-quote-argument commit)
-                            (shell-quote-argument relative-file)))
-           (diff (condition-case err
-                     (shell-command-to-string command)
-                   (error (message "Error getting diff for %s in %s: %s" relative-file commit err)
-                          nil))))
+	   (relative-file (file-relative-name file repo-path))
+	   (command (format "git show %s -- %s"
+			    (shell-quote-argument commit)
+			    (shell-quote-argument relative-file)))
+	   (diff (condition-case err
+		     (shell-command-to-string command)
+		   (error (message "Error getting diff for %s in %s: %s" relative-file commit err)
+			  nil))))
       ;; Check if diff is empty or indicates no changes (git show includes commit info)
       (if (or (null diff)
-              (string-blank-p diff)
-              ;; Check if the actual diff section marker is present
-              (not (string-match-p "diff --git" diff)))
-          (progn
-            (message "No effective changes found for %s in commit %s." relative-file commit)
-            nil)
-        ;; Return the full output, including commit info and diff
-        diff))))
+	      (string-blank-p diff)
+	      ;; Check if the actual diff section marker is present
+	      (not (string-match-p "diff --git" diff)))
+	  (progn
+	    (message "No effective changes found for %s in commit %s." relative-file commit)
+	    nil)
+	;; Return the full output, including commit info and diff
+	diff))))
 
 (defun tlon-ai--find-target-file (source-file source-repo target-repo)
   "Find the corresponding target file path in TARGET-REPO.
 Based on SOURCE-FILE in SOURCE-REPO."
   (let* ((source-subtype (tlon-repo-lookup :subtype :dir source-repo))
-         (target-subtype (tlon-repo-lookup :subtype :dir target-repo))
-         (target-repo-name (or (tlon-repo-lookup :name :dir target-repo) ; Get repo name
-                               (file-name-nondirectory target-repo))) ; Fallback
-         (target-path nil))
+	 (target-subtype (tlon-repo-lookup :subtype :dir target-repo))
+	 (target-repo-name (or (tlon-repo-lookup :name :dir target-repo) ; Get repo name
+			       (file-name-nondirectory target-repo))) ; Fallback
+	 (target-path nil))
     (cond
      ;; Case 1: Source is original, Target is translation
      ((and (eq source-subtype 'originals) (eq target-subtype 'translations))
       (let ((source-filename (file-name-nondirectory source-file)))
-        ;; Look for a file in the target repo whose 'original_path' matches the source filename
-        (setq target-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
-                                                "file" ; The key to return (the full file path)
-                                                "original_path" ; The key to match
-                                                source-filename)))) ; The value to match
+	;; Look for a file in the target repo whose 'original_path' matches the source filename
+	(setq target-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
+						"file" ; The key to return (the full file path)
+						"original_path" ; The key to match
+						source-filename)))) ; The value to match
 
      ;; Case 2: Source is translation, Target is original
      ((and (eq source-subtype 'translations) (eq target-subtype 'originals))
       (if-let ((original-relative-path (tlon-yaml-get-key "original_path" source-file)))
-          (let* ((source-bare-dir (tlon-get-bare-dir source-file))
-                 (source-lang (tlon-repo-lookup :language :dir source-repo))
-                 (target-lang "en") ; Originals are always 'en' in this setup
-                 (original-bare-dir (tlon-get-bare-dir-translation target-lang source-lang source-bare-dir)))
-            ;; Ensure target repo path ends with a slash before concatenating
-            (setq target-path (file-name-concat (directory-file-name target-repo)
-                                                original-bare-dir
-                                                original-relative-path)))
-        (message "Warning: Could not find 'original_path' in source file %s" source-file)))
+	  (let* ((source-bare-dir (tlon-get-bare-dir source-file))
+		 (source-lang (tlon-repo-lookup :language :dir source-repo))
+		 (target-lang "en") ; Originals are always 'en' in this setup
+		 (original-bare-dir (tlon-get-bare-dir-translation target-lang source-lang source-bare-dir)))
+	    ;; Ensure target repo path ends with a slash before concatenating
+	    (setq target-path (file-name-concat (directory-file-name target-repo)
+						original-bare-dir
+						original-relative-path)))
+	(message "Warning: Could not find 'original_path' in source file %s" source-file)))
 
      ;; Case 3: Source is translation, Target is another translation
      ((and (eq source-subtype 'translations) (eq target-subtype 'translations))
       (if-let ((original-relative-path (tlon-yaml-get-key "original_path" source-file)))
-          ;; Find the translation in the target repo that points to the same original
-          (setq target-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
-                                                  "file"
-                                                  "original_path"
-                                                  original-relative-path))
-        (message "Warning: Could not find 'original_path' in source file %s" source-file)))
+	  ;; Find the translation in the target repo that points to the same original
+	  (setq target-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
+						  "file"
+						  "original_path"
+						  original-relative-path))
+	(message "Warning: Could not find 'original_path' in source file %s" source-file)))
      ;; Other cases (e.g., original to original) are not expected for propagation
      (t (message "Warning: Unsupported propagation from %s (%s) to %s (%s)."
 		 (file-name-nondirectory source-repo) source-subtype
@@ -2269,16 +2266,16 @@ Based on SOURCE-FILE in SOURCE-REPO."
     (let ((warning-message nil))
       (cond
        ((null target-path)
-        (setq warning-message
-              (format "Target file for %s in %s could not be determined (metadata lookup failed)."
-                      (file-name-nondirectory source-file)
-                      target-repo-name))) ; Use repo name
+	(setq warning-message
+	      (format "Target file for %s in %s could not be determined (metadata lookup failed)."
+		      (file-name-nondirectory source-file)
+		      target-repo-name))) ; Use repo name
        ((not (file-exists-p target-path))
 	(setq warning-message
-              (format "Target file path %s determined for %s in %s, but file does not exist."
-                      target-path
-                      (file-name-nondirectory source-file)
-                      target-repo-name))))
+	      (format "Target file path %s determined for %s in %s, but file does not exist."
+		      target-path
+		      (file-name-nondirectory source-file)
+		      target-repo-name))))
       (if warning-message
 	  (progn (message "Warning: %s Skipping." warning-message) nil)
 	;; Only return target-path if it exists
@@ -2287,19 +2284,19 @@ Based on SOURCE-FILE in SOURCE-REPO."
 (defun tlon-ai--commit-in-repo (repo-path file-path message)
   "Stage FILE-PATH and commit it in REPO-PATH with MESSAGE."
   (let ((default-directory repo-path) ; Crucial for git commands
-        (relative-file (file-relative-name file-path repo-path)))
+	(relative-file (file-relative-name file-path repo-path)))
     (message "Staging '%s' in repo '%s'" relative-file (file-name-nondirectory repo-path))
     (if (zerop (call-process "git" nil nil nil "add" relative-file))
-        (progn
-          (message "Committing '%s' with message: %s" relative-file message)
-          (if (zerop (call-process "git" nil nil nil "commit" "-m" message))
-              (let ((new-commit (string-trim (shell-command-to-string "git rev-parse HEAD"))))
-                (message "Successfully committed %s in %s (commit: %s)"
-                         relative-file (file-name-nondirectory repo-path) (substring new-commit 0 7))
-                ;; Open Magit status showing the new commit
-                (when (and (not noninteractive) (fboundp 'magit-show-commit))
-                  (magit-show-commit new-commit)))
-            (message "Error: Failed to commit %s in %s" relative-file (file-name-nondirectory repo-path))))
+	(progn
+	  (message "Committing '%s' with message: %s" relative-file message)
+	  (if (zerop (call-process "git" nil nil nil "commit" "-m" message))
+	      (let ((new-commit (string-trim (shell-command-to-string "git rev-parse HEAD"))))
+		(message "Successfully committed %s in %s (commit: %s)"
+			 relative-file (file-name-nondirectory repo-path) (substring new-commit 0 7))
+		;; Open Magit status showing the new commit
+		(when (and (not noninteractive) (fboundp 'magit-show-commit))
+		  (magit-show-commit new-commit)))
+	    (message "Error: Failed to commit %s in %s" relative-file (file-name-nondirectory repo-path))))
       (message "Error: Failed to stage %s in %s" relative-file (file-name-nondirectory repo-path)))))
 
 (defun tlon-ai--propagate-changes-callback (response info target-file target-repo source-repo-name source-commit)
@@ -2310,23 +2307,23 @@ SOURCE-REPO-NAME is the name of the source repository, and SOURCE-COMMIT is the
 commit hash."
   (if (not response)
       (progn
-        (message "AI failed to process changes for %s. Status: %s"
-                 (file-name-nondirectory target-file) (plist-get info :status))
-        (tlon-ai-callback-fail info)) ; Use existing fail message
+	(message "AI failed to process changes for %s. Status: %s"
+		 (file-name-nondirectory target-file) (plist-get info :status))
+	(tlon-ai-callback-fail info)) ; Use existing fail message
     (progn
       (message "AI provided changes for %s. Applying..." (file-name-nondirectory target-file))
       ;; Overwrite the target file with the AI's response
       (condition-case err
-          (with-temp-file target-file ; Overwrites atomically
-            (insert response))
-        (error (message "Error writing AI changes to %s: %s" target-file err)
-               nil)) ; Prevent commit if write fails
+	  (with-temp-file target-file ; Overwrites atomically
+	    (insert response))
+	(error (message "Error writing AI changes to %s: %s" target-file err)
+	       nil)) ; Prevent commit if write fails
 
       ;; If write succeeded, commit the changes
       (when (file-exists-p target-file) ; Double check write didn't fail silently
-        (let ((commit-message (format "AI: Propagate changes from commit %s in %s"
-                                      (substring source-commit 0 7) source-repo-name)))
-          (tlon-ai--commit-in-repo target-repo target-file commit-message))))))
+	(let ((commit-message (format "AI: Propagate changes from commit %s in %s"
+				      (substring source-commit 0 7) source-repo-name)))
+	  (tlon-ai--commit-in-repo target-repo target-file commit-message))))))
 
 ;;;;; Menu
 
@@ -2401,22 +2398,22 @@ variable."
 (cl-defmethod transient-infix-read ((obj tlon-ai-model-selection-infix))
   "Read a new value for OBJ's variable."
   (let* ((choices
-          (append
-           '(("Default model" . nil))
-           (cl-loop for (backend-name . backend) in gptel--known-backends
-                    append (cl-loop for model in (gptel-backend-models backend)
-                                    collect (cons (format "%s: %s"
-                                                          backend-name
-                                                          (gptel--model-name model))
-                                                  (cons backend-name model))))))
-         (choice (completing-read
-                  (format "Select model (current: %s): "
-                          (if (symbol-value (oref obj variable))
-                              (format "%s: %s"
-                                      (car (symbol-value (oref obj variable)))
-                                      (cdr (symbol-value (oref obj variable))))
-                            (oref obj default-label)))
-                  choices nil t)))
+	  (append
+	   '(("Default model" . nil))
+	   (cl-loop for (backend-name . backend) in gptel--known-backends
+		    append (cl-loop for model in (gptel-backend-models backend)
+				    collect (cons (format "%s: %s"
+							  backend-name
+							  (gptel--model-name model))
+						  (cons backend-name model))))))
+	 (choice (completing-read
+		  (format "Select model (current: %s): "
+			  (if (symbol-value (oref obj variable))
+			      (format "%s: %s"
+				      (car (symbol-value (oref obj variable)))
+				      (cdr (symbol-value (oref obj variable))))
+			    (oref obj default-label)))
+		  choices nil t)))
     (cdr (assoc choice choices))))
 
 (cl-defmethod transient-infix-set ((obj tlon-ai-model-selection-infix) value)
@@ -2427,9 +2424,9 @@ variable."
   "Format OBJ's value for display."
   (let ((value (symbol-value (oref obj variable))))
     (propertize (if value
-                    (format "%s: %s" (car value) (cdr value))
-                  (oref obj default-label))
-                'face 'transient-value)))
+		    (format "%s: %s" (car value) (cdr value))
+		  (oref obj default-label))
+		'face 'transient-value)))
 
 (transient-define-infix tlon-ai-infix-select-summarization-model ()
   "AI model to use for summarizing.
