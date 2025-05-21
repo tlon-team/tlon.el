@@ -579,29 +579,23 @@ Otherwise,
   "Get the contents of FILE as a string.
 If FILE is a PDF, convert it to Markdown first. If FILE is HTML, render it to
 text using `eww`."
-  (let ((original-file-path file)) ; Store the original path for messages/extensions
+  (let ((original-file-path file))
     (cond
-     ;; Case 1: HTML file
      ((string= (file-name-extension original-file-path) "html")
       (let ((rendered-text nil)
-            (eww-process-buffer nil)) ; Suppress *eww process* buffer messages
-        (save-selected-window         ; Prevent eww from visibly stealing focus
+            (eww-process-buffer nil))
+        (save-selected-window
           (eww-browse-url (concat "file://" (expand-file-name original-file-path)))
-          ;; After eww-browse-url, the eww buffer is current.
           (setq rendered-text (buffer-substring-no-properties (point-min) (point-max)))
-          (kill-buffer (current-buffer))) ; Kill the eww buffer (which is current)
+          (kill-buffer (current-buffer)))
         rendered-text))
-
-     ;; Case 2: PDF file
      ((string= (file-name-extension original-file-path) "pdf")
       (with-temp-buffer
         (let ((markdown-temp-file (make-temp-file "pdf-to-markdown-")))
           (tlon-convert-pdf original-file-path markdown-temp-file)
           (insert-file-contents markdown-temp-file)
-          (delete-file markdown-temp-file) ; Clean up temp markdown file
+          (delete-file markdown-temp-file)
           (buffer-substring-no-properties (point-min) (point-max)))))
-
-     ;; Case 3: Other file types (e.g., plain text, markdown)
      (t
       (with-temp-buffer
         (insert-file-contents original-file-path)
