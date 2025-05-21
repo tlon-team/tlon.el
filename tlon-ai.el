@@ -381,6 +381,19 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   ;; %s will be the JSON database string
   "Prompt for finding BibTeX keys for multiple references against a JSON database.")
 
+;;;;; Change Propagation
+
+(defconst tlon-ai-propagate-changes-prompt
+  (concat
+   "You are an expert code/text synchronizer.\n"
+   "The following diff shows changes made to a file in %s (source language), located at relative path '%s'.\n\n"
+   "--- DIFF START ---\n%s\n--- DIFF END ---\n\n"
+   "Your task is to apply the *semantic equivalent* of these changes to the corresponding file in %s (target language).\n"
+   "The *entire current content* of the target file is provided below.\n\n"
+   "--- TARGET FILE CONTENT START ---\n%s\n--- TARGET FILE CONTENT END ---\n\n"
+   "Please output *only* the complete, modified content of the target file. Do not add explanations, comments, apologies, or markdown formatting (like ```) around the output.")
+  "Prompt for propagating changes across files in different languages.")
+
 ;;;;; Glossary Generation
 
 (defconst tlon-ai-create-glossary-language-prompt
@@ -2165,20 +2178,12 @@ repository."
             (let* ((target-content (with-temp-buffer
                                      (insert-file-contents target-file)
                                      (buffer-string)))
-                   (prompt (format
-                            (concat
-                             "You are an expert code/text synchronizer.\n"
-                             "The following diff shows changes made to a file in %s (source language), located at relative path '%s'.\n\n"
-                             "--- DIFF START ---\n%s\n--- DIFF END ---\n\n"
-                             "Your task is to apply the *semantic equivalent* of these changes to the corresponding file in %s (target language).\n"
-                             "The *entire current content* of the target file is provided below.\n\n"
-                             "--- TARGET FILE CONTENT START ---\n%s\n--- TARGET FILE CONTENT END ---\n\n"
-                             "Please output *only* the complete, modified content of the target file. Do not add explanations, comments, apologies, or markdown formatting (like ```) around the output.")
-                            source-lang
-                            (file-relative-name source-file source-repo)
-                            diff
-                            target-lang
-                            target-content)))
+                   (prompt (format tlon-ai-propagate-changes-prompt
+                                   source-lang
+                                   (file-relative-name source-file source-repo)
+                                   diff
+                                   target-lang
+                                   target-content)))
               (message "Requesting AI to update %s (lang: %s) in repo %s..."
                        (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
               (with-temp-buffer
