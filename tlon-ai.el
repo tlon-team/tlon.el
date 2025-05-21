@@ -2195,8 +2195,8 @@ repository."
                                            nil ; Use default model for now, consider a custom one
                                            t   ; Bypass context check as we manage context implicitly
                                            (current-buffer)))) ; Pass this temp buffer as the request-buffer
-          ;; Message is now handled inside tlon-ai--find-target-file
-          )))
+              ;; Message is now handled inside tlon-ai--find-target-file
+              ))))
     (message "AI change propagation requests initiated for all target repositories.")))
 
 ;;;;;; Helper functions
