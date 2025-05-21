@@ -2137,6 +2137,8 @@ repositories (originals and translations), ask the AI to apply the semantically
 equivalent changes. Finally, commit the changes made by the AI in each target
 repository."
   (interactive)
+  (when (magit-extras-repo-is-dirty-p)
+    (user-error "This command propagates the contents of the most recent commit, but you have uncommited changes"))
   (let* ((source-file (buffer-file-name))
          (_ (unless source-file (user-error "Current buffer is not visiting a file")))
          (source-repo (tlon-get-repo-from-file source-file 'no-prompt))
@@ -2156,7 +2158,6 @@ repository."
       (user-error "No target repositories found to propagate changes to"))
     (message "Found commit %s for %s in %s. Propagating changes..."
              (substring latest-commit 0 7) (file-name-nondirectory source-file) source-repo-name)
-    (message "Diff:\n%s" diff) ; Log the diff for debugging/info
     (dolist (target-repo target-repos)
       (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
              (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
@@ -2180,18 +2181,13 @@ repository."
                             target-content)))
               (message "Requesting AI to update %s (lang: %s) in repo %s..."
                        (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
-              ;; Make the request - the callback handles writing and committing
               (with-temp-buffer
-                (fundamental-mode) ; Ensure a neutral mode
-                (let ((gptel-track-media nil)) ; Ensure media tracking is off for this specific request's context
+                (let ((gptel-track-media nil))
                   (tlon-make-gptel-request prompt nil
-                                           (lambda (response info) ; Wrap callback to pass context
-                                             (tlon-ai--propagate-changes-callback response info target-file target-repo source-repo-name latest-commit)) ; Pass source-repo-name
-                                           nil ; Use default model for now, consider a custom one
-                                           t   ; Bypass context check as we manage context implicitly
-                                           (current-buffer)))) ; Pass this temp buffer as the request-buffer
-              ;; Message is now handled inside tlon-ai--find-target-file
-              ))))
+                                           (lambda (response info)
+                                             (tlon-ai--propagate-changes-callback
+					      response info target-file target-repo source-repo-name latest-commit))
+                                           nil 'no-context-check (current-buffer))))))))
     (message "AI change propagation requests initiated for all target repositories.")))
 
 ;;;;;; Helper functions
