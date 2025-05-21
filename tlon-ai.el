@@ -2150,17 +2150,13 @@ repository."
          (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
                                     (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
          (target-repos (remove source-repo all-content-repos)))
-
     (unless diff
       (user-error "No changes found in commit %s for file %s. Aborting" latest-commit source-file))
-
     (unless target-repos
       (user-error "No target repositories found to propagate changes to"))
-
     (message "Found commit %s for %s in %s. Propagating changes..."
              (substring latest-commit 0 7) (file-name-nondirectory source-file) source-repo-name)
     (message "Diff:\n%s" diff) ; Log the diff for debugging/info
-
     (dolist (target-repo target-repos)
       (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
              (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
@@ -2168,7 +2164,6 @@ repository."
             (let* ((target-content (with-temp-buffer
                                      (insert-file-contents target-file)
                                      (buffer-string)))
-                   ;; Construct the prompt carefully
                    (prompt (format
                             (concat
                              "You are an expert code/text synchronizer.\n"
