@@ -90,22 +90,24 @@ This section details the interactive commands provided by =tlon-forg.el=.
 :END:
 
 #+findex: tlon-capture-issue
-+ ~tlon-capture-issue~ :: (Autoloaded) Creates a new Org TODO item based on the current Forge issue (or the one specified).
-  1. Checks if the issue is open.
-  2. Handles the assignee based on ~tlon-when-assignee-is-nil~ and ~tlon-when-assignee-is-someone-else~, potentially changing the assignee or skipping capture.
-  3. If the issue is a "Job" (title starts with "Job: "):
++ ~tlon-capture-issue~ :: (Autoloaded) Creates a new Org TODO item based on the specified =ISSUE= or one selected interactively.
+  1. If =ISSUE= is provided, uses it. Otherwise, attempts to get the issue from the current context (e.g., a Forge buffer).
+  2. If no issue can be determined from context (e.g., when called from an Org buffer not associated with a repository), it prompts the user to select a repository (from Tlön's known repos or by listing from GitHub via `gh` CLI for ~tlon-forg-project-owner~) and then an issue from that repository.
+  3. Checks if the selected/provided issue is open.
+  4. Handles the assignee based on ~tlon-when-assignee-is-nil~ and ~tlon-when-assignee-is-someone-else~, potentially changing the assignee on GitHub or skipping capture.
+  5. If the issue's title starts with "Job: ":
      - Ensures it has a valid phase label (prompting if necessary via ~tlon-capture-handle-phase~).
      - Stores or refiles the job TODO under its master job heading using ~tlon-store-or-refile-job-todo~.
-  4. If it's a generic issue:
+  6. If it's a generic issue:
      - Stores the TODO in the generic file using ~tlon-store-todo~ with the "tbG" template.
   Only captures if a TODO doesn't already exist for the issue.
 
 #+findex: tlon-capture-all-issues
-+ ~tlon-capture-all-issues~ :: (Autoloaded) Captures all open issues in the current repository that are either unassigned or assigned to the current user.
-  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
-  2. Iterates through all open issues in the repository (~tlon-get-issues~).
-  3. For each issue, checks if a TODO already exists (~tlon-get-todo-position-from-issue~).
-  4. If no TODO exists and the issue is assigned to the current user or unassigned, calls ~tlon-capture-issue~. (Note: It implicitly uses =no-capture= for ~tlon-when-assignee-is-someone-else~ in this bulk mode).
++ ~tlon-capture-all-issues~ :: (Autoloaded) Captures all open issues in a selected repository that are not assigned to another user (behavior depends on ~tlon-when-assignee-is-someone-else~, which defaults to `no-capture` effectively in bulk mode).
+  1. If a repository cannot be inferred from the current context, the user is prompted to select one (from Tlön's known repos or by listing from GitHub via `gh` CLI for ~tlon-forg-project-owner~).
+  2. Performs a silent =forge-pull= for the selected repository first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
+  3. Iterates through all open issues in the selected repository (~tlon-get-issues~).
+  4. For each issue, if a TODO doesn't already exist (~tlon-get-todo-position-from-issue~), it calls ~tlon-capture-issue~ for that issue.
   5. Clears the =org-refile= cache upon completion.
 
 *** Reconciling Issues and TODOs
@@ -380,9 +382,9 @@ This section lists non-interactive functions, variables, and constants used inte
 :CUSTOM_ID: h:tlon-forg-capture-helpers
 :END:
 #+findex: tlon-pull-silently
-+ ~tlon-pull-silently~ :: Performs a =forge--pull= operation, suppressing output messages. Optionally displays a custom =MESSAGE=. If a =CALLBACK= function is provided, it is executed after the pull completes, and the window configuration active before the pull is restored afterwards.
++ ~tlon-pull-silently~ :: Performs a =forge--pull= operation for the given =REPO= (or the current one if =REPO= is nil), suppressing output messages. Optionally displays a custom =MESSAGE=. If a =CALLBACK= function is provided, it is executed after the pull completes, and the window configuration active before the pull is restored afterwards.
 #+findex: tlon-capture-all-issues-after-pull
-+ ~tlon-capture-all-issues-after-pull~ :: Callback function for ~tlon-capture-all-issues~ that initiates the capture process after the initial pull completes.
++ ~tlon-capture-all-issues-after-pull~ :: Callback function for ~tlon-capture-all-issues~ that initiates the capture process for the specified =REPO= after the initial pull completes.
 #+findex: tlon-store-todo
 + ~tlon-store-todo~ :: Uses =org-capture= with a specific =TEMPLATE= ("tbG" or "tbJ") to store a new TODO for the =ISSUE=, unless one already exists. Handles master job TODO creation.
 #+findex: tlon-capture-handle-assignee

@@ -33,6 +33,55 @@
 (require 'tlon-core)
 (require 'tlon-dispatch)
 
+;; Forward declarations
+(declare-function tlon-get-repo "tlon-core" (&optional no-prompt include-all))
+(declare-function tlon-repo-lookup "tlon-core" (key &rest key-value))
+
+;;;; Helper Functions for Repository and Issue Selection
+
+(defun tlon-forg-get-or-select-repository ()
+  "Return a `forge-repository` object.
+Tries to get the current repository using `forge-get-repository :tracked`.
+If that fails, uses `tlon-get-repo` to prompt for a known Tlön repository.
+If that also fails, lists repositories from `tlon-forg-project-owner` on
+GitHub using `gh` CLI and prompts for selection. The selected repository
+must be locally configured in Tlön for its path to be found."
+  (or (ignore-errors (forge-get-repository :tracked))
+      (let ((repo-path (tlon-get-repo nil 'include-all))) ; Prompt from known Tlön repos
+        (if repo-path
+            (let ((default-directory repo-path)) ; Set context for forge
+              (forge-get-repository :tracked))
+          ;; Fallback to gh list if tlon-get-repo doesn't yield/user cancels
+          (message "No repository selected from Tlön configuration. Fetching list from GitHub...")
+          (let* ((gh-executable (executable-find "gh"))
+                 (repo-names
+                  (if gh-executable
+                      (split-string
+                       (shell-command-to-string
+                        (format "gh repo list %s --json name --jq \".[] | .name\""
+                                tlon-forg-project-owner))
+                       "\n" t 'omit-empty) ; omit-empty in case of trailing newline
+                    (user-error "The 'gh' command-line tool is required but not found.")))
+                 (selected-repo-name (completing-read "Select repository from GitHub: " repo-names nil t)))
+            (when selected-repo-name
+              (let ((repo-dir (tlon-repo-lookup :dir :name selected-repo-name)))
+                (unless repo-dir
+                  (user-error "Repository '%s' not found in local Tlön configuration. Please ensure it's cloned and configured." selected-repo-name))
+                (unless (file-directory-p repo-dir)
+                  (user-error "Repository directory '%s' for '%s' does not exist." repo-dir selected-repo-name))
+                (let ((default-directory repo-dir))
+                  (forge-get-repository :tracked)))))))))
+
+(defun tlon-forg-select-issue-from-repo (repo)
+  "Prompt the user to select an open issue from REPO.
+REPO must be a valid `forge-repository` object.
+Returns a `forge-issue` object or nil if no issue is selected or on error."
+  (when repo
+    (let ((default-directory (oref repo worktree))) ; Ensure correct context
+      (condition-case nil
+          (forge-select-issue repo) ; Prompts for an issue
+        (error nil))))) ; Return nil if user cancels or any error occurs
+
 ;;;; User options
 
 (defgroup tlon-forg ()
@@ -236,54 +285,93 @@ on whether or not is a job). ISSUE is needed if either POS or FILE is nil."
 ;;;###autoload
 (defun tlon-capture-issue (&optional issue)
   "Create a new `org-mode' TODO based on ISSUE.
-If ISSUE is nil, use the issue at point or in the current buffer."
+If ISSUE is nil, it attempts to use the issue at point or in the current
+buffer. If no issue can be determined from the context (e.g., when called
+from an Org mode buffer not in a repository context), it prompts to select a
+repository and then an issue from that repository."
   (interactive)
-  (let* ((issue (or issue (forge-current-topic)))
-	 (issue-name (oref issue title))
-	 (repo (forge-get-repository issue))
-	 (default-directory (oref repo worktree)))
-    (when (and (eq (tlon-get-state issue) 'open)
-	       (tlon-capture-handle-assignee issue))
-      (message "Capturing ‘%s’" issue-name)
-      (if (tlon-issue-is-job-p issue)
-	  (tlon-create-job-todo-from-issue issue)
-	(tlon-store-todo "tbG" nil issue)))))
+  (let (repo issue-to-capture)
+    (if issue
+        (setq issue-to-capture issue
+              repo (forge-get-repository issue))
+      ;; No explicit issue passed, try to get from context or prompt
+      (setq issue-to-capture (ignore-errors (forge-current-topic)))
+      (if issue-to-capture
+          (setq repo (forge-get-repository issue-to-capture))
+        ;; Still no issue, so prompt for repository then issue
+        (setq repo (tlon-forg-get-or-select-repository))
+        (unless repo
+          (user-error "Repository selection failed or cancelled. Aborting capture."))
+        (setq issue-to-capture (tlon-forg-select-issue-from-repo repo))
+        (unless issue-to-capture
+          (user-error "Issue selection failed or cancelled. Aborting capture."))))
+
+    ;; Ensure repo is set if issue-to-capture is set (should be by now)
+    (unless repo
+      (if issue-to-capture
+          (setq repo (forge-get-repository issue-to-capture))
+        ;; This case should ideally be caught by earlier user-errors
+        (user-error "Cannot determine repository. Aborting capture.")))
+
+    ;; Proceed with capture if issue and repo are valid
+    (let* ((issue-name (oref issue-to-capture title))
+           (default-directory (oref repo worktree))) ; Set context for subsequent operations
+      (when (and (eq (tlon-get-state issue-to-capture) 'open)
+                 (tlon-capture-handle-assignee issue-to-capture))
+        (message "Capturing ‘%s’" issue-name)
+        (if (tlon-issue-is-job-p issue-to-capture)
+            (tlon-create-job-todo-from-issue issue-to-capture)
+          (tlon-store-todo "tbG" nil issue-to-capture))))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues (arg)
-  "Capture all issues in the current repo not assigned to another user.
+  "Capture all open issues in a selected repository.
+The issues captured are those not assigned to another user. If a repository
+cannot be inferred from the current context, the user is prompted to select one.
 Before initiating the capture process, this command performs a full pull of the
-current repo to ensure that it reflects its remote state. The window
+selected repository to ensure local data reflects its remote state. The window
 configuration active before the command was called will be restored after
 completion. This command clears the `org-refile' cache upon completion.
 
-Pull all issues from forge before initiating the capture process. If called with
-a prefix ARG, omit this initial pull."
+If called with a prefix ARG, the initial pull from forge is omitted."
   (interactive "P")
-  (if arg
-      (tlon-capture-all-issues-after-pull)
-    (tlon-pull-silently "Pulling issues..." #'tlon-capture-all-issues-after-pull)))
+  (let ((repo (tlon-forg-get-or-select-repository)))
+    (unless repo
+      (user-error "No repository selected or available. Aborting capture-all-issues."))
+    ;; Set default-directory for the scope of tlon-pull-silently and its callback
+    (let ((default-directory (oref repo worktree)))
+      (if arg
+          (tlon-capture-all-issues-after-pull repo)
+        (tlon-pull-silently "Pulling issues..."
+                            (lambda () (tlon-capture-all-issues-after-pull repo))
+                            repo)))))
 
-(defun tlon-pull-silently (&optional message callback)
-  "Pull all issues from forge.
+(defun tlon-pull-silently (&optional message callback repo)
+  "Pull all issues from forge for REPO.
+If REPO is nil, attempts to determine the current repository.
 If MESSAGE is non-nil, display it while the process is ongoing.
 If CALLBACK is non-nil, call it after the process completes, restoring the
 window configuration that was active before the pull started."
   (when message (message message))
-  (let ((original-window-config (current-window-configuration))) ; Save config before pull
-    (shut-up
-      (forge--pull (forge-get-repository :tracked)
-                   (lambda () ; New callback wrapper
-                     (unwind-protect ; Ensure restoration even on error in callback
-                         (when callback (funcall callback))
-                       (set-window-configuration original-window-config))))))) ; Restore config after callback
+  (let ((original-window-config (current-window-configuration))
+        (forge-repo (or repo (tlon-forg-get-or-select-repository))))
+    (unless forge-repo
+      (user-error "Cannot determine repository for pull operation."))
+    (let ((default-directory (oref forge-repo worktree))) ; Set context for forge--pull
+      (shut-up
+       (forge--pull forge-repo
+                    (lambda () ; New callback wrapper
+                      (unwind-protect ; Ensure restoration even on error in callback
+                          (when callback (funcall callback))
+                        (set-window-configuration original-window-config))))))))
 
-(defun tlon-capture-all-issues-after-pull ()
-  "Capture all issues in the current repo after `forge-pull' is finished."
-  (let* ((repo (forge-get-repository :tracked)))
-    (dolist (issue (tlon-get-issues repo))
+(defun tlon-capture-all-issues-after-pull (repo)
+  "Capture all issues in REPO after `forge-pull' is finished.
+REPO must be a valid `forge-repository` object."
+  (let ((default-directory (oref repo worktree))) ; Set context
+    (dolist (issue (tlon-get-issues repo)) ; tlon-get-issues uses the repo context
       (unless (tlon-get-todo-position-from-issue issue)
-	(tlon-capture-issue issue)))
+        (tlon-capture-issue issue))) ; Pass the specific issue object
     (org-refile-cache-clear)
     (message "Finished capturing issues. Refile cache cleared.")))
 
