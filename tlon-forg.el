@@ -75,12 +75,20 @@ must be locally configured in Tlön for its path to be found."
 (defun tlon-forg-select-issue-from-repo (repo)
   "Prompt the user to select an open issue from REPO.
 REPO must be a valid `forge-repository` object.
+Ensures topics for REPO are fetched before prompting.
 Returns a `forge-issue` object or nil if no issue is selected or on error."
   (when repo
     (let ((default-directory (oref repo worktree))) ; Ensure correct context
-      (condition-case nil
-          (forge-select-issue repo) ; Prompts for an issue
-        (error nil))))) ; Return nil if user cancels or any error occurs
+      (message "Fetching issues for %s..." (oref repo name))
+      (condition-case err
+          (progn
+            (shut-up (forge-pull-topics repo)) ; Fetch/update topics silently
+            (message "Fetching issues for %s... done. Please select an issue." (oref repo name))
+            (forge-select-issue repo)) ; Prompts for an issue
+        ((debug error) ; Catch user-error and other errors, provide debug info
+         (message "Error during issue selection/fetching for %s: %s" (oref repo name) err)
+         (message "To debug, try M-x toggle-debug-on-error and run the command again.")
+         nil)))))
 
 ;;;; User options
 
