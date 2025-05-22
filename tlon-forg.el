@@ -86,7 +86,20 @@ Returns a `forge-issue` object or nil if no issue is selected or on error."
             ;; Passing nil as the callback makes it synchronous.
             (shut-up (forge--pull repo nil)) ; Pull all data for the repo silently and synchronously.
             (message "Fetching issues for %s... done. Please select an issue." (oref repo name))
-            (forge-select-issue repo)) ; Prompts for an issue
+            ;; Call the modified tlon-get-issue-number-from-open-issues
+            (let ((selected-issue-number (tlon-get-issue-number-from-open-issues repo)))
+              (if selected-issue-number
+                  (let* ((issue-id (caar (forge-sql [:select [id] :from issue
+                                                     :where (and (= repository $s1)
+                                                                 (= number $s2))]
+                                                (oref repo id)
+                                                selected-issue-number))))
+                    (if issue-id
+                        (forge-get-topic issue-id)
+                      (progn
+                        (message "Error: Could not retrieve details for issue #%s in %s." selected-issue-number (oref repo name))
+                        nil)))
+                nil))) ; No issue number selected, tlon-get-issue-number-from-open-issues returned nil
         ((debug error) ; Catch user-error and other errors, provide debug info
          (message "Error during issue selection/fetching for %s: %s" (oref repo name) err)
          (message "To debug, try M-x toggle-debug-on-error and run the command again.")
@@ -875,23 +888,31 @@ ISSUE is nil, use the issue at point."
   (let* ((abbrev-repo (tlon-get-element-from-heading "^\\[\\(.*?\\)\\]")))
     (tlon-repo-lookup :dir :abbrev abbrev-repo)))
 
-(defun tlon-get-issue-number-from-open-issues ()
-  "Prompt user to select from a list of open issues and return number of selection."
-  (let* ((default-directory (tlon-get-repo nil 'include-all))
-	 (repo (forge-get-repository :tracked))
+(defun tlon-get-issue-number-from-open-issues (&optional forge-repo)
+  "Prompt user to select from a list of open issues in FORGE-REPO and return its number.
+If FORGE-REPO (a forge-repository object) is nil, the repository is
+determined from context or by prompting."
+  (let* ((repo-to-use (or forge-repo
+                          (let ((repo-path (tlon-get-repo nil 'include-all))) ; Prompts if needed
+                            (when repo-path
+                              (let ((default-directory repo-path))
+                                (forge-get-repository :tracked))))))
+         ;; Ensure repo-to-use is valid before proceeding
+         (_ (unless repo-to-use (user-error "Could not determine repository for issue selection.")))
+         (default-directory (oref repo-to-use worktree)) ; Set context for oref issues
 	 ;; Fetch all issues, but filter for open ones
-	 (issue-list (mapcar #'(lambda (issue)
+	 (issue-list (mapcar #'(lambda (issue) ; issue here is a forge-issue object
 				 (cons (format "#%d %s"
 					       (oref issue number)
 					       (oref issue title))
 				       (oref issue number)))
 			     (cl-remove-if-not (lambda (issue)
 						 (string= (oref issue state) "open"))
-					       (oref repo issues))))
-	 ;; Let the user select one
-	 (selected-issue (cdr (assoc (completing-read "Select an issue: " issue-list) issue-list))))
+					       (oref repo-to-use issues))))
+	 ;; Let the user select one, requiring a match
+	 (selected-issue-number (cdr (assoc (completing-read "Select an issue: " issue-list nil t) issue-list))))
     ;; Return the selected issue number
-    selected-issue))
+    selected-issue-number))
 
 (defun tlon-get-issues (&optional repo)
   "Return a list of all open issues in REPO.
