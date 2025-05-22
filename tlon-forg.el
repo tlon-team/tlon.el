@@ -28,6 +28,7 @@
 (require 'forge)
 (require 'org)
 (require 'org-refile)
+(require 'org-element-ast)
 (require 'shut-up)
 (require 'tlon-core)
 (require 'tlon-dispatch)
@@ -134,7 +135,7 @@ This is used for GraphQL queries to fetch issue and project field details."
   "The global Relay Node ID of the target GitHub Project (e.g., Project #9).")
 
 (defconst tlon-forg-status-field-node-id "PVTSSF_lADOBtGWf84A5jZfzguVNY8"
-  "The global Relay Node ID of the 'Status' field within the target GitHub Project.")
+  "The global Relay Node ID of the \"Status\" field within the  GitHub Project.")
 
 (defconst tlon-forg-status-option-ids-alist
   '(("Doing" . "47fc9ee4")
@@ -143,7 +144,7 @@ This is used for GraphQL queries to fetch issue and project field details."
     ("Someday" . "4bf0f00e")
     ("Done" . "98236657"))
   "Alist mapping GitHub Project status names (car) to their global Option IDs (cdr)
-for the 'Status' field in the target project.")
+for the \"Status\" field in the target project.")
 
 (defconst tlon-gh-add-item-to-project-mutation-query
   "mutation($projectNodeId:ID!, $issueNodeId:ID!) {
@@ -168,7 +169,7 @@ for the 'Status' field in the target project.")
       }
     }
   }"
-  "GraphQL mutation to update a single select field (e.g., Status) of a project item.")
+  "GraphQL mutation to update a single field (e.g., Status) of a project item.")
 
 ;;;; Functions
 
@@ -477,11 +478,12 @@ If ISSUE is nil, use the issue at point."
 
 (defun tlon-gh--call-api-graphql-mutation (mutation-query-string variables)
   "Execute a GitHub GraphQL MUTATION-QUERY-STRING with VARIABLES.
-VARIABLES is a list of cons cells like '((key . value) (key2 . value2)) for -F options."
+VARIABLES is a list of cons cells like \\='((key . value) (key2 . value2)) for
+-F options."
   (let* ((lines (split-string mutation-query-string "\n" t)) ; t = omit empty lines
          (lines-without-comments (mapcar (lambda (line) (replace-regexp-in-string "#.*" "" line)) lines))
          (query-almost-single-line (string-join lines-without-comments " "))
-         (single-line-mutation (s-trim (replace-regexp-in-string "\\s-+" " " query-almost-single-line)))
+         (single-line-mutation (string-trim (replace-regexp-in-string "\\s-+" " " query-almost-single-line)))
          ;; Write query to a temporary file and reference it with @ to avoid parsing issues.
          (temp-file (make-temp-file "tlon-gh-mutation-" nil ".graphql" single-line-mutation))
          (process-args (list "api" "graphql" "-F" (concat "query=@" temp-file)))
@@ -510,7 +512,7 @@ VARIABLES is a list of cons cells like '((key . value) (key2 . value2)) for -F o
     ;; Use `apply' so that each element of `process-args' becomes a separate argument
     (let ((gh-executable (executable-find "gh")))
       (unless gh-executable
-        (error "The 'gh' command-line tool was not found in your system's PATH or Emacs' exec-path. Please ensure it is installed and accessible."))
+        (error "The 'gh' command-line tool was not found in your system's PATH or Emacs' exec-path. Please ensure it is installed and accessible"))
       (setq exit-status (apply #'call-process gh-executable nil output-buffer nil process-args)))
 
     (with-current-buffer output-buffer
@@ -561,10 +563,9 @@ Returns the new project item's Node ID, or nil on failure."
 
 (defun tlon-gh-update-project-item-status-field (project-node-id item-node-id field-node-id new-status-option-id)
   "Update the project item's status field.
-PROJECT-NODE-ID is the project's Node ID.
-ITEM-NODE-ID is the project item's Node ID.
-FIELD-NODE-ID is the 'Status' field's Node ID.
-NEW-STATUS-OPTION-ID is the Node ID of the desired status option (e.g., for 'Doing')."
+PROJECT-NODE-ID is the project's Node ID. ITEM-NODE-ID is the project item's
+Node ID. FIELD-NODE-ID is the \"Status\" field's Node ID. NEW-STATUS-OPTION-ID
+is the Node ID of the desired status option (e.g., for \"Doing\")."
   (let* ((variables `(("projectNodeId" . ,project-node-id)
                       ("itemNodeId" . ,item-node-id)
                       ("fieldNodeId" . ,field-node-id)
@@ -573,7 +574,7 @@ NEW-STATUS-OPTION-ID is the Node ID of the desired status option (e.g., for 'Doi
     (if-let* ((data (cdr (assoc "data" response)))
               (update-value (cdr (assoc "updateProjectV2ItemFieldValue" data)))
               (projectV2Item (cdr (assoc "projectV2Item" update-value)))
-              (_item-id (cdr (assoc "id" projectV2Item)))) ; We have a successful response if projectV2Item.id exists
+              (item-id (cdr (assoc "id" projectV2Item)))) ; We have a successful response if projectV2Item.id exists
         (message "Successfully updated project item status.")
       (progn
         (message "Failed to update project item status. Response: %s" response)
@@ -602,79 +603,79 @@ This includes title, labels (tags), and project status."
 
         ;; Extract base title from Org heading (stripping repo, issue link, etc.)
         ;; The raw-value is usually just the text after the keyword and before tags.
-    ;; If it contains the orgit-link, we need to be more careful.
-    ;; For now, assume raw-value is mostly the title. A more robust parsing might be needed.
-    ;; A simple approach: find the link, take its description, remove #num prefix.
-    (let* ((link-in-title (save-excursion
-                            (goto-char (org-element-property :contents-begin heading-element))
-                            (when (re-search-forward org-link-bracket-re (org-element-property :contents-end heading-element) t)
-                              (org-element-context))))
-           (org-title-for-issue
-            (if (and link-in-title (eq (org-element-type link-in-title) 'link))
-                (let ((desc (org-element-property :description link-in-title)))
-                  (if (string-match "^#[0-9]+ \\(.*\\)$" desc) (match-string 1 desc) desc))
-              (s-trim org-raw-title-parts)))) ; Fallback to raw-value, might need refinement
+	;; If it contains the orgit-link, we need to be more careful.
+	;; For now, assume raw-value is mostly the title. A more robust parsing might be needed.
+	;; A simple approach: find the link, take its description, remove #num prefix.
+	(let* ((link-in-title (save-excursion
+				(goto-char (org-element-property :contents-begin heading-element))
+				(when (re-search-forward org-link-bracket-re (org-element-property :contents-end heading-element) t)
+				  (org-element-context))))
+               (org-title-for-issue
+		(if (and link-in-title (eq (org-element-type link-in-title) 'link))
+                    (let ((desc (org-element-property :description link-in-title)))
+                      (if (string-match "^#[0-9]+ \\(.*\\)$" desc) (match-string 1 desc) desc))
+		  (string-trim org-raw-title-parts)))) ; Fallback to raw-value, might need refinement
 
-      (message "Org title for issue: '%s', Org tags: %s, Org TODO keyword: %s"
-               org-title-for-issue org-tags org-todo-keyword)
+	  (message "Org title for issue: '%s', Org tags: %s, Org TODO keyword: %s"
+		   org-title-for-issue org-tags org-todo-keyword)
 
-      ;; Fetch current GH issue details, including project-specific fields
-      (let* ((gh-fields (condition-case err
-                            (tlon-gh-parse-issue-fields (tlon-gh-get-issue-fields issue-number repo-name))
-                          (error (progn (message "Error fetching GH fields for #%s: %s" issue-number err) nil))))
-             (issue-node-id (plist-get gh-fields :issue-node-id))
-             (current-issue-title (oref issue title))
-             (current-issue-labels (sort (copy-sequence (tlon-forg-get-labels issue)) #'string<))
-             (current-gh-project-status-name (plist-get gh-fields :status))
-             (project-item-id (plist-get gh-fields :project-item-id)))
+	  ;; Fetch current GH issue details, including project-specific fields
+	  (let* ((gh-fields (condition-case err
+				(tlon-gh-parse-issue-fields (tlon-gh-get-issue-fields issue-number repo-name))
+                              (error (progn (message "Error fetching GH fields for #%s: %s" issue-number err) nil))))
+		 (issue-node-id (plist-get gh-fields :issue-node-id))
+		 (current-issue-title (oref issue title))
+		 (current-issue-labels (sort (copy-sequence (tlon-forg-get-labels issue)) #'string<))
+		 (current-gh-project-status-name (plist-get gh-fields :status))
+		 (project-item-id (plist-get gh-fields :project-item-id)))
 
-        (unless issue-node-id
-          (message "Could not retrieve issue Node ID for #%s. Skipping updates." issue-number)
-          (cl-return-from tlon-update-issue-from-todo))
+            (unless issue-node-id
+              (message "Could not retrieve issue Node ID for #%s. Skipping updates." issue-number)
+              (cl-return-from tlon-update-issue-from-todo))
 
-        ;; 1. Update Title
-        (unless (string= org-title-for-issue current-issue-title)
-          (message "Updating issue title from '%s' to '%s'" current-issue-title org-title-for-issue)
-          (forge--set-topic-title repo issue org-title-for-issue)
-          (message "Issue title updated."))
+            ;; 1. Update Title
+            (unless (string= org-title-for-issue current-issue-title)
+              (message "Updating issue title from '%s' to '%s'" current-issue-title org-title-for-issue)
+              (forge--set-topic-title repo issue org-title-for-issue)
+              (message "Issue title updated."))
 
-        ;; 2. Update Labels (Tags)
-        (let ((sorted-org-tags (sort (copy-sequence org-tags) #'string<)))
-          (unless (equal sorted-org-tags current-issue-labels)
-            (message "Updating issue labels from %s to %s" current-issue-labels sorted-org-tags)
-            (forge--set-topic-labels repo issue sorted-org-tags)
-            (message "Issue labels updated.")))
+            ;; 2. Update Labels (Tags)
+            (let ((sorted-org-tags (sort (copy-sequence org-tags) #'string<)))
+              (unless (equal sorted-org-tags current-issue-labels)
+		(message "Updating issue labels from %s to %s" current-issue-labels sorted-org-tags)
+		(forge--set-topic-labels repo issue sorted-org-tags)
+		(message "Issue labels updated.")))
 
-        ;; 3. Update Project Status
-        (when org-todo-keyword ; Only proceed if there's an Org TODO keyword
-          (let* ((target-gh-status-name (car (cl-rassoc org-todo-keyword tlon-todo-statuses :test #'string=))))
-            (if (not target-gh-status-name)
-                (message "Org TODO keyword '%s' does not map to a known GitHub Project status. Skipping status update." org-todo-keyword)
-              (unless (string= target-gh-status-name current-gh-project-status-name)
-                (message "Project status differs. Org implies '%s' (from %s), GitHub has '%s'."
-                         target-gh-status-name org-todo-keyword (or current-gh-project-status-name "None/Unknown"))
-                (let ((target-status-option-id (cdr (assoc target-gh-status-name tlon-forg-status-option-ids-alist #'string=))))
-                  (unless target-status-option-id
-                    (message "Cannot find Option ID for GitHub status '%s'. Skipping status update." target-gh-status-name)
-                    (cl-return-from tlon-update-issue-from-todo))
-                  ;; Assuming tlon-forg-status-field-node-id is correctly hardcoded
-                  (if project-item-id
-                      ;; Issue is in project, update status
-                      (progn
-                        (message "Updating status for item %s to '%s' (Option ID: %s)" project-item-id target-gh-status-name target-status-option-id)
-                        (tlon-gh-update-project-item-status-field tlon-forg-project-node-id project-item-id tlon-forg-status-field-node-id target-status-option-id))
-                    ;; Issue not in project
-                    (when (y-or-n-p (format "Issue '%s' (#%s) is not in Project %s. Add it and set status to '%s'?"
-                                            current-issue-title issue-number tlon-forg-project-number target-gh-status-name))
-                      (message "Adding issue #%s to project %s..." issue-number tlon-forg-project-node-id)
-                      (message "Debug: tlon-update-issue-from-todo: gh-fields before add: %S" gh-fields)
-                      (message "Debug: tlon-update-issue-from-todo: issue-node-id for add: %S" issue-node-id)
-                      (let ((new-item-id (tlon-gh-add-issue-to-project tlon-forg-project-node-id issue-node-id)))
-                        (if new-item-id
-                            (progn
-                              (message "Issue added to project (New Item ID: %s). Now setting status to '%s'." new-item-id target-gh-status-name)
-                              (tlon-gh-update-project-item-status-field tlon-forg-project-node-id new-item-id tlon-forg-status-field-node-id target-status-option-id))
-                          (warn "Failed to add issue #%s to project." issue-number))))))))))))
+            ;; 3. Update Project Status
+            (when org-todo-keyword ; Only proceed if there's an Org TODO keyword
+              (let* ((target-gh-status-name (car (cl-rassoc org-todo-keyword tlon-todo-statuses :test #'string=))))
+		(if (not target-gh-status-name)
+                    (message "Org TODO keyword '%s' does not map to a known GitHub Project status. Skipping status update." org-todo-keyword)
+		  (unless (string= target-gh-status-name current-gh-project-status-name)
+                    (message "Project status differs. Org implies '%s' (from %s), GitHub has '%s'."
+                             target-gh-status-name org-todo-keyword (or current-gh-project-status-name "None/Unknown"))
+                    (let ((target-status-option-id (cdr (assoc target-gh-status-name tlon-forg-status-option-ids-alist #'string=))))
+                      (unless target-status-option-id
+			(message "Cannot find Option ID for GitHub status '%s'. Skipping status update." target-gh-status-name)
+			(cl-return-from tlon-update-issue-from-todo))
+                      ;; Assuming tlon-forg-status-field-node-id is correctly hardcoded
+                      (if project-item-id
+			  ;; Issue is in project, update status
+			  (progn
+                            (message "Updating status for item %s to '%s' (Option ID: %s)" project-item-id target-gh-status-name target-status-option-id)
+                            (tlon-gh-update-project-item-status-field tlon-forg-project-node-id project-item-id tlon-forg-status-field-node-id target-status-option-id))
+			;; Issue not in project
+			(when (y-or-n-p (format "Issue '%s' (#%s) is not in Project %s. Add it and set status to '%s'?"
+						current-issue-title issue-number tlon-forg-project-number target-gh-status-name))
+			  (message "Adding issue #%s to project %s..." issue-number tlon-forg-project-node-id)
+			  (message "Debug: tlon-update-issue-from-todo: gh-fields before add: %S" gh-fields)
+			  (message "Debug: tlon-update-issue-from-todo: issue-node-id for add: %S" issue-node-id)
+			  (let ((new-item-id (tlon-gh-add-issue-to-project tlon-forg-project-node-id issue-node-id)))
+                            (if new-item-id
+				(progn
+				  (message "Issue added to project (New Item ID: %s). Now setting status to '%s'." new-item-id target-gh-status-name)
+				  (tlon-gh-update-project-item-status-field tlon-forg-project-node-id new-item-id tlon-forg-status-field-node-id target-status-option-id))
+                              (warn "Failed to add issue #%s to project." issue-number))))))))))))
         (message "Issue update attempt complete.")))))
 
 ;;;;; Files
@@ -908,12 +909,13 @@ return \"~\", so that the entry is sorted to the end."
 ;;;;;; status
 
 (defun tlon-get-status-in-issue (&optional issue _upcased)
-  "Return the GitHub Project status of ISSUE from `tlon-forg-project-number', mapped to an Org TODO keyword.
-The status is derived from the 'Status' field of the issue's project item
-in the project specified by `tlon-forg-project-number', fetched via `gh` CLI. Returns an uppercase string like \"DOING\",
-\"NEXT\", \"DONE\", etc., or a fallback like \"TODO\" if the project status
-cannot be determined or the issue is not found in Project #9.
-If ISSUE is nil, use the issue at point or in the current buffer."
+  "Return the GitHub Project status of ISSUE, mapped to an Org TODO keyword.
+The status is derived from the \"Status\" field of the issue\"s project item in
+the project specified by `tlon-forg-project-number', fetched via `gh` CLI.
+Returns an uppercase string like \"DOING\", \"NEXT\", \"DONE\", etc., or a
+fallback like \"TODO\" if the project status cannot be determined or the issue
+is not found in Project #9. If ISSUE is nil, use the issue at point or in the
+current buffer."
   (let* ((issue (or issue (forge-current-topic)))
          (repo (if issue (forge-get-repository issue) nil))
          (repo-name (if repo (oref repo name) nil))
@@ -1404,13 +1406,13 @@ Note: The surrounding `gh api graphql -f query='...'` part is NOT included here.
 (defun tlon-gh-get-issue-fields (issue-number repo-name)
   "Return the relevant fields for ISSUE-NUMBER in REPO-NAME as a raw list."
   (let* ((raw-query (format tlon-forg-gh-project-query
-                               tlon-forg-project-owner
-                               repo-name
-                               issue-number))
+                            tlon-forg-project-owner
+                            repo-name
+                            issue-number))
          (lines (split-string raw-query "\n" t)) ; t = omit empty lines
          (lines-without-comments (mapcar (lambda (line) (replace-regexp-in-string "#.*" "" line)) lines))
          (query-almost-single-line (string-join lines-without-comments " "))
-         (single-line-query (s-trim (replace-regexp-in-string "\\s-+" " " query-almost-single-line)))
+         (single-line-query (string-trim (replace-regexp-in-string "\\s-+" " " query-almost-single-line)))
          ;; Write query to a temporary file and reference it with @ to avoid parsing issues.
          (temp-file (make-temp-file "tlon-gh-query-" nil ".graphql" single-line-query))
          (process-args (list "api" "graphql" "-F" (concat "query=@" temp-file)))
@@ -1425,7 +1427,7 @@ Note: The surrounding `gh api graphql -f query='...'` part is NOT included here.
     ;; Use `apply' so that each element of `process-args' becomes a separate argument
     (let ((gh-executable (executable-find "gh")))
       (unless gh-executable
-        (error "The 'gh' command-line tool was not found in your system's PATH or Emacs' exec-path. Please ensure it is installed and accessible."))
+        (error "The 'gh' command-line tool was not found in your system's PATH or Emacs' exec-path. Please ensure it is installed and accessible"))
       (setq exit-status (apply #'call-process gh-executable nil output-buffer nil process-args)))
 
     (with-current-buffer output-buffer
@@ -1457,7 +1459,8 @@ Note: The surrounding `gh api graphql -f query='...'` part is NOT included here.
 
 (defun tlon-gh-parse-issue-fields (raw-list)
   "Parse RAW-LIST of issue fields into a property list.
-This function specifically looks for data related to project number `tlon-forg-project-number'."
+This function specifically looks for data related to project number
+`tlon-forg-project-number'."
   (message "Debug: tlon-gh-parse-issue-fields received raw-list: %S" raw-list)
   (let* ((data (cdr (assoc "data" raw-list)))
          (repository (cdr (assoc "repository" data)))
