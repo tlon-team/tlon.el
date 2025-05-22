@@ -82,7 +82,9 @@ Returns a `forge-issue` object or nil if no issue is selected or on error."
       (message "Fetching issues for %s..." (oref repo name))
       (condition-case err
           (progn
-            (shut-up (forge-pull-topics repo)) ; Fetch/update topics silently
+            ;; Try using the internal forge--update-topics, as forge-pull-topics might be unavailable in older Forge versions.
+            ;; Passing nil as the second argument (callback) ensures synchronous operation.
+            (shut-up (forge--update-topics repo nil)) ; Fetch/update topics silently
             (message "Fetching issues for %s... done. Please select an issue." (oref repo name))
             (forge-select-issue repo)) ; Prompts for an issue
         ((debug error) ; Catch user-error and other errors, provide debug info
