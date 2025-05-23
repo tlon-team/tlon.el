@@ -79,16 +79,16 @@ must be locally configured in Tlön for its path to be found."
                       (split-string
                        (shell-command-to-string
                         (format "gh repo list %s --json name --jq \".[] | .name\""
-                                tlon-forg-project-owner))
+                                forge-extras-project-owner))
                        "\n" t 'omit-empty) ; omit-empty in case of trailing newline
-                    (user-error "The 'gh' command-line tool is required but not found.")))
+                    (user-error "The 'gh' command-line tool is required but not found")))
                  (selected-repo-name (completing-read "Select repository from GitHub: " repo-names nil t)))
             (when selected-repo-name
               (let ((repo-dir (tlon-repo-lookup :dir :name selected-repo-name)))
                 (unless repo-dir
-                  (user-error "Repository '%s' not found in local Tlön configuration. Please ensure it's cloned and configured." selected-repo-name))
+                  (user-error "Repository '%s' not found in local Tlön configuration. Please ensure it's cloned and configured" selected-repo-name))
                 (unless (file-directory-p repo-dir)
-                  (user-error "Repository directory '%s' for '%s' does not exist." repo-dir selected-repo-name))
+                  (user-error "Repository directory '%s' for '%s' does not exist" repo-dir selected-repo-name))
                 (let ((default-directory repo-dir))
                   (forge-get-repository :tracked)))))))))
 
@@ -300,17 +300,17 @@ repository and then an issue from that repository."
         ;; Still no issue, so prompt for repository then issue
         (setq repo (tlon-forg-get-or-select-repository))
         (unless repo
-          (user-error "Repository selection failed or cancelled. Aborting capture."))
+          (user-error "Repository selection failed or cancelled. Aborting capture"))
         (setq issue-to-capture (tlon-forg-select-issue-from-repo repo))
         (unless issue-to-capture
-          (user-error "Issue selection failed or cancelled. Aborting capture."))))
+          (user-error "Issue selection failed or cancelled. Aborting capture"))))
 
     ;; Ensure repo is set if issue-to-capture is set (should be by now)
     (unless repo
       (if issue-to-capture
           (setq repo (forge-get-repository issue-to-capture))
         ;; This case should ideally be caught by earlier user-errors
-        (user-error "Cannot determine repository. Aborting capture.")))
+        (user-error "Cannot determine repository. Aborting capture")))
 
     ;; Proceed with capture if issue and repo are valid
     (let* ((issue-name (oref issue-to-capture title))
@@ -336,7 +336,7 @@ If called with a prefix ARG, the initial pull from forge is omitted."
   (interactive "P")
   (let ((repo (tlon-forg-get-or-select-repository)))
     (unless repo
-      (user-error "No repository selected or available. Aborting capture-all-issues."))
+      (user-error "No repository selected or available. Aborting capture-all-issues"))
     ;; Set default-directory for the scope of tlon-pull-silently and its callback
     (let ((default-directory (oref repo worktree)))
       (if arg
@@ -355,14 +355,14 @@ window configuration that was active before the pull started."
   (let ((original-window-config (current-window-configuration))
         (forge-repo (or repo (tlon-forg-get-or-select-repository))))
     (unless forge-repo
-      (user-error "Cannot determine repository for pull operation."))
+      (user-error "Cannot determine repository for pull operation"))
     (let ((default-directory (oref forge-repo worktree))) ; Set context for forge--pull
       (shut-up
-       (forge--pull forge-repo
-                    (lambda () ; New callback wrapper
-                      (unwind-protect ; Ensure restoration even on error in callback
-                          (when callback (funcall callback))
-                        (set-window-configuration original-window-config))))))))
+	(forge--pull forge-repo
+                     (lambda () ; New callback wrapper
+                       (unwind-protect ; Ensure restoration even on error in callback
+                           (when callback (funcall callback))
+                         (set-window-configuration original-window-config))))))))
 
 (defun tlon-capture-all-issues-after-pull (repo)
   "Capture all issues in REPO after `forge-pull' is finished.
@@ -654,28 +654,48 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
             (when org-todo-keyword ; Only proceed if there's an Org TODO keyword
               (let* ((target-gh-status-name (car (cl-rassoc org-todo-keyword tlon-todo-statuses :test #'string=))))
 		(if (not target-gh-status-name)
-                    (message "Org TODO keyword '%s' does not map to a known GitHub Project status. Skipping status update." org-todo-keyword)
+                    (message
+		     (concat
+		      (format "Org TODO keyword '%s' does not map to a known GitHub Project status. " org-todo-keyword)
+		      "Skipping status update."))
 		  (unless (string= target-gh-status-name current-gh-project-status-name)
                     (message "Project status differs. Org implies '%s' (from %s), GitHub has '%s'."
                              target-gh-status-name org-todo-keyword (or current-gh-project-status-name "None/Unknown"))
-                    (let ((target-status-option-id (cdr (assoc target-gh-status-name forge-extras-status-option-ids-alist #'string=))))
+                    (let ((target-status-option-id
+			   (cdr (assoc target-gh-status-name forge-extras-status-option-ids-alist #'string=))))
                       (unless target-status-option-id
-			(message "Cannot find Option ID for GitHub status '%s'. Skipping status update." target-gh-status-name)
+			(message "Cannot find Option ID for GitHub status '%s'. Skipping status update."
+				 target-gh-status-name)
 			(cl-return-from tlon-update-issue-from-todo))
                       (if project-item-id
 			  ;; Issue is in project, update status
 			  (progn
-                            (message "Updating status for item %s to '%s' (Option ID: %s)" project-item-id target-gh-status-name target-status-option-id)
-                            (forge-extras-gh-update-project-item-status-field forge-extras-project-node-id project-item-id forge-extras-status-field-node-id target-status-option-id))
+                            (message "Updating status for item %s to '%s' (Option ID: %s)"
+				     project-item-id target-gh-status-name target-status-option-id)
+                            (forge-extras-gh-update-project-item-status-field
+			     forge-extras-project-node-id
+			     project-item-id
+			     forge-extras-status-field-node-id
+			     target-status-option-id))
 			;; Issue not in project
-			(when (y-or-n-p (format "Issue '%s' (#%s) is not in Project %s (%s). Add it and set status to '%s'?"
-						current-issue-title issue-number forge-extras-project-number forge-extras-project-owner target-gh-status-name))
+			(when (y-or-n-p
+			       (format "Issue '%s' (#%s) is not in Project %s (%s). Add it and set status to '%s'?"
+				       current-issue-title issue-number
+				       forge-extras-project-number
+				       forge-extras-project-owner
+				       target-gh-status-name))
 			  (message "Adding issue #%s to project %s..." issue-number forge-extras-project-node-id)
-			  (let ((new-item-id (forge-extras-gh-add-issue-to-project forge-extras-project-node-id issue-node-id)))
+			  (let ((new-item-id (forge-extras-gh-add-issue-to-project
+					      forge-extras-project-node-id issue-node-id)))
                             (if new-item-id
 				(progn
-				  (message "Issue added to project (New Item ID: %s). Now setting status to '%s'." new-item-id target-gh-status-name)
-				  (forge-extras-gh-update-project-item-status-field forge-extras-project-node-id new-item-id forge-extras-status-field-node-id target-status-option-id))
+				  (message "Issue added to project (New Item ID: %s). Now setting status to '%s'."
+					   new-item-id target-gh-status-name)
+				  (forge-extras-gh-update-project-item-status-field
+				   forge-extras-project-node-id
+				   new-item-id
+				   forge-extras-status-field-node-id
+				   target-status-option-id))
                               (warn "Failed to add issue #%s to project." issue-number))))))))))))
         (message "Issue update attempt complete.")))))
 
@@ -718,11 +738,12 @@ If ISSUE is nil, default to the issue at point."
     (tlon-get-todos-generic-file)))
 
 (defun tlon-get-todo-position-from-issue (&optional issue)
-  "Get the TODO position and file of ISSUE. Returns (POSITION . FILE) or nil.
-If the issue is a job, search for its heading name in the jobs file.
-Else (generic issue), search first in the repo-specific file (REPO-NAME.org in
-`paths-dir-tlon-todos'), then in the generic todos file, using the `orgit-topic'
-ID as a substring. If ISSUE is nil, use the issue at point."
+  "Get the TODO position and file of ISSUE.
+Return (POSITION . FILE) or nil. If the issue is a job, search for its heading
+name in the jobs file. Else (generic issue), search first in the repo-specific
+file (REPO-NAME.org in `paths-dir-tlon-todos'), then in the generic todos file,
+using the `orgit-topic' ID as a substring. If ISSUE is nil, use the issue at
+point."
   (when-let ((issue (or issue (forge-current-topic))))
     (if (tlon-issue-is-job-p issue)
         (let ((file (tlon-get-todos-jobs-file)))
@@ -793,7 +814,7 @@ ID as a substring. If ISSUE is nil, use the issue at point."
     (tlon-repo-lookup :dir :abbrev abbrev-repo)))
 
 (defun tlon-get-issue-number-from-open-issues (&optional forge-repo)
-  "Prompt user to select from a list of open issues in FORGE-REPO and return its number.
+  "Prompt user to select from open issues in FORGE-REPO and return its number.
 If FORGE-REPO (a forge-repository object) is nil, the repository is
 determined from context or by prompting."
   (let* ((repo-to-use (or forge-repo
@@ -802,7 +823,7 @@ determined from context or by prompting."
                               (let ((default-directory repo-path))
                                 (forge-get-repository :tracked))))))
          ;; Ensure repo-to-use is valid before proceeding
-         (_ (unless repo-to-use (user-error "Could not determine repository for issue selection.")))
+         (_ (unless repo-to-use (user-error "Could not determine repository for issue selection")))
          (default-directory (oref repo-to-use worktree)) ; Set context for oref issues
 	 ;; Fetch all issues, but filter for open ones
 	 (issue-list (mapcar #'(lambda (issue) ; issue here is a forge-issue object
@@ -833,8 +854,9 @@ If REPO is nil, use the current repository."
 	    (mapcar #'car issues))))
 
 (defun tlon-get-latest-issue (&optional repo)
-  "Return a list (NUMBER TITLE) of the most recently created open issue in REPO, or
-nil if no open issues are found. If REPO is nil, use the current repository."
+  "Return a list of the most recent open issue in REPO, or nil otherwise.
+The list is in the format \\='(NUMBER TITLE). If REPO is nil, use the current
+repository."
   (let* ((issues (tlon-get-issues repo))
 	 (latest-issue (car (sort issues (lambda (a b)
 					   (time-less-p
@@ -1271,23 +1293,23 @@ which is then added to the heading."
     ;; 2. If not in heading, try to infer from filename
     (unless repo-dir
       (when buffer-file-name
-        (let* ((filename-sans-ext (file-name-sans-extension (file-name-nondirectory buffer-file-name)))
-               (repo-dir-from-file (ignore-errors (tlon-repo-lookup :dir :name filename-sans-ext))))
-          (when repo-dir-from-file
-            (setq repo-dir repo-dir-from-file)
-            ;; If repo inferred from filename, ensure heading has the repo abbrev
-            (unless (tlon-get-repo-from-heading)
-              (setq repo-abbrev-inferred (tlon-repo-lookup :abbrev :dir repo-dir))
-              (when repo-abbrev-inferred
-                (org-extras-goto-beginning-of-heading-text)
-                (insert (format "[%s] " repo-abbrev-inferred))))))))
+	(let* ((filename-sans-ext (file-name-sans-extension (file-name-nondirectory buffer-file-name)))
+	       (repo-dir-from-file (ignore-errors (tlon-repo-lookup :dir :name filename-sans-ext))))
+	  (when repo-dir-from-file
+	    (setq repo-dir repo-dir-from-file)
+	    ;; If repo inferred from filename, ensure heading has the repo abbrev
+	    (unless (tlon-get-repo-from-heading)
+	      (setq repo-abbrev-inferred (tlon-repo-lookup :abbrev :dir repo-dir))
+	      (when repo-abbrev-inferred
+		(org-extras-goto-beginning-of-heading-text)
+		(insert (format "[%s] " repo-abbrev-inferred))))))))
 
     ;; 3. If still no repo, prompt and add to heading
     (unless repo-dir
       (tlon-set-repo-in-heading) ; This prompts and modifies the heading
       (setq repo-dir (tlon-get-repo-from-heading))
       (unless repo-dir
-        (user-error "Repository selection cancelled or failed.")))
+	(user-error "Repository selection cancelled or failed")))
 
     ;; Get forge-repo object from repo-dir
     (setq forge-repo (let ((default-directory repo-dir)) (forge-get-repository :tracked)))
@@ -1297,30 +1319,30 @@ which is then added to the heading."
     ;; At this point, repo-dir and forge-repo MUST be set, and the heading should reflect the repo.
     (let (todo-linkified)
       (save-excursion
-        (let* ((default-directory repo-dir) ; Set default-directory for operations that might need it implicitly
-               (heading (substring-no-properties (org-get-heading t t t t))) ; Read heading *after* potential modifications
-               (status (tlon-get-status-in-todo))
-               (tags (tlon-get-tags-in-todo))
-               ;; abbrev-repo should now reliably come from the heading
-               (abbrev-repo (tlon-get-element-from-heading "^\\[\\(.*?\\)\\]"))
-               (_ (unless abbrev-repo (error "Logic error: Repo abbrev not found in heading '%s' after setup for repo %s" heading repo-dir))))
-               (issue-title (substring heading (+ (length abbrev-repo) 3)))
-               (latest-issue-pre (car (tlon-get-latest-issue forge-repo)))
-               (latest-issue-post latest-issue-pre))
+	(let* ((default-directory repo-dir) ; Set default-directory for operations that might need it implicitly
+	       (heading (substring-no-properties (org-get-heading t t t t))) ; Read heading *after* potential modifications
+	       (status (tlon-get-status-in-todo))
+	       (tags (tlon-get-tags-in-todo))
+	       ;; abbrev-repo should now reliably come from the heading
+	       (abbrev-repo (tlon-get-element-from-heading "^\\[\\(.*?\\)\\]"))
+	       (_ (unless abbrev-repo (error "Logic error: Repo abbrev not found in heading '%s' after setup for repo %s" heading repo-dir)))
+	       (issue-title (substring heading (+ (length abbrev-repo) 3)))
+	       (latest-issue-pre (car (tlon-get-latest-issue forge-repo)))
+	       (latest-issue-post latest-issue-pre))
 
-          (tlon-create-issue issue-title repo-dir) ; Pass repo-dir, so tlon-create-issue won't prompt
+	  (tlon-create-issue issue-title repo-dir) ; Pass repo-dir, so tlon-create-issue won't prompt
 
-          (forge--pull forge-repo) ; Use forge--pull for synchronous pull with specific repo
-          (while (eq latest-issue-pre latest-issue-post)
-            (sleep-for 0.1)
-            (setq latest-issue-post (car (tlon-get-latest-issue forge-repo))))
-          (tlon-set-issue-number-in-heading latest-issue-post)
-          ;; tlon-visit-issue takes number and repo path
-          (tlon-visit-issue latest-issue-post repo-dir)
-          ;; Operations on the visited issue will use its context
-          (tlon-set-assignee (tlon-user-lookup :github :name user-full-name))
-          (tlon-set-labels (append `(,status) tags)))
-        (setq todo-linkified (tlon-make-todo-name-from-issue nil nil 'no-status)))
+	  (forge--pull forge-repo) ; Use forge--pull for synchronous pull with specific repo
+	  (while (eq latest-issue-pre latest-issue-post)
+	    (sleep-for 0.1)
+	    (setq latest-issue-post (car (tlon-get-latest-issue forge-repo))))
+	  (tlon-set-issue-number-in-heading latest-issue-post)
+	  ;; tlon-visit-issue takes number and repo path
+	  (tlon-visit-issue latest-issue-post repo-dir)
+	  ;; Operations on the visited issue will use its context
+	  (tlon-set-assignee (tlon-user-lookup :github :name user-full-name))
+	  (tlon-set-labels (append `(,status) tags)))
+	(setq todo-linkified (tlon-make-todo-name-from-issue nil nil 'no-status)))
       (org-edit-headline todo-linkified))))
 
 (defun tlon-create-issue-or-todo ()
