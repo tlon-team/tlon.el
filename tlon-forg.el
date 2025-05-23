@@ -929,14 +929,16 @@ If REPO is nil, use the current repository."
 	    (mapcar #'car issues))))
 
 (defun tlon-get-latest-issue (&optional repo)
-  "Return the most recently created issue in REPO.
-If REPO is nil, use the current repository."
+  "Return a list (NUMBER TITLE) of the most recently created open issue in REPO, or
+nil if no open issues are found. If REPO is nil, use the current repository."
   (let* ((issues (tlon-get-issues repo))
 	 (latest-issue (car (sort issues (lambda (a b)
 					   (time-less-p
 					    (date-to-time (oref b created))
 					    (date-to-time (oref a created))))))))
-    (list (oref latest-issue number) (oref latest-issue title))))
+    (if latest-issue
+        (list (oref latest-issue number) (oref latest-issue title))
+      nil)))
 
 (defun tlon-count-issues (&optional repo)
   "Return the number of open issues in REPO.
