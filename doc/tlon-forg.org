@@ -63,6 +63,8 @@ This module provides integration between =forge= (Emacs interface for Git forges
 
 #+vindex: tlon-forg-enforce-user
 + ~tlon-forg-enforce-user~ :: String or nil. If non-nil, forces Tlön to consider this string as the current user's GitHub login, primarily for testing purposes. Defaults to nil.
+#+vindex: tlon-forg-archive-todo-on-close
++ ~tlon-forg-archive-todo-on-close~ :: Boolean flag. If non-nil, ~tlon-close-issue-and-todo~ will archive the corresponding Org TODO item after marking it as "DONE". Defaults to nil. Can be toggled temporarily via ~tlon-forg-menu~.
   The GitHub Project owner, number, and various Node IDs (for the project, status field, and status options) are now configured via `defcustom` variables in =forge-extras.el= (e.g., ~forge-extras-project-owner~, ~forge-extras-project-number~, ~forge-extras-project-node-id~, etc.). Please refer to =forge-extras.el= for their configuration.
 
 ** Commands
@@ -183,6 +185,8 @@ This section details the interactive commands provided by =tlon-forg.el=.
   2. Closes the GitHub issue using ~tlon-close-issue-number~ (which visits the issue and calls ~tlon-close-issue~).
   3. Visits the corresponding Org TODO (~tlon-visit-todo~).
   4. Sets the TODO state to "DONE" using =org-todo=.
+  5. If ~tlon-forg-archive-todo-on-close~ is non-nil, archives the Org TODO subtree using =org-archive-subtree=.
+  6. Saves the Org buffer.
 
 *** Sorting Org Entries
 :PROPERTIES:
@@ -235,6 +239,7 @@ It provides the following groups and commands:
   + =r= :: reconcile issue and todo (~tlon-reconcile-issue-and-todo~)
   + =R= :: reconcile all issues and todos (~tlon-reconcile-all-issues-and-todos~)
 + *Options*: (These set the corresponding user options temporarily for the session)
+  + =-A= :: Archive TODO on close (~tlon-infix-toggle-archive-todo-on-close~)
   + =-a= :: Include archived (~tlon-infix-toggle-include-archived~)
   + =-r= :: When reconciling (~tlon-forg-when-reconciling-infix~)
   + =-n= :: When assignee is nil (~tlon-when-assignee-is-nil-infix~)
@@ -449,3 +454,5 @@ Configuration for GitHub Project integration (like project owner, project number
 + ~tlon-forg-when-reconciling-infix~ :: Transient infix command to set ~tlon-forg-when-reconciling~.
 #+findex: tlon-infix-toggle-include-archived
 + ~tlon-infix-toggle-include-archived~ :: Transient infix command to toggle ~tlon-forg-include-archived~.
+#+findex: tlon-infix-toggle-archive-todo-on-close
++ ~tlon-infix-toggle-archive-todo-on-close~ :: Transient infix command to toggle ~tlon-forg-archive-todo-on-close~.

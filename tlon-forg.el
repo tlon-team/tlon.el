@@ -190,6 +190,20 @@ current session."
   :type 'boolean
   :group 'tlon-forg)
 
+(defcustom tlon-forg-archive-todo-on-close nil
+  "Whether to archive the Org TODO item when closing an issue and its TODO.
+When non-nil, `tlon-close-issue-and-todo' will archive the corresponding
+Org TODO subtree after marking it as DONE."
+  :type 'boolean
+  :group 'tlon-forg)
+
+(defcustom tlon-forg-archive-todo-on-close nil
+  "Whether to archive the Org TODO item when closing an issue and its TODO.
+When non-nil, `tlon-close-issue-and-todo' will archive the corresponding
+Org TODO subtree after marking it as DONE."
+  :type 'boolean
+  :group 'tlon-forg)
+
 (defcustom tlon-forg-enforce-user nil
   "If non-nil, the name to be considered that of the current user.
 For testing purposes."
@@ -913,7 +927,12 @@ If REPO is nil, use the current repository."
             (progn
               (tlon-visit-todo pos-file-pair)
               (org-todo "DONE")
-              (message "Closed issue and TODO."))
+              (if tlon-forg-archive-todo-on-close
+                  (progn
+                    (org-archive-subtree-default)
+                    (message "Closed issue and TODO (archived)."))
+                (message "Closed issue and TODO."))
+              (save-buffer)) ; Save buffer after TODO state change and potential archive
           (message "Closed issue, but no corresponding TODO found to mark as DONE."))))))
 
 ;; shouldn’t this be done using the orgit-link rather than issue-number?
@@ -1459,6 +1478,12 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   :variable 'tlon-forg-include-archived
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-include-archived)))
 
+(transient-define-infix tlon-infix-toggle-archive-todo-on-close ()
+  "Toggle the value of `tlon-forg-archive-todo-on-close' in `forg' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-forg-archive-todo-on-close
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-archive-todo-on-close)))
+
 ;;;###autoload (autoload 'tlon-forg-menu "tlon-forg" nil t)
 (transient-define-prefix tlon-forg-menu ()
   "`forg' menu."
@@ -1476,10 +1501,12 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("r" "reconcile"                                        tlon-reconcile-issue-and-todo)
     ("R" "reconcile all"                                    tlon-reconcile-all-issues-and-todos)]
    ["Options"
-    ("-a" "Include archived"                                tlon-infix-toggle-include-archived)
     ("-r" "When reconciling"                                tlon-forg-when-reconciling-infix)
     ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)
-    ("-e" "When assignee is someone else"                   tlon-when-assignee-is-someone-else-infix)]])
+    ("-e" "When assignee is someone else"                   tlon-when-assignee-is-someone-else-infix)
+    ""
+    ("-a" "Include archived"                                tlon-infix-toggle-include-archived)
+    ("-A" "Archive on close"                                tlon-infix-toggle-archive-todo-on-close)]])
 
 (provide 'tlon-forg)
 ;;; tlon-forg.el ends here
