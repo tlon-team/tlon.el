@@ -27,6 +27,7 @@ This module provides integration between =forge= (Emacs interface for Git forges
 + =shut-up=
 + =tlon-core=
 + =tlon-dispatch=
++ =forge-extras= (for GitHub Project integration and other Forge enhancements)
 + =org-extras= (optional, for some job-related refiling)
 + =ghub= (for creating issues)
 + =magit= (for creating issues)
@@ -62,6 +63,7 @@ This module provides integration between =forge= (Emacs interface for Git forges
 
 #+vindex: tlon-forg-enforce-user
 + ~tlon-forg-enforce-user~ :: String or nil. If non-nil, forces Tlön to consider this string as the current user's GitHub login, primarily for testing purposes. Defaults to nil.
+  The GitHub Project owner, number, and various Node IDs (for the project, status field, and status options) are now configured via `defcustom` variables in =forge-extras.el= (e.g., ~forge-extras-project-owner~, ~forge-extras-project-number~, ~forge-extras-project-node-id~, etc.). Please refer to =forge-extras.el= for their configuration.
 
 ** Commands
 :PROPERTIES:
@@ -249,24 +251,7 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-todo-tags~ :: List of valid Org tags used by Tlön (e.g., "PendingReview", "Later").
 #+vindex: tlon-forg-sort-by-tags-regexp
 + ~tlon-forg-sort-by-tags-regexp~ :: Regexp used by ~tlon-forg-sort-by-tag~ to identify sortable tags.
-#+vindex: tlon-forg-project-number
-+ ~tlon-forg-project-number~ :: The GitHub Project number (integer) used to fetch issue status and other project-specific fields. Defaults to 9.
-#+vindex: tlon-forg-project-owner
-+ ~tlon-forg-project-owner~ :: The GitHub owner (organization or user) for the project. This is used in GraphQL queries to fetch issue and project field details (e.g., for the project specified by ~tlon-forg-project-number~). Also used by ~tlon-forg-discover-project-node-ids~. Defaults to "tlon-team".
-#+vindex: tlon-forg-project-node-id
-+ ~tlon-forg-project-node-id~ :: Constant holding the global Relay Node ID of the target GitHub Project (e.g., Project #9). This should be configured with the correct ID for your primary project.
-#+vindex: tlon-forg-status-field-node-id
-+ ~tlon-forg-status-field-node-id~ :: Constant holding the global Relay Node ID of the "Status" field within the target project. This should be configured with the correct ID.
-#+vindex: tlon-forg-status-option-ids-alist
-+ ~tlon-forg-status-option-ids-alist~ :: Constant holding an alist mapping GitHub Project status names (e.g., "Doing") to their global Option IDs for the "Status" field in the target project. This should be configured with the correct alist.
-#+vindex: tlon-forg-gh-project-query
-+ ~tlon-forg-gh-project-query~ :: A format string containing the raw GraphQL query to fetch issue details. It's intended to be formatted with owner name, repository name, and issue number, and then passed to `gh api graphql -f query=-` via standard input.
-#+vindex: tlon-gh-add-item-to-project-mutation-query
-+ ~tlon-gh-add-item-to-project-mutation-query~ :: GraphQL mutation string to add an issue to a project.
-#+vindex: tlon-gh-update-project-item-field-mutation-query
-+ ~tlon-gh-update-project-item-field-mutation-query~ :: GraphQL mutation string to update a single-select field (like "Status") of a project item.
-#+vindex: tlon-gh-field-ids
-+ ~tlon-gh-field-ids~ :: Alist mapping field names (e.g., =:effortid=) to their GitHub ProjectV2 field IDs (experimental, largely superseded by more specific Node ID constants).
+  GitHub Project related constants (like project owner, number, node IDs for project, status field, and status options, as well as GraphQL queries) are now primarily managed within =forge-extras.el=. Functions in =tlon-forg.el= that interact with GitHub Projects now call helper functions from =forge-extras.el= and rely on its configuration (e.g., ~forge-extras-project-owner~, ~forge-extras-project-node-id~).
 
 *** File Path Management
 :PROPERTIES:
@@ -314,7 +299,7 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-get-labels-of-type
 + ~tlon-get-labels-of-type~ :: Returns labels of a specific =TYPE= ('tag or 'phase) from an =ISSUE=.
 #+findex: tlon-get-status-in-issue
-+ ~tlon-get-status-in-issue~ :: Returns the GitHub Project status of an =ISSUE= from the project specified by ~tlon-forg-project-number~, mapped to an Org TODO keyword (e.g., "DOING", "NEXT"). It fetches the 'Status' field via `gh` CLI. If the project status cannot be determined or the issue is not in the specified project, it falls back to a status based on the issue's open/closed state (e.g., "TODO", "DONE").
++ ~tlon-get-status-in-issue~ :: Returns the GitHub Project status of an =ISSUE=, mapped to an Org TODO keyword (e.g., "DOING", "NEXT"). It uses ~forge-extras-gh-get-issue-fields~ and ~forge-extras-gh-parse-issue-fields~ (from =forge-extras.el=) to fetch and parse the 'Status' field from the project configured in =forge-extras.el= (via ~forge-extras-project-number~, ~forge-extras-project-owner~, etc.). If the project status cannot be determined or the issue is not in the specified project, it falls back to a status based on the issue's open/closed state (e.g., "TODO", "DONE").
 #+findex: tlon-get-status-in-todo
 + ~tlon-get-status-in-todo~ :: Returns the Org TODO state (e.g., "doing") if it's one of the `cdr` values in ~tlon-todo-statuses~.
 #+findex: tlon-get-phase-in-labels
@@ -373,7 +358,7 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-update-todo-from-issue
 + ~tlon-update-todo-from-issue~ :: Replaces the current Org heading line with the provided =ISSUE-NAME= string during reconciliation.
 #+findex: tlon-update-issue-from-todo
-+ ~tlon-update-issue-from-todo~ :: Updates the GitHub issue (title, labels, project status) to match the Org TODO heading at point. If the issue is not in the target project (defined by ~tlon-forg-project-number~ and ~tlon-forg-project-node-id~), prompts to add it before setting the status. Uses `gh` CLI for project interactions. *Requires user configuration of Node ID constants.*
++ ~tlon-update-issue-from-todo~ :: Updates the GitHub issue (title, labels, project status) to match the Org TODO heading at point. It uses functions from =forge-extras.el= (like ~forge-extras-gh-get-issue-fields~, ~forge-extras-gh-parse-issue-fields~, ~forge-extras-gh-add-issue-to-project~, and ~forge-extras-gh-update-project-item-status-field~) for GitHub Project interactions. If the issue is not in the target project (configured in =forge-extras.el= via ~forge-extras-project-number~, ~forge-extras-project-node-id~, etc.), it prompts to add it before setting the status. Configuration of project IDs should be done in =forge-extras.el=.
 #+findex: tlon-mark-todo-done
 + ~tlon-mark-todo-done~ :: Finds the =TODO= heading in =FILE= and sets its state to "DONE".
 
@@ -419,24 +404,13 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-check-label-and-assignee
 + ~tlon-check-label-and-assignee~ :: Checks if the label and assignee of the issue associated with the currently clocked task match the clocked action and the current user. Used before starting a job phase.
 
-*** GitHub Project Integration (Experimental)
+*** GitHub Project Integration
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-forg-gh-project
 :END:
-These functions use the `gh` command-line tool and GraphQL to interact with GitHub Projects (V2). This functionality appears experimental or incomplete.
+The direct integration with GitHub Projects (V2) using the `gh` command-line tool and GraphQL has been largely moved to =forge-extras.el=. Functions within =tlon-forg.el=, such as ~tlon-get-status-in-issue~ and ~tlon-update-issue-from-todo~, now call helper functions provided by =forge-extras.el= (e.g., ~forge-extras-gh-get-issue-fields~, ~forge-extras-gh-parse-issue-fields~, ~forge-extras-gh-add-issue-to-project~, ~forge-extras-gh-update-project-item-status-field~).
 
-#+findex: tlon-gh-get-issue-fields
-+ ~tlon-gh-get-issue-fields~ :: Executes the GraphQL query defined in ~tlon-forg-gh-project-query~ using `gh api graphql` to fetch project-related fields for a specific issue. Returns the raw JSON response.
-#+findex: tlon-gh-parse-issue-fields
-+ ~tlon-gh-parse-issue-fields~ :: Parses the raw JSON list returned by ~tlon-gh-get-issue-fields~ into a structured property list. This plist includes the issue's title, assignees, labels, effort, GitHub project status name, the issue's global Node ID, the project item's Node ID (if in the target project), the "Status" field's Node ID, and the selected status option's Node ID. It filters for data related to the project specified by ~tlon-forg-project-number~.
-#+findex: tlon-gh--call-api-graphql-mutation
-+ ~tlon-gh--call-api-graphql-mutation~ :: Internal helper function to execute a GitHub GraphQL mutation via `gh api graphql`, passing specified variables. Returns the parsed JSON response or nil on error.
-#+findex: tlon-gh-add-issue-to-project
-+ ~tlon-gh-add-issue-to-project~ :: Adds an issue (specified by its Node ID) to a project (specified by its Node ID) using a GraphQL mutation. Returns the new project item's Node ID or nil on failure.
-#+findex: tlon-gh-update-project-item-status-field
-+ ~tlon-gh-update-project-item-status-field~ :: Updates the "Status" field of a project item using a GraphQL mutation. Requires Node IDs for the project, project item, "Status" field (from ~tlon-forg-status-field-node-id~), and the target status option (from ~tlon-forg-status-option-ids-alist~).
-#+findex: tlon-forg-discover-project-node-ids
-+ ~tlon-forg-discover-project-node-ids~ :: Interactive command to help discover GitHub Project Node IDs for verification or for configuring a different project. It prompts for the owner and project number, then uses `gh` CLI commands to find and display the project's Node ID, the "Status" field's Node ID, and the Node IDs for status options. This command is for discovery and does not automatically set the global constants.
+Configuration for GitHub Project integration (like project owner, project number, and various Node IDs) should now be done via the `defcustom` variables in =forge-extras.el= (e.g., ~forge-extras-project-owner~, ~forge-extras-project-number~, ~forge-extras-project-node-id~, ~forge-extras-status-field-node-id~, ~forge-extras-status-option-ids-alist~). The command ~tlon-forg-discover-project-node-ids~, which helps in discovering these IDs, is also part of =forge-extras.el=.
 
 *** Miscellaneous Helpers
 :PROPERTIES:
