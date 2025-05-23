@@ -15,7 +15,7 @@
 :CUSTOM_ID: h:tlon-forg
 :END:
 
-This module provides integration between =forge= (Emacs interface for Git forges like GitHub) and Org mode. It allows capturing GitHub issues as Org TODO items, keeping their state synchronized, navigating between the issue and its corresponding TODO, and managing related metadata like assignees and labels (which map to Org status and tags).
+This module provides integration between =forge= (Emacs interface for Git forges like GitHub) and Org mode. It allows capturing GitHub issues as Org TODO items, keeping their state synchronized, navigating between the issue and its corresponding TODO, and managing related metadata like assignees and labels (which map to Org status and tags). TODO items are stored in a main generic file, a jobs-specific file, or potentially in repository-specific Org files.
 
 ** Dependencies
 :PROPERTIES:
@@ -81,7 +81,10 @@ This section details the interactive commands provided by =tlon-forg.el=.
 + ~tlon-visit-issue~ :: Visits the GitHub issue associated with the current context. If point is on an =orgit-topic:= link, follows it. Otherwise, tries to extract the issue number and repository from the current Org heading.
 
 #+findex: tlon-visit-todo
-+ ~tlon-visit-todo~ :: Visits the Org TODO item associated with the current context (GitHub issue or Org heading). Finds the correct Org file (generic or jobs) and position based on the issue's ID or job title.
++ ~tlon-visit-todo~ :: Visits an Org TODO item.
+  If called with a =POS-FILE= argument (a cons cell of =POSITION . FILE-PATH=), it navigates directly to that location.
+  Otherwise, if an =ISSUE= object is provided (or defaults to the issue at point), it uses ~tlon-get-todo-position-from-issue~ to find the TODO's location and then visits it.
+  Signals an error if no TODO can be found.
 
 #+findex: tlon-visit-todo-or-capture
 + ~tlon-visit-todo-or-capture~ :: Visits the Org TODO associated with the current issue. If no TODO exists yet, it calls ~tlon-capture-issue~ first.
@@ -128,9 +131,9 @@ This section details the interactive commands provided by =tlon-forg.el=.
      - =todo=: Updates the issue state to match the TODO (currently not implemented, signals error).
 
 #+findex: tlon-reconcile-all-issues-and-todos
-+ ~tlon-reconcile-all-issues-and-todos~ :: (Autoloaded) Reconciles all Org TODOs in the generic file (~tlon-get-todos-generic-file~) with their corresponding GitHub issues.
++ ~tlon-reconcile-all-issues-and-todos~ :: (Autoloaded) Reconciles all Org TODOs found in the relevant TODO files with their corresponding GitHub issues.
   1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
-  2. Iterates through all headings in the generic TODO file.
+  2. Iterates through all headings in all detected TODO files. These include the generic file (~tlon-get-todos-generic-file~), the jobs file (~tlon-get-todos-jobs-file~), and any repository-specific =*.org= files found in the directory specified by =paths-dir-tlon-todos=.
   3. For each heading, finds the associated issue (~tlon-get-issue~).
   4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~.
   5. Clears the =org-refile= cache upon completion.
@@ -266,13 +269,18 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-get-todos-generic-file
 + ~tlon-get-todos-generic-file~ :: Retrieves the path to the generic TODO file using its Org ID (=paths-tlon-todos-generic-id=) and caches it.
 #+findex: tlon-get-todos-file-from-issue
-+ ~tlon-get-todos-file-from-issue~ :: Returns the appropriate TODO file path (jobs or generic) based on whether the =ISSUE= is a job (~tlon-issue-is-job-p~).
++ ~tlon-get-todos-file-from-issue~ :: Returns the appropriate TODO file path (jobs or generic) based on whether the =ISSUE= is a job (~tlon-issue-is-job-p~). This typically determines the initial capture location for a new TODO.
+  Generic issues are initially captured to the file returned by ~tlon-get-todos-generic-file~. However, they may be subsequently moved to repository-specific Org files located in the directory specified by the variable =paths-dir-tlon-todos=. These files are typically named after the repository (e.g., =foo-bar.org= for a repository named =foo-bar=). Functions like ~tlon-get-todo-position-from-issue~ are aware of this structure and will search these locations to find existing TODOs.
 #+findex: tlon-get-todo-position
 + ~tlon-get-todo-position~ :: Finds the starting position of a heading matching =STRING= in =FILE=. If =SUBSTRING= is non-nil, matches anywhere in the heading; otherwise, requires an exact match. Uses ~org-find-exact-headline-in-buffer~ or ~tlon-find-headline-substring-in-file~.
 #+findex: tlon-find-headline-substring-in-file
 + ~tlon-find-headline-substring-in-file~ :: Helper to find the position of a heading containing =TODO= as a substring within =FILE=.
 #+findex: tlon-get-todo-position-from-issue
-+ ~tlon-get-todo-position-from-issue~ :: Finds the position of the TODO associated with =ISSUE=. For jobs, searches for the heading name; for generic issues, searches for the =orgit-topic:= link substring.
++ ~tlon-get-todo-position-from-issue~ :: Finds the position and file of the TODO associated with =ISSUE=. Returns a cons cell =(POSITION . FILE-PATH)= if found, otherwise nil.
+  - For job issues, it searches for the heading name (derived from the issue title) in the jobs file (~tlon-get-todos-jobs-file~).
+  - For generic (non-job) issues, it searches for the =orgit-topic:ID= link as a substring:
+    1. First, in the repository-specific Org file (e.g., =REPO-NAME.org=) located within the directory defined by =paths-dir-tlon-todos=.
+    2. If not found there, it searches in the main generic TODOs file (~tlon-get-todos-generic-file~).
 
 *** Issue and TODO Data Retrieval
 :PROPERTIES:
