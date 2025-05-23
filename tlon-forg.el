@@ -42,6 +42,21 @@
 (declare-function forge-extras-gh-add-issue-to-project "forge-extras" (project-node-id issue-node-id))
 (declare-function forge-extras-gh-update-project-item-status-field "forge-extras" (project-node-id item-node-id field-node-id status-option-id))
 
+;;;; Path Helpers
+
+(defun tlon-forg--get-repo-specific-todo-file (issue)
+  "Return the full path to the repo-specific Org TODO file for ISSUE.
+The file is named REPO-NAME.org inside `paths-dir-tlon-todos'.
+Returns nil if `paths-dir-tlon-todos' is not set, not a directory,
+or if ISSUE has no repository or repository name."
+  (when-let* ((repo (and issue (ignore-errors (forge-get-repository issue)))) ; Ensure issue is valid for repo
+              (repo-name (and repo (oref repo name)))
+              (todos-dir (and (boundp 'paths-dir-tlon-todos)
+                              (stringp paths-dir-tlon-todos)
+                              (file-directory-p paths-dir-tlon-todos)
+                              paths-dir-tlon-todos)))
+    (expand-file-name (format "%s.org" repo-name) todos-dir)))
+
 ;;;; Helper Functions for Repository and Issue Selection
 
 (defun tlon-forg-get-or-select-repository ()
@@ -236,15 +251,20 @@ link, else get their values from the heading title, if possible."
     (tlon-visit-issue number repo)
     (current-buffer)))
 
-(defun tlon-visit-todo (&optional pos file issue)
-  "Visit TODO at POS in FILE.
-If POS is nil, use the position of the TODO associated with the issue at point.
-If FILE is nil, use the file where the issue at point would be stored (depending
-on whether or not is a job). ISSUE is needed if either POS or FILE is nil."
-  (if-let ((pos (or pos (tlon-get-todo-position-from-issue issue)))
-	   (file (or file (tlon-get-todos-file-from-issue issue))))
-      (tlon-open-todo file pos)
-    (user-error "No TODO found")))
+(defun tlon-visit-todo (&optional pos-file issue)
+  "Visit TODO.
+If POS-FILE (a cons cell `(POSITION . FILE-PATH)`) is provided, visit TODO at
+POSITION in FILE-PATH.
+If POS-FILE is nil, ISSUE (a `forge-issue` object) must be provided. The
+function will then determine the position and file of the TODO associated with
+ISSUE using `tlon-get-todo-position-from-issue`.
+If ISSUE is also nil, it defaults to the issue at point."
+  (let* ((resolved-pos-file (or pos-file (tlon-get-todo-position-from-issue issue)))
+         (pos (car resolved-pos-file))
+         (file (cdr resolved-pos-file)))
+    (if (and pos file)
+        (tlon-open-todo file pos)
+      (user-error "No TODO found"))))
 
 (defun tlon-open-todo (file position)
   "Open FILE at TODO POSITION."
@@ -255,8 +275,8 @@ on whether or not is a job). ISSUE is needed if either POS or FILE is nil."
 
 (defun tlon-visit-todo-or-capture ()
   "Visit the TODO associated with the current issue, creating one if necessary."
-  (if-let ((pos (tlon-get-todo-position-from-issue)))
-      (tlon-visit-todo pos)
+  (if-let ((pos-file (tlon-get-todo-position-from-issue))) ; Returns (POS . FILE)
+      (tlon-visit-todo pos-file)
     (tlon-capture-issue)))
 
 ;;;;; Capture
@@ -432,9 +452,10 @@ If SET-ISSUE is non-nil, set issue label to `Awaiting processing' and assignee
 to the current user. If ISSUE is non-nil, use the issue at point or in the
 current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-	 (todo (tlon-make-todo-name-from-issue issue 'no-action 'no-status)))
-    (if-let ((pos (tlon-get-todo-position todo (tlon-get-todos-jobs-file))))
-	(tlon-visit-todo pos)
+	 (todo (tlon-make-todo-name-from-issue issue 'no-action 'no-status))
+         (jobs-file (tlon-get-todos-jobs-file)))
+    (if-let ((pos (tlon-get-todo-position todo jobs-file)))
+	(tlon-visit-todo (cons pos jobs-file))
       (save-window-excursion
 	(when set-issue
 	  (tlon-set-initial-label-and-assignee))
@@ -485,35 +506,54 @@ called with a prefix ARG, omit this initial pull."
       (tlon-reconcile-all-issues-and-todos-after-pull)
     (tlon-pull-silently "Pulling issues..." #'tlon-reconcile-all-issues-and-todos-after-pull)))
 
+(defun tlon-forg--get-all-todo-files ()
+  "Return a list of all Org TODO files to be processed.
+This includes the generic file, the jobs file, and all *.org files
+in `paths-dir-tlon-todos'."
+  (let ((files (list (tlon-get-todos-generic-file)
+                     (tlon-get-todos-jobs-file))))
+    (when (and (boundp 'paths-dir-tlon-todos)
+               (stringp paths-dir-tlon-todos)
+               (file-directory-p paths-dir-tlon-todos))
+      (setq files (append files (directory-files paths-dir-tlon-todos t "\\.org$" t)))) ; t for full path
+    ;; Ensure absolute paths and remove duplicates
+    (delete-dups (mapcar #'expand-file-name files))))
+
 (defun tlon-reconcile-all-issues-and-todos-after-pull ()
-  "Reconcile TODOs with their issues after after `forge-pull' is finished."
+  "Reconcile TODOs with their issues after `forge-pull' is finished."
   (save-window-excursion
-    (with-current-buffer (find-file-noselect (tlon-get-todos-generic-file))
-      (save-excursion
-        (let ((org-fold-core-style 'overlays))
-          (org-fold-core-save-visibility
-              (org-fold-show-all)
-            (goto-char (point-min))
-            (while (re-search-forward org-heading-regexp nil t)
-              (when-let ((issue (tlon-get-issue)))
-		(when (or (not (member org-archive-tag (org-get-tags)))
-                          tlon-forg-include-archived)
-                  (tlon-reconcile-issue-and-todo-from-issue issue))))))
-	(org-refile-cache-clear)
-        (message "Finished reconciling issues and TODOs. Refile cache cleared.")))))
+    (let ((todo-files (tlon-forg--get-all-todo-files)))
+      (dolist (file todo-files)
+        (when (file-exists-p file)
+          (with-current-buffer (find-file-noselect file)
+            (message "Reconciling TODOs in %s..." (file-name-nondirectory file))
+            (save-excursion
+              (let ((org-fold-core-style 'overlays))
+                (org-fold-core-save-visibility
+                    (org-fold-show-all)
+                  (goto-char (point-min))
+                  (while (re-search-forward org-heading-regexp nil t)
+                    (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
+                      (when (or (not (member org-archive-tag (org-get-tags)))
+                                tlon-forg-include-archived)
+                        (tlon-reconcile-issue-and-todo-from-issue issue)))))))))))
+    (org-refile-cache-clear)
+    (message "Finished reconciling all found issues and TODOs. Refile cache cleared.")))
 
 (defun tlon-reconcile-issue-and-todo-from-issue (&optional issue)
   "Reconcile ISSUE and associated TODO.
 If ISSUE is nil, use the issue at point."
   (let* ((issue (or issue (forge-current-topic)))
-	 (pos (tlon-get-todo-position-from-issue issue))
+	 (pos-file-pair (tlon-get-todo-position-from-issue issue)) ; Returns (POS . FILE)
 	 (issue-name (tlon-make-todo-name-from-issue issue)))
-    (save-window-excursion
-      (tlon-visit-todo pos nil issue)
-      (let ((todo-name (substring-no-properties (org-get-heading nil nil t t))))
-	(if (string= issue-name todo-name)
-	    (message "Issue ‘%s’ and its local TODO are in sync." (oref issue title))
-	  (tlon-reconcile-issue-and-todo-prompt issue-name todo-name))))))
+    (if pos-file-pair
+        (save-window-excursion
+          (tlon-visit-todo pos-file-pair) ; Pass the (POS . FILE) pair
+          (let ((todo-name (substring-no-properties (org-get-heading nil nil t t))))
+            (if (string= issue-name todo-name)
+                (message "Issue ‘%s’ and its local TODO are in sync." (oref issue title))
+              (tlon-reconcile-issue-and-todo-prompt issue-name todo-name))))
+      (message "No TODO found for issue %s to reconcile." (oref issue title)))))
 
 (defun tlon-reconcile-issue-and-todo-prompt (issue-name todo-name)
   "Prompt the user to reconcile discrepancies between ISSUE-NAME and TODO-NAME."
@@ -678,17 +718,31 @@ If ISSUE is nil, default to the issue at point."
     (tlon-get-todos-generic-file)))
 
 (defun tlon-get-todo-position-from-issue (&optional issue)
-  "Get the TODO position of ISSUE, using the appropriate method.
-If the issue is a job, use the heading name, else use the `orgit-topic' ID. If
-ISSUE is nil, use the issue at point."
+  "Get the TODO position and file of ISSUE. Returns (POSITION . FILE) or nil.
+If the issue is a job, search for its heading name in the jobs file.
+Else (generic issue), search first in the repo-specific file (REPO-NAME.org in
+`paths-dir-tlon-todos'), then in the generic todos file, using the `orgit-topic'
+ID as a substring. If ISSUE is nil, use the issue at point."
   (when-let ((issue (or issue (forge-current-topic))))
     (if (tlon-issue-is-job-p issue)
-	(tlon-get-todo-position
-	 (tlon-make-todo-name-from-issue issue nil 'no-status)
-	 (tlon-get-todos-jobs-file))
-      (tlon-get-todo-position
-       (format "\\[orgit-topic:%s\\]" (oref issue id))
-       (tlon-get-todos-generic-file) 'substring))))
+        (let ((file (tlon-get-todos-jobs-file)))
+          (when-let ((pos (tlon-get-todo-position
+                           (tlon-make-todo-name-from-issue issue nil 'no-status)
+                           file)))
+            (cons pos file)))
+      (let* ((search-string (format "\\[orgit-topic:%s\\]" (oref issue id)))
+             (repo-specific-file (tlon-forg--get-repo-specific-todo-file issue))
+             (pos-in-repo-file (and repo-specific-file
+                                    (file-exists-p repo-specific-file)
+                                    (tlon-get-todo-position search-string repo-specific-file 'substring)))
+             (generic-file (tlon-get-todos-generic-file))
+             (pos-in-generic-file (unless pos-in-repo-file ; Only search generic if not in repo-specific
+                                    (and generic-file ; Ensure generic file path is valid
+                                         (file-exists-p generic-file)
+                                         (tlon-get-todo-position search-string generic-file 'substring)))))
+        (cond (pos-in-repo-file (cons pos-in-repo-file repo-specific-file))
+              (pos-in-generic-file (cons pos-in-generic-file generic-file))
+              (t nil))))))
 
 ;;;;; Counterpart
 
@@ -829,12 +883,16 @@ If REPO is nil, use the current repository."
 
 (defun tlon-close-issue-and-todo-from-issue ()
   "With point on issue, close issue and associated TODO."
-  (let ((issue-number (tlon-get-issue-number-from-heading))
-	(repo (tlon-get-repo-from-heading)))
-    (tlon-close-issue-number issue-number repo)
-    (tlon-visit-todo)
-    (org-todo "DONE")
-    (message "Closed issue and TODO.")))
+  (let ((issue (tlon-get-issue))) ; Get forge-issue object from context
+    (when issue
+      (tlon-close-issue-number (oref issue number) (oref (forge-get-repository issue) worktree))
+      (let ((pos-file-pair (tlon-get-todo-position-from-issue issue)))
+        (if pos-file-pair
+            (progn
+              (tlon-visit-todo pos-file-pair)
+              (org-todo "DONE")
+              (message "Closed issue and TODO."))
+          (message "Closed issue, but no corresponding TODO found to mark as DONE."))))))
 
 ;; shouldn’t this be done using the orgit-link rather than issue-number?
 (defun tlon-close-issue-number (issue-number repo)
@@ -1253,21 +1311,24 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 (defun tlon-get-parent-todo (todo)
   "Get parent of TODO in `tlon-todos-jobs-file'."
-  (let ((pos (tlon-get-todo-position todo (tlon-get-todos-jobs-file))))
-    (save-window-excursion
-      (tlon-visit-todo pos (tlon-get-todos-jobs-file))
-      (widen)
-      (org-up-heading-safe)
-      (org-no-properties (org-get-heading)))))
+  (let* ((jobs-file (tlon-get-todos-jobs-file))
+         (pos (tlon-get-todo-position todo jobs-file)))
+    (when pos
+      (save-window-excursion
+        (tlon-visit-todo (cons pos jobs-file))
+        (widen)
+        (org-up-heading-safe)
+        (org-no-properties (org-get-heading))))))
 
 (defun tlon-mark-todo-done (todo file)
   "Mark TODO in FILE as DONE."
   (let ((pos (tlon-get-todo-position todo file)))
-    (save-window-excursion
-      (tlon-visit-todo pos file)
-      (org-todo "DONE")
-      (save-buffer)
-      (message "Marked `%s' as DONE" todo))))
+    (when pos
+      (save-window-excursion
+        (tlon-visit-todo (cons pos file))
+        (org-todo "DONE")
+        (save-buffer)
+        (message "Marked `%s' as DONE" todo)))))
 
 (declare-function tlon-get-clock-key "tlon-clock")
 (declare-function tlon-get-clock-label "tlon-clock")
