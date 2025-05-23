@@ -1254,38 +1254,74 @@ If ISSUE is nil, use the issue at point or in current buffer."
 
 ;;;###autoload
 (defun tlon-create-issue-from-todo ()
-  "Create a new GitHub issue based on the current `org-mode' heading."
+  "Create a new GitHub issue based on the current `org-mode' heading.
+The repository is inferred first from the heading, then from the
+current buffer's filename if it matches a known repository name.
+If it cannot be inferred, the user is prompted to select a repository,
+which is then added to the heading."
   (interactive)
   (tlon-ensure-org-mode)
   (when (tlon-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
-  ;; TODO: we should use an org-specific function to check for this
-  ;; (unless (tlon-issue-has-valid-status-p)
-  ;; (user-error "Invalid TODO status"))
-  (unless (tlon-get-repo-from-heading)
-    (tlon-set-repo-in-heading))
-  (let (todo-linkified)
-    (save-excursion
-      (let* ((default-directory (tlon-get-repo-from-heading))
-	     (heading (substring-no-properties (org-get-heading t t t t)))
-	     (status (tlon-get-status-in-todo))
-	     (tags (tlon-get-tags-in-todo))
-	     (abbrev-repo (tlon-repo-lookup :abbrev :dir default-directory))
-	     (issue-title (substring heading (+ (length abbrev-repo) 3)))
-	     (latest-issue-pre (car (tlon-get-latest-issue)))
-	     (latest-issue-post latest-issue-pre))
-	(tlon-create-issue issue-title default-directory)
-	;; TODO: consider replacing this with `tlon-create-and-visit-issue'
-	(forge-pull)
-	(while (eq latest-issue-pre latest-issue-post)
-	  (sleep-for 0.1)
-	  (setq latest-issue-post (car (tlon-get-latest-issue))))
-	(tlon-set-issue-number-in-heading latest-issue-post)
-	(tlon-visit-issue)
-	(tlon-set-assignee (tlon-user-lookup :github :name user-full-name))
-	(tlon-set-labels (append `(,status) tags)))
-      (setq todo-linkified (tlon-make-todo-name-from-issue nil nil 'no-status)))
-    (org-edit-headline todo-linkified)))
+
+  (let (repo-dir forge-repo repo-abbrev-inferred)
+    ;; 1. Try to get repo from heading
+    (setq repo-dir (tlon-get-repo-from-heading))
+
+    ;; 2. If not in heading, try to infer from filename
+    (unless repo-dir
+      (when buffer-file-name
+        (let* ((filename-sans-ext (file-name-sans-extension (file-name-nondirectory buffer-file-name)))
+               (repo-dir-from-file (ignore-errors (tlon-repo-lookup :dir :name filename-sans-ext))))
+          (when repo-dir-from-file
+            (setq repo-dir repo-dir-from-file)
+            ;; If repo inferred from filename, ensure heading has the repo abbrev
+            (unless (tlon-get-repo-from-heading)
+              (setq repo-abbrev-inferred (tlon-repo-lookup :abbrev :dir repo-dir))
+              (when repo-abbrev-inferred
+                (org-extras-goto-beginning-of-heading-text)
+                (insert (format "[%s] " repo-abbrev-inferred))))))))
+
+    ;; 3. If still no repo, prompt and add to heading
+    (unless repo-dir
+      (tlon-set-repo-in-heading) ; This prompts and modifies the heading
+      (setq repo-dir (tlon-get-repo-from-heading))
+      (unless repo-dir
+        (user-error "Repository selection cancelled or failed.")))
+
+    ;; Get forge-repo object from repo-dir
+    (setq forge-repo (let ((default-directory repo-dir)) (forge-get-repository :tracked)))
+    (unless forge-repo
+      (user-error "Could not get forge repository object for %s" repo-dir))
+
+    ;; At this point, repo-dir and forge-repo MUST be set, and the heading should reflect the repo.
+    (let (todo-linkified)
+      (save-excursion
+        (let* ((default-directory repo-dir) ; Set default-directory for operations that might need it implicitly
+               (heading (substring-no-properties (org-get-heading t t t t))) ; Read heading *after* potential modifications
+               (status (tlon-get-status-in-todo))
+               (tags (tlon-get-tags-in-todo))
+               ;; abbrev-repo should now reliably come from the heading
+               (abbrev-repo (tlon-get-element-from-heading "^\\[\\(.*?\\)\\]"))
+               (_ (unless abbrev-repo (error "Logic error: Repo abbrev not found in heading '%s' after setup for repo %s" heading repo-dir))))
+               (issue-title (substring heading (+ (length abbrev-repo) 3)))
+               (latest-issue-pre (car (tlon-get-latest-issue forge-repo)))
+               (latest-issue-post latest-issue-pre))
+
+          (tlon-create-issue issue-title repo-dir) ; Pass repo-dir, so tlon-create-issue won't prompt
+
+          (forge--pull forge-repo) ; Use forge--pull for synchronous pull with specific repo
+          (while (eq latest-issue-pre latest-issue-post)
+            (sleep-for 0.1)
+            (setq latest-issue-post (car (tlon-get-latest-issue forge-repo))))
+          (tlon-set-issue-number-in-heading latest-issue-post)
+          ;; tlon-visit-issue takes number and repo path
+          (tlon-visit-issue latest-issue-post repo-dir)
+          ;; Operations on the visited issue will use its context
+          (tlon-set-assignee (tlon-user-lookup :github :name user-full-name))
+          (tlon-set-labels (append `(,status) tags)))
+        (setq todo-linkified (tlon-make-todo-name-from-issue nil nil 'no-status)))
+      (org-edit-headline todo-linkified))))
 
 (defun tlon-create-issue-or-todo ()
   "Create issue from TODO or vice versa."

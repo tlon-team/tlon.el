@@ -157,13 +157,16 @@ This section details the interactive commands provided by =tlon-forg.el=.
 #+findex: tlon-create-issue-from-todo
 + ~tlon-create-issue-from-todo~ :: (Autoloaded) Creates a new GitHub issue based on the Org heading at point.
   1. Ensures the heading doesn't already have an issue number.
-  2. Ensures the heading has a repository tag (prompts to add one via ~tlon-set-repo-in-heading~ if missing).
-  3. Extracts the title, status, and tags from the heading.
-  4. Creates the issue on GitHub using ~tlon-create-issue~.
-  5. Pulls changes until the new issue appears locally.
+  2. Determines the repository:
+     a. First, by checking for a repository tag in the Org heading.
+     b. If not found, by checking if the current buffer's filename (sans extension) matches a known repository name. If a match is found and the heading does not already contain the repository tag, the tag is inserted into the heading.
+     c. If still not found, prompts the user to select a repository, which is then added to the heading (~tlon-set-repo-in-heading~).
+  3. Extracts the title (from the heading, after the repository tag), status, and tags from the heading.
+  4. Creates the issue on GitHub using ~tlon-create-issue~ (passing the determined repository, so no further prompting for repo occurs there).
+  5. Pulls changes from the repository until the new issue appears locally.
   6. Sets the issue number in the Org heading (~tlon-set-issue-number-in-heading~).
   7. Visits the new issue.
-  8. Sets the assignee to the current user and applies the status and tags from the Org heading as labels (~tlon-set-assignee~, ~tlon-set-labels~).
+  8. Sets the assignee to the current user and applies the status and tags from the Org heading as labels on GitHub (~tlon-set-assignee~, ~tlon-set-labels~).
   9. Updates the Org heading to include the =orgit-topic:= link using ~tlon-make-todo-name-from-issue~.
 
 #+findex: tlon-create-issue-or-todo
