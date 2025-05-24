@@ -629,10 +629,12 @@ ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
 (defun tlon-reconcile-estimate-from-issue (&optional issue)
   "Reconcile estimate for ISSUE and its associated TODO.
 If ISSUE is nil, use the issue at point."
-  (let* ((issue (or issue (forge-current-topic)))
-         (repo (forge-get-repository issue)) ; Get repo object before switching buffer context
-         (pos-file-pair (tlon-get-todo-position-from-issue issue)))
-    (if pos-file-pair
+  (let ((issue (or issue (forge-current-topic))))
+    (unless issue
+      (user-error "No issue found to reconcile estimate for"))
+    (let* ((repo (forge-get-repository issue)) ; Get repo object before switching buffer context
+           (pos-file-pair (tlon-get-todo-position-from-issue issue)))
+      (if pos-file-pair
         (save-window-excursion
           (tlon-visit-todo pos-file-pair) ; Visit the TODO, this changes current-buffer and default-directory
           ;; For subsequent GitHub/Forge operations, explicitly set default-directory
