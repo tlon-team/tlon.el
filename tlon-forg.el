@@ -1499,7 +1499,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("C" "capture all"                                      tlon-capture-all-issues)]
    ["Reconcile"
     ("r" "reconcile"                                        tlon-reconcile-issue-and-todo)
-    ("R" "reconcile all"                                    tlon-reconcile-all-issues-and-todos)]
+    ("R" "reconcile all"                                    tlon-reconcile-all-issues-and-todos)
+    ("e" "reconcile estimate"                               tlon-reconcile-estimate)]
    ["Options"
     ("-r" "When reconciling"                                tlon-forg-when-reconciling-infix)
     ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)
