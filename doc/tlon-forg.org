@@ -51,15 +51,15 @@ This module provides integration between =forge= (Emacs interface for Git forges
 #+vindex: tlon-when-assignee-is-someone-else
 + ~tlon-when-assignee-is-someone-else~ :: Controls behavior when capturing an issue assigned to someone else. Options are the same as ~tlon-when-assignee-is-nil~. Note: This option is ignored (treated as =no-capture=) when using ~tlon-capture-all-issues~. Can be set temporarily via ~tlon-forg-menu~.
 
-#+vindex: tlon-forg-when-reconciling
-+ ~tlon-forg-when-reconciling~ :: Controls behavior when ~tlon-reconcile-issue-and-todo~ finds discrepancies between the issue and its TODO. Options:
+#+vindex: tlon-forg-when-syncing
++ ~tlon-forg-when-syncing~ :: Controls behavior when ~tlon-sync-issue-and-todo~ finds discrepancies between the issue and its TODO. Options:
   + =prompt= (default): Ask user whether to keep the issue's state or the TODO's state.
   + =issue=: Automatically update the TODO to match the issue.
   + =todo=: Automatically update the issue to match the TODO (Note: Currently not fully implemented).
   Can be set temporarily via ~tlon-forg-menu~.
 
 #+vindex: tlon-forg-include-archived
-+ ~tlon-forg-include-archived~ :: Boolean flag. If non-nil, archived issues/TODOs are included in capture and reconcile operations. Defaults to nil. Can be toggled temporarily via ~tlon-forg-menu~.
++ ~tlon-forg-include-archived~ :: Boolean flag. If non-nil, archived issues/TODOs are included in capture and sync operations. Defaults to nil. Can be toggled temporarily via ~tlon-forg-menu~.
 
 #+vindex: tlon-forg-enforce-user
 + ~tlon-forg-enforce-user~ :: String or nil. If non-nil, forces Tlön to consider this string as the current user's GitHub login, primarily for testing purposes. Defaults to nil.
@@ -117,34 +117,34 @@ This section details the interactive commands provided by =tlon-forg.el=.
   4. For each issue, if a TODO doesn't already exist (~tlon-get-todo-position-from-issue~), it calls ~tlon-capture-issue~ for that issue.
   5. Clears the =org-refile= cache upon completion.
 
-*** Reconciling Issues and TODOs
+*** Syncing Issues and TODOs
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-forg-reconcile-cmds
+:CUSTOM_ID: h:tlon-forg-sync-cmds
 :END:
 
-#+findex: tlon-reconcile-issue-and-todo
-+ ~tlon-reconcile-issue-and-todo~ :: (Autoloaded) Synchronizes the state (title, status, tags, and estimate) between the current issue and its associated Org TODO, or vice versa. Works whether point is in the issue buffer or on the TODO heading.
+#+findex: tlon-sync-issue-and-todo
++ ~tlon-sync-issue-and-todo~ :: (Autoloaded) Synchronizes the state (title, status, tags, and estimate) between the current issue and its associated Org TODO, or vice versa. Works whether point is in the issue buffer or on the TODO heading.
   For title, status, and tags:
   1. Determines the issue and TODO based on the current context.
   2. Generates the expected TODO heading string based on the current issue state (~tlon-make-todo-name-from-issue~).
   3. Compares this with the actual TODO heading string.
-  4. If they differ, it applies the behavior defined by ~tlon-forg-when-reconciling~:
+  4. If they differ, it applies the behavior defined by ~tlon-forg-when-syncing~:
      - =prompt=: Asks the user whether to update the TODO or the issue.
      - =issue=: Updates the TODO heading to match the issue state (~tlon-update-todo-from-issue~).
      - =todo=: Updates the issue state to match the TODO (~tlon-update-issue-from-todo~).
   For estimate (GitHub Project "Estimate" field vs. Org "Effort" property):
   - If only one has an estimate (and the other is none or zero), the other is updated silently.
-  - If both have estimates and they differ, behavior is controlled by ~tlon-forg-when-reconciling~:
+  - If both have estimates and they differ, behavior is controlled by ~tlon-forg-when-syncing~:
     - =prompt=: Asks whether to use the GitHub estimate or the Org estimate.
     - =issue=: Updates the Org TODO "Effort" to match the GitHub "Estimate".
     - =todo=: Updates the GitHub "Estimate" to match the Org TODO "Effort".
 
-#+findex: tlon-reconcile-all-issues-and-todos
-+ ~tlon-reconcile-all-issues-and-todos~ :: (Autoloaded) Reconciles all Org TODOs found in the relevant TODO files with their corresponding GitHub issues, including their estimates.
+#+findex: tlon-sync-all-issues-and-todos
++ ~tlon-sync-all-issues-and-todos~ :: (Autoloaded) Syncs all Org TODOs found in the relevant TODO files with their corresponding GitHub issues, including their estimates.
   1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
   2. Iterates through all headings in all detected TODO files. These include the generic file (~tlon-get-todos-generic-file~), the jobs file (~tlon-get-todos-jobs-file~), and any repository-specific =*.org= files found in the directory specified by =paths-dir-tlon-todos=.
   3. For each heading, finds the associated issue (~tlon-get-issue~).
-  4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~ (which handles name, status, tags, and estimate).
+  4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-sync-issue-and-todo-from-issue~ (which handles name, status, tags, and estimate).
   5. Clears the =org-refile= cache upon completion.
 
 *** Counterpart Navigation
@@ -242,13 +242,13 @@ It provides the following groups and commands:
 + *Capture*:
   + =c= :: capture issue (~tlon-capture-issue~)
   + =C= :: capture all issues (~tlon-capture-all-issues~)
-+ *Reconcile*:
-  + =r= :: reconcile issue and todo (~tlon-reconcile-issue-and-todo~)
-  + =R= :: reconcile all issues and todos (~tlon-reconcile-all-issues-and-todos~)
++ *Sync*:
+  + =s= :: sync issue and todo (~tlon-sync-issue-and-todo~)
+  + =S= :: sync all issues and todos (~tlon-sync-all-issues-and-todos~)
 + *Options*: (These set the corresponding user options temporarily for the session)
   + =-A= :: Archive TODO on close (~tlon-infix-toggle-archive-todo-on-close~)
   + =-a= :: Include archived (~tlon-infix-toggle-include-archived~)
-  + =-r= :: When reconciling (~tlon-forg-when-reconciling-infix~)
+  + =-s= :: When syncing (~tlon-forg-when-syncing-infix~)
   + =-n= :: When assignee is nil (~tlon-when-assignee-is-nil-infix~)
   + =-e= :: When assignee is someone else (~tlon-when-assignee-is-someone-else-infix~)
 
@@ -409,12 +409,12 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-store-master-job-todo~ :: Creates the main parent heading for a job if it doesn't exist. Optionally sets the initial issue label and assignee.
 #+findex: tlon-store-or-refile-job-todo
 + ~tlon-store-or-refile-job-todo~ :: Creates a new job TODO using ~tlon-store-todo~ and then refiles it under its corresponding master job heading (found using ~tlon-get-todo-position~). If the master heading doesn't exist, prompts to create it via ~tlon-store-master-job-todo~. Uses =org-extras= functions for refiling.
-#+findex: tlon-reconcile-all-issues-and-todos-after-pull
-+ ~tlon-reconcile-all-issues-and-todos-after-pull~ :: Callback function for ~tlon-reconcile-all-issues-and-todos~ that initiates the reconciliation process after the initial pull completes.
-#+findex: tlon-reconcile-issue-and-todo-from-issue
-+ ~tlon-reconcile-issue-and-todo-from-issue~ :: Core reconciliation logic called by ~tlon-reconcile-issue-and-todo~. Compares expected and actual TODO names and calls ~tlon-reconcile-issue-and-todo-prompt~ if they differ.
-#+findex: tlon-reconcile-issue-and-todo-prompt
-+ ~tlon-reconcile-issue-and-todo-prompt~ :: Handles the user interaction or automatic action based on ~tlon-forg-when-reconciling~ when a discrepancy is found. Calls either ~tlon-update-todo-from-issue~ or ~tlon-update-issue-from-todo~.
+#+findex: tlon-sync-all-issues-and-todos-after-pull
++ ~tlon-sync-all-issues-and-todos-after-pull~ :: Callback function for ~tlon-sync-all-issues-and-todos~ that initiates the sync process after the initial pull completes.
+#+findex: tlon-sync-issue-and-todo-from-issue
++ ~tlon-sync-issue-and-todo-from-issue~ :: Core sync logic called by ~tlon-sync-issue-and-todo~. Compares expected and actual TODO names and calls ~tlon-sync-issue-and-todo-prompt~ if they differ.
+#+findex: tlon-sync-issue-and-todo-prompt
++ ~tlon-sync-issue-and-todo-prompt~ :: Handles the user interaction or automatic action based on ~tlon-forg-when-syncing~ when a discrepancy is found. Calls either ~tlon-update-todo-from-issue~ or ~tlon-update-issue-from-todo~.
 
 *** Validation and Checks
 :PROPERTIES:
@@ -442,7 +442,7 @@ Configuration for GitHub Project integration (like project owner, project number
 #+findex: tlon-open-todo
 + ~tlon-open-todo~ :: Helper function to open =FILE= and go to =POSITION=.
 #+findex: tlon-todo-issue-funcall
-+ ~tlon-todo-issue-funcall~ :: Calls =TODO-FUN= if in Org mode at a heading, or =ISSUE-FUN= if in a Forge buffer with an issue context. Used by counterpart and reconcile commands.
++ ~tlon-todo-issue-funcall~ :: Calls =TODO-FUN= if in Org mode at a heading, or =ISSUE-FUN= if in a Forge buffer with an issue context. Used by counterpart and sync commands.
 #+findex: tlon-forg-tag-sorter
 + ~tlon-forg-tag-sorter~ :: The custom comparison function used by ~tlon-forg-sort-by-tag~. Extracts the first tag matching ~tlon-forg-sort-by-tags-regexp~ or returns "~" for sorting unmatched entries last.
 #+findex: tlon-create-issue
@@ -457,8 +457,8 @@ Configuration for GitHub Project integration (like project owner, project number
 + ~tlon-when-assignee-is-nil-infix~ :: Transient infix command to set ~tlon-when-assignee-is-nil~.
 #+findex: tlon-when-assignee-is-someone-else-infix
 + ~tlon-when-assignee-is-someone-else-infix~ :: Transient infix command to set ~tlon-when-assignee-is-someone-else~.
-#+findex: tlon-forg-when-reconciling-infix
-+ ~tlon-forg-when-reconciling-infix~ :: Transient infix command to set ~tlon-forg-when-reconciling~.
+#+findex: tlon-forg-when-syncing-infix
++ ~tlon-forg-when-syncing-infix~ :: Transient infix command to set ~tlon-forg-when-syncing~.
 #+findex: tlon-infix-toggle-include-archived
 + ~tlon-infix-toggle-include-archived~ :: Transient infix command to toggle ~tlon-forg-include-archived~.
 #+findex: tlon-infix-toggle-archive-todo-on-close

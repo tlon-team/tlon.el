@@ -173,7 +173,7 @@ this variable is `no-capture'."
 		 (const :tag "Do not capture" t))
   :group 'tlon-forg)
 
-(defcustom tlon-forg-when-reconciling 'prompt
+(defcustom tlon-forg-when-syncing 'prompt
   "What to do when the issue and its associated todo differ.
 - `prompt': prompt the user to choose between the issue and the todo.
 - `issue': update the todo to match the issue.
@@ -188,7 +188,7 @@ current session."
   :group 'tlon-forg)
 
 (defcustom tlon-forg-include-archived nil
-  "Whether to include archived issues in capture or reconcile processes."
+  "Whether to include archived issues in capture or sync processes."
   :type 'boolean
   :group 'tlon-forg)
 
@@ -495,32 +495,32 @@ If ISSUE is nil, use the issue at point or in the current buffer."
       (tlon-store-master-job-todo nil issue)
       (tlon-capture-issue issue))))
 
-;;;;; Reconcile
+;;;;; Sync
 
 ;;;###autoload
-(defun tlon-reconcile-issue-and-todo ()
-  "With point on either, reconcile issue and associated TODO."
+(defun tlon-sync-issue-and-todo ()
+  "With point on either, sync issue and associated TODO."
   (interactive)
   (tlon-todo-issue-funcall
    (lambda ()
      (with-current-buffer (tlon-get-issue-buffer)
-       (tlon-reconcile-issue-and-todo-from-issue)))
-   #'tlon-reconcile-issue-and-todo-from-issue))
+       (tlon-sync-issue-and-todo-from-issue)))
+   #'tlon-sync-issue-and-todo-from-issue))
 
 ;;;###autoload
-(defun tlon-reconcile-all-issues-and-todos (arg)
-  "Reconcile all TODOs with their issues.
-Before initiating the reconciliation process, this command performs a full pull
+(defun tlon-sync-all-issues-and-todos (arg)
+  "Sync all TODOs with their issues.
+Before initiating the synchronization process, this command performs a full pull
 of the current repo to ensure that local data reflects the remote state. The
 window configuration active before the command was called will be restored after
 completion. This command clears the `org-refile' cache upon completion.
 
-Pull all issues from forge before initiating the reconciliation process. If
+Pull all issues from forge before initiating the synchronization process. If
 called with a prefix ARG, omit this initial pull."
   (interactive "P")
   (if arg
-      (tlon-reconcile-all-issues-and-todos-after-pull)
-    (tlon-pull-silently "Pulling issues..." #'tlon-reconcile-all-issues-and-todos-after-pull)))
+      (tlon-sync-all-issues-and-todos-after-pull)
+    (tlon-pull-silently "Pulling issues..." #'tlon-sync-all-issues-and-todos-after-pull)))
 
 (defun tlon-forg--get-all-todo-files ()
   "Return a list of all Org TODO files to be processed.
@@ -535,14 +535,14 @@ in `paths-dir-tlon-todos'."
     ;; Ensure absolute paths and remove duplicates
     (delete-dups (mapcar #'expand-file-name files))))
 
-(defun tlon-reconcile-all-issues-and-todos-after-pull ()
-  "Reconcile TODOs with their issues after `forge-pull' is finished."
+(defun tlon-sync-all-issues-and-todos-after-pull ()
+  "Sync TODOs with their issues after `forge-pull' is finished."
   (save-window-excursion
     (let ((todo-files (tlon-forg--get-all-todo-files)))
       (dolist (file todo-files)
         (when (file-exists-p file)
           (with-current-buffer (find-file-noselect file)
-            (message "Reconciling TODOs in %s..." (file-name-nondirectory file))
+            (message "Syncing TODOs in %s..." (file-name-nondirectory file))
             (save-excursion
               (let ((org-fold-core-style 'overlays))
                 (org-fold-core-save-visibility
@@ -552,37 +552,37 @@ in `paths-dir-tlon-todos'."
                     (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
                       (when (or (not (member org-archive-tag (org-get-tags)))
                                 tlon-forg-include-archived)
-                        (tlon-reconcile-issue-and-todo-from-issue issue)))))))))))
+                        (tlon-sync-issue-and-todo-from-issue issue)))))))))))
     (org-refile-cache-clear)
-    (message "Finished reconciling all found issues and TODOs. Refile cache cleared.")))
+    (message "Finished syncing all found issues and TODOs. Refile cache cleared.")))
 
-(defun tlon-reconcile-issue-and-todo-from-issue (&optional issue)
-  "Reconcile ISSUE and associated TODO (name, status, tags, and estimate).
+(defun tlon-sync-issue-and-todo-from-issue (&optional issue)
+  "Sync ISSUE and associated TODO (name, status, tags, and estimate).
 If ISSUE is nil, use the issue at point."
   (let* ((issue (or issue (forge-current-topic)))
          (issue-title (if issue (oref issue title) "Unknown Issue")))
     (unless issue
-      (message "No issue found to reconcile.")
-      (cl-return-from tlon-reconcile-issue-and-todo-from-issue))
+      (message "No issue found to sync.")
+      (cl-return-from tlon-sync-issue-and-todo-from-issue))
 
     (let* ((pos-file-pair (tlon-get-todo-position-from-issue issue))
            (issue-name (tlon-make-todo-name-from-issue issue)))
       (if pos-file-pair
           (progn
-            ;; Reconcile Name/Status/Tags
+            ;; Sync Name/Status/Tags
             (save-window-excursion
               (tlon-visit-todo pos-file-pair)
               (let ((todo-name (substring-no-properties (org-get-heading nil nil t t))))
                 (if (string= issue-name todo-name)
                     (message "Issue ‘%s’: Name/Status/Tags are in sync with local TODO." issue-title)
-                  (tlon-reconcile-issue-and-todo-prompt issue-name todo-name))))
-            ;; Reconcile Estimate (only if the above didn't abort due to user-error)
-            (tlon-reconcile-estimate-from-issue issue))
-        (message "No TODO found for issue ‘%s’ to reconcile." issue-title)))))
+                  (tlon-sync-issue-and-todo-prompt issue-name todo-name))))
+            ;; Sync Estimate (only if the above didn't abort due to user-error)
+            (tlon-sync-estimate-from-issue issue))
+        (message "No TODO found for issue ‘%s’ to sync." issue-title)))))
 
-(defun tlon-reconcile-issue-and-todo-prompt (issue-name todo-name)
-  "Prompt the user to reconcile discrepancies between ISSUE-NAME and TODO-NAME."
-  (let ((choice (pcase tlon-forg-when-reconciling
+(defun tlon-sync-issue-and-todo-prompt (issue-name todo-name)
+  "Prompt the user to sync discrepancies between ISSUE-NAME and TODO-NAME."
+  (let ((choice (pcase tlon-forg-when-syncing
 		  ('prompt
 		   (read-char-choice
 		    (format "The issue differs from its todo. Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
@@ -637,12 +637,12 @@ ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
     (org-entry-put nil "Effort" effort-str)
     (message "Org Effort property updated to %s." effort-str)))
 
-(defun tlon-reconcile-estimate-from-issue (&optional issue)
-  "Reconcile estimate for ISSUE and its associated TODO.
+(defun tlon-sync-estimate-from-issue (&optional issue)
+  "Sync estimate for ISSUE and its associated TODO.
 If ISSUE is nil, use the issue at point."
   (let ((issue (or issue (forge-current-topic))))
     (unless issue
-      (user-error "No issue found to reconcile estimate for"))
+      (user-error "No issue found to sync estimate for"))
     (let* ((repo (forge-get-repository issue)) ; Get repo object before switching buffer context
            (pos-file-pair (tlon-get-todo-position-from-issue issue)))
       (if pos-file-pair
@@ -681,7 +681,7 @@ If ISSUE is nil, use the issue at point."
                  ((and gh-estimate-significant-p org-effort-significant-p (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
                   (message "Estimates differ: GitHub issue #%s has %s hours, Org TODO has %s (%s hours)."
                            issue-number gh-estimate-hours org-effort-str org-effort-hours)
-                  (let ((choice (pcase tlon-forg-when-reconciling
+                  (let ((choice (pcase tlon-forg-when-syncing
                                   ('prompt
                                    (read-char-choice
                                     (format "Estimates differ. Keep (g)itHub's (%s hrs) or (o)rg's (%s hrs)?"
@@ -689,18 +689,18 @@ If ISSUE is nil, use the issue at point."
                                     '(?g ?o)))
                                   ('issue ?g)
                                   ('todo ?o)
-                                  (_ (user-error "Invalid `tlon-forg-when-reconciling' value: %s" tlon-forg-when-reconciling)))))
+                                  (_ (user-error "Invalid `tlon-forg-when-syncing' value: %s" tlon-forg-when-syncing)))))
                     (pcase choice
                       (?g (message "Updating Org TODO to match GitHub estimate.")
                           (tlon-forg--set-org-effort gh-estimate-hours))
                       (?o (message "Updating GitHub issue to match Org TODO estimate.")
                           (tlon-forg--set-github-project-estimate issue org-effort-hours))
-                      (_ (user-error "Aborted estimate reconciliation")))))
+                      (_ (user-error "Aborted estimate sync")))))
 
                  ;; Case 4: Both are nil/zero, or both are significant and equal.
                  (t
                   (message "Estimates for issue #%s and Org TODO are in sync." issue-number))))))
-        (message "No TODO found for issue %s to reconcile estimate." (oref issue title))))))
+        (message "No TODO found for issue %s to sync estimate." (oref issue title))))))
 
 (defun tlon-update-todo-from-issue (issue-name)
   "Update TODO to match ISSUE-NAME."
@@ -1585,14 +1585,14 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   :prompt "What to do when the assignee is someone else (see docstring for details): "
   :variable 'tlon-when-assignee-is-someone-else)
 
-(transient-define-infix tlon-forg-when-reconciling-infix ()
-  "Set the value of `tlon-forg-when-reconciling' in `forg' menu."
+(transient-define-infix tlon-forg-when-syncing-infix ()
+  "Set the value of `tlon-forg-when-syncing' in `forg' menu."
   :class 'transient-lisp-variable
   :reader (lambda (prompt _ _)
 	    (tlon-symbol-reader prompt '(prompt issue todo)))
   :transient t
   :prompt "What to do when the issue and its associated todo differ (see docstring for details): "
-  :variable 'tlon-forg-when-reconciling)
+  :variable 'tlon-forg-when-syncing)
 
 (transient-define-infix tlon-infix-toggle-include-archived ()
   "Toggle the value of `tlon-forg-include-archived' in `forg' menu."
@@ -1619,11 +1619,11 @@ If ISSUE is nil, use the issue at point or in the current buffer."
    ["Capture"
     ("c" "capture"                                          tlon-capture-issue)
     ("C" "capture all"                                      tlon-capture-all-issues)]
-   ["Reconcile"
-    ("r" "reconcile"                                        tlon-reconcile-issue-and-todo)
-    ("R" "reconcile all"                                    tlon-reconcile-all-issues-and-todos)]
+   ["Sync"
+    ("s" "sync"                                             tlon-sync-issue-and-todo)
+    ("S" "sync all"                                         tlon-sync-all-issues-and-todos)]
    ["Options"
-    ("-r" "When reconciling"                                tlon-forg-when-reconciling-infix)
+    ("-s" "When syncing"                                    tlon-forg-when-syncing-infix)
     ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)
     ("-e" "When assignee is someone else"                   tlon-when-assignee-is-someone-else-infix)
     ""
