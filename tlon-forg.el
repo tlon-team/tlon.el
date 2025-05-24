@@ -632,7 +632,7 @@ ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
       (user-error "Failed to update project estimate for issue #%s" issue-number))))
 
 (defun tlon-forg--set-org-effort (effort-hours)
-  "Set Org 'Effort' property from EFFORT-HOURS (float)."
+  "Set Org effort property from EFFORT-HOURS (float)."
   (let ((effort-str (org-duration-from-minutes (* effort-hours 60.0))))
     (org-entry-put nil "Effort" effort-str)
     (message "Org Effort property updated to %s." effort-str)))
