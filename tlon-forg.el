@@ -651,19 +651,23 @@ If ISSUE is nil, use the issue at point."
                      (org-effort-str (org-entry-get nil "Effort" 'inherit))
                      (org-effort-minutes (if org-effort-str (org-duration-to-minutes org-effort-str) nil))
                      (org-effort-hours (if org-effort-minutes (/ (float org-effort-minutes) 60.0) nil))
-                     (epsilon 0.01)) ; Tolerance for float comparison
+                     (epsilon 0.01) ; Tolerance for float comparison
+                     (gh-estimate-significant-p (and gh-estimate-hours (> gh-estimate-hours epsilon)))
+                     (org-effort-significant-p (and org-effort-hours (> org-effort-hours epsilon))))
 
-		(cond
-		 ;; Only GitHub has estimate
-		 ((and gh-estimate-hours (not org-effort-hours))
-                  (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO." issue-number gh-estimate-hours)
-                  (tlon-forg--set-org-effort gh-estimate-hours)) ; Org op, fine
-		 ;; Only Org TODO has estimate
-		 ((and org-effort-hours (not gh-estimate-hours))
-                  (message "Org TODO has effort %s, GitHub issue #%s has none. Updating GitHub issue." org-effort-str issue-number)
-                  (tlon-forg--set-github-project-estimate issue org-effort-hours)) ; GH op, default-directory is correctly set by outer let
-		 ;; Both have estimates, and they differ
-		 ((and gh-estimate-hours org-effort-hours (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
+                (cond
+                 ;; Case 1: Only GitHub has a significant estimate, Org has none or zero.
+                 ((and gh-estimate-significant-p (not org-effort-significant-p))
+                  (message "GitHub issue #%s has estimate %s, Org TODO has none or zero. Updating Org TODO." issue-number gh-estimate-hours)
+                  (tlon-forg--set-org-effort gh-estimate-hours))
+
+                 ;; Case 2: Only Org has a significant estimate, GitHub has none or zero.
+                 ((and org-effort-significant-p (not gh-estimate-significant-p))
+                  (message "Org TODO has effort %s (%s hours), GitHub issue #%s has none or zero. Updating GitHub issue." org-effort-str org-effort-hours issue-number)
+                  (tlon-forg--set-github-project-estimate issue org-effort-hours))
+
+                 ;; Case 3: Both have significant estimates, and they differ.
+                 ((and gh-estimate-significant-p org-effort-significant-p (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
                   (message "Estimates differ: GitHub issue #%s has %s hours, Org TODO has %s (%s hours)."
                            issue-number gh-estimate-hours org-effort-str org-effort-hours)
                   (let ((choice (pcase tlon-forg-when-reconciling
@@ -677,14 +681,15 @@ If ISSUE is nil, use the issue at point."
                                   (_ (user-error "Invalid `tlon-forg-when-reconciling' value: %s" tlon-forg-when-reconciling)))))
                     (pcase choice
                       (?g (message "Updating Org TODO to match GitHub estimate.")
-                          (tlon-forg--set-org-effort gh-estimate-hours)) ; Org op, fine
+                          (tlon-forg--set-org-effort gh-estimate-hours))
                       (?o (message "Updating GitHub issue to match Org TODO estimate.")
-                          (tlon-forg--set-github-project-estimate issue org-effort-hours)) ; GH op, default-directory is correctly set
+                          (tlon-forg--set-github-project-estimate issue org-effort-hours))
                       (_ (user-error "Aborted estimate reconciliation")))))
-		 ;; Both have estimates and they are (close enough to) equal, or both are nil
-		 (t
-                  (message "Estimates for issue #%s and Org TODO are in sync or both are nil." issue-number))))))
-	(message "No TODO found for issue %s to reconcile estimate." (oref issue title))))))
+
+                 ;; Case 4: Both are nil/zero, or both are significant and equal.
+                 (t
+                  (message "Estimates for issue #%s and Org TODO are in sync (both nil, zero, or equal)." issue-number))))))
+        (message "No TODO found for issue %s to reconcile estimate." (oref issue title))))))
 
 ;;;###autoload
 (defun tlon-reconcile-estimate ()
