@@ -123,31 +123,29 @@ This section details the interactive commands provided by =tlon-forg.el=.
 :END:
 
 #+findex: tlon-reconcile-issue-and-todo
-+ ~tlon-reconcile-issue-and-todo~ :: (Autoloaded) Synchronizes the state (title, status, tags) between the current issue and its associated Org TODO, or vice versa. Works whether point is in the issue buffer or on the TODO heading.
++ ~tlon-reconcile-issue-and-todo~ :: (Autoloaded) Synchronizes the state (title, status, tags, and estimate) between the current issue and its associated Org TODO, or vice versa. Works whether point is in the issue buffer or on the TODO heading.
+  For title, status, and tags:
   1. Determines the issue and TODO based on the current context.
   2. Generates the expected TODO heading string based on the current issue state (~tlon-make-todo-name-from-issue~).
   3. Compares this with the actual TODO heading string.
   4. If they differ, it applies the behavior defined by ~tlon-forg-when-reconciling~:
      - =prompt=: Asks the user whether to update the TODO or the issue.
      - =issue=: Updates the TODO heading to match the issue state (~tlon-update-todo-from-issue~).
-     - =todo=: Updates the issue state to match the TODO (currently not implemented, signals error).
-
-#+findex: tlon-reconcile-all-issues-and-todos
-+ ~tlon-reconcile-all-issues-and-todos~ :: (Autoloaded) Reconciles all Org TODOs found in the relevant TODO files with their corresponding GitHub issues.
-  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
-  2. Iterates through all headings in all detected TODO files. These include the generic file (~tlon-get-todos-generic-file~), the jobs file (~tlon-get-todos-jobs-file~), and any repository-specific =*.org= files found in the directory specified by =paths-dir-tlon-todos=.
-  3. For each heading, finds the associated issue (~tlon-get-issue~).
-  4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~.
-  5. Clears the =org-refile= cache upon completion.
-
-#+findex: tlon-reconcile-estimate
-+ ~tlon-reconcile-estimate~ :: (Autoloaded) Synchronizes the estimate between the current issue (GitHub Project "Estimate" field) and its associated Org TODO ("Effort" property).
-  - If only one has an estimate, the other is updated silently.
+     - =todo=: Updates the issue state to match the TODO (~tlon-update-issue-from-todo~).
+  For estimate (GitHub Project "Estimate" field vs. Org "Effort" property):
+  - If only one has an estimate (and the other is none or zero), the other is updated silently.
   - If both have estimates and they differ, behavior is controlled by ~tlon-forg-when-reconciling~:
     - =prompt=: Asks whether to use the GitHub estimate or the Org estimate.
     - =issue=: Updates the Org TODO "Effort" to match the GitHub "Estimate".
     - =todo=: Updates the GitHub "Estimate" to match the Org TODO "Effort".
-  - Works from either the issue buffer or the Org TODO heading.
+
+#+findex: tlon-reconcile-all-issues-and-todos
++ ~tlon-reconcile-all-issues-and-todos~ :: (Autoloaded) Reconciles all Org TODOs found in the relevant TODO files with their corresponding GitHub issues, including their estimates.
+  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
+  2. Iterates through all headings in all detected TODO files. These include the generic file (~tlon-get-todos-generic-file~), the jobs file (~tlon-get-todos-jobs-file~), and any repository-specific =*.org= files found in the directory specified by =paths-dir-tlon-todos=.
+  3. For each heading, finds the associated issue (~tlon-get-issue~).
+  4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~ (which handles name, status, tags, and estimate).
+  5. Clears the =org-refile= cache upon completion.
 
 *** Counterpart Navigation
 :PROPERTIES:
@@ -247,7 +245,6 @@ It provides the following groups and commands:
 + *Reconcile*:
   + =r= :: reconcile issue and todo (~tlon-reconcile-issue-and-todo~)
   + =R= :: reconcile all issues and todos (~tlon-reconcile-all-issues-and-todos~)
-  + =e= :: reconcile estimate (~tlon-reconcile-estimate~)
 + *Options*: (These set the corresponding user options temporarily for the session)
   + =-A= :: Archive TODO on close (~tlon-infix-toggle-archive-todo-on-close~)
   + =-a= :: Include archived (~tlon-infix-toggle-include-archived~)
