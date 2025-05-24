@@ -12,6 +12,7 @@
 ;;                   (files-extras "0.1")
 ;;                   (forge "0.3.0")
 ;;                   (forge-search "0")
+;;                   (forge-extras "0.1")
 ;;                   (gptel "0.1")
 ;;                   (gptel-extras "0.1")
 ;;                   (markdown-mode-extras "0.1")

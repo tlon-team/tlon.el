@@ -4,6 +4,8 @@
 
 ;; Author: Pablo Stafforini
 
+;; Package-Requires: ((forge-extras "0.1"))
+
 ;; This file is NOT part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
