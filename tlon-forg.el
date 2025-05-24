@@ -938,8 +938,12 @@ point."
     (string-to-number issue-number)))
 
 (defun tlon-get-repo-from-heading ()
-  "Get the repo from the heading at point."
-  (let* ((abbrev-repo (tlon-get-element-from-heading "^\\[\\(.*?\\)\\]")))
+  "Return the repository directory indicated in the Org heading at point.
+The heading is expected to contain a fragment like \"[REPO]\" anywhere in the
+text (it can be preceded by an Org TODO keyword such as \"TODO\", \"DOING\",
+etc.).  The repository *abbreviation* (i.e., what appears inside the square
+brackets) is converted to its full path via `tlon-repo-lookup'."
+  (let* ((abbrev-repo (tlon-get-element-from-heading "\\[\\([^]]+\\)\\]")))
     (tlon-repo-lookup :dir :abbrev abbrev-repo)))
 
 (defun tlon-get-issue-number-from-open-issues (&optional forge-repo)
