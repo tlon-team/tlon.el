@@ -584,6 +584,117 @@ If ISSUE is nil, use the issue at point."
       (?t (tlon-update-issue-from-todo)) ; No longer needs todo-name argument
       (_ (user-error "Aborted")))))
 
+(defun tlon-forg--set-github-project-estimate (issue estimate-value)
+  "Set GitHub Project estimate for ISSUE to ESTIMATE-VALUE.
+ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
+  (unless (and (boundp 'forge-extras-estimate-field-node-id)
+               (stringp forge-extras-estimate-field-node-id)
+               (not (string-empty-p forge-extras-estimate-field-node-id)))
+    (user-error "`forge-extras-estimate-field-node-id' is not configured. Please set it"))
+  (let* ((repo (forge-get-repository issue))
+         (issue-number (oref issue number))
+         (repo-name (oref repo name))
+         (gh-fields (forge-extras-gh-get-issue-fields issue-number repo-name))
+         (parsed-fields (when gh-fields (forge-extras-gh-parse-issue-fields gh-fields)))
+         (issue-node-id (plist-get parsed-fields :issue-node-id))
+         (current-project-item-id (plist-get parsed-fields :project-item-id))
+         target-project-item-id)
+    (unless parsed-fields
+      (user-error "Could not retrieve project data for issue #%s. Aborting estimate update" issue-number))
+    (unless issue-node-id
+      (user-error "Could not retrieve GitHub Issue Node ID for #%s. Aborting estimate update" issue-number))
+
+    (setq target-project-item-id
+          (forge-extras--ensure-issue-in-project
+           issue-number issue-node-id current-project-item-id
+           (format "Issue #%s is not in Project %s (%s). Add it and set estimate to '%s'?"
+                   issue-number forge-extras-project-number forge-extras-project-owner estimate-value)))
+    (unless target-project-item-id
+      (user-error "Failed to ensure issue #%s is in project. Aborting estimate update" issue-number))
+
+    (if (forge-extras-gh-update-project-item-estimate-field
+         forge-extras-project-node-id
+         target-project-item-id
+         forge-extras-estimate-field-node-id
+         estimate-value)
+        (message "Project estimate for issue #%s updated to %s." issue-number estimate-value)
+      (user-error "Failed to update project estimate for issue #%s" issue-number))))
+
+(defun tlon-forg--set-org-effort (effort-hours)
+  "Set Org 'Effort' property from EFFORT-HOURS (float)."
+  (let ((effort-str (org-duration-from-minutes (* effort-hours 60.0))))
+    (org-entry-put nil "Effort" effort-str)
+    (message "Org Effort property updated to %s." effort-str)))
+
+(defun tlon-reconcile-estimate-from-issue (&optional issue)
+  "Reconcile estimate for ISSUE and its associated TODO.
+If ISSUE is nil, use the issue at point."
+  (let* ((issue (or issue (forge-current-topic)))
+         (pos-file-pair (tlon-get-todo-position-from-issue issue)))
+    (if pos-file-pair
+        (save-window-excursion
+          (tlon-visit-todo pos-file-pair) ; Visit the TODO to set context for org-entry-get
+          (let* ((repo (forge-get-repository issue))
+                 (issue-number (oref issue number))
+                 (repo-name (oref repo name))
+                 ;; GitHub Estimate (float hours)
+                 (gh-fields (condition-case err
+                                (forge-extras-gh-get-issue-fields issue-number repo-name)
+                              (error (progn (message "Error fetching GH fields for #%s: %s" issue-number err) nil))))
+                 (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil))
+                 (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
+                 ;; Org Effort (float hours)
+                 (org-effort-str (org-entry-get nil "Effort" 'inherit))
+                 (org-effort-minutes (if org-effort-str (org-duration-to-minutes org-effort-str) nil))
+                 (org-effort-hours (if org-effort-minutes (/ (float org-effort-minutes) 60.0) nil))
+                 (epsilon 0.01)) ; Tolerance for float comparison
+
+            (cond
+             ;; Only GitHub has estimate
+             ((and gh-estimate-hours (not org-effort-hours))
+              (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO." issue-number gh-estimate-hours)
+              (tlon-forg--set-org-effort gh-estimate-hours))
+             ;; Only Org TODO has estimate
+             ((and org-effort-hours (not gh-estimate-hours))
+              (message "Org TODO has effort %s, GitHub issue #%s has none. Updating GitHub issue." org-effort-str issue-number)
+              (tlon-forg--set-github-project-estimate issue org-effort-hours))
+             ;; Both have estimates, and they differ
+             ((and gh-estimate-hours org-effort-hours (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
+              (message "Estimates differ: GitHub issue #%s has %s hours, Org TODO has %s (%s hours)."
+                       issue-number gh-estimate-hours org-effort-str org-effort-hours)
+              (let ((choice (pcase tlon-forg-when-reconciling
+                              ('prompt
+                               (read-char-choice
+                                (format "Estimates differ. Keep (g)itHub's (%s hrs) or (o)rg's (%s hrs)?"
+                                        gh-estimate-hours org-effort-hours)
+                                '(?g ?o)))
+                              ('issue ?g)
+                              ('todo ?o)
+                              (_ (user-error "Invalid `tlon-forg-when-reconciling' value: %s" tlon-forg-when-reconciling)))))
+                (pcase choice
+                  (?g (message "Updating Org TODO to match GitHub estimate.")
+                      (tlon-forg--set-org-effort gh-estimate-hours))
+                  (?o (message "Updating GitHub issue to match Org TODO estimate.")
+                      (tlon-forg--set-github-project-estimate issue org-effort-hours))
+                  (_ (user-error "Aborted estimate reconciliation")))))
+             ;; Both have estimates and they are (close enough to) equal, or both are nil
+             (t
+              (message "Estimates for issue #%s and Org TODO are in sync or both are nil." issue-number)))))
+      (message "No TODO found for issue %s to reconcile estimate." (oref issue title)))))
+
+;;;###autoload
+(defun tlon-reconcile-estimate ()
+  "Reconcile estimate between current issue and its Org TODO.
+Works from either context (issue buffer or TODO heading)."
+  (interactive)
+  (tlon-todo-issue-funcall
+   (lambda () ; Called when in Org mode
+     (let ((issue (tlon-get-issue)))
+       (unless issue (user-error "Cannot find GitHub issue for this TODO"))
+       (tlon-reconcile-estimate-from-issue issue)))
+   (lambda () ; Called when in Forge mode
+     (tlon-reconcile-estimate-from-issue (forge-current-topic)))))
+
 (defun tlon-update-todo-from-issue (issue-name)
   "Update TODO to match ISSUE-NAME."
   (let ((original-visual-line-mode visual-line-mode))
