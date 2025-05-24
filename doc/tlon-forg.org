@@ -140,6 +140,15 @@ This section details the interactive commands provided by =tlon-forg.el=.
   4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-reconcile-issue-and-todo-from-issue~.
   5. Clears the =org-refile= cache upon completion.
 
+#+findex: tlon-reconcile-estimate
++ ~tlon-reconcile-estimate~ :: (Autoloaded) Synchronizes the estimate between the current issue (GitHub Project "Estimate" field) and its associated Org TODO ("Effort" property).
+  - If only one has an estimate, the other is updated silently.
+  - If both have estimates and they differ, behavior is controlled by ~tlon-forg-when-reconciling~:
+    - =prompt=: Asks whether to use the GitHub estimate or the Org estimate.
+    - =issue=: Updates the Org TODO "Effort" to match the GitHub "Estimate".
+    - =todo=: Updates the GitHub "Estimate" to match the Org TODO "Effort".
+  - Works from either the issue buffer or the Org TODO heading.
+
 *** Counterpart Navigation
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-forg-counterpart-cmds
@@ -238,6 +247,7 @@ It provides the following groups and commands:
 + *Reconcile*:
   + =r= :: reconcile issue and todo (~tlon-reconcile-issue-and-todo~)
   + =R= :: reconcile all issues and todos (~tlon-reconcile-all-issues-and-todos~)
+  + =e= :: reconcile estimate (~tlon-reconcile-estimate~)
 + *Options*: (These set the corresponding user options temporarily for the session)
   + =-A= :: Archive TODO on close (~tlon-infix-toggle-archive-todo-on-close~)
   + =-a= :: Include archived (~tlon-infix-toggle-include-archived~)
