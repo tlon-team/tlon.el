@@ -141,6 +141,9 @@ DIR is the directory where the repo is stored."
     "80k podcast"
     ("p" "80k podcast"                  tlon-magit-browse-80k-podcast)
     ""
+    "80k website"
+    ("w" "80k website"                  tlon-magit-browse-80k-website)
+    ""
     "Boletín"
     ("l" "boletin"                      tlon-magit-browse-boletin)]
    ["La bisagra de la historia"
@@ -210,16 +213,19 @@ DIR is the directory where the repo is stored."
     ("q j" "uqbar-ja"                     tlon-dired-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)]
    ["EA International"
-    ("i" "ea.international"             tlon-dired-browse-ea-international)
+    ("i" "ea.international"               tlon-dired-browse-ea-international)
     ""
     "EA News"
-    ("n" "ean"                          tlon-dired-browse-ean)
+    ("n" "ean"                            tlon-dired-browse-ean)
     ""
     "80k podcast"
-    ("p" "80k podcast"                  tlon-dired-browse-80k-podcast)
+    ("p" "80k podcast"                    tlon-dired-browse-80k-podcast)
+    ""
+    "80k website"
+    ("w" "80k website"                    tlon-dired-browse-80k-website)
     ""
     "Boletín"
-    ("l" "boletin"                      tlon-dired-browse-boletin)]
+    ("l" "boletin"                        tlon-dired-browse-boletin)]
    ["La bisagra de la historia"
     ("s s" "bisagra"                      tlon-dired-browse-bisagra)
     ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
@@ -247,7 +253,7 @@ DIR is the directory where the repo is stored."
     ("c p" "Pablo"                        tlon-dired-browse-clock-pablo)
     ""
     "Docs"
-    ("d" "tlon-docs"                    tlon-dired-browse-docs)]])
+    ("d" "tlon-docs"                      tlon-dired-browse-docs)]])
 
 ;;;;; Open file in repo
 
