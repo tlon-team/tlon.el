@@ -635,56 +635,56 @@ If ISSUE is nil, use the issue at point."
     (let* ((repo (forge-get-repository issue)) ; Get repo object before switching buffer context
            (pos-file-pair (tlon-get-todo-position-from-issue issue)))
       (if pos-file-pair
-        (save-window-excursion
-          (tlon-visit-todo pos-file-pair) ; Visit the TODO, this changes current-buffer and default-directory
-          ;; For subsequent GitHub/Forge operations, explicitly set default-directory
-          (let ((default-directory (oref repo worktree)))
-            (let* ((issue-number (oref issue number))
-                   (repo-name (oref repo name)) ; repo-name is from the already fetched repo object
-                   ;; GitHub Estimate (float hours)
-                   (gh-fields (condition-case err
-                                  (forge-extras-gh-get-issue-fields issue-number repo-name)
-                                (error (progn (message "Error fetching GH fields for #%s: %s" issue-number err) nil))))
-                   (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil))
-                   (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
-                   ;; Org Effort (float hours) - This part is Org-specific, doesn't need repo context
-                   (org-effort-str (org-entry-get nil "Effort" 'inherit))
-                   (org-effort-minutes (if org-effort-str (org-duration-to-minutes org-effort-str) nil))
-                   (org-effort-hours (if org-effort-minutes (/ (float org-effort-minutes) 60.0) nil))
-                   (epsilon 0.01)) ; Tolerance for float comparison
+          (save-window-excursion
+            (tlon-visit-todo pos-file-pair) ; Visit the TODO, this changes current-buffer and default-directory
+            ;; For subsequent GitHub/Forge operations, explicitly set default-directory
+            (let ((default-directory (oref repo worktree)))
+              (let* ((issue-number (oref issue number))
+                     (repo-name (oref repo name)) ; repo-name is from the already fetched repo object
+                     ;; GitHub Estimate (float hours)
+                     (gh-fields (condition-case err
+                                    (forge-extras-gh-get-issue-fields issue-number repo-name)
+                                  (error (progn (message "Error fetching GH fields for #%s: %s" issue-number err) nil))))
+                     (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil))
+                     (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
+                     ;; Org Effort (float hours) - This part is Org-specific, doesn't need repo context
+                     (org-effort-str (org-entry-get nil "Effort" 'inherit))
+                     (org-effort-minutes (if org-effort-str (org-duration-to-minutes org-effort-str) nil))
+                     (org-effort-hours (if org-effort-minutes (/ (float org-effort-minutes) 60.0) nil))
+                     (epsilon 0.01)) ; Tolerance for float comparison
 
-              (cond
-               ;; Only GitHub has estimate
-               ((and gh-estimate-hours (not org-effort-hours))
-                (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO." issue-number gh-estimate-hours)
-                (tlon-forg--set-org-effort gh-estimate-hours)) ; Org op, fine
-               ;; Only Org TODO has estimate
-               ((and org-effort-hours (not gh-estimate-hours))
-                (message "Org TODO has effort %s, GitHub issue #%s has none. Updating GitHub issue." org-effort-str issue-number)
-                (tlon-forg--set-github-project-estimate issue org-effort-hours)) ; GH op, default-directory is correctly set by outer let
-               ;; Both have estimates, and they differ
-               ((and gh-estimate-hours org-effort-hours (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
-                (message "Estimates differ: GitHub issue #%s has %s hours, Org TODO has %s (%s hours)."
-                         issue-number gh-estimate-hours org-effort-str org-effort-hours)
-                (let ((choice (pcase tlon-forg-when-reconciling
-                                ('prompt
-                                 (read-char-choice
-                                  (format "Estimates differ. Keep (g)itHub's (%s hrs) or (o)rg's (%s hrs)?"
-                                          gh-estimate-hours org-effort-hours)
-                                  '(?g ?o)))
-                                ('issue ?g)
-                                ('todo ?o)
-                                (_ (user-error "Invalid `tlon-forg-when-reconciling' value: %s" tlon-forg-when-reconciling)))))
-                  (pcase choice
-                    (?g (message "Updating Org TODO to match GitHub estimate.")
-                        (tlon-forg--set-org-effort gh-estimate-hours)) ; Org op, fine
-                    (?o (message "Updating GitHub issue to match Org TODO estimate.")
-                        (tlon-forg--set-github-project-estimate issue org-effort-hours)) ; GH op, default-directory is correctly set
-                    (_ (user-error "Aborted estimate reconciliation")))))
-               ;; Both have estimates and they are (close enough to) equal, or both are nil
-               (t
-                (message "Estimates for issue #%s and Org TODO are in sync or both are nil." issue-number))))))
-      (message "No TODO found for issue %s to reconcile estimate." (oref issue title)))))
+		(cond
+		 ;; Only GitHub has estimate
+		 ((and gh-estimate-hours (not org-effort-hours))
+                  (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO." issue-number gh-estimate-hours)
+                  (tlon-forg--set-org-effort gh-estimate-hours)) ; Org op, fine
+		 ;; Only Org TODO has estimate
+		 ((and org-effort-hours (not gh-estimate-hours))
+                  (message "Org TODO has effort %s, GitHub issue #%s has none. Updating GitHub issue." org-effort-str issue-number)
+                  (tlon-forg--set-github-project-estimate issue org-effort-hours)) ; GH op, default-directory is correctly set by outer let
+		 ;; Both have estimates, and they differ
+		 ((and gh-estimate-hours org-effort-hours (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
+                  (message "Estimates differ: GitHub issue #%s has %s hours, Org TODO has %s (%s hours)."
+                           issue-number gh-estimate-hours org-effort-str org-effort-hours)
+                  (let ((choice (pcase tlon-forg-when-reconciling
+                                  ('prompt
+                                   (read-char-choice
+                                    (format "Estimates differ. Keep (g)itHub's (%s hrs) or (o)rg's (%s hrs)?"
+                                            gh-estimate-hours org-effort-hours)
+                                    '(?g ?o)))
+                                  ('issue ?g)
+                                  ('todo ?o)
+                                  (_ (user-error "Invalid `tlon-forg-when-reconciling' value: %s" tlon-forg-when-reconciling)))))
+                    (pcase choice
+                      (?g (message "Updating Org TODO to match GitHub estimate.")
+                          (tlon-forg--set-org-effort gh-estimate-hours)) ; Org op, fine
+                      (?o (message "Updating GitHub issue to match Org TODO estimate.")
+                          (tlon-forg--set-github-project-estimate issue org-effort-hours)) ; GH op, default-directory is correctly set
+                      (_ (user-error "Aborted estimate reconciliation")))))
+		 ;; Both have estimates and they are (close enough to) equal, or both are nil
+		 (t
+                  (message "Estimates for issue #%s and Org TODO are in sync or both are nil." issue-number))))))
+	(message "No TODO found for issue %s to reconcile estimate." (oref issue title))))))
 
 ;;;###autoload
 (defun tlon-reconcile-estimate ()
