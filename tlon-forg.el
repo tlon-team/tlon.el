@@ -699,7 +699,7 @@ If ISSUE is nil, use the issue at point."
 
                  ;; Case 4: Both are nil/zero, or both are significant and equal.
                  (t
-                  (message "Estimates for issue #%s and Org TODO are in sync (both nil, zero, or equal)." issue-number))))))
+                  (message "Estimates for issue #%s and Org TODO are in sync." issue-number))))))
         (message "No TODO found for issue %s to reconcile estimate." (oref issue title))))))
 
 (defun tlon-update-todo-from-issue (issue-name)
