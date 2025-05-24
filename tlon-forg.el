@@ -681,7 +681,7 @@ If ISSUE is nil, use the issue at point."
                     (_ (user-error "Aborted estimate reconciliation")))))
                ;; Both have estimates and they are (close enough to) equal, or both are nil
                (t
-                (message "Estimates for issue #%s and Org TODO are in sync or both are nil." issue-number)))))))
+                (message "Estimates for issue #%s and Org TODO are in sync or both are nil." issue-number))))))
       (message "No TODO found for issue %s to reconcile estimate." (oref issue title)))))
 
 ;;;###autoload
