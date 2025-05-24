@@ -223,12 +223,19 @@
 	   :type meta
 	   :key "i"
 	   :help t)
+    (:name "80k-website"
+	   :project "other"
+	   :subproject "80k-website"
+	   :abbrev "80k-website"
+	   :type content
+	   :key "w"
+	   :help t)
     (:name "80k-podcast"
 	   :project "other"
 	   :subproject "80k-podcast"
 	   :abbrev "80k-podcast"
 	   :type content
-	   :key "i"
+	   :key "p"
 	   :help t)
     (:name "aea"
 	   :project "other"
