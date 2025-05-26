@@ -45,6 +45,7 @@
   (file-name-concat user-emacs-directory "elpaca/repos/tlon/")
   "Directory where the `tlon' package is located.")
 
+;; `abbrev' is for naming Emacs symbols, perhaps for other things
 (defconst tlon-repos
   `((:name "babel-core"
 	   :project "babel"
@@ -211,7 +212,7 @@
     (:name "ea.news"
 	   :project "other"
 	   :subproject "ea.news"
-	   :abbrev "ean"
+	   :abbrev "ea-news"
 	   :type development
 	   :subtype issues
 	   :key "n n"
@@ -250,6 +251,12 @@
 	   :abbrev "aea-content"
 	   :type content
 	   :key "r c"
+	   :help t)
+    (:name "altruismoeficaz.org"
+	   :project "other"
+	   :abbrev "altruismoeficaz-org"
+	   :type content
+	   :key "o"
 	   :help t)
     (:name "bisagra"
 	   :project "other"
