@@ -105,7 +105,7 @@ use a different model for proofreading the reference article."
   :group 'tlon-ai)
 
 (defcustom tlon-ai-help-model
-  '("Gemini" . gemini-2.0-flash-exp)
+  '("Gemini" . gemini-2.0-flash-lite-preview-02-05)
   "Model to use for the AI help command (`tlon-ai-ask-for-help').
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, use the
