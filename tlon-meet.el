@@ -282,6 +282,7 @@ PARTICIPANTS, using filename inference for initial participant suggestion."
                                     "--diarize"
                                     "--language" "es"
                                     "--hf_token" hf-token
+                                    "--compute_type" "float32" ; Add compute_type
                                     "--output_dir" "."))) ; Output to CWD (which is audio-dir)
         ;; Log the actual command being run
         (with-current-buffer buffer
