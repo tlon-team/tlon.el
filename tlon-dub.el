@@ -32,6 +32,7 @@
 (eval-when-compile (require 'threads))
 (require 'tlon-ai)
 (require 'transient)
+(require 'cl-lib)
 
 (defgroup tlon-dub ()
   "Dubbing functionality using ElevenLabs."
@@ -84,6 +85,13 @@ Requires resource_id.")
 Requires dubbing_id and speaker_id.")
 
 ;;;;; Regexps
+
+(defconst tlon-dub--speaker-prefix-regex
+  "^\\([A-Z][a-z]*\\(?:[ \t]+[A-Z][a-z]*\\)\\{1,3\\}:\\)[ \t]*"
+  "Regexp that matches a speaker name at the start of a line.
+Capture group 1 includes the trailing colon (e.g., \"Rob Wiblin:\").
+Case must remain significant – always bind `case-fold-search' to nil when
+using this regexp.")
 
 ;;;;;; Common
 
@@ -291,6 +299,35 @@ Return only the shortened paragraph without any additional commentary or explana
 
 ;;;; Helper Functions
 
+;; ------------------------------------------------------------------
+;; Compatibility: Emacs < 28 does not have `plist-delete'.
+(unless (fboundp 'plist-delete)
+  (defun plist-delete (plist prop)
+    "Return a copy of PLIST with every occurrence of PROP removed."
+    (let ((res nil))
+      (while plist
+        (let ((key (pop plist))
+              (val (pop plist)))
+          (unless (eq key prop)
+            (setq res (cons val (cons key res))))))
+      (nreverse res)))
+)
+;; ------------------------------------------------------------------
+
+(defun tlon-dub--timestamp-to-seconds (ts)
+  "Convert an SRT timestamp TS (\"HH:MM:SS,mmm\") to float seconds."
+  (when (string-match "\\([0-9][0-9]\\):\\([0-9][0-9]\\):\\([0-9][0-9]\\),\\([0-9][0-9][0-9]\\)" ts)
+    (+ (* 3600 (string-to-number (match-string 1 ts)))
+       (* 60   (string-to-number (match-string 2 ts)))
+       (string-to-number (match-string 3 ts))
+       (/ (string-to-number (match-string 4 ts)) 1000.0))))
+
+(defun tlon-dub--get-speaker (text)
+  "Return the speaker prefix (including the colon) found at start of TEXT or nil."
+  (let ((case-fold-search nil))
+    (when (string-match tlon-dub--speaker-prefix-regex text)
+      (match-string 1 text))))
+
 (defun tlon-dub--get-content-type (filename)
   "Return the MIME content type based on FILENAME's extension.
 Returns nil if the extension is not recognized or unsupported for dubbing."
@@ -458,6 +495,71 @@ Returns the path to the OUTPUT-FILE-PATH."
       (user-error "No VTT segments found or processed in %s. Output file not created" source-file))))
 
 ;;;; Functions
+
+;;;###autoload
+(defun tlon-dub-resegment-srt (srt-file &optional min-duration)
+  "Resegment SRT-FILE and write a new file with larger segments.
+A new segment starts whenever the speaker changes and every segment is at
+least MIN-DURATION seconds (default 30).  Subject to these constraints, the
+segments are as short as possible.  The new file is written next to the
+original with the suffix “-resegmented.srt” and the list of segments is
+returned."
+  (interactive (list (read-file-name "SRT file: " nil nil t ".srt")))
+  (setq min-duration (or min-duration 30))
+  (let* ((segments (tlon-dub--parse-srt srt-file))
+         (merged '())
+         (current nil)
+         (current-speaker ""))   ;; NEW
+    (dolist (seg segments)
+      (let* ((text (plist-get seg :text))
+             (detected (tlon-dub--get-speaker text)))
+        ;; Update `current-speaker` whenever a speaker prefix is detected
+        (when detected
+          (setq current-speaker detected))
+        (let ((speaker current-speaker))
+          (if (null current)
+              ;; ----- first block -----
+              (setq current (list :start (plist-get seg :start)
+                                  :end   (plist-get seg :end)
+                                  :text  text
+                                  :speaker speaker))
+            ;; ----- we already have an open block -----
+            (let* ((same-speaker (string= speaker (plist-get current :speaker)))
+                   (cur-dur (- (tlon-dub--timestamp-to-seconds (plist-get current :end))
+                               (tlon-dub--timestamp-to-seconds (plist-get current :start)))))
+              (cond
+               ;; 1. Speaker changed → always close current block
+               ((not same-speaker)
+                (push (plist-delete current :speaker) merged)
+                (setq current (list :start (plist-get seg :start)
+                                    :end   (plist-get seg :end)
+                                    :text  text
+                                    :speaker speaker)))
+               ;; 2. Same speaker, ≥ MIN-DURATION, and current text ends a sentence → close
+               ((and (>= cur-dur min-duration)
+                     (tlon-dub--ends-sentence-p (plist-get current :text)))
+                (push (plist-delete current :speaker) merged)
+                (setq current (list :start (plist-get seg :start)
+                                    :end   (plist-get seg :end)
+                                    :text  text
+                                    :speaker speaker)))
+               ;; 3. Otherwise keep extending current block (same speaker, < MIN-DURATION)
+               (t
+                (setf (plist-get current :end) (plist-get seg :end))
+                (setf (plist-get current :text)
+                      (concat (plist-get current :text) "\n" text)))))))))
+    ;; push the last open segment
+    (when current
+      (push (plist-delete current :speaker) merged))
+    (setq merged (nreverse merged))
+    (let ((out-file (concat (file-name-sans-extension srt-file) "-resegmented.srt")))
+      (tlon-dub--write-srt-file merged out-file)
+      (message "Resegmented file written to %s" out-file)
+      merged)))
+
+(defun tlon-dub--ends-sentence-p (text)
+  "Return non-nil when TEXT ends with obvious sentence punctuation."
+  (string-match-p "[\\.\\!\\?…]\\s-*\\'" (string-trim text)))
 
 ;;;###autoload
 (defun tlon-dub-start-project (source-file source-lang target-lang project-name
@@ -1149,7 +1251,8 @@ If nil, use the default `gptel-model'."
     ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
     ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
-    ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)]
+    ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)
+    ("r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("d" "Get Project Metadata" tlon-dub-get-project-metadata) ; Changed key from "m" to "d" to avoid conflict
