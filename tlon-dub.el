@@ -1283,5 +1283,4 @@ If nil, use the default `gptel-model'."
     ("-m" "Propagation Model" tlon-dub-infix-select-propagation-model)]])
 
 (provide 'tlon-dub)
-
 ;;; tlon-dub.el ends here
