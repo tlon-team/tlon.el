@@ -530,7 +530,9 @@ returned."
               (cond
                ;; 1. Speaker changed → always close current block
                ((not same-speaker)
-                (push (plist-delete current :speaker) merged)
+                (let ((seg (copy-sequence current)))
+                  (cl-remf seg :speaker)
+                  (push seg merged))
                 (setq current (list :start (plist-get seg :start)
                                     :end   (plist-get seg :end)
                                     :text  text
@@ -538,7 +540,9 @@ returned."
                ;; 2. Same speaker, ≥ MIN-DURATION, and current text ends a sentence → close
                ((and (>= cur-dur min-duration)
                      (tlon-dub--ends-sentence-p (plist-get current :text)))
-                (push (plist-delete current :speaker) merged)
+                (let ((seg (copy-sequence current)))
+                  (cl-remf seg :speaker)
+                  (push seg merged))
                 (setq current (list :start (plist-get seg :start)
                                     :end   (plist-get seg :end)
                                     :text  text
@@ -550,7 +554,9 @@ returned."
                       (concat (plist-get current :text) "\n" text)))))))))
     ;; push the last open segment
     (when current
-      (push (plist-delete current :speaker) merged))
+      (let ((seg (copy-sequence current)))
+        (cl-remf seg :speaker)
+        (push seg merged)))
     (setq merged (nreverse merged))
     (let ((out-file (concat (file-name-sans-extension srt-file) "-resegmented.srt")))
       (tlon-dub--write-srt-file merged out-file)
