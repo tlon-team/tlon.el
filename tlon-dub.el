@@ -1178,10 +1178,10 @@ end timestamps."
                         (tlon-dub--csv-escape-string trans-text-clean))
                 csv-lines)
           (unless (string-empty-p speaker)            ;; ← new lines
-            (setq previous-speaker speaker)))          ;; ←
-      (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
-      (message "CSV file created at %s" output-path)
-      output-path)))
+            (setq previous-speaker speaker))          ;; ←
+	  (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
+	  (message "CSV file created at %s" output-path)
+	  output-path)))))
 
 (defun tlon-dub--parse-srt (file)
   "Parse SRT FILE and return a list of segments.
