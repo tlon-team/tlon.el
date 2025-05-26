@@ -1144,7 +1144,8 @@ end timestamps."
       (user-error "Mismatch in number of segments: English SRT has %d, Translated SRT has %d"
 		  (length english-segments) (length translated-segments)))
     (let ((csv-lines (list tlon-dub-csv-header))
-	  (output-path (concat (file-name-sans-extension english-srt-file) ".csv")))
+	  (output-path (concat (file-name-sans-extension english-srt-file) ".csv"))
+          (previous-speaker ""))               ;; ← add this line
       (dotimes (i (length english-segments))
         (let* ((eng-seg          (nth i english-segments))
                (trans-seg        (nth i translated-segments))
@@ -1162,6 +1163,7 @@ end timestamps."
                ;; Clean the segment texts
                (eng-text-clean   (tlon-dub--clean-segment-text eng-text-raw))
                (trans-text-clean (tlon-dub--clean-segment-text trans-text-raw)))
+          (setq speaker (or speaker previous-speaker))  ;; ← new line
           ;; ─── timestamp sanity check ───────────────────────────────────
           (unless (and (string= eng-start-time trans-start-time)
                        (string= eng-end-time   trans-end-time))
@@ -1174,7 +1176,9 @@ end timestamps."
                         (tlon-dub--csv-escape-string eng-end-time)
                         (tlon-dub--csv-escape-string eng-text-clean)
                         (tlon-dub--csv-escape-string trans-text-clean))
-                csv-lines)))
+                csv-lines)
+          (unless (string-empty-p speaker)            ;; ← new lines
+            (setq previous-speaker speaker)))          ;; ←
       (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
       (message "CSV file created at %s" output-path)
       output-path)))
