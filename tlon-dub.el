@@ -422,9 +422,9 @@ headers, blank lines, tagged text lines, and duplicated timestamp/text entries.
 OUTPUT-FILE-PATH is the optional path for the converted CSV file. If nil, it
 defaults to SOURCE-FILE with its extension changed to \".csv\".
 
-  The CSV file starts with the header line specified in `tlon-dub-csv-header'.
-  Subsequent data lines have the format:
-  \"\",\"HH:MM:SS,mmm\",\"HH:MM:SS,mmm\",\"Caption text\",\"\"
+The CSV file starts with the header line specified in `tlon-dub-csv-header'.
+Subsequent data lines have the format:
+\"\",\"HH:MM:SS,mmm\",\"HH:MM:SS,mmm\",\"Caption text\",\"\"
 
 This format is intended for Elevenlabs, as detailed here:
 https://elevenlabs.io/docs/product-guides/products/dubbing/dubbing-studio#example-csv-files
@@ -1141,7 +1141,7 @@ end timestamps."
      english-srt-file translated-srt-file)
     (let ((csv-lines (list tlon-dub-csv-header))
 	  (output-path (concat (file-name-sans-extension english-srt-file) ".csv"))
-          (previous-speaker ""))               ;; ← add this line
+          (previous-speaker ""))
       (dotimes (i (length english-segments))
         (let* ((eng-seg          (nth i english-segments))
                (trans-seg        (nth i translated-segments))
@@ -1151,30 +1151,23 @@ end timestamps."
                (trans-end-time   (plist-get trans-seg :end))
                (eng-text-raw     (plist-get eng-seg  :text))
                (trans-text-raw   (plist-get trans-seg :text))
-               ;; Detect speaker (prefer English, fallback to translation)
                (speaker-prefix   (or (tlon-dub--get-speaker eng-text-raw)
                                      (tlon-dub--get-speaker trans-text-raw)))
                (speaker          (when speaker-prefix
-                                   (string-trim (substring speaker-prefix 0 -1)))) ; drop “:”
-               ;; Clean the segment texts
+                                   (string-trim (substring speaker-prefix 0 -1))))
                (eng-text-clean   (tlon-dub--clean-segment-text eng-text-raw))
                (trans-text-clean (tlon-dub--clean-segment-text trans-text-raw)))
-          (setq speaker (or speaker previous-speaker))  ;; ← new line
-          ;; ─── timestamp sanity check ───────────────────────────────────
-          (tlon-dub--ensure-matching-timestamps
-           eng-start-time eng-end-time trans-start-time trans-end-time i)
-          ;; ─── build CSV line ───────────────────────────────────────────
+          (setq speaker (or speaker previous-speaker))
+          (tlon-dub--ensure-matching-timestamps eng-start-time eng-end-time trans-start-time trans-end-time i)
           (push (tlon-dub--make-csv-line
                  speaker eng-start-time eng-end-time
                  eng-text-clean trans-text-clean)
                 csv-lines)
-          (unless (string-empty-p speaker)            ;; ← new lines
-            (setq previous-speaker speaker))))        ;; ←
-
-      ;; --- write CSV file once all segments have been collected -----------------
+          (unless (string-empty-p speaker)
+            (setq previous-speaker speaker))))
       (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
       (message "CSV file created at %s" output-path)
-      output-path)))               ;; closes the LET
+      output-path)))
 
 (defun tlon-dub--validate-srt-segments (en-segs tr-segs en-file tr-file)
   "Signal user errors when either SRT list is nil or their lengths differ.
@@ -1191,7 +1184,9 @@ the error messages."
 
 (defun tlon-dub--ensure-matching-timestamps (en-start en-end tr-start tr-end idx)
   "Ensure timestamps in segment IDX match between English and translation.
-Signals a `user-error' when they differ."
+EN-START isthe start timestamp in the English segment. EN-END is the end
+timestamp. TR-START is the start timestamp in the translated segment. TR-END is
+the end timestamp."
   (unless (and (string= en-start tr-start) (string= en-end tr-end))
     (user-error "Timestamp mismatch in segment %d:\nEnglish: %s → %s\nTranslated: %s → %s"
                 (1+ idx) en-start en-end tr-start tr-end)))
