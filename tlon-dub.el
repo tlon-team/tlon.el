@@ -1136,13 +1136,9 @@ end timestamps."
 	 (read-file-name "Translated SRT file: " nil nil t ".srt")))
   (let ((english-segments (tlon-dub--parse-srt english-srt-file))
 	(translated-segments (tlon-dub--parse-srt translated-srt-file)))
-    (unless english-segments
-      (user-error "Could not parse English SRT file, or it is empty: %s" english-srt-file))
-    (unless translated-segments
-      (user-error "Could not parse translated SRT file, or it is empty: %s" translated-srt-file))
-    (unless (= (length english-segments) (length translated-segments))
-      (user-error "Mismatch in number of segments: English SRT has %d, Translated SRT has %d"
-		  (length english-segments) (length translated-segments)))
+    (tlon-dub--validate-srt-segments
+     english-segments translated-segments
+     english-srt-file translated-srt-file)
     (let ((csv-lines (list tlon-dub-csv-header))
 	  (output-path (concat (file-name-sans-extension english-srt-file) ".csv"))
           (previous-speaker ""))               ;; ← add this line
@@ -1165,17 +1161,12 @@ end timestamps."
                (trans-text-clean (tlon-dub--clean-segment-text trans-text-raw)))
           (setq speaker (or speaker previous-speaker))  ;; ← new line
           ;; ─── timestamp sanity check ───────────────────────────────────
-          (unless (and (string= eng-start-time trans-start-time)
-                       (string= eng-end-time   trans-end-time))
-            (user-error "Timestamp mismatch in segment %d:\nEnglish: %s → %s\nTranslated: %s → %s"
-                        (1+ i) eng-start-time eng-end-time trans-start-time trans-end-time))
+          (tlon-dub--ensure-matching-timestamps
+           eng-start-time eng-end-time trans-start-time trans-end-time i)
           ;; ─── build CSV line ───────────────────────────────────────────
-          (push (format "%s,%s,%s,%s,%s"
-                        (tlon-dub--csv-escape-string (or speaker ""))
-                        (tlon-dub--csv-escape-string eng-start-time)
-                        (tlon-dub--csv-escape-string eng-end-time)
-                        (tlon-dub--csv-escape-string eng-text-clean)
-                        (tlon-dub--csv-escape-string trans-text-clean))
+          (push (tlon-dub--make-csv-line
+                 speaker eng-start-time eng-end-time
+                 eng-text-clean trans-text-clean)
                 csv-lines)
           (unless (string-empty-p speaker)            ;; ← new lines
             (setq previous-speaker speaker))))        ;; ←
@@ -1184,6 +1175,36 @@ end timestamps."
       (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
       (message "CSV file created at %s" output-path)
       output-path)))               ;; closes the LET
+
+(defun tlon-dub--validate-srt-segments (en-segs tr-segs en-file tr-file)
+  "Signal user errors when either SRT list is nil or their lengths differ.
+EN-SEGS and TR-SEGS are the parsed segment lists.
+EN-FILE and TR-FILE are the originating filenames, used only in
+the error messages."
+  (unless en-segs
+    (user-error "Could not parse English SRT file, or it is empty: %s" en-file))
+  (unless tr-segs
+    (user-error "Could not parse translated SRT file, or it is empty: %s" tr-file))
+  (unless (= (length en-segs) (length tr-segs))
+    (user-error "Mismatch in number of segments: English SRT has %d, Translated SRT has %d"
+                (length en-segs) (length tr-segs))))
+
+(defun tlon-dub--ensure-matching-timestamps (en-start en-end tr-start tr-end idx)
+  "Ensure timestamps in segment IDX match between English and translation.
+Signals a `user-error' when they differ."
+  (unless (and (string= en-start tr-start) (string= en-end tr-end))
+    (user-error "Timestamp mismatch in segment %d:\nEnglish: %s → %s\nTranslated: %s → %s"
+                (1+ idx) en-start en-end tr-start tr-end)))
+
+(defun tlon-dub--make-csv-line (speaker start end en-text tr-text)
+  "Return a CSV line for ElevenLabs.
+SPEAKER, START, END, EN-TEXT and TR-TEXT are inserted after proper escaping."
+  (format "%s,%s,%s,%s,%s"
+          (tlon-dub--csv-escape-string (or speaker ""))
+          (tlon-dub--csv-escape-string start)
+          (tlon-dub--csv-escape-string end)
+          (tlon-dub--csv-escape-string en-text)
+          (tlon-dub--csv-escape-string tr-text)))
 
 (defun tlon-dub--parse-srt (file)
   "Parse SRT FILE and return a list of segments.
