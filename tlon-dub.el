@@ -1246,18 +1246,18 @@ If nil, use the default `gptel-model'."
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
   :info-manual "(tlon) Dubbing"
   [["Transcription & Timestamps (srt)"
-    ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
-    ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
-    ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
+    ;; ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
+    ;; ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
+    ;; ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
+    ;; ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
+    ;; ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)
     ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
-    ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
-    ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)
     ("r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("d" "Get Project Metadata" tlon-dub-get-project-metadata) ; Changed key from "m" to "d" to avoid conflict
     ("g" "Get Dubbing Transcript (VTT)" tlon-dub-get-dubbing)
-    ("r" "Get Resource Data" tlon-dub-get-resource-data)
+    ("R" "Get Resource Data" tlon-dub-get-resource-data)
     ("A" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
    ["Options"
     ("-m" "Propagation Model" tlon-dub-infix-select-propagation-model)]])
