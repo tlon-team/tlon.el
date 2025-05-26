@@ -1146,26 +1146,35 @@ end timestamps."
     (let ((csv-lines (list tlon-dub-csv-header))
 	  (output-path (concat (file-name-sans-extension english-srt-file) ".csv")))
       (dotimes (i (length english-segments))
-	(let* ((eng-seg (nth i english-segments))
-	       (trans-seg (nth i translated-segments))
-	       (eng-start-time (plist-get eng-seg :start))
-	       (eng-end-time (plist-get eng-seg :end))
-	       (trans-start-time (plist-get trans-seg :start))
-	       (trans-end-time (plist-get trans-seg :end))
-	       (eng-text (plist-get eng-seg :text))
-	       (trans-text (plist-get trans-seg :text)))
-	  ;; Verify that timestamps match for the current segment
-	  (unless (and (string= eng-start-time trans-start-time)
-		       (string= eng-end-time trans-end-time))
-	    (user-error "Timestamp mismatch in segment %d:\nEnglish: %s --> %s\nTranslated: %s --> %s"
-			(1+ i) eng-start-time eng-end-time trans-start-time trans-end-time))
-	  ;; Timestamps match, proceed to format CSV line using English timestamps
-	  (push (format "\"\",%s,%s,%s,%s" ; Speaker is empty
-			(tlon-dub--csv-escape-string eng-start-time)
-			(tlon-dub--csv-escape-string eng-end-time)
-			(tlon-dub--csv-escape-string eng-text)
-			(tlon-dub--csv-escape-string trans-text))
-		csv-lines)))
+        (let* ((eng-seg          (nth i english-segments))
+               (trans-seg        (nth i translated-segments))
+               (eng-start-time   (plist-get eng-seg  :start))
+               (eng-end-time     (plist-get eng-seg  :end))
+               (trans-start-time (plist-get trans-seg :start))
+               (trans-end-time   (plist-get trans-seg :end))
+               (eng-text-raw     (plist-get eng-seg  :text))
+               (trans-text-raw   (plist-get trans-seg :text))
+               ;; Detect speaker (prefer English, fallback to translation)
+               (speaker-prefix   (or (tlon-dub--get-speaker eng-text-raw)
+                                     (tlon-dub--get-speaker trans-text-raw)))
+               (speaker          (when speaker-prefix
+                                   (string-trim (substring speaker-prefix 0 -1)))) ; drop “:”
+               ;; Clean the segment texts
+               (eng-text-clean   (tlon-dub--clean-segment-text eng-text-raw))
+               (trans-text-clean (tlon-dub--clean-segment-text trans-text-raw)))
+          ;; ─── timestamp sanity check ───────────────────────────────────
+          (unless (and (string= eng-start-time trans-start-time)
+                       (string= eng-end-time   trans-end-time))
+            (user-error "Timestamp mismatch in segment %d:\nEnglish: %s → %s\nTranslated: %s → %s"
+                        (1+ i) eng-start-time eng-end-time trans-start-time trans-end-time))
+          ;; ─── build CSV line ───────────────────────────────────────────
+          (push (format "%s,%s,%s,%s,%s"
+                        (tlon-dub--csv-escape-string (or speaker ""))
+                        (tlon-dub--csv-escape-string eng-start-time)
+                        (tlon-dub--csv-escape-string eng-end-time)
+                        (tlon-dub--csv-escape-string eng-text-clean)
+                        (tlon-dub--csv-escape-string trans-text-clean))
+                csv-lines)))
       (write-region (string-join (nreverse csv-lines) "\n") nil output-path nil 'silent)
       (message "CSV file created at %s" output-path)
       output-path)))
@@ -1210,6 +1219,13 @@ file is empty."
 		      (warn "Could not parse SRT block in %s: %s" file block))))))
 	    (nreverse segments))))
     (user-error (progn (message "Error parsing SRT file %s: %s" file err) nil))))
+
+(defun tlon-dub--clean-segment-text (text)
+  "Remove speaker prefix and line-breaks from TEXT, then collapse spaces."
+  (let ((case-fold-search nil))
+    (setq text (replace-regexp-in-string tlon-dub--speaker-prefix-regex "" text 1 t)))
+  (setq text (replace-regexp-in-string "[[:space:]\n\r]+" " " (string-trim text)))
+  text)
 
 (defun tlon-dub--csv-escape-string (str)
   "Escape STR for CSV by doubling quotes and enclosing in quotes."
