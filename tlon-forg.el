@@ -1041,10 +1041,11 @@ If REPO is nil, use the current repository."
 
 (defun tlon-close-issue-and-todo-from-issue ()
   "With point on issue, close issue and associated TODO."
-  (let ((issue (tlon-get-issue))) ; Get forge-issue object from context
+  (let ((issue (tlon-get-issue)))
     (when issue
       (tlon-close-issue-number (oref issue number) (oref (forge-get-repository issue) worktree))
-      (let ((pos-file-pair (tlon-get-todo-position-from-issue issue)))
+      (let ((pos-file-pair (tlon-get-todo-position-from-issue issue))
+	    message)
         (if pos-file-pair
             (progn
               (tlon-visit-todo pos-file-pair)
@@ -1052,10 +1053,11 @@ If REPO is nil, use the current repository."
               (if tlon-forg-archive-todo-on-close
                   (progn
                     (org-archive-subtree-default)
-                    (message "Closed issue and TODO (archived)."))
-                (message "Closed issue and TODO."))
-              (save-buffer)) ; Save buffer after TODO state change and potential archive
-          (message "Closed issue, but no corresponding TODO found to mark as DONE."))))))
+                    (setq message "Closed issue and TODO (archived)."))
+                (setq message "Closed issue and TODO."))
+              (save-buffer))
+          (setq message "Closed issue, but no corresponding TODO found to mark as DONE."))
+	(message message)))))
 
 ;; shouldn’t this be done using the orgit-link rather than issue-number?
 (defun tlon-close-issue-number (issue-number repo)
