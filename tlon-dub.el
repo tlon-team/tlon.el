@@ -823,6 +823,14 @@ FORMAT overrides `tlon-dub-transcription-format'."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
   (tlon-whisperx-transcribe audio-file (or format tlon-dub-transcription-format)))
 
+;;;###autoload
+(defun tlon-dub-diarize-with-whisperx (audio-file &optional language)
+  "Diarize AUDIO-FILE with whisperx asynchronously.
+LANGUAGE defaults to \"en\".  The resulting transcript (with speaker
+labels) is produced by whisperx and saved in the same directory."
+  (interactive (list (read-file-name "Audio/Video file to diarize: ")))
+  (tlon-whisperx-diarize audio-file (or language "en")))
+
 ;;;;; Timestamp propagation
 
 ;;;;;; Machine timestamps
@@ -1275,6 +1283,7 @@ If nil, use the default `gptel-model'."
   :info-manual "(tlon) Dubbing"
   [["Transcription & Timestamps (srt)"
     ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
+    ("i" "Diarize with WhisperX (Audio -> diarized srt/txt)" tlon-dub-diarize-with-whisperx)
     ;; ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
     ;; ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ;; ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
