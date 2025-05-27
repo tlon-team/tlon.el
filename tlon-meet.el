@@ -30,6 +30,7 @@
 (require 'tlon-ai)
 (require 'tlon-core)
 (require 'filenotify)
+(require 'tlon-whisperx)
 
 ;;;; Variables
 
@@ -260,70 +261,29 @@ provided PARTICIPANTS list. If CALLBACK is provided, call it with the path to
 the final cleaned transcript file after the formatting and cleanup steps are
 complete. Interactively, prompts for AUDIO-FILE (audio or video) and
 PARTICIPANTS, using filename inference for initial participant suggestion."
-  (interactive (tlon-meet--get-file-and-participants)) ; Gets file and confirmed participants
-  (let* ((audio-dir (file-name-directory (expand-file-name audio-file)))
-         (audio-filename (file-name-nondirectory audio-file))
-         ;; whisperx outputs [basename].txt by default in the same directory as the audio file
-         (transcript-file (concat (file-name-sans-extension (expand-file-name audio-file)) ".txt"))
-         (buffer (get-buffer-create "*Diarization Output*"))
-         (process-name "whisperx-diarize-process")
-         (hf-token (auth-source-pass-get "whisperX" (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL")))))
-    ;; Note: transcript-file path calculation remains above, assuming output lands in audio-dir
-    ;; Show the output buffer only if called interactively
-    (when (called-interactively-p 'any)
-      (display-buffer buffer))
-    (with-current-buffer buffer
+  (interactive (tlon-meet--get-file-and-participants))
+  (let ((output-buffer (get-buffer-create "*Diarization Output*")))
+    (when (called-interactively-p 'any) (display-buffer output-buffer))
+    (with-current-buffer output-buffer
       (erase-buffer)
-      (insert (format "Starting diarization of %s using whisperx...\n\n" audio-filename)))
-    ;; Run the whisperx command, ensuring output goes to audio-dir by setting CWD
-    (let ((default-directory audio-dir)) ; Set CWD for the process
-      ;; Define command inside let, so paths/args are relative to CWD if needed
-      (let ((whisperx-command (list "whisperx" (expand-file-name audio-file) ; Absolute path for input
-                                    "--diarize"
-                                    "--language" "es"
-                                    "--hf_token" hf-token
-                                    "--compute_type" "float32" ; Add compute_type
-                                    "--output_dir" "."))) ; Output to CWD (which is audio-dir)
-        ;; Log the actual command being run
-        (with-current-buffer buffer
-          (insert (format "Running command in %s: %s\n\n" default-directory (string-join whisperx-command " "))))
-        ;; Start the process
-        (make-process
-         :name process-name
-         :buffer buffer
-         :command whisperx-command
-         :sentinel
-         (lambda (process event)
-           (let ((output-buffer (process-buffer process)))
-             (cond
-              ((string-match "\\`exited abnormally" event) ;; Check for abnormal exit
-               (with-current-buffer output-buffer
-		 (goto-char (point-max))
-		 (insert (format "\n\nError: Diarization failed.\nEvent: %s\nSee buffer output above for details."
-				 event))))
-              ((string= event "finished\n") ;; Original success condition
-               (with-current-buffer output-buffer
-		 (goto-char (point-max))
-		 (insert "\nDiarization complete. Checking for transcript...\n"))
-               ;; Check if transcript file exists
-               (if (file-exists-p transcript-file)
-                   (progn ; Transcript file exists
-                     (let ((base-name (file-name-sans-extension transcript-file)))
-                       ;; Delete unwanted files, ignoring errors if they don't exist
-                       (dolist (ext '(".vtt" ".srt" ".tsv" ".json"))
-                         (ignore-errors (delete-file (concat base-name ext))))
-                       (with-current-buffer output-buffer
-                         (goto-char (point-max))
-                         (insert (format "Transcript file found: %s. Cleaned up other formats. Starting formatting...\n"
-					 transcript-file)))
-                       ;; Call the formatting function, passing the original callback along
-                       (tlon-meet-format-transcript transcript-file participants callback)))
-                 ;; Else (transcript file not found)
-                 (with-current-buffer output-buffer
-                   (goto-char (point-max))
-                   (insert (format "\n\nError: Transcript file %s not found after successful diarization.\n" transcript-file)))))
-              ;; Ignore other events like "sent signal..."
-              (t nil)))))))))
+      (insert (format "Starting diarization of %s using whisperx…\n\n"
+                      audio-filename)))
+    (tlon-whisperx-diarize
+     audio-file "es" nil
+     (lambda (transcript-file _ok)
+       (if (not transcript-file)
+           (with-current-buffer output-buffer
+             (goto-char (point-max))
+             (insert "\nError: Transcript file not created.\n"))
+         (let* ((base-name (file-name-sans-extension transcript-file)))
+           (dolist (ext '(".vtt" ".srt" ".tsv" ".json"))
+             (ignore-errors (delete-file (concat base-name ext))))
+           (with-current-buffer output-buffer
+             (goto-char (point-max))
+             (insert (format "Transcript found: %s. Starting formatting…\n"
+                             transcript-file)))
+           (tlon-meet-format-transcript
+            transcript-file participants callback)))))))
 
 (defun tlon-meet--get-file-and-participants ()
   "Prompt user for audio/video file and participants, inferring participants first.

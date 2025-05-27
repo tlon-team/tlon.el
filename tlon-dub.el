@@ -33,6 +33,7 @@
 (require 'tlon-ai)
 (require 'transient)
 (require 'cl-lib)
+(require 'tlon-whisperx)
 
 (defgroup tlon-dub ()
   "Dubbing functionality using ElevenLabs."
@@ -826,42 +827,11 @@ segment IDs."
 ;;;###autoload
 (defun tlon-dub-transcribe-with-whisperx (audio-file &optional format)
   "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
-
-FORMAT, if non-nil, overrides `tlon-dub-transcription-format'.
-See `tlon-dub-transcription-format' for admissible values."
+FORMAT overrides `tlon-dub-transcription-format'."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
-  (let* ((expanded-audio-file (expand-file-name audio-file))
-	 (output-dir (file-name-directory expanded-audio-file))
-	 (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
-	 (output-buffer (format "*%s-output*" process-name))
-	 (format (or format tlon-dub-transcription-format))
-	 (command-parts (list "whisperx"
-			      expanded-audio-file
-			      "--compute_type" "float32"
-			      "--output_format" format
-			      "--output_dir" output-dir)))
-    (message "Starting whisperx %s transcription for %s..." format audio-file)
-    (message "Output %s file will be in %s. Check %s for progress/errors." format output-dir output-buffer)
-    (let ((process (apply #'start-process process-name output-buffer command-parts)))
-      (set-process-sentinel
-       process
-       (lambda (proc event)
-	 (let ((status (process-status proc)))
-	   (with-current-buffer (process-buffer proc)
-	     (message "Whisperx process '%s' for '%s' finished with status: %s. Output in %s and buffer %s"
-		      (process-name proc) expanded-audio-file status output-dir (buffer-name (process-buffer proc))))
-	   (when (memq status '(exit signal))
-	     (cond
-	      ((string-match "exited abnormally" event)
-	       (message "Whisperx process for %s exited abnormally. Check buffer %s for details."
-			expanded-audio-file (buffer-name (process-buffer proc)))
-	       (display-buffer (process-buffer proc)))
-	      ((string-match "finished" event)
-	       (message "Whisperx transcription for %s completed successfully. Output in %s."
-			expanded-audio-file output-dir))
-	      (t
-	       (message "Whisperx process for %s event: %s. Output in %s. Check buffer %s."
-			expanded-audio-file event output-dir (buffer-name (process-buffer proc))))))))))))
+  (tlon-whisperx-transcribe
+   audio-file
+   (or format tlon-dub-transcription-format)))
 
 ;;;;; Timestamp propagation
 
