@@ -829,9 +829,7 @@ segment IDs."
   "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
 FORMAT overrides `tlon-dub-transcription-format'."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
-  (tlon-whisperx-transcribe
-   audio-file
-   (or format tlon-dub-transcription-format)))
+  (tlon-whisperx-transcribe audio-file (or format tlon-dub-transcription-format)))
 
 ;;;;; Timestamp propagation
 
@@ -1293,7 +1291,7 @@ If nil, use the default `gptel-model'."
     ("r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
-    ("d" "Get Project Metadata" tlon-dub-get-project-metadata) ; Changed key from "m" to "d" to avoid conflict
+    ("d" "Get Project Metadata" tlon-dub-get-project-metadata)
     ("g" "Get Dubbing Transcript (VTT)" tlon-dub-get-dubbing)
     ("R" "Get Resource Data" tlon-dub-get-resource-data)
     ("A" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
