@@ -48,6 +48,16 @@ itself. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-dub)
 
+(defcustom tlon-dub-transcription-format "all"
+  "Default output format produced by WhisperX transcription.
+
+Allowed values are \"all\", \"srt\", \"vtt\", \"txt\", \"tsv\", \"json\",
+and \"aud\"."
+  :type '(choice (const "all") (const "srt") (const "vtt")
+                 (const "txt") (const "tsv") (const "json")
+                 (const "aud"))
+  :group 'tlon-dub)
+
 (defcustom tlon-dub-alignment-model
   '("ChatGPT" . 'o4-mini)
   "Model to use for aligning sentences.
@@ -817,14 +827,15 @@ segment IDs."
 ;;;###autoload
 (defun tlon-dub-transcribe-with-whisperx (audio-file &optional format)
   "Generate a transcript for AUDIO-FILE asynchronously using whisperx.
-The transcript file will be saved in the same directory as AUDIO-FILE, in the
-specified FORMAT. If FORMAT is nil, use \"srt\"."
+
+FORMAT, if non-nil, overrides `tlon-dub-transcription-format'.
+See `tlon-dub-transcription-format' for admissible values."
   (interactive (list (read-file-name "Audio/Video file to transcribe: ")))
   (let* ((expanded-audio-file (expand-file-name audio-file))
 	 (output-dir (file-name-directory expanded-audio-file))
 	 (process-name (format "whisperx-%s" (file-name-nondirectory expanded-audio-file)))
 	 (output-buffer (format "*%s-output*" process-name))
-	 (format (or format "srt"))
+	 (format (or format tlon-dub-transcription-format))
 	 (command-parts (list "whisperx"
 			      expanded-audio-file
 			      "--compute_type" "float32"
