@@ -1289,6 +1289,14 @@ Attempts to handle common sentence-ending punctuation patterns."
 
 ;;;; Menu
 
+(defun tlon-dub-set-transcription-format ()
+  "Interactively set `tlon-dub-transcription-format`."
+  (interactive)
+  (setq tlon-dub-transcription-format
+        (completing-read "Default transcription format: "
+                         '("all" "srt" "vtt" "txt" "tsv" "json" "aud")
+                         nil t nil nil tlon-dub-transcription-format)))
+
 (transient-define-infix tlon-dub-infix-select-propagation-model ()
   "AI model to use for propagating timestamps.
 If nil, use the default `gptel-model'."
@@ -1314,7 +1322,8 @@ If nil, use the default `gptel-model'."
     ("R" "Get Resource Data" tlon-dub-get-resource-data)
     ("A" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
    ["Options"
-    ("-m" "Propagation Model" tlon-dub-infix-select-propagation-model)]])
+    ("-m" "Propagation Model" tlon-dub-infix-select-propagation-model)
+    ("-f" "Transcription Format" tlon-dub-set-transcription-format)]])
 
 (provide 'tlon-dub)
 ;;; tlon-dub.el ends here
