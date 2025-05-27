@@ -1289,19 +1289,25 @@ Attempts to handle common sentence-ending punctuation patterns."
 
 ;;;; Menu
 
-(defun tlon-dub-set-transcription-format ()
-  "Interactively set `tlon-dub-transcription-format`."
-  (interactive)
-  (setq tlon-dub-transcription-format
-        (completing-read "Default transcription format: "
-                         '("all" "srt" "vtt" "txt" "tsv" "json" "aud")
-                         nil t nil nil tlon-dub-transcription-format)))
+(transient-define-infix tlon-dub-infix-select-transcription-format ()
+  "Default WhisperX transcription format."
+  :class 'transient-lisp-variable
+  :variable 'tlon-dub-transcription-format
+  :reader (lambda (prompt _ _)
+            (tlon-transient-read-string-choice
+             prompt '("all" "srt" "vtt" "txt" "tsv" "json" "aud")))
+  :prompt "Transcription format: ")
 
 (transient-define-infix tlon-dub-infix-select-propagation-model ()
   "AI model to use for propagating timestamps.
 If nil, use the default `gptel-model'."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-dub-propagation-model)
+
+(transient-define-infix tlon-dub-infix-select-alignment-model ()
+  "AI model to use for sentence alignment."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-dub-alignment-model)
 
 ;;;###autoload (autoload 'tlon-dub-menu "tlon-dub" nil t)
 (transient-define-prefix tlon-dub-menu ()
@@ -1323,7 +1329,8 @@ If nil, use the default `gptel-model'."
     ("A" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
    ["Options"
     ("-m" "Propagation model" tlon-dub-infix-select-propagation-model)
-    ("-f" "Transcription format" tlon-dub-set-transcription-format)]])
+    ("-a" "Alignment model" tlon-dub-infix-select-alignment-model)
+    ("-f" "Transcription format" tlon-dub-infix-select-transcription-format)]])
 
 (provide 'tlon-dub)
 ;;; tlon-dub.el ends here
