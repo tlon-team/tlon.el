@@ -232,6 +232,49 @@ The `cdr` values should be present in `org-todo-keywords'.")
 
 ;;;; Functions
 
+;;;;; internal helpers for sync  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun tlon-forg--org-heading-title ()
+  "Return the *issue title* encoded in the Org heading at point.
+Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
+`tlon-make-todo-name-from-issue'."
+  (let* ((el (org-element-at-point))
+         (raw (org-element-property :raw-value el))
+         (beg (org-element-property :contents-begin el))
+         (end (org-element-property :contents-end el)))
+    (save-excursion
+      (goto-char beg)
+      (cond
+       ;; if there is an explicit link, use its description
+       ((re-search-forward org-link-bracket-re end t)
+        (let* ((link (org-element-context))
+               (desc (org-element-property :description link)))
+          (if (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" desc)
+              (match-string 1 desc)
+            desc)))
+       ;; otherwise fall back to the raw heading text (already stripped of
+       ;; TODO keyword, tags, etc.)
+       (t (string-trim raw))))))
+
+(defun tlon-forg--diff-issue-and-todo (issue)
+  "Return a list of symbols whose values differ between ISSUE and the Org heading.
+Possible symbols are `title', `status' and `tags'."
+  (let* ((issue-title  (oref issue title))
+         (issue-status (tlon-get-status-in-issue issue))   ; already up-cased
+         (issue-tags   (sort (tlon-forg-get-labels issue) #'string<))
+         (org-title    (tlon-forg--org-heading-title))
+         (org-status   (org-get-todo-state))               ; up-cased by Org
+         (org-tags     (sort (org-get-tags) #'string<))
+         (diff '()))
+    (unless (string= issue-title org-title)   (push 'title  diff))
+    (unless (string= issue-status org-status) (push 'status diff))
+    (unless (equal   issue-tags org-tags)     (push 'tags   diff))
+    diff))
+
+(defun tlon-forg--report-diff (diff)
+  "Return a short human-readable string summarizing DIFF."
+  (mapconcat (lambda (sym) (symbol-name sym)) diff ", "))
+
 ;;;;; Visit
 
 ;; FIXME: this returns nil when called in an issue with no args
@@ -559,34 +602,35 @@ in `paths-dir-tlon-todos'."
 (defun tlon-sync-issue-and-todo-from-issue (&optional issue)
   "Sync ISSUE and associated TODO (name, status, tags, and estimate).
 If ISSUE is nil, use the issue at point."
-  (let* ((issue (or issue (forge-current-topic)))
-         (issue-title (if issue (oref issue title) "Unknown Issue")))
-    (unless issue
-      (message "No issue found to sync.")
-      (cl-return-from tlon-sync-issue-and-todo-from-issue))
-
-    (let* ((pos-file-pair (tlon-get-todo-position-from-issue issue))
-           (issue-name (tlon-make-todo-name-from-issue issue)))
-      (if pos-file-pair
-          (progn
-            ;; Sync Name/Status/Tags
-            (save-window-excursion
-              (tlon-visit-todo pos-file-pair)
-              (let ((todo-name (substring-no-properties (org-get-heading nil nil t t))))
-                (if (string= issue-name todo-name)
-                    (message "Issue ‘%s’: Name/Status/Tags are in sync with local TODO." issue-title)
-                  (tlon-sync-issue-and-todo-prompt issue-name todo-name))))
-            ;; Sync Estimate (only if the above didn't abort due to user-error)
-            (tlon-sync-estimate-from-issue issue))
-        (message "No TODO found for issue ‘%s’ to sync." issue-title)))))
+  (if-let* ((issue (or issue (forge-current-topic))))
+      (let* ((pos-file-pair (tlon-get-todo-position-from-issue issue)))
+	(if (not pos-file-pair)
+            (message "No TODO found for issue ‘%s’." (oref issue title))
+	  ;; visit the todo heading, compute differences, then act
+	  (save-window-excursion
+            (tlon-visit-todo pos-file-pair)
+            (let* ((diff (tlon-forg--diff-issue-and-todo issue)))
+              (if (null diff)
+		  (message "Issue ‘%s’ and its TODO are in sync." (oref issue title))
+		(let* ((issue-name (tlon-make-todo-name-from-issue issue))
+                       (todo-name  (substring-no-properties
+                                    (org-get-heading nil nil t t))))
+		  (message "Differences detected in: %s"
+			   (tlon-forg--report-diff diff))
+		  (tlon-sync-issue-and-todo-prompt issue-name todo-name))))))
+	;; estimates are handled separately
+	(tlon-sync-estimate-from-issue issue))
+    (user-error "No issue found to sync")))
 
 (defun tlon-sync-issue-and-todo-prompt (issue-name todo-name)
   "Prompt the user to sync discrepancies between ISSUE-NAME and TODO-NAME."
   (let ((choice (pcase tlon-forg-when-syncing
 		  ('prompt
 		   (read-char-choice
-		    (format "The issue differs from its todo. Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
-			    issue-name todo-name)
+		    (format "The issue and TODO differ (%s). Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
+                            (tlon-forg--report-diff (tlon-forg--diff-issue-and-todo
+                                                     (forge-current-topic)))
+                            issue-name todo-name)
 		    '(?i ?t)))
 		  ('issue ?i)
 		  ('todo ?t))))
