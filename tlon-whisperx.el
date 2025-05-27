@@ -28,6 +28,19 @@
 (require 'tlon-core)
 (require 'auth-source)
 
+(defgroup tlon-whisperx nil
+  "Shared helpers for running whisperx."
+  :group 'tlon)
+
+(defcustom tlon-dub-transcription-format "all"
+  "Output format produced by WhisperX transcription.
+Allowed values are \"all\", \"srt\", \"vtt\", \"txt\", \"tsv\", \"json\",
+and \"aud\"."
+  :type '(choice (const "all") (const "srt") (const "vtt")
+                 (const "txt") (const "tsv") (const "json")
+                 (const "aud"))
+  :group 'tlon-whisperx)
+
 (defun tlon-whisperx--start (audio-file args buffer-name callback)
   "Run whisperx on AUDIO-FILE with ARGS, log to BUFFER-NAME, call CALLBACK.
 CALLBACK is called as (CALLBACK transcript-path t) on success, or (CALLBACK nil
