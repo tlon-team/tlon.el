@@ -57,14 +57,6 @@ itself. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-dub)
 
-(defcustom tlon-dub-transcription-format "all"
-  "Output format produced by WhisperX transcription.
-Allowed values are \"all\", \"srt\", \"vtt\", \"txt\", \"tsv\", \"json\",
-and \"aud\"."
-  :type '(choice (const "all") (const "srt") (const "vtt")
-                 (const "txt") (const "tsv") (const "json")
-                 (const "aud"))
-  :group 'tlon-dub)
 
 ;;;; Constants
 
