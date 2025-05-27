@@ -824,12 +824,19 @@ FORMAT overrides `tlon-dub-transcription-format'."
   (tlon-whisperx-transcribe audio-file (or format tlon-dub-transcription-format)))
 
 ;;;###autoload
-(defun tlon-dub-diarize-with-whisperx (audio-file &optional language)
-  "Diarize AUDIO-FILE with whisperx asynchronously.
-LANGUAGE defaults to \"en\".  The resulting transcript (with speaker
-labels) is produced by whisperx and saved in the same directory."
-  (interactive (list (read-file-name "Audio/Video file to diarize: ")))
-  (tlon-whisperx-diarize audio-file (or language "en")))
+(defun tlon-dub-diarize-with-whisperx (audio-file &optional language speakers)
+  "Diarize AUDIO-FILE with whisperx.
+Optional LANGUAGE defaults to \"en\".  If SPEAKERS > 0, whisperx is instructed
+to use exactly that many speakers."
+  (interactive
+   (let* ((file (read-file-name "Audio/Video file to diarize: "))
+          (n    (read-number "Number of speakers (0 = auto-detect): " 0)))
+     (list file nil n)))
+  (tlon-whisperx-diarize
+   audio-file
+   (or language "en")
+   speakers
+   nil nil))
 
 ;;;;; Timestamp propagation
 

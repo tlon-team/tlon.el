@@ -88,20 +88,27 @@ on success."
          (buffer-name (format "*whisperx-%s-output*" (file-name-nondirectory audio-file))))
     (tlon-whisperx--start audio-file args buffer-name (or callback (lambda (&rest _) nil)))))
 
-(defun tlon-whisperx-diarize (audio-file &optional language hf-token callback)
+(defun tlon-whisperx-diarize (audio-file &optional language speakers hf-token callback)
   "Diarize AUDIO-FILE with whisperx.
-LANGUAGE defaults to \"es\". HF-TOKEN is retrieved if nil. CALLBACK is called
-as (CALLBACK transcript-path t) on success."
+LANGUAGE defaults to \"es\".  If SPEAKERS is a positive integer, whisperx is
+called with “--min_speakers SPEAKERS --max_speakers SPEAKERS”; if nil or 0 the
+tool auto-detects speakers.  HF-TOKEN and CALLBACK behave as before."
   (let* ((language (or language "es"))
          (hf-token (or hf-token
                        (auth-source-pass-get "whisperX"
                                              (concat "chrome/huggingface.co/" (getenv "PERSONAL_EMAIL")))))
-         (args (list (expand-file-name audio-file)
-                     "--diarize"
-                     "--language" language
-                     "--hf_token" hf-token
-                     "--compute_type" "float32"
-                     "--output_dir" "."))
+         (speaker-flags
+          (when (and speakers (> speakers 0))
+            (list "--min_speakers" (number-to-string speakers)
+                  "--max_speakers" (number-to-string speakers))))
+         (args (append
+                (list (expand-file-name audio-file)
+                      "--diarize"
+                      "--language" language
+                      "--hf_token" hf-token
+                      "--compute_type" "float32"
+                      "--output_dir" ".")
+                speaker-flags))
          (buffer-name "*Diarization Output*"))
     (tlon-whisperx--start audio-file args buffer-name (or callback (lambda (&rest _) nil)))))
 
