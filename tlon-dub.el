@@ -25,6 +25,7 @@
 
 ;;; Code:
 
+(require 'subr-x)         ; for delete-dups, string-blank-p, etc.
 (require 'tlon-core)
 (require 'tlon-tts)
 (require 'json)
@@ -87,6 +88,10 @@ Requires resource_id.")
 Requires dubbing_id and speaker_id.")
 
 ;;;;; Regexps
+
+(defconst tlon-dub--diarized-speaker-regex
+  "^\\[SPEAKER_\\([0-9]+\\)\\]:[[:space:]]*"
+  "Regexp matching a WhisperX diarization speaker prefix inside a subtitle line.")
 
 (defconst tlon-dub--speaker-prefix-regex
   "^\\([A-Z][a-z]*\\(?:[ \t]+[A-Z][a-z]*\\)\\{1,3\\}:\\)[ \t]*"
@@ -564,6 +569,58 @@ returned."
       (tlon-dub--write-srt-file merged out-file)
       (message "Resegmented file written to %s" out-file)
       merged)))
+
+;;;###autoload
+(defun tlon-dub-clean-diarized-srt (diarized-file &optional speaker-alist)
+  "Convert DIARIZED-FILE (WhisperX SRT with [SPEAKER_xx]: prefixes) \
+into a cleaner SRT.
+
+Interactively prompts for a name for every distinct SPEAKER_xx that appears.
+SPEAKER-ALIST may be supplied programmatically as
+  ((\"00\" . \"Alice\") (\"01\" . \"Bob\")).
+
+The first subtitle block of each *speaker run* is prefixed with
+\"Name: \", subsequent contiguous blocks by the same speaker omit any prefix.
+Returns the pathname of the newly written “-cleaned.srt” file."
+  (interactive (list (read-file-name "Diarized SRT: " nil nil t ".srt")))
+  (let* ((segments (tlon-dub--parse-srt diarized-file))
+         ;; collect unique speaker ids present in file
+         (ids (delete-dups
+               (delq nil
+                     (mapcar (lambda (seg)
+                               (let ((text (plist-get seg :text)))
+                                 (when (string-match tlon-dub--diarized-speaker-regex text)
+                                   (match-string 1 text))))
+                             segments))))
+         ;; build alist id→name (prompt when needed)
+         (mapping (or speaker-alist
+                      (mapcar (lambda (id)
+                                (cons id (read-string (format "Name for SPEAKER_%s: " id))))
+                              ids)))
+         (prev-id nil)
+         (cleaned-segments
+          (mapcar
+           (lambda (seg)
+             (let* ((raw-text (plist-get seg :text))
+                    (cur-id  (when (string-match tlon-dub--diarized-speaker-regex raw-text)
+                               (match-string 1 raw-text)))
+                    ;; strip WhisperX prefix if present
+                    (clean-text (replace-regexp-in-string
+                                 tlon-dub--diarized-speaker-regex "" raw-text 1 t)))
+               ;; prepend human name when speaker changed
+               (when (and cur-id (not (equal cur-id prev-id)))
+                 (setq clean-text
+                       (concat (cdr (assoc cur-id mapping)) ": "
+                               (string-trim-left clean-text))))
+               (setq prev-id (or cur-id prev-id))
+               (list :start (plist-get seg :start)
+                     :end   (plist-get seg :end)
+                     :text  clean-text)))
+           segments))
+         (out-file (concat (file-name-sans-extension diarized-file) "-cleaned.srt")))
+    (tlon-dub--write-srt-file cleaned-segments out-file)
+    (message "Cleaned SRT saved to %s" out-file)
+    out-file))
 
 (defun tlon-dub--ends-sentence-p (text)
   "Return non-nil when TEXT ends with obvious sentence punctuation."
@@ -1280,6 +1337,7 @@ If nil, use the default `gptel-model'."
   [["Transcription & Timestamps (srt)"
     ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
     ("i" "Diarize with WhisperX (Audio -> diarized srt/txt)" tlon-dub-diarize-with-whisperx)
+    ("x" "Clean diarized SRT (→ -cleaned.srt)" tlon-dub-clean-diarized-srt)
     ;; ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
     ;; ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ;; ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
