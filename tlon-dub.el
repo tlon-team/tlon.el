@@ -505,7 +505,7 @@ segments are as short as possible.  The new file is written next to the
 original with the suffix “-resegmented.srt” and the list of segments is
 returned."
   (interactive (list (read-file-name "SRT file: " nil nil t ".srt")))
-  (setq min-duration (or min-duration 30))
+  (setq min-duration (or min-duration 5))
   (let* ((segments (tlon-dub--parse-srt srt-file))
          (merged '())
          (current nil)
@@ -1290,7 +1290,7 @@ If nil, use the default `gptel-model'."
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
   :info-manual "(tlon) Dubbing"
   [["Transcription & Timestamps (srt)"
-    ;; ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
+    ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
     ;; ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
     ;; ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ;; ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
