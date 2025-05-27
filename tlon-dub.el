@@ -48,6 +48,14 @@ itself. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-dub)
 
+(defcustom tlon-dub-alignment-model
+  '("ChatGPT" . 'o4-mini)
+  "Model to use for aligning sentences.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. If nil, use the default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-dub)
+
 (defcustom tlon-dub-transcription-format "all"
   "Output format produced by WhisperX transcription.
 Allowed values are \"all\", \"srt\", \"vtt\", \"txt\", \"tsv\", \"json\",
@@ -55,14 +63,6 @@ and \"aud\"."
   :type '(choice (const "all") (const "srt") (const "vtt")
                  (const "txt") (const "tsv") (const "json")
                  (const "aud"))
-  :group 'tlon-dub)
-
-(defcustom tlon-dub-alignment-model
-  '("ChatGPT" . 'o4-mini)
-  "Model to use for aligning sentences.
-The value is a cons cell whose car is the backend and whose cdr is the model
-itself. If nil, use the default `gptel-model'."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-dub)
 
 ;;;; Constants
@@ -1322,8 +1322,8 @@ If nil, use the default `gptel-model'."
     ("R" "Get Resource Data" tlon-dub-get-resource-data)
     ("A" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
    ["Options"
-    ("-m" "Propagation Model" tlon-dub-infix-select-propagation-model)
-    ("-f" "Transcription Format" tlon-dub-set-transcription-format)]])
+    ("-m" "Propagation model" tlon-dub-infix-select-propagation-model)
+    ("-f" "Transcription format" tlon-dub-set-transcription-format)]])
 
 (provide 'tlon-dub)
 ;;; tlon-dub.el ends here
