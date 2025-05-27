@@ -832,7 +832,7 @@ to use exactly that many speakers."
    (let* ((file (read-file-name "Audio/Video file to diarize: "))
           (n    (read-number "Number of speakers (0 = auto-detect): " 0)))
      (list file nil n)))
-  (tlon-whisperx-diarize audio-file (or language "en") speakers nil nil))
+  (tlon-whisperx-diarize audio-file (or language "en") speakers))
 
 ;;;;; Timestamp propagation
 
