@@ -241,8 +241,14 @@ function tried to be a nudge in that direction."
           (tlon-create-or-visit-meeting-issue-fede-pablo time))
          ((string-match "Group meeting" heading)
           (tlon-create-or-visit-group-meeting-issue time)))
-        ;; NEW ─ ensure the issue is in the project and marked DOING
         (tlon-meet--project-set-doing)))))
+
+(defun tlon-meet--project-set-doing ()
+  "Add the current Forge issue to the project and set its status to DOING."
+  (when-let ((issue (ignore-errors (forge-current-topic))))
+    ;; suppress any y-or-n-p prompt that forge-extras may raise
+    (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+      (tlon-forg--set-github-project-status issue "DOING"))))
 
 (defun tlon-open-meeting-link ()
   "Open the meeting link in the current Org buffer."
