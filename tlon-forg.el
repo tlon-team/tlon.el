@@ -35,6 +35,7 @@
 (require 'tlon-core)
 (require 'tlon-dispatch)
 (require 'forge-extras)
+(require 'cl-lib)
 
 ;; Forward declarations
 (declare-function tlon-get-repo "tlon-core" (&optional no-prompt include-all))
@@ -281,11 +282,19 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
 Possible symbols are `title', `status' and `tags'."
   (let* ((issue-title  (oref issue title))
-         (issue-status (tlon-get-status-in-issue issue))   ; already up-cased
-         (issue-tags   (sort (tlon-forg-get-labels issue) #'string<))
+         (issue-status (let ((st (tlon-get-status-in-issue issue)))
+                         (when st (upcase st))))
+         (issue-tags   (sort (cl-remove-duplicates
+                              (mapcar #'downcase (tlon-forg-get-labels issue))
+                              :test #'string=)
+                             #'string<))
          (org-title    (tlon-forg--org-heading-title))
-         (org-status   (org-get-todo-state))               ; up-cased by Org
-         (org-tags     (sort (org-get-tags) #'string<))
+         (org-status   (let ((st (org-get-todo-state)))
+                         (when st (upcase st))))
+         (org-tags     (sort (cl-remove-duplicates
+                              (mapcar #'downcase (org-get-tags))
+                              :test #'string=)
+                             #'string<))
          (diff '()))
     (unless (string= issue-title org-title)   (push 'title  diff))
     (unless (string= issue-status org-status) (push 'status diff))
