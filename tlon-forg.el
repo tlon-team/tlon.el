@@ -237,18 +237,26 @@ The `cdr` values should be present in `org-todo-keywords'.")
 
 ;;;;; internal helpers for sync
 
-(defun tlon-forg--wait-for-issue (number repo-dir &optional timeout interval)
-  "Return the forge ISSUE object NUMBER in REPO-DIR, waiting until it exists.
-TIMEOUT (seconds, default 5) and INTERVAL (seconds, default 0.2) control the
-maximum time to wait and the pause between retries.  Signals `user-error'
-if the issue cannot be found within TIMEOUT."
-  (let ((timeout  (or timeout 5))
-        (interval (or interval 0.2))
-        issue)
-    (while (and (not issue)
-                (> timeout 0))
+(defun tlon-forg--wait-for-issue (number repo-dir &optional forge-repo timeout interval)
+  "Return ISSUE NUMBER in REPO-DIR, waiting until it exists locally.
+While waiting, repeatedly pulls FORGE-REPO to refresh the database.
+
+TIMEOUT  – seconds to wait (default 10)
+INTERVAL – seconds between retries (default 0.5)
+
+Signal a `user-error' if the issue cannot be found in time."
+  (let* ((timeout  (or timeout 10))
+         (interval (or interval 0.5))
+         (forge-repo (or forge-repo
+                         (let ((default-directory repo-dir))
+                           (forge-get-repository :tracked))))
+         issue)
+    (while (and (not issue) (> timeout 0))
+      ;; attempt to locate the issue
       (setq issue (tlon-get-issue number repo-dir))
       (unless issue
+        ;; refresh forge’s local db then retry
+        (tlon-forg--pull-sync forge-repo)
         (sleep-for interval)
         (setq timeout (- timeout interval))))
     (or issue
@@ -1521,7 +1529,7 @@ The command:
     (let* ((new-num (tlon-create-issue title repo-dir))
            ;; ensure it is in the local DB
            (tlon-forg--pull-sync forge-repo)
-           (issue (tlon-forg--wait-for-issue new-num repo-dir)))
+           (issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
       (tlon-set-labels `(,status) nil issue)   ; status label only
       (when effort-h
         (tlon-forg--set-github-project-estimate issue effort-h))
@@ -1592,7 +1600,7 @@ to reflect the new issue and its metadata."
     ;; 1. create the issue on GitHub
     (let* ((new-num (tlon-create-issue title repo-dir))
            (tlon-forg--pull-sync forge-repo)
-           (issue (tlon-forg--wait-for-issue new-num repo-dir)))
+           (issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
       ;; 3. label + status    (labels only; project status later)
       (tlon-set-labels `(,status ,@org-tags) nil issue)
       ;; 4. effort → GH estimate
