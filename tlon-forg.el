@@ -1609,10 +1609,12 @@ to reflect the new issue and its metadata."
             (tlon-forg--set-github-project-estimate issue org-effort-hours)))
         (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
                (new-head   (tlon-make-todo-name-from-issue issue)))
-          (org-edit-headline new-head)
-          (org-todo status)
-          (when org-tags (org-set-tags-to (string-join org-tags ":")))
-          (when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
+          (tlon-update-todo-from-issue new-head)        ; reliably rewrites heading line
+          (org-todo status)                             ; keep keyword in sync
+          (when org-tags
+            (org-set-tags-to (string-join org-tags ":")))
+          (when org-effort-hours
+            (tlon-forg--set-org-effort org-effort-hours)))
         (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
           (tlon-update-issue-from-todo))
         (tlon-forg--pull-sync forge-repo)))))
