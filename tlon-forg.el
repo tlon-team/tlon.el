@@ -1452,21 +1452,21 @@ If ISSUE is nil, use the issue at point or in current buffer."
 ;;;;; Create issues
 
 (defun tlon-create-issue (title &optional repo body)
-  "Create new GitHub issue in REPO with TITLE and BODY."
+  "Create new GitHub issue in REPO with TITLE and BODY.
+Returns the created issue number."
   (let* ((repo (or repo (tlon-get-repo 'error 'include-all)))
-	 (body (or body ""))
-	 (default-directory repo)
-	 (repo (forge-get-repository :tracked))
-	 (owner (oref repo owner))
-	 (reponame (oref repo name))
-	 (resource (format "/repos/%s/%s/issues" owner reponame))
-	 (data `((title . ,title)
-		 (body . ,body))))
-    (ghub-post resource data
-	       :auth 'forge
-	       :noerror t ;; avoid showing the original large output
-	       :reader 'ignore) ;; do not parse the response json
-    (message "Created issue with title %s" title)))
+         (body (or body ""))
+         (default-directory repo)
+         (repo (forge-get-repository :tracked))
+         (owner (oref repo owner))
+         (reponame (oref repo name))
+         (resource (format "/repos/%s/%s/issues" owner reponame))
+         (data `((title . ,title)
+                 (body . ,body)))
+         (resp (ghub-post resource data :auth 'forge))
+         (num  (alist-get 'number resp)))
+    (message "Created issue #%s with title %s" num title)
+    num))
 
 ;; currently only used for submitting bugs; maybe it can be integrated with the
 ;; forg code
@@ -1497,12 +1497,10 @@ The command:
          (effort-h    (and (string-match-p "\\S-" effort-str)
                            (string-to-number effort-str))))
     ;; ----- create issue ---------------------------------------------------
-    (tlon-create-issue title repo-dir)         ; no description prompt
-    (forge--pull forge-repo)
-    (let* ((num   (caar (forge-sql [:select (max number) :from issue
-                                    :where (= repository $s1)]
-                                   (oref forge-repo id))))
-           (issue (tlon-get-issue num repo-dir)))
+    (let* ((new-num (tlon-create-issue title repo-dir))
+           ;; ensure it is in the local DB
+           (_ (forge--pull forge-repo))
+           (issue   (tlon-get-issue new-num repo-dir)))
       (tlon-set-labels `(,status) nil issue)   ; status label only
       (when effort-h
         (tlon-forg--set-github-project-estimate issue effort-h))
@@ -1571,31 +1569,27 @@ to reflect the new issue and its metadata."
            (org-entry-get nil "Effort" 'inherit)))
          (status "DOING"))
     ;; 1. create the issue on GitHub
-    (tlon-create-issue title repo-dir)
-    ;; 2. pull so the freshly-created issue exists locally
-    (forge--pull forge-repo)
-    (let* ((new-num (caar (forge-sql [:select (max number) :from issue
-					      :where (= repository $s1)]
-                                     (oref forge-repo id))))
+    (let* ((new-num (tlon-create-issue title repo-dir))
+           (_       (forge--pull forge-repo))
            (issue   (tlon-get-issue new-num repo-dir)))
       ;; 3. label + status    (labels only; project status later)
       (tlon-set-labels `(,status ,@org-tags) nil issue)
       ;; 4. effort → GH estimate
       (when org-effort-hours
-	(tlon-forg--set-github-project-estimate issue org-effort-hours))
+        (tlon-forg--set-github-project-estimate issue org-effort-hours))
       ;; 5. update heading with link etc.
       (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
              (new-head   (tlon-make-todo-name-from-issue issue)))
-	(unless (tlon-get-repo-from-heading)
+        (unless (tlon-get-repo-from-heading)
           (org-extras-goto-beginning-of-heading-text)
           (insert (format "[%s] " repo-abbrev)))
-	(org-edit-headline new-head)
-	(org-todo status)
-	(when org-tags (org-set-tags (string-join org-tags ":")))
-	(when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
+        (org-edit-headline new-head)
+        (org-todo status)
+        (when org-tags (org-set-tags (string-join org-tags ":")))
+        (when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
       ;; 6. silently add to project and set project-status = “Doing”
       (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-	(tlon-update-issue-from-todo)))))
+        (tlon-update-issue-from-todo)))))
 
 (defun tlon-create-issue-or-todo ()
   "Create issue from TODO or vice versa."
