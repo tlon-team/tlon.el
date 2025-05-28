@@ -256,6 +256,23 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
        ;; TODO keyword, tags, etc.)
        (t (string-trim raw))))))
 
+(defun tlon-forg--org-heading-components ()
+  "Return plist (:title TITLE :tags TAGS :todo TODO) for the heading at point."
+  (let* ((el        (org-element-at-point))
+         (todo      (org-element-property :todo-keyword el))
+         (tags      (org-element-property :tags el))
+         (beg       (org-element-property :begin el))
+         (end-line  (save-excursion (goto-char beg) (line-end-position)))
+         (link      (save-excursion
+                      (goto-char beg)
+                      (when (re-search-forward org-link-bracket-re end-line t)
+                        (org-element-context))))
+         (title     (string-trim
+                     (if (and link (eq (org-element-type link) 'link))
+                         (org-element-property :description link)
+                       (org-element-property :raw-value el)))))
+    (list :title title :tags tags :todo todo)))
+
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
 Possible symbols are `title', `status' and `tags'."
@@ -763,127 +780,81 @@ If ISSUE is nil, use the issue at point."
 This includes title, labels (tags), and project status.
 Uses functions from `forge-extras.el` for GitHub Project interactions."
   (interactive)
-  (cl-block tlon-update-issue-from-todo
-    (unless (org-at-heading-p)
-      (user-error "Point is not on an Org heading"))
-    (let ((issue (tlon-get-issue))) ; Get forge-issue from current heading context
-      (unless issue
-        (user-error "Could not find a corresponding GitHub issue for this TODO")
-        (cl-return-from tlon-update-issue-from-todo))
+  (unless (org-at-heading-p)
+    (user-error "Point is not on an Org heading"))
+  (let* ((issue (tlon-get-issue)))
+    (unless issue
+      (user-error "Could not find a corresponding GitHub issue for this TODO"))
+    (let* ((repo              (forge-get-repository issue))
+           (default-directory (oref repo worktree))   ; run GH calls from repo
+           (org-info          (tlon-forg--org-heading-components))
+           (org-title         (plist-get org-info :title))
+           (org-tags          (plist-get org-info :tags))
+           (org-todo-keyword  (plist-get org-info :todo))
+           (issue-number      (oref issue number))
+           (repo-name         (oref repo name))
+           (gh-fields         (ignore-errors
+                                (forge-extras-gh-parse-issue-fields
+                                 (forge-extras-gh-get-issue-fields
+                                  issue-number repo-name))))
+           (issue-node-id     (plist-get gh-fields :issue-node-id))
+           (project-item-id   (plist-get gh-fields :project-item-id))
+           (current-title     (oref issue title))
+           (current-labels    (sort (copy-sequence
+                                     (tlon-forg-get-labels issue)) #'string<))
+           (current-status    (plist-get gh-fields :status)))
+      (unless issue-node-id
+        (user-error "Cannot retrieve project data for issue #%s" issue-number))
 
-      ;; first obtain the repository object of ISSUE
-      (let* ((repo (forge-get-repository issue)))
-        ;; make every gh/forge call run from the repo’s worktree
-        (let ((default-directory (oref repo worktree)))
-          (let* ((heading-element (org-element-at-point))
-                 (org-todo-keyword (org-element-property :todo-keyword heading-element))
-                 (org-raw-title-parts (org-element-property :raw-value heading-element)) ; :raw-value for title part
-                 (org-tags (org-element-property :tags heading-element))
-                 ;; --------------- REMOVED the old ‘repo’ binding here ---------------
-                 (issue-number (oref issue number))
-                 (repo-name (oref repo name)))
+      ;; ----------------------------------------------------------------
+      ;; 1. title
+      (unless (string= org-title current-title)
+        (message "Updating issue title from '%s' to '%s'" current-title org-title)
+        (forge--set-topic-title repo issue org-title))
 
-          ;; Extract base title from Org heading (stripping repo, issue link, etc.)
-          ;; The raw-value is usually just the text after the keyword and before tags.
-          ;; If it contains the orgit-link, we need to be more careful.
-          ;; For now, assume raw-value is mostly the title. A more robust parsing might be needed.
-          ;; --- replace existing link-in-title / org-title-for-issue block -----------
-          (let* ((heading-line-beg (org-element-property :begin heading-element))
-                 (heading-line-end (save-excursion
-                                    (goto-char heading-line-beg)
-                                    (line-end-position)))
-                 (link-in-title
-                  (save-excursion
-                    (goto-char heading-line-beg)
-                    (when (re-search-forward org-link-bracket-re heading-line-end t)
-                      (org-element-context))))
-                 ;; keep the link description verbatim so the “#NN …” prefix is
-                 ;; preserved; fall back to the raw heading text otherwise
-                 (org-title-for-issue
-                  (string-trim
-                   (if (and link-in-title (eq (org-element-type link-in-title) 'link))
-                       (org-element-property :description link-in-title)
-                     (org-element-property :raw-value heading-element)))))
-          ;; -------------------------------------------------------------------------
+      ;; ----------------------------------------------------------------
+      ;; 2. labels
+      (let ((wanted-labels (sort (copy-sequence org-tags) #'string<)))
+        (unless (equal wanted-labels current-labels)
+          (message "Updating issue labels from %s to %s"
+                   current-labels wanted-labels)
+          (forge--set-topic-labels repo issue wanted-labels)))
 
-	  (message "Org title for issue: '%s', Org tags: %s, Org TODO keyword: %s"
-		   org-title-for-issue org-tags org-todo-keyword)
+      ;; ----------------------------------------------------------------
+      ;; 3. project status
+      (when org-todo-keyword
+        (let* ((target-status (car (cl-rassoc org-todo-keyword tlon-todo-statuses
+                                              :test #'string=))))
+          (cond
+           ((null target-status)
+            (message "TODO keyword '%s' not mapped to a project status; skipping"
+                     org-todo-keyword))
+           ((string= target-status current-status) nil)   ; already in sync
+           (t
+            (let* ((option-id (cdr (assoc target-status
+                                          forge-extras-status-option-ids-alist
+                                          #'string=))))
+              (unless option-id
+                (message "Cannot find option id for status '%s'; skipping"
+                         target-status))
+              (if project-item-id
+                  ;; already in project → just update status
+                  (forge-extras-gh-update-project-item-status-field
+                   forge-extras-project-node-id project-item-id
+                   forge-extras-status-field-node-id option-id)
+                ;; not in project → ask to add & then set status
+                (when (y-or-n-p
+                       (format "Issue #%s is not in Project %s.  Add it and set status to '%s'? "
+                               issue-number forge-extras-project-number target-status))
+                  (let ((new-item-id
+                         (forge-extras-gh-add-issue-to-project
+                          forge-extras-project-node-id issue-node-id)))
+                    (when new-item-id
+                      (forge-extras-gh-update-project-item-status-field
+                       forge-extras-project-node-id new-item-id
+                       forge-extras-status-field-node-id option-id)))))))))
 
-	  ;; Fetch current GH issue details, including project-specific fields
-	  (let* ((gh-fields (condition-case err
-				(forge-extras-gh-parse-issue-fields (forge-extras-gh-get-issue-fields issue-number repo-name))
-                              (error (progn (message "Error fetching GH fields for #%s: %s" issue-number err) nil))))
-		 (issue-node-id (plist-get gh-fields :issue-node-id))
-		 (current-issue-title (oref issue title))
-		 (current-issue-labels (sort (copy-sequence (tlon-forg-get-labels issue)) #'string<))
-		 (current-gh-project-status-name (plist-get gh-fields :status))
-		 (project-item-id (plist-get gh-fields :project-item-id)))
-
-            (unless issue-node-id
-              (message "Could not retrieve issue Node ID for #%s. Skipping updates." issue-number)
-              (cl-return-from tlon-update-issue-from-todo))
-
-            ;; 1. Update Title
-            (unless (string= org-title-for-issue current-issue-title)
-              (message "Updating issue title from '%s' to '%s'" current-issue-title org-title-for-issue)
-              (forge--set-topic-title repo issue org-title-for-issue)
-              (message "Issue title updated."))
-
-            ;; 2. Update Labels (Tags)
-            (let ((sorted-org-tags (sort (copy-sequence org-tags) #'string<)))
-              (unless (equal sorted-org-tags current-issue-labels)
-		(message "Updating issue labels from %s to %s" current-issue-labels sorted-org-tags)
-		(forge--set-topic-labels repo issue sorted-org-tags)
-		(message "Issue labels updated.")))
-
-            ;; 3. Update Project Status
-            (when org-todo-keyword ; Only proceed if there's an Org TODO keyword
-              (let* ((target-gh-status-name (car (cl-rassoc org-todo-keyword tlon-todo-statuses :test #'string=))))
-		(if (not target-gh-status-name)
-                    (message
-		     (concat
-		      (format "Org TODO keyword '%s' does not map to a known GitHub Project status. " org-todo-keyword)
-		      "Skipping status update."))
-		  (unless (string= target-gh-status-name current-gh-project-status-name)
-                    (message "Project status differs. Org implies '%s' (from %s), GitHub has '%s'."
-                             target-gh-status-name org-todo-keyword (or current-gh-project-status-name "None/Unknown"))
-                    (let ((target-status-option-id
-			   (cdr (assoc target-gh-status-name forge-extras-status-option-ids-alist #'string=))))
-                      (unless target-status-option-id
-			(message "Cannot find Option ID for GitHub status '%s'. Skipping status update."
-				 target-gh-status-name)
-			(cl-return-from tlon-update-issue-from-todo))
-                      (if project-item-id
-			  ;; Issue is in project, update status
-			  (progn
-                            (message "Updating status for item %s to '%s' (Option ID: %s)"
-				     project-item-id target-gh-status-name target-status-option-id)
-                            (forge-extras-gh-update-project-item-status-field
-			     forge-extras-project-node-id
-			     project-item-id
-			     forge-extras-status-field-node-id
-			     target-status-option-id))
-			;; Issue not in project
-			(when (y-or-n-p
-			       (format "Issue '%s' (#%s) is not in Project %s (%s). Add it and set status to '%s'?"
-				       current-issue-title issue-number
-				       forge-extras-project-number
-				       forge-extras-project-owner
-				       target-gh-status-name))
-			  (message "Adding issue #%s to project %s..." issue-number forge-extras-project-node-id)
-			  (let ((new-item-id (forge-extras-gh-add-issue-to-project
-					      forge-extras-project-node-id issue-node-id)))
-                            (if new-item-id
-				(progn
-				  (message "Issue added to project (New Item ID: %s). Now setting status to '%s'."
-					   new-item-id target-gh-status-name)
-				  (forge-extras-gh-update-project-item-status-field
-				   forge-extras-project-node-id
-				   new-item-id
-				   forge-extras-status-field-node-id
-				   target-status-option-id))
-                              (warn "Failed to add issue #%s to project." issue-number))))))))))))
-        (message "Issue update attempt complete."))))))
+      (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
 
