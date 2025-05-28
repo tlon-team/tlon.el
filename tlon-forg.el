@@ -278,6 +278,16 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
          (title (tlon-forg--org-heading-title)))
     (list :title title :tags tags :todo todo)))
 
+(defun tlon-forg--valid-tags (tags)
+  "Return the down-cased TAGS that are listed in `tlon-todo-tags'."
+  (sort (cl-remove-duplicates
+         (cl-remove-if-not
+          (lambda (tag)
+            (member (downcase tag) (mapcar #'downcase tlon-todo-tags)))
+          (mapcar #'downcase tags))
+         :test #'string=)
+        #'string<))
+
 (defun tlon-forg--prompt-element-diff (element issue-val todo-val)
   "Ask which value of ELEMENT should prevail and return ?i or ?t.
 Respects `tlon-forg-when-syncing': when it is `issue' or `todo'
@@ -312,18 +322,12 @@ the choice is taken automatically, otherwise the user is asked."
 
 (defun tlon-forg--sync-tags (issue)
   "Reconcile the tags between ISSUE and the Org heading."
-  (let* ((issue-tags (sort (cl-remove-duplicates
-                            (mapcar #'downcase (tlon-forg-get-labels issue))
-                            :test #'string=)
-                           #'string<))
-         (todo-tags  (sort (cl-remove-duplicates
-                            (mapcar #'downcase (org-get-tags))
-                            :test #'string=)
-                           #'string<)))
+  (let* ((issue-tags (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
+         (todo-tags  (tlon-forg--valid-tags (org-get-tags))))
     (unless (equal issue-tags todo-tags)
       (pcase (tlon-forg--prompt-element-diff
               "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
-        (?i (org-set-tags (string-join issue-tags ":")))
+        (?i (org-set-tags-to (string-join issue-tags ":")))
         (?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
@@ -332,17 +336,11 @@ Possible symbols are `title', `status' and `tags'."
   (let* ((issue-title  (string-trim (oref issue title)))
          (issue-status (let ((st (tlon-get-status-in-issue issue)))
                          (when st (upcase st))))
-         (issue-tags   (sort (cl-remove-duplicates
-                              (mapcar #'downcase (tlon-forg-get-labels issue))
-                              :test #'string=)
-                             #'string<))
+         (issue-tags   (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
          (org-title    (string-trim (tlon-forg--org-heading-title)))
          (org-status   (let ((st (org-get-todo-state)))
                          (when st (upcase st))))
-         (org-tags     (sort (cl-remove-duplicates
-                              (mapcar #'downcase (org-get-tags))
-                              :test #'string=)
-                             #'string<))
+         (org-tags     (tlon-forg--valid-tags (org-get-tags)))
          (diff '()))
     (unless (string= issue-title org-title)   (push 'title  diff))
     (unless (string= issue-status org-status) (push 'status diff))
