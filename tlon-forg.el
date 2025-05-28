@@ -232,7 +232,7 @@ The `cdr` values should be present in `org-todo-keywords'.")
 
 ;;;; Functions
 
-;;;;; internal helpers for sync  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; internal helpers for sync
 
 (defun tlon-forg--org-heading-title ()
   "Return the *issue title* encoded in the Org heading at point.
@@ -805,22 +805,16 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
            (current-status    (plist-get gh-fields :status)))
       (unless issue-node-id
         (user-error "Cannot retrieve project data for issue #%s" issue-number))
-
-      ;; ----------------------------------------------------------------
       ;; 1. title
       (unless (string= org-title current-title)
         (message "Updating issue title from '%s' to '%s'" current-title org-title)
         (forge--set-topic-title repo issue org-title))
-
-      ;; ----------------------------------------------------------------
       ;; 2. labels
       (let ((wanted-labels (sort (copy-sequence org-tags) #'string<)))
         (unless (equal wanted-labels current-labels)
           (message "Updating issue labels from %s to %s"
                    current-labels wanted-labels)
           (forge--set-topic-labels repo issue wanted-labels)))
-
-      ;; ----------------------------------------------------------------
       ;; 3. project status
       (when org-todo-keyword
         (let* ((target-status (car (cl-rassoc org-todo-keyword tlon-todo-statuses
@@ -852,8 +846,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
                     (when new-item-id
                       (forge-extras-gh-update-project-item-status-field
                        forge-extras-project-node-id new-item-id
-                       forge-extras-status-field-node-id option-id)))))))))
-
+                       forge-extras-status-field-node-id option-id))))))))))
       (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
