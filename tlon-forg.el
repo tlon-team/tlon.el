@@ -1534,8 +1534,10 @@ The command:
         (tlon-set-assignee assignee issue)
         (tlon-set-labels `(,status) nil issue)
         (when effort-h
-          (tlon-forg--set-github-project-estimate issue effort-h))
-        (tlon-forg--pull-sync forge-repo)             ; refresh local cache
+          ;; add to project and set estimate silently
+          (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+            (tlon-forg--set-github-project-estimate issue effort-h)))
+        ;; no intermediate pull; we will refresh after the status update
         ;; ----- capture & visit todo -----------------------------------------
         (let ((tlon-when-assignee-is-nil        'capture)
               (tlon-when-assignee-is-someone-else 'capture))
