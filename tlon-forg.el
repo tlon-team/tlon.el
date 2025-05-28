@@ -243,20 +243,22 @@ FROM and TO are strings accepted by pandoc’s -f/-t switches.
 Return TEXT trimmed of trailing newline.
 Signal an error if pandoc is not in PATH."
   (unless (executable-find "pandoc")
-    (user-error "pandoc executable not found"))
+    (user-error "Pandoc executable not found"))
   (with-temp-buffer
     (insert (or text ""))
     (let ((exit (call-process-region (point-min) (point-max)
                                      "pandoc" t t nil
                                      "-f" from "-t" to)))
       (when (/= exit 0)
-        (user-error "pandoc conversion failed"))
+        (user-error "Pandoc conversion failed"))
       (string-trim (buffer-string)))))
 
 (defun tlon-forg-md->org (text)
+  "Convert TEXT from Markdown to Org format using pandoc."
   (tlon-forg--pandoc-convert text "markdown" "org"))
 
 (defun tlon-forg-org->md (text)
+  "Convert TEXT from Org to Markdown format using pandoc."
   (tlon-forg--pandoc-convert text "org" "markdown"))
 
 (defun tlon-forg--wait-for-issue (number repo-dir &optional forge-repo timeout interval)
@@ -386,7 +388,8 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
     (unless (equal issue-tags todo-tags)
       (pcase (tlon-forg--prompt-element-diff
               "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
-        (?i (org-set-tags-to (string-join issue-tags ":")))
+	;; do not convert `org-set-tags' to `org-set-tags-to' (which is obsolete)!
+        (?i (org-set-tags (string-join issue-tags ":")))
         (?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
