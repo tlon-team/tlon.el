@@ -1536,9 +1536,12 @@ If ISSUE is nil, use the issue at point or in current buffer."
 
 ;;;;; Create issues
 
-(defun tlon-create-issue (title &optional repo body)
+(defun tlon-create-issue (title &optional repo body format)
   "Create new GitHub issue in REPO with TITLE and BODY.
-Returns the created issue number."
+Returns the created issue number.
+
+Optional fourth argument FORMAT can be :org (default, convert title from Org to Markdown)
+or :markdown (title is already Markdown, do not convert)."
   (let* ((repo (or repo (tlon-get-repo 'error 'include-all)))
          (body (or body ""))
          (default-directory repo)
@@ -1546,7 +1549,9 @@ Returns the created issue number."
          (owner (oref repo owner))
          (reponame (oref repo name))
          (resource (format "/repos/%s/%s/issues" owner reponame))
-         (md-title (tlon-forg-org->md title))
+         (md-title (if (eq format :markdown)
+                       title                       ; already md
+                     (tlon-forg-org->md title)))   ; org → md
          (data `((title . ,md-title)
                  (body . ,body)))
          (resp (ghub-post resource data :auth 'forge))
@@ -1582,7 +1587,7 @@ The command:
          (effort-h    (and (string-match-p "\\S-" effort-str)
                            (string-to-number effort-str)))
          (assignee    (tlon-select-assignee "Assignee: ")))
-    (let* ((new-num (tlon-create-issue title repo-dir)))
+    (let* ((new-num (tlon-create-issue title repo-dir nil :markdown)))
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
         (tlon-set-assignee assignee issue)
@@ -1681,7 +1686,7 @@ to reflect the new issue and its metadata."
 If KEY is not provided, the key in the Markdown buffer at point is used."
   (let ((default-directory (tlon-get-repo 'error))
 	(key (or key (tlon-get-key-in-buffer))))
-    (tlon-create-issue (format "Job: `%s`" key) default-directory)))
+    (tlon-create-issue (format "Job: `%s`" key) default-directory nil :markdown)))
 
 (defun tlon-close-issue (&optional issue)
   "Close ISSUE.
