@@ -463,5 +463,14 @@ Return the path of the temporary file created."
 	 (file (file-name-concat tlon-package-dir (file-name-with-extension selection "el"))))
     (find-file file)))
 
+;;;;; Tlön dashboard
+
+;;;###autoload
+(defun tlon-browse-dashboard ()
+  "Browse the GitHub Tlön dashboard."
+  (interactive)
+  (let ((browse-url-browser-function 'browse-url-default-browser))
+    (browse-url "https://github.com/orgs/tlon-team/projects/9/")))
+
 (provide 'tlon)
 ;;; tlon.el ends here
