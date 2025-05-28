@@ -784,16 +784,24 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
         ;; The raw-value is usually just the text after the keyword and before tags.
 	;; If it contains the orgit-link, we need to be more careful.
 	;; For now, assume raw-value is mostly the title. A more robust parsing might be needed.
-	;; A simple approach: find the link, take its description, remove #num prefix.
-	(let* ((link-in-title (save-excursion
-				(goto-char (org-element-property :contents-begin heading-element))
-				(when (re-search-forward org-link-bracket-re (org-element-property :contents-end heading-element) t)
-				  (org-element-context))))
-               (org-title-for-issue
-		(if (and link-in-title (eq (org-element-type link-in-title) 'link))
-                    (let ((desc (org-element-property :description link-in-title)))
-                      (if (string-match "^#[0-9]+ \\(.*\\)$" desc) (match-string 1 desc) desc))
-		  (string-trim org-raw-title-parts)))) ; Fallback to raw-value, might need refinement
+	;; --- replace existing link-in-title / org-title-for-issue block -----------
+	(let* ((heading-line-beg (org-element-property :begin heading-element))
+	       (heading-line-end (save-excursion
+                                   (goto-char heading-line-beg)
+                                   (line-end-position)))
+	       (link-in-title
+                (save-excursion
+                  (goto-char heading-line-beg)
+                  (when (re-search-forward org-link-bracket-re heading-line-end t)
+                    (org-element-context))))
+	       ;; keep the link description verbatim so the “#NN …” prefix is
+	       ;; preserved; fall back to the raw heading text otherwise
+	       (org-title-for-issue
+                (string-trim
+                 (if (and link-in-title (eq (org-element-type link-in-title) 'link))
+                     (org-element-property :description link-in-title)
+                   (org-element-property :raw-value heading-element)))))
+	;; -------------------------------------------------------------------------
 
 	  (message "Org title for issue: '%s', Org tags: %s, Org TODO keyword: %s"
 		   org-title-for-issue org-tags org-todo-keyword)
