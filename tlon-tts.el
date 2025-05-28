@@ -2190,19 +2190,16 @@ chunks. Prompts for FILE if not provided or determinable from context."
   "Return a list of the existing file chunks for FILE.
 The file chunks are the files in the same directory as FILE that have the same
 base name and extension as FILE, but with '-chunk-NNN' appended to the base
-name before the extension. The list is sorted numerically by chunk number.
-If no chunks are found, return nil."
+name before the extension. The list is sorted alphabetically, so that
+numeric and letter-suffixed chunk files (e.g., 002, 002a, 002b, 003) are
+ordered as required. If no chunks are found, return nil."
   (let* ((dir (file-name-directory file))
          (base-name (file-name-base file))
          (extension (file-name-extension file))
-         ;; Match base-chunk-DDD.ext
-         (pattern (concat "^" (regexp-quote base-name) "-chunk-[0-9]+\\." (regexp-quote extension) "$"))
+         ;; Match base-chunk-DDD[a-z...].ext
+         (pattern (concat "^" (regexp-quote base-name) "-chunk-[0-9]+[a-z]*\\." (regexp-quote extension) "$"))
          (files (directory-files dir t pattern)))
-    ;; Sort numerically based on the chunk number extracted from the filename
-    (sort files (lambda (f1 f2)
-                  (let ((n1 (string-to-number (replace-regexp-in-string ".*-chunk-\\([0-9]+\\)\\..*" "\\1" f1)))
-                        (n2 (string-to-number (replace-regexp-in-string ".*-chunk-\\([0-9]+\\)\\..*" "\\1" f2))))
-                    (< n1 n2))))))
+    (sort files #'string-lessp)))
 
 (defun tlon-tts-get-base-audio-file-interactive (&optional file-hint)
   "Return the base audio file path for operations.
