@@ -883,8 +883,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 				   forge-extras-status-field-node-id
 				   target-status-option-id))
                               (warn "Failed to add issue #%s to project." issue-number))))))))))))
-        (message "Issue update attempt complete.")))))
-    )
+        (message "Issue update attempt complete."))))))
 
 ;;;;; Files
 
