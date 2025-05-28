@@ -1792,10 +1792,10 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   :info-manual "(tlon) GitHub and org-mode synchronization"
   [["Actions"
     ("n" "new"                                              tlon-create-new-issue)
-    ("v" "visit"                                            tlon-visit-counterpart)
     ("p" "post"                                             tlon-create-issue-from-todo)
-    ("x" "close"                                            tlon-close-issue-and-todo)
-    ("s" "sort"                                             tlon-forg-sort-by-tag)]
+    ("s" "sort"                                             tlon-forg-sort-by-tag)
+    ("v" "visit"                                            tlon-visit-counterpart)
+    ("x" "close"                                            tlon-close-issue-and-todo)]
    ["Capture (issue ↠ todo)"
     ("c" "capture"                                          tlon-capture-issue)
     ("C" "capture all"                                      tlon-capture-all-issues)]
