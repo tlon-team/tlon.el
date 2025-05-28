@@ -258,20 +258,10 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
 
 (defun tlon-forg--org-heading-components ()
   "Return plist (:title TITLE :tags TAGS :todo TODO) for the heading at point."
-  (let* ((el        (org-element-at-point))
-         (todo      (org-element-property :todo-keyword el))
-         (tags      (org-element-property :tags el))
-         (beg       (org-element-property :begin el))
-         (end-line  (save-excursion (goto-char beg) (line-end-position)))
-         (link      (save-excursion
-                      (goto-char beg)
-                      (when (re-search-forward org-link-bracket-re end-line t)
-                        (org-element-context))))
-         (title     (string-trim
-                     (or (if (and link (eq (org-element-type link) 'link))
-                             (org-element-property :description link)
-                           (org-element-property :raw-value el))
-                         ""))))
+  (let* ((el   (org-element-at-point))
+         (todo (org-element-property :todo-keyword el))
+         (tags (org-element-property :tags el))
+         (title (tlon-forg--org-heading-title)))
     (list :title title :tags tags :todo todo)))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
