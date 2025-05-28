@@ -1472,31 +1472,49 @@ If ISSUE is nil, use the issue at point or in current buffer."
 ;; forg code
 
 ;;;###autoload
-(defun tlon-create-issue-interactive ()
-  "Prompt for repo, title and description, then create a GitHub issue.
-The issue is automatically added to the configured project and its status
-initialised to “Doing”."
+(defun tlon-create-new-issue ()
+  "Create a GitHub issue from scratch, then capture it as an Org TODO.
+
+The command:
+• prompts for a repository, title, status (Org TODO keyword),
+  and optional effort estimate in hours;
+• creates the issue, labels it with the chosen status,
+  sets the project estimate when given;
+• captures the freshly-created issue as an Org TODO
+  and leaves point on that heading;
+• silently adds the issue to the project and updates its
+  project status to match the TODO."
   (interactive)
+  ;; ----- prompts ----------------------------------------------------------
   (let* ((repo-dir (tlon-get-repo nil 'include-all))
          (forge-repo (let ((default-directory repo-dir))
                        (forge-get-repository :tracked)))
-         (title (read-string "Issue title: "))
-         (body  (read-string "Description (empty for none): "))
-         (status "DOING"))
-    ;; create
-    (tlon-create-issue title repo-dir body)
+         (title       (read-string "Issue title: "))
+         (status      (completing-read
+                       "Status: "
+                       (mapcar #'cdr tlon-todo-statuses) nil t "DOING"))
+         (effort-str  (read-string "Effort hours (optional): "))
+         (effort-h    (and (string-match-p "\\S-" effort-str)
+                           (string-to-number effort-str))))
+    ;; ----- create issue ---------------------------------------------------
+    (tlon-create-issue title repo-dir)         ; no description prompt
     (forge--pull forge-repo)
-    ;; fetch the new issue object
-    (let* ((num (caar (forge-sql [:select (max number) :from issue
-                                  :where (= repository $s1)]
-                                  (oref forge-repo id))))
+    (let* ((num   (caar (forge-sql [:select (max number) :from issue
+                                    :where (= repository $s1)]
+                                   (oref forge-repo id))))
            (issue (tlon-get-issue num repo-dir)))
-      ;; label
-      (tlon-set-labels `(,status) nil issue)
-      ;; add to project + set status “Doing” without user confirmation
+      (tlon-set-labels `(,status) nil issue)   ; status label only
+      (when effort-h
+        (tlon-forg--set-github-project-estimate issue effort-h))
+      ;; ----- capture & visit todo -----------------------------------------
+      (tlon-capture-issue issue)
+      (when-let ((pf (tlon-get-todo-position-from-issue issue)))
+        (tlon-visit-todo pf))
+      ;; ----- sync project fields silently ---------------------------------
       (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-        (tlon-update-issue-from-todo))          ; re-uses existing machinery
-      (tlon-visit-issue num repo-dir))))
+        (tlon-update-issue-from-todo)))))
+
+(defalias 'tlon-create-issue-interactive #'tlon-create-new-issue)
 
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
