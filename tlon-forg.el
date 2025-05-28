@@ -363,7 +363,7 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
     (unless (equal issue-tags todo-tags)
       (pcase (tlon-forg--prompt-element-diff
               "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
-        (?i (org-set-tags (string-join issue-tags ":")))
+        (?i (org-set-tags-to (string-join issue-tags ":")))
         (?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
@@ -1613,7 +1613,7 @@ to reflect the new issue and its metadata."
             (insert (format "[%s] " repo-abbrev)))
           (org-edit-headline new-head)
           (org-todo status)
-          (when org-tags (org-set-tags (string-join org-tags ":")))
+          (when org-tags (org-set-tags-to (string-join org-tags ":")))
           (when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
         (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
           (tlon-update-issue-from-todo))
