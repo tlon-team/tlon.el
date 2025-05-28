@@ -237,6 +237,28 @@ The `cdr` values should be present in `org-todo-keywords'.")
 
 ;;;;; internal helpers for sync
 
+(defun tlon-forg--pandoc-convert (text from to)
+  "Convert TEXT between markup formats FROM → TO using pandoc.
+FROM and TO are strings accepted by pandoc’s -f/-t switches.
+Return TEXT trimmed of trailing newline.
+Signal an error if pandoc is not in PATH."
+  (unless (executable-find "pandoc")
+    (user-error "pandoc executable not found"))
+  (with-temp-buffer
+    (insert (or text ""))
+    (let ((exit (call-process-region (point-min) (point-max)
+                                     "pandoc" t t nil
+                                     "-f" from "-t" to)))
+      (when (/= exit 0)
+        (user-error "pandoc conversion failed"))
+      (string-trim (buffer-string)))))
+
+(defun tlon-forg-md->org (text)
+  (tlon-forg--pandoc-convert text "markdown" "org"))
+
+(defun tlon-forg-org->md (text)
+  (tlon-forg--pandoc-convert text "org" "markdown"))
+
 (defun tlon-forg--wait-for-issue (number repo-dir &optional forge-repo timeout interval)
   "Return ISSUE NUMBER in REPO-DIR, waiting until it exists locally.
 While waiting, repeatedly pulls FORGE-REPO to refresh the database.
@@ -338,12 +360,13 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
 
 (defun tlon-forg--sync-title (issue)
   "Reconcile the ISSUE title with the Org heading at point."
-  (let* ((issue-title (string-trim (oref issue title)))
+  (let* ((issue-title (string-trim (tlon-forg-md->org (oref issue title))))
          (todo-title  (string-trim (tlon-forg--org-heading-title))))
     (unless (string= issue-title todo-title)
       (pcase (tlon-forg--prompt-element-diff "Titles" issue-title todo-title)
         (?i (tlon-update-todo-from-issue (tlon-make-todo-name-from-issue issue)))
-        (?t (forge--set-topic-title (forge-get-repository issue) issue todo-title))))))
+        (?t (forge--set-topic-title (forge-get-repository issue) issue
+                                    (tlon-forg-org->md todo-title)))))))
 
 (defun tlon-forg--sync-status (issue)
   "Reconcile the status between ISSUE and the Org heading."
@@ -369,7 +392,7 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
 Possible symbols are `title', `status' and `tags'."
-  (let* ((issue-title  (string-trim (oref issue title)))
+  (let* ((issue-title  (string-trim (tlon-forg-md->org (oref issue title))))
          (issue-status (let ((st (tlon-get-status-in-issue issue)))
                          (when st (upcase st))))
          (issue-tags   (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
@@ -927,7 +950,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
       ;; 1. title
       (unless (string= org-title current-title)
         (message "Updating issue title from '%s' to '%s'" current-title org-title)
-        (forge--set-topic-title repo issue org-title))
+        (forge--set-topic-title repo issue (tlon-forg-org->md org-title)))
       ;; 2. labels
       (let ((wanted-labels (sort (copy-sequence org-tags) #'string<)))
         (unless (equal wanted-labels current-labels)
@@ -1442,7 +1465,7 @@ An issue name is its number followed by its title.
 If ISSUE is nil, get the issue at point or in current buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (number (oref issue number))
-	 (title (oref issue title)))
+	 (title (tlon-forg-md->org (oref issue title))))
     (format "#%s %s" number title)))
 
 (defun tlon-get-issue-link (&optional issue)
@@ -1520,7 +1543,8 @@ Returns the created issue number."
          (owner (oref repo owner))
          (reponame (oref repo name))
          (resource (format "/repos/%s/%s/issues" owner reponame))
-         (data `((title . ,title)
+         (md-title (tlon-forg-org->md title))
+         (data `((title . ,md-title)
                  (body . ,body)))
          (resp (ghub-post resource data :auth 'forge))
          (num  (alist-get 'number resp)))
