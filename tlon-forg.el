@@ -658,7 +658,6 @@ ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
       (user-error "Could not retrieve project data for issue #%s. Aborting estimate update" issue-number))
     (unless issue-node-id
       (user-error "Could not retrieve GitHub Issue Node ID for #%s. Aborting estimate update" issue-number))
-
     (setq target-project-item-id
           (forge-extras--ensure-issue-in-project
            issue-number issue-node-id current-project-item-id
@@ -666,7 +665,6 @@ ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
                    issue-number forge-extras-project-number forge-extras-project-owner estimate-value)))
     (unless target-project-item-id
       (user-error "Failed to ensure issue #%s is in project. Aborting estimate update" issue-number))
-
     (if (forge-extras-gh-update-project-item-estimate-field
          forge-extras-project-node-id
          target-project-item-id
@@ -699,7 +697,9 @@ If ISSUE is nil, use the issue at point."
                      ;; GitHub Estimate (float hours)
                      (gh-fields (condition-case err
                                     (forge-extras-gh-get-issue-fields issue-number repo-name)
-                                  (error (progn (message "Error fetching GH fields for #%s: %s" issue-number err) nil))))
+                                  (error (progn
+					   (message "Error fetching GH fields for #%s: %s" issue-number err)
+					   nil))))
                      (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil))
                      (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
                      ;; Org Effort (float hours) - This part is Org-specific, doesn't need repo context
@@ -709,20 +709,20 @@ If ISSUE is nil, use the issue at point."
                      (epsilon 0.01) ; Tolerance for float comparison
                      (gh-estimate-significant-p (and gh-estimate-hours (> gh-estimate-hours epsilon)))
                      (org-effort-significant-p (and org-effort-hours (> org-effort-hours epsilon))))
-
                 (cond
                  ;; Case 1: Only GitHub has a significant estimate, Org has none or zero.
                  ((and gh-estimate-significant-p (not org-effort-significant-p))
-                  (message "GitHub issue #%s has estimate %s, Org TODO has none or zero. Updating Org TODO." issue-number gh-estimate-hours)
+                  (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO."
+			   issue-number gh-estimate-hours)
                   (tlon-forg--set-org-effort gh-estimate-hours))
-
                  ;; Case 2: Only Org has a significant estimate, GitHub has none or zero.
                  ((and org-effort-significant-p (not gh-estimate-significant-p))
-                  (message "Org TODO has effort %s (%s hours), GitHub issue #%s has none or zero. Updating GitHub issue." org-effort-str org-effort-hours issue-number)
+                  (message "Org TODO has effort %s (%s hours), GitHub issue #%s has none. Updating GitHub issue."
+			   org-effort-str org-effort-hours issue-number)
                   (tlon-forg--set-github-project-estimate issue org-effort-hours))
-
                  ;; Case 3: Both have significant estimates, and they differ.
-                 ((and gh-estimate-significant-p org-effort-significant-p (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
+                 ((and gh-estimate-significant-p org-effort-significant-p
+		       (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
                   (message "Estimates differ: GitHub issue #%s has %s hours, Org TODO has %s (%s hours)."
                            issue-number gh-estimate-hours org-effort-str org-effort-hours)
                   (let ((choice (pcase tlon-forg-when-syncing
@@ -733,14 +733,14 @@ If ISSUE is nil, use the issue at point."
                                     '(?g ?o)))
                                   ('issue ?g)
                                   ('todo ?o)
-                                  (_ (user-error "Invalid `tlon-forg-when-syncing' value: %s" tlon-forg-when-syncing)))))
+                                  (_ (user-error "Invalid `tlon-forg-when-syncing' value: %s"
+						 tlon-forg-when-syncing)))))
                     (pcase choice
                       (?g (message "Updating Org TODO to match GitHub estimate.")
                           (tlon-forg--set-org-effort gh-estimate-hours))
                       (?o (message "Updating GitHub issue to match Org TODO estimate.")
                           (tlon-forg--set-github-project-estimate issue org-effort-hours))
                       (_ (user-error "Aborted estimate sync")))))
-
                  ;; Case 4: Both are nil/zero, or both are significant and equal.
                  (t
                   (message "Estimates for issue #%s and Org TODO are in sync." issue-number))))))
