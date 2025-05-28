@@ -1632,7 +1632,7 @@ to reflect the new issue and its metadata."
         (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
           (tlon-update-issue-from-todo))
         ;; keep local cache in sync with the project status just set
-        (tlon-forg--pull-sync forge-repo))))
+        (tlon-forg--pull-sync forge-repo)))))
 
 (defun tlon-create-issue-or-todo ()
   "Create issue from TODO or vice versa."
