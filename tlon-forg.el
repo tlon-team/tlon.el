@@ -46,6 +46,8 @@
 (declare-function forge-extras-gh-parse-issue-fields "forge-extras" (raw-list))
 (declare-function forge-extras-gh-add-issue-to-project "forge-extras" (project-node-id issue-node-id))
 (declare-function forge-extras-gh-update-project-item-status-field "forge-extras" (project-node-id item-node-id field-node-id status-option-id))
+(declare-function forge-extras-insert-issue-markdown-link "forge-extras"
+		  (&optional repositories))
 
 ;;;; Path Helpers
 
@@ -234,6 +236,12 @@ The `cdr` values should be present in `org-todo-keywords'.")
   "[[:digit:]]\\{2\\}_[[:digit:]]\\{2\\}")
 
 ;;;; Functions
+
+;;;###autoload
+(defun tlon-insert-issue-link ()
+  "Insert a markdown link to a GitHub issue in a Tlön repository."
+  (interactive)
+  (forge-extras-insert-issue-markdown-link "tlon-team")))
 
 ;;;;; internal helpers for sync
 
