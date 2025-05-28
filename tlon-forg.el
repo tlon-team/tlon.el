@@ -507,6 +507,10 @@ window configuration that was active before the pull started."
                            (when callback (funcall callback))
                          (set-window-configuration original-window-config))))))))
 
+(defun tlon-forg--pull-sync (forge-repo)
+  "Run `forge--pull' on FORGE-REPO synchronously and quietly."
+  (shut-up (forge--pull forge-repo nil)))   ; nil callback ⇒ wait
+
 (defun tlon-capture-all-issues-after-pull (repo)
   "Capture all issues in REPO after `forge-pull' is finished.
 REPO must be a valid `forge-repository` object."
@@ -1499,8 +1503,10 @@ The command:
     ;; ----- create issue ---------------------------------------------------
     (let* ((new-num (tlon-create-issue title repo-dir))
            ;; ensure it is in the local DB
-           (_ (forge--pull forge-repo))
-           (issue   (tlon-get-issue new-num repo-dir)))
+           (tlon-forg--pull-sync forge-repo)
+           (issue (or (tlon-get-issue new-num repo-dir)
+                      (progn (sleep-for 0.1)
+                             (tlon-get-issue new-num repo-dir)))))
       (tlon-set-labels `(,status) nil issue)   ; status label only
       (when effort-h
         (tlon-forg--set-github-project-estimate issue effort-h))
@@ -1570,8 +1576,10 @@ to reflect the new issue and its metadata."
          (status "DOING"))
     ;; 1. create the issue on GitHub
     (let* ((new-num (tlon-create-issue title repo-dir))
-           (_       (forge--pull forge-repo))
-           (issue   (tlon-get-issue new-num repo-dir)))
+           (tlon-forg--pull-sync forge-repo)
+           (issue (or (tlon-get-issue new-num repo-dir)
+                      (progn (sleep-for 0.1)
+                             (tlon-get-issue new-num repo-dir)))))
       ;; 3. label + status    (labels only; project status later)
       (tlon-set-labels `(,status ,@org-tags) nil issue)
       ;; 4. effort → GH estimate
