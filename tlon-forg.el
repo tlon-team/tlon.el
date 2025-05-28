@@ -1447,15 +1447,16 @@ buffer."
 	 (status (tlon-get-status-in-issue issue 'upcased))
 	 (tags (tlon-forg-get-labels issue))
 	 (repo-name (oref (forge-get-repository issue) name))
-	 (repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
-	 (todo-name (replace-regexp-in-string
-		     "[[:space:]]\\{2,\\}"
-		     " "
-		     (concat
-		      (unless no-status (format "%s " (or status "")))
-		      (format "[%s] %s %s" repo-abbrev action (tlon-get-issue-link issue))
-		      (when tags (format "   :%s:" (mapconcat #'identity tags ":")))))))
-    todo-name))
+	 (repo-abbrev (tlon-repo-lookup :abbrev :name repo-name)))
+    (setq repo-abbrev (or repo-abbrev repo-name))
+    (let ((todo-name (replace-regexp-in-string
+		      "[[:space:]]\\{2,\\}"
+		      " "
+		      (concat
+		       (unless no-status (format "%s " (or status "")))
+		       (format "[%s] %s %s" repo-abbrev action (tlon-get-issue-link issue))
+		       (when tags (format "   :%s:" (mapconcat #'identity tags ":")))))))
+      todo-name)))
 
 (defvar tlon-key-regexp)
 (declare-function tlon-get-file-from-key "tlon")
@@ -1608,9 +1609,6 @@ to reflect the new issue and its metadata."
             (tlon-forg--set-github-project-estimate issue org-effort-hours)))
         (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
                (new-head   (tlon-make-todo-name-from-issue issue)))
-          (unless (tlon-get-repo-from-heading)
-            (org-extras-goto-beginning-of-heading-text)
-            (insert (format "[%s] " repo-abbrev)))
           (org-edit-headline new-head)
           (org-todo status)
           (when org-tags (org-set-tags-to (string-join org-tags ":")))
