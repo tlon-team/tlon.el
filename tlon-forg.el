@@ -807,17 +807,17 @@ If ISSUE is nil, use the issue at point."
                   (let ((choice (pcase tlon-forg-when-syncing
                                   ('prompt
                                    (read-char-choice
-                                    (format "Estimates differ. Keep (g)itHub's (%s hrs) or (o)rg's (%s hrs)?"
+                                    (format "Estimates differ. Keep (i)ssue's (%s hrs) or (t)odo's (%s hrs)?"
                                             gh-estimate-hours org-effort-hours)
-                                    '(?g ?o)))
-                                  ('issue ?g)
-                                  ('todo ?o)
+                                    '(?i ?t)))
+                                  ('issue ?i)
+                                  ('todo ?t)
                                   (_ (user-error "Invalid `tlon-forg-when-syncing' value: %s"
 						 tlon-forg-when-syncing)))))
                     (pcase choice
-                      (?g (message "Updating Org TODO to match GitHub estimate.")
+                      (?i (message "Updating Org TODO to match GitHub estimate.")
                           (tlon-forg--set-org-effort gh-estimate-hours))
-                      (?o (message "Updating GitHub issue to match Org TODO estimate.")
+                      (?t (message "Updating GitHub issue to match Org TODO estimate.")
                           (tlon-forg--set-github-project-estimate issue org-effort-hours))
                       (_ (user-error "Aborted estimate sync")))))
                  ;; Case 4: Both are nil/zero, or both are significant and equal.
