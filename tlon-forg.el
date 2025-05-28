@@ -278,6 +278,55 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
          (title (tlon-forg--org-heading-title)))
     (list :title title :tags tags :todo todo)))
 
+(defun tlon-forg--prompt-element-diff (element issue-val todo-val)
+  "Ask which value of ELEMENT should prevail and return ?i or ?t.
+Respects `tlon-forg-when-syncing': when it is `issue' or `todo'
+the choice is taken automatically, otherwise the user is asked."
+  (pcase tlon-forg-when-syncing
+    ('issue ?i)
+    ('todo  ?t)
+    (_ (read-char-choice
+        (format "%s differ. Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'\n"
+                element issue-val todo-val)
+        '(?i ?t)))))
+
+(defun tlon-forg--sync-title (issue)
+  "Reconcile the ISSUE title with the Org heading at point."
+  (let* ((issue-title (string-trim (oref issue title)))
+         (todo-title  (string-trim (tlon-forg--org-heading-title))))
+    (unless (string= issue-title todo-title)
+      (pcase (tlon-forg--prompt-element-diff "Titles" issue-title todo-title)
+        (?i (tlon-update-todo-from-issue (tlon-make-todo-name-from-issue issue)))
+        (?t (forge--set-topic-title (forge-get-repository issue) issue todo-title))))))
+
+(defun tlon-forg--sync-status (issue)
+  "Reconcile the status between ISSUE and the Org heading."
+  (let* ((issue-status (let ((st (tlon-get-status-in-issue issue)))
+                         (when st (upcase st))))
+         (todo-status  (let ((st (org-get-todo-state)))
+                         (when st (upcase st))))
+         (issue-name   (tlon-make-todo-name-from-issue issue)))
+    (unless (string= issue-status todo-status)
+      (pcase (tlon-forg--prompt-element-diff "Statuses" issue-status todo-status)
+        (?i (org-todo issue-status))
+        (?t (tlon-update-issue-from-todo)))))
+
+(defun tlon-forg--sync-tags (issue)
+  "Reconcile the tags between ISSUE and the Org heading."
+  (let* ((issue-tags (sort (cl-remove-duplicates
+                            (mapcar #'downcase (tlon-forg-get-labels issue))
+                            :test #'string=)
+                           #'string<))
+         (todo-tags  (sort (cl-remove-duplicates
+                            (mapcar #'downcase (org-get-tags))
+                            :test #'string=)
+                           #'string<)))
+    (unless (equal issue-tags todo-tags)
+      (pcase (tlon-forg--prompt-element-diff
+              "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
+        (?i (org-set-tags-to (string-join issue-tags ":")))
+        (?t (tlon-update-issue-from-todo)))))
+
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
 Possible symbols are `title', `status' and `tags'."
@@ -639,15 +688,10 @@ If ISSUE is nil, use the issue at point."
 	  ;; visit the todo heading, compute differences, then act
 	  (save-window-excursion
             (tlon-visit-todo pos-file-pair)
-            (let* ((diff (tlon-forg--diff-issue-and-todo issue)))
-              (if (null diff)
-		  (message "Issue ‘%s’ and its TODO are in sync." (oref issue title))
-		(let* ((issue-name (tlon-make-todo-name-from-issue issue))
-                       (todo-name  (substring-no-properties
-                                    (org-get-heading nil nil t t))))
-		  (message "Differences detected in: %s"
-			   (tlon-forg--report-diff diff))
-		  (tlon-sync-issue-and-todo-prompt issue-name todo-name diff))))))
+            ;; element-by-element reconciliation
+            (tlon-forg--sync-title  issue)
+            (tlon-forg--sync-status issue)
+            (tlon-forg--sync-tags   issue)))
 	;; estimates are handled separately
 	(tlon-sync-estimate-from-issue issue))
     (user-error "No issue found to sync")))
