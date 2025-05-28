@@ -304,12 +304,11 @@ the choice is taken automatically, otherwise the user is asked."
   (let* ((issue-status (let ((st (tlon-get-status-in-issue issue)))
                          (when st (upcase st))))
          (todo-status  (let ((st (org-get-todo-state)))
-                         (when st (upcase st))))
-         (issue-name   (tlon-make-todo-name-from-issue issue)))
+                         (when st (upcase st)))))
     (unless (string= issue-status todo-status)
       (pcase (tlon-forg--prompt-element-diff "Statuses" issue-status todo-status)
         (?i (org-todo issue-status))
-        (?t (tlon-update-issue-from-todo)))))
+        (?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--sync-tags (issue)
   "Reconcile the tags between ISSUE and the Org heading."
@@ -324,8 +323,8 @@ the choice is taken automatically, otherwise the user is asked."
     (unless (equal issue-tags todo-tags)
       (pcase (tlon-forg--prompt-element-diff
               "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
-        (?i (org-set-tags-to (string-join issue-tags ":")))
-        (?t (tlon-update-issue-from-todo)))))
+        (?i (org-set-tags (string-join issue-tags ":")))
+        (?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
