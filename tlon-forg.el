@@ -617,23 +617,22 @@ If ISSUE is nil, use the issue at point."
                                     (org-get-heading nil nil t t))))
 		  (message "Differences detected in: %s"
 			   (tlon-forg--report-diff diff))
-		  (tlon-sync-issue-and-todo-prompt issue-name todo-name))))))
+		  (tlon-sync-issue-and-todo-prompt issue-name todo-name diff))))))
 	;; estimates are handled separately
 	(tlon-sync-estimate-from-issue issue))
     (user-error "No issue found to sync")))
 
-(defun tlon-sync-issue-and-todo-prompt (issue-name todo-name)
-  "Prompt the user to sync discrepancies between ISSUE-NAME and TODO-NAME."
+(defun tlon-sync-issue-and-todo-prompt (issue-name todo-name diff)
+  "Prompt the user to reconcile DIFF between ISSUE-NAME and TODO-NAME."
   (let ((choice (pcase tlon-forg-when-syncing
-		  ('prompt
-		   (read-char-choice
-		    (format "The issue and TODO differ (%s). Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
-                            (tlon-forg--report-diff (tlon-forg--diff-issue-and-todo
-                                                     (forge-current-topic)))
+                  ('prompt
+                   (read-char-choice
+                    (format "The issue and TODO differ (%s). Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
+                            (tlon-forg--report-diff diff)
                             issue-name todo-name)
-		    '(?i ?t)))
-		  ('issue ?i)
-		  ('todo ?t))))
+                    '(?i ?t)))
+                  ('issue ?i)
+                  ('todo  ?t))))
     (pcase choice
       (?i (tlon-update-todo-from-issue issue-name))
       (?t (tlon-update-issue-from-todo)) ; No longer needs todo-name argument
