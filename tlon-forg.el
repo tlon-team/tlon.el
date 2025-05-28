@@ -772,36 +772,38 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
         (cl-return-from tlon-update-issue-from-todo))
 
       ;; Issue is confirmed to be non-nil at this point.
-      (let* ((heading-element (org-element-at-point))
-             (org-todo-keyword (org-element-property :todo-keyword heading-element))
-             (org-raw-title-parts (org-element-property :raw-value heading-element)) ; :raw-value for title part
-             (org-tags (org-element-property :tags heading-element))
-             (repo (forge-get-repository issue))
-             (issue-number (oref issue number))
-             (repo-name (oref repo name)))
+      ;; ensure every shell/gh invocation is executed inside the repo
+      (let ((default-directory (oref repo worktree)))
+        (let* ((heading-element (org-element-at-point))
+               (org-todo-keyword (org-element-property :todo-keyword heading-element))
+               (org-raw-title-parts (org-element-property :raw-value heading-element)) ; :raw-value for title part
+               (org-tags (org-element-property :tags heading-element))
+               (repo (forge-get-repository issue))
+               (issue-number (oref issue number))
+               (repo-name (oref repo name)))
 
-        ;; Extract base title from Org heading (stripping repo, issue link, etc.)
-        ;; The raw-value is usually just the text after the keyword and before tags.
-	;; If it contains the orgit-link, we need to be more careful.
-	;; For now, assume raw-value is mostly the title. A more robust parsing might be needed.
-	;; --- replace existing link-in-title / org-title-for-issue block -----------
-	(let* ((heading-line-beg (org-element-property :begin heading-element))
-	       (heading-line-end (save-excursion
-                                   (goto-char heading-line-beg)
-                                   (line-end-position)))
-	       (link-in-title
-                (save-excursion
-                  (goto-char heading-line-beg)
-                  (when (re-search-forward org-link-bracket-re heading-line-end t)
-                    (org-element-context))))
-	       ;; keep the link description verbatim so the “#NN …” prefix is
-	       ;; preserved; fall back to the raw heading text otherwise
-	       (org-title-for-issue
-                (string-trim
-                 (if (and link-in-title (eq (org-element-type link-in-title) 'link))
-                     (org-element-property :description link-in-title)
-                   (org-element-property :raw-value heading-element)))))
-	;; -------------------------------------------------------------------------
+          ;; Extract base title from Org heading (stripping repo, issue link, etc.)
+          ;; The raw-value is usually just the text after the keyword and before tags.
+          ;; If it contains the orgit-link, we need to be more careful.
+          ;; For now, assume raw-value is mostly the title. A more robust parsing might be needed.
+          ;; --- replace existing link-in-title / org-title-for-issue block -----------
+          (let* ((heading-line-beg (org-element-property :begin heading-element))
+                 (heading-line-end (save-excursion
+                                    (goto-char heading-line-beg)
+                                    (line-end-position)))
+                 (link-in-title
+                  (save-excursion
+                    (goto-char heading-line-beg)
+                    (when (re-search-forward org-link-bracket-re heading-line-end t)
+                      (org-element-context))))
+                 ;; keep the link description verbatim so the “#NN …” prefix is
+                 ;; preserved; fall back to the raw heading text otherwise
+                 (org-title-for-issue
+                  (string-trim
+                   (if (and link-in-title (eq (org-element-type link-in-title) 'link))
+                       (org-element-property :description link-in-title)
+                     (org-element-property :raw-value heading-element)))))
+          ;; -------------------------------------------------------------------------
 
 	  (message "Org title for issue: '%s', Org tags: %s, Org TODO keyword: %s"
 		   org-title-for-issue org-tags org-todo-keyword)
@@ -881,6 +883,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 				   target-status-option-id))
                               (warn "Failed to add issue #%s to project." issue-number))))))))))))
         (message "Issue update attempt complete.")))))
+    )
 
 ;;;;; Files
 
