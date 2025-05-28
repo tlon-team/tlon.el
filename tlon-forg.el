@@ -1582,7 +1582,9 @@ The command:
          (title       (read-string "Issue title: "))
          (status      (completing-read
                        "Status: "
-                       (mapcar #'cdr tlon-todo-statuses) nil t "DOING"))
+                       (seq-remove (lambda (s) (string= s "DONE"))
+                                   (mapcar #'cdr tlon-todo-statuses))
+                       nil t "DOING"))
          (effort-str  (read-string "Effort hours (optional): "))
          (effort-h    (and (string-match-p "\\S-" effort-str)
                            (string-to-number effort-str)))
