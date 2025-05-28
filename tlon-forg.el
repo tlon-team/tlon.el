@@ -254,7 +254,20 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
             desc)))
        ;; otherwise fall back to the raw heading text (already stripped of
        ;; TODO keyword, tags, etc.)
-       (t (string-trim (or raw "")))))))
+       (t
+        (let* ((str (string-trim (or raw ""))))
+          ;; drop a leading repo tag such as “[repo] ”
+          (setq str (replace-regexp-in-string "^\\[[^]]+\\][[:space:]]*" "" str))
+
+          ;; if the headline contains an orgit link, keep only its description
+          (when (string-match "\\[\\[orgit-topic:[^]]+\\]\\[\\(.*?\\)\\]\\]" str)
+            (setq str (match-string 1 str)))
+
+          ;; discard a leading “#123 ” issue number, if present
+          (when (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" str)
+            (setq str (match-string 1 str)))
+
+          str))))))
 
 (defun tlon-forg--org-heading-components ()
   "Return plist (:title TITLE :tags TAGS :todo TODO) for the heading at point."
