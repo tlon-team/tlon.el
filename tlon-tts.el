@@ -1983,7 +1983,6 @@ Append silence (sync), then normalize & join (async), delete, open.
 LAST-CHUNK-FILE is the last chunk file processed."
   (let* ((final-output-file (tlon-tts-get-original-filename last-chunk-file))
          (api-generated-chunks (tlon-tts-get-list-of-chunks final-output-file))
-         files-to-normalize
          temp-silence-appended-files-to-cleanup) ; Will hold list of temp files if silence is appended
     (message "All API chunks processed. Starting final audio processing for %s..."
              (file-name-nondirectory final-output-file))
