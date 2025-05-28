@@ -245,8 +245,8 @@ TIMEOUT  – seconds to wait (default 10)
 INTERVAL – seconds between retries (default 0.5)
 
 Signal a `user-error' if the issue cannot be found in time."
-  (let* ((timeout  (or timeout 10))
-         (interval (or interval 0.5))
+  (let* ((timeout  (or timeout 30))     ; wait up-to 30 s
+         (interval (or interval 1.0))   ; retry every second
          (forge-repo (or forge-repo
                          (let ((default-directory repo-dir))
                            (forge-get-repository :tracked))))
@@ -1535,8 +1535,12 @@ The command:
       (tlon-set-labels `(,status) nil issue)          ; keep, but move after assignee
       (when effort-h
         (tlon-forg--set-github-project-estimate issue effort-h))
+      ;; ensure local DB has the new assignee / labels / estimate
+      (tlon-forg--pull-sync forge-repo)
       ;; ----- capture & visit todo -----------------------------------------
-      (tlon-capture-issue issue)
+      (let ((tlon-when-assignee-is-nil        'capture)
+            (tlon-when-assignee-is-someone-else 'capture))
+        (tlon-capture-issue issue))
       (when-let ((pf (tlon-get-todo-position-from-issue issue)))
         (tlon-visit-todo pf)
         (org-todo status)                           ; set desired TODO keyword
@@ -1544,7 +1548,9 @@ The command:
           (tlon-forg--set-org-effort effort-h)))
       ;; ----- sync project fields silently ---------------------------------
       (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-        (tlon-update-issue-from-todo)))))
+        (tlon-update-issue-from-todo))
+      ;; keep local cache in sync with the project status just set
+      (tlon-forg--pull-sync forge-repo))))
 
 (defalias 'tlon-create-issue-interactive #'tlon-create-new-issue)
 
@@ -1611,6 +1617,8 @@ to reflect the new issue and its metadata."
       ;; 4. effort → GH estimate
       (when org-effort-hours
         (tlon-forg--set-github-project-estimate issue org-effort-hours))
+      ;; ensure local DB has the new assignee / labels / estimate
+      (tlon-forg--pull-sync forge-repo)
       ;; 5. update heading with link etc.
       (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
              (new-head   (tlon-make-todo-name-from-issue issue)))
@@ -1623,7 +1631,9 @@ to reflect the new issue and its metadata."
         (when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
       ;; 6. silently add to project and set project-status = “Doing”
       (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-        (tlon-update-issue-from-todo)))))
+        (tlon-update-issue-from-todo))
+      ;; keep local cache in sync with the project status just set
+      (tlon-forg--pull-sync forge-repo))))
 
 (defun tlon-create-issue-or-todo ()
   "Create issue from TODO or vice versa."
