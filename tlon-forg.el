@@ -1572,7 +1572,9 @@ The command:
           (tlon-visit-todo pf)
           (org-todo status)
           (when effort-h
-            (tlon-forg--set-org-effort effort-h)))))
+            (tlon-forg--set-org-effort effort-h))
+	  (tlon-visit-counterpart)
+	  (other-window 1))))))
 
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
