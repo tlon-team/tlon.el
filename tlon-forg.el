@@ -1530,13 +1530,18 @@ The command:
            ;; ensure it is in the local DB
            (tlon-forg--pull-sync forge-repo)
            (issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
-      (tlon-set-labels `(,status) nil issue)   ; status label only
+      ;; NEW ─ ensure initial metadata is complete
+      (tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
+      (tlon-set-labels `(,status) nil issue)          ; keep, but move after assignee
       (when effort-h
         (tlon-forg--set-github-project-estimate issue effort-h))
       ;; ----- capture & visit todo -----------------------------------------
       (tlon-capture-issue issue)
       (when-let ((pf (tlon-get-todo-position-from-issue issue)))
-        (tlon-visit-todo pf))
+        (tlon-visit-todo pf)
+        (org-todo status)                           ; set desired TODO keyword
+        (when effort-h
+          (tlon-forg--set-org-effort effort-h)))
       ;; ----- sync project fields silently ---------------------------------
       (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
         (tlon-update-issue-from-todo)))))
