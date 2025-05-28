@@ -228,14 +228,15 @@ function tried to be a nudge in that direction."
 (defun tlon-set-meeting-buffers (&optional _ _)
   "Open Zoom link and Create or visit appropriate meeting issue."
   (org-open-at-point)
-  (let ((heading (org-get-heading t t t t)))
+  (let ((heading (org-get-heading t t t t))
+	(time (format-time-string "%Y-%m-%d")))
     (cond
      ((string-match "Leo<>Pablo" heading)
-      (tlon-create-or-visit-meeting-issue-leo-pablo (format-time-string "%Y-%m-%d")))
+      (tlon-create-or-visit-meeting-issue-leo-pablo time))
      ((string-match "Fede<>Pablo" heading)
-      (tlon-create-or-visit-meeting-issue-fede-pablo (format-time-string "%Y-%m-%d")))
+      (tlon-create-or-visit-meeting-issue-fede-pablo time))
      ((string-match "Group meeting" heading)
-      (tlon-create-or-visit-group-meeting-issue (format-time-string "%Y-%m-%d"))))))
+      (tlon-create-or-visit-group-meeting-issue time)))))
 
 ;;;;; clock-in
 
