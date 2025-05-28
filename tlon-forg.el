@@ -783,6 +783,32 @@ ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
         (message "Project estimate for issue #%s updated to %s." issue-number estimate-value)
       (user-error "Failed to update project estimate for issue #%s" issue-number))))
 
+(defun tlon-forg--set-github-project-status (issue org-status-keyword)
+  "Set GitHub Project status for ISSUE to ORG-STATUS-KEYWORD.
+ORG-STATUS-KEYWORD is the Org TODO keyword (e.g., \"DOING\")."
+  (let* ((target-status (car (cl-rassoc org-status-keyword tlon-todo-statuses
+                                        :test #'string=))))
+    (unless target-status
+      (user-error "Cannot map Org status %s to a project status" org-status-keyword))
+    (let* ((option-id (cdr (assoc target-status
+                                  forge-extras-status-option-ids-alist
+                                  #'string=))))
+      (unless option-id
+        (user-error "Status option-id for %s not configured" target-status))
+      (let* ((repo         (forge-get-repository issue))
+             (issue-num    (oref issue number))
+             (repo-name    (oref repo name))
+             (data         (forge-extras-gh-get-issue-fields issue-num repo-name))
+             (parsed       (and data (forge-extras-gh-parse-issue-fields data)))
+             (issue-node   (plist-get parsed :issue-node-id))
+             (item-id      (plist-get parsed :project-item-id)))
+        (setq item-id
+              (forge-extras--ensure-issue-in-project
+               issue-num issue-node item-id ""))   ; never prompt (string→true)
+        (forge-extras-gh-update-project-item-status-field
+         forge-extras-project-node-id item-id
+         forge-extras-status-field-node-id option-id)))))
+
 (defun tlon-forg--org-effort-to-hours (str)
   "Convert Org Effort string STR to float hours.
 If STR is a plain number assume it is already in hours, otherwise
@@ -1537,6 +1563,8 @@ The command:
         (when effort-h
           (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
             (tlon-forg--set-github-project-estimate issue effort-h)))
+        (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+          (tlon-forg--set-github-project-status issue status))
         (let ((tlon-when-assignee-is-nil        'capture)
               (tlon-when-assignee-is-someone-else 'capture))
           (tlon-capture-issue issue))
@@ -1544,10 +1572,7 @@ The command:
           (tlon-visit-todo pf)
           (org-todo status)
           (when effort-h
-            (tlon-forg--set-org-effort effort-h)))
-        (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-          (tlon-update-issue-from-todo))
-        (tlon-forg--pull-sync forge-repo)))))
+            (tlon-forg--set-org-effort effort-h)))))
 
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
@@ -1607,6 +1632,8 @@ to reflect the new issue and its metadata."
         (when org-effort-hours
           (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
             (tlon-forg--set-github-project-estimate issue org-effort-hours)))
+        (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+          (tlon-forg--set-github-project-status issue status))
         (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
                (new-head   (tlon-make-todo-name-from-issue issue)))
           (tlon-update-todo-from-issue new-head)        ; reliably rewrites heading line
@@ -1614,10 +1641,7 @@ to reflect the new issue and its metadata."
           (when org-tags
             (org-set-tags-to (string-join org-tags ":")))
           (when org-effort-hours
-            (tlon-forg--set-org-effort org-effort-hours)))
-        (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-          (tlon-update-issue-from-todo))
-        (tlon-forg--pull-sync forge-repo)))))
+            (tlon-forg--set-org-effort org-effort-hours)))))
 
 (defun tlon-create-issue-or-todo ()
   "Create issue from TODO or vice versa."
