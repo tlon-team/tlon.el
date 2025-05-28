@@ -1612,38 +1612,35 @@ to reflect the new issue and its metadata."
   (when (tlon-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
   (let* ((repo-dir (or (tlon-get-repo-from-heading)
-                       (tlon-get-repo nil 'include-all)))
-         (repo-name (tlon-repo-lookup :name :dir repo-dir))
-         (forge-repo (let ((default-directory repo-dir))
-                       (forge-get-repository :tracked)))
-         ;; heading elements
-         (heading-str (substring-no-properties
-                       (org-get-heading t t t t)))
-         (title (string-trim
-                 (replace-regexp-in-string
-                  "^\\(TODO\\|DOING\\|DONE\\|NEXT\\|LATER\\|SOMEDAY\\)[[:space:]]+"
-                  "" heading-str)))
-         (org-tags (tlon-get-tags-in-todo))
-         (org-effort-hours (tlon-forg--org-effort-to-hours
+		       (tlon-get-repo nil 'include-all)))
+	 (forge-repo (let ((default-directory repo-dir))
+		       (forge-get-repository :tracked)))
+	 (heading-str (substring-no-properties
+		       (org-get-heading t t t t)))
+	 (title (string-trim
+		 (replace-regexp-in-string
+		  "^\\(TODO\\|DOING\\|DONE\\|NEXT\\|LATER\\|SOMEDAY\\)[[:space:]]+"
+		  "" heading-str)))
+	 (org-tags (tlon-get-tags-in-todo))
+	 (org-effort-hours (tlon-forg--org-effort-to-hours
 			    (org-entry-get nil "Effort" 'inherit)))
-         (status "DOING"))
+	 (status "DOING"))
     (let* ((new-num (tlon-create-issue title repo-dir)))
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
-        (tlon-set-labels `(,status ,@org-tags) nil issue)
-        (when org-effort-hours
-          (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-            (tlon-forg--set-github-project-estimate issue org-effort-hours)))
-        (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-          (tlon-forg--set-github-project-status issue status))
-        (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
-               (new-head   (tlon-make-todo-name-from-issue issue)))
-          (tlon-update-todo-from-issue new-head)        ; reliably rewrites heading line
-          (org-todo status)                             ; keep keyword in sync
-          (when org-tags
-            (org-set-tags-to (string-join org-tags ":")))
-          (when org-effort-hours
-            (tlon-forg--set-org-effort org-effort-hours)))))
+	(tlon-set-labels `(,status ,@org-tags) nil issue)
+	(when org-effort-hours
+	  (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+	    (tlon-forg--set-github-project-estimate issue org-effort-hours)))
+	(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+	  (tlon-forg--set-github-project-status issue status))
+	(let* ((new-head   (tlon-make-todo-name-from-issue issue)))
+	  (tlon-update-todo-from-issue new-head)
+	  (org-todo status)
+	  (when org-tags
+	    (org-set-tags (string-join org-tags ":")))
+	  (when org-effort-hours
+	    (tlon-forg--set-org-effort org-effort-hours)))))))
 
 (defun tlon-create-issue-or-todo ()
   "Create issue from TODO or vice versa."
