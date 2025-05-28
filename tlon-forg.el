@@ -39,16 +39,6 @@
 (require 'crm)        ; for completing-read-multiple
 (require 'seq)        ; for seq-filter (used below)
 
-;; Forward declarations
-(declare-function tlon-get-repo "tlon-core" (&optional no-prompt include-all))
-(declare-function tlon-repo-lookup "tlon-core" (key &rest key-value))
-(declare-function forge-extras-gh-get-issue-fields "forge-extras" (issue-number repo-name))
-(declare-function forge-extras-gh-parse-issue-fields "forge-extras" (raw-list))
-(declare-function forge-extras-gh-add-issue-to-project "forge-extras" (project-node-id issue-node-id))
-(declare-function forge-extras-gh-update-project-item-status-field "forge-extras" (project-node-id item-node-id field-node-id status-option-id))
-(declare-function forge-extras-insert-issue-markdown-link "forge-extras"
-		  (&optional repositories))
-
 ;;;; Path Helpers
 
 (defun tlon-forg--get-repo-specific-todo-file (issue)
