@@ -281,14 +281,14 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
 Possible symbols are `title', `status' and `tags'."
-  (let* ((issue-title  (oref issue title))
+  (let* ((issue-title  (string-trim (oref issue title)))
          (issue-status (let ((st (tlon-get-status-in-issue issue)))
                          (when st (upcase st))))
          (issue-tags   (sort (cl-remove-duplicates
                               (mapcar #'downcase (tlon-forg-get-labels issue))
                               :test #'string=)
                              #'string<))
-         (org-title    (tlon-forg--org-heading-title))
+         (org-title    (string-trim (tlon-forg--org-heading-title)))
          (org-status   (let ((st (org-get-todo-state)))
                          (when st (upcase st))))
          (org-tags     (sort (cl-remove-duplicates
@@ -702,9 +702,19 @@ ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
         (message "Project estimate for issue #%s updated to %s." issue-number estimate-value)
       (user-error "Failed to update project estimate for issue #%s" issue-number))))
 
+(defun tlon-forg--org-effort-to-hours (str)
+  "Convert Org Effort string STR to float hours.
+If STR is a plain number assume it is already in hours, otherwise
+use `org-duration-to-minutes' and convert minutes → hours."
+  (when str
+    (let ((s (string-trim str)))
+      (if (string-match-p "\\`[0-9]+\\(?:\\.[0-9]+\\)?\\'" s)
+          (string-to-number s)                ; pure number ⇒ hours
+        (/ (float (org-duration-to-minutes s)) 60.0)))))
+
 (defun tlon-forg--set-org-effort (effort-hours)
   "Set Org effort property from EFFORT-HOURS (float)."
-  (let ((effort-str (org-duration-from-minutes (* effort-hours 60.0))))
+  (let ((effort-str (format "%g" effort-hours)))
     (org-entry-put nil "Effort" effort-str)
     (message "Org Effort property updated to %s." effort-str)))
 
@@ -733,8 +743,7 @@ If ISSUE is nil, use the issue at point."
                      (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
                      ;; Org Effort (float hours) - This part is Org-specific, doesn't need repo context
                      (org-effort-str (org-entry-get nil "Effort" 'inherit))
-                     (org-effort-minutes (if org-effort-str (org-duration-to-minutes org-effort-str) nil))
-                     (org-effort-hours (if org-effort-minutes (/ (float org-effort-minutes) 60.0) nil))
+                     (org-effort-hours (tlon-forg--org-effort-to-hours org-effort-str))
                      (epsilon 0.01) ; Tolerance for float comparison
                      (gh-estimate-significant-p (and gh-estimate-hours (> gh-estimate-hours epsilon)))
                      (org-effort-significant-p (and org-effort-hours (> org-effort-hours epsilon))))
