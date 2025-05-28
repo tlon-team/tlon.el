@@ -240,7 +240,9 @@ function tried to be a nudge in that direction."
          ((string-match "Fede<>Pablo" heading)
           (tlon-create-or-visit-meeting-issue-fede-pablo time))
          ((string-match "Group meeting" heading)
-          (tlon-create-or-visit-group-meeting-issue time)))))))
+          (tlon-create-or-visit-group-meeting-issue time)))
+        ;; NEW ─ ensure the issue is in the project and marked DOING
+        (tlon-meet--project-set-doing)))))
 
 (defun tlon-open-meeting-link ()
   "Open the meeting link in the current Org buffer."
