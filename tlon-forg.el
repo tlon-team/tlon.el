@@ -808,24 +808,15 @@ If ISSUE is nil, use the issue at point."
                  ;; Case 3: Both have significant estimates, and they differ.
                  ((and gh-estimate-significant-p org-effort-significant-p
 		       (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
-                  (message "Estimates differ: GitHub issue #%s has %s hours, Org TODO has %s (%s hours)."
-                           issue-number gh-estimate-hours org-effort-str org-effort-hours)
-                  (let ((choice (pcase tlon-forg-when-syncing
-                                  ('prompt
-                                   (read-char-choice
-                                    (format "Estimates differ. Keep (i)ssue's (%s hrs) or (t)odo's (%s hrs)?"
-                                            gh-estimate-hours org-effort-hours)
-                                    '(?i ?t)))
-                                  ('issue ?i)
-                                  ('todo ?t)
-                                  (_ (user-error "Invalid `tlon-forg-when-syncing' value: %s"
-						 tlon-forg-when-syncing)))))
+                  (let ((choice (tlon-forg--prompt-element-diff
+                                 "Estimates"
+                                 (format "%g" gh-estimate-hours)
+                                 (format "%g" org-effort-hours))))
                     (pcase choice
                       (?i (message "Updating Org TODO to match GitHub estimate.")
                           (tlon-forg--set-org-effort gh-estimate-hours))
                       (?t (message "Updating GitHub issue to match Org TODO estimate.")
-                          (tlon-forg--set-github-project-estimate issue org-effort-hours))
-                      (_ (user-error "Aborted estimate sync")))))
+                          (tlon-forg--set-github-project-estimate issue org-effort-hours)))))
                  ;; Case 4: estimates already match – nothing to do, stay silent
                  (t nil)))))
         (message "No TODO found for issue %s to sync estimate." (oref issue title))))))
