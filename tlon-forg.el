@@ -288,17 +288,23 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
          :test #'string=)
         #'string<))
 
+(defun tlon-forg--select-with-completing-read (element issue-val todo-val)
+  "Prompt via `completing-read' which value of ELEMENT to keep.
+Return ?i when user chooses ISSUE value, ?t when they choose TODO value."
+  (let* ((choices `((,(format "issue: %s" issue-val) . ?i)
+                    (,(format "todo:  %s" todo-val) . ?t)))
+         (selection (completing-read
+                     (format "%s differ. Choose value to keep: " element)
+                     (mapcar #'car choices) nil t)))
+    (cdr (assoc selection choices))))
+
+
 (defun tlon-forg--prompt-element-diff (element issue-val todo-val)
-  "Ask which value of ELEMENT should prevail and return ?i or ?t.
-Respects `tlon-forg-when-syncing': when it is `issue' or `todo'
-the choice is taken automatically, otherwise the user is asked."
+  "Return ?i or ?t according to `tlon-forg-when-syncing' or user choice."
   (pcase tlon-forg-when-syncing
     ('issue ?i)
     ('todo  ?t)
-    (_ (read-char-choice
-        (format "%s differ. Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'\n"
-                element issue-val todo-val)
-        '(?i ?t)))))
+    (_ (tlon-forg--select-with-completing-read element issue-val todo-val))))
 
 (defun tlon-forg--sync-title (issue)
   "Reconcile the ISSUE title with the Org heading at point."
