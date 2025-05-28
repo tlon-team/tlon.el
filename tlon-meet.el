@@ -222,21 +222,36 @@ function tried to be a nudge in that direction."
     (insert (format "A discutir en %s." backlink))
     (forge-post-submit)))
 
-;;;;; Advice org
+;;;;; org-agenda integration
 
 ;;;###autoload
 (defun tlon-set-meeting-buffers (&optional _ _)
-  "Open Zoom link and Create or visit appropriate meeting issue."
-  (org-open-at-point)
-  (let ((heading (org-get-heading t t t t))
-	(time (format-time-string "%Y-%m-%d")))
-    (cond
-     ((string-match "Leo<>Pablo" heading)
-      (tlon-create-or-visit-meeting-issue-leo-pablo time))
-     ((string-match "Fede<>Pablo" heading)
-      (tlon-create-or-visit-meeting-issue-fede-pablo time))
-     ((string-match "Group meeting" heading)
-      (tlon-create-or-visit-group-meeting-issue time)))))
+  "Open meeting link and create or visit appropriate meeting issue."
+  (when (string= (system-name) "Pablos-MacBook-Pro.local")
+    (let ((heading (org-get-heading t t t t))
+	  (time (format-time-string "%Y-%m-%d")))
+      (when (or (string-match "Leo<>Pablo" heading)
+                (string-match "Fede<>Pablo" heading)
+                (string-match "Group meeting" heading))
+        (tlon-open-meeting-link)
+        (cond
+         ((string-match "Leo<>Pablo" heading)
+          (tlon-create-or-visit-meeting-issue-leo-pablo time))
+         ((string-match "Fede<>Pablo" heading)
+          (tlon-create-or-visit-meeting-issue-fede-pablo time))
+         ((string-match "Group meeting" heading)
+          (tlon-create-or-visit-group-meeting-issue time)))))))
+
+(defun tlon-open-meeting-link ()
+  "Open the meeting link in the current Org buffer."
+  (save-excursion
+    (org-back-to-heading t)
+    (org-end-of-meta-data 'full)
+    (when (re-search-forward browse-url-button-regexp nil t)
+      (goto-char (match-beginning 0))
+      (org-open-at-point))))
+
+(advice-add 'org-extras-agenda-goto-and-start-clock :after 'tlon-set-meeting-buffers)
 
 ;;;;; clock-in
 
