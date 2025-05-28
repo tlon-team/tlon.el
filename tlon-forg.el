@@ -820,9 +820,8 @@ If ISSUE is nil, use the issue at point."
                       (?t (message "Updating GitHub issue to match Org TODO estimate.")
                           (tlon-forg--set-github-project-estimate issue org-effort-hours))
                       (_ (user-error "Aborted estimate sync")))))
-                 ;; Case 4: Both are nil/zero, or both are significant and equal.
-                 (t
-                  (message "Estimates for issue #%s and Org TODO are in sync." issue-number))))))
+                 ;; Case 4: estimates already match – nothing to do, stay silent
+                 (t nil)))))
         (message "No TODO found for issue %s to sync estimate." (oref issue title))))))
 
 (defun tlon-update-todo-from-issue (issue-name)
