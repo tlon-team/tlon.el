@@ -771,16 +771,17 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
         (user-error "Could not find a corresponding GitHub issue for this TODO")
         (cl-return-from tlon-update-issue-from-todo))
 
-      ;; Issue is confirmed to be non-nil at this point.
-      ;; ensure every shell/gh invocation is executed inside the repo
-      (let ((default-directory (oref repo worktree)))
-        (let* ((heading-element (org-element-at-point))
-               (org-todo-keyword (org-element-property :todo-keyword heading-element))
-               (org-raw-title-parts (org-element-property :raw-value heading-element)) ; :raw-value for title part
-               (org-tags (org-element-property :tags heading-element))
-               (repo (forge-get-repository issue))
-               (issue-number (oref issue number))
-               (repo-name (oref repo name)))
+      ;; first obtain the repository object of ISSUE
+      (let* ((repo (forge-get-repository issue)))
+        ;; make every gh/forge call run from the repo’s worktree
+        (let ((default-directory (oref repo worktree)))
+          (let* ((heading-element (org-element-at-point))
+                 (org-todo-keyword (org-element-property :todo-keyword heading-element))
+                 (org-raw-title-parts (org-element-property :raw-value heading-element)) ; :raw-value for title part
+                 (org-tags (org-element-property :tags heading-element))
+                 ;; --------------- REMOVED the old ‘repo’ binding here ---------------
+                 (issue-number (oref issue number))
+                 (repo-name (oref repo name)))
 
           ;; Extract base title from Org heading (stripping repo, issue link, etc.)
           ;; The raw-value is usually just the text after the keyword and before tags.
