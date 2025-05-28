@@ -1617,9 +1617,9 @@ to reflect the new issue and its metadata."
         (tlon-set-labels `(,status ,@org-tags) nil issue)
         ;; 4. effort → GH estimate
         (when org-effort-hours
-          (tlon-forg--set-github-project-estimate issue org-effort-hours))
-        ;; ensure local DB has the new assignee / labels / estimate
-        (tlon-forg--pull-sync forge-repo)
+          (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+            (tlon-forg--set-github-project-estimate issue org_effort_hours)))
+        ;; postpone pull until after the status-sync below
         ;; 5. update heading with link etc.
         (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
                (new-head   (tlon-make-todo-name-from-issue issue)))
@@ -1629,7 +1629,7 @@ to reflect the new issue and its metadata."
           (org-edit-headline new-head)
           (org-todo status)
           (when org-tags (org-set-tags-to (string-join org-tags ":")))
-          (when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
+          (when org-effort-hours (tlon-forg--set-org-effort org-effort_hours)))
         ;; 6. silently add to project and set project-status = “Doing”
         (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
           (tlon-update-issue-from-todo))
