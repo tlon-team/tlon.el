@@ -248,13 +248,13 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
        ;; if there is an explicit link, use its description
        ((re-search-forward org-link-bracket-re end t)
         (let* ((link (org-element-context))
-               (desc (org-element-property :description link)))
+               (desc (or (org-element-property :description link) "")))
           (if (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" desc)
               (match-string 1 desc)
             desc)))
        ;; otherwise fall back to the raw heading text (already stripped of
        ;; TODO keyword, tags, etc.)
-       (t (string-trim raw))))))
+       (t (string-trim (or raw "")))))))
 
 (defun tlon-forg--org-heading-components ()
   "Return plist (:title TITLE :tags TAGS :todo TODO) for the heading at point."
@@ -268,9 +268,10 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
                       (when (re-search-forward org-link-bracket-re end-line t)
                         (org-element-context))))
          (title     (string-trim
-                     (if (and link (eq (org-element-type link) 'link))
-                         (org-element-property :description link)
-                       (org-element-property :raw-value el)))))
+                     (or (if (and link (eq (org-element-type link) 'link))
+                             (org-element-property :description link)
+                           (org-element-property :raw-value el))
+                         ""))))
     (list :title title :tags tags :todo todo)))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
