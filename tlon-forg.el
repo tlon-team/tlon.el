@@ -1500,24 +1500,23 @@ Returns the created issue number."
     (message "Created issue #%s with title %s" num title)
     num))
 
-;; currently only used for submitting bugs; maybe it can be integrated with the
-;; forg code
-
 ;;;###autoload
 (defun tlon-create-new-issue ()
   "Create a GitHub issue from scratch, then capture it as an Org TODO.
-
 The command:
-• prompts for a repository, title, status (Org TODO keyword),
-  and optional effort estimate in hours;
-• creates the issue, labels it with the chosen status,
-  sets the project estimate when given;
-• captures the freshly-created issue as an Org TODO
-  and leaves point on that heading;
-• silently adds the issue to the project and updates its
-  project status to match the TODO."
+
+- prompts for a repository, title, status (Org TODO keyword), and optional
+  effort estimate in hours;
+
+- creates the issue, labels it with the chosen status, sets the project estimate
+  when given;
+
+- captures the freshly-created issue as an Org TODO and leaves point on that
+  heading;
+
+- silently adds the issue to the project and updates its project status to match
+  the TODO."
   (interactive)
-  ;; ----- prompts ----------------------------------------------------------
   (let* ((repo-dir (tlon-get-repo nil 'include-all))
          (forge-repo (let ((default-directory repo-dir))
                        (forge-get-repository :tracked)))
@@ -1529,31 +1528,24 @@ The command:
          (effort-h    (and (string-match-p "\\S-" effort-str)
                            (string-to-number effort-str)))
          (assignee    (tlon-select-assignee "Assignee: ")))
-    ;; ----- create issue ---------------------------------------------------
     (let* ((new-num (tlon-create-issue title repo-dir)))
-      (tlon-forg--pull-sync forge-repo)               ; ensure visible locally
+      (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
-        ;; initial metadata -------------------------------------------------
         (tlon-set-assignee assignee issue)
         (tlon-set-labels `(,status) nil issue)
         (when effort-h
-          ;; add to project and set estimate silently
           (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
             (tlon-forg--set-github-project-estimate issue effort-h)))
-        ;; no intermediate pull; we will refresh after the status update
-        ;; ----- capture & visit todo -----------------------------------------
         (let ((tlon-when-assignee-is-nil        'capture)
               (tlon-when-assignee-is-someone-else 'capture))
           (tlon-capture-issue issue))
         (when-let ((pf (tlon-get-todo-position-from-issue issue)))
           (tlon-visit-todo pf)
-          (org-todo status)                           ; set desired TODO keyword
+          (org-todo status)
           (when effort-h
             (tlon-forg--set-org-effort effort-h)))
-        ;; ----- sync project fields silently ---------------------------------
         (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
           (tlon-update-issue-from-todo))
-        ;; keep local cache in sync with the project status just set
         (tlon-forg--pull-sync forge-repo)))))
 
 (defun tlon-create-issue-in-dir (dir)
@@ -1591,9 +1583,8 @@ to reflect the new issue and its metadata."
   (tlon-ensure-org-mode)
   (when (tlon-get-issue-number-from-heading)
     (user-error "This heading already has an issue"))
-  ;; derive information from the heading or prompt minimally
   (let* ((repo-dir (or (tlon-get-repo-from-heading)
-                       (tlon-get-repo nil 'include-all)))  ; ask only if needed
+                       (tlon-get-repo nil 'include-all)))
          (repo-name (tlon-repo-lookup :name :dir repo-dir))
          (forge-repo (let ((default-directory repo-dir))
                        (forge-get-repository :tracked)))
@@ -1605,23 +1596,16 @@ to reflect the new issue and its metadata."
                   "^\\(TODO\\|DOING\\|DONE\\|NEXT\\|LATER\\|SOMEDAY\\)[[:space:]]+"
                   "" heading-str)))
          (org-tags (tlon-get-tags-in-todo))
-         ;; optional effort taken from Org property – no prompt
-         (org-effort-hours
-          (tlon-forg--org-effort-to-hours
-           (org-entry-get nil "Effort" 'inherit)))
+         (org-effort-hours (tlon-forg--org-effort-to-hours
+			    (org-entry-get nil "Effort" 'inherit)))
          (status "DOING"))
-    ;; 1. create the issue on GitHub
     (let* ((new-num (tlon-create-issue title repo-dir)))
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
-        ;; 3. label + status    (labels only; project status later)
         (tlon-set-labels `(,status ,@org-tags) nil issue)
-        ;; 4. effort → GH estimate
         (when org-effort-hours
           (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-            (tlon-forg--set-github-project-estimate issue org_effort_hours)))
-        ;; postpone pull until after the status-sync below
-        ;; 5. update heading with link etc.
+            (tlon-forg--set-github-project-estimate issue org-effort-hours)))
         (let* ((repo-abbrev (tlon-repo-lookup :abbrev :name repo-name))
                (new-head   (tlon-make-todo-name-from-issue issue)))
           (unless (tlon-get-repo-from-heading)
@@ -1630,11 +1614,9 @@ to reflect the new issue and its metadata."
           (org-edit-headline new-head)
           (org-todo status)
           (when org-tags (org-set-tags (string-join org-tags ":")))
-          (when org-effort-hours (tlon-forg--set-org-effort org-effort_hours)))
-        ;; 6. silently add to project and set project-status = “Doing”
+          (when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
         (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
           (tlon-update-issue-from-todo))
-        ;; keep local cache in sync with the project status just set
         (tlon-forg--pull-sync forge-repo)))))
 
 (defun tlon-create-issue-or-todo ()
