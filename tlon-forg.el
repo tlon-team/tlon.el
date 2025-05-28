@@ -47,11 +47,11 @@ The file is named REPO-NAME.org inside `paths-dir-tlon-todos'.
 Returns nil if `paths-dir-tlon-todos' is not set, not a directory,
 or if ISSUE has no repository or repository name."
   (when-let* ((repo (and issue (ignore-errors (forge-get-repository issue)))) ; Ensure issue is valid for repo
-              (repo-name (and repo (oref repo name)))
-              (todos-dir (and (boundp 'paths-dir-tlon-todos)
-                              (stringp paths-dir-tlon-todos)
-                              (file-directory-p paths-dir-tlon-todos)
-                              paths-dir-tlon-todos)))
+	      (repo-name (and repo (oref repo name)))
+	      (todos-dir (and (boundp 'paths-dir-tlon-todos)
+			      (stringp paths-dir-tlon-todos)
+			      (file-directory-p paths-dir-tlon-todos)
+			      paths-dir-tlon-todos)))
     (expand-file-name (format "%s.org" repo-name) todos-dir)))
 
 ;;;; Helper Functions for Repository and Issue Selection
@@ -65,29 +65,29 @@ GitHub using `gh` CLI and prompts for selection. The selected repository
 must be locally configured in Tlön for its path to be found."
   (or (ignore-errors (forge-get-repository :tracked))
       (let ((repo-path (tlon-get-repo nil 'include-all))) ; Prompt from known Tlön repos
-        (if repo-path
-            (let ((default-directory repo-path)) ; Set context for forge
-              (forge-get-repository :tracked))
-          ;; Fallback to gh list if tlon-get-repo doesn't yield/user cancels
-          (message "No repository selected from Tlön configuration. Fetching list from GitHub...")
-          (let* ((gh-executable (executable-find "gh"))
-                 (repo-names
-                  (if gh-executable
-                      (split-string
-                       (shell-command-to-string
-                        (format "gh repo list %s --json name --jq \".[] | .name\""
-                                forge-extras-project-owner))
-                       "\n" t 'omit-empty) ; omit-empty in case of trailing newline
-                    (user-error "The 'gh' command-line tool is required but not found")))
-                 (selected-repo-name (completing-read "Select repository from GitHub: " repo-names nil t)))
-            (when selected-repo-name
-              (let ((repo-dir (tlon-repo-lookup :dir :name selected-repo-name)))
-                (unless repo-dir
-                  (user-error "Repository '%s' not found in local Tlön configuration. Please ensure it's cloned and configured" selected-repo-name))
-                (unless (file-directory-p repo-dir)
-                  (user-error "Repository directory '%s' for '%s' does not exist" repo-dir selected-repo-name))
-                (let ((default-directory repo-dir))
-                  (forge-get-repository :tracked)))))))))
+	(if repo-path
+	    (let ((default-directory repo-path)) ; Set context for forge
+	      (forge-get-repository :tracked))
+	  ;; Fallback to gh list if tlon-get-repo doesn't yield/user cancels
+	  (message "No repository selected from Tlön configuration. Fetching list from GitHub...")
+	  (let* ((gh-executable (executable-find "gh"))
+		 (repo-names
+		  (if gh-executable
+		      (split-string
+		       (shell-command-to-string
+			(format "gh repo list %s --json name --jq \".[] | .name\""
+				forge-extras-project-owner))
+		       "\n" t 'omit-empty) ; omit-empty in case of trailing newline
+		    (user-error "The 'gh' command-line tool is required but not found")))
+		 (selected-repo-name (completing-read "Select repository from GitHub: " repo-names nil t)))
+	    (when selected-repo-name
+	      (let ((repo-dir (tlon-repo-lookup :dir :name selected-repo-name)))
+		(unless repo-dir
+		  (user-error "Repository '%s' not found in local Tlön configuration. Please ensure it's cloned and configured" selected-repo-name))
+		(unless (file-directory-p repo-dir)
+		  (user-error "Repository directory '%s' for '%s' does not exist" repo-dir selected-repo-name))
+		(let ((default-directory repo-dir))
+		  (forge-get-repository :tracked)))))))))
 
 (defun tlon-forg-select-issue-from-repo (repo)
   "Prompt the user to select an open issue from REPO.
@@ -98,29 +98,29 @@ Returns a `forge-issue` object or nil if no issue is selected or on error."
     (let ((default-directory (oref repo worktree))) ; Ensure correct context
       (message "Fetching issues for %s..." (oref repo name))
       (condition-case err
-          (progn
-            ;; Use forge--pull to synchronously update the repository data, including issues.
-            ;; Passing nil as the callback makes it synchronous.
-            (shut-up (forge--pull repo nil)) ; Pull all data for the repo silently and synchronously.
-            (message "Fetching issues for %s... done. Please select an issue." (oref repo name))
-            ;; Call the modified tlon-get-issue-number-from-open-issues
-            (let ((selected-issue-number (tlon-get-issue-number-from-open-issues repo)))
-              (if selected-issue-number
-                  (let* ((issue-id (caar (forge-sql [:select [id] :from issue
-                                                     :where (and (= repository $s1)
-                                                                 (= number $s2))]
-                                                (oref repo id)
-                                                selected-issue-number))))
-                    (if issue-id
-                        (forge-get-topic issue-id)
-                      (progn
-                        (message "Error: Could not retrieve details for issue #%s in %s." selected-issue-number (oref repo name))
-                        nil)))
-                nil))) ; No issue number selected, tlon-get-issue-number-from-open-issues returned nil
-        ((debug error) ; Catch user-error and other errors, provide debug info
-         (message "Error during issue selection/fetching for %s: %s" (oref repo name) err)
-         (message "To debug, try M-x toggle-debug-on-error and run the command again.")
-         nil)))))
+	  (progn
+	    ;; Use forge--pull to synchronously update the repository data, including issues.
+	    ;; Passing nil as the callback makes it synchronous.
+	    (shut-up (forge--pull repo nil)) ; Pull all data for the repo silently and synchronously.
+	    (message "Fetching issues for %s... done. Please select an issue." (oref repo name))
+	    ;; Call the modified tlon-get-issue-number-from-open-issues
+	    (let ((selected-issue-number (tlon-get-issue-number-from-open-issues repo)))
+	      (if selected-issue-number
+		  (let* ((issue-id (caar (forge-sql [:select [id] :from issue
+							     :where (and (= repository $s1)
+									 (= number $s2))]
+						    (oref repo id)
+						    selected-issue-number))))
+		    (if issue-id
+			(forge-get-topic issue-id)
+		      (progn
+			(message "Error: Could not retrieve details for issue #%s in %s." selected-issue-number (oref repo name))
+			nil)))
+		nil))) ; No issue number selected, tlon-get-issue-number-from-open-issues returned nil
+	((debug error) ; Catch user-error and other errors, provide debug info
+	 (message "Error during issue selection/fetching for %s: %s" (oref repo name) err)
+	 (message "To debug, try M-x toggle-debug-on-error and run the command again.")
+	 nil)))))
 
 ;;;; User options
 
@@ -231,7 +231,7 @@ The `cdr` values should be present in `org-todo-keywords'.")
 (defun tlon-insert-issue-link ()
   "Insert a markdown link to a GitHub issue in a Tlön repository."
   (interactive)
-  (forge-extras-insert-issue-markdown-link "tlon-team")))
+  (forge-extras-insert-issue-markdown-link "tlon-team"))
 
 ;;;;; internal helpers for sync
 
@@ -245,10 +245,10 @@ Signal an error if pandoc is not in PATH."
   (with-temp-buffer
     (insert (or text ""))
     (let ((exit (call-process-region (point-min) (point-max)
-                                     "pandoc" t t nil
-                                     "-f" from "-t" to)))
+				     "pandoc" t t nil
+				     "-f" from "-t" to)))
       (when (/= exit 0)
-        (user-error "Pandoc conversion failed"))
+	(user-error "Pandoc conversion failed"))
       (string-trim (buffer-string)))))
 
 (defun tlon-forg-md->org (text)
@@ -268,74 +268,74 @@ INTERVAL – seconds between retries (default 0.5)
 
 Signal a `user-error' if the issue cannot be found in time."
   (let* ((timeout  (or timeout 30))     ; wait up-to 30 s
-         (interval (or interval 1.0))   ; retry every second
-         (forge-repo (or forge-repo
-                         (let ((default-directory repo-dir))
-                           (forge-get-repository :tracked))))
-         issue)
+	 (interval (or interval 1.0))   ; retry every second
+	 (forge-repo (or forge-repo
+			 (let ((default-directory repo-dir))
+			   (forge-get-repository :tracked))))
+	 issue)
     (while (and (not issue) (> timeout 0))
       ;; attempt to locate the issue
       (setq issue (tlon-get-issue number repo-dir))
       (unless issue
-        ;; refresh forge’s local db then retry
-        (tlon-forg--pull-sync forge-repo)
-        (sleep-for interval)
-        (setq timeout (- timeout interval))))
+	;; refresh forge’s local db then retry
+	(tlon-forg--pull-sync forge-repo)
+	(sleep-for interval)
+	(setq timeout (- timeout interval))))
     (or issue
-        (user-error "Unable to retrieve newly created issue #%s" number))))
+	(user-error "Unable to retrieve newly created issue #%s" number))))
 
 (defun tlon-forg--org-heading-title ()
   "Return the *issue title* encoded in the Org heading at point.
 Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
 `tlon-make-todo-name-from-issue'."
   (let* ((el (org-element-at-point))
-         (raw (org-element-property :raw-value el))
-         (beg (org-element-property :contents-begin el))
-         (end (org-element-property :contents-end el)))
+	 (raw (org-element-property :raw-value el))
+	 (beg (org-element-property :contents-begin el))
+	 (end (org-element-property :contents-end el)))
     (save-excursion
       (goto-char beg)
       (cond
        ;; if there is an explicit link, use its description
        ((re-search-forward org-link-bracket-re end t)
-        (let* ((link (org-element-context))
-               (desc (or (org-element-property :description link) "")))
-          (if (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" desc)
-              (match-string 1 desc)
-            desc)))
+	(let* ((link (org-element-context))
+	       (desc (or (org-element-property :description link) "")))
+	  (if (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" desc)
+	      (match-string 1 desc)
+	    desc)))
        ;; otherwise fall back to the raw heading text (already stripped of
        ;; TODO keyword, tags, etc.)
        (t
-        (let* ((str (string-trim (or raw ""))))
-          ;; drop a leading repo tag such as “[repo] ”
-          (setq str (replace-regexp-in-string "^\\[[^]]+\\][[:space:]]*" "" str))
+	(let* ((str (string-trim (or raw ""))))
+	  ;; drop a leading repo tag such as “[repo] ”
+	  (setq str (replace-regexp-in-string "^\\[[^]]+\\][[:space:]]*" "" str))
 
-          ;; if the headline contains an orgit link, keep only its description
-          (when (string-match "\\[\\[orgit-topic:[^]]+\\]\\[\\(.*?\\)\\]\\]" str)
-            (setq str (match-string 1 str)))
+	  ;; if the headline contains an orgit link, keep only its description
+	  (when (string-match "\\[\\[orgit-topic:[^]]+\\]\\[\\(.*?\\)\\]\\]" str)
+	    (setq str (match-string 1 str)))
 
-          ;; discard a leading “#123 ” issue number, if present
-          (when (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" str)
-            (setq str (match-string 1 str)))
+	  ;; discard a leading “#123 ” issue number, if present
+	  (when (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" str)
+	    (setq str (match-string 1 str)))
 
-          str))))))
+	  str))))))
 
 (defun tlon-forg--org-heading-components ()
   "Return plist (:title TITLE :tags TAGS :todo TODO) for the heading at point."
   (let* ((el   (org-element-at-point))
-         (todo (org-element-property :todo-keyword el))
-         (tags (org-element-property :tags el))
-         (title (tlon-forg--org-heading-title)))
+	 (todo (org-element-property :todo-keyword el))
+	 (tags (org-element-property :tags el))
+	 (title (tlon-forg--org-heading-title)))
     (list :title title :tags tags :todo todo)))
 
 (defun tlon-forg--valid-tags (tags)
   "Return the down-cased TAGS that are listed in `tlon-todo-tags'."
   (sort (cl-remove-duplicates
-         (cl-remove-if-not
-          (lambda (tag)
-            (member (downcase tag) (mapcar #'downcase tlon-todo-tags)))
-          (mapcar #'downcase tags))
-         :test #'string=)
-        #'string<))
+	 (cl-remove-if-not
+	  (lambda (tag)
+	    (member (downcase tag) (mapcar #'downcase tlon-todo-tags)))
+	  (mapcar #'downcase tags))
+	 :test #'string=)
+	#'string<))
 
 (defun tlon-forg--select-with-completing-read (element issue-val todo-val)
   "Prompt via `completing-read' which value of ELEMENT to keep.
@@ -343,10 +343,10 @@ Return ?i when user chooses ISSUE value, ?t when they choose TODO value.
 ISSUE-VAL and TODO-VAL are the values to be compared, and ELEMENT is a string
 describing the element being compared (e.g., \"Titles\")."
   (let* ((choices `((,(format "issue: %s" issue-val) . ?i)
-                    (,(format "todo:  %s" todo-val) . ?t)))
-         (selection (completing-read
-                     (format "%s differ. Choose value to keep: " element)
-                     (mapcar #'car choices) nil t)))
+		    (,(format "todo:  %s" todo-val) . ?t)))
+	 (selection (completing-read
+		     (format "%s differ. Choose value to keep: " element)
+		     (mapcar #'car choices) nil t)))
     (cdr (assoc selection choices))))
 
 (defun tlon-forg--prompt-element-diff (element issue-val todo-val)
@@ -361,47 +361,47 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
 (defun tlon-forg--sync-title (issue)
   "Reconcile the ISSUE title with the Org heading at point."
   (let* ((issue-title (string-trim (tlon-forg-md->org (oref issue title))))
-         (todo-title  (string-trim (tlon-forg--org-heading-title))))
+	 (todo-title  (string-trim (tlon-forg--org-heading-title))))
     (unless (string= issue-title todo-title)
       (pcase (tlon-forg--prompt-element-diff "Titles" issue-title todo-title)
-        (?i (tlon-update-todo-from-issue (tlon-make-todo-name-from-issue issue)))
-        (?t (forge--set-topic-title (forge-get-repository issue) issue
-                                    (tlon-forg-org->md todo-title)))))))
+	(?i (tlon-update-todo-from-issue (tlon-make-todo-name-from-issue issue)))
+	(?t (forge--set-topic-title (forge-get-repository issue) issue
+				    (tlon-forg-org->md todo-title)))))))
 
 (defun tlon-forg--sync-status (issue)
   "Reconcile the status between ISSUE and the Org heading."
   (let* ((issue-status (let ((st (tlon-get-status-in-issue issue)))
-                         (when st (upcase st))))
-         (todo-status  (let ((st (org-get-todo-state)))
-                         (when st (upcase st)))))
+			 (when st (upcase st))))
+	 (todo-status  (let ((st (org-get-todo-state)))
+			 (when st (upcase st)))))
     (unless (string= issue-status todo-status)
       (pcase (tlon-forg--prompt-element-diff "Statuses" issue-status todo-status)
-        (?i (org-todo issue-status))
-        (?t (tlon-update-issue-from-todo))))))
+	(?i (org-todo issue-status))
+	(?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--sync-tags (issue)
   "Reconcile the tags between ISSUE and the Org heading."
   (let* ((issue-tags (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
-         (todo-tags  (tlon-forg--valid-tags (org-get-tags))))
+	 (todo-tags  (tlon-forg--valid-tags (org-get-tags))))
     (unless (equal issue-tags todo-tags)
       (pcase (tlon-forg--prompt-element-diff
-              "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
+	      "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
 	;; do not convert `org-set-tags' to `org-set-tags-to' (which is obsolete)!
-        (?i (org-set-tags (string-join issue-tags ":")))
-        (?t (tlon-update-issue-from-todo))))))
+	(?i (org-set-tags (string-join issue-tags ":")))
+	(?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
 Possible symbols are `title', `status' and `tags'."
   (let* ((issue-title  (string-trim (tlon-forg-md->org (oref issue title))))
-         (issue-status (let ((st (tlon-get-status-in-issue issue)))
-                         (when st (upcase st))))
-         (issue-tags   (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
-         (org-title    (string-trim (tlon-forg--org-heading-title)))
-         (org-status   (let ((st (org-get-todo-state)))
-                         (when st (upcase st))))
-         (org-tags     (tlon-forg--valid-tags (org-get-tags)))
-         (diff '()))
+	 (issue-status (let ((st (tlon-get-status-in-issue issue)))
+			 (when st (upcase st))))
+	 (issue-tags   (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
+	 (org-title    (string-trim (tlon-forg--org-heading-title)))
+	 (org-status   (let ((st (org-get-todo-state)))
+			 (when st (upcase st))))
+	 (org-tags     (tlon-forg--valid-tags (org-get-tags)))
+	 (diff '()))
     (unless (string= issue-title org-title)   (push 'title  diff))
     (unless (string= issue-status org-status) (push 'status diff))
     (unless (equal   issue-tags org-tags)     (push 'tags   diff))
@@ -455,10 +455,10 @@ function will then determine the position and file of the TODO associated with
 ISSUE using `tlon-get-todo-position-from-issue`.
 If ISSUE is also nil, it defaults to the issue at point."
   (let* ((resolved-pos-file (or pos-file (tlon-get-todo-position-from-issue issue)))
-         (pos (car resolved-pos-file))
-         (file (cdr resolved-pos-file)))
+	 (pos (car resolved-pos-file))
+	 (file (cdr resolved-pos-file)))
     (if (and pos file)
-        (tlon-open-todo file pos)
+	(tlon-open-todo file pos)
       (user-error "No TODO found"))))
 
 (defun tlon-open-todo (file position)
@@ -486,36 +486,36 @@ repository and then an issue from that repository."
   (interactive)
   (let (repo issue-to-capture)
     (if issue
-        (setq issue-to-capture issue
-              repo (forge-get-repository issue))
+	(setq issue-to-capture issue
+	      repo (forge-get-repository issue))
       ;; No explicit issue passed, try to get from context or prompt
       (setq issue-to-capture (ignore-errors (forge-current-topic)))
       (if issue-to-capture
-          (setq repo (forge-get-repository issue-to-capture))
-        ;; Still no issue, so prompt for repository then issue
-        (setq repo (tlon-forg-get-or-select-repository))
-        (unless repo
-          (user-error "Repository selection failed or cancelled. Aborting capture"))
-        (setq issue-to-capture (tlon-forg-select-issue-from-repo repo))
-        (unless issue-to-capture
-          (user-error "Issue selection failed or cancelled. Aborting capture"))))
+	  (setq repo (forge-get-repository issue-to-capture))
+	;; Still no issue, so prompt for repository then issue
+	(setq repo (tlon-forg-get-or-select-repository))
+	(unless repo
+	  (user-error "Repository selection failed or cancelled. Aborting capture"))
+	(setq issue-to-capture (tlon-forg-select-issue-from-repo repo))
+	(unless issue-to-capture
+	  (user-error "Issue selection failed or cancelled. Aborting capture"))))
 
     ;; Ensure repo is set if issue-to-capture is set (should be by now)
     (unless repo
       (if issue-to-capture
-          (setq repo (forge-get-repository issue-to-capture))
-        ;; This case should ideally be caught by earlier user-errors
-        (user-error "Cannot determine repository. Aborting capture")))
+	  (setq repo (forge-get-repository issue-to-capture))
+	;; This case should ideally be caught by earlier user-errors
+	(user-error "Cannot determine repository. Aborting capture")))
 
     ;; Proceed with capture if issue and repo are valid
     (let* ((issue-name (oref issue-to-capture title))
-           (default-directory (oref repo worktree))) ; Set context for subsequent operations
+	   (default-directory (oref repo worktree))) ; Set context for subsequent operations
       (when (and (eq (tlon-get-state issue-to-capture) 'open)
-                 (tlon-capture-handle-assignee issue-to-capture))
-        (message "Capturing ‘%s’" issue-name)
-        (if (tlon-issue-is-job-p issue-to-capture)
-            (tlon-create-job-todo-from-issue issue-to-capture)
-          (tlon-store-todo "tbG" nil issue-to-capture))))))
+		 (tlon-capture-handle-assignee issue-to-capture))
+	(message "Capturing ‘%s’" issue-name)
+	(if (tlon-issue-is-job-p issue-to-capture)
+	    (tlon-create-job-todo-from-issue issue-to-capture)
+	  (tlon-store-todo "tbG" nil issue-to-capture))))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues (arg)
@@ -535,10 +535,10 @@ If called with a prefix ARG, the initial pull from forge is omitted."
     ;; Set default-directory for the scope of tlon-pull-silently and its callback
     (let ((default-directory (oref repo worktree)))
       (if arg
-          (tlon-capture-all-issues-after-pull repo)
-        (tlon-pull-silently "Pulling issues..."
-                            (lambda () (tlon-capture-all-issues-after-pull repo))
-                            repo)))))
+	  (tlon-capture-all-issues-after-pull repo)
+	(tlon-pull-silently "Pulling issues..."
+			    (lambda () (tlon-capture-all-issues-after-pull repo))
+			    repo)))))
 
 (defun tlon-pull-silently (&optional message callback repo)
   "Pull all issues from forge for REPO.
@@ -548,16 +548,16 @@ If CALLBACK is non-nil, call it after the process completes, restoring the
 window configuration that was active before the pull started."
   (when message (message message))
   (let ((original-window-config (current-window-configuration))
-        (forge-repo (or repo (tlon-forg-get-or-select-repository))))
+	(forge-repo (or repo (tlon-forg-get-or-select-repository))))
     (unless forge-repo
       (user-error "Cannot determine repository for pull operation"))
     (let ((default-directory (oref forge-repo worktree))) ; Set context for forge--pull
       (shut-up
 	(forge--pull forge-repo
-                     (lambda () ; New callback wrapper
-                       (unwind-protect ; Ensure restoration even on error in callback
-                           (when callback (funcall callback))
-                         (set-window-configuration original-window-config))))))))
+		     (lambda () ; New callback wrapper
+		       (unwind-protect ; Ensure restoration even on error in callback
+			   (when callback (funcall callback))
+			 (set-window-configuration original-window-config))))))))
 
 (defun tlon-forg--pull-sync (forge-repo)
   "Run `forge--pull' on FORGE-REPO synchronously and quietly."
@@ -569,7 +569,7 @@ REPO must be a valid `forge-repository` object."
   (let ((default-directory (oref repo worktree))) ; Set context
     (dolist (issue (tlon-get-issues repo)) ; tlon-get-issues uses the repo context
       (unless (tlon-get-todo-position-from-issue issue)
-        (tlon-capture-issue issue))) ; Pass the specific issue object
+	(tlon-capture-issue issue))) ; Pass the specific issue object
     (org-refile-cache-clear)
     (message "Finished capturing issues. Refile cache cleared.")))
 
@@ -652,7 +652,7 @@ to the current user. If ISSUE is non-nil, use the issue at point or in the
 current buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (todo (tlon-make-todo-name-from-issue issue 'no-action 'no-status))
-         (jobs-file (tlon-get-todos-jobs-file)))
+	 (jobs-file (tlon-get-todos-jobs-file)))
     (if-let ((pos (tlon-get-todo-position todo jobs-file)))
 	(tlon-visit-todo (cons pos jobs-file))
       (save-window-excursion
@@ -710,10 +710,10 @@ called with a prefix ARG, omit this initial pull."
 This includes the generic file, the jobs file, and all *.org files
 in `paths-dir-tlon-todos'."
   (let ((files (list (tlon-get-todos-generic-file)
-                     (tlon-get-todos-jobs-file))))
+		     (tlon-get-todos-jobs-file))))
     (when (and (boundp 'paths-dir-tlon-todos)
-               (stringp paths-dir-tlon-todos)
-               (file-directory-p paths-dir-tlon-todos))
+	       (stringp paths-dir-tlon-todos)
+	       (file-directory-p paths-dir-tlon-todos))
       (setq files (append files (directory-files paths-dir-tlon-todos t "\\.org$" t)))) ; t for full path
     ;; Ensure absolute paths and remove duplicates
     (delete-dups (mapcar #'expand-file-name files))))
@@ -723,19 +723,19 @@ in `paths-dir-tlon-todos'."
   (save-window-excursion
     (let ((todo-files (tlon-forg--get-all-todo-files)))
       (dolist (file todo-files)
-        (when (file-exists-p file)
-          (with-current-buffer (find-file-noselect file)
-            (message "Syncing TODOs in %s..." (file-name-nondirectory file))
-            (save-excursion
-              (let ((org-fold-core-style 'overlays))
-                (org-fold-core-save-visibility
-                    (org-fold-show-all)
-                  (goto-char (point-min))
-                  (while (re-search-forward org-heading-regexp nil t)
-                    (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
-                      (when (or (not (member org-archive-tag (org-get-tags)))
-                                tlon-forg-include-archived)
-                        (tlon-sync-issue-and-todo-from-issue issue)))))))))))
+	(when (file-exists-p file)
+	  (with-current-buffer (find-file-noselect file)
+	    (message "Syncing TODOs in %s..." (file-name-nondirectory file))
+	    (save-excursion
+	      (let ((org-fold-core-style 'overlays))
+		(org-fold-core-save-visibility
+		    (org-fold-show-all)
+		  (goto-char (point-min))
+		  (while (re-search-forward org-heading-regexp nil t)
+		    (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
+		      (when (or (not (member org-archive-tag (org-get-tags)))
+				tlon-forg-include-archived)
+			(tlon-sync-issue-and-todo-from-issue issue)))))))))))
     (org-refile-cache-clear)
     (message "Finished syncing all found issues and TODOs. Refile cache cleared.")))
 
@@ -745,14 +745,14 @@ If ISSUE is nil, use the issue at point."
   (if-let* ((issue (or issue (forge-current-topic))))
       (let* ((pos-file-pair (tlon-get-todo-position-from-issue issue)))
 	(if (not pos-file-pair)
-            (message "No TODO found for issue ‘%s’." (oref issue title))
+	    (message "No TODO found for issue ‘%s’." (oref issue title))
 	  ;; visit the todo heading, compute differences, then act
 	  (save-window-excursion
-            (tlon-visit-todo pos-file-pair)
-            ;; element-by-element reconciliation
-            (tlon-forg--sync-title  issue)
-            (tlon-forg--sync-status issue)
-            (tlon-forg--sync-tags   issue)))
+	    (tlon-visit-todo pos-file-pair)
+	    ;; element-by-element reconciliation
+	    (tlon-forg--sync-title  issue)
+	    (tlon-forg--sync-status issue)
+	    (tlon-forg--sync-tags   issue)))
 	;; estimates are handled separately
 	(tlon-sync-estimate-from-issue issue))
     (user-error "No issue found to sync")))
@@ -760,14 +760,14 @@ If ISSUE is nil, use the issue at point."
 (defun tlon-sync-issue-and-todo-prompt (issue-name todo-name diff)
   "Prompt the user to reconcile DIFF between ISSUE-NAME and TODO-NAME."
   (let ((choice (pcase tlon-forg-when-syncing
-                  ('prompt
-                   (read-char-choice
-                    (format "The issue and TODO differ (%s). Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
-                            (tlon-forg--report-diff diff)
-                            issue-name todo-name)
-                    '(?i ?t)))
-                  ('issue ?i)
-                  ('todo  ?t))))
+		  ('prompt
+		   (read-char-choice
+		    (format "The issue and TODO differ (%s). Keep (i)ssue or (t)odo?\n\nissue: `%s'\ntodo:  `%s'"
+			    (tlon-forg--report-diff diff)
+			    issue-name todo-name)
+		    '(?i ?t)))
+		  ('issue ?i)
+		  ('todo  ?t))))
     (pcase choice
       (?i (tlon-update-todo-from-issue issue-name))
       (?t (tlon-update-issue-from-todo)) ; No longer needs todo-name argument
@@ -777,61 +777,61 @@ If ISSUE is nil, use the issue at point."
   "Set GitHub Project estimate for ISSUE to ESTIMATE-VALUE.
 ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
   (unless (and (boundp 'forge-extras-estimate-field-node-id)
-               (stringp forge-extras-estimate-field-node-id)
-               (not (string-empty-p forge-extras-estimate-field-node-id)))
+	       (stringp forge-extras-estimate-field-node-id)
+	       (not (string-empty-p forge-extras-estimate-field-node-id)))
     (user-error "`forge-extras-estimate-field-node-id' is not configured. Please set it"))
   (let* ((repo (forge-get-repository issue))
-         (issue-number (oref issue number))
-         (repo-name (oref repo name))
-         (gh-fields (forge-extras-gh-get-issue-fields issue-number repo-name))
-         (parsed-fields (when gh-fields (forge-extras-gh-parse-issue-fields gh-fields)))
-         (issue-node-id (plist-get parsed-fields :issue-node-id))
-         (current-project-item-id (plist-get parsed-fields :project-item-id))
-         target-project-item-id)
+	 (issue-number (oref issue number))
+	 (repo-name (oref repo name))
+	 (gh-fields (forge-extras-gh-get-issue-fields issue-number repo-name))
+	 (parsed-fields (when gh-fields (forge-extras-gh-parse-issue-fields gh-fields)))
+	 (issue-node-id (plist-get parsed-fields :issue-node-id))
+	 (current-project-item-id (plist-get parsed-fields :project-item-id))
+	 target-project-item-id)
     (unless parsed-fields
       (user-error "Could not retrieve project data for issue #%s. Aborting estimate update" issue-number))
     (unless issue-node-id
       (user-error "Could not retrieve GitHub Issue Node ID for #%s. Aborting estimate update" issue-number))
     (setq target-project-item-id
-          (forge-extras--ensure-issue-in-project
-           issue-number issue-node-id current-project-item-id
-           (format "Issue #%s is not in Project %s (%s). Add it and set estimate to '%s'?"
-                   issue-number forge-extras-project-number forge-extras-project-owner estimate-value)))
+	  (forge-extras--ensure-issue-in-project
+	   issue-number issue-node-id current-project-item-id
+	   (format "Issue #%s is not in Project %s (%s). Add it and set estimate to '%s'?"
+		   issue-number forge-extras-project-number forge-extras-project-owner estimate-value)))
     (unless target-project-item-id
       (user-error "Failed to ensure issue #%s is in project. Aborting estimate update" issue-number))
     (if (forge-extras-gh-update-project-item-estimate-field
-         forge-extras-project-node-id
-         target-project-item-id
-         forge-extras-estimate-field-node-id
-         estimate-value)
-        (message "Project estimate for issue #%s updated to %s." issue-number estimate-value)
+	 forge-extras-project-node-id
+	 target-project-item-id
+	 forge-extras-estimate-field-node-id
+	 estimate-value)
+	(message "Project estimate for issue #%s updated to %s." issue-number estimate-value)
       (user-error "Failed to update project estimate for issue #%s" issue-number))))
 
 (defun tlon-forg--set-github-project-status (issue org-status-keyword)
   "Set GitHub Project status for ISSUE to ORG-STATUS-KEYWORD.
 ORG-STATUS-KEYWORD is the Org TODO keyword (e.g., \"DOING\")."
   (let* ((target-status (car (cl-rassoc org-status-keyword tlon-todo-statuses
-                                        :test #'string=))))
+					:test #'string=))))
     (unless target-status
       (user-error "Cannot map Org status %s to a project status" org-status-keyword))
     (let* ((option-id (cdr (assoc target-status
-                                  forge-extras-status-option-ids-alist
-                                  #'string=))))
+				  forge-extras-status-option-ids-alist
+				  #'string=))))
       (unless option-id
-        (user-error "Status option-id for %s not configured" target-status))
+	(user-error "Status option-id for %s not configured" target-status))
       (let* ((repo         (forge-get-repository issue))
-             (issue-num    (oref issue number))
-             (repo-name    (oref repo name))
-             (data         (forge-extras-gh-get-issue-fields issue-num repo-name))
-             (parsed       (and data (forge-extras-gh-parse-issue-fields data)))
-             (issue-node   (plist-get parsed :issue-node-id))
-             (item-id      (plist-get parsed :project-item-id)))
-        (setq item-id
-              (forge-extras--ensure-issue-in-project
-               issue-num issue-node item-id ""))   ; never prompt (string→true)
-        (forge-extras-gh-update-project-item-status-field
-         forge-extras-project-node-id item-id
-         forge-extras-status-field-node-id option-id)))))
+	     (issue-num    (oref issue number))
+	     (repo-name    (oref repo name))
+	     (data         (forge-extras-gh-get-issue-fields issue-num repo-name))
+	     (parsed       (and data (forge-extras-gh-parse-issue-fields data)))
+	     (issue-node   (plist-get parsed :issue-node-id))
+	     (item-id      (plist-get parsed :project-item-id)))
+	(setq item-id
+	      (forge-extras--ensure-issue-in-project
+	       issue-num issue-node item-id ""))   ; never prompt (string→true)
+	(forge-extras-gh-update-project-item-status-field
+	 forge-extras-project-node-id item-id
+	 forge-extras-status-field-node-id option-id)))))
 
 (defun tlon-forg--org-effort-to-hours (str)
   "Convert Org Effort string STR to float hours.
@@ -840,8 +840,8 @@ use `org-duration-to-minutes' and convert minutes → hours."
   (when str
     (let ((s (string-trim str)))
       (if (string-match-p "\\`[0-9]+\\(?:\\.[0-9]+\\)?\\'" s)
-          (string-to-number s)                ; pure number ⇒ hours
-        (/ (float (org-duration-to-minutes s)) 60.0)))))
+	  (string-to-number s)                ; pure number ⇒ hours
+	(/ (float (org-duration-to-minutes s)) 60.0)))))
 
 (defun tlon-forg--set-org-effort (effort-hours)
   "Set Org effort property from EFFORT-HOURS (float)."
@@ -856,54 +856,54 @@ If ISSUE is nil, use the issue at point."
     (unless issue
       (user-error "No issue found to sync estimate for"))
     (let* ((repo (forge-get-repository issue)) ; Get repo object before switching buffer context
-           (pos-file-pair (tlon-get-todo-position-from-issue issue)))
+	   (pos-file-pair (tlon-get-todo-position-from-issue issue)))
       (if pos-file-pair
-          (save-window-excursion
-            (tlon-visit-todo pos-file-pair) ; Visit the TODO, this changes current-buffer and default-directory
-            ;; For subsequent GitHub/Forge operations, explicitly set default-directory
-            (let ((default-directory (oref repo worktree)))
-              (let* ((issue-number (oref issue number))
-                     (repo-name (oref repo name)) ; repo-name is from the already fetched repo object
-                     ;; GitHub Estimate (float hours)
-                     (gh-fields (condition-case err
-                                    (forge-extras-gh-get-issue-fields issue-number repo-name)
-                                  (error (progn
+	  (save-window-excursion
+	    (tlon-visit-todo pos-file-pair) ; Visit the TODO, this changes current-buffer and default-directory
+	    ;; For subsequent GitHub/Forge operations, explicitly set default-directory
+	    (let ((default-directory (oref repo worktree)))
+	      (let* ((issue-number (oref issue number))
+		     (repo-name (oref repo name)) ; repo-name is from the already fetched repo object
+		     ;; GitHub Estimate (float hours)
+		     (gh-fields (condition-case err
+				    (forge-extras-gh-get-issue-fields issue-number repo-name)
+				  (error (progn
 					   (message "Error fetching GH fields for #%s: %s" issue-number err)
 					   nil))))
-                     (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil))
-                     (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
-                     ;; Org Effort (float hours) - This part is Org-specific, doesn't need repo context
-                     (org-effort-str (org-entry-get nil "Effort" 'inherit))
-                     (org-effort-hours (tlon-forg--org-effort-to-hours org-effort-str))
-                     (epsilon 0.01) ; Tolerance for float comparison
-                     (gh-estimate-significant-p (and gh-estimate-hours (> gh-estimate-hours epsilon)))
-                     (org-effort-significant-p (and org-effort-hours (> org-effort-hours epsilon))))
-                (cond
-                 ;; Case 1: Only GitHub has a significant estimate, Org has none or zero.
-                 ((and gh-estimate-significant-p (not org-effort-significant-p))
-                  (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO."
+		     (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil))
+		     (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
+		     ;; Org Effort (float hours) - This part is Org-specific, doesn't need repo context
+		     (org-effort-str (org-entry-get nil "Effort" 'inherit))
+		     (org-effort-hours (tlon-forg--org-effort-to-hours org-effort-str))
+		     (epsilon 0.01) ; Tolerance for float comparison
+		     (gh-estimate-significant-p (and gh-estimate-hours (> gh-estimate-hours epsilon)))
+		     (org-effort-significant-p (and org-effort-hours (> org-effort-hours epsilon))))
+		(cond
+		 ;; Case 1: Only GitHub has a significant estimate, Org has none or zero.
+		 ((and gh-estimate-significant-p (not org-effort-significant-p))
+		  (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO."
 			   issue-number gh-estimate-hours)
-                  (tlon-forg--set-org-effort gh-estimate-hours))
-                 ;; Case 2: Only Org has a significant estimate, GitHub has none or zero.
-                 ((and org-effort-significant-p (not gh-estimate-significant-p))
-                  (message "Org TODO has effort %s (%s hours), GitHub issue #%s has none. Updating GitHub issue."
+		  (tlon-forg--set-org-effort gh-estimate-hours))
+		 ;; Case 2: Only Org has a significant estimate, GitHub has none or zero.
+		 ((and org-effort-significant-p (not gh-estimate-significant-p))
+		  (message "Org TODO has effort %s (%s hours), GitHub issue #%s has none. Updating GitHub issue."
 			   org-effort-str org-effort-hours issue-number)
-                  (tlon-forg--set-github-project-estimate issue org-effort-hours))
-                 ;; Case 3: Both have significant estimates, and they differ.
-                 ((and gh-estimate-significant-p org-effort-significant-p
+		  (tlon-forg--set-github-project-estimate issue org-effort-hours))
+		 ;; Case 3: Both have significant estimates, and they differ.
+		 ((and gh-estimate-significant-p org-effort-significant-p
 		       (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
-                  (let ((choice (tlon-forg--prompt-element-diff
-                                 "Estimates"
-                                 (format "%g" gh-estimate-hours)
-                                 (format "%g" org-effort-hours))))
-                    (pcase choice
-                      (?i (message "Updating Org TODO to match GitHub estimate.")
-                          (tlon-forg--set-org-effort gh-estimate-hours))
-                      (?t (message "Updating GitHub issue to match Org TODO estimate.")
-                          (tlon-forg--set-github-project-estimate issue org-effort-hours)))))
-                 ;; Case 4: estimates already match – nothing to do, stay silent
-                 (t nil)))))
-        (message "No TODO found for issue %s to sync estimate." (oref issue title))))))
+		  (let ((choice (tlon-forg--prompt-element-diff
+				 "Estimates"
+				 (format "%g" gh-estimate-hours)
+				 (format "%g" org-effort-hours))))
+		    (pcase choice
+		      (?i (message "Updating Org TODO to match GitHub estimate.")
+			  (tlon-forg--set-org-effort gh-estimate-hours))
+		      (?t (message "Updating GitHub issue to match Org TODO estimate.")
+			  (tlon-forg--set-github-project-estimate issue org-effort-hours)))))
+		 ;; Case 4: estimates already match – nothing to do, stay silent
+		 (t nil)))))
+	(message "No TODO found for issue %s to sync estimate." (oref issue title))))))
 
 (defun tlon-update-todo-from-issue (issue-name)
   "Update TODO to match ISSUE-NAME."
@@ -929,67 +929,67 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
     (unless issue
       (user-error "Could not find a corresponding GitHub issue for this TODO"))
     (let* ((repo              (forge-get-repository issue))
-           (default-directory (oref repo worktree))   ; run GH calls from repo
-           (org-info          (tlon-forg--org-heading-components))
-           (org-title         (plist-get org-info :title))
-           (org-tags          (plist-get org-info :tags))
-           (org-todo-keyword  (plist-get org-info :todo))
-           (issue-number      (oref issue number))
-           (repo-name         (oref repo name))
-           (gh-fields         (ignore-errors
-                                (forge-extras-gh-parse-issue-fields
-                                 (forge-extras-gh-get-issue-fields
-                                  issue-number repo-name))))
-           (issue-node-id     (plist-get gh-fields :issue-node-id))
-           (project-item-id   (plist-get gh-fields :project-item-id))
-           (current-title     (oref issue title))
-           (current-labels    (sort (copy-sequence
-                                     (tlon-forg-get-labels issue)) #'string<))
-           (current-status    (plist-get gh-fields :status)))
+	   (default-directory (oref repo worktree))   ; run GH calls from repo
+	   (org-info          (tlon-forg--org-heading-components))
+	   (org-title         (plist-get org-info :title))
+	   (org-tags          (plist-get org-info :tags))
+	   (org-todo-keyword  (plist-get org-info :todo))
+	   (issue-number      (oref issue number))
+	   (repo-name         (oref repo name))
+	   (gh-fields         (ignore-errors
+				(forge-extras-gh-parse-issue-fields
+				 (forge-extras-gh-get-issue-fields
+				  issue-number repo-name))))
+	   (issue-node-id     (plist-get gh-fields :issue-node-id))
+	   (project-item-id   (plist-get gh-fields :project-item-id))
+	   (current-title     (oref issue title))
+	   (current-labels    (sort (copy-sequence
+				     (tlon-forg-get-labels issue)) #'string<))
+	   (current-status    (plist-get gh-fields :status)))
       (unless issue-node-id
-        (user-error "Cannot retrieve project data for issue #%s" issue-number))
+	(user-error "Cannot retrieve project data for issue #%s" issue-number))
       ;; 1. title
       (unless (string= org-title current-title)
-        (message "Updating issue title from '%s' to '%s'" current-title org-title)
-        (forge--set-topic-title repo issue (tlon-forg-org->md org-title)))
+	(message "Updating issue title from '%s' to '%s'" current-title org-title)
+	(forge--set-topic-title repo issue (tlon-forg-org->md org-title)))
       ;; 2. labels
       (let ((wanted-labels (sort (copy-sequence org-tags) #'string<)))
-        (unless (equal wanted-labels current-labels)
-          (message "Updating issue labels from %s to %s"
-                   current-labels wanted-labels)
-          (forge--set-topic-labels repo issue wanted-labels)))
+	(unless (equal wanted-labels current-labels)
+	  (message "Updating issue labels from %s to %s"
+		   current-labels wanted-labels)
+	  (forge--set-topic-labels repo issue wanted-labels)))
       ;; 3. project status
       (when org-todo-keyword
-        (let* ((target-status (car (cl-rassoc org-todo-keyword tlon-todo-statuses
-                                              :test #'string=))))
-          (cond
-           ((null target-status)
-            (message "TODO keyword '%s' not mapped to a project status; skipping"
-                     org-todo-keyword))
-           ((string= target-status current-status) nil)   ; already in sync
-           (t
-            (let* ((option-id (cdr (assoc target-status
-                                          forge-extras-status-option-ids-alist
-                                          #'string=))))
-              (unless option-id
-                (message "Cannot find option id for status '%s'; skipping"
-                         target-status))
-              (if project-item-id
-                  ;; already in project → just update status
-                  (forge-extras-gh-update-project-item-status-field
-                   forge-extras-project-node-id project-item-id
-                   forge-extras-status-field-node-id option-id)
-                ;; not in project → ask to add & then set status
-                (when (y-or-n-p
-                       (format "Issue #%s is not in Project %s.  Add it and set status to '%s'? "
-                               issue-number forge-extras-project-number target-status))
-                  (let ((new-item-id
-                         (forge-extras-gh-add-issue-to-project
-                          forge-extras-project-node-id issue-node-id)))
-                    (when new-item-id
-                      (forge-extras-gh-update-project-item-status-field
-                       forge-extras-project-node-id new-item-id
-                       forge-extras-status-field-node-id option-id))))))))))
+	(let* ((target-status (car (cl-rassoc org-todo-keyword tlon-todo-statuses
+					      :test #'string=))))
+	  (cond
+	   ((null target-status)
+	    (message "TODO keyword '%s' not mapped to a project status; skipping"
+		     org-todo-keyword))
+	   ((string= target-status current-status) nil)   ; already in sync
+	   (t
+	    (let* ((option-id (cdr (assoc target-status
+					  forge-extras-status-option-ids-alist
+					  #'string=))))
+	      (unless option-id
+		(message "Cannot find option id for status '%s'; skipping"
+			 target-status))
+	      (if project-item-id
+		  ;; already in project → just update status
+		  (forge-extras-gh-update-project-item-status-field
+		   forge-extras-project-node-id project-item-id
+		   forge-extras-status-field-node-id option-id)
+		;; not in project → ask to add & then set status
+		(when (y-or-n-p
+		       (format "Issue #%s is not in Project %s.  Add it and set status to '%s'? "
+			       issue-number forge-extras-project-number target-status))
+		  (let ((new-item-id
+			 (forge-extras-gh-add-issue-to-project
+			  forge-extras-project-node-id issue-node-id)))
+		    (when new-item-id
+		      (forge-extras-gh-update-project-item-status-field
+		       forge-extras-project-node-id new-item-id
+		       forge-extras-status-field-node-id option-id))))))))))
       (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
@@ -1039,24 +1039,24 @@ using the `orgit-topic' ID as a substring. If ISSUE is nil, use the issue at
 point."
   (when-let ((issue (or issue (forge-current-topic))))
     (if (tlon-issue-is-job-p issue)
-        (let ((file (tlon-get-todos-jobs-file)))
-          (when-let ((pos (tlon-get-todo-position
-                           (tlon-make-todo-name-from-issue issue nil 'no-status)
-                           file)))
-            (cons pos file)))
+	(let ((file (tlon-get-todos-jobs-file)))
+	  (when-let ((pos (tlon-get-todo-position
+			   (tlon-make-todo-name-from-issue issue nil 'no-status)
+			   file)))
+	    (cons pos file)))
       (let* ((search-string (format "\\[orgit-topic:%s\\]" (oref issue id)))
-             (repo-specific-file (tlon-forg--get-repo-specific-todo-file issue))
-             (pos-in-repo-file (and repo-specific-file
-                                    (file-exists-p repo-specific-file)
-                                    (tlon-get-todo-position search-string repo-specific-file 'substring)))
-             (generic-file (tlon-get-todos-generic-file))
-             (pos-in-generic-file (unless pos-in-repo-file ; Only search generic if not in repo-specific
-                                    (and generic-file ; Ensure generic file path is valid
-                                         (file-exists-p generic-file)
-                                         (tlon-get-todo-position search-string generic-file 'substring)))))
-        (cond (pos-in-repo-file (cons pos-in-repo-file repo-specific-file))
-              (pos-in-generic-file (cons pos-in-generic-file generic-file))
-              (t nil))))))
+	     (repo-specific-file (tlon-forg--get-repo-specific-todo-file issue))
+	     (pos-in-repo-file (and repo-specific-file
+				    (file-exists-p repo-specific-file)
+				    (tlon-get-todo-position search-string repo-specific-file 'substring)))
+	     (generic-file (tlon-get-todos-generic-file))
+	     (pos-in-generic-file (unless pos-in-repo-file ; Only search generic if not in repo-specific
+				    (and generic-file ; Ensure generic file path is valid
+					 (file-exists-p generic-file)
+					 (tlon-get-todo-position search-string generic-file 'substring)))))
+	(cond (pos-in-repo-file (cons pos-in-repo-file repo-specific-file))
+	      (pos-in-generic-file (cons pos-in-generic-file generic-file))
+	      (t nil))))))
 
 ;;;;; Counterpart
 
@@ -1115,13 +1115,13 @@ brackets) is converted to its full path via `tlon-repo-lookup'."
 If FORGE-REPO (a forge-repository object) is nil, the repository is
 determined from context or by prompting."
   (let* ((repo-to-use (or forge-repo
-                          (let ((repo-path (tlon-get-repo nil 'include-all))) ; Prompts if needed
-                            (when repo-path
-                              (let ((default-directory repo-path))
-                                (forge-get-repository :tracked))))))
-         ;; Ensure repo-to-use is valid before proceeding
-         (_ (unless repo-to-use (user-error "Could not determine repository for issue selection")))
-         (default-directory (oref repo-to-use worktree)) ; Set context for oref issues
+			  (let ((repo-path (tlon-get-repo nil 'include-all))) ; Prompts if needed
+			    (when repo-path
+			      (let ((default-directory repo-path))
+				(forge-get-repository :tracked))))))
+	 ;; Ensure repo-to-use is valid before proceeding
+	 (_ (unless repo-to-use (user-error "Could not determine repository for issue selection")))
+	 (default-directory (oref repo-to-use worktree)) ; Set context for oref issues
 	 ;; Fetch all issues, but filter for open ones
 	 (issue-list (mapcar #'(lambda (issue) ; issue here is a forge-issue object
 				 (cons (format "#%d %s"
@@ -1160,7 +1160,7 @@ repository."
 					    (date-to-time (oref b created))
 					    (date-to-time (oref a created))))))))
     (if latest-issue
-        (list (oref latest-issue number) (oref latest-issue title))
+	(list (oref latest-issue number) (oref latest-issue title))
       nil)))
 
 (defun tlon-count-issues (&optional repo)
@@ -1207,17 +1207,17 @@ If REPO is nil, use the current repository."
       (tlon-close-issue-number (oref issue number) (oref (forge-get-repository issue) worktree))
       (let ((pos-file-pair (tlon-get-todo-position-from-issue issue))
 	    message)
-        (if pos-file-pair
-            (progn
-              (tlon-visit-todo pos-file-pair)
-              (org-todo "DONE")
-              (if tlon-forg-archive-todo-on-close
-                  (progn
-                    (org-archive-subtree-default)
-                    (setq message "Closed issue and TODO (archived)."))
-                (setq message "Closed issue and TODO."))
-              (save-buffer))
-          (setq message "Closed issue, but no corresponding TODO found to mark as DONE."))
+	(if pos-file-pair
+	    (progn
+	      (tlon-visit-todo pos-file-pair)
+	      (org-todo "DONE")
+	      (if tlon-forg-archive-todo-on-close
+		  (progn
+		    (org-archive-subtree-default)
+		    (setq message "Closed issue and TODO (archived)."))
+		(setq message "Closed issue and TODO."))
+	      (save-buffer))
+	  (setq message "Closed issue, but no corresponding TODO found to mark as DONE."))
 	(message message)))))
 
 ;; shouldn’t this be done using the orgit-link rather than issue-number?
@@ -1272,29 +1272,29 @@ by `forge-extras-gh-get-issue-fields`. Returns an uppercase string like
 status cannot be determined or the issue is not found in the project. If ISSUE
 is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
-         (repo (if issue (forge-get-repository issue) nil))
-         (repo-name (if repo (oref repo name) nil))
-         (issue-number (if issue (oref issue number) nil)))
+	 (repo (if issue (forge-get-repository issue) nil))
+	 (repo-name (if repo (oref repo name) nil))
+	 (issue-number (if issue (oref issue number) nil)))
     (if (and issue repo repo-name issue-number) ; Ensure issue object and its details are valid
-        (let* ((raw-fields (condition-case err
-                               (forge-extras-gh-get-issue-fields issue-number repo-name) ; Use forge-extras
-                             (error (progn
-                                      (message "Error fetching GitHub project fields for #%s in %s (via forge-extras): %s" issue-number repo-name err)
-                                      nil))))
-               (parsed-fields (if raw-fields (forge-extras-gh-parse-issue-fields raw-fields) nil)) ; Use forge-extras
-               (project-status-val (if parsed-fields (plist-get parsed-fields :status) nil))
-               (org-status (if project-status-val
-                               (cdr (assoc project-status-val tlon-todo-statuses #'string=))
-                             nil)))
-          (if org-status
-              org-status
-            (progn
-              (message "Unknown or missing project status for #%s in Project #%s (owner: %s, repo: %s, GH status: %s). Falling back to open/closed state."
-                       issue-number forge-extras-project-number forge-extras-project-owner repo-name project-status-val)
-              (if (eq (oref issue state) 'completed) "DONE" "TODO"))))
+	(let* ((raw-fields (condition-case err
+			       (forge-extras-gh-get-issue-fields issue-number repo-name) ; Use forge-extras
+			     (error (progn
+				      (message "Error fetching GitHub project fields for #%s in %s (via forge-extras): %s" issue-number repo-name err)
+				      nil))))
+	       (parsed-fields (if raw-fields (forge-extras-gh-parse-issue-fields raw-fields) nil)) ; Use forge-extras
+	       (project-status-val (if parsed-fields (plist-get parsed-fields :status) nil))
+	       (org-status (if project-status-val
+			       (cdr (assoc project-status-val tlon-todo-statuses #'string=))
+			     nil)))
+	  (if org-status
+	      org-status
+	    (progn
+	      (message "Unknown or missing project status for #%s in Project #%s (owner: %s, repo: %s, GH status: %s). Falling back to open/closed state."
+		       issue-number forge-extras-project-number forge-extras-project-owner repo-name project-status-val)
+	      (if (eq (oref issue state) 'completed) "DONE" "TODO"))))
       (progn
-        (message "Could not determine issue/repo details for project status fetch. Falling back to open/closed state.")
-        (if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO")))))
+	(message "Could not determine issue/repo details for project status fetch. Falling back to open/closed state.")
+	(if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO")))))
 
 (defun tlon-get-status-in-todo ()
   "Return the status of the `org-mode' heading at point.
@@ -1541,19 +1541,19 @@ Returns the created issue number.
 Optional fourth argument FORMAT can be :org (default, convert title from Org to Markdown)
 or :markdown (title is already Markdown, do not convert)."
   (let* ((repo (or repo (tlon-get-repo 'error 'include-all)))
-         (body (or body ""))
-         (default-directory repo)
-         (repo (forge-get-repository :tracked))
-         (owner (oref repo owner))
-         (reponame (oref repo name))
-         (resource (format "/repos/%s/%s/issues" owner reponame))
-         (md-title (if (eq format :markdown)
-                       title                       ; already md
-                     (tlon-forg-org->md title)))   ; org → md
-         (data `((title . ,md-title)
-                 (body . ,body)))
-         (resp (ghub-post resource data :auth 'forge))
-         (num  (alist-get 'number resp)))
+	 (body (or body ""))
+	 (default-directory repo)
+	 (repo (forge-get-repository :tracked))
+	 (owner (oref repo owner))
+	 (reponame (oref repo name))
+	 (resource (format "/repos/%s/%s/issues" owner reponame))
+	 (md-title (if (eq format :markdown)
+		       title                       ; already md
+		     (tlon-forg-org->md title)))   ; org → md
+	 (data `((title . ,md-title)
+		 (body . ,body)))
+	 (resp (ghub-post resource data :auth 'forge))
+	 (num  (alist-get 'number resp)))
     (message "Created issue #%s with title %s" num title)
     num))
 
@@ -1575,36 +1575,36 @@ The command:
   the TODO."
   (interactive)
   (let* ((repo-dir (tlon-get-repo nil 'include-all))
-         (forge-repo (let ((default-directory repo-dir))
-                       (forge-get-repository :tracked)))
-         (title       (read-string "Issue title: "))
-         (status      (completing-read
-                       "Status: "
-                       (seq-remove (lambda (s) (string= s "DONE"))
-                                   (mapcar #'cdr tlon-todo-statuses))
-                       nil t "DOING"))
-         (effort-str  (read-string "Effort hours (optional): "))
-         (effort-h    (and (string-match-p "\\S-" effort-str)
-                           (string-to-number effort-str)))
-         (assignee    (tlon-select-assignee "Assignee: ")))
+	 (forge-repo (let ((default-directory repo-dir))
+		       (forge-get-repository :tracked)))
+	 (title       (read-string "Issue title: "))
+	 (status      (completing-read
+		       "Status: "
+		       (seq-remove (lambda (s) (string= s "DONE"))
+				   (mapcar #'cdr tlon-todo-statuses))
+		       nil t "DOING"))
+	 (effort-str  (read-string "Effort hours (optional): "))
+	 (effort-h    (and (string-match-p "\\S-" effort-str)
+			   (string-to-number effort-str)))
+	 (assignee    (tlon-select-assignee "Assignee: ")))
     (let* ((new-num (tlon-create-issue title repo-dir nil :markdown)))
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
-        (tlon-set-assignee assignee issue)
-        (tlon-set-labels `(,status) nil issue)
-        (when effort-h
-          (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-            (tlon-forg--set-github-project-estimate issue effort-h)))
-        (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-          (tlon-forg--set-github-project-status issue status))
-        (let ((tlon-when-assignee-is-nil        'capture)
-              (tlon-when-assignee-is-someone-else 'capture))
-          (tlon-capture-issue issue))
-        (when-let ((pf (tlon-get-todo-position-from-issue issue)))
-          (tlon-visit-todo pf)
-          (org-todo status)
-          (when effort-h
-            (tlon-forg--set-org-effort effort-h))
+	(tlon-set-assignee assignee issue)
+	(tlon-set-labels `(,status) nil issue)
+	(when effort-h
+	  (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+	    (tlon-forg--set-github-project-estimate issue effort-h)))
+	(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+	  (tlon-forg--set-github-project-status issue status))
+	(let ((tlon-when-assignee-is-nil        'capture)
+	      (tlon-when-assignee-is-someone-else 'capture))
+	  (tlon-capture-issue issue))
+	(when-let ((pf (tlon-get-todo-position-from-issue issue)))
+	  (tlon-visit-todo pf)
+	  (org-todo status)
+	  (when effort-h
+	    (tlon-forg--set-org-effort effort-h))
 	  (tlon-visit-counterpart)
 	  (other-window 1))))))
 
@@ -1699,23 +1699,23 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 (defun tlon-get-parent-todo (todo)
   "Get parent of TODO in `tlon-todos-jobs-file'."
   (let* ((jobs-file (tlon-get-todos-jobs-file))
-         (pos (tlon-get-todo-position todo jobs-file)))
+	 (pos (tlon-get-todo-position todo jobs-file)))
     (when pos
       (save-window-excursion
-        (tlon-visit-todo (cons pos jobs-file))
-        (widen)
-        (org-up-heading-safe)
-        (org-no-properties (org-get-heading))))))
+	(tlon-visit-todo (cons pos jobs-file))
+	(widen)
+	(org-up-heading-safe)
+	(org-no-properties (org-get-heading))))))
 
 (defun tlon-mark-todo-done (todo file)
   "Mark TODO in FILE as DONE."
   (let ((pos (tlon-get-todo-position todo file)))
     (when pos
       (save-window-excursion
-        (tlon-visit-todo (cons pos file))
-        (org-todo "DONE")
-        (save-buffer)
-        (message "Marked `%s' as DONE" todo)))))
+	(tlon-visit-todo (cons pos file))
+	(org-todo "DONE")
+	(save-buffer)
+	(message "Marked `%s' as DONE" todo)))))
 
 (declare-function tlon-get-clock-key "tlon-clock")
 (declare-function tlon-get-clock-label "tlon-clock")
