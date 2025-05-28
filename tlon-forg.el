@@ -237,6 +237,23 @@ The `cdr` values should be present in `org-todo-keywords'.")
 
 ;;;;; internal helpers for sync
 
+(defun tlon-forg--wait-for-issue (number repo-dir &optional timeout interval)
+  "Return the forge ISSUE object NUMBER in REPO-DIR, waiting until it exists.
+TIMEOUT (seconds, default 5) and INTERVAL (seconds, default 0.2) control the
+maximum time to wait and the pause between retries.  Signals `user-error'
+if the issue cannot be found within TIMEOUT."
+  (let ((timeout  (or timeout 5))
+        (interval (or interval 0.2))
+        issue)
+    (while (and (not issue)
+                (> timeout 0))
+      (setq issue (tlon-get-issue number repo-dir))
+      (unless issue
+        (sleep-for interval)
+        (setq timeout (- timeout interval))))
+    (or issue
+        (user-error "Unable to retrieve newly created issue #%s" number))))
+
 (defun tlon-forg--org-heading-title ()
   "Return the *issue title* encoded in the Org heading at point.
 Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
@@ -1504,9 +1521,7 @@ The command:
     (let* ((new-num (tlon-create-issue title repo-dir))
            ;; ensure it is in the local DB
            (tlon-forg--pull-sync forge-repo)
-           (issue (or (tlon-get-issue new-num repo-dir)
-                      (progn (sleep-for 0.1)
-                             (tlon-get-issue new-num repo-dir)))))
+           (issue (tlon-forg--wait-for-issue new-num repo-dir)))
       (tlon-set-labels `(,status) nil issue)   ; status label only
       (when effort-h
         (tlon-forg--set-github-project-estimate issue effort-h))
@@ -1577,9 +1592,7 @@ to reflect the new issue and its metadata."
     ;; 1. create the issue on GitHub
     (let* ((new-num (tlon-create-issue title repo-dir))
            (tlon-forg--pull-sync forge-repo)
-           (issue (or (tlon-get-issue new-num repo-dir)
-                      (progn (sleep-for 0.1)
-                             (tlon-get-issue new-num repo-dir)))))
+           (issue (tlon-forg--wait-for-issue new-num repo-dir)))
       ;; 3. label + status    (labels only; project status later)
       (tlon-set-labels `(,status ,@org-tags) nil issue)
       ;; 4. effort → GH estimate
@@ -1593,7 +1606,7 @@ to reflect the new issue and its metadata."
           (insert (format "[%s] " repo-abbrev)))
         (org-edit-headline new-head)
         (org-todo status)
-        (when org-tags (org-set-tags (string-join org-tags ":")))
+        (when org-tags (org-set-tags-to (string-join org-tags ":")))
         (when org-effort-hours (tlon-forg--set-org-effort org-effort-hours)))
       ;; 6. silently add to project and set project-status = “Doing”
       (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
