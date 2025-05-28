@@ -65,8 +65,7 @@
     ("v" "url"                            tlon-url-menu)
     ("y" "forg"                           tlon-forg-menu)
     ("x" "tex"                            tlon-tex-menu)
-    ("z" "tts"                            tlon-tts-menu)
-    ("." "notifications"                  forge-list-notifications)]
+    ("z" "tts"                            tlon-tts-menu)]
    [""
     "Browse repo"
     ("d" "in Dired"                       tlon-dired-repo-menu)
@@ -77,12 +76,13 @@
     ("H-o" "open"                         tlon-open-package-files)
     ("H-c" "copy info"                    tlon-copy-package-info)
     ""
-    
-    ""
-    ("-D" "Debug"                         tlon-menu-infix-toggle-debug)
+    ("." "notifications"                  forge-list-notifications)
+    ("/" "dashboard"                      tlon-browse-dashboard)
     ""
     ("?" "get help"                       tlon-ai-ask-for-help)
     ("!" "report bug"                     tlon-report-bug)
+    ""
+    ("-D" "Debug"                         tlon-menu-infix-toggle-debug)
     ""
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
     (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))]])
