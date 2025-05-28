@@ -317,7 +317,9 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
 
 (defun tlon-forg--select-with-completing-read (element issue-val todo-val)
   "Prompt via `completing-read' which value of ELEMENT to keep.
-Return ?i when user chooses ISSUE value, ?t when they choose TODO value."
+Return ?i when user chooses ISSUE value, ?t when they choose TODO value.
+ISSUE-VAL and TODO-VAL are the values to be compared, and ELEMENT is a string
+describing the element being compared (e.g., \"Titles\")."
   (let* ((choices `((,(format "issue: %s" issue-val) . ?i)
                     (,(format "todo:  %s" todo-val) . ?t)))
          (selection (completing-read
@@ -325,9 +327,10 @@ Return ?i when user chooses ISSUE value, ?t when they choose TODO value."
                      (mapcar #'car choices) nil t)))
     (cdr (assoc selection choices))))
 
-
 (defun tlon-forg--prompt-element-diff (element issue-val todo-val)
-  "Return ?i or ?t according to `tlon-forg-when-syncing' or user choice."
+  "Return ?i or ?t according to `tlon-forg-when-syncing' or user choice.
+ELEMENT is a string describing the element being compared (e.g., \"Titles\").
+ISSUE-VAL and TODO-VAL are the values to be compared."
   (pcase tlon-forg-when-syncing
     ('issue ?i)
     ('todo  ?t)
@@ -360,7 +363,7 @@ Return ?i when user chooses ISSUE value, ?t when they choose TODO value."
     (unless (equal issue-tags todo-tags)
       (pcase (tlon-forg--prompt-element-diff
               "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
-        (?i (org-set-tags-to (string-join issue-tags ":")))
+        (?i (org-set-tags (string-join issue-tags ":")))
         (?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
@@ -1553,8 +1556,6 @@ The command:
         ;; keep local cache in sync with the project status just set
         (tlon-forg--pull-sync forge-repo)))))
 
-(defalias 'tlon-create-issue-interactive #'tlon-create-new-issue)
-
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
   (magit-status-setup-buffer dir)
@@ -1628,7 +1629,7 @@ to reflect the new issue and its metadata."
             (insert (format "[%s] " repo-abbrev)))
           (org-edit-headline new-head)
           (org-todo status)
-          (when org-tags (org-set-tags-to (string-join org-tags ":")))
+          (when org-tags (org-set-tags (string-join org-tags ":")))
           (when org-effort-hours (tlon-forg--set-org-effort org-effort_hours)))
         ;; 6. silently add to project and set project-status = “Doing”
         (cl-letf* (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
@@ -1761,10 +1762,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "`forg' menu."
   :info-manual "(tlon) GitHub and org-mode synchronization"
   [["Actions"
-    ("y" "dwim"                                             tlon-visit-counterpart-or-capture)
+    ("n" "new"                                              tlon-create-new-issue)
     ("v" "visit"                                            tlon-visit-counterpart)
     ("p" "post"                                             tlon-create-issue-from-todo)
-    ("n" "new issue"                                       tlon-create-issue-interactive)
     ("x" "close"                                            tlon-close-issue-and-todo)
     ("s" "sort"                                             tlon-forg-sort-by-tag)]
    ["Capture"
