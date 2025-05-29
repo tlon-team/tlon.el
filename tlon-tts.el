@@ -2527,7 +2527,7 @@ CHUNK-INDEX is ignored for Microsoft Azure but included for API consistency."
 	       '(tlon-tts-audio
 		 tlon-tts-locale
 		 tlon-tts-voice)
-	       parameters)))
+	       (when parameters (list parameters)))))
     (cl-destructuring-bind (audio locale voice) vars
       (let* ((ssml-wrapper (alist-get "Microsoft Azure" tlon-ssml-wrapper nil nil #'string=))
 	     (wrapped-string (format ssml-wrapper locale voice
@@ -2554,7 +2554,7 @@ CHUNK-INDEX is ignored for Google Cloud but included for API consistency."
   (let ((vars (tlon-tts-get-file-local-or-override
 	       '(tlon-tts-locale
 		 tlon-tts-voice)
-	       parameters)))
+	       (when parameters (list parameters)))))
     (cl-destructuring-bind (locale voice) vars
       (let* ((ssml-wrapper (alist-get "Google Cloud" tlon-ssml-wrapper nil nil #'string=))
 	     (wrapped-string (format ssml-wrapper locale voice string)))
@@ -2593,7 +2593,7 @@ CHUNK-INDEX is ignored for Amazon Polly but included for API consistency."
   (let ((vars (tlon-tts-get-file-local-or-override
 	       '(tlon-tts-audio
 		 tlon-tts-voice)
-	       parameters)))
+	       (when parameters (list parameters)))))
     (cl-destructuring-bind (audio voice) vars
       (format tlon-amazon-polly-request
 	      (car audio) voice string tlon-amazon-polly-region destination))))
@@ -2608,7 +2608,7 @@ the car is the name of the file-local variable the cdr is its overriding value.
 CHUNK-INDEX is ignored for OpenAI but included for API consistency."
   (let ((vars (tlon-tts-get-file-local-or-override
 	       '(tlon-tts-voice)
-	       parameters)))
+	       (when parameters (list parameters)))))
     (cl-destructuring-bind (voice) vars
       (format tlon-openai-tts-request
 	      (tlon-tts-openai-get-or-set-key)
