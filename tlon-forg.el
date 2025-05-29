@@ -1492,8 +1492,8 @@ If ISSUE is nil, use the issue at point or in current buffer."
   "Create new GitHub issue in REPO with TITLE and BODY.
 Returns the created issue number.
 
-Optional fourth argument FORMAT can be :org (default, convert title from Org to Markdown)
-or :markdown (title is already Markdown, do not convert)."
+Optional fourth argument FORMAT can be `:org' (default, convert title from Org
+to Markdown) or `:markdown' (title is already Markdown, do not convert)."
   (let* ((repo (or repo (tlon-get-repo 'error 'include-all)))
 	 (body (or body ""))
 	 (default-directory repo)
