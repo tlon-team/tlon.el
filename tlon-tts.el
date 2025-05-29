@@ -27,8 +27,6 @@
 
 (require 'tlon-core)
 (require 'tlon-md)
-(require 'tlon-counterpart) ; For paragraph counting
-(autoload 'magit-extras-stage-commit-and-push "magit-extra")
 (eval-and-compile
   (require 'eieio)
   (require 'transient))
@@ -2770,6 +2768,7 @@ USE-CONTEXT is non-nil."
 ;;;;; File uploading
 
 (declare-function magit-stage-files "magit-apply")
+(declare-function magit-extras-stage-commit-and-push "magit-extra")
 ;;;###autoload
 (defun tlon-tts-move-file-to-audio-server (&optional file)
   "Move audio FILE to the audio repo, then stage, commit, and push the change.

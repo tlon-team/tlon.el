@@ -226,6 +226,7 @@ If FILE is nil, use the current buffer."
 			result)))))
           (nreverse result))))))
 
+;;;###autoload
 (defun tlon-get-number-of-paragraphs (&optional start end)
   "Return the number of paragraphs between START and END.
 START and END are buffer positions. If START is nil, use `point-min'.
