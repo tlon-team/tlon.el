@@ -1588,6 +1588,23 @@ If VOICE-ID is nil or not found, return \"default\"."
     (unless (re-search-forward tlon-tts-chunk-comment-regex nil t)
       (tlon-tts-insert-chunk-comments))))
 
+(defun tlon-tts-remove-existing-chunk-comments ()
+  "Remove existing chunk comments from the narratable content area.
+This ensures chunking logic operates on clean text without pre-existing
+`<!-- Chunk N -->` comments."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (let ((limit (save-excursion ; Determine end of content before local vars
+                     (goto-char (point-min))
+                     (if (re-search-forward tlon-tts-local-variables-section-start nil t)
+                         (match-beginning 0)
+                       (point-max)))))
+        (goto-char (point-min)) ; Start search from beginning of buffer
+        ;; Remove comments only within the content area (up to 'limit')
+        (while (re-search-forward "^<!-- Chunk [0-9]+ -->\n?" limit t)
+          (replace-match "" t t))))))
+
 (defun tlon-tts-calculate-chunks ()
   "Calculate chunk boundaries and populate the tlon-tts-chunks data structure.
 This function analyzes the current buffer content and determines how to split
@@ -1599,33 +1616,11 @@ paragraph regardless of size to work around voice degradation issues for
 longer texts."
   (let ((char-limit (tlon-tts--engine-char-limit))
         (destination (tlon-tts-set-destination))
-        chunks
-        (original-point (point))) ; Save current point
-
-    ;; Temporarily remove chunk/paragraph comments from the narratable content.
-    ;; This ensures `tlon-tts-read-into-chunks` (and thereby `tlon-tts-break-into-chunks`)
-    ;; operates on clean text.
-    (save-excursion
-      (save-restriction
-        (widen) ; Consider the whole buffer for determining the limit
-        (let ((limit (save-excursion ; Determine end of content before local vars
-                       (goto-char (point-min))
-                       (if (re-search-forward tlon-tts-local-variables-section-start nil t)
-                           (match-beginning 0)
-                         (point-max)))))
-          (goto-char (point-min)) ; Start search from beginning of buffer
-          ;; Remove comments only within the content area (up to 'limit')
-          (while (re-search-forward "^<!-- Chunk [0-9]+ -->\n?" limit t)
-            (replace-match "" t t)))))
-    
-    ;; `tlon-tts-read-into-chunks` will now process the buffer.
-    ;; It internally pops the local variables section, calls `tlon-tts-break-into-chunks`
-    ;; on the (now comment-free) content, and then re-inserts the local variables.
+        (original-point (point))
+        chunks)
+    (tlon-tts-remove-existing-chunk-comments)
     (setq chunks (tlon-tts-read-into-chunks char-limit destination))
-
-    ;; Restore original point
     (goto-char original-point)
-    
     (setq tlon-tts-chunks chunks)))
 
 (defun tlon-tts-set-destination ()
