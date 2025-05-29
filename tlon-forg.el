@@ -1569,7 +1569,7 @@ The command:
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
   (magit-status-setup-buffer dir)
-  (forge-create-issue))
+  (forge-create-issue nil))
 
 ;;;###autoload
 (defun tlon-report-bug ()
