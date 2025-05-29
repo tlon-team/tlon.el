@@ -1574,9 +1574,13 @@ The command:
 - silently adds the issue to the project and updates its project status to match
   the TODO."
   (interactive)
-  (let* ((repo-dir (tlon-get-repo nil 'include-all))
-	 (forge-repo (let ((default-directory repo-dir))
-		       (forge-get-repository :tracked)))
+  (let* (;; Make sure we always have a valid forge repository first
+         (forge-repo (tlon-forg-get-or-select-repository))
+         ;; Abort early when user cancels the selection
+         (_         (unless forge-repo
+                      (user-error "Repository selection cancelled – aborting")))
+         ;; Worktree *string* of the selected repository
+         (repo-dir  (oref forge-repo worktree))
 	 (title       (read-string "Issue title: "))
 	 (status      (completing-read
 		       "Status: "
@@ -1645,8 +1649,6 @@ to reflect the new issue and its metadata."
     (user-error "This heading already has an issue"))
   (let* ((repo-dir (or (tlon-get-repo-from-heading)
 		       (tlon-get-repo nil 'include-all)))
-	 (forge-repo (let ((default-directory repo-dir))
-		       (forge-get-repository :tracked)))
 	 (heading-str (substring-no-properties
 		       (org-get-heading t t t t)))
 	 (title (string-trim
