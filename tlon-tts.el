@@ -762,36 +762,44 @@ questions\").")
 	   :audio-var tlon-microsoft-azure-audio-settings
 	   :choices-var tlon-microsoft-azure-audio-choices
 	   :request-fun tlon-tts-microsoft-azure-make-request
-	   :char-limit ,tlon-microsoft-azure-char-limit
+	   :char-limit 'tlon-microsoft-azure-char-limit
 	   :property :azure)
     (:name "Google Cloud"
 	   :voices-var tlon-google-cloud-voices
 	   :audio-var tlon-google-cloud-audio-settings
 	   :choices-var tlon-google-cloud-audio-choices
 	   :request-fun tlon-tts-google-cloud-make-request
-	   :char-limit ,tlon-google-cloud-char-limit
+	   :char-limit 'tlon-google-cloud-char-limit
 	   :property :google)
     (:name "Amazon Polly"
 	   :voices-var tlon-amazon-polly-voices
 	   :audio-var tlon-amazon-polly-audio-settings
 	   :choices-var tlon-amazon-polly-audio-choices
 	   :request-fun tlon-tts-amazon-polly-make-request
-	   :char-limit ,tlon-amazon-polly-char-limit
+	   :char-limit 'tlon-amazon-polly-char-limit
 	   :property :polly)
     (:name "OpenAI"
 	   :voices-var tlon-openai-voices
 	   :audio-var tlon-openai-audio-settings
 	   :request-fun tlon-tts-openai-make-request
-	   :char-limit ,tlon-openai-char-limit
+	   :char-limit 'tlon-openai-char-limit
 	   :property :openai)
     (:name "ElevenLabs"
 	   :voices-var tlon-elevenlabs-voices
 	   :audio-var tlon-elevenlabs-audio-settings
 	   :choices-var tlon-elevenlabs-audio-choices
 	   :request-fun tlon-tts-elevenlabs-make-request
-	   :char-limit ,tlon-elevenlabs-char-limit
+	   :char-limit 'tlon-elevenlabs-char-limit
 	   :property :elevenlabs))
   "Text-to-speech engines and associated properties.")
+
+(defun tlon-tts--engine-char-limit ()
+  "Return the current char-limit for `tlon-tts-engine'.
+If the :char-limit entry in `tlon-tts-engines' is a symbol, look up its
+present value; otherwise return the value itself."
+  (let ((prop (tlon-lookup tlon-tts-engines
+                           :char-limit :name tlon-tts-engine)))
+    (if (symbolp prop) (symbol-value prop) prop)))
 
 ;; needs to use double quotes for Azure, but maybe single quotes for Google Cloud?
 ;; cannot be in single quotes because the entire string is itself enclosed in single quotes
@@ -1640,8 +1648,8 @@ respecting paragraph boundaries. Each chunk will include the maximum number of
 paragraphs that fit within the size limit. DESTINATION is the base output
 filename.
 
-If CHUNK-SIZE is nil (specifically for ElevenLabs paragraph mode), each
-paragraph becomes a separate chunk, breaking before voice changes.
+For any engine, if CHUNK-SIZE is nil the text is split paragraph-wise.
+Each paragraph becomes a separate chunk, breaking before voice changes.
 
 Voice changes specified in `tlon-tts-voice-chunks' always force a chunk break.
 
