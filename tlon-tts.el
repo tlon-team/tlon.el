@@ -762,34 +762,34 @@ questions\").")
 	   :audio-var tlon-microsoft-azure-audio-settings
 	   :choices-var tlon-microsoft-azure-audio-choices
 	   :request-fun tlon-tts-microsoft-azure-make-request
-	   :char-limit 'tlon-microsoft-azure-char-limit
+	   :char-limit tlon-microsoft-azure-char-limit
 	   :property :azure)
     (:name "Google Cloud"
 	   :voices-var tlon-google-cloud-voices
 	   :audio-var tlon-google-cloud-audio-settings
 	   :choices-var tlon-google-cloud-audio-choices
 	   :request-fun tlon-tts-google-cloud-make-request
-	   :char-limit 'tlon-google-cloud-char-limit
+	   :char-limit tlon-google-cloud-char-limit
 	   :property :google)
     (:name "Amazon Polly"
 	   :voices-var tlon-amazon-polly-voices
 	   :audio-var tlon-amazon-polly-audio-settings
 	   :choices-var tlon-amazon-polly-audio-choices
 	   :request-fun tlon-tts-amazon-polly-make-request
-	   :char-limit 'tlon-amazon-polly-char-limit
+	   :char-limit tlon-amazon-polly-char-limit
 	   :property :polly)
     (:name "OpenAI"
 	   :voices-var tlon-openai-voices
 	   :audio-var tlon-openai-audio-settings
 	   :request-fun tlon-tts-openai-make-request
-	   :char-limit 'tlon-openai-char-limit
+	   :char-limit tlon-openai-char-limit
 	   :property :openai)
     (:name "ElevenLabs"
 	   :voices-var tlon-elevenlabs-voices
 	   :audio-var tlon-elevenlabs-audio-settings
 	   :choices-var tlon-elevenlabs-audio-choices
 	   :request-fun tlon-tts-elevenlabs-make-request
-	   :char-limit 'tlon-elevenlabs-char-limit
+	   :char-limit tlon-elevenlabs-char-limit
 	   :property :elevenlabs))
   "Text-to-speech engines and associated properties.")
 
