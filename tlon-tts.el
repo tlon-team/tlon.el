@@ -2635,7 +2635,7 @@ for context)."
          (vars (tlon-tts-get-file-local-or-override
                 '(tlon-tts-voice
                   tlon-tts-audio)
-                (if parameters (list parameters) nil))) ; Ensure parameters is a list
+                (when parameters (list parameters)))) ; Ensure parameters is a list
          ;; Get context only if chunk-index is provided and paragraph chunking is active
          (use-context (and chunk-index (null tlon-elevenlabs-char-limit)))
          (before-text (when (and use-context (> chunk-index 0))
