@@ -2517,11 +2517,12 @@ Returns a list of paths to new temporary files with silence appended."
 
 ;;;;;;; Microsoft Azure
 
-(defun tlon-tts-microsoft-azure-make-request (string destination &optional parameters)
+(defun tlon-tts-microsoft-azure-make-request (string destination &optional parameters chunk-index)
   "Make a request to the Microsoft Azure text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
-the car is the name of the file-local variable the cdr is its overriding value."
+the car is the name of the file-local variable the cdr is its overriding value.
+CHUNK-INDEX is ignored for Microsoft Azure but included for API consistency."
   (let ((vars (tlon-tts-get-file-local-or-override
 	       '(tlon-tts-audio
 		 tlon-tts-locale
@@ -2544,11 +2545,12 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;;;;;;; Google Cloud
 
-(defun tlon-tts-google-cloud-make-request (string destination &optional parameters)
+(defun tlon-tts-google-cloud-make-request (string destination &optional parameters chunk-index)
   "Make a request to the Google Cloud text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
-the car is the name of the file-local variable the cdr is its overriding value."
+the car is the name of the file-local variable the cdr is its overriding value.
+CHUNK-INDEX is ignored for Google Cloud but included for API consistency."
   (let ((vars (tlon-tts-get-file-local-or-override
 	       '(tlon-tts-locale
 		 tlon-tts-voice)
@@ -2582,11 +2584,12 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;;;;;;; Amazon Polly
 
-(defun tlon-tts-amazon-polly-make-request (string destination &optional parameters)
+(defun tlon-tts-amazon-polly-make-request (string destination &optional parameters chunk-index)
   "Construct the AWS CLI command to call Amazon Polly.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
-the car is the name of the file-local variable the cdr is its overriding value."
+the car is the name of the file-local variable the cdr is its overriding value.
+CHUNK-INDEX is ignored for Amazon Polly but included for API consistency."
   (let ((vars (tlon-tts-get-file-local-or-override
 	       '(tlon-tts-audio
 		 tlon-tts-voice)
@@ -2597,11 +2600,12 @@ the car is the name of the file-local variable the cdr is its overriding value."
 
 ;;;;;;; OpenAI
 
-(defun tlon-tts-openai-make-request (string destination &optional parameters)
+(defun tlon-tts-openai-make-request (string destination &optional parameters chunk-index)
   "Make a request to the OpenAI text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
-the car is the name of the file-local variable the cdr is its overriding value."
+the car is the name of the file-local variable the cdr is its overriding value.
+CHUNK-INDEX is ignored for OpenAI but included for API consistency."
   (let ((vars (tlon-tts-get-file-local-or-override
 	       '(tlon-tts-voice)
 	       parameters)))
