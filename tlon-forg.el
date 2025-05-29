@@ -776,62 +776,16 @@ If ISSUE is nil, use the issue at point."
 (defun tlon-forg--set-github-project-estimate (issue estimate-value)
   "Set GitHub Project estimate for ISSUE to ESTIMATE-VALUE.
 ISSUE is a forge-topic object. ESTIMATE-VALUE is a float."
-  (unless (and (boundp 'forge-extras-estimate-field-node-id)
-	       (stringp forge-extras-estimate-field-node-id)
-	       (not (string-empty-p forge-extras-estimate-field-node-id)))
-    (user-error "`forge-extras-estimate-field-node-id' is not configured. Please set it"))
-  (let* ((repo (forge-get-repository issue))
-	 (issue-number (oref issue number))
-	 (repo-name (oref repo name))
-	 (gh-fields (forge-extras-gh-get-issue-fields issue-number repo-name))
-	 (parsed-fields (when gh-fields (forge-extras-gh-parse-issue-fields gh-fields)))
-	 (issue-node-id (plist-get parsed-fields :issue-node-id))
-	 (current-project-item-id (plist-get parsed-fields :project-item-id))
-	 target-project-item-id)
-    (unless parsed-fields
-      (user-error "Could not retrieve project data for issue #%s. Aborting estimate update" issue-number))
-    (unless issue-node-id
-      (user-error "Could not retrieve GitHub Issue Node ID for #%s. Aborting estimate update" issue-number))
-    (setq target-project-item-id
-	  (forge-extras--ensure-issue-in-project
-	   issue-number issue-node-id current-project-item-id
-	   (format "Issue #%s is not in Project %s (%s). Add it and set estimate to '%s'?"
-		   issue-number forge-extras-project-number forge-extras-project-owner estimate-value)))
-    (unless target-project-item-id
-      (user-error "Failed to ensure issue #%s is in project. Aborting estimate update" issue-number))
-    (if (forge-extras-gh-update-project-item-estimate-field
-	 forge-extras-project-node-id
-	 target-project-item-id
-	 forge-extras-estimate-field-node-id
-	 estimate-value)
-	(message "Project estimate for issue #%s updated to %s." issue-number estimate-value)
-      (user-error "Failed to update project estimate for issue #%s" issue-number))))
+  (forge-extras-set-project-estimate issue estimate-value))
 
 (defun tlon-forg--set-github-project-status (issue org-status-keyword)
   "Set GitHub Project status for ISSUE to ORG-STATUS-KEYWORD.
 ORG-STATUS-KEYWORD is the Org TODO keyword (e.g., \"DOING\")."
   (let* ((target-status (car (cl-rassoc org-status-keyword tlon-todo-statuses
-					:test #'string=))))
+                                        :test #'string=))))
     (unless target-status
       (user-error "Cannot map Org status %s to a project status" org-status-keyword))
-    (let* ((option-id (cdr (assoc target-status
-				  forge-extras-status-option-ids-alist
-				  #'string=))))
-      (unless option-id
-	(user-error "Status option-id for %s not configured" target-status))
-      (let* ((repo         (forge-get-repository issue))
-	     (issue-num    (oref issue number))
-	     (repo-name    (oref repo name))
-	     (data         (forge-extras-gh-get-issue-fields issue-num repo-name))
-	     (parsed       (and data (forge-extras-gh-parse-issue-fields data)))
-	     (issue-node   (plist-get parsed :issue-node-id))
-	     (item-id      (plist-get parsed :project-item-id)))
-	(setq item-id
-	      (forge-extras--ensure-issue-in-project
-	       issue-num issue-node item-id ""))   ; never prompt (string→true)
-	(forge-extras-gh-update-project-item-status-field
-	 forge-extras-project-node-id item-id
-	 forge-extras-status-field-node-id option-id)))))
+    (forge-extras-set-project-status issue target-status)))
 
 (defun tlon-forg--org-effort-to-hours (str)
   "Convert Org Effort string STR to float hours.
