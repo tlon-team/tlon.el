@@ -1580,9 +1580,9 @@ If VOICE-ID is nil or not found, return \"default\"."
 This function ensures that chunking logic operates on text free of
 pre-existing `<!-- Chunk N -->` or `<!-- Paragraph N -->` comments by
 temporarily removing them before `tlon-tts-read-into-chunks` is called.
-For ElevenLabs, if `tlon-elevenlabs-char-limit' is nil, will chunk by paragraph
-regardless of size to work around voice degradation issues."
-  (let ((char-limit (tlon-lookup tlon-tts-engines :char-limit :name tlon-tts-engine))
+For any engine, if `*-char-limit' is nil, will chunk by paragraph
+regardless of size to work around voice degradation issues for longer texts."
+  (let ((char-limit (tlon-tts--engine-char-limit))
         (destination (tlon-tts-set-destination))
         chunks
         (original-point (point))) ; Save current point
