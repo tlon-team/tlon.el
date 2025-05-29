@@ -97,7 +97,7 @@ This section details the interactive commands provided by =tlon-tts.el=.
 #+findex: tlon-tts-narrate-staged-buffer
 + ~tlon-tts-narrate-staged-buffer~ :: (Autoloaded) Narrates the content currently prepared in the staging buffer.
   1. Ensures the current buffer is a staging buffer.
-  2. Breaks the prepared text into chunks based on engine character limits and voice changes (~tlon-tts-prepare-chunks~). This populates the internal `tlon-tts-chunks` list.
+  2. Breaks the prepared text into chunks based on engine character limits and voice changes (~tlon-tts-calculate-chunks~). This populates the internal `tlon-tts-chunks` list.
   3. Inserts `<!-- Chunk N -->` comments into the staging buffer based on the prepared chunks (~tlon-tts-insert-chunk-comments~).
   4. Iterates through the chunks, calling the appropriate engine's request function (~tlon-tts-generate-audio~) for each chunk, saving the audio to files named by chunk number (e.g., =filename-chunk-001.mp3=).
   5. Monitors the asynchronous audio generation processes.
@@ -282,14 +282,20 @@ This section lists key non-interactive functions, variables, and constants used 
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-tts-chunking-internals
 :END:
-#+findex: tlon-tts-prepare-chunks
-+ ~tlon-tts-prepare-chunks~ :: Calculates the engine's character limit and calls ~tlon-tts-read-into-chunks~. This function ensures that chunking logic operates on text free of pre-existing `<!-- Chunk N -->` comments by temporarily removing them before `tlon-tts-read-into-chunks` is called.
+#+findex: tlon-tts-calculate-chunks
++ ~tlon-tts-calculate-chunks~ :: Calculates the engine's character limit and calls ~tlon-tts-read-into-chunks~. This function ensures that chunking logic operates on text free of pre-existing `<!-- Chunk N -->` comments by temporarily removing them before `tlon-tts-read-into-chunks` is called.
+#+findex: tlon-tts-ensure-chunks-calculated
++ ~tlon-tts-ensure-chunks-calculated~ :: Ensures ~tlon-tts-chunks~ is populated, calling ~tlon-tts-calculate-chunks~ if necessary.
+#+findex: tlon-tts-ensure-chunks-ready
++ ~tlon-tts-ensure-chunks-ready~ :: Ensures chunks are calculated and chunk comments are inserted in the buffer.
+#+findex: tlon-tts-ensure-chunk-comments-inserted
++ ~tlon-tts-ensure-chunk-comments-inserted~ :: Ensures chunk comments are present in the buffer, inserting them if missing.
 #+findex: tlon-tts-read-into-chunks
 + ~tlon-tts-read-into-chunks~ :: Reads the staging buffer content (excluding local variables section) and splits it into chunks using ~tlon-tts-break-into-chunks~.
 #+findex: tlon-tts-break-into-chunks
 + ~tlon-tts-break-into-chunks~ :: Core logic for splitting text into chunks based on paragraph boundaries, engine character limits, and voice changes specified by =tlon-tts-voice-chunks=. It assigns a 1-based chunk number to each generated chunk and stores this in the chunk data. This chunk number is then used for filenames.
 #+findex: tlon-tts-insert-chunk-comments
-+ ~tlon-tts-insert-chunk-comments~ :: After chunks are prepared by ~tlon-tts-prepare-chunks~ (which calls ~tlon-tts-break-into-chunks~), this function is called by ~tlon-tts-narrate-staged-buffer~. It first removes any pre-existing `<!-- Chunk N -->` comments, then iterates through the `tlon-tts-chunks` list and inserts new `<!-- Chunk N -->` comments at the beginning of each chunk's text in the staging buffer, using the `begin-marker` and `chunk-number` stored in each chunk's data.
++ ~tlon-tts-insert-chunk-comments~ :: After chunks are calculated by ~tlon-tts-calculate-chunks~ (which calls ~tlon-tts-break-into-chunks~), this function is called by ~tlon-tts-narrate-staged-buffer~. It first removes any pre-existing `<!-- Chunk N -->` comments, then iterates through the `tlon-tts-chunks` list and inserts new `<!-- Chunk N -->` comments at the beginning of each chunk's text in the staging buffer, using the `begin-marker` and `chunk-number` stored in each chunk's data.
 #+findex: tlon-tts-process-chunks
 + ~tlon-tts-process-chunks~ :: Iterates through the generated ~tlon-tts-chunks~, calling ~tlon-tts-generate-audio~ for each, potentially skipping existing files based on ~tlon-tts-generate-missing-chunks-only~.
 #+findex: tlon-tts-generate-audio

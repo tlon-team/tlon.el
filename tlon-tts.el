@@ -1292,7 +1292,7 @@ position of the cursor from the source buffer."
         (flycheck-mode -1))
       (tlon-tts-set-file-local-vars file)
       (tlon-tts-prepare-staging-buffer)
-      (tlon-tts-prepare-chunks)
+      (tlon-tts-calculate-chunks)
       (tlon-tts-insert-chunk-comments)
       (tlon-tts-restore-position paragraph-index))))
 
@@ -1412,13 +1412,10 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (setq tlon-tts-user-selected-chunks-to-process nil) ; Ensure we are in full buffer mode
   ;; If tlon-tts-chunks is not populated, it means initial staging
   ;; might not have completed or this is a fresh call.
-  ;; In this case, prepare chunks and insert comments.
-  (unless tlon-tts-chunks
-    (tlon-tts-prepare-chunks)      ; Populates tlon-tts-chunks
-    (tlon-tts-insert-chunk-comments)) ; Insert comments based on populated chunks
+  ;; In this case, calculate chunks and insert comments.
+  (tlon-tts-ensure-chunks-ready)
   ;; Now, tlon-tts-chunks should be populated, and the comments in the
-  ;; buffer should be in sync with it (either because they were just
-  ;; inserted, or because they were already there and the block above was skipped).
+  ;; buffer should be in sync with it.
   (tlon-tts-process-chunks))
 
 (defun tlon-tts-staging-buffer-p ()
@@ -1439,14 +1436,12 @@ number (e.g., `basename-chunk-005.mp3`)."
                  (list nil nil)))
   (unless (tlon-tts-staging-buffer-p)
     (user-error "Not in a TTS staging buffer. Run `tlon-tts-stage-content' first"))
-  ;; Ensure chunks are prepared so tlon-tts-chunks is populated
+  ;; Ensure chunks are calculated so tlon-tts-chunks is populated
   ;; and comments in buffer reflect it.
   (save-excursion
-    (unless tlon-tts-chunks
-      (tlon-tts-prepare-chunks)      ; Populates tlon-tts-chunks
-      (tlon-tts-insert-chunk-comments))) ; Reflects it in buffer comments
+    (tlon-tts-ensure-chunks-ready))
   (unless tlon-tts-chunks
-    (user-error "No TTS chunks found. Staging buffer might be empty or invalid, or `tlon-tts-prepare-chunks` failed"))
+    (user-error "No TTS chunks found. Staging buffer might be empty or invalid, or `tlon-tts-calculate-chunks` failed"))
   (let (chunks-to-generate)
     (if (and beg end)
         ;; --- Region is active ---
@@ -1575,13 +1570,33 @@ If VOICE-ID is nil or not found, return \"default\"."
 
 ;;;;;; Prepare chunks
 
-(defun tlon-tts-prepare-chunks ()
-  "Prepare the list of chunks based on the current buffer content.
-This function ensures that chunking logic operates on text free of
-pre-existing `<!-- Chunk N -->` or `<!-- Paragraph N -->` comments by
-temporarily removing them before `tlon-tts-read-into-chunks` is called.
-For any engine, if `*-char-limit' is nil, will chunk by paragraph
-regardless of size to work around voice degradation issues for longer texts."
+(defun tlon-tts-ensure-chunks-calculated ()
+  "Ensure tlon-tts-chunks is populated, calculating if necessary."
+  (unless tlon-tts-chunks
+    (tlon-tts-calculate-chunks)))
+
+(defun tlon-tts-ensure-chunks-ready ()
+  "Ensure chunks are calculated and comments are inserted in the buffer."
+  (tlon-tts-ensure-chunks-calculated)
+  (tlon-tts-ensure-chunk-comments-inserted))
+
+(defun tlon-tts-ensure-chunk-comments-inserted ()
+  "Ensure chunk comments are present in the buffer."
+  (save-excursion
+    (goto-char (point-min))
+    ;; Check if chunk comments already exist
+    (unless (re-search-forward tlon-tts-chunk-comment-regex nil t)
+      (tlon-tts-insert-chunk-comments))))
+
+(defun tlon-tts-calculate-chunks ()
+  "Calculate chunk boundaries and populate the tlon-tts-chunks data structure.
+This function analyzes the current buffer content and determines how to split
+it into chunks based on engine limits and voice changes, but does not modify
+the buffer content itself. It ensures that chunking logic operates on text
+free of pre-existing `<!-- Chunk N -->` comments by temporarily removing them
+before analysis. For any engine, if `*-char-limit' is nil, will chunk by
+paragraph regardless of size to work around voice degradation issues for
+longer texts."
   (let ((char-limit (tlon-tts--engine-char-limit))
         (destination (tlon-tts-set-destination))
         chunks
