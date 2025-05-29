@@ -1613,7 +1613,9 @@ to reflect the new issue and its metadata."
 	 (org-effort-hours (tlon-forg--org-effort-to-hours
 			    (org-entry-get nil "Effort" 'inherit)))
 	 (status "DOING"))
-    (let* ((new-num (tlon-create-issue title repo-dir)))
+    (let* ((default-directory repo-dir)
+	   (forge-repo (forge-get-repository :tracked))
+	   (new-num (tlon-create-issue title repo-dir)))
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
 	(tlon-set-labels `(,status ,@org-tags) nil issue)
