@@ -77,7 +77,7 @@ must be locally configured in Tlön for its path to be found."
 		       (shell-command-to-string
 			(format "gh repo list %s --json name --jq \".[] | .name\""
 				forge-extras-project-owner))
-		       "\n" t 'omit-empty) ; omit-empty in case of trailing newline
+		       "\n" t) ; omit trailing empty element – 3rd arg ‘t’ already does this
 		    (user-error "The 'gh' command-line tool is required but not found")))
 		 (selected-repo-name (completing-read "Select repository from GitHub: " repo-names nil t)))
 	    (when selected-repo-name
