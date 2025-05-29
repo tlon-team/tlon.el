@@ -224,19 +224,26 @@
 	   :type meta
 	   :key "i"
 	   :help t)
-    (:name "80k-website"
-	   :project "other"
-	   :subproject "80k-website"
-	   :abbrev "80k-website"
-	   :type content
-	   :key "w"
-	   :help t)
+    ;; (:name "80k-website"
+    ;; :project "other"
+    ;; :subproject "80k-website"
+    ;; :abbrev "80k-website"
+    ;; :type content
+    ;; :key "w"
+    ;; :help t)
     (:name "80k-podcast"
 	   :project "other"
 	   :subproject "80k-podcast"
 	   :abbrev "80k-podcast"
 	   :type content
 	   :key "p"
+	   :help t)
+    (:name "AI-2027"
+	   :project "other"
+	   :subproject "AI-2027"
+	   :abbrev "ai-2027"
+	   :type content
+	   :key "7"
 	   :help t)
     (:name "aea"
 	   :project "other"

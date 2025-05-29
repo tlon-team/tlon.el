@@ -140,9 +140,12 @@ DIR is the directory where the repo is stored."
     ""
     "80k podcast"
     ("p" "80k podcast"                    tlon-magit-browse-80k-podcast)
+    ;; ""
+    ;; "80k website"
+    ;; ("w" "80k website"                    tlon-magit-browse-80k-website)
     ""
-    "80k website"
-    ("w" "80k website"                    tlon-magit-browse-80k-website)
+    "AI-2027"
+    ("7" "ai-2027"                        tlon-magit-browse-ai-2027)
     ""
     "altruismoeficaz.org"
     ("o" "altruismoeficaz.org"            tlon-magit-browse-altruismoeficaz-org)
@@ -223,9 +226,12 @@ DIR is the directory where the repo is stored."
     ""
     "80k podcast"
     ("p" "80k podcast"                    tlon-dired-browse-80k-podcast)
+    ;; ""
+    ;; "80k website"
+    ;; ("w" "80k website"                    tlon-dired-browse-80k-website)
     ""
-    "80k website"
-    ("w" "80k website"                    tlon-dired-browse-80k-website)
+    "AI–2027"
+    ("7" "ai-2027"                        tlon-dired-browse-ai-2027)
     ""
     "Altruismo Eficaz en Español"
     ("o" "altruismoeficaz.org"            tlon-dired-browse-altruismoeficaz-org)
