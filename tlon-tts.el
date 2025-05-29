@@ -594,7 +594,7 @@ best male and female voices we were able to identify in each language.
 A list of available voices may be found here:
 <https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/ai-services/speech-service/includes/language-support/tts.md>.")
 
-(defconst tlon-microsoft-azure-char-limit (* 9 60 14)
+(defconst tlon-microsoft-azure-char-limit nil
   "Maximum number of characters that Microsoft Azure can process per request.
 Microsoft Azure can process up to 10 minutes of audio at a time. This estimate
 assumes 14 characters per second, and uses nine minutes to err on the safe side.")
