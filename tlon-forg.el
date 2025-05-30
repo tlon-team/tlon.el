@@ -1528,16 +1528,11 @@ The command:
 - silently adds the issue to the project and updates its project status to match
   the TODO."
   (interactive)
-  (let* (;; Always prompt for repository selection
-         (repo-path (tlon-get-repo nil 'include-all))
-         (forge-repo (when repo-path
-                       (let ((default-directory repo-path))
-                         (forge-get-repository :tracked))))
-         ;; Abort early when user cancels the selection
-         (_         (unless forge-repo
-                      (user-error "Repository selection cancelled – aborting")))
-         ;; Worktree *string* of the selected repository
-         (repo-dir  (oref forge-repo worktree))
+  (let* ((detected-repo (tlon-repo-lookup :name :dir (tlon-get-repo 'no-prompt 'include-all)))
+	 (selected-repo (completing-read "Repo: " (tlon-repo-lookup-all :name) nil t detected-repo))
+	 (repo-dir  (tlon-repo-lookup :dir :name selected-repo))
+	 (forge-repo (let ((default-directory repo-dir))
+		       (forge-get-repository :tracked)))
 	 (title       (read-string "Issue title: "))
 	 (status      (completing-read
 		       "Status: "
