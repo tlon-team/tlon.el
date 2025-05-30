@@ -104,9 +104,9 @@ This section details the interactive commands provided by =tlon-forg.el=.
   4. Handles the assignee based on ~tlon-when-assignee-is-nil~ and ~tlon-when-assignee-is-someone-else~, potentially changing the assignee on GitHub or skipping capture.
   5. If the issue's title starts with "Job: ":
      - Ensures it has a valid phase label (prompting if necessary via ~tlon-capture-handle-phase~).
-     - Stores or refiles the job TODO under its master job heading using ~tlon-store-or-refile-job-todo~.
+     - Stores or refiles the job TODO under its master job heading using ~tlon-store-or-refile-job-todo~. The job TODO is initially captured (potentially to the file from which the command was invoked, if an Org file), and then immediately refiled to the central jobs file under its master heading.
   6. If it's a generic issue:
-     - Stores the TODO in the generic file using ~tlon-store-todo~ with the "tbG" template.
+     - Stores the TODO. If the command was invoked from an Org file buffer, the TODO is created in that buffer's file. Otherwise, it's stored in the default file specified by the "tbG" template (typically the generic TODOs file).
   Only captures if a TODO doesn't already exist for the issue.
 
 #+findex: tlon-capture-all-issues-in-repo
