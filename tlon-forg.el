@@ -518,40 +518,46 @@ If ISSUE is also nil, it defaults to the issue at point."
 If ISSUE is nil, it attempts to use the issue at point or in the current
 buffer. If no issue can be determined from the context (e.g., when called
 from an Org mode buffer not in a repository context), it prompts to select a
-repository and then an issue from that repository."
+repository and then an issue from that repository.
+
+If this command is invoked from an Org mode buffer with an associated file,
+the new TODO will be created in that file. Otherwise, it defaults to the
+file specified in the capture template (e.g., generic or jobs file)."
   (interactive)
-  (let (repo issue-to-capture)
+  (let (repo issue-to-capture (invoked-from-org-file nil))
     (if issue
-	(setq issue-to-capture issue
-	      repo (forge-get-repository issue))
+        (setq issue-to-capture issue
+              repo (forge-get-repository issue))
       ;; No explicit issue passed, try to get from context or prompt
       (setq issue-to-capture (ignore-errors (forge-current-topic)))
       (if issue-to-capture
-	  (setq repo (forge-get-repository issue-to-capture))
-	;; Still no issue, so prompt for repository then issue
-	(setq repo (tlon-forg-get-or-select-repository))
-	(unless repo
-	  (user-error "Repository selection failed or cancelled. Aborting capture"))
-	(setq issue-to-capture (tlon-forg-select-issue-from-repo repo))
-	(unless issue-to-capture
-	  (user-error "Issue selection failed or cancelled. Aborting capture"))))
+          (setq repo (forge-get-repository issue-to-capture))
+        ;; Still no issue, so prompt for repository then issue
+        (when (and (eq major-mode 'org-mode) (buffer-file-name))
+          (setq invoked-from-org-file (buffer-file-name)))
+        (setq repo (tlon-forg-get-or-select-repository))
+        (unless repo
+          (user-error "Repository selection failed or cancelled. Aborting capture"))
+        (setq issue-to-capture (tlon-forg-select-issue-from-repo repo))
+        (unless issue-to-capture
+          (user-error "Issue selection failed or cancelled. Aborting capture"))))
 
     ;; Ensure repo is set if issue-to-capture is set (should be by now)
     (unless repo
       (if issue-to-capture
-	  (setq repo (forge-get-repository issue-to-capture))
-	;; This case should ideally be caught by earlier user-errors
-	(user-error "Cannot determine repository. Aborting capture")))
+          (setq repo (forge-get-repository issue-to-capture))
+        ;; This case should ideally be caught by earlier user-errors
+        (user-error "Cannot determine repository. Aborting capture")))
 
     ;; Proceed with capture if issue and repo are valid
     (let* ((issue-name (oref issue-to-capture title))
-	   (default-directory (oref repo worktree))) ; Set context for subsequent operations
+           (default-directory (oref repo worktree))) ; Set context for subsequent operations
       (when (and (eq (tlon-get-state issue-to-capture) 'open)
-		 (tlon-capture-handle-assignee issue-to-capture))
-	(message "Capturing ‘%s’" issue-name)
-	(if (tlon-issue-is-job-p issue-to-capture)
-	    (tlon-create-job-todo-from-issue issue-to-capture)
-	  (tlon-store-todo "tbG" nil issue-to-capture))))))
+                 (tlon-capture-handle-assignee issue-to-capture))
+        (message "Capturing ‘%s’" issue-name)
+        (if (tlon-issue-is-job-p issue-to-capture)
+            (tlon-create-job-todo-from-issue issue-to-capture invoked-from-org-file)
+          (tlon-store-todo "tbG" nil issue-to-capture invoked-from-org-file))))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues-in-repo (arg)
@@ -702,16 +708,39 @@ If PROJECT-ITEMS is provided, only capture issues that are in the project."
     (org-refile-cache-clear)
     (message "Finished capturing issues. Refile cache cleared.")))
 
-(defun tlon-store-todo (template &optional no-action issue)
+(defun tlon-store-todo (template &optional no-action issue target-file)
   "Store a new TODO using TEMPLATE.
 If TODO already exists, do nothing. If NO-ACTION is non-nil, store a master
-TODO. If ISSUE is non-nil, use it instead of the issue at point."
+TODO. If ISSUE is non-nil, use it instead of the issue at point.
+If TARGET-FILE is non-nil and the TEMPLATE's target can be modified,
+capture to this file. Otherwise, use the TEMPLATE's default target file."
   (let ((issue (or issue (forge-current-topic))))
     (shut-up
       (unless (tlon-get-todo-position-from-issue issue)
-	(let ((todo (tlon-make-todo-name-from-issue issue no-action nil)))
-	  (kill-new todo)
-	  (org-capture nil template))))))
+        (let ((todo-text (tlon-make-todo-name-from-issue issue no-action nil)))
+          (kill-new todo-text)
+          (if target-file
+              (let* ((original-template-list (assoc template org-capture-templates))
+                     (capture-arg template)) ; Default to original template key
+                (when original-template-list
+                  (let ((modified-template-list (copy-sequence original-template-list))
+                        (original-target-spec (nth 3 modified-template-list))
+                        (new-target-spec nil))
+                    (cond
+                     ((and (listp original-target-spec) (eq (car original-target-spec) 'file))
+                      (setq new-target-spec (list 'file target-file)))
+                     ((and (listp original-target-spec) (eq (car original-target-spec) 'file+headline))
+                      (setq new-target-spec (list 'file+headline target-file (caddr original-target-spec))))
+                     ((and (listp original-target-spec) (eq (car original-target-spec) 'file+olp))
+                      (setq new-target-spec (cons 'file+olp (cons target-file (cddr original-target-spec)))))
+                     (t
+                      (message "Warning: Capture template '%s' target type not modifiable for specific file. Using default target." template)))
+
+                    (when new-target-spec
+                      (setf (nth 3 modified-template-list) new-target-spec)
+                      (setq capture-arg modified-template-list))))
+                (org-capture nil capture-arg))
+            (org-capture nil template)))))))
 
 ;;;;;; Handling assignee, status, phase
 
@@ -767,18 +796,20 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (when (string-match-p "^Job: " (oref issue title))
       t)))
 
-(defun tlon-create-job-todo-from-issue (&optional issue)
+(defun tlon-create-job-todo-from-issue (&optional issue invoked-from-org-file)
   "Create a new `org-mode' job TODO based on ISSUE.
-If ISSUE is nil, use the issue at point or in the current buffer."
+If ISSUE is nil, use the issue at point or in the current buffer.
+INVOKED-FROM-ORG-FILE is the file path if called from an Org buffer."
   (let ((issue (or issue (forge-current-topic))))
     (tlon-capture-handle-phase issue)
-    (tlon-store-or-refile-job-todo issue)))
+    (tlon-store-or-refile-job-todo issue invoked-from-org-file)))
 
-(defun tlon-store-master-job-todo (&optional set-issue issue)
+(defun tlon-store-master-job-todo (&optional set-issue issue invoked-from-org-file)
   "Create a new job master TODO.
 If SET-ISSUE is non-nil, set issue label to `Awaiting processing' and assignee
 to the current user. If ISSUE is non-nil, use the issue at point or in the
-current buffer."
+current buffer. INVOKED-FROM-ORG-FILE is passed down but not used for
+the master TODO itself, which always goes to the jobs file."
   (let* ((issue (or issue (forge-current-topic)))
 	 (todo (tlon-make-todo-name-from-issue issue 'no-action 'no-status))
 	 (jobs-file (tlon-get-todos-jobs-file)))
@@ -787,24 +818,33 @@ current buffer."
       (save-window-excursion
 	(when set-issue
 	  (tlon-set-initial-label-and-assignee))
-	(tlon-store-todo "tbJ" 'master-todo issue)))))
+        ;; Master TODOs are always created in the central jobs file,
+        ;; so invoked-from-org-file is intentionally not passed to this tlon-store-todo call.
+	(tlon-store-todo "tbJ" 'master-todo issue))))))
 
 (autoload 'org-extras-refile-goto-latest "org-extras")
 (autoload 'org-extras-refile-at-position "org-extras")
-(defun tlon-store-or-refile-job-todo (&optional issue)
+(defun tlon-store-or-refile-job-todo (&optional issue invoked-from-org-file)
   "Refile TODO under appropriate heading, or create new master TODO if none exists.
-If ISSUE is nil, use the issue at point or in the current buffer."
+If ISSUE is nil, use the issue at point or in the current buffer.
+INVOKED-FROM-ORG-FILE is the file path if called from an Org buffer, used for
+initial capture before refiling."
   (if-let* ((issue (or issue (forge-current-topic)))
 	    (pos (tlon-get-todo-position
 		  (tlon-make-todo-name-from-issue issue 'no-action 'no-status)
-		  (tlon-get-todos-jobs-file))))
+		  (tlon-get-todos-jobs-file)))) ; Master heading is sought in jobs file
       (save-window-excursion
-	(tlon-store-todo "tbJ" nil issue)
+        ;; Initial capture respects invoked-from-org-file
+	(tlon-store-todo "tbJ" nil issue invoked-from-org-file)
+        ;; Refile to the jobs file under the master heading
 	(let* ((inhibit-message t))
 	  (org-extras-refile-at-position pos)
 	  (org-extras-refile-goto-latest)))
     (when (y-or-n-p (format "No master TODO found for issue `%s'. Create?" (oref issue title)))
-      (tlon-store-master-job-todo nil issue)
+      ;; Pass invoked-from-org-file for consistency, though tlon-store-master-job-todo
+      ;; will ignore it for placing the master TODO itself.
+      (tlon-store-master-job-todo nil issue invoked-from-org-file)
+      ;; This recursive call to tlon-capture-issue will re-evaluate invoked-from-org-file.
       (tlon-capture-issue issue))))
 
 ;;;;; Sync
