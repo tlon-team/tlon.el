@@ -748,6 +748,84 @@ If ISSUE is nil, use the issue at point or in the current buffer."
    #'tlon-sync-issue-and-todo-from-issue))
 
 ;;;###autoload
+(defun tlon-sync-all-issues-in-repo (arg)
+  "Sync all TODOs with their issues in a selected repository.
+Before initiating the synchronization process, this command performs a full pull
+of the selected repository to ensure that local data reflects the remote state.
+If a repository cannot be inferred from the current context, the user is prompted
+to select one. The window configuration active before the command was called will
+be restored after completion. This command clears the `org-refile' cache upon
+completion.
+
+If called with a prefix ARG, the initial pull from forge is omitted."
+  (interactive "P")
+  (let ((repo (tlon-forg-get-or-select-repository)))
+    (unless repo
+      (user-error "No repository selected or available. Aborting sync-all-issues"))
+    ;; Set default-directory for the scope of tlon-pull-silently and its callback
+    (let ((default-directory (oref repo worktree)))
+      (if arg
+          (tlon-sync-all-issues-in-repo-after-pull repo)
+        (tlon-pull-silently "Pulling issues..."
+                            (lambda () (tlon-sync-all-issues-in-repo-after-pull repo))
+                            repo)))))
+
+;;;###autoload
+(defun tlon-sync-all-issues-in-project (arg)
+  "Sync all TODOs with their issues in the GitHub Project.
+This command fetches all issues from the project configured in
+`forge-extras-project-owner' and `forge-extras-project-number'.
+
+Before initiating the synchronization process, this command performs a full pull
+of each repository containing issues in the project to ensure local data reflects
+its remote state. The window configuration active before the command was called
+will be restored after completion. This command clears the `org-refile' cache
+upon completion.
+
+If called with a prefix ARG, the initial pull from forge is omitted."
+  (interactive "P")
+  (let* ((original-window-config (current-window-configuration))
+         (project-items (forge-extras-list-project-items-ordered))
+         (issue-repos (make-hash-table :test 'equal)))
+    
+    ;; Group issues by repository
+    (dolist (item project-items)
+      (when (eq (plist-get item :type) 'issue)
+        (let* ((repo-fullname (plist-get item :repo))
+               (repo-parts (split-string repo-fullname "/"))
+               (owner (car repo-parts))
+               (repo-name (cadr repo-parts))
+               (repo-dir (tlon-repo-lookup :dir :name repo-name)))
+          (when repo-dir
+            (puthash repo-name repo-dir issue-repos)))))
+    
+    (if (= (hash-table-count issue-repos) 0)
+      (user-error "No repositories with issues found in the project")
+      
+      ;; Process each repository
+      (let ((repos-processed 0)
+            (total-repos (hash-table-count issue-repos)))
+        (maphash
+         (lambda (repo-name repo-dir)
+           (let ((default-directory repo-dir))
+             (message "Processing repository %s (%d/%d)..." 
+                      repo-name (1+ repos-processed) total-repos)
+             (let ((forge-repo (forge-get-repository :tracked)))
+               (if arg
+                   (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                 (tlon-pull-silently 
+                  (format "Pulling issues from %s..." repo-name)
+                  (lambda () (tlon-sync-all-issues-in-repo-after-pull forge-repo))
+                  forge-repo)))
+             (setq repos-processed (1+ repos-processed))))
+         issue-repos)
+        
+        (org-refile-cache-clear)
+        (set-window-configuration original-window-config)
+        (message "Finished syncing issues from %d repositories in project. Refile cache cleared." 
+                 total-repos)))))
+
+;;;###autoload
 (defun tlon-sync-all-issues-and-todos (arg)
   "Sync all TODOs with their issues.
 Before initiating the synchronization process, this command performs a full pull
@@ -774,6 +852,30 @@ in `paths-dir-tlon-todos'."
       (setq files (append files (directory-files paths-dir-tlon-todos t "\\.org$" t)))) ; t for full path
     ;; Ensure absolute paths and remove duplicates
     (delete-dups (mapcar #'expand-file-name files))))
+
+(defun tlon-sync-all-issues-in-repo-after-pull (repo)
+  "Sync TODOs with their issues in REPO after `forge-pull' is finished.
+REPO must be a valid `forge-repository` object."
+  (let ((default-directory (oref repo worktree))) ; Set context
+    (let ((todo-files (tlon-forg--get-all-todo-files)))
+      (dolist (file todo-files)
+        (when (file-exists-p file)
+          (with-current-buffer (find-file-noselect file)
+            (message "Syncing TODOs in %s..." (file-name-nondirectory file))
+            (save-excursion
+              (let ((org-fold-core-style 'overlays))
+                (org-fold-core-save-visibility
+                    (org-fold-show-all)
+                  (goto-char (point-min))
+                  (while (re-search-forward org-heading-regexp nil t)
+                    (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
+                      ;; Only sync issues from the specified repository
+                      (when (and (eq (oref (forge-get-repository issue) id) (oref repo id))
+                                 (or (not (member org-archive-tag (org-get-tags)))
+                                     tlon-forg-include-archived))
+                        (tlon-sync-issue-and-todo-from-issue issue)))))))))))
+    (org-refile-cache-clear)
+    (message "Finished syncing issues in repository %s. Refile cache cleared." (oref repo name))))
 
 (defun tlon-sync-all-issues-and-todos-after-pull ()
   "Sync TODOs with their issues after `forge-pull' is finished."
@@ -1889,7 +1991,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("c p" "capture all issues in project"                  tlon-capture-all-issues-in-project)]
    ["Sync (issue ↔ todo)"
     ("s" "sync"                                             tlon-sync-issue-and-todo)
-    ("S" "sync all"                                         tlon-sync-all-issues-and-todos)]
+    ("S r" "sync all issues in repo"                        tlon-sync-all-issues-in-repo)
+    ("S p" "sync all issues in project"                     tlon-sync-all-issues-in-project)
+    ("S a" "sync all issues and todos"                      tlon-sync-all-issues-and-todos)]
    ["Options"
     ("-s" "When syncing"                                    tlon-forg-when-syncing-infix)
     ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)

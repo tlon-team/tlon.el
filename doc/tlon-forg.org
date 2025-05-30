@@ -148,6 +148,24 @@ This section details the interactive commands provided by =tlon-forg.el=.
     - =issue=: Updates the Org TODO "Effort" to match the GitHub "Estimate".
     - =todo=: Updates the GitHub "Estimate" to match the Org TODO "Effort".
 
+#+findex: tlon-sync-all-issues-in-repo
++ ~tlon-sync-all-issues-in-repo~ :: (Autoloaded) Syncs all Org TODOs with their corresponding GitHub issues in a selected repository, including their estimates.
+  1. If a repository cannot be inferred from the current context, the user is prompted to select one (from Tlön's known repos or by listing from GitHub via `gh` CLI for ~tlon-forg-project-owner~).
+  2. Performs a silent =forge-pull= for the selected repository first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
+  3. Iterates through all headings in all detected TODO files. These include the generic file (~tlon-get-todos-generic-file~), the jobs file (~tlon-get-todos-jobs-file~), and any repository-specific =*.org= files found in the directory specified by =paths-dir-tlon-todos=.
+  4. For each heading, finds the associated issue (~tlon-get-issue~) and checks if it belongs to the selected repository.
+  5. If an issue is found, belongs to the selected repository, and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-sync-issue-and-todo-from-issue~ (which handles name, status, tags, and estimate).
+  6. Clears the =org-refile= cache upon completion.
+
+#+findex: tlon-sync-all-issues-in-project
++ ~tlon-sync-all-issues-in-project~ :: (Autoloaded) Syncs all Org TODOs with their corresponding GitHub issues in the GitHub Project configured in =forge-extras.el= (via ~forge-extras-project-owner~ and ~forge-extras-project-number~), including their estimates.
+  1. Fetches all items from the configured GitHub Project using ~forge-extras-list-project-items-ordered~.
+  2. Groups the issues by repository and checks if each repository is locally available.
+  3. For each repository containing issues in the project:
+     a. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date.
+     b. Calls ~tlon-sync-all-issues-in-repo-after-pull~ to sync all issues in that repository.
+  4. Restores the original window configuration and clears the =org-refile= cache upon completion.
+
 #+findex: tlon-sync-all-issues-and-todos
 + ~tlon-sync-all-issues-and-todos~ :: (Autoloaded) Syncs all Org TODOs found in the relevant TODO files with their corresponding GitHub issues, including their estimates.
   1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
