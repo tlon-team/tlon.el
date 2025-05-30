@@ -210,7 +210,8 @@ For testing purposes."
 ;;;; Variables
 
 (defconst tlon-todo-statuses
-  '(("Doing" . "DOING")
+  '(("Todo" . "TODO")
+    ("Doing" . "DOING")
     ("Next" . "NEXT")
     ("Later" . "LATER")
     ("Someday" . "SOMEDAY")
@@ -1307,20 +1308,16 @@ ISSUE-NUMBER is a tie-breaker."
         (setq issue-number (oref issue number))
 	;; Calculate status-priority
 	(let* ((status-keyword (org-get-todo-state))
-	       (status-alist tlon-todo-statuses)
+	       (todo-order '("TODO" "DOING" "NEXT" "LATER" "SOMEDAY"))
 	       (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
 	  (cond
 	   ((null status-keyword) (setq status-priority 100)) ; No status
 	   ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
 	   (t
-	    (let ((idx -1) (found nil))
-	      (dolist (entry status-alist)
-		(setq idx (1+ idx))
-		(when (string= status-keyword (cdr entry))
-		  (setq status-priority idx
-			found t)
-		  (cl-return)))
-	      (unless found (setq status-priority 50)))))) ; Default for other active states
+	    (let ((pos (cl-position status-keyword todo-order :test #'string=)))
+	      (if pos
+		  (setq status-priority pos)
+		(setq status-priority 50)))))) ; Default for other active states
 
 	;; Calculate project-position
 	(when-let* ((repo-obj (forge-get-repository issue))
