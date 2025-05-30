@@ -1194,12 +1194,6 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 ;;;;;; sort by tag
 
-(declare-function tlon-forg-status-and-project-order-sorter "tlon-forg")
-(declare-function tlon-get-issue "tlon-forg")
-(declare-function tlon-get-issue-number-from-heading "tlon-forg")
-(declare-function tlon-get-repo-from-heading "tlon-forg")
-(declare-function tlon-get-element-from-heading "tlon-forg")
-
 ;;;###autoload
 (defun tlon-forg-sort-by-tag ()
   "Sort org entries by the first tag that matches the relevant regexp pattern.
@@ -1246,44 +1240,44 @@ ISSUE-NUMBER is a tie-breaker."
 	 (status-priority max-priority)
 	 (project-position max-priority)
 	 (issue-number max-priority))
-    (if (not issue)
-	(list max-priority max-priority max-priority) ; Sort items not linked to issues last
-      (setq issue-number (oref issue number))
-      ;; Calculate status-priority
-      (let* ((status-keyword (org-get-todo-state))
-	     (status-alist tlon-todo-statuses)
-	     (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
-	(cond
-	 ((null status-keyword) (setq status-priority 100)) ; No status
-	 ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
-	 (t
-	  (let ((idx -1) (found nil))
-	    (dolist (entry status-alist)
-	      (setq idx (1+ idx))
-	      (when (string= status-keyword (cdr entry))
-		(setq status-priority idx
-		      found t)
-		(cl-return)))
-	    (unless found (setq status-priority 50)))))) ; Default for other active states
+    (if-not issue
+	    (list max-priority max-priority max-priority) ; Sort items not linked to issues last
+	    (setq issue-number (oref issue number))
+	    ;; Calculate status-priority
+	    (let* ((status-keyword (org-get-todo-state))
+		   (status-alist tlon-todo-statuses)
+		   (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
+	      (cond
+	       ((null status-keyword) (setq status-priority 100)) ; No status
+	       ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
+	       (t
+		(let ((idx -1) (found nil))
+		  (dolist (entry status-alist)
+		    (setq idx (1+ idx))
+		    (when (string= status-keyword (cdr entry))
+		      (setq status-priority idx
+			    found t)
+		      (cl-return)))
+		  (unless found (setq status-priority 50)))))) ; Default for other active states
 
-      ;; Calculate project-position
-      (when-let* ((repo-obj (forge-get-repository issue))
-		  (owner (oref repo-obj owner))
-		  (repo-name (oref repo-obj name))
-		  (issue-repo-fullname (format "%s/%s" owner repo-name)))
-	(let ((idx -1) (found-idx nil))
-	  (dolist (item project-items)
-	    (setq idx (1+ idx))
-	    (when (and (eq (plist-get item :type) 'issue)
-		       (string= (plist-get item :repo) issue-repo-fullname)
-		       (= (plist-get item :number) issue-number))
-	      (setq found-idx idx)
-	      (cl-return)))
-	  (if found-idx
-	      (setq project-position found-idx)
-	    (setq project-position max-priority)))) ; Issue not in project list
+	    ;; Calculate project-position
+	    (when-let* ((repo-obj (forge-get-repository issue))
+			(owner (oref repo-obj owner))
+			(repo-name (oref repo-obj name))
+			(issue-repo-fullname (format "%s/%s" owner repo-name)))
+	      (let ((idx -1) (found-idx nil))
+		(dolist (item project-items)
+		  (setq idx (1+ idx))
+		  (when (and (eq (plist-get item :type) 'issue)
+			     (string= (plist-get item :repo) issue-repo-fullname)
+			     (= (plist-get item :number) issue-number))
+		    (setq found-idx idx)
+		    (cl-return)))
+		(if found-idx
+		    (setq project-position found-idx)
+		  (setq project-position max-priority)))) ; Issue not in project list
 
-      (list status-priority project-position issue-number))))
+	    (list status-priority project-position issue-number))))
 
 ;;;;;; status
 
