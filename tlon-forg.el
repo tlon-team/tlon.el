@@ -853,7 +853,7 @@ cached project items list is used instead of fetching a fresh one."
                    (progn
                      (tlon-sync-all-issues-in-repo-after-pull forge-repo)
                      (funcall finish))
-                 (tlon-pull-silently 
+                 (tlon-pull-silently
                   (format "Pulling issues from %s..." repo-name)
                   (lambda ()
                     (tlon-sync-all-issues-in-repo-after-pull forge-repo)
@@ -891,13 +891,13 @@ REPO must be a valid `forge-repository` object."
               (goto-char (car pos-file))
               (when (or (not (member org-archive-tag (org-get-tags)))
                         tlon-forg-include-archived)
-                (message "Syncing issue #%d in repository %s..." 
+                (message "Syncing issue #%d in repository %s..."
                          (oref issue number) repo-name)
                 (tlon-sync-issue-and-todo-from-issue issue)
                 (setq issue-count (1+ issue-count)))))))
       
       (org-refile-cache-clear)
-      (message "Finished syncing %d issues in repository %s. Refile cache cleared." 
+      (message "Finished syncing %d issues in repository %s. Refile cache cleared."
                issue-count repo-name))))
 
 
