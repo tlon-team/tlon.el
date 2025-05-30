@@ -238,7 +238,7 @@ It provides the following groups and commands:
   + =v= :: visit counterpart (~tlon-visit-counterpart~)
   + =p= :: post (create issue from todo) (~tlon-create-issue-from-todo~)
   + =x= :: close issue and todo (~tlon-close-issue-and-todo~)
-  + =s= :: sort by tag (~tlon-forg-sort-by-tag~)
+  + =o= :: sort by tag (~tlon-forg-sort-by-tag~)
 + *Capture*:
   + =c= :: capture issue (~tlon-capture-issue~)
   + =C= :: capture all issues (~tlon-capture-all-issues~)

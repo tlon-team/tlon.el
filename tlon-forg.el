@@ -1757,7 +1757,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   [["Actions"
     ("n" "new"                                              tlon-create-new-issue)
     ("p" "post"                                             tlon-create-issue-from-todo)
-    ("s" "sort"                                             tlon-forg-sort-by-tag)
+    ("o" "sort by tag"                                      tlon-forg-sort-by-tag)
     ("v" "visit"                                            tlon-visit-counterpart)
     ("x" "close"                                            tlon-close-issue-and-todo)]
    ["Capture (issue ↠ todo)"
