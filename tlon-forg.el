@@ -194,7 +194,7 @@ Org TODO subtree after marking it as DONE."
   :type 'boolean
   :group 'tlon-forg)
 
-(defcustom tlon-forg-sort-after-operations nil
+(defcustom tlon-forg-sort-after-sync-or-capture nil
   "Whether to sort the buffer after bulk capture or sync operations.
 When non-nil, `tlon-capture-all-issues-in-project' and 
 `tlon-sync-all-issues-in-project' will sort the buffer by status and 
@@ -598,7 +598,7 @@ cached project items list is used instead of fetching a fresh one."
         (set-window-configuration original-window-config)
         
         ;; Sort buffer if option is enabled
-        (when tlon-forg-sort-after-operations
+        (when tlon-forg-sort-after-sync-or-capture
           (when-let ((todos-file (tlon-get-todos-generic-file)))
             (with-current-buffer (find-file-noselect todos-file)
               (tlon-forg-sort-by-status-and-project-order arg))))
@@ -834,7 +834,7 @@ cached project items list is used instead of fetching a fresh one."
         (set-window-configuration original-window-config)
         
         ;; Sort buffer if option is enabled
-        (when tlon-forg-sort-after-operations
+        (when tlon-forg-sort-after-sync-or-capture
           (when-let ((todos-file (tlon-get-todos-generic-file)))
             (with-current-buffer (find-file-noselect todos-file)
               (tlon-forg-sort-by-status-and-project-order arg))))
@@ -1964,10 +1964,10 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-archive-todo-on-close)))
 
 (transient-define-infix tlon-infix-toggle-sort-after-sync-or-capture ()
-  "Toggle the value of `tlon-forg-sort-after-operations' in `forg' menu."
+  "Toggle the value of `tlon-forg-sort-after-sync-or-capture' in `forg' menu."
   :class 'transient-lisp-variable
-  :variable 'tlon-forg-sort-after-operations
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-sort-after-operations)))
+  :variable 'tlon-forg-sort-after-sync-or-capture
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-sort-after-sync-or-capture)))
 
 ;;;###autoload (autoload 'tlon-forg-menu "tlon-forg" nil t)
 (transient-define-prefix tlon-forg-menu ()
