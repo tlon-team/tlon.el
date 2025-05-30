@@ -1282,19 +1282,11 @@ Entries not linked to an issue, or issues not in the project, are sorted last."
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an `org-mode' buffer"))
   (let ((project-items (forge-extras-list-project-items-ordered)))
-    (message "Debug: Fetched %d project items" (length project-items))
-    (save-excursion
-      (goto-char (point-min))
-      (let ((count 0))
-        (while (re-search-forward org-heading-regexp nil t)
-          (setq count (1+ count)))
-        (message "Debug: Found %d headings in buffer" count)))
     ;; Ensure we're at a heading before sorting
     (save-excursion
       (goto-char (point-min))
       (when (re-search-forward org-heading-regexp nil t)
         (beginning-of-line)
-        (message "Debug: Positioned at first heading, starting sort")
         (org-sort-entries nil ?f (lambda () (tlon-forg-status-and-project-order-sorter project-items)))))))
 
 (defun tlon-forg-status-and-project-order-sorter (project-items)
@@ -1308,21 +1300,15 @@ ISSUE-NUMBER is a tie-breaker."
 	 (max-priority 999)
 	 (status-priority max-priority)
 	 (project-position max-priority)
-	 (issue-number max-priority)
-         (heading-text (org-get-heading t t t t)))
-    (message "Debug: Processing heading: %s" heading-text)
+	 (issue-number max-priority))
     (if (not issue)
-	(progn
-          (message "Debug: No issue found for heading")
-          (list max-priority max-priority max-priority)) ; Sort items not linked to issues last
+	(list max-priority max-priority max-priority) ; Sort items not linked to issues last
       (progn
         (setq issue-number (oref issue number))
-        (message "Debug: Found issue #%d" issue-number)
 	;; Calculate status-priority
 	(let* ((status-keyword (org-get-todo-state))
 	       (status-alist tlon-todo-statuses)
 	       (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
-          (message "Debug: Status keyword: %s" (or status-keyword "nil"))
 	  (cond
 	   ((null status-keyword) (setq status-priority 100)) ; No status
 	   ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
@@ -1335,14 +1321,12 @@ ISSUE-NUMBER is a tie-breaker."
 			found t)
 		  (cl-return)))
 	      (unless found (setq status-priority 50)))))) ; Default for other active states
-        (message "Debug: Status priority: %d" status-priority)
 
 	;; Calculate project-position
 	(when-let* ((repo-obj (forge-get-repository issue))
 		    (owner (oref repo-obj owner))
 		    (repo-name (oref repo-obj name))
 		    (issue-repo-fullname (format "%s/%s" owner repo-name)))
-          (message "Debug: Issue repo: %s" issue-repo-fullname)
 	  (let ((idx -1) (found-idx nil))
 	    (dolist (item project-items)
 	      (setq idx (1+ idx))
@@ -1352,12 +1336,9 @@ ISSUE-NUMBER is a tie-breaker."
 		(setq found-idx idx)
 		(cl-return)))
 	    (if found-idx
-		(progn
-                  (setq project-position found-idx)
-                  (message "Debug: Found in project at position %d" found-idx))
-	      (message "Debug: Issue not found in project items"))))
+		(setq project-position found-idx)
+	      (setq project-position max-priority)))) ; Issue not in project list
 
-        (message "Debug: Final sort key: (%d %d %d)" status-priority project-position issue-number)
 	(list status-priority project-position issue-number)))))
 
 ;;;;;; status
