@@ -1231,7 +1231,7 @@ Entries not linked to an issue, or issues not in the project, are sorted last."
 (defun tlon-forg-status-and-project-order-sorter (project-items)
   "Return a sort key for an Org entry based on status and project order.
 PROJECT-ITEMS is a list of plists from `forge-extras-list-project-items-ordered'.
-The sort key is a list: (STATUS-PRIORITY PROJECT-POSITION ISSUE-NUMBER).
+The sort key is a string representation of (STATUS-PRIORITY PROJECT-POSITION ISSUE-NUMBER).
 Lower STATUS-PRIORITY means earlier in sort.
 Lower PROJECT-POSITION means earlier in sort.
 ISSUE-NUMBER is a tie-breaker."
@@ -1241,7 +1241,7 @@ ISSUE-NUMBER is a tie-breaker."
 	 (project-position max-priority)
 	 (issue-number max-priority))
     (if (not issue)
-	(list max-priority max-priority max-priority) ; Sort items not linked to issues last
+	(format "%03d-%03d-%03d" max-priority max-priority max-priority) ; Sort items not linked to issues last
       (progn
         (setq issue-number (oref issue number))
 	;; Calculate status-priority
@@ -1278,7 +1278,7 @@ ISSUE-NUMBER is a tie-breaker."
 		(setq project-position found-idx)
 	      (setq project-position max-priority)))) ; Issue not in project list
 
-	(list status-priority project-position issue-number)))))
+	(format "%03d-%03d-%03d" status-priority project-position issue-number)))))
 
 ;;;;;; status
 
