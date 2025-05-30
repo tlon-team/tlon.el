@@ -68,36 +68,56 @@ forge yet just return nil."
 
 (defun tlon-forg-get-or-select-repository ()
   "Return a `forge-repository` object.
-Tries to get the current repository using `forge-get-repository :tracked`.
-If that fails, uses `tlon-get-repo` to prompt for a known Tlön repository.
-If that also fails, lists repositories from `tlon-forg-project-owner` on
-GitHub using `gh` CLI and prompts for selection. The selected repository
-must be locally configured in Tlön for its path to be found."
-  (or (ignore-errors (forge-get-repository :tracked))
-      (let ((repo-path (tlon-get-repo nil 'include-all))) ; Prompt from known Tlön repos
-	(if repo-path
-	    (let ((default-directory repo-path)) ; Set context for forge
-	      (forge-get-repository :tracked))
-	  ;; Fallback to gh list if tlon-get-repo doesn't yield/user cancels
-	  (message "No repository selected from Tlön configuration. Fetching list from GitHub...")
-	  (let* ((gh-executable (executable-find "gh"))
-		 (repo-names
-		  (if gh-executable
-		      (split-string
-		       (shell-command-to-string
-			(format "gh repo list %s --json name --jq \".[] | .name\""
-				forge-extras-project-owner))
-		       "\n" t) ; omit trailing empty element – 3rd arg ‘t’ already does this
-		    (user-error "The 'gh' command-line tool is required but not found")))
-		 (selected-repo-name (completing-read "Select repository from GitHub: " repo-names nil t)))
-	    (when selected-repo-name
-	      (let ((repo-dir (tlon-repo-lookup :dir :name selected-repo-name)))
-		(unless repo-dir
-		  (user-error "Repository '%s' not found in local Tlön configuration. Please ensure it's cloned and configured" selected-repo-name))
-		(unless (file-directory-p repo-dir)
-		  (user-error "Repository directory '%s' for '%s' does not exist" repo-dir selected-repo-name))
-		(let ((default-directory repo-dir))
-		  (forge-get-repository :tracked)))))))))
+Priority:
+1. If current buffer is an Org file named like a known Tlön repo (e.g., REPO.org).
+2. Current repository via `forge-get-repository :tracked` in `default-directory`.
+3. Prompt from known Tlön repositories via `tlon-get-repo`.
+4. List repositories from GitHub via `gh` CLI and prompt.
+The selected repository must be locally configured in Tlön for its path to be found."
+  (or
+   ;; 1. Try to derive repo from current buffer's filename if it's an Org file
+   (when-let* ((current-file (buffer-file-name))
+               (is-org-file (and current-file (string-suffix-p ".org" current-file))))
+     (when is-org-file
+       (let* ((base-name (file-name-sans-extension (file-name-nondirectory current-file)))
+              (repo-path (tlon-repo-lookup :dir :name base-name)))
+         (when (and repo-path (file-directory-p repo-path))
+           (ignore-errors ; In case forge isn't set up for this repo-path yet
+             (let ((default-directory repo-path))
+               (forge-get-repository :tracked)))))))
+
+   ;; 2. Try current repository via `forge-get-repository :tracked`
+   (ignore-errors (forge-get-repository :tracked))
+
+   ;; 3. Prompt from known Tlön repositories
+   (let ((repo-path (tlon-get-repo nil 'include-all)))
+     (when repo-path
+       (ignore-errors
+         (let ((default-directory repo-path))
+           (forge-get-repository :tracked)))))
+
+   ;; 4. Fallback to gh list
+   (progn
+     (message "No repository determined from context or Tlön configuration. Fetching list from GitHub...")
+     (let* ((gh-executable (executable-find "gh"))
+            (repo-names
+             (if gh-executable
+                 (split-string
+                  (shell-command-to-string
+                   (format "gh repo list %s --json name --jq \".[] | .name\""
+                           forge-extras-project-owner))
+                  "\n" t)
+               (user-error "The 'gh' command-line tool is required but not found")))
+            (selected-repo-name (completing-read "Select repository from GitHub: " repo-names nil t)))
+       (when selected-repo-name
+         (let ((repo-dir (tlon-repo-lookup :dir :name selected-repo-name)))
+           (unless repo-dir
+             (user-error "Repository '%s' not found in local Tlön configuration. Please ensure it's cloned and configured" selected-repo-name))
+           (unless (file-directory-p repo-dir)
+             (user-error "Repository directory '%s' for '%s' does not exist" repo-dir selected-repo-name))
+           (ignore-errors
+             (let ((default-directory repo-dir))
+               (forge-get-repository :tracked)))))))))
 
 (defun tlon-forg-select-issue-from-repo (repo)
   "Prompt the user to select an open issue from REPO.
