@@ -1903,6 +1903,7 @@ to reflect the new issue and its metadata."
 	   (new-num (tlon-create-issue title repo-dir)))
       (tlon-forg--pull-sync forge-repo)
       (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
+	(tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
 	(tlon-set-labels `(,status ,@org-tags) nil issue)
 	(when org-effort-hours
 	  (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
