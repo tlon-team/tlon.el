@@ -110,7 +110,7 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
   #+end_src
 
 #+vindex: tlon-ai-help-model
-+ ~tlon-ai-help-model~ :: Model to use for the AI help command (~tlon-ai-ask-for-help~).
++ ~tlon-ai-help-model~ :: Model to use for the AI help command (~tlon-ai-ask-for-help~). The value is a cons cell whose car is the backend and whose cdr is the model itself. See ~gptel-extras-ai-models~ for the available options. If nil, use the default ~gptel-model~.
   #+begin_src emacs-lisp
   (setq tlon-ai-help-model '("Gemini" . gemini-2.0-flash-lite-preview-02-05))
   #+end_src
