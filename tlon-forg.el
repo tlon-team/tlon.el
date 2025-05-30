@@ -513,28 +513,33 @@ If ISSUE is also nil, it defaults to the issue at point."
 ;;;;; Capture
 
 ;;;###autoload
-(defun tlon-capture-issue (&optional issue)
+(defun tlon-capture-issue (&optional issue invoked-from-org-file)
   "Create a new `org-mode' TODO based on ISSUE.
 If ISSUE is nil, it attempts to use the issue at point or in the current
-buffer. If no issue can be determined from the context (e.g., when called
-from an Org mode buffer not in a repository context), it prompts to select a
-repository and then an issue from that repository.
+buffer. If no issue can be determined from the context, it prompts to select a
+repository and then an issue.
 
-If this command is invoked from an Org mode buffer with an associated file,
-the new TODO will be created in that file. Otherwise, it defaults to the
-file specified in the capture template (e.g., generic or jobs file)."
-  (interactive)
-  (let (repo issue-to-capture (invoked-from-org-file nil))
+INVOKED-FROM-ORG-FILE specifies the Org file path if the command's context
+originates from a specific Org file (e.g., when called by
+`tlon-capture-all-issues-in-repo`). If nil and called interactively from an
+Org buffer, that buffer's file is used. This determines where the new TODO
+is created if not a job TODO (which are refiled). Otherwise, capture defaults
+to the file specified in the capture template."
+  (interactive
+   (list nil ; For `issue` argument when called interactively
+         (if (and (eq major-mode 'org-mode) (buffer-file-name)) ; For `invoked-from-org-file`
+             (buffer-file-name)
+           nil)))
+  (let (repo issue-to-capture) ; `invoked-from-org-file` is now a parameter
     (if issue
         (setq issue-to-capture issue
               repo (forge-get-repository issue))
-      ;; No explicit issue passed, try to get from context or prompt
+      ;; No explicit issue passed (e.g., interactive call, or programmatic without issue)
       (setq issue-to-capture (ignore-errors (forge-current-topic)))
       (if issue-to-capture
           (setq repo (forge-get-repository issue-to-capture))
-        ;; Still no issue, so prompt for repository then issue
-        (when (and (eq major-mode 'org-mode) (buffer-file-name))
-          (setq invoked-from-org-file (buffer-file-name)))
+        ;; Still no issue (e.g. interactive call from a non-forge, non-org buffer, or org buffer without topic)
+        ;; `invoked-from-org-file` (the parameter) is already set by interactive spec or caller.
         (setq repo (tlon-forg-get-or-select-repository))
         (unless repo
           (user-error "Repository selection failed or cancelled. Aborting capture"))
@@ -546,7 +551,6 @@ file specified in the capture template (e.g., generic or jobs file)."
     (unless repo
       (if issue-to-capture
           (setq repo (forge-get-repository issue-to-capture))
-        ;; This case should ideally be caught by earlier user-errors
         (user-error "Cannot determine repository. Aborting capture")))
 
     ;; Proceed with capture if issue and repo are valid
@@ -571,16 +575,19 @@ completion. This command clears the `org-refile' cache upon completion.
 
 If called with a prefix ARG, the initial pull from forge is omitted."
   (interactive "P")
-  (let ((repo (tlon-forg-get-or-select-repository)))
+  (let* ((repo (tlon-forg-get-or-select-repository))
+         (origin-file (if (and (eq major-mode 'org-mode) (buffer-file-name))
+                          (buffer-file-name)
+                        nil)))
     (unless repo
       (user-error "No repository selected or available. Aborting capture-all-issues"))
     ;; Set default-directory for the scope of tlon-pull-silently and its callback
     (let ((default-directory (oref repo worktree)))
       (if arg
-	  (tlon-capture-all-issues-in-repo-after-pull repo)
-	(tlon-pull-silently "Pulling issues..."
-			    (lambda () (tlon-capture-all-issues-in-repo-after-pull repo))
-			    repo)))))
+          (tlon-capture-all-issues-in-repo-after-pull repo nil origin-file)
+        (tlon-pull-silently "Pulling issues..."
+                            (lambda () (tlon-capture-all-issues-in-repo-after-pull repo nil origin-file))
+                            repo)))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues-in-project (arg)
@@ -600,7 +607,10 @@ cached project items list is used instead of fetching a fresh one."
   (interactive "P")
   (let* ((original-window-config (current-window-configuration))
          (project-items (forge-extras-list-project-items-ordered nil nil arg))
-         (issue-repos (make-hash-table :test 'equal)))
+         (issue-repos (make-hash-table :test 'equal))
+         (origin-file (if (and (eq major-mode 'org-mode) (buffer-file-name))
+                          (buffer-file-name)
+                        nil)))
     
     ;; Group issues by repository
     (dolist (item project-items)
@@ -645,12 +655,12 @@ cached project items list is used instead of fetching a fresh one."
                    (message "Processing repository %s..." repo-name)
                    (if arg
                        (progn
-                         (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items)
+                         (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items origin-file)
                          (funcall finish))
                      (tlon-pull-silently
                       (format "Pulling issues from %s..." repo-name)
                       (lambda ()
-                        (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items)
+                        (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items origin-file)
                         (funcall finish))
                       forge-repo)))))))
          issue-repos)))))
@@ -678,10 +688,12 @@ window configuration that was active before the pull started."
   "Run `forge--pull' on FORGE-REPO synchronously and quietly."
   (shut-up (forge--pull forge-repo nil)))   ; nil callback ⇒ wait
 
-(defun tlon-capture-all-issues-in-repo-after-pull (repo &optional project-items)
+(defun tlon-capture-all-issues-in-repo-after-pull (repo &optional project-items invoked-from-org-file)
   "Capture all issues in REPO after `forge-pull' is finished.
 REPO must be a valid `forge-repository` object.
-If PROJECT-ITEMS is provided, only capture issues that are in the project."
+If PROJECT-ITEMS is provided, only capture issues that are in the project.
+INVOKED-FROM-ORG-FILE is the path to the org file from which the overall
+capture operation was initiated, if any."
   (let ((default-directory (oref repo worktree)) ; Set context
         (repo-name (oref repo name))
         (owner (oref repo owner))
@@ -700,11 +712,11 @@ If PROJECT-ITEMS is provided, only capture issues that are in the project."
               (when issue-id
                 (let ((issue (forge-get-topic issue-id)))
                   (unless (tlon-get-todo-position-from-issue issue)
-                    (tlon-capture-issue issue)))))))
+                    (tlon-capture-issue issue invoked-from-org-file)))))))
       ;; Fallback to all issues in repo (original behavior)
       (dolist (issue (tlon-get-issues repo))
         (unless (tlon-get-todo-position-from-issue issue)
-          (tlon-capture-issue issue))))
+          (tlon-capture-issue issue invoked-from-org-file))))
     (org-refile-cache-clear)
     (message "Finished capturing issues. Refile cache cleared.")))
 
