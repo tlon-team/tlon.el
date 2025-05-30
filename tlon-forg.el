@@ -31,14 +31,14 @@
 (require 'org)
 (require 'org-refile)
 (require 'org-element-ast)
+(require 'ox-md)
 (require 'shut-up)
 (require 'tlon-core)
 (require 'tlon-dispatch)
 (require 'forge-extras)
 (require 'cl-lib)
-(require 'crm)        ; for completing-read-multiple
-(require 'seq)        ; for seq-filter (used below)
-(require 'ox-md)      ; for org-md-export-as-markdown
+(require 'crm)
+(require 'seq)
 
 ;;;; Path Helpers
 
