@@ -735,9 +735,9 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
               (let* ((original-template-list (assoc template org-capture-templates))
                      (capture-arg template)) ; Default to original template key
                 (when original-template-list
-                  (let ((modified-template-list (copy-sequence original-template-list))
-                        (original-target-spec (nth 3 modified-template-list))
-                        (new-target-spec nil))
+                  (let* ((modified-template-list (copy-sequence original-template-list))
+                         (original-target-spec (nth 3 modified-template-list))
+                         (new-target-spec nil))
                     (cond
                      ((and (listp original-target-spec) (eq (car original-target-spec) 'file))
                       (setq new-target-spec (list 'file target-file)))
