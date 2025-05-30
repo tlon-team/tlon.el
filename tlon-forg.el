@@ -1598,7 +1598,7 @@ to reflect the new issue and its metadata."
   (interactive)
   (tlon-ensure-org-mode)
   (when (tlon-get-issue-number-from-heading)
-    (user-error "This heading already has an issue"))
+    (error "This heading already has an issue"))
   (let* ((repo-dir (or (tlon-get-repo-from-heading)
 		       (tlon-get-repo nil 'include-all)))
 	 (heading-str (substring-no-properties
