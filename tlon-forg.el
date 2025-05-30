@@ -747,9 +747,11 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                              (new-target-spec nil))
 			(cond
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file))
-                          (setq new-target-spec (list 'file target-file)))
+			  (let ((heading (file-name-base target-file)))       ; repo name sans “.org”
+			    (setq new-target-spec (list 'file+headline target-file heading))))
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+headline))
-                          (setq new-target-spec (list 'file+headline target-file (caddr original-target-spec))))
+			  (let ((heading (file-name-base target-file)))
+			    (setq new-target-spec (list 'file+headline target-file heading))))
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+olp))
                           (setq new-target-spec (cons 'file+olp (cons target-file (cddr original-target-spec)))))
 			 (t
@@ -772,22 +774,22 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                   ;; or it was found but its structure was not modifiable. Create ad-hoc.
                   (unless capture-arg-final
                     (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
-                    (let ((template-string (if original-template-list
+                    (let* ((heading (file-name-base target-file))
+                           (template-string (if original-template-list
                                                (nth 4 original-template-list) ; Reuse template string if possible
                                              "* TODO %c\n%i")) ; Default template string
-                          (description (if original-template-list
-                                           (nth 1 original-template-list) ; Reuse description
-					 (format "Tlon Adhoc Capture to %s" (file-name-nondirectory target-file))))
-                          (entry-type (if original-template-list
-                                          (nth 2 original-template-list) ; Reuse entry type
-					'entry)))
+                           (description (if original-template-list
+                                            (nth 1 original-template-list) ; Reuse description
+					  (format "Tlon Adhoc Capture to %s" (file-name-nondirectory target-file))))
+                           (entry-type (if original-template-list
+                                           (nth 2 original-template-list) ; Reuse entry type
+					 'entry)))
                       (setq capture-arg-final
-                            (list "tlon-adhoc" ; Ad-hoc key name (for clarity, not strictly used by org-capture)
+                            (list "tlon-adhoc"
                                   description
                                   entry-type
-                                  (list 'file target-file) ; The crucial part: target the desired file
+                                  (list 'file+headline target-file heading)
                                   template-string
-                                  ;; Minimal, safe properties for ad-hoc template
                                   :immediate-finish t 
                                   :unnarrowed t))))
                   
