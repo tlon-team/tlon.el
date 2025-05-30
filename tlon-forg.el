@@ -1890,8 +1890,10 @@ to reflect the new issue and its metadata."
 		       (org-get-heading t t t t)))
 	 (title (string-trim
 		 (replace-regexp-in-string
-		  "^\\(TODO\\|DOING\\|DONE\\|NEXT\\|LATER\\|SOMEDAY\\)[[:space:]]+"
-		  "" heading-str)))
+		  "\n" " "
+		  (replace-regexp-in-string
+		   "^\\(TODO\\|DOING\\|DONE\\|NEXT\\|LATER\\|SOMEDAY\\)[[:space:]]+"
+		   "" heading-str))))
 	 (org-tags (tlon-get-tags-in-todo))
 	 (org-effort-hours (tlon-forg--org-effort-to-hours
 			    (org-entry-get nil "Effort" 'inherit)))
