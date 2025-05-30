@@ -166,13 +166,6 @@ This section details the interactive commands provided by =tlon-forg.el=.
      b. Calls ~tlon-sync-all-issues-in-repo-after-pull~ to sync all issues in that repository.
   4. Restores the original window configuration and clears the =org-refile= cache upon completion.
 
-#+findex: tlon-sync-all-issues-and-todos
-+ ~tlon-sync-all-issues-and-todos~ :: (Autoloaded) Syncs all Org TODOs found in the relevant TODO files with their corresponding GitHub issues, including their estimates.
-  1. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
-  2. Iterates through all headings in all detected TODO files. These include the generic file (~tlon-get-todos-generic-file~), the jobs file (~tlon-get-todos-jobs-file~), and any repository-specific =*.org= files found in the directory specified by =paths-dir-tlon-todos=.
-  3. For each heading, finds the associated issue (~tlon-get-issue~).
-  4. If an issue is found and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-sync-issue-and-todo-from-issue~ (which handles name, status, tags, and estimate).
-  5. Clears the =org-refile= cache upon completion.
 
 *** Counterpart Navigation
 :PROPERTIES:
