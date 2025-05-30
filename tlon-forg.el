@@ -194,10 +194,11 @@ Org TODO subtree after marking it as DONE."
   :type 'boolean
   :group 'tlon-forg)
 
-(defcustom tlon-forg-archive-todo-on-close nil
-  "Whether to archive the Org TODO item when closing an issue and its TODO.
-When non-nil, `tlon-close-issue-and-todo' will archive the corresponding
-Org TODO subtree after marking it as DONE."
+(defcustom tlon-forg-sort-after-operations nil
+  "Whether to sort the buffer after bulk capture or sync operations.
+When non-nil, `tlon-capture-all-issues-in-project' and 
+`tlon-sync-all-issues-in-project' will sort the buffer by status and 
+project order after completing their operations."
   :type 'boolean
   :group 'tlon-forg)
 
@@ -554,10 +555,11 @@ its remote state. The window configuration active before the command was called
 will be restored after completion. This command clears the `org-refile' cache
 upon completion.
 
-If called with a prefix ARG, the initial pull from forge is omitted."
+If called with a prefix ARG, the initial pull from forge is omitted and the
+cached project items list is used instead of fetching a fresh one."
   (interactive "P")
   (let* ((original-window-config (current-window-configuration))
-         (project-items (forge-extras-list-project-items-ordered))
+         (project-items (forge-extras-list-project-items-ordered nil nil arg))
          (issue-repos (make-hash-table :test 'equal)))
     
     ;; Group issues by repository
@@ -594,6 +596,13 @@ If called with a prefix ARG, the initial pull from forge is omitted."
         
         (org-refile-cache-clear)
         (set-window-configuration original-window-config)
+        
+        ;; Sort buffer if option is enabled
+        (when tlon-forg-sort-after-operations
+          (when-let ((todos-file (tlon-get-todos-generic-file)))
+            (with-current-buffer (find-file-noselect todos-file)
+              (tlon-forg-sort-by-status-and-project-order arg))))
+        
         (message "Finished capturing issues from %d repositories in project. Refile cache cleared." 
                  total-repos)))))
 
@@ -782,10 +791,11 @@ its remote state. The window configuration active before the command was called
 will be restored after completion. This command clears the `org-refile' cache
 upon completion.
 
-If called with a prefix ARG, the initial pull from forge is omitted."
+If called with a prefix ARG, the initial pull from forge is omitted and the
+cached project items list is used instead of fetching a fresh one."
   (interactive "P")
   (let* ((original-window-config (current-window-configuration))
-         (project-items (forge-extras-list-project-items-ordered))
+         (project-items (forge-extras-list-project-items-ordered nil nil arg))
          (issue-repos (make-hash-table :test 'equal)))
     
     ;; Group issues by repository
@@ -822,6 +832,13 @@ If called with a prefix ARG, the initial pull from forge is omitted."
         
         (org-refile-cache-clear)
         (set-window-configuration original-window-config)
+        
+        ;; Sort buffer if option is enabled
+        (when tlon-forg-sort-after-operations
+          (when-let ((todos-file (tlon-get-todos-generic-file)))
+            (with-current-buffer (find-file-noselect todos-file)
+              (tlon-forg-sort-by-status-and-project-order arg))))
+        
         (message "Finished syncing issues from %d repositories in project. Refile cache cleared." 
                  total-repos)))))
 
@@ -1345,16 +1362,18 @@ return \"~\", so that the entry is sorted to the end."
       "~")))
 
 ;;;###autoload
-(defun tlon-forg-sort-by-status-and-project-order ()
+(defun tlon-forg-sort-by-status-and-project-order (&optional arg)
   "Sort org entries by status and then by GitHub Project order.
 Status order is based on `tlon-todo-statuses' (DOING, NEXT, LATER, SOMEDAY),
 followed by other active TODO states, then DONE, then items with no status.
 Project order is determined by `forge-extras-list-project-items-ordered'.
-Entries not linked to an issue, or issues not in the project, are sorted last."
-  (interactive)
+Entries not linked to an issue, or issues not in the project, are sorted last.
+
+With prefix ARG, use the cached project items list instead of fetching a fresh one."
+  (interactive "P")
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an `org-mode' buffer"))
-  (let ((project-items (forge-extras-list-project-items-ordered)))
+  (let ((project-items (forge-extras-list-project-items-ordered nil nil arg)))
     ;; Ensure we're at a heading before sorting
     (save-excursion
       (goto-char (point-min))
@@ -1944,6 +1963,12 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   :variable 'tlon-forg-archive-todo-on-close
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-archive-todo-on-close)))
 
+(transient-define-infix tlon-infix-toggle-sort-after-operations ()
+  "Toggle the value of `tlon-forg-sort-after-operations' in `forg' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-forg-sort-after-operations
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-sort-after-operations)))
+
 ;;;###autoload (autoload 'tlon-forg-menu "tlon-forg" nil t)
 (transient-define-prefix tlon-forg-menu ()
   "`forg' menu."
@@ -1968,7 +1993,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("-e" "When assignee is someone else"                   tlon-when-assignee-is-someone-else-infix)
     ""
     ("-a" "Include archived"                                tlon-infix-toggle-include-archived)
-    ("-A" "Archive on close"                                tlon-infix-toggle-archive-todo-on-close)]])
+    ("-A" "Archive on close"                                tlon-infix-toggle-archive-todo-on-close)
+    ("-S" "Sort after operations"                           tlon-infix-toggle-sort-after-operations)]])
 
 (provide 'tlon-forg)
 ;;; tlon-forg.el ends here
