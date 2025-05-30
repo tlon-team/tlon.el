@@ -727,13 +727,18 @@ TODO. If ISSUE is non-nil, use it instead of the issue at point.
 If TARGET-FILE is non-nil and the TEMPLATE's target can be modified,
 capture to this file. Otherwise, use the TEMPLATE's default target file."
   (let ((issue (or issue (forge-current-topic))))
-    (shut-up
-      (unless (tlon-get-todo-position-from-issue issue)
-        (let ((todo-text (tlon-make-todo-name-from-issue issue no-action nil)))
-          (kill-new todo-text)
-          (if target-file
-              (let ((capture-arg-final nil) ; This will hold the final template list or key
-                    (original-template-list (assoc template org-capture-templates)))
+    ;; helper: guarantee the resulting template inserts at beginning
+    (cl-labels ((tlon--ensure-prepend (tpl)
+                  (unless (plist-member (nthcdr 5 tpl) :prepend)
+                    (nconc tpl '(:prepend t)))
+                  tpl))
+      (shut-up
+        (unless (tlon-get-todo-position-from-issue issue)
+          (let ((todo-text (tlon-make-todo-name-from-issue issue no-action nil)))
+            (kill-new todo-text)
+            (if target-file
+                (let ((capture-arg-final nil) ; This will hold the final template list or key
+                      (original-template-list (assoc template org-capture-templates)))
 
                 (if original-template-list
                     ;; Template key FOUND. Try to modify it.
@@ -755,7 +760,7 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                       (if (and new-target-spec (not (eq new-target-spec :failed-to-modify)))
                           (progn
                             (setf (nth 3 modified-template-list) new-target-spec)
-                            (setq capture-arg-final modified-template-list))
+                            (setq capture-arg-final (tlon--ensure-prepend modified-template-list)))
                         ;; Else (new-target-spec is nil or :failed-to-modify)
                         ;; -> Ad-hoc template will be created below because capture-arg-final is still nil
                         ))
@@ -789,10 +794,17 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                 ;; When capture-arg-final is a list (a full template definition),
                 ;; temporarily add it to org-capture-templates and call org-capture with its key.
                 ;; This is more robust than relying on org-capture's direct list handling.
+                (setq capture-arg-final (tlon--ensure-prepend capture-arg-final))
                 (let ((org-capture-templates (cons capture-arg-final org-capture-templates)))
                   (org-capture nil (car capture-arg-final))))
             ;; No target-file, use the template key as is (original behavior)
-            (org-capture nil template)))))))
+            (let* ((orig-tpl (assoc template org-capture-templates))
+                   (org-capture-templates
+                    (if orig-tpl
+                        (cons (tlon--ensure-prepend (copy-sequence orig-tpl))
+                              (remove orig-tpl org-capture-templates))
+                      org-capture-templates)))
+              (org-capture nil template)))))))
 
 ;;;;;; Handling assignee, status, phase
 
