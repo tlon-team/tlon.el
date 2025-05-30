@@ -1528,8 +1528,11 @@ The command:
 - silently adds the issue to the project and updates its project status to match
   the TODO."
   (interactive)
-  (let* (;; Make sure we always have a valid forge repository first
-         (forge-repo (tlon-forg-get-or-select-repository))
+  (let* (;; Always prompt for repository selection
+         (repo-path (tlon-get-repo nil 'include-all))
+         (forge-repo (when repo-path
+                       (let ((default-directory repo-path))
+                         (forge-get-repository :tracked))))
          ;; Abort early when user cancels the selection
          (_         (unless forge-repo
                       (user-error "Repository selection cancelled – aborting")))
