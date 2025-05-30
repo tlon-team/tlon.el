@@ -614,12 +614,12 @@ cached project items list is used instead of fetching a fresh one."
                    (message "Processing repository %s..." repo-name)
                    (if arg
                        (progn
-                         (tlon-capture-all-issues-in-repo-after-pull forge-repo)
+                         (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items)
                          (funcall finish))
                      (tlon-pull-silently
                       (format "Pulling issues from %s..." repo-name)
                       (lambda ()
-                        (tlon-capture-all-issues-in-repo-after-pull forge-repo)
+                        (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items)
                         (funcall finish))
                       forge-repo)))))))
          issue-repos)))))
@@ -647,13 +647,33 @@ window configuration that was active before the pull started."
   "Run `forge--pull' on FORGE-REPO synchronously and quietly."
   (shut-up (forge--pull forge-repo nil)))   ; nil callback ⇒ wait
 
-(defun tlon-capture-all-issues-in-repo-after-pull (repo)
+(defun tlon-capture-all-issues-in-repo-after-pull (repo &optional project-items)
   "Capture all issues in REPO after `forge-pull' is finished.
-REPO must be a valid `forge-repository` object."
-  (let ((default-directory (oref repo worktree))) ; Set context
-    (dolist (issue (tlon-get-issues repo)) ; tlon-get-issues uses the repo context
-      (unless (tlon-get-todo-position-from-issue issue)
-	(tlon-capture-issue issue))) ; Pass the specific issue object
+REPO must be a valid `forge-repository` object.
+If PROJECT-ITEMS is provided, only capture issues that are in the project."
+  (let ((default-directory (oref repo worktree)) ; Set context
+        (repo-name (oref repo name))
+        (owner (oref repo owner))
+        (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name))))
+    (if project-items
+        ;; Only process issues that are in the project
+        (dolist (item project-items)
+          (when (and (eq (plist-get item :type) 'issue)
+                     (string= (plist-get item :repo) repo-fullname))
+            (let* ((issue-number (plist-get item :number))
+                   (issue-id (caar (forge-sql [:select [id] :from issue
+                                              :where (and (= repository $s1)
+                                                          (= number $s2))]
+                                             (oref repo id)
+                                             issue-number))))
+              (when issue-id
+                (let ((issue (forge-get-topic issue-id)))
+                  (unless (tlon-get-todo-position-from-issue issue)
+                    (tlon-capture-issue issue)))))))
+      ;; Fallback to all issues in repo (original behavior)
+      (dolist (issue (tlon-get-issues repo))
+        (unless (tlon-get-todo-position-from-issue issue)
+          (tlon-capture-issue issue))))
     (org-refile-cache-clear)
     (message "Finished capturing issues. Refile cache cleared.")))
 
@@ -858,12 +878,12 @@ cached project items list is used instead of fetching a fresh one."
                    (message "Processing repository %s..." repo-name)
                    (if arg
                        (progn
-                         (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                         (tlon-sync-all-issues-in-repo-after-pull forge-repo project-items)
                          (funcall finish))
                      (tlon-pull-silently
                       (format "Pulling issues from %s..." repo-name)
                       (lambda ()
-                        (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                        (tlon-sync-all-issues-in-repo-after-pull forge-repo project-items)
                         (funcall finish))
                       forge-repo)))))))
          issue-repos)))))
@@ -882,30 +902,55 @@ in `paths-dir-tlon-todos'."
     ;; Ensure absolute paths and remove duplicates
     (delete-dups (mapcar #'expand-file-name files))))
 
-(defun tlon-sync-all-issues-in-repo-after-pull (repo)
+(defun tlon-sync-all-issues-in-repo-after-pull (repo &optional project-items)
   "Sync TODOs with their issues in REPO after `forge-pull' is finished.
-REPO must be a valid `forge-repository` object."
+REPO must be a valid `forge-repository` object.
+If PROJECT-ITEMS is provided, only sync issues that are in the project."
   (let ((default-directory (oref repo worktree)) ; Set context
-        (repo-name (oref repo name)))
-    ;; Get all issues from this specific repository
-    (let* ((issues (tlon-get-issues repo))
-           (issue-count 0))
-      ;; For each issue, find its TODO and sync it
-      (dolist (issue issues)
-        (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
-          (with-current-buffer (find-file-noselect (cdr pos-file))
-            (save-excursion
-              (goto-char (car pos-file))
-              (when (or (not (member org-archive-tag (org-get-tags)))
-                        tlon-forg-include-archived)
-                (message "Syncing issue #%d in repository %s..."
-                         (oref issue number) repo-name)
-                (tlon-sync-issue-and-todo-from-issue issue)
-                (setq issue-count (1+ issue-count)))))))
-      
-      (org-refile-cache-clear)
-      (message "Finished syncing %d issues in repository %s. Refile cache cleared."
-               issue-count repo-name))))
+        (repo-name (oref repo name))
+        (owner (oref repo owner))
+        (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name)))
+        (issue-count 0))
+    (if project-items
+        ;; Only process issues that are in the project
+        (dolist (item project-items)
+          (when (and (eq (plist-get item :type) 'issue)
+                     (string= (plist-get item :repo) repo-fullname))
+            (let* ((issue-number (plist-get item :number))
+                   (issue-id (caar (forge-sql [:select [id] :from issue
+                                              :where (and (= repository $s1)
+                                                          (= number $s2))]
+                                             (oref repo id)
+                                             issue-number))))
+              (when issue-id
+                (let ((issue (forge-get-topic issue-id)))
+                  (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
+                    (with-current-buffer (find-file-noselect (cdr pos-file))
+                      (save-excursion
+                        (goto-char (car pos-file))
+                        (when (or (not (member org-archive-tag (org-get-tags)))
+                                  tlon-forg-include-archived)
+                          (message "Syncing issue #%d in repository %s..."
+                                   (oref issue number) repo-name)
+                          (tlon-sync-issue-and-todo-from-issue issue)
+                          (setq issue-count (1+ issue-count)))))))))))
+      ;; Fallback to all issues in repo (original behavior)
+      (let ((issues (tlon-get-issues repo)))
+        (dolist (issue issues)
+          (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
+            (with-current-buffer (find-file-noselect (cdr pos-file))
+              (save-excursion
+                (goto-char (car pos-file))
+                (when (or (not (member org-archive-tag (org-get-tags)))
+                          tlon-forg-include-archived)
+                  (message "Syncing issue #%d in repository %s..."
+                           (oref issue number) repo-name)
+                  (tlon-sync-issue-and-todo-from-issue issue)
+                  (setq issue-count (1+ issue-count)))))))))
+    
+    (org-refile-cache-clear)
+    (message "Finished syncing %d issues in repository %s. Refile cache cleared."
+             issue-count repo-name)))
 
 
 (defun tlon-sync-issue-and-todo-from-issue (&optional issue)
