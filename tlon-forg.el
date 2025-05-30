@@ -1196,6 +1196,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 (declare-function tlon-forg-status-and-project-order-sorter "tlon-forg")
 (declare-function tlon-get-issue "tlon-forg")
+(declare-function tlon-get-issue-number-from-heading "tlon-forg")
+(declare-function tlon-get-repo-from-heading "tlon-forg")
+(declare-function tlon-get-element-from-heading "tlon-forg")
 
 ;;;###autoload
 (defun tlon-forg-sort-by-tag ()
