@@ -843,27 +843,29 @@ in `paths-dir-tlon-todos'."
   "Sync TODOs with their issues in REPO after `forge-pull' is finished.
 REPO must be a valid `forge-repository` object."
   (let ((default-directory (oref repo worktree)) ; Set context
-        (repo-id (oref repo id)))
-    (let ((todo-files (tlon-forg--get-all-todo-files)))
-      (dolist (file todo-files)
-        (when (file-exists-p file)
-          (with-current-buffer (find-file-noselect file)
-            (message "Syncing TODOs in %s for repository %s..." 
-                     (file-name-nondirectory file) (oref repo name))
+        (repo-id (oref repo id))
+        (repo-name (oref repo name)))
+    
+    ;; Get all issues from this specific repository
+    (let* ((issues (tlon-get-issues repo))
+           (issue-count 0))
+      
+      ;; For each issue, find its TODO and sync it
+      (dolist (issue issues)
+        (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
+          (with-current-buffer (find-file-noselect (cdr pos-file))
             (save-excursion
-              (let ((org-fold-core-style 'overlays))
-                (org-fold-core-save-visibility
-                    (org-fold-show-all)
-                  (goto-char (point-min))
-                  (while (re-search-forward org-heading-regexp nil t)
-                    (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
-                      ;; Only sync issues from the specified repository
-                      (when (and (eq (oref (forge-get-repository issue) id) repo-id)
-                                 (or (not (member org-archive-tag (org-get-tags)))
-                                     tlon-forg-include-archived))
-                        (tlon-sync-issue-and-todo-from-issue issue)))))))))))
-    (org-refile-cache-clear)
-    (message "Finished syncing issues in repository %s. Refile cache cleared." (oref repo name))))
+              (goto-char (car pos-file))
+              (when (or (not (member org-archive-tag (org-get-tags)))
+                        tlon-forg-include-archived)
+                (message "Syncing issue #%d in repository %s..." 
+                         (oref issue number) repo-name)
+                (tlon-sync-issue-and-todo-from-issue issue)
+                (setq issue-count (1+ issue-count)))))))
+      
+      (org-refile-cache-clear)
+      (message "Finished syncing %d issues in repository %s. Refile cache cleared." 
+               issue-count repo-name))))
 
 
 (defun tlon-sync-issue-and-todo-from-issue (&optional issue)
