@@ -2515,7 +2515,7 @@ Returns a list of paths to new temporary files with silence appended."
 
 ;;;;;;; Microsoft Azure
 
-(defun tlon-tts-microsoft-azure-make-request (string destination &optional parameters)
+(defun tlon-tts-microsoft-azure-make-request (string destination parameters &optional _chunk-index)
   "Make a request to the Microsoft Azure text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
@@ -2543,7 +2543,7 @@ CHUNK-INDEX is ignored for Microsoft Azure but included for API consistency."
 
 ;;;;;;; Google Cloud
 
-(defun tlon-tts-google-cloud-make-request (string destination &optional parameters)
+(defun tlon-tts-google-cloud-make-request (string destination parameters &optional _chunk-index)
   "Make a request to the Google Cloud text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
@@ -2582,7 +2582,7 @@ CHUNK-INDEX is ignored for Google Cloud but included for API consistency."
 
 ;;;;;;; Amazon Polly
 
-(defun tlon-tts-amazon-polly-make-request (string destination &optional parameters)
+(defun tlon-tts-amazon-polly-make-request (string destination parameters &optional _chunk-index)
   "Construct the AWS CLI command to call Amazon Polly.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
@@ -2598,7 +2598,7 @@ CHUNK-INDEX is ignored for Amazon Polly but included for API consistency."
 
 ;;;;;;; OpenAI
 
-(defun tlon-tts-openai-make-request (string destination &optional parameters)
+(defun tlon-tts-openai-make-request (string destination parameters &optional _chunk-index)
   "Make a request to the OpenAI text-to-speech service.
 STRING is the string of the request. DESTINATION is the output file path.
 PARAMETERS is a cons cell of parameters to use when generating the audio, where
