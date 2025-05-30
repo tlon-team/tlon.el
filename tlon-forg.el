@@ -513,7 +513,7 @@ If ISSUE is also nil, it defaults to the issue at point."
 ;;;;; Capture
 
 ;;;###autoload
-(defun tlon-capture-issue (&optional issue invoked-from-org-file)
+(defun tlon-ncapture-issue (&optional issue invoked-from-org-file)
   "Create a new `org-mode' TODO based on ISSUE.
 If ISSUE is nil, it attempts to use the issue at point or in the current
 buffer. If no issue can be determined from the context, it prompts to select a
@@ -740,71 +740,71 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                 (let ((capture-arg-final nil) ; This will hold the final template list or key
                       (original-template-list (assoc template org-capture-templates)))
 
-                (if original-template-list
-                    ;; Template key FOUND. Try to modify it.
-                    (let* ((modified-template-list (copy-sequence original-template-list))
-                           (original-target-spec (nth 3 modified-template-list))
-                           (new-target-spec nil))
-                      (cond
-                       ((and (listp original-target-spec) (eq (car original-target-spec) 'file))
-                        (setq new-target-spec (list 'file target-file)))
-                       ((and (listp original-target-spec) (eq (car original-target-spec) 'file+headline))
-                        (setq new-target-spec (list 'file+headline target-file (caddr original-target-spec))))
-                       ((and (listp original-target-spec) (eq (car original-target-spec) 'file+olp))
-                        (setq new-target-spec (cons 'file+olp (cons target-file (cddr original-target-spec)))))
-                       (t
-                        (message "Warning: Capture template '%s' target type not modifiable for specific file. Will use an ad-hoc template." template)
-                        ;; Signal that new_target_spec could not be formed from original
-                        (setq new-target-spec :failed-to-modify))) 
-                      
-                      (if (and new-target-spec (not (eq new-target-spec :failed-to-modify)))
-                          (progn
-                            (setf (nth 3 modified-template-list) new-target-spec)
-                            (setq capture-arg-final (tlon--ensure-prepend modified-template-list)))
-                        ;; Else (new-target-spec is nil or :failed-to-modify)
-                        ;; -> Ad-hoc template will be created below because capture-arg-final is still nil
-                        ))
-                  ;; Else (original-template-list is NIL - template key NOT found)
-                  ;; -> Ad-hoc template will be created below because capture-arg-final is still nil
-                  )
+                  (if original-template-list
+                      ;; Template key FOUND. Try to modify it.
+                      (let* ((modified-template-list (copy-sequence original-template-list))
+                             (original-target-spec (nth 3 modified-template-list))
+                             (new-target-spec nil))
+			(cond
+			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file))
+                          (setq new-target-spec (list 'file target-file)))
+			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+headline))
+                          (setq new-target-spec (list 'file+headline target-file (caddr original-target-spec))))
+			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+olp))
+                          (setq new-target-spec (cons 'file+olp (cons target-file (cddr original-target-spec)))))
+			 (t
+                          (message "Warning: Capture template '%s' target type not modifiable for specific file. Will use an ad-hoc template." template)
+                          ;; Signal that new_target_spec could not be formed from original
+                          (setq new-target-spec :failed-to-modify)))
+			
+			(if (and new-target-spec (not (eq new-target-spec :failed-to-modify)))
+                            (progn
+                              (setf (nth 3 modified-template-list) new-target-spec)
+                              (setq capture-arg-final (tlon--ensure-prepend modified-template-list)))
+                          ;; Else (new-target-spec is nil or :failed-to-modify)
+                          ;; -> Ad-hoc template will be created below because capture-arg-final is still nil
+                          ))
+                    ;; Else (original-template-list is NIL - template key NOT found)
+                    ;; -> Ad-hoc template will be created below because capture-arg-final is still nil
+                    )
 
-                ;; If capture-arg-final is still nil, it means either template key was not found,
-                ;; or it was found but its structure was not modifiable. Create ad-hoc.
-                (unless capture-arg-final
-                  (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
-                  (let ((template-string (if original-template-list
-                                             (nth 4 original-template-list) ; Reuse template string if possible
-                                           "* TODO %c\n%i")) ; Default template string
-                        (description (if original-template-list
-                                         (nth 1 original-template-list) ; Reuse description
-                                       (format "Tlon Adhoc Capture to %s" (file-name-nondirectory target-file))))
-                        (entry-type (if original-template-list
-                                        (nth 2 original-template-list) ; Reuse entry type
-                                      'entry)))
-                    (setq capture-arg-final
-                          (list "tlon-adhoc" ; Ad-hoc key name (for clarity, not strictly used by org-capture)
-                                description
-                                entry-type
-                                (list 'file target-file) ; The crucial part: target the desired file
-                                template-string
-                                ;; Minimal, safe properties for ad-hoc template
-                                :immediate-finish t 
-                                :unnarrowed t))))
-                
-                ;; When capture-arg-final is a list (a full template definition),
-                ;; temporarily add it to org-capture-templates and call org-capture with its key.
-                ;; This is more robust than relying on org-capture's direct list handling.
-                (setq capture-arg-final (tlon--ensure-prepend capture-arg-final))
-                (let ((org-capture-templates (cons capture-arg-final org-capture-templates)))
-                  (org-capture nil (car capture-arg-final))))
-            ;; No target-file, use the template key as is (original behavior)
-            (let* ((orig-tpl (assoc template org-capture-templates))
-                   (org-capture-templates
-                    (if orig-tpl
-                        (cons (tlon--ensure-prepend (copy-sequence orig-tpl))
-                              (remove orig-tpl org-capture-templates))
-                      org-capture-templates)))
-              (org-capture nil template)))))))
+                  ;; If capture-arg-final is still nil, it means either template key was not found,
+                  ;; or it was found but its structure was not modifiable. Create ad-hoc.
+                  (unless capture-arg-final
+                    (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
+                    (let ((template-string (if original-template-list
+                                               (nth 4 original-template-list) ; Reuse template string if possible
+                                             "* TODO %c\n%i")) ; Default template string
+                          (description (if original-template-list
+                                           (nth 1 original-template-list) ; Reuse description
+					 (format "Tlon Adhoc Capture to %s" (file-name-nondirectory target-file))))
+                          (entry-type (if original-template-list
+                                          (nth 2 original-template-list) ; Reuse entry type
+					'entry)))
+                      (setq capture-arg-final
+                            (list "tlon-adhoc" ; Ad-hoc key name (for clarity, not strictly used by org-capture)
+                                  description
+                                  entry-type
+                                  (list 'file target-file) ; The crucial part: target the desired file
+                                  template-string
+                                  ;; Minimal, safe properties for ad-hoc template
+                                  :immediate-finish t 
+                                  :unnarrowed t))))
+                  
+                  ;; When capture-arg-final is a list (a full template definition),
+                  ;; temporarily add it to org-capture-templates and call org-capture with its key.
+                  ;; This is more robust than relying on org-capture's direct list handling.
+                  (setq capture-arg-final (tlon--ensure-prepend capture-arg-final))
+                  (let ((org-capture-templates (cons capture-arg-final org-capture-templates)))
+                    (org-capture nil (car capture-arg-final))))
+              ;; No target-file, use the template key as is (original behavior)
+              (let* ((orig-tpl (assoc template org-capture-templates))
+                     (org-capture-templates
+                      (if orig-tpl
+                          (cons (tlon--ensure-prepend (copy-sequence orig-tpl))
+				(remove orig-tpl org-capture-templates))
+			org-capture-templates)))
+		(org-capture nil template)))))))))
 
 ;;;;;; Handling assignee, status, phase
 
