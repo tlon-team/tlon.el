@@ -42,7 +42,7 @@ This module provides functions for importing documents from various sources (web
 :CUSTOM_ID: h:tlon-import-pandoc
 :END:
 #+vindex: tlon-pandoc-to-markdown
-+ ~tlon-pandoc-to-markdown~ :: The core Pandoc command arguments for converting HTML to Tlön-flavored Markdown (raw HTML, native divs/spans, fenced divs/spans, header attributes, fenced code blocks, no wrapping, strip comments).
++ ~tlon-pandoc-to-markdown~ :: The core Pandoc command arguments for converting HTML to Tlön-flavored Markdown (raw HTML, native divs/spans, fenced divs/spans, bracketed spans, header attributes, fenced code blocks, no wrapping, strip comments).
 #+vindex: tlon-pandoc-convert-from-file
 + ~tlon-pandoc-convert-from-file~ :: The full Pandoc command string for converting an HTML file to Markdown.
 #+vindex: tlon-pandoc-convert-from-url

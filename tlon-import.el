@@ -150,9 +150,8 @@ HTML-CONTENT is the raw HTML string."
 (defun tlon-import-eaf--process-article (response &optional title)
   "Process an EAF article from API RESPONSE. Optional TITLE override."
   (let ((article-title (or title (tlon-import-eaf-get-article-title response))))
-    (if-let ((contents (tlon-import-eaf-get-article-contents response)))
-        (let ((html (tlon-import-eaf-get-article-html response)))
-          (tlon-import-eaf--common-processing article-title "articles" html))
+    (if-let ((html (tlon-import-eaf-get-article-html response))) ; Directly use HTML
+        (tlon-import-eaf--common-processing article-title "articles" html)
       (if (y-or-n-p "EAF API returned no contents for article. Import as normal URL?")
           (let ((url (tlon-import-eaf-get-article-url response)))
             (tlon-import-convert-html-to-markdown url article-title))
@@ -310,12 +309,6 @@ If ASYNC is t, run the request asynchronously."
   (let* ((tag (cdr (assoc 'tag response)))
 	 (result (cdr (assoc 'result tag))))
     result))
-
-(defun tlon-import-eaf-get-tag-contents (response)
-  "Get tag contents from EA Forum API RESPONSE."
-  (let* ((tag (cdr (assoc 'tag response)))
-	 (contents (cdr (assoc 'contents tag))))
-    contents))
 
 (defun tlon-import-eaf-get-tag-url (response)
   "Construct tag URL from EA Forum API RESPONSE.

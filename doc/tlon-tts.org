@@ -283,7 +283,7 @@ This section lists key non-interactive functions, variables, and constants used 
 :CUSTOM_ID: h:tlon-tts-chunking-internals
 :END:
 #+findex: tlon-tts-calculate-chunks
-+ ~tlon-tts-calculate-chunks~ :: Calculates the engine's character limit and calls ~tlon-tts-read-into-chunks~. This function ensures that chunking logic operates on text free of pre-existing `<!-- Chunk N -->` comments by temporarily removing them before `tlon-tts-read-into-chunks` is called.
++ ~tlon-tts-calculate-chunks~ :: Calculates chunk boundaries and populates the `tlon-tts-chunks` data structure. It analyzes the current buffer content and determines how to split it into chunks based on engine limits and voice changes. For any engine, if its `*-char-limit` (e.g., ~tlon-elevenlabs-char-limit~) is nil, it will chunk by paragraph regardless of size to work around voice degradation issues for longer texts. This function ensures that chunking logic operates on text free of pre-existing `<!-- Chunk N -->` comments by temporarily removing them before analysis.
 #+findex: tlon-tts-ensure-chunks-calculated
 + ~tlon-tts-ensure-chunks-calculated~ :: Ensures ~tlon-tts-chunks~ is populated, calling ~tlon-tts-calculate-chunks~ if necessary.
 #+findex: tlon-tts-ensure-chunks-ready
@@ -341,16 +341,28 @@ This section lists key non-interactive functions, variables, and constants used 
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-tts-audio-internals
 :END:
+#+findex: tlon-tts-finish-processing
++ ~tlon-tts-finish-processing~ :: Finalizes the TTS process after all API chunks are generated. It appends silence if needed (synchronously), then asynchronously normalizes (if enabled) and joins the chunks. Handles cleanup of temporary files and opens the final audio file.
 #+findex: tlon-tts-get-chunk-name
 + ~tlon-tts-get-chunk-name~ :: Generates the filename for an audio chunk based on the original filename and the 1-based chunk number (e.g., =basename-chunk-XXX.ext=). This number is assigned sequentially as chunks are created.
 #+findex: tlon-tts-get-list-of-chunks
 + ~tlon-tts-get-list-of-chunks~ :: Finds all chunk files matching a base filename pattern (e.g., =basename-chunk-*.ext=) and sorts them numerically by chunk number.
+#+findex: tlon-tts-get-base-audio-file-interactive
++ ~tlon-tts-get-base-audio-file-interactive~ :: Prompts for or determines the base audio file path for operations like finalization or chunk deletion. If a chunk filename is provided, it derives the base name.
 #+findex: tlon-tts-create-list-of-chunks
 + ~tlon-tts-create-list-of-chunks~ :: Creates a temporary text file listing chunk filenames (typically normalized temporary files), required by =ffmpeg= for concatenation. This is used internally by the asynchronous joining process.
 #+findex: tlon-tts-append-silence-to-chunks
-+ ~tlon-tts-append-silence-to-chunks~ :: Appends silence to each chunk file using =ffmpeg=, necessary for some engines like ElevenLabs. This is called synchronously by ~tlon-tts-finish-processing~ before the asynchronous normalization and joining steps.
++ ~tlon-tts-append-silence-to-chunks~ :: Appends silence to each chunk file using =ffmpeg=, necessary for some engines like ElevenLabs. This is called synchronously by ~tlon-tts-finish-processing~ before the asynchronous normalization and joining steps. Returns a list of paths to the new temporary files with silence appended.
 #+findex: tlon-tts-append-silence-to-chunks-p
 + ~tlon-tts-append-silence-to-chunks-p~ :: Determines if silence should be appended based on the TTS engine used for the file.
+#+findex: tlon-tts-async-start-normalization
++ ~tlon-tts-async-start-normalization~ :: Asynchronously normalizes a list of audio files to temporary output files using =ffmpeg=. Chains commands with `&&`.
+#+findex: tlon-tts-normalization-sentinel
++ ~tlon-tts-normalization-sentinel~ :: Sentinel function for the asynchronous normalization process. Triggers joining after successful normalization or handles errors, including cleanup of temporary normalized files.
+#+findex: tlon-tts-async-start-joining
++ ~tlon-tts-async-start-joining~ :: Asynchronously joins a list of audio files into a final output file using =ffmpeg= concatenation.
+#+findex: tlon-tts-joining-sentinel
++ ~tlon-tts-joining-sentinel~ :: Sentinel function for the asynchronous joining process. Handles cleanup of temporary files (including the ffmpeg list file and potentially the input files if they were temporary) and opens the final audio file on success.
 
 ** Testing
 :PROPERTIES:

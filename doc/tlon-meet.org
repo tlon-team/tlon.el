@@ -102,24 +102,19 @@ This section details the interactive commands provided by =tlon-meet.el=.
 
 #+findex: tlon-meet-transcribe-audio
 + ~tlon-meet-transcribe-audio~ :: Transcribes an =AUDIO-FILE= (audio or video) using =whisperx= with diarization and then formats the transcript using AI.
-  1. Prompts the user to select an =AUDIO-FILE= (audio or video), defaulting to the directory specified by ~tlon-default-conference-app~ (~tlon-meet-recordings-directory~ or ~tlon-zoom-recordings-directory~) and filtering for common audio/video extensions.
-  2. Prompts the user for the meeting =PARTICIPANTS= (nicknames).
-  3. Creates and displays a "*Diarization Output*" buffer.
-  4. Runs the =whisperx= command asynchronously on the =AUDIO-FILE= (audio or video) with the following arguments:
-     - =--diarize= (enables speaker diarization)
-     - =--language es= (sets the language to Spanish)
-     - =--hf_token [YOUR_TOKEN]= (uses a Hugging Face token retrieved via =auth-source=)
-     - =--output_dir .= (ensures output goes to the audio file's directory)
-  5. *Participant Handling*: Interactively, it prompts for participants using ~tlon-meet--get-file-and-participants~, which attempts to infer participants from the filename (e.g., "Leo<>Pablo - YYYY MM DD...") and uses them as the initial suggestion in the prompt. The confirmed list of participants is then used for formatting.
-  6. When the =whisperx= command finishes successfully, it checks for the existence of the transcript file (expected name: =[audio-filename-sans-extension].txt= in the same directory as the audio file).
-  7. If the transcript exists, it deletes other generated files (=.vtt=, =.srt=, =.tsv=, =.json=) and then calls ~tlon-meet-format-transcript~ using the provided participant list. This function:
-     a. Generates an initial formatted Markdown file (=.md=) using the AI and participant context.
-     b. Deletes the original =.txt= file.
-     c. Calls ~tlon-meet-cleanup-transcript~ to ask the AI to correct errors in the =.md= file, overwriting it with the cleaned version.
-     d. If a callback function was provided (e.g., by ~tlon-meet-transcribe-and-summarize~), it is called *after* the cleanup step with the path to the final, cleaned =.md= file.
-  7. If the =whisperx= command fails or the initial =.txt= transcript doesn't exist, it reports an error in the output buffer. Errors during formatting or cleanup are reported via messages. The callback (if provided) might still be called in case of cleanup errors, passing the path to the uncleaned =.md= file.
-
-  *Note:* This command relies on the external =whisperx= command-line tool (via ~tlon-whisperx-diarize~) and its dependencies being installed and available in the system's PATH. It also requires a Hugging Face token with access to the necessary models (like =pyannote/speaker-diarization=). The token is retrieved using Emacs' =auth-source=. Configuration for the =whisperx= executable path can be found in =tlon-whisperx.el=. If you encounter errors:
+  1. Prompts the user to select an =AUDIO-FILE= (audio or video) and =PARTICIPANTS= (nicknames) using ~tlon-meet--get-file-and-participants~, which attempts to infer participants from the filename for the prompt.
+  2. Creates and displays a "*Diarization Output*" buffer.
+  3. Calls ~tlon-whisperx-diarize~ with the =AUDIO-FILE=, language "es", and no explicit speaker count (allowing auto-detection). The Hugging Face token is handled internally by ~tlon-whisperx-diarize~.
+  4. The callback provided to ~tlon-whisperx-diarize~ handles the result:
+     - If successful (a transcript file, typically `.txt`, is created):
+       - It deletes other potential WhisperX output files (`.vtt`, `.srt`, `.tsv`, `.json`) from the same directory.
+       - It calls ~tlon-meet-format-transcript~ with the path to the `.txt` transcript and the provided =PARTICIPANTS= list. This function, in turn:
+         a. Generates an initial formatted Markdown file (`.md`) using AI and participant context.
+         b. Deletes the original `.txt` file.
+         c. Calls ~tlon-meet-cleanup-transcript~ to ask AI to correct errors in the `.md` file, overwriting it.
+         d. If the original ~tlon-meet-transcribe-audio~ call included a =CALLBACK= (e.g., from ~tlon-meet-transcribe-and-summarize~), that callback is invoked *after* the cleanup step with the path to the final (cleaned or uncleaned) `.md` file.
+     - If transcription fails or the `.txt` file isn't created, an error is reported in the output buffer.
+  *Note:* This command uses ~tlon-whisperx-diarize~ (from =tlon-whisperx.el=), which relies on the external =whisperx= command-line tool. Ensure =whisperx= and its dependencies are installed and in your PATH. The path to the =whisperx= executable itself can be configured in =tlon-whisperx.el=. A Hugging Face token (retrieved via =auth-source=) is required for diarization models. If you encounter errors:
     - Check the "*Diarization Output*" buffer for detailed error messages from =whisperx=.
     - Try running the =whisperx= command manually from your terminal using the command logged in the output buffer (e.g., =whisperx /path/to/audio.m4a --diarize --language es --hf_token ...=).
     - Ensure =whisperx= and its dependencies (PyTorch, etc.) are correctly installed in your Python environment.

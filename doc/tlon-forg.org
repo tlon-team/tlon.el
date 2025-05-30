@@ -432,6 +432,8 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-pull-silently~ :: Performs a =forge--pull= operation for the given =REPO= (or the current one if =REPO= is nil), suppressing output messages. Optionally displays a custom =MESSAGE=. If a =CALLBACK= function is provided, it is executed after the pull completes, and the window configuration active before the pull is restored afterwards.
 #+findex: tlon-forg--pull-sync
 + ~tlon-forg--pull-sync~ :: Runs `forge--pull` on `FORGE-REPO` synchronously and quietly.
+#+findex: tlon-forg--wait-for-issue
++ ~tlon-forg--wait-for-issue~ :: Returns an =ISSUE= by =NUMBER= in =REPO-DIR=, waiting and pulling =FORGE-REPO= until it exists locally or times out. Signals a `user-error` if the issue cannot be found in time.
 #+findex: tlon-capture-all-issues-after-pull
 + ~tlon-capture-all-issues-after-pull~ :: Callback function for ~tlon-capture-all-issues~ that initiates the capture process for the specified =REPO= after the initial pull completes.
 #+findex: tlon-store-todo
@@ -472,6 +474,8 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-forg--diff-issue-and-todo~ :: Returns a list of symbols (`title`, `status`, `tags`) whose values differ between an issue and the Org heading.
 #+findex: tlon-forg--report-diff
 + ~tlon-forg--report-diff~ :: Returns a human-readable string summarizing differences.
+#+findex: tlon-forg--get-all-todo-files
++ ~tlon-forg--get-all-todo-files~ :: Returns a list of all Org TODO files to be processed (generic, jobs, and repo-specific). It combines the paths from ~tlon-get-todos-generic-file~, ~tlon-get-todos-jobs-file~, and all `.org` files found in the directory specified by `paths-dir-tlon-todos`. Ensures paths are absolute and unique.
 
 *** Validation and Checks
 :PROPERTIES:

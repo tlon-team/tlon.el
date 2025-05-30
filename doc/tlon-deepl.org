@@ -104,10 +104,9 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   2. Prompts for target language using ~tlon-select-language~ (excluding the source language).
   3. Prompts for the text to translate, defaulting to the active region or the word at point.
   4. Sets the internal state variables (~tlon-deepl-text~, ~tlon-deepl-source-language~, ~tlon-deepl-target-language~).
-  5. If a callback is provided, calls ~tlon-deepl-request-wrapper~ with the =translate= type.
-  6. Otherwise, uses a direct approach with curl to get the translation, which is more reliable for all languages.
-  7. Returns the translated text as a string.
-  8. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
+  5. Calls ~tlon-deepl-request-wrapper~ with the =translate= type. The provided =CALLBACK= (or the default ~tlon-deepl-print-translation~ if nil) will be executed upon completion.
+  6. Handles glossary lookup (~tlon-deepl-get-language-glossary~) and prompts for confirmation if no suitable glossary is found (unless =NO-GLOSSARY-OK= is non-nil).
+  7. Returns the translated text as a string (typically via the callback or the default printing mechanism).
 
 #+findex: tlon-deepl-translate-abstract
 + ~tlon-deepl-translate-abstract~ :: Translates the =abstract= field of a BibTeX entry =KEY= into specified languages. Takes optional =ABSTRACT=, =KEY=, =LANGS= (list of target language names), and =INTERACTIVE-CALL-P=.
@@ -144,12 +143,10 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   4. Calls ~tlon-deepl-request-wrapper~ with the =glossary-create= type. The callback (~tlon-deepl-glossary-create-callback~) refreshes the local glossary list and messages the API response.
 
 #+findex: tlon-deepl-glossary-update
-+ ~tlon-deepl-glossary-update~ :: Updates a DeepL glossary for a specified language by deleting and recreating it.
++ ~tlon-deepl-glossary-update~ :: Updates a DeepL glossary for a specified language by deleting it (if it exists) and then recreating it with the current local glossary data.
   1. Prompts for the target =LANGUAGE= using ~tlon-select-language~.
-  2. Searches for an existing glossary with the target language.
-  3. If found, deletes the existing glossary and then creates a new one with updated content.
-  4. If no existing glossary is found, simply creates a new one.
-  5. Provides progress messages throughout the process.
+  2. Calls ~tlon-deepl-glossary-delete~ for the specified language, with a callback to then call ~tlon-deepl-glossary-create~ for the same language. This ensures the creation happens after successful deletion (or proceeds directly if no glossary existed to delete).
+  3. Provides progress messages throughout the process.
 
 #+findex: tlon-deepl-glossary-delete
 + ~tlon-deepl-glossary-delete~ :: Deletes a DeepL glossary.

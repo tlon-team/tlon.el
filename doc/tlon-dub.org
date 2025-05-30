@@ -100,6 +100,7 @@ This workflow presupposes that we already have (1) the original audio and video 
     + =t= :: Transcribe with WhisperX (Audio -> srt) (~tlon-dub-transcribe-with-whisperx~)
     + =i= :: Diarize with WhisperX (Audio -> diarized srt/txt) (~tlon-dub-diarize-with-whisperx~)
     + =x= :: Clean diarized SRT (-> -cleaned.srt) (~tlon-dub-clean-diarized-srt~)
+    + =o= :: Optimize Translation Length (en.srt + lang.srt -> optimized.srt) (~tlon-dub-optimize-translation-length~)
     + =c= :: Convert SRTs to CSV (en.srt + lang.srt -> .csv) (~tlon-dub-convert-srt-to-csv~)
     + =r= :: Resegment SRT (speaker/min-30s) (~tlon-dub-resegment-srt~)
   + *ElevenLabs API*:

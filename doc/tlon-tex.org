@@ -329,7 +329,7 @@ These functions customize the BibTeX autokey generation process, likely used as 
 #+findex: tlon-get-field-in-bibliography
 + ~tlon-get-field-in-bibliography~ :: Returns a list of all values for a specific =FIELD= found across all entries in the cached Tlön bibliography.
 +#+findex: tlon-tex-get-keys-in-file
-++ ~tlon-tex-get-keys-in-file~ :: Returns a list of all BibTeX keys found in the specified =FILE= by accessing the citar cache. Ensures the file is cached if not already present.
++ ~tlon-tex-get-keys-in-file~ :: Returns a list of all BibTeX keys found in the specified =FILE= by accessing the citar cache. Ensures the file is cached if not already present.
 
 *** Citation Replacement Helpers
 :PROPERTIES:
