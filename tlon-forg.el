@@ -196,9 +196,9 @@ Org TODO subtree after marking it as DONE."
 
 (defcustom tlon-forg-sort-after-sync-or-capture nil
   "Whether to sort the buffer after bulk capture or sync operations.
-When non-nil, `tlon-capture-all-issues-in-project' and 
-`tlon-sync-all-issues-in-project' will sort the buffer by status and 
-project order after completing their operations."
+When non-nil, `tlon-capture-all-issues-in-project' and
+`tlon-sync-all-issues-in-project' will sort the buffer by status and project
+order after completing their operations."
   :type 'boolean
   :group 'tlon-forg)
 
@@ -567,42 +567,37 @@ cached project items list is used instead of fetching a fresh one."
       (when (eq (plist-get item :type) 'issue)
         (let* ((repo-fullname (plist-get item :repo))
                (repo-parts (split-string repo-fullname "/"))
-               (owner (car repo-parts))
                (repo-name (cadr repo-parts))
                (repo-dir (tlon-repo-lookup :dir :name repo-name)))
           (when repo-dir
             (puthash repo-name repo-dir issue-repos)))))
-    
     (if (= (hash-table-count issue-repos) 0)
 	(user-error "No repositories with issues found in the project")
-      
       ;; Process each repository
       (let ((repos-processed 0)
             (total-repos (hash-table-count issue-repos)))
         (maphash
          (lambda (repo-name repo-dir)
            (let ((default-directory repo-dir))
-             (message "Processing repository %s (%d/%d)..." 
+             (message "Processing repository %s (%d/%d)..."
                       repo-name (1+ repos-processed) total-repos)
              (let ((forge-repo (forge-get-repository :tracked)))
                (if arg
                    (tlon-capture-all-issues-in-repo-after-pull forge-repo)
-                 (tlon-pull-silently 
+                 (tlon-pull-silently
                   (format "Pulling issues from %s..." repo-name)
                   (lambda () (tlon-capture-all-issues-in-repo-after-pull forge-repo))
                   forge-repo)))
              (setq repos-processed (1+ repos-processed))))
          issue-repos)
-        
         (org-refile-cache-clear)
         (set-window-configuration original-window-config)
-        
         ;; Sort buffer if option is enabled
         (when tlon-forg-sort-after-sync-or-capture
           (when-let ((todos-file (tlon-get-todos-generic-file)))
             (with-current-buffer (find-file-noselect todos-file)
               (tlon-forg-sort-by-status-and-project-order t))))
-        (message "Finished capturing issues from %d repositories in project. Refile cache cleared." 
+        (message "Finished capturing issues from %d repositories in project. Refile cache cleared."
                  total-repos)))))
 
 (defun tlon-pull-silently (&optional message callback repo)
@@ -760,10 +755,10 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   "Sync all TODOs with their issues in a selected repository.
 Before initiating the synchronization process, this command performs a full pull
 of the selected repository to ensure that local data reflects the remote state.
-If a repository cannot be inferred from the current context, the user is prompted
-to select one. The window configuration active before the command was called will
-be restored after completion. This command clears the `org-refile' cache upon
-completion.
+If a repository cannot be inferred from the current context, the user is
+prompted to select one. The window configuration active before the command was
+called will be restored after completion. This command clears the `org-refile'
+cache upon completion.
 
 If called with a prefix ARG, the initial pull from forge is omitted."
   (interactive "P")
@@ -785,10 +780,10 @@ This command fetches all issues from the project configured in
 `forge-extras-project-owner' and `forge-extras-project-number'.
 
 Before initiating the synchronization process, this command performs a full pull
-of each repository containing issues in the project to ensure local data reflects
-its remote state. The window configuration active before the command was called
-will be restored after completion. This command clears the `org-refile' cache
-upon completion.
+of each repository containing issues in the project to ensure local data
+reflects its remote state. The window configuration active before the command
+was called will be restored after completion. This command clears the
+`org-refile' cache upon completion.
 
 If called with a prefix ARG, the initial pull from forge is omitted and the
 cached project items list is used instead of fetching a fresh one."
@@ -796,28 +791,24 @@ cached project items list is used instead of fetching a fresh one."
   (let* ((original-window-config (current-window-configuration))
          (project-items (forge-extras-list-project-items-ordered nil nil arg))
          (issue-repos (make-hash-table :test 'equal)))
-    
     ;; Group issues by repository
     (dolist (item project-items)
       (when (eq (plist-get item :type) 'issue)
         (let* ((repo-fullname (plist-get item :repo))
                (repo-parts (split-string repo-fullname "/"))
-               (owner (car repo-parts))
                (repo-name (cadr repo-parts))
                (repo-dir (tlon-repo-lookup :dir :name repo-name)))
           (when repo-dir
             (puthash repo-name repo-dir issue-repos)))))
-    
     (if (= (hash-table-count issue-repos) 0)
 	(user-error "No repositories with issues found in the project")
-      
       ;; Process each repository
       (let ((repos-processed 0)
             (total-repos (hash-table-count issue-repos)))
         (maphash
          (lambda (repo-name repo-dir)
            (let ((default-directory repo-dir))
-             (message "Processing repository %s (%d/%d)..." 
+             (message "Processing repository %s (%d/%d)..."
                       repo-name (1+ repos-processed) total-repos)
              (let ((forge-repo (forge-get-repository :tracked)))
                (if arg
@@ -828,10 +819,8 @@ cached project items list is used instead of fetching a fresh one."
                   forge-repo)))
              (setq repos-processed (1+ repos-processed))))
          issue-repos)
-        
         (org-refile-cache-clear)
         (set-window-configuration original-window-config)
-        
         ;; Sort buffer if option is enabled
         (when tlon-forg-sort-after-sync-or-capture
           (when-let ((todos-file (tlon-get-todos-generic-file)))
@@ -858,13 +847,10 @@ in `paths-dir-tlon-todos'."
   "Sync TODOs with their issues in REPO after `forge-pull' is finished.
 REPO must be a valid `forge-repository` object."
   (let ((default-directory (oref repo worktree)) ; Set context
-        (repo-id (oref repo id))
         (repo-name (oref repo name)))
-    
     ;; Get all issues from this specific repository
     (let* ((issues (tlon-get-issues repo))
            (issue-count 0))
-      
       ;; For each issue, find its TODO and sync it
       (dolist (issue issues)
         (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
@@ -1367,7 +1353,8 @@ followed by other active TODO states, then DONE, then items with no status.
 Project order is determined by `forge-extras-list-project-items-ordered'.
 Entries not linked to an issue, or issues not in the project, are sorted last.
 
-With prefix ARG, use the cached project items list instead of fetching a fresh one."
+With prefix ARG, use the cached project items list instead of fetching a fresh
+one."
   (interactive "P")
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an `org-mode' buffer"))
@@ -1381,9 +1368,9 @@ With prefix ARG, use the cached project items list instead of fetching a fresh o
 
 (defun tlon-forg-status-and-project-order-sorter (project-items)
   "Return a sort key for an Org entry based on status and project order.
-PROJECT-ITEMS is a list of plists from `forge-extras-list-project-items-ordered'.
-The sort key is a number for proper comparison in `org-sort-entries'.
-Lower values sort earlier."
+PROJECT-ITEMS is a list of plists from
+`forge-extras-list-project-items-ordered'. The sort key is a number for proper
+comparison in `org-sort-entries'. Lower values sort earlier."
   (let* ((issue (tlon-get-issue))
 	 (max-priority 999)
 	 (status-priority max-priority)
@@ -1405,7 +1392,6 @@ Lower values sort earlier."
 	      (if pos
 		  (setq status-priority pos)
 		(setq status-priority 50)))))) ; Default for other active states
-
 	;; Calculate project-position
 	(when-let* ((repo-obj (forge-get-repository issue))
 		    (owner (oref repo-obj owner))
@@ -1422,7 +1408,6 @@ Lower values sort earlier."
 	    (if found-idx
 		(setq project-position found-idx)
 	      (setq project-position max-priority)))) ; Issue not in project list
-
 	;; Return a single number that encodes all three priorities
 	(+ (* status-priority 1000000) (* project-position 1000) issue-number)))))
 
