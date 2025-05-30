@@ -593,9 +593,10 @@ cached project items list is used instead of fetching a fresh one."
                   (org-refile-cache-clear)
                   (set-window-configuration original-window-config)
                   (when tlon-forg-sort-after-sync-or-capture
-                    (when-let ((todos-file (tlon-get-todos-generic-file)))
-                      (with-current-buffer (find-file-noselect todos-file)
-                        (tlon-forg-sort-by-status-and-project-order t))))
+                    (dolist (todos-file (tlon-forg--get-all-todo-files))
+                      (when (and todos-file (file-exists-p todos-file))
+                        (with-current-buffer (find-file-noselect todos-file)
+                          (tlon-forg-sort-by-status-and-project-order t)))))
                   (message "Finished %s %d repositories in project. Refile cache cleared."
                            (if (eq this-command 'tlon-capture-all-issues-in-project)
                                "capturing issues from"
@@ -836,9 +837,10 @@ cached project items list is used instead of fetching a fresh one."
                   (org-refile-cache-clear)
                   (set-window-configuration original-window-config)
                   (when tlon-forg-sort-after-sync-or-capture
-                    (when-let ((todos-file (tlon-get-todos-generic-file)))
-                      (with-current-buffer (find-file-noselect todos-file)
-                        (tlon-forg-sort-by-status-and-project-order t))))
+                    (dolist (todos-file (tlon-forg--get-all-todo-files))
+                      (when (and todos-file (file-exists-p todos-file))
+                        (with-current-buffer (find-file-noselect todos-file)
+                          (tlon-forg-sort-by-status-and-project-order t)))))
                   (message "Finished %s %d repositories in project. Refile cache cleared."
                            (if (eq this-command 'tlon-capture-all-issues-in-project)
                                "capturing issues from"
