@@ -1,0 +1,81 @@
+#+TITLE: Tlön
+#+AUTHOR: Pablo Stafforini
+#+EMAIL: pablo@stafforini.com
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+Tlön is a comprehensive Emacs package designed to streamline translation workflows, manage bibliographic data, and facilitate content creation for [[https://tlon.team/][Tlön]], our organization. It provides tools for working with Markdown files, YAML metadata, counterpart documents, and various import/export operations.
+
+* Features
+
+- *Translation management*: Create and manage translation files with automatic metadata handling
+- *Counterpart navigation*: Seamlessly navigate between original and translated documents  
+- *Bibliography integration*: Comprehensive BibTeX and bibliography management
+- *Markdown extensions*: Enhanced Markdown editing with custom MDX components
+- *Import tools*: Import content from various sources including HTML, PDF, and external APIs
+- *YAML metadata*: Robust metadata management and validation
+- *Git integration*: Enhanced Git workflows with automatic commit generation
+- *Quality assurance*: Automated cleanup and validation tools
+
+* Documentation
+
+The package is organized into several modules, each with comprehensive documentation:
+
+- [[file:doc/tlon-ai.org][AI functionality]] - Integration with AI models for summarization, translation, and content creation
+- [[file:doc/tlon-api.org][API interaction]] - Interface with Tlön Babel APIs for citations and file management
+- [[file:doc/tlon-cleanup.org][Cleanup tools]] - Automated formatting and quality assurance
+- [[file:doc/tlon-clock.org][Clock management]] - Time tracking and workflow coordination
+- [[file:doc/tlon-color.org][Color palette management]] - Color palette management for frontend projects
+- [[file:doc/tlon-contacts.org][Contact management]] - Managing contacts stored in Org mode files
+- [[file:doc/tlon-core.org][Core functionality]] - Essential functions for repository management, lookups, and utilities
+- [[file:doc/tlon-count.org][Word counting and statistics]] - Word counting, statistics, and reporting tools
+- [[file:doc/tlon-counterpart.org][Counterpart navigation]] - Tools for working with original and translated document pairs
+- [[file:doc/tlon-deepl.org][DeepL integration]] - Translation services and glossary management via DeepL API
+- [[file:doc/tlon-dict.org][Dictionary functionality]] - Dictionary and synonym lookup integration
+- [[file:doc/tlon-dispatch.org][Dispatch commands]] - Main entry points and hierarchical menus for Tlön operations
+- [[file:doc/tlon-dub.org][Dubbing]] - Audio and video dubbing functionality with ElevenLabs integration
+- [[file:doc/tlon-ebib.org][Ebib integration]] - Integration with external bibliographic database APIs
+- [[file:doc/tlon-email.org][Email functionality]] - Email composition using predefined templates
+- [[file:doc/tlon-fix.org][Fix utilities]] - Automated error correction and validation
+- [[file:doc/tlon-forg.org][Forge integration]] - GitHub issues and Org mode TODO synchronization
+- [[file:doc/tlon-glossary.org][Glossary management]] - Multilingual glossary management and extraction
+- [[file:doc/tlon-images.org][Image processing]] - Image manipulation and optimization tools
+- [[file:doc/tlon-import.org][Import tools]] - Import content from HTML, PDF, and external sources
+- [[file:doc/tlon-jobs.org][Job management]] - Workflow management for translation jobs
+- [[file:doc/tlon-md.org][Markdown editing]] - Enhanced Markdown mode with MDX components and specialized editing tools
+- [[file:doc/tlon-meet.org][Meeting management]] - Meeting issue creation and recording processing
+- [[file:doc/tlon-read.org][Text-to-speech control]] - TTS playback control and navigation
+- [[file:doc/tlon-report.org][Clock reporting and management]] - Time tracking reports and Git integration
+- [[file:doc/tlon-repos.org][Repository management]] - Git repository creation, cloning, and management
+- [[file:doc/tlon-search.org][Search functionality]] - Search commands for commits, files, and translations
+- [[file:doc/tlon-split.org][Split window alignment]] - Window alignment for translation workflows
+- [[file:doc/tlon-tex.org][BibTeX functionality]] - Bibliography management and citation handling
+- [[file:doc/tlon-tts.org][Text-to-speech]] - Comprehensive TTS functionality with multiple engines
+- [[file:doc/tlon-url.org][URL handling]] - URL validation, archiving, and replacement tools
+- [[file:doc/tlon-yaml.org][YAML metadata]] - Metadata management and validation for translation files
+
+* Installation
+
+** Dependencies
+
+The package requires several external packages. See the =Package-Requires= header in =tlon.el= for the complete list.
+
+** Configuration
+
+After installation, you'll need to configure:
+
+- Repository paths
+- User information for Git operations
+- Language preferences for translations
+- Bibliography file locations
+
+See the individual module documentation for detailed configuration instructions.
+
+* Usage
+
+The package provides numerous interactive commands. The main point of entry is the main =transient= menu, =tlon-dispatch=.
+
+* License
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
