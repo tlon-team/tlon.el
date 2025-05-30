@@ -54,6 +54,15 @@ or if ISSUE has no repository or repository name."
 			      paths-dir-tlon-todos)))
     (expand-file-name (format "%s.org" repo-name) todos-dir)))
 
+(defun tlon-forg--safe-get-repository (repo-dir)
+  "Return the tracked forge repository for REPO-DIR or nil.
+Never signals an error – if the directory has not been registered with
+forge yet just return nil."
+  (let ((default-directory repo-dir))
+    (condition-case nil
+        (forge-get-repository :tracked)
+      (error nil))))
+
 ;;;; Helper Functions for Repository and Issue Selection
 
 (defun tlon-forg-get-or-select-repository ()
@@ -579,16 +588,19 @@ cached project items list is used instead of fetching a fresh one."
         (maphash
          (lambda (repo-name repo-dir)
            (let ((default-directory repo-dir))
-             (message "Processing repository %s (%d/%d)..."
-                      repo-name (1+ repos-processed) total-repos)
-             (let ((forge-repo (forge-get-repository :tracked)))
-               (if arg
-                   (tlon-capture-all-issues-in-repo-after-pull forge-repo)
-                 (tlon-pull-silently
-                  (format "Pulling issues from %s..." repo-name)
-                  (lambda () (tlon-capture-all-issues-in-repo-after-pull forge-repo))
-                  forge-repo)))
-             (setq repos-processed (1+ repos-processed))))
+             (let ((forge-repo (tlon-forg--safe-get-repository repo-dir)))
+               (if (null forge-repo)
+                   (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
+                 (progn
+                   (message "Processing repository %s (%d/%d)..."
+                            repo-name (1+ repos-processed) total-repos)
+                   (if arg
+                       (tlon-capture-all-issues-in-repo-after-pull forge-repo)
+                     (tlon-pull-silently
+                      (format "Pulling issues from %s..." repo-name)
+                      (lambda () (tlon-capture-all-issues-in-repo-after-pull forge-repo))
+                      forge-repo))
+                   (setq repos-processed (1+ repos-processed)))))))
          issue-repos)
         (org-refile-cache-clear)
         (set-window-configuration original-window-config)
