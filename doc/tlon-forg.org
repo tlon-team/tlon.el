@@ -349,7 +349,7 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-forg-md->org
 + ~tlon-forg-md->org~ :: Converts =TEXT= from Markdown to Org format.
 #+findex: tlon-forg-org->md
-+ ~tlon-forg-org->md~ :: Converts =TEXT= from Org to Markdown format.
++ ~tlon-forg-org->md~ :: Converts =TEXT= from Org to Markdown format using Emacs's built-in Org export engine (`org-export-string-as`).
 
 *** Issue and TODO Data Retrieval
 :PROPERTIES:

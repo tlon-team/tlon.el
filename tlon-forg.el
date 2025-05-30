@@ -38,6 +38,7 @@
 (require 'cl-lib)
 (require 'crm)        ; for completing-read-multiple
 (require 'seq)        ; for seq-filter (used below)
+(require 'ox-md)      ; for org-md-export-as-markdown
 
 ;;;; Path Helpers
 
@@ -267,8 +268,12 @@ Signal an error if pandoc is not in PATH."
   (tlon-forg--pandoc-convert text "markdown" "org"))
 
 (defun tlon-forg-org->md (text)
-  "Convert TEXT from Org to Markdown format using pandoc."
-  (tlon-forg--pandoc-convert text "org" "gfm"))
+  "Convert TEXT from Org to Markdown format using `org-export-string-as'."
+  (if (or (null text) (string-empty-p text))
+      ""
+    ;; Convert the string, requesting only the body of the output.
+    ;; backend='md, subtreep=nil, info=(list :body-only t)
+    (string-trim (org-export-string-as text 'md nil (list :body-only t)))))
 
 (defun tlon-forg--wait-for-issue (number repo-dir &optional forge-repo timeout interval)
   "Return ISSUE NUMBER in REPO-DIR, waiting until it exists locally.
