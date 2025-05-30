@@ -1884,9 +1884,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("v" "visit"                                            tlon-visit-counterpart)
     ("x" "close"                                            tlon-close-issue-and-todo)]
    ["Capture (issue ↠ todo)"
-    ("c" "capture"                                          tlon-capture-issue)
-    ("C" "capture all in repo"                              tlon-capture-all-issues-in-repo)
-    ("P" "capture all in project"                           tlon-capture-all-issues-in-project)]
+    ("c c" "capture issue"                                  tlon-capture-issue)
+    ("c r" "capture all issues in repo"                     tlon-capture-all-issues-in-repo)
+    ("c p" "capture all issues in project"                  tlon-capture-all-issues-in-project)]
    ["Sync (issue ↔ todo)"
     ("s" "sync"                                             tlon-sync-issue-and-todo)
     ("S" "sync all"                                         tlon-sync-all-issues-and-todos)]
