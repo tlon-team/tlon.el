@@ -518,7 +518,7 @@ repository and then an issue from that repository."
 	  (tlon-store-todo "tbG" nil issue-to-capture))))))
 
 ;;;###autoload
-(defun tlon-capture-all-issues (arg)
+(defun tlon-capture-all-issues-in-repo (arg)
   "Capture all open issues in a selected repository.
 The issues captured are those not assigned to another user. If a repository
 cannot be inferred from the current context, the user is prompted to select one.
@@ -535,10 +535,66 @@ If called with a prefix ARG, the initial pull from forge is omitted."
     ;; Set default-directory for the scope of tlon-pull-silently and its callback
     (let ((default-directory (oref repo worktree)))
       (if arg
-	  (tlon-capture-all-issues-after-pull repo)
+	  (tlon-capture-all-issues-in-repo-after-pull repo)
 	(tlon-pull-silently "Pulling issues..."
-			    (lambda () (tlon-capture-all-issues-after-pull repo))
+			    (lambda () (tlon-capture-all-issues-in-repo-after-pull repo))
 			    repo)))))
+
+;;;###autoload
+(defun tlon-capture-all-issues-in-project (arg)
+  "Capture all open issues in the GitHub Project.
+The issues captured are those not assigned to another user. This command
+fetches all issues from the project configured in `forge-extras-project-owner'
+and `forge-extras-project-number'.
+
+Before initiating the capture process, this command performs a full pull of
+each repository containing issues in the project to ensure local data reflects
+its remote state. The window configuration active before the command was called
+will be restored after completion. This command clears the `org-refile' cache
+upon completion.
+
+If called with a prefix ARG, the initial pull from forge is omitted."
+  (interactive "P")
+  (let* ((original-window-config (current-window-configuration))
+         (project-items (forge-extras-list-project-items-ordered))
+         (issue-repos (make-hash-table :test 'equal)))
+    
+    ;; Group issues by repository
+    (dolist (item project-items)
+      (when (eq (plist-get item :type) 'issue)
+        (let* ((repo-fullname (plist-get item :repo))
+               (repo-parts (split-string repo-fullname "/"))
+               (owner (car repo-parts))
+               (repo-name (cadr repo-parts))
+               (repo-dir (tlon-repo-lookup :dir :name repo-name)))
+          (when repo-dir
+            (puthash repo-name repo-dir issue-repos)))))
+    
+    (if (= (hash-table-count issue-repos) 0)
+      (user-error "No repositories with issues found in the project")
+      
+      ;; Process each repository
+      (let ((repos-processed 0)
+            (total-repos (hash-table-count issue-repos)))
+        (maphash
+         (lambda (repo-name repo-dir)
+           (let ((default-directory repo-dir))
+             (message "Processing repository %s (%d/%d)..." 
+                      repo-name (1+ repos-processed) total-repos)
+             (let ((forge-repo (forge-get-repository :tracked)))
+               (if arg
+                   (tlon-capture-all-issues-in-repo-after-pull forge-repo)
+                 (tlon-pull-silently 
+                  (format "Pulling issues from %s..." repo-name)
+                  (lambda () (tlon-capture-all-issues-in-repo-after-pull forge-repo))
+                  forge-repo)))
+             (setq repos-processed (1+ repos-processed))))
+         issue-repos)
+        
+        (org-refile-cache-clear)
+        (set-window-configuration original-window-config)
+        (message "Finished capturing issues from %d repositories in project. Refile cache cleared." 
+                 total-repos)))))
 
 (defun tlon-pull-silently (&optional message callback repo)
   "Pull all issues from forge for REPO.
@@ -563,7 +619,7 @@ window configuration that was active before the pull started."
   "Run `forge--pull' on FORGE-REPO synchronously and quietly."
   (shut-up (forge--pull forge-repo nil)))   ; nil callback ⇒ wait
 
-(defun tlon-capture-all-issues-after-pull (repo)
+(defun tlon-capture-all-issues-in-repo-after-pull (repo)
   "Capture all issues in REPO after `forge-pull' is finished.
 REPO must be a valid `forge-repository` object."
   (let ((default-directory (oref repo worktree))) ; Set context
@@ -1828,7 +1884,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("x" "close"                                            tlon-close-issue-and-todo)]
    ["Capture (issue ↠ todo)"
     ("c" "capture"                                          tlon-capture-issue)
-    ("C" "capture all"                                      tlon-capture-all-issues)]
+    ("C" "capture all in repo"                              tlon-capture-all-issues-in-repo)
+    ("P" "capture all in project"                           tlon-capture-all-issues-in-project)]
    ["Sync (issue ↔ todo)"
     ("s" "sync"                                             tlon-sync-issue-and-todo)
     ("S" "sync all"                                         tlon-sync-all-issues-and-todos)]
