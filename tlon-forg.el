@@ -1240,9 +1240,9 @@ ISSUE-NUMBER is a tie-breaker."
 	 (status-priority max-priority)
 	 (project-position max-priority)
 	 (issue-number max-priority))
-    (if-not issue
-	    (list max-priority max-priority max-priority) ; Sort items not linked to issues last
-	    (setq issue-number (oref issue number))
+    (if (not issue)
+	(list max-priority max-priority max-priority) ; Sort items not linked to issues last
+      (setq issue-number (oref issue number))
 	    ;; Calculate status-priority
 	    (let* ((status-keyword (org-get-todo-state))
 		   (status-alist tlon-todo-statuses)
