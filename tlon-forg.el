@@ -1963,7 +1963,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   :variable 'tlon-forg-archive-todo-on-close
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-archive-todo-on-close)))
 
-(transient-define-infix tlon-infix-toggle-sort-after-operations ()
+(transient-define-infix tlon-infix-toggle-sort-after-sync-or-capture ()
   "Toggle the value of `tlon-forg-sort-after-operations' in `forg' menu."
   :class 'transient-lisp-variable
   :variable 'tlon-forg-sort-after-operations
@@ -1995,7 +1995,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("-a" "Include archived"                                tlon-infix-toggle-include-archived)
     ("-A" "Archive on close"                                tlon-infix-toggle-archive-todo-on-close)
     ""
-    ("-s" "Sort after capture/sync all issues in project"   tlon-infix-toggle-sort-after-operations)]])
+    ("-s" "Sort after capture/sync all issues in project"   tlon-infix-toggle-sort-after-sync-or-capture)]])
 
 (provide 'tlon-forg)
 ;;; tlon-forg.el ends here
