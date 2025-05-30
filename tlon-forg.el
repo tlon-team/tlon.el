@@ -1289,7 +1289,13 @@ Entries not linked to an issue, or issues not in the project, are sorted last."
         (while (re-search-forward org-heading-regexp nil t)
           (setq count (1+ count)))
         (message "Debug: Found %d headings in buffer" count)))
-    (org-sort-entries nil ?f (lambda () (tlon-forg-status-and-project-order-sorter project-items)))))
+    ;; Ensure we're at a heading before sorting
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward org-heading-regexp nil t)
+        (beginning-of-line)
+        (message "Debug: Positioned at first heading, starting sort")
+        (org-sort-entries nil ?f (lambda () (tlon-forg-status-and-project-order-sorter project-items)))))))
 
 (defun tlon-forg-status-and-project-order-sorter (project-items)
   "Return a sort key for an Org entry based on status and project order.
