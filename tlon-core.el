@@ -349,6 +349,10 @@
 	   :language "es"
 	   :inactive t
 	   :key "l s")
+    (:name "tlon-generic"
+	   :project "tlon"
+	   :abbrev "tlon-generic"
+	   :type misc)
     (:name "sandbox"
 	   :abbrev "sandbox"
 	   :type test))
