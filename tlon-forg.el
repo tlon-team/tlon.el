@@ -825,20 +825,6 @@ If called with a prefix ARG, the initial pull from forge is omitted."
         (message "Finished syncing issues from %d repositories in project. Refile cache cleared." 
                  total-repos)))))
 
-;;;###autoload
-(defun tlon-sync-all-issues-and-todos (arg)
-  "Sync all TODOs with their issues.
-Before initiating the synchronization process, this command performs a full pull
-of the current repo to ensure that local data reflects the remote state. The
-window configuration active before the command was called will be restored after
-completion. This command clears the `org-refile' cache upon completion.
-
-Pull all issues from forge before initiating the synchronization process. If
-called with a prefix ARG, omit this initial pull."
-  (interactive "P")
-  (if arg
-      (tlon-sync-all-issues-and-todos-after-pull)
-    (tlon-pull-silently "Pulling issues..." #'tlon-sync-all-issues-and-todos-after-pull)))
 
 (defun tlon-forg--get-all-todo-files ()
   "Return a list of all Org TODO files to be processed.
@@ -856,12 +842,14 @@ in `paths-dir-tlon-todos'."
 (defun tlon-sync-all-issues-in-repo-after-pull (repo)
   "Sync TODOs with their issues in REPO after `forge-pull' is finished.
 REPO must be a valid `forge-repository` object."
-  (let ((default-directory (oref repo worktree))) ; Set context
+  (let ((default-directory (oref repo worktree)) ; Set context
+        (repo-id (oref repo id)))
     (let ((todo-files (tlon-forg--get-all-todo-files)))
       (dolist (file todo-files)
         (when (file-exists-p file)
           (with-current-buffer (find-file-noselect file)
-            (message "Syncing TODOs in %s..." (file-name-nondirectory file))
+            (message "Syncing TODOs in %s for repository %s..." 
+                     (file-name-nondirectory file) (oref repo name))
             (save-excursion
               (let ((org-fold-core-style 'overlays))
                 (org-fold-core-save-visibility
@@ -870,33 +858,13 @@ REPO must be a valid `forge-repository` object."
                   (while (re-search-forward org-heading-regexp nil t)
                     (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
                       ;; Only sync issues from the specified repository
-                      (when (and (eq (oref (forge-get-repository issue) id) (oref repo id))
+                      (when (and (eq (oref (forge-get-repository issue) id) repo-id)
                                  (or (not (member org-archive-tag (org-get-tags)))
                                      tlon-forg-include-archived))
                         (tlon-sync-issue-and-todo-from-issue issue)))))))))))
     (org-refile-cache-clear)
     (message "Finished syncing issues in repository %s. Refile cache cleared." (oref repo name))))
 
-(defun tlon-sync-all-issues-and-todos-after-pull ()
-  "Sync TODOs with their issues after `forge-pull' is finished."
-  (save-window-excursion
-    (let ((todo-files (tlon-forg--get-all-todo-files)))
-      (dolist (file todo-files)
-	(when (file-exists-p file)
-	  (with-current-buffer (find-file-noselect file)
-	    (message "Syncing TODOs in %s..." (file-name-nondirectory file))
-	    (save-excursion
-	      (let ((org-fold-core-style 'overlays))
-		(org-fold-core-save-visibility
-		    (org-fold-show-all)
-		  (goto-char (point-min))
-		  (while (re-search-forward org-heading-regexp nil t)
-		    (when-let ((issue (tlon-get-issue))) ; tlon-get-issue gets from heading
-		      (when (or (not (member org-archive-tag (org-get-tags)))
-				tlon-forg-include-archived)
-			(tlon-sync-issue-and-todo-from-issue issue)))))))))))
-    (org-refile-cache-clear)
-    (message "Finished syncing all found issues and TODOs. Refile cache cleared.")))
 
 (defun tlon-sync-issue-and-todo-from-issue (&optional issue)
   "Sync ISSUE and associated TODO (name, status, tags, and estimate).
@@ -1990,10 +1958,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("c r" "capture all issues in repo"                     tlon-capture-all-issues-in-repo)
     ("c p" "capture all issues in project"                  tlon-capture-all-issues-in-project)]
    ["Sync (issue ↔ todo)"
-    ("s s" "sync"                                             tlon-sync-issue-and-todo)
-    ("s r" "sync all issues in repo"                        tlon-sync-all-issues-in-repo)
-    ("s p" "sync all issues in project"                     tlon-sync-all-issues-in-project)
-    ("s a" "sync all issues and todos"                      tlon-sync-all-issues-and-todos)]
+    ("s" "sync"                                             tlon-sync-issue-and-todo)
+    ("S r" "sync all issues in repo"                        tlon-sync-all-issues-in-repo)
+    ("S p" "sync all issues in project"                     tlon-sync-all-issues-in-project)]
    ["Options"
     ("-s" "When syncing"                                    tlon-forg-when-syncing-infix)
     ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)
