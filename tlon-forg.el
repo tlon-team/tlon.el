@@ -1988,13 +1988,14 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("s r" "sync all issues in repo"                        tlon-sync-all-issues-in-repo)
     ("s p" "sync all issues in project"                     tlon-sync-all-issues-in-project)]
    ["Options"
-    ("-s" "When syncing"                                    tlon-forg-when-syncing-infix)
+    ("-d" "When issue & todo differ"                        tlon-forg-when-syncing-infix)
     ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)
     ("-e" "When assignee is someone else"                   tlon-when-assignee-is-someone-else-infix)
     ""
     ("-a" "Include archived"                                tlon-infix-toggle-include-archived)
     ("-A" "Archive on close"                                tlon-infix-toggle-archive-todo-on-close)
-    ("-S" "Sort after operations"                           tlon-infix-toggle-sort-after-operations)]])
+    ""
+    ("-s" "Sort after capture/sync all issues in project"   tlon-infix-toggle-sort-after-operations)]])
 
 (provide 'tlon-forg)
 ;;; tlon-forg.el ends here
