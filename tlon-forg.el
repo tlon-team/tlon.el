@@ -1895,7 +1895,7 @@ to reflect the new issue and its metadata."
 	 (org-tags (tlon-get-tags-in-todo))
 	 (org-effort-hours (tlon-forg--org-effort-to-hours
 			    (org-entry-get nil "Effort" 'inherit)))
-	 (status "DOING"))
+	 (status (or (org-get-todo-state) "DOING")))
     (let* ((default-directory repo-dir)
 	   (forge-repo (forge-get-repository :tracked))
 	   (new-num (tlon-create-issue title repo-dir)))
