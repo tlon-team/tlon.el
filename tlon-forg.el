@@ -583,34 +583,45 @@ cached project items list is used instead of fetching a fresh one."
     (if (= (hash-table-count issue-repos) 0)
 	(user-error "No repositories with issues found in the project")
       ;; Process each repository
-      (let ((repos-processed 0)
-            (total-repos (hash-table-count issue-repos)))
+      (let* ((total-repos (hash-table-count issue-repos))
+             (repos-finished 0)
+             (finish
+              (lambda ()
+                (setq repos-finished (1+ repos-finished))
+                (when (= repos-finished total-repos)
+                  ;; restore frame, clear cache, sort, final message
+                  (org-refile-cache-clear)
+                  (set-window-configuration original-window-config)
+                  (when tlon-forg-sort-after-sync-or-capture
+                    (when-let ((todos-file (tlon-get-todos-generic-file)))
+                      (with-current-buffer (find-file-noselect todos-file)
+                        (tlon-forg-sort-by-status-and-project-order t))))
+                  (message "Finished %s %d repositories in project. Refile cache cleared."
+                           (if (eq this-command 'tlon-capture-all-issues-in-project)
+                               "capturing issues from"
+                             "syncing issues from")
+                           total-repos)))))
         (maphash
          (lambda (repo-name repo-dir)
            (let ((default-directory repo-dir))
              (let ((forge-repo (tlon-forg--safe-get-repository repo-dir)))
                (if (null forge-repo)
-                   (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
+                   (progn
+                     (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
+                     (funcall finish))
                  (progn
-                   (message "Processing repository %s (%d/%d)..."
-                            repo-name (1+ repos-processed) total-repos)
+                   (message "Processing repository %s..." repo-name)
                    (if arg
-                       (tlon-capture-all-issues-in-repo-after-pull forge-repo)
+                       (progn
+                         (tlon-capture-all-issues-in-repo-after-pull forge-repo)
+                         (funcall finish))
                      (tlon-pull-silently
                       (format "Pulling issues from %s..." repo-name)
-                      (lambda () (tlon-capture-all-issues-in-repo-after-pull forge-repo))
-                      forge-repo))
-                   (setq repos-processed (1+ repos-processed)))))))
-         issue-repos)
-        (org-refile-cache-clear)
-        (set-window-configuration original-window-config)
-        ;; Sort buffer if option is enabled
-        (when tlon-forg-sort-after-sync-or-capture
-          (when-let ((todos-file (tlon-get-todos-generic-file)))
-            (with-current-buffer (find-file-noselect todos-file)
-              (tlon-forg-sort-by-status-and-project-order t))))
-        (message "Finished capturing issues from %d repositories in project. Refile cache cleared."
-                 total-repos)))))
+                      (lambda ()
+                        (tlon-capture-all-issues-in-repo-after-pull forge-repo)
+                        (funcall finish))
+                      forge-repo)))))))
+         issue-repos)))))
 
 (defun tlon-pull-silently (&optional message callback repo)
   "Pull all issues from forge for REPO.
@@ -815,31 +826,40 @@ cached project items list is used instead of fetching a fresh one."
     (if (= (hash-table-count issue-repos) 0)
 	(user-error "No repositories with issues found in the project")
       ;; Process each repository
-      (let ((repos-processed 0)
-            (total-repos (hash-table-count issue-repos)))
+      (let* ((total-repos (hash-table-count issue-repos))
+             (repos-finished 0)
+             (finish
+              (lambda ()
+                (setq repos-finished (1+ repos-finished))
+                (when (= repos-finished total-repos)
+                  ;; restore frame, clear cache, sort, final message
+                  (org-refile-cache-clear)
+                  (set-window-configuration original-window-config)
+                  (when tlon-forg-sort-after-sync-or-capture
+                    (when-let ((todos-file (tlon-get-todos-generic-file)))
+                      (with-current-buffer (find-file-noselect todos-file)
+                        (tlon-forg-sort-by-status-and-project-order t))))
+                  (message "Finished %s %d repositories in project. Refile cache cleared."
+                           (if (eq this-command 'tlon-capture-all-issues-in-project)
+                               "capturing issues from"
+                             "syncing issues from")
+                           total-repos)))))
         (maphash
          (lambda (repo-name repo-dir)
            (let ((default-directory repo-dir))
-             (message "Processing repository %s (%d/%d)..."
-                      repo-name (1+ repos-processed) total-repos)
              (let ((forge-repo (forge-get-repository :tracked)))
+               (message "Processing repository %s..." repo-name)
                (if arg
-                   (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                   (progn
+                     (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                     (funcall finish))
                  (tlon-pull-silently 
                   (format "Pulling issues from %s..." repo-name)
-                  (lambda () (tlon-sync-all-issues-in-repo-after-pull forge-repo))
-                  forge-repo)))
-             (setq repos-processed (1+ repos-processed))))
-         issue-repos)
-        (org-refile-cache-clear)
-        (set-window-configuration original-window-config)
-        ;; Sort buffer if option is enabled
-        (when tlon-forg-sort-after-sync-or-capture
-          (when-let ((todos-file (tlon-get-todos-generic-file)))
-            (with-current-buffer (find-file-noselect todos-file)
-              (tlon-forg-sort-by-status-and-project-order t))))
-        (message "Finished syncing issues from %d repositories in project. Refile cache cleared." 
-                 total-repos)))))
+                  (lambda ()
+                    (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                    (funcall finish))
+                  forge-repo)))))
+         issue-repos)))))
 
 
 (defun tlon-forg--get-all-todo-files ()
