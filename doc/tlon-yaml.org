@@ -16,6 +16,32 @@
 
 This module provides functions for reading, writing, and manipulating YAML front matter within the Tlön project, particularly for managing metadata associated with content files and their translations.
 
+** Configuration Constants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-yaml-constants
+:END:
+
+#+vindex: tlon-yaml-delimiter
++ ~tlon-yaml-delimiter~ :: The string used to delimit YAML front matter blocks (="---\n"=).
+#+vindex: tlon-yaml-core-keys
++ ~tlon-yaml-core-keys~ :: A list of YAML keys considered essential for initializing translation metadata (e.g., ="type"=, ="original_path"=).
+#+vindex: tlon-yaml-translation-only-keys
++ ~tlon-yaml-translation-only-keys~ :: A list of YAML keys that are typically included only in the metadata of translated files, not originals (e.g., ="original_path"=, ="publication_status"=).
+#+vindex: tlon-yaml-article-keys
++ ~tlon-yaml-article-keys~ :: A list defining the standard YAML keys and their preferred order for "article" type documents.
+#+vindex: tlon-yaml-tag-keys
++ ~tlon-yaml-tag-keys~ :: A list defining the standard YAML keys and their preferred order for "tag" type documents.
+#+vindex: tlon-yaml-author-keys
++ ~tlon-yaml-author-keys~ :: A list defining the standard YAML keys and their preferred order for "author" type documents.
+#+vindex: tlon-yaml-collection-keys
++ ~tlon-yaml-collection-keys~ :: A list defining the standard YAML keys and their preferred order for "collection" type documents.
+#+vindex: tlon-yaml-tag-or-author-keys
++ ~tlon-yaml-tag-or-author-keys~ :: A list defining YAML keys for "tag" or "author" types in the BAE (presumably Spanish) context.
+#+vindex: tlon-yaml-original-author-keys
++ ~tlon-yaml-original-author-keys~ :: A list defining YAML keys for original "author" type documents (e.g., in =uqbar-en=).
+#+vindex: tlon-yaml-publication-statuses
++ ~tlon-yaml-publication-statuses~ :: A list of valid publication status strings (e.g., ="unpublished"=, ="test"=, ="production"=).
+
 ** Core Functions
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-yaml-core

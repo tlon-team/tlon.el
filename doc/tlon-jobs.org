@@ -56,6 +56,8 @@ This structure drives the workflow logic, determining the next step and assignee
 :END:
 #+vindex: tlon-jobs-file
 The variable ~tlon-jobs-file~ holds the path to the =jobs.org= file. It is set dynamically by ~tlon-jobs-get-file~ and should not be configured manually.
+#+vindex: tlon-file-url-correspondences
+The constant ~tlon-file-url-correspondences~ defines the path to the JSON file storing URL correspondences, used for mapping URLs between different environments or versions.
 
 ** Commands
 :PROPERTIES:

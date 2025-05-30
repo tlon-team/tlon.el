@@ -81,6 +81,8 @@ These variables store temporary state during API requests.
 + ~tlon-deepl-target-language~ :: Stores the target language code for the current translation or glossary creation request.
 #+vindex: tlon-deepl-text
 + ~tlon-deepl-text~ :: Stores the text to be translated in the current request.
+#+vindex: tlon-deepl--override-glossary-id
++ ~tlon-deepl--override-glossary-id~ :: Internal variable used to force `tlon-deepl-glossary-delete-formatter` to use a specific glossary ID, bypassing user prompts. Set dynamically by ~tlon-deepl-glossary-delete~.
 
 ** Commands
 :PROPERTIES:
@@ -244,6 +246,19 @@ This section lists non-interactive functions and variables used internally or po
 
 #+findex: tlon-deepl-glossary-delete-formatter
 + ~tlon-deepl-glossary-delete-formatter~ :: Function used by ~tlon-deepl-request-wrapper~ to generate the specific URL for deleting a glossary. It calls ~tlon-deepl-select-glossary~ to get the ID and appends it to the base glossaries endpoint.
+
+*** Model Type Selection Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-deepl-model-type-helpers
+:END:
+#+vindex: tlon-deepl--model-choices
++ ~tlon-deepl--model-choices~ :: An alist mapping display names (e.g., "Latency optimized") to API model type strings (e.g., "latency_optimized").
+#+findex: tlon-deepl-model-type-reader
++ ~tlon-deepl-model-type-reader~ :: Reader function for the transient infix. Prompts the user to select a model type using completion based on ~tlon-deepl--model-choices~.
+#+findex: tlon-deepl-model-type-formatter
++ ~tlon-deepl-model-type-formatter~ :: Formatter function for the transient infix to display the selected model's label.
+#+findex: tlon-deepl-model-type-infix
++ ~tlon-deepl-model-type-infix~ :: The transient infix command definition for selecting the DeepL model type.
 
 *** Helper Functions
 :PROPERTIES:
