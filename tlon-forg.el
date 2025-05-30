@@ -137,7 +137,7 @@ Returns a `forge-issue` object or nil if no issue is selected or on error."
   "Integration between `forge' and `org-mode'."
   :group 'tlon)
 
-(defcustom tlon-when-assignee-is-nil 'prompt
+(defcustom tlon-when-assignee-is-nil 'no-capture
   "What to do when the issue has no assignee.
 - `prompt': prompt the user to confirm that it will be assigned to them.
 - `change': assign it to the user without prompting for confirmation.
@@ -155,7 +155,7 @@ current session."
 		 (const :tag "Do not capture" t))
   :group 'tlon-forg)
 
-(defcustom tlon-when-assignee-is-someone-else 'prompt
+(defcustom tlon-when-assignee-is-someone-else 'no-capture
   "What to do when the issue’s assignee is someone else.
 - `prompt': prompt the user to confirm that it will be assigned to them.
 - `change': assign it to the user without prompting for confirmation.
