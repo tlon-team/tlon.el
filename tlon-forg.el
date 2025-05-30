@@ -1958,9 +1958,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("c r" "capture all issues in repo"                     tlon-capture-all-issues-in-repo)
     ("c p" "capture all issues in project"                  tlon-capture-all-issues-in-project)]
    ["Sync (issue ↔ todo)"
-    ("s" "sync"                                             tlon-sync-issue-and-todo)
-    ("S r" "sync all issues in repo"                        tlon-sync-all-issues-in-repo)
-    ("S p" "sync all issues in project"                     tlon-sync-all-issues-in-project)]
+    ("s s" "sync"                                             tlon-sync-issue-and-todo)
+    ("s r" "sync all issues in repo"                        tlon-sync-all-issues-in-repo)
+    ("s p" "sync all issues in project"                     tlon-sync-all-issues-in-project)]
    ["Options"
     ("-s" "When syncing"                                    tlon-forg-when-syncing-infix)
     ("-n" "When assignee is nil"                            tlon-when-assignee-is-nil-infix)
