@@ -786,7 +786,11 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                                 :immediate-finish t 
                                 :unnarrowed t))))
                 
-                (org-capture nil capture-arg-final))
+                ;; When capture-arg-final is a list (a full template definition),
+                ;; temporarily add it to org-capture-templates and call org-capture with its key.
+                ;; This is more robust than relying on org-capture's direct list handling.
+                (let ((org-capture-templates (cons capture-arg-final org-capture-templates)))
+                  (org-capture nil (car capture-arg-final))))
             ;; No target-file, use the template key as is (original behavior)
             (org-capture nil template)))))))
 
