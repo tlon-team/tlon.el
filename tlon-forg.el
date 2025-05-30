@@ -820,7 +820,7 @@ the master TODO itself, which always goes to the jobs file."
 	  (tlon-set-initial-label-and-assignee))
         ;; Master TODOs are always created in the central jobs file,
         ;; so invoked-from-org-file is intentionally not passed to this tlon-store-todo call.
-	(tlon-store-todo "tbJ" 'master-todo issue))))))
+	(tlon-store-todo "tbJ" 'master-todo issue)))))
 
 (autoload 'org-extras-refile-goto-latest "org-extras")
 (autoload 'org-extras-refile-at-position "org-extras")
