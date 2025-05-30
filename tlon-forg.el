@@ -1215,6 +1215,70 @@ return \"~\", so that the entry is sorted to the end."
 	  (throw 'match tag)))
       "~")))
 
+;;;###autoload
+(defun tlon-forg-sort-by-status-and-project-order ()
+  "Sort org entries by status and then by GitHub Project order.
+Status order is based on `tlon-todo-statuses' (DOING, NEXT, LATER, SOMEDAY),
+followed by other active TODO states, then DONE, then items with no status.
+Project order is determined by `forge-extras-list-project-items-ordered'.
+Entries not linked to an issue, or issues not in the project, are sorted last."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an `org-mode' buffer"))
+  (let ((project-items (forge-extras-list-project-items-ordered)))
+    (org-sort-entries nil ?f (lambda () (tlon-forg-status-and-project-order-sorter project-items)))))
+
+(defun tlon-forg-status-and-project-order-sorter (project-items)
+  "Return a sort key for an Org entry based on status and project order.
+PROJECT-ITEMS is a list of plists from `forge-extras-list-project-items-ordered'.
+The sort key is a list: (STATUS-PRIORITY PROJECT-POSITION ISSUE-NUMBER).
+Lower STATUS-PRIORITY means earlier in sort.
+Lower PROJECT-POSITION means earlier in sort.
+ISSUE-NUMBER is a tie-breaker."
+  (let* ((issue (tlon-get-issue))
+	 (max-priority 999)
+	 (status-priority max-priority)
+	 (project-position max-priority)
+	 (issue-number max-priority))
+    (if-not issue
+	(list max-priority max-priority max-priority) ; Sort items not linked to issues last
+      (setq issue-number (oref issue number))
+      ;; Calculate status-priority
+      (let* ((status-keyword (org-get-todo-state))
+	     (status-alist tlon-todo-statuses)
+	     (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
+	(cond
+	 ((null status-keyword) (setq status-priority 100)) ; No status
+	 ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
+	 (t
+	  (let ((idx -1) (found nil))
+	    (dolist (entry status-alist)
+	      (setq idx (1+ idx))
+	      (when (string= status-keyword (cdr entry))
+		(setq status-priority idx
+		      found t)
+		(cl-return)))
+	    (unless found (setq status-priority 50)))))) ; Default for other active states
+
+      ;; Calculate project-position
+      (when-let* ((repo-obj (forge-get-repository issue))
+		  (owner (oref repo-obj owner))
+		  (repo-name (oref repo-obj name))
+		  (issue-repo-fullname (format "%s/%s" owner repo-name)))
+	(let ((idx -1) (found-idx nil))
+	  (dolist (item project-items)
+	    (setq idx (1+ idx))
+	    (when (and (eq (plist-get item :type) 'issue)
+		       (string= (plist-get item :repo) issue-repo-fullname)
+		       (= (plist-get item :number) issue-number))
+	      (setq found-idx idx)
+	      (cl-return)))
+	  (if found-idx
+	      (setq project-position found-idx)
+	    (setq project-position max-priority)))) ; Issue not in project list
+
+      (list status-priority project-position issue-number))))
+
 ;;;;;; status
 
 (defun tlon-get-status-in-issue (&optional issue _upcased)
@@ -1758,6 +1822,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     ("n" "new"                                              tlon-create-new-issue)
     ("p" "post"                                             tlon-create-issue-from-todo)
     ("o" "sort by tag"                                      tlon-forg-sort-by-tag)
+    ("O" "sort by status & project"                         tlon-forg-sort-by-status-and-project-order)
     ("v" "visit"                                            tlon-visit-counterpart)
     ("x" "close"                                            tlon-close-issue-and-todo)]
    ["Capture (issue ↠ todo)"

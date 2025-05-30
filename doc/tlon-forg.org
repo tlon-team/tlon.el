@@ -203,6 +203,12 @@ This section details the interactive commands provided by =tlon-forg.el=.
 #+findex: tlon-forg-sort-by-tag
 + ~tlon-forg-sort-by-tag~ :: (Autoloaded) Sorts Org entries in the current buffer based on the first tag that matches the pattern defined in ~tlon-forg-sort-by-tags-regexp~. Uses =org-sort-entries= with a custom sorter function (~tlon-forg-tag-sorter~). Entries without a matching tag are sorted to the end.
 
+#+findex: tlon-forg-sort-by-status-and-project-order
++ ~tlon-forg-sort-by-status-and-project-order~ :: (Autoloaded) Sorts Org entries in the current buffer first by their TODO status and then by their order in the GitHub Project.
+  Status order is based on the sequence in ~tlon-todo-statuses~ (e.g., "DOING", "NEXT", "LATER", "SOMEDAY"), followed by any other active Org TODO states, then "DONE" state, and finally items with no status.
+  Project order is determined by the list returned by ~forge-extras-list-project-items-ordered~.
+  Entries not linked to a GitHub issue, or issues not found in the project list, are sorted to the end. Uses =org-sort-entries= with a custom sorter function (~tlon-forg-status-and-project-order-sorter~).
+
 *** File Handling (Associated with Issues)
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-forg-file-cmds
@@ -239,6 +245,7 @@ It provides the following groups and commands:
   + =p= :: post (create issue from todo) (~tlon-create-issue-from-todo~)
   + =x= :: close issue and todo (~tlon-close-issue-and-todo~)
   + =o= :: sort by tag (~tlon-forg-sort-by-tag~)
+  + =O= :: sort by status & project order (~tlon-forg-sort-by-status-and-project-order~)
 + *Capture*:
   + =c= :: capture issue (~tlon-capture-issue~)
   + =C= :: capture all issues (~tlon-capture-all-issues~)
@@ -506,6 +513,12 @@ Configuration for GitHub Project integration (like project owner, project number
 + ~tlon-todo-issue-funcall~ :: Calls =TODO-FUN= if in Org mode at a heading, or =ISSUE-FUN= if in a Forge buffer with an issue context. Used by counterpart and sync commands.
 #+findex: tlon-forg-tag-sorter
 + ~tlon-forg-tag-sorter~ :: The custom comparison function used by ~tlon-forg-sort-by-tag~. Extracts the first tag matching ~tlon-forg-sort-by-tags-regexp~ or returns "~" for sorting unmatched entries last.
+#+findex: tlon-forg-status-and-project-order-sorter
++ ~tlon-forg-status-and-project-order-sorter~ :: The custom comparison function used by ~tlon-forg-sort-by-status-and-project-order~. It takes a list of project items (pre-fetched by the main command) and returns a sort key for the Org entry at point. The key is a list `(STATUS-PRIORITY PROJECT-POSITION ISSUE-NUMBER)`.
+  - =STATUS-PRIORITY= is a number based on the Org TODO keyword (lower is earlier; "DOING" < "NEXT" < ... < "DONE" < no status).
+  - =PROJECT-POSITION= is the index of the issue in the provided project items list (lower is earlier). Issues not in the list get a high position.
+  - =ISSUE-NUMBER= serves as a final tie-breaker.
+  Entries not linked to a GitHub issue receive a sort key that places them at the end.
 #+findex: tlon-create-issue
 + ~tlon-create-issue~ :: Creates a GitHub issue using =ghub-post=.
 #+findex: tlon-create-issue-in-dir
