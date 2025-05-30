@@ -574,7 +574,7 @@ cached project items list is used instead of fetching a fresh one."
             (puthash repo-name repo-dir issue-repos)))))
     
     (if (= (hash-table-count issue-repos) 0)
-      (user-error "No repositories with issues found in the project")
+	(user-error "No repositories with issues found in the project")
       
       ;; Process each repository
       (let ((repos-processed 0)
@@ -601,8 +601,7 @@ cached project items list is used instead of fetching a fresh one."
         (when tlon-forg-sort-after-sync-or-capture
           (when-let ((todos-file (tlon-get-todos-generic-file)))
             (with-current-buffer (find-file-noselect todos-file)
-              (tlon-forg-sort-by-status-and-project-order arg))))
-        
+              (tlon-forg-sort-by-status-and-project-order t))))
         (message "Finished capturing issues from %d repositories in project. Refile cache cleared." 
                  total-repos)))))
 
@@ -810,7 +809,7 @@ cached project items list is used instead of fetching a fresh one."
             (puthash repo-name repo-dir issue-repos)))))
     
     (if (= (hash-table-count issue-repos) 0)
-      (user-error "No repositories with issues found in the project")
+	(user-error "No repositories with issues found in the project")
       
       ;; Process each repository
       (let ((repos-processed 0)
@@ -837,8 +836,7 @@ cached project items list is used instead of fetching a fresh one."
         (when tlon-forg-sort-after-sync-or-capture
           (when-let ((todos-file (tlon-get-todos-generic-file)))
             (with-current-buffer (find-file-noselect todos-file)
-              (tlon-forg-sort-by-status-and-project-order arg))))
-        
+              (tlon-forg-sort-by-status-and-project-order t))))
         (message "Finished syncing issues from %d repositories in project. Refile cache cleared." 
                  total-repos)))))
 
