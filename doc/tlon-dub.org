@@ -50,6 +50,8 @@ This workflow presupposes that we already have (1) the original audio and video 
 
 #+vindex: tlon-dub-propagation-model
 + ~tlon-dub-propagation-model~ :: Specifies the AI model to use for the ~tlon-dub-propagate-timestamps~ command. The value is a cons cell where the =car= is the backend name (e.g., "ChatGPT", "Gemini") and the =cdr= is the model symbol (e.g., =gpt-4.5-preview=, =gemini-2.0-flash-exp=). If =nil=, the default =gptel-model= is used. This can be set via the ~tlon-dub-menu~.
+#+vindex: tlon-dub-alignment-model
++ ~tlon-dub-alignment-model~ :: Specifies the AI model to use for aligning sentences (e.g., in ~tlon-dub-align-punctuation~). Format is the same as ~tlon-dub-propagation-model~. If =nil=, the default =gptel-model= is used.
 
 ** Commands
 :PROPERTIES:
@@ -71,7 +73,9 @@ This workflow presupposes that we already have (1) the original audio and video 
 #+findex: tlon-dub-add-speaker-segment
 + ~tlon-dub-add-speaker-segment~ :: (Autoloaded) Adds a new segment for a specific speaker within an ElevenLabs dubbing project. Prompts for the =dubbing_id=, =speaker_id=, segment =start_time= (float, seconds), =end_time= (float, seconds), and the segment =text=. Sends a POST request to the API and displays the response.
 #+findex: tlon-dub-transcribe-with-whisperx
-+ ~tlon-dub-transcribe-with-whisperx~ :: (Autoloaded) Generates a JSON transcript for a given audio or video file *asynchronously* using the `whisperx` command-line tool. Prompts the user to select an =audio-file=. The command then runs `whisperx` with `--compute_type float32`, `--output_format json`, and specifies the output directory (`--output_dir`) to be the same as the input file's directory. The output `.json` file is created by `whisperx` in that directory. A message is displayed in the echo area upon completion, and an output buffer (e.g., `*whisperx-filename.mp4-output*`) is created to show `whisperx`'s stdout/stderr.
++ ~tlon-dub-transcribe-with-whisperx~ :: (Autoloaded) Wrapper for ~tlon-whisperx-transcribe~. Generates a transcript for AUDIO-FILE asynchronously using whisperx. FORMAT defaults to the value of ~tlon-dub-transcription-format~.
+#+findex: tlon-dub-diarize-with-whisperx
++ ~tlon-dub-diarize-with-whisperx~ :: (Autoloaded) Wrapper for ~tlon-whisperx-diarize~. Diarizes AUDIO-FILE with whisperx. Optional LANGUAGE defaults to "en". If SPEAKERS > 0, whisperx is instructed to use exactly that many speakers.
 #+findex: tlon-dub-propagate-machine-timestamps
 + ~tlon-dub-propagate-machine-timestamps~ :: (Autoloaded) Propagates timestamps from a =whisperx=-generated JSON transcript to a human-edited plain text/Markdown transcript using an AI model. Prompts for the =machine-transcript= (JSON) and the =human-transcript= (text/Markdown). The AI attempts to align timestamps from the JSON file with the human-edited text. The resulting timestamped transcript is saved as a new SRT file (e.g., =human-transcript-timestamped.srt=). The AI model used can be configured via ~tlon-dub-propagation-model~.
 #+findex: tlon-dub-propagate-english-timestamps
@@ -80,7 +84,7 @@ This workflow presupposes that we already have (1) the original audio and video 
 + ~tlon-dub-convert-srt-to-csv~ :: (Autoloaded) Converts a pair of timestamped English and translated SRT files into a CSV file formatted for ElevenLabs. Prompts for the =english-srt-file=, the =translated-srt-file=, and an =output-csv-file= path. The output CSV has columns: =speaker,start_time,end_time,transcription,translation=. The function validates that both SRT files have the same number of segments and that corresponding segments share identical start and end timestamps; it raises an error if these conditions are not met.
 
 #+findex: tlon-dub-align-punctuation
-+ ~tlon-dub-align-punctuation~ :: (Autoloaded) Aligns punctuation between a text file and a Markdown file using AI. Both files contain transcripts of the same audio, but may differ in their punctuation. The AI will revise the Markdown file so that its sentence boundaries match those in the text file. Prompts for the =text-file= and the =markdown-file=. The resulting aligned Markdown file is saved with a "-aligned" suffix. The AI model used can be configured via ~tlon-dub-propagation-model~.
++ ~tlon-dub-align-punctuation~ :: (Autoloaded) Aligns punctuation between a text file and a Markdown file using AI. Both files contain transcripts of the same audio, but may differ in their punctuation. The AI will revise the Markdown file so that its sentence boundaries match those in the text file. Prompts for the =text-file= and the =markdown-file=. The resulting aligned Markdown file is saved with a "-aligned" suffix. The AI model used can be configured via ~tlon-dub-alignment-model~.
 
 #+findex: tlon-dub-optimize-translation-length
 + ~tlon-dub-optimize-translation-length~ :: (Autoloaded) Optimizes translation length by shortening paragraphs that exceed a specified threshold. Prompts for an =english-srt-file=, a =translated-srt-file=, and a =threshold= ratio (default 1.2, meaning translations can be up to 20% longer than the English text). The function compares each segment's length between the English and translated files, identifies segments where the translation is too long, and uses AI to shorten those segments while preserving meaning. The result is saved to a new SRT file with "-optimized" suffix. The AI model used can be configured via ~tlon-dub-alignment-model~.
@@ -91,7 +95,23 @@ This workflow presupposes that we already have (1) the original audio and video 
 :END:
 
 #+findex: tlon-dub-menu
-+ ~tlon-dub-menu~ :: (Autoloaded) Displays a transient menu for Tlön Dubbing functionalities. It provides access to commands for interacting with the ElevenLabs API, using =whisperx= for transcription, converting VTT files, and propagating timestamps. It also allows configuration of the AI model used for timestamp propagation.
++ ~tlon-dub-menu~ :: (Autoloaded) Displays a transient menu for Tlön Dubbing functionalities.
+  + *Transcription & Timestamps (srt)*:
+    + =t= :: Transcribe with WhisperX (Audio -> srt) (~tlon-dub-transcribe-with-whisperx~)
+    + =i= :: Diarize with WhisperX (Audio -> diarized srt/txt) (~tlon-dub-diarize-with-whisperx~)
+    + =x= :: Clean diarized SRT (-> -cleaned.srt) (~tlon-dub-clean-diarized-srt~)
+    + =c= :: Convert SRTs to CSV (en.srt + lang.srt -> .csv) (~tlon-dub-convert-srt-to-csv~)
+    + =r= :: Resegment SRT (speaker/min-30s) (~tlon-dub-resegment-srt~)
+  + *ElevenLabs API*:
+    + =s= :: Start New Dubbing Project (~tlon-dub-start-project~)
+    + =d= :: Get Project Metadata (~tlon-dub-get-project-metadata~)
+    + =g= :: Get Dubbing Transcript (VTT) (~tlon-dub-get-dubbing~)
+    + =R= :: Get Resource Data (~tlon-dub-get-resource-data~)
+    + =A= :: Add Speaker Segment (~tlon-dub-add-speaker-segment~)
+  + *Options*:
+    + =-m= :: Propagation model (~tlon-dub-infix-select-propagation-model~)
+    + =-a= :: Alignment model (~tlon-dub-infix-select-alignment-model~)
+    + =-f= :: Transcription format (~tlon-dub-infix-select-transcription-format~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
@@ -106,6 +126,8 @@ This workflow presupposes that we already have (1) the original audio and video 
 + ~tlon-dub--get-content-type~ :: Takes a filename and returns the corresponding MIME content type string (e.g., ="audio/mpeg"=, ="video/webm"=) based on its file extension. Returns =nil= if the extension is not recognized or not suitable for the dubbing API (e.g., text files).
 #+findex: tlon-dub--parse-vtt
 + ~tlon-dub--parse-vtt~ :: Parses a string containing VTT transcript data. Returns a list of plists, where each plist represents a segment and contains =:start= (string), =:end= (string), and =:text= (string) keys. Returns nil or an incomplete list if parsing fails.
+#+findex: tlon-dub-convert-vtt-to-csv
++ ~tlon-dub-convert-vtt-to-csv~ :: Converts a VTT file (in the complex format with headers, blank lines, tagged text, and duplicated entries) to a CSV file suitable for ElevenLabs.
 #+findex: tlon-dub--parse-srt
 + ~tlon-dub--parse-srt~ :: Parses an SRT =file= and returns a list of segments. Each segment is a plist with =:start= (string, "HH:MM:SS,mmm"), =:end= (string, "HH:MM:SS,mmm"), and =:text= (string) keys. Handles optional segment numbers, optional paragraph numbers that may precede the timestamp line, and CR/LF line endings. Returns =nil= if parsing fails or the file is empty.
 #+findex: tlon-dub--csv-escape-string

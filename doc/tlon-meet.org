@@ -119,7 +119,7 @@ This section details the interactive commands provided by =tlon-meet.el=.
      d. If a callback function was provided (e.g., by ~tlon-meet-transcribe-and-summarize~), it is called *after* the cleanup step with the path to the final, cleaned =.md= file.
   7. If the =whisperx= command fails or the initial =.txt= transcript doesn't exist, it reports an error in the output buffer. Errors during formatting or cleanup are reported via messages. The callback (if provided) might still be called in case of cleanup errors, passing the path to the uncleaned =.md= file.
 
-  *Note:* This command relies on the external =whisperx= command-line tool and its dependencies being installed and available in the system's PATH. It also requires a Hugging Face token with access to the necessary models (like =pyannote/speaker-diarization=). The token is retrieved using Emacs' =auth-source=. If you encounter errors:
+  *Note:* This command relies on the external =whisperx= command-line tool (via ~tlon-whisperx-diarize~) and its dependencies being installed and available in the system's PATH. It also requires a Hugging Face token with access to the necessary models (like =pyannote/speaker-diarization=). The token is retrieved using Emacs' =auth-source=. Configuration for the =whisperx= executable path can be found in =tlon-whisperx.el=. If you encounter errors:
     - Check the "*Diarization Output*" buffer for detailed error messages from =whisperx=.
     - Try running the =whisperx= command manually from your terminal using the command logged in the output buffer (e.g., =whisperx /path/to/audio.m4a --diarize --language es --hf_token ...=).
     - Ensure =whisperx= and its dependencies (PyTorch, etc.) are correctly installed in your Python environment.
@@ -249,6 +249,10 @@ This section lists non-interactive functions used internally or potentially usef
 
 #+findex: tlon-get-meeting-repo
 + ~tlon-get-meeting-repo~ :: Finds the directory (:dir) of the meeting repository shared by =PARTICIPANT1= and =PARTICIPANT2=. It iterates through ~tlon-repos~, looking for a repo with =subtype= 'meetings that includes both participants in its =:participants= list.
+#+findex: tlon-meet--project-set-doing
++ ~tlon-meet--project-set-doing~ :: Adds the current Forge issue to the configured GitHub Project and sets its status to "DOING". Used as part of ~tlon-set-meeting-buffers~.
+#+findex: tlon-open-meeting-link
++ ~tlon-open-meeting-link~ :: Opens the meeting link (e.g., Zoom/Meet URL) found in the current Org agenda heading. Used by ~tlon-set-meeting-buffers~.
 
 ** File Monitoring
 :PROPERTIES:

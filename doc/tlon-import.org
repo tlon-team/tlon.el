@@ -16,6 +16,47 @@
 
 This module provides functions for importing documents from various sources (web URLs, local PDFs, Effective Altruism Forum articles/tags) into the Tlön content structure, including conversion and metadata setup.
 
+** Configuration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-config
+:END:
+
+*** API URLs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-api-urls
+:END:
+#+vindex: tlon-import-eaf-api-url
++ ~tlon-import-eaf-api-url~ :: The URL for the Effective Altruism Forum GraphQL API endpoint.
+#+vindex: tlon-import-lw-api-url
++ ~tlon-import-lw-api-url~ :: The URL for the LessWrong GraphQL API endpoint.
+
+*** EAF Objects
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-eaf-objects
+:END:
+#+vindex: tlon-import-eaf-objects
++ ~tlon-import-eaf-objects~ :: A list of entity types supported by the EAF GraphQL API (e.g., =post=, =tag=).
+
+*** Pandoc Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-pandoc
+:END:
+#+vindex: tlon-pandoc-to-markdown
++ ~tlon-pandoc-to-markdown~ :: The core Pandoc command arguments for converting HTML to Tlön-flavored Markdown (raw HTML, native divs/spans, fenced divs/spans, header attributes, fenced code blocks, no wrapping, strip comments).
+#+vindex: tlon-pandoc-convert-from-file
++ ~tlon-pandoc-convert-from-file~ :: The full Pandoc command string for converting an HTML file to Markdown.
+#+vindex: tlon-pandoc-convert-from-url
++ ~tlon-pandoc-convert-from-url~ :: The full Pandoc command string for converting HTML from a URL to Markdown.
+
+*** Executable Paths
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-import-executables
+:END:
+#+vindex: tlon-pdf2md
++ ~tlon-pdf2md~ :: Path to the `pdf2md-cli.js` executable for PDF to Markdown conversion.
+#+vindex: tlon-pdftotext
++ ~tlon-pdftotext~ :: Path to the `pdftotext` executable (from Poppler utilities) for PDF to text conversion.
+
 ** Main Import Command
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-import-main

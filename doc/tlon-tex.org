@@ -367,6 +367,13 @@ These functions customize the BibTeX autokey generation process, likely used as 
 #+findex: tlon-text-remove-translated-entries
 + ~tlon-text-remove-translated-entries~ :: Filters a =LIST= of BibTeX keys, removing any key that corresponds to an entry having a =translation= field (checked by temporarily opening the entry in Ebib).
 
+*** Miscellaneous Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-tex-misc-internals
+:END:
+#+findex: tlon-tex-add-multiple-urls-from-file
++ ~tlon-tex-add-multiple-urls-from-file~ :: Reads a =FILE= containing a list of URLs (one per line), filters out URLs already present in the bibliography, and then calls =zotra-extras-add-multiple-urls= to add the missing ones to ~tlon-file-fluid~.
+
 *** Field Modification Advice
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-tex-advice-internals

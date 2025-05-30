@@ -25,8 +25,10 @@ This module defines the main entry points for accessing Tlön functionalities us
 + ~tlon-dispatch~ :: The primary transient command prefix for all Tlön operations. Invoking this command displays a hierarchical menu.
   - *Submenus*: Provides access to specialized transient menus for different functional areas:
     - =a= : AI (~tlon-ai-menu~)
+    - =b= : dub (~tlon-dub-menu~)
     - =c= : Clock (~tlon-clock-menu~)
     - =H-d= : Dictionary (~tlon-dict-menu~)
+    - =e= : ebib (~tlon-ebib-menu~)
     - =f= : Files (~tlon-files-menu~)
     - =g= : Glossary (~tlon-glossary-menu~)
     - =i= : Images (~tlon-images-menu~)
@@ -51,7 +53,8 @@ This module defines the main entry points for accessing Tlön functionalities us
     - =m= : Browse in Magit (~tlon-magit-repo-menu~)
   - *Forge*:
     - =.= : List Forge notifications (~forge-list-notifications~)
-  - *Package Management*:
+  - *Dashboard & Package Management*:
+    - =,= : Tlön Dashboard (~tlon-browse-dashboard~)
     - =H-u= : Update Tlön package and reload (~tlon-update-package-and-reload~)
     - =H-o= : Open Tlön package files (~tlon-open-package-files~)
     - =H-c= : Copy Tlön package info (~tlon-copy-package-info~)

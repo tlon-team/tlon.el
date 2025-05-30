@@ -279,6 +279,22 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-todos-jobs-file~ :: Variable holding the path to the Org file containing job-related TODOs. Set dynamically via ~tlon-get-todos-jobs-file~.
 #+vindex: tlon-todos-generic-file
 + ~tlon-todos-generic-file~ :: Variable holding the path to the Org file containing generic TODOs. Set dynamically via ~tlon-get-todos-generic-file~.
+
+*** Repository and Issue Selection Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-repo-issue-selection-helpers
+:END:
+#+findex: tlon-forg--get-repo-specific-todo-file
++ ~tlon-forg--get-repo-specific-todo-file~ :: Returns the full path to the repo-specific Org TODO file for an =ISSUE= (e.g., =REPO-NAME.org= inside =paths-dir-tlon-todos=).
+#+findex: tlon-forg-get-or-select-repository
++ ~tlon-forg-get-or-select-repository~ :: Returns a `forge-repository` object. Tries current repo, then prompts from known Tlön repos, then lists from GitHub via `gh` CLI.
+#+findex: tlon-forg-select-issue-from-repo
++ ~tlon-forg-select-issue-from-repo~ :: Prompts the user to select an open issue from a `forge-repository` object after ensuring its topics are fetched.
+
+*** File Path Management
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-file-paths
+:END:
 #+findex: tlon-get-todos-jobs-file
 + ~tlon-get-todos-jobs-file~ :: Retrieves the path to the jobs TODO file using its Org ID (=paths-tlon-todos-jobs-id=) and caches it.
 #+findex: tlon-get-todos-generic-file
@@ -296,6 +312,17 @@ This section lists non-interactive functions, variables, and constants used inte
   - For generic (non-job) issues, it searches for the =orgit-topic:ID= link as a substring:
     1. First, in the repository-specific Org file (e.g., =REPO-NAME.org=) located within the directory defined by =paths-dir-tlon-todos=.
     2. If not found there, it searches in the main generic TODOs file (~tlon-get-todos-generic-file~).
+
+*** Pandoc Conversion Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-forg-pandoc-helpers
+:END:
+#+findex: tlon-forg--pandoc-convert
++ ~tlon-forg--pandoc-convert~ :: Converts =TEXT= between markup formats =FROM= → =TO= using Pandoc.
+#+findex: tlon-forg-md->org
++ ~tlon-forg-md->org~ :: Converts =TEXT= from Markdown to Org format.
+#+findex: tlon-forg-org->md
++ ~tlon-forg-org->md~ :: Converts =TEXT= from Org to Markdown format.
 
 *** Issue and TODO Data Retrieval
 :PROPERTIES:
@@ -353,6 +380,10 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-get-file-from-issue~ :: Extracts a key from the issue name and finds the corresponding file path using ~tlon-get-file-from-key~.
 #+findex: tlon-get-parent-todo
 + ~tlon-get-parent-todo~ :: Finds the parent heading of a given =TODO= name within the jobs file.
+#+findex: tlon-forg--org-heading-title
++ ~tlon-forg--org-heading-title~ :: Returns the issue title encoded in the Org heading at point, stripping repo tags, orgit-links, and issue number prefixes.
+#+findex: tlon-forg--org-heading-components
++ ~tlon-forg--org-heading-components~ :: Returns a plist =(:title TITLE :tags TAGS :todo TODO)= for the Org heading at point.
 
 *** Issue and TODO Modification
 :PROPERTIES:
@@ -384,6 +415,14 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-update-issue-from-todo~ :: Updates the GitHub issue (title, labels, project status) to match the Org TODO heading at point. It uses functions from =forge-extras.el= (like ~forge-extras-gh-get-issue-fields~, ~forge-extras-gh-parse-issue-fields~, ~forge-extras-gh-add-issue-to-project~, and ~forge-extras-gh-update-project-item-status-field~) for GitHub Project interactions. If the issue is not in the target project (configured in =forge-extras.el= via ~forge-extras-project-number~, ~forge-extras-project-node-id~, etc.), it prompts to add it before setting the status. Configuration of project IDs should be done in =forge-extras.el=.
 #+findex: tlon-mark-todo-done
 + ~tlon-mark-todo-done~ :: Finds the =TODO= heading in =FILE= and sets its state to "DONE".
+#+findex: tlon-forg--set-github-project-estimate
++ ~tlon-forg--set-github-project-estimate~ :: Sets the GitHub Project "Estimate" field for an =ISSUE= to =ESTIMATE-VALUE= (float hours).
+#+findex: tlon-forg--set-github-project-status
++ ~tlon-forg--set-github-project-status~ :: Sets the GitHub Project status for an =ISSUE= based on an =ORG-STATUS-KEYWORD=.
+#+findex: tlon-forg--org-effort-to-hours
++ ~tlon-forg--org-effort-to-hours~ :: Converts an Org "Effort" property string to float hours.
+#+findex: tlon-forg--set-org-effort
++ ~tlon-forg--set-org-effort~ :: Sets the Org "Effort" property from float =EFFORT-HOURS=.
 
 *** Capture and Reconciliation Helpers
 :PROPERTIES:
@@ -391,6 +430,8 @@ This section lists non-interactive functions, variables, and constants used inte
 :END:
 #+findex: tlon-pull-silently
 + ~tlon-pull-silently~ :: Performs a =forge--pull= operation for the given =REPO= (or the current one if =REPO= is nil), suppressing output messages. Optionally displays a custom =MESSAGE=. If a =CALLBACK= function is provided, it is executed after the pull completes, and the window configuration active before the pull is restored afterwards.
+#+findex: tlon-forg--pull-sync
++ ~tlon-forg--pull-sync~ :: Runs `forge--pull` on `FORGE-REPO` synchronously and quietly.
 #+findex: tlon-capture-all-issues-after-pull
 + ~tlon-capture-all-issues-after-pull~ :: Callback function for ~tlon-capture-all-issues~ that initiates the capture process for the specified =REPO= after the initial pull completes.
 #+findex: tlon-store-todo
@@ -412,9 +453,25 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-sync-all-issues-and-todos-after-pull
 + ~tlon-sync-all-issues-and-todos-after-pull~ :: Callback function for ~tlon-sync-all-issues-and-todos~ that initiates the sync process after the initial pull completes.
 #+findex: tlon-sync-issue-and-todo-from-issue
-+ ~tlon-sync-issue-and-todo-from-issue~ :: Core sync logic called by ~tlon-sync-issue-and-todo~. Compares expected and actual TODO names and calls ~tlon-sync-issue-and-todo-prompt~ if they differ.
++ ~tlon-sync-issue-and-todo-from-issue~ :: Core sync logic called by ~tlon-sync-issue-and-todo~. Compares expected and actual TODO names and calls ~tlon-sync-issue-and-todo-prompt~ if they differ. Also syncs estimates.
+#+findex: tlon-sync-estimate-from-issue
++ ~tlon-sync-estimate-from-issue~ :: Syncs the estimate for an =ISSUE= and its associated TODO. Handles cases where only one has an estimate or if they differ, based on ~tlon-forg-when-syncing~.
 #+findex: tlon-sync-issue-and-todo-prompt
 + ~tlon-sync-issue-and-todo-prompt~ :: Handles the user interaction or automatic action based on ~tlon-forg-when-syncing~ when a discrepancy is found. Calls either ~tlon-update-todo-from-issue~ or ~tlon-update-issue-from-todo~.
+#+findex: tlon-forg--select-with-completing-read
++ ~tlon-forg--select-with-completing-read~ :: Prompts user via `completing-read` which value of an element to keep during sync.
+#+findex: tlon-forg--prompt-element-diff
++ ~tlon-forg--prompt-element-diff~ :: Determines sync action based on `tlon-forg-when-syncing` or user choice for a differing element.
+#+findex: tlon-forg--sync-title
++ ~tlon-forg--sync-title~ :: Reconciles the issue title with the Org heading at point.
+#+findex: tlon-forg--sync-status
++ ~tlon-forg--sync-status~ :: Reconciles the status between an issue and the Org heading.
+#+findex: tlon-forg--sync-tags
++ ~tlon-forg--sync-tags~ :: Reconciles the tags between an issue and the Org heading.
+#+findex: tlon-forg--diff-issue-and-todo
++ ~tlon-forg--diff-issue-and-todo~ :: Returns a list of symbols (`title`, `status`, `tags`) whose values differ between an issue and the Org heading.
+#+findex: tlon-forg--report-diff
++ ~tlon-forg--report-diff~ :: Returns a human-readable string summarizing differences.
 
 *** Validation and Checks
 :PROPERTIES:

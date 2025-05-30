@@ -173,6 +173,33 @@ This section lists non-interactive functions and variables used internally or po
 #+findex: tlon-update-glossary
 + ~tlon-update-glossary~ :: Takes the main glossary alist, a potentially modified =ENTRY=, and the corresponding English =TERM=. If an entry for =TERM= already exists in the glossary, it replaces it with =ENTRY=. If not, it appends =ENTRY= to the glossary. Returns the updated glossary alist.
 
+*** AI Glossary Generation Helpers
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-glossary-ai-helpers
+:END:
+#+findex: tlon-ai-create-glossary-language-callback
++ ~tlon-ai-create-glossary-language-callback~ :: Callback for the first AI call (translation generation) in ~tlon-ai-create-glossary-language~. Saves the raw response and initiates the second AI call for verification.
+#+findex: tlon-ai-process-verified-translations-callback
++ ~tlon-ai-process-verified-translations-callback~ :: Callback for the second AI call (verification). Parses the cleaned list, merges translations, writes the updated glossary, and handles success/failure logging.
+#+findex: tlon-ai--clean-verified-response
++ ~tlon-ai--clean-verified-response~ :: Cleans the verified AI response string by removing markdown fences and trimming whitespace.
+#+findex: tlon-ai--parse-verified-translations
++ ~tlon-ai--parse-verified-translations~ :: Parses the cleaned (verified) response string into a list of translation strings.
+#+findex: tlon-ai--validate-translation-list
++ ~tlon-ai--validate-translation-list~ :: Validates the list of received translations against the list of expected English terms, warning if lengths differ but proceeding with the minimum.
+#+findex: tlon-ai--create-translation-pairs
++ ~tlon-ai--create-translation-pairs~ :: Creates a list of (English Term . Translation) pairs, filtering out any pairs where the translation is "[TRANSLATION_UNAVAILABLE]".
+#+findex: tlon-ai--update-glossary-entry
++ ~tlon-ai--update-glossary-entry~ :: Updates a single glossary entry (alist) with a new translation for a specific language, modifying the entry in place.
+#+findex: tlon-ai--merge-translations-into-glossary
++ ~tlon-ai--merge-translations-into-glossary~ :: Merges a list of (English Term . Translation) pairs into the main glossary data structure for the target language.
+#+findex: tlon-ai--handle-verification-success
++ ~tlon-ai--handle-verification-success~ :: Handles successful processing after AI verification: writes the glossary, logs success, and deletes the temporary raw response file.
+#+findex: tlon-ai--handle-processing-error
++ ~tlon-ai--handle-processing-error~ :: Handles errors that occur during the processing of the verified AI response, logging the error and keeping the raw response file.
+#+findex: tlon-ai--handle-verification-failure
++ ~tlon-ai--handle-verification-failure~ :: Handles failures reported by the verification AI itself, logging the failure and keeping the raw response file.
+
 *** Glossary Extraction Formatting
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-glossary-extraction

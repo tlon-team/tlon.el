@@ -109,6 +109,12 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
   (setq tlon-ai-glossary-verify-model '("Gemini" . gemini-2.0-flash-thinking-exp-01-21))
   #+end_src
 
+#+vindex: tlon-ai-help-model
++ ~tlon-ai-help-model~ :: Model to use for the AI help command (~tlon-ai-ask-for-help~).
+  #+begin_src emacs-lisp
+  (setq tlon-ai-help-model '("Gemini" . gemini-2.0-flash-lite-preview-02-05))
+  #+end_src
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-ai-commands
