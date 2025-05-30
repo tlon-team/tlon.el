@@ -67,13 +67,21 @@ forge yet just return nil."
 ;;;; Helper Functions for Repository and Issue Selection
 
 (defun tlon-forg-get-or-select-repository ()
-  "Return a `forge-repository` object.
+  "Return a `forge-repository' object.
 Priority:
-1. If current buffer is an Org file named like a known Tlön repo (e.g., REPO.org).
-2. Current repository via `forge-get-repository :tracked` in `default-directory`.
-3. Prompt from known Tlön repositories via `tlon-get-repo`.
-4. List repositories from GitHub via `gh` CLI and prompt.
-The selected repository must be locally configured in Tlön for its path to be found."
+
+1. If current buffer is an Org file named like a known Tlön repo (e.g.,
+REPO.org).
+
+2. Current repository via `forge-get-repository :tracked' in
+`default-directory'.
+
+3. Prompt from known Tlön repositories via `tlon-get-repo'.
+
+4. List repositories from GitHub via `gh' CLI and prompt.
+
+The selected repository must be locally configured in Tlön for its path to be
+found."
   (or
    ;; 1. Try to derive repo from current buffer's filename if it's an Org file
    (when-let* ((current-file (buffer-file-name))
@@ -513,7 +521,7 @@ If ISSUE is also nil, it defaults to the issue at point."
 ;;;;; Capture
 
 ;;;###autoload
-(defun tlon-ncapture-issue (&optional issue invoked-from-org-file)
+(defun tlon-capture-issue (&optional issue invoked-from-org-file)
   "Create a new `org-mode' TODO based on ISSUE.
 If ISSUE is nil, it attempts to use the issue at point or in the current
 buffer. If no issue can be determined from the context, it prompts to select a
