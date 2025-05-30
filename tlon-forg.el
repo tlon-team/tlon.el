@@ -849,18 +849,23 @@ cached project items list is used instead of fetching a fresh one."
         (maphash
          (lambda (repo-name repo-dir)
            (let ((default-directory repo-dir))
-             (let ((forge-repo (forge-get-repository :tracked)))
-               (message "Processing repository %s..." repo-name)
-               (if arg
+             (let ((forge-repo (tlon-forg--safe-get-repository repo-dir)))
+               (if (null forge-repo)
                    (progn
-                     (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                     (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
                      (funcall finish))
-                 (tlon-pull-silently
-                  (format "Pulling issues from %s..." repo-name)
-                  (lambda ()
-                    (tlon-sync-all-issues-in-repo-after-pull forge-repo)
-                    (funcall finish))
-                  forge-repo)))))
+                 (progn
+                   (message "Processing repository %s..." repo-name)
+                   (if arg
+                       (progn
+                         (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                         (funcall finish))
+                     (tlon-pull-silently
+                      (format "Pulling issues from %s..." repo-name)
+                      (lambda ()
+                        (tlon-sync-all-issues-in-repo-after-pull forge-repo)
+                        (funcall finish))
+                      forge-repo)))))))
          issue-repos)))))
 
 
