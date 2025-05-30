@@ -305,19 +305,6 @@ Prompts the user to select a repository from the list derived from entries under
     ("P" "Pull issues in all repos"      tlon-pull-issues-in-all-repos)
     ("u" "Unlock uqbar git-crypt"        tlon-git-crypt-unlock)]])
 
-*** Internal Functions
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-repos-internals
-:END:
-#+findex: tlon-get-local-repos
-+ ~tlon-get-local-repos~ :: Prompts the user to select from a list of Tlön repository names that exist locally. It finds the intersection of all configured Tlön repos and those listed by `vc-extras-list-local-candidates`.
-#+findex: tlon-repos-pull-babel-refs
-+ ~tlon-repos-pull-babel-refs~ :: Asynchronously pulls changes from the `babel-refs` repository. This function is scheduled to run periodically via an idle timer.
-#+findex: tlon-forge-menu
-+ ~tlon-forge-menu~ :: This function overrides the default `forge-dispatch` transient menu to provide a Tlön-specific layout and additional commands related to Tlön repositories.
-#+findex: tlon--get-git-crypt-repos
-+ ~tlon--get-git-crypt-repos~ :: Returns a list of Tlön repository names that are configured to use `git-crypt`, based on entries found in the password store under "tlon/core/git-crypt/".
-
 (provide 'tlon-repos)
 
 ;;; tlon-repos.el ends here
