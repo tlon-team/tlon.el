@@ -1194,6 +1194,9 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 
 ;;;;;; sort by tag
 
+(declare-function tlon-forg-status-and-project-order-sorter "tlon-forg")
+(declare-function tlon-get-issue "tlon-forg")
+
 ;;;###autoload
 (defun tlon-forg-sort-by-tag ()
   "Sort org entries by the first tag that matches the relevant regexp pattern.
