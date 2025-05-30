@@ -268,7 +268,7 @@ Signal an error if pandoc is not in PATH."
 
 (defun tlon-forg-org->md (text)
   "Convert TEXT from Org to Markdown format using pandoc."
-  (tlon-forg--pandoc-convert text "org" "markdown"))
+  (tlon-forg--pandoc-convert text "org" "gfm"))
 
 (defun tlon-forg--wait-for-issue (number repo-dir &optional forge-repo timeout interval)
   "Return ISSUE NUMBER in REPO-DIR, waiting until it exists locally.
