@@ -82,7 +82,7 @@ buffer."
   (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file))
 	 (subproject (tlon-repo-lookup :subproject :dir repo))
-	 (language (tlon-get-counterpart-language repo t))
+	 (language (tlon-get-counterpart-language repo prompt)) ; Use the prompt argument
 	 (counterpart-repo
 	  (tlon-repo-lookup :dir
 			    :subproject subproject
@@ -111,25 +111,44 @@ counterpart is always \"en\"."
        "en")
       (_ (user-error "Language not recognized")))))
 
-(defun tlon-get-counterpart-dir (&optional file)
+(defun tlon-get-counterpart-dir (&optional file target-language-code)
   "Get the counterpart directory of FILE.
 A file's counterpart directory is the directory of that file's counterpart. For
 example, the counterpart directory of `~/Dropbox/repos/uqbar-es/autores/' is
 `~/Dropbox/repos/uqbar-en/authors/'.
 
-If FILE is nil, return the counterpart repo of the file visited by the current
-buffer."
+If FILE is nil, use the file visited by the current buffer.
+If TARGET-LANGUAGE-CODE is provided, use it to determine the counterpart repo
+and target language, avoiding prompts. Otherwise, determine them automatically,
+which may prompt if the source file is an original."
   (let* ((file (or file (buffer-file-name)))
-	 (repo (tlon-get-repo-from-file file))
-	 (counterpart-repo (tlon-get-counterpart-repo file))
-	 (bare-dir (tlon-get-bare-dir file))
-	 (source-lang (tlon-repo-lookup :language :dir repo))
-	 (target-lang (tlon-get-counterpart-language repo))
-	 (counterpart-bare-dir (tlon-get-bare-dir-translation target-lang source-lang bare-dir)))
-    ;; Only attempt to concatenate if counterpart-bare-dir is non-nil.
-    ;; Otherwise, tlon-get-counterpart-dir will return nil.
-    (when counterpart-bare-dir
-      (file-name-concat counterpart-repo counterpart-bare-dir))))
+         (repo (tlon-get-repo-from-file file)) ; Source repo
+         (source-lang (tlon-repo-lookup :language :dir repo))
+         (bare-dir (tlon-get-bare-dir file))
+         (final-target-lang target-language-code)
+         (final-counterpart-repo nil))
+
+    (if target-language-code
+        (progn
+          (setq final-target-lang target-language-code)
+          (setq final-counterpart-repo
+                (tlon-repo-lookup :dir
+                                  :subproject (tlon-repo-lookup :subproject :dir repo)
+                                  :language final-target-lang)))
+      ;; No target-language-code provided, determine automatically (non-prompting)
+      (progn
+        (setq final-target-lang (tlon-get-counterpart-language repo nil)) ; nil for prompt
+        (setq final-counterpart-repo (tlon-get-counterpart-repo file nil)))) ; nil for prompt
+
+    (if (and final-counterpart-repo final-target-lang)
+        (let ((counterpart-bare-dir (tlon-get-bare-dir-translation final-target-lang source-lang bare-dir)))
+          (when counterpart-bare-dir
+            (file-name-concat final-counterpart-repo counterpart-bare-dir)))
+      (progn
+        (when tlon-debug
+          (message "tlon-get-counterpart-dir: Could not determine counterpart repo or target language for %s (target-code: %s)"
+                   file target-language-code))
+        nil))))
 
 ;;;###autoload
 (defun tlon-open-counterpart (&optional other-win file)
@@ -324,7 +343,7 @@ or the function itself."
 Returns the relative path string for the counterpart link, or nil if not found."
   (let* ((current-dir (file-name-directory current-buffer-file))
          (target-repo (tlon-get-repo-from-file current-buffer-file))
-         ;; (target-lang (tlon-repo-lookup :language :dir target-repo)) ; Not strictly needed?
+         (target-lang-code (tlon-repo-lookup :language :dir target-repo))
          (buffer-original-path (tlon-yaml-get-key "original_path" current-buffer-file)))
     (unless buffer-original-path
       (warn "No 'original_path' found in metadata for %s" current-buffer-file)
@@ -346,7 +365,7 @@ Returns the relative path string for the counterpart link, or nil if not found."
       ;; links that live in sibling sub-directories such as
       ;; “../authors/derek-parfit.md”, where no metadata entry exists yet.
       (unless counterpart-abs-path
-        (let* ((fallback-dir  (tlon-get-counterpart-dir linked-original-abs-path))
+        (let* ((fallback-dir (tlon-get-counterpart-dir linked-original-abs-path target-lang-code))
                (fallback-path (when fallback-dir
                                 (file-name-concat fallback-dir
                                                   (file-name-nondirectory linked-original-abs-path)))))
