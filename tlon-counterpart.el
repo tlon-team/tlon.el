@@ -73,23 +73,24 @@ language."
 				"original_path"
 				(file-name-nondirectory file))))
 
-(defun tlon-get-counterpart-repo (&optional file)
+(defun tlon-get-counterpart-repo (&optional file (prompt t))
   "Get the counterpart repo of FILE.
 A file's counterpart repo is the repo of that file's counterpart.
 
 If FILE is nil, return the counterpart repo of the file visited by the current
-buffer."
+buffer.
+PROMPT controls whether `tlon-get-counterpart-language' should prompt."
   (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file))
 	 (subproject (tlon-repo-lookup :subproject :dir repo))
-	 (language (tlon-get-counterpart-language repo prompt)) ; Use the prompt argument
+	 (language (tlon-get-counterpart-language repo prompt))
 	 (counterpart-repo
 	  (tlon-repo-lookup :dir
 			    :subproject subproject
 			    :language language)))
     counterpart-repo))
 
-(defun tlon-get-counterpart-language (&optional repo prompt)
+(defun tlon-get-counterpart-language (&optional repo (prompt t))
   "Return the language code of the counterpart of REPO.
 
 If PROMPT is non-nil and the source repo’s language is \"en\",
