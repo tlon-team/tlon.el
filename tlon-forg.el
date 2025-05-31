@@ -1994,7 +1994,8 @@ The command:
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
   (magit-status-setup-buffer dir)
-  (forge-create-issue nil))
+  (let ((repo (forge-get-repository t)))
+    (forge-create-issue repo)))
 
 ;;;###autoload
 (defun tlon-report-bug ()
