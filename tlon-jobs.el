@@ -30,6 +30,8 @@
 (require 'tlon-clock)
 (require 'tlon-core)
 (require 'tlon-forg)
+(eval-when-compile
+  (require 'bytecomp))
 
 ;;;; Variables
 
