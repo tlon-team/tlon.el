@@ -291,7 +291,7 @@ PARTICIPANTS, using filename inference for initial participant suggestion."
     (with-current-buffer output-buffer
       (erase-buffer)
       (insert (format "Starting diarization of %s using whisperx…\n\n"
-                      audio-filename)))
+                      audio-file)))
     (tlon-whisperx-diarize
      audio-file "es" nil nil
      (lambda (transcript-file _ok)
