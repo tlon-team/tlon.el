@@ -178,6 +178,9 @@ DIR is the directory where the repo is stored."
     ("c f" "Fede"                         tlon-magit-browse-clock-fede)
     ("c p" "Pablo"                        tlon-magit-browse-clock-pablo)
     ""
+    "Emacs"
+    ("e" "tlon.el"                         tlon-magit-browse-tlon-el)
+    ""
     "Docs"
     ("d" "tlon-docs"                      tlon-magit-browse-docs)]])
 
@@ -263,6 +266,9 @@ DIR is the directory where the repo is stored."
     ("c l" "Leo"                          tlon-dired-browse-clock-leo)
     ("c f" "Fede"                         tlon-dired-browse-clock-fede)
     ("c p" "Pablo"                        tlon-dired-browse-clock-pablo)
+    ""
+    "Emacs"
+    ("e" "tlon.el"                         tlon-dired-browse-tlon-el)
     ""
     "Docs"
     ("d" "tlon-docs"                      tlon-dired-browse-docs)]])

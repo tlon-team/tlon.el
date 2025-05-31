@@ -317,6 +317,11 @@
 	   :abbrev "docs"
 	   :type docs
 	   :help t)
+    (:name "tlon.el"
+ 	   :project "tlon"
+ 	   :abbrev "tlon-el"
+ 	   :type development
+ 	   :subtype emacs)
     (:name "tlon"
 	   :project "tlon"
 	   :abbrev "tlon"
