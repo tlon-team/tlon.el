@@ -760,8 +760,9 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                              (new-target-spec nil))
 			(cond
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file))
-			  ;; Capture to the specified file, let org-mode decide placement (e.g. :prepend, point)
-			  (setq new-target-spec (list 'file target-file)))
+			  ;; Capture under the file’s main heading (file base name).
+			  (let ((heading (file-name-base target-file)))
+			    (setq new-target-spec (list 'file+headline target-file heading))))
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+headline))
 			  ;; Capture to the specified file, under the original headline from the template
 			  (setq new-target-spec (list 'file+headline target-file (caddr original-target-spec))))
@@ -787,7 +788,8 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                   ;; or it was found but its structure was not modifiable. Create ad-hoc.
                   (unless capture-arg-final
                     (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
-                    (let* ((template-string (if original-template-list
+                    (let* ((heading (file-name-base target-file))
+                           (template-string (if original-template-list
 						(nth 4 original-template-list) ; Reuse template string if possible
                                               "* TODO %c\n%i")) ; Default template string
                            (description (if original-template-list
@@ -800,8 +802,9 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                             (list "tlon-adhoc"
                                   description
                                   entry-type
-                                  ;; Use simple file target for ad-hoc to avoid creating unwanted headlines
-                                  (list 'file target-file)
+                                  ;; Use file+headline target for ad-hoc to file's main heading
+                                  (let ((heading (file-name-base target-file)))
+                                    (list 'file+headline target-file heading))
                                   template-string
                                   :immediate-finish t
                                   :unnarrowed t))))
