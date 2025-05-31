@@ -2004,7 +2004,11 @@ The command:
     ;; Now set up the Magit buffer for UI, using the repo's worktree path
     (magit-status-setup-buffer (oref repo worktree))
     ;; `repo` object should now have its data populated by the pull.
-    (forge-create-issue repo)))
+    ;; forge-create-issue expects a template.
+    ;; (forge--topic-template nil 'forge-issue) gets the default template
+    ;; for the current repository context.
+    (let ((template (forge--topic-template nil 'forge-issue)))
+      (forge-create-issue template))))
 
 ;;;###autoload
 (defun tlon-report-bug ()
