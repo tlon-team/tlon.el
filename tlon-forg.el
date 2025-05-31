@@ -788,8 +788,8 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                   (unless capture-arg-final
                     (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
                     (let* ((template-string (if original-template-list
-                                               (nth 4 original-template-list) ; Reuse template string if possible
-                                             "* TODO %c\n%i")) ; Default template string
+						(nth 4 original-template-list) ; Reuse template string if possible
+                                              "* TODO %c\n%i")) ; Default template string
                            (description (if original-template-list
                                             (nth 1 original-template-list) ; Reuse description
 					  (format "Tlon Adhoc Capture to %s" (file-name-nondirectory target-file))))
@@ -803,7 +803,7 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                                   ;; Use simple file target for ad-hoc to avoid creating unwanted headlines
                                   (list 'file target-file)
                                   template-string
-                                  :immediate-finish t 
+                                  :immediate-finish t
                                   :unnarrowed t))))
                   
                   ;; When capture-arg-final is a list (a full template definition),
