@@ -327,18 +327,20 @@ These collected files are added to the =gptel= context. The user's question, alo
 :CUSTOM_ID: h:tlon-ai-propagate-changes
 :END:
 #+findex: tlon-ai-propagate-changes
-The command ~tlon-ai-propagate-changes~ attempts to automatically apply changes made in the latest commit of the current file to its corresponding files in other ~tlon~ content repositories (originals and translations).
+The command ~tlon-ai-propagate-changes~ attempts to automatically apply changes made in the latest commit of the current repository to corresponding files in other ~tlon~ content repositories (originals and translations).
 
-1. It identifies the current file, its repository, language, and the latest commit affecting it using ~tlon~ and Git functions.
-2. It retrieves the diff for the file from that commit using =git show=.
-3. It identifies all other ~tlon~ content repositories (excluding the source repo).
-4. For each target repository:
-   - It determines the corresponding target file using metadata lookups (~tlon-ai--find-target-file~), handling different scenarios (original to translation, translation to original, translation to translation).
-   - If a target file is found and exists, it constructs a prompt asking the AI to apply the *semantic equivalent* of the source diff to the target file's content (provided in the prompt).
-   - It sends the request to the AI.
-   - The callback function (~tlon-ai--propagate-changes-callback~) receives the AI's response (the modified target content).
-   - If the AI response is valid, the callback overwrites the target file with the new content.
-   - It then stages and commits the changes in the target repository using Git, with a commit message indicating the source commit and repository.
+1. It identifies the current repository and its latest commit using ~tlon~ and Git functions.
+2. It retrieves a list of all files modified in that commit within the source repository.
+3. For each modified source file:
+   a. It retrieves the diff for that file from the commit using =git show=.
+   b. It identifies all other ~tlon~ content repositories (excluding the source repo).
+   c. For each target repository:
+      i. It determines the corresponding target file using metadata lookups (~tlon-ai--find-target-file~), handling different scenarios (original to translation, translation to original, translation to translation).
+      ii. If a target file is found and exists, it constructs a prompt asking the AI to apply the *semantic equivalent* of the source diff to the target file's content (provided in the prompt).
+      iii. It sends the request to the AI.
+      iv. The callback function (~tlon-ai--propagate-changes-callback~) receives the AI's response (the modified target content).
+      v. If the AI response is valid, the callback overwrites the target file with the new content.
+      vi. It then stages and commits the changes in the target repository using Git, with a commit message indicating the source commit and repository.
 
 This command relies heavily on accurate metadata (=original_path=) and consistent file structures across repositories.
 
