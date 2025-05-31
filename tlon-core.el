@@ -836,7 +836,8 @@ If FILE is nil, return the counterpart repo of the file visited by the current
 buffer."
   (when-let* ((file (or file (buffer-file-name)))
 	      (repo (tlon-get-repo-from-file file)))
-    (directory-file-name (file-name-directory (file-relative-name file repo)))))
+    (when-let ((relative-path (file-relative-name file repo)))
+      (directory-file-name (file-name-directory relative-path)))))
 
 (defun tlon-select-bare-dir (lang)
   "Set the bare dir in LANG."
