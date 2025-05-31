@@ -582,8 +582,7 @@ text using `eww`."
   (let ((original-file-path file))
     (cond
      ((string= (file-name-extension original-file-path) "html")
-      (let ((rendered-text nil)
-            (eww-process-buffer nil))
+      (let ((rendered-text nil))
         (save-selected-window
           (eww-browse-url (concat "file://" (expand-file-name original-file-path)))
           (setq rendered-text (buffer-substring-no-properties (point-min) (point-max)))
@@ -2142,6 +2141,9 @@ determined."
     (message "Finished processing all files in %s." directory)))
 
 ;;;;; Change propagation
+
+(require 'magit-extras)
+(declare-function magit-extras-repo-is-dirty-p "magit-extras" (&optional dir-or-repo))
 
 ;;;;;; Change Propagation Command
 

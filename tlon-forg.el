@@ -39,6 +39,9 @@
 (require 'cl-lib)
 (require 'crm)
 (require 'seq)
+(require 'org-capture)
+
+(declare-variable org-capture-templates "org-capture" t)
 
 ;;;; Path Helpers
 
@@ -703,8 +706,8 @@ If PROJECT-ITEMS is provided, only capture issues that are in the project.
 INVOKED-FROM-ORG-FILE is the path to the org file from which the overall
 capture operation was initiated, if any."
   (let ((default-directory (oref repo worktree)) ; Set context
-        (repo-name (oref repo name))
-        (owner (oref repo owner))
+        (_repo-name (oref repo name)) ; unused
+        (_owner (oref repo owner)) ; unused
         (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name))))
     (if project-items
         ;; Only process issues that are in the project
@@ -808,13 +811,16 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                   (let ((org-capture-templates (cons capture-arg-final org-capture-templates)))
                     (org-capture nil (car capture-arg-final))))
               ;; No target-file, use the template key as is (original behavior)
-              (let* ((orig-tpl (assoc template org-capture-templates))
-                     (org-capture-templates
-                      (if orig-tpl
-                          (cons (tlon--ensure-prepend (copy-sequence orig-tpl))
-				(remove orig-tpl org-capture-templates))
-			org-capture-templates)))
-		(org-capture nil template)))))))))
+              (let* ((orig-tpl-entry (assoc template org-capture-templates))) ; Get the original template entry
+                (if orig-tpl-entry
+                    ;; If the template exists, modify it and call org-capture
+                    ;; in a let that shadows org-capture-templates
+                    (let ((org-capture-templates ; Shadow global org-capture-templates
+                           (cons (tlon--ensure-prepend (copy-sequence orig-tpl-entry)) ; Prepend modified
+                                 (remove orig-tpl-entry org-capture-templates)))) ; Remove original from global
+                      (org-capture nil template)) ; template is the key, org-capture uses shadowed list
+                  ;; If template does not exist, call org-capture normally
+                  (org-capture nil template))))))))))
 
 ;;;;;; Handling assignee, status, phase
 
@@ -878,11 +884,11 @@ INVOKED-FROM-ORG-FILE is the file path if called from an Org buffer."
     (tlon-capture-handle-phase issue)
     (tlon-store-or-refile-job-todo issue invoked-from-org-file)))
 
-(defun tlon-store-master-job-todo (&optional set-issue issue invoked-from-org-file)
+(defun tlon-store-master-job-todo (&optional set-issue issue _invoked-from-org-file)
   "Create a new job master TODO.
 If SET-ISSUE is non-nil, set issue label to `Awaiting processing' and assignee
 to the current user. If ISSUE is non-nil, use the issue at point or in the
-current buffer. INVOKED-FROM-ORG-FILE is passed down but not used for
+current buffer. _INVOKED-FROM-ORG-FILE is passed down but not used for
 the master TODO itself, which always goes to the jobs file."
   (let* ((issue (or issue (forge-current-topic)))
 	 (todo (tlon-make-todo-name-from-issue issue 'no-action 'no-status))
@@ -1047,7 +1053,7 @@ REPO must be a valid `forge-repository` object.
 If PROJECT-ITEMS is provided, only sync issues that are in the project."
   (let ((default-directory (oref repo worktree)) ; Set context
         (repo-name (oref repo name))
-        (owner (oref repo owner))
+        (_owner (oref repo owner)) ; unused
         (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name)))
         (issue-count 0))
     (if project-items
