@@ -760,11 +760,11 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                              (new-target-spec nil))
 			(cond
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file))
-			  (let ((heading (file-name-base target-file)))       ; repo name sans “.org”
-			    (setq new-target-spec (list 'file+headline target-file heading))))
+			  ;; Capture to the specified file, let org-mode decide placement (e.g. :prepend, point)
+			  (setq new-target-spec (list 'file target-file)))
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+headline))
-			  (let ((heading (file-name-base target-file)))
-			    (setq new-target-spec (list 'file+headline target-file heading))))
+			  ;; Capture to the specified file, under the original headline from the template
+			  (setq new-target-spec (list 'file+headline target-file (caddr original-target-spec))))
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+olp))
                           (setq new-target-spec (cons 'file+olp (cons target-file (cddr original-target-spec)))))
 			 (t
@@ -787,8 +787,7 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                   ;; or it was found but its structure was not modifiable. Create ad-hoc.
                   (unless capture-arg-final
                     (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
-                    (let* ((heading (file-name-base target-file))
-                           (template-string (if original-template-list
+                    (let* ((template-string (if original-template-list
                                                (nth 4 original-template-list) ; Reuse template string if possible
                                              "* TODO %c\n%i")) ; Default template string
                            (description (if original-template-list
@@ -801,7 +800,8 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                             (list "tlon-adhoc"
                                   description
                                   entry-type
-                                  (list 'file+headline target-file heading)
+                                  ;; Use simple file target for ad-hoc to avoid creating unwanted headlines
+                                  (list 'file target-file)
                                   template-string
                                   :immediate-finish t 
                                   :unnarrowed t))))
