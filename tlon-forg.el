@@ -1993,15 +1993,16 @@ The command:
 
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
-  (magit-status-setup-buffer dir)
-  (let ((repo (forge-get-repository nil))) ; Get repo object without demanding a pull via 't'
-    (unless repo
-      (user-error "No forge repository found for directory %s" dir))
-    ;; Ensure repository data is available, synchronously.
-    ;; The `forge-pull` function with a nil callback is synchronous.
-    (forge-pull repo nil nil)
-    ;; `repo` object should now have its data populated.
-    (forge-create-issue repo)))
+  (let ((default-directory dir))
+    (let ((repo (forge-get-repository :tracked))) ; Use :tracked to find the repo
+      (unless repo
+        (user-error "No tracked Forge repository found for directory %s. Ensure it is added to Forge and its data pulled." dir))
+      ;; Ensure repository data is available and fresh, synchronously.
+      (forge-pull repo nil nil)
+      ;; Now set up the Magit buffer for UI
+      (magit-status-setup-buffer dir)
+      ;; `repo` object should now have its data populated.
+      (forge-create-issue repo))))
 
 ;;;###autoload
 (defun tlon-report-bug ()
