@@ -2145,58 +2145,85 @@ determined."
 (require 'magit-extras)
 (declare-function magit-extras-repo-is-dirty-p "magit-extras" (&optional dir-or-repo))
 
+(defun tlon-ai--get-files-changed-in-commit (commit repo-path)
+  "Return a list of absolute file paths changed in COMMIT within REPO-PATH."
+  (when (and commit repo-path (file-directory-p repo-path))
+    (let* ((default-directory repo-path) ; Ensure git runs in the correct repo
+           (command (format "git diff-tree --no-commit-id --name-only -r %s"
+                            (shell-quote-argument commit)))
+           (output (condition-case err
+                       (shell-command-to-string command)
+                     (error (message "Error getting files changed in commit %s: %s" commit err)
+                            nil))))
+      (when output
+        (mapcar (lambda (relative-path)
+                  (expand-file-name relative-path repo-path))
+                (split-string (string-trim output) "\n" t))))))
+
 ;;;;;; Change Propagation Command
 
 ;;;###autoload
 (defun tlon-ai-propagate-changes ()
-  "Propagate modifications from the latest commit of the current file.
-Get the diff of the latest commit affecting the current file in its repository.
+  "Propagate modifications from all files in the latest commit of the current repository.
+For each file changed in the latest commit of the current repository, get its diff.
 Then, for each corresponding file in other \"uqbar\" content
 repositories (originals and translations), ask the AI to apply the semantically
 equivalent changes. Finally, commit the changes made by the AI in each target
 repository."
   (interactive)
   (when (magit-extras-repo-is-dirty-p)
-    (user-error "This command propagates the contents of the most recent commit, but you have uncommited changes"))
-  (let* ((source-file (buffer-file-name))
-	 (_ (unless source-file (user-error "Current buffer is not visiting a file")))
-	 (source-repo (tlon-get-repo-from-file source-file 'no-prompt))
-	 (_ (unless source-repo (user-error "Could not determine repository for %s" source-file)))
-	 (source-repo-name (tlon-repo-lookup :name :dir source-repo)) ; Get the repo name
-	 (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
-	 (source-lang (tlon-repo-lookup :language :dir source-repo))
-	 (latest-commit (tlon-latest-user-commit-in-file source-file))
-	 (_ (unless latest-commit (user-error "Could not find latest commit for %s" source-file)))
-	 (diff (tlon-ai--get-commit-diff latest-commit source-file source-repo))
-	 (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
-				    (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
-	 (target-repos (remove source-repo all-content-repos)))
-    (unless diff
-      (user-error "No changes found in commit %s for file %s. Aborting" latest-commit source-file))
+    (user-error "This command propagates changes from the most recent commit, but you have uncommitted changes"))
+
+  (let* ((source-repo (tlon-get-repo 'no-prompt)) ; Get current repo, or prompt
+         (_ (unless source-repo (user-error "Could not determine current repository.")))
+         (source-repo-name (tlon-repo-lookup :name :dir source-repo))
+         (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
+         (source-lang (tlon-repo-lookup :language :dir source-repo))
+         (latest-commit (tlon-get-latest-commit source-repo)) ; Get latest commit for the repo
+         (_ (unless latest-commit (user-error "Could not find the latest commit for repository %s" source-repo-name)))
+         (source-files-in-commit (tlon-ai--get-files-changed-in-commit latest-commit source-repo))
+         (_ (unless source-files-in-commit (user-error "No files found in commit %s for repository %s. Aborting."
+                                                       (substring latest-commit 0 7) source-repo-name)))
+         (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
+                                    (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
+         (target-repos (remove source-repo all-content-repos)))
+
     (unless target-repos
-      (user-error "No target repositories found to propagate changes to"))
-    (message "Found commit %s for %s in %s. Propagating changes..."
-	     (substring latest-commit 0 7) (file-name-nondirectory source-file) source-repo-name)
-    (dolist (target-repo target-repos)
-      (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
-	     (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
-	(if target-file
-	    (let* ((target-content (with-temp-buffer
-				     (insert-file-contents target-file)
-				     (buffer-string)))
-		   (prompt (format tlon-ai-propagate-changes-prompt source-lang
-				   (file-relative-name source-file source-repo)
-				   diff target-lang target-content)))
-	      (message "Requesting AI to update %s (lang: %s) in repo %s..."
-		       (file-name-nondirectory target-file) target-lang (file-name-nondirectory target-repo))
-	      (with-temp-buffer
-		(let ((gptel-track-media nil))
-		  (tlon-make-gptel-request prompt nil
-					   (lambda (response info)
-					     (tlon-ai--propagate-changes-callback
-					      response info target-file target-repo source-repo-name latest-commit))
-					   nil 'no-context-check (current-buffer))))))))
-    (message "AI change propagation requests initiated for all target repositories.")))
+      (user-error "No target repositories found to propagate changes to."))
+
+    (message "Found commit %s in %s. Propagating changes for %d file(s)..."
+             (substring latest-commit 0 7) source-repo-name (length source-files-in-commit))
+
+    (dolist (source-file source-files-in-commit)
+      (message "Processing source file: %s" (file-relative-name source-file source-repo))
+      (let ((diff (tlon-ai--get-commit-diff latest-commit source-file source-repo)))
+        (if (not diff)
+            (message "  No effective changes found for %s in commit %s. Skipping."
+                     (file-relative-name source-file source-repo) (substring latest-commit 0 7))
+          (dolist (target-repo target-repos)
+            (let* ((target-lang (tlon-repo-lookup :language :dir target-repo))
+                   (target-file (tlon-ai--find-target-file source-file source-repo target-repo)))
+              (if target-file
+                  (let* ((target-content (with-temp-buffer
+                                           (insert-file-contents target-file)
+                                           (buffer-string)))
+                         (prompt (format tlon-ai-propagate-changes-prompt source-lang
+                                         (file-relative-name source-file source-repo)
+                                         diff target-lang target-content)))
+                    (message "  Requesting AI to update %s (lang: %s) in repo %s (target for %s)..."
+                             (file-name-nondirectory target-file) target-lang
+                             (file-name-nondirectory target-repo)
+                             (file-name-nondirectory source-file))
+                    (with-temp-buffer
+                      (let ((gptel-track-media nil))
+                        (tlon-make-gptel-request prompt nil
+                                                 (lambda (response info)
+                                                   (tlon-ai--propagate-changes-callback
+                                                    response info target-file target-repo source-repo-name latest-commit))
+                                                 nil 'no-context-check (current-buffer)))))
+                (message "  No target file found in repo %s for source file %s. Skipping."
+                         (file-name-nondirectory target-repo) (file-name-nondirectory source-file))))))))
+    (message "AI change propagation requests initiated for all applicable files and target repositories.")))
 
 ;;;;;; Helper functions
 
