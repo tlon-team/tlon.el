@@ -41,8 +41,6 @@
 (require 'seq)
 (require 'org-capture)
 
-(declare-variable org-capture-templates "org-capture" t)
-
 ;;;; Path Helpers
 
 (defun tlon-forg--get-repo-specific-todo-file (issue)
