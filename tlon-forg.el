@@ -1993,20 +1993,12 @@ The command:
 
 (defun tlon-create-issue-in-dir (dir)
   "Create a new issue in the git repository at DIR."
-  (let ((default-directory dir)
-	(repo (forge-get-repository :tracked)))
+  (let* ((default-directory dir)
+	 (repo (forge-get-repository :tracked)))
     (unless repo
       (user-error "No tracked Forge repository found for directory %s" dir))
-    ;; Ensure repository data is available and fresh, synchronously.
-    ;; forge-pull operates on the current repository (set by default-directory).
-    ;; Called with no arguments, it pulls the default remote.
     (forge-pull)
-    ;; Now set up the Magit buffer for UI, using the repo's worktree path
     (magit-status-setup-buffer (oref repo worktree))
-    ;; `repo` object should now have its data populated by the pull.
-    ;; forge-create-issue expects a template.
-    ;; (forge--topic-template nil 'forge-issue) gets the default template
-    ;; for the current repository context.
     (let ((template (forge--topic-template nil 'forge-issue)))
       (forge-create-issue template))))
 
