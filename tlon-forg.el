@@ -96,7 +96,11 @@ found."
                (forge-get-repository :tracked)))))))
 
    ;; 2. Try current repository via `forge-get-repository :tracked`
-   (ignore-errors (forge-get-repository :tracked))
+   (let ((r (ignore-errors (forge-get-repository :tracked))))
+     (when (and r
+                ;; accept only if the worktree belongs to a Tlön repo
+                (tlon-get-repo-from-dir (oref r worktree)))
+       r))
 
    ;; 3. Prompt from known Tlön repositories
    (let ((repo-path (tlon-get-repo nil 'include-all)))
