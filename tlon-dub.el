@@ -36,6 +36,9 @@
 (require 'cl-lib)
 (require 'tlon-whisperx)
 
+(declare-function copy-list "cl-lib" (list))
+(declare-function cond-> "threads" (val &rest clauses))
+
 (defgroup tlon-dub ()
   "Dubbing functionality using ElevenLabs."
   :group 'tlon)
