@@ -2012,7 +2012,7 @@ The command:
 (defun tlon-prepopulate-bug-report-buffer ()
   "Prepopulate the bug report buffer with relevant headings and information."
   (goto-char (point-max))
-  (insert (concat "\n\n"
+  (insert (concat "Bug: \n\n"
 		  "## Descripción\n\n\n"
 		  "## Pasos para reproducir\n\n1.\n2.\n3.\n\n\n"
 		  "## Comentarios\n<!-- Opcional -->\n\n\n"
@@ -2021,7 +2021,7 @@ The command:
 		  "\n- Tlon version: " tlon-version
 		  "\n- Latest commit: " (tlon-get-latest-commit)
 		  "\n\n"))
-  (goto-char (+ (point-min) 2)))
+  (goto-char (+ (point-min) 7)))
 
 ;;;###autoload
 (defun tlon-create-issue-from-todo ()
