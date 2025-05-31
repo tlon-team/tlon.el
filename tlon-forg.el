@@ -1843,11 +1843,13 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 (defun tlon-get-issue-name (&optional issue)
   "Get the name of ISSUE.
 An issue name is its number followed by its title.
+The title part is sanitized to be a single line by replacing newlines with spaces.
 
 If ISSUE is nil, get the issue at point or in current buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (number (oref issue number))
-	 (title (tlon-forg-md->org (oref issue title))))
+	 (title (replace-regexp-in-string "\n" " "
+					  (tlon-forg-md->org (oref issue title)))))
     (format "#%s %s" number title)))
 
 (defun tlon-get-issue-link (&optional issue)
