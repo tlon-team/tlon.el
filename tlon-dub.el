@@ -406,7 +406,7 @@ Each segment is a plist with :start, :end, and :text keys."
        ((string-match "^\\([0-9:]+\\.[0-9]+\\)[ \t]+-->[ \t]+\\([0-9:]+\\.[0-9]+\\)" line)
 	;; If we were collecting text, finalize the previous segment
 	(when text-buffer
-	  (setf (plist-put current-segment :text) (string-trim text-buffer))
+	  (setf (plist-get current-segment :text) (string-trim text-buffer))
 	  (push current-segment segments)
 	  (setq text-buffer nil))
 	;; Start a new segment
@@ -417,7 +417,7 @@ Each segment is a plist with :start, :end, and :text keys."
 	(setq text-buffer (concat text-buffer (if (string-empty-p text-buffer) "" "\n") line)))))
     ;; Add the last segment if text was collected
     (when text-buffer
-      (setf (plist-put current-segment :text) (string-trim text-buffer))
+      (setf (plist-get current-segment :text) (string-trim text-buffer))
       (push current-segment segments))
     (nreverse segments)))
 
@@ -572,16 +572,16 @@ returned."
 
 ;;;###autoload
 (defun tlon-dub-clean-diarized-srt (diarized-file &optional speaker-alist)
-  "Convert DIARIZED-FILE (WhisperX SRT with [SPEAKER_xx]: prefixes) \
-into a cleaner SRT.
+  "Convert DIARIZED-FILE (WhisperX SRT with [SPEAKER_xx]: prefixes) into a
+cleaner SRT.
 
 Interactively prompts for a name for every distinct SPEAKER_xx that appears.
-SPEAKER-ALIST may be supplied programmatically as
-  ((\"00\" . \"Alice\") (\"01\" . \"Bob\")).
+SPEAKER-ALIST may be supplied programmatically as `((\"00\" . \"Alice\") (\"01\"
+. \"Bob\"))`.
 
-The first subtitle block of each *speaker run* is prefixed with
-\"Name: \", subsequent contiguous blocks by the same speaker omit any prefix.
-Returns the pathname of the newly written “-cleaned.srt” file."
+The first subtitle block of each *speaker run* is prefixed with \"Name: \",
+subsequent contiguous blocks by the same speaker omit any prefix. Returns the
+pathname of the newly written “-cleaned.srt” file."
   (interactive (list (read-file-name "Diarized SRT: " nil nil t ".srt")))
   (let* ((segments (tlon-dub--parse-srt diarized-file))
          ;; collect unique speaker ids present in file
@@ -988,9 +988,10 @@ TRANSLATED-FILE is the path to the original non-timestamped translated file."
 ;;;###autoload
 (defun tlon-dub-align-punctuation (text-file markdown-file)
   "Align punctuation between TEXT-FILE and MARKDOWN-FILE using AI.
-Both files contain transcripts of the same audio, but may differ in punctuation.
-The AI will revise the Markdown file so that its sentence boundaries match
-those in the text file. The result is saved to a new file with '-aligned' suffix."
+Both files contain transcripts of the same audio, but may differ in
+punctuation. The AI will revise the Markdown file so that its sentence
+boundaries match those in the text file. The result is saved to a new file with
+'-aligned' suffix."
   (interactive
    (list (read-file-name "Text file: " nil nil t ".txt")
          (read-file-name "Markdown file: " nil nil t ".md")))
@@ -1120,7 +1121,7 @@ THRESHOLD is the maximum allowed ratio."
         ;; Make asynchronous request to AI with callback
         (tlon-make-gptel-request
          prompt nil
-         (lambda (response info)
+         (lambda (response _info) ; info argument is unused
            (let ((optimized-text (if response response trans-text)))
              ;; Update the segment with optimized text
              (setf (nth index optimized-segments)
