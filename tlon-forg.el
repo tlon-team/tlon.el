@@ -1998,10 +1998,12 @@ The command:
       (unless repo
         (user-error "No tracked Forge repository found for directory %s. Ensure it is added to Forge and its data pulled." dir))
       ;; Ensure repository data is available and fresh, synchronously.
-      (forge-pull repo nil nil)
+      ;; forge-pull operates on the current repository (set by default-directory).
+      ;; Called with no arguments, it pulls the default remote.
+      (forge-pull)
       ;; Now set up the Magit buffer for UI
       (magit-status-setup-buffer dir)
-      ;; `repo` object should now have its data populated.
+      ;; `repo` object should now have its data populated by the pull.
       (forge-create-issue repo))))
 
 ;;;###autoload
