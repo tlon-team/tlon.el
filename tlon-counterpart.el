@@ -126,7 +126,10 @@ buffer."
 	 (source-lang (tlon-repo-lookup :language :dir repo))
 	 (target-lang (tlon-get-counterpart-language repo))
 	 (counterpart-bare-dir (tlon-get-bare-dir-translation target-lang source-lang bare-dir)))
-    (file-name-concat counterpart-repo counterpart-bare-dir)))
+    ;; Only attempt to concatenate if counterpart-bare-dir is non-nil.
+    ;; Otherwise, tlon-get-counterpart-dir will return nil.
+    (when counterpart-bare-dir
+      (file-name-concat counterpart-repo counterpart-bare-dir))))
 
 ;;;###autoload
 (defun tlon-open-counterpart (&optional other-win file)
