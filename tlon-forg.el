@@ -1606,45 +1606,50 @@ one."
 PROJECT-ITEMS is a list of plists from
 `forge-extras-list-project-items-ordered'. The sort key is a number for proper
 comparison in `org-sort-entries'. Lower values sort earlier."
-  (let* ((issue (tlon-get-issue))
+  (let* ((tags (org-get-tags))
+	 (archive-priority 2000000000) ; Very high number to ensure archive entries sort last
+	 (issue (tlon-get-issue))
 	 (max-priority 999)
 	 (status-priority max-priority)
 	 (project-position max-priority)
 	 (issue-number max-priority))
-    (if (not issue)
-	max-priority ; Sort items not linked to issues last
-      (progn
-        (setq issue-number (oref issue number))
-	;; Calculate status-priority
-	(let* ((status-keyword (org-get-todo-state))
-	       (todo-order (mapcar #'cdr tlon-todo-statuses))
-	       (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
-	  (cond
-	   ((null status-keyword) (setq status-priority 100)) ; No status
-	   ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
-	   (t
-	    (let ((pos (cl-position status-keyword todo-order :test #'string=)))
-	      (if pos
-		  (setq status-priority pos)
-		(setq status-priority 50)))))) ; Default for other active states
-	;; Calculate project-position
-	(when-let* ((repo-obj (forge-get-repository issue))
-		    (owner (oref repo-obj owner))
-		    (repo-name (oref repo-obj name))
-		    (issue-repo-fullname (format "%s/%s" owner repo-name)))
-	  (let ((idx -1) (found-idx nil))
-	    (dolist (item project-items)
-	      (setq idx (1+ idx))
-	      (when (and (eq (plist-get item :type) 'issue)
-			 (string= (plist-get item :repo) issue-repo-fullname)
-			 (= (plist-get item :number) issue-number))
-		(setq found-idx idx)
-		(cl-return)))
-	    (if found-idx
-		(setq project-position found-idx)
-	      (setq project-position max-priority)))) ; Issue not in project list
-	;; Return a single number that encodes all three priorities
-	(+ (* status-priority 1000000) (* project-position 1000) issue-number)))))
+    ;; Check if this heading has the ARCHIVE tag
+    (if (member "ARCHIVE" tags)
+	archive-priority ; Sort archive entries to the very end
+      (if (not issue)
+	  max-priority ; Sort items not linked to issues last (but before archive)
+	(progn
+          (setq issue-number (oref issue number))
+	  ;; Calculate status-priority
+	  (let* ((status-keyword (org-get-todo-state))
+		 (todo-order (mapcar #'cdr tlon-todo-statuses))
+		 (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
+	    (cond
+	     ((null status-keyword) (setq status-priority 100)) ; No status
+	     ((string= status-keyword done-keyword) (setq status-priority 99)) ; DONE status
+	     (t
+	      (let ((pos (cl-position status-keyword todo-order :test #'string=)))
+		(if pos
+		    (setq status-priority pos)
+		  (setq status-priority 50)))))) ; Default for other active states
+	  ;; Calculate project-position
+	  (when-let* ((repo-obj (forge-get-repository issue))
+		      (owner (oref repo-obj owner))
+		      (repo-name (oref repo-obj name))
+		      (issue-repo-fullname (format "%s/%s" owner repo-name)))
+	    (let ((idx -1) (found-idx nil))
+	      (dolist (item project-items)
+		(setq idx (1+ idx))
+		(when (and (eq (plist-get item :type) 'issue)
+			   (string= (plist-get item :repo) issue-repo-fullname)
+			   (= (plist-get item :number) issue-number))
+		  (setq found-idx idx)
+		  (cl-return)))
+	      (if found-idx
+		  (setq project-position found-idx)
+		(setq project-position max-priority)))) ; Issue not in project list
+	  ;; Return a single number that encodes all three priorities
+	  (+ (* status-priority 1000000) (* project-position 1000) issue-number))))))
 
 ;;;;;; status
 
