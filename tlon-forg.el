@@ -427,9 +427,10 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
 	(?t (forge--set-topic-title (forge-get-repository issue) issue
 				    (tlon-forg-org->md todo-title)))))))
 
-(defun tlon-forg--sync-status (issue)
-  "Reconcile the status between ISSUE and the Org heading."
-  (let* ((issue-status (let ((st (tlon-get-status-in-issue issue)))
+(defun tlon-forg--sync-status (issue &optional project-item-data)
+  "Reconcile the status between ISSUE and the Org heading.
+If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
+  (let* ((issue-status (let ((st (tlon-get-status-in-issue issue nil project-item-data)))
 			 (when st (upcase st))))
 	 (todo-status  (let ((st (org-get-todo-state)))
 			 (when st (upcase st)))))
@@ -1066,50 +1067,58 @@ in `paths-dir-tlon-todos'."
     ;; Ensure absolute paths and remove duplicates
     (delete-dups (mapcar #'expand-file-name files))))
 
-(defun tlon-sync-all-issues-in-repo-after-pull (repo &optional project-items)
+(defun tlon-sync-all-issues-in-repo-after-pull (repo &optional all-project-items)
   "Sync TODOs with their issues in REPO after `forge-pull' is finished.
 REPO must be a valid `forge-repository` object.
-If PROJECT-ITEMS is provided, only sync issues that are in the project."
-  (let ((default-directory (oref repo worktree)) ; Set context
-        (repo-name (oref repo name))
-        (_owner (oref repo owner)) ; unused
-        (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name)))
-        (issue-count 0))
-    (if project-items
-        ;; Only process issues that are in the project
-        (dolist (item project-items)
-          (when (and (eq (plist-get item :type) 'issue)
-                     (string= (plist-get item :repo) repo-fullname))
-            (let* ((issue-number (plist-get item :number))
-                   (issue-id (caar (forge-sql [:select [id] :from issue
-                                              :where (and (= repository $s1)
-                                                          (= number $s2))]
-                                             (oref repo id)
-                                             issue-number))))
-              (when issue-id
-                (let ((issue (forge-get-topic issue-id)))
-                  (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
-                    (with-current-buffer (find-file-noselect (cdr pos-file))
-                      (save-excursion
-                        (goto-char (car pos-file))
-                        (when (or (not (member org-archive-tag (org-get-tags)))
-                                  tlon-forg-include-archived)
-                          (message "Syncing issue #%d in repository %s..."
-                                   (oref issue number) repo-name)
-                          (tlon-sync-issue-and-todo-from-issue issue)
-                          (setq issue-count (1+ issue-count)))))))))))
-      ;; Fallback to all issues in repo (original behavior)
-      (let ((issues (tlon-get-issues repo)))
-        (dolist (issue issues)
-          (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
-            (with-current-buffer (find-file-noselect (cdr pos-file))
-              (save-excursion
-                (goto-char (car pos-file))
-                (when (or (not (member org-archive-tag (org-get-tags)))
-                          tlon-forg-include-archived)
-                  (message "Syncing issue #%d in repository %s..."
-                           (oref issue number) repo-name)
-                  (tlon-sync-issue-and-todo-from-issue issue)
+If ALL-PROJECT-ITEMS (a list of plists representing all items in a GitHub
+Project) is provided, it's filtered for items belonging to REPO. Otherwise,
+project item data (status, estimate) for all issues in the configured GitHub
+Project is fetched once using `forge-extras-list-project-items-ordered` and
+then filtered for REPO.
+This collected project data is then used to sync each local issue in REPO,
+passing specific item data to `tlon-sync-issue-and-todo-from-issue` to
+avoid per-issue API calls for status and estimate."
+  (let* ((default-directory (oref repo worktree)) ; Set context
+         (repo-name (oref repo name))
+         (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name)))
+         (issue-count 0)
+         (project-data-map (make-hash-table :test 'eql))) ; Keyed by issue number
+
+    ;; 1. Populate project-data-map with status and estimate for issues in this repo
+    (if all-project-items
+        (progn
+          (message "Using provided project items data for repository %s..." repo-name)
+          (dolist (item all-project-items)
+            (when (and (eq (plist-get item :type) 'issue)
+                       (string= (plist-get item :repo) repo-fullname))
+              (puthash (plist-get item :number) item project-data-map))))
+      (progn
+        (message "Fetching project item data for repository %s via all-project fetch..." repo-name)
+        ;; Fetch all project items for the configured project and then filter
+        ;; The third arg 't' to forge-extras-list-project-items-ordered means use cache if available.
+        ;; This is appropriate as tlon-sync-all-issues-in-repo might be called after tlon-sync-all-issues-in-project.
+        (let ((all-items (forge-extras-list-project-items-ordered nil nil t)))
+          (dolist (item all-items)
+            (when (and (eq (plist-get item :type) 'issue)
+                       (string= (plist-get item :repo) repo-fullname))
+              (puthash (plist-get item :number) item project-data-map))))))
+    (message "Populated project data for %d issues in %s."
+             (hash-table-count project-data-map) repo-name)
+
+    ;; 2. Iterate through local issues and sync them
+    (let ((local-issues (tlon-get-issues repo)))
+      (dolist (issue local-issues)
+        (when-let ((pos-file (tlon-get-todo-position-from-issue issue)))
+          (with-current-buffer (find-file-noselect (cdr pos-file))
+            (save-excursion
+              (goto-char (car pos-file))
+              (when (or (not (member org-archive-tag (org-get-tags)))
+                        tlon-forg-include-archived)
+                (message "Syncing issue #%d in repository %s..."
+                         (oref issue number) repo-name)
+                ;; Get the specific project item data for this issue
+                (let ((project-item-data (gethash (oref issue number) project-data-map)))
+                  (tlon-sync-issue-and-todo-from-issue issue project-item-data)
                   (setq issue-count (1+ issue-count)))))))))
     
     (org-refile-cache-clear)
@@ -1117,8 +1126,10 @@ If PROJECT-ITEMS is provided, only sync issues that are in the project."
              issue-count repo-name)))
 
 
-(defun tlon-sync-issue-and-todo-from-issue (&optional issue)
+(defun tlon-sync-issue-and-todo-from-issue (&optional issue project-item-data)
   "Sync ISSUE and associated TODO (name, status, tags, and estimate).
+If PROJECT-ITEM-DATA is provided, it is passed to helper functions for
+determining status and estimate, avoiding per-issue API calls for these.
 If ISSUE is nil, use the issue at point."
   (if-let* ((issue (or issue (forge-current-topic))))
       (let* ((pos-file-pair (tlon-get-todo-position-from-issue issue)))
@@ -1129,10 +1140,10 @@ If ISSUE is nil, use the issue at point."
 	    (tlon-visit-todo pos-file-pair)
 	    ;; element-by-element reconciliation
 	    (tlon-forg--sync-title  issue)
-	    (tlon-forg--sync-status issue)
+	    (tlon-forg--sync-status issue project-item-data)
 	    (tlon-forg--sync-tags   issue)))
 	;; estimates are handled separately
-	(tlon-sync-estimate-from-issue issue))
+	(tlon-sync-estimate-from-issue issue project-item-data))
     (user-error "No issue found to sync")))
 
 (defun tlon-sync-issue-and-todo-prompt (issue-name todo-name diff)
@@ -1181,29 +1192,34 @@ use `org-duration-to-minutes' and convert minutes → hours."
     (org-entry-put nil "Effort" effort-str)
     (message "Org Effort property updated to %s." effort-str)))
 
-(defun tlon-sync-estimate-from-issue (&optional issue)
+(defun tlon-sync-estimate-from-issue (&optional issue project-item-data)
   "Sync estimate for ISSUE and its associated TODO.
+If PROJECT-ITEM-DATA (a plist containing :estimate) is provided, its :estimate
+field (float hours) is used for the GitHub estimate. Otherwise, project fields
+are fetched via `forge-extras-gh-get-issue-fields`.
 If ISSUE is nil, use the issue at point."
   (let ((issue (or issue (forge-current-topic))))
     (unless issue
       (user-error "No issue found to sync estimate for"))
-    (let* ((repo (forge-get-repository issue)) ; Get repo object before switching buffer context
+    (let* ((repo (forge-get-repository issue))
 	   (pos-file-pair (tlon-get-todo-position-from-issue issue)))
       (if pos-file-pair
 	  (save-window-excursion
-	    (tlon-visit-todo pos-file-pair) ; Visit the TODO, this changes current-buffer and default-directory
-	    ;; For subsequent GitHub/Forge operations, explicitly set default-directory
-	    (let ((default-directory (oref repo worktree)))
+	    (tlon-visit-todo pos-file-pair)
+	    (let ((default-directory (oref repo worktree))) ; For tlon-forg--set-github-project-estimate
 	      (let* ((issue-number (oref issue number))
-		     (repo-name (oref repo name)) ; repo-name is from the already fetched repo object
-		     ;; GitHub Estimate (float hours)
-		     (gh-fields (condition-case err
-				    (forge-extras-gh-get-issue-fields issue-number repo-name)
-				  (error (progn
-					   (message "Error fetching GH fields for #%s: %s" issue-number err)
-					   nil))))
-		     (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil))
-		     (gh-estimate-hours (if parsed-gh-fields (plist-get parsed-gh-fields :effort) nil))
+		     (gh-estimate-hours
+		      (if project-item-data
+			  (plist-get project-item-data :estimate)
+			;; Fallback to fetching if project-item-data is not provided
+			(when-let* ((repo-name (oref repo name))
+				    (gh-fields (condition-case err
+						   (forge-extras-gh-get-issue-fields issue-number repo-name)
+						 (error (progn
+							  (message "Error fetching GH fields for #%s: %s" issue-number err)
+							  nil))))
+				    (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil)))
+			  (plist-get parsed-gh-fields :effort))))
 		     ;; Org Effort (float hours) - This part is Org-specific, doesn't need repo context
 		     (org-effort-str (org-entry-get nil "Effort" 'inherit))
 		     (org-effort-hours (tlon-forg--org-effort-to-hours org-effort-str))
@@ -1666,38 +1682,42 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 
 ;;;;;; status
 
-(defun tlon-get-status-in-issue (&optional issue _upcased)
+(defun tlon-get-status-in-issue (&optional issue _upcased project-item-data)
   "Return the GitHub Project status of ISSUE, mapped to an Org TODO keyword.
-The status is derived from the \"Status\" field of the issue's project item in
-the project specified by `forge-extras-project-number', fetched via `gh` CLI
-by `forge-extras-gh-get-issue-fields`. Returns an uppercase string like
-\"DOING\", \"NEXT\", \"DONE\", etc., or a fallback like \"TODO\" if the project
-status cannot be determined or the issue is not found in the project. If ISSUE
-is nil, use the issue at point or in the current buffer."
+If PROJECT-ITEM-DATA (a plist containing :status) is provided, its :status
+field is used. Otherwise, project fields are fetched via
+`forge-extras-gh-get-issue-fields`.
+Falls back to a status based on the issue's open/closed state (e.g., \"TODO\",
+\"DONE\") if the project status cannot be determined."
   (let* ((issue (or issue (forge-current-topic)))
-	 (repo (if issue (forge-get-repository issue) nil))
-	 (repo-name (if repo (oref repo name) nil))
-	 (issue-number (if issue (oref issue number) nil)))
-    (if (and issue repo repo-name issue-number) ; Ensure issue object and its details are valid
-	(let* ((raw-fields (condition-case err
-			       (forge-extras-gh-get-issue-fields issue-number repo-name) ; Use forge-extras
-			     (error (progn
-				      (message "Error fetching GitHub project fields for #%s in %s (via forge-extras): %s" issue-number repo-name err)
-				      nil))))
-	       (parsed-fields (if raw-fields (forge-extras-gh-parse-issue-fields raw-fields) nil)) ; Use forge-extras
-	       (project-status-val (if parsed-fields (plist-get parsed-fields :status) nil))
-	       (org-status (if project-status-val
-			       (cdr (assoc project-status-val tlon-todo-statuses #'string=))
-			     nil)))
-	  (if org-status
-	      org-status
-	    (progn
-	      (message "Unknown or missing project status for #%s in Project #%s (owner: %s, repo: %s, GH status: %s). Falling back to open/closed state."
-		       issue-number forge-extras-project-number forge-extras-project-owner repo-name project-status-val)
-	      (if (eq (oref issue state) 'completed) "DONE" "TODO"))))
+         (project-status-val nil)
+         (org-status nil))
+    (if project-item-data
+        (setq project-status-val (plist-get project-item-data :status))
+      ;; Fallback to fetching if project-item-data is not provided
+      (when-let* ((repo (if issue (forge-get-repository issue) nil))
+                  (repo-name (if repo (oref repo name) nil))
+                  (issue-number (if issue (oref issue number) nil)))
+        (if (and issue repo repo-name issue-number)
+            (let* ((raw-fields (condition-case err
+                                   (forge-extras-gh-get-issue-fields issue-number repo-name)
+                                 (error (progn
+                                          (message "Error fetching GitHub project fields for #%s in %s (via forge-extras): %s" issue-number repo-name err)
+                                          nil))))
+                   (parsed-fields (if raw-fields (forge-extras-gh-parse-issue-fields raw-fields) nil)))
+              (setq project-status-val (if parsed-fields (plist-get parsed-fields :status) nil)))
+          (message "Could not determine issue/repo details for project status fetch."))))
+
+    (setq org-status (if project-status-val
+                         (cdr (assoc project-status-val tlon-todo-statuses #'string=))
+                       nil))
+    (if org-status
+        org-status
       (progn
-	(message "Could not determine issue/repo details for project status fetch. Falling back to open/closed state.")
-	(if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO")))))
+        (message "Unknown or missing project status for #%s (GH status: %s). Falling back to open/closed state."
+                 (if issue (oref issue number) "N/A")
+                 project-status-val)
+        (if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO")))))
 
 (defun tlon-get-status-in-todo ()
   "Return the status of the `org-mode' heading at point.

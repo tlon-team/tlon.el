@@ -155,15 +155,17 @@ This section details the interactive commands provided by =tlon-forg.el=.
   3. Iterates through all headings in all detected TODO files. These include the generic file (~tlon-get-todos-generic-file~), the jobs file (~tlon-get-todos-jobs-file~), and any repository-specific =*.org= files found in the directory specified by =paths-dir-tlon-todos=.
   4. For each heading, finds the associated issue (~tlon-get-issue~) and checks if it belongs to the selected repository.
   5. If an issue is found, belongs to the selected repository, and the TODO is not archived (or ~tlon-forg-include-archived~ is non-nil), calls ~tlon-sync-issue-and-todo-from-issue~ (which handles name, status, tags, and estimate).
+     During synchronization, information about issue status and estimates from the GitHub Project is fetched efficiently in batches (once per repository context, not per-issue), significantly improving performance for these operations.
   6. Clears the =org-refile= cache upon completion.
 
 #+findex: tlon-sync-all-issues-in-project
 + ~tlon-sync-all-issues-in-project~ :: (Autoloaded) Syncs all Org TODOs with their corresponding GitHub issues in the GitHub Project configured in =forge-extras.el= (via ~forge-extras-project-owner~ and ~forge-extras-project-number~), including their estimates.
-  1. Fetches all items from the configured GitHub Project using ~forge-extras-list-project-items-ordered~.
+  1. Fetches all items from the configured GitHub Project using ~forge-extras-list-project-items-ordered~. This data (including status and estimates) is fetched once for the entire project.
   2. Groups the issues by repository and checks if each repository is locally available.
   3. For each repository containing issues in the project:
      a. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date.
-     b. Calls ~tlon-sync-all-issues-in-repo-after-pull~ to sync all issues in that repository.
+     b. Calls ~tlon-sync-all-issues-in-repo-after-pull~ to sync all issues in that repository, passing the pre-fetched project item data.
+     During synchronization, information about issue status and estimates from the GitHub Project is fetched efficiently in batches (once per repository context, not per-issue), significantly improving performance for these operations.
   4. Restores the original window configuration and clears the =org-refile= cache upon completion.
 
 
