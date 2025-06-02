@@ -1940,15 +1940,14 @@ buffer."
 		   ""))
 	 (status (tlon-get-status-in-issue issue 'upcased))
 	 (tags (tlon-forg-get-labels issue))
-	 (repo-name (oref (forge-get-repository issue) name))
-	 (repo-abbrev (tlon-repo-lookup :abbrev :name repo-name)))
-    (setq repo-abbrev (or repo-abbrev repo-name))
+	 (repo-name (oref (forge-get-repository issue) name))) ; Get the repository name
+    ;; Use repo-name directly, instead of looking up an abbreviation.
     (let ((todo-name (replace-regexp-in-string
 		      "[[:space:]]\\{2,\\}"
 		      " "
 		      (concat
 		       (unless no-status (format "%s " (or status "")))
-		       (format "[%s] %s %s" repo-abbrev action (tlon-get-issue-link issue))
+		       (format "[%s] %s %s" repo-name action (tlon-get-issue-link issue))
 		       (when tags (format "   :%s:" (mapconcat #'identity tags ":")))))))
       todo-name)))
 
