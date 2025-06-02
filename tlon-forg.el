@@ -485,7 +485,11 @@ Possible symbols are `title', `status' and `tags'."
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
 link, else get their values from the heading title, if possible."
   (interactive)
-  (forge-visit-issue (tlon-get-issue number repo)))
+  (if-let ((issue (tlon-get-issue number repo)))
+      (forge-visit-issue issue)
+    (if (and number repo)
+        (user-error "Could not find or retrieve issue #%s in repository %s" number repo)
+      (user-error "Could not find or retrieve issue from current context"))))
 
 (defun tlon-get-issue (&optional number repo)
   "Get Github issue.
