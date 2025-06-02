@@ -723,7 +723,7 @@ to automatically process it using `tlon-meet-transcribe-and-summarize'."
 
 ;;;;; Menu
 
-;;;###autoload (autoload 'tlon-md-menu "tlon-md" nil t)
+;;;###autoload (autoload 'tlon-meet-menu "tlon-meet" nil t)
 (transient-define-prefix tlon-meet-menu ()
   "`meet' menu."
   [["Meetings"
