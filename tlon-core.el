@@ -321,7 +321,8 @@
  	   :project "tlon"
  	   :abbrev "tlon-el"
  	   :type development
- 	   :subtype emacs)
+ 	   :subtype emacs
+           :dir ,(file-name-concat elpaca-repos-directory "tlon"))
     (:name "tlon"
 	   :project "tlon"
 	   :abbrev "tlon"
@@ -336,7 +337,8 @@
 	   :project "tlon"
 	   :abbrev "tlon.el"
 	   :type development
-	   :subtype emacs)
+	   :subtype emacs
+           :dir tlon-package-dir)
     (:name "essays-en"
 	   :project "babel"
 	   :subproject "essays"
@@ -617,11 +619,12 @@ the actual user.")
 ;;;; Functions
 
 (defun tlon-set-dir (repo)
-  "Set the `:directory' property for REPO in `tlon-repos'."
-  (let* ((dir (file-name-as-directory
-	       (file-name-concat paths-dir-tlon-repos
-				 (plist-get repo :name)))))
-    (plist-put repo :dir dir)))
+  "Set the `:directory' property for REPO in `tlon-repos' if not already set."
+  (unless (plist-get repo :dir)
+    (let* ((dir (file-name-as-directory
+                 (file-name-concat paths-dir-tlon-repos
+                                   (plist-get repo :name)))))
+      (plist-put repo :dir dir))))
 
 (mapc #'tlon-set-dir tlon-repos)
 
