@@ -697,16 +697,20 @@ If CALLBACK is non-nil, call it after the process completes, restoring the
 window configuration that was active before the pull started."
   (when message (message message))
   (let ((original-window-config (current-window-configuration))
-	(forge-repo (or repo (tlon-forg-get-or-select-repository))))
+        (forge-repo (or repo (tlon-forg-get-or-select-repository))))
     (unless forge-repo
       (user-error "Cannot determine repository for pull operation"))
     (let ((default-directory (oref forge-repo worktree))) ; Set context for forge--pull
+      ;; Perform the forge pull silently and synchronously.
       (shut-up
-	(forge--pull forge-repo
-		     (lambda () ; New callback wrapper
-		       (unwind-protect ; Ensure restoration even on error in callback
-			   (when callback (funcall callback))
-			 (set-window-configuration original-window-config))))))))
+        (forge--pull forge-repo nil))) ; Pass nil to forge--pull to make it synchronous.
+      
+      ;; After the silent pull is complete, execute the callback if provided.
+      ;; This ensures the callback runs outside the shut-up context and not from a sentinel.
+      (unwind-protect
+          (when callback
+            (funcall callback))
+        (set-window-configuration original-window-config)))))
 
 (defun tlon-forg--pull-sync (forge-repo)
   "Run `forge--pull' on FORGE-REPO synchronously and quietly."
