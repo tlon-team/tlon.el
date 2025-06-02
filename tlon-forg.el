@@ -395,34 +395,37 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
 	 :test #'string=)
 	#'string<))
 
-(defun tlon-forg--select-with-completing-read (element issue-val todo-val)
+(defun tlon-forg--select-with-completing-read (element issue-val todo-val issue-context-string)
   "Prompt via `completing-read' which value of ELEMENT to keep.
 Return ?i when user chooses ISSUE value, ?t when they choose TODO value.
 ISSUE-VAL and TODO-VAL are the values to be compared, and ELEMENT is a string
-describing the element being compared (e.g., \"Titles\")."
+describing the element being compared (e.g., \"Titles\").
+ISSUE-CONTEXT-STRING provides context about the issue being processed."
   (let* ((choices `((,(format "issue: %s" issue-val) . ?i)
 		    (,(format "todo:  %s" todo-val) . ?t)))
 	 (selection (completing-read
-		     (format "%s differ. Choose value to keep: " element)
+		     (format "For issue '%s':\n%s differ. Choose value to keep: " issue-context-string element)
 		     (mapcar #'car choices) nil t)))
     (cdr (assoc selection choices))))
 
-(defun tlon-forg--prompt-element-diff (element issue-val todo-val)
+(defun tlon-forg--prompt-element-diff (element issue-val todo-val issue-context-string)
   "Return ?i or ?t according to `tlon-forg-when-syncing' or user choice.
 ELEMENT is a string describing the element being compared (e.g., \"Titles\").
-ISSUE-VAL and TODO-VAL are the values to be compared."
+ISSUE-VAL and TODO-VAL are the values to be compared.
+ISSUE-CONTEXT-STRING provides context about the issue being processed."
   (pcase tlon-forg-when-syncing
     ('issue ?i)
     ('todo  ?t)
-    (_ (tlon-forg--select-with-completing-read element issue-val todo-val))))
+    (_ (tlon-forg--select-with-completing-read element issue-val todo-val issue-context-string))))
 
 (defun tlon-forg--sync-title (issue)
   "Reconcile the ISSUE title with the Org heading at point."
   (let* ((issue-title-org (tlon-forg-md->org (oref issue title)))
          (issue-title (string-trim (replace-regexp-in-string "\n" " " issue-title-org)))
-	 (todo-title  (string-trim (tlon-forg--org-heading-title))))
+	 (todo-title  (string-trim (tlon-forg--org-heading-title)))
+	 (issue-context (tlon-get-issue-name issue)))
     (unless (string= issue-title todo-title)
-      (pcase (tlon-forg--prompt-element-diff "Titles" issue-title todo-title)
+      (pcase (tlon-forg--prompt-element-diff "Titles" issue-title todo-title issue-context)
 	(?i (tlon-update-todo-from-issue (tlon-make-todo-name-from-issue issue)))
 	(?t (forge--set-topic-title (forge-get-repository issue) issue
 				    (tlon-forg-org->md todo-title)))))))
@@ -433,19 +436,21 @@ If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
   (let* ((issue-status (let ((st (tlon-get-status-in-issue issue nil project-item-data)))
 			 (when st (upcase st))))
 	 (todo-status  (let ((st (org-get-todo-state)))
-			 (when st (upcase st)))))
+			 (when st (upcase st))))
+	 (issue-context (tlon-get-issue-name issue)))
     (unless (string= issue-status todo-status)
-      (pcase (tlon-forg--prompt-element-diff "Statuses" issue-status todo-status)
+      (pcase (tlon-forg--prompt-element-diff "Statuses" issue-status todo-status issue-context)
 	(?i (org-todo issue-status))
 	(?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--sync-tags (issue)
   "Reconcile the tags between ISSUE and the Org heading."
   (let* ((issue-tags (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
-	 (todo-tags  (tlon-forg--valid-tags (org-get-tags))))
+	 (todo-tags  (tlon-forg--valid-tags (org-get-tags)))
+	 (issue-context (tlon-get-issue-name issue)))
     (unless (equal issue-tags todo-tags)
       (pcase (tlon-forg--prompt-element-diff
-	      "Tags" (string-join issue-tags ", ") (string-join todo-tags ", "))
+	      "Tags" (string-join issue-tags ", ") (string-join todo-tags ", ") issue-context)
 	;; do not convert `org-set-tags' to `org-set-tags-to' (which is obsolete)!
 	(?i (org-set-tags (string-join issue-tags ":")))
 	(?t (tlon-update-issue-from-todo))))))
@@ -1240,10 +1245,12 @@ If ISSUE is nil, use the issue at point."
 		 ;; Case 3: Both have significant estimates, and they differ.
 		 ((and gh-estimate-significant-p org-effort-significant-p
 		       (> (abs (- gh-estimate-hours org-effort-hours)) epsilon))
-		  (let ((choice (tlon-forg--prompt-element-diff
-				 "Estimates"
-				 (format "%g" gh-estimate-hours)
-				 (format "%g" org-effort-hours))))
+		  (let* ((issue-context (tlon-get-issue-name issue))
+			 (choice (tlon-forg--prompt-element-diff
+				  "Estimates"
+				  (format "%g" gh-estimate-hours)
+				  (format "%g" org-effort-hours)
+				  issue-context)))
 		    (pcase choice
 		      (?i (message "Updating Org TODO to match GitHub estimate.")
 			  (tlon-forg--set-org-effort gh-estimate-hours))
