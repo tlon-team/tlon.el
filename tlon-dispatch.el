@@ -131,7 +131,8 @@ DIR is the directory where the repo is stored."
     ("q r" "uqbar-fr"                     tlon-magit-browse-uqbar-fr)
     ("q t" "uqbar-it"                     tlon-magit-browse-uqbar-it)
     ("q j" "uqbar-ja"                     tlon-magit-browse-uqbar-ja)
-    ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)]
+    ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)
+    ("q u" "uqbar-tr"                     tlon-magit-browse-uqbar-tr)]
    ["EA News"
     ("n" "ea.news"                        tlon-magit-browse-ea-news)
     ""
@@ -220,7 +221,8 @@ DIR is the directory where the repo is stored."
     ("q r" "uqbar-fr"                     tlon-dired-browse-uqbar-fr)
     ("q t" "uqbar-it"                     tlon-dired-browse-uqbar-it)
     ("q j" "uqbar-ja"                     tlon-dired-browse-uqbar-ja)
-    ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)]
+    ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)
+    ("q u" "uqbar-tr"                     tlon-dired-browse-uqbar-tr)]
    ["EA International"
     ("i" "ea.international"               tlon-dired-browse-ea-international)
     ""

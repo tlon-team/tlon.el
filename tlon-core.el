@@ -186,6 +186,16 @@
 	   :key "q j"
 	   :url ""
 	   :help t)
+    (:name "uqbar-tr"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-tr"
+	   :type content
+	   :subtype translations
+	   :language "tr"
+	   :key "q u"
+	   :url ""
+	   :help t)
     (:name "web-server"
 	   :project "tlon"
 	   :abbrev "web-server"
