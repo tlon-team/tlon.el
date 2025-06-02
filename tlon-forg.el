@@ -1847,7 +1847,7 @@ If ISSUE is nil, use the issue at point or in the current buffer."
   (when-let ((issue (or issue (forge-current-topic))))
     (oref issue state)))
 
-;;;;; ?
+;;;;; Issue Data Formatting Helpers
 
 (defun tlon-get-issue-name (&optional issue)
   "Get the name of ISSUE.
@@ -1900,29 +1900,6 @@ buffer."
 		       (when tags (format "   :%s:" (mapconcat #'identity tags ":")))))))
       todo-name)))
 
-(defvar tlon-key-regexp)
-(declare-function tlon-get-file-from-key "tlon")
-(defun tlon-get-file-from-issue (&optional issue)
-  "Get the file path of ISSUE.
-If ISSUE is nil, use the issue at point or in current buffer."
-  (let* ((issue (or issue (forge-current-topic)))
-	 (name (tlon-get-issue-name issue)))
-    (if (string-match tlon-key-regexp name)
-	(tlon-get-file-from-key (match-string 1 name))
-      (user-error "I wasn't able to find a file at point or in the forge buffer"))))
-
-;;;###autoload
-(defun tlon-open-forge-file ()
-  "Open the file of the issue at point or in the current buffer."
-  (interactive)
-  (find-file (tlon-get-file-from-issue)))
-
-(declare-function tlon-open-counterpart "tlon-counterpart")
-;;;###autoload
-(defun tlon-open-forge-counterpart ()
-  "Open the file counterpart of the issue at point or in the current buffer."
-  (interactive)
-  (tlon-open-counterpart nil (tlon-get-file-from-issue)))
 
 ;;;;; Create issues
 
@@ -2098,6 +2075,32 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 	 (repo (forge-get-repository issue)))
     (when (eq 'open (oref issue state))
       (forge--set-topic-state repo issue 'completed))))
+
+;;;;; File Operations for Issues
+
+(defvar tlon-key-regexp)
+(declare-function tlon-get-file-from-key "tlon")
+(defun tlon-get-file-from-issue (&optional issue)
+  "Get the file path of ISSUE.
+If ISSUE is nil, use the issue at point or in current buffer."
+  (let* ((issue (or issue (forge-current-topic)))
+	 (name (tlon-get-issue-name issue)))
+    (if (string-match tlon-key-regexp name)
+	(tlon-get-file-from-key (match-string 1 name))
+      (user-error "I wasn't able to find a file at point or in the forge buffer"))))
+
+;;;###autoload
+(defun tlon-open-forge-file ()
+  "Open the file of the issue at point or in the current buffer."
+  (interactive)
+  (find-file (tlon-get-file-from-issue)))
+
+(declare-function tlon-open-counterpart "tlon-counterpart")
+;;;###autoload
+(defun tlon-open-forge-counterpart ()
+  "Open the file counterpart of the issue at point or in the current buffer."
+  (interactive)
+  (tlon-open-counterpart nil (tlon-get-file-from-issue)))
 
 (defun tlon-get-parent-todo (todo)
   "Get parent of TODO in `tlon-todos-jobs-file'."
