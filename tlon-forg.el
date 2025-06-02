@@ -1467,12 +1467,15 @@ point."
 
 (defun tlon-get-repo-from-heading ()
   "Return the repository directory indicated in the Org heading at point.
-The heading is expected to contain a fragment like \"[REPO]\" anywhere in the
-text (it can be preceded by an Org TODO keyword such as \"TODO\", \"DOING\",
-etc.).  The repository *abbreviation* (i.e., what appears inside the square
-brackets) is converted to its full path via `tlon-repo-lookup'."
-  (let* ((abbrev-repo (tlon-get-element-from-heading "\\[\\([^]]+\\)\\]")))
-    (tlon-repo-lookup :dir :abbrev abbrev-repo)))
+The heading is expected to contain a fragment like \"[REPO-IDENTIFIER]\"
+anywhere in the text. The REPO-IDENTIFIER (what appears inside the square
+brackets) is first treated as a repository abbreviation, and if that lookup
+fails, it's treated as a repository name. The path is found via
+`tlon-repo-lookup'."
+  (let* ((repo-identifier (tlon-get-element-from-heading "\\[\\([^]]+\\)\\]")))
+    (when repo-identifier
+      (or (tlon-repo-lookup :dir :abbrev repo-identifier)
+          (tlon-repo-lookup :dir :name repo-identifier)))))
 
 (defun tlon-get-issue-number-from-open-issues (&optional forge-repo)
   "Prompt user to select from open issues in FORGE-REPO and return its number.

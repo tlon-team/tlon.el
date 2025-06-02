@@ -372,7 +372,7 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-get-issue-number-from-heading
 + ~tlon-get-issue-number-from-heading~ :: Extracts the issue number (e.g., #123) from the heading.
 #+findex: tlon-get-repo-from-heading
-+ ~tlon-get-repo-from-heading~ :: Extracts the repository abbreviation (e.g., [repo-abbrev]) from the heading and looks up the full directory path.
++ ~tlon-get-repo-from-heading~ :: Extracts the repository identifier (e.g., [repo-id]) from the heading. It then attempts to look up the full directory path by first treating the identifier as an abbreviation, and if that fails, as a name.
 #+findex: tlon-get-issue-number-from-open-issues
 + ~tlon-get-issue-number-from-open-issues~ :: Prompts the user to select an open issue from the current repository using completion and returns its number.
 #+findex: tlon-get-issues
