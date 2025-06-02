@@ -470,7 +470,8 @@ Return the path of the temporary file created."
   "Browse the GitHub Tlön dashboard."
   (interactive)
   (let ((browse-url-browser-function 'browse-url-default-browser))
-    (browse-url "https://github.com/orgs/tlon-team/projects/9/")))
+    ;; Me: all view
+    (browse-url "https://github.com/orgs/tlon-team/projects/9/views/10")))
 
 (provide 'tlon)
 ;;; tlon.el ends here
