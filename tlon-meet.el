@@ -32,6 +32,10 @@
 (require 'filenotify)
 (require 'tlon-whisperx)
 
+(with-eval-after-load 'macos        ; file that defines the autoloaded symbol
+  (advice-add 'org-extras-agenda-goto-and-start-clock
+              :after #'tlon-set-meeting-buffers))
+
 ;;;; Variables
 
 (defconst tlon-meet-format-transcript-prompt
@@ -258,8 +262,6 @@ function tried to be a nudge in that direction."
     (when (re-search-forward browse-url-button-regexp nil t)
       (goto-char (match-beginning 0))
       (org-open-at-point))))
-
-(advice-add 'org-extras-agenda-goto-and-start-clock :after 'tlon-set-meeting-buffers)
 
 ;;;;; clock-in
 
