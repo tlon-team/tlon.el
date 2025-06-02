@@ -495,18 +495,23 @@ link, else get their values from the heading title, if possible."
   "Get Github issue.
 If NUMBER and REPO are nil, follow org link to issue if point is on an `orgit'
 link, else get their values from the heading title, if possible."
-  (when-let* ((number (or number
-			  (tlon-get-issue-number-from-heading)))
-	      (repo (or repo
-			(tlon-get-repo-from-heading)))
-	      (default-directory repo)
-	      (forge-repo (forge-get-repository :tracked))
-	      (issue-id (caar (forge-sql [:select [id] :from issue
-						  :where (and (= repository $s1)
-							      (= number $s2))]
-					 (oref forge-repo id)
-					 number))))
-    (forge-get-topic issue-id)))
+  (let ((issue-number (or number (tlon-get-issue-number-from-heading)))
+        (repo-path (or repo (tlon-get-repo-from-heading))))
+    ;; Proceed only if both an issue number and a repository path are found.
+    (when (and issue-number repo-path)
+      (let ((default-directory repo-path)) ; repo-path is guaranteed to be non-nil here.
+        ;; Catch errors during Forge operations (e.g., if not a configured Forge repo).
+        (condition-case nil
+            (when-let* ((forge-repo (forge-get-repository :tracked)) ; Can return nil if not a forge repo.
+                        ;; Ensure forge-repo is non-nil before trying to use it.
+                        (issue-id (and forge-repo
+                                       (caar (forge-sql [:select [id] :from issue
+                                                                :where (and (= repository $s1)
+                                                                            (= number $s2))]
+                                                        (oref forge-repo id)
+                                                        issue-number)))))
+              (when issue-id (forge-get-topic issue-id))) ; Ensure issue-id was found.
+          (error nil)))))) ; If any error occurs, tlon-get-issue returns nil.
 
 (defun tlon-get-issue-buffer (&optional number repo)
   "Get Github issue buffer.
