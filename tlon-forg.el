@@ -418,7 +418,8 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
 
 (defun tlon-forg--sync-title (issue)
   "Reconcile the ISSUE title with the Org heading at point."
-  (let* ((issue-title (string-trim (tlon-forg-md->org (oref issue title))))
+  (let* ((issue-title-org (tlon-forg-md->org (oref issue title)))
+         (issue-title (string-trim (replace-regexp-in-string "\n" " " issue-title-org)))
 	 (todo-title  (string-trim (tlon-forg--org-heading-title))))
     (unless (string= issue-title todo-title)
       (pcase (tlon-forg--prompt-element-diff "Titles" issue-title todo-title)
@@ -451,7 +452,8 @@ ISSUE-VAL and TODO-VAL are the values to be compared."
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
 Possible symbols are `title', `status' and `tags'."
-  (let* ((issue-title  (string-trim (tlon-forg-md->org (oref issue title))))
+  (let* ((issue-title-org (tlon-forg-md->org (oref issue title)))
+         (issue-title  (string-trim (replace-regexp-in-string "\n" " " issue-title-org)))
 	 (issue-status (let ((st (tlon-get-status-in-issue issue)))
 			 (when st (upcase st))))
 	 (issue-tags   (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
