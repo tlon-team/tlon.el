@@ -704,13 +704,12 @@ window configuration that was active before the pull started."
       ;; Perform the forge pull silently and synchronously.
       (shut-up
         (forge--pull forge-repo nil))) ; Pass nil to forge--pull to make it synchronous.
-      
-      ;; After the silent pull is complete, execute the callback if provided.
-      ;; This ensures the callback runs outside the shut-up context and not from a sentinel.
-      (unwind-protect
-          (when callback
-            (funcall callback))
-        (set-window-configuration original-window-config)))))
+    ;; After the silent pull is complete, execute the callback if provided.
+    ;; This ensures the callback runs outside the shut-up context and not from a sentinel.
+    (unwind-protect
+        (when callback
+          (funcall callback))
+      (set-window-configuration original-window-config))))
 
 (defun tlon-forg--pull-sync (forge-repo)
   "Run `forge--pull' on FORGE-REPO synchronously and quietly."
