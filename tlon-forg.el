@@ -257,6 +257,7 @@ For testing purposes."
   '(("Todo" . "TODO")
     ("Doing" . "DOING")
     ("Next" . "NEXT")
+    ("Waiting" . "WAITING")
     ("Later" . "LATER")
     ("Someday" . "SOMEDAY")
     ("Done" . "DONE"))
@@ -1616,7 +1617,7 @@ comparison in `org-sort-entries'. Lower values sort earlier."
         (setq issue-number (oref issue number))
 	;; Calculate status-priority
 	(let* ((status-keyword (org-get-todo-state))
-	       (todo-order '("TODO" "DOING" "NEXT" "LATER" "SOMEDAY"))
+	       (todo-order (mapcar #'cdr tlon-todo-statuses))
 	       (done-keyword "DONE")) ; Assuming "DONE" is the keyword for completed tasks
 	  (cond
 	   ((null status-keyword) (setq status-priority 100)) ; No status
