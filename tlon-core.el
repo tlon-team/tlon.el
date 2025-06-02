@@ -333,12 +333,6 @@
 	   :abbrev "tlon-content"
 	   :type content
 	   :help t)
-    (:name "tlon.el"
-	   :project "tlon"
-	   :abbrev "tlon.el"
-	   :type development
-	   :subtype emacs
-           :dir tlon-package-dir)
     (:name "essays-en"
 	   :project "babel"
 	   :subproject "essays"
