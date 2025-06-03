@@ -345,15 +345,24 @@ function was called interactively."
 (declare-function tlon-tex-remove-braces "tlon-tex")
 (declare-function tlon-translate-abstract-callback "tlon-tex")
 (defun tlon-deepl--translate-abstract-interactive (key text source-lang-code)
-  "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE."
+  "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
+If a translation for the KEY into the selected target language already exists,
+prompt the user for confirmation before overwriting."
   (let* ((excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang-code)))
          (target-lang (tlon-select-language 'code 'babel "Target language: " 'require-match nil nil excluded-lang)))
     (when target-lang
-      (message "Initiating DeepL translation for %s -> %s" key target-lang)
-      (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang-code
-                            (lambda ()
-                              (tlon-translate-abstract-callback key target-lang 'overwrite))
-                            nil))))
+      (let ((existing-translation (tlon-deepl--get-existing-translation key target-lang))
+            (target-lang-name (tlon-lookup tlon-languages-properties :name :code target-lang)))
+        (if (and existing-translation
+                 (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
+                                        key target-lang-name))))
+            (message "Translation for %s into %s aborted by user." key target-lang-name)
+          (progn
+            (message "Initiating DeepL translation for %s -> %s (%s)" key target-lang-name source-lang-code)
+            (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang-code
+                                  (lambda ()
+                                    (tlon-translate-abstract-callback key target-lang 'overwrite))
+                                  nil)))))))
 
 (defvar tlon-project-target-languages)
 (defun tlon-deepl--translate-abstract-non-interactive (key text source-lang-code langs)
