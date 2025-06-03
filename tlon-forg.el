@@ -41,6 +41,17 @@
 (require 'seq)
 (require 'org-capture)
 
+;;;; Debugging
+
+(defvar tlon-debug nil
+  "When non-nil, enable verbose debugging messages for Tlön operations.
+This includes messages from some `tlon-` and `forge-extras-` functions.")
+
+(defmacro tlon-message-debug (format-string &rest args)
+  "Display a message using FORMAT-STRING and ARGS if `tlon-debug' is non-nil."
+  `(when tlon-debug
+     (message ,format-string ,@args)))
+
 ;;;; Path Helpers
 
 (defun tlon-forg--get-repo-specific-todo-file (issue)
@@ -119,7 +130,7 @@ found."
 
 (defun tlon-forg--get-repository-from-github ()
   "Fallback to gh list."
-  (message "No repository determined from context or Tlön configuration. Fetching list from GitHub...")
+  (tlon-message-debug "No repository determined from context or Tlön configuration. Fetching list from GitHub...")
   (let* ((gh-executable (executable-find "gh"))
          (repo-names
           (if gh-executable
@@ -147,13 +158,13 @@ Ensures topics for REPO are fetched before prompting.
 Returns a `forge-issue` object or nil if no issue is selected or on error."
   (when repo
     (let ((default-directory (oref repo worktree))) ; Ensure correct context
-      (message "Fetching issues for %s..." (oref repo name))
+      (tlon-message-debug "Fetching issues for %s..." (oref repo name))
       (condition-case err
 	  (progn
 	    ;; Use forge--pull to synchronously update the repository data, including issues.
 	    ;; Passing nil as the callback makes it synchronous.
 	    (shut-up (forge--pull repo nil)) ; Pull all data for the repo silently and synchronously.
-	    (message "Fetching issues for %s... done. Please select an issue." (oref repo name))
+	    (tlon-message-debug "Fetching issues for %s... done. Please select an issue." (oref repo name))
 	    ;; Call the modified tlon-get-issue-number-from-open-issues
 	    (let ((selected-issue-number (tlon-get-issue-number-from-open-issues repo)))
 	      (if selected-issue-number
@@ -629,7 +640,7 @@ Capture defaults to the template's file if no other target is determined."
            (default-directory (oref repo worktree))) ; Set context for subsequent operations
       (when (and (eq (tlon-get-state issue-to-capture) 'open)
                  (tlon-capture-handle-assignee issue-to-capture))
-        (message "Capturing ‘%s’" issue-name)
+        (tlon-message-debug "Capturing ‘%s’" issue-name)
         (if (tlon-issue-is-job-p issue-to-capture)
             (tlon-create-job-todo-from-issue issue-to-capture invoked-from-org-file)
           ;; For non-job issues, determine target file: repo-specific or generic.
@@ -734,7 +745,7 @@ cached project items list is used instead of fetching a fresh one."
                      (message "Skipping repository %s: not registered in forge (run `forge-add-repository` there first)" repo-name)
                      (funcall finish))
                  (progn
-                   (message "Processing repository %s..." repo-name)
+                   (tlon-message-debug "Processing repository %s..." repo-name)
                    (if arg
                        (progn
                          (tlon-capture-all-issues-in-repo-after-pull forge-repo project-items origin-file)
@@ -750,11 +761,11 @@ cached project items list is used instead of fetching a fresh one."
 (defun tlon-pull-silently (&optional message callback repo)
   "Pull all issues from forge for REPO.
 If REPO is nil, attempts to determine the current repository.
-If MESSAGE is non-nil, display it while the process is ongoing.
+If MESSAGE is non-nil, display it (if `tlon-debug' is true) while the process is ongoing.
 If CALLBACK is non-nil, call it after the process completes. The window
 configuration active before the pull started will be restored.
 Returns the result of the CALLBACK function, or nil if no callback."
-  (when message (message message))
+  (when message (tlon-message-debug message))
   (let ((original-window-config (current-window-configuration))
         (forge-repo (or repo (tlon-forg-get-or-select-repository))))
     (unless forge-repo
@@ -829,7 +840,7 @@ non-job issues if it's valid, otherwise nil."
     (org-refile-cache-clear)
     (if captured-anything-p
         (progn
-          (message "Finished capturing issues into %s. Refile cache cleared."
+          (tlon-message-debug "Finished capturing issues into %s. Refile cache cleared."
                    (if actual-target-file-for-non-jobs
                        (file-name-nondirectory actual-target-file-for-non-jobs)
                      "default location"))
@@ -838,7 +849,7 @@ non-job issues if it's valid, otherwise nil."
               actual-target-file-for-non-jobs
             nil))
       (progn ; else (not captured-anything-p)
-        (message "No new issues captured for this repository. Refile cache cleared.")
+        (tlon-message-debug "No new issues captured for this repository. Refile cache cleared.")
         nil)))) ; Return nil if nothing was captured or target file invalid
 
 (defun tlon-store-todo (template &optional no-action issue target-file override-status)
@@ -878,7 +889,7 @@ If OVERRIDE-STATUS is non-nil, pass it to `tlon-make-todo-name-from-issue'."
 			 ((and (listp original-target-spec) (eq (car original-target-spec) 'file+olp))
                           (setq new-target-spec (cons 'file+olp (cons target-file (cddr original-target-spec)))))
 			 (t
-                          (message "Warning: Capture template '%s' target type not modifiable for specific file. Will use an ad-hoc template." template)
+                          (tlon-message-debug "Warning: Capture template '%s' target type not modifiable for specific file. Will use an ad-hoc template." template)
                           ;; Signal that new_target_spec could not be formed from original
                           (setq new-target-spec :failed-to-modify)))
 			
@@ -1180,13 +1191,13 @@ avoid per-issue API calls for status and estimate."
     ;; 1. Populate project-data-map with status and estimate for issues in this repo
     (if all-project-items
         (progn
-          (message "Using provided project items data for repository %s..." repo-name)
+          (tlon-message-debug "Using provided project items data for repository %s..." repo-name)
           (dolist (item all-project-items)
             (when (and (eq (plist-get item :type) 'issue)
                        (string= (plist-get item :repo) repo-fullname))
               (puthash (plist-get item :number) item project-data-map))))
       (progn
-        (message "Fetching project item data for repository %s via all-project fetch..." repo-name)
+        (tlon-message-debug "Fetching project item data for repository %s via all-project fetch..." repo-name)
         ;; Fetch all project items for the configured project and then filter
         ;; The third arg 't' to forge-extras-list-project-items-ordered means use cache if available.
         ;; This is appropriate as tlon-sync-all-issues-in-repo might be called after tlon-sync-all-issues-in-project.
@@ -1195,7 +1206,7 @@ avoid per-issue API calls for status and estimate."
             (when (and (eq (plist-get item :type) 'issue)
                        (string= (plist-get item :repo) repo-fullname))
               (puthash (plist-get item :number) item project-data-map))))))
-    (message "Populated project data for %d issues in %s."
+    (tlon-message-debug "Populated project data for %d issues in %s."
              (hash-table-count project-data-map) repo-name)
 
     ;; 2. Iterate through local issues and sync them
@@ -1207,7 +1218,7 @@ avoid per-issue API calls for status and estimate."
               (goto-char (car pos-file))
               (when (or (not (member org-archive-tag (org-get-tags)))
                         tlon-forg-include-archived)
-                (message "Syncing issue #%d in repository %s..."
+                (tlon-message-debug "Syncing issue #%d in repository %s..."
                          (oref issue number) repo-name)
                 ;; Get the specific project item data for this issue
                 (let ((project-item-data (gethash (oref issue number) project-data-map)))
@@ -1215,7 +1226,7 @@ avoid per-issue API calls for status and estimate."
                   (setq issue-count (1+ issue-count)))))))))
     
     (org-refile-cache-clear)
-    (message "Finished syncing %d issues in repository %s. Refile cache cleared."
+    (tlon-message-debug "Finished syncing %d issues in repository %s. Refile cache cleared."
              issue-count repo-name)))
 
 
@@ -1309,7 +1320,7 @@ If ISSUE is nil, use the issue at point."
 				    (gh-fields (condition-case err
 						   (forge-extras-gh-get-issue-fields issue-number repo-name)
 						 (error (progn
-							  (message "Error fetching GH fields for #%s: %s" issue-number err)
+							  (when tlon-debug (message "Error fetching GH fields for #%s: %s" issue-number err))
 							  nil))))
 				    (parsed-gh-fields (if gh-fields (forge-extras-gh-parse-issue-fields gh-fields) nil)))
 			  (plist-get parsed-gh-fields :effort))))
@@ -1322,12 +1333,12 @@ If ISSUE is nil, use the issue at point."
 		(cond
 		 ;; Case 1: Only GitHub has a significant estimate, Org has none or zero.
 		 ((and gh-estimate-significant-p (not org-effort-significant-p))
-		  (message "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO."
+		  (tlon-message-debug "GitHub issue #%s has estimate %s, Org TODO has none. Updating Org TODO."
 			   issue-number gh-estimate-hours)
 		  (tlon-forg--set-org-effort gh-estimate-hours))
 		 ;; Case 2: Only Org has a significant estimate, GitHub has none or zero.
 		 ((and org-effort-significant-p (not gh-estimate-significant-p))
-		  (message "Org TODO has effort %s (%s hours), GitHub issue #%s has none. Updating GitHub issue."
+		  (tlon-message-debug "Org TODO has effort %s (%s hours), GitHub issue #%s has none. Updating GitHub issue."
 			   org-effort-str org-effort-hours issue-number)
 		  (tlon-forg--set-github-project-estimate issue org-effort-hours))
 		 ;; Case 3: Both have significant estimates, and they differ.
@@ -1340,9 +1351,9 @@ If ISSUE is nil, use the issue at point."
 				  (format "%g" org-effort-hours)
 				  issue-context)))
 		    (pcase choice
-		      (?i (message "Updating Org TODO to match GitHub estimate.")
+		      (?i (tlon-message-debug "Updating Org TODO to match GitHub estimate.")
 			  (tlon-forg--set-org-effort gh-estimate-hours))
-		      (?t (message "Updating GitHub issue to match Org TODO estimate.")
+		      (?t (tlon-message-debug "Updating GitHub issue to match Org TODO estimate.")
 			  (tlon-forg--set-github-project-estimate issue org-effort-hours)))))
 		 ;; Case 4: estimates already match – nothing to do, stay silent
 		 (t nil)))))
@@ -1358,7 +1369,7 @@ If ISSUE is nil, use the issue at point."
       (org-fold-show-subtree)
       (org-kill-line)
       (insert issue-name)
-      (message "TODO updated"))
+      (when tlon-debug (message "TODO updated")))
     (visual-line-mode original-visual-line-mode)))
 
 (defun tlon-update-issue-from-todo ()
@@ -1393,12 +1404,12 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 	(user-error "Cannot retrieve project data for issue #%s" issue-number))
       ;; 1. title
       (unless (string= org-title current-title)
-	(message "Updating issue title from '%s' to '%s'" current-title org-title)
+	(tlon-message-debug "Updating issue title from '%s' to '%s'" current-title org-title)
 	(forge--set-topic-title repo issue (tlon-forg-org->md org-title)))
       ;; 2. labels
       (let ((wanted-labels (sort (copy-sequence org-tags) #'string<)))
 	(unless (equal wanted-labels current-labels)
-	  (message "Updating issue labels from %s to %s"
+	  (tlon-message-debug "Updating issue labels from %s to %s"
 		   current-labels wanted-labels)
 	  (forge--set-topic-labels repo issue wanted-labels)))
       ;; 3. project status
@@ -1407,7 +1418,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 					      :test #'string=))))
 	  (cond
 	   ((null target-status)
-	    (message "TODO keyword '%s' not mapped to a project status; skipping"
+	    (tlon-message-debug "TODO keyword '%s' not mapped to a project status; skipping"
 		     org-todo-keyword))
 	   ((string= target-status current-status) nil)   ; already in sync
 	   (t
@@ -1433,7 +1444,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 			   forge-extras-project-node-id new-item-id
 			   forge-extras-status-field-node-id option-id)))))
 		;; Option ID not found
-		(message "Cannot find option id for status '%s'; skipping update of project status."
+		(tlon-message-debug "Cannot find option id for status '%s'; skipping update of project status."
 			 target-status)))))))
       (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
@@ -1806,11 +1817,11 @@ Falls back to a status based on the issue's open/closed state (e.g., \"TODO\",
             (let* ((raw-fields (condition-case err
                                    (forge-extras-gh-get-issue-fields issue-number repo-name)
                                  (error (progn
-                                          (message "Error fetching GitHub project fields for #%s in %s (via forge-extras): %s" issue-number repo-name err)
+                                          (when tlon-debug (message "Error fetching GitHub project fields for #%s in %s (via forge-extras): %s" issue-number repo-name err))
                                           nil))))
                    (parsed-fields (if raw-fields (forge-extras-gh-parse-issue-fields raw-fields) nil)))
               (setq project-status-val (if parsed-fields (plist-get parsed-fields :status) nil)))
-          (message "Could not determine issue/repo details for project status fetch."))))
+          (tlon-message-debug "Could not determine issue/repo details for project status fetch."))))
 
     (setq org-status (if project-status-val
                          (cdr (assoc project-status-val tlon-todo-statuses #'string=))
