@@ -577,30 +577,31 @@ If ISSUE is also nil, it defaults to the issue at point."
 ;;;;; Capture
 
 ;;;###autoload
-(defun tlon-capture-issue (&optional issue invoked-from-org-file)
+(defun tlon-capture-issue (&optional issue invoked-from-org-file override-status)
   "Create a new `org-mode' TODO based on ISSUE.
 If ISSUE is nil, it attempts to use the issue at point or in the current
 buffer. If no issue can be determined from the context, it prompts to select a
 repository and then an issue.
 
 INVOKED-FROM-ORG-FILE specifies an Org file path if the command's context
-originates from a specific Org file (e.g., when called by
-`tlon-capture-all-issues-in-repo`).
-- For job issues, this file is used for the initial capture before refiling to
-  the central jobs file.
-- For non-job issues, this parameter is largely superseded. The TODO is captured
-  to the repository-specific Org file (e.g., \"REPO-NAME.org\" in
-  `paths-dir-tlon-todos`) if it exists; otherwise, it's captured to the
-  generic TODOs file (`tlon-get-todos-generic-file`).
+originates from a specific Org file.
+OVERRIDE-STATUS, if non-nil, is used as the status string for the new TODO,
+bypassing `tlon-get-status-in-issue`.
+
+- For job issues, INVOKED-FROM-ORG-FILE is used for initial capture before
+  refiling.
+- For non-job issues, TODO is captured to repo-specific Org file or generic
+  TODOs file.
 If called interactively from an Org buffer and `invoked-from-org-file` is nil,
 the current buffer's file is used for job issues' initial capture.
 Capture defaults to the template's file if no other target is determined."
   (interactive
-   (list nil ; For `issue` argument when called interactively
+   (list nil ; For `issue`
          (if (and (eq major-mode 'org-mode) (buffer-file-name)) ; For `invoked-from-org-file`
              (buffer-file-name)
-           nil)))
-  (let (repo issue-to-capture) ; `invoked-from-org-file` is now a parameter
+           nil)
+         nil)) ; For `override-status`
+  (let (repo issue-to-capture)
     (if issue
         (setq issue-to-capture issue
               repo (forge-get-repository issue))
@@ -840,12 +841,13 @@ non-job issues if it's valid, otherwise nil."
         (message "No new issues captured for this repository. Refile cache cleared.")
         nil)))) ; Return nil if nothing was captured or target file invalid
 
-(defun tlon-store-todo (template &optional no-action issue target-file)
+(defun tlon-store-todo (template &optional no-action issue target-file override-status)
   "Store a new TODO using TEMPLATE.
 If TODO already exists, do nothing. If NO-ACTION is non-nil, store a master
 TODO. If ISSUE is non-nil, use it instead of the issue at point.
 If TARGET-FILE is non-nil and the TEMPLATE's target can be modified,
-capture to this file. Otherwise, use the TEMPLATE's default target file."
+capture to this file. Otherwise, use the TEMPLATE's default target file.
+If OVERRIDE-STATUS is non-nil, pass it to `tlon-make-todo-name-from-issue'."
   (let ((issue (or issue (forge-current-topic))))
     ;; helper: guarantee the resulting template inserts at beginning
     (cl-labels ((tlon--ensure-prepend (tpl)
@@ -854,7 +856,7 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                   tpl))
       (shut-up
         (unless (tlon-get-todo-position-from-issue issue)
-          (let ((todo-text (tlon-make-todo-name-from-issue issue no-action nil)))
+          (let ((todo-text (tlon-make-todo-name-from-issue issue no-action nil override-status)))
             (kill-new todo-text)
             (if target-file
                 (let ((capture-arg-final nil) ; This will hold the final template list or key
@@ -2005,7 +2007,7 @@ If ISSUE is nil, get the issue at point or in current buffer."
 	 (id (oref issue id)))
     (org-link-make-string (format "orgit-topic:%s" id) name)))
 
-(defun tlon-make-todo-name-from-issue (&optional issue no-action no-status)
+(defun tlon-make-todo-name-from-issue (&optional issue no-action no-status override-status)
   "Construct the name of TODO from ISSUE.
 For job TODOs, the resulting name will have a name with the form \"[REPO] ACTION
 NAME\". ACTION is optional, and used only for job TODOs. For example, if the
@@ -2014,15 +2016,17 @@ TODO is \"[uqbar-es] #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is
 `Handbook2022ExerciseForRadical`\".
 
 If NO-ACTION is non-nil, omit, the ACTION element. If NO-STATUS is non-nil, omit
-the STATUS element. If ISSUE is nil, use the issue at point or in the current
-buffer."
+the STATUS element. If OVERRIDE-STATUS is non-nil, use it instead of fetching.
+If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
 	 (action (if (and (tlon-issue-is-job-p issue)
 			  (not no-action))
 		     (or (tlon-label-lookup :action :label (tlon-get-first-label issue))
 			 "")
 		   ""))
-	 (status (tlon-get-status-in-issue issue 'upcased))
+	 (status (if override-status
+		     override-status
+		   (tlon-get-status-in-issue issue nil nil)))
 	 (tags (tlon-forg-get-labels issue))
 	 (repo-name (oref (forge-get-repository issue) name))) ; Get the repository name
     ;; Use repo-name directly, instead of looking up an abbreviation.
@@ -2105,10 +2109,11 @@ The command:
 	  (tlon-forg--set-github-project-status issue status))
 	(let ((tlon-when-assignee-is-nil        'capture)
 	      (tlon-when-assignee-is-someone-else 'capture))
-	  (tlon-capture-issue issue))
+	  ;; Pass the known status to tlon-capture-issue
+	  (tlon-capture-issue issue nil status))
 	(when-let ((pf (tlon-get-todo-position-from-issue issue)))
 	  (tlon-visit-todo pf)
-	  (org-todo status)
+	  (org-todo status) ; Ensures Org state is correct
 	  (when effort-h
 	    (tlon-forg--set-org-effort effort-h))
 	  (tlon-visit-counterpart)

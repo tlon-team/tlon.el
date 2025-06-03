@@ -97,21 +97,21 @@ This section details the interactive commands provided by =tlon-forg.el=.
 :END:
 
 #+findex: tlon-capture-issue
-+ ~tlon-capture-issue~ :: (Autoloaded) Creates a new Org TODO item based on the specified =ISSUE= or one selected interactively.
++ ~tlon-capture-issue~ :: (Autoloaded) Creates a new Org TODO item based on the specified =ISSUE= or one selected interactively. Accepts optional =INVOKED-FROM-ORG-FILE= and =OVERRIDE-STATUS= arguments.
   1. If =ISSUE= is provided, uses it. Otherwise, attempts to get the issue from the current context (e.g., a Forge buffer).
-  2. If no issue can be determined from context (e.g., when called from an Org buffer not associated with a repository), it prompts the user to select a repository (from Tlön's known repos or by listing from GitHub via `gh` CLI for ~tlon-forg-project-owner~) and then an issue from that repository.
+  2. If no issue can be determined from context (e.g., when called from an Org buffer not associated with a repository), it prompts the user to select a repository (from Tlön's known repos or by listing from GitHub via `gh` CLI for ~forge-extras-project-owner~) and then an issue from that repository.
   3. Checks if the selected/provided issue is open.
   4. Handles the assignee based on ~tlon-when-assignee-is-nil~ and ~tlon-when-assignee-is-someone-else~, potentially changing the assignee on GitHub or skipping capture.
   5. If the issue's title starts with "Job: ":
      - Ensures it has a valid phase label (prompting if necessary via ~tlon-capture-handle-phase~).
-     - Stores or refiles the job TODO under its master job heading using ~tlon-store-or-refile-job-todo~. The job TODO is initially captured (potentially to the file from which the command was invoked, if an Org file), and then immediately refiled to the central jobs file under its master heading.
+     - Stores or refiles the job TODO under its master job heading using ~tlon-store-or-refile-job-todo~. The job TODO is initially captured (potentially to =INVOKED-FROM-ORG-FILE=, if an Org file), and then immediately refiled to the central jobs file under its master heading.
   6. If it's a generic (non-job) issue:
      - The TODO is captured to the repository-specific Org file (e.g., =REPO-NAME.org= in the directory specified by =paths-dir-tlon-todos=) if that file exists. Otherwise, it's captured to the main generic TODOs file (see ~tlon-get-todos-generic-file~).
-  Only captures if a TODO doesn't already exist for the issue.
+  If =OVERRIDE-STATUS= is provided (e.g., by ~tlon-create-issue-from-todo~), that status string is used for the TODO heading, bypassing a call to ~tlon-get-status-in-issue~. Only captures if a TODO doesn't already exist for the issue.
 
 #+findex: tlon-capture-all-issues-in-repo
 + ~tlon-capture-all-issues-in-repo~ :: (Autoloaded) Captures all open issues in a selected repository that are not assigned to another user (behavior depends on ~tlon-when-assignee-is-someone-else~, which defaults to `no-capture` effectively in bulk mode).
-  1. If a repository cannot be inferred from the current context, the user is prompted to select one (from Tlön's known repos or by listing from GitHub via `gh` CLI for ~tlon-forg-project-owner~).
+  1. If a repository cannot be inferred from the current context, the user is prompted to select one (from Tlön's known repos or by listing from GitHub via `gh` CLI for ~forge-extras-project-owner~).
   2. Performs a silent =forge-pull= for the selected repository first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
   3. Iterates through all open issues in the selected repository (~tlon-get-issues~).
   4. For each issue, if a TODO doesn't already exist (~tlon-get-todo-position-from-issue~), it calls ~tlon-capture-issue~ for that issue.
@@ -411,7 +411,7 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-get-issue-link
 + ~tlon-get-issue-link~ :: Creates an Org link string (=orgit-topic:ID=) for an =ISSUE=.
 #+findex: tlon-make-todo-name-from-issue
-+ ~tlon-make-todo-name-from-issue~ :: Constructs the full Org heading string for an =ISSUE=, including status, repo abbreviation, optional job action, the issue link, and tags. Handles =NO-ACTION= and =NO-STATUS= flags.
++ ~tlon-make-todo-name-from-issue~ :: Constructs the full Org heading string for an =ISSUE=, including status, repo abbreviation, optional job action, the issue link, and tags. Handles =NO-ACTION=, =NO-STATUS=, and =OVERRIDE-STATUS= flags. If =OVERRIDE-STATUS= is provided, it's used directly for the status part of the heading, otherwise ~tlon-get-status-in-issue~ is called.
 #+findex: tlon-get-file-from-issue
 + ~tlon-get-file-from-issue~ :: Extracts a key from the issue name and finds the corresponding file path using ~tlon-get-file-from-key~.
 #+findex: tlon-get-parent-todo
@@ -473,7 +473,7 @@ This section lists non-interactive functions, variables, and constants used inte
 #+findex: tlon-capture-all-issues-after-pull
 + ~tlon-capture-all-issues-after-pull~ :: Callback function for ~tlon-capture-all-issues~ that initiates the capture process for the specified =REPO= after the initial pull completes.
 #+findex: tlon-store-todo
-+ ~tlon-store-todo~ :: Uses =org-capture= with a specific =TEMPLATE= ("tbG" or "tbJ") to store a new TODO for the =ISSUE=, unless one already exists. Handles master job TODO creation.
++ ~tlon-store-todo~ :: Uses =org-capture= with a specific =TEMPLATE= ("tbG" or "tbJ") to store a new TODO for the =ISSUE=, unless one already exists. Handles master job TODO creation. Accepts an optional =OVERRIDE-STATUS= to pass to ~tlon-make-todo-name-from-issue~.
 #+findex: tlon-capture-handle-assignee
 + ~tlon-capture-handle-assignee~ :: Implements the logic defined by ~tlon-when-assignee-is-nil~ and ~tlon-when-assignee-is-someone-else~ during issue capture. Returns =t= if capture should proceed, =nil= otherwise. May call ~tlon-forg-change-assignee~.
 #+findex: tlon-forg-change-assignee
