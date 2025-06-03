@@ -391,37 +391,49 @@ nil, use `tlon-project-target-languages'."
 (defun tlon-deepl-translate-missing-abstracts (&optional langs)
   "Translate abstracts for BibTeX entries missing translations into LANGS.
 Iterate through all keys in `tlon-file-fluid' and `tlon-file-stable'. For each
-key, check if abstract translations are missing for any language in LANGS using
-`tlon-deepl--get-existing-translation'. LANGS is a list of language names, such
-as `(\"spanish\" \"french\")'. If LANGS is nil, prompt the user to select
-languages using `tlon-read-multiple-languages'. When a translation in a
-language is missing, call `tlon-deepl-translate-abstract' for that key and the
-specific missing languages."
+key, check if abstract translations are missing for any language in LANGS.
+LANGS is a list of language names, such as `(\"spanish\" \"french\")'. If LANGS
+is nil, prompt the user to select languages using
+`tlon-read-multiple-languages'. When a translation in a language is missing,
+call `tlon-deepl-translate-abstract' for that key and the specific missing
+languages."
   (interactive)
-  (let* ((target-languages (or langs (tlon-read-multiple-languages 'babel)))
-         (keys (seq-uniq (append (tlon-tex-get-keys-in-file tlon-file-fluid)
-                                 (tlon-tex-get-keys-in-file tlon-file-stable))))
-         (total (length keys))
-         (initiated-count 0)
-         (processed 0))
+  (let ((target-languages (or langs (tlon-read-multiple-languages 'babel))))
     (unless target-languages
       (user-error "No target languages selected. Aborting."))
-    (message "Checking %d BibTeX entries for missing abstract translations..." total)
-    (dolist (key keys)
-      (setq processed (1+ processed))
-      (when-let* ((context (tlon-deepl--get-abstract-context nil key nil)) ; Get context non-interactively
-                  (abstract (nth 1 context))
-                  (source-lang-code (nth 2 context)))
-        (let ((missing-langs '()))
-          ;; Check each target language
-          (dolist (target-lang-name target-languages)
-            (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
-              (unless (or (string= source-lang-code target-lang-code) ; Skip source language
-                          (tlon-deepl--get-existing-translation key target-lang-code)) ; Check if translation exists
-                (push target-lang-name missing-langs)))) ; Add to list if missing
+    ;; Proceed if target-languages is not nil
+    (let* ((all-translations (tlon-read-abstract-translations))
+           (keys (seq-uniq (append (tlon-tex-get-keys-in-file tlon-file-fluid)
+                                   (tlon-tex-get-keys-in-file tlon-file-stable))))
+           (total (length keys))
+           (initiated-count 0)
+           (processed 0))
+      (message "Checking %d BibTeX entries for missing abstract translations..." total)
+      (dolist (key keys)
+        (setq processed (1+ processed))
+        (when-let* ((context (tlon-deepl--get-abstract-context nil key nil)) ; Get context non-interactively
+                    (abstract (nth 1 context))
+                    (source-lang-code (nth 2 context)))
+          (let ((missing-langs '()))
+            ;; Check each target language
+            (dolist (target-lang-name target-languages)
+              (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
+                (let* ((key-entry (assoc key all-translations))
+                       (translation-text nil)
+                       (has-translation nil))
+                  (when key-entry
+                    (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
+                      (when lang-entry
+                        (setq translation-text (cdr lang-entry)))))
+                  (setq has-translation (and translation-text
+                                             (stringp translation-text)
+                                             (> (length (string-trim translation-text)) 0)))
+                  (unless (or (string= source-lang-code target-lang-code) ; Skip source language
+                              has-translation) ; Check if translation exists
+                    (push target-lang-name missing-langs)))))) ; Add to list if missing
 
-          ;; If any translations are missing, initiate them
-          (when missing-langs
+            ;; If any translations are missing, initiate them
+            (when missing-langs
             (message "Processing key %s (missing: %s) (%d/%d)"
                      key (string-join (reverse missing-langs) ", ") processed total)
             (setq initiated-count (1+ initiated-count))
