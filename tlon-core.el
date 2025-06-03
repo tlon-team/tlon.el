@@ -343,6 +343,12 @@
 	   :abbrev "tlon-content"
 	   :type content
 	   :help t)
+    (:name "tlon-generic"
+	   :project "tlon"
+	   :abbrev "tlon-generic"
+	   :type meta
+	   :subtype issues
+	   :help nil)
     (:name "essays-en"
 	   :project "babel"
 	   :subproject "essays"
