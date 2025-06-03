@@ -1815,13 +1815,8 @@ Falls back to a status based on the issue's open/closed state (e.g., \"TODO\",
     (setq org-status (if project-status-val
                          (cdr (assoc project-status-val tlon-todo-statuses #'string=))
                        nil))
-    (if org-status
-        org-status
-      (progn
-        (message "Unknown or missing project status for #%s (GH status: %s). Falling back to open/closed state."
-                 (if issue (oref issue number) "N/A")
-                 project-status-val)
-        (if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO")))))
+    (or org-status
+	(if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO"))))
 
 (defun tlon-get-status-in-todo ()
   "Return the status of the `org-mode' heading at point.
