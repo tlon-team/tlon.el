@@ -259,6 +259,18 @@ For testing purposes."
   :type 'string
   :group 'tlon-forg)
 
+(defcustom tlon-forg-sync-after-capture-project 'prompt
+  "Whether to run `tlon-sync-all-issues-in-project' after `tlon-capture-all-issues-in-project'.
+- `t': Always sync after capturing all issues in a project.
+- `nil': Never sync after capturing all issues in a project.
+- `prompt': Prompt the user whether to sync after capturing.
+The sync operation will use the cached project item list if available.
+This option can be set temporarily via `tlon-forg-menu'."
+  :type '(choice (const :tag "Always sync" t)
+                 (const :tag "Never sync" nil)
+                 (const :tag "Prompt to sync" prompt))
+  :group 'tlon-forg)
+
 ;;;; Variables
 
 (defconst tlon-todo-statuses
@@ -714,16 +726,25 @@ cached project items list is used instead of fetching a fresh one."
                 (when (= repos-finished total-repos)
                   ;; restore frame, clear cache, sort, final message
                   (org-refile-cache-clear)
+                  (org-refile-cache-clear) ; For capture phase
+
+                  (let ((do-sync (pcase tlon-forg-sync-after-capture-project
+                                   ('t t)
+                                   ('nil nil)
+                                   ('prompt (y-or-n-p "Sync all issues in project after capture? ")))))
+                    (when do-sync
+                      (message "Proceeding to sync issues in project after capture...")
+                      ;; Pass `arg` to tlon-sync-all-issues-in-project to use cached project items.
+                      (tlon-sync-all-issues-in-project arg)
+                      (message "Sync after capture complete.")))
+
                   (set-window-configuration original-window-config)
                   (when tlon-forg-sort-after-sync-or-capture
                     (dolist (todos-file (tlon-forg--get-all-todo-files))
                       (when (and todos-file (file-exists-p todos-file))
                         (with-current-buffer (find-file-noselect todos-file)
                           (tlon-forg-sort-by-status-and-project-order t)))))
-                  (message "Finished %s %d repositories in project. Refile cache cleared."
-                           (if (eq this-command 'tlon-capture-all-issues-in-project)
-                               "capturing issues from"
-                             "syncing issues from")
+                  (message "Finished capturing issues from %d repositories in project. Subsequent sync (if any) also completed. Refile cache cleared."
                            total-repos)))))
         (maphash
          (lambda (repo-name repo-dir)
@@ -1121,10 +1142,7 @@ cached project items list is used instead of fetching a fresh one."
                       (when (and todos-file (file-exists-p todos-file))
                         (with-current-buffer (find-file-noselect todos-file)
                           (tlon-forg-sort-by-status-and-project-order t)))))
-                  (message "Finished %s %d repositories in project. Refile cache cleared."
-                           (if (eq this-command 'tlon-capture-all-issues-in-project)
-                               "capturing issues from"
-                             "syncing issues from")
+                  (message "Finished syncing issues from %d repositories in project. Refile cache cleared."
                            total-repos)))))
         (maphash
          (lambda (repo-name repo-dir)
@@ -2337,6 +2355,15 @@ If ISSUE is nil, use the issue at point or in current buffer."
   :variable 'tlon-forg-archive-todo-on-close
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-forg-archive-todo-on-close)))
 
+(transient-define-infix tlon-forg-sync-after-capture-project-infix ()
+  "Set the value of `tlon-forg-sync-after-capture-project' in `forg' menu."
+  :class 'transient-lisp-variable
+  :reader (lambda (prompt _ _)
+            (tlon-symbol-reader prompt '(t nil prompt)))
+  :transient t
+  :prompt "Sync after capturing all issues in project (see docstring for details): "
+  :variable 'tlon-forg-sync-after-capture-project)
+
 (transient-define-infix tlon-infix-toggle-sort-after-sync-or-capture ()
   "Toggle the value of `tlon-forg-sort-after-sync-or-capture' in `forg' menu."
   :class 'transient-lisp-variable
@@ -2369,7 +2396,8 @@ If ISSUE is nil, use the issue at point or in current buffer."
     ("-a" "Include archived"                                tlon-infix-toggle-include-archived)
     ("-A" "Archive on close"                                tlon-infix-toggle-archive-todo-on-close)
     ""
-    ("-s" "Sort after capture/sync all issues in project"   tlon-infix-toggle-sort-after-sync-or-capture)]])
+    ("-s" "Sync after project capture"                      tlon-forg-sync-after-capture-project-infix)
+    ("-o" "Sort after project capture/sync"                 tlon-infix-toggle-sort-after-sync-or-capture)]])
 
 (provide 'tlon-forg)
 ;;; tlon-forg.el ends here
