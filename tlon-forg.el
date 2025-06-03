@@ -1813,38 +1813,37 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 ;;;;;; status
 
 (defun tlon-get-status-in-issue (&optional issue _upcased project-item-data)
-  "Return the GitHub Project status of ISSUE, mapped to an Org TODO keyword.
-If PROJECT-ITEM-DATA (a plist containing :status) is provided, its :status
-field is used. Otherwise, project fields are fetched via
-`forge-extras-gh-get-issue-fields`.
-Falls back to a status based on the issue's open/closed state (e.g., \"TODO\",
-\"DONE\") if the project status cannot be determined."
+  "Return the GitHub Project status of ISSUE, mapped to an Org TODO keyword."
   (let* ((issue (or issue (forge-current-topic)))
-         (project-status-val nil)
-         (org-status nil))
-    (if project-item-data
-        (setq project-status-val (plist-get project-item-data :status))
-      ;; Fallback to fetching if project-item-data is not provided
-      (when-let* ((repo (if issue (forge-get-repository issue) nil))
-                  (repo-name (if repo (oref repo name) nil))
-                  (issue-number (if issue (oref issue number) nil)))
-        (if (and issue repo repo-name issue-number)
-            (let* ((raw-fields (condition-case err
-                                   (forge-extras-gh-get-issue-fields issue-number repo-name)
-                                 (error (progn
-                                          (when tlon-debug (message "Error fetching GitHub project fields for #%s in %s (via forge-extras): %s" issue-number repo-name err))
-                                          nil))))
-                   (parsed-fields (if raw-fields (forge-extras-gh-parse-issue-fields raw-fields) nil)))
-              (setq project-status-val (if parsed-fields (plist-get parsed-fields :status) nil)))
-          (tlon-message-debug "Could not determine issue/repo details for project status fetch."))))
+         ;; 1. take :status from PROJECT-ITEM-DATA when present
+         (project-status-val (when project-item-data
+                               (plist-get project-item-data :status)))
+         org-status)
+    ;; 2. if still nil, fetch it on-demand via GraphQL
+    (when (null project-status-val)
+      (when-let* ((repo (and issue (forge-get-repository issue)))
+                  (repo-name (and repo (oref repo name)))
+                  (issue-number (and issue (oref issue number))))
+        (let* ((raw (condition-case err
+                        (forge-extras-gh-get-issue-fields issue-number repo-name)
+                      (error (progn
+                               (when tlon-debug
+                                 (message "Error fetching GH fields for #%s in %s: %s"
+                                          issue-number repo-name err))
+                               nil))))
+               (parsed (and raw (forge-extras-gh-parse-issue-fields raw))))
+          (setq project-status-val (plist-get parsed :status)))))
 
+    ;; 3. map to org TODO keyword (case-insensitive)
     (when project-status-val
       (setq org-status
             (cdr (assoc-string (format "%s" project-status-val)
                                tlon-todo-statuses
-                               t))))          ; ‘t’ ⇒ case-insensitive match
+                               t)))) ; case-insensitive
+
+    ;; 4. fallback to open/closed when mapping failed
     (or org-status
-	(if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO"))))
+        (if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO"))))
 
 (defun tlon-get-status-in-todo ()
   "Return the status of the `org-mode' heading at point.
