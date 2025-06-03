@@ -1197,9 +1197,12 @@ avoid per-issue API calls for status and estimate."
          (issue-count 0)
          (project-data-map (make-hash-table :test 'eql))) ; Keyed by issue number
 
-    ;; Helper to ensure keys are always numeric
+    ;; Helper to ensure keys are always numeric and debug what we're storing
     (cl-labels ((tlon--put-project-item (item)
-                (let ((num (plist-get item :number)))
+                (let ((num (plist-get item :number))
+                      (status (plist-get item :status)))
+                  (when tlon-debug
+                    (message "Storing project item #%s with status: %s" num status))
                   (puthash (if (stringp num) (string-to-number num) num)
                            item
                            project-data-map))))
@@ -1237,6 +1240,10 @@ avoid per-issue API calls for status and estimate."
                          (oref issue number) repo-name)
                 ;; Get the specific project item data for this issue
                 (let ((project-item-data (gethash (oref issue number) project-data-map)))
+                  (when tlon-debug
+                    (message "For issue #%d, project-item-data status: %s" 
+                             (oref issue number) 
+                             (plist-get project-item-data :status)))
                   (tlon-sync-issue-and-todo-from-issue issue project-item-data)
                   (setq issue-count (1+ issue-count)))))))))
     
