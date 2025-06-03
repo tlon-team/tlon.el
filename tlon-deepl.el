@@ -411,10 +411,12 @@ languages."
       (message "Checking %d BibTeX entries for missing abstract translations..." total)
       (dolist (key keys)
         (setq processed (1+ processed))
-        (when-let* ((context (tlon-deepl--get-abstract-context nil key nil)) ; Get context non-interactively
-                    (abstract (nth 1 context))
-                    (source-lang-code (nth 2 context)))
-          (let ((missing-langs '()))
+        (let ((missing-langs '())) ; Moved let binding for missing-langs one level up
+          (when-let* ((context (tlon-deepl--get-abstract-context nil key nil)) ; Get context non-interactively
+                      (abstract (nth 1 context))
+                      (source-lang-code (nth 2 context)))
+            ;; `missing-langs` is now from the outer scope of this when-let*
+
             ;; Check each target language
             (dolist (target-lang-name target-languages)
               (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
@@ -433,12 +435,14 @@ languages."
                     (push target-lang-name missing-langs)))))) ; Add to list if missing
 
             ;; If any translations are missing, initiate them
+            ;; This block is still inside when-let* and uses `abstract` from when-let*
             (when missing-langs
-            (message "Processing key %s (missing: %s) (%d/%d)"
-                     key (string-join (reverse missing-langs) ", ") processed total)
-            (setq initiated-count (1+ initiated-count))
-            ;; Call translate abstract non-interactively with the list of *missing* languages
-            (tlon-deepl-translate-abstract abstract key (reverse missing-langs))))))
+              (message "Processing key %s (missing: %s) (%d/%d)"
+                       key (string-join (reverse missing-langs) ", ") processed total)
+              (setq initiated-count (1+ initiated-count))
+              ;; Call translate abstract non-interactively with the list of *missing* languages
+              (tlon-deepl-translate-abstract abstract key (reverse missing-langs))))
+          )) ; Close let for missing-langs here
     (message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count)))
 
 (declare-function tlon-read-abstract-translations "tlon-tex")
