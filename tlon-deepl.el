@@ -352,7 +352,7 @@ prompt the user for confirmation before overwriting."
          (target-lang (tlon-select-language 'code 'babel "Target language: " 'require-match nil nil excluded-lang)))
     (when target-lang
       (let ((existing-translation (tlon-deepl--get-existing-translation key target-lang))
-            (target-lang-name (tlon-lookup tlon-languages-properties :name :code target-lang)))
+            (target-lang-name (tlon-lookup tlon-languages-properties :standard :code target-lang)))
         (if (and existing-translation
                  (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
                                         key target-lang-name))))
