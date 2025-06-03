@@ -385,6 +385,15 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
 	 (title (tlon-forg--org-heading-title)))
     (list :title title :tags tags :todo todo)))
 
+(defun tlon-forg--normalize-tags (raw-tags)
+  "Normalize RAW-TAGS for comparison.
+This involves converting them to lowercase, removing any empty strings,
+and then sorting them. Returns a list of normalized tag strings, or nil
+if RAW-TAGS is nil or results in an empty list after normalization."
+  (sort (cl-remove-if (lambda (tag) (string-empty-p tag))
+                      (mapcar #'downcase (copy-sequence (or raw-tags '()))))
+        #'string<))
+
 (defun tlon-forg--valid-tags (tags)
   "Return the down-cased TAGS that are listed in `tlon-todo-tags'."
   (sort (cl-remove-duplicates
@@ -447,9 +456,9 @@ If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
   "Reconcile the tags between ISSUE and the Org heading."
   (let* ((gh-labels-raw (tlon-forg-get-labels issue)) ; Raw labels from GH
          (org-tags-raw (org-get-tags))               ; Raw tags from Org
-         ;; For comparison, normalize: downcase and sort
-         (issue-tags-for-compare (sort (mapcar #'downcase (copy-sequence (or gh-labels-raw '()))) #'string<))
-         (todo-tags-for-compare  (sort (mapcar #'downcase (copy-sequence (or org-tags-raw '()))) #'string<))
+         ;; For comparison, normalize
+         (issue-tags-for-compare (tlon-forg--normalize-tags gh-labels-raw))
+         (todo-tags-for-compare  (tlon-forg--normalize-tags org-tags-raw))
          (issue-context (tlon-get-issue-name issue)))
     (unless (equal issue-tags-for-compare todo-tags-for-compare)
       (pcase (tlon-forg--prompt-element-diff
