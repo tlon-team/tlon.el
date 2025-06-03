@@ -1,4 +1,4 @@
-;;; tlon-forg.el --- Integration between forge and org-mode -*- lexical-binding: t -*-
+;;; tlon-forg.el --- Forge & org-mode integration -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 
@@ -631,13 +631,13 @@ Capture defaults to the template's file if no other target is determined."
                  (tlon-capture-handle-assignee issue-to-capture))
         (tlon-message-debug "Capturing ‘%s’" issue-name)
         (if (tlon-issue-is-job-p issue-to-capture)
-            (tlon-create-job-todo-from-issue issue-to-capture invoked-from-org-file)
+            (tlon-create-job-todo-from-issue issue-to-capture invoked-from-org-file override-status)
           ;; For non-job issues, determine target file: repo-specific or generic.
           (let ((preferred-target-file
                  (or (when-let ((rsf (tlon-forg--get-repo-specific-todo-file issue-to-capture)))
                        (and (file-exists-p rsf) rsf))
                      (tlon-get-todos-generic-file))))
-            (tlon-store-todo "tbG" nil issue-to-capture preferred-target-file)))))))
+            (tlon-store-todo "tbG" nil issue-to-capture preferred-target-file override-status)))))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues-in-repo (arg)
@@ -749,11 +749,11 @@ cached project items list is used instead of fetching a fresh one."
 
 (defun tlon-pull-silently (&optional message callback repo)
   "Pull all issues from forge for REPO.
-If REPO is nil, attempts to determine the current repository.
-If MESSAGE is non-nil, display it (if `tlon-debug' is true) while the process is ongoing.
-If CALLBACK is non-nil, call it after the process completes. The window
-configuration active before the pull started will be restored.
-Returns the result of the CALLBACK function, or nil if no callback."
+If REPO is nil, attempts to determine the current repository. If MESSAGE is
+non-nil, display it (if `tlon-debug' is true) while the process is ongoing. If
+CALLBACK is non-nil, call it after the process completes. The window
+configuration active before the pull started will be restored. Returns the
+result of the CALLBACK function, or nil if no callback."
   (when message (tlon-message-debug message))
   (let ((original-window-config (current-window-configuration))
         (forge-repo (or repo (tlon-forg-get-or-select-repository))))
@@ -989,13 +989,14 @@ If ISSUE is nil, use the issue at point or in the current buffer."
     (when (string-match-p "^Job: " (oref issue title))
       t)))
 
-(defun tlon-create-job-todo-from-issue (&optional issue invoked-from-org-file)
+(defun tlon-create-job-todo-from-issue (&optional issue invoked-from-org-file override-status)
   "Create a new `org-mode' job TODO based on ISSUE.
 If ISSUE is nil, use the issue at point or in the current buffer.
-INVOKED-FROM-ORG-FILE is the file path if called from an Org buffer."
+INVOKED-FROM-ORG-FILE is the file path if called from an Org buffer.
+OVERRIDE-STATUS is passed to `tlon-store-or-refile-job-todo'."
   (let ((issue (or issue (forge-current-topic))))
     (tlon-capture-handle-phase issue)
-    (tlon-store-or-refile-job-todo issue invoked-from-org-file)))
+    (tlon-store-or-refile-job-todo issue invoked-from-org-file override-status)))
 
 (defun tlon-store-master-job-todo (&optional set-issue issue _invoked-from-org-file)
   "Create a new job master TODO.
@@ -1017,18 +1018,19 @@ the master TODO itself, which always goes to the jobs file."
 
 (autoload 'org-extras-refile-goto-latest "org-extras")
 (autoload 'org-extras-refile-at-position "org-extras")
-(defun tlon-store-or-refile-job-todo (&optional issue invoked-from-org-file)
+(defun tlon-store-or-refile-job-todo (&optional issue invoked-from-org-file override-status)
   "Refile TODO under appropriate heading, or create new master TODO if none exists.
 If ISSUE is nil, use the issue at point or in the current buffer.
 INVOKED-FROM-ORG-FILE is the file path if called from an Org buffer, used for
-initial capture before refiling."
+initial capture before refiling.
+OVERRIDE-STATUS is passed to `tlon-store-todo'."
   (if-let* ((issue (or issue (forge-current-topic)))
 	    (pos (tlon-get-todo-position
 		  (tlon-make-todo-name-from-issue issue 'no-action 'no-status)
 		  (tlon-get-todos-jobs-file)))) ; Master heading is sought in jobs file
       (save-window-excursion
         ;; Initial capture respects invoked-from-org-file
-	(tlon-store-todo "tbJ" nil issue invoked-from-org-file)
+	(tlon-store-todo "tbJ" nil issue invoked-from-org-file override-status)
         ;; Refile to the jobs file under the master heading
 	(let* ((inhibit-message t))
 	  (org-extras-refile-at-position pos)
