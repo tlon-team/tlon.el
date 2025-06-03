@@ -415,34 +415,36 @@ languages."
           (when-let* ((context (tlon-deepl--get-abstract-context nil key nil)) ; Get context non-interactively
                       (abstract (nth 1 context))
                       (source-lang-code (nth 2 context)))
-            ;; `missing-langs` is now from the outer scope of this when-let*
+            (progn ;; Explicit progn for when-let* body
+              ;; `missing-langs` is now from the outer scope of this when-let*
 
-            ;; Check each target language
-            (dolist (target-lang-name target-languages)
-              (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
-                (let* ((key-entry (assoc key all-translations))
-                       (translation-text nil)
-                       (has-translation nil))
-                  (when key-entry
-                    (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
-                      (when lang-entry
-                        (setq translation-text (cdr lang-entry)))))
-                  (setq has-translation (and translation-text
-                                             (stringp translation-text)
-                                             (> (length (string-trim translation-text)) 0)))
-                  (unless (or (string= source-lang-code target-lang-code) ; Skip source language
-                              has-translation) ; Check if translation exists
-                    (push target-lang-name missing-langs)))))) ; Add to list if missing
+              ;; Check each target language
+              (dolist (target-lang-name target-languages)
+                (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
+                  (let* ((key-entry (assoc key all-translations))
+                         (translation-text nil)
+                         (has-translation nil))
+                    (when key-entry
+                      (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
+                        (when lang-entry
+                          (setq translation-text (cdr lang-entry)))))
+                    (setq has-translation (and translation-text
+                                               (stringp translation-text)
+                                               (> (length (string-trim translation-text)) 0)))
+                    (unless (or (string= source-lang-code target-lang-code) ; Skip source language
+                                has-translation) ; Check if translation exists
+                      (push target-lang-name missing-langs)))))) ; Add to list if missing
 
-            ;; If any translations are missing, initiate them
-            ;; This block is still inside when-let* and uses `abstract` from when-let*
-            (when missing-langs
-              (message "Processing key %s (missing: %s) (%d/%d)"
-                       key (string-join (reverse missing-langs) ", ") processed total)
-              (setq initiated-count (1+ initiated-count))
-              ;; Call translate abstract non-interactively with the list of *missing* languages
-              (tlon-deepl-translate-abstract abstract key (reverse missing-langs))))
-          )) ; Close let for missing-langs here
+              ;; If any translations are missing, initiate them
+              ;; This block is still inside when-let* and uses `abstract` from when-let*
+              (when missing-langs
+                (message "Processing key %s (missing: %s) (%d/%d)"
+                         key (string-join (reverse missing-langs) ", ") processed total)
+                (setq initiated-count (1+ initiated-count))
+                ;; Call translate abstract non-interactively with the list of *missing* languages
+                (tlon-deepl-translate-abstract abstract key (reverse missing-langs))))
+            ) ; This closes the progn
+          )) ; This closes when-let*, then let for missing-langs
     (message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count)))
 
 (declare-function tlon-read-abstract-translations "tlon-tex")
