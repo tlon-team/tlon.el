@@ -25,6 +25,7 @@
 
 ;;; Code:
 
+(require 'elpaca)
 (require 'json)
 (require 'paths)
 
