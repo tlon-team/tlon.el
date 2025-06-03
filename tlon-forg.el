@@ -558,12 +558,18 @@ If ISSUE is nil, it attempts to use the issue at point or in the current
 buffer. If no issue can be determined from the context, it prompts to select a
 repository and then an issue.
 
-INVOKED-FROM-ORG-FILE specifies the Org file path if the command's context
+INVOKED-FROM-ORG-FILE specifies an Org file path if the command's context
 originates from a specific Org file (e.g., when called by
-`tlon-capture-all-issues-in-repo`). If nil and called interactively from an
-Org buffer, that buffer's file is used. This determines where the new TODO
-is created if not a job TODO (which are refiled). Otherwise, capture defaults
-to the file specified in the capture template."
+`tlon-capture-all-issues-in-repo`).
+- For job issues, this file is used for the initial capture before refiling to
+  the central jobs file.
+- For non-job issues, this parameter is largely superseded. The TODO is captured
+  to the repository-specific Org file (e.g., \"REPO-NAME.org\" in
+  `paths-dir-tlon-todos`) if it exists; otherwise, it's captured to the
+  generic TODOs file (`tlon-get-todos-generic-file`).
+If called interactively from an Org buffer and `invoked-from-org-file` is nil,
+the current buffer's file is used for job issues' initial capture.
+Capture defaults to the template's file if no other target is determined."
   (interactive
    (list nil ; For `issue` argument when called interactively
          (if (and (eq major-mode 'org-mode) (buffer-file-name)) ; For `invoked-from-org-file`
@@ -600,7 +606,12 @@ to the file specified in the capture template."
         (message "Capturing ‘%s’" issue-name)
         (if (tlon-issue-is-job-p issue-to-capture)
             (tlon-create-job-todo-from-issue issue-to-capture invoked-from-org-file)
-          (tlon-store-todo "tbG" nil issue-to-capture invoked-from-org-file))))))
+          ;; For non-job issues, determine target file: repo-specific or generic.
+          (let ((preferred-target-file
+                 (or (when-let ((rsf (tlon-forg--get-repo-specific-todo-file issue-to-capture)))
+                       (and (file-exists-p rsf) rsf))
+                     (tlon-get-todos-generic-file))))
+            (tlon-store-todo "tbG" nil issue-to-capture preferred-target-file)))))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues-in-repo (arg)
