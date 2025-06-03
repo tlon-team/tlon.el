@@ -1231,12 +1231,9 @@ avoid per-issue API calls for status and estimate."
          (issue-count 0)
          (project-data-map (make-hash-table :test 'eql))) ; Keyed by issue number
 
-    ;; Helper to ensure keys are always numeric and debug what we're storing
+    ;; Helper to ensure keys are always numeric
     (cl-labels ((tlon--put-project-item (item)
-                (let ((num (plist-get item :number))
-                      (status (plist-get item :status)))
-                  (when tlon-debug
-                    (message "Storing project item #%s with status: %s" num status))
+                (let ((num (plist-get item :number)))
                   (puthash (if (stringp num) (string-to-number num) num)
                            item
                            project-data-map))))
@@ -1274,10 +1271,6 @@ avoid per-issue API calls for status and estimate."
                          (oref issue number) repo-name)
                 ;; Get the specific project item data for this issue
                 (let ((project-item-data (gethash (oref issue number) project-data-map)))
-                  (when tlon-debug
-                    (message "For issue #%d, project-item-data status: %s" 
-                             (oref issue number) 
-                             (plist-get project-item-data :status)))
                   (tlon-sync-issue-and-todo-from-issue issue project-item-data)
                   (setq issue-count (1+ issue-count)))))))))
     
@@ -1860,8 +1853,17 @@ comparison in `org-sort-entries'. Lower values sort earlier."
          (project-status-val (when project-item-data
                                (plist-get project-item-data :status)))
          org-status)
+    
+    (when tlon-debug
+      (message "tlon-get-status-in-issue: issue #%s, project-item-data: %s, status from data: %s"
+               (if issue (oref issue number) "nil")
+               (if project-item-data "present" "nil")
+               project-status-val))
+    
     ;; 2. if still nil, fetch it on-demand via GraphQL
     (when (null project-status-val)
+      (when tlon-debug
+        (message "tlon-get-status-in-issue: No status in project-item-data, fetching via GraphQL"))
       (when-let* ((repo (and issue (forge-get-repository issue)))
                   (repo-name (and repo (oref repo name)))
                   (issue-number (and issue (oref issue number))))
