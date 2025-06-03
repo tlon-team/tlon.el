@@ -448,14 +448,14 @@ If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
   (let* ((gh-labels-raw (tlon-forg-get-labels issue)) ; Raw labels from GH
          (org-tags-raw (org-get-tags))               ; Raw tags from Org
          ;; For comparison, normalize: downcase and sort
-         (issue-tags-for-compare (sort (mapcar #'downcase (copy-sequence gh-labels-raw)) #'string<))
-         (todo-tags-for-compare  (sort (mapcar #'downcase (copy-sequence org-tags-raw)) #'string<))
+         (issue-tags-for-compare (sort (mapcar #'downcase (copy-sequence (or gh-labels-raw '()))) #'string<))
+         (todo-tags-for-compare  (sort (mapcar #'downcase (copy-sequence (or org-tags-raw '()))) #'string<))
          (issue-context (tlon-get-issue-name issue)))
     (unless (equal issue-tags-for-compare todo-tags-for-compare)
       (pcase (tlon-forg--prompt-element-diff
               "Tags" (string-join issue-tags-for-compare ", ") (string-join todo-tags-for-compare ", ") issue-context)
-        (?i ;; Update Org TODO from Issue: apply only "valid" (admissible) tags from the issue
-            (org-set-tags (string-join (tlon-forg--valid-tags gh-labels-raw) ":")))
+        (?i ;; Update Org TODO from Issue: apply all tags from the issue
+            (org-set-tags (string-join (or gh-labels-raw '()) ":")))
         (?t ;; Update Issue from Org TODO: tlon-update-issue-from-todo handles this.
             ;; It currently uses raw org tags to set issue labels.
             (tlon-update-issue-from-todo))))))
