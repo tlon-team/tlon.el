@@ -116,7 +116,8 @@ This section details the interactive commands provided by =tlon-forg.el=.
   2. Performs a silent =forge-pull= for the selected repository first (unless called with a prefix argument) to ensure local data is up-to-date. The window configuration active before the command is called will be restored upon completion.
   3. Iterates through all open issues in the selected repository (~tlon-get-issues~).
   4. For each issue, if a TODO doesn't already exist (~tlon-get-todo-position-from-issue~), it calls ~tlon-capture-issue~ for that issue.
-  5. Clears the =org-refile= cache upon completion.
+  5. If any TODOs were captured, the target Org file (repository-specific or generic) is opened, and point is moved to the last captured TODO using =org-capture-goto-last-stored=.
+  6. Clears the =org-refile= cache upon completion.
 
 #+findex: tlon-capture-all-issues-in-project
 + ~tlon-capture-all-issues-in-project~ :: (Autoloaded) Captures all open issues in the GitHub Project configured in =forge-extras.el= (via ~forge-extras-project-owner~ and ~forge-extras-project-number~) that are not assigned to another user.

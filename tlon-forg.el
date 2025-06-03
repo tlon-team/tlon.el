@@ -621,7 +621,9 @@ cannot be inferred from the current context, the user is prompted to select one.
 Before initiating the capture process, this command performs a full pull of the
 selected repository to ensure local data reflects its remote state. The window
 configuration active before the command was called will be restored after
-completion. This command clears the `org-refile' cache upon completion.
+completion. If any TODOs are captured, the target Org file is opened and
+point is moved to the last captured TODO. This command clears the
+`org-refile' cache upon completion.
 
 If called with a prefix ARG, the initial pull from forge is omitted."
   (interactive "P")
@@ -640,7 +642,8 @@ If called with a prefix ARG, the initial pull from forge is omitted."
                                    (lambda () (tlon-capture-all-issues-in-repo-after-pull repo nil origin-file))
                                    repo))))
         (when (and file-to-open (stringp file-to-open) (file-exists-p file-to-open))
-          (find-file file-to-open))))))
+          (find-file file-to-open)
+          (org-capture-goto-last-stored))))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues-in-project (arg)
