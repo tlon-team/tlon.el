@@ -41,17 +41,6 @@
 (require 'seq)
 (require 'org-capture)
 
-;;;; Debugging
-
-(defvar tlon-debug nil
-  "When non-nil, enable verbose debugging messages for Tlön operations.
-This includes messages from some `tlon-` and `forge-extras-` functions.")
-
-(defmacro tlon-message-debug (format-string &rest args)
-  "Display a message using FORMAT-STRING and ARGS if `tlon-debug' is non-nil."
-  `(when tlon-debug
-     (message ,format-string ,@args)))
-
 ;;;; Path Helpers
 
 (defun tlon-forg--get-repo-specific-todo-file (issue)
