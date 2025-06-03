@@ -1740,13 +1740,14 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 		      (repo-name (oref repo-obj name))
 		      (issue-repo-fullname (format "%s/%s" owner repo-name)))
 	    (let ((idx -1) (found-idx nil))
-	      (dolist (item project-items)
-		(setq idx (1+ idx))
-		(when (and (eq (plist-get item :type) 'issue)
-			   (string= (plist-get item :repo) issue-repo-fullname)
-			   (= (plist-get item :number) issue-number))
-		  (setq found-idx idx)
-		  (cl-return)))
+	      (cl-block 'search-loop
+		(dolist (item project-items)
+		  (setq idx (1+ idx))
+		  (when (and (eq (plist-get item :type) 'issue)
+			     (string= (plist-get item :repo) issue-repo-fullname)
+			     (= (plist-get item :number) issue-number))
+		    (setq found-idx idx)
+		    (cl-return-from search-loop))))
 	      (if found-idx
 		  (setq project-position found-idx)
 		(setq project-position max-priority)))) ; Issue not in project list
