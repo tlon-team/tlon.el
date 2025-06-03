@@ -453,7 +453,10 @@ If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
          (issue-context (tlon-get-issue-name issue)))
     (unless (equal issue-tags-for-compare todo-tags-for-compare)
       (pcase (tlon-forg--prompt-element-diff
-              "Tags" (string-join issue-tags-for-compare ", ") (string-join todo-tags-for-compare ", ") issue-context)
+              "Tags"
+              (string-join issue-tags-for-compare ", ") ; Display all GH tags being compared
+              (string-join (tlon-forg--valid-tags org-tags-raw) ", ") ; Display only "valid" Org tags for the TODO side
+              issue-context)
         (?i ;; Update Org TODO from Issue: apply all tags from the issue
             (org-set-tags (string-join (or gh-labels-raw '()) ":")))
         (?t ;; Update Issue from Org TODO: tlon-update-issue-from-todo handles this.
