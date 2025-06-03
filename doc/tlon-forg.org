@@ -105,10 +105,9 @@ This section details the interactive commands provided by =tlon-forg.el=.
   5. If the issue's title starts with "Job: ":
      - Ensures it has a valid phase label (prompting if necessary via ~tlon-capture-handle-phase~).
      - Stores or refiles the job TODO under its master job heading using ~tlon-store-or-refile-job-todo~. The job TODO is initially captured (potentially to the file from which the command was invoked, if an Org file), and then immediately refiled to the central jobs file under its master heading.
-  6. If it's a generic issue:
-     - Stores the TODO. If the command was invoked from an Org file buffer, the TODO is created in that buffer's file. Otherwise, it's stored in the default file specified by the "tbG" template (typically the generic TODOs file).
+  6. If it's a generic (non-job) issue:
+     - The TODO is captured to the repository-specific Org file (e.g., =REPO-NAME.org= in the directory specified by =paths-dir-tlon-todos=) if that file exists. Otherwise, it's captured to the main generic TODOs file (see ~tlon-get-todos-generic-file~).
   Only captures if a TODO doesn't already exist for the issue.
-  For non-job issues, the TODO is captured to the repository-specific Org file (e.g., =REPO-NAME.org= in the directory specified by =paths-dir-tlon-todos=) if that file exists. Otherwise, it's captured to the main generic TODOs file (see ~tlon-get-todos-generic-file~).
 
 #+findex: tlon-capture-all-issues-in-repo
 + ~tlon-capture-all-issues-in-repo~ :: (Autoloaded) Captures all open issues in a selected repository that are not assigned to another user (behavior depends on ~tlon-when-assignee-is-someone-else~, which defaults to `no-capture` effectively in bulk mode).
