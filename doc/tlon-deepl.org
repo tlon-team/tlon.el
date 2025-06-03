@@ -115,13 +115,14 @@ This section details the interactive commands provided by =tlon-deepl.el=.
   - If =INTERACTIVE-CALL-P= is nil, delegates to ~tlon-deepl--translate-abstract-non-interactive~ which iterates through target languages specified in =LANGS= (or ~tlon-project-target-languages~ if =LANGS= is nil), checks for existing translations in the JSON file, and translates missing ones.
 
 #+findex: tlon-deepl-translate-missing-abstracts
-+ ~tlon-deepl-translate-missing-abstracts~ :: Iterates through all BibTeX keys found in ~tlon-file-fluid~ and ~tlon-file-stable~ and translates abstracts that are missing translations for any language specified in ~tlon-project-target-languages~.
-  1. Gets a unique list of all keys from the specified bibliography files using ~tlon-tex-get-keys-in-file~.
-  2. For each =KEY=, retrieves its abstract and source language using ~tlon-deepl--get-abstract-context~.
-  3. Iterates through the target languages specified in =LANGS= (or ~tlon-project-target-languages~ if =LANGS= is nil).
-  4. For each target language (that is not the source language), it checks if a translation already exists in the JSON file using ~tlon-deepl--get-existing-translation~.
-  5. If any translations are missing for the current =KEY=, it calls ~tlon-deepl-translate-abstract~ non-interactively, passing the =KEY=, the abstract text, and the list of *specifically missing* languages for that key.
-  6. Provides progress messages during the process.
++ ~tlon-deepl-translate-missing-abstracts~ :: Iterates through all BibTeX keys found in ~tlon-file-fluid~ and ~tlon-file-stable~ and translates abstracts that are missing translations for specified languages.
+  1. If the optional =LANGS= argument is not provided, prompts the user to select one or more target languages using ~tlon-read-multiple-languages~. If no languages are selected, the command aborts. Otherwise, uses the provided or selected languages.
+  2. Gets a unique list of all keys from the specified bibliography files using ~tlon-tex-get-keys-in-file~.
+  3. For each =KEY=, retrieves its abstract and source language using ~tlon-deepl--get-abstract-context~.
+  4. Iterates through the target languages.
+  5. For each target language (that is not the source language), it checks if a translation already exists in the JSON file using ~tlon-deepl--get-existing-translation~.
+  6. If any translations are missing for the current =KEY=, it calls ~tlon-deepl-translate-abstract~ non-interactively, passing the =KEY=, the abstract text, and the list of *specifically missing* languages for that key.
+  7. Provides progress messages during the process.
 
 *** Glossaries
 :PROPERTIES:

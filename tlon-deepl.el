@@ -393,16 +393,19 @@ nil, use `tlon-project-target-languages'."
 Iterate through all keys in `tlon-file-fluid' and `tlon-file-stable'. For each
 key, check if abstract translations are missing for any language in LANGS using
 `tlon-deepl--get-existing-translation'. LANGS is a list of language names, such
-as `(\"spanish\" \"french\")'. If LANGS is nil, use
-`tlon-project-target-languages'. When a translation in a language is missing,
-call `tlon-deepl-translate-abstract' for that key and the specific missing
-languages."
+as `(\"spanish\" \"french\")'. If LANGS is nil, prompt the user to select
+languages using `tlon-read-multiple-languages'. When a translation in a
+language is missing, call `tlon-deepl-translate-abstract' for that key and the
+specific missing languages."
   (interactive)
-  (let* ((keys (seq-uniq (append (tlon-tex-get-keys-in-file tlon-file-fluid)
+  (let* ((target-languages (or langs (tlon-read-multiple-languages 'babel)))
+         (keys (seq-uniq (append (tlon-tex-get-keys-in-file tlon-file-fluid)
                                  (tlon-tex-get-keys-in-file tlon-file-stable))))
          (total (length keys))
          (initiated-count 0)
          (processed 0))
+    (unless target-languages
+      (user-error "No target languages selected. Aborting."))
     (message "Checking %d BibTeX entries for missing abstract translations..." total)
     (dolist (key keys)
       (setq processed (1+ processed))
@@ -411,7 +414,7 @@ languages."
                   (source-lang-code (nth 2 context)))
         (let ((missing-langs '()))
           ;; Check each target language
-          (dolist (target-lang-name (or langs tlon-project-target-languages))
+          (dolist (target-lang-name target-languages)
             (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
               (unless (or (string= source-lang-code target-lang-code) ; Skip source language
                           (tlon-deepl--get-existing-translation key target-lang-code)) ; Check if translation exists
