@@ -817,7 +817,7 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                   ;; or it was found but its structure was not modifiable. Create ad-hoc.
                   (unless capture-arg-final
                     (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
-                    (let* ((heading (file-name-base target-file))
+                    (let* ((heading (file-name-base target-file)) ; This 'heading' will now be used
                            (template-string (if original-template-list
 						(nth 4 original-template-list) ; Reuse template string if possible
                                               "* TODO %c\n%i")) ; Default template string
@@ -832,8 +832,7 @@ capture to this file. Otherwise, use the TEMPLATE's default target file."
                                   description
                                   entry-type
                                   ;; Use file+headline target for ad-hoc to file's main heading
-                                  (let ((heading (file-name-base target-file)))
-                                    (list 'file+headline target-file heading))
+                                  (list 'file+headline target-file heading) ; Uses 'heading' from let*
                                   template-string
                                   :immediate-finish t
                                   :unnarrowed t))))
@@ -1906,7 +1905,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 (defun tlon-get-issue-name (&optional issue)
   "Get the name of ISSUE.
 An issue name is its number followed by its title.
-The title part is sanitized to be a single line by replacing newlines with spaces.
+The title part is sanitized to be a single line by replacing newlines with
+spaces.
 
 If ISSUE is nil, get the issue at point or in current buffer."
   (let* ((issue (or issue (forge-current-topic)))
