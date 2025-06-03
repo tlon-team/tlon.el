@@ -299,6 +299,40 @@ The `cdr` values should be present in `org-todo-keywords'.")
   (interactive)
   (forge-extras-insert-issue-markdown-link "tlon-team"))
 
+;;;###autoload
+(defun tlon-forg-test-project-data ()
+  "Test what data is returned by forge-extras-list-project-items-ordered.
+This function fetches project items and displays the first few items with their
+status and estimate fields to verify the data structure."
+  (interactive)
+  (let ((project-items (forge-extras-list-project-items-ordered nil nil nil)))
+    (if project-items
+        (let ((test-items (seq-take project-items 3))) ; Take first 3 items for testing
+          (with-current-buffer (get-buffer-create "*Project Data Test*")
+            (erase-buffer)
+            (insert "Project Items Data Test\n")
+            (insert "========================\n\n")
+            (insert (format "Total items fetched: %d\n\n" (length project-items)))
+            (dolist (item test-items)
+              (insert (format "Item #%s (%s):\n" 
+                             (plist-get item :number)
+                             (plist-get item :repo)))
+              (insert (format "  Type: %s\n" (plist-get item :type)))
+              (insert (format "  Title: %s\n" (plist-get item :title)))
+              (insert (format "  Status: %s\n" (plist-get item :status)))
+              (insert (format "  Estimate: %s\n" (plist-get item :estimate)))
+              (insert (format "  All keys: %s\n" 
+                             (let ((keys '()))
+                               (let ((plist item))
+                                 (while plist
+                                   (push (car plist) keys)
+                                   (setq plist (cddr plist))))
+                               (nreverse keys))))
+              (insert "\n"))
+            (display-buffer (current-buffer)))
+          (message "Project data test complete. Check *Project Data Test* buffer."))
+      (message "No project items returned from forge-extras-list-project-items-ordered"))))
+
 ;;;;; internal helpers for sync
 
 (defun tlon-forg--pandoc-convert (text from to)
