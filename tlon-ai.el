@@ -2164,9 +2164,9 @@ determined."
 
 ;;;###autoload
 (defun tlon-ai-propagate-changes ()
-  "Propagate modifications from all files in the latest commit of the current repository.
-For each file changed in the latest commit of the current repository, get its diff.
-Then, for each corresponding file in other \"uqbar\" content
+  "Propagate modifications from all files in the latest commit of the current repo.
+For each file changed in the latest commit of the current repository, get its
+diff. Then, for each corresponding file in other \"uqbar\" content
 repositories (originals and translations), ask the AI to apply the semantically
 equivalent changes. Finally, commit the changes made by the AI in each target
 repository."
