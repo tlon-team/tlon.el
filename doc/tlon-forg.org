@@ -529,7 +529,7 @@ This section lists non-interactive functions, variables, and constants used inte
 :END:
 The direct integration with GitHub Projects (V2) using the `gh` command-line tool and GraphQL has been largely moved to =forge-extras.el=. Functions within =tlon-forg.el=, such as ~tlon-get-status-in-issue~ and ~tlon-update-issue-from-todo~, now call helper functions provided by =forge-extras.el= (e.g., ~forge-extras-gh-get-issue-fields~, ~forge-extras-gh-parse-issue-fields~, ~forge-extras-gh-add-issue-to-project~, ~forge-extras-gh-update-project-item-status-field~).
 
-Configuration for GitHub Project integration (like project owner, project number, and various Node IDs) should now be done via the `defcustom` variables in =forge-extras.el= (e.g., ~forge-extras-project-owner~, ~forge-extras-project-number~, ~forge-extras-project-node-id~, ~forge-extras-status-field-node-id~, ~forge-extras-status-option-ids-alist~). The command ~tlon-forg-discover-project-node-ids~, which helps in discovering these IDs, is also part of =forge-extras.el=.
+Configuration for GitHub Project integration (like project owner, project number, and various Node IDs) should now be done via the `defcustom` variables in =forge-extras.el= (e.g., ~forge-extras-project-owner~, ~forge-extras-project-number~, ~forge-extras-project-node-id~, ~forge-extras-status-field-node-id~, ~forge-extras-status-option-ids-alist~).
 
 *** Miscellaneous Helpers
 :PROPERTIES:
