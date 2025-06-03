@@ -633,11 +633,14 @@ If called with a prefix ARG, the initial pull from forge is omitted."
       (user-error "No repository selected or available. Aborting capture-all-issues"))
     ;; Set default-directory for the scope of tlon-pull-silently and its callback
     (let ((default-directory (oref repo worktree)))
-      (if arg
-          (tlon-capture-all-issues-in-repo-after-pull repo nil origin-file)
-        (tlon-pull-silently "Pulling issues..."
-                            (lambda () (tlon-capture-all-issues-in-repo-after-pull repo nil origin-file))
-                            repo)))))
+      (let ((file-to-open
+             (if arg
+                 (tlon-capture-all-issues-in-repo-after-pull repo nil origin-file)
+               (tlon-pull-silently "Pulling issues..."
+                                   (lambda () (tlon-capture-all-issues-in-repo-after-pull repo nil origin-file))
+                                   repo))))
+        (when (and file-to-open (stringp file-to-open) (file-exists-p file-to-open))
+          (find-file file-to-open))))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues-in-project (arg)
@@ -719,8 +722,9 @@ cached project items list is used instead of fetching a fresh one."
   "Pull all issues from forge for REPO.
 If REPO is nil, attempts to determine the current repository.
 If MESSAGE is non-nil, display it while the process is ongoing.
-If CALLBACK is non-nil, call it after the process completes, restoring the
-window configuration that was active before the pull started."
+If CALLBACK is non-nil, call it after the process completes. The window
+configuration active before the pull started will be restored.
+Returns the result of the CALLBACK function, or nil if no callback."
   (when message (message message))
   (let ((original-window-config (current-window-configuration))
         (forge-repo (or repo (tlon-forg-get-or-select-repository))))
@@ -732,10 +736,12 @@ window configuration that was active before the pull started."
         (forge--pull forge-repo nil))) ; Pass nil to forge--pull to make it synchronous.
     ;; After the silent pull is complete, execute the callback if provided.
     ;; This ensures the callback runs outside the shut-up context and not from a sentinel.
-    (unwind-protect
-        (when callback
-          (funcall callback))
-      (set-window-configuration original-window-config))))
+    (let (callback-result)
+      (unwind-protect
+          (when callback
+            (setq callback-result (funcall callback)))
+        (set-window-configuration original-window-config))
+      callback-result))) ; Return the callback's result
 
 (defun tlon-forg--pull-sync (forge-repo)
   "Run `forge--pull' on FORGE-REPO synchronously and quietly."
@@ -747,7 +753,8 @@ REPO must be a valid `forge-repository` object.
 If PROJECT-ITEMS is provided, only capture issues that are in the project.
 INVOKED-FROM-ORG-FILE is the path to the org file from which the overall
 capture operation was initiated, if any.
-If any issues are captured, the target Org file for non-job issues is opened."
+If any issues are captured, returns the path to the target Org file for
+non-job issues if it's valid, otherwise nil."
   (let* ((default-directory (oref repo worktree)) ; Set context
          (_repo-name (oref repo name)) ; unused variable, kept for context
          (_owner (oref repo owner)) ; unused variable, kept for context
@@ -790,15 +797,20 @@ If any issues are captured, the target Org file for non-job issues is opened."
           (setq captured-anything-p t)))) ; Mark that we captured something
 
     (org-refile-cache-clear)
+    (org-refile-cache-clear)
     (if captured-anything-p
         (progn
           (message "Finished capturing issues into %s. Refile cache cleared."
                    (if actual-target-file-for-non-jobs
                        (file-name-nondirectory actual-target-file-for-non-jobs)
                      "default location"))
-          (when (and actual-target-file-for-non-jobs (file-exists-p actual-target-file-for-non-jobs))
-            (find-file actual-target-file-for-non-jobs)))
-      (message "No new issues captured for this repository. Refile cache cleared."))))
+          ;; Return the file path if it's valid and we captured something
+          (if (and actual-target-file-for-non-jobs (file-exists-p actual-target-file-for-non-jobs))
+              actual-target-file-for-non-jobs
+            nil))
+      (progn ; else (not captured-anything-p)
+        (message "No new issues captured for this repository. Refile cache cleared.")
+        nil)))) ; Return nil if nothing was captured or target file invalid
 
 (defun tlon-store-todo (template &optional no-action issue target-file)
   "Store a new TODO using TEMPLATE.
