@@ -9,6 +9,7 @@
 ;;                   (citar "1.4.0")
 ;;                   (ebib "2.36")
 ;;                   (el-patch "0.1")
+;;                   (elpaca "0.0.1")
 ;;                   (files-extras "0.1")
 ;;                   (forge "0.3.0")
 ;;                   (forge-search "0")
