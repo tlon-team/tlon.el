@@ -1740,7 +1740,7 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 		      (repo-name (oref repo-obj name))
 		      (issue-repo-fullname (format "%s/%s" owner repo-name)))
 	    (let ((idx -1) (found-idx nil))
-	      (cl-block 'search-loop
+	      (cl-block search-loop
 		(dolist (item project-items)
 		  (setq idx (1+ idx))
 		  (when (and (eq (plist-get item :type) 'issue)
