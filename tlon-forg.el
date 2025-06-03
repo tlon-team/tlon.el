@@ -907,7 +907,7 @@ If OVERRIDE-STATUS is non-nil, pass it to `tlon-make-todo-name-from-issue'."
                   ;; If capture-arg-final is still nil, it means either template key was not found,
                   ;; or it was found but its structure was not modifiable. Create ad-hoc.
                   (unless capture-arg-final
-                    (message "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
+                    (tlon-message-debug "Using ad-hoc template to capture to %s (original template key: %s)" target-file template)
                     (let* ((heading (file-name-base target-file)) ; This 'heading' will now be used
                            (template-string (if original-template-list
 						(nth 4 original-template-list) ; Reuse template string if possible
