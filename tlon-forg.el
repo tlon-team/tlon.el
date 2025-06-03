@@ -1355,7 +1355,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 			   forge-extras-status-field-node-id option-id)))))
 		;; Option ID not found
 		(message "Cannot find option id for status '%s'; skipping update of project status."
-			 target-status))))))))
+			 target-status)))))))
       (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
