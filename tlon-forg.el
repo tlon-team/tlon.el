@@ -1521,9 +1521,12 @@ point."
   "Call TODO-FUN or ISSUE-FUN depending on the current major mode."
   (pcase major-mode
     ('org-mode
-     (unless (org-at-heading-p)
-       (user-error "I could not find an `org-mode' heading at point"))
-     (funcall todo-fun))
+     (let ((entry-pos (org-entry-beginning-position)))
+       (if entry-pos
+           (progn
+             (goto-char entry-pos) ; Move to the start of the headline
+             (funcall todo-fun))
+         (user-error "I could not find an `org-mode` entry at point"))))
     ((or 'forge-topic-mode 'forge-issue-mode 'magit-status-mode)
      (unless (tlon-get-issue-name)
        (user-error "I could not find a GitHub issue at point"))
