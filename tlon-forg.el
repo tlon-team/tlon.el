@@ -746,11 +746,27 @@ window configuration that was active before the pull started."
 REPO must be a valid `forge-repository` object.
 If PROJECT-ITEMS is provided, only capture issues that are in the project.
 INVOKED-FROM-ORG-FILE is the path to the org file from which the overall
-capture operation was initiated, if any."
-  (let ((default-directory (oref repo worktree)) ; Set context
-        (_repo-name (oref repo name)) ; unused
-        (_owner (oref repo owner)) ; unused
-        (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name))))
+capture operation was initiated, if any.
+If any issues are captured, the target Org file for non-job issues is opened."
+  (let* ((default-directory (oref repo worktree)) ; Set context
+         (_repo-name (oref repo name)) ; unused variable, kept for context
+         (_owner (oref repo owner)) ; unused variable, kept for context
+         (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name)))
+         (captured-anything-p nil) ; Flag to track if any issue was captured
+         ;; Determine the target file for non-job issues from THIS repo
+         (repo-name-for-file (oref repo name))
+         (safe-todos-dir (when (and (boundp 'paths-dir-tlon-todos)
+                                    (stringp paths-dir-tlon-todos)
+                                    (file-directory-p paths-dir-tlon-todos))
+                           paths-dir-tlon-todos))
+         (potential-repo-specific-file
+          (when (and repo-name-for-file safe-todos-dir)
+            (expand-file-name (format "%s.org" repo-name-for-file) safe-todos-dir)))
+         (actual-target-file-for-non-jobs
+          (if (and potential-repo-specific-file (file-exists-p potential-repo-specific-file))
+              potential-repo-specific-file
+            (tlon-get-todos-generic-file))))
+
     (if project-items
         ;; Only process issues that are in the project
         (dolist (item project-items)
@@ -764,14 +780,25 @@ capture operation was initiated, if any."
                                              issue-number))))
               (when issue-id
                 (let ((issue (forge-get-topic issue-id)))
-                  (unless (tlon-get-todo-position-from-issue issue)
-                    (tlon-capture-issue issue invoked-from-org-file)))))))
+                  (unless (tlon-get-todo-position-from-issue issue) ; If TODO doesn't exist yet
+                    (tlon-capture-issue issue invoked-from-org-file)
+                    (setq captured-anything-p t))))))) ; Mark that we captured something
       ;; Fallback to all issues in repo (original behavior)
       (dolist (issue (tlon-get-issues repo))
-        (unless (tlon-get-todo-position-from-issue issue)
-          (tlon-capture-issue issue invoked-from-org-file))))
+        (unless (tlon-get-todo-position-from-issue issue) ; If TODO doesn't exist yet
+          (tlon-capture-issue issue invoked-from-org-file)
+          (setq captured-anything-p t)))) ; Mark that we captured something
+
     (org-refile-cache-clear)
-    (message "Finished capturing issues. Refile cache cleared.")))
+    (if captured-anything-p
+        (progn
+          (message "Finished capturing issues into %s. Refile cache cleared."
+                   (if actual-target-file-for-non-jobs
+                       (file-name-nondirectory actual-target-file-for-non-jobs)
+                     "default location"))
+          (when (and actual-target-file-for-non-jobs (file-exists-p actual-target-file-for-non-jobs))
+            (find-file actual-target-file-for-non-jobs)))
+      (message "No new issues captured for this repository. Refile cache cleared."))))
 
 (defun tlon-store-todo (template &optional no-action issue target-file)
   "Store a new TODO using TEMPLATE.
