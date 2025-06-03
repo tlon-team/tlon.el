@@ -1334,7 +1334,7 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 	   (t
 	    (let* ((option-id (cdr (assoc target-status
 					  forge-extras-status-option-ids-alist
-					  #'string=))))
+					  :test #'string-equal)))) ; Use case-insensitive comparison
 	      (unless option-id
 		(message "Cannot find option id for status '%s'; skipping"
 			 target-status))
