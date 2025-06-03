@@ -1335,25 +1335,27 @@ Uses functions from `forge-extras.el` for GitHub Project interactions."
 	    (let* ((option-id (cdr (assoc target-status
 					  forge-extras-status-option-ids-alist
 					  #'string-equal)))) ; Use case-insensitive comparison
-	      (unless option-id
-		(message "Cannot find option id for status '%s'; skipping"
-			 target-status))
-	      (if project-item-id
-		  ;; already in project → just update status
-		  (forge-extras-gh-update-project-item-status-field
-		   forge-extras-project-node-id project-item-id
-		   forge-extras-status-field-node-id option-id)
-		;; not in project → ask to add & then set status
-		(when (y-or-n-p
-		       (format "Issue #%s is not in Project %s.  Add it and set status to '%s'? "
-			       issue-number forge-extras-project-number target-status))
-		  (let ((new-item-id
-			 (forge-extras-gh-add-issue-to-project
-			  forge-extras-project-node-id issue-node-id)))
-		    (when new-item-id
+	      (if option-id
+		  ;; Option ID found, proceed with update
+		  (if project-item-id
+		      ;; already in project → just update status
 		      (forge-extras-gh-update-project-item-status-field
-		       forge-extras-project-node-id new-item-id
-		       forge-extras-status-field-node-id option-id))))))))))
+		       forge-extras-project-node-id project-item-id
+		       forge-extras-status-field-node-id option-id)
+		    ;; not in project → ask to add & then set status
+		    (when (y-or-n-p
+			   (format "Issue #%s is not in Project %s.  Add it and set status to '%s'? "
+				   issue-number forge-extras-project-number target-status))
+		      (let ((new-item-id
+			     (forge-extras-gh-add-issue-to-project
+			      forge-extras-project-node-id issue-node-id)))
+			(when new-item-id
+			  (forge-extras-gh-update-project-item-status-field
+			   forge-extras-project-node-id new-item-id
+			   forge-extras-status-field-node-id option-id)))))
+		;; Option ID not found
+		(message "Cannot find option id for status '%s'; skipping update of project status."
+			 target-status))))))))
       (message "Issue “%s” (#%s) updated successfully." org-title issue-number))))
 
 ;;;;; Files
