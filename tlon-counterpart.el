@@ -93,7 +93,6 @@ PROMPT controls whether `tlon-get-counterpart-language' should prompt."
 
 (defun tlon-get-counterpart-language (&optional repo prompt)
   "Return the language code of the counterpart of REPO.
-
 If PROMPT is non-nil and the source repo’s language is \"en\",
 ask the user which target language to use.  When PROMPT is nil
 the first entry in `tlon-project-target-languages' is selected
