@@ -339,14 +339,14 @@
  	   :type development
  	   :subtype emacs
            :dir ,(file-name-concat elpaca-repos-directory "tlon"))
-    (:name "tlon"
+    (:name "tlon.team"
 	   :project "tlon"
-	   :abbrev "tlon"
+	   :abbrev "tlon-team"
 	   :type development
 	   :help t)
-    (:name "tlon-content"
+    (:name "tlon.team-content"
 	   :project "tlon"
-	   :abbrev "tlon-content"
+	   :abbrev "tlon-team-content"
 	   :type content
 	   :help t)
     (:name "tlon-generic"
