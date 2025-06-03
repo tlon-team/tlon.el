@@ -416,7 +416,7 @@ ISSUE-VAL and TODO-VAL are the values to be compared, and ELEMENT is a string
 describing the element being compared (e.g., \"Titles\").
 ISSUE-CONTEXT-STRING provides context about the issue being processed."
   (let* ((choices `((,(format "issue: %s" issue-val) . ?i)
-		    (,(format "todo:  %s" todo-val) . ?t)))
+		    (,(format "todo: %s" todo-val) . ?t)))
 	 (selection (completing-read
 		     (format "For issue '%s':\n%s differ. Choose value to keep: " issue-context-string element)
 		     (mapcar #'car choices) nil t)))
@@ -461,15 +461,16 @@ If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
   "Reconcile the tags between ISSUE and the Org heading."
   (let* ((gh-labels-raw (tlon-forg-get-labels issue)) ; Raw labels from GH
          (org-tags-raw (org-get-tags))               ; Raw tags from Org
-         ;; For comparison, normalize
+         ;; For comparison, normalize GH tags. For Org tags, use valid tags.
          (issue-tags-for-compare (tlon-forg--normalize-tags gh-labels-raw))
-         (todo-tags-for-compare  (tlon-forg--normalize-tags org-tags-raw))
+         ;; tlon-forg--valid-tags already downcases, sorts, and handles empty/nil.
+         (org-tags-for-compare-and-display (tlon-forg--valid-tags org-tags-raw))
          (issue-context (tlon-get-issue-name issue)))
-    (unless (equal issue-tags-for-compare todo-tags-for-compare)
+    (unless (equal issue-tags-for-compare org-tags-for-compare-and-display)
       (pcase (tlon-forg--prompt-element-diff
               "Tags"
               (string-join issue-tags-for-compare ", ") ; Display all GH tags being compared
-              (string-join (tlon-forg--valid-tags org-tags-raw) ", ") ; Display only "valid" Org tags for the TODO side
+              (string-join org-tags-for-compare-and-display ", ") ; Display valid Org tags, consistent with comparison
               issue-context)
         (?i ;; Update Org TODO from Issue: apply all tags from the issue
             (org-set-tags (string-join (or gh-labels-raw '()) ":")))
