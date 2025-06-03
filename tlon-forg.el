@@ -445,15 +445,20 @@ If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
 
 (defun tlon-forg--sync-tags (issue)
   "Reconcile the tags between ISSUE and the Org heading."
-  (let* ((issue-tags (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
-	 (todo-tags  (tlon-forg--valid-tags (org-get-tags)))
-	 (issue-context (tlon-get-issue-name issue)))
-    (unless (equal issue-tags todo-tags)
+  (let* ((gh-labels-raw (tlon-forg-get-labels issue)) ; Raw labels from GH
+         (org-tags-raw (org-get-tags))               ; Raw tags from Org
+         ;; For comparison, normalize: downcase and sort
+         (issue-tags-for-compare (sort (mapcar #'downcase (copy-sequence gh-labels-raw)) #'string<))
+         (todo-tags-for-compare  (sort (mapcar #'downcase (copy-sequence org-tags-raw)) #'string<))
+         (issue-context (tlon-get-issue-name issue)))
+    (unless (equal issue-tags-for-compare todo-tags-for-compare)
       (pcase (tlon-forg--prompt-element-diff
-	      "Tags" (string-join issue-tags ", ") (string-join todo-tags ", ") issue-context)
-	;; do not convert `org-set-tags' to `org-set-tags-to' (which is obsolete)!
-	(?i (org-set-tags (string-join issue-tags ":")))
-	(?t (tlon-update-issue-from-todo))))))
+              "Tags" (string-join issue-tags-for-compare ", ") (string-join todo-tags-for-compare ", ") issue-context)
+        (?i ;; Update Org TODO from Issue: apply only "valid" (admissible) tags from the issue
+            (org-set-tags (string-join (tlon-forg--valid-tags gh-labels-raw) ":")))
+        (?t ;; Update Issue from Org TODO: tlon-update-issue-from-todo handles this.
+            ;; It currently uses raw org tags to set issue labels.
+            (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--diff-issue-and-todo (issue)
   "Return a list of symbols whose values differ between ISSUE and the Org heading.
@@ -462,15 +467,17 @@ Possible symbols are `title', `status' and `tags'."
          (issue-title  (string-trim (replace-regexp-in-string "\n" " " issue-title-org)))
 	 (issue-status (let ((st (tlon-get-status-in-issue issue)))
 			 (when st (upcase st))))
-	 (issue-tags   (tlon-forg--valid-tags (tlon-forg-get-labels issue)))
+	 ;; For comparison, use normalized raw tags
+	 (issue-tags-for-compare (sort (mapcar #'downcase (tlon-forg-get-labels issue)) #'string<))
 	 (org-title    (string-trim (tlon-forg--org-heading-title)))
 	 (org-status   (let ((st (org-get-todo-state)))
 			 (when st (upcase st))))
-	 (org-tags     (tlon-forg--valid-tags (org-get-tags)))
+	 ;; For comparison, use normalized raw tags
+	 (org-tags-for-compare (sort (mapcar #'downcase (org-get-tags)) #'string<))
 	 (diff '()))
     (unless (string= issue-title org-title)   (push 'title  diff))
     (unless (string= issue-status org-status) (push 'status diff))
-    (unless (equal   issue-tags org-tags)     (push 'tags   diff))
+    (unless (equal issue-tags-for-compare org-tags-for-compare) (push 'tags   diff))
     diff))
 
 (defun tlon-forg--report-diff (diff)
