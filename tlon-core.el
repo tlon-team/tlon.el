@@ -40,6 +40,11 @@
   :type 'boolean
   :group 'tlon-core)
 
+(defmacro tlon-message-debug (format-string &rest args)
+  "Display a message using FORMAT-STRING and ARGS if `tlon-debug' is non-nil."
+  `(when tlon-debug
+     (message ,format-string ,@args)))
+
 ;;;; Variables
 
 (defconst tlon-package-dir
