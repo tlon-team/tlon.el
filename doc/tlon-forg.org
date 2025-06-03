@@ -65,6 +65,12 @@ This module provides integration between =forge= (Emacs interface for Git forges
 + ~tlon-forg-enforce-user~ :: String or nil. If non-nil, forces Tlön to consider this string as the current user's GitHub login, primarily for testing purposes. Defaults to nil.
 #+vindex: tlon-forg-archive-todo-on-close
 + ~tlon-forg-archive-todo-on-close~ :: Boolean flag. If non-nil, ~tlon-close-issue-and-todo~ will archive the corresponding Org TODO item after marking it as "DONE". Defaults to nil. Can be toggled temporarily via ~tlon-forg-menu~.
+#+vindex: tlon-forg-sync-after-capture-project
++ ~tlon-forg-sync-after-capture-project~ :: Controls whether ~tlon-sync-all-issues-in-project~ is run after ~tlon-capture-all-issues-in-project~ completes. Options:
+  + =prompt= (default): Ask the user if they want to sync.
+  + =t=: Always sync after capture.
+  + =nil=: Never sync after capture.
+  The sync operation will use the cached project item list if available, avoiding redundant API calls. Can be set temporarily via ~tlon-forg-menu~.
   The GitHub Project owner, number, and various Node IDs (for the project, status field, and status options) are now configured via `defcustom` variables in =forge-extras.el= (e.g., ~forge-extras-project-owner~, ~forge-extras-project-number~, ~forge-extras-project-node-id~, etc.). Please refer to =forge-extras.el= for their configuration.
 
 ** Commands
@@ -125,7 +131,8 @@ This section details the interactive commands provided by =tlon-forg.el=.
   3. For each repository containing issues in the project:
      a. Performs a silent =forge-pull= first (unless called with a prefix argument) to ensure local data is up-to-date.
      b. Calls ~tlon-capture-all-issues-in-repo-after-pull~ to capture all issues in that repository.
-  4. Restores the original window configuration and clears the =org-refile= cache upon completion.
+  4. After all repositories are processed for capture, it may optionally call ~tlon-sync-all-issues-in-project~ based on the value of ~tlon-forg-sync-after-capture-project~. If called, the sync operation will use the project items list fetched during the capture phase, avoiding redundant API calls.
+  5. Restores the original window configuration and clears the =org-refile= cache upon completion.
 
 *** Syncing Issues and TODOs
 :PROPERTIES:
@@ -278,6 +285,7 @@ It provides the following groups and commands:
 + *Options*: (These set the corresponding user options temporarily for the session)
   + =-A= :: Archive TODO on close (~tlon-infix-toggle-archive-todo-on-close~)
   + =-a= :: Include archived (~tlon-infix-toggle-include-archived~)
+  + =-C= :: Sync after project capture (~tlon-forg-sync-after-capture-project-infix~)
   + =-s= :: When syncing (~tlon-forg-when-syncing-infix~)
   + =-n= :: When assignee is nil (~tlon-when-assignee-is-nil-infix~)
   + =-e= :: When assignee is someone else (~tlon-when-assignee-is-someone-else-infix~)
