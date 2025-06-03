@@ -1197,24 +1197,30 @@ avoid per-issue API calls for status and estimate."
          (issue-count 0)
          (project-data-map (make-hash-table :test 'eql))) ; Keyed by issue number
 
-    ;; 1. Populate project-data-map with status and estimate for issues in this repo
-    (if all-project-items
+    ;; Helper to ensure keys are always numeric
+    (cl-labels ((tlon--put-project-item (item)
+                (let ((num (plist-get item :number)))
+                  (puthash (if (stringp num) (string-to-number num) num)
+                           item
+                           project-data-map))))
+      ;; 1. Populate project-data-map with status and estimate for issues in this repo
+      (if all-project-items
+          (progn
+            (tlon-message-debug "Using provided project items data for repository %s..." repo-name)
+            (dolist (item all-project-items)
+              (when (and (eq (plist-get item :type) 'issue)
+                         (string= (plist-get item :repo) repo-fullname))
+                (tlon--put-project-item item))))
         (progn
-          (tlon-message-debug "Using provided project items data for repository %s..." repo-name)
-          (dolist (item all-project-items)
-            (when (and (eq (plist-get item :type) 'issue)
-                       (string= (plist-get item :repo) repo-fullname))
-              (puthash (plist-get item :number) item project-data-map))))
-      (progn
-        (tlon-message-debug "Fetching project item data for repository %s via all-project fetch..." repo-name)
-        ;; Fetch all project items for the configured project and then filter
-        ;; The third arg 't' to forge-extras-list-project-items-ordered means use cache if available.
-        ;; This is appropriate as tlon-sync-all-issues-in-repo might be called after tlon-sync-all-issues-in-project.
-        (let ((all-items (forge-extras-list-project-items-ordered nil nil t)))
-          (dolist (item all-items)
-            (when (and (eq (plist-get item :type) 'issue)
-                       (string= (plist-get item :repo) repo-fullname))
-              (puthash (plist-get item :number) item project-data-map))))))
+          (tlon-message-debug "Fetching project item data for repository %s via all-project fetch..." repo-name)
+          ;; Fetch all project items for the configured project and then filter
+          ;; The third arg 't' to forge-extras-list-project-items-ordered means use cache if available.
+          ;; This is appropriate as tlon-sync-all-issues-in-repo might be called after tlon-sync-all-issues-in-project.
+          (let ((all-items (forge-extras-list-project-items-ordered nil nil t)))
+            (dolist (item all-items)
+              (when (and (eq (plist-get item :type) 'issue)
+                         (string= (plist-get item :repo) repo-fullname))
+                (tlon--put-project-item item)))))))
     (tlon-message-debug "Populated project data for %d issues in %s."
              (hash-table-count project-data-map) repo-name)
 
