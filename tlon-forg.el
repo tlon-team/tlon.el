@@ -650,7 +650,9 @@ Capture defaults to the template's file if no other target is determined."
                  (or (when-let ((rsf (tlon-forg--get-repo-specific-todo-file issue-to-capture)))
                        (and (file-exists-p rsf) rsf))
                      (tlon-get-todos-generic-file))))
-            (tlon-store-todo "tbG" nil issue-to-capture preferred-target-file override-status)))))))
+            (tlon-store-todo "tbG" nil issue-to-capture preferred-target-file override-status)))
+        ;; Sync estimate after capturing the TODO
+        (tlon-sync-estimate-from-issue issue-to-capture)))))
 
 ;;;###autoload
 (defun tlon-capture-all-issues-in-repo (arg)
