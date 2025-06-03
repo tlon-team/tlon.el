@@ -1832,9 +1832,11 @@ Falls back to a status based on the issue's open/closed state (e.g., \"TODO\",
               (setq project-status-val (if parsed-fields (plist-get parsed-fields :status) nil)))
           (tlon-message-debug "Could not determine issue/repo details for project status fetch."))))
 
-    (setq org-status (if project-status-val
-                         (cdr (assoc project-status-val tlon-todo-statuses #'string=))
-                       nil))
+    (when project-status-val
+      (setq org-status
+            (cdr (assoc-string (format "%s" project-status-val)
+                               tlon-todo-statuses
+                               t))))          ; ‘t’ ⇒ case-insensitive match
     (or org-status
 	(if (and issue (eq (oref issue state) 'completed)) "DONE" "TODO"))))
 
