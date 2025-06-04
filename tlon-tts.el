@@ -3621,7 +3621,7 @@ Some TTS engines do not read numbers correctly when they are not separated by
 periods or commas (depending on the language)."
   (goto-char (point-min))
   (let* ((lang (tlon-tts-get-current-language))
-	 (default-separator (tlon-lookup tlon-thousands-separator
+	 (default-separator (tlon-lookup tlon-tts-thousands-separator
 					 :separator :language lang))
 	 (separator (pcase tlon-tts-engine
 		      ("ElevenLabs" default-separator)
