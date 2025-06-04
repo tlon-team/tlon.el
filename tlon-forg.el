@@ -260,12 +260,16 @@ For testing purposes."
   :group 'tlon-forg)
 
 (defcustom tlon-forg-sync-after-capture-project 'prompt
-  "Whether to run `tlon-sync-all-issues-in-project' after `tlon-capture-all-issues-in-project'.
-- `t': Always sync after capturing all issues in a project.
-- `nil': Never sync after capturing all issues in a project.
+  "Whether to automatically sync all issues after capturing them.
+
+- t: Always sync after capturing all issues in a project.
+
+- nil: Never sync after capturing all issues in a project.
+
 - `prompt': Prompt the user whether to sync after capturing.
-The sync operation will use the cached project item list if available.
-This option can be set temporarily via `tlon-forg-menu'."
+
+The sync operation will use the cached project item list if available. This
+option can be set temporarily via `tlon-forg-menu'."
   :type '(choice (const :tag "Always sync" t)
                  (const :tag "Never sync" nil)
                  (const :tag "Prompt to sync" prompt))
@@ -1816,7 +1820,8 @@ comparison in `org-sort-entries'. Lower values sort earlier."
 ;;;;;; status
 
 (defun tlon-get-status-in-issue (&optional issue _upcased project-item-data)
-  "Return the GitHub Project status of ISSUE, mapped to an Org TODO keyword."
+  "Return the GitHub Project status of ISSUE, mapped to an Org TODO keyword.
+PROJECT-ITEM-DATA is a plist that may contain :status and :estimate."
   (let* ((issue (or issue (forge-current-topic)))
          ;; 1. take :status from PROJECT-ITEM-DATA when present
          (project-status-val (when project-item-data
