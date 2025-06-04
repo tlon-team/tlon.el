@@ -113,15 +113,16 @@ DIR is the directory where the repo is stored."
 ;;;###autoload (autoload 'tlon-magit-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-magit-repo-menu ()
   "Browse a Tlön repo in Magit."
-  [["Babel"
-    ("b c" "babel-core"                   tlon-magit-browse-babel-core)
-    ("b f" "babel-refs"                   tlon-magit-browse-babel-refs)
+  [["Languages"
+    ("l d" "de"                           tlon-magit-browse-de)
+    ("l s" "es"                           tlon-magit-browse-es)
+    ("l r" "fr"                           tlon-magit-browse-fr)
+    ("l t" "it"                           tlon-magit-browse-it)]
+   ["General"
+    ("g c" "babel-core"                   tlon-magit-browse-babel-core)
+    ("g f" "babel-refs"                   tlon-magit-browse-babel-refs)
     ""
-    ("b d" "babel-de"                     tlon-magit-browse-babel-de)
-    ("b s" "babel-es"                     tlon-magit-browse-babel-es)
-    ("b r" "babel-fr"                     tlon-magit-browse-babel-fr)
-    ("b t" "babel-it"                     tlon-magit-browse-babel-it)]
-   ["Uqbar"
+    "Uqbar"
     ("q q" "uqbar"                        tlon-magit-browse-uqbar)
     ("q d" "uqbar-audio"                  tlon-magit-browse-uqbar-audio)
     ""
@@ -152,7 +153,7 @@ DIR is the directory where the repo is stored."
     ("o" "altruismoeficaz.org"            tlon-magit-browse-altruismoeficaz-org)
     ""
     "Boletín"
-    ("l" "boletin"                        tlon-magit-browse-boletin)]
+    ("b" "boletin"                        tlon-magit-browse-boletin)]
    ["La bisagra de la historia"
     ("s s" "bisagra"                      tlon-magit-browse-bisagra)
     ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
@@ -180,10 +181,10 @@ DIR is the directory where the repo is stored."
     ("c p" "Pablo"                        tlon-magit-browse-clock-pablo)
     ""
     "Emacs"
-    ("e" "tlon.el"                         tlon-magit-browse-tlon-el)
+    ("e" "tlon.el"                        tlon-magit-browse-tlon-el)
     ""
     "Docs"
-    ("d" "tlon-docs"                      tlon-magit-browse-docs)]])
+    ("d" "tlon-docs"                    tlon-magit-browse-docs)]])
 
 ;;;;; Browse repo in Dired
 
@@ -203,15 +204,16 @@ DIR is the directory where the repo is stored."
 ;;;###autoload (autoload 'tlon-dired-repo-menu "tlon-dispatch" nil t)
 (transient-define-prefix tlon-dired-repo-menu ()
   "Browse a Tlön repo in Dired."
-  [["Babel"
-    ("b c" "babel-core"                   tlon-dired-browse-babel-core)
-    ("b f" "babel-refs"                   tlon-dired-browse-babel-refs)
+  [["Languages"
+    ("l d" "de"                           tlon-dired-browse-de)
+    ("l s" "es"                           tlon-dired-browse-es)
+    ("l r" "fr"                           tlon-dired-browse-fr)
+    ("l t" "it"                           tlon-dired-browse-it)]
+   ["General"
+    ("g c" "babel-core"                   tlon-dired-browse-babel-core)
+    ("g f" "babel-refs"                   tlon-dired-browse-babel-refs)
     ""
-    ("b d" "babel-de"                     tlon-dired-browse-babel-de)
-    ("b s" "babel-es"                     tlon-dired-browse-babel-es)
-    ("b r" "babel-fr"                     tlon-dired-browse-babel-fr)
-    ("b t" "babel-it"                     tlon-dired-browse-babel-it)]
-   ["Uqbar"
+    "Uqbar"
     ("q q" "uqbar"                        tlon-dired-browse-uqbar)
     ("q d" "uqbar-audio"                  tlon-dired-browse-uqbar-audio)
     ""
@@ -242,7 +244,7 @@ DIR is the directory where the repo is stored."
     ("o" "altruismoeficaz.org"            tlon-dired-browse-altruismoeficaz-org)
     ""
     "Boletín"
-    ("l" "boletin"                        tlon-dired-browse-boletin)]
+    ("b" "boletin"                        tlon-dired-browse-boletin)]
    ["La bisagra de la historia"
     ("s s" "bisagra"                      tlon-dired-browse-bisagra)
     ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
