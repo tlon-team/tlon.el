@@ -153,23 +153,20 @@ For a full list of audio outputs, see
 
 (defconst tlon-microsoft-azure-audio-choices
   '(("amr-wb-16000hz")
+    ("audio-16khz-128kbitrate-mono-mp3" . "mp3")
     ("audio-16khz-16bit-32kbps-mono-opus" . "opus")
     ("audio-16khz-32kbitrate-mono-mp3" . "mp3")
     ("audio-16khz-64kbitrate-mono-mp3" . "mp3")
-    ("audio-16khz-128kbitrate-mono-mp3" . "mp3")
+    ("audio-24khz-160kbitrate-mono-mp3" . "mp3")
     ("audio-24khz-16bit-24kbps-mono-opus" . "opus")
     ("audio-24khz-16bit-48kbps-mono-opus" . "opus")
     ("audio-24khz-48kbitrate-mono-mp3" . "mp3")
     ("audio-24khz-96kbitrate-mono-mp3" . "mp3")
-    ("audio-24khz-160kbitrate-mono-mp3" . "mp3")
-    ("audio-48khz-96kbitrate-mono-mp3" . "mp3")
     ("audio-48khz-192kbitrate-mono-mp3" . "mp3")
+    ("audio-48khz-96kbitrate-mono-mp3" . "mp3")
     ("ogg-16khz-16bit-mono-opus" . "opus")
     ("ogg-24khz-16bit-mono-opus" . "opus")
     ("ogg-48khz-16bit-mono-opus" . "opus")
-    ("raw-8khz-8bit-mono-alaw" . "alaw")
-    ("raw-8khz-8bit-mono-mulaw" . "mulaw")
-    ("raw-8khz-16bit-mono-pcm" . "pcm")
     ("raw-16khz-16bit-mono-pcm" . "pcm")
     ("raw-16khz-16bit-mono-truesilk" . "sil")
     ("raw-22050hz-16bit-mono-pcm" . "pcm")
@@ -177,6 +174,9 @@ For a full list of audio outputs, see
     ("raw-24khz-16bit-mono-truesilk" . "sil")
     ("raw-44100hz-16bit-mono-pcm" . "pcm")
     ("raw-48khz-16bit-mono-pcm" . "pcm")
+    ("raw-8khz-16bit-mono-pcm" . "pcm")
+    ("raw-8khz-8bit-mono-alaw" . "alaw")
+    ("raw-8khz-8bit-mono-mulaw" . "mulaw")
     ("webm-16khz-16bit-mono-opus" . "opus")
     ("webm-24khz-16bit-24kbps-mono-opus" . "opus")
     ("webm-24khz-16bit-mono-opus" . "opus"))
@@ -218,11 +218,11 @@ For details, see <https://cloud.google.com/speech-to-text/docs/encoding>."
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 (defconst tlon-google-cloud-audio-choices
-  '(("MP3" . "mp3")
-    ("FLAC" . "flac")
-    ("MULAW" . "mulaw")
-    ("AMR" . "amr")
+  '(("AMR" . "amr")
     ("AMR_WB" . "amr_wb")
+    ("FLAC" . "flac")
+    ("MP3" . "mp3")
+    ("MULAW" . "mulaw")
     ("OGG_OPUS" . "ogg")
     ("SPEEX_WITH_HEADER_BYTE" . "speex")
     ("WEBM_OPUS" . "webm"))
@@ -253,8 +253,8 @@ Admissible values are `\"ogg_vorbis\"', `\"pcm\"' and `\"mp3\"'."
 
 (defconst tlon-openai-audio-choices
   '(("mp3" . "mp3")
-    ("wav" . "wav")
-    ("opus" . "opus"))
+    ("opus" . "opus")
+    ("wav" . "wav"))
   "Output format and associated extension for the OpenAI TTS service.")
 
 (defcustom tlon-openai-model
@@ -306,11 +306,11 @@ The options are:
   :type '(cons (string :tag "Name") (string :tag "Extension")))
 
 (defconst tlon-elevenlabs-audio-choices
-  '(("mp3_44100_32" . "mp3")
+  '(("mp3_44100_128" . "mp3")
+    ("mp3_44100_192" . "mp3")
+    ("mp3_44100_32" . "mp3")
     ("mp3_44100_64" . "mp3")
     ("mp3_44100_96" . "mp3")
-    ("mp3_44100_128" . "mp3")
-    ("mp3_44100_192" . "mp3")
     ("pcm_16000" . "pcm")
     ("pcm_22050" . "pcm")
     ("pcm_24000" . "pcm")
@@ -577,15 +577,15 @@ The placeholders are: API key, output format, SSML, destination for the audio
 file, and destination for the log file.")
 
 (defconst tlon-microsoft-azure-voices
-  '((:id "es-US-AlonsoNeural" :language "es" :gender "male" :role "main")
-    (:id "es-US-PalomaNeural" :language "es" :gender "female" :role "main")
+  '((:id "es-AR-ElenaNeural" :language "es" :gender "female")
+    (:id "es-AR-TomasNeural" :language "es" :gender "male")
     (:id "es-CO-GonzaloNeural" :language "es" :gender "male")
     (:id "es-CO-SalomeNeural" :language "es" :gender "female")
-    (:id "fr-FR-HenriNeural" :language "fr" :gender "male")
     (:id "es-MX-DaliaNeural" :language "es" :gender "female" :role "alternate")
     (:id "es-MX-JorgeNeural" :language "es" :gender "male" :role "alternate")
-    (:id "es-AR-TomasNeural" :language "es" :gender "male")
-    (:id "es-AR-ElenaNeural" :language "es" :gender "female"))
+    (:id "es-US-AlonsoNeural" :language "es" :gender "male" :role "main")
+    (:id "es-US-PalomaNeural" :language "es" :gender "female" :role "main")
+    (:id "fr-FR-HenriNeural" :language "fr" :gender "male"))
   "Preferred Microsoft Azure voices for different languages.
 All the voices in this property list are neural and multilingual, and are the
 best male and female voices we were able to identify in each language.
@@ -612,10 +612,10 @@ assumes 14 characters per second, and uses nine minutes to err on the safe side.
 The placeholders are: token, JSON payload and destination.")
 
 (defconst tlon-google-cloud-voices
-  '((:id "en-US-Studio-Q" :language "en" :gender "male")
-    (:id "en-US-Studio-O" :language "en" :gender "female")
-    (:id "es-US-Studio-B" :language "es" :gender "male")
-    (:id "es-US-Neural2-A" :language "es" :gender "female"))
+  '((:id "en-US-Studio-O" :language "en" :gender "female")
+    (:id "en-US-Studio-Q" :language "en" :gender "male")
+    (:id "es-US-Neural2-A" :language "es" :gender "female")
+    (:id "es-US-Studio-B" :language "es" :gender "male"))
   "Preferred Google Cloud voices for different languages.
 The male voice is a \"studio\" voice, the highest quality voice type currently
 offered by Google Cloud. Unfortunately, as of 2024-04-12, Google Cloud does not
@@ -651,8 +651,8 @@ file.")
 
 (defconst tlon-amazon-polly-voices
   '((:id "Joanna" :language "en" :gender "female")
-    (:id "Matthew" :language "en" :gender "male")
     (:id "Lupe" :language "es" :gender "female")
+    (:id "Matthew" :language "en" :gender "male")
     (:id "Pedro" :language "es" :gender "male"))
   "Preferred Amazon Polly voices for different languages.
 Joanna and Matthew are some of the available Polly voices for English.")
@@ -687,8 +687,8 @@ voice, and the file destination.")
     (:id "ballad" :language "es" :gender "male")
     (:id "echo" :language "es" :gender "male")
     (:id "fable" :language "es" :gender "female")
-    (:id "onyx" :language "es" :gender "male")
     (:id "nova" :language "es" :gender "female")
+    (:id "onyx" :language "es" :gender "male")
     (:id "sage" :language "es" :gender "female")
     (:id "shimmer" :language "es" :gender "female")
     (:id "verse" :language "es" :gender "male"))
@@ -712,20 +712,20 @@ See <https://help.openai.com/en/articles/8555505-tts-api#h_273e638099>.")
 ;;;;;; ElevenLabs
 
 (defconst tlon-elevenlabs-voices
-  '((:name "Brian" :id "rncjssM0aAEg1ApKehUP" :language "multilingual" :gender "male")
+  '((:name "Amelia" :id "Lpn2A60EAsgGCWjFue20" :language "multilingual" :gender "female" :role "alternate")
+    (:name "Brian" :id "rncjssM0aAEg1ApKehUP" :language "multilingual" :gender "male")
     (:name "Bruce" :id "qUqZ27WoGID6BUp35xTV" :language "multilingual" :gender "male" :role "main")
-    (:name "Hades" :id "y3uxYtdWYpmzg8Wwx2k3" :language "multilingual" :gender "male")
     (:name "Cristian" :id "6hfb8itl0CXl6ZA7WVIA" :language "multilingual" :gender "male")
-    (:name "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male" :role "alternate")
-    (:name "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
-    (:name "Amelia" :id "Lpn2A60EAsgGCWjFue20" :language "multilingual" :gender "female" :role "alternate")
-    (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "main")
+    (:name "Hades" :id "y3uxYtdWYpmzg8Wwx2k3" :language "multilingual" :gender "male")
     (:name "Mariluz" :id "m1VE7dnwBN0zMer3LcKv" :language "multilingual" :gender "female" :role "main")
+    (:name "Michael" :id "8mLUlN9GCPCERe4bI7Wx" :language "multilingual" :gender "male" :role "alternate")
+    (:name "Nate Silver" :id "IT5b7X3vlpkwXPfi0xBA" :language "multilingual" :gender "main"
+	   :stability 0.40 :similarity_boost 0.80 :style 0 :use_speaker_boost t :speed 1)
+    (:name "Neal" :id "6JpiWMuXFTicEyWjwDLn" :language "multilingual" :gender "male")
     (:name "Ricardo" :id "CoAqFXxZEa3kpJmE7rDr" :language "multilingual" :gender "male" :role "main")
     (:name "Rob Wiblin" :id "t2fWaFXjl9r1VVHfyeK0" :language "multilingual" :gender "main"
 	   :stability 0.45 :similarity_boost 0.80 :style 0 :use_speaker_boost t :speed 1)
-    (:name "Nate Silver" :id "IT5b7X3vlpkwXPfi0xBA" :language "multilingual" :gender "main"
-	   :stability 0.40 :similarity_boost 0.80 :style 0 :use_speaker_boost t :speed 1))
+    (:name "Victoria" :id "lm0dJr2LmYD4zn0kFH9E" :language "multilingual" :gender "female" :role "main"))
   "Preferred ElevenLabs voices for different languages.
 A list of available voices may be found here:
 <https://elevenlabs.io/app/voice-library>. To get information about the voices,
@@ -756,13 +756,20 @@ questions\").")
 ;;;;; Engines
 
 (defconst tlon-tts-engines
-  `((:name "Microsoft Azure"
-	   :voices-var tlon-microsoft-azure-voices
-	   :audio-var tlon-microsoft-azure-audio-settings
-	   :choices-var tlon-microsoft-azure-audio-choices
-	   :request-fun tlon-tts-microsoft-azure-make-request
-	   :char-limit tlon-microsoft-azure-char-limit
-	   :property :azure)
+  `((:name "Amazon Polly"
+	   :voices-var tlon-amazon-polly-voices
+	   :audio-var tlon-amazon-polly-audio-settings
+	   :choices-var tlon-amazon-polly-audio-choices
+	   :request-fun tlon-tts-amazon-polly-make-request
+	   :char-limit tlon-amazon-polly-char-limit
+	   :property :polly)
+    (:name "ElevenLabs"
+	   :voices-var tlon-elevenlabs-voices
+	   :audio-var tlon-elevenlabs-audio-settings
+	   :choices-var tlon-elevenlabs-audio-choices
+	   :request-fun tlon-tts-elevenlabs-make-request
+	   :char-limit tlon-elevenlabs-char-limit
+	   :property :elevenlabs)
     (:name "Google Cloud"
 	   :voices-var tlon-google-cloud-voices
 	   :audio-var tlon-google-cloud-audio-settings
@@ -770,26 +777,19 @@ questions\").")
 	   :request-fun tlon-tts-google-cloud-make-request
 	   :char-limit tlon-google-cloud-char-limit
 	   :property :google)
-    (:name "Amazon Polly"
-	   :voices-var tlon-amazon-polly-voices
-	   :audio-var tlon-amazon-polly-audio-settings
-	   :choices-var tlon-amazon-polly-audio-choices
-	   :request-fun tlon-tts-amazon-polly-make-request
-	   :char-limit tlon-amazon-polly-char-limit
-	   :property :polly)
+    (:name "Microsoft Azure"
+	   :voices-var tlon-microsoft-azure-voices
+	   :audio-var tlon-microsoft-azure-audio-settings
+	   :choices-var tlon-microsoft-azure-audio-choices
+	   :request-fun tlon-tts-microsoft-azure-make-request
+	   :char-limit tlon-microsoft-azure-char-limit
+	   :property :azure)
     (:name "OpenAI"
 	   :voices-var tlon-openai-voices
 	   :audio-var tlon-openai-audio-settings
 	   :request-fun tlon-tts-openai-make-request
 	   :char-limit tlon-openai-char-limit
-	   :property :openai)
-    (:name "ElevenLabs"
-	   :voices-var tlon-elevenlabs-voices
-	   :audio-var tlon-elevenlabs-audio-settings
-	   :choices-var tlon-elevenlabs-audio-choices
-	   :request-fun tlon-tts-elevenlabs-make-request
-	   :char-limit tlon-elevenlabs-char-limit
-	   :property :elevenlabs))
+	   :property :openai))
   "Text-to-speech engines and associated properties.")
 
 (defun tlon-tts--engine-char-limit ()
@@ -841,14 +841,14 @@ The first placeholder is the input file, and the second is the output file.")
 ;;;;; Authorhip
 
 (defconst tlon-tts-authorship-pattern
-  '((:language "en" :pattern "by %s.")
+  '((:language "ar" :pattern "بواسطة %s.")
+    (:language "de" :pattern "von %s.")
+    (:language "en" :pattern "by %s.")
     (:language "es" :pattern "por %s.")
     (:language "fr" :pattern "par %s.")
     (:language "it" :pattern "di %s.")
-    (:language "de" :pattern "von %s.")
-    (:language "ar" :pattern "بواسطة %s.")
-    (:language "ko" :pattern "%s에 의해.")
-    (:language "ja" :pattern "%sによって".))
+    (:language "ja" :pattern "%sによって".)
+    (:language "ko" :pattern "%s에 의해."))
   "Pattern to use when listing the author(s) of a work.
 For example, in English, the pattern is `by %s', where `%s' is replaced by the
 author name(s).")
@@ -893,126 +893,126 @@ former in group 1.")
 ;;;;; Numbers
 
 (defconst tlon-tts-regular-exponent-pattern
-  '(("es" . "a la %s")
-    ("en" . "to the power of %s")
-    ("fr" . "à la %s")
+  '(("ar" . "إلى %s")
     ("de" . "zur %s")
+    ("en" . "to the power of %s")
+    ("es" . "a la %s")
+    ("fr" . "à la %s")
     ("it" . "alla %s")
-    ("pt" . "à %s")
-    ("ar" . "إلى %s")
+    ("ja" . "%s 乗")
     ("ko" . "%s 제곱")
-    ("ja" . "%s 乗"))
+    ("pt" . "à %s"))
   "Pattern for regular exponents.")
 
 (defconst tlon-tts-irregular-exponents
-  '((2 . (("es" . "al cuadrado")
-	  ("en" . "squared")
-	  ("fr" . "au carré")
+  '((2 . (("ar" . "إلى السطح الثاني")
 	  ("de" . "zum Quadrat")
+	  ("en" . "squared")
+	  ("es" . "al cuadrado")
+	  ("fr" . "au carré")
 	  ("it" . "al quadrato")
-	  ("pt" . "ao quadrado")
-	  ("ar" . "إلى السطح الثاني")
+	  ("ja" . "二乗")
 	  ("ko" . "제곱")
-	  ("ja" . "二乗")))
-    (3 . (("es" . "al cubo")
-	  ("en" . "cubed")
-	  ("fr" . "au cube")
+	  ("pt" . "ao quadrado")))
+    (3 . (("ar" . "إلى السطح الثالث")
 	  ("de" . "zum Kubik")
+	  ("en" . "cubed")
+	  ("es" . "al cubo")
+	  ("fr" . "au cube")
 	  ("it" . "al cubo")
-	  ("pt" . "ao cubo")
-	  ("ar" . "إلى السطح الثالث")
+	  ("ja" . "三乗")
 	  ("ko" . "세제곱")
-	  ("ja" . "三乗")))
-    (4 . (("es" . "a la cuarta")
-	  ("en" . "to the fourth")
-	  ("fr" . "à la quatrième")
+	  ("pt" . "ao cubo")))
+    (4 . (("ar" . "إلى السطح الرابع")
 	  ("de" . "zur vierten")
+	  ("en" . "to the fourth")
+	  ("es" . "a la cuarta")
+	  ("fr" . "à la quatrième")
 	  ("it" . "alla quarta")
-	  ("pt" . "à quarta")
-	  ("ar" . "إلى السطح الرابع")
+	  ("ja" . "四乗")
 	  ("ko" . "네제곱")
-	  ("ja" . "四乗")))
-    (5 . (("es" . "a la quinta")
-	  ("en" . "to the fifth")
-	  ("fr" . "à la cinquième")
+	  ("pt" . "à quarta")))
+    (5 . (("ar" . "إلى السطح الخامس")
 	  ("de" . "zur fünften")
+	  ("en" . "to the fifth")
+	  ("es" . "a la quinta")
+	  ("fr" . "à la cinquième")
 	  ("it" . "alla quinta")
-	  ("pt" . "à quinta")
-	  ("ar" . "إلى السطح الخامس")
+	  ("ja" . "五乗")
 	  ("ko" . "다섯제곱")
-	  ("ja" . "五乗")))
-    (6 . (("es" . "a la sexta")
-	  ("en" . "to the sixth")
-	  ("fr" . "à la sixième")
+	  ("pt" . "à quinta")))
+    (6 . (("ar" . "إلى السطح السادس")
 	  ("de" . "zur sechsten")
+	  ("en" . "to the sixth")
+	  ("es" . "a la sexta")
+	  ("fr" . "à la sixième")
 	  ("it" . "alla sesta")
-	  ("pt" . "à sexta")
-	  ("ar" . "إلى السطح السادس")
+	  ("ja" . "六乗")
 	  ("ko" . "여섯제곱")
-	  ("ja" . "六乗")))
-    (7 . (("es" . "a la séptima")
-	  ("en" . "to the seventh")
-	  ("fr" . "à la septième")
+	  ("pt" . "à sexta")))
+    (7 . (("ar" . "إلى السطح السابع")
 	  ("de" . "zur siebten")
+	  ("en" . "to the seventh")
+	  ("es" . "a la séptima")
+	  ("fr" . "à la septième")
 	  ("it" . "alla settima")
-	  ("pt" . "à sétima")
-	  ("ar" . "إلى السطح السابع")
+	  ("ja" . "七乗")
 	  ("ko" . "일곱제곱")
-	  ("ja" . "七乗")))
-    (8 . (("es" . "a la octava")
-	  ("en" . "to the eighth")
-	  ("fr" . "à la huitième")
+	  ("pt" . "à sétima")))
+    (8 . (("ar" . "إلى السطح الثامن")
 	  ("de" . "zur achten")
+	  ("en" . "to the eighth")
+	  ("es" . "a la octava")
+	  ("fr" . "à la huitième")
 	  ("it" . "all'ottava")
-	  ("pt" . "à oitava")
-	  ("ar" . "إلى السطح الثامن")
+	  ("ja" . "八乗")
 	  ("ko" . "여덟제곱")
-	  ("ja" . "八乗")))
-    (9 . (("es" . "a la novena")
-	  ("en" . "to the ninth")
-	  ("fr" . "à la neuvième")
+	  ("pt" . "à oitava")))
+    (9 . (("ar" . "إلى السطح التاسع")
 	  ("de" . "zur neunten")
+	  ("en" . "to the ninth")
+	  ("es" . "a la novena")
+	  ("fr" . "à la neuvième")
 	  ("it" . "alla nona")
-	  ("pt" . "à nona")
-	  ("ar" . "إلى السطح التاسع")
+	  ("ja" . "九乗")
 	  ("ko" . "아홉제곱")
-	  ("ja" . "九乗"))))
+	  ("pt" . "à nona"))))
   "List of exponents and their irregular verbal equivalents.")
 
 (defconst tlon-tts-80000
-  '(("en" . "Eighty thousand")
-    ("es" . "Ochenta mil")
-    ("pt" . "Oitenta mil")
-    ("fr" . "Quatre-vingt mille")
+  '(("ar" . "ثمانون ألف")
     ("de" . "Achtzigtausend")
+    ("en" . "Eighty thousand")
+    ("es" . "Ochenta mil")
+    ("fr" . "Quatre-vingt mille")
     ("it" . "Ottantamila")
-    ("ar" . "ثمانون ألف")
+    ("ja" . "八万")
     ("ko" . "팔만")
-    ("ja" . "八万"))
+    ("pt" . "Oitenta mil"))
   "The number 80000 in different languages.")
 
 (defconst tlon-tts-thousands-separator
-  '((:language "en" :separator ",")
+  '((:language "ar" :separator ",")
+    (:language "de" :separator ".")
+    (:language "en" :separator ",")
     (:language "es" :separator ".")
     (:language "fr" :separator " ")
     (:language "it" :separator ".")
-    (:language "de" :separator ".")
-    (:language "ar" :separator ",")
-    (:language "ko" :separator ",")
-    (:language "ja" :separator ","))
+    (:language "ja" :separator ",")
+    (:language "ko" :separator ","))
   "List of language-specific thousands separators.
 The specified separator will replace existing thousands separators, so that the
 TTS engine pronounces the numbers correctly.")
 
 (defconst tlon-tts-decimals-separator
-  '((:language "en" :separator "")
+  '((:language "ar" :separator "")
+    (:language "de" :separator "")
+    (:language "en" :separator "")
     (:language "es" :separator "")
     (:language "fr" :separator "")
     (:language "it" :separator "")
-    (:language "de" :separator "")
-    (:language "ar" :separator "")
-    (:language "ko" :separator "")
-    (:language "ja" :separator ""))
+    (:language "ja" :separator "")
+    (:language "ko" :separator ""))
   "List of language-specific decimals separators.
 The specified separator will replace existing thousands separators, so that the
 TTS engine pronounces the numbers correctly.")
@@ -1020,37 +1020,37 @@ TTS engine pronounces the numbers correctly.")
 ;;;;; Currencies
 
 (defconst tlon-tts-currencies
-  '(("₿" . (("en" . ("bitcoin" . "bitcoins"))
-	    ("es" . ("bitcoin" . "bitcoins"))))
-    ("Ξ" . (("en" . ("ether" . "ether"))
-	    ("es" . ("éter" . "éter"))))
+  '(("$" . (("en" . ("dollar" . "dollars"))
+	    ("es" . ("dólar" . "dólares"))))
     ("£" . (("en" . ("pound" . "pounds"))
 	    ("es" . ("libra" . "libras"))))
-    ("₪" . (("en" . ("shekel" . "shekels"))
-	    ("es" . ("séquel" . "séqueles")))) ; https://www.fundeu.es/recomendacion/shekel-shequel-sekel-sequel/
-    ("₹" . (("en" . ("rupee" . "rupees"))
-	    ("es" . ("rupia" . "rupias"))))
     ("¥" . (("en" . ("yen" . "yens"))
 	    ("es" . ("yen" . "yenes"))))
-    ("$" . (("en" . ("dollar" . "dollars"))
-	    ("es" . ("dólar" . "dólares")))))
+    ("Ξ" . (("en" . ("ether" . "ether"))
+	    ("es" . ("éter" . "éter")))) ("₪" . (("en" . ("shekel" . "shekels"))
+	    ("es" . ("séquel" . "séqueles"))))
+					; https://www.fundeu.es/recomendacion/shekel-shequel-sekel-sequel/
+    ("₹" . (("en" . ("rupee" . "rupees"))
+	    ("es" . ("rupia" . "rupias"))))
+    ("₿" . (("en" . ("bitcoin" . "bitcoins"))
+	    ("es" . ("bitcoin" . "bitcoins")))))
   "Currency symbols and their associated three-letter codes.")
 
 (defconst tlon-tts-currency-units
-  '(("es" . ("millones" "millón" "mil" "billones" "billón" "trillones" "trillón"))
-    ("en" . ("trillion" "billion" "million" "thousand")))
+  '(("en" . ("trillion" "billion" "million" "thousand"))
+    ("es" . ("millones" "millón" "mil" "billones" "billón" "trillones" "trillón")))
   "List of currency unit words by language.
 Order longer units before shorter ones if they share prefixes, for correct regex
 matching.")
 
 (defconst tlon-tts-currency-unit-prepositions
-  '(("es" . (("millones" . " de ")
-             ("millón" . " de ")
-             ("billones" . " de ")
+  '(("es" . (("billones" . " de ")
              ("billón" . " de ")
+             ("mil" . " ")
+             ("millones" . " de ")
+             ("millón" . " de ")
              ("trillones" . " de ")
-             ("trillón" . " de ")
-             ("mil" . " ") ; e.g., "siete mil dólares"
+             ("trillón" . " de ") ; e.g., "siete mil dólares"
              (t . " ")))  ; Default preposition (a space) if unit present but not listed
     ("en" . ((t . " ")))) ; Default for English (e.g., "seven million dollars")
   "Prepositions to use between currency unit and currency name, by language.
@@ -1181,8 +1181,8 @@ This is used by `tlon-tts-narrate-staged-chunks` for asynchronous processing.")
      ("es" "Sección." ."")
      ("fr" "Titre." . "")
      ("it" "Titolo." . "")
-     ("ko" "제목." . "")
-     ("ja" "見出し." . ""))
+     ("ja" "見出し." . "")
+     ("ko" "제목." . ""))
     (image
      ("ar" "هناك صورة هنا." . "\nنهاية الصورة.")
      ("de" "Hier ist ein Bild." . "\nEnde des Bildes.")
@@ -1235,8 +1235,8 @@ This is used by `tlon-tts-narrate-staged-chunks` for asynchronous processing.")
      ("es" "Subsección." . "")
      ("fr" "Sous-titre." . "")
      ("it" "Sottotitolo." . "")
-     ("ko" "소제목." . "")
-     ("ja" "サブタイトル." . ""))
+     ("ja" "サブタイトル." . "")
+     ("ko" "소제목." . ""))
     (table
      ("ar" "هناك جدول هنا.\n" . "\nنهاية الجدول.")
      ("de" "Hier ist eine Tabelle.\n" . "\nEnde der Tabelle.")
