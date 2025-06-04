@@ -848,7 +848,8 @@ The first placeholder is the input file, and the second is the output file.")
     (:language "fr" :pattern "par %s.")
     (:language "it" :pattern "di %s.")
     (:language "ja" :pattern "%sによって".)
-    (:language "ko" :pattern "%s에 의해."))
+    (:language "ko" :pattern "%s에 의해.")
+    (:language "tr" :pattern "tarafından %s."))
   "Pattern to use when listing the author(s) of a work.
 For example, in English, the pattern is `by %s', where `%s' is replaced by the
 author name(s).")
