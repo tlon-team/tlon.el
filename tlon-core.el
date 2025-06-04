@@ -58,7 +58,7 @@
 	   :subproject "babel"
 	   :abbrev "babel-core"
 	   :type meta
-	   :key "b c"
+	   :key "g c"
 	   :help t)
     (:name "babel-refs"
 	   :project "babel"
@@ -66,47 +66,39 @@
 	   :abbrev "babel-refs"
 	   :type meta
 	   :subtype biblio
-	   :key "b r"
+	   :key "g r"
 	   :help t)
-    (:name "babel-es"
+    (:name "es"
 	   :project "babel"
 	   :subproject "babel"
-	   :abbrev "babel-es"
+	   :abbrev "es"
 	   :type meta
 	   :language "es"
-	   :key "b s"
+	   :key "l s"
 	   :help t)
-    (:name "babel-fr"
+    (:name "fr"
 	   :project "babel"
 	   :subproject "babel"
-	   :abbrev "babel-fr"
+	   :abbrev "fr"
 	   :type meta
 	   :language "fr"
-	   :key "b f"
+	   :key "l f"
 	   :help t)
-    (:name "babel-it"
+    (:name "it"
 	   :project "babel"
 	   :subproject "babel"
-	   :abbrev "babel-it"
+	   :abbrev "it"
 	   :type meta
 	   :language "it"
-	   :key "b t"
+	   :key "l t"
 	   :help t)
-    (:name "babel-de"
+    (:name "de"
 	   :project "babel"
 	   :subproject "babel"
-	   :abbrev "babel-de"
+	   :abbrev "de"
 	   :type meta
 	   :language "de"
-	   :key "b d"
-	   :help t)
-    (:name "babel-issues"
-	   :project "babel"
-	   :subproject "babel"
-	   :abbrev "babel-issues"
-	   :type development
-	   :subtype issues
-	   :key "b i"
+	   :key "l d"
 	   :help t)
     (:name "uqbar"
 	   :project "babel"
