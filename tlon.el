@@ -78,7 +78,7 @@ This variable should not be set manually.")
 ;; and a function to get it for specific languages
 
 (defvar tlon-dir-dict
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-es") "dict/")
+  (file-name-concat (tlon-repo-lookup :dir :name "es") "dict/")
   "Directory where dictionary files are stored.")
 
 ;; TODO: currently unused; consider implementing
