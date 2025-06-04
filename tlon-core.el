@@ -459,6 +459,18 @@ amounts between 1000 and 9999.")
 (defconst tlon-default-thousands-separator " "
   "The default thousands separator.")
 
+(defconst tlon-language-separators
+  '((:language "ar" :thousands " " :decimal ".")
+    (:language "de" :thousands "." :decimal ",")
+    (:language "en" :thousands "," :decimal ".")
+    (:language "es" :thousands " " :decimal ",")
+    (:language "fr" :thousands " " :decimal ",")
+    (:language "it" :thousands "." :decimal ",")
+    (:language "ja" :thousands "," :decimal ".")
+    (:language "ko" :thousands "," :decimal ".")
+    (:language "tr" :thousands "." :decimal ","))
+  "Language-specific thousands and decimal separators.")
+
 ;;;;; EAF validation
 
 (defconst tlon-eaf-base-regexp
@@ -1183,20 +1195,13 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
 ;;;;; numbers
 
 (defun tlon-get-separator (type &optional language)
-  "Return the decimal separator for LANGUAGE.
+  "Return the separator for LANGUAGE.
 TYPE is either `thousands' or `decimal'. If LANGUAGE is nil, use the language of
 the current repository."
   (when-let* ((language (or language (tlon-get-language-in-file)))
-	      (separators '("," "."))
-	      (en (pcase type ('thousands ",") ('decimal ".")))
-	      (rest (lambda () (car (remove en separators))))
-	      ;; Get the separator for this language from the existing constant
-	      (lang-separator (tlon-lookup tlon-decimals-separator :separator :language language)))
-    (pcase language
-      ("en" en)
-      (_ (if (and lang-separator (not (string-empty-p lang-separator)))
-	     (funcall rest)
-	   en)))))
+	      (separator-key (pcase type ('thousands :thousands) ('decimal :decimal)))
+	      (separator (tlon-lookup tlon-language-separators separator-key :language language)))
+    separator))
 
 (defun tlon-get-decimal-separator (&optional language)
   "Return the decimal separator for LANGUAGE.
