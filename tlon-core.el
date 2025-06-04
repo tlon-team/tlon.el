@@ -418,34 +418,6 @@ If `:help' is non-nil, include this repo in the list of directories scanned by
 
 ;;;;; Numbers
 
-(defconst tlon-thousands-separator
-  '((:language "ar" :separator ",")
-    (:language "de" :separator ".")
-    (:language "en" :separator ",")
-    (:language "es" :separator ".")
-    (:language "fr" :separator " ")
-    (:language "it" :separator ".")
-    (:language "ja" :separator ",")
-    (:language "ko" :separator ",")
-    (:language "tr" :separator "."))
-  "List of language-specific thousands separators.
-The specified separator will replace existing thousands separators, so that the
-TTS engine pronounces the numbers correctly.")
-
-(defconst tlon-decimals-separator
-  '((:language "ar" :separator "")
-    (:language "de" :separator "")
-    (:language "en" :separator "")
-    (:language "es" :separator "")
-    (:language "fr" :separator "")
-    (:language "it" :separator "")
-    (:language "ja" :separator "")
-    (:language "ko" :separator "")
-    (:language "tr" :separator ""))
-  "List of language-specific decimals separators.
-The specified separator will replace existing thousands separators, so that the
-TTS engine pronounces the numbers correctly.")
-
 (defconst tlon-number-separated-by-separator
   "\\(?1:[[:digit:]]\\{1,4\\}\\(?:\\(?2:%s\\)[[:digit:]]\\{3\\}\\)*\\(?:\\(?3:%s\\)[[:digit:]]+\\)?\\)"
   "Pattern to match numbers separated by separator.

@@ -1006,6 +1006,34 @@ former in group 1.")
     ("tr" . "Seksen bin"))
   "The number 80000 in different languages.")
 
+(defconst tlon-tts-thousands-separator
+  '((:language "ar" :separator ",")
+    (:language "de" :separator ".")
+    (:language "en" :separator ",")
+    (:language "es" :separator ".")
+    (:language "fr" :separator " ")
+    (:language "it" :separator ".")
+    (:language "ja" :separator ",")
+    (:language "ko" :separator ",")
+    (:language "tr" :separator "."))
+  "List of language-specific thousands separators.
+The specified separator will replace existing thousands separators, so that the
+TTS engine pronounces the numbers correctly.")
+
+(defconst tlon-tts-decimals-separator
+  '((:language "ar" :separator "")
+    (:language "de" :separator "")
+    (:language "en" :separator "")
+    (:language "es" :separator "")
+    (:language "fr" :separator "")
+    (:language "it" :separator "")
+    (:language "ja" :separator "")
+    (:language "ko" :separator "")
+    (:language "tr" :separator ""))
+  "List of language-specific decimals separators.
+The specified separator will replace existing thousands separators, so that the
+TTS engine pronounces the numbers correctly.")
+
 ;;;;; Currencies
 
 (defconst tlon-tts-currencies
