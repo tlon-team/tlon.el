@@ -424,7 +424,7 @@ COMMIT is non-nil, commit the change."
 ;; TODO: consider adapting `tlon-commit-and-push' instead
 (defun tlon-url-correspondence-commit ()
   "Commit modifications in `url-correspondences.json'."
-  (let ((default-directory (tlon-repo-lookup :dir :name "babel-es")))
+  (let ((default-directory (tlon-repo-lookup :dir :name "es")))
     ;; save all unsaved files in repo
     (magit-save-repository-buffers)
     (call-interactively #'magit-pull-from-upstream nil)
