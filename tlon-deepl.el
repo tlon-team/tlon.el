@@ -400,8 +400,7 @@ languages."
   (interactive)
   (let ((target-languages (or langs (tlon-read-multiple-languages 'babel))))
     (unless target-languages
-      (user-error "No target languages selected. Aborting."))
-    ;; Proceed if target-languages is not nil
+      (user-error "No target languages selected. Aborting"))
     (let* ((all-translations (tlon-read-abstract-translations))
            (keys (seq-uniq (append (tlon-tex-get-keys-in-file tlon-file-fluid)
                                    (tlon-tex-get-keys-in-file tlon-file-stable))))
