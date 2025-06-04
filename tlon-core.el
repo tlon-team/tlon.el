@@ -1,4 +1,4 @@
-;;; tlon-core.el --- Core Babel functionality  -*- lexical-binding: t -*-
+;;; tlon-core.el --- Core Tlön functionality  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 
@@ -21,7 +21,7 @@
 
 ;;; Commentary:
 
-;; Core Babel functionality.
+;; Core Tlön functionality.
 
 ;;; Code:
 
