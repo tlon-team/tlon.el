@@ -166,8 +166,8 @@ DIR is the directory where the repo is stored."
     ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)
     ""
     "Tlön site"
-    ("t t" "tlon"                         tlon-magit-browse-tlon)
-    ("t c" "tlon-content"                 tlon-magit-browse-tlon-content)]
+    ("t t" "tlon.team"                    tlon-magit-browse-tlon-team)
+    ("t c" "tlon.team-content"            tlon-magit-browse-tlon-team-content)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-magit-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-magit-browse-meetings-fede-pablo)
@@ -256,8 +256,8 @@ DIR is the directory where the repo is stored."
     ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
     ""
     "Tlön site"
-    ("t t" "tlon"                         tlon-dired-browse-tlon)
-    ("t c" "tlon-content"                 tlon-dired-browse-tlon-content)]
+    ("t t" "tlon.team"                    tlon-dired-browse-tlon-team)
+    ("t c" "tlon.team-content"            tlon-dired-browse-tlon-team-content)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-dired-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-dired-browse-meetings-fede-pablo)
