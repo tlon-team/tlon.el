@@ -1161,10 +1161,14 @@ the current repository."
   (when-let* ((language (or language (tlon-get-language-in-file)))
 	      (separators '("," "."))
 	      (en (pcase type ('thousands ",") ('decimal ".")))
-	      (rest (lambda () (car (remove en separators)))))
+	      (rest (lambda () (car (remove en separators))))
+	      ;; Get the separator for this language from the existing constant
+	      (lang-separator (tlon-lookup tlon-tts-decimals-separator :separator :language language)))
     (pcase language
       ("en" en)
-      ((or "es" "fr" "it" "pt") (funcall rest)))))
+      (_ (if (and lang-separator (not (string-empty-p lang-separator)))
+	     (funcall rest)
+	   en)))))
 
 (defun tlon-get-decimal-separator (&optional language)
   "Return the decimal separator for LANGUAGE.
