@@ -159,9 +159,9 @@ This variable should not be set manually.")
     (user-error "Please set the value of `%s'" (symbol-name var))))
 
 (autoload 'magit-git-string "magit-git")
-(defun tlon-get-latest-commit ()
-  "Return the latest commit in the `tlon' package."
-  (let ((default-directory tlon-package-dir))
+(defun tlon-get-latest-commit (dir)
+  "Return the latest commit in DIR."
+  (let ((default-directory dir))
     (magit-git-string "rev-parse" "--short" "HEAD")))
 
 (declare-function elpaca-extras-update-and-reload "elpaca-extras")
@@ -176,7 +176,7 @@ This variable should not be set manually.")
   "Copy information about the `tlon' package to the kill ring."
   (interactive)
   (let ((info (format "Package version: %s\nLatest commit: %s"
-		      tlon-version (tlon-get-latest-commit))))
+		      tlon-version (tlon-get-latest-commit tlon-package-dir))))
     (kill-new info)
     (message info)))
 

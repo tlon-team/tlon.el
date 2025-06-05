@@ -2178,7 +2178,7 @@ The command:
 		  "## Backtrace\n<!-- Si el backtrace es demasiado largo y GitHub lo rechaza, adjuntar como archivo txt -->\n\n\n```elisp\n\n```\n\n"
 		  "## Información del sistema\n<!-- No modificar -->\n"
 		  "\n- Tlon version: " tlon-version
-		  "\n- Latest commit: " (tlon-get-latest-commit)
+		  "\n- Latest commit: " (tlon-get-latest-commit tlon-package-dir)
 		  "\n\n"))
   (goto-char (+ (point-min) 7)))
 
