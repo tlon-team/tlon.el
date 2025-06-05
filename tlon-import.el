@@ -27,6 +27,7 @@
 
 (require 'request)
 (require 'tlon-cleanup)
+(require 'tlon-core)
 (require 'tlon-fix)
 
 ;;;; Variables
