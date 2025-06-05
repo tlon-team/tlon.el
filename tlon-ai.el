@@ -2175,21 +2175,21 @@ repository."
     (user-error "This command propagates changes from the most recent commit, but you have uncommitted changes"))
 
   (let* ((source-repo (tlon-get-repo 'no-prompt)) ; Get current repo, or prompt
-         (_ (unless source-repo (user-error "Could not determine current repository.")))
+         (_ (unless source-repo (user-error "Could not determine current repository")))
          (source-repo-name (tlon-repo-lookup :name :dir source-repo))
          (_ (unless source-repo-name (user-error "Could not determine repository name for %s" source-repo)))
          (source-lang (tlon-repo-lookup :language :dir source-repo))
          (latest-commit (tlon-get-latest-commit source-repo)) ; Get latest commit for the repo
          (_ (unless latest-commit (user-error "Could not find the latest commit for repository %s" source-repo-name)))
          (source-files-in-commit (tlon-ai--get-files-changed-in-commit latest-commit source-repo))
-         (_ (unless source-files-in-commit (user-error "No files found in commit %s for repository %s. Aborting."
+         (_ (unless source-files-in-commit (user-error "No files found in commit %s for repository %s. Aborting"
                                                        (substring latest-commit 0 7) source-repo-name)))
          (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
                                     (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
          (target-repos (remove source-repo all-content-repos)))
 
     (unless target-repos
-      (user-error "No target repositories found to propagate changes to."))
+      (user-error "No target repositories found to propagate changes to"))
 
     (message "Found commit %s in %s. Propagating changes for %d file(s)..."
              (substring latest-commit 0 7) source-repo-name (length source-files-in-commit))

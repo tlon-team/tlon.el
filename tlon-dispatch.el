@@ -85,7 +85,7 @@
     ("-D" "Debug"                         tlon-menu-infix-toggle-debug)
     ""
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
-    (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit) 'face 'bold))))]])
+    (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit tlon-package-dir) 'face 'bold))))]])
 
 ;;;;;; Common elements
 
