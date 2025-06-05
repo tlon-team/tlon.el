@@ -2173,7 +2173,6 @@ repository."
   (interactive)
   (when (magit-extras-repo-is-dirty-p)
     (user-error "This command propagates changes from the most recent commit, but you have uncommitted changes"))
-
   (let* ((source-repo (tlon-get-repo 'no-prompt)) ; Get current repo, or prompt
          (_ (unless source-repo (user-error "Could not determine current repository")))
          (source-repo-name (tlon-repo-lookup :name :dir source-repo))
@@ -2187,13 +2186,10 @@ repository."
          (all-content-repos (append (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'originals)
                                     (tlon-lookup-all tlon-repos :dir :subproject "uqbar" :subtype 'translations)))
          (target-repos (remove source-repo all-content-repos)))
-
     (unless target-repos
       (user-error "No target repositories found to propagate changes to"))
-
     (message "Found commit %s in %s. Propagating changes for %d file(s)..."
              (substring latest-commit 0 7) source-repo-name (length source-files-in-commit))
-
     (dolist (source-file source-files-in-commit)
       (message "Processing source file: %s" (file-relative-name source-file source-repo))
       (let ((diff (tlon-ai--get-commit-diff latest-commit source-file source-repo)))
@@ -2216,11 +2212,12 @@ repository."
                              (file-name-nondirectory source-file))
                     (with-temp-buffer
                       (let ((gptel-track-media nil))
-                        (tlon-make-gptel-request prompt nil
-                                                 (lambda (response info)
-                                                   (tlon-ai--propagate-changes-callback
-                                                    response info target-file target-repo source-repo-name latest-commit))
-                                                 nil 'no-context-check (current-buffer)))))
+                        (tlon-make-gptel-request
+			 prompt nil
+                         (lambda (response info)
+                           (tlon-ai--propagate-changes-callback
+                            response info target-file target-repo source-repo-name latest-commit))
+                         nil 'no-context-check (current-buffer)))))
                 (message "  No target file found in repo %s for source file %s. Skipping."
                          (file-name-nondirectory target-repo) (file-name-nondirectory source-file))))))))
     (message "AI change propagation requests initiated for all applicable files and target repositories.")))
