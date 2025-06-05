@@ -416,7 +416,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 
 ;;;;; General
 
-(defun tlon-make-gptel-request (prompt &optional string callback full-model no-context-check request-buffer)
+(defun tlon-make-gptel-request (prompt &optional string callback full-model no-context-check request-buffer tools)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
 When STRING is non-nil, PROMPT is a formatting string containing the prompt and
 a slot for a string, which is the variable part of the prompt (e.g. the text to
@@ -425,12 +425,15 @@ is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
 car is the backend and whose cdr is the model.
 
 By default, warn the user if the context is not empty. If NO-CONTEXT-CHECK is
-non-nil, bypass this check.
-REQUEST-BUFFER if non-nil, is the buffer to use for the gptel request."
+non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
+the gptel request. TOOLS is a list of gptel-tool structs to include with the
+request."
   (unless tlon-ai-batch-fun
     (tlon-warn-if-gptel-context no-context-check))
   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	(prompt (tlon-ai-maybe-edit-prompt prompt)))
+	(prompt (tlon-ai-maybe-edit-prompt prompt))
+	(gptel-use-tools (if tools t gptel-use-tools))
+	(gptel-tools (or tools gptel-tools)))
     (cl-destructuring-bind (backend . model) full-model
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
 	     (full-prompt (if string (format prompt string) prompt))
