@@ -450,7 +450,7 @@ amounts between 1000 and 9999.")
   "Regular expression for capturing the `commentid' element in post URLs.")
 
 (defconst tlon-eaf-url-post-canonical
-  (format "\\(?1:%s/posts/\\(?2:%s\\)\\)\\(?:/[-[:alnum:]]*\\)\\(?3:%s\\)?"
+  (format "\\(?1:%s/posts/\\(?2:%s\\)\\)\\(?:/[-[:alnum:]]*\\)?\\(?3:%s\\)?"
 	  tlon-eaf-base-regexp tlon-eaf-id-regexp tlon-eaf-url-post-comment-id)
   "Regular expression for validating canonical URLs of EAF posts.
 The first group captures the entire canonical URL, the second group captures the
