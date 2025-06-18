@@ -241,27 +241,27 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 	     :language "de")))
 
 (defconst tlon-ai-get-abstract-prompts
-  `((:prompt ,(format "The following work may or may not contain an abstract%s. If it contains an abstract, please return it. Otherwise, create an abstract of it yourself. %s However, please omit this phrase if you are simply copying verbatim an abstract you found in the work."
+  `((:prompt ,(format "Please create an abstract of the following work%s%s"
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "en"))
 	     :language "en")
-    (:prompt ,(format "La siguiente obra puede contener o no un resumen%s. Si contiene un resumen, devuélvelo. En caso contrario, crea tú mismo un resumen. %s Sin embargo, omite esta frase si simplemente está devolviendo un resumen que encontraste en la obra.En otras palabras, incluye la frase sólo cuando tú hayas creado el resumen."
+    (:prompt ,(format "Por favor, crea un resumen de la presente obra%s%s"
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "es"))
 	     :language "es")
-    (:prompt ,(format "L'œuvre suivante peut ou non contenir un résumé%s. S'il contient un résumé, veuillez le renvoyer. Sinon, créez un résumé vous-même. %s Toutefois, veuillez omettre cette phrase si vous ne faites que copier mot pour mot un résumé que vous avez trouvé dans l'œuvre."
+    (:prompt ,(format "Veuillez créer un résumé de ce travail%s%s"
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "fr"))
 	     :language "fr")
-    (:prompt ,(format "Il seguente lavoro può contenere o meno un estratto%s. Se contiene un estratto, si prega di restituirlo. Altrimenti, creane uno tu stesso. %s Tuttavia, si prega di omettere questa frase se si sta semplicemente copiando alla lettera un estratto trovato nell'opera."
+    (:prompt ,(format "Si prega di creare un riassunto del seguente lavoro%s%s"
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "it"))
 	     :language "it")
-    (:prompt ,(format "Das folgende Werk kann eine Zusammenfassung enthalten oder auch nicht%s. Wenn es eine Zusammenfassung enthält, geben Sie sie bitte zurück. Andernfalls erstellen Sie bitte selbst eine Zusammenfassung des Werks. %s Bitte lassen Sie diesen Satz jedoch weg, wenn Sie einfach eine wortwörtliche Zusammenfassung kopieren, die Sie in dem Werk gefunden haben."
+    (:prompt ,(format "Bitte erstellen Sie eine Zusammenfassung der folgenden Arbeit%s%s"
 		      tlon-ai-string-wrapper
 		      (tlon-lookup tlon-ai-how-to-write-abstract-prompt
 				   :prompt :language "de"))
