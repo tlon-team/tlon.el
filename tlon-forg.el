@@ -65,6 +65,16 @@ forge yet just return nil."
         (forge-get-repository :tracked)
       (error nil))))
 
+(defun tlon-forg--get-repository-from-dir (dir)
+  "Return the tracked forge repository for DIR.
+This uses a temporary buffer whose `default-directory' is DIR so that
+`forge-get-repository' looks only at the directory, instead of falling back to
+the repository object associated with whatever Forge buffer happens to be
+current."
+  (with-temp-buffer
+    (let ((default-directory dir))
+      (forge-get-repository :tracked))))
+
 ;;;; Helper Functions for Repository and Issue Selection
 
 (defun tlon-forg-get-or-select-repository ()
@@ -2082,7 +2092,7 @@ to Markdown) or `:markdown' (title is already Markdown, do not convert)."
   (let* ((repo (or repo (tlon-get-repo 'error 'include-all)))
 	 (body (or body ""))
 	 (default-directory repo)
-	 (repo (forge-get-repository :tracked))
+	 (repo (tlon-forg--get-repository-from-dir default-directory))
 	 (owner (oref repo owner))
 	 (reponame (oref repo name))
 	 (resource (format "/repos/%s/%s/issues" owner reponame))
