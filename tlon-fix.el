@@ -287,6 +287,7 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
   (tlon-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
 		   " <abbr>\\1</abbr>"))
 
+;;;###autoload
 (defun tlon-manual-fix-add-thousands-separators ()
   "Prompt the user to add thousands separators to numerals that lack them.
 Unlike `tlon-autofix-replace-thousands-separators', which replaces an existing
