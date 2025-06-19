@@ -429,7 +429,7 @@ non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
 the gptel request. TOOLS is a list of gptel-tool structs to include with the
 request."
   (unless (or tlon-ai-batch-fun skip-context-check)
-    (tlon-warn-if-gptel-context))
+    (gptel-extras-warn-when-context))
   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
 	(prompt (tlon-ai-maybe-edit-prompt prompt))
 	(gptel-use-tools (if tools t gptel-use-tools))
@@ -451,16 +451,6 @@ request."
   (if tlon-ai-edit-prompt
       (read-string "Prompt: " prompt)
     prompt))
-
-(defun tlon-warn-if-gptel-context ()
-  "Prompt for confirmation to proceed when `gptel' context is not empty."
-  (unless (or (null gptel-context--alist)
-	      (y-or-n-p "The `gptel' context is not empty. Proceed? "))
-    (let ((message "Aborted"))
-      (when (y-or-n-p "Clear the `gptel' context? ")
-	(gptel-context-remove-all)
-	(setq message (concat message " (context cleared)")))
-      (user-error message))))
 
 ;;;;;; Generic callback functions
 
@@ -660,7 +650,7 @@ FILE is the file to translate."
 	     (prompt (format (tlon-lookup tlon-ai-write-reference-article-prompt
 					  :prompt :language lang)
 			     title)))
-	(tlon-warn-if-gptel-context)
+	(gptel-extras-warn-when-context)
 	(tlon-add-add-sources-to-context)
 	(tlon-add-glossary-to-context lang)
 	(tlon-make-gptel-request prompt nil #'tlon-ai-create-reference-article-callback
@@ -841,7 +831,7 @@ it instead."
   (interactive)
   ;; we warn here because this command adds files to the context, so the usual
   ;; check downstream must be bypassed via `no-context-check'
-  (tlon-warn-if-gptel-context)
+  (gptel-extras-warn-when-context)
   (let* ((previous-context gptel-context--alist)
 	 (file (tlon-ai-read-image-file file))
 	 (language (tlon-get-language-in-file file))
@@ -1205,7 +1195,7 @@ Collects documentation files from the standard tlon and extras doc directories,
 adds them to the AI context, and sends the user's question using the model
 specified in `tlon-ai-help-model'."
   (interactive)
-  (tlon-warn-if-gptel-context)
+  (gptel-extras-warn-when-context)
   (let* ((question (read-string "What do you need help with? "))
 	 (all-doc-files (tlon-ai-get-documentation-files))
 	 (existing-doc-files (tlon-ai-add-existing-doc-files all-doc-files))
