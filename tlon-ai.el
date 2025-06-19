@@ -416,7 +416,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 
 ;;;;; General
 
-(defun tlon-make-gptel-request (prompt &optional string callback full-model no-context-check request-buffer tools)
+(defun tlon-make-gptel-request (prompt &optional string callback full-model skip-context-check request-buffer tools)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
 When STRING is non-nil, PROMPT is a formatting string containing the prompt and
 a slot for a string, which is the variable part of the prompt (e.g. the text to
@@ -424,12 +424,12 @@ be summarized in a prompt to summarize text). When STRING is nil (because there
 is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
 car is the backend and whose cdr is the model.
 
-By default, warn the user if the context is not empty. If NO-CONTEXT-CHECK is
+By default, warn the user if the context is not empty. If SKIP-CONTEXT-CHECK is
 non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
 the gptel request. TOOLS is a list of gptel-tool structs to include with the
 request."
-  (unless tlon-ai-batch-fun
-    (tlon-warn-if-gptel-context no-context-check))
+  (unless (or tlon-ai-batch-fun skip-context-check)
+    (tlon-warn-if-gptel-context))
   (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
 	(prompt (tlon-ai-maybe-edit-prompt prompt))
 	(gptel-use-tools (if tools t gptel-use-tools))
@@ -452,11 +452,9 @@ request."
       (read-string "Prompt: " prompt)
     prompt))
 
-(defun tlon-warn-if-gptel-context (&optional no-context-check)
-  "Prompt for confirmation to proceed when `gptel' context is not empty.
-If NO-CONTEXT-CHECK is non-nil, by pass the check."
-  (unless (or no-context-check
-	      (null gptel-context--alist)
+(defun tlon-warn-if-gptel-context ()
+  "Prompt for confirmation to proceed when `gptel' context is not empty."
+  (unless (or (null gptel-context--alist)
 	      (y-or-n-p "The `gptel' context is not empty. Proceed? "))
     (let ((message "Aborted"))
       (when (y-or-n-p "Clear the `gptel' context? ")
@@ -666,7 +664,7 @@ FILE is the file to translate."
 	(tlon-add-add-sources-to-context)
 	(tlon-add-glossary-to-context lang)
 	(tlon-make-gptel-request prompt nil #'tlon-ai-create-reference-article-callback
-				 tlon-ai-create-reference-article-model 'no-context-check)
+				 tlon-ai-create-reference-article-model t)
 	(message "Creating reference article with %S..."
 		 (or (cdr tlon-ai-create-reference-article-model) gptel-model)))
     (user-error "No \"title\" value found in front matter")))
@@ -852,7 +850,7 @@ it instead."
 			    (tlon-ai-describe-image-callback response info callback previous-context))))
     (gptel-context-remove-all)
     (gptel-context-add-file file)
-    (tlon-make-gptel-request default-prompt nil custom-callback nil 'no-context-check)))
+    (tlon-make-gptel-request default-prompt nil custom-callback nil t)))
 
 (defun tlon-ai-describe-image-callback (response info original-callback previous-context)
   "Handle the response from `tlon-ai-describe-image'.
@@ -1214,7 +1212,7 @@ specified in `tlon-ai-help-model'."
 	 (full-prompt (format tlon-ai-help-prompt-template question)))
     (unless existing-doc-files
       (user-error "No documentation files found in standard Elpaca doc directories or none exist on disk"))
-    (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-for-help-callback tlon-ai-help-model 'no-context-check)
+    (tlon-make-gptel-request full-prompt nil #'tlon-ai-ask-for-help-callback tlon-ai-help-model t)
     (message "Preparing your answer using %d documentation files with model %S..."
 	     (length existing-doc-files) (cdr tlon-ai-help-model))))
 
@@ -1814,7 +1812,7 @@ precise replacement."
       (message "Starting batch BibTeX key lookup for %d references in region..."
 	       (length references-with-pos))
       ;; Make the single batch request
-      (tlon-make-gptel-request prompt nil #'tlon-ai--batch-bibkey-result-handler nil t) ; Bypass context check
+      (tlon-make-gptel-request prompt nil #'tlon-ai--batch-bibkey-result-handler nil t)
       (message "AI request sent. Waiting for BibTeX keys..."))))
 
 (defun tlon-ai--batch-bibkey-result-handler (response info)
@@ -2009,7 +2007,7 @@ Returns an alist: (ref-string . list-of-(start . end))."
       (let* ((references-block (mapconcat #'identity unique-refs "\n"))
 	     (prompt (format tlon-ai-get-bibkeys-batch-prompt references-block db-string)))
 	;; Make the single batch request
-	(tlon-make-gptel-request prompt nil #'tlon-ai--extracted-batch-bibkey-result-handler nil t))))) ; Use new batch callback
+	(tlon-make-gptel-request prompt nil #'tlon-ai--extracted-batch-bibkey-result-handler nil t)))))
 
 (defun tlon-ai--extracted-batch-bibkey-result-handler (response info)
   "Callback to handle the result of batch bibkey lookup for extracted references.
@@ -2220,7 +2218,7 @@ repository."
 			 (lambda (response info)
 			   (tlon-ai--propagate-changes-callback
 			    response info target-file target-repo source-repo-name latest-commit))
-			 nil 'no-context-check (current-buffer)))))
+			 nil t (current-buffer)))))
 		(message "  No target file found in repo %s for source file %s. Skipping."
 			 (file-name-nondirectory target-repo) (file-name-nondirectory source-file))))))))
     (message "AI change propagation requests initiated for all applicable files and target repositories.")))
