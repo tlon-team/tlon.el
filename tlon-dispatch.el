@@ -134,41 +134,23 @@ DIR is the directory where the repo is stored."
     ("q j" "uqbar-ja"                     tlon-magit-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-magit-browse-uqbar-ko)
     ("q u" "uqbar-tr"                     tlon-magit-browse-uqbar-tr)]
-   ["EA News"
-    ("n" "ea.news"                        tlon-magit-browse-ea-news)
-    ""
-    "EA International"
-    ("i" "ea.international"               tlon-magit-browse-ea-international)
-    ""
-    "80k podcast"
-    ("p" "80k podcast"                    tlon-magit-browse-80k-podcast)
-    ;; ""
-    ;; "80k website"
-    ;; ("w" "80k website"                    tlon-magit-browse-80k-website)
-    ""
-    "AI-2027"
+   ["Projects"
+    ("8 p" "80k podcast"                    tlon-magit-browse-80k-podcast)
+    ;; ("8 w" "80k website"                    tlon-magit-browse-80k-website)
     ("7" "ai-2027"                        tlon-magit-browse-ai-2027)
-    ""
-    "altruismoeficaz.org"
-    ("o" "altruismoeficaz.org"            tlon-magit-browse-altruismoeficaz-org)
-    ""
-    "Boletín"
-    ("b" "boletin"                        tlon-magit-browse-boletin)]
-   ["La bisagra de la historia"
-    ("s s" "bisagra"                      tlon-magit-browse-bisagra)
-    ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
-    ""
-    "Altruismo Eficaz Argentina"
     ("a a" "aea"                          tlon-magit-browse-aea)
     ("a c" "aea-content"                  tlon-magit-browse-aea-content)
-    ""
-    "utilitarianism"
-    ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)
-    ""
-    "Tlön site"
+    ("o" "altruismoeficaz.org"            tlon-magit-browse-altruismoeficaz-org)
+    ("s s" "bisagra"                      tlon-magit-browse-bisagra)
+    ("s c" "bisagra-content"              tlon-magit-browse-bisagra-content)
+    ("b" "boletin"                        tlon-magit-browse-boletin)
+    ("i" "ea.international"               tlon-magit-browse-ea-international)
+    ("n" "ea.news"                        tlon-magit-browse-ea-news)
+    ("r" "rational-animations"            tlon-magit-browse-rational-animations)
     ("t t" "tlon.team"                    tlon-magit-browse-tlon-team)
-    ("t c" "tlon.team-content"            tlon-magit-browse-tlon-team-content)]
+    ("t c" "tlon.team-content"            tlon-magit-browse-tlon-team-content)
+    ("u n" "utilitarianism-en"            tlon-magit-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"            tlon-magit-browse-utilitarianism-es)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-magit-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-magit-browse-meetings-fede-pablo)
@@ -225,41 +207,23 @@ DIR is the directory where the repo is stored."
     ("q j" "uqbar-ja"                     tlon-dired-browse-uqbar-ja)
     ("q k" "uqbar-ko"                     tlon-dired-browse-uqbar-ko)
     ("q u" "uqbar-tr"                     tlon-dired-browse-uqbar-tr)]
-   ["EA International"
-    ("i" "ea.international"               tlon-dired-browse-ea-international)
-    ""
-    "EA News"
-    ("n" "ea.news"                        tlon-dired-browse-ea-news)
-    ""
-    "80k podcast"
-    ("p" "80k podcast"                    tlon-dired-browse-80k-podcast)
-    ;; ""
-    ;; "80k website"
-    ;; ("w" "80k website"                    tlon-dired-browse-80k-website)
-    ""
-    "AI–2027"
+   ["Projects"
+    ("8 p" "80k podcast"                    tlon-dired-browse-80k-podcast)
+    ;; ("8 w" "80k website"                    tlon-dired-browse-80k-website)
     ("7" "ai-2027"                        tlon-dired-browse-ai-2027)
-    ""
-    "Altruismo Eficaz en Español"
-    ("o" "altruismoeficaz.org"            tlon-dired-browse-altruismoeficaz-org)
-    ""
-    "Boletín"
-    ("b" "boletin"                        tlon-dired-browse-boletin)]
-   ["La bisagra de la historia"
-    ("s s" "bisagra"                      tlon-dired-browse-bisagra)
-    ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
-    ""
-    "Altruismo Eficaz Argentina"
     ("a a" "aea"                          tlon-dired-browse-aea)
     ("a c" "aea-content"                  tlon-dired-browse-aea-content)
-    ""
-    "utilitarianism"
-    ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
-    ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)
-    ""
-    "Tlön site"
+    ("o" "altruismoeficaz.org"            tlon-dired-browse-altruismoeficaz-org)
+    ("s s" "bisagra"                      tlon-dired-browse-bisagra)
+    ("s c" "bisagra-content"              tlon-dired-browse-bisagra-content)
+    ("b" "boletin"                        tlon-dired-browse-boletin)
+    ("i" "ea.international"               tlon-dired-browse-ea-international)
+    ("n" "ea.news"                        tlon-dired-browse-ea-news)
+    ("r" "rational-animations"            tlon-dired-browse-rational-animations)
     ("t t" "tlon.team"                    tlon-dired-browse-tlon-team)
-    ("t c" "tlon.team-content"            tlon-dired-browse-tlon-team-content)]
+    ("t c" "tlon.team-content"            tlon-dired-browse-tlon-team-content)
+    ("u n" "utilitarianism-en"            tlon-dired-browse-utilitarianism-en)
+    ("u s" "utilitarianism-es"            tlon-dired-browse-utilitarianism-es)]
    ["Meetings"
     ("m l p" "Leo-Pablo"                  tlon-dired-browse-meetings-leo-pablo)
     ("m f p" "Fede-Pablo"                 tlon-dired-browse-meetings-fede-pablo)
