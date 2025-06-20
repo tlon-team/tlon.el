@@ -3435,7 +3435,7 @@ The report checks the content of the current staging buffer."
       (org-mode)
       (insert "* TTS Report")
       (when abbreviations
-	(insert "** Missing abbreviations\n\n")
+	(insert "\n** Missing abbreviations\n\n")
 	(dolist (abbreviation abbreviations)
 	  (insert (format "- %s\n" abbreviation))))
       (when chemical-symbols-p
