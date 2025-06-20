@@ -262,13 +262,22 @@ If citation is not found, return nil."
 (defun tlon-api-get-citation-json (url)
   "Return the JSON response from URL."
   (let* ((command (format "curl -sS -X 'GET' \ '%s' \ -H 'accept: application/json'" url))
-	 (output (shell-command-to-string command)))
+         (output (shell-command-to-string command)))
     (if (string-match "could not resolve host" output)
-	(user-error "Failed to get citation. Is your local environment set up correctly?")
-      (with-temp-buffer
-	(insert output)
-	(goto-char (point-min))
-	(json-read)))))
+        (user-error "Failed to get citation from URL '%s'. Curl error: could not resolve host. Is your local environment set up correctly?" url)
+      (let ((trimmed-output (string-trim output))) ; Trim whitespace for checks
+        (unless (or (string-prefix-p "{" trimmed-output)
+                    (string-prefix-p "[" trimmed-output))
+          (user-error "API response from URL '%s' does not look like JSON. Received (first 200 chars): %s"
+                      url (substring-no-properties trimmed-output 0 (min 200 (length trimmed-output)))))
+        (condition-case err
+            (with-temp-buffer
+              (insert output) ; Insert original output, not trimmed
+              (goto-char (point-min))
+              (json-read))
+          (json-readtable-error
+           (user-error "JSON parsing failed for URL '%s'. Original error: %s. Received (first 200 chars): %s"
+                       url err (substring-no-properties output 0 (min 200 (length output))))))))))
 
 ;;;;; File uploading
 
