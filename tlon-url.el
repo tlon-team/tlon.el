@@ -84,13 +84,34 @@ If FILE is nil, use the file visited by the current buffer."
 	 (goto-address-mode 1))))))
 
 ;;;###autoload
-(defun tlon-get-archived (&optional url)
-  "Get and copy the latest archived version of URL from Wayback Machine."
-  (interactive)
-  (let ((url (or url (read-string "URL: " (thing-at-point 'url t))))
-	(archived (format "https://web.archive.org/web/2/%s" url)))
-    (kill-new (format "https://web.archive.org/web/2/%s" url))
-    archived))
+(defun tlon-get-archived (url)
+  "Return the latest working archived version of URL from Wayback Machine.
+Also, copy the URL to the kill ring."
+  (interactive "sURL: ")
+  (let ((api-url (format "https://web.archive.org/cdx/search/cdx?url=%s&statuscode=200&limit=1&sort=reverse"
+                         (url-hexify-string url))))
+    (message "Fetching latest working archive for %s... (simple query)" url)
+    (url-retrieve
+     api-url
+     (lambda (status &rest _)
+       (let ((buffer (current-buffer)))
+         (with-current-buffer buffer
+           (if (plist-get status :error)
+               (message "Wayback Machine request failed: %S" (plist-get status :error))
+             (goto-char (point-min))
+             (if (re-search-forward "^\\s-*$" nil t)
+                 (let* ((response (buffer-substring-no-properties (point) (point-max)))
+                        (lines (split-string response "\n" t)))
+                   (if (and lines (> (length lines) 0))
+                       (let* ((fields (split-string (car lines) " "))
+                              (timestamp (nth 1 fields))
+                              (original-url (nth 2 fields))
+                              (archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url)))
+                         (message "Latest working archive: %s" archive-url)
+                         (kill-new archive-url))
+                     (message "No working archives found for %s" url)))
+               (message "Could not parse Wayback Machine API response."))))
+	 (kill-buffer buffer))))))
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
   "Replace URL-DEAD with URL-LIVE in all files across content repos.
