@@ -1391,17 +1391,54 @@ If ISSUE is nil, use the issue at point."
 		 (t nil)))))
 	(message "No TODO found for issue %s to sync estimate." (oref issue title))))))
 
-(defun tlon-update-todo-from-issue (issue-name)
-  "Update TODO to match ISSUE-NAME."
+(defun tlon-update-todo-from-issue (full-new-heading-text)
+  "Update TODO to match FULL-NEW-HEADING-TEXT.
+FULL-NEW-HEADING-TEXT is the complete heading string after the stars,
+including the new TODO keyword, title, and tags.
+Preserves existing priority cookie."
   (let ((original-visual-line-mode visual-line-mode))
-    (visual-line-mode -1)
-    (save-window-excursion
+    (visual-line-mode -1) ; Ensure correct point motion
+    (save-window-excursion ; Preserve point for the caller
+      (goto-char (org-entry-beginning-position)) ; Ensure we are at the correct headline
+      (org-fold-show-subtree) ; Ensure headline is visible for modification
+
+      (let (new-keyword new-title-material)
+        (if (string-match "^\\(\\S-\+\\)\\s-+\\(.*\\)$" full-new-heading-text)
+            (progn
+              (setq new-keyword (match-string 1 full-new-heading-text))
+              (setq new-title-material (match-string 2 full-new-heading-text)))
+          ;; Fallback if full-new-heading-text doesn't contain a keyword.
+          ;; Current callers (like tlon-make-todo-name-from-issue) should always provide one.
+          (setq new-keyword (or (nth 1 (org-heading-components)) "TODO")) ; Keep current or default
+          (setq new-title-material full-new-heading-text)))
+
+      ;; Set the keyword first. This preserves the priority cookie.
+      (org-todo new-keyword)
+
+      ;; Now, replace the old title material (after keyword and priority)
+      ;; with new-title-material.
       (beginning-of-line)
-      (re-search-forward " ")
-      (org-fold-show-subtree)
-      (org-kill-line)
-      (insert issue-name)
-      (when tlon-debug (message "TODO updated")))
+      ;; Move point past "** KEYWORD "
+      (unless (re-search-forward "^\\*+ +\\S-+\\s-+" nil t)
+        (user-error "Could not find keyword in headline after org-todo"))
+
+      ;; Move point past priority cookie, if it exists
+      (let ((priority-cookie-string (nth 2 (org-heading-components))))
+        (when priority-cookie-string
+          (unless (re-search-forward (regexp-quote priority-cookie-string) nil t)
+            ;; This error implies inconsistency if priority was expected but not found
+            (message "Warning: Priority cookie '%s' expected but not found after keyword" priority-cookie-string))
+          ;; Move past any space after priority cookie
+          (re-search-forward "\\s-*" nil t)))
+      
+      ;; Point is now at the start of the old title material.
+      ;; Delete from point to end of line (old title and tags)
+      (delete-region (point) (line-end-position))
+      ;; Insert the new title material
+      (insert new-title-material)
+
+      (when tlon-debug (message "TODO updated to: %s"
+                                (org-get-heading t t nil nil)))) ; Log the full new heading
     (visual-line-mode original-visual-line-mode)))
 
 (defun tlon-update-issue-from-todo ()
