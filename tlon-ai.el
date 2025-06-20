@@ -344,6 +344,15 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 	     :language "es"))
   "Prompts for creating a meta description for an article.")
 
+;;;;; Title Generation
+
+(defconst tlon-ai-create-title-prompt
+  `((:prompt ,(format "Your task is to generate an SEO-optimized title for the article content provided below: %s. Follow these rules:\n\n1. Length: Keep the title around 50-60 characters to avoid truncation in search results. If longer, ensure the first 55 characters convey the core message.\n2. Primary keyword first: Start with the main keyword or topic, naturally integrated.\n3. Clarity: Make the title clearly describe the content. Use words that reflect the main idea.\n4. Uniqueness: Create a unique title that won't duplicate existing ones.\n5. Engagement: Use numbers for lists, questions for Q&A content (\"How...?\" or \"Why...?\"), compelling adjectives (\"complete guide\", \"effective strategies\"), or action verbs (\"Learn to...\", \"Discover...\").\n6. Natural language: Write like a human headline, not keyword stuffing.\n7. Tone: Match an informative, respectful tone. Avoid sensational language unless warranted.\n\nReturn *only* the title itself, without quotes, introductory phrases, or formatting." tlon-ai-string-wrapper)
+	     :language "en")
+    (:prompt ,(format "Tu tarea es generar un título optimizado para SEO basado en el contenido del artículo que se proporciona a continuación: %s. Sigue estas reglas:\n\n1. Longitud: Mantén el título alrededor de 50-60 caracteres para evitar truncamiento en los resultados de búsqueda. Si es más largo, asegúrate de que los primeros 55 caracteres transmitan el mensaje principal.\n2. Palabra clave principal primero: Comienza con la palabra clave o tema principal, integrado de forma natural.\n3. Claridad: Haz que el título describa claramente el contenido. Usa palabras que reflejen la idea principal.\n4. Unicidad: Crea un título único que no duplique otros existentes.\n5. Engagement: Usa números para listas, preguntas para contenido de Q&A (\"¿Cómo...?\" o \"¿Por qué...?\"), adjetivos atractivos (\"guía completa\", \"estrategias efectivas\"), o verbos de acción (\"Aprende a...\", \"Descubre...\").\n6. Lenguaje natural: Escribe como un titular humano, no relleno de palabras clave.\n7. Tono: Coincide con un tono informativo y respetuoso. Evita el lenguaje sensacionalista a menos que esté justificado.\n8. Español correcto: Asegúrate de usar ortografía, gramática y puntuación correctas en español, incluyendo todas las tildes y signos de puntuación invertidos necesarios.\n\nDevuelve *solo* el título en sí, sin comillas, frases introductorias o formato." tlon-ai-string-wrapper)
+	     :language "es"))
+  "Prompts for creating an SEO-optimized title for an article.")
+
 ;;;;; Encoding
 
 (defconst tlon-ai-fix-encoding-prompt
@@ -2089,6 +2098,33 @@ Uses AI to generate a meta description based on the current buffer's content."
       (user-error "Current buffer is not visiting a file"))
     (tlon-ai--generate-and-insert-meta-description-for-file current-file t))) ; Pass t for interactive behavior
 
+;;;###autoload
+(defun tlon-ai-create-title ()
+  "Generate and set the \"title\" field in the YAML front matter.
+Uses AI to generate an SEO-optimized title based on the current buffer's content."
+  (interactive)
+  (let* ((current-file (buffer-file-name))
+         (article-content (tlon-md-read-content))
+         (language (or (tlon-get-language-in-file nil)
+                       (tlon-select-language 'code))))
+    (unless current-file
+      (user-error "Current buffer is not visiting a file"))
+    (unless language
+      (user-error "Language selection aborted"))
+    (if (string-empty-p (string-trim article-content))
+        (message "Cannot generate title: Article content is empty.")
+      (if-let ((prompt (tlon-lookup tlon-ai-create-title-prompt :prompt :language language)))
+          (progn
+            (message "Requesting AI title generation for %s (lang: %s)..."
+                     (file-name-nondirectory current-file)
+                     (or (tlon-validate-language language 'name) language))
+            (tlon-make-gptel-request prompt
+                                     article-content
+                                     #'tlon-ai-create-title-callback
+                                     tlon-ai-summarization-model))
+        (message "No title generation prompt available for language %s."
+                 (or (tlon-validate-language language 'name) language))))))
+
 (defun tlon-ai-create-meta-description-callback (response info)
   "Callback for `tlon-ai-create-meta-description'.
 If RESPONSE is valid, insert it as the \"meta\" field in the YAML front matter
@@ -2105,6 +2141,17 @@ response INFO."
 	(with-current-buffer original-buffer ;; Ensure context for tlon-yaml-insert-field
 	  (tlon-yaml-insert-field "meta" response)
 	  (message "Meta description set for %s." (file-name-nondirectory original-file-name)))))))
+
+(defun tlon-ai-create-title-callback (response info)
+  "Callback for `tlon-ai-create-title'.
+If RESPONSE is valid, insert it as the \"title\" field in the YAML front matter
+of the current buffer. Otherwise, call `tlon-ai-callback-fail' with the
+response INFO."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let ((cleaned-title (string-trim response)))
+      (tlon-yaml-insert-field "title" cleaned-title)
+      (message "Title set to: %s" cleaned-title))))
 
 (defun tlon-ai-create-meta-descriptions-in-directory (directory)
   "Iterate over Markdown files in DIRECTORY, creating AI meta descriptions.
@@ -2537,14 +2584,13 @@ If nil, use the default model."
     ("x" "Extract references from buffer/region" tlon-ai-extract-references)
     ("k" "Get BibKeys for references (region - line based)"   tlon-ai-get-bibkeys-from-references)
     ("X" "Extract & Replace References (buffer/region - precise)" tlon-ai-extract-and-replace-references)]
-   ["Help"
-    ("a a" "Ask for help"                               tlon-ai-ask-for-help)]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
     ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)
+    ("t" "create title"                             tlon-ai-create-title)
     ;; Create command to translate all images
     ;; TODO: develop this
     ;; ("M" "translate all math"                      tlon-ai-translate-math-in-buffer)
