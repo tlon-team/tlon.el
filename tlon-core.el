@@ -294,6 +294,13 @@
 	   :type misc
 	   :key "a"
 	   :help t)
+    (:name "rational-animations"
+	   :project "other"
+	   :subproject "rational-animations"
+	   :abbrev "rational-animations"
+	   :type content
+	   :key "r"
+	   :help t)
     (:name "meetings-leo-pablo"
 	   :abbrev "meetings-leo-pablo"
 	   :subtype meetings
