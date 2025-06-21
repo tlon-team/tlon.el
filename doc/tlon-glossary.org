@@ -74,16 +74,17 @@ The command ~tlon-edit-glossary~ provides an interactive way to create or update
 The command ~tlon-extract-glossary~ extracts a language-specific glossary from the main JSON file and saves it in a format suitable for a specified recipient.
 
 1. It prompts the user to select the target =LANGUAGE= using ~tlon-select-language~.
-2. It prompts the user to select the =RECIPIENT= type (=human=, =deepl-editor=, or =deepl-api=) using completion.
+2. It prompts the user to select the =RECIPIENT= type (=human=, =deepl-editor=, =deepl-api=, or =sieve=) using completion.
 3. It determines the target file path and extension based on the language and recipient using ~tlon-glossary-target-path~.
 4. It reads the source glossary JSON file.
 5. It creates or opens the target file and inserts the formatted glossary content using ~tlon-insert-formatted-glossary~, filtering and formatting entries based on the recipient:
    - =human=: Includes only "variable" type entries, formatted as CSV (="Source","Target"=).
    - =deepl-editor=: Includes all entries, formatted as CSV (="Source","Target","EN","LANG"=).
    - =deepl-api=: Includes all entries, formatted as TSV (=Source\tTarget=).
+   - =sieve=: Includes all entries that have a translation, formatted as a JSON object (={"Source": "Target", ...}=). Standard apostrophes (') in both source terms (keys) and target terms (values) are replaced with typographic apostrophes (’).
 6. It saves the target file.
 7. If the recipient is =human=, it asks the user if they want to share the extracted glossary via email using ~tlon-share-glossary~.
-8. For other recipients, it messages the path to the extracted file.
+8. For other recipients (=deepl-editor=, =deepl-api=, =sieve=), it messages the path to the extracted file.
 
 *** Share Glossary
 :PROPERTIES:
@@ -206,13 +207,17 @@ This section lists non-interactive functions and variables used internally or po
 :END:
 
 #+findex: tlon-glossary-target-path
-+ ~tlon-glossary-target-path~ :: Determines the full output file path for an extracted glossary based on the target =LANGUAGE= and =RECIPIENT=. It sets the file extension to =.csv= for =human= and =deepl-editor=, and =.tsv= for =deepl-api=. Uses ~tlon-glossary-make-file~ internally.
++ ~tlon-glossary-target-path~ :: Determines the full output file path for an extracted glossary based on the target =LANGUAGE= and =RECIPIENT=. It sets the file extension to =.csv= for =human= and =deepl-editor=, =.tsv= for =deepl-api=, and =.json= for =sieve=. Uses ~tlon-glossary-make-file~ internally.
 
 #+findex: tlon-glossary-make-file
 + ~tlon-glossary-make-file~ :: Constructs the filename (e.g., =EN-FR.csv=) and combines it with the user's download directory path (~paths-dir-downloads~).
 
 #+findex: tlon-insert-formatted-glossary
-+ ~tlon-insert-formatted-glossary~ :: Iterates through the parsed =JSON= glossary data. For each entry, it extracts the source (=en=) and target (=language=) terms. Based on the =RECIPIENT=, it formats the entry as CSV or TSV and inserts it into the current buffer. For =human= recipients, it only includes entries of type =variable=.
++ ~tlon-insert-formatted-glossary~ :: Iterates through the parsed =JSON= glossary data. For each entry, it extracts the source (=en=) and target (=language=) terms. Based on the =RECIPIENT=, it formats the entry and inserts it into the current buffer.
+  - For =human= recipients, it only includes entries of type =variable= and formats them as CSV lines.
+  - For =deepl-editor= recipients, it includes all types and formats them as CSV lines.
+  - For =deepl-api= recipients, it includes all types and formats them as TSV lines.
+  - For =sieve= recipients, it includes all types (that have a translation) and formats the entire glossary as a single JSON object mapping source terms to target terms. Standard apostrophes (') in both source terms (keys) and target terms (values) are replaced with typographic apostrophes (’).
 
 *** Git Integration (Currently Unused/TODO)
 :PROPERTIES:
