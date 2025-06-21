@@ -320,7 +320,7 @@ response file."
 ;;;###autoload
 (defun tlon-extract-glossary (language recipient)
   "Extract a LANGUAGE glossary from our multilingual glossary.
-RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
+RECIPIENT can be `human', `deepl-editor', `deepl-api', and `sieve'.
 
 - `human': extracts a glossary intended to be shared with another human being.
  Includes only entries of type \"variable\", saves them to a \"csv\" file, and
@@ -330,9 +330,13 @@ RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
   editor. Includes all entries and saves them to a \"csv\" file.
 
 - `deepl-api': extracts a glossary intended to be sent via the DeepL API.
-  Includes all entries and saves them a \"tsv\" file."
+  Includes all entries and saves them a \"tsv\" file.
+
+- `sieve': extracts a glossary as a JSON object with source terms as keys and
+  target terms as values. Includes all entries and saves them to a \"json\"
+  file."
   (interactive (list (tlon-select-language 'code 'babel)
-		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api) nil t))))
+		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api sieve) nil t))))
   (let* ((source-path tlon-file-glossary-source)
 	 (target-path (tlon-glossary-target-path language recipient))
 	 (json (tlon-read-json source-path nil 'list 'symbol)))
@@ -343,14 +347,15 @@ RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
     (pcase recipient
       ('human (when (y-or-n-p "Share glossary with translators? ")
 		(tlon-share-glossary target-path language)))
-      ((or 'deepl-editor 'deepl-api) (message "Glossary extracted to `%s'" target-path)))))
+      ((or 'deepl-editor 'deepl-api 'sieve) (message "Glossary extracted to `%s'" target-path)))))
 
 ;;;###autoload
 (defun tlon-glossary-target-path (language recipient)
   "Return the target path for a glossary in LANGUAGE for RECIPIENT."
   (let ((target-extension (pcase recipient
 			    ((or 'human 'deepl-editor) "csv")
-			    ('deepl-api "tsv"))))
+			    ('deepl-api "tsv")
+			    ('sieve "json"))))
     (tlon-glossary-make-file language target-extension)))
 
 (defun tlon-glossary-make-file (language extension)
@@ -361,20 +366,36 @@ RECIPIENT can be `human', `deepl-editor' and `deepl-api'.
 (defun tlon-insert-formatted-glossary (json language recipient)
   "Insert a properly formatted glossary in LANGUAGE from JSON data.
 Format the glossary based on its RECIPIENT: if `human' or `deepl-editor', in
-\"csv\" format; if `deepl-api', in \"tsv\" format. (DeepL requires different
-formats depending on whether the glossary is meant to be uploaded to the editor
-or via the API.)"
-  (dolist (item json)
-    (when-let* ((source-term (alist-get 'en item))
-		(target-term (alist-get (intern language) item))
-		(entry (pcase recipient
-			 ('human (format "\"%s\",\"%s\"\n" source-term target-term))
-			 ('deepl-editor
-			  (format "\"%s\",\"%s\",\"EN\",\"%s\"\n" source-term target-term (upcase language)))
-			 ('deepl-api (format "%s\t%s\n" source-term target-term)))))
-      (when (or (member recipient '(deepl-editor deepl-api))
-		(string= (alist-get 'type item) "variable"))
-	(insert entry)))))
+\"csv\" format; if `deepl-api', in \"tsv\" format; if `sieve', in JSON format.
+\\=(DeepL requires different formats depending on whether the glossary is meant
+to be uploaded to the editor or via the API.)"
+  (if (eq recipient 'sieve)
+      (tlon-insert-sieve-glossary json language)
+    (dolist (item json)
+      (when-let* ((source-term (alist-get 'en item))
+		  (target-term (alist-get (intern language) item))
+		  (entry (pcase recipient
+			   ('human (format "\"%s\",\"%s\"\n" source-term target-term))
+			   ('deepl-editor
+			    (format "\"%s\",\"%s\",\"EN\",\"%s\"\n" source-term target-term (upcase language)))
+			   ('deepl-api (format "%s\t%s\n" source-term target-term)))))
+	(when (or (member recipient '(deepl-editor deepl-api))
+		  (string= (alist-get 'type item) "variable"))
+	  (insert entry))))))
+
+(defun tlon-insert-sieve-glossary (json language)
+  "Insert a sieve-formatted glossary in LANGUAGE from JSON data.
+Creates a JSON object with source terms as keys and target terms as values.
+Standard apostrophes (') in both source and target terms are replaced with
+typographic apostrophes (’) to prevent Sieve errors."
+  (let ((glossary-object '()))
+    (dolist (item json)
+      (when-let* ((raw-source-term (alist-get 'en item))
+		  (raw-target-term (alist-get (intern language) item)))
+        (let ((source-term (replace-regexp-in-string "'" "’" raw-source-term))
+              (target-term (replace-regexp-in-string "'" "’" raw-target-term)))
+          (push (cons source-term target-term) glossary-object))))
+    (insert (json-encode (nreverse glossary-object)))))
 
 (defvar tlon-email-language)
 (declare-function tlon-email-send "tlon-email")
