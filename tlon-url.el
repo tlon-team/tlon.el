@@ -154,9 +154,10 @@ Also, copy the URL to the kill ring."
 (defun tlon-lychee-report ()
   "Generate a report of dead links using Lychee."
   (interactive)
-  (let ((default-directory (repo-dir (tlon-get-repo))))
+  (let ((default-directory (repo-dir (tlon-get-repo)))
+        (lychee-executable (executable-find "lychee")))
     (tlon-lychee-ensure)
-    (shell-command "lychee .")))
+    (ansi-term lychee-executable nil "lychee-report" ".")))
 
 ;;;###autoload
 (defun tlon-lychee-fix-dead-links ()
