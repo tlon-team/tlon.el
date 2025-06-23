@@ -28,7 +28,7 @@
 (require 'tlon-core)
 (require 'json)
 (require 'cl-lib)
-(require 'url-parse) ; For url-decode-url
+(require 'url-util)  ; For url-decode-url
 (require 'url-util)  ; For url-hexify-string
 (eval-and-compile
   (require 'transient))
