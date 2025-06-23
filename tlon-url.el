@@ -232,7 +232,7 @@ respective file."
                                       (message "No archive found for %s (from file %s)" original-dead-url filename))
                                     (when (= processed-links-count (car total-dead-links-ref))
                                       (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found."
-                                               replacements-count (car total-dead-links-ref)))))))))))))))))))))))
+                                               replacements-count (car total-dead-links-ref))))))))))))))))))))))
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
   "Replace URL-DEAD with URL-LIVE in all files across content repos.
