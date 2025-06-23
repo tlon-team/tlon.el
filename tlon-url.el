@@ -255,6 +255,8 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
 
 (defun tlon-lychee--count-dead-links-in-report (report)
   "Count and return the number of dead links in the lychee REPORT."
+  (unless (listp report)
+    (error "Expected report to be a list, but got: %s" (type-of report)))
   (let ((count 0))
     (dolist (file-entry report)
       (let ((link-statuses (cdr file-entry)))
