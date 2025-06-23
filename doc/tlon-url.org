@@ -23,8 +23,11 @@ This module provides tools for checking dead URLs within files and replacing URL
 
 + =tlon-core=
 + =transient=
++ =json= (Built-in Emacs 27.1+, or package)
++ =cl-lib= (Built-in)
 + =ffap= (Find File At Point, built-in)
-+ =linkchecker= (External command-line tool)
++ =linkchecker= (External command-line tool for ~tlon-check-urls-in-file~)
++ =lychee= (External command-line tool for ~tlon-lychee-fix-dead-links~)
 
 ** Commands
 :PROPERTIES:
@@ -52,11 +55,11 @@ The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a sp
 :CUSTOM_ID: h:tlon-get-archived-cmd
 :END:
 #+findex: tlon-get-archived
-The command ~tlon-get-archived~ (Autoloaded) constructs the Wayback Machine URL for the latest archived version of a given =URL= and copies it to the kill ring.
+The command ~tlon-get-archived~ (Autoloaded) fetches the latest working archived version of a given =URL= from the Wayback Machine and copies the archived URL to the kill ring.
 1. Prompts for the =URL=, defaulting to the URL at point (~thing-at-point 'url t~).
-2. Formats the Wayback Machine URL as =https://web.archive.org/web/2/URL=.
-3. Copies the formatted URL to the kill ring using =kill-new=.
-4. Returns the archived URL string.
+2. Calls the internal function ~tlon--get-wayback-machine-url~ to fetch the archive URL.
+3. If an archive URL is found, it's displayed in a message and copied to the kill ring using =kill-new=.
+4. If no archive is found or an error occurs, an appropriate message is displayed.
 
 *** Replace URL Across Projects
 :PROPERTIES:
@@ -88,7 +91,8 @@ The command ~tlon-url-menu~ (Autoloaded) activates a =transient= menu interface 
 It provides the following options under the "" (main) group:
 + =a= :: Get archived URL (~tlon-get-archived~)
 + =c= :: Check URLs in file (~tlon-check-urls-in-file~)
-+ =v= :: Replace URL across projects (~tlon-replace-url-across-projects~)
++ =l= :: Lychee fix dead links (~tlon-lychee-fix-dead-links~)
++ =r= :: Replace URL across projects (~tlon-replace-url-across-projects~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
@@ -105,4 +109,40 @@ This section lists non-interactive functions used internally or potentially usef
 
 #+findex: tlon-save-list-of-urls
 + ~tlon-save-list-of-urls~ :: Takes a list of =URLS=, creates a temporary file, writes the URLs (one per line) prefixed with a =# LinkChecker URL list= header, and returns the path to the temporary file. (Note: This function seems unused within the current module).
+
+*** Lychee Fix Dead Links
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-lychee-fix-dead-links-cmd
+:END:
+#+findex: tlon-lychee-fix-dead-links
+The command ~tlon-lychee-fix-dead-links~ (Autoloaded) automates finding and fixing dead links using =lychee= and the Wayback Machine.
+1. Identifies the current project's root directory using ~tlon-get-repo~.
+2. Ensures the =lychee= executable is found in the system's =exec-path=.
+3. Runs =lychee= asynchronously on all supported files in the project directory (e.g., =lychee --no-progress --format json --dump .=).
+4. Captures and parses the JSON output from =lychee=.
+5. If =lychee= fails or the JSON output is unparsable, an error is reported.
+6. Iterates through the report:
+   - Counts the total number of dead/problematic links (excluding "Ok", "Cached(Ok...)", and "Excluded" statuses).
+   - If no dead links are found, a message is displayed.
+   - Otherwise, for each dead link:
+     - The dead URL and the file it was found in are identified.
+     - ~tlon--get-wayback-machine-url~ is called to fetch an archived version.
+     - If an archived URL is successfully retrieved:
+       - ~tlon-lychee-replace-in-file~ is called to replace the dead URL with the archived URL in the specific file.
+       - A message confirms the replacement.
+     - If no archive is found, a message indicates this.
+7. After all links are processed, a summary message reports the total number of replacements made.
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-url-internals
+:END:
+
+This section lists non-interactive functions used internally or potentially useful for advanced customization.
+
+#+findex: tlon--get-wayback-machine-url
++ ~tlon--get-wayback-machine-url~ :: Takes a =URL= string and a =CALLBACK= function. It asynchronously fetches the latest working archived version of the =URL= from the Wayback Machine's CDX API. The =CALLBACK= is then called with two arguments: the =ARCHIVE-URL= (or =nil= if not found or on error) and the =ORIGINAL-URL=.
+
+#+findex: tlon-lychee-replace-in-file
++ ~tlon-lychee-replace-in-file~ :: Takes a =FILE-PATH=, an =OLD-URL=, and a =NEW-URL=. It reads the content of =FILE-PATH=, replaces all occurrences of =OLD-URL= with =NEW-URL=, and writes the modified content back to the file. Returns =t= if any replacements were made, =nil= otherwise. =OLD-URL= is escaped for literal matching.
 

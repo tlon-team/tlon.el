@@ -26,12 +26,61 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'json)
+(require 'cl-lib)
 (eval-and-compile
   (require 'transient))
 
 ;;;; Functions
 
 (declare-function ffap-url-p "ffap")
+
+(defun tlon--get-wayback-machine-url (url callback)
+  "Fetch the latest working archived version of URL from Wayback Machine.
+Call CALLBACK with (ARCHIVE-URL ORIGINAL-URL).
+ARCHIVE-URL is nil if no archive is found or an error occurs."
+  (let ((api-url (format "https://web.archive.org/cdx/search/cdx?url=%s&statuscode=200&limit=1&sort=reverse"
+                         (url-hexify-string url))))
+    (message "Fetching latest working archive for %s..." url)
+    (url-retrieve
+     api-url
+     (lambda (status &rest _) ; original-url is `url` from lexical scope
+       (let ((buffer (current-buffer))
+             (archive-url nil))
+         (with-current-buffer buffer
+           (if (plist-get status :error)
+               (progn
+                 (message "Wayback Machine request for %s failed: %S" url (plist-get status :error)))
+             ;; Else: no error from url-retrieve itself
+             (goto-char (point-min))
+             (if (re-search-forward "^\\s-*$" nil t) ; Skip empty lines / headers if any
+                 (let* ((response (buffer-substring-no-properties (point) (point-max)))
+                        (lines (split-string response "\n" t)))
+                   (if (and lines (> (length lines) 0))
+                       (let* ((fields (split-string (car lines) " "))
+                              (timestamp (nth 1 fields))
+                              (original-url-from-api (nth 2 fields)) ; original URL as per API
+                              (_archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api)))
+                         (setq archive-url _archive-url))))
+               ;; else: Could not parse response or empty response
+               (message "Could not parse Wayback Machine API response or no archive found for %s." url))))
+         (kill-buffer buffer) ; Clean up the *URL-Contents* buffer
+         (funcall callback archive-url url)))))) ; Pass original `url` for context
+
+(defun tlon-lychee-replace-in-file (file-path old-url new-url)
+  "Replace OLD-URL with NEW-URL in FILE-PATH.
+Return t if a replacement was made, nil otherwise."
+  (let ((modified nil)
+        (search-term (regexp-quote old-url))) ; Quote for regex search
+    (with-temp-buffer
+      (insert-file-contents file-path)
+      (goto-char (point-min))
+      (while (search-forward search-term nil t) ; Use quoted search term
+        (replace-match new-url t t nil) ; fixed case, literal, no regexp in replacement
+        (setq modified t))
+      (when modified
+        (write-region (point-min) (point-max) file-path)))
+    modified))
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
 If FILE is nil, use the file visited by the current buffer."
@@ -88,30 +137,102 @@ If FILE is nil, use the file visited by the current buffer."
   "Return the latest working archived version of URL from Wayback Machine.
 Also, copy the URL to the kill ring."
   (interactive "sURL: ")
-  (let ((api-url (format "https://web.archive.org/cdx/search/cdx?url=%s&statuscode=200&limit=1&sort=reverse"
-                         (url-hexify-string url))))
-    (message "Fetching latest working archive for %s... (simple query)" url)
-    (url-retrieve
-     api-url
-     (lambda (status &rest _)
-       (let ((buffer (current-buffer)))
-         (with-current-buffer buffer
-           (if (plist-get status :error)
-               (message "Wayback Machine request failed: %S" (plist-get status :error))
-             (goto-char (point-min))
-             (if (re-search-forward "^\\s-*$" nil t)
-                 (let* ((response (buffer-substring-no-properties (point) (point-max)))
-                        (lines (split-string response "\n" t)))
-                   (if (and lines (> (length lines) 0))
-                       (let* ((fields (split-string (car lines) " "))
-                              (timestamp (nth 1 fields))
-                              (original-url (nth 2 fields))
-                              (archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url)))
-                         (message "Latest working archive: %s" archive-url)
-                         (kill-new archive-url))
-                     (message "No working archives found for %s" url)))
-               (message "Could not parse Wayback Machine API response."))))
-	 (kill-buffer buffer))))))
+  (tlon--get-wayback-machine-url
+   url
+   (lambda (archive-url original-url) ; original-url is the same as url here
+     (if archive-url
+         (progn
+           (message "Latest working archive: %s" archive-url)
+           (kill-new archive-url))
+       (message "No working archives found for %s (or error during fetch)." original-url)))))
+
+;;;###autoload
+(defun tlon-lychee-fix-dead-links ()
+  "Run lychee to find dead links and replace them with Wayback Machine versions.
+This command operates on the current project's root directory, identified by
+`tlon-get-repo`. It runs `lychee` to scan all supported files, parses the
+JSON output, and for each dead link, attempts to find an archived version
+using the Wayback Machine. If successful, it replaces the dead link in the
+respective file."
+  (interactive)
+  (let* ((repo-dir (tlon-get-repo))
+         (default-directory repo-dir) ; Ensure lychee runs in the repo root
+         (lychee-command "lychee")
+         (lychee-args '("--no-progress" "--format" "json" "--dump" "."))
+         (output-buffer (generate-new-buffer "*lychee-output*"))
+         (proc nil) ; To store the process object
+         ;; For collecting results
+         (replacements-count 0)
+         (processed-links-count 0)
+         ;; Use a list as a mutable cell for total count, to be updated in callbacks
+         (total-dead-links-ref (list 0)))
+
+    (unless (executable-find lychee-command)
+      (error "Lychee executable '%s' not found in exec-path" lychee-command))
+
+    (message "Running Lychee to find dead links in %s..." repo-dir)
+    (setq proc (apply #'start-process "lychee" output-buffer lychee-command lychee-args))
+
+    (set-process-sentinel
+     proc
+     (lambda (process event)
+       (when (memq (process-status process) '(exit signal))
+         (with-current-buffer output-buffer
+           (let ((json-output (buffer-string)))
+             (kill-buffer output-buffer) ; Clean up
+             (if (not (zerop (process-exit-status process)))
+                 (error "Lychee process failed: %s. Output:\n%s" event json-output)
+               ;; Lychee succeeded, process JSON
+               (if (string-blank-p json-output)
+                   (message "Lychee produced empty output. No links processed.")
+                 (let ((report (condition-case err
+                                   (json-read-from-string json-output)
+                                 (error (error "Failed to parse Lychee JSON output: %s. Output:\n%s" err json-output)))))
+                   ;; First pass: count total dead links
+                   (dolist (file-entry report)
+                     (let* ((_filename (car file-entry)) ; Not used in this loop
+                            (link-statuses (cdr file-entry)))
+                       (dolist (link-status link-statuses)
+                         (let ((status (cdr (assoc 'status link-status)))
+                               (target-url (cdr (assoc 'target link-status))))
+                           (when (and target-url ; Ensure target-url is not nil
+                                      (not (or (string-prefix-p "Ok" status)
+                                               (string-prefix-p "Cached(Ok" status)
+                                               (string-prefix-p "Excluded" status))))
+                             (setcar total-dead-links-ref (1+ (car total-dead-links-ref))))))))
+
+                   (if (= (car total-dead-links-ref) 0)
+                       (message "Lychee found no dead links to process.")
+                     (progn
+                       (message "Lychee found %d dead link(s). Fetching archives and replacing..." (car total-dead-links-ref))
+                       ;; Second pass: process dead links
+                       (dolist (file-entry report)
+                         (let* ((filename (car file-entry)) ; Relative path
+                                (full-file-path (expand-file-name filename repo-dir))
+                                (link-statuses (cdr file-entry)))
+                           (dolist (link-status link-statuses)
+                             (let ((status (cdr (assoc 'status link-status)))
+                                   (target-url (cdr (assoc 'target link-status))))
+                               (when (and target-url
+                                          (not (or (string-prefix-p "Ok" status)
+                                                   (string-prefix-p "Cached(Ok" status)
+                                                   (string-prefix-p "Excluded" status))))
+                                 (message "Processing dead link: %s in %s" target-url filename)
+                                 (tlon--get-wayback-machine-url
+                                  target-url
+                                  (lambda (archive-url original-dead-url)
+                                    (cl-incf processed-links-count)
+                                    (if archive-url
+                                        (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
+                                            (progn
+                                              (cl-incf replacements-count)
+                                              (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
+                                          (message "Archive for %s found (%s), but no replacement made in %s (URL not found in current file state?)"
+                                                   original-dead-url archive-url filename))
+                                      (message "No archive found for %s (from file %s)" original-dead-url filename))
+                                    (when (= processed-links-count (car total-dead-links-ref))
+                                      (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found."
+                                               replacements-count (car total-dead-links-ref)))))))))))))))))))))))
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
   "Replace URL-DEAD with URL-LIVE in all files across content repos.
@@ -148,7 +269,8 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
   [[""
     ("a" "Get archived"                                tlon-get-archived)
     ("c" "Check URLs in file"                          tlon-check-urls-in-file)
-    ("v" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
+    ("l" "Lychee fix dead links"                       tlon-lychee-fix-dead-links)
+    ("r" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
