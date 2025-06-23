@@ -148,7 +148,15 @@ Also, copy the URL to the kill ring."
            (kill-new archive-url))
        (message "No working archives found for %s (or error during fetch)." original-url)))))
 
-;;;;; Dead links
+;;;;; Dead
+
+;;;###autoload
+(defun tlon-lychee-report ()
+  "Generate a report of dead links using Lychee."
+  (interactive)
+  (let ((default-directory (repo-dir (tlon-get-repo))))
+    (tlon-lychee-ensure)
+    (shell-command "lychee .")))
 
 ;;;###autoload
 (defun tlon-lychee-fix-dead-links ()
@@ -161,18 +169,12 @@ respective file. This process is asynchronous and relies on helper functions."
   (interactive)
   (let* ((repo-dir (tlon-get-repo))
          (default-directory repo-dir) ; Ensure lychee runs in the repo root
-         (lychee-executable-name "lychee")
-         (lychee-executable-path (executable-find lychee-executable-name))
          (stderr-file nil)
-         (cmd-string nil)
-         (stdout-buffer (generate-new-buffer "*lychee-stdout*")))
-
-    (unless lychee-executable-path
-      (error "Lychee executable '%s' not found in exec-path" lychee-executable-name))
-
+         (cmd-string nil))
+    (tlon-lychee-ensure)
     (setq stderr-file (make-temp-file "lychee-stderr"))
     (setq cmd-string (format "%s --no-progress --format json . 2>%s"
-                             (shell-quote-argument lychee-executable-path)
+                             (shell-quote-argument (executable-find "lychee"))
                              (shell-quote-argument stderr-file)))
 
     (message "Starting Lychee process with command: %s" cmd-string)
@@ -190,6 +192,11 @@ respective file. This process is asynchronous and relies on helper functions."
                 (tlon-lychee--process-parsed-report report repo-dir ""))))
         (message "Lychee output file not found: %s" output-file)))))
 
+(defun tlon-lychee-ensure ()
+  "Ensure the lychee executable is available."
+  (unless (executable-find "lychee")
+    (error "Lychee executable not found in exec-path")))
+
 (defun tlon-lychee--run-and-process (cmd-string stdout-buffer stderr-file repo-dir)
   "Run lychee with CMD-STRING, capturing output in STDOUT-BUFFER and STDERR-FILE.
 Process output via a sentinel that calls `tlon-lychee--handle-completion`
@@ -198,9 +205,9 @@ with REPO-DIR for context."
     (set-process-sentinel
      proc
      (lambda (process event)
-       (tlon-lychee--handle-completion process event stdout-buffer stderr-file repo-dir)))))
+       (tlon-lychee--handle-completion process stdout-buffer stderr-file repo-dir)))))
 
-(defun tlon-lychee--handle-completion (process event stdout-buffer stderr-file repo-dir)
+(defun tlon-lychee--handle-completion (process stdout-buffer stderr-file repo-dir)
   "Handle lychee process completion.
 Parse JSON output from STDOUT-BUFFER, read STDERR-FILE, and call
 `tlon-lychee--process-parsed-report` if successful.
@@ -227,8 +234,8 @@ Cleans up STDOUT-BUFFER and STDERR-FILE. REPO-DIR provides context."
                     (setq report (json-read-from-string stdout-content))
                     (message "Parsed report type: %s" (type-of report))
                     (message "Parsed report content: %s" report))
-                  (unless (listp report)
-                    (error "Expected report to be a list, but got: %s" (type-of report)))
+                (unless (listp report)
+                  (error "Expected report to be a list, but got: %s" (type-of report)))
                 (json-error
                  (setq parse-error-reason (format "JSON parsing failed: %s" err))
                  (message "Error parsing JSON: %s" err))
