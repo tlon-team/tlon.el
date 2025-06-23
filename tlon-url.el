@@ -85,21 +85,29 @@ Return t if a replacement was made, nil otherwise."
                 (url-unhex-string (url-hexify-string old-url))))))
     (with-temp-buffer
       (insert-file-contents file-path)
+      (let ((original-content (buffer-string)))
+        (message "DEBUG: File content length: %d" (length original-content))
+        (message "DEBUG: Searching for URL: %s" old-url)
+        (message "DEBUG: First 200 chars of file: %s" 
+                 (substring original-content 0 (min 200 (length original-content)))))
       (catch 'found
         (dolist (candidate search-candidates)
           (goto-char (point-min)) ; Start search from beginning for each candidate
-          (let ((search-term (regexp-quote candidate)))
-            ;; Check if this candidate URL exists in the buffer at all
-            (when (search-forward search-term nil t)
-              ;; If found, reset point and replace all occurrences of this candidate
-              (goto-char (point-min))
-              (while (search-forward search-term nil t)
-                (replace-match new-url t t nil) ; fixed case, literal replacement
-                (setq modified t))
-              ;; If modifications were made, write to file and exit dolist
-              (when modified
-                (write-region (point-min) (point-max) file-path)
-                (throw 'found t)))))))
+          (message "DEBUG: Trying candidate: %s" candidate)
+          ;; Use literal string search instead of regexp-quote with search-forward
+          (when (search-forward candidate nil t)
+            (message "DEBUG: Found candidate %s, replacing..." candidate)
+            ;; If found, reset point and replace all occurrences of this candidate
+            (goto-char (point-min))
+            (while (search-forward candidate nil t)
+              (replace-match new-url t t nil) ; fixed case, literal replacement
+              (setq modified t))
+            ;; If modifications were made, write to file and exit dolist
+            (when modified
+              (write-region (point-min) (point-max) file-path)
+              (message "DEBUG: File modified and saved")
+              (throw 'found t)))
+          (message "DEBUG: Candidate %s not found" candidate))))
     modified))
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
