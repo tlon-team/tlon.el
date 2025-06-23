@@ -44,28 +44,25 @@ ARCHIVE-URL is nil if no archive is found or an error occurs."
     (message "Fetching latest working archive for %s..." url)
     (url-retrieve
      api-url
-     (lambda (status &rest _) ; original-url is `url` from lexical scope
+     (lambda (status &rest _)
        (let ((buffer (current-buffer))
              (archive-url nil))
          (with-current-buffer buffer
            (if (plist-get status :error)
                (progn
                  (message "Wayback Machine request for %s failed: %S" url (plist-get status :error)))
-             ;; Else: no error from url-retrieve itself
              (goto-char (point-min))
-             (if (re-search-forward "^\\s-*$" nil t) ; Skip empty lines / headers if any
+             (if (re-search-forward "^\\s-*$" nil t)
                  (let* ((response (buffer-substring-no-properties (point) (point-max)))
                         (lines (split-string response "\n" t)))
                    (if (and lines (> (length lines) 0))
                        (let* ((fields (split-string (car lines) " "))
                               (timestamp (nth 1 fields))
-                              (original-url-from-api (nth 2 fields)) ; original URL as per API
-                              (_archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api)))
-                         (setq archive-url _archive-url))))
-               ;; else: Could not parse response or empty response
+                              (original-url-from-api (nth 2 fields)))
+                         (setq archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api)))))
                (message "Could not parse Wayback Machine API response or no archive found for %s." url))))
-         (kill-buffer buffer) ; Clean up the *URL-Contents* buffer
-         (funcall callback archive-url url)))))) ; Pass original `url` for context
+         (kill-buffer buffer)
+         (funcall callback archive-url url))))))
 
 (defun tlon-lychee-replace-in-file (file-path old-url new-url)
   "Replace OLD-URL with NEW-URL in FILE-PATH.
