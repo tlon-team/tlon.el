@@ -124,7 +124,10 @@ If FILE is nil, use the file visited by the current buffer."
 	 (command (format "linkchecker --file-output=text/%s  --recursion-level=0 %s"
                           (shell-quote-argument output-file) urls)))
     (message "Checking URLs...")
-    (set-process-sentinel
+    (set-process-filter
+     proc
+     (lambda (_proc output)
+       (message "Lychee output: %s" output)))
      (start-process-shell-command "LinkChecker" "/LinkChecker/" command)
      (lambda (_ event)
        (when (string-match-p "^finished" event)
@@ -173,7 +176,8 @@ respective file. This process is asynchronous and relies on helper functions."
                              (shell-quote-argument lychee-executable-path)
                              (shell-quote-argument stderr-file)))
 
-    (message "Running Lychee: %s" cmd-string)
+    (message "Starting Lychee process with command: %s" cmd-string)
+    (message "This may take a while depending on the number of files and links.")
     (tlon-lychee--run-and-process cmd-string stdout-buffer stderr-file repo-dir)))
 
 (defun tlon-lychee--run-and-process (cmd-string stdout-buffer stderr-file repo-dir)
