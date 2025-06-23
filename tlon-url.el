@@ -80,7 +80,8 @@ Return t if a replacement was made, nil otherwise."
         (search-candidates
          (delete-dups ; Ensure unique search terms
           (list old-url
-                (url-hexify-string old-url)))))
+                (url-hexify-string old-url)
+                (url-unhex-string old-url)))))
     (with-temp-buffer
       (insert-file-contents file-path)
       (catch 'found
