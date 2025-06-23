@@ -218,7 +218,10 @@ Cleans up STDOUT-BUFFER and STDERR-FILE. REPO-DIR provides context."
                     (message "Parsed report content: %s" report))
                 (json-error
                  (setq parse-error-reason (format "JSON parsing failed: %s" err))
-                 (message "Error parsing JSON: %s" err)))
+                 (message "Error parsing JSON: %s" err))
+                (error
+                 (setq parse-error-reason (format "Unexpected error: %s" err))
+                 (message "Unexpected error during JSON parsing: %s" err)))
             (error (setq parse-error-reason (format "JSON parsing failed: %s" err)))))
 
         (if parse-error-reason
