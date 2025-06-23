@@ -184,8 +184,10 @@ respective file. This process is asynchronous and relies on helper functions."
             (insert-file-contents output-file)
             (let ((stdout-content (buffer-string)))
               ;; Directly process the JSON content without expecting a process
-              (tlon-lychee--process-parsed-report
-               (json-read-from-string stdout-content) repo-dir "")))
+              (let ((report (json-read-from-string stdout-content)))
+                (unless (listp report)
+                  (error "Expected report to be a list, but got: %s" (type-of report)))
+                (tlon-lychee--process-parsed-report report repo-dir ""))))
         (message "Lychee output file not found: %s" output-file)))))
 
 (defun tlon-lychee--run-and-process (cmd-string stdout-buffer stderr-file repo-dir)
