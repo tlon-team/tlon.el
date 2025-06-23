@@ -173,7 +173,7 @@ respective file."
       (error "Lychee executable '%s' not found in exec-path" lychee-executable-name))
 
     (setq stderr-file (make-temp-file "lychee-stderr"))
-    (setq cmd-string (format "%s --no-progress --format json --dump . 2>%s"
+    (setq cmd-string (format "%s --no-progress --format json . 2>%s"
                              (shell-quote-argument lychee-executable-path)
                              (shell-quote-argument stderr-file)))
 
