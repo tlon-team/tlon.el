@@ -85,18 +85,10 @@ Return t if a replacement was made, nil otherwise."
                 (url-unhex-string (url-hexify-string old-url))))))
     (with-temp-buffer
       (insert-file-contents file-path)
-      (let ((original-content (buffer-string)))
-        (message "DEBUG: File content length: %d" (length original-content))
-        (message "DEBUG: Searching for URL: %s" old-url)
-        (message "DEBUG: First 200 chars of file: %s" 
-                 (substring original-content 0 (min 200 (length original-content)))))
       (catch 'found
         (dolist (candidate search-candidates)
           (goto-char (point-min)) ; Start search from beginning for each candidate
-          (message "DEBUG: Trying candidate: %s" candidate)
-          ;; Use literal string search instead of regexp-quote with search-forward
           (when (search-forward candidate nil t)
-            (message "DEBUG: Found candidate %s, replacing..." candidate)
             ;; If found, reset point and replace all occurrences of this candidate
             (goto-char (point-min))
             (while (search-forward candidate nil t)
@@ -105,9 +97,7 @@ Return t if a replacement was made, nil otherwise."
             ;; If modifications were made, write to file and exit dolist
             (when modified
               (write-region (point-min) (point-max) file-path)
-              (message "DEBUG: File modified and saved")
-              (throw 'found t)))
-          (message "DEBUG: Candidate %s not found" candidate))))
+              (throw 'found t))))))
     modified))
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
@@ -378,18 +368,39 @@ reporting."
 							 replacements-count-ref processed-links-count-ref
 							 stderr-content)
   "Handle response from Wayback Machine for ORIGINAL-DEAD-URL.
-If ARCHIVE-URL is found, replace in FULL-FILE-PATH (relative FILENAME). Updates
-counters REPLACEMENTS-COUNT-REF, PROCESSED-LINKS-COUNT-REF. Displays final
-summary when all TOTAL-DEAD-LINKS are processed, including STDERR-CONTENT."
+Opens URL in browser and prompts user for action. Updates counters and displays
+final summary when all TOTAL-DEAD-LINKS are processed."
   (cl-incf (car processed-links-count-ref))
-  (if archive-url
-      (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
-          (progn
-            (cl-incf (car replacements-count-ref))
-            (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
-        (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
-                 original-dead-url archive-url filename))
-    (message "No archive found for %s (from file %s)" original-dead-url filename))
+  
+  ;; Open the original URL in browser
+  (browse-url original-dead-url)
+  
+  ;; Prompt user for action
+  (let ((action (read-char-choice 
+                 (format "Dead link: %s\nArchive %s\nChoose action: (a)rchive, (s)pecify replacement, s(k)ip: "
+                         original-dead-url
+                         (if archive-url "found" "not found"))
+                 '(?a ?s ?k))))
+    (cond
+     ((eq action ?a)
+      (if archive-url
+          (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
+              (progn
+                (cl-incf (car replacements-count-ref))
+                (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
+            (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
+                     original-dead-url archive-url filename))
+        (message "No archive available for %s" original-dead-url)))
+     ((eq action ?s)
+      (let ((replacement-url (read-string "Enter replacement URL: ")))
+        (when (and replacement-url (not (string-blank-p replacement-url)))
+          (if (tlon-lychee-replace-in-file full-file-path original-dead-url replacement-url)
+              (progn
+                (cl-incf (car replacements-count-ref))
+                (message "Replaced: %s -> %s in %s" original-dead-url replacement-url filename))
+            (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename)))))
+     ((eq action ?k)
+      (message "Skipped: %s" original-dead-url))))
 
   (when (= (car processed-links-count-ref) total-dead-links)
     (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found."
