@@ -191,72 +191,77 @@ respective file."
            (kill-buffer stdout-buffer)
            (when (file-exists-p stderr-file) (delete-file stderr-file))
 
-           (if (not (zerop (process-exit-status process)))
-               (error "Lychee process failed (exit status %d): %s\nStdout (first 500 chars):\n%s\nStderr (first 500 chars):\n%s"
-                      (process-exit-status process) event
-                      (substring stdout-content 0 (min 500 (length stdout-content)))
-                      (substring stderr-content 0 (min 500 (length stderr-content))))
-             ;; Lychee succeeded (exit code 0)
+           (let ((report nil) (parse-error-reason nil))
+             ;; Attempt to parse JSON from stdout
              (if (string-blank-p stdout-content)
-                 (progn
-                   (message "Lychee produced empty output to stdout (no links processed or all excluded/cached)")
-                   (unless (string-blank-p stderr-content)
-                     (message "Lychee stderr (first 1000 chars):\n%s"
-                              (substring stderr-content 0 (min 1000 (length stderr-content))))))
-               (let ((report (condition-case err
-                                 (json-read-from-string stdout-content)
-                               (error (error "Failed to parse Lychee JSON from stdout: %s\nStdout (first 500 chars):\n%s\nStderr (first 500 chars):\n%s"
-                                             err
-                                             (substring stdout-content 0 (min 500 (length stdout-content)))
-                                             (substring stderr-content 0 (min 500 (length stderr-content))))))))
+                 (setq parse-error-reason "stdout was blank")
+               (condition-case err
+                   (setq report (json-read-from-string stdout-content))
+                 (error (setq parse-error-reason (format "JSON parsing failed: %s" err)))))
+
+             (if parse-error-reason
+                 ;; If parsing failed or stdout was blank, this is an error.
+                 ;; Include Lychee's exit status and the parsing issue in the error message.
+                 (error "Lychee%s (exit status %d) but %s.\nStdout (first 500 chars):\n%s\nStderr (first 500 chars):\n%s"
+                        (if (zerop (process-exit-status process)) " reported success" " process failed")
+                        (process-exit-status process)
+                        parse-error-reason
+                        (substring stdout-content 0 (min 500 (length stdout-content)))
+                        (substring stderr-content 0 (min 500 (length stderr-content))))
+               ;; JSON parsing succeeded. `report` is valid. Process it.
+               (progn
                  ;; First pass: count total dead links
                  (dolist (file-entry report)
                    (let* ((_filename (car file-entry)) ; Not used in this loop
-                            (link-statuses (cdr file-entry)))
-                       (dolist (link-status link-statuses)
-                         (let ((status (cdr (assoc 'status link-status)))
-                               (target-url (cdr (assoc 'target link-status))))
-                           (when (and target-url ; Ensure target-url is not nil
-                                      (not (or (string-prefix-p "Ok" status)
-                                               (string-prefix-p "Cached(Ok" status)
-                                               (string-prefix-p "Excluded" status))))
-                             (setcar total-dead-links-ref (1+ (car total-dead-links-ref))))))))
+                          (link-statuses (cdr file-entry)))
+                     (dolist (link-status link-statuses)
+                       (let ((status (cdr (assoc 'status link-status)))
+                             (target-url (cdr (assoc 'target link-status))))
+                         (when (and target-url ; Ensure target-url is not nil
+                                    (not (or (string-prefix-p "Ok" status)
+                                             (string-prefix-p "Cached(Ok" status)
+                                             (string-prefix-p "Excluded" status))))
+                           (setcar total-dead-links-ref (1+ (car total-dead-links-ref))))))))
 
-                   (if (= (car total-dead-links-ref) 0)
-                       (message "Lychee found no dead links to process.")
+                 (if (= (car total-dead-links-ref) 0)
                      (progn
-                       (message "Lychee found %d dead link(s). Fetching archives and replacing..." (car total-dead-links-ref))
-                       ;; Second pass: process dead links
-                       (dolist (file-entry report)
-                         (let* ((filename (car file-entry)) ; Relative path
-                                (full-file-path (expand-file-name filename repo-dir))
-                                (link-statuses (cdr file-entry)))
-                           (dolist (link-status link-statuses)
-                             (let ((status (cdr (assoc 'status link-status)))
-                                   (target-url (cdr (assoc 'target link-status))))
-                               (when (and target-url
-                                          (not (or (string-prefix-p "Ok" status)
-                                                   (string-prefix-p "Cached(Ok" status)
-                                                   (string-prefix-p "Excluded" status))))
-                                 (message "Processing dead link: %s in %s" target-url filename)
-                                 (tlon--get-wayback-machine-url
-                                  target-url
-                                  (lambda (archive-url original-dead-url)
-                                    (cl-incf processed-links-count)
-                                    (if archive-url
-                                        (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
-                                            (progn
-                                              (cl-incf replacements-count)
-                                              (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
-                                          (message "Archive for %s found (%s), but no replacement made in %s (URL not found in current file state?)"
-                                                   original-dead-url archive-url filename))
-                                      (message "No archive found for %s (from file %s)" original-dead-url filename))
-                                    (when (= processed-links-count (car total-dead-links-ref))
-                                      (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found"
-                                               replacements-count (car total-dead-links-ref))
-                                      (unless (string-blank-p stderr-content)
-                                        (message "Lychee stderr (first 1000 chars):\n%s"
-                                                 (substring stderr-content 0 (min 1000 (length stderr-content))))))))))))))))))))))))
+                       (message "Lychee found no dead links to process.")
+                       (unless (string-blank-p stderr-content)
+                         (message "Lychee stderr (first 1000 chars):\n%s"
+                                  (substring stderr-content 0 (min 1000 (length stderr-content))))))
+                   (progn
+                     (message "Lychee found %d dead link(s). Fetching archives and replacing..." (car total-dead-links-ref))
+                     ;; Second pass: process dead links
+                     (dolist (file-entry report)
+                       (let* ((filename (car file-entry)) ; Relative path
+                              (full-file-path (expand-file-name filename repo-dir))
+                              (link-statuses (cdr file-entry)))
+                         (dolist (link-status link-statuses)
+                           (let ((status (cdr (assoc 'status link-status)))
+                                 (target-url (cdr (assoc 'target link-status))))
+                             (when (and target-url
+                                        (not (or (string-prefix-p "Ok" status)
+                                                 (string-prefix-p "Cached(Ok" status)
+                                                 (string-prefix-p "Excluded" status))))
+                               (message "Processing dead link: %s in %s" target-url filename)
+                               (tlon--get-wayback-machine-url
+                                target-url
+                                (lambda (archive-url original-dead-url)
+                                  (cl-incf processed-links-count)
+                                  (if archive-url
+                                      (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
+                                          (progn
+                                            (cl-incf replacements-count)
+                                            (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
+                                        (message "Archive for %s found (%s), but no replacement made in %s (URL not found in current file state?)"
+                                                 original-dead-url archive-url filename))
+                                    (message "No archive found for %s (from file %s)" original-dead-url filename))
+                                  (when (= processed-links-count (car total-dead-links-ref))
+                                    (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found"
+                                             replacements-count (car total-dead-links-ref))
+                                    (unless (string-blank-p stderr-content)
+                                      (message "Lychee stderr (first 1000 chars):\n%s"
+                                               (substring stderr-content 0 (min 1000 (length stderr-content))))))))))))))))))))))))
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
   "Replace URL-DEAD with URL-LIVE in all files across content repos.
