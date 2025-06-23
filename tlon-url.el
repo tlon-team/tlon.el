@@ -195,10 +195,15 @@ Parse JSON output from STDOUT-BUFFER, read STDERR-FILE, and call
 `tlon-lychee--process-parsed-report` if successful.
 Cleans up STDOUT-BUFFER and STDERR-FILE. REPO-DIR provides context."
   (when (memq (process-status process) '(exit signal))
-    (let ((stdout-content (with-current-buffer stdout-buffer (buffer-string)))
-          (stderr-content (if (file-exists-p stderr-file)
-                              (with-temp-buffer (insert-file-contents stderr-file) (buffer-string))
-                            "")))
+    (let* ((stdout-content (with-current-buffer stdout-buffer (buffer-string)))
+           (stderr-content (if (file-exists-p stderr-file)
+                               (with-temp-buffer (insert-file-contents stderr-file) (buffer-string))
+                             ""))
+           (output-file (expand-file-name "lychee-output.json" "~/Downloads")))
+      ;; Save JSON output to a file for inspection
+      (with-temp-file output-file
+        (insert stdout-content))
+      (message "Lychee JSON output saved to %s" output-file)
       (kill-buffer stdout-buffer)
       (when (file-exists-p stderr-file) (delete-file stderr-file))
 
