@@ -312,13 +312,13 @@ STDERR-CONTENT is lychee's stderr output for final display."
 (defun tlon-lychee--attempt-single-fix (full-file-path filename url
                                         total-dead-links replacements-count-ref
                                         processed-links-count-ref stderr-content)
-  "Attempt to fix a single dead TARGET-URL in FULL-FILE-PATH (relative FILENAME).
+  "Attempt to fix a single dead URL in FULL-FILE-PATH (relative FILENAME).
 Uses Wayback Machine. TOTAL-DEAD-LINKS, REPLACEMENTS-COUNT-REF,
 PROCESSED-LINKS-COUNT-REF, and STDERR-CONTENT are for progress tracking and
 reporting."
   (tlon--get-wayback-machine-url
-   target-url
-   (lambda (archive-url original-dead-url) ; original-dead-url is target-url
+   url
+   (lambda (archive-url original-dead-url) ; original-dead-url is url
      (tlon-lychee--handle-wayback-response archive-url original-dead-url
                                            full-file-path filename
                                            total-dead-links
