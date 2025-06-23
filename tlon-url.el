@@ -124,16 +124,18 @@ If FILE is nil, use the file visited by the current buffer."
 	 (command (format "linkchecker --file-output=text/%s  --recursion-level=0 %s"
                           (shell-quote-argument output-file) urls)))
     (message "Checking URLs...")
-    (set-process-filter
-     proc
-     (lambda (_proc output)
-       (message "Lychee output: %s" output)))
-     (start-process-shell-command "LinkChecker" "/LinkChecker/" command)
-     (lambda (_ event)
-       (when (string-match-p "^finished" event)
-	 (message "URL checking completed.")
-	 (find-file output-file)
-	 (goto-address-mode 1))))))
+    (let ((proc (start-process-shell-command "LinkChecker" nil command)))
+      (set-process-filter
+       proc
+       (lambda (_proc output)
+         (message "LinkChecker output: %s" output)))
+      (set-process-sentinel
+       proc
+       (lambda (_ event)
+         (when (string-match-p "^finished" event)
+           (message "URL checking completed.")
+           (find-file output-file)
+           (goto-address-mode 1)))))))
 
 ;;;###autoload
 (defun tlon-get-archived (url)
