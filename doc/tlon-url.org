@@ -117,21 +117,10 @@ This section lists non-interactive functions used internally or potentially usef
 #+findex: tlon-lychee-fix-dead-links
 The command ~tlon-lychee-fix-dead-links~ (Autoloaded) automates finding and fixing dead links using =lychee= and the Wayback Machine.
 1. Identifies the current project's root directory using ~tlon-get-repo~.
-2. Ensures the =lychee= executable is found in the system's =exec-path=.
-3. Runs =lychee= asynchronously on all supported files in the project directory (e.g., =lychee --no-progress --format json --dump .=).
-4. Captures and parses the JSON output from =lychee=.
-5. If =lychee= fails or the JSON output is unparsable, an error is reported.
-6. Iterates through the report:
-   - Counts the total number of dead/problematic links (excluding "Ok", "Cached(Ok...)", and "Excluded" statuses).
-   - If no dead links are found, a message is displayed.
-   - Otherwise, for each dead link:
-     - The dead URL and the file it was found in are identified.
-     - ~tlon--get-wayback-machine-url~ is called to fetch an archived version.
-     - If an archived URL is successfully retrieved:
-       - ~tlon-lychee-replace-in-file~ is called to replace the dead URL with the archived URL in the specific file.
-       - A message confirms the replacement.
-     - If no archive is found, a message indicates this.
-7. After all links are processed, a summary message reports the total number of replacements made.
+2. Ensures the =lychee= executable is found.
+3. Constructs the =lychee= command to scan all supported files in the project, outputting in JSON format and redirecting stderr to a temporary file.
+4. Calls ~tlon-lychee--run-and-process~ to execute =lychee= asynchronously.
+The subsequent processing, including parsing output, finding archived URLs, and replacing links, is handled by a chain of internal helper functions (see below).
 
 ** Internal Functions and Variables
 :PROPERTIES:
@@ -145,4 +134,25 @@ This section lists non-interactive functions used internally or potentially usef
 
 #+findex: tlon-lychee-replace-in-file
 + ~tlon-lychee-replace-in-file~ :: Takes a =FILE-PATH=, an =OLD-URL=, and a =NEW-URL=. It reads the content of =FILE-PATH=, replaces all occurrences of =OLD-URL= with =NEW-URL=, and writes the modified content back to the file. Returns =t= if any replacements were made, =nil= otherwise. =OLD-URL= is escaped for literal matching.
+
+#+findex: tlon-lychee--run-and-process
++ ~tlon-lychee--run-and-process~ :: Takes =CMD-STRING=, =STDOUT-BUFFER=, =STDERR-FILE=, and =REPO-DIR=. Runs the =lychee= command asynchronously and sets a process sentinel to call ~tlon-lychee--handle-completion~.
+
+#+findex: tlon-lychee--handle-completion
++ ~tlon-lychee--handle-completion~ :: Called by the process sentinel from ~tlon-lychee--run-and-process~. It retrieves stdout and stderr content, cleans up temporary resources, parses the JSON output from =lychee=, and calls ~tlon-lychee--process-parsed-report~. Handles errors related to process failure or JSON parsing.
+
+#+findex: tlon-lychee--process-parsed-report
++ ~tlon-lychee--process-parsed-report~ :: Takes the parsed =REPORT=, =REPO-DIR=, and =STDERR-CONTENT=. It initializes counters for replacements and processed links, calls ~tlon-lychee--count-dead-links-in-report~ to get the total number of dead links. If dead links are found, it messages the user and calls ~tlon-lychee--iterate-and-attempt-fixes~. Otherwise, it reports that no dead links were found.
+
+#+findex: tlon-lychee--count-dead-links-in-report
++ ~tlon-lychee--count-dead-links-in-report~ :: Takes the parsed =REPORT= from =lychee=. It iterates through the report and returns the total count of links that are not "Ok", "Cached(Ok...)", or "Excluded".
+
+#+findex: tlon-lychee--iterate-and-attempt-fixes
++ ~tlon-lychee--iterate-and-attempt-fixes~ :: Takes the =REPORT=, =REPO-DIR=, =TOTAL-DEAD-LINKS= count, and references to counters for replacements and processed links, along with =STDERR-CONTENT=. It iterates through each file entry and link status in the report. For each dead link, it calls ~tlon-lychee--attempt-single-fix~.
+
+#+findex: tlon-lychee--attempt-single-fix
++ ~tlon-lychee--attempt-single-fix~ :: Takes =FULL-FILE-PATH=, relative =FILENAME=, the =TARGET-URL= (dead link), =TOTAL-DEAD-LINKS= count, and references to counters and =STDERR-CONTENT=. It calls ~tlon--get-wayback-machine-url~ for the =TARGET-URL=, providing ~tlon-lychee--handle-wayback-response~ as the callback.
+
+#+findex: tlon-lychee--handle-wayback-response
++ ~tlon-lychee--handle-wayback-response~ :: Callback function for ~tlon--get-wayback-machine-url~. Takes =ARCHIVE-URL=, =ORIGINAL-DEAD-URL=, file path information, total dead links count, counter references, and =STDERR-CONTENT=. It increments the processed links counter. If an =ARCHIVE-URL= is found, it attempts to replace the =ORIGINAL-DEAD-URL= in the file using ~tlon-lychee-replace-in-file~ and increments the replacements counter if successful. It logs messages about the outcome. When all dead links have been processed, it prints a final summary message, including any stderr output from =lychee=.
 
