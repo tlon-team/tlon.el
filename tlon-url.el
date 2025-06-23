@@ -271,7 +271,7 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
   (let ((count 0)
         (error-map-alist (cdr (assoc 'error_map report))))
     (dolist (file-entry error-map-alist)
-      ;; file-entry is (FILENAME . LINK-STATUSES-VECTOR)
+      ;; file-entry is (FILENAME-SYMBOL . LINK-STATUSES-VECTOR)
       (let ((link-statuses (cdr file-entry)))
         (when (vectorp link-statuses)
           (dotimes (i (length link-statuses))
@@ -295,7 +295,8 @@ REPLACEMENTS-COUNT-REF and PROCESSED-LINKS-COUNT-REF are mutable counters.
 STDERR-CONTENT is lychee's stderr output for final display."
   (let ((error-map-alist (cdr (assoc 'error_map report))))
     (dolist (file-entry error-map-alist)
-      (let* ((filename (car file-entry)) ; Relative path
+      (let* ((filename-symbol (car file-entry)) ; This is a symbol, not a string
+             (filename (symbol-name filename-symbol)) ; Convert symbol to string
              (full-file-path (expand-file-name filename repo-dir))
              (link-statuses (cdr file-entry))) ; This is a vector of link-status alists
         (when (vectorp link-statuses)
