@@ -28,6 +28,8 @@
 (require 'tlon-core)
 (require 'json)
 (require 'cl-lib)
+(require 'url-parse) ; For url-decode-url
+(require 'url-util)  ; For url-hexify-string
 (eval-and-compile
   (require 'transient))
 
@@ -66,17 +68,31 @@ ARCHIVE-URL is nil if no archive is found or an error occurs."
 
 (defun tlon-lychee-replace-in-file (file-path old-url new-url)
   "Replace OLD-URL with NEW-URL in FILE-PATH.
+Tries to match variations of OLD-URL (as-is, hexified, decoded).
 Return t if a replacement was made, nil otherwise."
   (let ((modified nil)
-        (search-term (regexp-quote old-url))) ; Quote for regex search
+        (search-candidates
+         (delete-dups ; Ensure unique search terms
+          (list old-url
+                (url-hexify-string old-url)
+                (url-decode-url old-url)))))
     (with-temp-buffer
       (insert-file-contents file-path)
-      (goto-char (point-min))
-      (while (search-forward search-term nil t) ; Use quoted search term
-        (replace-match new-url t t nil) ; fixed case, literal, no regexp in replacement
-        (setq modified t))
-      (when modified
-        (write-region (point-min) (point-max) file-path)))
+      (catch 'found
+        (dolist (candidate search-candidates)
+          (goto-char (point-min)) ; Start search from beginning for each candidate
+          (let ((search-term (regexp-quote candidate)))
+            ;; Check if this candidate URL exists in the buffer at all
+            (when (search-forward search-term nil t)
+              ;; If found, reset point and replace all occurrences of this candidate
+              (goto-char (point-min))
+              (while (search-forward search-term nil t)
+                (replace-match new-url t t nil) ; fixed case, literal replacement
+                (setq modified t))
+              ;; If modifications were made, write to file and exit dolist
+              (when modified
+                (write-region (point-min) (point-max) file-path)
+                (throw 'found t)))))))
     modified))
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
