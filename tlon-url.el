@@ -177,7 +177,14 @@ respective file. This process is asynchronous and relies on helper functions."
 
     (message "Starting Lychee process with command: %s" cmd-string)
     (message "This may take a while depending on the number of files and links.")
-    (tlon-lychee--run-and-process cmd-string stdout-buffer stderr-file repo-dir)))
+    ;; For debugging, read from existing JSON output file
+    (let ((output-file (expand-file-name "lychee-output.json" "~/Downloads")))
+      (if (file-exists-p output-file)
+          (with-temp-buffer
+            (insert-file-contents output-file)
+            (let ((stdout-content (buffer-string)))
+              (tlon-lychee--handle-completion nil "finished" (current-buffer) nil repo-dir)))
+        (message "Lychee output file not found: %s" output-file)))))
 
 (defun tlon-lychee--run-and-process (cmd-string stdout-buffer stderr-file repo-dir)
   "Run lychee with CMD-STRING, capturing output in STDOUT-BUFFER and STDERR-FILE.
