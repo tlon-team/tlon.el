@@ -273,15 +273,17 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
     (dolist (file-entry error-map-alist)
       ;; file-entry is (FILENAME . LINK-STATUSES-VECTOR)
       (let ((link-statuses (cdr file-entry)))
-        (dolist (link-status link-statuses) ; link-status is an alist
-          (let* ((url (cdr (assoc 'url link-status)))
-                 (status-details (cdr (assoc 'status link-status)))
-                 (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
-            (when (and url status-text
-                       (not (or (string-prefix-p "Ok" status-text)
-                                (string-prefix-p "Cached(Ok" status-text)
-                                (string-prefix-p "Excluded" status-text))))
-              (cl-incf count))))))
+        (when (vectorp link-statuses)
+          (dotimes (i (length link-statuses))
+            (let* ((link-status (aref link-statuses i)) ; link-status is an alist
+                   (url (cdr (assoc 'url link-status)))
+                   (status-details (cdr (assoc 'status link-status)))
+                   (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
+              (when (and url status-text
+                         (not (or (string-prefix-p "Ok" status-text)
+                                  (string-prefix-p "Cached(Ok" status-text)
+                                  (string-prefix-p "Excluded" status-text))))
+                (cl-incf count)))))))
     count))
 
 (defun tlon-lychee--iterate-and-attempt-fixes (report repo-dir total-dead-links
@@ -296,18 +298,20 @@ STDERR-CONTENT is lychee's stderr output for final display."
       (let* ((filename (car file-entry)) ; Relative path
              (full-file-path (expand-file-name filename repo-dir))
              (link-statuses (cdr file-entry))) ; This is a vector of link-status alists
-        (dolist (link-status link-statuses)
-          (let* ((url (cdr (assoc 'url link-status)))
-                 (status-details (cdr (assoc 'status link-status)))
-                 (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
-            (when (and url status-text
-                       (not (or (string-prefix-p "Ok" status-text)
-                                (string-prefix-p "Cached(Ok" status-text)
-                                (string-prefix-p "Excluded" status-text))))
-              (message "Processing dead link: %s in %s" url filename)
-              (tlon-lychee--attempt-single-fix full-file-path filename url
-                                               total-dead-links replacements-count-ref
-                                               processed-links-count-ref stderr-content))))))))
+        (when (vectorp link-statuses)
+          (dotimes (i (length link-statuses))
+            (let* ((link-status (aref link-statuses i))
+                   (url (cdr (assoc 'url link-status)))
+                   (status-details (cdr (assoc 'status link-status)))
+                   (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
+              (when (and url status-text
+                         (not (or (string-prefix-p "Ok" status-text)
+                                  (string-prefix-p "Cached(Ok" status-text)
+                                  (string-prefix-p "Excluded" status-text))))
+                (message "Processing dead link: %s in %s" url filename)
+                (tlon-lychee--attempt-single-fix full-file-path filename url
+                                                 total-dead-links replacements-count-ref
+                                                 processed-links-count-ref stderr-content)))))))))
 
 (defun tlon-lychee--attempt-single-fix (full-file-path filename url
                                         total-dead-links replacements-count-ref
