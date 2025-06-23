@@ -331,7 +331,7 @@ STDERR-CONTENT is lychee's stderr output for final display."
     (dolist (file-entry error-map-alist)
       (let* ((filename-symbol (car file-entry)) ; This is a symbol, not a string
              (filename (symbol-name filename-symbol)) ; Convert symbol to string
-             (full-file-path (expand-file-name filename repo-dir))
+             (full-file-path (expand-file-name (if (symbolp filename) (symbol-name filename) filename) repo-dir))
              (link-statuses (cdr file-entry))) ; This is a vector of link-status alists
         (when (vectorp link-statuses)
           (dotimes (i (length link-statuses))
