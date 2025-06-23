@@ -146,6 +146,8 @@ Also, copy the URL to the kill ring."
            (kill-new archive-url))
        (message "No working archives found for %s (or error during fetch)." original-url)))))
 
+;;;;; Dead links
+
 ;;;###autoload
 (defun tlon-lychee-fix-dead-links ()
   "Run lychee to find dead links and replace them with Wayback Machine versions.
@@ -276,7 +278,8 @@ STDERR-CONTENT is lychee's stderr output for final display."
                                         processed-links-count-ref stderr-content)
   "Attempt to fix a single dead TARGET-URL in FULL-FILE-PATH (relative FILENAME).
 Uses Wayback Machine. TOTAL-DEAD-LINKS, REPLACEMENTS-COUNT-REF,
-PROCESSED-LINKS-COUNT-REF, and STDERR-CONTENT are for progress tracking and reporting."
+PROCESSED-LINKS-COUNT-REF, and STDERR-CONTENT are for progress tracking and
+reporting."
   (tlon--get-wayback-machine-url
    target-url
    (lambda (archive-url original-dead-url) ; original-dead-url is target-url
@@ -287,14 +290,14 @@ PROCESSED-LINKS-COUNT-REF, and STDERR-CONTENT are for progress tracking and repo
                                            stderr-content))))
 
 (defun tlon-lychee--handle-wayback-response (archive-url original-dead-url
-                                             full-file-path filename
-                                             total-dead-links
-                                             replacements-count-ref processed-links-count-ref
-                                             stderr-content)
+							 full-file-path filename
+							 total-dead-links
+							 replacements-count-ref processed-links-count-ref
+							 stderr-content)
   "Handle response from Wayback Machine for ORIGINAL-DEAD-URL.
-If ARCHIVE-URL is found, replace in FULL-FILE-PATH (relative FILENAME).
-Updates counters REPLACEMENTS-COUNT-REF, PROCESSED-LINKS-COUNT-REF.
-Displays final summary when all TOTAL-DEAD-LINKS are processed, including STDERR-CONTENT."
+If ARCHIVE-URL is found, replace in FULL-FILE-PATH (relative FILENAME). Updates
+counters REPLACEMENTS-COUNT-REF, PROCESSED-LINKS-COUNT-REF. Displays final
+summary when all TOTAL-DEAD-LINKS are processed, including STDERR-CONTENT."
   (cl-incf (car processed-links-count-ref))
   (if archive-url
       (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
