@@ -183,7 +183,9 @@ respective file. This process is asynchronous and relies on helper functions."
           (with-temp-buffer
             (insert-file-contents output-file)
             (let ((stdout-content (buffer-string)))
-              (tlon-lychee--handle-completion nil "finished" (current-buffer) nil repo-dir)))
+              ;; Directly process the JSON content without expecting a process
+              (tlon-lychee--process-parsed-report
+               (json-read-from-string stdout-content) repo-dir "")))
         (message "Lychee output file not found: %s" output-file)))))
 
 (defun tlon-lychee--run-and-process (cmd-string stdout-buffer stderr-file repo-dir)
