@@ -212,6 +212,8 @@ Cleans up STDOUT-BUFFER and STDERR-FILE. REPO-DIR provides context."
             (setq parse-error-reason "stdout was blank")
           (condition-case err
               (setq report (json-read-from-string stdout-content))
+              (message "Parsed report type: %s" (type-of report))
+              (message "Parsed report content: %s" report)
             (error (setq parse-error-reason (format "JSON parsing failed: %s" err)))))
 
         (if parse-error-reason
