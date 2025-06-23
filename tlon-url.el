@@ -156,11 +156,11 @@ Also, copy the URL to the kill ring."
   (interactive)
   (let ((default-directory (tlon-get-repo)))
     (tlon-lychee-ensure)
-    (eshell) ;; Open eshell
-    (with-current-buffer (get-buffer "*eshell*") ;; Switch to eshell buffer
-      (goto-char (point-max)) ;; Go to the end of the buffer
-      (insert "lychee .") ;; Insert the command
-      (eshell-send-input)))) ;; Send the command
+    (eshell t)
+    (with-current-buffer (get-buffer "*eshell*")
+      (goto-char (point-max))
+      (insert "lychee .")
+      (eshell-send-input))))
 
 ;;;###autoload
 (defun tlon-lychee-fix-dead-links ()
@@ -199,7 +199,7 @@ respective file. This process is asynchronous and relies on helper functions."
 (defun tlon-lychee-ensure ()
   "Ensure the lychee executable is available."
   (unless (executable-find "lychee")
-    (error "Lychee executable not found in exec-path")))
+    (error "Lychee executable not found; please run `brew install lychee'")))
 
 (defun tlon-lychee--run-and-process (cmd-string stdout-buffer stderr-file repo-dir)
   "Run lychee with CMD-STRING, capturing output in STDOUT-BUFFER and STDERR-FILE.
