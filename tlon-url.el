@@ -268,20 +268,20 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
 
 (defun tlon-lychee--count-dead-links-in-report (report)
   "Count and return the number of dead links in the lychee REPORT."
-  (unless (listp report)
-    (error "Expected report to be a list, but got: %s" (type-of report)))
-  (let ((count 0))
-    (maphash
-     (lambda (_file link-statuses)
-       (dolist (link-status link-statuses)
-         (let ((status (cdr (assoc 'status link-status)))
-               (target-url (cdr (assoc 'target link-status))))
-           (when (and target-url ; Ensure target-url is not nil
-                      (not (or (string-prefix-p "Ok" status)
-                               (string-prefix-p "Cached(Ok" status)
-                               (string-prefix-p "Excluded" status))))
-             (cl-incf count)))))
-     report)
+  (let ((count 0)
+        (error-map-alist (cdr (assoc 'error_map report))))
+    (dolist (file-entry error-map-alist)
+      ;; file-entry is (FILENAME . LINK-STATUSES-VECTOR)
+      (let ((link-statuses (cdr file-entry)))
+        (dolist (link-status link-statuses) ; link-status is an alist
+          (let* ((url (cdr (assoc 'url link-status)))
+                 (status-details (cdr (assoc 'status link-status)))
+                 (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
+            (when (and url status-text
+                       (not (or (string-prefix-p "Ok" status-text)
+                                (string-prefix-p "Cached(Ok" status-text)
+                                (string-prefix-p "Excluded" status-text))))
+              (cl-incf count))))))
     count))
 
 (defun tlon-lychee--iterate-and-attempt-fixes (report repo-dir total-dead-links
@@ -291,23 +291,25 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
 REPO-DIR is the root. TOTAL-DEAD-LINKS is the pre-counted total.
 REPLACEMENTS-COUNT-REF and PROCESSED-LINKS-COUNT-REF are mutable counters.
 STDERR-CONTENT is lychee's stderr output for final display."
-  (dolist (file-entry report)
-    (let* ((filename (car file-entry)) ; Relative path
-           (full-file-path (expand-file-name filename repo-dir))
-           (link-statuses (cdr file-entry)))
-      (dolist (link-status link-statuses)
-        (let ((status (cdr (assoc 'status link-status)))
-              (target-url (cdr (assoc 'target link-status))))
-          (when (and target-url
-                     (not (or (string-prefix-p "Ok" status)
-                              (string-prefix-p "Cached(Ok" status)
-                              (string-prefix-p "Excluded" status))))
-            (message "Processing dead link: %s in %s" target-url filename)
-            (tlon-lychee--attempt-single-fix full-file-path filename target-url
-                                             total-dead-links replacements-count-ref
-                                             processed-links-count-ref stderr-content)))))))
+  (let ((error-map-alist (cdr (assoc 'error_map report))))
+    (dolist (file-entry error-map-alist)
+      (let* ((filename (car file-entry)) ; Relative path
+             (full-file-path (expand-file-name filename repo-dir))
+             (link-statuses (cdr file-entry))) ; This is a vector of link-status alists
+        (dolist (link-status link-statuses)
+          (let* ((url (cdr (assoc 'url link-status)))
+                 (status-details (cdr (assoc 'status link-status)))
+                 (status-text (if (consp status-details) (cdr (assoc 'text status-details)) nil)))
+            (when (and url status-text
+                       (not (or (string-prefix-p "Ok" status-text)
+                                (string-prefix-p "Cached(Ok" status-text)
+                                (string-prefix-p "Excluded" status-text))))
+              (message "Processing dead link: %s in %s" url filename)
+              (tlon-lychee--attempt-single-fix full-file-path filename url
+                                               total-dead-links replacements-count-ref
+                                               processed-links-count-ref stderr-content))))))))
 
-(defun tlon-lychee--attempt-single-fix (full-file-path filename target-url
+(defun tlon-lychee--attempt-single-fix (full-file-path filename url
                                         total-dead-links replacements-count-ref
                                         processed-links-count-ref stderr-content)
   "Attempt to fix a single dead TARGET-URL in FULL-FILE-PATH (relative FILENAME).
