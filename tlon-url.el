@@ -271,18 +271,17 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
   (unless (listp report)
     (error "Expected report to be a list, but got: %s" (type-of report)))
   (let ((count 0))
-    (dolist (file-entry report)
-      (unless (listp file-entry)
-        (error "Expected file-entry to be a list, but got: %s" (type-of file-entry)))
-      (let ((link-statuses (cdr file-entry)))
-        (dolist (link-status link-statuses)
-          (let ((status (cdr (assoc 'status link-status)))
-                (target-url (cdr (assoc 'target link-status))))
-            (when (and target-url ; Ensure target-url is not nil
-                       (not (or (string-prefix-p "Ok" status)
-                                (string-prefix-p "Cached(Ok" status)
-                                (string-prefix-p "Excluded" status))))
-              (cl-incf count))))))
+    (maphash
+     (lambda (_file link-statuses)
+       (dolist (link-status link-statuses)
+         (let ((status (cdr (assoc 'status link-status)))
+               (target-url (cdr (assoc 'target link-status))))
+           (when (and target-url ; Ensure target-url is not nil
+                      (not (or (string-prefix-p "Ok" status)
+                               (string-prefix-p "Cached(Ok" status)
+                               (string-prefix-p "Excluded" status))))
+             (cl-incf count)))))
+     report)
     count))
 
 (defun tlon-lychee--iterate-and-attempt-fixes (report repo-dir total-dead-links
