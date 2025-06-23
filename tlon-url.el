@@ -28,7 +28,6 @@
 (require 'tlon-core)
 (require 'json)
 (require 'cl-lib)
-(require 'url-util)  ; For url-decode-url
 (require 'url-util)  ; For url-hexify-string
 (eval-and-compile
   (require 'transient))
@@ -81,8 +80,7 @@ Return t if a replacement was made, nil otherwise."
         (search-candidates
          (delete-dups ; Ensure unique search terms
           (list old-url
-                (url-hexify-string old-url)
-                (url-decode-url old-url)))))
+                (url-hexify-string old-url)))))
     (with-temp-buffer
       (insert-file-contents file-path)
       (catch 'found
