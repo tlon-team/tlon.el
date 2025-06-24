@@ -374,7 +374,9 @@ Wait for user input before proceeding to the next link."
            (remaining-links (cdr dead-links-queue))
            (url (plist-get current-link :url))
            (full-file-path (plist-get current-link :file-path))
-           (filename (plist-get current-link :filename)))
+           (filename (plist-get current-link :filename))
+           (current-position (- total-dead-links (length dead-links-queue) -1))
+           (remaining-count (length remaining-links)))
       (message "Processing dead link: %s in %s" url filename)
       (cl-incf (car processed-links-count-ref))
       
@@ -383,8 +385,8 @@ Wait for user input before proceeding to the next link."
       
       ;; Prompt user for action
       (let ((action (read-char-choice
-                     (format "Dead link: %s\nChoose action: (a)rchive, (s)pecify replacement, s(k)ip, (q)uit: "
-                             url)
+                     (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (s)pecify replacement, s(k)ip, (q)uit: "
+                             current-position total-dead-links url remaining-count)
                      '(?a ?s ?k ?q))))
         (cond
          ((eq action ?a)
