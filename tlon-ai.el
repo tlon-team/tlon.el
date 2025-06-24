@@ -2205,18 +2205,21 @@ news."
 
 (defun tlon-ai-create-newsletter-issue-callback (response info)
   "Callback for `tlon-ai-create-newsletter-issue'.
-Displays the AI-generated newsletter draft in a new buffer."
+Displays the AI-generated newsletter draft in a new buffer.
+Only processes the response if it's a string (final AI output)."
   (if (not response)
       (tlon-ai-callback-fail info)
-    (let* ((buffer-name (generate-new-buffer-name "*Boletín Borrador AI*"))
-	   (buffer (get-buffer-create buffer-name)))
-      (with-current-buffer buffer
-	(erase-buffer)
-	(insert response)
-	(markdown-mode) ; Assuming output is Markdown
-	(goto-char (point-min)))
-      (switch-to-buffer buffer)
-      (message "AI-generated newsletter draft created in buffer %s." buffer-name))))
+    ;; Only proceed to create buffer and insert if response is a string
+    (when (stringp response)
+      (let* ((buffer-name (generate-new-buffer-name "*Boletín Borrador AI*"))
+	     (buffer (get-buffer-create buffer-name)))
+	(with-current-buffer buffer
+	  (erase-buffer)
+	  (insert response)
+	  (markdown-mode) ; Assuming output is Markdown
+	  (goto-char (point-min)))
+	(switch-to-buffer buffer)
+	(message "AI-generated newsletter draft created in buffer %s." buffer-name)))))
 
 ;;;;; Meta Description Generation
 
