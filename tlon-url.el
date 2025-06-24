@@ -325,12 +325,21 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
 REPO-DIR is the root. TOTAL-DEAD-LINKS is the pre-counted total.
 REPLACEMENTS-COUNT-REF and PROCESSED-LINKS-COUNT-REF are mutable counters.
 STDERR-CONTENT is lychee's stderr output for final display."
-  (let ((error-map-alist (cdr (assoc 'error_map report))))
+  (let ((dead-links-queue (tlon-lychee--collect-dead-links report repo-dir)))
+    (tlon-lychee--process-next-dead-link dead-links-queue total-dead-links
+                                         replacements-count-ref processed-links-count-ref
+                                         stderr-content)))
+
+(defun tlon-lychee--collect-dead-links (report repo-dir)
+  "Collect all dead links from REPORT into a list for sequential processing.
+Each item is a plist with :url, :file-path, :filename, :status-text."
+  (let ((dead-links nil)
+        (error-map-alist (cdr (assoc 'error_map report))))
     (dolist (file-entry error-map-alist)
-      (let* ((filename-symbol (car file-entry)) ; This is a symbol, not a string
-             (filename (symbol-name filename-symbol)) ; Convert symbol to string
-             (full-file-path (expand-file-name (if (symbolp filename) (symbol-name filename) filename) repo-dir))
-             (link-statuses (cdr file-entry))) ; This is a vector of link-status alists
+      (let* ((filename-symbol (car file-entry))
+             (filename (symbol-name filename-symbol))
+             (full-file-path (expand-file-name filename repo-dir))
+             (link-statuses (cdr file-entry)))
         (when (vectorp link-statuses)
           (dotimes (i (length link-statuses))
             (let* ((link-status (aref link-statuses i))
@@ -341,35 +350,43 @@ STDERR-CONTENT is lychee's stderr output for final display."
                          (not (or (string-prefix-p "Ok" status-text)
                                   (string-prefix-p "Cached(Ok" status-text)
                                   (string-prefix-p "Excluded" status-text))))
-                (message "Processing dead link: %s in %s" url filename)
-                (tlon-lychee--attempt-single-fix full-file-path filename url
-                                                 total-dead-links replacements-count-ref
-                                                 processed-links-count-ref stderr-content)))))))))
+                (push (list :url url
+                           :file-path full-file-path
+                           :filename filename
+                           :status-text status-text)
+                      dead-links)))))))
+    (reverse dead-links)))
 
-(defun tlon-lychee--attempt-single-fix (full-file-path filename url
-                                        total-dead-links replacements-count-ref
-                                        processed-links-count-ref stderr-content)
-  "Attempt to fix a single dead URL in FULL-FILE-PATH (relative FILENAME).
-Uses Wayback Machine. TOTAL-DEAD-LINKS, REPLACEMENTS-COUNT-REF,
-PROCESSED-LINKS-COUNT-REF, and STDERR-CONTENT are for progress tracking and
-reporting."
-  (tlon--get-wayback-machine-url
-   url
-   (lambda (archive-url original-dead-url) ; original-dead-url is url
-     (tlon-lychee--handle-wayback-response archive-url original-dead-url
-                                           full-file-path filename
-                                           total-dead-links
-                                           replacements-count-ref processed-links-count-ref
-                                           stderr-content))))
+(defun tlon-lychee--process-next-dead-link (dead-links-queue total-dead-links
+                                            replacements-count-ref processed-links-count-ref
+                                            stderr-content)
+  "Process the next dead link in DEAD-LINKS-QUEUE sequentially.
+Wait for user input before proceeding to the next link."
+  (if (null dead-links-queue)
+      (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found."
+               (car replacements-count-ref) total-dead-links)
+    (let* ((current-link (car dead-links-queue))
+           (remaining-links (cdr dead-links-queue))
+           (url (plist-get current-link :url))
+           (full-file-path (plist-get current-link :file-path))
+           (filename (plist-get current-link :filename)))
+      (message "Processing dead link: %s in %s" url filename)
+      (tlon--get-wayback-machine-url
+       url
+       (lambda (archive-url original-dead-url)
+         (tlon-lychee--handle-wayback-response-sequential
+          archive-url original-dead-url full-file-path filename
+          remaining-links total-dead-links
+          replacements-count-ref processed-links-count-ref
+          stderr-content))))))
 
-(defun tlon-lychee--handle-wayback-response (archive-url original-dead-url
-							 full-file-path filename
-							 total-dead-links
-							 replacements-count-ref processed-links-count-ref
-							 stderr-content)
-  "Handle response from Wayback Machine for ORIGINAL-DEAD-URL.
-Opens URL in browser and prompts user for action. Updates counters and displays
-final summary when all TOTAL-DEAD-LINKS are processed."
+(defun tlon-lychee--handle-wayback-response-sequential (archive-url original-dead-url
+                                                        full-file-path filename
+                                                        remaining-links total-dead-links
+                                                        replacements-count-ref processed-links-count-ref
+                                                        stderr-content)
+  "Handle response from Wayback Machine for ORIGINAL-DEAD-URL sequentially.
+Opens URL in browser, prompts user for action, then processes next link."
   (cl-incf (car processed-links-count-ref))
   
   ;; Open the original URL in browser
@@ -402,12 +419,10 @@ final summary when all TOTAL-DEAD-LINKS are processed."
      ((eq action ?k)
       (message "Skipped: %s" original-dead-url))))
 
-  (when (= (car processed-links-count-ref) total-dead-links)
-    (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found."
-             (car replacements-count-ref) total-dead-links)
-    (unless (string-blank-p stderr-content)
-      (message "Lychee stderr (first 1000 chars):\n%s"
-               (substring stderr-content 0 (min 1000 (length stderr-content)))))))
+  ;; Process the next link in the queue
+  (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                       replacements-count-ref processed-links-count-ref
+                                       stderr-content))
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
   "Replace URL-DEAD with URL-LIVE in all files across content repos.
