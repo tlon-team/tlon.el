@@ -151,7 +151,8 @@ Return t if a removal was made, nil otherwise."
             (throw 'found t))))
       modified)))
 
-(defvar tlon-lychee-whitelist-file (expand-file-name "lychee-whitelist.txt" user-emacs-directory)
+(defvar tlon-lychee-whitelist-file
+  (file-name-concat elpaca-directory "repos/tlon/tlon-url-lychee-whitelist.txt")
   "File to store whitelisted URLs that should be skipped.")
 
 (defun tlon-lychee--load-whitelist ()
