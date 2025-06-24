@@ -177,7 +177,8 @@ Also, copy the URL to the kill ring."
     (eshell t)
     (with-current-buffer (get-buffer "*eshell*")
       (goto-char (point-max))
-      (insert (format "lychee %s ." (if json "--format json" "")))
+      ;; TODO: propagate --accept flag to all lychee invocations
+      (insert (format "lychee --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 %s ." (if json "--format json" "")))
       (eshell-send-input))))
 
 ;;;###autoload
