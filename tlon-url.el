@@ -192,28 +192,15 @@ respective file. This process is asynchronous and relies on helper functions."
   (interactive)
   (let* ((repo-dir (tlon-get-repo))
          (default-directory repo-dir) ; Ensure lychee runs in the repo root
-         (stderr-file nil)
-         (cmd-string nil))
-    (tlon-lychee-ensure)
-    (setq stderr-file (make-temp-file "lychee-stderr"))
-    (setq cmd-string (format "%s --no-progress --format json . 2>%s"
+         (stderr-file (make-temp-file "lychee-stderr"))
+         (stdout-buffer (generate-new-buffer "*lychee-output*"))
+         (cmd-string (format "%s --no-progress --format json . 2>%s"
                              (shell-quote-argument (executable-find "lychee"))
-                             (shell-quote-argument stderr-file)))
-
+                             (shell-quote-argument stderr-file))))
+    (tlon-lychee-ensure)
     (message "Starting Lychee process with command: %s" cmd-string)
     (message "This may take a while depending on the number of files and links.")
-    ;; For debugging, read from existing JSON output file
-    (let ((output-file (expand-file-name "lychee-output.json" "~/Downloads")))
-      (if (file-exists-p output-file)
-          (with-temp-buffer
-            (insert-file-contents output-file)
-            (let ((stdout-content (buffer-string)))
-              ;; Directly process the JSON content without expecting a process
-              (let ((report (json-read-from-string stdout-content)))
-                (unless (listp report)
-                  (error "Expected report to be a list, but got: %s" (type-of report)))
-                (tlon-lychee--process-parsed-report report repo-dir ""))))
-        (message "Lychee output file not found: %s" output-file)))))
+    (tlon-lychee--run-and-process cmd-string stdout-buffer stderr-file repo-dir)))
 
 (defun tlon-lychee-ensure ()
   "Ensure the lychee executable is available."
