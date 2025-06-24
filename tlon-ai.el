@@ -2393,31 +2393,6 @@ commit hash."
 				      (substring source-commit 0 7) source-repo-name)))
 	  (tlon-ai--commit-in-repo target-repo target-file commit-message))))))
 
-;;;;; Newsletter
-
-;;;###autoload
-(defun tlon-ai-create-newsletter-issue ()
-  "Automate the creation of a new newsletter issue."
-  (interactive)
-  (let* ((repo-path (tlon-repo-lookup :dir :name "boletin"))
-         (numeros-path (file-name-concat repo-path "numeros"))
-         (latest-file (car (sort (directory-files numeros-path t "^[^.]" t) #'file-newer-than-file-p)))
-         (content (with-temp-buffer
-                    (insert-file-contents latest-file)
-                    (split-string (buffer-string) "\n" t)))
-         (prompt-template "Crea un resumen de un párrafo para el siguiente contenido: %s"))
-    (dolist (line content)
-      (let ((prompt (if (string-match-p "^https?://" line)
-                        (format prompt-template (concat "URL: " line))
-                      (format prompt-template line))))
-        (tlon-make-gptel-request prompt nil
-                                 (lambda (response info)
-                                   (if response
-                                       (message "Summary: %s" response)
-                                     (message "Failed to summarize: %s" (plist-get info :status))))
-                                 nil nil nil
-                                 '(search fetch_content))))))
-
 (transient-define-infix tlon-ai-infix-toggle-overwrite-alt-text ()
   "Toggle the value of `tlon-ai-overwrite-alt-text' in `ai' menu."
   :class 'transient-lisp-variable
