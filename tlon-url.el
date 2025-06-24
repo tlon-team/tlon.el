@@ -194,7 +194,7 @@ respective file. This process is asynchronous and relies on helper functions."
          (default-directory repo-dir) ; Ensure lychee runs in the repo root
          (stderr-file (make-temp-file "lychee-stderr"))
          (stdout-buffer (generate-new-buffer "*lychee-output*"))
-         (cmd-string (format "%s --no-progress --format json . 2>%s"
+         (cmd-string (format "%s --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 --no-progress --format json . 2>%s"
                              (shell-quote-argument (executable-find "lychee"))
                              (shell-quote-argument stderr-file))))
     (tlon-lychee-ensure)
