@@ -466,21 +466,37 @@ the gptel request. TOOLS is a list of gptel-tool structs to include with the
 request."
   (unless (or tlon-ai-batch-fun skip-context-check)
     (gptel-extras-warn-when-context))
-  (let ((full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	(prompt (tlon-ai-maybe-edit-prompt prompt))
-	(gptel-use-tools (if tools t gptel-use-tools))
-	(gptel-tools (or tools gptel-tools)))
+  (let* ((processed-tools (if (and tools (listp tools) (every #'stringp tools)) ; Check if tools is a list of strings
+                              (mapcar (lambda (tool-name-str) ; tool-name-str is definitely a string here
+                                        (let* ((tool-var (intern-soft (format "gptel-tool-%s" tool-name-str))))
+                                          (if (and tool-var (boundp tool-var))
+                                              (symbol-value tool-var)
+                                            (error "Unknown tlon tool name: %s. Expected gptel-tool-%s to be defined." tool-name-str tool-name-str))))
+                                      tools)
+                            ;; Else, tools is not a list of strings. It could be:
+                            ;; 1. A list of tool structs (correct as per original docstring)
+                            ;; 2. nil (no tools specified for this request)
+                            ;; 3. A list of mixed strings/structs or other types (error, but not handled here, will likely fail later)
+                            tools))
+         ;; Let-bind gptel-tools and gptel-use-tools for the dynamic scope of gptel-request
+         (gptel-tools processed-tools)
+         (gptel-use-tools (if gptel-tools t gptel-use-tools)) ; Enable tools if any are specified
+         ;; Other let-bindings
+         (full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
+         (prompt (tlon-ai-maybe-edit-prompt prompt)))
+
+    ;; Inner cl-destructuring-bind and let* for gptel-backend, full-prompt, request lambda
     (cl-destructuring-bind (backend . model) full-model
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	     (full-prompt (if string (format prompt string) prompt))
-	     (request (lambda () (gptel-request full-prompt
-				   :callback callback
-				   :buffer (or request-buffer (current-buffer))))))
-	(if tlon-ai-batch-fun
-	    (condition-case nil
-		(funcall request)
-	      (error nil))
-	  (funcall request))))))
+             (full-prompt (if string (format prompt string) prompt))
+             (request (lambda () (gptel-request full-prompt
+                                   :callback callback
+                                   :buffer (or request-buffer (current-buffer))))))
+        (if tlon-ai-batch-fun
+            (condition-case nil
+                (funcall request)
+              (error nil))
+          (funcall request))))))
 
 (defun tlon-ai-maybe-edit-prompt (prompt)
   "If `tlon-ai-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
