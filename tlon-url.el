@@ -371,53 +371,65 @@ Wait for user input before proceeding to the next link."
            (full-file-path (plist-get current-link :file-path))
            (filename (plist-get current-link :filename)))
       (message "Processing dead link: %s in %s" url filename)
-      (tlon--get-wayback-machine-url
-       url
-       (lambda (archive-url original-dead-url)
-         (tlon-lychee--handle-wayback-response-sequential
-          archive-url original-dead-url full-file-path filename
-          remaining-links total-dead-links
-          replacements-count-ref processed-links-count-ref
-          stderr-content))))))
+      (cl-incf (car processed-links-count-ref))
+      
+      ;; Open the original URL in browser
+      (browse-url url)
+      
+      ;; Prompt user for action
+      (let ((action (read-char-choice 
+                     (format "Dead link: %s\nChoose action: (a)rchive, (s)pecify replacement, s(k)ip, (q)uit: "
+                             url)
+                     '(?a ?s ?k ?q))))
+        (cond
+         ((eq action ?a)
+          ;; Only fetch archive when user chooses this option
+          (message "Fetching archived version...")
+          (tlon--get-wayback-machine-url
+           url
+           (lambda (archive-url original-dead-url)
+             (tlon-lychee--handle-archive-response
+              archive-url original-dead-url full-file-path filename
+              remaining-links total-dead-links
+              replacements-count-ref processed-links-count-ref
+              stderr-content))))
+         ((eq action ?s)
+          (let ((replacement-url (read-string "Enter replacement URL: ")))
+            (when (and replacement-url (not (string-blank-p replacement-url)))
+              (if (tlon-lychee-replace-in-file full-file-path url replacement-url)
+                  (progn
+                    (cl-incf (car replacements-count-ref))
+                    (message "Replaced: %s -> %s in %s" url replacement-url filename))
+                (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename))))
+          ;; Continue to next link
+          (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                               replacements-count-ref processed-links-count-ref
+                                               stderr-content))
+         ((eq action ?k)
+          (message "Skipped: %s" url)
+          ;; Continue to next link
+          (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                               replacements-count-ref processed-links-count-ref
+                                               stderr-content))
+         ((eq action ?q)
+          (message "Aborted. Made %d replacement(s) out of %d processed links."
+                   (car replacements-count-ref) (car processed-links-count-ref))))))))
 
-(defun tlon-lychee--handle-wayback-response-sequential (archive-url original-dead-url
-                                                        full-file-path filename
-                                                        remaining-links total-dead-links
-                                                        replacements-count-ref processed-links-count-ref
-                                                        stderr-content)
-  "Handle response from Wayback Machine for ORIGINAL-DEAD-URL sequentially.
-Opens URL in browser, prompts user for action, then processes next link."
-  (cl-incf (car processed-links-count-ref))
-  
-  ;; Open the original URL in browser
-  (browse-url original-dead-url)
-  
-  ;; Prompt user for action
-  (let ((action (read-char-choice 
-                 (format "Dead link: %s\nArchive %s\nChoose action: (a)rchive, (s)pecify replacement, s(k)ip: "
-                         original-dead-url
-                         (if archive-url "found" "not found"))
-                 '(?a ?s ?k))))
-    (cond
-     ((eq action ?a)
-      (if archive-url
-          (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
-              (progn
-                (cl-incf (car replacements-count-ref))
-                (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
-            (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
-                     original-dead-url archive-url filename))
-        (message "No archive available for %s" original-dead-url)))
-     ((eq action ?s)
-      (let ((replacement-url (read-string "Enter replacement URL: ")))
-        (when (and replacement-url (not (string-blank-p replacement-url)))
-          (if (tlon-lychee-replace-in-file full-file-path original-dead-url replacement-url)
-              (progn
-                (cl-incf (car replacements-count-ref))
-                (message "Replaced: %s -> %s in %s" original-dead-url replacement-url filename))
-            (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename)))))
-     ((eq action ?k)
-      (message "Skipped: %s" original-dead-url))))
+(defun tlon-lychee--handle-archive-response (archive-url original-dead-url
+                                             full-file-path filename
+                                             remaining-links total-dead-links
+                                             replacements-count-ref processed-links-count-ref
+                                             stderr-content)
+  "Handle response from Wayback Machine for ORIGINAL-DEAD-URL.
+This is called only when user chooses the archive option."
+  (if archive-url
+      (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
+          (progn
+            (cl-incf (car replacements-count-ref))
+            (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
+        (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
+                 original-dead-url archive-url filename))
+    (message "No archive available for %s" original-dead-url))
 
   ;; Process the next link in the queue
   (tlon-lychee--process-next-dead-link remaining-links total-dead-links
