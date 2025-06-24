@@ -96,6 +96,10 @@ Return t if a replacement was made, nil otherwise."
               (throw 'found t))))))
     modified))
 
+(defun tlon-lychee--is-wayback-url-p (url)
+  "Return t if URL is a Wayback Machine URL."
+  (string-match-p "\\`https?://\\(?:web\\.\\)?archive\\.org/" url))
+
 (defun tlon-lychee-remove-url-from-file (file-path url)
   "Remove URL markup from FILE-PATH, keeping the link text.
 For Markdown links [text](URL), keeps only the text.
@@ -146,6 +150,36 @@ Return t if a removal was made, nil otherwise."
             (write-region (point-min) (point-max) file-path)
             (throw 'found t))))
       modified)))
+
+(defvar tlon-lychee-whitelist-file (expand-file-name "lychee-whitelist.txt" user-emacs-directory)
+  "File to store whitelisted URLs that should be skipped.")
+
+(defun tlon-lychee--load-whitelist ()
+  "Load the whitelist of URLs from file.
+Return a list of URLs that should be skipped."
+  (if (file-exists-p tlon-lychee-whitelist-file)
+      (with-temp-buffer
+        (insert-file-contents tlon-lychee-whitelist-file)
+        (split-string (buffer-string) "\n" t "\\s-*"))
+    nil))
+
+(defun tlon-lychee--save-whitelist (whitelist)
+  "Save WHITELIST of URLs to file."
+  (with-temp-file tlon-lychee-whitelist-file
+    (dolist (url whitelist)
+      (insert url "\n"))))
+
+(defun tlon-lychee--add-to-whitelist (url)
+  "Add URL to the whitelist."
+  (let ((whitelist (tlon-lychee--load-whitelist)))
+    (unless (member url whitelist)
+      (push url whitelist)
+      (tlon-lychee--save-whitelist whitelist)
+      (message "Added %s to whitelist" url))))
+
+(defun tlon-lychee--is-whitelisted-p (url)
+  "Return t if URL is in the whitelist."
+  (member url (tlon-lychee--load-whitelist)))
   
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
@@ -386,7 +420,8 @@ REPO-DIR is the root directory of the repository. Each item is a plist with
               (when (and url status-text
                          (not (or (string-prefix-p "Ok" status-text)
                                   (string-prefix-p "Cached(Ok" status-text)
-                                  (string-prefix-p "Excluded" status-text))))
+                                  (string-prefix-p "Excluded" status-text)))
+                         (not (tlon-lychee--is-whitelisted-p url)))
                 (push (list :url url
                             :file-path full-file-path
                             :filename filename
@@ -423,30 +458,54 @@ Wait for user input before proceeding to the next link."
       (funcall browse-url-secondary-browser-function url)
       
       ;; Prompt user for action
-      (let ((action (read-char-choice
-                     (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (s)pecify replacement, (r)emove, s(k)ip, (q)uit: "
-                             current-position total-dead-links url remaining-count)
-                     '(?a ?s ?r ?k ?q))))
+      (let* ((is-wayback (tlon-lychee--is-wayback-url-p url))
+             (prompt-text (if is-wayback
+                              (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (s)pecify replacement, (r)emove, (w)hitelist, s(k)ip, (q)uit: "
+                                      current-position total-dead-links url remaining-count)
+                            (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (s)pecify replacement, (r)emove, (w)hitelist, s(k)ip, (q)uit: "
+                                    current-position total-dead-links url remaining-count)))
+             (valid-choices (if is-wayback '(?s ?r ?w ?k ?q) '(?a ?s ?r ?w ?k ?q)))
+             (action (read-char-choice prompt-text valid-choices)))
         (cond
          ((eq action ?a)
-          ;; Only fetch archive when user chooses this option
-          (message "Fetching archived version...")
-          (tlon--get-wayback-machine-url
-           url
-           (lambda (archive-url original-dead-url)
-             (tlon-lychee--handle-archive-response
-              archive-url original-dead-url full-file-path filename
-              remaining-links total-dead-links
-              replacements-count-ref processed-links-count-ref
-              stderr-content))))
+          (if is-wayback
+              (progn
+                (message "Cannot archive a Wayback Machine URL")
+                (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                                     replacements-count-ref processed-links-count-ref
+                                                     stderr-content))
+            ;; Only fetch archive when user chooses this option
+            (message "Fetching archived version...")
+            (tlon--get-wayback-machine-url
+             url
+             (lambda (archive-url original-dead-url)
+               (tlon-lychee--handle-archive-response
+                archive-url original-dead-url full-file-path filename
+                remaining-links total-dead-links
+                replacements-count-ref processed-links-count-ref
+                stderr-content)))))
          ((eq action ?s)
-          (let ((replacement-url (read-string "Enter replacement URL: ")))
-            (when (and replacement-url (not (string-blank-p replacement-url)))
-              (if (tlon-lychee-replace-in-file full-file-path url replacement-url)
-                  (progn
-                    (cl-incf (car replacements-count-ref))
-                    (message "Replaced: %s -> %s in %s" url replacement-url filename))
-                (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename))))
+          (let ((replacement-url nil))
+            (while (not replacement-url)
+              (let ((input (read-string "Enter replacement URL: ")))
+                (cond
+                 ((string-blank-p input)
+                  (message "Replacement URL cannot be empty. Please try again."))
+                 ((string= input url)
+                  (message "Replacement URL cannot be the same as the original URL. Please try again."))
+                 (t
+                  (setq replacement-url input)))))
+            (if (tlon-lychee-replace-in-file full-file-path url replacement-url)
+                (progn
+                  (cl-incf (car replacements-count-ref))
+                  (message "Replaced: %s -> %s in %s" url replacement-url filename))
+              (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename)))
+          ;; Continue to next link
+          (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                               replacements-count-ref processed-links-count-ref
+                                               stderr-content))
+         ((eq action ?w)
+          (tlon-lychee--add-to-whitelist url)
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
                                                replacements-count-ref processed-links-count-ref
