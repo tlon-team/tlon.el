@@ -132,7 +132,8 @@ Return t if a removal was made, nil otherwise."
           (when modified
             (write-region (point-min) (point-max) file-path)
             (throw 'found t))))
-    modified))
+      modified)))
+  
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
 If FILE is nil, use the file visited by the current buffer."
