@@ -166,6 +166,7 @@ Also, copy the URL to the kill ring."
 
 ;;;;; Dead
 
+(declare-function eshell-send-input "esh-mode")
 ;;;###autoload
 (defun tlon-lychee-report ()
   "Generate a report of dead links using Lychee."
@@ -224,14 +225,15 @@ with REPO-DIR for context."
   (let ((proc (start-process-shell-command "lychee" stdout-buffer cmd-string)))
     (set-process-sentinel
      proc
-     (lambda (process event)
+     (lambda (process _event)
        (tlon-lychee--handle-completion process stdout-buffer stderr-file repo-dir)))))
 
 (defun tlon-lychee--handle-completion (process stdout-buffer stderr-file repo-dir)
   "Handle lychee process completion.
 Parse JSON output from STDOUT-BUFFER, read STDERR-FILE, and call
 `tlon-lychee--process-parsed-report` if successful.
-Cleans up STDOUT-BUFFER and STDERR-FILE. REPO-DIR provides context."
+Cleans up STDOUT-BUFFER and STDERR-FILE. PROCESS is the lychee process
+and REPO-DIR provides context."
   (when (memq (process-status process) '(exit signal))
     (let* ((stdout-content (with-current-buffer stdout-buffer (buffer-string)))
            (stderr-content (if (file-exists-p stderr-file)
@@ -244,7 +246,6 @@ Cleans up STDOUT-BUFFER and STDERR-FILE. REPO-DIR provides context."
       (message "Lychee JSON output saved to %s" output-file)
       (kill-buffer stdout-buffer)
       (when (file-exists-p stderr-file) (delete-file stderr-file))
-
       (let ((report nil) (parse-error-reason nil))
         (if (string-blank-p stdout-content)
             (setq parse-error-reason "stdout was blank")
@@ -263,7 +264,6 @@ Cleans up STDOUT-BUFFER and STDERR-FILE. REPO-DIR provides context."
                  (setq parse-error-reason (format "Unexpected error: %s" err))
                  (message "Unexpected error during JSON parsing: %s" err)))
             (error (setq parse-error-reason (format "JSON parsing failed: %s" err)))))
-
         (if parse-error-reason
             (error "Lychee%s (exit status %d) but %s.\nStdout (first 500 chars):\n%s\nStderr (first 500 chars):\n%s"
                    (if (zerop (process-exit-status process)) " reported success" " process failed")
@@ -327,7 +327,8 @@ STDERR-CONTENT is lychee's stderr output for final display."
 
 (defun tlon-lychee--collect-dead-links (report repo-dir)
   "Collect all dead links from REPORT into a list for sequential processing.
-Each item is a plist with :url, :file-path, :filename, :status-text."
+REPO-DIR is the root directory of the repository. Each item is a plist with
+:url, :file-path, :filename, :status-text."
   (let ((dead-links nil)
         (error-map-alist (cdr (assoc 'error_map report))))
     (dolist (file-entry error-map-alist)
@@ -346,16 +347,23 @@ Each item is a plist with :url, :file-path, :filename, :status-text."
                                   (string-prefix-p "Cached(Ok" status-text)
                                   (string-prefix-p "Excluded" status-text))))
                 (push (list :url url
-                           :file-path full-file-path
-                           :filename filename
-                           :status-text status-text)
+                            :file-path full-file-path
+                            :filename filename
+                            :status-text status-text)
                       dead-links)))))))
     (reverse dead-links)))
 
 (defun tlon-lychee--process-next-dead-link (dead-links-queue total-dead-links
-                                            replacements-count-ref processed-links-count-ref
-                                            stderr-content)
+							     replacements-count-ref processed-links-count-ref
+							     stderr-content)
   "Process the next dead link in DEAD-LINKS-QUEUE sequentially.
+
+DEAD-LINKS-QUEUE is a list of plists containing dead link information.
+TOTAL-DEAD-LINKS is the total number of dead links found.
+REPLACEMENTS-COUNT-REF is a reference to the count of successful replacements.
+PROCESSED-LINKS-COUNT-REF is a reference to the count of processed links.
+STDERR-CONTENT is the error output from the lychee command.
+
 Wait for user input before proceeding to the next link."
   (if (null dead-links-queue)
       (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found."
@@ -372,7 +380,7 @@ Wait for user input before proceeding to the next link."
       (funcall browse-url-secondary-browser-function url)
       
       ;; Prompt user for action
-      (let ((action (read-char-choice 
+      (let ((action (read-char-choice
                      (format "Dead link: %s\nChoose action: (a)rchive, (s)pecify replacement, s(k)ip, (q)uit: "
                              url)
                      '(?a ?s ?k ?q))))
@@ -411,12 +419,22 @@ Wait for user input before proceeding to the next link."
                    (car replacements-count-ref) (car processed-links-count-ref))))))))
 
 (defun tlon-lychee--handle-archive-response (archive-url original-dead-url
-                                             full-file-path filename
-                                             remaining-links total-dead-links
-                                             replacements-count-ref processed-links-count-ref
-                                             stderr-content)
+							 full-file-path filename
+							 remaining-links total-dead-links
+							 replacements-count-ref processed-links-count-ref
+							 stderr-content)
   "Handle response from Wayback Machine for ORIGINAL-DEAD-URL.
-This is called only when user chooses the archive option."
+This is called only when user chooses the archive option.
+
+ARCHIVE-URL is the archived URL from the Wayback Machine, or nil if none found.
+ORIGINAL-DEAD-URL is the original dead URL to be replaced.
+FULL-FILE-PATH is the complete path to the file containing the dead link.
+FILENAME is the name of the file for display purposes.
+REMAINING-LINKS is the list of remaining dead links to process.
+TOTAL-DEAD-LINKS is the total number of dead links found.
+REPLACEMENTS-COUNT-REF is a reference to the count of successful replacements.
+PROCESSED-LINKS-COUNT-REF is a reference to the count of processed links.
+STDERR-CONTENT is the stderr output from the lychee command."
   (if archive-url
       (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
           (progn
