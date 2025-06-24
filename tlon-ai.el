@@ -393,13 +393,13 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 ;;;;; Newsletter Issue Creation
 
 (defconst tlon-ai-create-newsletter-issue-prompt
-  (format "Eres un asistente editorial encargado de redactar un borrador para nuestro boletín informativo en español.
+  (format "Eres un asistente editorial encargado de redactar un borrador para nuestro boletín sobre altruismo eficaz.
 Te proporcionaré el contenido de un archivo de entrada. Este archivo contiene una lista de elementos, cada uno en una nueva línea.
 Cada línea representa un artículo, evento u otra noticia que debe incluirse en el boletín.
 
 Tu tarea es procesar cada línea del texto de entrada de la siguiente manera:
-1.  Si la línea es una URL (comienza con \"http://\" o \"https://\"), utiliza tus herramientas de navegación web para acceder a su contenido y luego escribe un resumen conciso de una sola párrafo en español sobre ese contenido.
-2.  Si la línea es un fragmento de texto, escribe un resumen conciso de una sola párrafo en español sobre ese texto.
+1.  Si la línea es una URL (comienza con \"http://\" o \"https://\"), utiliza tus herramientas de navegación web para acceder a su contenido y luego escribe un resumen conciso de un solo párrafo en español de ese contenido.
+2.  Si la línea es un fragmento de texto, escribe un resumen conciso de un solo párrafo en español sobre ese texto.
 
 Después de procesar todas las líneas, debes estructurar el resultado final como un boletín en formato Markdown. El boletín debe tener las siguientes tres secciones principales, cada una introducida con un encabezado de nivel 2 (H2):
 -   `## Artículos`
@@ -474,8 +474,8 @@ request."
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
 	     (full-prompt (if string (format prompt string) prompt))
 	     (request (lambda () (gptel-request full-prompt
-			      :callback callback
-			      :buffer (or request-buffer (current-buffer))))))
+				   :callback callback
+				   :buffer (or request-buffer (current-buffer))))))
 	(if tlon-ai-batch-fun
 	    (condition-case nil
 		(funcall request)
@@ -2160,7 +2160,7 @@ Returns nil and signals a user-error if any step fails."
 ;;;###autoload
 (defun tlon-ai-create-newsletter-issue ()
   "Create a draft for a new newsletter issue using AI.
-Reads the most recent file from 'boletin/numeros/', processes each line (URL or
+Reads the most recent file from \"boletin/numeros/\", processes each line (URL or
 text) to generate a one-paragraph summary, and structures the output as a
 Spanish newsletter in Markdown with sections for articles, events, and other
 news."
@@ -2176,7 +2176,7 @@ news."
                                    nil ; Use default model or user-configured
                                    t   ; Skip context check
                                    nil ; Request buffer
-                                   (list gptel-tool-search gptel-tool-fetch-content)))) ; Tools
+                                   (list "search" "fetch_content")))) ; Tools
     (message "Could not create newsletter issue due to previous errors.")))
 
 (defun tlon-ai-create-newsletter-issue-callback (response info)
