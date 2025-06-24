@@ -2137,30 +2137,34 @@ Returns nil and signals a user-error if any step fails."
 
     ;; Filter out directories, keeping only regular files
     (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
-    (unless files-and-attrs
-      (message "No regular files found in %s. Prompting user to select a file." numeros-dir)
-      (let ((selected-file (read-file-name "Select a file: " numeros-dir nil t)))
-        (if (file-exists-p selected-file)
+
+    (if (not files-and-attrs)
+        ;; No regular files found, prompt user
+        (progn
+          (message "No regular files found in %s. Prompting user to select a file." numeros-dir)
+          (let ((selected-file (read-file-name "Select a file: " numeros-dir nil t)))
+            (if (and selected-file (file-exists-p selected-file))
+                (with-temp-buffer
+                  (insert-file-contents selected-file)
+                  (buffer-string)) ; Return content of selected file
+              (user-error "No file selected or selected file does not exist."))))
+      ;; Regular files were found, proceed with sorting and getting the latest
+      (progn
+        (setq sorted-files (sort files-and-attrs
+                                 (lambda (a b)
+                                   (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
+        (setq latest-file-path (car (car sorted-files)))
+
+        (unless (file-exists-p latest-file-path) ; Should exist, but good to check
+          (user-error "Latest file %s does not exist (this should not happen)." latest-file-path)
+          (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+
+        (condition-case err
             (with-temp-buffer
-              (insert-file-contents selected-file)
+              (insert-file-contents latest-file-path)
               (buffer-string))
-          (user-error "Selected file does not exist."))))
-
-    (setq sorted-files (sort files-and-attrs
-			     (lambda (a b)
-			       (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
-    (setq latest-file-path (car (car sorted-files)))
-
-    (unless (file-exists-p latest-file-path) ; Should exist, but good to check
-      (user-error "Latest file %s does not exist (this should not happen)." latest-file-path)
-      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
-
-    (condition-case err
-	(with-temp-buffer
-	  (insert-file-contents latest-file-path)
-	  (buffer-string))
-      (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
-	     nil))))
+          (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
+                 nil))))))
 
 ;;;###autoload
 (defun tlon-ai-create-newsletter-issue ()
