@@ -485,6 +485,7 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
     ("a" "Get archived"                                tlon-get-archived)
     ("c" "Check URLs in file"                          tlon-check-urls-in-file)
     ("l" "Lychee fix dead links"                       tlon-lychee-fix-dead-links)
+    ("p" "Lychee report"                               tlon-lychee-report)
     ("r" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
