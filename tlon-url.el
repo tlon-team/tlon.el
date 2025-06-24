@@ -95,9 +95,22 @@ Return t if a replacement was made, nil otherwise."
               (throw 'found t))))))
     modified))
 
+(defconst tlon-markdown-regex-link-inline
+  "\\(?1:!\\)?\\(?2:\\[\\)\\(?3:\\^?\\(?:\\\\\\]\\|[^]]\\)*\\|\\)\\(?4:\\]\\)\\(?5:(\\)\\s-*\\(?6:[^)]*?\\)\\(?:\\s-+\\(?7:\"[^\"]*\"\\)\\)?\\s-*\\(?8:)\\)"
+  "Regular expression for a [text](file) or an image link ![text](file).
+Group 1 matches the leading exclamation point (optional).
+Group 2 matches the opening square bracket.
+Group 3 matches the text inside the square brackets.
+Group 4 matches the closing square bracket.
+Group 5 matches the opening parenthesis.
+Group 6 matches the URL.
+Group 7 matches the title (optional).
+Group 8 matches the closing parenthesis.")
+
 (defun tlon-lychee-remove-url-from-file (file-path url)
   "Remove URL and its surrounding link markup from FILE-PATH.
-Handles Markdown links [text](URL) and bare URLs.
+For Markdown links [text](URL), offers choice to remove entire link or just URL.
+For bare URLs, removes the URL only.
 Return t if a removal was made, nil otherwise."
   (let ((modified nil)
         (search-candidates
@@ -111,24 +124,51 @@ Return t if a removal was made, nil otherwise."
       (catch 'found
         (dolist (candidate search-candidates)
           (goto-char (point-min))
-          (while (re-search-forward (regexp-quote candidate) nil t)
+          (while (re-search-forward tlon-markdown-regex-link-inline nil t)
+            (let ((link-url (match-string-no-properties 6)))
+              (when (string= link-url candidate)
+                (let ((link-text (match-string-no-properties 3))
+                      (full-match-start (match-beginning 0))
+                      (full-match-end (match-end 0))
+                      (url-start (match-beginning 6))
+                      (url-end (match-end 6)))
+                  (if (and link-text (not (string-blank-p link-text)))
+                      ;; Markdown link with text - ask user what to do
+                      (let ((choice (read-char-choice
+                                     (format "Found Markdown link: [%s](%s)\nChoose action: (r)emove entire link, (k)eep text only, (s)kip: "
+                                             link-text candidate)
+                                     '(?r ?k ?s))))
+                        (cond
+                         ((eq choice ?r)
+                          ;; Remove entire link
+                          (delete-region full-match-start full-match-end)
+                          (setq modified t))
+                         ((eq choice ?k)
+                          ;; Keep text, remove link markup
+                          (replace-match link-text t t nil 0)
+                          (setq modified t))
+                         ((eq choice ?s)
+                          ;; Skip this occurrence
+                          nil)))
+                    ;; Empty or whitespace-only text - remove entire link
+                    (delete-region full-match-start full-match-end)
+                    (setq modified t))))))
+          ;; Also check for bare URLs not in Markdown links
+          (goto-char (point-min))
+          (while (search-forward candidate nil t)
             (let ((url-start (match-beginning 0))
                   (url-end (match-end 0)))
-              ;; Check if this is part of a Markdown link [text](URL)
+              ;; Check if this URL is NOT part of a Markdown link
               (save-excursion
                 (goto-char url-start)
-                (if (and (> url-start 1)
-                         (eq (char-before url-start) ?\()
-                         (re-search-backward "\\[\\([^]]*\\)\\](" nil t)
-                         (= (match-end 0) url-start))
-                    ;; Remove the entire Markdown link [text](URL)
-                    (progn
-                      (delete-region (match-beginning 0) (1+ url-end))
-                      (setq modified t))
-                  ;; Remove just the bare URL
-                  (progn
-                    (delete-region url-start url-end)
-                    (setq modified t))))))
+                (unless (and (> url-start 1)
+                             (eq (char-before url-start) ?\()
+                             (re-search-backward tlon-markdown-regex-link-inline nil t)
+                             (and (>= url-start (match-beginning 6))
+                                  (<= url-end (match-end 6))))
+                  ;; This is a bare URL, remove it
+                  (delete-region url-start url-end)
+                  (setq modified t)))))
           (when modified
             (write-region (point-min) (point-max) file-path)
             (throw 'found t))))
