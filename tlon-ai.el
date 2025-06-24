@@ -2171,8 +2171,10 @@ Returns nil and signals a user-error if any step fails."
                                    (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
         (setq latest-file-path (car (car sorted-files)))
 
-        (unless (file-exists-p latest-file-path) ; Should exist, but good to check
-          (user-error "Latest file %s does not exist (this should not happen)." latest-file-path)
+        ;; Ensure latest-file-path is not nil before calling file-exists-p,
+        ;; and also handle if it's a string but file doesn't exist.
+        (unless (and latest-file-path (file-exists-p latest-file-path))
+          (user-error "Latest file %s does not exist or could not be determined." latest-file-path)
           (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
 
         (condition-case err
