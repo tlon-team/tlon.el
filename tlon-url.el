@@ -576,18 +576,27 @@ ACTION-COUNTS-REF is a reference to the plist of action counts.
 PROCESSED-LINKS-COUNT-REF is a reference to the count of processed links.
 STDERR-CONTENT is the stderr output from the lychee command."
   (if archive-url
-      (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
-          (progn
-            (cl-incf (plist-get action-counts-ref :archived))
-            (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
-        (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
-                 original-dead-url archive-url filename))
-    (message "No archive available for %s" original-dead-url))
-
-  ;; Process the next link in the queue
-  (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                       action-counts-ref processed-links-count-ref
-                                       stderr-content))
+      (progn
+        (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
+            (progn
+              (cl-incf (plist-get action-counts-ref :archived))
+              (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
+          (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
+                   original-dead-url archive-url filename))
+        ;; Process the next link in the queue
+        (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                             action-counts-ref processed-links-count-ref
+                                             stderr-content))
+    ;; No archive available - prompt user for other options
+    (message "No archive available for %s" original-dead-url)
+    (let* ((current-link (list :url original-dead-url
+                               :file-path full-file-path
+                               :filename filename))
+           (dead-links-queue (cons current-link remaining-links)))
+      ;; Return to main prompt with current link back in queue, skip browser open
+      (tlon-lychee--process-next-dead-link dead-links-queue total-dead-links
+                                           action-counts-ref processed-links-count-ref
+                                           stderr-content t))))
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
   "Replace URL-DEAD with URL-LIVE in all files across content repos.
