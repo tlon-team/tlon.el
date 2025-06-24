@@ -353,7 +353,7 @@ and REPO-DIR provides context."
   "Process the parsed lychee REPORT.
 Counts dead links, and if any, calls `tlon-lychee--iterate-and-attempt-fixes`.
 REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
-  (let* ((replacements-count-ref (list 0))
+  (let* ((action-counts-ref (list :archived 0 :replaced 0 :removed 0 :whitelisted 0 :skipped 0))
          (processed-links-count-ref (list 0))
          (total-dead-links (tlon-lychee--count-dead-links-in-report report)))
 
@@ -366,7 +366,7 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
       (progn
         (message "Lychee found %d dead link(s). Fetching archives and replacing..." total-dead-links)
         (tlon-lychee--iterate-and-attempt-fixes report repo-dir total-dead-links
-                                                replacements-count-ref processed-links-count-ref
+                                                action-counts-ref processed-links-count-ref
                                                 stderr-content)))))
 
 (defun tlon-lychee--count-dead-links-in-report (report)
@@ -390,15 +390,15 @@ REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
     count))
 
 (defun tlon-lychee--iterate-and-attempt-fixes (report repo-dir total-dead-links
-                                               replacements-count-ref processed-links-count-ref
+                                               action-counts-ref processed-links-count-ref
                                                stderr-content)
   "Iterate over REPORT from lychee, attempting to fix dead links.
 REPO-DIR is the root. TOTAL-DEAD-LINKS is the pre-counted total.
-REPLACEMENTS-COUNT-REF and PROCESSED-LINKS-COUNT-REF are mutable counters.
+ACTION-COUNTS-REF and PROCESSED-LINKS-COUNT-REF are mutable counters.
 STDERR-CONTENT is lychee's stderr output for final display."
   (let ((dead-links-queue (tlon-lychee--collect-dead-links report repo-dir)))
     (tlon-lychee--process-next-dead-link dead-links-queue total-dead-links
-                                         replacements-count-ref processed-links-count-ref
+                                         action-counts-ref processed-links-count-ref
                                          stderr-content)))
 
 (defun tlon-lychee--collect-dead-links (report repo-dir)
@@ -431,20 +431,32 @@ REPO-DIR is the root directory of the repository. Each item is a plist with
     (reverse dead-links)))
 
 (defun tlon-lychee--process-next-dead-link (dead-links-queue total-dead-links
-							     replacements-count-ref processed-links-count-ref
-							     stderr-content)
+							     action-counts-ref processed-links-count-ref
+							     stderr-content &optional skip-browser-open)
   "Process the next dead link in DEAD-LINKS-QUEUE sequentially.
 
 DEAD-LINKS-QUEUE is a list of plists containing dead link information.
 TOTAL-DEAD-LINKS is the total number of dead links found.
-REPLACEMENTS-COUNT-REF is a reference to the count of successful replacements.
+ACTION-COUNTS-REF is a reference to the plist of action counts.
 PROCESSED-LINKS-COUNT-REF is a reference to the count of processed links.
 STDERR-CONTENT is the error output from the lychee command.
+SKIP-BROWSER-OPEN when non-nil, skips opening the URL in browser.
 
 Wait for user input before proceeding to the next link."
   (if (null dead-links-queue)
-      (message "Lychee dead link processing complete. Made %d replacement(s) out of %d dead links found."
-               (car replacements-count-ref) total-dead-links)
+      (let ((archived (plist-get action-counts-ref :archived))
+            (replaced (plist-get action-counts-ref :replaced))
+            (removed (plist-get action-counts-ref :removed))
+            (whitelisted (plist-get action-counts-ref :whitelisted))
+            (skipped (plist-get action-counts-ref :skipped))
+            (total-actions (+ (plist-get action-counts-ref :archived)
+                              (plist-get action-counts-ref :replaced)
+                              (plist-get action-counts-ref :removed)
+                              (plist-get action-counts-ref :whitelisted)
+                              (plist-get action-counts-ref :skipped))))
+        (message "Lychee dead link processing complete. Processed %d out of %d dead links found.\nActions taken: %d archived, %d replaced, %d removed, %d whitelisted, %d skipped."
+                 (car processed-links-count-ref) total-dead-links
+                 archived replaced removed whitelisted skipped))
     (let* ((current-link (car dead-links-queue))
            (remaining-links (cdr dead-links-queue))
            (url (plist-get current-link :url))
@@ -455,8 +467,9 @@ Wait for user input before proceeding to the next link."
       (message "Processing dead link: %s in %s" url filename)
       (cl-incf (car processed-links-count-ref))
       
-      ;; Open the original URL in browser
-      (funcall browse-url-secondary-browser-function url)
+      ;; Open the original URL in browser (unless skipping)
+      (unless skip-browser-open
+        (funcall browse-url-secondary-browser-function url))
       
       ;; Prompt user for action
       (let* ((is-wayback (tlon-lychee--is-wayback-url-p url))
@@ -473,7 +486,7 @@ Wait for user input before proceeding to the next link."
               (progn
                 (message "Cannot archive a Wayback Machine URL")
                 (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                                     replacements-count-ref processed-links-count-ref
+                                                     action-counts-ref processed-links-count-ref
                                                      stderr-content))
             ;; Only fetch archive when user chooses this option
             (message "Fetching archived version...")
@@ -483,64 +496,72 @@ Wait for user input before proceeding to the next link."
                (tlon-lychee--handle-archive-response
                 archive-url original-dead-url full-file-path filename
                 remaining-links total-dead-links
-                replacements-count-ref processed-links-count-ref
+                action-counts-ref processed-links-count-ref
                 stderr-content)))))
          ((eq action ?r)
           (let ((input (read-string "Enter replacement URL: ")))
             (cond
              ((string-blank-p input)
               (message "Replacement URL cannot be empty. Returning to main prompt.")
-              ;; Return to main prompt by recursively calling this function
+              ;; Return to main prompt by recursively calling this function, skipping browser open
               (tlon-lychee--process-next-dead-link dead-links-queue total-dead-links
-                                                   replacements-count-ref processed-links-count-ref
-                                                   stderr-content))
+                                                   action-counts-ref processed-links-count-ref
+                                                   stderr-content t))
              ((string= input url)
               (message "Replacement URL cannot be the same as the original URL. Returning to main prompt.")
-              ;; Return to main prompt by recursively calling this function
+              ;; Return to main prompt by recursively calling this function, skipping browser open
               (tlon-lychee--process-next-dead-link dead-links-queue total-dead-links
-                                                   replacements-count-ref processed-links-count-ref
-                                                   stderr-content))
+                                                   action-counts-ref processed-links-count-ref
+                                                   stderr-content t))
              (t
               ;; Valid replacement URL
               (if (tlon-lychee-replace-in-file full-file-path url input)
                   (progn
-                    (cl-incf (car replacements-count-ref))
+                    (cl-incf (plist-get action-counts-ref :replaced))
                     (message "Replaced: %s -> %s in %s" url input filename))
                 (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename))
               ;; Continue to next link
               (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                                   replacements-count-ref processed-links-count-ref
+                                                   action-counts-ref processed-links-count-ref
                                                    stderr-content)))))
          ((eq action ?w)
           (tlon-lychee--add-to-whitelist url)
+          (cl-incf (plist-get action-counts-ref :whitelisted))
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                               replacements-count-ref processed-links-count-ref
+                                               action-counts-ref processed-links-count-ref
                                                stderr-content))
          ((eq action ?d)
           (if (tlon-lychee-remove-url-from-file full-file-path url)
               (progn
-                (cl-incf (car replacements-count-ref))
+                (cl-incf (plist-get action-counts-ref :removed))
                 (message "Removed: %s from %s" url filename))
             (message "URL not found for removal in %s" filename))
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                               replacements-count-ref processed-links-count-ref
+                                               action-counts-ref processed-links-count-ref
                                                stderr-content))
          ((eq action ?s)
           (message "Skipped: %s" url)
+          (cl-incf (plist-get action-counts-ref :skipped))
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                               replacements-count-ref processed-links-count-ref
+                                               action-counts-ref processed-links-count-ref
                                                stderr-content))
          ((eq action ?q)
-          (message "Aborted. Made %d replacement(s) out of %d processed links."
-                   (car replacements-count-ref) (car processed-links-count-ref))))))))
+          (let ((archived (plist-get action-counts-ref :archived))
+                (replaced (plist-get action-counts-ref :replaced))
+                (removed (plist-get action-counts-ref :removed))
+                (whitelisted (plist-get action-counts-ref :whitelisted))
+                (skipped (plist-get action-counts-ref :skipped)))
+            (message "Aborted. Processed %d out of %d dead links.\nActions taken: %d archived, %d replaced, %d removed, %d whitelisted, %d skipped."
+                     (car processed-links-count-ref) total-dead-links
+                     archived replaced removed whitelisted skipped))))))))
 
 (defun tlon-lychee--handle-archive-response (archive-url original-dead-url
 							 full-file-path filename
 							 remaining-links total-dead-links
-							 replacements-count-ref processed-links-count-ref
+							 action-counts-ref processed-links-count-ref
 							 stderr-content)
   "Handle response from Wayback Machine for ORIGINAL-DEAD-URL.
 This is called only when user chooses the archive option.
@@ -551,13 +572,13 @@ FULL-FILE-PATH is the complete path to the file containing the dead link.
 FILENAME is the name of the file for display purposes.
 REMAINING-LINKS is the list of remaining dead links to process.
 TOTAL-DEAD-LINKS is the total number of dead links found.
-REPLACEMENTS-COUNT-REF is a reference to the count of successful replacements.
+ACTION-COUNTS-REF is a reference to the plist of action counts.
 PROCESSED-LINKS-COUNT-REF is a reference to the count of processed links.
 STDERR-CONTENT is the stderr output from the lychee command."
   (if archive-url
       (if (tlon-lychee-replace-in-file full-file-path original-dead-url archive-url)
           (progn
-            (cl-incf (car replacements-count-ref))
+            (cl-incf (plist-get action-counts-ref :archived))
             (message "Replaced: %s -> %s in %s" original-dead-url archive-url filename))
         (message "Archive for %s found (%s), but no replacement made in %s (URL not found?)"
                  original-dead-url archive-url filename))
@@ -565,7 +586,7 @@ STDERR-CONTENT is the stderr output from the lychee command."
 
   ;; Process the next link in the queue
   (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                       replacements-count-ref processed-links-count-ref
+                                       action-counts-ref processed-links-count-ref
                                        stderr-content))
 
 (defun tlon-replace-url-across-projects (&optional url-dead url-live)
