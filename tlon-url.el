@@ -51,24 +51,19 @@ ARCHIVE-URL is nil if no archive is found or an error occurs."
          (with-current-buffer buffer
            (if (plist-get status :error)
                (message "Wayback Machine request for %s failed: %S" url (plist-get status :error))
-             ;; Else, no HTTP error, proceed to parse the response.
+             ;; Find the end of HTTP headers (empty line)
              (goto-char (point-min))
-             (let ((response-text (buffer-string)))
-               (if (string-blank-p response-text)
-                   (message "Wayback Machine API response for %s was empty." url)
-                 ;; Response is not blank, try to parse it.
-                 (let* ((lines (split-string response-text "\n" t)) ; t to omit empty strings
-                        (first-data-line (and lines (car lines))))
-                   (if first-data-line
-                       (let ((fields (split-string first-data-line " ")))
-                         (if (>= (length fields) 3) ; Need at least timestamp (idx 1) and original URL (idx 2)
-                             (let ((timestamp (nth 1 fields))
-                                   (original-url-from-api (nth 2 fields)))
-                               (setq archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api)))
-                           ;; Else (not enough fields on the first data line)
-                           (message "Could not parse fields from Wayback Machine API response for %s. First data line: %s" url first-data-line)))
-                     ;; Else (no data lines found in the response)
-                     (message "No data lines found in Wayback Machine API response for %s. Full response: %s" url response-text)))))))
+             (if (re-search-forward "^\\s-*$" nil t)
+                 (let* ((response (buffer-substring-no-properties (point) (point-max)))
+                        (lines (split-string response "\n" t)))
+                   (if (and lines (> (length lines) 0))
+                       (let* ((fields (split-string (car lines) " "))
+                              (timestamp (nth 1 fields))
+                              (original-url-from-api (nth 2 fields)))
+                         (when (and timestamp original-url-from-api)
+                           (setq archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api))))
+                     (message "No working archives found for %s" url)))
+               (message "Could not parse Wayback Machine API response for %s" url))))
          (kill-buffer buffer)
          (funcall callback archive-url url))))))
 
