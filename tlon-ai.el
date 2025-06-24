@@ -2138,8 +2138,13 @@ Returns nil and signals a user-error if any step fails."
     ;; Filter out directories, keeping only regular files
     (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
     (unless files-and-attrs
-      (user-error "No regular files found in %s." numeros-dir)
-      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+      (message "No regular files found in %s. Prompting user to select a file." numeros-dir)
+      (let ((selected-file (read-file-name "Select a file: " numeros-dir nil t)))
+        (if (file-exists-p selected-file)
+            (with-temp-buffer
+              (insert-file-contents selected-file)
+              (buffer-string))
+          (user-error "Selected file does not exist."))))
 
     (setq sorted-files (sort files-and-attrs
 			     (lambda (a b)
