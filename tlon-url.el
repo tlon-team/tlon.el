@@ -29,6 +29,7 @@
 (require 'json)
 (require 'cl-lib)
 (require 'url-util)  ; For url-hexify-string
+(require 'markdown-mode)
 (eval-and-compile
   (require 'transient))
 
@@ -95,17 +96,6 @@ Return t if a replacement was made, nil otherwise."
               (throw 'found t))))))
     modified))
 
-(defconst tlon-markdown-regex-link-inline
-  "\\(?1:!\\)?\\(?2:\\[\\)\\(?3:\\^?\\(?:\\\\\\]\\|[^]]\\)*\\|\\)\\(?4:\\]\\)\\(?5:(\\)\\s-*\\(?6:[^)]*?\\)\\(?:\\s-+\\(?7:\"[^\"]*\"\\)\\)?\\s-*\\(?8:)\\)"
-  "Regular expression for a [text](file) or an image link ![text](file).
-Group 1 matches the leading exclamation point (optional).
-Group 2 matches the opening square bracket.
-Group 3 matches the text inside the square brackets.
-Group 4 matches the closing square bracket.
-Group 5 matches the opening parenthesis.
-Group 6 matches the URL.
-Group 7 matches the title (optional).
-Group 8 matches the closing parenthesis.")
 
 (defun tlon-lychee-remove-url-from-file (file-path url)
   "Remove URL and its surrounding link markup from FILE-PATH.
@@ -124,7 +114,7 @@ Return t if a removal was made, nil otherwise."
       (catch 'found
         (dolist (candidate search-candidates)
           (goto-char (point-min))
-          (while (re-search-forward tlon-markdown-regex-link-inline nil t)
+          (while (re-search-forward markdown-regex-link-inline nil t)
             (let ((link-url (match-string-no-properties 6)))
               (when (string= link-url candidate)
                 (let ((link-text (match-string-no-properties 3))
@@ -163,7 +153,7 @@ Return t if a removal was made, nil otherwise."
                 (goto-char url-start)
                 (unless (and (> url-start 1)
                              (eq (char-before url-start) ?\()
-                             (re-search-backward tlon-markdown-regex-link-inline nil t)
+                             (re-search-backward markdown-regex-link-inline nil t)
                              (and (>= url-start (match-beginning 6))
                                   (<= url-end (match-end 6))))
                   ;; This is a bare URL, remove it
