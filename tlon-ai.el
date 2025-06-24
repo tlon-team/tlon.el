@@ -467,11 +467,8 @@ request."
   (unless (or tlon-ai-batch-fun skip-context-check)
     (gptel-extras-warn-when-context))
   (let* ((processed-tools (if (and tools (listp tools) (every #'stringp tools)) ; Check if tools is a list of strings
-                              (mapcar (lambda (tool-name-str) ; tool-name-str is definitely a string here
-                                        (let* ((tool-var (intern-soft (format "gptel-tool-%s" tool-name-str))))
-                                          (if (and tool-var (boundp tool-var))
-                                              (symbol-value tool-var)
-                                            (error "Unknown tlon tool name: %s. Expected gptel-tool-%s to be defined." tool-name-str tool-name-str))))
+                              (mapcar (lambda (tool-name-str)
+                                        (gptel-get-tool tool-name-str)) ; Use gptel-get-tool to find the tool struct. It will error if not found.
                                       tools)
                             ;; Else, tools is not a list of strings. It could be:
                             ;; 1. A list of tool structs (correct as per original docstring)
