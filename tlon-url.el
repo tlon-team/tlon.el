@@ -94,6 +94,45 @@ Return t if a replacement was made, nil otherwise."
               (write-region (point-min) (point-max) file-path)
               (throw 'found t))))))
     modified))
+
+(defun tlon-lychee-remove-url-from-file (file-path url)
+  "Remove URL and its surrounding link markup from FILE-PATH.
+Handles Markdown links [text](URL) and bare URLs.
+Return t if a removal was made, nil otherwise."
+  (let ((modified nil)
+        (search-candidates
+         (delete-dups
+          (list url
+                (url-hexify-string url)
+                (url-unhex-string url)
+                (url-unhex-string (url-hexify-string url))))))
+    (with-temp-buffer
+      (insert-file-contents file-path)
+      (catch 'found
+        (dolist (candidate search-candidates)
+          (goto-char (point-min))
+          (while (re-search-forward (regexp-quote candidate) nil t)
+            (let ((url-start (match-beginning 0))
+                  (url-end (match-end 0)))
+              ;; Check if this is part of a Markdown link [text](URL)
+              (save-excursion
+                (goto-char url-start)
+                (if (and (> url-start 1)
+                         (eq (char-before url-start) ?\()
+                         (re-search-backward "\\[\\([^]]*\\)\\](" nil t)
+                         (= (match-end 0) url-start))
+                    ;; Remove the entire Markdown link [text](URL)
+                    (progn
+                      (delete-region (match-beginning 0) (1+ url-end))
+                      (setq modified t))
+                  ;; Remove just the bare URL
+                  (progn
+                    (delete-region url-start url-end)
+                    (setq modified t))))))
+          (when modified
+            (write-region (point-min) (point-max) file-path)
+            (throw 'found t))))
+    modified))
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
 If FILE is nil, use the file visited by the current buffer."
@@ -371,9 +410,9 @@ Wait for user input before proceeding to the next link."
       
       ;; Prompt user for action
       (let ((action (read-char-choice
-                     (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (s)pecify replacement, s(k)ip, (q)uit: "
+                     (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (s)pecify replacement, (r)emove, s(k)ip, (q)uit: "
                              current-position total-dead-links url remaining-count)
-                     '(?a ?s ?k ?q))))
+                     '(?a ?s ?r ?k ?q))))
         (cond
          ((eq action ?a)
           ;; Only fetch archive when user chooses this option
@@ -394,6 +433,16 @@ Wait for user input before proceeding to the next link."
                     (cl-incf (car replacements-count-ref))
                     (message "Replaced: %s -> %s in %s" url replacement-url filename))
                 (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename))))
+          ;; Continue to next link
+          (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                               replacements-count-ref processed-links-count-ref
+                                               stderr-content))
+         ((eq action ?r)
+          (if (tlon-lychee-remove-url-from-file full-file-path url)
+              (progn
+                (cl-incf (car replacements-count-ref))
+                (message "Removed: %s from %s" url filename))
+            (message "URL not found for removal in %s" filename))
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
                                                replacements-count-ref processed-links-count-ref
