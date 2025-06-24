@@ -171,12 +171,13 @@ Also, copy the URL to the kill ring."
 (defun tlon-lychee-report ()
   "Generate a report of dead links using Lychee."
   (interactive)
-  (let ((default-directory (tlon-get-repo)))
+  (let ((default-directory (tlon-get-repo))
+	(json (y-or-n-p "JSON format? ")))
     (tlon-lychee-ensure)
     (eshell t)
     (with-current-buffer (get-buffer "*eshell*")
       (goto-char (point-max))
-      (insert "lychee .")
+      (insert (format "lychee %s ." (if json "--format json" "")))
       (eshell-send-input))))
 
 ;;;###autoload
