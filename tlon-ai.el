@@ -452,7 +452,7 @@ Asegúrate de que todo el boletín esté en español. Usa “sentence case” (n
 
 ;;;;; General
 
-(defun tlon-make-gptel-request (prompt &optional string callback full-model skip-context-check request-buffer tools)
+(defun tlon-make-gptel-request (prompt &optional string callback full-model skip-context-check request-buffer tools context-data)
   "Make a `gptel' request with PROMPT and STRING and CALLBACK.
 When STRING is non-nil, PROMPT is a formatting string containing the prompt and
 a slot for a string, which is the variable part of the prompt (e.g. the text to
@@ -463,7 +463,8 @@ car is the backend and whose cdr is the model.
 By default, warn the user if the context is not empty. If SKIP-CONTEXT-CHECK is
 non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
 the gptel request. TOOLS is a list of gptel-tool structs to include with the
-request."
+request. CONTEXT-DATA is arbitrary data passed to the `gptel-request` :context
+key, available in the callback's INFO plist."
   (unless (or tlon-ai-batch-fun skip-context-check)
     (gptel-extras-warn-when-context))
   (let* ((processed-tools (if (and tools (listp tools) (every #'stringp tools)) ; Check if tools is a list of strings
@@ -488,7 +489,8 @@ request."
              (full-prompt (if string (format prompt string) prompt))
              (request (lambda () (gptel-request full-prompt
                                    :callback callback
-                                   :buffer (or request-buffer (current-buffer))))))
+                                   :buffer (or request-buffer (current-buffer))
+                                   :context context-data))))
         (if tlon-ai-batch-fun
             (condition-case nil
                 (funcall request)
@@ -2157,9 +2159,10 @@ Returns nil and signals a user-error if any step fails."
           (message "No regular files found in %s. Prompting user to select a file." numeros-dir)
           (let ((selected-file (read-file-name "Select a file: " numeros-dir nil t)))
             (if (and selected-file (file-exists-p selected-file))
-                (with-temp-buffer
-                  (insert-file-contents selected-file)
-                  (buffer-string)) ; Return content of selected file
+                (cons (with-temp-buffer
+                        (insert-file-contents selected-file)
+                        (buffer-string))
+                      selected-file) ; Return (content . path)
               (user-error "No file selected or selected file does not exist."))))
       ;; Regular files were found, proceed with sorting and getting the latest
       (progn
@@ -2175,9 +2178,10 @@ Returns nil and signals a user-error if any step fails."
           (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
 
         (condition-case err
-            (with-temp-buffer
-              (insert-file-contents latest-file-path)
-              (buffer-string))
+            (cons (with-temp-buffer
+                    (insert-file-contents latest-file-path)
+                    (buffer-string))
+                  latest-file-path) ; Return (content . path)
           (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
                  nil))))))
 
@@ -2187,39 +2191,42 @@ Returns nil and signals a user-error if any step fails."
 Reads the most recent file from \"boletin/numeros/\", processes each line (URL or
 text) to generate a one-paragraph summary, and structures the output as a
 Spanish newsletter in Markdown with sections for articles, events, and other
-news."
+news. The original input file is then overwritten with this new draft."
   (interactive)
-  (if-let ((content (tlon-ai--get-latest-newsletter-input-content)))
+  (if-let* ((input-data (tlon-ai--get-latest-newsletter-input-content))
+            (content (car input-data))
+            (input-file-path (cdr input-data)))
       (if (string-blank-p content)
           (message "The latest newsletter input file is empty. Nothing to process.")
         (progn
-          (message "Requesting AI to draft newsletter issue...")
+          (message "Requesting AI to draft newsletter issue (input: %s)..." input-file-path)
           (tlon-make-gptel-request tlon-ai-create-newsletter-issue-prompt
                                    content
                                    #'tlon-ai-create-newsletter-issue-callback
                                    nil ; Use default model or user-configured
                                    t   ; Skip context check
                                    nil ; Request buffer
-                                   (list "search" "fetch_content")))) ; Tools
+                                   (list "search" "fetch_content") ; Tools
+                                   input-file-path))) ; Pass input-file-path as context-data
     (message "Could not create newsletter issue due to previous errors.")))
 
 (defun tlon-ai-create-newsletter-issue-callback (response info)
   "Callback for `tlon-ai-create-newsletter-issue'.
-Displays the AI-generated newsletter draft in a new buffer.
+Writes the AI-generated newsletter draft to the original input file,
+replacing its contents, and then opens the file.
 Only processes the response if it's a string (final AI output)."
   (if (not response)
       (tlon-ai-callback-fail info)
-    ;; Only proceed to create buffer and insert if response is a string
-    (when (stringp response)
-      (let* ((buffer-name (generate-new-buffer-name "*Boletín Borrador AI*"))
-	     (buffer (get-buffer-create buffer-name)))
-	(with-current-buffer buffer
-	  (erase-buffer)
-	  (insert response)
-	  (markdown-mode) ; Assuming output is Markdown
-	  (goto-char (point-min)))
-	(switch-to-buffer buffer)
-	(message "AI-generated newsletter draft created in buffer %s." buffer-name)))))
+    (when (stringp response) ; Ensure response is the final text
+      (let ((original-file-path (plist-get info :context)))
+        (if (and original-file-path (stringp original-file-path) (not (string-empty-p original-file-path)))
+            (progn
+              (with-temp-buffer
+                (insert response)
+                (write-file original-file-path nil)) ; Overwrites original file, creates backup
+              (message "Newsletter draft updated in %s. Opening file..." original-file-path)
+              (find-file original-file-path)) ; Open the updated file
+          (user-error "Original input file path not found in callback info or is invalid."))))))
 
 ;;;;; Meta Description Generation
 
