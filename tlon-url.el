@@ -374,7 +374,7 @@ Wait for user input before proceeding to the next link."
       (cl-incf (car processed-links-count-ref))
       
       ;; Open the original URL in browser
-      (browse-url url)
+      (funcall browse-url-secondary-browser-function url)
       
       ;; Prompt user for action
       (let ((action (read-char-choice 
