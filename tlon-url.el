@@ -449,7 +449,7 @@ Wait for user input before proceeding to the next link."
             (removed (plist-get action-counts-ref :removed))
             (whitelisted (plist-get action-counts-ref :whitelisted))
             (skipped (plist-get action-counts-ref :skipped)))
-        (message "Lychee dead link processing complete. Processed %d out of %d dead links found.\nActions taken: %d archived, %d replaced, %d removed, %d whitelisted, %d skipped."
+        (message "Lychee dead link processing complete. Processed %d out of %d dead links found (including whitelisted).\nActions taken: %d archived, %d replaced, %d removed, %d whitelisted, %d skipped."
                  (car processed-links-count-ref) total-dead-links
                  archived replaced removed whitelisted skipped))
     (let* ((current-link (car dead-links-queue))
