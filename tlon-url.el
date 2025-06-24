@@ -448,12 +448,7 @@ Wait for user input before proceeding to the next link."
             (replaced (plist-get action-counts-ref :replaced))
             (removed (plist-get action-counts-ref :removed))
             (whitelisted (plist-get action-counts-ref :whitelisted))
-            (skipped (plist-get action-counts-ref :skipped))
-            (total-actions (+ (plist-get action-counts-ref :archived)
-                              (plist-get action-counts-ref :replaced)
-                              (plist-get action-counts-ref :removed)
-                              (plist-get action-counts-ref :whitelisted)
-                              (plist-get action-counts-ref :skipped))))
+            (skipped (plist-get action-counts-ref :skipped)))
         (message "Lychee dead link processing complete. Processed %d out of %d dead links found.\nActions taken: %d archived, %d replaced, %d removed, %d whitelisted, %d skipped."
                  (car processed-links-count-ref) total-dead-links
                  archived replaced removed whitelisted skipped))
