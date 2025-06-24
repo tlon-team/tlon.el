@@ -486,25 +486,31 @@ Wait for user input before proceeding to the next link."
                 replacements-count-ref processed-links-count-ref
                 stderr-content)))))
          ((eq action ?s)
-          (let ((replacement-url nil))
-            (while (not replacement-url)
-              (let ((input (read-string "Enter replacement URL: ")))
-                (cond
-                 ((string-blank-p input)
-                  (message "Replacement URL cannot be empty. Please try again."))
-                 ((string= input url)
-                  (message "Replacement URL cannot be the same as the original URL. Please try again."))
-                 (t
-                  (setq replacement-url input)))))
-            (if (tlon-lychee-replace-in-file full-file-path url replacement-url)
-                (progn
-                  (cl-incf (car replacements-count-ref))
-                  (message "Replaced: %s -> %s in %s" url replacement-url filename))
-              (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename)))
-          ;; Continue to next link
-          (tlon-lychee--process-next-dead-link remaining-links total-dead-links
-                                               replacements-count-ref processed-links-count-ref
-                                               stderr-content))
+          (let ((input (read-string "Enter replacement URL: ")))
+            (cond
+             ((string-blank-p input)
+              (message "Replacement URL cannot be empty. Returning to main prompt.")
+              ;; Return to main prompt by recursively calling this function
+              (tlon-lychee--process-next-dead-link dead-links-queue total-dead-links
+                                                   replacements-count-ref processed-links-count-ref
+                                                   stderr-content))
+             ((string= input url)
+              (message "Replacement URL cannot be the same as the original URL. Returning to main prompt.")
+              ;; Return to main prompt by recursively calling this function
+              (tlon-lychee--process-next-dead-link dead-links-queue total-dead-links
+                                                   replacements-count-ref processed-links-count-ref
+                                                   stderr-content))
+             (t
+              ;; Valid replacement URL
+              (if (tlon-lychee-replace-in-file full-file-path url input)
+                  (progn
+                    (cl-incf (car replacements-count-ref))
+                    (message "Replaced: %s -> %s in %s" url input filename))
+                (message "Replacement URL specified but no replacement made in %s (URL not found?)" filename))
+              ;; Continue to next link
+              (tlon-lychee--process-next-dead-link remaining-links total-dead-links
+                                                   replacements-count-ref processed-links-count-ref
+                                                   stderr-content)))))
          ((eq action ?w)
           (tlon-lychee--add-to-whitelist url)
           ;; Continue to next link
