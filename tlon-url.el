@@ -478,7 +478,7 @@ Wait for user input before proceeding to the next link."
                                       current-position total-dead-links url remaining-count)
                             (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (r)eplace, (d)elete, (w)hitelist, (s)kip, (q)uit: "
                                     current-position total-dead-links url remaining-count)))
-             (valid-choices (if is-wayback '(?r ?d ?w sk ?q) '(?a ?r ?d ?w ?s ?q)))
+             (valid-choices (if is-wayback '(?r ?d ?w ?s ?q) '(?a ?r ?d ?w ?s ?q)))
              (action (read-char-choice prompt-text valid-choices)))
         (cond
          ((eq action ?a)
