@@ -96,11 +96,10 @@ Return t if a replacement was made, nil otherwise."
               (throw 'found t))))))
     modified))
 
-
 (defun tlon-lychee-remove-url-from-file (file-path url)
-  "Remove URL and its surrounding link markup from FILE-PATH.
-For Markdown links [text](URL), offers choice to remove entire link or just URL.
-For bare URLs, removes the URL only.
+  "Remove URL markup from FILE-PATH, keeping the link text.
+For Markdown links [text](URL), keeps only the text.
+For bare URLs, removes the URL entirely.
 Return t if a removal was made, nil otherwise."
   (let ((modified nil)
         (search-candidates
@@ -117,32 +116,16 @@ Return t if a removal was made, nil otherwise."
           (while (re-search-forward markdown-regex-link-inline nil t)
             (let ((link-url (match-string-no-properties 6)))
               (when (string= link-url candidate)
-                (let ((link-text (match-string-no-properties 3))
-                      (full-match-start (match-beginning 0))
-                      (full-match-end (match-end 0))
-                      (url-start (match-beginning 6))
-                      (url-end (match-end 6)))
+                (let ((link-text (match-string-no-properties 3)))
                   (if (and link-text (not (string-blank-p link-text)))
-                      ;; Markdown link with text - ask user what to do
-                      (let ((choice (read-char-choice
-                                     (format "Found Markdown link: [%s](%s)\nChoose action: (r)emove entire link, (k)eep text only, (s)kip: "
-                                             link-text candidate)
-                                     '(?r ?k ?s))))
-                        (cond
-                         ((eq choice ?r)
-                          ;; Remove entire link
-                          (delete-region full-match-start full-match-end)
-                          (setq modified t))
-                         ((eq choice ?k)
-                          ;; Keep text, remove link markup
-                          (replace-match link-text t t nil 0)
-                          (setq modified t))
-                         ((eq choice ?s)
-                          ;; Skip this occurrence
-                          nil)))
+                      ;; Keep text, remove link markup
+                      (progn
+                        (replace-match link-text t t nil 0)
+                        (setq modified t))
                     ;; Empty or whitespace-only text - remove entire link
-                    (delete-region full-match-start full-match-end)
-                    (setq modified t))))))
+                    (progn
+                      (replace-match "" t t nil 0)
+                      (setq modified t)))))))
           ;; Also check for bare URLs not in Markdown links
           (goto-char (point-min))
           (while (search-forward candidate nil t)
