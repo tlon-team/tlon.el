@@ -390,6 +390,33 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   ;; %s will be the JSON database string
   "Prompt for finding BibTeX keys for multiple references against a JSON database.")
 
+;;;;; Newsletter Issue Creation
+
+(defconst tlon-ai-create-newsletter-issue-prompt
+  (format "Eres un asistente editorial encargado de redactar un borrador para nuestro boletín informativo en español.
+Te proporcionaré el contenido de un archivo de entrada. Este archivo contiene una lista de elementos, cada uno en una nueva línea.
+Cada línea representa un artículo, evento u otra noticia que debe incluirse en el boletín.
+
+Tu tarea es procesar cada línea del texto de entrada de la siguiente manera:
+1.  Si la línea es una URL (comienza con \"http://\" o \"https://\"), utiliza tus herramientas de navegación web para acceder a su contenido y luego escribe un resumen conciso de una sola párrafo en español sobre ese contenido.
+2.  Si la línea es un fragmento de texto, escribe un resumen conciso de una sola párrafo en español sobre ese texto.
+
+Después de procesar todas las líneas, debes estructurar el resultado final como un boletín en formato Markdown. El boletín debe tener las siguientes tres secciones principales, cada una introducida con un encabezado de nivel 2 (H2):
+-   `## Artículos`
+-   `## Eventos`
+-   `## Otras noticias`
+
+Debes decidir en qué sección corresponde cada elemento resumido.
+
+Dentro de cada sección, cada elemento resumido debe presentarse de la siguiente manera:
+1.  Un encabezado de nivel 3 (H3) que tú generarás, describiendo brevemente el tema del resumen (por ejemplo, `### Nuevo descubrimiento en IA`).
+2.  El resumen de un solo párrafo que generaste para ese elemento.
+
+Asegúrate de que todo el boletín esté en español. El texto de entrada que te proporcionaré es el siguiente:
+
+%s" tlon-ai-string-wrapper) ; Use tlon-ai-string-wrapper to wrap the %s part
+  "Prompt for creating a newsletter issue from a list of items.")
+
 ;;;;; Change Propagation
 
 (defconst tlon-ai-propagate-changes-prompt
@@ -2086,6 +2113,87 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
     ;; Clean up state variable
     (setq tlon-ai--extract-replace-state nil)))
 
+;;;;; Newsletter Issue Creation
+
+(defun tlon-ai--get-latest-newsletter-input-content ()
+  "Find and return the content of the most recent file in 'boletin/numeros/'.
+Returns nil and signals a user-error if any step fails."
+  (let* ((boletin-repo-dir (tlon-repo-lookup :dir :name "boletin"))
+	 (numeros-subdir-name "numeros")
+	 numeros-dir files-and-attrs sorted-files latest-file-path)
+    (unless boletin-repo-dir
+      (user-error "Could not find the 'boletin' repository.")
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+
+    (setq numeros-dir (file-name-concat boletin-repo-dir numeros-subdir-name))
+    (unless (file-directory-p numeros-dir)
+      (user-error "The 'numeros' subdirectory does not exist or is not a directory in %s." boletin-repo-dir)
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+
+    (setq files-and-attrs (directory-files-and-attributes numeros-dir nil nil nil 'full))
+    (unless files-and-attrs
+      (user-error "No files found in %s." numeros-dir)
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+
+    ;; Filter out directories, keeping only regular files
+    (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
+    (unless files-and-attrs
+      (user-error "No regular files found in %s." numeros-dir)
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+
+    (setq sorted-files (sort files-and-attrs
+			     (lambda (a b)
+			       (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
+    (setq latest-file-path (car (car sorted-files)))
+
+    (unless (file-exists-p latest-file-path) ; Should exist, but good to check
+      (user-error "Latest file %s does not exist (this should not happen)." latest-file-path)
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+
+    (condition-case err
+	(with-temp-buffer
+	  (insert-file-contents latest-file-path)
+	  (buffer-string))
+      (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
+	     nil))))
+
+;;;###autoload
+(defun tlon-ai-create-newsletter-issue ()
+  "Create a draft for a new newsletter issue using AI.
+Reads the most recent file from 'boletin/numeros/', processes each line (URL or
+text) to generate a one-paragraph summary, and structures the output as a
+Spanish newsletter in Markdown with sections for articles, events, and other
+news."
+  (interactive)
+  (if-let ((content (tlon-ai--get-latest-newsletter-input-content)))
+      (if (string-blank-p content)
+          (message "The latest newsletter input file is empty. Nothing to process.")
+        (progn
+          (message "Requesting AI to draft newsletter issue...")
+          (tlon-make-gptel-request tlon-ai-create-newsletter-issue-prompt
+                                   content
+                                   #'tlon-ai-create-newsletter-issue-callback
+                                   nil ; Use default model or user-configured
+                                   t   ; Skip context check
+                                   nil ; Request buffer
+                                   (list gptel-tool-search gptel-tool-fetch-content)))) ; Tools
+    (message "Could not create newsletter issue due to previous errors.")))
+
+(defun tlon-ai-create-newsletter-issue-callback (response info)
+  "Callback for `tlon-ai-create-newsletter-issue'.
+Displays the AI-generated newsletter draft in a new buffer."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (let* ((buffer-name (generate-new-buffer-name "*Boletín Borrador AI*"))
+	   (buffer (get-buffer-create buffer-name)))
+      (with-current-buffer buffer
+	(erase-buffer)
+	(insert response)
+	(markdown-mode) ; Assuming output is Markdown
+	(goto-char (point-min)))
+      (switch-to-buffer buffer)
+      (message "AI-generated newsletter draft created in buffer %s." buffer-name))))
+
 ;;;;; Meta Description Generation
 
 ;;;###autoload
@@ -2573,6 +2681,9 @@ If nil, use the default model."
     "Reference articles"
     ("w w" "create reference article"                 tlon-ai-create-reference-article)
     ("w p" "proofread reference article"              tlon-ai-proofread-reference-article)
+    ""
+    "Newsletter"
+    ("n i" "Create newsletter issue"                  tlon-ai-create-newsletter-issue)
     ""
     "Propagation"
     ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
