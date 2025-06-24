@@ -461,11 +461,11 @@ Wait for user input before proceeding to the next link."
       ;; Prompt user for action
       (let* ((is-wayback (tlon-lychee--is-wayback-url-p url))
              (prompt-text (if is-wayback
-                              (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (s)pecify replacement, (r)emove, (w)hitelist, s(k)ip, (q)uit: "
+                              (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (r)eplace, (d)elete, (w)hitelist, (s)kip, (q)uit: "
                                       current-position total-dead-links url remaining-count)
-                            (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (s)pecify replacement, (r)emove, (w)hitelist, s(k)ip, (q)uit: "
+                            (format "Dead link (%d/%d): %s\n%d remaining after this one.\nChoose action: (a)rchive, (r)eplace, (d)elete, (w)hitelist, (s)kip, (q)uit: "
                                     current-position total-dead-links url remaining-count)))
-             (valid-choices (if is-wayback '(?s ?r ?w ?k ?q) '(?a ?s ?r ?w ?k ?q)))
+             (valid-choices (if is-wayback '(?r ?d ?w sk ?q) '(?a ?r ?d ?w ?s ?q)))
              (action (read-char-choice prompt-text valid-choices)))
         (cond
          ((eq action ?a)
@@ -485,7 +485,7 @@ Wait for user input before proceeding to the next link."
                 remaining-links total-dead-links
                 replacements-count-ref processed-links-count-ref
                 stderr-content)))))
-         ((eq action ?s)
+         ((eq action ?r)
           (let ((input (read-string "Enter replacement URL: ")))
             (cond
              ((string-blank-p input)
@@ -517,7 +517,7 @@ Wait for user input before proceeding to the next link."
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
                                                replacements-count-ref processed-links-count-ref
                                                stderr-content))
-         ((eq action ?r)
+         ((eq action ?d)
           (if (tlon-lychee-remove-url-from-file full-file-path url)
               (progn
                 (cl-incf (car replacements-count-ref))
@@ -527,7 +527,7 @@ Wait for user input before proceeding to the next link."
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
                                                replacements-count-ref processed-links-count-ref
                                                stderr-content))
-         ((eq action ?k)
+         ((eq action ?s)
           (message "Skipped: %s" url)
           ;; Continue to next link
           (tlon-lychee--process-next-dead-link remaining-links total-dead-links
