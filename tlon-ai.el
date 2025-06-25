@@ -409,10 +409,10 @@ Después de procesar todas las líneas, debes estructurar el resultado final com
 Debes decidir en qué sección corresponde cada elemento resumido.
 
 Dentro de cada sección, cada elemento resumido debe presentarse de la siguiente manera:
-1.  Un encabezado de nivel 3 (H3) que tú generarás, describiendo brevemente el tema del resumen (por ejemplo, `### Nuevo descubrimiento en IA`).
+1.  Un encabezado de nivel 3 (H3), describiendo brevemente el tema del resumen (por ejemplo, `### Nuevo descubrimiento en IA`). Si se trata de un artículo, utiliza el título del artículo como encabezado.
 2.  El resumen de un solo párrafo que generaste para ese elemento.
 
-Asegúrate de que todo el boletín esté en español. Usa “sentence case” (no “title case”) para los encabezados. El texto de entrada que te proporcionaré es el siguiente:
+Asegúrate de que todo el boletín esté en español. Usa “sentence case” (no “title case”) para los encabezados. Incluye un enlace al original en cada entrada. El texto de entrada que te proporcionaré es el siguiente:
 
 %s" tlon-ai-string-wrapper) ; Use tlon-ai-string-wrapper to wrap the %s part
   "Prompt for creating a newsletter issue from a list of items.")
