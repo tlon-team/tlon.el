@@ -392,31 +392,6 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 
 ;;;;; Newsletter Issue Creation
 
-(defconst tlon-ai-create-newsletter-issue-prompt
-  (format "Eres un asistente editorial encargado de redactar un borrador para nuestro boletín sobre altruismo eficaz.
-Te proporcionaré el contenido de un archivo de entrada. Este archivo contiene una lista de elementos, cada uno en una nueva línea.
-Cada línea representa un artículo, evento u otra noticia que debe incluirse en el boletín.
-
-Tu tarea es procesar cada línea del texto de entrada de la siguiente manera:
-1.  Si la línea es una URL (comienza con \"http://\" o \"https://\"), utiliza tus herramientas de navegación web para acceder a su contenido y luego escribe un resumen conciso de un solo párrafo en español de ese contenido.
-2.  Si la línea es un fragmento de texto, escribe un resumen conciso de un solo párrafo en español sobre ese texto.
-
-Después de procesar todas las líneas, debes estructurar el resultado final como un boletín en formato Markdown. El boletín debe tener las siguientes tres secciones principales, cada una introducida con un encabezado de nivel 2 (H2):
--   `## Artículos`
--   `## Eventos`
--   `## Otras noticias`
-
-Debes decidir en qué sección corresponde cada elemento resumido.
-
-Dentro de cada sección, cada elemento resumido debe presentarse de la siguiente manera:
-1.  Un encabezado de nivel 3 (H3), describiendo brevemente el tema del resumen (por ejemplo, `### Nuevo descubrimiento en IA`). Si se trata de un artículo, utiliza el título del artículo como encabezado.
-2.  El resumen de un solo párrafo que generaste para ese elemento.
-
-Asegúrate de que todo el boletín esté en español. Usa “sentence case” (no “title case”) para los encabezados. Incluye un enlace al original en cada entrada. El texto de entrada que te proporcionaré es el siguiente:
-
-%s" tlon-ai-string-wrapper) ; Use tlon-ai-string-wrapper to wrap the %s part
-  "Prompt for creating a newsletter issue from a list of items.")
-
 ;;;;; Change Propagation
 
 (defconst tlon-ai-propagate-changes-prompt
@@ -2198,16 +2173,25 @@ news. The original input file is then overwritten with this new draft."
             (input-file-path (cdr input-data)))
       (if (string-blank-p content)
           (message "The latest newsletter input file is empty. Nothing to process.")
-        (progn
-          (message "Requesting AI to draft newsletter issue (input: %s)..." input-file-path)
-          (tlon-make-gptel-request tlon-ai-create-newsletter-issue-prompt
-                                   content
-                                   #'tlon-ai-create-newsletter-issue-callback
-                                   nil ; Use default model or user-configured
-                                   t   ; Skip context check
-                                   nil ; Request buffer
-                                   (list "search" "fetch_content") ; Tools
-                                   input-file-path))) ; Pass input-file-path as context-data
+        (let* ((prompt-file-name "prompt.md")
+               (prompt-file-path (file-name-concat (file-name-directory input-file-path) prompt-file-name)))
+          (unless (file-exists-p prompt-file-path)
+            (user-error "Prompt file not found: %s" prompt-file-path))
+          (let ((newsletter-prompt-from-file (with-temp-buffer
+                                               (insert-file-contents prompt-file-path)
+                                               (buffer-string))))
+            (if (string-blank-p newsletter-prompt-from-file)
+                (user-error "Prompt file %s is empty." prompt-file-path)
+              (progn
+                (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..." input-file-path prompt-file-path)
+                (tlon-make-gptel-request newsletter-prompt-from-file
+                                         content
+                                         #'tlon-ai-create-newsletter-issue-callback
+                                         nil ; Use default model or user-configured
+                                         t   ; Skip context check
+                                         nil ; Request buffer
+                                         (list "search" "fetch_content") ; Tools
+                                         input-file-path)))))) ; Pass input-file-path as context-data
     (message "Could not create newsletter issue due to previous errors.")))
 
 (defun tlon-ai-create-newsletter-issue-callback (response info)
