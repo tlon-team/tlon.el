@@ -34,6 +34,7 @@
 (require 'tlon-core)
 (require 'tlon-tex) ; needed to set variables correctly
 (require 'tlon-counterpart)
+(require 'tlon-glossary)
 
 ;;;; User options
 
@@ -391,6 +392,21 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   "Prompt for finding BibTeX keys for multiple references against a JSON database.")
 
 ;;;;; Newsletter Issue Creation
+
+(defun tlon-ai--get-en-es-glossary-string ()
+  "Return the English-Spanish glossary as a TSV string.
+Uses `tlon-parse-glossary' and `tlon-insert-formatted-glossary' with
+recipient `deepl-api'."
+  (let* ((json-glossary (tlon-parse-glossary))
+         (language "es")
+         (recipient 'deepl-api))
+    (if json-glossary
+        (with-temp-buffer
+          (tlon-insert-formatted-glossary json-glossary language recipient)
+          (buffer-string))
+      (progn
+        (message "Warning: Glossary data could not be parsed for newsletter. Proceeding without glossary.")
+        ""))))
 
 ;;;;; Change Propagation
 
@@ -2122,14 +2138,16 @@ news. The original input file is then overwritten with this new draft."
                (prompt-file-path (file-name-concat (file-name-directory input-file-path) prompt-file-name)))
           (unless (file-exists-p prompt-file-path)
             (user-error "Prompt file not found: %s" prompt-file-path))
-          (let ((newsletter-prompt-from-file (with-temp-buffer
-                                               (insert-file-contents prompt-file-path)
-                                               (buffer-string))))
-            (if (string-blank-p newsletter-prompt-from-file)
+          (let* ((raw-prompt-from-file (with-temp-buffer
+                                         (insert-file-contents prompt-file-path)
+                                         (buffer-string)))
+                 (glossary-string (tlon-ai--get-en-es-glossary-string))
+                 (newsletter-prompt-with-glossary (replace-regexp-in-string "%%GLOSSARY%%" (string-trim glossary-string) raw-prompt-from-file t t)))
+            (if (string-blank-p raw-prompt-from-file)
                 (user-error "Prompt file %s is empty" prompt-file-path)
               (progn
                 (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..." input-file-path prompt-file-path)
-                (tlon-make-gptel-request newsletter-prompt-from-file
+                (tlon-make-gptel-request newsletter-prompt-with-glossary
                                          content
                                          #'tlon-ai-create-newsletter-issue-callback
                                          nil ; Use default model or user-configured
