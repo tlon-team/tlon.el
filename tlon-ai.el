@@ -2105,66 +2105,11 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
 
 ;;;;; Newsletter Issue Creation
 
-(defun tlon-ai--get-latest-newsletter-input-content ()
-  "Find and return the content of the most recent file in 'boletin/numeros/'.
-Returns nil and signals a user-error if any step fails."
-  (let* ((boletin-repo-dir (tlon-repo-lookup :dir :name "boletin"))
-	 (numeros-subdir-name "numeros")
-	 numeros-dir files-and-attrs sorted-files latest-file-path)
-    (unless boletin-repo-dir
-      (user-error "Could not find the 'boletin' repository.")
-      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
-
-    (setq numeros-dir (file-name-concat boletin-repo-dir numeros-subdir-name))
-    (unless (file-directory-p numeros-dir)
-      (user-error "The 'numeros' subdirectory does not exist or is not a directory in %s." boletin-repo-dir)
-      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
-
-    (setq files-and-attrs (directory-files-and-attributes numeros-dir nil nil nil 'full))
-    (unless files-and-attrs
-      (user-error "No files found in %s." numeros-dir)
-      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
-
-    ;; Filter out directories, keeping only regular files
-    (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
-
-    (if (not files-and-attrs)
-        ;; No regular files found, prompt user
-        (progn
-          (message "No regular files found in %s. Prompting user to select a file." numeros-dir)
-          (let ((selected-file (read-file-name "Select a file: " numeros-dir nil t)))
-            (if (and selected-file (file-exists-p selected-file))
-                (cons (with-temp-buffer
-                        (insert-file-contents selected-file)
-                        (buffer-string))
-                      selected-file) ; Return (content . path)
-              (user-error "No file selected or selected file does not exist."))))
-      ;; Regular files were found, proceed with sorting and getting the latest
-      (progn
-        (setq sorted-files (sort files-and-attrs
-                                 (lambda (a b)
-                                   (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
-        (setq latest-file-path (car (car sorted-files)))
-
-        ;; Ensure latest-file-path is not nil before calling file-exists-p,
-        ;; and also handle if it's a string but file doesn't exist.
-        (unless (and latest-file-path (file-exists-p latest-file-path))
-          (user-error "Latest file %s does not exist or could not be determined." latest-file-path)
-          (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
-
-        (condition-case err
-            (cons (with-temp-buffer
-                    (insert-file-contents latest-file-path)
-                    (buffer-string))
-                  latest-file-path) ; Return (content . path)
-          (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
-                 nil))))))
-
 ;;;###autoload
 (defun tlon-ai-create-newsletter-issue ()
   "Create a draft for a new newsletter issue using AI.
-Reads the most recent file from \"boletin/numeros/\", processes each line (URL or
-text) to generate a one-paragraph summary, and structures the output as a
+Reads the most recent file from \"boletin/numeros/\", processes each line (URL
+or text) to generate a one-paragraph summary, and structures the output as a
 Spanish newsletter in Markdown with sections for articles, events, and other
 news. The original input file is then overwritten with this new draft."
   (interactive)
@@ -2181,7 +2126,7 @@ news. The original input file is then overwritten with this new draft."
                                                (insert-file-contents prompt-file-path)
                                                (buffer-string))))
             (if (string-blank-p newsletter-prompt-from-file)
-                (user-error "Prompt file %s is empty." prompt-file-path)
+                (user-error "Prompt file %s is empty" prompt-file-path)
               (progn
                 (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..." input-file-path prompt-file-path)
                 (tlon-make-gptel-request newsletter-prompt-from-file
@@ -2196,9 +2141,10 @@ news. The original input file is then overwritten with this new draft."
 
 (defun tlon-ai-create-newsletter-issue-callback (response info)
   "Callback for `tlon-ai-create-newsletter-issue'.
-Writes the AI-generated newsletter draft to the original input file,
-replacing its contents, and then opens the file.
-Only processes the response if it's a string (final AI output)."
+Writes the AI-generated newsletter draft to the original input file, replacing
+its contents, and then opens the file. Only processes RESPONSE if it's a
+string (final AI output). Otherwise, call `tlon-ai-callback-fail' with the
+response INFO."
   (if (not response)
       (tlon-ai-callback-fail info)
     (when (stringp response) ; Ensure response is the final text
@@ -2210,7 +2156,53 @@ Only processes the response if it's a string (final AI output)."
                 (write-file original-file-path nil)) ; Overwrites original file, creates backup
               (message "Newsletter draft updated in %s. Opening file..." original-file-path)
               (find-file original-file-path)) ; Open the updated file
-          (user-error "Original input file path not found in callback info or is invalid."))))))
+          (user-error "Original input file path not found in callback info or is invalid"))))))
+
+(defun tlon-ai--get-latest-newsletter-input-content ()
+  "Find and return the content of the most recent file in \"boletin/numeros/\".
+Returns nil and signals a user-error if any step fails."
+  (let* ((boletin-repo-dir (tlon-repo-lookup :dir :name "boletin"))
+	 (numeros-subdir-name "numeros/")
+	 numeros-dir files-and-attrs sorted-files latest-file-path)
+    (unless boletin-repo-dir
+      (user-error "Could not find the 'boletin' repository")
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+    (setq numeros-dir (file-name-concat boletin-repo-dir numeros-subdir-name))
+    (unless (file-directory-p numeros-dir)
+      (user-error "The \"numeros\" subdirectory does not exist or is not a directory in %s" boletin-repo-dir)
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+    (setq files-and-attrs (directory-files-and-attributes numeros-dir nil nil nil 'full))
+    (unless files-and-attrs
+      (user-error "No files found in %s" numeros-dir)
+      (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+    ;; Filter out directories, keeping only regular files
+    (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
+    (if (not files-and-attrs)
+        (let ((selected-file (read-file-name "Select a file: " numeros-dir nil t)))
+	  (message "No regular files found in %s. Prompting user to select a file." numeros-dir)
+          (if (and selected-file (file-exists-p selected-file))
+              (cons (with-temp-buffer
+                      (insert-file-contents selected-file)
+                      (buffer-string))
+                    selected-file) ; Return (content . path)
+            (user-error "No file selected or selected file does not exist")))
+      ;; Regular files were found, proceed with sorting and getting the latest
+      (setq sorted-files (sort files-and-attrs
+                               (lambda (a b)
+                                 (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
+      (setq latest-file-path (car (car sorted-files)))
+      ;; Ensure latest-file-path is not nil before calling file-exists-p,
+      ;; and also handle if it's a string but file doesn't exist.
+      (unless (and latest-file-path (file-exists-p latest-file-path))
+        (user-error "Latest file %s does not exist or could not be determined" latest-file-path)
+        (cl-return-from tlon-ai--get-latest-newsletter-input-content nil))
+      (condition-case err
+          (cons (with-temp-buffer
+                  (insert-file-contents latest-file-path)
+                  (buffer-string))
+                latest-file-path) ; Return (content . path)
+        (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
+               nil)))))
 
 ;;;;; Meta Description Generation
 
