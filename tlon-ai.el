@@ -458,7 +458,7 @@ request. CONTEXT-DATA is arbitrary data passed to the `gptel-request` :context
 key, available in the callback's INFO plist."
   (unless (or tlon-ai-batch-fun skip-context-check)
     (gptel-extras-warn-when-context))
-  (let* ((processed-tools (if (and tools (listp tools) (every #'stringp tools)) ; Check if tools is a list of strings
+  (let* ((processed-tools (if (and tools (listp tools) (cl-every #'stringp tools)) ; Check if tools is a list of strings
                               (mapcar (lambda (tool-name-str)
                                         (gptel-get-tool tool-name-str)) ; Use gptel-get-tool to find the tool struct. It will error if not found.
                                       tools)
@@ -479,9 +479,9 @@ key, available in the callback's INFO plist."
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
              (full-prompt (if string (format prompt string) prompt))
              (request (lambda () (gptel-request full-prompt
-                                   :callback callback
-                                   :buffer (or request-buffer (current-buffer))
-                                   :context context-data))))
+                              :callback callback
+                              :buffer (or request-buffer (current-buffer))
+                              :context context-data))))
         (if tlon-ai-batch-fun
             (condition-case nil
                 (funcall request)
@@ -2237,7 +2237,8 @@ Uses AI to generate a meta description based on the current buffer's content."
 ;;;###autoload
 (defun tlon-ai-create-title ()
   "Generate and set the \"title\" field in the YAML front matter.
-Uses AI to generate an SEO-optimized title based on the current buffer's content."
+Uses AI to generate an SEO-optimized title based on the current buffer's
+content."
   (interactive)
   (let* ((current-file (buffer-file-name))
          (article-content (tlon-md-read-content))
