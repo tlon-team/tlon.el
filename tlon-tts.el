@@ -841,22 +841,6 @@ The first placeholder is the input file, and the second is the output file.")
   "</SmallCaps><sub>"
   "Pattern that may match a chemical symbol.")
 
-;;;;; Authorhip
-
-(defconst tlon-tts-authorship-pattern
-  '((:language "ar" :pattern "بواسطة %s.")
-    (:language "de" :pattern "von %s.")
-    (:language "en" :pattern "by %s.")
-    (:language "es" :pattern "por %s.")
-    (:language "fr" :pattern "par %s.")
-    (:language "it" :pattern "di %s.")
-    (:language "ja" :pattern "%sによって".)
-    (:language "ko" :pattern "%s에 의해.")
-    (:language "tr" :pattern "tarafından %s."))
-  "Pattern to use when listing the author(s) of a work.
-For example, in English, the pattern is `by %s', where `%s' is replaced by the
-author name(s).")
-
 ;;;;; Links
 
 (defconst tlon-tts-self-referential-link
@@ -2794,7 +2778,7 @@ USE-CONTEXT is non-nil."
 		(title-part (concat (format "%s." title) separator)))
       (if-let* ((authors (alist-get "authors" metadata nil nil #'string=))
 		(author-string (tlon-concatenate-list authors))
-		(pattern (tlon-lookup tlon-tts-authorship-pattern :pattern :language (tlon-tts-get-current-language)))
+		(pattern (tlon-lookup tlon-authorship-pattern :pattern :language (tlon-tts-get-current-language)))
 		(author-part (concat (format pattern author-string) separator)))
 	  (concat title-part author-part)
 	title-part))))
