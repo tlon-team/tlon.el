@@ -64,7 +64,7 @@ the original audio file name."
          (width (car tlon-youtube-video-resolution))
          (height (cdr tlon-youtube-video-resolution)))
     (unless uqbar-audio-dir
-      (user-error "Could not find the 'uqbar-audio' repository directory."))
+      (user-error "Could not find the 'uqbar-audio' repository directory"))
     (let* ((selected-audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
            (audio-file (expand-file-name selected-audio-file))
            (video-file-name (file-name-with-extension (file-name-base selected-audio-file) "mp4"))
@@ -85,56 +85,35 @@ the original audio file name."
   '(("720p (1280x720)"   . (1280 . 720))
     ("1080p (1920x1080)" . (1920 . 1080))
     ("1440p (2560x1440)" . (2560 . 1440))
-    ("4K (2160p) (3840x2160)" . (3840 . 2160))
-    ("Custom..." . custom))
+    ("4K (2160p) (3840x2160)" . (3840 . 2160)))
   "Alist of predefined resolution choices for YouTube videos.
-The car is the display string and the cdr is the (WIDTH . HEIGHT) cons cell,
-or 'custom to prompt for a custom resolution.")
+The car is the display string and the cdr is the (WIDTH . HEIGHT) cons cell")
 
 (defun tlon-youtube-read-resolution-choice (prompt obj _history)
   "Reader function for `tlon-youtube-video-resolution`.
-PROMPT is the prompt string. OBJ is the transient infix object.
-_HISTORY is the history list (unused).
-Allows selecting from predefined resolutions or entering a custom WIDTHxHEIGHT string."
+PROMPT is the prompt string. OBJ is the transient infix object. _HISTORY is the
+history list (unused). Allows selecting from predefined resolutions."
   (let* ((val-from-obj (if (and obj (slot-boundp obj 'variable))
                            (ignore-errors (symbol-value (oref obj 'variable)))
-                         nil)) ; Safely get value via obj
+                         nil))
          (initial-value (if (consp val-from-obj)
                             val-from-obj
-                          ;; Fallback to the global variable if obj path failed or gave non-cons
                           (if (consp tlon-youtube-video-resolution)
                               tlon-youtube-video-resolution
-                            '(1280 . 720)))) ; Absolute fallback
+                            '(1280 . 720))))
          (choices (mapcar #'car tlon-youtube-resolution-choices))
          (found-pair (cl-find-if (lambda (pair) (equal (cdr pair) initial-value))
                                  tlon-youtube-resolution-choices))
          (current-selection-str
           (if found-pair
-              (car found-pair) ; Display string for known resolution
-            (if (consp initial-value) ; Should always be true due to defcustom type
-                (format "Custom (%dx%d)" (car initial-value) (cdr initial-value))
-              ;; Fallback if initial-value is not a cons (e.g. nil), though defcustom type should prevent this.
-              ;; Use the first choice as a safe default for the prompt.
-              (car choices))))
+              (car found-pair)
+            (car choices)))
          (selection (completing-read prompt choices nil t nil nil current-selection-str)))
     (cond
-     ((or (null selection) (string-empty-p selection)) initial-value) ; User cancelled or entered empty, keep current
+     ((or (null selection) (string-empty-p selection)) initial-value)
      (t
       (let ((choice-pair (assoc selection tlon-youtube-resolution-choices)))
-	(if (eq (cdr choice-pair) 'custom)
-            (let* ((custom-prompt-string (format "%s Enter custom resolution (WIDTHxHEIGHT): " prompt))
-                   (current-custom-value-string
-                    (if (consp initial-value)
-			(format "%dx%d" (car initial-value) (cdr initial-value))
-                      "1280x720")) ; Default for custom prompt if initial-value is bad
-                   (custom-input (read-string custom-prompt-string current-custom-value-string)))
-              (if (string-match "^\\([0-9]+\\)[xX]\\([0-9]+\\)$" custom-input)
-                  (cons (string-to-number (match-string 1 custom-input))
-			(string-to-number (match-string 2 custom-input)))
-		(progn
-                  (message "Invalid custom resolution format. Using current value.")
-                  initial-value))) ; Return current value if custom input is invalid
-          (cdr choice-pair)))))))
+        (cdr choice-pair))))))
 
 (transient-define-infix tlon-youtube-video-resolution-infix ()
   "Set the video resolution for YouTube videos."
