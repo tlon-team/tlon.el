@@ -102,8 +102,10 @@ To use the YouTube API integration features, you need to:
 1. Run ~M-x tlon-youtube-authorize~
 2. This will open your browser to Google's authorization page
 3. Sign in with your Google account and authorize the application
-4. Copy the authorization code from the browser and paste it into Emacs
-5. The system will automatically obtain and store both access and refresh tokens
+4. After authorization, you'll be redirected to a localhost page that may show an error (this is normal)
+5. Copy the authorization code from the URL in your browser's address bar (after "code=")
+6. Paste the authorization code into Emacs when prompted
+7. The system will automatically obtain and store both access and refresh tokens
 
 **That's it!** The system will automatically refresh your access token when it expires (every hour), so you only need to authorize once.
 
