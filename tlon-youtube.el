@@ -137,13 +137,6 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (authors (read-string "Enter author(s): "))
          (author-text authors)
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
-         ;; Use high DPI for text rendering
-         (dpi 300)
-         (scale-factor (/ dpi 72.0)) ; Standard screen DPI is 72
-         (scaled-width (round (* width scale-factor)))
-         (scaled-height (round (* height scale-factor)))
-         (title-pointsize (round (* height 0.035 scale-factor)))
-         (title-y-offset (round (* height -0.12 scale-factor)))
          (text-width (round (* width 0.8)))
          (text-height (round (* height 0.4)))
          ;; Make author font size proportional to estimated title font size
@@ -151,32 +144,28 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (estimated-title-pointsize (max 20 (min 60 (/ (* text-height 0.8) 
                                                        (max 1 (/ (length title) 20))))))
          (authors-pointsize (round (* estimated-title-pointsize 0.6)))
-         (authors-y-offset (round (* height 0.18 scale-factor)))
-         (logo-size (round (* height 0.15 scale-factor)))
-         (logo-padding (round (* width 0.03 scale-factor)))
-         (stroke-width (round (* 2 scale-factor))))
+         (logo-size (round (* height 0.12)))
+         (command (format tlon-youtube-thumbnail-command-template
+                          width height
+                          (shell-quote-argument font-path)
+                          text-width text-height
+                          (tlon-youtube--sanitize-draw-string title)
+                          (shell-quote-argument font-path)
+                          authors-pointsize
+                          (tlon-youtube--sanitize-draw-string author-text)
+                          (shell-quote-argument logo-path)
+                          logo-size logo-size
+                          (shell-quote-argument thumbnail-file))))
     (unless (file-exists-p font-path)
       (user-error "Font file not found: %s" font-path))
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-           (logo-size (round (* height 0.12)))
-           (command (format tlon-youtube-thumbnail-command-template
-                            width height
-                            (shell-quote-argument font-path)
-                            text-width text-height
-                            (tlon-youtube--sanitize-draw-string title)
-                            (shell-quote-argument font-path)
-                            authors-pointsize
-                            (tlon-youtube--sanitize-draw-string author-text)
-                            (shell-quote-argument logo-path)
-                            logo-size logo-size
-                            (shell-quote-argument thumbnail-file))))
-      (message "Generating %dx%d thumbnail at %d DPI..." width height dpi)
-      (let ((result (shell-command command)))
-        (message "Shell command result: %d" result)
-        (if (file-exists-p thumbnail-file)
-            (message "Successfully generated thumbnail: %s" thumbnail-file)
-          (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output"))))))
+    (message "Generating %dx%d thumbnail..." width height)
+    (let ((result (shell-command command)))
+      (message "Shell command result: %d" result)
+      (if (file-exists-p thumbnail-file)
+          (message "Successfully generated thumbnail: %s" thumbnail-file)
+        (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output")))))
 
 (defun tlon-youtube--sanitize-draw-string (str)
   "Sanitize STR for use in ImageMagick -draw text command.
