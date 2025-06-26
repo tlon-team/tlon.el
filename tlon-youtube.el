@@ -92,33 +92,52 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
-         (title-pointsize (round (* height 0.08)))
-         (title-y-offset (round (* height -0.12)))
-         (authors-pointsize (round (* height 0.05)))
-         (authors-y-offset (round (* height 0.18)))
-         (logo-size (round (* height 0.15)))
-         (logo-padding (round (* width 0.03))))
+         ;; Use high DPI for text rendering
+         (dpi 300)
+         (scale-factor (/ dpi 72.0)) ; Standard screen DPI is 72
+         (scaled-width (round (* width scale-factor)))
+         (scaled-height (round (* height scale-factor)))
+         (title-pointsize (round (* height 0.08 scale-factor)))
+         (title-y-offset (round (* height -0.12 scale-factor)))
+         (authors-pointsize (round (* height 0.05 scale-factor)))
+         (authors-y-offset (round (* height 0.18 scale-factor)))
+         (logo-size (round (* height 0.15 scale-factor)))
+         (logo-padding (round (* width 0.03 scale-factor)))
+         (stroke-width (round (* 2 scale-factor))))
+    ;; Debug output
+    (message "=== THUMBNAIL DEBUG INFO ===")
+    (message "Target size: %dx%d" width height)
+    (message "Scaled size: %dx%d (DPI: %d, scale: %.2f)" scaled-width scaled-height dpi scale-factor)
+    (message "Title pointsize: %d (scaled from %.1f)" title-pointsize (* height 0.08))
+    (message "Font path: %s" font-path)
+    (message "Font exists: %s" (if (file-exists-p font-path) "YES" "NO"))
+    (message "Logo path: %s" logo-path)
+    (message "Logo exists: %s" (if (file-exists-p logo-path) "YES" "NO"))
     ;; Check if font exists
     (unless (file-exists-p font-path)
       (user-error "Font file not found: %s" font-path))
     ;; Check if logo exists
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-    (let ((command (format "convert -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth 2 -gravity center -draw \"text 0,%d '%s'\" -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d 'by %s'\" \\( %s -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -quality 95 %s"
-                           width height
+    (let ((command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center -draw \"text 0,%d '%s'\" -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d 'by %s'\" \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+                           dpi scaled-width scaled-height
                            (shell-quote-argument font-path) title-pointsize
-                           title-y-offset (tlon-youtube--sanitize-draw-string title)
+                           stroke-width title-y-offset (tlon-youtube--sanitize-draw-string title)
                            (shell-quote-argument font-path) authors-pointsize
                            authors-y-offset (tlon-youtube--sanitize-draw-string authors)
-                           (shell-quote-argument logo-path) logo-size logo-size
+                           (shell-quote-argument logo-path) dpi logo-size logo-size
                            logo-padding logo-padding
+                           width height
                            (shell-quote-argument thumbnail-file))))
-      (message "Generating %dx%d thumbnail..." width height)
-      (message "Command: %s" command) ; Debug output
-      (shell-command command)
-      (if (file-exists-p thumbnail-file)
-          (message "Successfully generated thumbnail: %s" thumbnail-file)
-        (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output")))))
+      (message "Command: %s" command)
+      (message "Generating %dx%d thumbnail at %d DPI..." width height dpi)
+      (let ((result (shell-command command)))
+        (message "Shell command result: %d" result)
+        (if (file-exists-p thumbnail-file)
+            (progn
+              (message "Successfully generated thumbnail: %s" thumbnail-file)
+              (message "File size: %d bytes" (file-attribute-size (file-attributes thumbnail-file))))
+          (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output"))))))
 
 (defun tlon-youtube--sanitize-draw-string (str)
   "Sanitize STR for use in ImageMagick -draw text command.
