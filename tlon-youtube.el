@@ -373,9 +373,14 @@ Prompts for thumbnail file and video ID."
   "Get OAuth 2.0 access token for YouTube API.
 Checks `tlon-youtube-access-token' first, then falls back to environment
 variable."
-  (or tlon-youtube-access-token
-      (getenv "YOUTUBE_ACCESS_TOKEN")
-      (user-error "No access token available. Set `tlon-youtube-access-token` or YOUTUBE_ACCESS_TOKEN environment variable")))
+  (cond ((and tlon-youtube-access-token (not (string-empty-p tlon-youtube-access-token)))
+         (message "Using YouTube access token from `tlon-youtube-access-token' variable.")
+         tlon-youtube-access-token)
+        ((getenv "YOUTUBE_ACCESS_TOKEN")
+         (message "Using YouTube access token from YOUTUBE_ACCESS_TOKEN environment variable.")
+         (getenv "YOUTUBE_ACCESS_TOKEN"))
+        (t
+         (user-error "No access token available. Set `tlon-youtube-access-token` or YOUTUBE_ACCESS_TOKEN environment variable"))))
 
 
 (defconst tlon-youtube-resolution-choices
