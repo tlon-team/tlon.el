@@ -37,28 +37,27 @@
 ;;;; Functions
 
 (defun tlon-youtube-generate-wavelength-video ()
-  "Generate a 4K video (3840x2160) with an animated wavelength from an audio file using `seewav`.
-Prompts the user to select an audio file from the \"uqbar-audio\"
-repository. The output video is saved in `paths-dir-downloads`
-with a `.mp4` extension, using the original audio file name."
+  "Generate a 4K video with an animated wavelength from an audio file.
+Use `seewav` to generate the animation. Prompt the user to select an audio file
+from the \"uqbar-audio\" repository. The output video is saved in
+\"paths-dir-downloads\" with a \"mp4\" extension, using the original audio file
+name."
   (interactive)
   (let* ((uqbar-audio-dir (tlon-repo-lookup :dir :name "uqbar-audio")))
     (unless uqbar-audio-dir
-      (user-error "Could not find the 'uqbar-audio' repository directory."))
+      (user-error "Could not find the 'uqbar-audio' repository directory"))
     (let* ((selected-audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
-           ;; Expand the selected audio file path
            (audio-file (expand-file-name selected-audio-file))
-           (video-file-name (concat (file-name-nondirectory (file-name-sans-extension selected-audio-file)) ".mp4"))
-           ;; Construct and expand the output video file path
-           (video-file (expand-file-name (file-name-concat paths-dir-downloads video-file-name)))
-           (command (format "seewav -W 3840 -H 2160 %s %s"
-                            (shell-quote-argument audio-file)
-                            (shell-quote-argument video-file))))
-      (message "Generating 4K video with seewav...")
+           (video-file-name (file-name-with-extension (file-name-base selected-audio-file) "mp4"))
+	   (video-file (expand-file-name (file-name-concat paths-dir-downloads video-file-name)))
+	   (command (format "seewav -W 3840 -H 2160 %s %s"
+			    (shell-quote-argument audio-file)
+			    (shell-quote-argument video-file))))
+      (message "Generating 4K video with `seewav'...")
       (shell-command command)
-      (if (file-exists-p video-file) ; Use the expanded path for checking
+      (if (file-exists-p video-file)
           (message "Successfully generated video: %s" video-file)
-        (user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
+	(user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
 
 ;;;; Menu
 
