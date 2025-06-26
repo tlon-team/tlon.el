@@ -107,19 +107,8 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (logo-size (round (* height 0.15 scale-factor)))
          (logo-padding (round (* width 0.03 scale-factor)))
          (stroke-width (round (* 2 scale-factor))))
-    ;; Debug output
-    (message "=== THUMBNAIL DEBUG INFO ===")
-    (message "Target size: %dx%d" width height)
-    (message "Scaled size: %dx%d (DPI: %d, scale: %.2f)" scaled-width scaled-height dpi scale-factor)
-    (message "Title pointsize: %d (scaled from %.1f)" title-pointsize (* height 0.08))
-    (message "Font path: %s" font-path)
-    (message "Font exists: %s" (if (file-exists-p font-path) "YES" "NO"))
-    (message "Logo path: %s" logo-path)
-    (message "Logo exists: %s" (if (file-exists-p logo-path) "YES" "NO"))
-    ;; Check if font exists
     (unless (file-exists-p font-path)
       (user-error "Font file not found: %s" font-path))
-    ;; Check if logo exists
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
     (let* ((title-lines (tlon-youtube--wrap-text title (* scaled-width 0.8) (/ title-pointsize scale-factor)))
