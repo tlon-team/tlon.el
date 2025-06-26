@@ -44,16 +44,19 @@ with a `.mp4` extension, using the original audio file name."
   (interactive)
   (let* ((uqbar-audio-dir (tlon-repo-lookup :dir :name "uqbar-audio")))
     (unless uqbar-audio-dir
-      (user-error "Could not find the 'uqbar-audio' repository directory"))
-    (let* ((audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
-           (video-file-name (concat (file-name-nondirectory (file-name-sans-extension audio-file)) ".mp4"))
-           (video-file (file-name-concat paths-dir-downloads video-file-name))
+      (user-error "Could not find the 'uqbar-audio' repository directory."))
+    (let* ((selected-audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
+           ;; Expand the selected audio file path
+           (audio-file (expand-file-name selected-audio-file))
+           (video-file-name (concat (file-name-nondirectory (file-name-sans-extension selected-audio-file)) ".mp4"))
+           ;; Construct and expand the output video file path
+           (video-file (expand-file-name (file-name-concat paths-dir-downloads video-file-name)))
            (command (format "seewav %s %s"
                             (shell-quote-argument audio-file)
                             (shell-quote-argument video-file))))
       (message "Generating video with seewav...")
       (shell-command command)
-      (if (file-exists-p video-file)
+      (if (file-exists-p video-file) ; Use the expanded path for checking
           (message "Successfully generated video: %s" video-file)
         (user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
 
