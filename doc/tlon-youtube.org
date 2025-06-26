@@ -1,0 +1,26 @@
+#+title: tlon - YouTube Functionality
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* YouTube Functionality (=tlon-youtube.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube
+:END:
+
+This module provides functionality to process and upload podcast episodes to YouTube.
+
+** Video Generation
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-video-generation
+:END:
+
+#+findex: tlon-youtube-generate-wavelength-video
++ ~tlon-youtube-generate-wavelength-video~ :: Generates a video with an animated wavelength from an audio file using ~seewav~. Prompts the user to select an audio file from the "uqbar-audio" repository. The output video is saved in the same directory as the audio file with a ~.mp4~ extension.
