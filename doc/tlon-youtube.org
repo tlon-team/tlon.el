@@ -23,4 +23,4 @@ This module provides functionality to process and upload podcast episodes to You
 :END:
 
 #+findex: tlon-youtube-generate-wavelength-video
-+ ~tlon-youtube-generate-wavelength-video~ :: Generates a video with an animated wavelength from an audio file using ~seewav~. Prompts the user to select an audio file from the "uqbar-audio" repository. The output video is saved in the same directory as the audio file with a ~.mp4~ extension.
++ ~tlon-youtube-generate-wavelength-video~ :: Generates a video with an animated wavelength from an audio file using ~seewav~. Prompts the user to select an audio file from the "uqbar-audio" repository. The output video is saved in the ~paths-dir-downloads~ directory with a ~.mp4~ extension, using the original audio file name.
