@@ -145,7 +145,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (logo-padding (round (* scaled-width 0.03)))
          (stroke-width (round (* 2 scale-factor)))
          (monospace-font-path "/System/Library/Fonts/Monaco.ttf")
-         (url-pointsize (round (* scaled-height 0.025)))
+         (url-pointsize (round (* scaled-height 0.015)))
          (url-padding-x (round (* scaled-width 0.02)))
          (url-padding-y (round (* scaled-height 0.02)))
          (url-text "altruismoeficaz.net")
