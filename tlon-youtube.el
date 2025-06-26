@@ -40,7 +40,7 @@
 ;;;; Constants
 
 (defconst tlon-youtube-thumbnail-command-template
-  "magick -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth 2 caption:'%s' -gravity center -geometry +0-50 -composite -font %s -pointsize %d -fill '#5d6d7e' -gravity center -annotate +0+100 '%s' \\( %s -resize %dx%d \\) -gravity southeast -geometry +20+20 -composite %s"
+  "magick -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth 2 -gravity center caption:'%s' -geometry +0-50 -composite -font %s -pointsize %d -fill '#5d6d7e' -gravity center -annotate +0+100 '%s' \\( %s -resize %dx%d \\) -gravity southeast -geometry +20+20 -composite %s"
   "ImageMagick command template for generating YouTube thumbnails.
 
 This template creates a thumbnail with the following components:
