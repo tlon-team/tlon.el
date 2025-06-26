@@ -97,9 +97,9 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (scale-factor (/ dpi 72.0)) ; Standard screen DPI is 72
          (scaled-width (round (* width scale-factor)))
          (scaled-height (round (* height scale-factor)))
-         (title-pointsize (round (* height 0.08 scale-factor)))
+         (title-pointsize (round (* height 0.05 scale-factor)))
          (title-y-offset (round (* height -0.12 scale-factor)))
-         (authors-pointsize (round (* height 0.05 scale-factor)))
+         (authors-pointsize (round (* height 0.035 scale-factor)))
          (authors-y-offset (round (* height 0.18 scale-factor)))
          (logo-size (round (* height 0.15 scale-factor)))
          (logo-padding (round (* width 0.03 scale-factor)))
@@ -119,16 +119,31 @@ the \"tlon.team-content\" repository to create a thumbnail image."
     ;; Check if logo exists
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-    (let ((command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center -draw \"text 0,%d '%s'\" -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d 'by %s'\" \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
-                           dpi scaled-width scaled-height
-                           (shell-quote-argument font-path) title-pointsize
-                           stroke-width title-y-offset (tlon-youtube--sanitize-draw-string title)
-                           (shell-quote-argument font-path) authors-pointsize
-                           authors-y-offset (tlon-youtube--sanitize-draw-string authors)
-                           (shell-quote-argument logo-path) dpi logo-size logo-size
-                           logo-padding logo-padding
-                           width height
-                           (shell-quote-argument thumbnail-file))))
+    (let* ((title-lines (tlon-youtube--wrap-text title (* scaled-width 0.8) (/ title-pointsize scale-factor)))
+           (line-height (round (* title-pointsize 1.2)))
+           (total-title-height (* (length title-lines) line-height))
+           (title-start-y (- title-y-offset (/ total-title-height 2)))
+           (title-draw-commands
+            (mapconcat
+             (lambda (line-info)
+               (let ((line (car line-info))
+                     (y-pos (cdr line-info)))
+                 (format "-draw \"text 0,%d '%s'\""
+                         y-pos (tlon-youtube--sanitize-draw-string line))))
+             (cl-loop for line in title-lines
+                      for i from 0
+                      collect (cons line (+ title-start-y (* i line-height))))
+             " "))
+           (command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d 'by %s'\" \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+                            dpi scaled-width scaled-height
+                            (shell-quote-argument font-path) title-pointsize
+                            stroke-width title-draw-commands
+                            (shell-quote-argument font-path) authors-pointsize
+                            authors-y-offset (tlon-youtube--sanitize-draw-string authors)
+                            (shell-quote-argument logo-path) dpi logo-size logo-size
+                            logo-padding logo-padding
+                            width height
+                            (shell-quote-argument thumbnail-file))))
       (message "Command: %s" command)
       (message "Generating %dx%d thumbnail at %d DPI..." width height dpi)
       (let ((result (shell-command command)))
@@ -143,6 +158,28 @@ the \"tlon.team-content\" repository to create a thumbnail image."
   "Sanitize STR for use in ImageMagick -draw text command.
 Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   (replace-regexp-in-string "'" "\\\\'" str t t))
+
+(defun tlon-youtube--wrap-text (text max-width pointsize)
+  "Wrap TEXT to fit within MAX-WIDTH pixels at POINTSIZE.
+Returns a list of lines that will fit within the specified width.
+Uses a rough approximation of character width."
+  (let* ((char-width (* pointsize 0.6)) ; Approximate character width
+         (chars-per-line (max 1 (floor (/ max-width char-width))))
+         (words (split-string text))
+         (lines '())
+         (current-line ""))
+    (dolist (word words)
+      (let ((test-line (if (string-empty-p current-line)
+                           word
+                         (concat current-line " " word))))
+        (if (<= (length test-line) chars-per-line)
+            (setq current-line test-line)
+          (when (not (string-empty-p current-line))
+            (push current-line lines))
+          (setq current-line word))))
+    (when (not (string-empty-p current-line))
+      (push current-line lines))
+    (reverse lines)))
 
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
