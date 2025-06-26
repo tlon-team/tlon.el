@@ -98,15 +98,15 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (authors-y-offset (round (* height 0.15)))
          (logo-draw-width (round (* width 0.25))) ; Scale logo to 25% of thumbnail width
          (logo-padding (round (* width 0.02)))   ; Padding for the logo from the corner
-         (command (format "convert -size %dx%d xc:white \
+         (command (format "convert -size %dx%d xc:white -antialias \
 -gravity center -font Arial -pointsize %d -draw \"text 0,%d '%s'\" \
 -pointsize %d -draw \"text 0,%d 'by %s'\" \
-\\( '%s' -trim -resize %dx0 \\) \
+\\( %s -trim -resize %dx0 \\) \
 -gravity southeast -geometry +%d+%d -composite \
 %s"
                           width height
-                          title-pointsize title-y-offset (shell-quote-argument title)
-                          authors-pointsize authors-y-offset (shell-quote-argument authors)
+                          title-pointsize title-y-offset (tlon-youtube--sanitize-draw-string title)
+                          authors-pointsize authors-y-offset (tlon-youtube--sanitize-draw-string authors)
                           (shell-quote-argument logo-path) logo-draw-width
                           logo-padding logo-padding
                           (shell-quote-argument thumbnail-file))))
