@@ -43,7 +43,7 @@ with a `.mp4` extension, using the original audio file name."
   (interactive)
   (let* ((uqbar-audio-dir (tlon-repo-lookup :dir :name "uqbar-audio")))
     (unless uqbar-audio-dir
-      (user-error "Could not find the 'uqbar-audio' repository directory."))
+      (user-error "Could not find the 'uqbar-audio' repository directory"))
     (let* ((audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
            (video-file-name (concat (file-name-nondirectory (file-name-sans-extension audio-file)) ".mp4"))
            (video-file (file-name-concat paths-dir-downloads video-file-name))
@@ -54,7 +54,7 @@ with a `.mp4` extension, using the original audio file name."
       (shell-command command)
       (if (file-exists-p video-file)
           (message "Successfully generated video: %s" video-file)
-        (user-error "Failed to generate video. Check *Messages* buffer for seewav output.")))))
+        (user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
 
 (provide 'tlon-youtube)
 ;;; tlon-youtube.el ends here
