@@ -317,7 +317,7 @@ Prompts for thumbnail file and video ID."
          (process-name "youtube-thumbnail-upload")
          (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
          (command `("curl" "-s" "-X" "POST"
-                    "--data-binary" ,(format "@%s" (shell-quote-argument thumbnail-file))
+                    "--data-binary" ,(format "@%s" thumbnail-file)
                     "-H" ,(format "Authorization: Bearer %s" access-token)
                     "-H" "Content-Type: image/png"
                     ,url)))
