@@ -284,10 +284,19 @@ Prompts for video file, title, description, and privacy setting."
                           (response-data (condition-case nil
                                              (json-read-from-string json-response)
                                            (error nil)))
-                          (video-id (and response-data (cdr (assoc 'id response-data)))))
-                     (if video-id
-                         (message "Video uploaded successfully! Video ID: %s" video-id)
-                       (message "Upload failed or could not extract video ID. Response: %s" json-response))))
+                          (video-id (and response-data (cdr (assoc 'id response-data))))
+                          (error-info (and response-data (cdr (assoc 'error response-data)))))
+                     (cond
+                      (video-id
+                       (message "Video uploaded successfully! Video ID: %s" video-id))
+                      (error-info
+                       (let ((error-code (cdr (assoc 'code error-info)))
+                             (error-message (cdr (assoc 'message error-info))))
+                         (message "YouTube API Error %s: %s" error-code error-message)
+                         (when (= error-code 401)
+                           (message "This might be due to an expired access token. Try getting a new one."))))
+                      (t
+                       (message "Upload failed or could not extract video ID. Response: %s" json-response)))))
                (delete-file request-body-file)
                (kill-buffer (process-buffer proc))))))))))
 
@@ -339,7 +348,9 @@ Prompts for thumbnail file and video ID."
                       (error-info
                        (let ((error-code (cdr (assoc 'code error-info)))
                              (error-message (cdr (assoc 'message error-info))))
-                         (message "YouTube API Error %s: %s" error-code error-message)))
+                         (message "YouTube API Error %s: %s" error-code error-message)
+                         (when (= error-code 401)
+                           (message "This might be due to an expired access token. Try getting a new one."))))
                       (response-data
                        (message "Thumbnail uploaded successfully!"))
                       (t
@@ -347,6 +358,16 @@ Prompts for thumbnail file and video ID."
                (delete-file request-body-file)
                (kill-buffer (process-buffer proc))))))))))
 
+
+(defun tlon-youtube-set-access-token ()
+  "Prompt for and set the YouTube API access token for the current session."
+  (interactive)
+  (let ((token (read-string "Enter new YouTube access token: ")))
+    (if (and token (> (length token) 0))
+        (progn
+          (setq tlon-youtube-access-token token)
+          (message "YouTube access token updated for the current session."))
+      (user-error "No token provided"))))
 
 (defun tlon-youtube--get-access-token ()
   "Get OAuth 2.0 access token for YouTube API.
@@ -410,7 +431,8 @@ history list (unused). Allows selecting from predefined resolutions."
     ("u" "Upload video to YouTube" tlon-youtube-upload-video)
     ("T" "Upload thumbnail to YouTube" tlon-youtube-upload-thumbnail)]
    ["Options"
-    ("r" "Video Resolution" tlon-youtube-video-resolution-infix)]])
+    ("r" "Video Resolution" tlon-youtube-video-resolution-infix)
+    ("s" "Set Access Token" tlon-youtube-set-access-token)]])
 
 (provide 'tlon-youtube)
 ;;; tlon-youtube.el ends here
