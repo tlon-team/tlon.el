@@ -78,16 +78,16 @@ This module provides functionality to process and upload podcast episodes to You
 + ~tlon-youtube-upload-thumbnail~ :: Uploads a thumbnail image to an existing YouTube video. Prompts the user to select a thumbnail file (filtered to show ~.png~, ~.jpg~, and ~.jpeg~ files) and enter the YouTube video ID. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
 #+findex: tlon-youtube-authorize
-+ ~tlon-youtube-authorize~ :: Starts the OAuth 2.0 authorization flow for the YouTube API. This opens a browser window for you to authorize the application and automatically obtains both access and refresh tokens via a temporary local web server. You only need to run this once - the refresh token will be used to automatically get new access tokens when they expire. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
++ ~tlon-youtube-authorize~ :: Forces a new OAuth 2.0 authorization for the YouTube API. This is useful if the stored tokens are invalid or have been revoked. The authorization process is handled automatically by the `oauth2-auto.el` library, which starts a local server to capture the authorization token from your browser. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
 *** Authentication Setup
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-youtube-auth
 :END:
 
-To upload videos and thumbnails to YouTube, you must first authorize the Tlön application to access your Google Account. This is done using OAuth 2.0. The authorization process is automated via a local web server that runs temporarily inside Emacs.
+To upload videos and thumbnails to YouTube, you must first authorize the Tlön application to access your Google Account. This is done using OAuth 2.0. The authorization process is handled by the `oauth2-auto.el` library, which provides a robust and automated flow.
 
-**IMPORTANT**: For this to work, you *must* use an OAuth 2.0 Client ID of type **Desktop app**. If you have been using a "Web application" client ID, it will not work with this authorization flow. The previous manual copy-paste method (`oob`) was deprecated by Google and no longer works, which is why this automated flow is now required.
+**IMPORTANT**: For this to work, you *must* use an OAuth 2.0 Client ID of type **Desktop app**. If you have been using a "Web application" client ID, it will not work with this authorization flow.
 
 Please follow these steps carefully to ensure you have the correct credentials:
 
@@ -105,19 +105,17 @@ Please follow these steps carefully to ensure you have the correct credentials:
 :CUSTOM_ID: h:tlon-youtube-authorization
 :END:
 
-Once your **Desktop app** credentials are configured correctly, the authorization process is fully automated within Emacs.
+Once your **Desktop app** credentials are configured correctly, the authorization process is fully automated within Emacs. The first time you run a command that requires authentication (like ~tlon-youtube-upload-video~), `oauth2-auto.el` will automatically initiate the authorization flow.
 
 **Automated Workflow:**
-1. Run ~M-x tlon-youtube-authorize~.
-2. Emacs will start a temporary local web server on port 8080.
-3. Your browser will open to Google's authorization page.
-4. Sign in with your Google account and grant the requested permissions.
-5. After you approve, Google will redirect your browser to the local server address (`http://localhost:8080`).
-6. Emacs will automatically capture the authorization code from the redirect, exchange it for tokens, and shut down the server.
-7. A success message will appear in your browser, and you can simply close the tab.
+1. The first time you perform an action that requires authorization, your browser will open to Google's authorization page.
+2. Sign in with your Google account and grant the requested permissions.
+3. After you approve, Google will redirect your browser to a local server address that `oauth2-auto.el` is listening on.
+4. The library will automatically capture the authorization code, exchange it for tokens, and store them securely.
+5. A success message will appear in your browser, and you can simply close the tab.
 
-There is no need to copy or paste anything. The access and refresh tokens are stored automatically.
+There is no need to copy or paste anything. The access and refresh tokens are stored and managed automatically by `oauth2-auto.el`.
 
-**That's it!** The system will automatically use the refresh token to get new access tokens when they expire (typically every hour), so you should only need to authorize once.
+**That's it!** The system will automatically use the refresh token to get new access tokens when they expire, so you should only need to authorize once.
 
-**When you get a 401 error:** The system will automatically attempt to refresh your access token. If that fails (e.g., if the refresh token is revoked), you may need to re-authorize by running ~M-x tlon-youtube-authorize~ again.
+**Forcing Re-authorization:** If you ever need to re-authorize (e.g., if you revoke access from your Google Account settings), you can run ~M-x tlon-youtube-authorize~.
