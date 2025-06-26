@@ -376,7 +376,7 @@ This only needs to be done once - the refresh token will be stored."
   (let* ((email (read-string "Enter Google account email (optional): "))
          (scope "https://www.googleapis.com/auth/youtube.upload")
          (redirect-uri "urn:ietf:wg:oauth:2.0:oob")
-         (auth-url (format "https://accounts.google.com/logout?continue=https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=select_account%s"
+         (auth-url (format "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=consent%s"
                            (url-hexify-string tlon-youtube-client-id)
                            (url-hexify-string redirect-uri)
                            (url-hexify-string scope)
