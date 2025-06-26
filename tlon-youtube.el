@@ -32,6 +32,7 @@
 (require 'tlon-core)
 (require 'cl-lib)
 (require 'paths) ; For paths-dir-downloads
+(require 'transient)
 
 ;;;; Functions
 
@@ -55,6 +56,14 @@ with a `.mp4` extension, using the original audio file name."
       (if (file-exists-p video-file)
           (message "Successfully generated video: %s" video-file)
         (user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
+
+;;;; Menu
+
+;;;###autoload (autoload 'tlon-youtube-menu "tlon-youtube" nil t)
+(transient-define-prefix tlon-youtube-menu ()
+  "YouTube menu."
+  [["Actions"
+    ("g" "generate wavelength video" tlon-youtube-generate-wavelength-video)]])
 
 (provide 'tlon-youtube)
 ;;; tlon-youtube.el ends here
