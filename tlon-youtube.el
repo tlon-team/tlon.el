@@ -29,5 +29,30 @@
 
 ;;; Code:
 
+(require 'tlon-core)
+(require 'cl-lib)
+
+;;;; Functions
+
+(defun tlon-youtube-generate-wavelength-video ()
+  "Generate a video with an animated wavelength from an audio file using `seewav`.
+Prompts the user to select an audio file from the \"uqbar-audio\"
+repository. The output video is saved in the same directory as
+the audio file with a `.mp4` extension."
+  (interactive)
+  (let* ((uqbar-audio-dir (tlon-repo-lookup :dir :name "uqbar-audio")))
+    (unless uqbar-audio-dir
+      (user-error "Could not find the 'uqbar-audio' repository directory."))
+    (let* ((audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
+           (video-file (concat (file-name-sans-extension audio-file) ".mp4"))
+           (command (format "seewav -a %s -o %s"
+                            (shell-quote-argument audio-file)
+                            (shell-quote-argument video-file))))
+      (message "Generating video with seewav...")
+      (shell-command command)
+      (if (file-exists-p video-file)
+          (message "Successfully generated video: %s" video-file)
+        (user-error "Failed to generate video. Check *Messages* buffer for seewav output.")))))
+
 (provide 'tlon-youtube)
 ;;; tlon-youtube.el ends here
