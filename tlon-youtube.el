@@ -260,19 +260,17 @@ Prompts for video file, title, description, and privacy setting."
     (with-temp-buffer
       (set-buffer-multibyte nil)
       ;; Insert boundary and JSON header
-      (insert "--" boundary "\r\n")
-      (insert "Content-Type: application/json; charset=UTF-8\r\n\r\n")
+      (insert (encode-coding-string (format "--%s\r\n" boundary) 'utf-8))
+      (insert (encode-coding-string "Content-Type: application/json; charset=UTF-8\r\n\r\n" 'utf-8))
       ;; Insert UTF-8 encoded metadata as raw bytes
-      (let ((metadata-bytes (encode-coding-string metadata 'utf-8)))
-        (dotimes (i (length metadata-bytes))
-          (insert (aref metadata-bytes i))))
+      (insert (encode-coding-string metadata 'utf-8))
       ;; Insert video part boundary and header
-      (insert "\r\n--" boundary "\r\n")
-      (insert "Content-Type: video/mp4\r\n\r\n")
+      (insert (encode-coding-string (format "\r\n--%s\r\n" boundary) 'utf-8))
+      (insert (encode-coding-string "Content-Type: video/mp4\r\n\r\n" 'utf-8))
       ;; Insert video file contents
       (insert-file-contents-literally video-file)
       ;; Insert final boundary
-      (insert "\r\n--" boundary "--\r\n")
+      (insert (encode-coding-string (format "\r\n--%s--\r\n" boundary) 'utf-8))
       (message "Debug: buffer is multibyte: %s, buffer size: %d" 
                (multibyte-string-p (buffer-string)) (buffer-size))
       (let ((url-request-method "POST")
