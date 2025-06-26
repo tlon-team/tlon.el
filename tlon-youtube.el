@@ -143,7 +143,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          ;; Estimate title font size based on text length and available space
          (estimated-title-pointsize (max 20 (min 60 (/ (* text-height 0.8) 
                                                        (max 1 (/ (length title) 20))))))
-         (authors-pointsize (round (* estimated-title-pointsize 0.6)))
+         (authors-pointsize (round (* estimated-title-pointsize 0.8)))
          (logo-size (round (* height 0.12)))
          (command (format tlon-youtube-thumbnail-command-template
                           width height
