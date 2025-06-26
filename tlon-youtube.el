@@ -48,7 +48,7 @@ with a `.mp4` extension, using the original audio file name."
     (let* ((audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
            (video-file-name (concat (file-name-nondirectory (file-name-sans-extension audio-file)) ".mp4"))
            (video-file (file-name-concat paths-dir-downloads video-file-name))
-           (command (format "seewav -a %s -o %s"
+           (command (format "seewav %s %s"
                             (shell-quote-argument audio-file)
                             (shell-quote-argument video-file))))
       (message "Generating video with seewav...")
