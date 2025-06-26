@@ -135,9 +135,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (font-path (expand-file-name "~/Library/Fonts/GilliusADF-Regular.otf"))
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
-         (language (tlon-select-language 'code))
-         (authorship-pattern (tlon-lookup tlon-authorship-pattern :pattern :language language))
-         (author-text (string-trim-right (format authorship-pattern authors) "\\."))
+         (author-text authors)
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
          ;; Use high DPI for text rendering
          (dpi 300)
@@ -146,7 +144,11 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (scaled-height (round (* height scale-factor)))
          (title-pointsize (round (* height 0.035 scale-factor)))
          (title-y-offset (round (* height -0.12 scale-factor)))
-         (authors-pointsize (round (* height 0.035 scale-factor)))
+         ;; Make author font size proportional to estimated title font size
+         ;; Estimate title font size based on text length and available space
+         (estimated-title-pointsize (max 20 (min 60 (/ (* text-height 0.8) 
+                                                       (max 1 (/ (length title) 20))))))
+         (authors-pointsize (round (* estimated-title-pointsize 0.6)))
          (authors-y-offset (round (* height 0.18 scale-factor)))
          (logo-size (round (* height 0.15 scale-factor)))
          (logo-padding (round (* width 0.03 scale-factor)))
