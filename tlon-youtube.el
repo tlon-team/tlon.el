@@ -40,7 +40,7 @@
 ;;;; Constants
 
 (defconst tlon-youtube-thumbnail-command-template
-  "magick -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth 2 -gravity center caption:'%s' -geometry +0-50 -composite -font %s -pointsize %d -fill '#5d6d7e' -gravity center -annotate +0+100 '%s' \\( %s -resize %dx%d \\) -gravity southeast -geometry +20+20 -composite %s"
+  "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center caption:'%s' -geometry +0%d -composite -font %s -pointsize %d -fill '#5d6d7e' -gravity center -annotate +0+%d '%s' \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
   "ImageMagick command template for generating YouTube thumbnails.
 
 This template creates a thumbnail with the following components:
@@ -137,28 +137,39 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (authors (read-string "Enter author(s): "))
          (author-text authors)
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
-         (text-width (round (* width 0.8)))
-         (text-height (round (* height 0.4)))
-         ;; Make author font size proportional to the text area height
-         ;; This will scale naturally with the title size
-         (authors-pointsize (round (* text-height 0.15)))
-         (logo-size (round (* height 0.12)))
+         ;; Use high DPI for text rendering to prevent pixelation
+         (dpi 300)
+         (scale-factor (/ dpi 72.0)) ; Standard screen DPI is 72
+         (scaled-width (round (* width scale-factor)))
+         (scaled-height (round (* height scale-factor)))
+         (text-width (round (* scaled-width 0.8)))
+         (text-height (round (* scaled-height 0.4)))
+         (title-y-offset (round (* scaled-height -0.12)))
+         (authors-pointsize (round (* scaled-height 0.035)))
+         (authors-y-offset (round (* scaled-height 0.18)))
+         (logo-size (round (* scaled-height 0.15)))
+         (logo-padding (round (* scaled-width 0.03)))
+         (stroke-width (round (* 2 scale-factor)))
          (command (format tlon-youtube-thumbnail-command-template
-                          width height
+                          dpi scaled-width scaled-height
                           (shell-quote-argument font-path)
                           text-width text-height
                           (tlon-youtube--sanitize-draw-string title)
+                          title-y-offset
                           (shell-quote-argument font-path)
                           authors-pointsize
+                          authors-y-offset
                           (tlon-youtube--sanitize-draw-string author-text)
                           (shell-quote-argument logo-path)
-                          logo-size logo-size
+                          dpi logo-size logo-size
+                          logo-padding logo-padding
+                          width height
                           (shell-quote-argument thumbnail-file))))
     (unless (file-exists-p font-path)
       (user-error "Font file not found: %s" font-path))
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-    (message "Generating %dx%d thumbnail..." width height)
+    (message "Generating %dx%d thumbnail at %d DPI..." width height dpi)
     (let ((result (shell-command command)))
       (message "Shell command result: %d" result)
       (if (file-exists-p thumbnail-file)
