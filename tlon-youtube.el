@@ -218,7 +218,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
     (shell-command command)
     (if (file-exists-p thumbnail-file)
         (message "Successfully generated thumbnail: %s" thumbnail-file)
-      (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output")))))
+      (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output"))))
 
 (defun tlon-youtube--sanitize-draw-string (str)
   "Sanitize STR for use in ImageMagick -draw text command.
@@ -245,7 +245,7 @@ Prompts for video file, title, description, and privacy setting."
 (defun tlon-youtube--upload-video-file (video-file title description privacy)
   "Upload VIDEO-FILE to YouTube with TITLE, DESCRIPTION, and PRIVACY setting."
   (unless (executable-find "curl")
-    (user-error "curl is not installed or not in your PATH"))
+    (user-error "`curl' is not installed or not in your PATH"))
   (let* ((access-token (tlon-youtube--get-access-token))
          (metadata (json-encode
                     `((snippet . ((title . ,title)
@@ -269,10 +269,10 @@ Prompts for video file, title, description, and privacy setting."
     (let* ((process-name "youtube-upload")
            (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
            (command `("curl" "-s" "-X" "POST"
-                           "--data-binary" ,(format "@%s" request-body-file)
-                           "-H" ,(format "Authorization: Bearer %s" access-token)
-                           "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
-                           ,url)))
+                      "--data-binary" ,(format "@%s" request-body-file)
+                      "-H" ,(format "Authorization: Bearer %s" access-token)
+                      "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
+                      ,url)))
       (let ((process (apply #'start-process process-name output-buffer command)))
         (set-process-sentinel
          process
@@ -326,7 +326,8 @@ Prompts for thumbnail file and video ID."
 
 (defun tlon-youtube--get-access-token ()
   "Get OAuth 2.0 access token for YouTube API.
-Checks `tlon-youtube-access-token` first, then falls back to environment variable."
+Checks `tlon-youtube-access-token' first, then falls back to environment
+variable."
   (or tlon-youtube-access-token
       (getenv "YOUTUBE_ACCESS_TOKEN")
       (user-error "No access token available. Set `tlon-youtube-access-token` or YOUTUBE_ACCESS_TOKEN environment variable")))
