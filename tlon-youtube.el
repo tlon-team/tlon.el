@@ -119,6 +119,14 @@ Valid values are: \"private\", \"unlisted\", \"public\"."
                  (const "public"))
   :group 'tlon-youtube)
 
+(defcustom tlon-youtube-access-token nil
+  "OAuth 2.0 access token for YouTube API authentication.
+Get this from the Google OAuth 2.0 Playground or implement OAuth flow.
+If nil, will fall back to YOUTUBE_ACCESS_TOKEN environment variable."
+  :type '(choice (const :tag "Not set" nil)
+                 (string :tag "Access Token"))
+  :group 'tlon-youtube)
+
 ;;;; Functions
 
 (defun tlon-youtube-generate-wavelength-video ()
@@ -309,10 +317,10 @@ Prompts for thumbnail file and video ID."
 
 (defun tlon-youtube--get-access-token ()
   "Get OAuth 2.0 access token for YouTube API.
-This is a simplified implementation that assumes you have a valid token.
-In a real implementation, you would need to handle the full OAuth flow."
-  (or (getenv "YOUTUBE_ACCESS_TOKEN")
-      (user-error "No access token available. Set YOUTUBE_ACCESS_TOKEN environment variable or implement OAuth flow")))
+Checks `tlon-youtube-access-token` first, then falls back to environment variable."
+  (or tlon-youtube-access-token
+      (getenv "YOUTUBE_ACCESS_TOKEN")
+      (user-error "No access token available. Set `tlon-youtube-access-token` or YOUTUBE_ACCESS_TOKEN environment variable")))
 
 
 (defconst tlon-youtube-resolution-choices
