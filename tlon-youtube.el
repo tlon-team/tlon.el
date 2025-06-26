@@ -88,8 +88,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (height (cdr tlon-youtube-video-resolution))
          (logo-path (expand-file-name "images/ea-logo-transparent.png"
                                       (tlon-repo-lookup :dir :name "tlon.team-content")))
-         (font-path (expand-file-name "fonts/GilliusADF-Regular.otf"
-                                      (tlon-repo-lookup :dir :name "tlon.team-content")))
+         (font-path (expand-file-name "~/Library/Fonts/GilliusADF-Regular.otf"))
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
