@@ -99,9 +99,9 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (logo-size (round (* height 0.15))) ; Logo size based on height
          (logo-padding (round (* width 0.03)))   ; Padding for the logo from the corner
          (command (format "convert -density 300 -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \
--antialias -text-antialias -font 'Liberation-Sans-Bold' -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth 1 \
+-antialias -text-antialias -font 'GilliusADF-Regular.otf' -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth 1 \
 -gravity center -draw \"text 0,%d '%s'\" \
--font 'Liberation-Sans' -pointsize %d -fill '#5d6d7e' -stroke none \
+-font 'GilliusADF-Regular.otf' -pointsize %d -fill '#5d6d7e' -stroke none \
 -draw \"text 0,%d 'by %s'\" \
 \\( '%s' -background none -trim -resize %dx%d \\) \
 -gravity southeast -geometry +%d+%d -composite \
