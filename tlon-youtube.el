@@ -314,34 +314,38 @@ Prompts for thumbnail file and video ID."
     (user-error "Thumbnail file is not readable: %s" thumbnail-file))
   (let* ((access-token (tlon-youtube--get-access-token))
          (url (format "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=%s" video-id))
-         (process-name "youtube-thumbnail-upload")
-         (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
-         (command `("curl" "-s" "-X" "POST"
-                    "--data-binary" ,(format "@%s" thumbnail-file)
-                    "-H" ,(format "Authorization: Bearer %s" access-token)
-                    "-H" "Content-Type: image/png"
-                    ,url)))
-    (let ((process (apply #'start-process process-name output-buffer command)))
-      (set-process-sentinel
-       process
-       (lambda (proc _event)
-         (when (memq (process-status proc) '(exit signal))
-           (with-current-buffer (process-buffer proc)
-             (let* ((json-response (buffer-string))
-                    (response-data (condition-case nil
-                                       (json-read-from-string json-response)
-                                     (error nil)))
-                    (error-info (and response-data (cdr (assoc 'error response-data)))))
-               (cond
-                (error-info
-                 (let ((error-code (cdr (assoc 'code error-info)))
-                       (error-message (cdr (assoc 'message error-info))))
-                   (message "YouTube API Error %s: %s" error-code error-message)))
-                (response-data
-                 (message "Thumbnail uploaded successfully!"))
-                (t
-                 (message "Thumbnail upload completed. Response: %s" json-response)))))
-           (kill-buffer (process-buffer proc))))))))
+         (request-body-file (make-temp-file "youtube-thumbnail-" nil ".png")))
+    (copy-file thumbnail-file request-body-file t)
+    (let* ((process-name "youtube-thumbnail-upload")
+           (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
+           (command `("curl" "-s" "-X" "POST"
+                      "--data-binary" ,(format "@%s" request-body-file)
+                      "-H" ,(format "Authorization: Bearer %s" access-token)
+                      "-H" "Content-Type: image/png"
+                      ,url)))
+      (let ((process (apply #'start-process process-name output-buffer command)))
+        (set-process-sentinel
+         process
+         (lambda (proc _event)
+           (when (memq (process-status proc) '(exit signal))
+             (unwind-protect
+                 (with-current-buffer (process-buffer proc)
+                   (let* ((json-response (buffer-string))
+                          (response-data (condition-case nil
+                                             (json-read-from-string json-response)
+                                           (error nil)))
+                          (error-info (and response-data (cdr (assoc 'error response-data)))))
+                     (cond
+                      (error-info
+                       (let ((error-code (cdr (assoc 'code error-info)))
+                             (error-message (cdr (assoc 'message error-info))))
+                         (message "YouTube API Error %s: %s" error-code error-message)))
+                      (response-data
+                       (message "Thumbnail uploaded successfully!"))
+                      (t
+                       (message "Thumbnail upload completed. Response: %s" json-response)))))
+               (delete-file request-body-file)
+               (kill-buffer (process-buffer proc))))))))))
 
 
 (defun tlon-youtube--get-access-token ()
