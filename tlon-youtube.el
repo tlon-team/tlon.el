@@ -147,7 +147,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (monospace-font-path (expand-file-name "~/Library/Fonts/SauceCodeProNerdFontMono-Italic.ttf"))
          (url-pointsize (round (* scaled-height 0.015)))
          (url-padding-x (round (* scaled-width 0.02)))
-         (url-padding-y (round (* scaled-height 0.02)))
+         (url-padding-y (round (* scaled-height 0.015)))
          (url-text "altruismoeficaz.net")
          (command (format tlon-youtube-thumbnail-command-template
                           dpi scaled-width scaled-height
