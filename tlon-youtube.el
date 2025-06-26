@@ -97,18 +97,29 @@ Get this from the Google Cloud Console."
                  (string :tag "API Key"))
   :group 'tlon-youtube)
 
-(defcustom tlon-youtube-client-id nil
+(defcustom tlon-youtube-client-id
+  (auth-source-pass-get "client-id" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
   "OAuth 2.0 client ID for YouTube API authentication.
 Get this from the Google Cloud Console."
   :type '(choice (const :tag "Not set" nil)
                  (string :tag "Client ID"))
   :group 'tlon-youtube)
 
-(defcustom tlon-youtube-client-secret nil
+(defcustom tlon-youtube-client-secret
+  (auth-source-pass-get "client-secret" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
   "OAuth 2.0 client secret for YouTube API authentication.
 Get this from the Google Cloud Console."
   :type '(choice (const :tag "Not set" nil)
                  (string :tag "Client Secret"))
+  :group 'tlon-youtube)
+
+(defcustom tlon-youtube-access-token
+  (auth-source-pass-get "youtube-access-token" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+  "OAuth 2.0 access token for YouTube API authentication.
+Get this from the Google OAuth 2.0 Playground or implement OAuth flow.
+If nil, will fall back to YOUTUBE_ACCESS_TOKEN environment variable."
+  :type '(choice (const :tag "Not set" nil)
+                 (string :tag "Access Token"))
   :group 'tlon-youtube)
 
 (defcustom tlon-youtube-default-privacy "private"
@@ -117,14 +128,6 @@ Valid values are: \"private\", \"unlisted\", \"public\"."
   :type '(choice (const "private")
                  (const "unlisted")
                  (const "public"))
-  :group 'tlon-youtube)
-
-(defcustom tlon-youtube-access-token nil
-  "OAuth 2.0 access token for YouTube API authentication.
-Get this from the Google OAuth 2.0 Playground or implement OAuth flow.
-If nil, will fall back to YOUTUBE_ACCESS_TOKEN environment variable."
-  :type '(choice (const :tag "Not set" nil)
-                 (string :tag "Access Token"))
   :group 'tlon-youtube)
 
 ;;;; Functions
