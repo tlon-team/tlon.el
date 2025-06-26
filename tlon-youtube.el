@@ -143,6 +143,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
                           dpi scaled-width scaled-height
                           (shell-quote-argument font-path)
                           text-width text-height
+                          stroke-width
                           (tlon-youtube--sanitize-draw-string title)
                           title-y-offset
                           (shell-quote-argument font-path)
