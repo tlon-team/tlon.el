@@ -141,7 +141,6 @@ the \"tlon.team-content\" repository to create a thumbnail image."
 Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   (replace-regexp-in-string "'" "\\\\'" str t t))
 
-
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
     ("1080p (1920x1080)" . (1920 . 1080))
