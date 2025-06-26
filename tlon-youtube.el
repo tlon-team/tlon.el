@@ -91,28 +91,41 @@ the original audio file name."
 The car is the display string and the cdr is the (WIDTH . HEIGHT) cons cell,
 or 'custom to prompt for a custom resolution.")
 
-(defun tlon-youtube-read-resolution-choice (prompt initial-value _history)
+(defun tlon-youtube-read-resolution-choice (prompt obj _history)
   "Reader function for `tlon-youtube-video-resolution`.
-PROMPT is the prompt string. INITIAL-VALUE is the current (WIDTH . HEIGHT) cons.
+PROMPT is the prompt string. OBJ is the transient infix object.
+_HISTORY is the history list (unused).
 Allows selecting from predefined resolutions or entering a custom WIDTHxHEIGHT string."
-  (let* ((choices (mapcar #'car tlon-youtube-resolution-choices))
+  (let* ((initial-value (symbol-value (oref obj variable))) ; Get current variable value (WIDTH . HEIGHT)
+         (choices (mapcar #'car tlon-youtube-resolution-choices))
+         (found-pair (cl-find-if (lambda (pair) (equal (cdr pair) initial-value))
+                                 tlon-youtube-resolution-choices))
          (current-selection-str
-          (or (car (rassoc initial-value tlon-youtube-resolution-choices)) ; Find string for current value
-              (format "Custom (%dx%d)" (car initial-value) (cdr initial-value))))
+          (if found-pair
+              (car found-pair) ; Display string for known resolution
+            (if (consp initial-value) ; Should always be true due to defcustom type
+                (format "Custom (%dx%d)" (car initial-value) (cdr initial-value))
+              ;; Fallback if initial-value is not a cons (e.g. nil), though defcustom type should prevent this.
+              ;; Use the first choice as a safe default for the prompt.
+              (car choices)))))
          (selection (completing-read prompt choices nil t nil nil current-selection-str)))
     (cond
      ((or (null selection) (string-empty-p selection)) initial-value) ; User cancelled or entered empty, keep current
      (t
       (let ((choice-pair (assoc selection tlon-youtube-resolution-choices)))
         (if (eq (cdr choice-pair) 'custom)
-            (let* ((custom-input (read-string (format "%s Enter custom resolution (WIDTHxHEIGHT): " prompt)
-                                              (format "%dx%d" (car initial-value) (cdr initial-value)))))
+            (let* ((custom-prompt-string (format "%s Enter custom resolution (WIDTHxHEIGHT): " prompt))
+                   (current-custom-value-string
+                    (if (consp initial-value)
+                        (format "%dx%d" (car initial-value) (cdr initial-value))
+                      "1280x720")) ; Default for custom prompt if initial-value is bad
+                   (custom-input (read-string custom-prompt-string current-custom-value-string)))
               (if (string-match "^\\([0-9]+\\)[xX]\\([0-9]+\\)$" custom-input)
                   (cons (string-to-number (match-string 1 custom-input))
                         (string-to-number (match-string 2 custom-input)))
                 (progn
                   (message "Invalid custom resolution format. Using current value.")
-                  initial-value)))
+                  initial-value))) ; Return current value if custom input is invalid
           (cdr choice-pair)))))))
 
 (transient-define-infix tlon-youtube-video-resolution-infix ()
