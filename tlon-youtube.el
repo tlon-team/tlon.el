@@ -114,27 +114,17 @@ the \"tlon.team-content\" repository to create a thumbnail image."
       (user-error "Font file not found: %s" font-path))
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-    (let* ((title-lines (tlon-youtube--wrap-text title (* scaled-width 0.7) (/ title-pointsize scale-factor)))
-           (line-height (round (* title-pointsize 1.2)))
-           (total-title-height (* (length title-lines) line-height))
-           (title-start-y (- title-y-offset (/ total-title-height 2)))
-           (title-draw-commands
-            (mapconcat
-             (lambda (line-info)
-               (let ((line (car line-info))
-                     (y-pos (cdr line-info)))
-                 (format "-draw \"text 0,%d '%s'\""
-                         y-pos (tlon-youtube--sanitize-draw-string line))))
-             (cl-loop for line in title-lines
-                      for i from 0
-                      collect (cons line (+ title-start-y (* i line-height))))
-             " "))
-           (command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d '%s'\" \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+    (let* ((text-width (round (* scaled-width 0.8)))
+           (text-height (round (* scaled-height 0.6)))
+           (command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \\( -size %dx%d -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s \\) -gravity center -geometry +0%d -composite \\( -font %s -pointsize %d -fill '#5d6d7e' -stroke none -gravity center -draw \"text 0,%d '%s'\" -size %dx%d xc:none \\) -gravity center -composite \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
                             dpi scaled-width scaled-height
+                            text-width text-height
                             (shell-quote-argument font-path) title-pointsize
-                            stroke-width title-draw-commands
+                            stroke-width (tlon-youtube--create-multiline-text title text-width title-pointsize font-path)
+                            title-y-offset
                             (shell-quote-argument font-path) authors-pointsize
                             authors-y-offset (tlon-youtube--sanitize-draw-string author-text)
+                            scaled-width scaled-height
                             (shell-quote-argument logo-path) dpi logo-size logo-size
                             logo-padding logo-padding
                             width height
@@ -151,28 +141,11 @@ the \"tlon.team-content\" repository to create a thumbnail image."
 Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   (replace-regexp-in-string "'" "\\\\'" str t t))
 
-(defun tlon-youtube--wrap-text (text max-width pointsize)
-  "Wrap TEXT to fit within MAX-WIDTH pixels at POINTSIZE.
-Returns a list of lines that will fit within the specified width.
-Uses a conservative character width estimate."
-  (let* ((char-width (* pointsize 0.7)) ; More realistic character width for GilliusADF
-         (safe-width (* max-width 0.9)) ; Use 90% of available width for safety margin
-         (chars-per-line (max 10 (floor (/ safe-width char-width)))) ; Minimum 10 chars per line
-         (words (split-string text))
-         (lines '())
-         (current-line ""))
-    (dolist (word words)
-      (let ((test-line (if (string-empty-p current-line)
-                           word
-                         (concat current-line " " word))))
-        (if (<= (length test-line) chars-per-line)
-            (setq current-line test-line)
-          (when (not (string-empty-p current-line))
-            (push current-line lines))
-          (setq current-line word))))
-    (when (not (string-empty-p current-line))
-      (push current-line lines))
-    (reverse lines)))
+(defun tlon-youtube--create-multiline-text (text max-width pointsize font-path)
+  "Create ImageMagick command for multiline text using caption: feature.
+TEXT is the text to render, MAX-WIDTH is the maximum width in pixels,
+POINTSIZE is the font size, and FONT-PATH is the path to the font file."
+  (format "caption:'%s'" (tlon-youtube--sanitize-draw-string text)))
 
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
