@@ -77,8 +77,8 @@ This module provides functionality to process and upload podcast episodes to You
 #+findex: tlon-youtube-upload-thumbnail
 + ~tlon-youtube-upload-thumbnail~ :: Uploads a thumbnail image to an existing YouTube video. Prompts the user to select a thumbnail file (filtered to show ~.png~, ~.jpg~, and ~.jpeg~ files) and enter the YouTube video ID. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
-#+findex: tlon-youtube-set-access-token
-+ ~tlon-youtube-set-access-token~ :: Prompts the user to enter a new YouTube API access token. This sets the token for the current Emacs session, which can be useful if the existing token has expired. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+#+findex: tlon-youtube-authorize
++ ~tlon-youtube-authorize~ :: Starts the OAuth 2.0 authorization flow for the YouTube API. This opens a browser window for you to authorize the application and automatically obtains both access and refresh tokens. You only need to run this once - the refresh token will be used to automatically get new access tokens when they expire. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
 *** Authentication Setup
 :PROPERTIES:
@@ -93,22 +93,18 @@ To use the YouTube API integration features, you need to:
 4. Set ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ in your Emacs configuration
 5. Obtain an OAuth 2.0 access token (see below)
 
-**** Getting an Access Token
+**** Getting Authorization
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-youtube-access-token
+:CUSTOM_ID: h:tlon-youtube-authorization
 :END:
 
-**Important:** YouTube access tokens expire after 1 hour, so you'll need to refresh them regularly.
+**Simple workflow (automatic):**
+1. Run ~M-x tlon-youtube-authorize~
+2. This will open your browser to Google's authorization page
+3. Sign in with your Google account and authorize the application
+4. Copy the authorization code from the browser and paste it into Emacs
+5. The system will automatically obtain and store both access and refresh tokens
 
-**Current workflow (manual):**
-1. Go to the [[https://developers.google.com/oauthplayground/][Google OAuth 2.0 Playground]]
-2. In "Step 1", find "YouTube Data API v3" and select the scope ~https://www.googleapis.com/auth/youtube.upload~
-3. Click "Authorize APIs" and sign in with your Google account
-4. In "Step 2", click "Exchange authorization code for tokens"
-5. Copy the "Access token" and either:
-   - Use ~M-x tlon-youtube-set-access-token~ to set it for the current session, or
-   - Set the ~YOUTUBE_ACCESS_TOKEN~ environment variable
+**That's it!** The system will automatically refresh your access token when it expires (every hour), so you only need to authorize once.
 
-**When you get a 401 error:** This usually means your access token has expired. Simply repeat the above steps to get a new token.
-
-**Future improvement needed:** The current implementation uses a simplified authentication approach that requires manual token management. A full implementation should handle the complete OAuth 2.0 flow within Emacs, including automatic token refresh using refresh tokens.
+**When you get a 401 error:** The system will automatically attempt to refresh your access token. If that fails, you may need to re-authorize by running ~M-x tlon-youtube-authorize~ again.

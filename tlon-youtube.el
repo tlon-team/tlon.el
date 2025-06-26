@@ -113,13 +113,19 @@ Get this from the Google Cloud Console."
                  (string :tag "Client Secret"))
   :group 'tlon-youtube)
 
-(defcustom tlon-youtube-access-token
-  (auth-source-pass-get "youtube-access-token" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+(defcustom tlon-youtube-access-token nil
   "OAuth 2.0 access token for YouTube API authentication.
-Get this from the Google OAuth 2.0 Playground or implement OAuth flow.
-If nil, will fall back to YOUTUBE_ACCESS_TOKEN environment variable."
+This is automatically managed by the OAuth flow - don't set manually."
   :type '(choice (const :tag "Not set" nil)
                  (string :tag "Access Token"))
+  :group 'tlon-youtube)
+
+(defcustom tlon-youtube-refresh-token
+  (auth-source-pass-get "youtube-refresh-token" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+  "OAuth 2.0 refresh token for YouTube API authentication.
+This is used to automatically get new access tokens when they expire."
+  :type '(choice (const :tag "Not set" nil)
+                 (string :tag "Refresh Token"))
   :group 'tlon-youtube)
 
 (defcustom tlon-youtube-default-privacy "private"
@@ -294,7 +300,8 @@ Prompts for video file, title, description, and privacy setting."
                              (error-message (cdr (assoc 'message error-info))))
                          (message "YouTube API Error %s: %s" error-code error-message)
                          (when (= error-code 401)
-                           (message "This might be due to an expired access token. Try getting a new one."))))
+                           (message "Access token expired. Attempting to refresh...")
+                           (tlon-youtube--refresh-access-token))))
                       (t
                        (message "Upload failed or could not extract video ID. Response: %s" json-response)))))
                (delete-file request-body-file)
@@ -350,7 +357,8 @@ Prompts for thumbnail file and video ID."
                              (error-message (cdr (assoc 'message error-info))))
                          (message "YouTube API Error %s: %s" error-code error-message)
                          (when (= error-code 401)
-                           (message "This might be due to an expired access token. Try getting a new one."))))
+                           (message "Access token expired. Attempting to refresh...")
+                           (tlon-youtube--refresh-access-token))))
                       (response-data
                        (message "Thumbnail uploaded successfully!"))
                       (t
@@ -359,28 +367,114 @@ Prompts for thumbnail file and video ID."
                (kill-buffer (process-buffer proc))))))))))
 
 
-(defun tlon-youtube-set-access-token ()
-  "Prompt for and set the YouTube API access token for the current session."
+(defun tlon-youtube-authorize ()
+  "Start the OAuth 2.0 authorization flow for YouTube API.
+This will open a browser for you to authorize the application and get
+both access and refresh tokens."
   (interactive)
-  (let ((token (read-string "Enter new YouTube access token: ")))
-    (if (and token (> (length token) 0))
-        (progn
-          (setq tlon-youtube-access-token token)
-          (message "YouTube access token updated for the current session."))
-      (user-error "No token provided"))))
+  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
+    (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
+  (let* ((redirect-uri "http://localhost:8080")
+         (scope "https://www.googleapis.com/auth/youtube.upload")
+         (auth-url (format "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=consent"
+                           (url-hexify-string tlon-youtube-client-id)
+                           (url-hexify-string redirect-uri)
+                           (url-hexify-string scope))))
+    (browse-url auth-url)
+    (message "Please authorize the application in your browser, then enter the authorization code below.")
+    (let ((auth-code (read-string "Enter authorization code: ")))
+      (tlon-youtube--exchange-code-for-tokens auth-code redirect-uri))))
+
+(defun tlon-youtube--exchange-code-for-tokens (auth-code redirect-uri)
+  "Exchange AUTH-CODE for access and refresh tokens using REDIRECT-URI."
+  (let* ((url "https://oauth2.googleapis.com/token")
+         (data (format "client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=%s"
+                       (url-hexify-string tlon-youtube-client-id)
+                       (url-hexify-string tlon-youtube-client-secret)
+                       (url-hexify-string auth-code)
+                       (url-hexify-string redirect-uri)))
+         (process-name "youtube-token-exchange")
+         (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
+         (command `("curl" "-s" "-X" "POST"
+                    "-H" "Content-Type: application/x-www-form-urlencoded"
+                    "-d" ,data
+                    ,url)))
+    (let ((process (apply #'start-process process-name output-buffer command)))
+      (set-process-sentinel
+       process
+       (lambda (proc _event)
+         (when (memq (process-status proc) '(exit signal))
+           (with-current-buffer (process-buffer proc)
+             (let* ((json-response (buffer-string))
+                    (response-data (condition-case nil
+                                       (json-read-from-string json-response)
+                                     (error nil)))
+                    (access-token (and response-data (cdr (assoc 'access_token response-data))))
+                    (refresh-token (and response-data (cdr (assoc 'refresh_token response-data))))
+                    (error-info (and response-data (cdr (assoc 'error response-data)))))
+               (cond
+                ((and access-token refresh-token)
+                 (setq tlon-youtube-access-token access-token)
+                 (setq tlon-youtube-refresh-token refresh-token)
+                 (message "Authorization successful! Tokens obtained and stored."))
+                (error-info
+                 (message "Authorization failed: %s" error-info))
+                (t
+                 (message "Authorization failed. Response: %s" json-response)))))
+           (kill-buffer (process-buffer proc))))))))
+
+(defun tlon-youtube--refresh-access-token ()
+  "Refresh the access token using the stored refresh token."
+  (unless tlon-youtube-refresh-token
+    (user-error "No refresh token available. Run `tlon-youtube-authorize` first"))
+  (let* ((url "https://oauth2.googleapis.com/token")
+         (data (format "client_id=%s&client_secret=%s&refresh_token=%s&grant_type=refresh_token"
+                       (url-hexify-string tlon-youtube-client-id)
+                       (url-hexify-string tlon-youtube-client-secret)
+                       (url-hexify-string tlon-youtube-refresh-token)))
+         (process-name "youtube-token-refresh")
+         (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
+         (command `("curl" "-s" "-X" "POST"
+                    "-H" "Content-Type: application/x-www-form-urlencoded"
+                    "-d" ,data
+                    ,url)))
+    (let ((process (apply #'start-process process-name output-buffer command)))
+      (set-process-sentinel
+       process
+       (lambda (proc _event)
+         (when (memq (process-status proc) '(exit signal))
+           (with-current-buffer (process-buffer proc)
+             (let* ((json-response (buffer-string))
+                    (response-data (condition-case nil
+                                       (json-read-from-string json-response)
+                                     (error nil)))
+                    (access-token (and response-data (cdr (assoc 'access_token response-data))))
+                    (error-info (and response-data (cdr (assoc 'error response-data)))))
+               (cond
+                (access-token
+                 (setq tlon-youtube-access-token access-token)
+                 (message "Access token refreshed successfully."))
+                (error-info
+                 (message "Token refresh failed: %s" error-info))
+                (t
+                 (message "Token refresh failed. Response: %s" json-response)))))
+           (kill-buffer (process-buffer proc))))))))
 
 (defun tlon-youtube--get-access-token ()
-  "Get OAuth 2.0 access token for YouTube API.
-Checks `tlon-youtube-access-token' first, then falls back to environment
-variable."
-  (cond ((and tlon-youtube-access-token (not (string-empty-p tlon-youtube-access-token)))
-         (message "Using YouTube access token from `tlon-youtube-access-token' variable.")
-         tlon-youtube-access-token)
-        ((getenv "YOUTUBE_ACCESS_TOKEN")
-         (message "Using YouTube access token from YOUTUBE_ACCESS_TOKEN environment variable.")
-         (getenv "YOUTUBE_ACCESS_TOKEN"))
-        (t
-         (user-error "No access token available. Set `tlon-youtube-access-token` or YOUTUBE_ACCESS_TOKEN environment variable"))))
+  "Get a valid OAuth 2.0 access token for YouTube API.
+Automatically refreshes the token if needed."
+  (cond
+   ;; If we have an access token, return it (we'll handle 401 errors in the upload functions)
+   ((and tlon-youtube-access-token (not (string-empty-p tlon-youtube-access-token)))
+    tlon-youtube-access-token)
+   ;; If we have a refresh token but no access token, refresh it
+   ((and tlon-youtube-refresh-token (not (string-empty-p tlon-youtube-refresh-token)))
+    (tlon-youtube--refresh-access-token)
+    ;; Return the current token (might be nil if refresh is async)
+    tlon-youtube-access-token)
+   ;; No tokens available
+   (t
+    (user-error "No access token available. Run `M-x tlon-youtube-authorize` first"))))
 
 
 (defconst tlon-youtube-resolution-choices
@@ -437,7 +531,7 @@ history list (unused). Allows selecting from predefined resolutions."
     ("T" "Upload thumbnail to YouTube" tlon-youtube-upload-thumbnail)]
    ["Options"
     ("r" "Video Resolution" tlon-youtube-video-resolution-infix)
-    ("s" "Set Access Token" tlon-youtube-set-access-token)]])
+    ("a" "Authorize YouTube API" tlon-youtube-authorize)]])
 
 (provide 'tlon-youtube)
 ;;; tlon-youtube.el ends here
