@@ -139,14 +139,11 @@ the \"tlon.team-content\" repository to create a thumbnail image."
                             logo-padding logo-padding
                             width height
                             (shell-quote-argument thumbnail-file))))
-      (message "Command: %s" command)
       (message "Generating %dx%d thumbnail at %d DPI..." width height dpi)
       (let ((result (shell-command command)))
         (message "Shell command result: %d" result)
         (if (file-exists-p thumbnail-file)
-            (progn
-              (message "Successfully generated thumbnail: %s" thumbnail-file)
-              (message "File size: %d bytes" (file-attribute-size (file-attributes thumbnail-file))))
+            (message "Successfully generated thumbnail: %s" thumbnail-file)
           (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output"))))))
 
 (defun tlon-youtube--sanitize-draw-string (str)
