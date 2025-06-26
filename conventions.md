@@ -1,0 +1,1 @@
+Whenever you make a change to an Elisp file, consider documenting it in the corresponding org-mode file. For example, if you introduce a new command in tlon-core.el, you should also add a section in doc/tlon-core.org that describes the command, etc.
