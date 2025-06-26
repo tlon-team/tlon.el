@@ -107,8 +107,8 @@ Allows selecting from predefined resolutions or entering a custom WIDTHxHEIGHT s
                 (format "Custom (%dx%d)" (car initial-value) (cdr initial-value))
               ;; Fallback if initial-value is not a cons (e.g. nil), though defcustom type should prevent this.
               ;; Use the first choice as a safe default for the prompt.
-              (car choices)))))
-    (selection (completing-read prompt choices nil t nil nil current-selection-str))
+              (car choices))))
+         (selection (completing-read prompt choices nil t nil nil current-selection-str)))
     (cond
      ((or (null selection) (string-empty-p selection)) initial-value) ; User cancelled or entered empty, keep current
      (t
