@@ -33,6 +33,8 @@
 (require 'cl-lib)
 (require 'paths) ; For paths-dir-downloads
 (require 'transient)
+(require 'url)
+(require 'json)
 
 ;; Ensure tlon-authorship-pattern is available
 (defvar tlon-authorship-pattern)
@@ -86,6 +88,35 @@ Common resolutions:
 - 1440p: (2560 . 1440)
 - 4K (2160p): (3840 . 2160)"
   :type '(cons integer integer)
+  :group 'tlon-youtube)
+
+(defcustom tlon-youtube-api-key nil
+  "YouTube Data API v3 key for API requests.
+Get this from the Google Cloud Console."
+  :type '(choice (const :tag "Not set" nil)
+                 (string :tag "API Key"))
+  :group 'tlon-youtube)
+
+(defcustom tlon-youtube-client-id nil
+  "OAuth 2.0 client ID for YouTube API authentication.
+Get this from the Google Cloud Console."
+  :type '(choice (const :tag "Not set" nil)
+                 (string :tag "Client ID"))
+  :group 'tlon-youtube)
+
+(defcustom tlon-youtube-client-secret nil
+  "OAuth 2.0 client secret for YouTube API authentication.
+Get this from the Google Cloud Console."
+  :type '(choice (const :tag "Not set" nil)
+                 (string :tag "Client Secret"))
+  :group 'tlon-youtube)
+
+(defcustom tlon-youtube-default-privacy "private"
+  "Default privacy setting for uploaded videos.
+Valid values are: \"private\", \"unlisted\", \"public\"."
+  :type '(choice (const "private")
+                 (const "unlisted")
+                 (const "public"))
   :group 'tlon-youtube)
 
 ;;;; Functions
@@ -186,6 +217,103 @@ the \"tlon.team-content\" repository to create a thumbnail image."
 Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   (replace-regexp-in-string "'" "\\\\'" str t t))
 
+(defun tlon-youtube-upload-video ()
+  "Upload a video file to YouTube.
+Prompts for video file, title, description, and privacy setting."
+  (interactive)
+  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
+    (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
+  (let* ((video-file (read-file-name "Select video file: " paths-dir-downloads nil t nil
+                                     (lambda (name) (string-match-p "\\.mp4\\'" name))))
+         (title (read-string "Video title: "))
+         (description (read-string "Video description: "))
+         (privacy (completing-read "Privacy setting: "
+                                   '("private" "unlisted" "public")
+                                   nil t nil nil tlon-youtube-default-privacy)))
+    (unless (file-exists-p video-file)
+      (user-error "Video file does not exist: %s" video-file))
+    (tlon-youtube--upload-video-file video-file title description privacy)))
+
+(defun tlon-youtube--upload-video-file (video-file title description privacy)
+  "Upload VIDEO-FILE to YouTube with TITLE, DESCRIPTION, and PRIVACY setting."
+  (let* ((access-token (tlon-youtube--get-access-token))
+         (metadata (json-encode
+                    `((snippet . ((title . ,title)
+                                  (description . ,description)))
+                      (status . ((privacyStatus . ,privacy))))))
+         (boundary (format "boundary_%s" (format-time-string "%s")))
+         (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status"))
+    (with-temp-buffer
+      (set-buffer-multibyte nil)
+      (insert (format "--%s\r\n" boundary))
+      (insert "Content-Type: application/json; charset=UTF-8\r\n\r\n")
+      (insert metadata)
+      (insert (format "\r\n--%s\r\n" boundary))
+      (insert "Content-Type: video/mp4\r\n\r\n")
+      (insert-file-contents-literally video-file)
+      (insert (format "\r\n--%s--\r\n" boundary))
+      (let ((url-request-method "POST")
+            (url-request-extra-headers
+             `(("Authorization" . ,(format "Bearer %s" access-token))
+               ("Content-Type" . ,(format "multipart/related; boundary=%s" boundary))))
+            (url-request-data (buffer-string)))
+        (message "Uploading video to YouTube...")
+        (url-retrieve url #'tlon-youtube--handle-upload-response)))))
+
+(defun tlon-youtube--handle-upload-response (status)
+  "Handle the response from YouTube video upload with STATUS."
+  (if (plist-get status :error)
+      (message "Error uploading video: %s" (plist-get status :error))
+    (goto-char (point-min))
+    (when (re-search-forward "^$" nil t)
+      (let* ((json-response (buffer-substring-no-properties (point) (point-max)))
+             (response-data (json-read-from-string json-response))
+             (video-id (cdr (assoc 'id response-data))))
+        (if video-id
+            (message "Video uploaded successfully! Video ID: %s" video-id)
+          (message "Upload completed but could not extract video ID"))))))
+
+(defun tlon-youtube-upload-thumbnail ()
+  "Upload a thumbnail to an existing YouTube video.
+Prompts for thumbnail file and video ID."
+  (interactive)
+  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
+    (user-error "YouTube API credentials not configured"))
+  (let* ((thumbnail-file (read-file-name "Select thumbnail file: " paths-dir-downloads nil t nil
+                                         (lambda (name) (string-match-p "\\.\\(png\\|jpg\\|jpeg\\)\\'" name))))
+         (video-id (read-string "YouTube video ID: ")))
+    (unless (file-exists-p thumbnail-file)
+      (user-error "Thumbnail file does not exist: %s" thumbnail-file))
+    (tlon-youtube--upload-thumbnail-file thumbnail-file video-id)))
+
+(defun tlon-youtube--upload-thumbnail-file (thumbnail-file video-id)
+  "Upload THUMBNAIL-FILE to YouTube video with VIDEO-ID."
+  (let* ((access-token (tlon-youtube--get-access-token))
+         (url (format "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=%s" video-id)))
+    (with-temp-buffer
+      (set-buffer-multibyte nil)
+      (insert-file-contents-literally thumbnail-file)
+      (let ((url-request-method "POST")
+            (url-request-extra-headers
+             `(("Authorization" . ,(format "Bearer %s" access-token))
+               ("Content-Type" . "image/png")))
+            (url-request-data (buffer-string)))
+        (message "Uploading thumbnail to YouTube...")
+        (url-retrieve url #'tlon-youtube--handle-thumbnail-response)))))
+
+(defun tlon-youtube--handle-thumbnail-response (status)
+  "Handle the response from YouTube thumbnail upload with STATUS."
+  (if (plist-get status :error)
+      (message "Error uploading thumbnail: %s" (plist-get status :error))
+    (message "Thumbnail uploaded successfully!")))
+
+(defun tlon-youtube--get-access-token ()
+  "Get OAuth 2.0 access token for YouTube API.
+This is a simplified implementation that assumes you have a valid token.
+In a real implementation, you would need to handle the full OAuth flow."
+  (or (getenv "YOUTUBE_ACCESS_TOKEN")
+      (user-error "No access token available. Set YOUTUBE_ACCESS_TOKEN environment variable or implement OAuth flow")))
+
 
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
@@ -233,9 +361,12 @@ history list (unused). Allows selecting from predefined resolutions."
 ;;;###autoload (autoload 'tlon-youtube-menu "tlon-youtube" nil t)
 (transient-define-prefix tlon-youtube-menu ()
   "YouTube menu."
-  [["Actions"
+  [["Generate"
     ("g" "Generate wavelength video" tlon-youtube-generate-wavelength-video)
     ("t" "Generate video thumbnail" tlon-youtube-generate-thumbnail)]
+   ["Upload"
+    ("u" "Upload video to YouTube" tlon-youtube-upload-video)
+    ("T" "Upload thumbnail to YouTube" tlon-youtube-upload-thumbnail)]
    ["Options"
     ("r" "Video Resolution" tlon-youtube-video-resolution-infix)]])
 

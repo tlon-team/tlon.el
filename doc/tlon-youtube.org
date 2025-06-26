@@ -38,6 +38,18 @@ This module provides functionality to process and upload podcast episodes to You
   - 4K (2160p): `(3840 . 2160)`
   This option can be configured via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
+#+vindex: tlon-youtube-api-key
++ ~tlon-youtube-api-key~ :: YouTube Data API v3 key for API requests. This should be obtained from the Google Cloud Console. Currently used for read-only operations.
+
+#+vindex: tlon-youtube-client-id
++ ~tlon-youtube-client-id~ :: OAuth 2.0 client ID for YouTube API authentication. This should be obtained from the Google Cloud Console and is required for uploading videos and thumbnails.
+
+#+vindex: tlon-youtube-client-secret
++ ~tlon-youtube-client-secret~ :: OAuth 2.0 client secret for YouTube API authentication. This should be obtained from the Google Cloud Console and is required for uploading videos and thumbnails.
+
+#+vindex: tlon-youtube-default-privacy
++ ~tlon-youtube-default-privacy~ :: Default privacy setting for uploaded videos. Valid values are "private", "unlisted", or "public". Defaults to "private".
+
 ** Video Generation
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-youtube-video-generation
@@ -53,3 +65,29 @@ This module provides functionality to process and upload podcast episodes to You
   The Tlön logo (from the "tlon.team-content" repository, specifically ~images/ea-logo-transparent.png~) is automatically trimmed, resized, and added to the thumbnail.
   The output image is saved as ~thumbnail.png~ in the ~paths-dir-downloads~ directory.
   This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+
+** YouTube API Integration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-api
+:END:
+
+#+findex: tlon-youtube-upload-video
++ ~tlon-youtube-upload-video~ :: Uploads a video file to YouTube using the YouTube Data API v3. Prompts the user to select a video file (filtered to show only ~.mp4~ files), enter a title and description, and choose a privacy setting ("private", "unlisted", or "public"). Requires ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ to be configured, as well as a valid OAuth 2.0 access token (set via the ~YOUTUBE_ACCESS_TOKEN~ environment variable). This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+
+#+findex: tlon-youtube-upload-thumbnail
++ ~tlon-youtube-upload-thumbnail~ :: Uploads a thumbnail image to an existing YouTube video. Prompts the user to select a thumbnail file (filtered to show ~.png~, ~.jpg~, and ~.jpeg~ files) and enter the YouTube video ID. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+
+*** Authentication Setup
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-auth
+:END:
+
+To use the YouTube API integration features, you need to:
+
+1. Create a project in the Google Cloud Console
+2. Enable the YouTube Data API v3
+3. Create OAuth 2.0 credentials (client ID and client secret)
+4. Set ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ in your Emacs configuration
+5. Obtain an OAuth 2.0 access token and set it as the ~YOUTUBE_ACCESS_TOKEN~ environment variable
+
+Note: The current implementation uses a simplified authentication approach. A full implementation would handle the complete OAuth 2.0 flow within Emacs.
