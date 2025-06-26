@@ -126,14 +126,16 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (height (cdr tlon-youtube-video-resolution))
          (logo-path (expand-file-name "images/ea-logo-transparent.png"
                                       (tlon-repo-lookup :dir :name "tlon.team-content")))
-         (font-path (expand-file-name "~/Library/Fonts/GilliusADF-Regular.otf"))
+	 (font-dir (expand-file-name "~/Library/Fonts/"))
+         (font-path (file-name-concat font-dir "GilliusADF-Regular.otf"))
+         (monospace-font-path (file-name-concat font-dir "SauceCodeProNerdFontMono-Italic.ttf"))
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
          (author-text authors)
-         (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
          ;; Use high DPI for text rendering to prevent pixelation
-         (dpi 300)
-         (scale-factor (/ dpi 72.0)) ; Standard screen DPI is 72
+         (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
+         (dpi 300) ; Standard screen DPI is 72
+         (scale-factor (/ dpi 72.0))
          (scaled-width (round (* width scale-factor)))
          (scaled-height (round (* height scale-factor)))
          (text-width (round (* scaled-width 0.8)))
@@ -144,10 +146,9 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (logo-size (round (* scaled-height 0.18)))
          (logo-padding (round (* scaled-width 0.03)))
          (stroke-width (round (* 2 scale-factor)))
-         (monospace-font-path (expand-file-name "~/Library/Fonts/SauceCodeProNerdFontMono-Italic.ttf"))
-         (url-pointsize (round (* scaled-height 0.015)))
+         (url-pointsize (round (* scaled-height 0.013)))
          (url-padding-x (round (* scaled-width 0.02)))
-         (url-padding-y (round (* scaled-height 0.015)))
+         (url-padding-y (round (* scaled-height 0.035)))
          (url-text "altruismoeficaz.net")
          (command (format tlon-youtube-thumbnail-command-template
                           dpi scaled-width scaled-height
