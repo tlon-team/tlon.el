@@ -108,22 +108,22 @@ Allows selecting from predefined resolutions or entering a custom WIDTHxHEIGHT s
               ;; Fallback if initial-value is not a cons (e.g. nil), though defcustom type should prevent this.
               ;; Use the first choice as a safe default for the prompt.
               (car choices)))))
-         (selection (completing-read prompt choices nil t nil nil current-selection-str)))
+    (selection (completing-read prompt choices nil t nil nil current-selection-str))
     (cond
      ((or (null selection) (string-empty-p selection)) initial-value) ; User cancelled or entered empty, keep current
      (t
       (let ((choice-pair (assoc selection tlon-youtube-resolution-choices)))
-        (if (eq (cdr choice-pair) 'custom)
+	(if (eq (cdr choice-pair) 'custom)
             (let* ((custom-prompt-string (format "%s Enter custom resolution (WIDTHxHEIGHT): " prompt))
                    (current-custom-value-string
                     (if (consp initial-value)
-                        (format "%dx%d" (car initial-value) (cdr initial-value))
+			(format "%dx%d" (car initial-value) (cdr initial-value))
                       "1280x720")) ; Default for custom prompt if initial-value is bad
                    (custom-input (read-string custom-prompt-string current-custom-value-string)))
               (if (string-match "^\\([0-9]+\\)[xX]\\([0-9]+\\)$" custom-input)
                   (cons (string-to-number (match-string 1 custom-input))
-                        (string-to-number (match-string 2 custom-input)))
-                (progn
+			(string-to-number (match-string 2 custom-input)))
+		(progn
                   (message "Invalid custom resolution format. Using current value.")
                   initial-value))) ; Return current value if custom input is invalid
           (cdr choice-pair)))))))
