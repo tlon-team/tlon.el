@@ -23,7 +23,20 @@ This module provides functionality to process and upload podcast episodes to You
 :END:
 
 #+findex: tlon-youtube-menu
-+ ~tlon-youtube-menu~ :: Opens the main transient menu for YouTube-related operations.
++ ~tlon-youtube-menu~ :: Opens the main transient menu for YouTube-related operations. This menu allows access to commands and options for video generation and YouTube integration.
+
+** User Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-options
+:END:
+
+#+vindex: tlon-youtube-video-resolution
++ ~tlon-youtube-video-resolution~ :: A cons cell `(WIDTH . HEIGHT)` specifying the video resolution for generated videos. Defaults to 720p `(1280 . 720)`. Common resolutions include:
+  - 720p:  `(1280 . 720)`
+  - 1080p: `(1920 . 1080)`
+  - 1440p: `(2560 . 1440)`
+  - 4K (2160p): `(3840 . 2160)`
+  This option can be configured via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
 ** Video Generation
 :PROPERTIES:
@@ -31,4 +44,4 @@ This module provides functionality to process and upload podcast episodes to You
 :END:
 
 #+findex: tlon-youtube-generate-wavelength-video
-+ ~tlon-youtube-generate-wavelength-video~ :: Generates a 720p video (1280x720 pixels) with an animated wavelength from an audio file using ~seewav~. Prompts the user to select an audio file from the "uqbar-audio" repository. The output video is saved in the ~paths-dir-downloads~ directory with a ~.mp4~ extension, using the original audio file name. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
++ ~tlon-youtube-generate-wavelength-video~ :: Generates a video with an animated wavelength from an audio file using ~seewav~. The resolution of the video is determined by the ~tlon-youtube-video-resolution~ user option. Prompts the user to select an audio file from the "uqbar-audio" repository. The output video is saved in the ~paths-dir-downloads~ directory with a ~.mp4~ extension, using the original audio file name. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].

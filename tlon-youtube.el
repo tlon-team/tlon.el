@@ -34,30 +34,93 @@
 (require 'paths) ; For paths-dir-downloads
 (require 'transient)
 
+;;;; User options
+
+(defgroup tlon-youtube ()
+  "`tlon-youtube' user options."
+  :group 'tlon)
+
+(defcustom tlon-youtube-video-resolution '(1280 . 720)
+  "Video resolution (WIDTH . HEIGHT) for generated videos.
+Common resolutions:
+- 720p:  (1280 . 720)
+- 1080p: (1920 . 1080)
+- 1440p: (2560 . 1440)
+- 4K (2160p): (3840 . 2160)"
+  :type '(cons integer integer)
+  :group 'tlon-youtube)
+
 ;;;; Functions
 
 (defun tlon-youtube-generate-wavelength-video ()
-  "Generate a 720p video (1280x720) with an animated wavelength from an audio file.
-Use `seewav` to generate the animation. Prompt the user to select an audio file
-from the \"uqbar-audio\" repository. The output video is saved in
-\"paths-dir-downloads\" with a \"mp4\" extension, using the original audio file
-name."
+  "Generate a video with an animated wavelength from an audio file.
+Uses `seewav` to generate the animation. The resolution is determined
+by `tlon-youtube-video-resolution`. Prompts the user to select an
+audio file from the \"uqbar-audio\" repository. The output video is
+saved in `paths-dir-downloads` with a \".mp4\" extension, using
+the original audio file name."
   (interactive)
-  (let* ((uqbar-audio-dir (tlon-repo-lookup :dir :name "uqbar-audio")))
+  (let* ((uqbar-audio-dir (tlon-repo-lookup :dir :name "uqbar-audio"))
+         (width (car tlon-youtube-video-resolution))
+         (height (cdr tlon-youtube-video-resolution)))
     (unless uqbar-audio-dir
-      (user-error "Could not find the 'uqbar-audio' repository directory"))
+      (user-error "Could not find the 'uqbar-audio' repository directory."))
     (let* ((selected-audio-file (read-file-name "Select audio file: " uqbar-audio-dir))
            (audio-file (expand-file-name selected-audio-file))
            (video-file-name (file-name-with-extension (file-name-base selected-audio-file) "mp4"))
-	   (video-file (expand-file-name (file-name-concat paths-dir-downloads video-file-name)))
-	   (command (format "seewav -W 1280 -H 720 %s %s"
-			    (shell-quote-argument audio-file)
-			    (shell-quote-argument video-file))))
-      (message "Generating 720p video with `seewav'...")
+           (video-file (expand-file-name (file-name-concat paths-dir-downloads video-file-name)))
+           (command (format "seewav -W %d -H %d %s %s"
+                            width height
+                            (shell-quote-argument audio-file)
+                            (shell-quote-argument video-file))))
+      (message "Generating %dx%d video with `seewav'..." width height)
       (shell-command command)
       (if (file-exists-p video-file)
           (message "Successfully generated video: %s" video-file)
-	(user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
+        (user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
+
+;;;; Transient menu options and helpers
+
+(defconst tlon-youtube-resolution-choices
+  '(("720p (1280x720)"   . (1280 . 720))
+    ("1080p (1920x1080)" . (1920 . 1080))
+    ("1440p (2560x1440)" . (2560 . 1440))
+    ("4K (2160p) (3840x2160)" . (3840 . 2160))
+    ("Custom..." . custom))
+  "Alist of predefined resolution choices for YouTube videos.
+The car is the display string and the cdr is the (WIDTH . HEIGHT) cons cell,
+or 'custom to prompt for a custom resolution.")
+
+(defun tlon-youtube-read-resolution-choice (prompt initial-value _history)
+  "Reader function for `tlon-youtube-video-resolution`.
+PROMPT is the prompt string. INITIAL-VALUE is the current (WIDTH . HEIGHT) cons.
+Allows selecting from predefined resolutions or entering a custom WIDTHxHEIGHT string."
+  (let* ((choices (mapcar #'car tlon-youtube-resolution-choices))
+         (current-selection-str
+          (or (car (rassoc initial-value tlon-youtube-resolution-choices)) ; Find string for current value
+              (format "Custom (%dx%d)" (car initial-value) (cdr initial-value))))
+         (selection (completing-read prompt choices nil t nil nil current-selection-str)))
+    (cond
+     ((or (null selection) (string-empty-p selection)) initial-value) ; User cancelled or entered empty, keep current
+     (t
+      (let ((choice-pair (assoc selection tlon-youtube-resolution-choices)))
+        (if (eq (cdr choice-pair) 'custom)
+            (let* ((custom-input (read-string (format "%s Enter custom resolution (WIDTHxHEIGHT): " prompt)
+                                              (format "%dx%d" (car initial-value) (cdr initial-value)))))
+              (if (string-match "^\\([0-9]+\\)[xX]\\([0-9]+\\)$" custom-input)
+                  (cons (string-to-number (match-string 1 custom-input))
+                        (string-to-number (match-string 2 custom-input)))
+                (progn
+                  (message "Invalid custom resolution format. Using current value.")
+                  initial-value)))
+          (cdr choice-pair)))))))
+
+(transient-define-infix tlon-youtube-video-resolution-infix ()
+  "Set the video resolution for YouTube videos."
+  :class 'transient-lisp-variable
+  :variable 'tlon-youtube-video-resolution
+  :reader #'tlon-youtube-read-resolution-choice
+  :transient t)
 
 ;;;; Menu
 
@@ -65,7 +128,9 @@ name."
 (transient-define-prefix tlon-youtube-menu ()
   "YouTube menu."
   [["Actions"
-    ("g" "generate wavelength video" tlon-youtube-generate-wavelength-video)]])
+    ("g" "Generate wavelength video" tlon-youtube-generate-wavelength-video)]
+   ["Options"
+    ("r" "Video Resolution" tlon-youtube-video-resolution-infix)]])
 
 (provide 'tlon-youtube)
 ;;; tlon-youtube.el ends here
