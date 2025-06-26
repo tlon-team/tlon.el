@@ -181,7 +181,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
     (let* ((text-width (round (* scaled-width 0.8)))
-           (text-height (round (* scaled-height 0.6)))
+           (text-height (round (* scaled-height 0.8)))
            (command (format tlon-youtube-thumbnail-command-template
                             dpi scaled-width scaled-height
                             text-width text-height
