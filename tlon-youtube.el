@@ -153,7 +153,6 @@ the original audio file name."
                             width height
                             (shell-quote-argument audio-file)
                             (shell-quote-argument video-file))))
-      (message "Generating %dx%d video with `seewav'..." width height)
       (shell-command command)
       (if (file-exists-p video-file)
           (message "Successfully generated video: %s" video-file)
@@ -216,12 +215,10 @@ the \"tlon.team-content\" repository to create a thumbnail image."
       (user-error "Font file not found: %s" font-path))
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-    (message "Generating %dx%d thumbnail at %d DPI..." width height dpi)
-    (let ((result (shell-command command)))
-      (message "Shell command result: %d" result)
-      (if (file-exists-p thumbnail-file)
-          (message "Successfully generated thumbnail: %s" thumbnail-file)
-        (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output")))))
+    (shell-command command)
+    (if (file-exists-p thumbnail-file)
+        (message "Successfully generated thumbnail: %s" thumbnail-file)
+      (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output")))))
 
 (defun tlon-youtube--sanitize-draw-string (str)
   "Sanitize STR for use in ImageMagick -draw text command.
@@ -276,7 +273,6 @@ Prompts for video file, title, description, and privacy setting."
                            "-H" ,(format "Authorization: Bearer %s" access-token)
                            "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
                            ,url)))
-      (message "Uploading video to YouTube via curl...")
       (let ((process (apply #'start-process process-name output-buffer command)))
         (set-process-sentinel
          process
@@ -320,7 +316,6 @@ Prompts for thumbnail file and video ID."
              `(("Authorization" . ,(format "Bearer %s" access-token))
                ("Content-Type" . "image/png")))
             (url-request-data (buffer-string)))
-        (message "Uploading thumbnail to YouTube...")
         (url-retrieve url #'tlon-youtube--handle-thumbnail-response)))))
 
 (defun tlon-youtube--handle-thumbnail-response (status)
