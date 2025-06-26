@@ -477,7 +477,23 @@ and the third group captures the collection ID.")
   "\\([[:alnum:]-]*\\)"
   "Regular expression for matching tag slugs.")
 
-;;;;; Misc
+;;;;; Authorhip
+
+(defconst tlon-authorship-pattern
+  '((:language "ar" :pattern "بواسطة %s.")
+    (:language "de" :pattern "von %s.")
+    (:language "en" :pattern "by %s.")
+    (:language "es" :pattern "por %s.")
+    (:language "fr" :pattern "par %s.")
+    (:language "it" :pattern "di %s.")
+    (:language "ja" :pattern "%sによって".)
+    (:language "ko" :pattern "%s에 의해.")
+    (:language "tr" :pattern "tarafından %s."))
+  "Pattern to use when listing the author(s) of a work.
+For example, in English, the pattern is `by %s', where `%s' is replaced by the
+author name(s).")
+
+;;;;; Conjuncts
 
 (defconst tlon-tts-conjuncts
   '((:language "en" :conjunct "and")
