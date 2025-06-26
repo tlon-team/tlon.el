@@ -368,32 +368,58 @@ Prompts for thumbnail file and video ID."
 
 
 (defun tlon-youtube-authorize ()
-  "Start the OAuth 2.0 authorization flow for YouTube API.
-This will open a browser for you to authorize the application and get
-both access and refresh tokens."
+  "Start the OAuth 2.0 device flow for YouTube API.
+This is more reliable than the web flow."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
-  (let* ((redirect-uri "urn:ietf:wg:oauth:2.0:oob")
-         (scope "https://www.googleapis.com/auth/youtube.upload")
-         (auth-url (format "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=consent"
-                           (url-hexify-string tlon-youtube-client-id)
-                           (url-hexify-string redirect-uri)
-                           (url-hexify-string scope))))
-    (browse-url auth-url)
-    (message "Please authorize the application in your browser, then enter the authorization code below.")
-    (let ((auth-code (read-string "Enter authorization code: ")))
-      (tlon-youtube--exchange-code-for-tokens auth-code redirect-uri))))
+  (tlon-youtube--start-device-flow))
 
-(defun tlon-youtube--exchange-code-for-tokens (auth-code redirect-uri)
-  "Exchange AUTH-CODE for access and refresh tokens using REDIRECT-URI."
+(defun tlon-youtube--start-device-flow ()
+  "Start the device authorization flow."
+  (let* ((url "https://oauth2.googleapis.com/device/code")
+         (data (format "client_id=%s&scope=%s"
+                       (url-hexify-string tlon-youtube-client-id)
+                       (url-hexify-string "https://www.googleapis.com/auth/youtube.upload")))
+         (process-name "youtube-device-flow")
+         (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
+         (command `("curl" "-s" "-X" "POST"
+                    "-H" "Content-Type: application/x-www-form-urlencoded"
+                    "-d" ,data
+                    ,url)))
+    (let ((process (apply #'start-process process-name output-buffer command)))
+      (set-process-sentinel
+       process
+       (lambda (proc _event)
+         (when (memq (process-status proc) '(exit signal))
+           (with-current-buffer (process-buffer proc)
+             (let* ((json-response (buffer-string))
+                    (response-data (condition-case nil
+                                       (json-read-from-string json-response)
+                                     (error nil)))
+                    (device-code (and response-data (cdr (assoc 'device_code response-data))))
+                    (user-code (and response-data (cdr (assoc 'user_code response-data))))
+                    (verification-url (and response-data (cdr (assoc 'verification_url response-data))))
+                    (error-info (and response-data (cdr (assoc 'error response-data)))))
+               (cond
+                ((and device-code user-code verification-url)
+                 (message "Go to %s and enter code: %s" verification-url user-code)
+                 (browse-url verification-url)
+                 (tlon-youtube--poll-for-tokens device-code))
+                (error-info
+                 (message "Device flow failed: %s" error-info))
+                (t
+                 (message "Device flow failed. Response: %s" json-response)))))
+           (kill-buffer (process-buffer proc))))))))
+
+(defun tlon-youtube--poll-for-tokens (device-code)
+  "Poll for tokens using DEVICE-CODE."
   (let* ((url "https://oauth2.googleapis.com/token")
-         (data (format "client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=%s"
+         (data (format "client_id=%s&client_secret=%s&device_code=%s&grant_type=urn:ietf:params:oauth:grant-type:device_code"
                        (url-hexify-string tlon-youtube-client-id)
                        (url-hexify-string tlon-youtube-client-secret)
-                       (url-hexify-string auth-code)
-                       (url-hexify-string redirect-uri)))
-         (process-name "youtube-token-exchange")
+                       (url-hexify-string device-code)))
+         (process-name "youtube-token-poll")
          (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
          (command `("curl" "-s" "-X" "POST"
                     "-H" "Content-Type: application/x-www-form-urlencoded"
@@ -411,12 +437,19 @@ both access and refresh tokens."
                                      (error nil)))
                     (access-token (and response-data (cdr (assoc 'access_token response-data))))
                     (refresh-token (and response-data (cdr (assoc 'refresh_token response-data))))
-                    (error-info (and response-data (cdr (assoc 'error response-data)))))
+                    (error-info (and response-data (cdr (assoc 'error response-data))))
+                    (error-code (and error-info (cdr (assoc 'error error-info)))))
                (cond
                 ((and access-token refresh-token)
                  (setq tlon-youtube-access-token access-token)
                  (setq tlon-youtube-refresh-token refresh-token)
                  (message "Authorization successful! Tokens obtained and stored."))
+                ((string= error-code "authorization_pending")
+                 (message "Waiting for authorization... Please complete the process in your browser.")
+                 (run-with-timer 5 nil (lambda () (tlon-youtube--poll-for-tokens device-code))))
+                ((string= error-code "slow_down")
+                 (message "Polling too fast, slowing down...")
+                 (run-with-timer 10 nil (lambda () (tlon-youtube--poll-for-tokens device-code))))
                 (error-info
                  (message "Authorization failed: %s" error-info))
                 (t
