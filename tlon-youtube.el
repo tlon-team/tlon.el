@@ -84,19 +84,33 @@ the original audio file name."
 Prompts the user for a title and author(s), and uses the logo from
 the \"tlon.team-content\" repository to create a thumbnail image."
   (interactive)
-  (let* ((logo-path (expand-file-name "images/ea-logo-transparent.png"
+  (let* ((width (car tlon-youtube-video-resolution))
+         (height (cdr tlon-youtube-video-resolution))
+         (logo-path (expand-file-name "images/ea-logo-transparent.png"
                                       (tlon-repo-lookup :dir :name "tlon.team-content")))
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
-         (command (format "convert -size 1280x720 xc:white -gravity center -font Arial -pointsize 48 \
--draw \"text 0,-200 '%s'\" -pointsize 36 -draw \"text 0,200 'by %s'\" \
--gravity southeast -draw \"image Over 0,0 200,200 '%s'\" %s"
-                          (shell-quote-argument title)
-                          (shell-quote-argument authors)
-                          (shell-quote-argument logo-path)
+         ;; Calculate dynamic sizes and positions
+         (title-pointsize (round (* height 0.06)))
+         (title-y-offset (round (* height -0.15)))
+         (authors-pointsize (round (* height 0.04)))
+         (authors-y-offset (round (* height 0.15)))
+         (logo-draw-width (round (* width 0.25))) ; Scale logo to 25% of thumbnail width
+         (logo-padding (round (* width 0.02)))   ; Padding for the logo from the corner
+         (command (format "convert -size %dx%d xc:white \
+-gravity center -font Arial -pointsize %d -draw \"text 0,%d '%s'\" \
+-pointsize %d -draw \"text 0,%d 'by %s'\" \
+\\( '%s' -trim -resize %dx0 \\) \
+-gravity southeast -geometry +%d+%d -composite \
+%s"
+                          width height
+                          title-pointsize title-y-offset (shell-quote-argument title)
+                          authors-pointsize authors-y-offset (shell-quote-argument authors)
+                          (shell-quote-argument logo-path) logo-draw-width
+                          logo-padding logo-padding
                           (shell-quote-argument thumbnail-file))))
-    (message "Generating thumbnail...")
+    (message "Generating %dx%d thumbnail..." width height)
     (shell-command command)
     (if (file-exists-p thumbnail-file)
         (message "Successfully generated thumbnail: %s" thumbnail-file)
