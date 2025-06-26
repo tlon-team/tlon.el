@@ -34,6 +34,9 @@
 (require 'paths) ; For paths-dir-downloads
 (require 'transient)
 
+;; Ensure tlon-authorship-pattern is available
+(defvar tlon-authorship-pattern)
+
 ;;;; User options
 
 (defgroup tlon-youtube ()
