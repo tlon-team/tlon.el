@@ -91,7 +91,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
          (command (format "convert -size 1280x720 xc:white -gravity center -font Arial -pointsize 48 \
 -draw \"text 0,-200 '%s'\" -pointsize 36 -draw \"text 0,200 'by %s'\" \
--gravity southeast -draw \"image Over 0,0 0,0 '%s'\" %s"
+-gravity southeast -draw \"image Over 0,0 200,200 '%s'\" %s"
                           (shell-quote-argument title)
                           (shell-quote-argument authors)
                           (shell-quote-argument logo-path)
