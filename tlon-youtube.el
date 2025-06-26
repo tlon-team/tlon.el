@@ -93,38 +93,33 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
-         ;; Calculate dynamic sizes and positions - scale up for high density
-         (scale-factor 4) ; Render at 4x size then downsample
-         (scaled-width (* width scale-factor))
-         (scaled-height (* height scale-factor))
-         (title-pointsize (* (round (* height 0.08)) scale-factor))
-         (title-y-offset (* (round (* height -0.12)) scale-factor))
-         (authors-pointsize (* (round (* height 0.05)) scale-factor))
-         (authors-y-offset (* (round (* height 0.18)) scale-factor))
-         (logo-size (* (round (* height 0.15)) scale-factor))
-         (logo-padding (* (round (* width 0.03)) scale-factor))
-         (command (format "convert -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \
--font '%s' -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d \
--gravity center -draw \"text 0,%d '%s'\" \
--font '%s' -pointsize %d -fill '#5d6d7e' -stroke none \
--draw \"text 0,%d 'by %s'\" \
-\\( '%s' -background none -trim -resize %dx%d \\) \
--gravity southeast -geometry +%d+%d -composite \
--resize %dx%d -quality 95 '%s'"
-                          scaled-width scaled-height
-                          font-path title-pointsize scale-factor
-                          title-y-offset (tlon-youtube--sanitize-draw-string title)
-                          font-path authors-pointsize
-                          authors-y-offset (tlon-youtube--sanitize-draw-string authors)
-                          logo-path logo-size logo-size
-                          logo-padding logo-padding
-                          width height
-                          thumbnail-file)))
-    (message "Generating %dx%d thumbnail..." width height)
-    (shell-command command)
-    (if (file-exists-p thumbnail-file)
-        (message "Successfully generated thumbnail: %s" thumbnail-file)
-      (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output"))))
+         (title-pointsize (round (* height 0.08)))
+         (title-y-offset (round (* height -0.12)))
+         (authors-pointsize (round (* height 0.05)))
+         (authors-y-offset (round (* height 0.18)))
+         (logo-size (round (* height 0.15)))
+         (logo-padding (round (* width 0.03))))
+    ;; Check if font exists
+    (unless (file-exists-p font-path)
+      (user-error "Font file not found: %s" font-path))
+    ;; Check if logo exists
+    (unless (file-exists-p logo-path)
+      (user-error "Logo file not found: %s" logo-path))
+    (let ((command (format "convert -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth 2 -gravity center -draw \"text 0,%d '%s'\" -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d 'by %s'\" \\( %s -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -quality 95 %s"
+                           width height
+                           (shell-quote-argument font-path) title-pointsize
+                           title-y-offset (tlon-youtube--sanitize-draw-string title)
+                           (shell-quote-argument font-path) authors-pointsize
+                           authors-y-offset (tlon-youtube--sanitize-draw-string authors)
+                           (shell-quote-argument logo-path) logo-size logo-size
+                           logo-padding logo-padding
+                           (shell-quote-argument thumbnail-file))))
+      (message "Generating %dx%d thumbnail..." width height)
+      (message "Command: %s" command) ; Debug output
+      (shell-command command)
+      (if (file-exists-p thumbnail-file)
+          (message "Successfully generated thumbnail: %s" thumbnail-file)
+        (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output")))))
 
 (defun tlon-youtube--sanitize-draw-string (str)
   "Sanitize STR for use in ImageMagick -draw text command.
