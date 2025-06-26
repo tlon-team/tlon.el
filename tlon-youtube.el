@@ -139,11 +139,10 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
          (text-width (round (* width 0.8)))
          (text-height (round (* height 0.4)))
-         ;; Make author font size proportional to estimated title font size
-         ;; Estimate title font size based on text length and available space
-         (estimated-title-pointsize (max 20 (min 60 (/ (* text-height 0.8) 
-                                                       (max 1 (/ (length title) 20))))))
-         (authors-pointsize (round (* estimated-title-pointsize 0.8)))
+         ;; Make author font size proportional to the text area, similar to title
+         ;; but smaller since it's secondary text
+         (authors-pointsize (max 12 (min 30 (/ (* text-height 0.3) 
+                                               (max 1 (/ (length author-text) 15))))))
          (logo-size (round (* height 0.12)))
          (command (format tlon-youtube-thumbnail-command-template
                           width height
