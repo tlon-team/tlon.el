@@ -144,7 +144,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (logo-size (round (* scaled-height 0.18)))
          (logo-padding (round (* scaled-width 0.03)))
          (stroke-width (round (* 2 scale-factor)))
-         (monospace-font-path "SauceCodeProNerdFontMono-Italic.ttf")
+         (monospace-font-path (expand-file-name "~/Library/Fonts/SauceCodeProNerdFontMono-Italic.ttf"))
          (url-pointsize (round (* scaled-height 0.015)))
          (url-padding-x (round (* scaled-width 0.02)))
          (url-padding-y (round (* scaled-height 0.02)))
