@@ -135,7 +135,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (text-height (round (* scaled-height 0.4)))
          (title-y-offset (round (* scaled-height -0.12)))
          (authors-pointsize (round (* scaled-height 0.035)))
-         (authors-y-offset (round (* scaled-height 0.18)))
+         (authors-y-offset (round (* scaled-height 0.20)))
          (logo-size (round (* scaled-height 0.15)))
          (logo-padding (round (* scaled-width 0.03)))
          (stroke-width (round (* 2 scale-factor)))
