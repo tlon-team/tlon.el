@@ -136,7 +136,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (title-y-offset (round (* scaled-height -0.12)))
          (authors-pointsize (round (* scaled-height 0.035)))
          (authors-y-offset (round (* scaled-height 0.20)))
-         (logo-size (round (* scaled-height 0.15)))
+         (logo-size (round (* scaled-height 0.18)))
          (logo-padding (round (* scaled-width 0.03)))
          (stroke-width (round (* 2 scale-factor)))
          (command (format tlon-youtube-thumbnail-command-template
