@@ -40,7 +40,7 @@
 ;;;; Constants
 
 (defconst tlon-youtube-thumbnail-command-template
-  "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center caption:'%s' -geometry +0%d -composite -font %s -pointsize %d -fill '#5d6d7e' -stroke '#5d6d7e' -strokewidth 1 -gravity center -annotate +0+%d '%s' \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+  "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center caption:'%s' -geometry +0%d -composite -font %s -pointsize %d -fill '#5d6d7e' -stroke '#5d6d7e' -strokewidth 1 -gravity center -annotate +0+%d '%s' \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -font %s -pointsize %d -fill '#7f8c8d' -gravity southwest -annotate +%d+%d '%s' -resize %dx%d -quality 95 %s"
   "ImageMagick command template for generating YouTube thumbnails.
 
 Format arguments (in order):
@@ -63,9 +63,14 @@ Format arguments (in order):
 17. Logo height
 18. Logo padding X
 19. Logo padding Y
-20. Final width
-21. Final height
-22. Output file path")
+20. Monospace font path (URL)
+21. URL pointsize
+22. URL padding X
+23. URL padding Y
+24. URL text
+25. Final width
+26. Final height
+27. Output file path")
 
 ;;;; User options
 
@@ -139,6 +144,11 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (logo-size (round (* scaled-height 0.18)))
          (logo-padding (round (* scaled-width 0.03)))
          (stroke-width (round (* 2 scale-factor)))
+         (monospace-font-path "/System/Library/Fonts/Monaco.ttf")
+         (url-pointsize (round (* scaled-height 0.025)))
+         (url-padding-x (round (* scaled-width 0.02)))
+         (url-padding-y (round (* scaled-height 0.02)))
+         (url-text "altruismoeficaz.net")
          (command (format tlon-youtube-thumbnail-command-template
                           dpi scaled-width scaled-height
                           (shell-quote-argument font-path)
@@ -153,6 +163,10 @@ the \"tlon.team-content\" repository to create a thumbnail image."
                           (shell-quote-argument logo-path)
                           dpi logo-size logo-size
                           logo-padding logo-padding
+                          (shell-quote-argument monospace-font-path)
+                          url-pointsize
+                          url-padding-x url-padding-y
+                          url-text
                           width height
                           (shell-quote-argument thumbnail-file))))
     (unless (file-exists-p font-path)
