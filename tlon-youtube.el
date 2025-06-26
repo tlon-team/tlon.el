@@ -37,6 +37,72 @@
 ;; Ensure tlon-authorship-pattern is available
 (defvar tlon-authorship-pattern)
 
+;;;; Constants
+
+(defconst tlon-youtube-thumbnail-command-template
+  "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \\( -size %dx%d -background none -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s \\) -gravity center -geometry +0%d -composite \\( -font %s -pointsize %d -fill '#5d6d7e' -stroke none -gravity center -draw \"text 0,%d '%s'\" -size %dx%d xc:none \\) -gravity center -composite \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+  "ImageMagick command template for generating YouTube thumbnails.
+
+This template creates a thumbnail with the following components:
+- `-density %d`: Sets rendering DPI for high-quality text (300 DPI)
+- `-size %dx%d`: Canvas dimensions (scaled width x scaled height)
+- `-define gradient:angle=135 gradient:'#f8f9fa-#e9ecef'`: Diagonal gradient background
+- First subcommand \\(...\\): Title text rendering
+  - `-size %dx%d`: Text area dimensions (80% of canvas width x 60% of canvas height)
+  - `-background none`: Transparent background for text area
+  - `-font %s`: Font file path (GilliusADF-Regular.otf)
+  - `-pointsize %d`: Title font size (scaled)
+  - `-fill '#2c3e50'`: Dark blue-gray text color
+  - `-stroke '#34495e'`: Darker stroke outline for better contrast
+  - `-strokewidth %d`: Stroke width (scaled)
+  - `-gravity center`: Center text alignment
+  - `%s`: Caption text with automatic wrapping
+- `-gravity center -geometry +0%d -composite`: Position title text on canvas
+- Second subcommand \\(...\\): Author text rendering
+  - `-font %s`: Same font file
+  - `-pointsize %d`: Author font size (smaller than title)
+  - `-fill '#5d6d7e'`: Medium gray color for hierarchy
+  - `-stroke none`: No stroke for author text
+  - `-draw \"text 0,%d '%s'\"`: Draw author text at specified Y offset
+  - `-size %dx%d xc:none`: Transparent canvas for author text
+- Third subcommand \\(...\\): Logo processing
+  - `%s`: Logo file path
+  - `-density %d`: Logo rendering DPI
+  - `-background none`: Preserve logo transparency
+  - `-trim`: Remove excess whitespace
+  - `-resize %dx%d`: Scale logo to specified dimensions
+- `-gravity southeast -geometry +%d+%d -composite`: Position logo in bottom-right
+- `-resize %dx%d`: Final downsampling to target resolution
+- `-quality 95`: High JPEG quality
+- `%s`: Output file path
+
+Format arguments (in order):
+1. DPI (300)
+2. Scaled canvas width
+3. Scaled canvas height
+4. Text area width
+5. Text area height
+6. Font path
+7. Title pointsize
+8. Stroke width
+9. Title caption text
+10. Title Y offset
+11. Font path (author)
+12. Author pointsize
+13. Author Y offset
+14. Author text
+15. Canvas width (for author area)
+16. Canvas height (for author area)
+17. Logo path
+18. Logo DPI
+19. Logo width
+20. Logo height
+21. Logo padding X
+22. Logo padding Y
+23. Final width
+24. Final height
+25. Output file path")
+
 ;;;; User options
 
 (defgroup tlon-youtube ()
@@ -116,7 +182,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
       (user-error "Logo file not found: %s" logo-path))
     (let* ((text-width (round (* scaled-width 0.8)))
            (text-height (round (* scaled-height 0.6)))
-           (command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \\( -size %dx%d -background none -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s \\) -gravity center -geometry +0%d -composite \\( -font %s -pointsize %d -fill '#5d6d7e' -stroke none -gravity center -draw \"text 0,%d '%s'\" -size %dx%d xc:none \\) -gravity center -composite \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+           (command (format tlon-youtube-thumbnail-command-template
                             dpi scaled-width scaled-height
                             text-width text-height
                             (shell-quote-argument font-path) title-pointsize
