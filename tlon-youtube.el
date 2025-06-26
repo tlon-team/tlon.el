@@ -40,7 +40,7 @@
 ;;;; Constants
 
 (defconst tlon-youtube-thumbnail-command-template
-  "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \\( -size %dx%d -background none -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s \\) -gravity center -geometry +0%d -composite \\( -font %s -pointsize %d -fill '#5d6d7e' -stroke none -gravity center -draw \"text 0,%d '%s'\" -size %dx%d xc:none \\) -gravity center -composite \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+  "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \\( -size %dx%d -background none -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s \\) -gravity center -geometry +0%d -composite \\( -font %s -pointsize %d -fill '#5d6d7e' -stroke none -gravity center -draw \"text 0,%d '%s'\" -size %dx%d xc:none \\) -gravity center -composite \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
   "ImageMagick command template for generating YouTube thumbnails.
 
 This template creates a thumbnail with the following components:
@@ -214,34 +214,38 @@ Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   "Calculate optimal font size for TEXT to fit within MAX-WIDTH and MAX-HEIGHT.
 BASE-POINTSIZE is the starting font size. FONT-PATH is the path to the font file.
 Returns the largest font size that allows the text to fit within the constraints."
-  (let ((current-size base-pointsize)
-        (min-size (round (* base-pointsize 0.3))) ; Don't go below 30% of base size
+  (let ((min-size (round (* base-pointsize 0.3))) ; Don't go below 30% of base size
         (max-size base-pointsize)
+        (best-size (round (* base-pointsize 0.3)))
         (temp-file (make-temp-file "tlon-youtube-text-test" nil ".png")))
     (unwind-protect
         (progn
           ;; Binary search for optimal font size
-          (while (> (- max-size min-size) 2)
-            (setq current-size (/ (+ min-size max-size) 2))
-            (let ((test-command (format "convert -size %dx%d -background none -font %s -pointsize %d -gravity center caption:'%s' %s"
-                                        max-width max-height
-                                        (shell-quote-argument font-path)
-                                        current-size
-                                        (tlon-youtube--sanitize-draw-string text)
-                                        (shell-quote-argument temp-file))))
+          (while (> (- max-size min-size) 1)
+            (let* ((current-size (/ (+ min-size max-size) 2))
+                   (test-command (format "magick -size %dx%d -background none -font %s -pointsize %d -gravity center caption:'%s' %s"
+                                         max-width max-height
+                                         (shell-quote-argument font-path)
+                                         current-size
+                                         (tlon-youtube--sanitize-draw-string text)
+                                         (shell-quote-argument temp-file))))
+              (when (file-exists-p temp-file)
+                (delete-file temp-file))
               (shell-command test-command)
               (if (file-exists-p temp-file)
                   (let* ((identify-output (shell-command-to-string 
-                                           (format "identify -format '%%w %%h' %s" 
+                                           (format "magick identify -format '%%w %%h' %s" 
                                                    (shell-quote-argument temp-file))))
                          (dimensions (split-string (string-trim identify-output)))
                          (actual-width (string-to-number (car dimensions)))
                          (actual-height (string-to-number (cadr dimensions))))
                     (if (and (<= actual-width max-width) (<= actual-height max-height))
-                        (setq min-size current-size) ; Text fits, try larger
+                        (progn
+                          (setq best-size current-size)
+                          (setq min-size current-size)) ; Text fits, try larger
                       (setq max-size current-size))) ; Text too big, try smaller
                 (setq max-size current-size)))) ; Command failed, try smaller
-          min-size)
+          best-size)
       ;; Cleanup
       (when (file-exists-p temp-file)
         (delete-file temp-file)))))
