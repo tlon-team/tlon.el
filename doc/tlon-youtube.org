@@ -85,28 +85,32 @@ This module provides functionality to process and upload podcast episodes to You
 :CUSTOM_ID: h:tlon-youtube-auth
 :END:
 
-To use the YouTube API integration features, you need to:
+To use the YouTube API integration features, you need to set up OAuth 2.0 credentials in the Google Cloud Console.
 
-1. Create a project in the Google Cloud Console
-2. Enable the YouTube Data API v3
-3. Create OAuth 2.0 credentials (client ID and client secret)
-4. Set ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ in your Emacs configuration
-5. Obtain an OAuth 2.0 access token (see below)
+1. Go to the [[https://console.cloud.google.com/][Google Cloud Console]]
+2. Create a new project or select an existing one
+3. Enable the *YouTube Data API v3* for your project
+4. Go to "Credentials" and click "Create Credentials" -> "OAuth client ID"
+5. Select the application type **Desktop app**. This is important, as other types like "Web application" will not work with this workflow and will cause a `redirect_uri_mismatch` error.
+6. Give the client ID a name (e.g., "tlon-emacs-client") and click "Create"
+7. A dialog will show your "Client ID" and "Client Secret". Copy these.
+8. Set the values for ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ in your Emacs configuration. It is recommended to use a secure method like `auth-source` to store these, rather than setting them directly in your `init.el`.
 
 **** Getting Authorization
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-youtube-authorization
 :END:
 
+Once your credentials are set up, you need to authorize the application to access your YouTube account.
+
 **Simple workflow:**
 1. Run ~M-x tlon-youtube-authorize~
 2. This will open your browser to Google's authorization page
-3. Sign in with your Google account and authorize the application
-4. After authorization, you'll be redirected to a localhost page that may show an error (this is normal)
-5. Copy the authorization code from the URL in your browser's address bar (after "code=")
-6. Paste the authorization code into Emacs when prompted
-7. The system will automatically obtain and store both access and refresh tokens
+3. Sign in with the Google account you want to upload videos to and authorize the application
+4. After authorization, Google will display a page with an authorization code. Copy this code.
+5. Paste the authorization code into the Emacs prompt
+6. The system will automatically exchange the code for an access token and a refresh token. The refresh token will be stored securely for future sessions.
 
-**That's it!** The system will automatically refresh your access token when it expires (every hour), so you only need to authorize once.
+**That's it!** The system will automatically use the refresh token to get new access tokens when they expire (typically every hour), so you should only need to authorize once.
 
-**When you get a 401 error:** The system will automatically attempt to refresh your access token. If that fails, you may need to re-authorize by running ~M-x tlon-youtube-authorize~ again.
+**When you get a 401 error:** The system will automatically attempt to refresh your access token. If that fails (e.g., if the refresh token is revoked), you may need to re-authorize by running ~M-x tlon-youtube-authorize~ again.
