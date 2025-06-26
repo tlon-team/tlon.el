@@ -96,7 +96,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (authors (read-string "Enter author(s): "))
          (language (tlon-select-language 'code))
          (authorship-pattern (tlon-lookup tlon-authorship-pattern :pattern :language language))
-         (author-text (format authorship-pattern authors))
+         (author-text (string-trim-right (format authorship-pattern authors) "\\."))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
          ;; Use high DPI for text rendering
          (dpi 300)
@@ -158,7 +158,7 @@ Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   "Wrap TEXT to fit within MAX-WIDTH pixels at POINTSIZE.
 Returns a list of lines that will fit within the specified width.
 Uses a rough approximation of character width."
-  (let* ((char-width (* pointsize 0.6)) ; Approximate character width
+  (let* ((char-width (* pointsize 0.5)) ; More conservative character width estimate
          (chars-per-line (max 1 (floor (/ max-width char-width))))
          (words (split-string text))
          (lines '())
