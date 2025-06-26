@@ -259,18 +259,24 @@ Prompts for video file, title, description, and privacy setting."
     ;; Build the entire request body in a unibyte buffer
     (with-temp-buffer
       (set-buffer-multibyte nil)
+      (message "Debug: Starting buffer construction")
       ;; Insert boundary and JSON header
       (insert (encode-coding-string (format "--%s\r\n" boundary) 'utf-8))
       (insert (encode-coding-string "Content-Type: application/json; charset=UTF-8\r\n\r\n" 'utf-8))
+      (message "Debug: Inserted JSON header")
       ;; Insert UTF-8 encoded metadata as raw bytes
       (insert (encode-coding-string metadata 'utf-8))
+      (message "Debug: Inserted metadata")
       ;; Insert video part boundary and header
       (insert (encode-coding-string (format "\r\n--%s\r\n" boundary) 'utf-8))
       (insert (encode-coding-string "Content-Type: video/mp4\r\n\r\n" 'utf-8))
+      (message "Debug: Inserted video header")
       ;; Insert video file contents
       (insert-file-contents-literally video-file)
+      (message "Debug: Inserted video file contents")
       ;; Insert final boundary
       (insert (encode-coding-string (format "\r\n--%s--\r\n" boundary) 'utf-8))
+      (message "Debug: Inserted final boundary")
       (message "Debug: buffer is multibyte: %s, buffer size: %d" 
                (multibyte-string-p (buffer-string)) (buffer-size))
       (let ((url-request-method "POST")
