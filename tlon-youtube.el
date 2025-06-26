@@ -267,7 +267,7 @@ Prompts for video file, title, description, and privacy setting."
             (url-request-extra-headers
              `(("Authorization" . ,(format "Bearer %s" access-token))
                ("Content-Type" . ,(format "multipart/related; boundary=%s" boundary))))
-            (url-request-data (buffer-string)))
+            (url-request-data (buffer-substring-no-properties (point-min) (point-max))))
         (message "Uploading video to YouTube...")
         (url-retrieve url #'tlon-youtube--handle-upload-response)))))
 
