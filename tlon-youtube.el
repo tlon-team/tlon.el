@@ -96,7 +96,7 @@ or 'custom to prompt for a custom resolution.")
 PROMPT is the prompt string. OBJ is the transient infix object.
 _HISTORY is the history list (unused).
 Allows selecting from predefined resolutions or entering a custom WIDTHxHEIGHT string."
-  (let* ((val-from-obj (if obj (symbol-value (oref obj 'variable)) nil)) ; Safely get value via obj
+  (let* ((val-from-obj (and obj (ignore-errors (symbol-value (oref obj 'variable))))) ; Safely get value via obj
          (initial-value (if (consp val-from-obj)
                             val-from-obj
                           ;; Fallback to the global variable if obj path failed or gave non-cons
