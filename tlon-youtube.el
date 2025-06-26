@@ -88,29 +88,37 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (height (cdr tlon-youtube-video-resolution))
          (logo-path (expand-file-name "images/ea-logo-transparent.png"
                                       (tlon-repo-lookup :dir :name "tlon.team-content")))
+         (font-path (expand-file-name "fonts/GilliusADF-Regular.otf"
+                                      (tlon-repo-lookup :dir :name "tlon.team-content")))
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
-         ;; Calculate dynamic sizes and positions
-         (title-pointsize (round (* height 0.08)))
-         (title-y-offset (round (* height -0.12)))
-         (authors-pointsize (round (* height 0.05)))
-         (authors-y-offset (round (* height 0.18)))
-         (logo-size (round (* height 0.15))) ; Logo size based on height
-         (logo-padding (round (* width 0.03)))   ; Padding for the logo from the corner
-         (command (format "convert -density 300 -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \
--antialias -text-antialias -font 'GilliusADF-Regular.otf' -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth 1 \
+         ;; Calculate dynamic sizes and positions - scale up for high density
+         (scale-factor 4) ; Render at 4x size then downsample
+         (scaled-width (* width scale-factor))
+         (scaled-height (* height scale-factor))
+         (title-pointsize (* (round (* height 0.08)) scale-factor))
+         (title-y-offset (* (round (* height -0.12)) scale-factor))
+         (authors-pointsize (* (round (* height 0.05)) scale-factor))
+         (authors-y-offset (* (round (* height 0.18)) scale-factor))
+         (logo-size (* (round (* height 0.15)) scale-factor))
+         (logo-padding (* (round (* width 0.03)) scale-factor))
+         (command (format "convert -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' \
+-font '%s' -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d \
 -gravity center -draw \"text 0,%d '%s'\" \
--font 'GilliusADF-Regular.otf' -pointsize %d -fill '#5d6d7e' -stroke none \
+-font '%s' -pointsize %d -fill '#5d6d7e' -stroke none \
 -draw \"text 0,%d 'by %s'\" \
 \\( '%s' -background none -trim -resize %dx%d \\) \
 -gravity southeast -geometry +%d+%d -composite \
--resample 72 -quality 95 '%s'"
-                          width height
-                          title-pointsize title-y-offset (tlon-youtube--sanitize-draw-string title)
-                          authors-pointsize authors-y-offset (tlon-youtube--sanitize-draw-string authors)
+-resize %dx%d -quality 95 '%s'"
+                          scaled-width scaled-height
+                          font-path title-pointsize scale-factor
+                          title-y-offset (tlon-youtube--sanitize-draw-string title)
+                          font-path authors-pointsize
+                          authors-y-offset (tlon-youtube--sanitize-draw-string authors)
                           logo-path logo-size logo-size
                           logo-padding logo-padding
+                          width height
                           thumbnail-file)))
     (message "Generating %dx%d thumbnail..." width height)
     (shell-command command)
