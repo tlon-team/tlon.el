@@ -368,77 +368,26 @@ Prompts for thumbnail file and video ID."
 
 
 (defun tlon-youtube-authorize ()
-  "Authorize YouTube API access using OAuth 2.0.
-This starts a local server to automatically capture the authorization code."
+  "Authorize YouTube API access using the 'out-of-band' (copy/paste) flow."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
-
-  (let* ((port 8080)
-         (server-process-name "youtube-auth-server")
-         (existing-process (get-process server-process-name)))
-    ;; Stop any lingering server first
-    (when existing-process (delete-process existing-process))
-
-    ;; Start the server
-    (let ((server-proc
-           (make-network-process
-            :name server-process-name
-            :buffer (generate-new-buffer (format "*%s*" server-process-name))
-            :host 'local
-            :service port
-            :server t
-            :filter #'tlon-youtube--auth-server-filter
-            :sentinel (lambda (proc _event)
-                        (when (process-buffer proc)
-                          (kill-buffer (process-buffer proc)))))))
-      (unless (eq (process-status server-proc) 'listen)
-        (delete-process server-proc)
-        (user-error "Failed to start local server on port %d. Is another service using it?" port))
-
-      (message "Local server started on port %d. Waiting for authorization..." port)
-
-      ;; Construct and open the auth URL
-      (let* ((email (read-string "Enter Google account email (optional): "))
-             (scope "https://www.googleapis.com/auth/youtube.upload")
-             (redirect-uri (format "http://localhost:%d/auth-callback" port))
-             (auth-url (format "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=consent%s"
-                               (url-hexify-string tlon-youtube-client-id)
-                               (url-hexify-string redirect-uri)
-                               (url-hexify-string scope)
-                               (if (and email (not (string-empty-p email)))
-                                   (format "&login_hint=%s" (url-hexify-string email))
-                                 ""))))
-        (browse-url auth-url)
-        (message "Please authorize in your browser. Waiting for redirect...")))))
-
-(defun tlon-youtube--auth-server-filter (proc string)
-  "Process filter for the OAuth2 local server.
-PROC is the server process. STRING is the incoming data.
-Parses the HTTP request for the 'code' or 'error' parameter."
-  (let ((request-line (car (split-string string "\r?\n"))))
-    (cond
-     ;; Check for authorization code
-     ((string-match "GET /auth-callback?code=\\([^ &]+\\)" request-line)
-      (let ((code (match-string 1 request-line)))
-        (process-send-string proc "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Authorization successful!</h1><p>You can close this browser tab now. The tokens are being processed in Emacs.</p></body></html>")
-        (message "Authorization code received. Exchanging for tokens...")
-        (tlon-youtube--exchange-code-for-tokens code)
-        (delete-process proc)))
-     ;; Check for error
-     ((string-match "GET /auth-callback?error=\\([^ &]+\\)" request-line)
-      (let ((error-msg (match-string 1 request-line)))
-        (process-send-string proc (format "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Authorization failed.</h1><p>Error: %s</p></body></html>" error-msg))
-        (message "Authorization failed: %s" error-msg)
-        (delete-process proc)))
-     ;; Ignore other requests (like for favicon.ico)
-     (t
-      (ignore)))))
+  (let* ((scope "https://www.googleapis.com/auth/youtube.upload")
+         (redirect-uri "urn:ietf:wg:oauth:2.0:oob")
+         (auth-url (format "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=consent"
+                           (url-hexify-string tlon-youtube-client-id)
+                           (url-hexify-string redirect-uri)
+                           (url-hexify-string scope))))
+    (browse-url auth-url)
+    (message "Please follow the instructions in your browser to authorize.")
+    (let ((auth-code (read-string "Paste authorization code from browser here: ")))
+      (when (and auth-code (not (string-empty-p auth-code)))
+        (tlon-youtube--exchange-code-for-tokens (string-trim auth-code))))))
 
 (defun tlon-youtube--exchange-code-for-tokens (auth-code)
   "Exchange AUTH-CODE for access and refresh tokens."
   (let* ((url "https://oauth2.googleapis.com/token")
-         (data (format "client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=http://localhost:8080/auth-callback"
+         (data (format "client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=urn:ietf:wg:oauth:2.0:oob"
                        (url-hexify-string tlon-youtube-client-id)
                        (url-hexify-string tlon-youtube-client-secret)
                        (url-hexify-string auth-code)))
