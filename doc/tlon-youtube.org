@@ -85,39 +85,36 @@ This module provides functionality to process and upload podcast episodes to You
 :CUSTOM_ID: h:tlon-youtube-auth
 :END:
 
-To fix the `redirect_uri_mismatch` error, you must create a new OAuth Client ID in the Google Cloud Console with the correct settings. Please follow these steps carefully:
+To resolve authentication issues, the authorization process has been automated. This requires a one-time update to your OAuth Client ID configuration in the Google Cloud Console. This change makes the process more reliable and removes the need for manual copy-pasting of authorization codes.
+
+Please follow these steps carefully:
 
 1. Go to the [[https://console.cloud.google.com/apis/credentials][Credentials page]] in the Google Cloud Console.
 2. Select the project you are using for Tlön.
-3. Click *+ CREATE CREDENTIALS* at the top and select *OAuth client ID*.
-4. For *Application type*, select **Web application**.
-5. Give it a name, for example, "Tlön Emacs Client (Web)".
-6. Under *Authorized redirect URIs*, click *+ ADD URI*.
-7. In the text box that appears, enter **exactly** this value: `http://localhost:8080`
-8. Click *CREATE*.
-9. A dialog will show your new "Client ID" and "Client Secret". Copy these new credentials.
-10. Update your Emacs configuration (`tlon-youtube-client-id` and `tlon-youtube-client-secret`) with these **new** values. It is highly recommended to use `auth-source` or another secrets management tool.
-
-After you have created the new credentials and updated your Emacs configuration, you can proceed with authorization.
+3. Find your existing **Web application** OAuth client ID and click the pencil icon to edit it. (If you don't have one, create a new one of type "Web application").
+4. Under the *Authorized redirect URIs* section, click *+ ADD URI*.
+5. In the text box that appears, enter **exactly** this value: `http://localhost:8080/auth-callback`
+6. You can remove the old `http://localhost:8080` URI if it exists, to keep things clean.
+7. Click *SAVE*. You do not need to create new credentials; just update the existing ones.
+8. Ensure your `tlon-youtube-client-id` and `tlon-youtube-client-secret` in Emacs correspond to this client ID.
 
 **** Getting Authorization
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-youtube-authorization
 :END:
 
-Once your new credentials are set up, you need to authorize the application.
+Once your credentials are configured correctly, the authorization process is fully automated within Emacs.
 
-**Workflow:**
+**Automated Workflow:**
 1. Run ~M-x tlon-youtube-authorize~.
-2. This will open your browser to Google's authorization page.
-3. Sign in with your Google account and authorize the application.
-4. After you approve, Google will redirect your browser to `http://localhost:8080/?code=...`. The page may show a "This site can’t be reached" error. This is expected and normal.
-5. Copy the entire URL from your browser's address bar.
-6. From the URL, you need to extract the authorization code. It's the long string of characters that comes after `code=` and before `&scope`.
-   - Example URL: `http://localhost:8080/?code=4/0A...qg&scope=https://...`
-   - In this example, the code is `4/0A...qg`.
-7. Paste *only the authorization code* into the Emacs prompt.
-8. The system will exchange the code for an access token and a refresh token.
+2. Emacs will start a temporary local web server.
+3. Your browser will open to Google's authorization page.
+4. Sign in with your Google account and grant the requested permissions.
+5. After you approve, Google will redirect your browser to the local server.
+6. Emacs will automatically capture the authorization code, exchange it for tokens, and shut down the server.
+7. A success message will appear in your browser, and you can simply close the tab.
+
+There is no need to copy or paste anything. The access and refresh tokens are stored automatically.
 
 **That's it!** The system will automatically use the refresh token to get new access tokens when they expire (typically every hour), so you should only need to authorize once.
 
