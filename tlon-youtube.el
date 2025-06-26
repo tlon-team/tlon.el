@@ -91,6 +91,9 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (font-path (expand-file-name "~/Library/Fonts/GilliusADF-Regular.otf"))
          (title (read-string "Enter video title: "))
          (authors (read-string "Enter author(s): "))
+         (language (tlon-select-language 'code))
+         (authorship-pattern (tlon-lookup tlon-authorship-pattern :pattern :language language))
+         (author-text (format authorship-pattern authors))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
          ;; Use high DPI for text rendering
          (dpi 300)
@@ -139,7 +142,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
                             (shell-quote-argument font-path) title-pointsize
                             stroke-width title-draw-commands
                             (shell-quote-argument font-path) authors-pointsize
-                            authors-y-offset (tlon-youtube--sanitize-draw-string authors)
+                            authors-y-offset (tlon-youtube--sanitize-draw-string author-text)
                             (shell-quote-argument logo-path) dpi logo-size logo-size
                             logo-padding logo-padding
                             width height
