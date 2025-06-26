@@ -308,12 +308,16 @@ Prompts for thumbnail file and video ID."
   "Upload THUMBNAIL-FILE to YouTube video with VIDEO-ID."
   (unless (executable-find "curl")
     (user-error "`curl' is not installed or not in your PATH"))
+  (unless (file-exists-p thumbnail-file)
+    (user-error "Thumbnail file does not exist: %s" thumbnail-file))
+  (unless (file-readable-p thumbnail-file)
+    (user-error "Thumbnail file is not readable: %s" thumbnail-file))
   (let* ((access-token (tlon-youtube--get-access-token))
          (url (format "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=%s" video-id))
          (process-name "youtube-thumbnail-upload")
          (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
          (command `("curl" "-s" "-X" "POST"
-                    "--data-binary" ,(format "@%s" thumbnail-file)
+                    "--data-binary" ,(format "@%s" (shell-quote-argument thumbnail-file))
                     "-H" ,(format "Authorization: Bearer %s" access-token)
                     "-H" "Content-Type: image/png"
                     ,url)))
