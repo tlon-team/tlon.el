@@ -35,7 +35,6 @@
 (require 'transient)
 (require 'url)
 (require 'json)
-(require 'simple-httpd)
 
 ;; Ensure tlon-authorship-pattern is available
 (defvar tlon-authorship-pattern)
@@ -374,6 +373,9 @@ This starts a local server to automatically capture the authorization code."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
+  
+  (unless (require 'simple-httpd nil t)
+    (user-error "The `simple-httpd` package is required for authorization. Please install it with: M-x package-install RET simple-httpd RET"))
 
   (let ((port 8080))
     ;; Stop any lingering server first
