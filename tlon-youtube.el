@@ -92,24 +92,26 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (authors (read-string "Enter author(s): "))
          (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
          ;; Calculate dynamic sizes and positions
-         (title-pointsize (round (* height 0.06)))
-         (title-y-offset (round (* height -0.15)))
-         (authors-pointsize (round (* height 0.04)))
-         (authors-y-offset (round (* height 0.15)))
-         (logo-draw-width (round (* width 0.25))) ; Scale logo to 25% of thumbnail width
-         (logo-padding (round (* width 0.02)))   ; Padding for the logo from the corner
-         (command (format "convert -size %dx%d xc:white -antialias \
--gravity center -font Arial -pointsize %d -draw \"text 0,%d '%s'\" \
--pointsize %d -draw \"text 0,%d 'by %s'\" \
-\\( %s -trim -resize %dx0 \\) \
+         (title-pointsize (round (* height 0.08)))
+         (title-y-offset (round (* height -0.12)))
+         (authors-pointsize (round (* height 0.05)))
+         (authors-y-offset (round (* height 0.18)))
+         (logo-size (round (* height 0.15))) ; Logo size based on height
+         (logo-padding (round (* width 0.03)))   ; Padding for the logo from the corner
+         (command (format "convert -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -antialias \
+-gravity center -font 'Liberation-Sans-Bold' -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth 1 \
+-draw \"text 0,%d '%s'\" \
+-font 'Liberation-Sans' -pointsize %d -fill '#5d6d7e' -stroke none \
+-draw \"text 0,%d 'by %s'\" \
+\\( '%s' -background none -trim -resize %dx%d \\) \
 -gravity southeast -geometry +%d+%d -composite \
-%s"
+-quality 95 '%s'"
                           width height
                           title-pointsize title-y-offset (tlon-youtube--sanitize-draw-string title)
                           authors-pointsize authors-y-offset (tlon-youtube--sanitize-draw-string authors)
-                          (shell-quote-argument logo-path) logo-draw-width
+                          logo-path logo-size logo-size
                           logo-padding logo-padding
-                          (shell-quote-argument thumbnail-file))))
+                          thumbnail-file)))
     (message "Generating %dx%d thumbnail..." width height)
     (shell-command command)
     (if (file-exists-p thumbnail-file)
