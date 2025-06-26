@@ -277,7 +277,7 @@ Prompts for video file, title, description, and privacy setting."
       ;; Insert final boundary
       (insert (encode-coding-string (format "\r\n--%s--\r\n" boundary) 'utf-8))
       (message "Debug: Inserted final boundary")
-      (message "Debug: buffer is multibyte: %s, buffer size: %d" 
+      (message "Debug: buffer is multibyte: %s, buffer size: %d"
                (multibyte-string-p (buffer-string)) (buffer-size))
       (let ((url-request-method "POST")
             (url-request-extra-headers
@@ -286,7 +286,7 @@ Prompts for video file, title, description, and privacy setting."
             (url-request-data (buffer-substring-no-properties (point-min) (point-max))))
         (message "Debug: url-request-data is multibyte: %s" (multibyte-string-p url-request-data))
         (message "Uploading video to YouTube...")
-        (url-retrieve url #'tlon-youtube--handle-upload-response))))))
+        (url-retrieve url #'tlon-youtube--handle-upload-response)))))
 
 (defun tlon-youtube--handle-upload-response (status)
   "Handle the response from YouTube video upload with STATUS."
