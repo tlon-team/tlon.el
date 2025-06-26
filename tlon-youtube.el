@@ -137,7 +137,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
                       for i from 0
                       collect (cons line (+ title-start-y (* i line-height))))
              " "))
-           (command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d 'by %s'\" \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
+           (command (format "convert -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -pointsize %d -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center %s -font %s -pointsize %d -fill '#5d6d7e' -stroke none -draw \"text 0,%d '%s'\" \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
                             dpi scaled-width scaled-height
                             (shell-quote-argument font-path) title-pointsize
                             stroke-width title-draw-commands
