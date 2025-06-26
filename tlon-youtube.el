@@ -98,7 +98,7 @@ Get this from the Google Cloud Console."
   :group 'tlon-youtube)
 
 (defcustom tlon-youtube-client-id
-  (auth-source-pass-get "client-id" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+  (auth-source-pass-get "desktop-client-id" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
   "OAuth 2.0 client ID for YouTube API authentication.
 Get this from the Google Cloud Console."
   :type '(choice (const :tag "Not set" nil)
@@ -106,7 +106,7 @@ Get this from the Google Cloud Console."
   :group 'tlon-youtube)
 
 (defcustom tlon-youtube-client-secret
-  (auth-source-pass-get "client-secret" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+  (auth-source-pass-get "desktop-client-secret" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
   "OAuth 2.0 client secret for YouTube API authentication.
 Get this from the Google Cloud Console."
   :type '(choice (const :tag "Not set" nil)
@@ -121,7 +121,7 @@ This is automatically managed by the OAuth flow - don't set manually."
   :group 'tlon-youtube)
 
 (defcustom tlon-youtube-refresh-token
-  (auth-source-pass-get "youtube-refresh-token" (concat "tlon/core/console.cloud.google.com/" tlon-email-shared))
+  nil
   "OAuth 2.0 refresh token for YouTube API authentication.
 This is used to automatically get new access tokens when they expire."
   :type '(choice (const :tag "Not set" nil)
