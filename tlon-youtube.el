@@ -79,7 +79,28 @@ the original audio file name."
           (message "Successfully generated video: %s" video-file)
         (user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
 
-;;;; Transient menu options and helpers
+(defun tlon-youtube-generate-thumbnail ()
+  "Generate a thumbnail for the video.
+Prompts the user for a title and author(s), and uses the logo from
+the \"tlon.team-content\" repository to create a thumbnail image."
+  (interactive)
+  (let* ((logo-path (expand-file-name "images/ea-logo-transparent.png"
+                                      (tlon-repo-lookup :dir :name "tlon.team-content")))
+         (title (read-string "Enter video title: "))
+         (authors (read-string "Enter author(s): "))
+         (thumbnail-file (expand-file-name "thumbnail.png" paths-dir-downloads))
+         (command (format "convert -size 1280x720 xc:white -gravity center -font Arial -pointsize 48 \
+-draw \"text 0,-200 '%s'\" -pointsize 36 -draw \"text 0,200 'by %s'\" \
+-gravity southeast -draw \"image Over 0,0 0,0 '%s'\" %s"
+                          (shell-quote-argument title)
+                          (shell-quote-argument authors)
+                          (shell-quote-argument logo-path)
+                          (shell-quote-argument thumbnail-file))))
+    (message "Generating thumbnail...")
+    (shell-command command)
+    (if (file-exists-p thumbnail-file)
+        (message "Successfully generated thumbnail: %s" thumbnail-file)
+      (user-error "Failed to generate thumbnail. Check *Messages* buffer for convert output"))))
 
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
@@ -128,7 +149,8 @@ history list (unused). Allows selecting from predefined resolutions."
 (transient-define-prefix tlon-youtube-menu ()
   "YouTube menu."
   [["Actions"
-    ("g" "Generate wavelength video" tlon-youtube-generate-wavelength-video)]
+    ("g" "Generate wavelength video" tlon-youtube-generate-wavelength-video)
+    ("t" "Generate video thumbnail" tlon-youtube-generate-thumbnail)]
    ["Options"
     ("r" "Video Resolution" tlon-youtube-video-resolution-infix)]])
 
