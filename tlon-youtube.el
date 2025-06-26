@@ -273,7 +273,7 @@ Prompts for video file, title, description, and privacy setting."
       (insert (format "\r\n--%s--\r\n" boundary))
       (message "Debug: Inserted final boundary")
       (message "Debug: buffer is multibyte: %s, buffer size: %d"
-               (multibyte-p) (buffer-size)))
+               (buffer-multibyte-p) (buffer-size)))
     (let ((url-request-method "POST")
           (url-request-extra-headers
            `(("Authorization" . ,(format "Bearer %s" access-token))
