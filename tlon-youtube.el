@@ -144,6 +144,8 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (scaled-height (round (* height scale-factor)))
          (title-pointsize (round (* height 0.035 scale-factor)))
          (title-y-offset (round (* height -0.12 scale-factor)))
+         (text-width (round (* width 0.8)))
+         (text-height (round (* height 0.4)))
          ;; Make author font size proportional to estimated title font size
          ;; Estimate title font size based on text length and available space
          (estimated-title-pointsize (max 20 (min 60 (/ (* text-height 0.8) 
@@ -157,8 +159,6 @@ the \"tlon.team-content\" repository to create a thumbnail image."
       (user-error "Font file not found: %s" font-path))
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-    (let* ((text-width (round (* width 0.8)))
-           (text-height (round (* height 0.4)))
            (logo-size (round (* height 0.12)))
            (command (format tlon-youtube-thumbnail-command-template
                             width height
