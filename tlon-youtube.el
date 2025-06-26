@@ -253,40 +253,37 @@ Prompts for video file, title, description, and privacy setting."
                                   (description . ,description)))
                       (status . ((privacyStatus . ,privacy))))))
          (boundary (format "boundary_%s" (format-time-string "%s")))
-         (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status"))
+         (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
+         (upload-buffer (generate-new-buffer " *youtube-upload-data*")))
     (message "Debug: metadata = %s" metadata)
     (message "Debug: metadata contains multibyte chars: %s" (multibyte-string-p metadata))
-    ;; Build the entire request body in a unibyte buffer
-    (with-temp-buffer
+    (with-current-buffer upload-buffer
       (set-buffer-multibyte nil)
       (message "Debug: Starting buffer construction")
-      ;; Insert boundary and JSON header
-      (insert (encode-coding-string (format "--%s\r\n" boundary) 'utf-8))
-      (insert (encode-coding-string "Content-Type: application/json; charset=UTF-8\r\n\r\n" 'utf-8))
+      (insert (format "--%s\r\n" boundary))
+      (insert "Content-Type: application/json; charset=UTF-8\r\n\r\n")
       (message "Debug: Inserted JSON header")
-      ;; Insert UTF-8 encoded metadata as raw bytes
       (insert (encode-coding-string metadata 'utf-8))
       (message "Debug: Inserted metadata")
-      ;; Insert video part boundary and header
-      (insert (encode-coding-string (format "\r\n--%s\r\n" boundary) 'utf-8))
-      (insert (encode-coding-string "Content-Type: video/mp4\r\n\r\n" 'utf-8))
+      (insert (format "\r\n--%s\r\n" boundary))
+      (insert "Content-Type: video/mp4\r\n\r\n")
       (message "Debug: Inserted video header")
-      ;; Insert video file contents
       (insert-file-contents-literally video-file)
       (message "Debug: Inserted video file contents")
-      ;; Insert final boundary
-      (insert (encode-coding-string (format "\r\n--%s--\r\n" boundary) 'utf-8))
+      (insert (format "\r\n--%s--\r\n" boundary))
       (message "Debug: Inserted final boundary")
       (message "Debug: buffer is multibyte: %s, buffer size: %d"
-               (multibyte-string-p (buffer-string)) (buffer-size))
-      (let ((url-request-method "POST")
-            (url-request-extra-headers
-             `(("Authorization" . ,(format "Bearer %s" access-token))
-               ("Content-Type" . ,(format "multipart/related; boundary=%s" boundary))))
-            (url-request-data (buffer-substring-no-properties (point-min) (point-max))))
-        (message "Debug: url-request-data is multibyte: %s" (multibyte-string-p url-request-data))
-        (message "Uploading video to YouTube...")
-        (url-retrieve url #'tlon-youtube--handle-upload-response)))))
+               (multibyte-p) (buffer-size)))
+    (let ((url-request-method "POST")
+          (url-request-extra-headers
+           `(("Authorization" . ,(format "Bearer %s" access-token))
+             ("Content-Type" . ,(format "multipart/related; boundary=%s" boundary))))
+          (url-request-data upload-buffer))
+      (message "Uploading video to YouTube...")
+      (url-retrieve url (lambda (status)
+                          (unwind-protect
+                              (tlon-youtube--handle-upload-response status)
+                            (kill-buffer upload-buffer)))))))
 
 (defun tlon-youtube--handle-upload-response (status)
   "Handle the response from YouTube video upload with STATUS."
