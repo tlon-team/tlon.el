@@ -169,7 +169,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
          (scale-factor (/ dpi 72.0)) ; Standard screen DPI is 72
          (scaled-width (round (* width scale-factor)))
          (scaled-height (round (* height scale-factor)))
-         (title-pointsize (round (* height 0.05 scale-factor)))
+         (base-title-pointsize (round (* height 0.05 scale-factor)))
          (title-y-offset (round (* height -0.12 scale-factor)))
          (authors-pointsize (round (* height 0.035 scale-factor)))
          (authors-y-offset (round (* height 0.18 scale-factor)))
@@ -182,6 +182,9 @@ the \"tlon.team-content\" repository to create a thumbnail image."
       (user-error "Logo file not found: %s" logo-path))
     (let* ((text-width (round (* scaled-width 0.8)))
            (text-height (round (* scaled-height 0.8)))
+           ;; Calculate optimal font size for the title
+           (title-pointsize (tlon-youtube--calculate-optimal-font-size 
+                             title text-width text-height base-title-pointsize font-path))
            (command (format tlon-youtube-thumbnail-command-template
                             dpi scaled-width scaled-height
                             text-width text-height
@@ -206,6 +209,42 @@ the \"tlon.team-content\" repository to create a thumbnail image."
   "Sanitize STR for use in ImageMagick -draw text command.
 Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   (replace-regexp-in-string "'" "\\\\'" str t t))
+
+(defun tlon-youtube--calculate-optimal-font-size (text max-width max-height base-pointsize font-path)
+  "Calculate optimal font size for TEXT to fit within MAX-WIDTH and MAX-HEIGHT.
+BASE-POINTSIZE is the starting font size. FONT-PATH is the path to the font file.
+Returns the largest font size that allows the text to fit within the constraints."
+  (let ((current-size base-pointsize)
+        (min-size (round (* base-pointsize 0.3))) ; Don't go below 30% of base size
+        (max-size base-pointsize)
+        (temp-file (make-temp-file "tlon-youtube-text-test" nil ".png")))
+    (unwind-protect
+        (progn
+          ;; Binary search for optimal font size
+          (while (> (- max-size min-size) 2)
+            (setq current-size (/ (+ min-size max-size) 2))
+            (let ((test-command (format "convert -size %dx%d -background none -font %s -pointsize %d -gravity center caption:'%s' %s"
+                                        max-width max-height
+                                        (shell-quote-argument font-path)
+                                        current-size
+                                        (tlon-youtube--sanitize-draw-string text)
+                                        (shell-quote-argument temp-file))))
+              (shell-command test-command)
+              (if (file-exists-p temp-file)
+                  (let* ((identify-output (shell-command-to-string 
+                                           (format "identify -format '%%w %%h' %s" 
+                                                   (shell-quote-argument temp-file))))
+                         (dimensions (split-string (string-trim identify-output)))
+                         (actual-width (string-to-number (car dimensions)))
+                         (actual-height (string-to-number (cadr dimensions))))
+                    (if (and (<= actual-width max-width) (<= actual-height max-height))
+                        (setq min-size current-size) ; Text fits, try larger
+                      (setq max-size current-size))) ; Text too big, try smaller
+                (setq max-size current-size)))) ; Command failed, try smaller
+          min-size)
+      ;; Cleanup
+      (when (file-exists-p temp-file)
+        (delete-file temp-file)))))
 
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
