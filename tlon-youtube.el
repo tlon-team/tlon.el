@@ -96,7 +96,13 @@ or 'custom to prompt for a custom resolution.")
 PROMPT is the prompt string. OBJ is the transient infix object.
 _HISTORY is the history list (unused).
 Allows selecting from predefined resolutions or entering a custom WIDTHxHEIGHT string."
-  (let* ((initial-value (symbol-value (oref obj variable))) ; Get current variable value (WIDTH . HEIGHT)
+  (let* ((val-from-obj (if obj (symbol-value (oref obj 'variable)) nil)) ; Safely get value via obj
+         (initial-value (if (consp val-from-obj)
+                            val-from-obj
+                          ;; Fallback to the global variable if obj path failed or gave non-cons
+                          (if (consp tlon-youtube-video-resolution)
+                              tlon-youtube-video-resolution
+                            '(1280 . 720)))) ; Absolute fallback
          (choices (mapcar #'car tlon-youtube-resolution-choices))
          (found-pair (cl-find-if (lambda (pair) (equal (cdr pair) initial-value))
                                  tlon-youtube-resolution-choices))
