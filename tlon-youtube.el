@@ -306,23 +306,39 @@ Prompts for thumbnail file and video ID."
 
 (defun tlon-youtube--upload-thumbnail-file (thumbnail-file video-id)
   "Upload THUMBNAIL-FILE to YouTube video with VIDEO-ID."
+  (unless (executable-find "curl")
+    (user-error "`curl' is not installed or not in your PATH"))
   (let* ((access-token (tlon-youtube--get-access-token))
-         (url (format "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=%s" video-id)))
-    (with-temp-buffer
-      (set-buffer-multibyte nil)
-      (insert-file-contents-literally thumbnail-file)
-      (let ((url-request-method "POST")
-            (url-request-extra-headers
-             `(("Authorization" . ,(format "Bearer %s" access-token))
-               ("Content-Type" . "image/png")))
-            (url-request-data (buffer-string)))
-        (url-retrieve url #'tlon-youtube--handle-thumbnail-response)))))
+         (url (format "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=%s" video-id))
+         (process-name "youtube-thumbnail-upload")
+         (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
+         (command `("curl" "-s" "-X" "POST"
+                    "--data-binary" ,(format "@%s" thumbnail-file)
+                    "-H" ,(format "Authorization: Bearer %s" access-token)
+                    "-H" "Content-Type: image/png"
+                    ,url)))
+    (let ((process (apply #'start-process process-name output-buffer command)))
+      (set-process-sentinel
+       process
+       (lambda (proc _event)
+         (when (memq (process-status proc) '(exit signal))
+           (with-current-buffer (process-buffer proc)
+             (let* ((json-response (buffer-string))
+                    (response-data (condition-case nil
+                                       (json-read-from-string json-response)
+                                     (error nil)))
+                    (error-info (and response-data (cdr (assoc 'error response-data)))))
+               (cond
+                (error-info
+                 (let ((error-code (cdr (assoc 'code error-info)))
+                       (error-message (cdr (assoc 'message error-info))))
+                   (message "YouTube API Error %s: %s" error-code error-message)))
+                (response-data
+                 (message "Thumbnail uploaded successfully!"))
+                (t
+                 (message "Thumbnail upload completed. Response: %s" json-response)))))
+           (kill-buffer (process-buffer proc))))))))
 
-(defun tlon-youtube--handle-thumbnail-response (status)
-  "Handle the response from YouTube thumbnail upload with STATUS."
-  (if (plist-get status :error)
-      (message "Error uploading thumbnail: %s" (plist-get status :error))
-    (message "Thumbnail uploaded successfully!")))
 
 (defun tlon-youtube--get-access-token ()
   "Get OAuth 2.0 access token for YouTube API.
