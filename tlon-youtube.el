@@ -375,7 +375,7 @@ This only needs to be done once - the refresh token will be stored."
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
   (let* ((email (read-string "Enter Google account email (optional): "))
          (scope "https://www.googleapis.com/auth/youtube.upload")
-         (redirect-uri "urn:ietf:wg:oauth:2.0:oob")
+         (redirect-uri "http://localhost:8080")
          (auth-url (format "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=consent%s"
                            (url-hexify-string tlon-youtube-client-id)
                            (url-hexify-string redirect-uri)
@@ -391,7 +391,7 @@ This only needs to be done once - the refresh token will be stored."
 (defun tlon-youtube--exchange-code-for-tokens (auth-code)
   "Exchange AUTH-CODE for access and refresh tokens."
   (let* ((url "https://oauth2.googleapis.com/token")
-         (data (format "client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=urn:ietf:wg:oauth:2.0:oob"
+         (data (format "client_id=%s&client_secret=%s&code=%s&grant_type=authorization_code&redirect_uri=http://localhost:8080"
                        (url-hexify-string tlon-youtube-client-id)
                        (url-hexify-string tlon-youtube-client-secret)
                        (url-hexify-string auth-code)))
