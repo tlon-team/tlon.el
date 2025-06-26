@@ -114,7 +114,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
       (user-error "Font file not found: %s" font-path))
     (unless (file-exists-p logo-path)
       (user-error "Logo file not found: %s" logo-path))
-    (let* ((title-lines (tlon-youtube--wrap-text title (* scaled-width 0.8) (/ title-pointsize scale-factor)))
+    (let* ((title-lines (tlon-youtube--wrap-text title (* scaled-width 0.7) (/ title-pointsize scale-factor)))
            (line-height (round (* title-pointsize 1.2)))
            (total-title-height (* (length title-lines) line-height))
            (title-start-y (- title-y-offset (/ total-title-height 2)))
@@ -157,9 +157,10 @@ Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
 (defun tlon-youtube--wrap-text (text max-width pointsize)
   "Wrap TEXT to fit within MAX-WIDTH pixels at POINTSIZE.
 Returns a list of lines that will fit within the specified width.
-Uses a rough approximation of character width."
-  (let* ((char-width (* pointsize 0.5)) ; More conservative character width estimate
-         (chars-per-line (max 1 (floor (/ max-width char-width))))
+Uses a conservative character width estimate."
+  (let* ((char-width (* pointsize 0.7)) ; More realistic character width for GilliusADF
+         (safe-width (* max-width 0.9)) ; Use 90% of available width for safety margin
+         (chars-per-line (max 10 (floor (/ safe-width char-width)))) ; Minimum 10 chars per line
          (words (split-string text))
          (lines '())
          (current-line ""))
