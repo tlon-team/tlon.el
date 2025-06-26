@@ -91,6 +91,24 @@ To use the YouTube API integration features, you need to:
 2. Enable the YouTube Data API v3
 3. Create OAuth 2.0 credentials (client ID and client secret)
 4. Set ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ in your Emacs configuration
-5. Obtain an OAuth 2.0 access token and set it as the ~YOUTUBE_ACCESS_TOKEN~ environment variable
+5. Obtain an OAuth 2.0 access token (see below)
 
-Note: The current implementation uses a simplified authentication approach. A full implementation would handle the complete OAuth 2.0 flow within Emacs.
+**** Getting an Access Token
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-youtube-access-token
+:END:
+
+**Important:** YouTube access tokens expire after 1 hour, so you'll need to refresh them regularly.
+
+**Current workflow (manual):**
+1. Go to the [[https://developers.google.com/oauthplayground/][Google OAuth 2.0 Playground]]
+2. In "Step 1", find "YouTube Data API v3" and select the scope ~https://www.googleapis.com/auth/youtube.upload~
+3. Click "Authorize APIs" and sign in with your Google account
+4. In "Step 2", click "Exchange authorization code for tokens"
+5. Copy the "Access token" and either:
+   - Use ~M-x tlon-youtube-set-access-token~ to set it for the current session, or
+   - Set the ~YOUTUBE_ACCESS_TOKEN~ environment variable
+
+**When you get a 401 error:** This usually means your access token has expired. Simply repeat the above steps to get a new token.
+
+**Future improvement needed:** The current implementation uses a simplified authentication approach that requires manual token management. A full implementation should handle the complete OAuth 2.0 flow within Emacs, including automatic token refresh using refresh tokens.
