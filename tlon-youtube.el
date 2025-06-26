@@ -37,7 +37,7 @@
 ;;;; Functions
 
 (defun tlon-youtube-generate-wavelength-video ()
-  "Generate a video with an animated wavelength from an audio file using `seewav`.
+  "Generate a 4K video (3840x2160) with an animated wavelength from an audio file using `seewav`.
 Prompts the user to select an audio file from the \"uqbar-audio\"
 repository. The output video is saved in `paths-dir-downloads`
 with a `.mp4` extension, using the original audio file name."
@@ -51,10 +51,10 @@ with a `.mp4` extension, using the original audio file name."
            (video-file-name (concat (file-name-nondirectory (file-name-sans-extension selected-audio-file)) ".mp4"))
            ;; Construct and expand the output video file path
            (video-file (expand-file-name (file-name-concat paths-dir-downloads video-file-name)))
-           (command (format "seewav %s %s"
+           (command (format "seewav -W 3840 -H 2160 %s %s"
                             (shell-quote-argument audio-file)
                             (shell-quote-argument video-file))))
-      (message "Generating video with seewav...")
+      (message "Generating 4K video with seewav...")
       (shell-command command)
       (if (file-exists-p video-file) ; Use the expanded path for checking
           (message "Successfully generated video: %s" video-file)
