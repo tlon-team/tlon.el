@@ -374,7 +374,7 @@ both access and refresh tokens."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
-  (let* ((redirect-uri "http://localhost:8080")
+  (let* ((redirect-uri "urn:ietf:wg:oauth:2.0:oob")
          (scope "https://www.googleapis.com/auth/youtube.upload")
          (auth-url (format "https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&scope=%s&response_type=code&access_type=offline&prompt=consent"
                            (url-hexify-string tlon-youtube-client-id)
