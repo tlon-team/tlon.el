@@ -189,7 +189,7 @@ The car is the display string and the cdr is the (WIDTH . HEIGHT) cons cell")
 PROMPT is the prompt string. OBJ is the transient infix object. _HISTORY is the
 history list (unused). Allows selecting from predefined resolutions."
   (let* ((val-from-obj (if (and obj (slot-boundp obj 'variable))
-                           (ignore-errors (symbol-value (oref obj 'variable)))
+                           (ignore-errors (symbol-value (oref obj variable)))
                          nil))
          (initial-value (if (consp val-from-obj)
                             val-from-obj
