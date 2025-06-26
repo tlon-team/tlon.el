@@ -43,40 +43,29 @@
   "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center caption:'%s' -geometry +0%d -composite -font %s -pointsize %d -fill '#5d6d7e' -gravity center -annotate +0+%d '%s' \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -resize %dx%d -quality 95 %s"
   "ImageMagick command template for generating YouTube thumbnails.
 
-This template creates a thumbnail with the following components:
-- `-size %dx%d`: Canvas dimensions 
-- `-define gradient:angle=135 gradient:'#f8f9fa-#e9ecef'`: Diagonal gradient background
-- `-font %s`: Font file path for title
-- `-size %dx%d`: Text area for title (constrained size)
-- `-background none`: Transparent background for text
-- `-fill '#2c3e50'`: Dark blue-gray text color
-- `-stroke '#34495e'`: Darker stroke outline
-- `-strokewidth 2`: Stroke width
-- `caption:'%s'`: Title text with automatic fitting to size
-- `-gravity center -geometry +0-50`: Position title slightly above center
-- `-composite`: Apply title to canvas
-- `-font %s`: Font for author text
-- `-pointsize %d`: Author font size
-- `-fill '#5d6d7e'`: Medium gray for author
-- `-gravity center -annotate +0+100`: Position author text below center
-- `'%s'`: Author text
-- Logo processing: resize and position in bottom-right
-- `%s`: Output file path
-
-Format arguments:
-1. Canvas width
-2. Canvas height  
-3. Font path
-4. Text area width (for title)
-5. Text area height (for title)
-6. Title text
-7. Font path (for author)
-8. Author pointsize
-9. Author text
-10. Logo path
-11. Logo width
-12. Logo height
-13. Output file path")
+Format arguments (in order):
+1. DPI (300)
+2. Scaled canvas width
+3. Scaled canvas height
+4. Font path
+5. Text area width
+6. Text area height
+7. Stroke width
+8. Title text
+9. Title Y offset
+10. Font path (author)
+11. Author pointsize
+12. Author Y offset
+13. Author text
+14. Logo path
+15. Logo DPI
+16. Logo width
+17. Logo height
+18. Logo padding X
+19. Logo padding Y
+20. Final width
+21. Final height
+22. Output file path")
 
 ;;;; User options
 
