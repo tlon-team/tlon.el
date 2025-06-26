@@ -120,7 +120,7 @@ the \"tlon.team-content\" repository to create a thumbnail image."
                             dpi scaled-width scaled-height
                             text-width text-height
                             (shell-quote-argument font-path) title-pointsize
-                            stroke-width (tlon-youtube--create-multiline-text title text-width title-pointsize font-path)
+                            stroke-width (format "caption:'%s'" (tlon-youtube--sanitize-draw-string title))
                             title-y-offset
                             (shell-quote-argument font-path) authors-pointsize
                             authors-y-offset (tlon-youtube--sanitize-draw-string author-text)
@@ -141,11 +141,6 @@ the \"tlon.team-content\" repository to create a thumbnail image."
 Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   (replace-regexp-in-string "'" "\\\\'" str t t))
 
-(defun tlon-youtube--create-multiline-text (text max-width pointsize font-path)
-  "Create ImageMagick command for multiline text using caption: feature.
-TEXT is the text to render, MAX-WIDTH is the maximum width in pixels,
-POINTSIZE is the font size, and FONT-PATH is the path to the font file."
-  (format "caption:'%s'" (tlon-youtube--sanitize-draw-string text)))
 
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
