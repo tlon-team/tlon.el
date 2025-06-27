@@ -376,45 +376,41 @@ Prompts for video file, title, description, and privacy setting."
 
 (defun tlon-youtube--execute-video-upload (upload-command metadata-file)
   "Execute the video UPLOAD-COMMAND and handle the response."
-  (let* ((upload-process-name "youtube-video-upload")
-         (upload-output-buffer (generate-new-buffer (format "*%s-output*" upload-process-name)))
-         (upload-process (apply #'start-process upload-process-name upload-output-buffer upload-command)))
-    (set-process-sentinel
-     upload-process
-     (lambda (proc _event)
-       (when (memq (process-status proc) '(exit signal))
-         (let ((exit-status (process-exit-status proc))
-               (output-buf (process-buffer proc)))
-           (with-current-buffer output-buf
-             (let* ((full-output (buffer-string))
-                    (json-start-pos (save-excursion
-                                      (goto-char (point-max))
-                                      (search-backward "{" nil t)))
-                    (json-response (if json-start-pos
-                                       (buffer-substring-no-properties json-start-pos (point-max))
-                                     full-output))
-                    (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
-                    (video-id (and response-data (cdr (assoc 'id response-data))))
-                    (error-info (and response-data (cdr (assoc 'error response-data)))))
-               (cond
-                (video-id
-                 (message "Video uploaded successfully! Video ID: %s" video-id)
-                 (when (file-exists-p metadata-file) (delete-file metadata-file))
-                 (kill-buffer output-buf))
-                (error-info
-                 (let ((error-code (cdr (assoc 'code error-info)))
-                       (error-message (cdr (assoc 'message error-info))))
-                   (message "YouTube API Error %s: %s" error-code error-message))
-                 (message "Metadata file kept for debugging: %s" metadata-file)
-                 (pop-to-buffer output-buf))
-                ((not (zerop exit-status))
-                 (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buf))
-                 (message "Metadata file kept for debugging: %s" metadata-file)
-                 (pop-to-buffer output-buf))
-                (t
-                 (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buf))
-                 (message "Metadata file kept for debugging: %s" metadata-file)
-                 (pop-to-buffer output-buf)))))))))))
+  (let* ((command-string (mapconcat #'shell-quote-argument upload-command " "))
+         (output-buffer (generate-new-buffer "*youtube-video-upload-output*")))
+    (message "Executing upload command via shell...")
+    ;; Use shell-command to execute exactly like terminal
+    (let ((exit-status (call-process-shell-command command-string nil output-buffer t)))
+      (with-current-buffer output-buffer
+        (let* ((full-output (buffer-string))
+               (json-start-pos (save-excursion
+                                 (goto-char (point-max))
+                                 (search-backward "{" nil t)))
+               (json-response (if json-start-pos
+                                  (buffer-substring-no-properties json-start-pos (point-max))
+                                full-output))
+               (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
+               (video-id (and response-data (cdr (assoc 'id response-data))))
+               (error-info (and response-data (cdr (assoc 'error response-data)))))
+          (cond
+           (video-id
+            (message "Video uploaded successfully! Video ID: %s" video-id)
+            (when (file-exists-p metadata-file) (delete-file metadata-file))
+            (kill-buffer output-buffer))
+           (error-info
+            (let ((error-code (cdr (assoc 'code error-info)))
+                  (error-message (cdr (assoc 'message error-info))))
+              (message "YouTube API Error %s: %s" error-code error-message))
+            (message "Metadata file kept for debugging: %s" metadata-file)
+            (pop-to-buffer output-buffer))
+           ((not (zerop exit-status))
+            (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buffer))
+            (message "Metadata file kept for debugging: %s" metadata-file)
+            (pop-to-buffer output-buffer))
+           (t
+            (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buffer))
+            (message "Metadata file kept for debugging: %s" metadata-file)
+            (pop-to-buffer output-buffer))))))))
 
 (defun tlon-youtube-prepare-upload-command ()
   "Execute the first step and prepare the second step command for debugging.
