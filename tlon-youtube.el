@@ -41,7 +41,8 @@
 ;;;; Constants
 
 (defconst tlon-youtube-playlists
-  '(("Altruismo eficaz" . "PLVb3CGn-SVQUSWACtsk2AvqRodOCd6duQ"))
+  '(("Altruismo eficaz podcast" . "PLVb3CGn-SVQUSWACtsk2AvqRodOCd6duQ")
+    ("Altruismo eficaz" . "PLVb3CGn-SVQVJ_Oih1dWGdMMjPdrfZtng"))
   "Alist of playlist names and their corresponding YouTube playlist IDs.")
 
 (defconst tlon-youtube-thumbnail-command-template
