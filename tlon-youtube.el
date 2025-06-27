@@ -408,6 +408,11 @@ upload."
             (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output."
 		     exit-status (buffer-name output-buffer))
             (pop-to-buffer output-buffer))
+           ((and (zerop exit-status) (string-match-p "HTTP/2 200\\|HTTP/1.1 200" full-output))
+            ;; Upload succeeded but no JSON response (which is normal for resumable uploads)
+            (message "Video uploaded successfully!")
+            (when (file-exists-p metadata-file) (delete-file metadata-file))
+            (kill-buffer output-buffer))
            (t
             (message "Upload completed but no JSON response found. Check `%s' for output."
 		     (buffer-name output-buffer))
