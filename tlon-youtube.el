@@ -287,33 +287,31 @@ Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
 ;;;;;; Upload video
 
 (defun tlon-youtube--prepare-upload-request (video-file title description privacy)
-  "Prepare multipart body and curl command for YouTube upload.
-Returns a list of (COMMAND-LIST REQUEST-BODY-FILE)."
-  (let* ((boundary "tlon-youtube-upload-boundary")
-         (request-body-file (make-temp-file "youtube-upload-body-" nil ".dat"))
+  "Prepare resumable upload commands for YouTube upload.
+Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
+  (let* ((metadata-file (make-temp-file "youtube-metadata-" nil ".json"))
          (metadata (json-encode
                     `((snippet . ((title . ,title)
                                   (description . ,description)))
-                      (status . ((privacyStatus . ,privacy)))))))
-    ;; Create the multipart body file in a single pass.
-    (with-temp-buffer
-      (set-buffer-multibyte nil)
-      (insert (format "--%s\r\n" boundary))
-      (insert "Content-Type: application/json; charset=UTF-8\r\n\r\n")
-      (insert (encode-coding-string metadata 'utf-8))
-      (insert (format "\r\n--%s\r\n" boundary))
-      (insert "Content-Type: video/mp4\r\n\r\n")
-      (insert-file-contents-literally video-file)
-      (insert (format "\r\n--%s--\r\n" boundary))
-      (write-region (point-min) (point-max) request-body-file nil nil nil 'no-conversion))
-    (let* ((access-token (tlon-youtube--get-access-token))
-           (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
-           (command `("curl" "-v" "-X" "POST"
-                      "--data-binary" ,(format "@%s" request-body-file)
-                      "-H" ,(format "Authorization: Bearer %s" access-token)
-                      "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
-                      ,url)))
-      (list command request-body-file))))
+                      (status . ((privacyStatus . ,privacy))))))
+         (access-token (tlon-youtube--get-access-token))
+         (init-url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status")
+         (init-command `("curl" "-v" "-X" "POST"
+                         "--data" ,metadata
+                         "-H" ,(format "Authorization: Bearer %s" access-token)
+                         "-H" "Content-Type: application/json; charset=UTF-8"
+                         "-H" "X-Upload-Content-Type: video/mp4"
+                         "-H" ,(format "X-Upload-Content-Length: %d" (file-attribute-size (file-attributes video-file)))
+                         "-D" "-"  ; Include response headers in output
+                         ,init-url))
+         (upload-command `("curl" "-v" "-X" "PUT"
+                           "--data-binary" ,(format "@%s" video-file)
+                           "-H" "Content-Type: video/mp4"
+                           "UPLOAD_URL_PLACEHOLDER")))
+    ;; Write metadata to file
+    (with-temp-file metadata-file
+      (insert metadata))
+    (list init-command upload-command metadata-file)))
 
 (defun tlon-youtube-upload-video ()
   "Upload a video file to YouTube.
@@ -338,57 +336,92 @@ Prompts for video file, title, description, and privacy setting."
     (user-error "`curl' is not installed or not in your PATH"))
   (let* ((request-data (tlon-youtube--prepare-upload-request
                         video-file title description privacy))
-         (command (car request-data))
-         (request-body-file (cadr request-data))
-         (process-name "youtube-upload")
-         (output-buffer (generate-new-buffer (format "*%s-output*" process-name))))
-    (message "Request body file (will be deleted on success): %s" request-body-file)
-    (message "Running YouTube upload command: %s"
-             (string-join (mapcar #'shell-quote-argument command) " "))
-    (let ((process (apply #'start-process process-name output-buffer command)))
+         (init-command (nth 0 request-data))
+         (upload-command (nth 1 request-data))
+         (metadata-file (nth 2 request-data)))
+    (message "Metadata file: %s" metadata-file)
+    (message "Step 1 - Initialize upload: %s"
+             (string-join (mapcar #'shell-quote-argument init-command) " "))
+    
+    ;; Step 1: Initialize the resumable upload
+    (let* ((init-process-name "youtube-upload-init")
+           (init-output-buffer (generate-new-buffer (format "*%s-output*" init-process-name)))
+           (init-process (apply #'start-process init-process-name init-output-buffer init-command)))
       (set-process-sentinel
-       process
+       init-process
        (lambda (proc _event)
          (when (memq (process-status proc) '(exit signal))
            (let ((exit-status (process-exit-status proc))
                  (output-buf (process-buffer proc)))
              (with-current-buffer output-buf
                (let* ((full-output (buffer-string))
-                      (json-start-pos (save-excursion
-                                        (goto-char (point-max))
-                                        (search-backward "{" nil t)))
-                      (json-response (if json-start-pos
-                                         (buffer-substring-no-properties json-start-pos (point-max))
-                                       full-output))
-                      (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
-                      (video-id (and response-data (cdr (assoc 'id response-data))))
-                      (error-info (and response-data (cdr (assoc 'error response-data)))))
+                      (upload-url (tlon-youtube--extract-upload-url full-output)))
                  (cond
-                  (video-id
-                   (message "Video uploaded successfully! Video ID: %s" video-id)
-                   (when (file-exists-p request-body-file) (delete-file request-body-file))
-                   (kill-buffer output-buf))
-                  (error-info
-                   (let ((error-code (cdr (assoc 'code error-info)))
-                         (error-message (cdr (assoc 'message error-info))))
-                     (message "YouTube API Error %s: %s" error-code error-message))
-                   (message "Request body file kept for debugging: %s" request-body-file)
-                   (pop-to-buffer output-buf))
-                  ((not (zerop exit-status))
-                   (message "Upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buf))
-                   (message "Request body file kept for debugging: %s" request-body-file)
-                   (pop-to-buffer output-buf))
+                  ((and (zerop exit-status) upload-url)
+                   (message "Upload URL obtained: %s" upload-url)
+                   ;; Step 2: Upload the actual video file
+                   (let ((final-upload-command (cl-substitute upload-url "UPLOAD_URL_PLACEHOLDER" upload-command :test #'string=)))
+                     (message "Step 2 - Upload video file: %s"
+                              (string-join (mapcar #'shell-quote-argument final-upload-command) " "))
+                     (tlon-youtube--execute-video-upload final-upload-command metadata-file)))
                   (t
-                   (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buf))
-                   (message "Request body file kept for debugging: %s" request-body-file)
+                   (message "Failed to initialize upload (exit code %d). Check `%s' for details." exit-status (buffer-name output-buf))
+                   (message "Metadata file kept for debugging: %s" metadata-file)
                    (pop-to-buffer output-buf))))))))))))
 
+(defun tlon-youtube--extract-upload-url (curl-output)
+  "Extract the upload URL from CURL-OUTPUT containing response headers."
+  (when (string-match "^Location: \\(https://[^\r\n]+\\)" curl-output)
+    (match-string 1 curl-output)))
+
+(defun tlon-youtube--execute-video-upload (upload-command metadata-file)
+  "Execute the video UPLOAD-COMMAND and handle the response."
+  (let* ((upload-process-name "youtube-video-upload")
+         (upload-output-buffer (generate-new-buffer (format "*%s-output*" upload-process-name)))
+         (upload-process (apply #'start-process upload-process-name upload-output-buffer upload-command)))
+    (set-process-sentinel
+     upload-process
+     (lambda (proc _event)
+       (when (memq (process-status proc) '(exit signal))
+         (let ((exit-status (process-exit-status proc))
+               (output-buf (process-buffer proc)))
+           (with-current-buffer output-buf
+             (let* ((full-output (buffer-string))
+                    (json-start-pos (save-excursion
+                                      (goto-char (point-max))
+                                      (search-backward "{" nil t)))
+                    (json-response (if json-start-pos
+                                       (buffer-substring-no-properties json-start-pos (point-max))
+                                     full-output))
+                    (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
+                    (video-id (and response-data (cdr (assoc 'id response-data))))
+                    (error-info (and response-data (cdr (assoc 'error response-data)))))
+               (cond
+                (video-id
+                 (message "Video uploaded successfully! Video ID: %s" video-id)
+                 (when (file-exists-p metadata-file) (delete-file metadata-file))
+                 (kill-buffer output-buf))
+                (error-info
+                 (let ((error-code (cdr (assoc 'code error-info)))
+                       (error-message (cdr (assoc 'message error-info))))
+                   (message "YouTube API Error %s: %s" error-code error-message))
+                 (message "Metadata file kept for debugging: %s" metadata-file)
+                 (pop-to-buffer output-buf))
+                ((not (zerop exit-status))
+                 (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buf))
+                 (message "Metadata file kept for debugging: %s" metadata-file)
+                 (pop-to-buffer output-buf))
+                (t
+                 (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buf))
+                 (message "Metadata file kept for debugging: %s" metadata-file)
+                 (pop-to-buffer output-buf)))))))))))
+
 (defun tlon-youtube-prepare-upload-command ()
-  "Prepare and display the curl command for a YouTube video upload.
-This command prepares the request body and constructs the `curl`
-command, but does not execute it. It prints the command to the
-*Messages* buffer so it can be run manually in a terminal for
-debugging."
+  "Prepare and display the curl commands for a YouTube video upload.
+This command prepares the metadata and constructs the `curl`
+commands for the two-step resumable upload process, but does not
+execute them. It prints the commands to the *Messages* buffer so
+they can be run manually in a terminal for debugging."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
@@ -403,12 +436,21 @@ debugging."
       (user-error "Video file does not exist: %s" video-file))
     (let* ((request-data (tlon-youtube--prepare-upload-request
                           video-file title description privacy))
-           (command-list (car request-data))
-           (request-body-file (cadr request-data))
-           (shell-command (string-join (mapcar #'shell-quote-argument command-list) " ")))
-      (message "Manual curl command prepared. Run this in your terminal:")
-      (message "%s" shell-command)
-      (message "Request body file (needed for the command): %s" request-body-file))))
+           (init-command (nth 0 request-data))
+           (upload-command (nth 1 request-data))
+           (metadata-file (nth 2 request-data))
+           (init-shell-command (string-join (mapcar #'shell-quote-argument init-command) " "))
+           (upload-shell-command (string-join (mapcar #'shell-quote-argument upload-command) " ")))
+      (message "Manual curl commands prepared for resumable upload:")
+      (message "")
+      (message "Step 1 - Initialize upload (run this first):")
+      (message "%s" init-shell-command)
+      (message "")
+      (message "Step 2 - Upload video file (replace UPLOAD_URL_PLACEHOLDER with Location header from step 1):")
+      (message "%s" upload-shell-command)
+      (message "")
+      (message "Metadata file: %s" metadata-file)
+      (message "Video file: %s" video-file))))
 
 ;;;;;; Upload thumbnail
 
