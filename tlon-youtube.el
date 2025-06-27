@@ -291,8 +291,11 @@ Prompts for video file, title, description, and privacy setting."
                    (output-buf (process-buffer proc)))
                (with-current-buffer output-buf
                  (let* ((full-output (buffer-string))
-                        (json-response (if (search-backward "{" nil t)
-                                           (buffer-substring-no-properties (point) (point-max))
+                        (json-start-pos (save-excursion
+                                          (goto-char (point-max))
+                                          (search-backward "{" nil t)))
+                        (json-response (if json-start-pos
+                                           (buffer-substring-no-properties json-start-pos (point-max))
                                          full-output))
                         (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
                         (video-id (and response-data (cdr (assoc 'id response-data))))
