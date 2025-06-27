@@ -272,7 +272,7 @@ Prompts for video file, title, description, and privacy setting."
       (insert "Content-Type: video/mp4\r\n\r\n")
       (insert-file-contents-literally video-file)
       (insert (format "\r\n--%s--\r\n" boundary))
-      (write-file request-body-file nil))
+      (write-region (point-min) (point-max) request-body-file nil nil nil 'no-conversion))
 
     (let* ((process-name "youtube-upload")
            (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
