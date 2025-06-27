@@ -31,14 +31,11 @@
 
 (require 'tlon-core)
 (require 'cl-lib)
-(require 'paths) ; For paths-dir-downloads
+(require 'paths)
 (require 'transient)
 (require 'url)
 (require 'json)
 (require 'oauth2-auto)
-
-;; Ensure tlon-authorship-pattern is available
-(defvar tlon-authorship-pattern)
 
 ;;;; Constants
 
@@ -352,7 +349,7 @@ Prompts for thumbnail file and video ID."
 This is useful if the stored tokens are invalid or have been revoked."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured."))
+    (user-error "YouTube API credentials not configured"))
   (require 'oauth2-auto)
   (message "Starting authorization process... Please check your browser.")
   (oauth2-auto-poll-promise (oauth2-auto-force-reauth tlon-email-shared 'tlon-youtube))
@@ -361,7 +358,7 @@ This is useful if the stored tokens are invalid or have been revoked."
 (defun tlon-youtube--get-access-token ()
   "Get a valid OAuth 2.0 access token for YouTube API using oauth2-auto."
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (user-error "YouTube API credentials not configured."))
+    (user-error "YouTube API credentials not configured"))
   (require 'oauth2-auto)
   (oauth2-auto-access-token-sync tlon-email-shared 'tlon-youtube))
 
