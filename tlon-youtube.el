@@ -518,6 +518,20 @@ Prompts for thumbnail file and video ID."
       (user-error "Thumbnail file does not exist: %s" thumbnail-file))
     (tlon-youtube--upload-thumbnail-file thumbnail-file video-id)))
 
+(defun tlon-youtube-add-to-playlist ()
+  "Add an existing YouTube video to a playlist.
+Prompts for video ID and playlist selection."
+  (interactive)
+  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
+    (user-error "YouTube API credentials not configured"))
+  (let* ((video-id (read-string "YouTube video ID: "))
+         (playlist-choices (mapcar #'car tlon-youtube-playlists))
+         (playlist-choice (completing-read "Select playlist: " playlist-choices nil t))
+         (playlist-id (cdr (assoc playlist-choice tlon-youtube-playlists))))
+    (unless playlist-id
+      (user-error "Invalid playlist selection"))
+    (tlon-youtube--add-video-to-playlist video-id playlist-id)))
+
 (defun tlon-youtube--upload-thumbnail-file (thumbnail-file video-id)
   "Upload THUMBNAIL-FILE to YouTube video with VIDEO-ID."
   (unless (file-exists-p thumbnail-file)
@@ -608,7 +622,8 @@ This is useful if the stored tokens are invalid or have been revoked."
     ("t" "Generate video thumbnail" tlon-youtube-generate-thumbnail)]
    ["Upload"
     ("u" "Upload video to YouTube" tlon-youtube-upload-video)
-    ("T" "Upload thumbnail to YouTube" tlon-youtube-upload-thumbnail)]
+    ("T" "Upload thumbnail to YouTube" tlon-youtube-upload-thumbnail)
+    ("p" "Add video to playlist" tlon-youtube-add-to-playlist)]
    ["Debug"
     ("P" "Prepare upload command" tlon-youtube-prepare-upload-command)]
    ["Options"

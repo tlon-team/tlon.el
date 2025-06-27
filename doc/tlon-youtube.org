@@ -80,6 +80,9 @@ This module provides functionality to process and upload podcast episodes to You
 #+findex: tlon-youtube-upload-thumbnail
 + ~tlon-youtube-upload-thumbnail~ :: Uploads a thumbnail image to an existing YouTube video. Prompts the user to select a thumbnail file (filtered to show ~.png~, ~.jpg~, and ~.jpeg~ files) and enter the YouTube video ID. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
+#+findex: tlon-youtube-add-to-playlist
++ ~tlon-youtube-add-to-playlist~ :: Adds an existing YouTube video to a playlist. Prompts the user to enter a YouTube video ID and select from the available playlists defined in ~tlon-youtube-playlists~. This is useful for testing the playlist functionality without having to upload a new video. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+
 #+findex: tlon-youtube-authorize
 + ~tlon-youtube-authorize~ :: Forces a new OAuth 2.0 authorization for the YouTube API. This is useful if the stored tokens are invalid or have been revoked. The authorization process is handled automatically by the `oauth2-auto.el` library, which starts a local server to capture the authorization token from your browser. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
