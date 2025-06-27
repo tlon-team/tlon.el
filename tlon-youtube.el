@@ -288,28 +288,35 @@ Prompts for video file, title, description, and privacy setting."
          process
          (lambda (proc _event)
            (when (memq (process-status proc) '(exit signal))
-             (with-current-buffer (process-buffer proc)
-               (let* ((json-response (if (search-backward "{" nil t)
-                                         (buffer-substring-no-properties (point) (point-max))
-                                       (buffer-string)))
-                      (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
-                      (video-id (and response-data (cdr (assoc 'id response-data))))
-                      (error-info (and response-data (cdr (assoc 'error response-data)))))
-                 (cond
-                  (video-id
-                   (message "Video uploaded successfully! Video ID: %s" video-id)
-                   (when (file-exists-p request-body-file) (delete-file request-body-file)))
-                  (error-info
-                   (let ((error-code (cdr (assoc 'code error-info)))
-                         (error-message (cdr (assoc 'message error-info))))
-                     (message "YouTube API Error %s: %s" error-code error-message))
-                   (message "Request body file kept for debugging: %s" request-body-file)
-                   (pop-to-buffer (current-buffer)))
-                  (t
-                   (message "Upload failed. Check `%s' for full `curl -v' output." (buffer-name))
-                   (message "Request body file kept for debugging: %s" request-body-file)
-                   (pop-to-buffer (current-buffer))))))
-             (kill-buffer (process-buffer proc)))))))))
+             (let ((exit-status (process-exit-status proc))
+                   (output-buf (process-buffer proc)))
+               (with-current-buffer output-buf
+                 (let* ((full-output (buffer-string))
+                        (json-response (if (search-backward "{" nil t)
+                                           (buffer-substring-no-properties (point) (point-max))
+                                         full-output))
+                        (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
+                        (video-id (and response-data (cdr (assoc 'id response-data))))
+                        (error-info (and response-data (cdr (assoc 'error response-data)))))
+                   (cond
+                    (video-id
+                     (message "Video uploaded successfully! Video ID: %s" video-id)
+                     (when (file-exists-p request-body-file) (delete-file request-body-file))
+                     (kill-buffer output-buf))
+                    (error-info
+                     (let ((error-code (cdr (assoc 'code error-info)))
+                           (error-message (cdr (assoc 'message error-info))))
+                       (message "YouTube API Error %s: %s" error-code error-message))
+                     (message "Request body file kept for debugging: %s" request-body-file)
+                     (pop-to-buffer output-buf))
+                    ((not (zerop exit-status))
+                     (message "Upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buf))
+                     (message "Request body file kept for debugging: %s" request-body-file)
+                     (pop-to-buffer output-buf))
+                    (t
+                     (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buf))
+                     (message "Request body file kept for debugging: %s" request-body-file)
+                     (pop-to-buffer output-buf))))))))))))
 
 (defun tlon-youtube-prepare-upload-command ()
   "Prepare and display the curl command for a YouTube video upload.
