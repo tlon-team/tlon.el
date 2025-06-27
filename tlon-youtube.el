@@ -271,7 +271,6 @@ Prompts for video file, title, description, and privacy setting."
       (insert-file-contents-literally video-file)
       (insert (format "\r\n--%s--\r\n" boundary))
       (write-region (point-min) (point-max) request-body-file nil nil nil 'no-conversion))
-
     (let* ((access-token (tlon-youtube--get-access-token))
            (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
            (process-name "youtube-upload")
@@ -316,7 +315,7 @@ Prompts for video file, title, description, and privacy setting."
                     (t
                      (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buf))
                      (message "Request body file kept for debugging: %s" request-body-file)
-                     (pop-to-buffer output-buf))))))))))))
+                     (pop-to-buffer output-buf)))))))))))))
 
 (defun tlon-youtube-prepare-upload-command ()
   "Prepare and display the curl command for a YouTube video upload.
