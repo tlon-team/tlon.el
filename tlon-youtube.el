@@ -30,6 +30,7 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'tlon)
 (require 'cl-lib)
 (require 'paths)
 (require 'transient)
@@ -123,12 +124,15 @@ Valid values are: \"private\", \"unlisted\", \"public\"."
 
 (defun tlon-youtube-generate-wavelength-video ()
   "Generate a video with an animated wavelength from an audio file.
+The command runs asynchronously and opens the video upon completion.
 Uses `seewav` to generate the animation. The resolution is determined
 by `tlon-youtube-video-resolution`. Prompts the user to select an
 audio file from the \"uqbar-audio\" repository. The output video is
 saved in `paths-dir-downloads` with a \".mp4\" extension, using
 the original audio file name."
   (interactive)
+  (unless (executable-find "seewav")
+    (user-error "`seewav' is not installed or not in your PATH"))
   (let* ((uqbar-audio-dir (tlon-repo-lookup :dir :name "uqbar-audio"))
          (width (car tlon-youtube-video-resolution))
          (height (cdr tlon-youtube-video-resolution)))
@@ -138,14 +142,29 @@ the original audio file name."
            (audio-file (expand-file-name selected-audio-file))
            (video-file-name (file-name-with-extension (file-name-base selected-audio-file) "mp4"))
            (video-file (expand-file-name (file-name-concat paths-dir-downloads video-file-name)))
-           (command (format "seewav -W %d -H %d %s %s"
-                            width height
-                            (shell-quote-argument audio-file)
-                            (shell-quote-argument video-file))))
-      (shell-command command)
-      (if (file-exists-p video-file)
-          (message "Successfully generated video: %s" video-file)
-        (user-error "Failed to generate video. Check *Messages* buffer for seewav output")))))
+           (process-name "seewav-generate-video")
+           (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
+           (command `("seewav"
+                      "-W" ,(number-to-string width)
+                      "-H" ,(number-to-string height)
+                      ,audio-file
+                      ,video-file)))
+      (message "Generating video in the background...")
+      (let ((process (apply #'start-process process-name output-buffer command)))
+        (set-process-sentinel
+         process
+         (lambda (proc _event)
+           (when (memq (process-status proc) '(exit signal))
+             (let ((output-buf (process-buffer proc)))
+               (if (and (zerop (process-exit-status proc)) (file-exists-p video-file))
+                   (progn
+                     (message "Successfully generated video: %s. Opening it now..." video-file)
+                     (tlon-browse-file video-file)
+                     (when (buffer-live-p output-buf)
+                       (kill-buffer output-buf)))
+                 (progn
+                   (message "Failed to generate video. Check the `%s' buffer for details." (buffer-name output-buf))
+                   (pop-to-buffer output-buf)))))))))))
 
 (defun tlon-youtube-generate-thumbnail ()
   "Generate a thumbnail for the video.
