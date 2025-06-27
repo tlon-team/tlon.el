@@ -417,11 +417,9 @@ Prompts for video file, title, description, and privacy setting."
                  (pop-to-buffer output-buf)))))))))))
 
 (defun tlon-youtube-prepare-upload-command ()
-  "Prepare and display the curl commands for a YouTube video upload.
-This command prepares the metadata and constructs the `curl`
-commands for the two-step resumable upload process, but does not
-execute them. It prints the commands to the *Messages* buffer so
-they can be run manually in a terminal for debugging."
+  "Execute the first step and prepare the second step command for debugging.
+This runs the initialization step automatically and then shows you the
+exact curl command to run for the video upload step."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
@@ -437,37 +435,33 @@ they can be run manually in a terminal for debugging."
     (let* ((request-data (tlon-youtube--prepare-upload-request
                           video-file title description privacy))
            (init-command (nth 0 request-data))
-           (upload-command (nth 1 request-data))
-           (metadata-file (nth 2 request-data))
-           ;; Create properly quoted commands for terminal use
-           (init-shell-command (mapconcat #'shell-quote-argument init-command " "))
-           (upload-shell-command (mapconcat #'shell-quote-argument upload-command " ")))
-      (with-current-buffer (get-buffer-create "*YouTube Upload Commands*")
-        (erase-buffer)
-        (insert "YouTube Upload Commands - Copy and paste these into your terminal:\n")
-        (insert "================================================================\n\n")
-        (insert "STEP 1: Initialize upload (run this first)\n")
-        (insert "-------------------------------------------\n")
-        (insert init-shell-command)
-        (insert "\n\n")
-        (insert "STEP 2: Upload video file\n")
-        (insert "--------------------------\n")
-        (insert "After running step 1, find the 'location:' line in the output.\n")
-        (insert "Copy the URL from that line and run this command:\n\n")
-        (insert "curl -v -X PUT --data-binary @")
-        (insert (shell-quote-argument (expand-file-name video-file)))
-        (insert " -H \"Content-Type: video/mp4\" \"PASTE_LOCATION_URL_HERE\"\n\n")
-        (insert "Example (using the location URL from your step 1 output):\n")
-        (insert "curl -v -X PUT --data-binary @")
-        (insert (shell-quote-argument (expand-file-name video-file)))
-        (insert " -H \"Content-Type: video/mp4\" \"https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status&upload_id=YOUR_UPLOAD_ID\"\n\n")
-        (insert "Files:\n")
-        (insert "------\n")
-        (insert (format "Metadata file: %s\n" metadata-file))
-        (insert (format "Video file: %s\n" video-file))
-        (goto-char (point-min))
-        (pop-to-buffer (current-buffer)))
-      (message "Commands prepared in *YouTube Upload Commands* buffer"))))
+           (metadata-file (nth 2 request-data)))
+      (message "Running initialization step...")
+      ;; Execute the initialization step synchronously
+      (let* ((init-output (shell-command-to-string (mapconcat #'shell-quote-argument init-command " ")))
+             (upload-url (tlon-youtube--extract-upload-url init-output)))
+        (if upload-url
+            (let ((final-upload-command (format "curl -v -X PUT --data-binary @%s -H \"Content-Type: video/mp4\" \"%s\""
+                                                (shell-quote-argument (expand-file-name video-file))
+                                                upload-url)))
+              (with-current-buffer (get-buffer-create "*YouTube Upload Commands*")
+                (erase-buffer)
+                (insert "YouTube Upload Commands - Ready to run:\n")
+                (insert "==========================================\n\n")
+                (insert "STEP 1: ✓ COMPLETED - Upload URL obtained\n")
+                (insert "-------------------------------------------\n")
+                (insert "Upload URL: " upload-url "\n\n")
+                (insert "STEP 2: Upload video file (copy and run this command)\n")
+                (insert "------------------------------------------------------\n")
+                (insert final-upload-command "\n\n")
+                (insert "Files:\n")
+                (insert "------\n")
+                (insert (format "Metadata file: %s\n" metadata-file))
+                (insert (format "Video file: %s\n" video-file))
+                (goto-char (point-min))
+                (pop-to-buffer (current-buffer)))
+              (message "Ready! Copy the command from the *YouTube Upload Commands* buffer"))
+          (message "Failed to get upload URL. Check initialization output: %s" init-output))))))
 
 ;;;;;; Upload thumbnail
 
