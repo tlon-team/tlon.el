@@ -437,7 +437,7 @@ PLAYLIST-ID is an optional playlist ID to add the video to after upload."
             (message "%s failed with exit code %d. Check `%s' for output."
 		     (capitalize upload-type) exit-status (buffer-name output-buffer))
             (pop-to-buffer output-buffer))
-           ((and (zerop exit-status) response-data)
+           ((and (zerop exit-status) response-data (equal upload-type "thumbnail upload"))
             ;; Successful response with JSON data (thumbnail uploads)
             (message "%s" success-message)
             (when (file-exists-p cleanup-file) (delete-file cleanup-file))
