@@ -391,13 +391,15 @@ Prompts for video file, title, description, and privacy setting."
            (error-info
             (let ((error-code (cdr (assoc 'code error-info)))
                   (error-message (cdr (assoc 'message error-info))))
-              (message "YouTube API Error %s: %s" error-code error-message)))
+              (message "YouTube API Error %s: %s" error-code error-message))
             (pop-to-buffer output-buffer))
            ((not (zerop exit-status))
-            (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buffer)))
+            (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output."
+		     exit-status (buffer-name output-buffer))
             (pop-to-buffer output-buffer))
            (t
-            (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buffer)))
+            (message "Upload completed but no JSON response found. Check `%s' for output."
+		     (buffer-name output-buffer))
             (pop-to-buffer output-buffer))))))))
 
 (defun tlon-youtube-prepare-upload-command ()
