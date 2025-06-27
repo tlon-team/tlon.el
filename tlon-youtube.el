@@ -314,7 +314,7 @@ Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
                          "-H" ,(format "X-Upload-Content-Length: %d" (file-attribute-size (file-attributes video-file)))
                          "-D" "-"  ; Include response headers in output
                          ,init-url))
-         (upload-command `("curl" "-v" "-X" "PUT"
+         (upload-command `("curl" "-s" "-X" "PUT"
                            "--data-binary" ,(format "@%s" (expand-file-name video-file))
                            "-H" "Content-Type: video/mp4"
                            "UPLOAD_URL_PLACEHOLDER")))
@@ -433,14 +433,9 @@ PLAYLIST-ID is an optional playlist ID to add the video to after upload."
               (message "YouTube API Error %s: %s" error-code error-message))
             (pop-to-buffer output-buffer))
            ((not (zerop exit-status))
-            (message "%s failed with exit code %d. Check `%s' for full `curl -v' output."
+            (message "%s failed with exit code %d. Check `%s' for output."
 		     (capitalize upload-type) exit-status (buffer-name output-buffer))
             (pop-to-buffer output-buffer))
-           ((and (zerop exit-status) (string-match-p "HTTP/2 200\\|HTTP/1.1 200" full-output))
-            ;; Upload succeeded but no JSON response (which is normal for resumable uploads)
-            (message "%s" success-message)
-            (when (file-exists-p cleanup-file) (delete-file cleanup-file))
-            (kill-buffer output-buffer))
            ((and (zerop exit-status) response-data)
             ;; Successful response with JSON data (thumbnail uploads)
             (message "%s" success-message)
