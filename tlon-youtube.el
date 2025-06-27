@@ -339,10 +339,6 @@ Prompts for video file, title, description, and privacy setting."
          (init-command (nth 0 request-data))
          (upload-command (nth 1 request-data))
          (metadata-file (nth 2 request-data)))
-    (message "Metadata file: %s" metadata-file)
-    (message "Step 1 - Initialize upload: %s"
-             (string-join (mapcar #'shell-quote-argument init-command) " "))
-    
     ;; Step 1: Initialize the resumable upload
     (let* ((init-process-name "youtube-upload-init")
            (init-output-buffer (generate-new-buffer (format "*%s-output*" init-process-name)))
@@ -358,15 +354,11 @@ Prompts for video file, title, description, and privacy setting."
                       (upload-url (tlon-youtube--extract-upload-url full-output)))
                  (cond
                   ((and (zerop exit-status) upload-url)
-                   (message "Upload URL obtained: %s" upload-url)
                    ;; Step 2: Upload the actual video file
                    (let ((final-upload-command (cl-substitute upload-url "UPLOAD_URL_PLACEHOLDER" upload-command :test #'string=)))
-                     (message "Step 2 - Upload video file: %s"
-                              (string-join (mapcar #'shell-quote-argument final-upload-command) " "))
                      (tlon-youtube--execute-video-upload final-upload-command metadata-file)))
                   (t
                    (message "Failed to initialize upload (exit code %d). Check `%s' for details." exit-status (buffer-name output-buf))
-                   (message "Metadata file kept for debugging: %s" metadata-file)
                    (pop-to-buffer output-buf))))))))))))
 
 (defun tlon-youtube--extract-upload-url (curl-output)
@@ -378,8 +370,7 @@ Prompts for video file, title, description, and privacy setting."
   "Execute the video UPLOAD-COMMAND and handle the response."
   (let* ((command-string (mapconcat #'shell-quote-argument upload-command " "))
          (output-buffer (generate-new-buffer "*youtube-video-upload-output*")))
-    (message "Executing upload command via shell...")
-    ;; Use shell-command to execute exactly like terminal
+    ;; Execute upload via shell to match terminal behavior
     (let ((exit-status (call-process-shell-command command-string nil output-buffer t)))
       (with-current-buffer output-buffer
         (let* ((full-output (buffer-string))
@@ -400,16 +391,13 @@ Prompts for video file, title, description, and privacy setting."
            (error-info
             (let ((error-code (cdr (assoc 'code error-info)))
                   (error-message (cdr (assoc 'message error-info))))
-              (message "YouTube API Error %s: %s" error-code error-message))
-            (message "Metadata file kept for debugging: %s" metadata-file)
+              (message "YouTube API Error %s: %s" error-code error-message)))
             (pop-to-buffer output-buffer))
            ((not (zerop exit-status))
-            (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buffer))
-            (message "Metadata file kept for debugging: %s" metadata-file)
+            (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output." exit-status (buffer-name output-buffer)))
             (pop-to-buffer output-buffer))
            (t
-            (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buffer))
-            (message "Metadata file kept for debugging: %s" metadata-file)
+            (message "Upload completed but no JSON response found. Check `%s' for output." (buffer-name output-buffer)))
             (pop-to-buffer output-buffer))))))))
 
 (defun tlon-youtube-prepare-upload-command ()
