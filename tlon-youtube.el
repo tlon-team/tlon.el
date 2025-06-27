@@ -603,7 +603,7 @@ This is useful if the stored tokens are invalid or have been revoked."
    `(tlon-youtube
      (authorize_url . "https://accounts.google.com/o/oauth2/v2/auth")
      (token_url . "https://oauth2.googleapis.com/token")
-     (scope . "https://www.googleapis.com/auth/youtube.upload")
+     (scope . "https://www.googleapis.com/auth/youtube")
      (client_id . ,tlon-youtube-client-id)
      (client_secret . ,tlon-youtube-client-secret))))
 
