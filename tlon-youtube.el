@@ -288,6 +288,12 @@ Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
 
 (defun tlon-youtube--prepare-upload-request (video-file title description privacy)
   "Prepare resumable upload commands for YouTube upload.
+
+VIDEO-FILE is the path to the video file to upload.
+TITLE is the title for the YouTube video.
+DESCRIPTION is the description for the YouTube video.
+PRIVACY is the privacy status (e.g., \"private\", \"public\", \"unlisted\").
+
 Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
   (let* ((metadata-file (make-temp-file "youtube-metadata-" nil ".json"))
          (metadata (json-encode
@@ -355,10 +361,12 @@ Prompts for video file, title, description, and privacy setting."
                  (cond
                   ((and (zerop exit-status) upload-url)
                    ;; Step 2: Upload the actual video file
-                   (let ((final-upload-command (cl-substitute upload-url "UPLOAD_URL_PLACEHOLDER" upload-command :test #'string=)))
+                   (let ((final-upload-command
+			  (cl-substitute upload-url "UPLOAD_URL_PLACEHOLDER" upload-command :test #'string=)))
                      (tlon-youtube--execute-video-upload final-upload-command metadata-file)))
                   (t
-                   (message "Failed to initialize upload (exit code %d). Check `%s' for details." exit-status (buffer-name output-buf))
+                   (message "Failed to initialize upload (exit code %d). Check `%s' for details."
+			    exit-status (buffer-name output-buf))
                    (pop-to-buffer output-buf))))))))))))
 
 (defun tlon-youtube--extract-upload-url (curl-output)
@@ -367,7 +375,10 @@ Prompts for video file, title, description, and privacy setting."
     (match-string 1 curl-output)))
 
 (defun tlon-youtube--execute-video-upload (upload-command metadata-file)
-  "Execute the video UPLOAD-COMMAND and handle the response."
+  "Execute the video UPLOAD-COMMAND and handle the response.
+UPLOAD-COMMAND is a list of command arguments for uploading a video.
+METADATA-FILE is the path to the metadata file to be deleted upon successful
+upload."
   (let* ((command-string (mapconcat #'shell-quote-argument upload-command " "))
          (output-buffer (generate-new-buffer "*youtube-video-upload-output*")))
     ;; Execute upload via shell to match terminal behavior
