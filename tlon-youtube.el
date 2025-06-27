@@ -260,8 +260,7 @@ Prompts for video file, title, description, and privacy setting."
                     `((snippet . ((title . ,title)
                                   (description . ,description)))
                       (status . ((privacyStatus . ,privacy)))))))
-    ;; Create the multipart body file by appending parts.
-    ;; This is more robust for large video files than building in one buffer.
+    ;; Create the multipart body file in a single pass.
     (with-temp-buffer
       (set-buffer-multibyte nil)
       (insert (format "--%s\r\n" boundary))
@@ -269,15 +268,9 @@ Prompts for video file, title, description, and privacy setting."
       (insert (encode-coding-string metadata 'utf-8))
       (insert (format "\r\n--%s\r\n" boundary))
       (insert "Content-Type: video/mp4\r\n\r\n")
-      (write-region (point-min) (point-max) request-body-file nil nil nil 'no-conversion))
-    (with-temp-buffer
-      (set-buffer-multibyte nil)
       (insert-file-contents-literally video-file)
-      (write-region (point-min) (point-max) request-body-file t nil nil 'no-conversion))
-    (with-temp-buffer
-      (set-buffer-multibyte nil)
       (insert (format "\r\n--%s--\r\n" boundary))
-      (write-region (point-min) (point-max) request-body-file t nil nil 'no-conversion))
+      (write-region (point-min) (point-max) request-body-file nil nil nil 'no-conversion))
 
     (let* ((access-token (tlon-youtube--get-access-token))
            (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
@@ -297,7 +290,7 @@ Prompts for video file, title, description, and privacy setting."
            (when (memq (process-status proc) '(exit signal))
              (with-current-buffer (process-buffer proc)
                (let* ((full-output (buffer-string))
-                      (json-start (string-search-backward "{" full-output nil))
+                      (json-start (string-match-backward "{" full-output))
                       (json-response (if json-start (substring full-output json-start) full-output))
                       (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
                       (video-id (and response-data (cdr (assoc 'id response-data))))
