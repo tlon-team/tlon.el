@@ -72,7 +72,10 @@ This module provides functionality to process and upload podcast episodes to You
 :END:
 
 #+findex: tlon-youtube-upload-video
-+ ~tlon-youtube-upload-video~ :: Uploads a video file to YouTube using the YouTube Data API v3. This command uses the ~curl~ command-line tool to perform the upload. Prompts the user to select a video file (filtered to show only ~.mp4~ files), enter a title and description, and choose a privacy setting ("private", "unlisted", or "public"). Requires ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ to be configured for OAuth 2.0 authentication. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
++ ~tlon-youtube-upload-video~ :: Uploads a video file to YouTube using the YouTube Data API v3. This command uses the ~curl~ command-line tool to perform the upload. Prompts the user to select a video file (filtered to show only ~.mp4~ files), enter a title and description, and choose a privacy setting ("private", "unlisted", or "public"). Before execution, it prints the full `curl` command to the *Messages* buffer, which is useful for debugging. Requires ~tlon-youtube-client-id~ and ~tlon-youtube-client-secret~ to be configured for OAuth 2.0 authentication. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
+
+#+findex: tlon-youtube-prepare-upload-command
++ ~tlon-youtube-prepare-upload-command~ :: Prepares and displays the `curl` command for a YouTube video upload without executing it. This command is useful for debugging, as it allows you to run the upload from a terminal. It prints the full command to the *Messages* buffer and preserves the temporary file containing the request body. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
 
 #+findex: tlon-youtube-upload-thumbnail
 + ~tlon-youtube-upload-thumbnail~ :: Uploads a thumbnail image to an existing YouTube video. Prompts the user to select a thumbnail file (filtered to show ~.png~, ~.jpg~, and ~.jpeg~ files) and enter the YouTube video ID. Requires the same authentication setup as ~tlon-youtube-upload-video~. This command can also be accessed via the [[h:tlon-youtube-menu][tlon-youtube-menu]].
