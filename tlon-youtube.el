@@ -305,7 +305,7 @@ Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
                          "-D" "-"  ; Include response headers in output
                          ,init-url))
          (upload-command `("curl" "-v" "-X" "PUT"
-                           "--data-binary" ,(format "@%s" video-file)
+                           "--data-binary" ,(format "@%s" (expand-file-name video-file))
                            "-H" "Content-Type: video/mp4"
                            "UPLOAD_URL_PLACEHOLDER")))
     ;; Write metadata to file
