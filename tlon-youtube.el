@@ -40,6 +40,10 @@
 
 ;;;; Constants
 
+(defconst tlon-youtube-playlists
+  '(("Altruismo eficaz" . "PLVb3CGn-SVQUSWACtsk2AvqRodOCd6duQ"))
+  "Alist of playlist names and their corresponding YouTube playlist IDs.")
+
 (defconst tlon-youtube-thumbnail-command-template
   "magick -density %d -size %dx%d -define gradient:angle=135 gradient:'#f8f9fa-#e9ecef' -font %s -size %dx%d -background none -fill '#2c3e50' -stroke '#34495e' -strokewidth %d -gravity center caption:'%s' -geometry +0%d -composite -font %s -pointsize %d -fill '#5d6d7e' -stroke '#5d6d7e' -strokewidth 1 -gravity center -annotate +0+%d '%s' \\( %s -density %d -background none -trim -resize %dx%d \\) -gravity southeast -geometry +%d+%d -composite -font %s -pointsize %d -fill '#7f8c8d' -gravity southwest -annotate +%d+%d '%s' -resize %dx%d -quality 95 %s"
   "ImageMagick command template for generating YouTube thumbnails.
@@ -321,7 +325,7 @@ Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
 
 (defun tlon-youtube-upload-video ()
   "Upload a video file to YouTube.
-Prompts for video file, title, description, and privacy setting."
+Prompts for video file, title, description, privacy setting, and optional playlist."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
@@ -331,13 +335,18 @@ Prompts for video file, title, description, and privacy setting."
          (description (read-string "Video description: "))
          (privacy (completing-read "Privacy setting: "
                                    '("private" "unlisted" "public")
-                                   nil t nil nil tlon-youtube-default-privacy)))
+                                   nil t nil nil tlon-youtube-default-privacy))
+         (playlist-choices (append '("None") (mapcar #'car tlon-youtube-playlists)))
+         (playlist-choice (completing-read "Add to playlist (optional): " playlist-choices nil t nil nil "None"))
+         (playlist-id (when (not (string= playlist-choice "None"))
+                        (cdr (assoc playlist-choice tlon-youtube-playlists)))))
     (unless (file-exists-p video-file)
       (user-error "Video file does not exist: %s" video-file))
-    (tlon-youtube--upload-video-file video-file title description privacy)))
+    (tlon-youtube--upload-video-file video-file title description privacy playlist-id)))
 
-(defun tlon-youtube--upload-video-file (video-file title description privacy)
-  "Upload VIDEO-FILE to YouTube with TITLE, DESCRIPTION, and PRIVACY setting."
+(defun tlon-youtube--upload-video-file (video-file title description privacy &optional playlist-id)
+  "Upload VIDEO-FILE to YouTube with TITLE, DESCRIPTION, and PRIVACY setting.
+Optionally add to PLAYLIST-ID if provided."
   (unless (executable-find "curl")
     (user-error "`curl' is not installed or not in your PATH"))
   (let* ((request-data (tlon-youtube--prepare-upload-request
@@ -363,7 +372,7 @@ Prompts for video file, title, description, and privacy setting."
                    ;; Step 2: Upload the actual video file
                    (let ((final-upload-command
 			  (cl-substitute upload-url "UPLOAD_URL_PLACEHOLDER" upload-command :test #'string=)))
-                     (tlon-youtube--execute-video-upload final-upload-command metadata-file)))
+                     (tlon-youtube--execute-video-upload final-upload-command metadata-file playlist-id)))
                   (t
                    (message "Failed to initialize upload (exit code %d). Check `%s' for details."
 			    exit-status (buffer-name output-buf))
@@ -374,23 +383,26 @@ Prompts for video file, title, description, and privacy setting."
   (when (string-match "^Location: \\(https://[^\r\n]+\\)" curl-output)
     (match-string 1 curl-output)))
 
-(defun tlon-youtube--execute-video-upload (upload-command metadata-file)
+(defun tlon-youtube--execute-video-upload (upload-command metadata-file &optional playlist-id)
   "Execute the video UPLOAD-COMMAND and handle the response.
 UPLOAD-COMMAND is a list of command arguments for uploading a video.
 METADATA-FILE is the path to the metadata file to be deleted upon successful
-upload."
+upload.
+PLAYLIST-ID is an optional playlist ID to add the video to after upload."
   (tlon-youtube--execute-upload-command
    upload-command
    metadata-file
    "Video uploaded successfully!"
-   "video upload"))
+   "video upload"
+   playlist-id))
 
-(defun tlon-youtube--execute-upload-command (command cleanup-file success-message upload-type)
+(defun tlon-youtube--execute-upload-command (command cleanup-file success-message upload-type &optional playlist-id)
   "Execute a YouTube upload COMMAND and handle the response.
 COMMAND is a list of command arguments.
 CLEANUP-FILE is the file to delete on successful upload.
 SUCCESS-MESSAGE is the message to display on success.
-UPLOAD-TYPE is a string describing the upload type for error messages."
+UPLOAD-TYPE is a string describing the upload type for error messages.
+PLAYLIST-ID is an optional playlist ID to add the video to after upload."
   (unless (executable-find "curl")
     (user-error "`curl' is not installed or not in your PATH"))
   (let* ((command-string (mapconcat #'shell-quote-argument command " "))
@@ -411,6 +423,8 @@ UPLOAD-TYPE is a string describing the upload type for error messages."
           (cond
            (video-id
             (message "%s Video ID: %s" success-message video-id)
+            (when playlist-id
+              (tlon-youtube--add-video-to-playlist video-id playlist-id))
             (when (file-exists-p cleanup-file) (delete-file cleanup-file))
             (kill-buffer output-buffer))
            (error-info
@@ -450,7 +464,11 @@ exact curl command to run for the video upload step."
          (description (read-string "Video description: "))
          (privacy (completing-read "Privacy setting: "
                                    '("private" "unlisted" "public")
-                                   nil t nil nil tlon-youtube-default-privacy)))
+                                   nil t nil nil tlon-youtube-default-privacy))
+         (playlist-choices (append '("None") (mapcar #'car tlon-youtube-playlists)))
+         (playlist-choice (completing-read "Add to playlist (optional): " playlist-choices nil t nil nil "None"))
+         (playlist-id (when (not (string= playlist-choice "None"))
+                        (cdr (assoc playlist-choice tlon-youtube-playlists)))))
     (unless (file-exists-p video-file)
       (user-error "Video file does not exist: %s" video-file))
     (let* ((request-data (tlon-youtube--prepare-upload-request
@@ -475,6 +493,11 @@ exact curl command to run for the video upload step."
                 (insert "STEP 2: Upload video file (copy and run this command)\n")
                 (insert "------------------------------------------------------\n")
                 (insert final-upload-command "\n\n")
+                (when playlist-id
+                  (insert "STEP 3: Add to playlist (manual)\n")
+                  (insert "---------------------------------\n")
+                  (insert (format "Playlist ID: %s\n" playlist-id))
+                  (insert "Note: Playlist addition is not included in manual commands.\n\n"))
                 (insert "Files:\n")
                 (insert "------\n")
                 (insert (format "Metadata file: %s\n" metadata-file))
@@ -519,6 +542,29 @@ Prompts for thumbnail file and video ID."
        request-body-file
        "Thumbnail uploaded successfully!"
        "thumbnail upload"))))
+
+(defun tlon-youtube--add-video-to-playlist (video-id playlist-id)
+  "Add VIDEO-ID to PLAYLIST-ID using the YouTube API."
+  (let* ((access-token (tlon-youtube--get-access-token))
+         (url "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet")
+         (metadata (json-encode
+                    `((snippet . ((playlistId . ,playlist-id)
+                                  (resourceId . ((kind . "youtube#video")
+                                                 (videoId . ,video-id))))))))
+         (command `("curl" "-s" "-X" "POST"
+                    "--data" ,metadata
+                    "-H" ,(format "Authorization: Bearer %s" access-token)
+                    "-H" "Content-Type: application/json"
+                    ,url)))
+    (let* ((command-string (mapconcat #'shell-quote-argument command " "))
+           (output (shell-command-to-string command-string))
+           (response-data (condition-case nil (json-read-from-string output) (error nil)))
+           (error-info (and response-data (cdr (assoc 'error response-data)))))
+      (if error-info
+          (let ((error-code (cdr (assoc 'code error-info)))
+                (error-message (cdr (assoc 'message error-info))))
+            (message "Failed to add video to playlist. YouTube API Error %s: %s" error-code error-message))
+        (message "Video added to playlist successfully!")))))
 
 ;;;;; Upload
 
