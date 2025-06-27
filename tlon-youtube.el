@@ -379,8 +379,8 @@ Prompts for video file, title, description, and privacy setting."
 UPLOAD-COMMAND is a list of command arguments for uploading a video.
 METADATA-FILE is the path to the metadata file to be deleted upon successful
 upload."
-  (tlon-youtube--execute-upload-command 
-   upload-command 
+  (tlon-youtube--execute-upload-command
+   upload-command
    metadata-file
    "Video uploaded successfully!"
    "video upload"))
@@ -514,13 +514,13 @@ Prompts for thumbnail file and video ID."
                      "-H" ,(format "Authorization: Bearer %s" access-token)
                      "-H" "Content-Type: image/png"
                      ,url)))
-      (tlon-youtube--execute-upload-command 
-       command 
+      (tlon-youtube--execute-upload-command
+       command
        request-body-file
        "Thumbnail uploaded successfully!"
        "thumbnail upload"))))
 
-;;;;;; Authorize upload
+;;;;; Upload
 
 (defun tlon-youtube-authorize ()
   "Force re-authorization for YouTube API access.
@@ -540,6 +540,22 @@ This is useful if the stored tokens are invalid or have been revoked."
   (require 'oauth2-auto)
   (oauth2-auto-access-token-sync tlon-email-shared 'tlon-youtube))
 
+(defun tlon-youtube--oauth2-auto-setup ()
+  "Setup OAuth2 authentication for YouTube using oauth2-auto."
+  (add-to-list
+   'oauth2-auto-additional-providers-alist
+   `(tlon-youtube
+     (authorize_url . "https://accounts.google.com/o/oauth2/v2/auth")
+     (token_url . "https://oauth2.googleapis.com/token")
+     (scope . "https://www.googleapis.com/auth/youtube.upload")
+     (client_id . ,tlon-youtube-client-id)
+     (client_secret . ,tlon-youtube-client-secret))))
+
+(if (and tlon-youtube-client-id tlon-youtube-client-secret)
+    (tlon-youtube--oauth2-auto-setup)
+  (unless noninteractive
+    (warn "tlon-youtube: must set `tlon-youtube-client-id' and `tlon-youtube-client-secret'.")))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-youtube-menu "tlon-youtube" nil t)
@@ -556,22 +572,6 @@ This is useful if the stored tokens are invalid or have been revoked."
    ["Options"
     ("r" "Video Resolution" tlon-youtube-video-resolution-infix)
     ("a" "Authorize YouTube API" tlon-youtube-authorize)]])
-
-(defun tlon-youtube--oauth2-auto-setup ()
-  "Setup OAuth2 authentication for YouTube using oauth2-auto."
-  (add-to-list
-   'oauth2-auto-additional-providers-alist
-   `(tlon-youtube
-     (authorize_url . "https://accounts.google.com/o/oauth2/v2/auth")
-     (token_url . "https://oauth2.googleapis.com/token")
-     (scope . "https://www.googleapis.com/auth/youtube.upload")
-     (client_id . ,tlon-youtube-client-id)
-     (client_secret . ,tlon-youtube-client-secret))))
-
-(if (and tlon-youtube-client-id tlon-youtube-client-secret)
-    (tlon-youtube--oauth2-auto-setup)
-  (unless noninteractive
-    (warn "tlon-youtube: must set `tlon-youtube-client-id' and `tlon-youtube-client-secret' for this package to work.")))
 
 (provide 'tlon-youtube)
 ;;; tlon-youtube.el ends here
