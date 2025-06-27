@@ -362,7 +362,6 @@ Prompts for thumbnail file and video ID."
                (delete-file request-body-file)
                (kill-buffer (process-buffer proc))))))))))
 
-
 (defun tlon-youtube-authorize ()
   "Force re-authorization for YouTube API access.
 This is useful if the stored tokens are invalid or have been revoked."
@@ -380,7 +379,6 @@ This is useful if the stored tokens are invalid or have been revoked."
     (user-error "YouTube API credentials not configured"))
   (require 'oauth2-auto)
   (oauth2-auto-access-token-sync tlon-email-shared 'tlon-youtube))
-
 
 (defconst tlon-youtube-resolution-choices
   '(("720p (1280x720)"   . (1280 . 720))
