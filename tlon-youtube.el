@@ -122,6 +122,53 @@ Valid values are: \"private\", \"unlisted\", \"public\"."
 
 ;;;; Functions
 
+;;;;; Create
+
+;;;;;; Video resolution
+
+(defconst tlon-youtube-resolution-choices
+  '(("720p (1280x720)"   . (1280 . 720))
+    ("1080p (1920x1080)" . (1920 . 1080))
+    ("1440p (2560x1440)" . (2560 . 1440))
+    ("4K (2160p) (3840x2160)" . (3840 . 2160)))
+  "Alist of predefined resolution choices for YouTube videos.
+The car is the display string and the cdr is the (WIDTH . HEIGHT) cons cell")
+
+(defun tlon-youtube-read-resolution-choice (prompt obj _history)
+  "Reader function for `tlon-youtube-video-resolution`.
+PROMPT is the prompt string. OBJ is the transient infix object. _HISTORY is the
+history list (unused). Allows selecting from predefined resolutions."
+  (let* ((val-from-obj (if (and obj (slot-boundp obj 'variable))
+                           (ignore-errors (symbol-value (oref obj variable)))
+                         nil))
+         (initial-value (if (consp val-from-obj)
+                            val-from-obj
+                          (if (consp tlon-youtube-video-resolution)
+                              tlon-youtube-video-resolution
+                            '(1280 . 720))))
+         (choices (mapcar #'car tlon-youtube-resolution-choices))
+         (found-pair (cl-find-if (lambda (pair) (equal (cdr pair) initial-value))
+                                 tlon-youtube-resolution-choices))
+         (current-selection-str
+          (if found-pair
+              (car found-pair)
+            (car choices)))
+         (selection (completing-read prompt choices nil t nil nil current-selection-str)))
+    (cond
+     ((or (null selection) (string-empty-p selection)) initial-value)
+     (t
+      (let ((choice-pair (assoc selection tlon-youtube-resolution-choices)))
+        (cdr choice-pair))))))
+
+(transient-define-infix tlon-youtube-video-resolution-infix ()
+  "Set the video resolution for YouTube videos."
+  :class 'transient-lisp-variable
+  :variable 'tlon-youtube-video-resolution
+  :reader #'tlon-youtube-read-resolution-choice
+  :transient t)
+
+;;;;;; Wavelength video
+
 (defun tlon-youtube-generate-wavelength-video ()
   "Generate a video with an animated wavelength from an audio file.
 The command runs asynchronously and opens the video upon completion.
@@ -165,6 +212,8 @@ the original audio file name."
                  (progn
                    (message "Failed to generate video. Check the `%s' buffer for details." (buffer-name output-buf))
                    (pop-to-buffer output-buf)))))))))))
+
+;;;;;; Thumbnail
 
 (defun tlon-youtube-generate-thumbnail ()
   "Generate a thumbnail for the video.
@@ -232,6 +281,10 @@ the \"tlon.team-content\" repository to create a thumbnail image."
   "Sanitize STR for use in ImageMagick -draw text command.
 Replaces single quotes with escaped single quotes (e.g., ' -> \\\\')."
   (replace-regexp-in-string "'" "\\\\'" str t t))
+
+;;;;; Upload
+
+;;;;;; Upload video
 
 (defun tlon-youtube-upload-video ()
   "Upload a video file to YouTube.
@@ -358,14 +411,16 @@ debugging."
       (let* ((access-token (tlon-youtube--get-access-token))
              (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
              (command-list `("curl" "-v" "-X" "POST"
-                               "--data-binary" ,(format "@%s" request-body-file)
-                               "-H" ,(format "Authorization: Bearer %s" access-token)
-                               "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
-                               ,url))
+                             "--data-binary" ,(format "@%s" request-body-file)
+                             "-H" ,(format "Authorization: Bearer %s" access-token)
+                             "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
+                             ,url))
              (shell-command (string-join (mapcar #'shell-quote-argument command-list) " ")))
         (message "Manual curl command prepared. Run this in your terminal:")
         (message "%s" shell-command)
         (message "Request body file (needed for the command): %s" request-body-file)))))
+
+;;;;;; Upload thumbnail
 
 (defun tlon-youtube-upload-thumbnail ()
   "Upload a thumbnail to an existing YouTube video.
@@ -423,6 +478,8 @@ Prompts for thumbnail file and video ID."
                (delete-file request-body-file)
                (kill-buffer (process-buffer proc))))))))))
 
+;;;;;; Authorize upload
+
 (defun tlon-youtube-authorize ()
   "Force re-authorization for YouTube API access.
 This is useful if the stored tokens are invalid or have been revoked."
@@ -441,48 +498,7 @@ This is useful if the stored tokens are invalid or have been revoked."
   (require 'oauth2-auto)
   (oauth2-auto-access-token-sync tlon-email-shared 'tlon-youtube))
 
-(defconst tlon-youtube-resolution-choices
-  '(("720p (1280x720)"   . (1280 . 720))
-    ("1080p (1920x1080)" . (1920 . 1080))
-    ("1440p (2560x1440)" . (2560 . 1440))
-    ("4K (2160p) (3840x2160)" . (3840 . 2160)))
-  "Alist of predefined resolution choices for YouTube videos.
-The car is the display string and the cdr is the (WIDTH . HEIGHT) cons cell")
-
-(defun tlon-youtube-read-resolution-choice (prompt obj _history)
-  "Reader function for `tlon-youtube-video-resolution`.
-PROMPT is the prompt string. OBJ is the transient infix object. _HISTORY is the
-history list (unused). Allows selecting from predefined resolutions."
-  (let* ((val-from-obj (if (and obj (slot-boundp obj 'variable))
-                           (ignore-errors (symbol-value (oref obj variable)))
-                         nil))
-         (initial-value (if (consp val-from-obj)
-                            val-from-obj
-                          (if (consp tlon-youtube-video-resolution)
-                              tlon-youtube-video-resolution
-                            '(1280 . 720))))
-         (choices (mapcar #'car tlon-youtube-resolution-choices))
-         (found-pair (cl-find-if (lambda (pair) (equal (cdr pair) initial-value))
-                                 tlon-youtube-resolution-choices))
-         (current-selection-str
-          (if found-pair
-              (car found-pair)
-            (car choices)))
-         (selection (completing-read prompt choices nil t nil nil current-selection-str)))
-    (cond
-     ((or (null selection) (string-empty-p selection)) initial-value)
-     (t
-      (let ((choice-pair (assoc selection tlon-youtube-resolution-choices)))
-        (cdr choice-pair))))))
-
-(transient-define-infix tlon-youtube-video-resolution-infix ()
-  "Set the video resolution for YouTube videos."
-  :class 'transient-lisp-variable
-  :variable 'tlon-youtube-video-resolution
-  :reader #'tlon-youtube-read-resolution-choice
-  :transient t)
-
-;;;; Menu
+;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-youtube-menu "tlon-youtube" nil t)
 (transient-define-prefix tlon-youtube-menu ()
