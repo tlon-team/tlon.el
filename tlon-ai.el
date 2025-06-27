@@ -391,23 +391,6 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   ;; %s will be the JSON database string
   "Prompt for finding BibTeX keys for multiple references against a JSON database.")
 
-;;;;; Newsletter Issue Creation
-
-(defun tlon-ai--get-en-es-glossary-string ()
-  "Return the English-Spanish glossary as a TSV string.
-Uses `tlon-parse-glossary' and `tlon-insert-formatted-glossary' with
-recipient `deepl-api'."
-  (let* ((json-glossary (tlon-parse-glossary))
-         (language "es")
-         (recipient 'deepl-api))
-    (if json-glossary
-        (with-temp-buffer
-          (tlon-insert-formatted-glossary json-glossary language recipient)
-          (buffer-string))
-      (progn
-        (message "Warning: Glossary data could not be parsed for newsletter. Proceeding without glossary.")
-        ""))))
-
 ;;;;; Change Propagation
 
 (defconst tlon-ai-propagate-changes-prompt
@@ -2119,7 +2102,9 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
     ;; Clean up state variable
     (setq tlon-ai--extract-replace-state nil)))
 
-;;;;; Newsletter Issue Creation
+;;;;; Newsletter
+
+;;;;;; Create issue
 
 ;;;###autoload
 (defun tlon-ai-create-newsletter-issue ()
@@ -2234,6 +2219,24 @@ Returns nil and signals a user-error if any step fails."
                 latest-file-path) ; Return (content . path)
         (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
                nil)))))
+
+(defun tlon-ai--get-en-es-glossary-string ()
+  "Return the English-Spanish glossary as a TSV string.
+Uses `tlon-parse-glossary' and `tlon-insert-formatted-glossary' with
+recipient `deepl-api'."
+  (let* ((json-glossary (tlon-parse-glossary))
+         (language "es")
+         (recipient 'deepl-api))
+    (if json-glossary
+        (with-temp-buffer
+          (tlon-insert-formatted-glossary json-glossary language recipient)
+          (buffer-string))
+      (progn
+        (message "Warning: Glossary data could not be parsed for newsletter. Proceeding without glossary.")
+        ""))))
+
+;;;;;; Slack
+
 
 ;;;;; Meta Description Generation
 
