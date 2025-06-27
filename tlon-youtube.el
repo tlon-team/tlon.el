@@ -550,7 +550,7 @@ Prompts for thumbnail file and video ID."
          (command `("curl" "-s" "-X" "POST"
                     "--data" ,metadata
                     "-H" ,(format "Authorization: Bearer %s" access-token)
-                    "-H" "Content-Type: application/json"
+                    "-H" "Content-Type: application/json; charset=UTF-8"
                     ,url)))
     (let* ((command-string (mapconcat #'shell-quote-argument command " "))
            (output (shell-command-to-string command-string))
