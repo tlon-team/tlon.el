@@ -290,7 +290,7 @@ Prompts for video file, title, description, and privacy setting."
            (when (memq (process-status proc) '(exit signal))
              (with-current-buffer (process-buffer proc)
                (let* ((full-output (buffer-string))
-                      (json-start (string-match-backward "{" full-output))
+                      (json-start (search-backward "{" full-output))
                       (json-response (if json-start (substring full-output json-start) full-output))
                       (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
                       (video-id (and response-data (cdr (assoc 'id response-data))))
