@@ -254,46 +254,69 @@ Prompts for video file, title, description, and privacy setting."
   "Upload VIDEO-FILE to YouTube with TITLE, DESCRIPTION, and PRIVACY setting."
   (unless (executable-find "curl")
     (user-error "`curl' is not installed or not in your PATH"))
-  (let ((metadata-file (make-temp-file "youtube-metadata-" nil ".json")))
+  (let* ((boundary "tlon-youtube-upload-boundary")
+         (request-body-file (make-temp-file "youtube-upload-body-" nil ".dat"))
+         (metadata (json-encode
+                    `((snippet . ((title . ,title)
+                                  (description . ,description)))
+                      (status . ((privacyStatus . ,privacy)))))))
+    ;; Create the multipart body file by appending parts.
+    ;; This is more robust for large video files than building in one buffer.
     (with-temp-buffer
-      (insert (json-encode
-               `((snippet . ((title . ,title)
-                             (description . ,description)))
-                 (status . ((privacyStatus . ,privacy))))))
-      (write-file metadata-file))
-    (unwind-protect
-        (let* ((access-token (tlon-youtube--get-access-token))
-               (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
-               (process-name "youtube-upload")
-               (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
-               (command `("curl" "-s" "-X" "POST"
-                          "-H" ,(format "Authorization: Bearer %s" access-token)
-                          "-F" ,(format "metadata=@%s;type=application/json;charset=UTF-8" metadata-file)
-                          "-F" ,(format "file=@%s;type=video/mp4" video-file)
-                          ,url)))
-          (let ((process (apply #'start-process process-name output-buffer command)))
-            (set-process-sentinel
-             process
-             (lambda (proc _event)
-               (when (memq (process-status proc) '(exit signal))
-                 (with-current-buffer (process-buffer proc)
-                   (let* ((json-response (buffer-string))
-                          (response-data (condition-case nil
-                                             (json-read-from-string json-response)
-                                           (error nil)))
-                          (video-id (and response-data (cdr (assoc 'id response-data))))
-                          (error-info (and response-data (cdr (assoc 'error response-data)))))
-                     (cond
-                      (video-id
-                       (message "Video uploaded successfully! Video ID: %s" video-id))
-                      (error-info
-                       (let ((error-code (cdr (assoc 'code error-info)))
-                             (error-message (cdr (assoc 'message error-info))))
-                         (message "YouTube API Error %s: %s" error-code error-message)))
-                      (t
-                       (message "Upload failed or could not extract video ID. Response: %s" json-response)))))
-                 (kill-buffer (process-buffer proc)))))))
-      (delete-file metadata-file))))
+      (set-buffer-multibyte nil)
+      (insert (format "--%s\r\n" boundary))
+      (insert "Content-Type: application/json; charset=UTF-8\r\n\r\n")
+      (insert (encode-coding-string metadata 'utf-8))
+      (insert (format "\r\n--%s\r\n" boundary))
+      (insert "Content-Type: video/mp4\r\n\r\n")
+      (write-region (point-min) (point-max) request-body-file nil nil 'no-conversion))
+    (with-temp-buffer
+      (set-buffer-multibyte nil)
+      (insert-file-contents-literally video-file)
+      (write-region (point-min) (point-max) request-body-file t nil 'no-conversion))
+    (with-temp-buffer
+      (set-buffer-multibyte nil)
+      (insert (format "\r\n--%s--\r\n" boundary))
+      (write-region (point-min) (point-max) request-body-file t nil 'no-conversion))
+
+    (let* ((access-token (tlon-youtube--get-access-token))
+           (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
+           (process-name "youtube-upload")
+           (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
+           (command `("curl" "-v" "-X" "POST"
+                      "--data-binary" ,(format "@%s" request-body-file)
+                      "-H" ,(format "Authorization: Bearer %s" access-token)
+                      "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
+                      ,url)))
+      (message "Running YouTube upload command: %S" command)
+      (message "Request body file (retained for debugging on failure): %s" request-body-file)
+      (let ((process (apply #'start-process process-name output-buffer command)))
+        (set-process-sentinel
+         process
+         (lambda (proc _event)
+           (when (memq (process-status proc) '(exit signal))
+             (with-current-buffer (process-buffer proc)
+               (let* ((full-output (buffer-string))
+                      (json-start (string-search-backward "{" full-output nil))
+                      (json-response (if json-start (substring full-output json-start) full-output))
+                      (response-data (condition-case nil (json-read-from-string json-response) (error nil)))
+                      (video-id (and response-data (cdr (assoc 'id response-data))))
+                      (error-info (and response-data (cdr (assoc 'error response-data)))))
+                 (cond
+                  (video-id
+                   (message "Video uploaded successfully! Video ID: %s" video-id)
+                   (when (file-exists-p request-body-file) (delete-file request-body-file)))
+                  (error-info
+                   (let ((error-code (cdr (assoc 'code error-info)))
+                         (error-message (cdr (assoc 'message error-info))))
+                     (message "YouTube API Error %s: %s" error-code error-message))
+                   (message "Request body file kept for debugging: %s" request-body-file)
+                   (pop-to-buffer (current-buffer)))
+                  (t
+                   (message "Upload failed. Check `%s' for full `curl -v' output." (buffer-name))
+                   (message "Request body file kept for debugging: %s" request-body-file)
+                   (pop-to-buffer (current-buffer))))))
+             (kill-buffer (process-buffer proc)))))))))
 
 (defun tlon-youtube-upload-thumbnail ()
   "Upload a thumbnail to an existing YouTube video.
