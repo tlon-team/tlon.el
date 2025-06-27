@@ -269,15 +269,15 @@ Prompts for video file, title, description, and privacy setting."
       (insert (encode-coding-string metadata 'utf-8))
       (insert (format "\r\n--%s\r\n" boundary))
       (insert "Content-Type: video/mp4\r\n\r\n")
-      (write-region (point-min) (point-max) request-body-file nil nil 'no-conversion))
+      (write-region (point-min) (point-max) request-body-file nil nil nil 'no-conversion))
     (with-temp-buffer
       (set-buffer-multibyte nil)
       (insert-file-contents-literally video-file)
-      (write-region (point-min) (point-max) request-body-file t nil 'no-conversion))
+      (write-region (point-min) (point-max) request-body-file t nil nil 'no-conversion))
     (with-temp-buffer
       (set-buffer-multibyte nil)
       (insert (format "\r\n--%s--\r\n" boundary))
-      (write-region (point-min) (point-max) request-body-file t nil 'no-conversion))
+      (write-region (point-min) (point-max) request-body-file t nil nil 'no-conversion))
 
     (let* ((access-token (tlon-youtube--get-access-token))
            (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
