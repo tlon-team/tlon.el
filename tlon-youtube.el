@@ -379,8 +379,22 @@ Prompts for video file, title, description, and privacy setting."
 UPLOAD-COMMAND is a list of command arguments for uploading a video.
 METADATA-FILE is the path to the metadata file to be deleted upon successful
 upload."
-  (let* ((command-string (mapconcat #'shell-quote-argument upload-command " "))
-         (output-buffer (generate-new-buffer "*youtube-video-upload-output*")))
+  (tlon-youtube--execute-upload-command 
+   upload-command 
+   metadata-file
+   "Video uploaded successfully!"
+   "video upload"))
+
+(defun tlon-youtube--execute-upload-command (command cleanup-file success-message upload-type)
+  "Execute a YouTube upload COMMAND and handle the response.
+COMMAND is a list of command arguments.
+CLEANUP-FILE is the file to delete on successful upload.
+SUCCESS-MESSAGE is the message to display on success.
+UPLOAD-TYPE is a string describing the upload type for error messages."
+  (unless (executable-find "curl")
+    (user-error "`curl' is not installed or not in your PATH"))
+  (let* ((command-string (mapconcat #'shell-quote-argument command " "))
+         (output-buffer (generate-new-buffer (format "*youtube-%s-output*" upload-type))))
     ;; Execute upload via shell to match terminal behavior
     (let ((exit-status (call-process-shell-command command-string nil output-buffer t)))
       (with-current-buffer output-buffer
@@ -396,8 +410,8 @@ upload."
                (error-info (and response-data (cdr (assoc 'error response-data)))))
           (cond
            (video-id
-            (message "Video uploaded successfully! Video ID: %s" video-id)
-            (when (file-exists-p metadata-file) (delete-file metadata-file))
+            (message "%s Video ID: %s" success-message video-id)
+            (when (file-exists-p cleanup-file) (delete-file cleanup-file))
             (kill-buffer output-buffer))
            (error-info
             (let ((error-code (cdr (assoc 'code error-info)))
@@ -405,17 +419,22 @@ upload."
               (message "YouTube API Error %s: %s" error-code error-message))
             (pop-to-buffer output-buffer))
            ((not (zerop exit-status))
-            (message "Video upload failed with exit code %d. Check `%s' for full `curl -v' output."
-		     exit-status (buffer-name output-buffer))
+            (message "%s failed with exit code %d. Check `%s' for full `curl -v' output."
+		     (capitalize upload-type) exit-status (buffer-name output-buffer))
             (pop-to-buffer output-buffer))
            ((and (zerop exit-status) (string-match-p "HTTP/2 200\\|HTTP/1.1 200" full-output))
             ;; Upload succeeded but no JSON response (which is normal for resumable uploads)
-            (message "Video uploaded successfully!")
-            (when (file-exists-p metadata-file) (delete-file metadata-file))
+            (message "%s" success-message)
+            (when (file-exists-p cleanup-file) (delete-file cleanup-file))
+            (kill-buffer output-buffer))
+           ((and (zerop exit-status) response-data)
+            ;; Successful response with JSON data (thumbnail uploads)
+            (message "%s" success-message)
+            (when (file-exists-p cleanup-file) (delete-file cleanup-file))
             (kill-buffer output-buffer))
            (t
-            (message "Upload completed but no JSON response found. Check `%s' for output."
-		     (buffer-name output-buffer))
+            (message "%s completed but no clear success indicator. Check `%s' for output."
+		     (capitalize upload-type) (buffer-name output-buffer))
             (pop-to-buffer output-buffer))))))))
 
 (defun tlon-youtube-prepare-upload-command ()
@@ -482,8 +501,6 @@ Prompts for thumbnail file and video ID."
 
 (defun tlon-youtube--upload-thumbnail-file (thumbnail-file video-id)
   "Upload THUMBNAIL-FILE to YouTube video with VIDEO-ID."
-  (unless (executable-find "curl")
-    (user-error "`curl' is not installed or not in your PATH"))
   (unless (file-exists-p thumbnail-file)
     (user-error "Thumbnail file does not exist: %s" thumbnail-file))
   (unless (file-readable-p thumbnail-file)
@@ -492,36 +509,16 @@ Prompts for thumbnail file and video ID."
          (url (format "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=%s" video-id))
          (request-body-file (make-temp-file "youtube-thumbnail-" nil ".png")))
     (copy-file thumbnail-file request-body-file t)
-    (let* ((process-name "youtube-thumbnail-upload")
-           (output-buffer (generate-new-buffer (format "*%s-output*" process-name)))
-           (command `("curl" "-s" "-X" "POST"
-                      "--data-binary" ,(format "@%s" request-body-file)
-                      "-H" ,(format "Authorization: Bearer %s" access-token)
-                      "-H" "Content-Type: image/png"
-                      ,url)))
-      (let ((process (apply #'start-process process-name output-buffer command)))
-        (set-process-sentinel
-         process
-         (lambda (proc _event)
-           (when (memq (process-status proc) '(exit signal))
-             (unwind-protect
-                 (with-current-buffer (process-buffer proc)
-                   (let* ((json-response (buffer-string))
-                          (response-data (condition-case nil
-                                             (json-read-from-string json-response)
-                                           (error nil)))
-                          (error-info (and response-data (cdr (assoc 'error response-data)))))
-                     (cond
-                      (error-info
-                       (let ((error-code (cdr (assoc 'code error-info)))
-                             (error-message (cdr (assoc 'message error-info))))
-                         (message "YouTube API Error %s: %s" error-code error-message)))
-                      (response-data
-                       (message "Thumbnail uploaded successfully!"))
-                      (t
-                       (message "Thumbnail upload completed. Response: %s" json-response)))))
-               (delete-file request-body-file)
-               (kill-buffer (process-buffer proc))))))))))
+    (let ((command `("curl" "-s" "-X" "POST"
+                     "--data-binary" ,(format "@%s" request-body-file)
+                     "-H" ,(format "Authorization: Bearer %s" access-token)
+                     "-H" "Content-Type: image/png"
+                     ,url)))
+      (tlon-youtube--execute-upload-command 
+       command 
+       request-body-file
+       "Thumbnail uploaded successfully!"
+       "thumbnail upload"))))
 
 ;;;;;; Authorize upload
 
