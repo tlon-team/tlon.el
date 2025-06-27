@@ -311,6 +311,53 @@ Prompts for video file, title, description, and privacy setting."
                    (pop-to-buffer (current-buffer))))))
              (kill-buffer (process-buffer proc)))))))))
 
+(defun tlon-youtube-prepare-upload-command ()
+  "Prepare and display the curl command for a YouTube video upload.
+This command prepares the request body and constructs the `curl`
+command, but does not execute it. It prints the command to the
+*Messages* buffer so it can be run manually in a terminal for
+debugging."
+  (interactive)
+  (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
+    (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
+  (let* ((video-file (read-file-name "Select video file: " paths-dir-downloads nil t nil
+                                     (lambda (name) (string-match-p "\\.mp4\\'" name))))
+         (title (read-string "Video title: "))
+         (description (read-string "Video description: "))
+         (privacy (completing-read "Privacy setting: "
+                                   '("private" "unlisted" "public")
+                                   nil t nil nil tlon-youtube-default-privacy)))
+    (unless (file-exists-p video-file)
+      (user-error "Video file does not exist: %s" video-file))
+    (let* ((boundary "tlon-youtube-upload-boundary")
+           (request-body-file (make-temp-file "youtube-upload-body-" nil ".dat"))
+           (metadata (json-encode
+                      `((snippet . ((title . ,title)
+                                    (description . ,description)))
+                        (status . ((privacyStatus . ,privacy)))))))
+      ;; Create the multipart body file in a single pass.
+      (with-temp-buffer
+        (set-buffer-multibyte nil)
+        (insert (format "--%s\r\n" boundary))
+        (insert "Content-Type: application/json; charset=UTF-8\r\n\r\n")
+        (insert (encode-coding-string metadata 'utf-8))
+        (insert (format "\r\n--%s\r\n" boundary))
+        (insert "Content-Type: video/mp4\r\n\r\n")
+        (insert-file-contents-literally video-file)
+        (insert (format "\r\n--%s--\r\n" boundary))
+        (write-region (point-min) (point-max) request-body-file nil nil nil 'no-conversion))
+      (let* ((access-token (tlon-youtube--get-access-token))
+             (url "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status")
+             (command-list `("curl" "-v" "-X" "POST"
+                               "--data-binary" ,(format "@%s" request-body-file)
+                               "-H" ,(format "Authorization: Bearer %s" access-token)
+                               "-H" ,(format "Content-Type: multipart/related; boundary=%s" boundary)
+                               ,url))
+             (shell-command (string-join (mapcar #'shell-quote-argument command-list) " ")))
+        (message "Manual curl command prepared. Run this in your terminal:")
+        (message "%s" shell-command)
+        (message "Request body file (needed for the command): %s" request-body-file)))))
+
 (defun tlon-youtube-upload-thumbnail ()
   "Upload a thumbnail to an existing YouTube video.
 Prompts for thumbnail file and video ID."
@@ -437,6 +484,8 @@ history list (unused). Allows selecting from predefined resolutions."
    ["Upload"
     ("u" "Upload video to YouTube" tlon-youtube-upload-video)
     ("T" "Upload thumbnail to YouTube" tlon-youtube-upload-thumbnail)]
+   ["Debug"
+    ("P" "Prepare upload command" tlon-youtube-prepare-upload-command)]
    ["Options"
     ("r" "Video Resolution" tlon-youtube-video-resolution-infix)
     ("a" "Authorize YouTube API" tlon-youtube-authorize)]])
