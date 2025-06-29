@@ -2728,7 +2728,7 @@ If nil, use the default model."
     ("w p" "proofread reference article"              tlon-ai-proofread-reference-article)
     ""
     "Newsletter"
-    ("n i" "Create newsletter issue"                  tlon-ai-create-newsletter-issue)
+    ("n" "Create newsletter issue"                  tlon-ai-create-newsletter-issue)
     ""
     "Propagation"
     ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
