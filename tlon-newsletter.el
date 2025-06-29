@@ -44,6 +44,8 @@ use a different model for creating a newsletter issue."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-newsletter)
 
+;;;; Functions
+
 ;;;;; Create issue
 
 ;;;###autoload
