@@ -53,8 +53,9 @@
     ("k" "markdown"                       tlon-md-menu)
     ("l" "DeepL"                          tlon-deepl-menu)
     ("H-l" "color"                        tlon-color-menu)
-    ("H-m" "meet"                         tlon-meet-menu)]
+    ("n" "newsletter"                     tlon-newsletter-menu)]
    [""""
+    ("H-m" "meet"                         tlon-meet-menu)
     ("o" "count"                          tlon-count-menu)
     ("p" "api"                            tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
