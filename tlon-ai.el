@@ -130,15 +130,6 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
-(defcustom tlon-ai-newsletter-model nil
-  "Model to use for creating newsletter issues.
-The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, do not
-use a different model for creating a newsletter issue."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
-  :group 'tlon-ai)
-
-
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -2563,13 +2554,6 @@ If nil, use the default model."
 If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-ai-glossary-verify-model)
-
-(transient-define-infix tlon-ai-infix-select-newsletter-model ()
-  "AI model to use for creating a newsletter issue.
-If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-newsletter-model)
-
 
 ;;;;;; Main menu
 
