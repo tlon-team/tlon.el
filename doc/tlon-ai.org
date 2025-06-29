@@ -115,6 +115,12 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
   (setq tlon-ai-help-model '("Gemini" . gemini-2.0-flash-lite-preview-02-05))
   #+end_src
 
+#+vindex: tlon-ai-newsletter-model
++ ~tlon-ai-newsletter-model~ :: Model to use for creating newsletter issues with ~tlon-newsletter-create-issue~.
+  #+begin_src emacs-lisp
+  (setq tlon-ai-newsletter-model nil) ; Use default gptel model
+  #+end_src
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-ai-commands

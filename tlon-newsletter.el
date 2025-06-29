@@ -73,7 +73,7 @@ news. The original input file is then overwritten with this new draft."
                 (tlon-make-gptel-request final-prompt
                                          content
                                          #'tlon-newsletter--create-issue-callback
-                                         nil ; Use default model or user-configured
+                                         tlon-ai-newsletter-model
                                          t   ; Skip context check
                                          nil ; Request buffer
                                          (list "search" "fetch_content") ; Tools
