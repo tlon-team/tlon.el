@@ -152,7 +152,7 @@ Return t if a removal was made, nil otherwise."
       modified)))
 
 (defvar tlon-lychee-whitelist-file
-  (file-name-concat elpaca-directory "repos/tlon/tlon-url-lychee-whitelist.txt")
+  (file-name-concat elpaca-directory "repos/tlon/etc/tlon-url-lychee-whitelist.txt")
   "File to store whitelisted URLs that should be skipped.")
 
 (defun tlon-lychee--load-whitelist ()
