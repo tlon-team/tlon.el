@@ -71,21 +71,23 @@
    [""
     "Browse repo"
     ("d" "in Dired"                       tlon-dired-repo-menu)
-    ("m" "in Magit"                       tlon-magit-repo-menu)]
-   [""
-    "Package"
-    ("H-u" "update & reload"              tlon-update-package-and-reload)
-    ("H-o" "open"                         tlon-open-package-files)
-    ("H-c" "copy info"                    tlon-copy-package-info)
-    ""
+    ("m" "in Magit"                       tlon-magit-repo-menu)
+    """"""
+    "GitHub"
     ("," "dashboard"                      tlon-browse-dashboard)
-    ("." "notifications"                  forge-list-notifications)
-    ""
+    ("." "notifications"                  forge-list-notifications)]
+   [""
+    "Meta"
     ("?" "get help"                       tlon-ai-ask-for-help)
     ("!" "report bug"                     tlon-report-bug)
     ""
     ("-D" "Debug"                         tlon-menu-infix-toggle-debug)
     ""
+    "Package (tlon.el)"
+    ("H-u" "update & reload"              tlon-update-package-and-reload)
+    ("H-o" "open"                         tlon-open-package-files)
+    ("H-c" "copy info"                    tlon-copy-package-info)
+    """"
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
     (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit tlon-package-dir) 'face 'bold))))]])
 
