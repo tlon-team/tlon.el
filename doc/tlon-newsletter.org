@@ -44,3 +44,14 @@ It works as follows:
 7. The resulting newsletter draft replaces the content of the original input file (the most recent file in the ~numeros/~ subdirectory). The updated file is then opened for review.
 
 This command requires the AI to have web access capabilities, which are enabled by passing the ~gptel-tool-search~ and ~gptel-tool-fetch-content~ tools to the AI request.
+
+** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-newsletter-menu
+:END:
+#+findex: tlon-newsletter-menu
+The command ~tlon-newsletter-menu~ displays a =transient= menu interface for newsletter functionality.
+
+It allows for:
+- Creating a new newsletter issue (~tlon-newsletter-create-issue~).
+- Selecting a custom AI model for the task via the "Model" option, which controls the ~tlon-ai-newsletter-model~ variable.
