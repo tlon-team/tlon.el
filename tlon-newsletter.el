@@ -160,9 +160,15 @@ recipient `deepl-api'."
         (message "Warning: Glossary data could not be parsed for newsletter. Proceeding without glossary.")
         ""))))
 
+;;;;; Menu
+
+(transient-define-prefix tlon-newsletter-menu ()
+  "Menu for `tlon-newsletter'."
+  :info-manual "(tlon) newsletter"
+  [["Commands"
+    ("n" "Create newsletter issue" tlon-newsletter-create-issue)]
+   ["Options"
+    ("-m" "Model" tlon-ai-infix-select-newsletter-model)]])
+
 (provide 'tlon-newsletter)
 ;;; tlon-newsletter.el ends here
-
-;; Local Variables:
-;; jinx-languages: "es en it fr de"
-;; End:
