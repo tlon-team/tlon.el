@@ -16,6 +16,17 @@
 
 This module provides functionality for creating newsletter issues using AI.
 
+** User Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-newsletter-options
+:END:
+
+#+vindex: tlon-newsletter-model
++ ~tlon-newsletter-model~ :: Model to use for creating newsletter issues with ~tlon-newsletter-create-issue~.
+  #+begin_src emacs-lisp
+  (setq tlon-newsletter-model nil) ; Use default gptel model
+  #+end_src
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-newsletter-commands
@@ -54,4 +65,4 @@ The command ~tlon-newsletter-menu~ displays a =transient= menu interface for new
 
 It allows for:
 - Creating a new newsletter issue (~tlon-newsletter-create-issue~).
-- Selecting a custom AI model for the task via the "Model" option, which controls the ~tlon-ai-newsletter-model~ variable.
+- Selecting a custom AI model for the task via the "Model" option, which controls the ~tlon-newsletter-model~ variable.

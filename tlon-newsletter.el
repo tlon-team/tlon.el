@@ -28,6 +28,21 @@
 (require 'tlon-ai)
 (require 'tlon-core)
 (require 'tlon-glossary)
+(require 'transient)
+
+;;;; User options
+
+(defgroup tlon-newsletter nil
+  "Newsletter functionality for Tlön."
+  :group 'tlon)
+
+(defcustom tlon-newsletter-model nil
+  "Model to use for creating newsletter issues.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, do not
+use a different model for creating a newsletter issue."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-newsletter)
 
 ;;;;; Create issue
 
@@ -73,7 +88,7 @@ news. The original input file is then overwritten with this new draft."
                 (tlon-make-gptel-request final-prompt
                                          content
                                          #'tlon-newsletter--create-issue-callback
-                                         tlon-ai-newsletter-model
+                                         tlon-newsletter-model
                                          t   ; Skip context check
                                          nil ; Request buffer
                                          (list "search" "fetch_content") ; Tools
@@ -162,13 +177,19 @@ recipient `deepl-api'."
 
 ;;;;; Menu
 
+(transient-define-infix tlon-newsletter-infix-select-model ()
+  "AI model to use for creating a newsletter issue.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-newsletter-model)
+
 (transient-define-prefix tlon-newsletter-menu ()
   "Menu for `tlon-newsletter'."
   :info-manual "(tlon) newsletter"
   [["Commands"
     ("n" "Create newsletter issue" tlon-newsletter-create-issue)]
    ["Options"
-    ("-m" "Model" tlon-ai-infix-select-newsletter-model)]])
+    ("-m" "Model" tlon-newsletter-infix-select-model)]])
 
 (provide 'tlon-newsletter)
 ;;; tlon-newsletter.el ends here
