@@ -57,7 +57,7 @@ Allowed values are \"hex\" and \"hsl\"."
 ;;;;; Files
 
 (defconst tlon-color-palette-file
-  (file-name-concat tlon-package-dir "tlon-color-palettes.el")
+  (file-name-concat tlon-package-dir "etc/tlon-color-palettes.el")
   "File where custom color palettes are persisted.")
 
 (defvar tlon-color-globals-css-file
