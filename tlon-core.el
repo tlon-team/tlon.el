@@ -337,7 +337,7 @@
  	   :abbrev "tlon-el"
  	   :type development
  	   :subtype emacs
-           :dir ,(file-name-concat elpaca-repos-directory "tlon"))
+           :dir ,tlon-package-dir)
     (:name "tlon.team"
 	   :project "tlon"
 	   :abbrev "tlon-team"
