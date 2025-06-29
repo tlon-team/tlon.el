@@ -22,6 +22,7 @@ Tlön is a comprehensive Emacs package designed to streamline translation workfl
 
 The package is organized into several modules, each with comprehensive documentation:
 
+- [[file:doc/tlon.org][Tlön package]] - Main package file providing top-level commands and integration
 - [[file:doc/tlon-ai.org][AI functionality]] - Integration with AI models for summarization, translation, and content creation
 - [[file:doc/tlon-api.org][API interaction]] - Interface with Tlön Babel APIs for citations and file management
 - [[file:doc/tlon-cleanup.org][Cleanup tools]] - Automated formatting and quality assurance
@@ -54,6 +55,7 @@ The package is organized into several modules, each with comprehensive documenta
 - [[file:doc/tlon-tts.org][Text-to-speech]] - Comprehensive TTS functionality with multiple engines
 - [[file:doc/tlon-url.org][URL handling]] - URL validation, archiving, and replacement tools
 - [[file:doc/tlon-yaml.org][YAML metadata]] - Metadata management and validation for translation files
+- [[file:doc/tlon-youtube.org][YouTube integration]] - Tools for managing YouTube videos and subtitles
 
 * Installation
 
