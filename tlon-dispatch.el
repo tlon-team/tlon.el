@@ -65,7 +65,7 @@
     ("u" "counterpart"                    tlon-counterpart-menu)
     ("v" "url"                            tlon-url-menu)
     ("y" "forg"                           tlon-forg-menu)
-    ("Y" "youtube"                        tlon-youtube-menu)
+    ("H-y" "youtube"                      tlon-youtube-menu)
     ("x" "tex"                            tlon-tex-menu)
     ("z" "tts"                            tlon-tts-menu)]
    [""
