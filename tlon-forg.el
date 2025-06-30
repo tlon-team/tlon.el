@@ -442,8 +442,8 @@ Return ?i when user chooses ISSUE value, ?t when they choose TODO value.
 ISSUE-VAL and TODO-VAL are the values to be compared, and ELEMENT is a string
 describing the element being compared (e.g., \"Titles\").
 ISSUE-CONTEXT-STRING provides context about the issue being processed."
-  (let* ((choices `((,(format "issue: %s" issue-val) . ?i)
-		    (,(format "todo: %s" todo-val) . ?t)))
+  (let* ((choices `((,(format "github issue: %s" issue-val) . ?i)
+		    (,(format "org heading:  %s" todo-val) . ?t)))
 	 (selection (completing-read
 		     (format "For issue '%s':\n%s differ. Choose value to keep: " issue-context-string element)
 		     (mapcar #'car choices) nil t)))
