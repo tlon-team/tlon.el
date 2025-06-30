@@ -463,7 +463,8 @@ key, available in the callback's INFO plist."
              (request (lambda () (gptel-request full-prompt
                               :callback callback
                               :buffer (or request-buffer (current-buffer))
-                              :context context-data))))
+                              :context context-data
+                              :transforms gptel-prompt-transform-functions))))
         (if tlon-ai-batch-fun
             (condition-case nil
                 (funcall request)
