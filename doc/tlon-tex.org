@@ -170,7 +170,7 @@ This section details the interactive commands provided by =tlon-tex.el=.
   1. Gets missing URLs using ~tlon-get-missing-urls~.
   2. Iterates through missing URLs, highlighting each one.
   3. Prompts the user ("Add? y/n") for each URL.
-  4. Saves the URLs the user wants to add to the file specified by =zotra-extras-add-multiple-urls-filename= using =files-extras-list-to-lines=.
+  4. Saves the URLs the user wants to add to the file specified by =zotra-extras-add-multiple-urls-from-file= using =files-extras-list-to-lines=.
   5. Messages the user about the saved file and the next step (using =zotra-extras-add-multiple-urls=).
 
 *** Translation Entry Creation

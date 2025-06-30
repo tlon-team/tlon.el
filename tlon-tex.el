@@ -537,7 +537,7 @@ and sets the value of the field for all entries to `Tlön'."
 
 ;;;;; Add missing URLs
 
-(defvar zotra-extras-add-multiple-urls-filename)
+(defvar zotra-extras-add-multiple-urls-from-file)
 (declare-function files-extras-list-to-lines "files-extras")
 ;;;###autoload
 (defun tlon-prompt-to-add-missing-urls ()
@@ -557,9 +557,9 @@ and sets the value of the field for all entries to `Tlön'."
 	(hi-lock-unface-buffer (regexp-quote url)))
       (if (null urls-to-add)
 	  (message "No URLs to add.")
-	(files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-filename)
+	(files-extras-list-to-lines urls-to-add zotra-extras-add-multiple-urls-from-file)
 	(message "Saved URLs to `%s'. You can now add them with Zotra via `zotra-extras-add-multiple-urls'."
-		 zotra-extras-add-multiple-urls-filename)))))
+		 zotra-extras-add-multiple-urls-from-file)))))
 
 ;; TODO: maybe generalize to other fields, e.g. isbn, doi
 (declare-function simple-extras-simplify-url "simple-extras")
