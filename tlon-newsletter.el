@@ -71,30 +71,24 @@ news. The original input file is then overwritten with this new draft."
                (prompt-file-path (file-name-concat (file-name-directory input-file-path) prompt-file-name)))
           (unless (file-exists-p prompt-file-path)
             (user-error "Prompt file not found: %s" prompt-file-path))
-          (let* ((raw-prompt-from-file (with-temp-buffer
-                                         (insert-file-contents prompt-file-path)
-                                         (buffer-string)))
-                 (glossary-string (tlon-newsletter--get-en-es-glossary-string))
-                 (prompt-with-glossary (replace-regexp-in-string "%%GLOSSARY%%" (string-trim glossary-string) raw-prompt-from-file t t))
-                 (example-issue-file-name "2025-07.md")
-                 (example-issue-path (file-name-concat (file-name-directory input-file-path) example-issue-file-name))
-                 (example-issue-content
-                  (if (file-exists-p example-issue-path)
+          (let* ((raw-prompt (with-temp-buffer
+                               (insert-file-contents prompt-file-path)
+                               (buffer-string)))
+                 (sample-issue-content
+                  (if (file-exists-p tlon-newsletter-sample-issue)
                       (with-temp-buffer
-                        (insert-file-contents example-issue-path)
+                        (insert-file-contents tlon-newsletter-sample-issue)
                         (buffer-string))
                     (progn
-                      (message "Warning: Example issue file not found: %s. Proceeding without example." example-issue-path)
+                      (message "Warning: Sample issue file not found: %s. Proceeding without example." tlon-newsletter-sample-issue)
                       "")))
-                 (final-prompt (if (string-empty-p example-issue-content)
-                                   prompt-with-glossary ;; Use prompt with only glossary if example is missing
-                                 (replace-regexp-in-string "%%EXAMPLE_ISSUE%%" (string-trim example-issue-content) prompt-with-glossary t t))))
-            (if (string-blank-p raw-prompt-from-file) ; Check original prompt file for blankness
+                 (final-prompt (format raw-prompt sample-issue-content content)))
+            (if (string-blank-p raw-prompt) ; Check original prompt file for blankness
                 (user-error "Prompt file %s is empty" prompt-file-path)
               (progn
                 (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..." input-file-path prompt-file-path)
                 (tlon-make-gptel-request final-prompt
-                                         content
+                                         nil
                                          #'tlon-newsletter--create-issue-callback
                                          tlon-newsletter-model
                                          t   ; Skip context check
