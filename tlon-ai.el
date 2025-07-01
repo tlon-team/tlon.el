@@ -113,22 +113,6 @@ default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
-(defcustom tlon-ai-glossary-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
-  "Model to use for AI glossary generation (`tlon-ai-create-glossary-language').
-The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, use the
-default `gptel-model'."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
-  :group 'tlon-ai)
-
-(defcustom tlon-ai-glossary-verify-model
-  '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
-  "Model to use for verifying/cleaning AI glossary translations.
-See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'."
-  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
-  :group 'tlon-ai)
-
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -401,24 +385,6 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
    "--- TARGET FILE CONTENT START ---\n%s\n--- TARGET FILE CONTENT END ---\n\n"
    "Please output *only* the complete, modified content of the target file. Do not add explanations, comments, apologies, or markdown formatting (like ```) around the output.")
   "Prompt for propagating changes across files in different languages.")
-
-;;;;; Glossary Generation
-
-(defconst tlon-ai-create-glossary-language-prompt
-  "You are an expert multilingual glossary creator.\n\nYour task is to generate translations for a list of English terms into the target language: *%s*.\n\nI will provide you with a list of English terms that currently lack a translation in the target language (one term per line).\n\nHere is the list of English terms needing translation:\n```text\n%s\n```\n\nPlease return *only* the translations for these terms into the target language (%s), one translation per line.\n\nExample output format:\n```text\nTranslation 1\nTranslation 2\nTranslation 3\n...\n```\n\n- Provide *exactly one* translation line for *every* English term in the input list.\n- Maintain the exact order of the translations corresponding to the input terms.\n- If you are unsure about a translation, provide your best guess or use the placeholder string \"[TRANSLATION_UNAVAILABLE]\". *Do not omit any terms.*\n- The total number of lines in your response *must* equal the number of lines in the input list.\n- Do *not* include the original English terms in your response.\n- Do *not* include any explanations, introductory text, numbering, bullet points, or any JSON/Markdown formatting. Return only the plain text translations, one per line."
-  ;; %s will be the target language name (e.g., "German")
-  ;; %s will be the newline-separated list of English terms needing translation
-  ;; %s will be the target language name again (for the prompt text)
-  "Prompt for generating translations for missing terms in a glossary language.")
-
-(defconst tlon-ai-verify-glossary-translations-prompt
-  "You are a text cleaning expert. I received the following text block which is *supposed* to be a list of translations into %s, one per line, corresponding to %d English terms. However, it might contain errors, extra text, incorrect formatting, or an incorrect number of lines.\n\nPlease analyze the following text block:\n```text\n%s\n```\n\nYour task is to return *only* the cleaned list of translations, one per line.\n- Ensure there are *exactly* %d lines in your output.\n- Each line should contain only the translation for the corresponding term.\n- Remove any introductory text, explanations, numbering, bullet points, JSON/Markdown formatting, or other extraneous content.\n- If the input seems corrupt or unusable for a specific line, use the placeholder \"[TRANSLATION_UNAVAILABLE]\".\n- If the input has fewer lines than expected, add placeholder lines at the end to reach the expected count.\n- If the input has more lines than expected, truncate it to the expected count.\n- Return *only* the plain text translations, one per line."
-  ;; %s = target language name
-  ;; %d = expected number of translations
-  ;; %s = raw response from first AI
-  ;; %d = expected number of translations (again)
-  "Prompt for verifying and cleaning AI-generated glossary translations.")
-
 
 ;;;; Functions
 
@@ -2544,18 +2510,6 @@ If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-ai-help-model)
 
-(transient-define-infix tlon-ai-infix-select-glossary-model ()
-  "AI model to use for glossary generation.
-If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-glossary-model)
-
-(transient-define-infix tlon-ai-infix-select-glossary-verify-model ()
-  "AI model to use for verifying glossary translations.
-If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-glossary-verify-model)
-
 ;;;;;; Main menu
 
 (autoload 'gptel--infix-provider "gptel-transient")
@@ -2622,8 +2576,6 @@ If nil, use the default model."
     "Models"
     ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("m -s" "Summarization" tlon-ai-infix-select-summarization-model)
-    ("m -g" "Glossary generation" tlon-ai-infix-select-glossary-model)
-    ("m -v" "Glossary verification" tlon-ai-infix-select-glossary-verify-model) ; Added
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
     ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
