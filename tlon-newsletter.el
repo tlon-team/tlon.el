@@ -30,6 +30,12 @@
 (require 'tlon-glossary)
 (require 'transient)
 
+;;;; Variables
+
+(defconst tlon-newsletter-sample-issue
+  (file-name-concat tlon-package-dir "etc/sample-newsletter-issue.md")
+  "File with a sample issue of the newsletter.")
+
 ;;;; User options
 
 (defgroup tlon-newsletter nil
@@ -61,7 +67,7 @@ news. The original input file is then overwritten with this new draft."
             (input-file-path (cdr input-data)))
       (if (string-blank-p content)
           (message "The latest newsletter input file is empty. Nothing to process.")
-        (let* ((prompt-file-name "prompt.md")
+        (let* ((prompt-file-name "newsletter-prompt.md")
                (prompt-file-path (file-name-concat (file-name-directory input-file-path) prompt-file-name)))
           (unless (file-exists-p prompt-file-path)
             (user-error "Prompt file not found: %s" prompt-file-path))
@@ -185,6 +191,7 @@ If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-newsletter-model)
 
+;;;###autoload (autoload 'tlon-newsletter-menu "tlon-newsletter" nil t)
 (transient-define-prefix tlon-newsletter-menu ()
   "Menu for `tlon-newsletter'."
   :info-manual "(tlon) newsletter"
