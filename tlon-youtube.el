@@ -329,7 +329,8 @@ Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
 ;;;###autoload
 (defun tlon-youtube-upload-video ()
   "Upload a video file to YouTube.
-Prompts for video file, title, description, privacy setting, and optional playlist."
+Prompts for video file, title, description, privacy setting, and optional
+playlist."
   (interactive)
   (unless (and tlon-youtube-client-id tlon-youtube-client-secret)
     (user-error "YouTube API credentials not configured. Set `tlon-youtube-client-id` and `tlon-youtube-client-secret`"))
