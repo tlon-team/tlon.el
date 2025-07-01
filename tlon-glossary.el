@@ -26,10 +26,16 @@
 ;;; Code:
 
 (require 'tlon)
-(require 'tlon-ai) ; Added for AI functions
 (require 'tlon-core) ; Added for tlon-write-data, tlon-read-json, etc.
 (require 'json) ; Added for json-read-from-string
 (require 'transient)
+
+(declare-function tlon-make-gptel-request "tlon-ai")
+(declare-function tlon-ai-callback-fail "tlon-ai")
+(defvar tlon-ai-glossary-model)
+(defvar tlon-ai-glossary-verify-model)
+(defvar tlon-ai-create-glossary-language-prompt)
+(defvar tlon-ai-verify-glossary-translations-prompt)
 
 ;;;; Variables
 
@@ -149,6 +155,7 @@ Prompts for a target language, identifies terms missing a translation for that
 language, sends only those terms to an AI model, and merges the AI-generated
 translations back into the glossary file. Can be run iteratively."
   (interactive)
+  (require 'tlon-ai)
   (let* ((new-lang-code (tlon-select-language 'code 'babel "Target language: "))
          (new-lang-name (tlon-lookup tlon-languages-properties :name :code new-lang-code))
          (glossary-data (tlon-parse-glossary))

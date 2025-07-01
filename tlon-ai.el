@@ -34,7 +34,6 @@
 (require 'tlon-core)
 (require 'tlon-tex) ; needed to set variables correctly
 (require 'tlon-counterpart)
-(require 'tlon-glossary)
 
 ;;;; User options
 
@@ -812,6 +811,7 @@ Checks for `locator' attributes in <Cite> tags."
 (defun tlon-add-glossary-to-context (lang)
   "Add the glossary of LANG to the context."
   (unless (string= lang "en")
+    (require 'tlon-glossary)
     (tlon-extract-glossary lang 'deepl-editor)
     (gptel-context-add-file (tlon-glossary-target-path lang 'deepl-editor))))
 
