@@ -625,7 +625,9 @@ If FILE is nil, use the file visited by the current buffer."
 (defvar markdown-regex-link-inline)
 ;;;###autoload
 (defun tlon-convert-links-to-cite ()
-  "Prompt the user to convert all links in the current buffer to citations."
+  "Prompt the user to convert each URL in the current buffer to a citation.
+The user will only be prompted to convert URLs for which a BibTeX entry is
+found."
   (interactive)
   (save-excursion
     (goto-char (point-min))
