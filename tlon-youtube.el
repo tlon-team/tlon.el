@@ -174,6 +174,7 @@ history list (unused). Allows selecting from predefined resolutions."
 
 ;;;;;; Wavelength video
 
+;;;###autoload
 (defun tlon-youtube-generate-wavelength-video ()
   "Generate a video with an animated wavelength from an audio file.
 The command runs asynchronously and opens the video upon completion.
@@ -220,6 +221,7 @@ the original audio file name."
 
 ;;;;;; Thumbnail
 
+;;;###autoload
 (defun tlon-youtube-generate-thumbnail ()
   "Generate a thumbnail for the video.
 Prompts the user for a title and author(s), and uses the logo from
@@ -324,6 +326,7 @@ Returns a list of (INIT-COMMAND UPLOAD-COMMAND METADATA-FILE)."
       (insert metadata))
     (list init-command upload-command metadata-file)))
 
+;;;###autoload
 (defun tlon-youtube-upload-video ()
   "Upload a video file to YouTube.
 Prompts for video file, title, description, privacy setting, and optional playlist."
@@ -505,6 +508,7 @@ exact curl command to run for the video upload step."
 
 ;;;;;; Upload thumbnail
 
+;;;###autoload
 (defun tlon-youtube-upload-thumbnail ()
   "Upload a thumbnail to an existing YouTube video.
 Prompts for thumbnail file and video ID."
@@ -518,6 +522,7 @@ Prompts for thumbnail file and video ID."
       (user-error "Thumbnail file does not exist: %s" thumbnail-file))
     (tlon-youtube--upload-thumbnail-file thumbnail-file video-id)))
 
+;;;###autoload
 (defun tlon-youtube-add-to-playlist ()
   "Add an existing YouTube video to a playlist.
 Prompts for video ID and playlist selection."
