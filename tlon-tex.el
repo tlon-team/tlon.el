@@ -641,7 +641,7 @@ found."
 	    (when (y-or-n-p (format "Convert %s to citation with key %s? " url key))
 	      (goto-char start)
 	      (when (re-search-forward markdown-regex-link-inline end t)
-		(replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key) ".") t t)))))))))
+		(replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key "" "") ".") t t)))))))))
 
 (declare-function tlon-md-get-tag-to-fill "tlon-md")
 ;;;###autoload
@@ -660,7 +660,7 @@ locators (which are not relevant in a bibliography)."
 	(let* ((title (match-string 1))
 	       (key (tlon-bibliography-lookup "title" title "=key=")))
 	  (when key
-	    (replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key) ".")
+	    (replace-match (concat (format (tlon-md-get-tag-to-fill "Cite") key "" "") ".")
 			   t t)))))))
 
 (defvar citar-cache--bibliographies)
