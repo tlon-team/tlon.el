@@ -134,9 +134,9 @@ Please note that the order in which these functions are called is relevant. Do
 not alter it unless you know what you are doing."
   (interactive)
   (tlon-cleanup-eaf-replace-urls)
-  (tlon-cleanup-fix-footnotes)
-  (tlon-cleanup-fix-footnote-references)
-  (tlon-cleanup-remove-text))
+  (tlon-cleanup-fix-eaf-footnotes)
+  (tlon-cleanup-fix-eaf-footnote-references)
+  (tlon-cleanup-remove-eaf-text))
 
 ;;;###autoload
 (defun tlon-cleanup-eaf-replace-urls ()
@@ -169,7 +169,7 @@ entry is added."
 
 ;; If problems arise, test against documents imported from these URLs:
 ;; https://forum.effectivealtruism.org/s/vSAFjmWsfbMrTonpq/p/u5JesqQ3jdLENXBtB
-(defun tlon-cleanup-fix-footnotes ()
+(defun tlon-cleanup-fix-eaf-footnotes ()
   "Convert footnotes to valid Markdown syntax."
   (let* ((ref-number "[[:digit:]]\\{1,3\\}")
 	 (ref-source (format "\\^\\[\\\\\\[\\(?1:%s\\)\\\\\\]\\](#fn.*?){.*?}\\^" ref-number)))
@@ -177,7 +177,7 @@ entry is added."
     (while (re-search-forward ref-source nil t)
       (replace-match (format "[^%s]" (match-string-no-properties 1))))))
 
-(defun tlon-cleanup-fix-footnote-references ()
+(defun tlon-cleanup-fix-eaf-footnote-references ()
   "Convert footnote references to valid Markdown syntax."
   (let* ((ref-number "[[:digit:]]\\{1,3\\}")
 	 (ref-target (format "\\(?1:%1$s\\)\\..*?\\(?2:[^[:space:]].*?\\)\\[↩︎\\](#fnref-[[:alnum:]]*-%1$s){\\.footnote-backref}"
@@ -186,7 +186,7 @@ entry is added."
     (while (re-search-forward ref-target nil t)
       (replace-match (format "[^%s]: %s" (match-string-no-properties 1) (match-string-no-properties 2))))))
 
-(defun tlon-cleanup-remove-text ()
+(defun tlon-cleanup-remove-eaf-text ()
   "Remove various strings of text."
   (dolist (string '("::: footnotes\n"
 		    "{rev=\"footnote\"} :::"
