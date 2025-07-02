@@ -201,6 +201,32 @@ entry is added."
     (while (re-search-forward string nil t)
       (replace-match ""))))
 
+;;;;; Generic
+
+(defun tlon-cleanup-generic ()
+  "Cleanup a buffer visiting an imported document from a generic source.
+Please note that the order in which these functions are called is relevant. Do
+not alter it unless you know what you are doing."
+  (interactive)
+  (tlon-cleanup-fix-generic-footnotes)
+  (tlon-cleanup-fix-generic-footnote-references))
+
+(defun tlon-cleanup-fix-generic-footnotes ()
+  "Convert generic footnotes to valid Markdown syntax."
+  (let ((ref-source "\\[<sup>\\([[:digit:]]\\{1,3\\}\\)</sup>\\](#fn-\\1[^)]*)"))
+    (goto-char (point-min))
+    (while (re-search-forward ref-source nil t)
+      (replace-match (format "[^%s]" (match-string-no-properties 1))))))
+
+(defun tlon-cleanup-fix-generic-footnote-references ()
+  "Convert generic footnote references to valid Markdown syntax."
+  (let ((ref-target "^\\([[:digit:]]\\{1,3\\}\\)\\.\\s-*\\([[:print:][:space:]]*?\\)\\s-*\\[↩\\](#fn-ref-\\1)"))
+    (goto-char (point-min))
+    (while (re-search-forward ref-target nil t)
+      (replace-match (format "[^%s]: %s"
+                             (match-string-no-properties 1)
+                             (match-string-no-properties 2))))))
+
 ;;;;;; Footnotes
 
 (defun tlon-cleanup-split-footnotes-into-paragraphs ()
