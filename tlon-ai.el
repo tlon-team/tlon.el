@@ -386,6 +386,21 @@ default `gptel-model'."
    "Please output *only* the complete, modified content of the target file. Do not add explanations, comments, apologies, or markdown formatting (like ```) around the output.")
   "Prompt for propagating changes across files in different languages.")
 
+;;;;; Citation Replacement
+
+(defconst tlon-ai-replace-citations-prompt
+  "You are an expert academic editor. Your task is to process a text file, identify all bibliographic citations within it, and replace them with a structured `<Cite>` tag.
+
+Here is the process you must follow:
+1. Read the content of the file located at the path I will provide.
+2. For each citation you find (e.g., 'Davidson (2021)', 'Smith, 2019', 'see Jones et al., forthcoming'), use the `search_bibliography` tool to find the corresponding entry in the user's bibliography database. This tool will return the unique BibTeX key for the entry if a match is found.
+3. If a citation refers to a URL or a web page, you may need to use the `fetch_content` and `search` tools to identify the work before looking it up in the bibliography.
+4. Once you have the BibTeX key (e.g., 'Davidson2021ReportSemiInformative'), you must replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`.
+5. After identifying all citations and their keys, use the `edit_file` tool to apply all the replacements to the original file. You should perform all edits in a single operation if possible.
+
+The path to the file you need to process is: %s"
+  "Prompt for replacing citations with BibTeX keys.")
+
 ;;;; Functions
 
 ;;;;; General
@@ -2068,6 +2083,33 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
     ;; Clean up state variable
     (setq tlon-ai--extract-replace-state nil)))
 
+;;;;;; Citation Replacement (AI Agent)
+
+;;;###autoload
+(defun tlon-ai-replace-citations-in-file ()
+  "Use AI to find and replace bibliographic citations in a file with <Cite> tags.
+This command prompts for a file and then instructs an AI agent, equipped with
+tools like `search_bibliography`, `read_file`, and `edit_file`, to process
+the file. The AI will identify citations, find their corresponding BibTeX
+keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
+  (interactive)
+  (let* ((file (read-file-name "File to process: "))
+         (prompt (format tlon-ai-replace-citations-prompt file))
+         (tools '("search_bibliography" "fetch_content" "search" "edit_file" "read_file")))
+    (unless (file-exists-p file)
+      (user-error "File does not exist: %s" file))
+    (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
+    (tlon-make-gptel-request prompt nil #'tlon-ai-replace-citations-callback nil t nil tools)))
+
+(defun tlon-ai-replace-citations-callback (response info)
+  "Callback for `tlon-ai-replace-citations-in-file'.
+RESPONSE is the AI's response, INFO is the response info.
+This function primarily exists to confirm that the AI agent has finished its
+task, as the file modifications are expected to be done via tools."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (message "AI agent has finished processing citations. Please check the file for changes.")))
+
 ;;;;;; Slack
 
 
@@ -2557,7 +2599,8 @@ If nil, use the default model."
     "Bibliography"
     ("x" "Extract references from buffer/region" tlon-ai-extract-references)
     ("k" "Get BibKeys for references (region - line based)"   tlon-ai-get-bibkeys-from-references)
-    ("X" "Extract & Replace References (buffer/region - precise)" tlon-ai-extract-and-replace-references)]
+    ("X" "Extract & Replace References (buffer/region - precise)" tlon-ai-extract-and-replace-references)
+    ("C" "Replace citations with AI agent"            tlon-ai-replace-citations-in-file)]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
