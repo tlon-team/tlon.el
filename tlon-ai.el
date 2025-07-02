@@ -436,35 +436,35 @@ key, available in the callback's INFO plist."
   (unless (or tlon-ai-batch-fun skip-context-check)
     (gptel-extras-warn-when-context))
   (let* ((processed-tools (if (and tools (listp tools) (cl-every #'stringp tools)) ; Check if tools is a list of strings
-                              (mapcar (lambda (tool-name-str)
-                                        (gptel-get-tool tool-name-str)) ; Use gptel-get-tool to find the tool struct. It will error if not found.
-                                      tools)
-                            ;; Else, tools is not a list of strings. It could be:
-                            ;; 1. A list of tool structs (correct as per original docstring)
-                            ;; 2. nil (no tools specified for this request)
-                            ;; 3. A list of mixed strings/structs or other types (error, but not handled here, will likely fail later)
-                            tools))
-         ;; Let-bind gptel-tools and gptel-use-tools for the dynamic scope of gptel-request
-         (gptel-tools processed-tools)
-         (gptel-use-tools (if gptel-tools t gptel-use-tools)) ; Enable tools if any are specified
-         ;; Other let-bindings
-         (full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-         (prompt (tlon-ai-maybe-edit-prompt prompt)))
+			      (mapcar (lambda (tool-name-str)
+					(gptel-get-tool tool-name-str)) ; Use gptel-get-tool to find the tool struct. It will error if not found.
+				      tools)
+			    ;; Else, tools is not a list of strings. It could be:
+			    ;; 1. A list of tool structs (correct as per original docstring)
+			    ;; 2. nil (no tools specified for this request)
+			    ;; 3. A list of mixed strings/structs or other types (error, but not handled here, will likely fail later)
+			    tools))
+	 ;; Let-bind gptel-tools and gptel-use-tools for the dynamic scope of gptel-request
+	 (gptel-tools processed-tools)
+	 (gptel-use-tools (if gptel-tools t gptel-use-tools)) ; Enable tools if any are specified
+	 ;; Other let-bindings
+	 (full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
+	 (prompt (tlon-ai-maybe-edit-prompt prompt)))
 
     ;; Inner cl-destructuring-bind and let* for gptel-backend, full-prompt, request lambda
     (cl-destructuring-bind (backend . model) full-model
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-             (full-prompt (if string (format prompt string) prompt))
-             (request (lambda () (gptel-request full-prompt
-                              :callback callback
-                              :buffer (or request-buffer (current-buffer))
-                              :context context-data
-                              :transforms gptel-prompt-transform-functions))))
-        (if tlon-ai-batch-fun
-            (condition-case nil
-                (funcall request)
-              (error nil))
-          (funcall request))))))
+	     (full-prompt (if string (format prompt string) prompt))
+	     (request (lambda () (gptel-request full-prompt
+			      :callback callback
+			      :buffer (or request-buffer (current-buffer))
+			      :context context-data
+			      :transforms gptel-prompt-transform-functions))))
+	(if tlon-ai-batch-fun
+	    (condition-case nil
+		(funcall request)
+	      (error nil))
+	  (funcall request))))))
 
 (defun tlon-ai-maybe-edit-prompt (prompt)
   "If `tlon-ai-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
@@ -558,7 +558,7 @@ Otherwise,
 - If the region is active, return its contents.
 
 - If in `bibtex-mode' or in `ebib-entry-mode', return the contents of the HTML
-  or PDF file associated with the current BibTeX entry, if either is found.
+or PDF file associated with the current BibTeX entry, if either is found.
 
 - If in `pdf-view-mode', return the contents of the current PDF file.
 
@@ -2109,8 +2109,8 @@ the file. The AI will identify citations, find their corresponding BibTeX
 keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
   (interactive)
   (let* ((file (read-file-name "File to process: "))
-         (prompt (format tlon-ai-replace-citations-prompt file))
-         (tools '("search_bibliography" "fetch_content" "search" "edit_file" "read_file")))
+	 (prompt (format tlon-ai-replace-citations-prompt file))
+	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "read_file")))
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
@@ -2167,26 +2167,26 @@ Uses AI to generate an SEO-optimized title based on the current buffer's
 content."
   (interactive)
   (let* ((current-file (buffer-file-name))
-         (article-content (tlon-md-read-content))
-         (language (or (tlon-get-language-in-file nil)
-                       (tlon-select-language 'code))))
+	 (article-content (tlon-md-read-content))
+	 (language (or (tlon-get-language-in-file nil)
+		       (tlon-select-language 'code))))
     (unless current-file
       (user-error "Current buffer is not visiting a file"))
     (unless language
       (user-error "Language selection aborted"))
     (if (string-empty-p (string-trim article-content))
-        (message "Cannot generate title: Article content is empty.")
+	(message "Cannot generate title: Article content is empty.")
       (if-let ((prompt (tlon-lookup tlon-ai-create-title-prompt :prompt :language language)))
-          (progn
-            (message "Requesting AI title generation for %s (lang: %s)..."
-                     (file-name-nondirectory current-file)
-                     (or (tlon-validate-language language 'name) language))
-            (tlon-make-gptel-request prompt
-                                     article-content
-                                     #'tlon-ai-create-title-callback
-                                     tlon-ai-summarization-model))
-        (message "No title generation prompt available for language %s."
-                 (or (tlon-validate-language language 'name) language))))))
+	  (progn
+	    (message "Requesting AI title generation for %s (lang: %s)..."
+		     (file-name-nondirectory current-file)
+		     (or (tlon-validate-language language 'name) language))
+	    (tlon-make-gptel-request prompt
+				     article-content
+				     #'tlon-ai-create-title-callback
+				     tlon-ai-summarization-model))
+	(message "No title generation prompt available for language %s."
+		 (or (tlon-validate-language language 'name) language))))))
 
 (defun tlon-ai-create-meta-description-callback (response info)
   "Callback for `tlon-ai-create-meta-description'.
