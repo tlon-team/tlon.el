@@ -347,6 +347,11 @@ When invoked, it prompts the user for a file to process. It then sends a request
 
 The entire process, from reading the file to writing the changes, is managed by the AI agent. The command simply initiates the process and reports when the agent has finished.
 
+#+findex: tlon-ai-add-missing-citations
+The command ~tlon-ai-add-missing-citations~ is a companion to ~tlon-ai-replace-citations-in-file~. After the latter command has marked all unfound citations by enclosing them in ~{!~ and ~!}~, this command can be run.
+
+It prompts for a file and instructs an AI agent to find all such marked citations. For each one, the agent is tasked to find an identifier (URL, DOI, ISBN), potentially using search tools, and then use the =add_bib_entry= tool to add the work to the user's main BibTeX file (=tlon-file-fluid=). This command does not modify the processed file itself; its only purpose is to populate the bibliography. After running it, the user can run ~tlon-ai-replace-citations-in-file~ again to replace the newly added citations with proper =<Cite>= tags.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-ai-menu
