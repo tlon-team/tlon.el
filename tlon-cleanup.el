@@ -225,7 +225,8 @@ not alter it unless you know what you are doing."
     (while (re-search-forward ref-target nil t)
       (replace-match (format "[^%s]: %s"
                              (match-string-no-properties 1)
-                             (match-string-no-properties 2))))))
+                             (match-string-no-properties 2))
+                     nil t))))
 
 ;;;;;; Footnotes
 
