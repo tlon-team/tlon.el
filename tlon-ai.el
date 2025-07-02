@@ -2107,12 +2107,10 @@ keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
 RESPONSE is the AI's response, INFO is the response info.
 This function primarily exists to confirm that the AI agent has finished its
 task, as the file modifications are expected to be done via tools."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (message "AI agent has finished processing citations. Please check the file for changes.")))
+  (unless response
+    (tlon-ai-callback-fail info)))
 
 ;;;;;; Slack
-
 
 ;;;;; Meta Description Generation
 
