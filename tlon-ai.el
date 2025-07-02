@@ -402,6 +402,19 @@ Here is the process you must follow:
   The path to the file you need to process is: %s"
   "Prompt for replacing citations with BibTeX keys.")
 
+(defconst tlon-ai-add-missing-citations-prompt
+  "You are an expert academic assistant. Your task is to process a text file and add missing bibliographic entries to a BibTeX file.
+
+Here is the process you must follow:
+1. Read the content of the file located at the path I will provide using the `read_file` tool.
+2. Find all citations enclosed in `{!` and `!}`.
+3. For each citation found, you must find a unique identifier for the work, such as a URL, DOI, or ISBN. The citation string itself may contain it. If not, you must use the `search` tool to find one.
+4. Once you have an identifier, use the `add_bib_entry` tool to add a new entry to the bibliography file. The `bibfile` parameter for this tool MUST be '%s'. The `identifier` parameter should be the URL, DOI, or ISBN you found.
+5. You do not need to modify the original file. Your only task is to add entries to the bibliography. Once you have processed all missing citations, simply respond with 'Done.'.
+
+The path to the file you need to process is: %s"
+  "Prompt for adding missing citations to the bibliography.")
+
 ;;;; Functions
 
 ;;;;; General
@@ -2110,6 +2123,28 @@ task, as the file modifications are expected to be done via tools."
   (unless response
     (tlon-ai-callback-fail info)))
 
+;;;###autoload
+(defun tlon-ai-add-missing-citations ()
+  "Use AI to add missing citations in a file to the bibliography.
+This command prompts for a file and then instructs an AI agent to find all
+citations enclosed in `{!` and `!}`. For each one, it uses the `add_bib_entry`
+tool to add an entry to `tlon-file-fluid`."
+  (interactive)
+  (let* ((file (read-file-name "File to process: "))
+         (prompt (format tlon-ai-add-missing-citations-prompt tlon-file-fluid file))
+         (tools '("add_bib_entry" "read_file" "search")))
+    (unless (file-exists-p file)
+      (user-error "File does not exist: %s" file))
+    (message "Requesting AI to add missing citations from %s..." (file-name-nondirectory file))
+    (tlon-make-gptel-request prompt nil #'tlon-ai-add-missing-citations-callback nil t nil tools)))
+
+(defun tlon-ai-add-missing-citations-callback (response info)
+  "Callback for `tlon-ai-add-missing-citations'.
+RESPONSE is the AI's response, INFO is the response info."
+  (if response
+      (message "AI agent finished processing missing citations.")
+    (tlon-ai-callback-fail info)))
+
 ;;;;;; Slack
 
 ;;;;; Meta Description Generation
@@ -2599,7 +2634,8 @@ If nil, use the default model."
     ("x" "Extract references from buffer/region" tlon-ai-extract-references)
     ("k" "Get BibKeys for references (region - line based)"   tlon-ai-get-bibkeys-from-references)
     ("X" "Extract & Replace References (buffer/region - precise)" tlon-ai-extract-and-replace-references)
-    ("C" "Replace citations with AI agent"            tlon-ai-replace-citations-in-file)]
+    ("C" "Replace citations with AI agent"            tlon-ai-replace-citations-in-file)
+    ("A" "Add missing citations to BibTeX"            tlon-ai-add-missing-citations)]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
