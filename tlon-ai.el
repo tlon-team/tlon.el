@@ -2132,8 +2132,8 @@ citations enclosed in `{!` and `!}`. For each one, it uses the `add_bib_entry`
 tool to add an entry to `tlon-file-fluid`."
   (interactive)
   (let* ((file (read-file-name "File to process: "))
-         (prompt (format tlon-ai-add-missing-citations-prompt tlon-file-fluid file))
-         (tools '("add_bib_entry" "read_file" "search")))
+	 (prompt (format tlon-ai-add-missing-citations-prompt tlon-file-fluid file))
+	 (tools '("add_bib_entry" "fetch_content" "search" "edit_file" "read_file")))
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to add missing citations from %s..." (file-name-nondirectory file))
