@@ -113,6 +113,15 @@ default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
+(defcustom tlon-ai-replace-citations-model
+  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  "Model to use for replacing citations (`tlon-ai-replace-citations-in-file').
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-ai)
+
 ;;;; Variables
 
 (defvar tlon-ai-retries 0
@@ -2116,7 +2125,7 @@ keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
-    (tlon-make-gptel-request prompt nil #'tlon-ai-replace-citations-callback nil t nil tools)))
+    (tlon-make-gptel-request prompt nil #'tlon-ai-replace-citations-callback tlon-ai-replace-citations-model t nil tools)))
 
 (defun tlon-ai-replace-citations-callback (response info)
   "Callback for `tlon-ai-replace-citations-in-file'.
@@ -2589,6 +2598,12 @@ If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-ai-help-model)
 
+(transient-define-infix tlon-ai-infix-select-replace-citations-model ()
+  "AI model to use for replacing citations.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-replace-citations-model)
+
 ;;;;;; Main menu
 
 (autoload 'gptel--infix-provider "gptel-transient")
@@ -2659,7 +2674,8 @@ If nil, use the default model."
     ("m -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
-    ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
+    ("a -a" "Help model" tlon-ai-infix-select-help-model)
+    ("m -C" "Replace citations" tlon-ai-infix-select-replace-citations-model)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
