@@ -139,7 +139,7 @@ default `gptel-model'."
 
 (declare-function paths-dir-dotemacs "tlon-paths")
 (defconst tlon-ai-changelog-file
-  (file-name-concat (paths-dir-dotemacs) "extras/gptel-extras-changelog-template.org")
+  (file-name-concat paths-dir-dotemacs "extras/gptel-extras-changelog-template.org")
   "The file with the changelog template for `tlon-ai-summarize-commit-diffs'.")
 
 ;;;;; Language detection
