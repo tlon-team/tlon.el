@@ -76,16 +76,6 @@ default `gptel-model'."
 
 ;;;;; Files
 
-(defconst tlon-file-abstract-translations
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs")
-		    "bib" "abstract-translations.json")
-  "The JSON file containing the abstract translations.")
-
-(defconst tlon-file-bare-bibliography
-  (file-name-concat (tlon-repo-lookup :dir :name "babel-refs")
-		    "bib" "bare-bibliography.json")
-  "The JSON file containing the bare bibliography (author, date, title, key).")
-
 (defconst tlon-tex-excluded-keys-file
   (file-name-concat tlon-package-dir "tlon-excluded-keys.el")
   "File where the excluded keys are persisted.")
