@@ -2204,7 +2204,7 @@ The command:
 	 (repo (forge-get-repository :tracked)))
     (unless repo
       (user-error "No tracked Forge repository found for directory %s" dir))
-    (forge-pull)
+    (forge--pull repo)
     (magit-status-setup-buffer (oref repo worktree))
     (let ((template (forge--topic-template nil 'forge-issue)))
       (forge-create-issue template))))

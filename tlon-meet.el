@@ -118,7 +118,7 @@ The %s will be replaced with the transcript text.")
     (let* ((get-last-updated (lambda () (oref repo updated)))
            (last-updated (funcall get-last-updated))
            (count 0))
-      (forge-pull)
+      (forge--pull repo)
       (while (and (< count 25) (string= last-updated (funcall get-last-updated)))
         (sleep-for 0.1)
         (setq count (1+ count))))))
@@ -184,14 +184,14 @@ If GROUP is non-nil, include the \"group\" option in the prompt."
   "Create an issue with TITLE in DIR and visit it."
   (with-temp-buffer
     (cd dir)
-    (when (forge-get-repository :tracked?)
+    (when-let ((repo (forge-get-repository :tracked?)))
       (tlon-create-issue title dir)
-      (forge-pull)
+      (forge--pull repo)
       (while (not (tlon-issue-lookup title dir))
 	(sleep-for 0.1))
       (forge-visit-issue (tlon-issue-lookup title dir))
       (format "*forge: %s %s*"
-	      (oref (forge-get-repository :tracked?) slug)
+	      (oref repo slug)
 	      (oref (forge-current-topic) slug)))))
 
 ;; TODO: generalize to all possible meetings
