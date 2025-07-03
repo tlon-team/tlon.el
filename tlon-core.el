@@ -47,9 +47,13 @@
 
 ;;;; Variables
 
+;;;;; Files
+
 (defconst tlon-package-dir
   (file-name-concat user-emacs-directory "elpaca/repos/tlon/")
   "Directory where the `tlon' package is located.")
+
+;;;;; Repos
 
 ;; `abbrev' is for naming Emacs symbols, perhaps for other things
 (defconst tlon-repos
@@ -385,6 +389,8 @@ creating `org-mode' TODOs.
 
 If `:help' is non-nil, include this repo in the list of directories scanned by
 `tlon-ai-get-documentation-files'.")
+
+;;;;; Email
 
 (defcustom tlon-email-shared
   "tlon.shared@gmail.com"
