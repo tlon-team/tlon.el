@@ -28,6 +28,8 @@
 
 (require 'bibtex-extras)
 (require 'citar-cache)
+(require 'gptel)
+(require 'gptel-extras)
 (require 'paths)
 (require 'seq)
 (require 'shut-up)
@@ -46,6 +48,29 @@
 	  (const :tag "Always overwrite" always)
 	  (const :tag "Never overwrite" never)
 	  (const :tag "Ask" ask)))
+
+(defcustom tlon-tex-edit-prompt nil
+  "Whether to edit the prompt before sending it to the AI model."
+  :type 'boolean
+  :group 'tlon-tex)
+
+(defcustom tlon-tex-replace-citations-model
+  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  "Model to use for replacing citations (`tlon-tex-replace-citations-in-file').
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-tex)
+
+(defcustom tlon-tex-add-missing-citations-model
+  tlon-tex-replace-citations-model
+  "Model to use for adding missing citations (`tlon-tex-add-missing-citations').
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-tex)
 
 ;;;; Variables
 
@@ -1010,6 +1035,556 @@ Includes entries even if some fields are missing (value will be null)."
                                    urls)))
     (zotra-extras-add-multiple-urls missing-urls tlon-file-fluid)))
 
+;;;;; AI Bibliographic Helpers
+
+(defconst tlon-tex-string-wrapper
+  ":\n\n```\n%s\n```\n\n"
+  "Wrapper for strings to be passed in prompts.")
+
+(defconst tlon-tex-gptel-error-message
+  "`gptel' failed with message: %s"
+  "Error message to display when `gptel-quick' fails.")
+
+(defun tlon-tex-make-gptel-request (prompt &optional string callback full-model skip-context-check request-buffer tools context-data)
+  "Make a `gptel' request with PROMPT and STRING and CALLBACK.
+When STRING is non-nil, PROMPT is a formatting string containing the prompt and
+a slot for a string, which is the variable part of the prompt (e.g. the text to
+be summarized in a prompt to summarize text). When STRING is nil (because there
+is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
+car is the backend and whose cdr is the model.
+
+By default, warn the user if the context is not empty. If SKIP-CONTEXT-CHECK is
+non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
+the gptel request. TOOLS is a list of gptel-tool structs to include with the
+request. CONTEXT-DATA is arbitrary data passed to the `gptel-request` :context
+key, available in the callback's INFO plist."
+  (unless skip-context-check
+    (gptel-extras-warn-when-context))
+  (let* ((processed-tools (if (and tools (listp tools) (cl-every #'stringp tools)) ; Check if tools is a list of strings
+			      (mapcar (lambda (tool-name-str)
+					(gptel-get-tool tool-name-str)) ; Use gptel-get-tool to find the tool struct. It will error if not found.
+				      tools)
+			    ;; Else, tools is not a list of strings. It could be:
+			    ;; 1. A list of tool structs (correct as per original docstring)
+			    ;; 2. nil (no tools specified for this request)
+			    ;; 3. A list of mixed strings/structs or other types (error, but not handled here, will likely fail later)
+			    tools))
+	 ;; Let-bind gptel-tools and gptel-use-tools for the dynamic scope of gptel-request
+	 (gptel-tools processed-tools)
+	 (gptel-use-tools (if gptel-tools t gptel-use-tools)) ; Enable tools if any are specified
+	 ;; Other let-bindings
+	 (full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
+	 (prompt (tlon-tex-maybe-edit-prompt prompt)))
+
+    ;; Inner cl-destructuring-bind and let* for gptel-backend, full-prompt, request lambda
+    (cl-destructuring-bind (backend . model) full-model
+      (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
+	     (full-prompt (if string (format prompt string) prompt))
+	     (request (lambda () (gptel-request full-prompt
+			      :callback callback
+			      :buffer (or request-buffer (current-buffer))
+			      :context context-data
+			      :transforms gptel-prompt-transform-functions))))
+	(funcall request)))))
+
+(defun tlon-tex-maybe-edit-prompt (prompt)
+  "If `tlon-tex-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
+  (if tlon-tex-edit-prompt
+      (read-string "Prompt: " prompt)
+    prompt))
+
+(defun tlon-tex-callback-fail (info)
+  "Callback message when `gptel' fails.
+INFO is the response info."
+  (message tlon-tex-gptel-error-message (plist-get info :status)))
+
+
+;;;;; Bibliographic Reference Extraction
+
+(defconst tlon-tex-extract-references-prompt
+  (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference on a new line. Do not include any commentary, numbering, or bullet points, just the references themselves. Examples of references might look like 'Author (Year) Title', 'Author, A. B. (Year). Title of work.', etc."
+	  tlon-tex-string-wrapper)
+  "Prompt for extracting bibliographic references from text.")
+
+(defconst tlon-tex-get-bibkeys-prompt
+  "You are an expert bibliographic database lookup tool. You will be given an 'Input Reference' string and a 'Database' in JSON format containing bibliographic entries.\n\nYour task is to find the *single best matching entry* in the Database for the Input Reference. The match should be based on semantic similarity (author, title, year), even if the strings are not identical. \n\nOnce you find the best match, you must return *only* the value of the 'key' field for that matching entry. Do not return anything else - no explanations, no 'The key is:', just the key string itself.\n\nIf you cannot find a reasonably good match in the Database, return the exact string 'NOT_FOUND'.\n\nInput Reference:\n%s\n\nDatabase:\n```json\n%s\n```\n\nKey:"
+  ;; %s will be the single input reference
+  ;; %s will be the single input reference
+  ;; %s will be the JSON database string
+  "Prompt for finding a BibTeX key for a single reference against a JSON database.")
+
+(defconst tlon-tex-extract-exact-references-prompt
+  (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference *exactly* as it appears in the text, including all original punctuation and spacing. Each reference should be on a new line. Do not include any commentary, numbering, or bullet points, just the exact reference strings themselves."
+	  tlon-tex-string-wrapper)
+  "Prompt for extracting bibliographic references exactly as found.")
+
+(defconst tlon-tex-get-bibkeys-batch-prompt
+  "You are an expert bibliographic database lookup tool. You will be given a list of 'Input References' (one per line) and a 'Database' in JSON format containing bibliographic entries.\n\nYour task is to find the *single best matching entry* in the Database for *each* Input Reference. The match should be based on semantic similarity (author, title, year), even if the strings are not identical.\n\nReturn a list of keys, one per line, corresponding *exactly* to the order of the Input References. For each Input Reference:\n- If you find a good match, return the value of the 'key' field for that entry.\n- If you cannot find a reasonably good match, return the exact string 'NOT_FOUND'.\n\nDo not return anything else - no explanations, no numbering, just the list of keys (or 'NOT_FOUND'), one per line.\n\nInput References:\n```\n%s\n```\n\nDatabase:\n```json\n%s\n```\n\nKeys:"
+  ;; %s will be the newline-separated list of input references
+  ;; %s will be the JSON database string
+  "Prompt for finding BibTeX keys for multiple references against a JSON database.")
+
+;;;;; Citation Replacement
+
+(defconst tlon-tex-replace-citations-prompt
+  "You are an expert academic editor. Your task is to process a text file, identify all bibliographic citations within it, and replace them with a structured `<Cite>` tag.
+
+Here is the process you must follow:
+1. Read the content of the file located at the path I will provide. You should read this file ONLY ONCE.
+2. Locate all the citations in the file. The citations may appear in a variety of different formats. Some examples: 'Hutchinson (2021)', 'Smith, 2019', 'see Jones et al., forthcoming', 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476', '[Smith KF, Sax DF, Lafferty KD. Evidence for the role of infectious disease in species extinction and endangerment. Conserv Biol. 2006 Oct;20(5):1349-57.]', etc. You should use your common sense to determine whether a string is or isn't a citation.
+3. For each citation you find, determine if the cited works exist using the `search_bibliography` tool. This tool will return the unique BibTeX key for the entry if a match is found.
+4. If a citation includes a link to a web page, you may need to use the `fetch_content` and `search` tools to identify the work before looking it up in the bibliography. NB: you don't need to open every link you find in the file; you only need to open links that are part of a citation.
+5. Once you have the BibTeX key (e.g., 'Hutchinson2021WhatGivesMe'), you must replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`. For example, replace 'Hutchinson (2021)' with <Cite bibKey=\"Hutchinson2021WhatGivesMe\" />. If the citation included a link, do not keep it. For example, replace 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476' with '<Cite bibKey=\"Bostrom2019VulnerableWorldHypothesis\" />'.
+6. Enclose those citation that you are unable to find in my bibliography between '{!' and '!}', so that they can be easily identified later. For example, replace 'Smith, 2019' with '{!Smith, 2019$}'.
+7. After Identifying All Citations And their keys, use the `edit_file` tool to apply all the replacements to the original file. You should perform all edits in a single operation if possible.
+
+Note, as mentioned (1), you should read the provided file ONLY ONCE, keep its contents in memory, and then do all the other operations without re-reading the file.
+
+  The path to the file you need to process is: %s"
+  "Prompt for replacing citations with BibTeX keys.")
+
+(defconst tlon-tex-add-missing-citations-prompt
+  "You are an expert academic assistant. Your task is to process a text file and add missing bibliographic entries to a BibTeX file.
+
+Here is the process you must follow:
+1. Read the content of the file located at the path I will provide using the `read_file` tool. You should read this file ONLY ONCE.
+2. Find all citations enclosed in `{!` and `!}`.
+3. For each citation found, you must find a unique identifier for the work, such as a URL, DOI, or ISBN. The citation string itself may contain it. If not, you must use the `search` tool to find one online.
+4. When you succeed in finding an identifier, use the `add_bib_entry` tool to add a new entry to the bibliography file. The `bibfile` parameter for this tool MUST be '%s'. The `identifier` parameter should be the URL, DOI, or ISBN you found. Rarely, `add_bib_ebtry` may fail to add the work. In these cases, just proceed to the next missing citation.
+5. After adding the entry, replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`, where `KEY` is the BibTeX key generated by the `add_bib_entry` tool. This key is returned by 'add_bib_entry' after adding the entry. For example, if they key corresponding to '{!Smith, 2019$}' is 'Liu2021Covid19And', you should replace '{!Smith, 2019$}' with '<Cite bibKey=\"Smith2019EarlyCovidVaccines\" />'.
+6. If you do not find a unique identifier for a citation, you must leave it as is. Do NOT try to find an alternative work or entry to replace it with. Just leave the citation as '{!CITATION$}'.
+
+Note, as mentioned in (1), you should read the provided file ONLY ONCE, keep its contents in memory, and then do all the other operations without re-reading the file.
+
+The path to the file you need to process is: %s"
+  "Prompt for adding missing citations to the bibliography.")
+
+;;;###autoload
+(defun tlon-tex-extract-references (&optional use-region)
+  "Scan the current buffer or region for bibliographic references using AI.
+Display the found references in the *Messages* buffer and copies
+them (newline-separated) to the kill ring. With prefix argument USE-REGION,
+operate only on the active region."
+  (interactive "P")
+  (let ((text (if use-region
+		  (if (region-active-p)
+		      (buffer-substring-no-properties (region-beginning) (region-end))
+		    (user-error "Region not active"))
+		(buffer-string))))
+    (when (string-empty-p text)
+      (user-error "Buffer or region is empty"))
+    (message "Requesting AI to extract references...")
+    (tlon-tex-make-gptel-request tlon-tex-extract-references-prompt text
+			     #'tlon-tex-extract-references-callback)))
+
+(defun tlon-tex-extract-references-callback (response info)
+  "Callback for `tlon-tex-extract-references'.
+Displays the found references and copies them to the kill ring. RESPONSE is the
+AI's response, INFO is the response info."
+  (if (not response)
+      (tlon-tex-callback-fail info)
+    (let* ((references (split-string (string-trim response) "\n" t)) ; Split by newline, remove empty
+	   (count (length references)))
+      (kill-new (mapconcat #'identity references "\n"))
+      (message "AI found %d potential reference(s). Copied to kill ring." count)
+      ;; Optionally display the references (might be long)
+      (when (> count 0)
+	(message "References:\n%s%s"
+		 (mapconcat (lambda (ref) (concat "- " ref))
+			    (seq-take references (min count 10)) ; Show first 10
+			    "\n")
+		 (if (> count 10) "\n..." ""))))))
+
+;;;;;; Bibkey Lookup Command and Helpers
+
+(defvar tlon-tex--bibkey-state nil
+  "Internal state variable for asynchronous bibkey lookup.")
+
+;;;###autoload
+(defun tlon-tex-get-bibkeys-from-references (beg end)
+  "Replace bibliographic references in region with <Cite> tags using AI.
+Scans each *non-blank line* in the active region (BEG END), treats the
+*entire line* as a single reference, and asks the AI in a *single batch
+request* to find the corresponding BibTeX keys in
+`tlon-file-bare-bibliography`. Replaces each original reference line with
+`<Cite bibKey=\"KEY\" />` if a key is found. Lines where no key is found or an
+error occurs are left unchanged.
+
+WARNING: This function replaces the *entire line*. If a line contains text
+other than the reference (e.g., footnote markers) or multiple references, the
+replacement might be incorrect. Consider using
+`tlon-tex-extract-and-replace-references` (bound to `X` in the menu) for more
+precise replacement."
+  (interactive "r") ; Require region
+  (unless (file-exists-p tlon-file-bare-bibliography)
+    (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
+
+  (let* ((references-with-pos '()) ; List of (text start end)
+	 (reference-texts '())     ; List of just the text strings
+	 (db-string (with-temp-buffer
+		      (insert-file-contents tlon-file-bare-bibliography)
+		      (buffer-string)))
+	 (source-buffer (current-buffer))) ; Store the buffer where the command was invoked
+
+    ;; Parse region line by line, storing text and positions
+    (save-excursion
+      (goto-char beg)
+      (while (< (point) end)
+	(let* ((line-start (line-beginning-position))
+	       (line-end (line-end-position))
+	       ;; Ensure we don't go past the original region end
+	       (actual-end (min line-end end))
+	       (line-text (buffer-substring-no-properties line-start actual-end)))
+	  (unless (string-blank-p line-text)
+	    (let ((trimmed-text (string-trim line-text)))
+	      (push (list trimmed-text line-start actual-end) references-with-pos)
+	      (push trimmed-text reference-texts))))
+	(forward-line 1)))
+
+    ;; Reverse lists to maintain original order
+    (setq references-with-pos (nreverse references-with-pos))
+    (setq reference-texts (nreverse reference-texts))
+
+    (when (string-empty-p db-string)
+      (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
+    (unless references-with-pos
+      (user-error "No non-blank reference lines found in region"))
+
+    ;; Initialize state for the asynchronous process
+    (setq tlon-tex--bibkey-state
+	  `(:references-with-pos ,references-with-pos ; List of (text start end)
+				 :db-string ,db-string
+				 :results () ; Will store (start . end . key)
+				 :source-buffer ,source-buffer))
+
+    (let* ((references-block (mapconcat #'identity reference-texts "\n"))
+	   (prompt (format tlon-tex-get-bibkeys-batch-prompt references-block db-string)))
+      (message "Starting batch BibTeX key lookup for %d references in region..."
+	       (length references-with-pos))
+      ;; Make the single batch request
+      (tlon-tex-make-gptel-request prompt nil #'tlon-tex--batch-bibkey-result-handler nil t)
+      (message "AI request sent. Waiting for BibTeX keys..."))))
+
+(defun tlon-tex--batch-bibkey-result-handler (response info)
+  "Callback function to handle the result of a batch bibkey lookup.
+Parses the newline-separated keys, associates them with original references, and
+triggers replacements. RESPONSE is the AI's response, INFO is the response info."
+  (let* ((state tlon-tex--bibkey-state)
+	 (references-with-pos (plist-get state :references-with-pos))
+	 (num-references (length references-with-pos))
+	 (results '())) ; Build the results list here
+
+    (unless response
+      (message "AI batch request failed. Status: %s" (plist-get info :status))
+      (setq tlon-tex--bibkey-state nil) ; Clean up state
+      (cl-return-from tlon-tex--batch-bibkey-result-handler))
+
+    (let ((returned-keys (split-string (string-trim response) "\n" t)))
+      (unless (= (length returned-keys) num-references)
+	(message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
+		 (length returned-keys) num-references)
+	(message "AI Response:\n%s" response) ; Log response for debugging
+	(setq tlon-tex--bibkey-state nil) ; Clean up state
+	(cl-return-from tlon-tex--batch-bibkey-result-handler))
+
+      ;; Associate keys with positions
+      (dotimes (i num-references)
+	(let* ((entry (nth i references-with-pos))
+	       (start-pos (nth 1 entry))
+	       (end-pos (nth 2 entry))
+	       (key (nth i returned-keys)))
+	  (push (list start-pos end-pos key) results)))
+
+      ;; Store the final results (reversed to match original order implicitly)
+      (setf (plist-get state :results) (nreverse results))
+      (setq tlon-tex--bibkey-state state) ; Update state with results
+
+      ;; All references processed, apply replacements
+      (tlon-tex--apply-bibkey-replacements))))
+
+(defun tlon-tex--apply-bibkey-replacements ()
+  "Apply the BibTeX key replacements in the source buffer."
+  (let* ((state tlon-tex--bibkey-state)
+	 (results (plist-get state :results)) ; List of (start end key)
+	 (source-buffer (plist-get state :source-buffer))
+	 (replacements-made 0)
+	 (errors-occurred 0))
+
+    (unless (buffer-live-p source-buffer)
+      (message "Source buffer is no longer live. Aborting replacements.")
+      (setq tlon-tex--bibkey-state nil)
+      (cl-return-from tlon-tex--apply-bibkey-replacements))
+
+    ;; Sort results by start position in REVERSE order to avoid messing up positions
+    (setq results (sort results (lambda (a b) (> (car a) (car b)))))
+
+    (with-current-buffer source-buffer
+      (dolist (result results)
+	(let ((start (nth 0 result))
+	      (end (nth 1 result))
+	      (key (nth 2 result)))
+	  ;; Check if key is valid (not an error marker)
+	  (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+	      (progn
+		(message "No valid key found for text at %d-%d (Result: %s). Skipping." start end key)
+		(cl-incf errors-occurred))
+	    ;; Perform replacement
+	    (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+	      (goto-char start) ; Go to start before deleting
+	      (delete-region start end)
+	      (insert replacement-text)
+	      (cl-incf replacements-made))))))
+
+    (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
+	     replacements-made errors-occurred)
+    ;; Clean up state variable
+    (setq tlon-tex--bibkey-state nil)))
+
+;;;;;; Extract and Replace Command
+
+(defvar tlon-tex--extract-replace-state nil
+  "Internal state variable for asynchronous reference extraction and replacement.")
+
+;;;###autoload
+(defun tlon-tex-extract-and-replace-references (&optional use-region)
+  "Extract references in buffer/region, get BibKeys, and replace with <Cite> tags.
+Uses AI to find references, then AI again to find BibKeys against
+`tlon-file-bare-bibliography`. Replaces the *first found occurrence* (searching
+backwards) of each *exact* reference string with a <Cite> tag.
+
+WARNING: Relies on AI returning exact reference strings. May fail or replace
+incorrectly if the AI modifies the string or if the same reference appears
+multiple times.
+
+With prefix argument USE-REGION, operate only on the active region."
+  (interactive "P")
+  (unless (file-exists-p tlon-file-bare-bibliography)
+    (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
+
+  (let* ((beg (if use-region (region-beginning) (point-min)))
+	 (end (if use-region (region-end) (point-max)))
+	 (text (buffer-substring-no-properties beg end))
+	 (db-string (with-temp-buffer
+		      (insert-file-contents tlon-file-bare-bibliography)
+		      (buffer-string)))
+	 (source-buffer (current-buffer)))
+    (when (string-empty-p text)
+      (user-error "Buffer or region is empty"))
+    (when (string-empty-p db-string)
+      (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
+
+    ;; Initialize state
+    (setq tlon-tex--extract-replace-state
+	  `(:source-buffer ,source-buffer
+			   :region-start ,beg
+			   :region-end ,end
+			   :db-string ,db-string
+			   :extracted-references () ; List of strings from AI
+			   :reference-positions ()  ; Alist: (ref-string . list-of-(start . end))
+			   :unique-references ()    ; List of unique ref strings
+			   :key-map ()              ; Hash table: ref-string -> key
+			   :keys-to-fetch 0
+			   :keys-fetched 0))
+
+    (message "Requesting AI to extract exact references...")
+    (tlon-tex-make-gptel-request tlon-tex-extract-exact-references-prompt text
+			     #'tlon-tex--extract-references-exact-callback)))
+
+(defun tlon-tex--extract-references-exact-callback (response info)
+  "Callback for the initial reference extraction.
+Finds positions and starts key lookup. RESPONSE is the AI's response, INFO is
+the response info."
+  (if (not response)
+      (progn
+	(setq tlon-tex--extract-replace-state nil) ; Clean up state
+	(tlon-tex-callback-fail info))
+    (let* ((state tlon-tex--extract-replace-state)
+	   (extracted-refs (split-string (string-trim response) "\n" t)))
+      (setf (plist-get state :extracted-references) extracted-refs)
+      (message "AI extracted %d potential references. Finding positions..." (length extracted-refs))
+      (setf (plist-get state :reference-positions)
+	    (tlon-tex--find-reference-positions
+	     extracted-refs
+	     (plist-get state :source-buffer)
+	     (plist-get state :region-start)
+	     (plist-get state :region-end)))
+      (let ((unique-refs (cl-delete-duplicates
+			  (mapcar #'car (plist-get state :reference-positions)) :test #'string=)))
+	(setf (plist-get state :unique-references) unique-refs)
+	(setf (plist-get state :keys-to-fetch) (length unique-refs))
+	(setf (plist-get state :key-map) (make-hash-table :test 'equal))
+	(if (zerop (plist-get state :keys-to-fetch))
+	    (progn
+	      (message "No references found or positions located.")
+	      (setq tlon-tex--extract-replace-state nil)) ; Clean up
+	  (message "Found positions for %d unique references. Requesting BibTeX keys in batch..." (length unique-refs))
+	  (tlon-tex--get-keys-for-extracted-references)))))) ; Start batch key lookup
+
+(defun tlon-tex--find-reference-positions (references buffer beg end)
+  "Search for occurrences of REFERENCES strings within BUFFER between BEG and END.
+Returns an alist: (ref-string . list-of-(start . end))."
+  (let ((positions-alist '()))
+    (with-current-buffer buffer
+      (dolist (ref references positions-alist)
+	(let ((ref-positions '()))
+	  (save-excursion
+	    (goto-char end) ; Start searching backwards from the end
+	    (while (search-backward ref beg t)
+	      (let* ((match-start (match-beginning 0))
+		     (match-end (match-end 0))
+		     (line-start (line-beginning-position))
+		     (adjusted-start match-start))
+		;; Check if the match is preceded by a footnote marker at line start
+		(save-excursion
+		  (goto-char match-start)
+		  (when (and (= (point) line-start) ; Ensure match starts exactly at line beginning
+			     (looking-at "\\[\\^[0-9]+\\]: "))
+		    ;; If marker found, adjust start position past the marker
+		    (setq adjusted-start (match-end 0))))
+		(push (cons adjusted-start match-end) ref-positions))))
+	  (when ref-positions
+	    (push (cons ref ref-positions) positions-alist)))))))
+
+(defun tlon-tex--get-keys-for-extracted-references ()
+  "Initiate a single batch request to get BibTeX keys for extracted references."
+  (let* ((state tlon-tex--extract-replace-state)
+	 (unique-refs (plist-get state :unique-references))
+	 (db-string (plist-get state :db-string)))
+    (if (null unique-refs)
+	(progn
+	  (message "No unique references to look up keys for.")
+	  (setq tlon-tex--extract-replace-state nil)) ; Clean up state
+      (let* ((references-block (mapconcat #'identity unique-refs "\n"))
+	     (prompt (format tlon-tex-get-bibkeys-batch-prompt references-block db-string)))
+	;; Make the single batch request
+	(tlon-tex-make-gptel-request prompt nil #'tlon-tex--extracted-batch-bibkey-result-handler nil t)))))
+
+(defun tlon-tex--extracted-batch-bibkey-result-handler (response info)
+  "Callback to handle the result of batch bibkey lookup for extracted references.
+Parses the newline-separated keys, populates the key-map, and triggers
+replacements. RESPONSE is the AI's response, INFO is the response info."
+  (let* ((state tlon-tex--extract-replace-state)
+	 (unique-refs (plist-get state :unique-references))
+	 (key-map (plist-get state :key-map)) ; Hash table: ref-string -> key
+	 (num-references (length unique-refs)))
+
+    (if response
+	;; Process valid response
+	(let ((returned-keys (split-string (string-trim response) "\n" t)))
+	  (if (= (length returned-keys) num-references)
+	      ;; Correct number of keys returned
+	      (progn
+		;; Populate the key-map hash table
+		(dotimes (i num-references)
+		  (let ((ref-string (nth i unique-refs))
+			(key (nth i returned-keys)))
+		    (puthash ref-string key key-map)))
+		(message "All keys fetched via batch request. Applying replacements...")
+		(tlon-tex--apply-extracted-reference-replacements)) ; Proceed to replacements
+	    ;; Incorrect number of keys returned
+	    (message "Error: AI returned %d keys, but %d unique references were sent. Aborting replacements."
+		     (length returned-keys) num-references)
+	    (message "AI Response:\n%s" response) ; Log response for debugging
+	    (setq tlon-tex--extract-replace-state nil))) ; Clean up state
+      ;; Handle failed AI request
+      (message "AI batch key lookup request failed. Status: %s" (plist-get info :status))
+      (setq tlon-tex--extract-replace-state nil)))) ; Clean up state
+
+(defun tlon-tex--apply-extracted-reference-replacements ()
+  "Apply the BibTeX key replacements in the source buffer for extracted references."
+  (let* ((state tlon-tex--extract-replace-state)
+	 ;; Check if state is nil (might have been cleaned up due to error)
+	 (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
+	 (source-buffer (plist-get state :source-buffer))
+	 (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
+	 (key-map (plist-get state :key-map))
+	 (replacements '()) ; List of (start end replacement-text)
+	 (replacements-made 0)
+	 (errors-occurred 0)
+	 (not-found-count 0))
+    (unless (buffer-live-p source-buffer)
+      (message "Source buffer is no longer live. Aborting replacements.")
+      (setq tlon-tex--extract-replace-state nil)
+      (cl-return-from tlon-tex--apply-extracted-reference-replacements))
+    ;; Build the list of replacements
+    (dolist (pos-entry ref-positions)
+      (let* ((ref-string (car pos-entry))
+	     (positions (cdr pos-entry))
+	     (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
+	(if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+	    (progn
+	      (when (string= key "NOT_FOUND") (cl-incf not-found-count))
+	      (when (string= key "ERROR_AI") (cl-incf errors-occurred)))
+	  ;; Valid key found, create replacement entries for all found positions
+	  (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+	    (dolist (pos positions)
+	      (push (list (car pos) (cdr pos) replacement-text) replacements))))))
+    ;; Sort replacements by start position in REVERSE order
+    (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
+    ;; Apply replacements
+    (with-current-buffer source-buffer
+      (dolist (replacement replacements)
+	(let ((start (nth 0 replacement))
+	      (end (nth 1 replacement))
+	      (text (nth 2 replacement)))
+	  ;; Check if the region still contains the expected text? (Might be too complex/slow)
+	  (goto-char start)
+	  (delete-region start end)
+	  (insert text)
+	  (cl-incf replacements-made))))
+    (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
+	     replacements-made not-found-count errors-occurred)
+    ;; Clean up state variable
+    (setq tlon-tex--extract-replace-state nil)))
+
+;;;;;; Citation Replacement (AI Agent)
+
+;;;###autoload
+(defun tlon-tex-replace-citations-in-file ()
+  "Use AI to find and replace bibliographic citations in a file with <Cite> tags.
+This command prompts for a file and then instructs an AI agent, equipped with
+tools like `search_bibliography`, `read_file`, and `edit_file`, to process
+the file. The AI will identify citations, find their corresponding BibTeX
+keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
+  (interactive)
+  (let* ((file (read-file-name "File to process: " nil (buffer-file-name)))
+	 (prompt (format tlon-tex-replace-citations-prompt file))
+	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "read_file")))
+    (unless (file-exists-p file)
+      (user-error "File does not exist: %s" file))
+    (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
+    (tlon-tex-make-gptel-request prompt nil #'tlon-tex-replace-citations-callback tlon-tex-replace-citations-model t nil tools)))
+
+(defun tlon-tex-replace-citations-callback (response info)
+  "Callback for `tlon-tex-replace-citations-in-file'.
+RESPONSE is the AI's response, INFO is the response info.
+This function primarily exists to confirm that the AI agent has finished its
+task, as the file modifications are expected to be done via tools."
+  (unless response
+    (tlon-tex-callback-fail info)))
+
+;;;###autoload
+(defun tlon-tex-add-missing-citations ()
+  "Use AI to add missing citations in a file to the bibliography.
+This command prompts for a file and then instructs an AI agent to find all
+citations enclosed in `{!` and `!}`. For each one, it uses the `add_bib_entry`
+tool to add an entry to `tlon-file-fluid`."
+  (interactive)
+  (let* ((file (read-file-name "File to process: " nil (buffer-file-name)))
+	 (prompt (format tlon-tex-add-missing-citations-prompt tlon-file-fluid file))
+	 (tools '("add_bib_entry" "fetch_content" "search" "edit_file" "read_file")))
+    (unless (file-exists-p file)
+      (user-error "File does not exist: %s" file))
+    (message "Requesting AI to add missing citations from %s..." (file-name-nondirectory file))
+    (tlon-tex-make-gptel-request prompt nil #'tlon-tex-add-missing-citations-callback tlon-tex-add-missing-citations-model t nil tools)))
+
+(defun tlon-tex-add-missing-citations-callback (response info)
+  "Callback for `tlon-tex-add-missing-citations'.
+RESPONSE is the AI's response, INFO is the response info."
+  (if response
+      (message "AI agent finished processing missing citations.")
+    (tlon-tex-callback-fail info)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
@@ -1033,6 +1608,13 @@ Includes entries even if some fields are missing (value will be null)."
     "Move"
     ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
     ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)]
+   ["AI"
+    "Bibliography"
+    ("x" "Extract references from buffer/region" tlon-tex-extract-references)
+    ("k" "Get BibKeys for references (region - line based)"   tlon-tex-get-bibkeys-from-references)
+    ("X" "Extract & Replace References (buffer/region - precise)" tlon-tex-extract-and-replace-references)
+    ("C" "Replace citations with AI agent"            tlon-tex-replace-citations-in-file)
+    ("A" "Add missing citations to BibTeX"            tlon-tex-add-missing-citations)]
    ["Misc"
     ("B" "Create bare bibliography"            tlon-tex-create-bare-bibliography)]])
 
