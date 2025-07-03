@@ -103,17 +103,6 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
   (setq tlon-ai-help-model '("Gemini" . gemini-2.0-flash-lite-preview-02-05))
   #+end_src
 
-#+vindex: tlon-ai-replace-citations-model
-+ ~tlon-ai-replace-citations-model~ :: Model used by ~tlon-ai-replace-citations-in-file~ to identify and replace bibliographic citations.
-  #+begin_src emacs-lisp
-  (setq tlon-ai-replace-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
-  #+end_src
-
-#+vindex: tlon-ai-add-missing-citations-model
-+ ~tlon-ai-add-missing-citations-model~ :: Model used by ~tlon-ai-add-missing-citations~ to find information about missing citations and add them to the bibliography.
-  #+begin_src emacs-lisp
-  (setq tlon-ai-add-missing-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
-  #+end_src
 
 ** Commands
 :PROPERTIES:
@@ -357,8 +346,6 @@ The "Models" section of the menu allows selecting specific AI models for differe
 + =w -w= :: Select model for creating reference articles (~tlon-ai-infix-select-create-reference-article-model~)
 + =w -p= :: Select model for proofreading reference articles (~tlon-ai-infix-select-proofread-reference-article-model~)
 + =a -a= :: Select model for help (~tlon-ai-infix-select-help-model~)
-+ =m -C= :: Select model for replacing citations (~tlon-ai-infix-select-replace-citations-model~)
-+ =m -A= :: Select model for adding missing citations (~tlon-ai-infix-select-add-missing-citations-model~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
