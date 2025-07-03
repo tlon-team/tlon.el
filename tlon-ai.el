@@ -31,7 +31,6 @@
 (require 'json)
 (require 'shut-up)
 (require 'tlon)
-(require 'tlon-core)
 (require 'tlon-counterpart)
 
 ;;;; User options

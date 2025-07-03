@@ -29,10 +29,8 @@
 
 ;;; Code:
 
-(require 'tlon-core)
 (require 'tlon)
 (require 'cl-lib)
-(require 'paths)
 (require 'transient)
 (require 'url)
 (require 'json)

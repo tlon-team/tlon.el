@@ -30,10 +30,9 @@
 (require 'citar-cache)
 (require 'gptel)
 (require 'gptel-extras)
-(require 'paths)
 (require 'seq)
 (require 'shut-up)
-(require 'tlon-core)
+(require 'tlon)
 (require 'transient)
 
 ;;;; User options
