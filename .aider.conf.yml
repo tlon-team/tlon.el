@@ -3,5 +3,5 @@ commit-prompt: |
   - Begin with the name of the file being modified, but instead of using the full file, only use the part between `tlon-` and `.el`. For example, if the file is `tlon-tts.el`, use `tts`. For documentation files, use what you would have used if you were writting a commit for the Elisp file being documented. For example, if the file is `tlon-tts.org`, use `tts`.
   - Continue with ": " followed by a brief description of the change. The word after the colon should be in lowercase. For example, if you are refactoring a function in `tlon-tts-el`, your commit message should look like this: `tts: refactor function name`.
 read:
-  - conventions.md
+  - etc/conventions.md
   - ~/Dropbox/dotfiles/aider/global_conventions.md
