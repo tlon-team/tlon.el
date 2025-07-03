@@ -314,9 +314,9 @@ If DELETE is non-nil, delete the footnote."
 
 ;;;; Transient commands
 
-;;;###autoload
-(transient-define-prefix tlon-cleanup-transient ()
-  "Show a transient menu with all the cleanup commands."
+;;;###autoload (autoload 'tlon-cleanup-menu "tlon-cleanup" nil t)
+(transient-define-prefix tlon-cleanup-menu ()
+  "`tlon-cleanup' menu."
   ["Cleanup"
    ("c" "Common" tlon-cleanup-common)
    ("e" "EA Forum" tlon-cleanup-eaf)
