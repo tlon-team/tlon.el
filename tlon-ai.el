@@ -123,7 +123,7 @@ default `gptel-model'."
   :group 'tlon-ai)
 
 (defcustom tlon-ai-add-missing-citations-model
-  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  tlon-ai-replace-citations-model
   "Model to use for adding missing citations (`tlon-ai-add-missing-citations').
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for the available options. If nil, use the
@@ -411,11 +411,12 @@ default `gptel-model'."
 
 Here is the process you must follow:
 1. Read the content of the file located at the path I will provide. You should read this file ONLY ONCE.
-2. For each citation you find (e.g., 'Hutchinson (2021)', 'Smith, 2019', 'see Jones et al., forthcoming', 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476', etc), determine if the cited works exist using the `search_bibliography` tool. This tool will return the unique BibTeX key for the entry if a match is found.
-3. If a citation includes a link to a web page, you may need to use the `fetch_content` and `search` tools to identify the work before looking it up in the bibliography. NB: you don't need to open every link you find in the file; you only need to open links that are part of a citation.
-4. Once you have the BibTeX key (e.g., 'Hutchinson2021WhatGivesMe'), you must replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`. For example, replace 'Hutchinson (2021)' with <Cite bibKey=\"Hutchinson2021WhatGivesMe\" />. If the citation included a link, do not keep it. For example, replace 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476' with '<Cite bibKey=\"Bostrom2019VulnerableWorldHypothesis\" />'.
-5. Enclose those citation that you are unable to find in my bibliography between '{!' and '!}', so that they can be easily identified later. For example, replace 'Smith, 2019' with '{!Smith, 2019$}'.
-6. After Identifying All Citations And their keys, use the `edit_file` tool to apply all the replacements to the original file. You should perform all edits in a single operation if possible.
+2. Locate all the citations in the file. The citations may appear in a variety of different formats. Some examples: 'Hutchinson (2021)', 'Smith, 2019', 'see Jones et al., forthcoming', 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476', '[Smith KF, Sax DF, Lafferty KD. Evidence for the role of infectious disease in species extinction and endangerment. Conserv Biol. 2006 Oct;20(5):1349-57.]', etc. You should use your common sense to determine whether a string is or isn't a citation.
+3. For each citation you find, determine if the cited works exist using the `search_bibliography` tool. This tool will return the unique BibTeX key for the entry if a match is found.
+4. If a citation includes a link to a web page, you may need to use the `fetch_content` and `search` tools to identify the work before looking it up in the bibliography. NB: you don't need to open every link you find in the file; you only need to open links that are part of a citation.
+5. Once you have the BibTeX key (e.g., 'Hutchinson2021WhatGivesMe'), you must replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`. For example, replace 'Hutchinson (2021)' with <Cite bibKey=\"Hutchinson2021WhatGivesMe\" />. If the citation included a link, do not keep it. For example, replace 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476' with '<Cite bibKey=\"Bostrom2019VulnerableWorldHypothesis\" />'.
+6. Enclose those citation that you are unable to find in my bibliography between '{!' and '!}', so that they can be easily identified later. For example, replace 'Smith, 2019' with '{!Smith, 2019$}'.
+7. After Identifying All Citations And their keys, use the `edit_file` tool to apply all the replacements to the original file. You should perform all edits in a single operation if possible.
 
 Note, as mentioned (1), you should read the provided file ONLY ONCE, keep its contents in memory, and then do all the other operations without re-reading the file.
 
