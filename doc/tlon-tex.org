@@ -96,12 +96,12 @@ This module provides a wide range of functions for interacting with BibTeX files
 + ~tlon-regexp-expanded-citation-with-link~ :: Regex derived from ~tlon-regexp-expanded-citation-formatter~ to match an expanded citation where the title is a Tlön-style Markdown link. Captures the title.
 #+vindex: tlon-regexp-expanded-citation-with-no-link
 + ~tlon-regexp-expanded-citation-with-no-link~ :: Regex derived from ~tlon-regexp-expanded-citation-formatter~ to match an expanded citation where the title is enclosed in quotes or asterisks but is not a link. Captures the title.
-#+vindex: tlon-tex-max-abstract-length
-+ ~tlon-tex-max-abstract-length~ :: Maximum recommended word count for an abstract. Used in reports.
-#+vindex: tlon-tex-min-abstract-length
-+ ~tlon-tex-min-abstract-length~ :: Minimum recommended word count for an abstract. Used in reports.
-#+vindex: tlon-tex-synopsis-length
-+ ~tlon-tex-synopsis-length~ :: Maximum recommended word count for a synopsis (generated via AI).
+#+vindex: tlon-max-abstract-length
++ ~tlon-max-abstract-length~ :: Maximum recommended word count for an abstract. Used in reports.
+#+vindex: tlon-min-abstract-length
++ ~tlon-min-abstract-length~ :: Minimum recommended word count for an abstract. Used in reports.
+#+vindex: tlon-synopsis-length
++ ~tlon-synopsis-length~ :: Maximum recommended word count for a synopsis (generated via AI).
 
 *** Variables
 :PROPERTIES:
@@ -228,8 +228,8 @@ This section details the interactive commands provided by =tlon-tex.el=.
 #+findex: tlon-tex-entries-report
 + ~tlon-tex-entries-report~ :: (Autoloaded) Generates a report buffer listing BibTeX entries in the current buffer that:
   - Have no abstract (excluding those in ~tlon-tex-excluded-keys~ or with a =crossref= field).
-  - Have abstracts longer than ~tlon-tex-max-abstract-length~ words.
-  - Have abstracts shorter than ~tlon-tex-min-abstract-length~ words.
+  - Have abstracts longer than ~tlon-max-abstract-length~ words.
+  - Have abstracts shorter than ~tlon-min-abstract-length~ words.
   - Have abstracts with fewer than 10 words.
   Filters out entries that are translations (have a =translation= field) using ~tlon-text-remove-translated-entries~.
 

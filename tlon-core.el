@@ -510,6 +510,17 @@ author name(s).")
   "\\([ \\$£€][[:digit:]]\\{1,3\\}\\)\\([[:digit:]]\\{3\\}[\\.,:;!\\? ]\\)"
   "Regular expression matching numerals without thousands separators.")
 
+;;;;; Abstracts
+
+(defconst tlon-max-abstract-length 300
+  "Maximum length of an abstract, in words.")
+
+(defconst tlon-min-abstract-length 45
+  "Minimum length of an abstract, in words.")
+
+(defconst tlon-synopsis-length 2000
+  "Maximum length of a synopsis, in words.")
+
 ;;;;; To sort
 
 (defvar tlon-users
