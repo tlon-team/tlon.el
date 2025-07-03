@@ -43,6 +43,7 @@
     ("a" "AI"                             tlon-ai-menu)
     ("b" "dub"                            tlon-dub-menu)
     ("c" "clock"                          tlon-clock-menu)
+    ("H-c" "cleanup"                      tlon-cleanup-menu)
     ("H-d" "dict"                         tlon-dict-menu)
     ("e" "ebib"                           tlon-ebib-menu)
     ("f" "files"                          tlon-files-menu)
@@ -59,7 +60,7 @@
     ("p" "api"                            tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
-    ("S" "split"                          tlon-split-menu)
+    ("H-s" "split"                        tlon-split-menu)
     ("t" "contacts"                       tlon-contacts-menu)
     ("u" "counterpart"                    tlon-counterpart-menu)
     ("v" "url"                            tlon-url-menu)
@@ -85,7 +86,7 @@
     "Package (tlon.el)"
     ("H-u" "update & reload"              tlon-update-package-and-reload)
     ("H-o" "open"                         tlon-open-package-files)
-    ("H-c" "copy info"                    tlon-copy-package-info)
+    ("H-i" "copy info"                    tlon-copy-package-info)
     """"
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
     (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit tlon-package-dir) 'face 'bold))))]])
