@@ -28,6 +28,8 @@
 (require 'tlon-core)
 (require 'auth-source)
 
+;;;; User options
+
 (defgroup tlon-whisperx nil
   "Shared helpers for running whisperx."
   :group 'tlon)
@@ -40,6 +42,8 @@ and \"aud\"."
                  (const "txt") (const "tsv") (const "json")
                  (const "aud"))
   :group 'tlon-whisperx)
+
+;;;; Functions
 
 (defun tlon-whisperx--start (audio-file args buffer-name callback)
   "Run whisperx on AUDIO-FILE with ARGS, log to BUFFER-NAME, call CALLBACK.
