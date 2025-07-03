@@ -182,17 +182,6 @@ The capture group 3 contains the title of the work.")
   "Regexp to match a citation whose title has no link in our \"long\" style.
 The capture group 3 contains the title of the work.")
 
-;;;;; Abstracts
-
-(defconst tlon-tex-max-abstract-length 300
-  "Maximum length of an abstract, in words.")
-
-(defconst tlon-tex-min-abstract-length 45
-  "Minimum length of an abstract, in words.")
-
-(defconst tlon-tex-synopsis-length 2000
-  "Maximum length of a synopsis, in words.")
-
 ;;;;;; Reports
 
 (defvar tlon-tex-excluded-keys nil
@@ -902,11 +891,11 @@ is non-nil, save the translations in VAR; otherwise, save them in
 	    (if (re-search-forward "^[[:blank:]]+abstract = {" nil t)
 		(let* ((begin (point))
 		       (end (progn (bibtex-next-field t) (beginning-of-line) (left-char 3) (point))))
-		  (cond ((> (count-words begin end) tlon-tex-max-abstract-length)
+		  (cond ((> (count-words begin end) tlon-max-abstract-length)
 			 (push key long-abstracts))
 			((< (count-words begin end) 10)
 			 (push key minimal-abstracts))
-			((< (count-words begin end) tlon-tex-min-abstract-length)
+			((< (count-words begin end) tlon-min-abstract-length)
 			 (push key short-abstracts))))
 	      (push key no-abstract)))
 	  (widen)))
@@ -924,8 +913,8 @@ Abstracts below minimum length (%s words): %s
 Abstracts with fewer than 10 words: %s
 
 No abstract: %s"
-			  tlon-tex-max-abstract-length long-abstracts
-			  tlon-tex-min-abstract-length short-abstracts
+			  tlon-max-abstract-length long-abstracts
+			  tlon-min-abstract-length short-abstracts
 			  minimal-abstracts
 			  no-abstract))
 	  (pop-to-buffer buffer-name))))))
