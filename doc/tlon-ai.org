@@ -344,26 +344,6 @@ The command ~tlon-ai-propagate-changes~ attempts to automatically apply changes 
 
 This command relies heavily on accurate metadata (=original_path=) and consistent file structures across repositories.
 
-*** Replacing Citations with an AI Agent
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-ai-replace-citations-in-file
-:END:
-#+findex: tlon-ai-replace-citations-in-file
-The command ~tlon-ai-replace-citations-in-file~ uses an AI agent to find and replace bibliographic citations in a file with structured =<Cite>= tags.
-
-When invoked, it prompts the user for a file to process, defaulting to the file in the current buffer. It then sends a request to the AI, instructing it to act as an academic editor. The AI is granted access to a specific set of tools to complete its task:
-+ =read_file=: To read the content of the specified file.
-+ =search_bibliography=: To look up identified citations in the user's bibliographic database and retrieve the corresponding BibTeX key.
-+ =fetch_content= and =search=: To research citations that point to web content and cannot be found directly in the bibliography.
-+ =edit_file=: To apply the changes to the file, replacing the original citation text (e.g., "Davidson (2021)") with the structured tag (e.g., =<Cite bibKey="Davidson2021ReportSemiInformative" />=).
-
-The entire process, from reading the file to writing the changes, is managed by the AI agent. The command simply initiates the process and reports when the agent has finished.
-
-#+findex: tlon-ai-add-missing-citations
-The command ~tlon-ai-add-missing-citations~ is a companion to ~tlon-ai-replace-citations-in-file~. After the latter command has marked all unfound citations by enclosing them in ~{!~ and ~!}~, this command can be run.
-
-It prompts for a file (defaulting to the file in the current buffer) and instructs an AI agent to find all such marked citations. For each one, the agent is tasked to find an identifier (URL, DOI, ISBN), potentially using search tools, and then use the =add_bib_entry= tool to add the work to the user's main BibTeX file (=tlon-file-fluid=). This command does not modify the processed file itself; its only purpose is to populate the bibliography. After running it, the user can run ~tlon-ai-replace-citations-in-file~ again to replace the newly added citations with proper =<Cite>= tags.
-
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-ai-menu
