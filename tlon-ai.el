@@ -2151,7 +2151,7 @@ If nil, use the default model."
     "Propagation"
     ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
     ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)
-    ""
+    ""]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("e" "fix encoding"                               tlon-ai-fix-encoding-in-string)
