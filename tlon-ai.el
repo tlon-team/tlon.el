@@ -2173,8 +2173,7 @@ If nil, use the default model."
     ("m -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
-    ("a -a" "Help model" tlon-ai-infix-select-help-model)
-    ("m -A" "Add missing citations" tlon-ai-infix-select-add-missing-citations-model)]])
+    ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here

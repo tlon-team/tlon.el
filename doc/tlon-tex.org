@@ -260,6 +260,15 @@ It provides the following groups and commands:
   + *Move*:
     + =t= :: Move this entry to Tlön database (~tlon-move-entry-to-fluid~)
     + =s= :: Move all entries to stable (~tlon-move-all-fluid-entries-to-stable~)
++ *AI*:
+  + *Bibliography*:
+    + =x= :: Extract references from buffer/region (~tlon-tex-extract-references~)
+    + =k= :: Get BibKeys for references (region - line based) (~tlon-tex-get-bibkeys-from-references~)
+    + =X= :: Extract & Replace References (buffer/region - precise) (~tlon-tex-extract-and-replace-references~)
+    + =C= :: Replace citations with AI agent (~tlon-tex-replace-citations-in-file~)
+    + =A= :: Add missing citations to BibTeX (~tlon-tex-add-missing-citations~)
++ *Misc*:
+  + =B= :: Create bare bibliography (~tlon-tex-create-bare-bibliography~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
