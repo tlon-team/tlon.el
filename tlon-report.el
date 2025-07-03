@@ -26,7 +26,6 @@
 
 ;;; Code:
 
-(require 'paths)
 (require 'tlon-core)
 (require 'transient)
 

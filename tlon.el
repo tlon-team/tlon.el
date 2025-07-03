@@ -44,7 +44,6 @@
 
 ;;; Code:
 
-(require 'paths)
 (require 'tlon-core)
 
 ;;;; User options

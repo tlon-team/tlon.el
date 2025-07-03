@@ -27,7 +27,6 @@
 
 (require 'tlon)
 (require 'tlon-ai)
-(require 'tlon-core) ; Added for tlon-write-data, tlon-read-json, etc.
 (require 'json) ; Added for json-read-from-string
 (require 'transient)
 

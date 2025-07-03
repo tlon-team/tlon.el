@@ -26,7 +26,6 @@
 ;;; Code:
 
 (require 'magit)
-(require 'paths)
 (require 'tlon-clock)
 (require 'tlon-core)
 (require 'tlon-forg)
