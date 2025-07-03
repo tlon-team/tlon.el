@@ -50,6 +50,18 @@ This module provides a wide range of functions for interacting with BibTeX files
   + =never=: Never overwrite the existing abstract.
   + =ask= (default): Prompt the user whether to overwrite.
 
+#+vindex: tlon-tex-replace-citations-model
++ ~tlon-tex-replace-citations-model~ :: Model used by ~tlon-tex-replace-citations-in-file~ to identify and replace bibliographic citations.
+  #+begin_src emacs-lisp
+  (setq tlon-tex-replace-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  #+end_src
+
+#+vindex: tlon-tex-add-missing-citations-model
++ ~tlon-tex-add-missing-citations-model~ :: Model used by ~tlon-tex-add-missing-citations~ to find information about missing citations and add them to the bibliography.
+  #+begin_src emacs-lisp
+  (setq tlon-tex-add-missing-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  #+end_src
+
 ** Configuration
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-tex-config
@@ -267,6 +279,9 @@ It provides the following groups and commands:
     + =X= :: Extract & Replace References (buffer/region - precise) (~tlon-tex-extract-and-replace-references~)
     + =C= :: Replace citations with AI agent (~tlon-tex-replace-citations-in-file~)
     + =A= :: Add missing citations to BibTeX (~tlon-tex-add-missing-citations~)
+  + *Models*:
+    + =m -C= :: Replace citations (~tlon-tex-infix-select-replace-citations-model~)
+    + =m -A= :: Add missing citations (~tlon-tex-infix-select-add-missing-citations-model~)
 + *Misc*:
   + =B= :: Create bare bibliography (~tlon-tex-create-bare-bibliography~)
 

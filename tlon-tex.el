@@ -1585,6 +1585,63 @@ RESPONSE is the AI's response, INFO is the response info."
       (message "AI agent finished processing missing citations.")
     (tlon-tex-callback-fail info)))
 
+;;;;;; Model selection
+
+(defclass tlon-tex-model-selection-infix (transient-infix)
+  ((variable :initarg :variable)
+   (choices  :initarg :choices)
+   (default-label :initarg :default-label :initform "Default model"))
+  "A transient infix for selecting AI models or using the default.")
+
+(cl-defmethod transient-init-value ((obj tlon-tex-model-selection-infix))
+  "Initialize OBJ's value slot."
+  (oset obj value (symbol-value (oref obj variable))))
+
+(cl-defmethod transient-infix-read ((obj tlon-tex-model-selection-infix))
+  "Read a new value for OBJ's variable."
+  (let* ((choices
+	  (append
+	   '(("Default model" . nil))
+	   (cl-loop for (backend-name . backend) in gptel--known-backends
+		    append (cl-loop for model in (gptel-backend-models backend)
+				    collect (cons (format "%s: %s"
+							  backend-name
+							  (gptel--model-name model))
+						  (cons backend-name model))))))
+	 (choice (completing-read
+		  (format "Select model (current: %s): "
+			  (if (symbol-value (oref obj variable))
+			      (format "%s: %s"
+				      (car (symbol-value (oref obj variable)))
+				      (cdr (symbol-value (oref obj variable))))
+			    (oref obj default-label)))
+		  choices nil t)))
+    (cdr (assoc choice choices))))
+
+(cl-defmethod transient-infix-set ((obj tlon-tex-model-selection-infix) value)
+  "Set the value of OBJ's variable to VALUE."
+  (set (oref obj variable) value))
+
+(cl-defmethod transient-format-value ((obj tlon-tex-model-selection-infix))
+  "Format OBJ's value for display."
+  (let ((value (symbol-value (oref obj variable))))
+    (propertize (if value
+		    (format "%s: %s" (car value) (cdr value))
+		  (oref obj default-label))
+		'face 'transient-value)))
+
+(transient-define-infix tlon-tex-infix-select-replace-citations-model ()
+  "AI model to use for replacing citations.
+If nil, use the default model."
+  :class 'tlon-tex-model-selection-infix
+  :variable 'tlon-tex-replace-citations-model)
+
+(transient-define-infix tlon-tex-infix-select-add-missing-citations-model ()
+  "AI model to use for adding missing citations.
+If nil, use the default model."
+  :class 'tlon-tex-model-selection-infix
+  :variable 'tlon-tex-add-missing-citations-model)
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-tex-menu "tlon-tex" nil t)
@@ -1614,7 +1671,11 @@ RESPONSE is the AI's response, INFO is the response info."
     ("k" "Get BibKeys for references (region - line based)"   tlon-tex-get-bibkeys-from-references)
     ("X" "Extract & Replace References (buffer/region - precise)" tlon-tex-extract-and-replace-references)
     ("C" "Replace citations with AI agent"            tlon-tex-replace-citations-in-file)
-    ("A" "Add missing citations to BibTeX"            tlon-tex-add-missing-citations)]
+    ("A" "Add missing citations to BibTeX"            tlon-tex-add-missing-citations)
+    ""
+    "Models"
+    ("m -C" "Replace citations" tlon-tex-infix-select-replace-citations-model)
+    ("m -A" "Add missing citations" tlon-tex-infix-select-add-missing-citations-model)]
    ["Misc"
     ("B" "Create bare bibliography"            tlon-tex-create-bare-bibliography)]])
 
