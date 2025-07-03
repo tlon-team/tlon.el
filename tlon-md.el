@@ -471,7 +471,8 @@ user to insert VALUES."
 
 (defun tlon-md-insert-attribute-value (attribute value &optional content)
   "Insert an ATTRIBUTE VALUE in the tag at point.
-If the tag already contains an attribute with the same name, replace its value."
+If the tag already contains an attribute with the same name, replace its value.
+If CONTENT is provided, use it as the tag content."
   (let ((tag (tlon-get-tag-at-point)))
     (tlon-md-edit-tag (tlon-md-set-tag-attribute-value tag attribute value)
 		      content 'insert-values)))
@@ -987,6 +988,8 @@ voices available for the `tlon-tts-global-engine'."
 
 ;;;;;;; Attribute readers
 
+(defvar tlon-tts-global-engine)
+(defvar tlon-tts-engines)
 (defun tlon-md-voice-name-reader ()
   "Prompt the user to select the friendly `name` attribute value for a `voice` tag.
 Uses the voices defined for the `tlon-tts-global-engine'. Returns the selected
