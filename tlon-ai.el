@@ -102,6 +102,15 @@ use a different model for proofreading the reference article."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-ai)
 
+(defcustom tlon-ai-summarize-commit-diffs-model
+  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  "Model to use for summarizing commit diffs.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, do not
+use a different model for summarizing commit diffs."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-ai)
+
 (defcustom tlon-ai-help-model
   '("Gemini" . gemini-2.0-flash-thinking-exp-01-21)
   "Model to use for the AI help command (`tlon-ai-ask-for-help').
@@ -127,6 +136,11 @@ default `gptel-model'."
 (defconst tlon-gptel-error-message
   "`gptel' failed with message: %s"
   "Error message to display when `gptel-quick' fails.")
+
+(declare-function paths-dir-dotemacs "tlon-paths")
+(defconst tlon-ai-changelog-file
+  (file-name-concat (paths-dir-dotemacs) "extras/gptel-extras-changelog-template.org")
+  "The file with the changelog template for `tlon-ai-summarize-commit-diffs'.")
 
 ;;;;; Language detection
 
@@ -360,6 +374,26 @@ default `gptel-model'."
    "--- TARGET FILE CONTENT START ---\n%s\n--- TARGET FILE CONTENT END ---\n\n"
    "Please output *only* the complete, modified content of the target file. Do not add explanations, comments, apologies, or markdown formatting (like ```) around the output.")
   "Prompt for propagating changes across files in different languages.")
+
+
+;;;;; Commit Summarization
+
+(defconst tlon-ai-summarize-commit-diffs-system-prompt
+  "You are a software developer's assistant focused on git commit analysis. \
+Be concise but thorough when analyzing changes. Group related changes together if \
+you notice patterns. If commit messages are included, use them to inform your analysis."
+  "System prompt for summarizing commit diffs.")
+
+(defconst tlon-ai-summarize-commit-diffs-prompt
+  "Here are several git commit diffs:\n\n%s\n\nPlease analyze these commits and
+provide a concise summary of the main changes. Include any significant patterns \
+you notice. Write the summary using org-mode syntax, NOT Markdown. When writing the summary, \
+focus on making it useful for someone who is already familiar with the code and \
+wants to learn about the changes made in these commits, so that they can quickly \
+determine if they need to handle any breaking changes or if they want to start \
+using any of the new functionality. Organize the summary into sections, one for \
+each package or feature, following this model:\n\n%s"
+  "Prompt for summarizing commit diffs.")
 
 
 ;;;; Functions
@@ -1976,6 +2010,60 @@ commit hash."
 				      (substring source-commit 0 7) source-repo-name)))
 	  (tlon-ai--commit-in-repo target-repo target-file commit-message))))))
 
+;;;;; Commit summarization
+
+(autoload 'magit-commit-at-point "magit-git")
+(autoload 'magit-git-insert "magit-git")
+;;;###autoload
+(defun tlon-ai-summarize-commit-diffs (beg end &optional include-stats)
+  "Summarize the diffs of commits in the selected region using an LLM.
+BEG and END mark the region of commits to summarize in `magit-log-mode'. When
+INCLUDE-STATS is non-nil (with prefix arg), include diffstats in the prompt."
+  (interactive "r\nP")
+  (unless (derived-mode-p 'magit-log-mode)
+    (user-error "This function is meant to be called from the Magit log (`M-x magit RET ll')"))
+  (save-excursion
+    (let* ((commits (save-restriction
+                      (narrow-to-region beg end)
+                      (goto-char (point-min))
+                      (cl-loop while (not (eobp))
+                               collect (magit-commit-at-point)
+                               do (forward-line))))
+           (commit-diffs
+            (with-temp-buffer
+              (apply #'magit-git-insert "show" "--patch"
+                     (append (unless include-stats '("--unified=3"))
+                             commits))
+              (buffer-string)))
+           (prompt (format
+                    (concat tlon-ai-summarize-commit-diffs-system-prompt
+                            "\n\n"
+                            tlon-ai-summarize-commit-diffs-prompt)
+                    commit-diffs
+                    (with-temp-buffer
+                      (insert-file-contents tlon-ai-changelog-file)
+                      (buffer-string)))))
+      (tlon-make-gptel-request prompt nil (tlon-ai-summarize-commit-diffs-callback commits)
+                               tlon-ai-summarize-commit-diffs-model t))))
+
+(defun tlon-ai-summarize-commit-diffs-callback (commits)
+  "Callback for `tlon-ai-summarize-commit-diffs'.
+COMMITS is a list of commit hashes."
+  (lambda (response info)
+    (if (not response)
+        (tlon-ai-callback-fail info)
+      (with-current-buffer (get-buffer-create "*Commit Summary*")
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (read-only-mode -1)
+          (insert "Commit Summary:\n"
+                  "==============\n\n"
+                  (format "Selected commits: %s\n\n"
+                          (mapconcat #'identity commits ", ")))
+          (insert response)
+          (goto-char (point-min)))
+        (pop-to-buffer (current-buffer))))))
+
 (transient-define-infix tlon-ai-infix-toggle-overwrite-alt-text ()
   "Toggle the value of `tlon-ai-overwrite-alt-text' in `ai' menu."
   :class 'transient-lisp-variable
@@ -2107,6 +2195,12 @@ If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-ai-help-model)
 
+(transient-define-infix tlon-ai-infix-select-summarize-commit-diffs-model ()
+  "AI model to use for summarizing commit diffs.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-ai-summarize-commit-diffs-model)
+
 
 ;;;;;; Main menu
 
@@ -2149,6 +2243,7 @@ If nil, use the default model."
     ("n" "Create newsletter issue"                  tlon-newsletter-create-issue)
     ""
     "Propagation"
+    ("d" "summarize commit diffs"                     tlon-ai-summarize-commit-diffs)
     ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
     ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)
     ""]
@@ -2168,6 +2263,7 @@ If nil, use the default model."
     ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ""
     "Models"
+    ("m -d" "Summarize commit diffs" tlon-ai-infix-select-summarize-commit-diffs-model)
     ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("m -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)

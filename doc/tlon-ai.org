@@ -97,6 +97,12 @@ Each option takes a cons cell =(BACKEND . MODEL)=, where =BACKEND= is a string (
   (setq tlon-ai-proofread-reference-article-model '("ChatGPT" . gpt-4.5-preview))
   #+end_src
 
+#+vindex: tlon-ai-summarize-commit-diffs-model
++ ~tlon-ai-summarize-commit-diffs-model~ :: Model for summarizing commit diffs.
+  #+begin_src emacs-lisp
+  (setq tlon-ai-summarize-commit-diffs-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  #+end_src
+
 #+vindex: tlon-ai-help-model
 + ~tlon-ai-help-model~ :: Model to use for the AI help command (~tlon-ai-ask-for-help~). The value is a cons cell whose car is the backend and whose cdr is the model itself. See ~gptel-extras-ai-models~ for the available options. If nil, use the default ~gptel-model~.
   #+begin_src emacs-lisp
@@ -141,6 +147,17 @@ The command ~tlon-ai-proofread-reference-article~ sends the content of the curre
 It uses the prompt defined in ~tlon-ai-proofread-reference-article-prompt~, instructing the AI to act as an expert proofreader, focusing on factual errors, calculation mistakes, and other important issues within the context of an encyclopedia of effective altruism. The language is determined from the current file.
 
 The AI's response, containing the proofread version or comments, is displayed in a new buffer named "*Comments on [Article Title]*". The model used can be customized via ~tlon-ai-proofread-reference-article-model~.
+
+*** Summarizing Commit Diffs
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ai-summarize-commit-diffs
+:END:
+#+findex: tlon-ai-summarize-commit-diffs
+The command ~tlon-ai-summarize-commit-diffs~ summarizes the diffs of commits in the selected region of a Magit log buffer.
+
+It is meant to be called from a Magit log buffer (~M-x magit-log-current~ or similar). It takes the selected commits, gets their diffs, and sends them to an AI model for summarization. The prompt instructs the AI to provide a concise summary useful for developers, focusing on main changes and patterns, and to format the output in Org mode, following a changelog template.
+
+The AI's response is displayed in a new buffer named ~*Commit Summary*~. The model used for this task can be customized via ~tlon-ai-summarize-commit-diffs-model~. With a prefix argument, it includes diffstats in the prompt.
 
 *** Rewriting Text
 :PROPERTIES:
@@ -341,6 +358,7 @@ This command relies heavily on accurate metadata (=original_path=) and consisten
 The command ~tlon-ai-menu~ displays a =transient= menu interface, providing quick access to most of the AI-related commands and options described above. It allows toggling options like =tlon-ai-overwrite-alt-text= and =tlon-ai-edit-prompt=, selecting models for specific tasks, setting batch functions, and invoking the various AI operations (summarization, image description, translation, help, etc.).
 
 The "Models" section of the menu allows selecting specific AI models for different tasks:
++ =m -d= :: Select model for summarizing commit diffs (~tlon-ai-infix-select-summarize-commit-diffs-model~)
 + =m -f= :: Select model for Markdown fix (~tlon-ai-infix-select-markdown-fix-model~)
 + =m -s= :: Select model for summarization (~tlon-ai-infix-select-summarization-model~)
 + =w -w= :: Select model for creating reference articles (~tlon-ai-infix-select-create-reference-article-model~)
