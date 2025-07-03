@@ -1185,7 +1185,8 @@ precise replacement."
   "Callback function to handle the result of a batch bibkey lookup.
 Parses the newline-separated keys, associates them with original references, and
 triggers replacements. RESPONSE is the AI's response, INFO is the response info."
-  (let* ((state tlon-tex--bibkey-state)
+  (cl-block tlon-tex--batch-bibkey-result-handler
+    (let* ((state tlon-tex--bibkey-state)
 	 (references-with-pos (plist-get state :references-with-pos))
 	 (num-references (length references-with-pos))
 	 (results '())) ; Build the results list here
@@ -1216,11 +1217,12 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
       (setq tlon-tex--bibkey-state state) ; Update state with results
 
       ;; All references processed, apply replacements
-      (tlon-tex--apply-bibkey-replacements))))
+      (tlon-tex--apply-bibkey-replacements)))))
 
 (defun tlon-tex--apply-bibkey-replacements ()
   "Apply the BibTeX key replacements in the source buffer."
-  (let* ((state tlon-tex--bibkey-state)
+  (cl-block tlon-tex--apply-bibkey-replacements
+    (let* ((state tlon-tex--bibkey-state)
 	 (results (plist-get state :results)) ; List of (start end key)
 	 (source-buffer (plist-get state :source-buffer))
 	 (replacements-made 0)
@@ -1254,7 +1256,7 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
     (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
 	     replacements-made errors-occurred)
     ;; Clean up state variable
-    (setq tlon-tex--bibkey-state nil)))
+    (setq tlon-tex--bibkey-state nil))))
 
 ;;;;;; Extract and Replace Command
 
@@ -1408,7 +1410,8 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
 
 (defun tlon-tex--apply-extracted-reference-replacements ()
   "Apply the BibTeX key replacements in the source buffer for extracted references."
-  (let* ((state tlon-tex--extract-replace-state)
+  (cl-block tlon-tex--apply-extracted-reference-replacements
+    (let* ((state tlon-tex--extract-replace-state)
 	 ;; Check if state is nil (might have been cleaned up due to error)
 	 (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
 	 (source-buffer (plist-get state :source-buffer))
@@ -1451,7 +1454,7 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
     (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
 	     replacements-made not-found-count errors-occurred)
     ;; Clean up state variable
-    (setq tlon-tex--extract-replace-state nil)))
+    (setq tlon-tex--extract-replace-state nil))))
 
 ;;;;;; Citation Replacement (AI Agent)
 
