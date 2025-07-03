@@ -33,6 +33,7 @@
 (require 'seq)
 (require 'shut-up)
 (require 'tlon)
+(require 'tlon-ai)
 (require 'transient)
 
 ;;;; User options
@@ -1013,75 +1014,11 @@ Includes entries even if some fields are missing (value will be null)."
                                    urls)))
     (zotra-extras-add-multiple-urls missing-urls tlon-file-fluid)))
 
-;;;;; AI Bibliographic Helpers
-
-(defconst tlon-tex-string-wrapper
-  ":\n\n```\n%s\n```\n\n"
-  "Wrapper for strings to be passed in prompts.")
-
-(defconst tlon-tex-gptel-error-message
-  "`gptel' failed with message: %s"
-  "Error message to display when `gptel-quick' fails.")
-
-(defun tlon-tex-make-gptel-request (prompt &optional string callback full-model skip-context-check request-buffer tools context-data)
-  "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-When STRING is non-nil, PROMPT is a formatting string containing the prompt and
-a slot for a string, which is the variable part of the prompt (e.g. the text to
-be summarized in a prompt to summarize text). When STRING is nil (because there
-is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
-car is the backend and whose cdr is the model.
-
-By default, warn the user if the context is not empty. If SKIP-CONTEXT-CHECK is
-non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
-the gptel request. TOOLS is a list of gptel-tool structs to include with the
-request. CONTEXT-DATA is arbitrary data passed to the `gptel-request` :context
-key, available in the callback's INFO plist."
-  (unless skip-context-check
-    (gptel-extras-warn-when-context))
-  (let* ((processed-tools (if (and tools (listp tools) (cl-every #'stringp tools)) ; Check if tools is a list of strings
-			      (mapcar (lambda (tool-name-str)
-					(gptel-get-tool tool-name-str)) ; Use gptel-get-tool to find the tool struct. It will error if not found.
-				      tools)
-			    ;; Else, tools is not a list of strings. It could be:
-			    ;; 1. A list of tool structs (correct as per original docstring)
-			    ;; 2. nil (no tools specified for this request)
-			    ;; 3. A list of mixed strings/structs or other types (error, but not handled here, will likely fail later)
-			    tools))
-	 ;; Let-bind gptel-tools and gptel-use-tools for the dynamic scope of gptel-request
-	 (gptel-tools processed-tools)
-	 (gptel-use-tools (if gptel-tools t gptel-use-tools)) ; Enable tools if any are specified
-	 ;; Other let-bindings
-	 (full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	 (prompt (tlon-tex-maybe-edit-prompt prompt)))
-
-    ;; Inner cl-destructuring-bind and let* for gptel-backend, full-prompt, request lambda
-    (cl-destructuring-bind (backend . model) full-model
-      (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	     (full-prompt (if string (format prompt string) prompt))
-	     (request (lambda () (gptel-request full-prompt
-			      :callback callback
-			      :buffer (or request-buffer (current-buffer))
-			      :context context-data
-			      :transforms gptel-prompt-transform-functions))))
-	(funcall request)))))
-
-(defun tlon-tex-maybe-edit-prompt (prompt)
-  "If `tlon-tex-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
-  (if tlon-tex-edit-prompt
-      (read-string "Prompt: " prompt)
-    prompt))
-
-(defun tlon-tex-callback-fail (info)
-  "Callback message when `gptel' fails.
-INFO is the response info."
-  (message tlon-tex-gptel-error-message (plist-get info :status)))
-
-
 ;;;;; Bibliographic Reference Extraction
 
 (defconst tlon-tex-extract-references-prompt
   (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference on a new line. Do not include any commentary, numbering, or bullet points, just the references themselves. Examples of references might look like 'Author (Year) Title', 'Author, A. B. (Year). Title of work.', etc."
-	  tlon-tex-string-wrapper)
+	  tlon-ai-string-wrapper)
   "Prompt for extracting bibliographic references from text.")
 
 (defconst tlon-tex-get-bibkeys-prompt
@@ -1093,7 +1030,7 @@ INFO is the response info."
 
 (defconst tlon-tex-extract-exact-references-prompt
   (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference *exactly* as it appears in the text, including all original punctuation and spacing. Each reference should be on a new line. Do not include any commentary, numbering, or bullet points, just the exact reference strings themselves."
-	  tlon-tex-string-wrapper)
+	  tlon-ai-string-wrapper)
   "Prompt for extracting bibliographic references exactly as found.")
 
 (defconst tlon-tex-get-bibkeys-batch-prompt
@@ -1153,7 +1090,7 @@ operate only on the active region."
     (when (string-empty-p text)
       (user-error "Buffer or region is empty"))
     (message "Requesting AI to extract references...")
-    (tlon-tex-make-gptel-request tlon-tex-extract-references-prompt text
+    (tlon-make-gptel-request tlon-tex-extract-references-prompt text
 			     #'tlon-tex-extract-references-callback)))
 
 (defun tlon-tex-extract-references-callback (response info)
@@ -1161,7 +1098,7 @@ operate only on the active region."
 Displays the found references and copies them to the kill ring. RESPONSE is the
 AI's response, INFO is the response info."
   (if (not response)
-      (tlon-tex-callback-fail info)
+      (tlon-ai-callback-fail info)
     (let* ((references (split-string (string-trim response) "\n" t)) ; Split by newline, remove empty
 	   (count (length references)))
       (kill-new (mapconcat #'identity references "\n"))
@@ -1241,7 +1178,7 @@ precise replacement."
       (message "Starting batch BibTeX key lookup for %d references in region..."
 	       (length references-with-pos))
       ;; Make the single batch request
-      (tlon-tex-make-gptel-request prompt nil #'tlon-tex--batch-bibkey-result-handler nil t)
+      (tlon-make-gptel-request prompt nil #'tlon-tex--batch-bibkey-result-handler nil t)
       (message "AI request sent. Waiting for BibTeX keys..."))))
 
 (defun tlon-tex--batch-bibkey-result-handler (response info)
@@ -1366,7 +1303,7 @@ With prefix argument USE-REGION, operate only on the active region."
 			   :keys-fetched 0))
 
     (message "Requesting AI to extract exact references...")
-    (tlon-tex-make-gptel-request tlon-tex-extract-exact-references-prompt text
+    (tlon-make-gptel-request tlon-tex-extract-exact-references-prompt text
 			     #'tlon-tex--extract-references-exact-callback)))
 
 (defun tlon-tex--extract-references-exact-callback (response info)
@@ -1376,7 +1313,7 @@ the response info."
   (if (not response)
       (progn
 	(setq tlon-tex--extract-replace-state nil) ; Clean up state
-	(tlon-tex-callback-fail info))
+	(tlon-ai-callback-fail info))
     (let* ((state tlon-tex--extract-replace-state)
 	   (extracted-refs (split-string (string-trim response) "\n" t)))
       (setf (plist-get state :extracted-references) extracted-refs)
@@ -1436,7 +1373,7 @@ Returns an alist: (ref-string . list-of-(start . end))."
       (let* ((references-block (mapconcat #'identity unique-refs "\n"))
 	     (prompt (format tlon-tex-get-bibkeys-batch-prompt references-block db-string)))
 	;; Make the single batch request
-	(tlon-tex-make-gptel-request prompt nil #'tlon-tex--extracted-batch-bibkey-result-handler nil t)))))
+	(tlon-make-gptel-request prompt nil #'tlon-tex--extracted-batch-bibkey-result-handler nil t)))))
 
 (defun tlon-tex--extracted-batch-bibkey-result-handler (response info)
   "Callback to handle the result of batch bibkey lookup for extracted references.
@@ -1532,7 +1469,7 @@ keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
-    (tlon-tex-make-gptel-request prompt nil #'tlon-tex-replace-citations-callback tlon-tex-replace-citations-model t nil tools)))
+    (tlon-make-gptel-request prompt nil #'tlon-tex-replace-citations-callback tlon-tex-replace-citations-model t nil tools)))
 
 (defun tlon-tex-replace-citations-callback (response info)
   "Callback for `tlon-tex-replace-citations-in-file'.
@@ -1540,7 +1477,7 @@ RESPONSE is the AI's response, INFO is the response info.
 This function primarily exists to confirm that the AI agent has finished its
 task, as the file modifications are expected to be done via tools."
   (unless response
-    (tlon-tex-callback-fail info)))
+    (tlon-ai-callback-fail info)))
 
 ;;;###autoload
 (defun tlon-tex-add-missing-citations ()
@@ -1555,14 +1492,14 @@ tool to add an entry to `tlon-file-fluid`."
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to add missing citations from %s..." (file-name-nondirectory file))
-    (tlon-tex-make-gptel-request prompt nil #'tlon-tex-add-missing-citations-callback tlon-tex-add-missing-citations-model t nil tools)))
+    (tlon-make-gptel-request prompt nil #'tlon-tex-add-missing-citations-callback tlon-tex-add-missing-citations-model t nil tools)))
 
 (defun tlon-tex-add-missing-citations-callback (response info)
   "Callback for `tlon-tex-add-missing-citations'.
 RESPONSE is the AI's response, INFO is the response info."
   (if response
       (message "AI agent finished processing missing citations.")
-    (tlon-tex-callback-fail info)))
+    (tlon-ai-callback-fail info)))
 
 ;;;;;; Model selection
 
