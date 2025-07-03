@@ -108,23 +108,23 @@ These functions target cleanup tasks specific to content imported from the Effec
   - Licensing text (`*This work is licensed...*`)
   - Horizontal separators (`————————————————————————`)
 
-** Generic Cleanup
+** Non-EAF Cleanup
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-cleanup-generic-funcs
+:CUSTOM_ID: h:tlon-cleanup-non-eaf-funcs
 :END:
 
 These functions target cleanup tasks specific to content imported from various sources that use a common but non-standard footnote format.
 
-#+findex: tlon-cleanup-generic
-+ ~tlon-cleanup-generic~ :: Runs a sequence of cleanup functions for generic content. The sequence is:
-  - ~tlon-cleanup-fix-generic-footnotes~
-  - ~tlon-cleanup-fix-generic-footnote-references~
+#+findex: tlon-cleanup-non-eaf
++ ~tlon-cleanup-non-eaf~ :: Runs a sequence of cleanup functions for non-EAF content. The sequence is:
+  - ~tlon-cleanup-fix-non-eaf-footnotes~
+  - ~tlon-cleanup-fix-non-eaf-footnote-references~
 
-#+findex: tlon-cleanup-fix-generic-footnotes
-+ ~tlon-cleanup-fix-generic-footnotes~ :: Converts generic footnote markers (e.g., =[<sup>1</sup>](#fn-1 "...")=) into standard Markdown footnote references (e.g., =[^1]=).
+#+findex: tlon-cleanup-fix-non-eaf-footnotes
++ ~tlon-cleanup-fix-non-eaf-footnotes~ :: Converts non-EAF footnote markers (e.g., =[<sup>1</sup>](#fn-1 "...")=) into standard Markdown footnote references (e.g., =[^1]=).
 
-#+findex: tlon-cleanup-fix-generic-footnote-references
-+ ~tlon-cleanup-fix-generic-footnote-references~ :: Converts generic footnote definitions (e.g., =1. Footnote text [↩](#fn-ref-1)=) into standard Markdown footnote definitions (e.g., =[^1]: Footnote text=).
+#+findex: tlon-cleanup-fix-non-eaf-footnote-references
++ ~tlon-cleanup-fix-non-eaf-footnote-references~ :: Converts non-EAF footnote definitions (e.g., =1. Footnote text [↩](#fn-ref-1)=) into standard Markdown footnote definitions (e.g., =[^1]: Footnote text=).
 
 ** Footnote Management
 :PROPERTIES:
