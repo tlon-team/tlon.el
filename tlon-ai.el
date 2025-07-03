@@ -1037,6 +1037,7 @@ TYPE is either `abstract' or `synopsis'."
     ;; Use a timer to avoid deep recursion in batch mode when skipping many items
     (run-with-idle-timer 0 nil #'tlon-ai-batch-continue)))
 
+(declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-shorten-abstract-with-ai ()
   "Shorten the abstract at point so that does not exceed word threshold."
   (interactive)
