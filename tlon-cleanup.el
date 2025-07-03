@@ -26,6 +26,7 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'transient)
 
 ;;;; Functions
 
@@ -310,6 +311,23 @@ If DELETE is non-nil, delete the footnote."
       (push (match-string 1 string) matches)
       (setq start (match-end 0)))
     (format "[%s]" (mapconcat 'identity (nreverse matches) "; "))))
+
+;;;; Transient commands
+
+;;;###autoload
+(transient-define-prefix tlon-cleanup-transient ()
+  "Show a transient menu with all the cleanup commands."
+  ["Cleanup"
+   ("c" "Common" tlon-cleanup-common)
+   ("e" "EA Forum" tlon-cleanup-eaf)
+   ("g" "Generic" tlon-cleanup-generic)]
+  ["Footnotes"
+   ("s" "Split into paragraphs" tlon-cleanup-split-footnotes-into-paragraphs)
+   ("f" "Consolidate" tlon-cleanup-consolidate-footnotes)
+   ("F" "Consolidate all" tlon-cleanup-consolidate-all-footnotes)]
+  ["URLs"
+   ("u" "Replace EAF URLs" tlon-cleanup-eaf-replace-urls)
+   ("U" "Replace EAF URLs in repo" tlon-cleanup-eaf-replace-urls-in-repo)])
 
 (provide 'tlon-cleanup)
 ;;; tlon-cleanup.el ends here

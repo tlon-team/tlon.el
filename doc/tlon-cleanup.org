@@ -16,6 +16,16 @@
 
 This module provides functions for cleaning up Markdown buffers after importing content, particularly from external sources like the Effective Altruism Forum (EAF) or via Pandoc conversion. It handles common formatting issues, escaping/unescaping characters, fixing footnote syntax, removing unwanted elements, and consolidating footnotes.
 
+** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-cleanup-transient
+:END:
+
+This module provides a transient menu for accessing the cleanup commands.
+
+#+findex: tlon-cleanup-transient
++ ~tlon-cleanup-transient~ :: Show a transient menu with all the cleanup commands.
+
 ** Common Cleanup Functions
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-cleanup-common-funcs
