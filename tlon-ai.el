@@ -2130,7 +2130,7 @@ tools like `search_bibliography`, `read_file`, and `edit_file`, to process
 the file. The AI will identify citations, find their corresponding BibTeX
 keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
   (interactive)
-  (let* ((file (read-file-name "File to process: "))
+  (let* ((file (read-file-name "File to process: " nil (buffer-file-name)))
 	 (prompt (format tlon-ai-replace-citations-prompt file))
 	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "read_file")))
     (unless (file-exists-p file)
@@ -2153,7 +2153,7 @@ This command prompts for a file and then instructs an AI agent to find all
 citations enclosed in `{!` and `!}`. For each one, it uses the `add_bib_entry`
 tool to add an entry to `tlon-file-fluid`."
   (interactive)
-  (let* ((file (read-file-name "File to process: "))
+  (let* ((file (read-file-name "File to process: " nil (buffer-file-name)))
 	 (prompt (format tlon-ai-add-missing-citations-prompt tlon-file-fluid file))
 	 (tools '("add_bib_entry" "fetch_content" "search" "edit_file" "read_file")))
     (unless (file-exists-p file)
