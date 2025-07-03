@@ -46,7 +46,6 @@
 
 (require 'paths)
 (require 'tlon-core)
-(require 'tlon-youtube)
 
 ;;;; User options
 
