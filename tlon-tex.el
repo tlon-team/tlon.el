@@ -1614,7 +1614,10 @@ If nil, use the default model."
     ""
     "Convert to `Cite'"
     ("b" "Convert bibliography"                tlon-convert-bibliography-to-cite)
-    ("l" "Convert links"                       tlon-convert-links-to-cite)]
+    ("l" "Convert links"                       tlon-convert-links-to-cite)
+    ""
+    "Check"
+    ("v" "Check BibTeX keys"                   tlon-tex-check-bibkeys)]
    ["Ebib"
     ("a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
     ("c" "Create translation entry"            tlon-tex-create-translation-entry)]
