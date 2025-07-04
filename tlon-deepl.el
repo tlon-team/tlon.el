@@ -26,7 +26,8 @@
 
 ;;; Code:
 
-(require 'tlon-ai) ; For tlon-simple-model-selection-infix
+;; NOTE: I think the below is unnecessary (2025-07-04). Consider deleting.
+;; (require 'tlon-ai) ; For tlon-simple-model-selection-infix
 (require 'tlon-core)
 (require 'tlon-glossary)
 (require 'url)
@@ -104,7 +105,6 @@ The cdr of each cons cell is a list of the form
 
 (defvar tlon-deepl--override-glossary-id nil
   "When non-nil, force `tlon-deepl-glossary-delete-formatter' to use this ID.
-
 This is a dynamically-bound helper set by `tlon-deepl-glossary-delete'
 so the formatter can build the proper endpoint without re-prompting
 the user.")
