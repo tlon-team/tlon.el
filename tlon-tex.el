@@ -769,6 +769,31 @@ instead."
 	     (bibtex-extras-get-field "crossref"))
     (bibtex-next-entry)))
 
+;;;###autoload
+(defun tlon-tex-check-bibkeys (&optional file)
+  "Check if all BibTeX keys in FILE are valid.
+If FILE is not provided, use the file visited by the current buffer. If a
+region is selected, check only the region."
+  (interactive)
+  (let* ((text (if (use-region-p)
+                   (buffer-substring-no-properties (region-beginning) (region-end))
+                 (with-temp-buffer
+                   (insert-file-contents (or file (buffer-file-name)))
+                   (buffer-string))))
+         (pattern (tlon-md-get-tag-pattern "Cite"))
+         invalid-keys)
+    (with-temp-buffer
+      (insert text)
+      (goto-char (point-min))
+      (while (re-search-forward pattern nil t)
+        (let ((key (match-string-no-properties 3)))
+          (when key
+            (unless (tlon-bibliography-lookup "=key=" key)
+              (push key invalid-keys))))))
+    (if invalid-keys
+        (message "Invalid BibTeX keys found: %s" (mapconcat #'identity (delete-dups invalid-keys) ", "))
+      (message "All BibTeX keys are valid."))))
+
 ;;;;; Abstracts
 
 ;;;;;; Translations

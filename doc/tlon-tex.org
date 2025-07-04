@@ -239,6 +239,9 @@ This section details the interactive commands provided by =tlon-tex.el=.
 #+findex: tlon-tex-find-next-entry-with-missing-field
 + ~tlon-tex-find-next-entry-with-missing-field~ :: Moves point to the next BibTeX entry in the buffer that is missing a specified =FIELD= (prompting for the field name with completion). Skips entries that have a =crossref= field.
 
+#+findex: tlon-tex-check-bibkeys
++ ~tlon-tex-check-bibkeys~ :: (Autoloaded) Checks if all BibTeX keys inside =<Cite>= tags in the current buffer, a specified =FILE=, or an active region are valid. A key is considered valid if it can be found in the bibliography using ~tlon-bibliography-lookup~. It reports any invalid keys found, or confirms that all keys are valid.
+
 *** Bibliography Management
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-tex-bibliography-commands
