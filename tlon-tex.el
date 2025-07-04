@@ -1045,18 +1045,15 @@ Includes entries even if some fields are missing (value will be null)."
   "You are an expert academic editor. Your task is to process a text file, identify all bibliographic citations within it, and replace them with a structured `<Cite>` tag.
 
 Here is the process you must follow:
-1. Read the content of the file located at the path I will provide. You should read this file ONLY ONCE.
-2. Locate all the citations in the file. The citations may appear in a variety of different formats. Some examples: 'Hutchinson (2021)', 'Smith, 2019', 'see Jones et al., forthcoming', 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476', '[Smith KF, Sax DF, Lafferty KD. Evidence for the role of infectious disease in species extinction and endangerment. Conserv Biol. 2006 Oct;20(5):1349-57.]', etc. You should use your common sense to determine whether a string is or isn't a citation.
-3. Note: some citations may have already been processed. These citations have the format `<Cite bibKey=\"KEY\" />`, as discussed in (6) below. You should completely IGNORE all of these citations: just leave them as they are.
-4. For each citation you find, determine if the cited works exist using the `search_bibliography` tool. This tool will return the unique BibTeX key for the entry if a match is found.
-5. If a citation includes a link to a web page, you may need to use the `fetch_content` and `search` tools to identify the work before looking it up in the bibliography. NB: you don't need to open every link you find in the file; you only need to open links that are part of a citation.
-6. Once you have the BibTeX key (e.g., 'Hutchinson2021WhatGivesMe'), you must replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`. For example, replace 'Hutchinson (2021)' with <Cite bibKey=\"Hutchinson2021WhatGivesMe\" />. If the citation included a link, do not keep it. For example, replace 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476' with '<Cite bibKey=\"Bostrom2019VulnerableWorldHypothesis\" />'.
-7. Enclose those citation that you are unable to find in my bibliography between '{!' and '!}', so that they can be easily identified later. For example, replace 'Smith, 2019' with '{!Smith, 2019$}'. NOTE: if the citation includes a link, do NOT remove it. For example, if you can't find 'Ajay K. Kohli & Bernard J. Jaworski (1990) [Market orientation: the construct, research propositions, and managerial implications](https://doi.org/10.1177/002224299005400201), *Journal of Marketing*, vol. 54, pp. 1–18', repalce it with '{!Ajay K. Kohli & Bernard J. Jaworski (1990) [Market orientation: the construct, research propositions, and managerial implications](https://doi.org/10.1177/002224299005400201), *Journal of Marketing*, vol. 54, pp. 1–18!}'.
-8. After Identifying All Citations And their keys, use the `edit_file` tool to apply all the replacements to the original file. You should perform all edits in a single operation if possible.
+1. Locate all the citations in the text provided at the end of these instructions. The citations may appear in a variety of different formats. Some examples: 'Hutchinson (2021)', 'Smith, 2019', 'see Jones et al., forthcoming', 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476', '[Smith KF, Sax DF, Lafferty KD. Evidence for the role of infectious disease in species extinction and endangerment. Conserv Biol. 2006 Oct;20(5):1349-57.]', etc. You should use your common sense to determine whether a string is or isn't a citation.
+2. Note: some citations may have already been processed. These citations have the format `<Cite bibKey=\"KEY\" />`, as discussed in (6) below. You should completely IGNORE all of these citations: just leave them as they are.
+3. For each citation you find, determine if the cited works exist using the `search_bibliography` tool. This tool will return the unique BibTeX key for the entry if a match is found.
+4. If a citation includes a link to a web page, you may need to use the `fetch_content` and `search` tools to identify the work before looking it up in the bibliography. NB: you don't need to open every link you find in the text; you only need to open links that are part of a citation.
+5. Once you have the BibTeX key (e.g., 'Hutchinson2021WhatGivesMe'), you must replace the original citation string in the text with the format `<Cite bibKey=\"KEY\" />`. For example, replace 'Hutchinson (2021)' with <Cite bibKey=\"Hutchinson2021WhatGivesMe\" />. If the citation included a link, do not keep it. For example, replace 'Nick Bostrom (2019) [The vulnerable world hypothesis](https://doi.org/10.1111/1758-5899.12718), *Global Policy*, vol. 10, pp. 455–476' with '<Cite bibKey=\"Bostrom2019VulnerableWorldHypothesis\" />'.
+6. Enclose those citation that you are unable to find in my bibliography between '{!' and '!}', so that they can be easily identified later. For example, replace 'Smith, 2019' with '{!Smith, 2019$}'. NOTE: if the citation includes a link, do NOT remove it. For example, if you can't find 'Ajay K. Kohli & Bernard J. Jaworski (1990) [Market orientation: the construct, research propositions, and managerial implications](https://doi.org/10.1177/002224299005400201), *Journal of Marketing*, vol. 54, pp. 1–18', repalce it with '{!Ajay K. Kohli & Bernard J. Jaworski (1990) [Market orientation: the construct, research propositions, and managerial implications](https://doi.org/10.1177/002224299005400201), *Journal of Marketing*, vol. 54, pp. 1–18!}'.
+7. After identifying all citations and their keys, use the `edit_file` tool to apply all the replacements to `%s', which is the file from which the text was taken. You should perform all edits in a single operation if possible.
 
-Note, as mentioned (1), you should read the provided file ONLY ONCE, keep its contents in memory, and then do all the other operations without re-reading the file.
-
-  The path to the file you need to process is: %s"
+  Here is the text: %s"
   "Prompt for replacing citations with BibTeX keys.")
 
 (defconst tlon-tex-add-missing-citations-prompt
@@ -1466,8 +1463,17 @@ tools like `search_bibliography`, `read_file`, and `edit_file`, to process
 the file. The AI will identify citations, find their corresponding BibTeX
 keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
   (interactive)
-  (let* ((file (read-file-name "File to process: " nil (buffer-file-name)))
-	 (prompt (format tlon-tex-replace-citations-prompt file))
+  (let* ((file (if (region-active-p)
+		   (buffer-file-name)
+		 (read-file-name "File to process: " nil nil nil
+				 (file-relative-name (buffer-file-name) default-directory))))
+	 (prompt (format tlon-tex-replace-citations-prompt file
+			 (if (region-active-p)
+			     (buffer-substring-no-properties (region-beginning) (region-end))
+			   ;; return file contents
+			   (with-temp-buffer
+			     (insert-file-contents file)
+			     (buffer-string)))))
 	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "read_file")))
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
