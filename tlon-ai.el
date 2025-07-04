@@ -411,27 +411,15 @@ car is the backend and whose cdr is the model.
 By default, warn the user if the context is not empty. If SKIP-CONTEXT-CHECK is
 non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
 the gptel request. TOOLS is a list of gptel-tool structs to include with the
-request. CONTEXT-DATA is arbitrary data passed to the `gptel-request` :context
+request. CONTEXT-DATA is arbitrary data passed to the `gptel-request' `:context'
 key, available in the callback's INFO plist."
   (unless (or tlon-ai-batch-fun skip-context-check)
     (gptel-extras-warn-when-context))
-  (let* ((processed-tools (if (and tools (listp tools) (cl-every #'stringp tools)) ; Check if tools is a list of strings
-			      (mapcar (lambda (tool-name-str)
-					(gptel-get-tool tool-name-str)) ; Use gptel-get-tool to find the tool struct. It will error if not found.
-				      tools)
-			    ;; Else, tools is not a list of strings. It could be:
-			    ;; 1. A list of tool structs (correct as per original docstring)
-			    ;; 2. nil (no tools specified for this request)
-			    ;; 3. A list of mixed strings/structs or other types (error, but not handled here, will likely fail later)
-			    tools))
-	 ;; Let-bind gptel-tools and gptel-use-tools for the dynamic scope of gptel-request
-	 (gptel-tools processed-tools)
-	 (gptel-use-tools (if gptel-tools t gptel-use-tools)) ; Enable tools if any are specified
-	 ;; Other let-bindings
+  (let* ((tool-structs (mapcar #'gptel-get-tool tools))
+	 (gptel-tools tool-structs)
+	 (gptel-use-tools (if gptel-tools t gptel-use-tools))
 	 (full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
 	 (prompt (tlon-ai-maybe-edit-prompt prompt)))
-
-    ;; Inner cl-destructuring-bind and let* for gptel-backend, full-prompt, request lambda
     (cl-destructuring-bind (backend . model) full-model
       (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
 	     (full-prompt (if string (format prompt string) prompt))
