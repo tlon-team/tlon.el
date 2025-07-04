@@ -417,7 +417,7 @@ These commands leverage AI to perform advanced bibliographic tasks.
 + ~tlon-tex-replace-citations-in-file~ :: (Autoloaded) Uses an AI agent to find and replace all bibliographic citations in a user-specified file with structured =<Cite>= tags. The AI is equipped with tools to read the file, search the bibliography, research citations online, and edit the file. Unfound citations are marked with `{!` and `!}`.
 
 #+findex: tlon-tex-add-missing-citations
-+ ~tlon-tex-add-missing-citations~ :: (Autoloaded) A companion to the above command. It instructs an AI agent to process a file, find all citations marked as missing (`{!...}`), use search tools to find an identifier (URL, DOI, etc.), and add a corresponding entry to the fluid bibliography file using the =add_bib_entry= tool. It then replaces the marked citation with a proper =<Cite>= tag.
++ ~tlon-tex-add-missing-citations~ :: (Autoloaded) A companion to the above command. It instructs an AI agent to process a file or region, find all citations marked as missing (`{!...}`), use search tools to find an identifier (URL, DOI, etc.), and add a corresponding entry to the fluid bibliography file using the =add_bib_entry= tool. It then replaces the marked citation with a proper =<Cite>= tag.
 
 *** Field Modification Advice
 :PROPERTIES:
