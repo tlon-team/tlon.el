@@ -48,7 +48,7 @@ This module provides functions for translating entire files using various transl
   4. If a counterpart exists, it asks the user whether to overwrite it. If the user declines, they are prompted for a new file path.
   5. If no counterpart file is found, it checks for a counterpart directory. If one exists, it prompts the user to save the file in that directory. Otherwise, it prompts for a full file path.
   6. Based on the value of ~tlon-translation-engine~, it calls the appropriate translation function (e.g., ~tlon-deepl-translate~).
-  7. The content of the source file is read, translated, and then written to the target file.
+  7. The content of the source file is read, translated, and then written to the target file, which is then opened.
 
 *** Transient Menu
 :PROPERTIES:
@@ -69,7 +69,7 @@ It provides the following groups and commands:
 :END:
 
 #+findex: tlon-translate--do-translate
-+ ~tlon-translate--do-translate~ :: Handles the actual translation process. It reads the source file, calls the selected translation engine's function, and writes the result to the target file.
++ ~tlon-translate--do-translate~ :: Handles the actual translation process. It reads the source file, calls the selected translation engine's function, writes the result to the target file, and opens it.
 
 #+findex: tlon-translate--get-counterpart-for-language
 + ~tlon-translate--get-counterpart-for-language~ :: A helper function that finds the file path of a counterpart for a given =FILE= in a specific target =LANG-CODE=. It handles both original files and existing translations, looking up metadata to find the correct path.

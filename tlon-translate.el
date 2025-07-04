@@ -90,16 +90,16 @@ file. If LANG is not provided, prompt for a target language."
             (source-lang-code (tlon-repo-lookup :language :dir source-repo))
             (text (with-temp-buffer
                     (insert-file-contents source-file)
-                    (buffer-string)))
-            (translated-text nil))
+                    (buffer-string))))
        (tlon-deepl-translate text target-lang-code source-lang-code
                              (lambda ()
-                               (setq translated-text (tlon-translate--get-deepl-translation-from-buffer)))
-                             t)
-       (when translated-text
-         (with-temp-file target-file
-           (insert translated-text))
-         (message "Translated %s to %s" source-file target-file))))
+                               (let ((translated-text (tlon-translate--get-deepl-translation-from-buffer)))
+                                 (when translated-text
+                                   (with-temp-file target-file
+                                     (insert translated-text))
+                                   (message "Translated %s to %s" source-file target-file)
+                                   (find-file target-file))))
+                             t)))
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
 (defun tlon-translate--get-counterpart-for-language (file lang-code)
