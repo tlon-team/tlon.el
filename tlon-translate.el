@@ -46,14 +46,14 @@
   "File translation functionality for Tlön."
   :group 'tlon)
 
-(defcustom tlon-translation-engine 'deepl
+(defcustom tlon-translate-engine 'deepl
   "The translation engine to use for file translation."
   :group 'tlon-translate
-  :type '(choice (const :tag "DeepL" 'deepl)))
+  :type '(choice (const :tag "DeepL" deepl)))
 
 ;;;; Variables
 
-(defconst tlon-translation--engine-choices
+(defconst tlon-translate--engine-choices
   '(("DeepL" . deepl))
   "Alist of translation engine display names and their symbols.")
 
@@ -61,11 +61,12 @@
 
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
-  "Translate FILE into LANG using `tlon-translation-engine'.
+  "Translate FILE into LANG using `tlon-translate-engine'.
 If FILE is not provided, prompt for one, defaulting to the current buffer's
 file. If LANG is not provided, prompt for a target language."
   (interactive
-   (list (read-file-name "Translate file: " nil (buffer-file-name) t)
+   (list (read-file-name "Translate file: " nil nil t
+			 (file-relative-name (buffer-file-name) default-directory))
          (tlon-select-language 'code 'babel "Target language: " 'require-match)))
   (let* ((source-file file)
          (target-lang-code lang)
@@ -83,7 +84,7 @@ file. If LANG is not provided, prompt for a target language."
 
 (defun tlon-translate--do-translate (source-file target-file target-lang-code)
   "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE."
-  (pcase tlon-translation-engine
+  (pcase tlon-translate-engine
     ('deepl
      (let* ((source-repo (tlon-get-repo-from-file source-file))
             (source-lang-code (tlon-repo-lookup :language :dir source-repo))
@@ -99,7 +100,7 @@ file. If LANG is not provided, prompt for a target language."
          (with-temp-file target-file
            (insert translated-text))
          (message "Translated %s to %s" source-file target-file))))
-    (_ (user-error "Unsupported translation engine: %s" tlon-translation-engine))))
+    (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
 (defun tlon-translate--get-counterpart-for-language (file lang-code)
   "Return the counterpart of FILE for LANG-CODE."
@@ -151,28 +152,28 @@ file. If LANG is not provided, prompt for a target language."
 
 ;;;;; Menu
 
-;;;###autoload (autoload 'tlon-translation-menu "tlon-translate" nil t)
-(transient-define-prefix tlon-translation-menu ()
-  "File translation menu."
+;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
+(transient-define-prefix tlon-translate-menu ()
+  "`tlon-translate' menu."
   [["Translate"
     ("f" "Translate file" tlon-translate-file)]
    ["Options"
-    ("e" "Engine" tlon-translation-engine-infix)]])
+    ("e" "Engine" tlon-translate-engine-infix)]])
 
-(defun tlon-translation-engine-reader (prompt _initval _arg)
+(defun tlon-translate-engine-reader (prompt _initval _arg)
   "PROMPT the user to select a translation engine."
-  (let* ((current-value tlon-translation-engine)
-         (current-label (or (car (rassoc current-value tlon-translation--engine-choices))
+  (let* ((current-value tlon-translate-engine)
+         (current-label (or (car (rassoc current-value tlon-translate--engine-choices))
                             (format "%s (Unknown)" current-value)))
          (prompt (format "%s (current: %s): " prompt current-label))
-         (selection (completing-read prompt tlon-translation--engine-choices nil t)))
-    (cdr (assoc selection tlon-translation--engine-choices))))
+         (selection (completing-read prompt tlon-translate--engine-choices nil t)))
+    (cdr (assoc selection tlon-translate--engine-choices))))
 
-(transient-define-infix tlon-translation-engine-infix ()
-  "Select the translation engine (`tlon-translation-engine')."
+(transient-define-infix tlon-translate-engine-infix ()
+  "Select the translation engine (`tlon-translate-engine')."
   :class 'transient-lisp-variable
-  :variable 'tlon-translation-engine
-  :reader 'tlon-translation-engine-reader
+  :variable 'tlon-translate-engine
+  :reader 'tlon-translate-engine-reader
   :prompt "Translation Engine: ")
 
 (provide 'tlon-translate)
