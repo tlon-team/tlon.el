@@ -1,0 +1,84 @@
+#+title: tlon - File Translation
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* File Translation (=tlon-translate.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate
+:END:
+
+This module provides functions for translating entire files using various translation engines.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-dependencies
+:END:
+
++ =tlon-core=
++ =tlon-counterpart=
++ =tlon-deepl=
++ =transient=
+
+** Configuration
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-config
+:END:
+
+#+vindex: tlon-translation-engine
++ ~tlon-translation-engine~ :: Specifies the translation engine to use. Currently, the only supported value is ='deepl=.
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-commands
+:END:
+
+#+findex: tlon-translate-file
++ ~tlon-translate-file~ :: Translates a file into a specified language.
+  1. Prompts for the source =FILE= to translate, defaulting to the file in the current buffer.
+  2. Prompts for the target =LANG= (language code).
+  3. Determines the path for the translated file. It first checks if a counterpart file for the target language already exists using ~tlon-translate--get-counterpart-for-language~.
+  4. If a counterpart exists, it asks the user whether to overwrite it. If the user declines, they are prompted for a new file path.
+  5. If no counterpart file is found, it checks for a counterpart directory. If one exists, it prompts the user to save the file in that directory. Otherwise, it prompts for a full file path.
+  6. Based on the value of ~tlon-translation-engine~, it calls the appropriate translation function (e.g., ~tlon-deepl-translate~).
+  7. The content of the source file is read, translated, and then written to the target file.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-menu
+:END:
+#+findex: tlon-translation-menu
+The command ~tlon-translation-menu~ activates a =transient= menu for file translation operations.
+
+It provides the following groups and commands:
++ *Translate*:
+  + =f= :: Translate file (~tlon-translate-file~)
++ *Options*:
+  + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
+
+** Internal Functions
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-internals
+:END:
+
+#+findex: tlon-translate--do-translate
++ ~tlon-translate--do-translate~ :: Handles the actual translation process. It reads the source file, calls the selected translation engine's function, and writes the result to the target file.
+
+#+findex: tlon-translate--get-counterpart-for-language
++ ~tlon-translate--get-counterpart-for-language~ :: A helper function that finds the file path of a counterpart for a given =FILE= in a specific target =LANG-CODE=. It handles both original files and existing translations, looking up metadata to find the correct path.
+
+#+findex: tlon-translate--get-translation-from-original
++ ~tlon-translate--get-translation-from-original~ :: A helper that, given an original file, finds its translation for a specific =LANG-CODE=. It checks metadata and falls back to constructing a path in a counterpart directory if no metadata entry is found.
+
+#+findex: tlon-translate--get-deepl-translation-from-buffer
++ ~tlon-translate--get-deepl-translation-from-buffer~ :: A callback function used with ~tlon-deepl-translate~ to parse the JSON response from the DeepL API and extract the translated text string.
+
+#+findex: tlon-translation-engine-infix
++ ~tlon-translation-engine-infix~ :: The transient infix command for selecting the translation engine via ~tlon-translation-engine~.
