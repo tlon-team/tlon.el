@@ -777,9 +777,12 @@ region is selected, check only the region."
   (interactive)
   (let* ((text (if (use-region-p)
                    (buffer-substring-no-properties (region-beginning) (region-end))
-                 (with-temp-buffer
-                   (insert-file-contents (or file (buffer-file-name)))
-                   (buffer-string))))
+                 (let ((filename (or file (buffer-file-name))))
+                   (if filename
+                       (with-temp-buffer
+                         (insert-file-contents filename)
+                         (buffer-string))
+                     (buffer-string)))))
          (pattern (tlon-md-get-tag-pattern "Cite"))
          invalid-keys)
     (with-temp-buffer
