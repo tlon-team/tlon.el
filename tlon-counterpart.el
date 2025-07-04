@@ -28,6 +28,7 @@
 (require 'tlon-core)
 (require 'tlon-md)
 (require 'tlon-yaml)
+(require 'cl-lib)
 
 ;;;; Functions
 
@@ -383,7 +384,7 @@ Returns the relative path string for the counterpart link, or nil if not found."
         (progn
           (warn "Counterpart not found for original link '%s' (resolved original lookup key: %s)"
                 original-relative-link linked-original-relative-path)
-          nil)))))
+          nil))))))
 
 ;;;###autoload
 (defun tlon-replace-internal-links ()
