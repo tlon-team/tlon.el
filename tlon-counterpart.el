@@ -344,7 +344,8 @@ or the function itself."
 (defun tlon-get-counterpart-link (original-relative-link current-buffer-file)
   "Find the counterpart link for ORIGINAL-RELATIVE-LINK in CURRENT-BUFFER-FILE.
 Returns the relative path string for the counterpart link, or nil if not found."
-  (let* ((current-dir (file-name-directory current-buffer-file))
+  (cl-block tlon-get-counterpart-link
+    (let* ((current-dir (file-name-directory current-buffer-file))
          (target-repo (tlon-get-repo-from-file current-buffer-file))
          (target-lang-code (tlon-repo-lookup :language :dir target-repo))
          (buffer-original-path (tlon-yaml-get-key "original_path" current-buffer-file)))
