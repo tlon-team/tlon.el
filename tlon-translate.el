@@ -27,18 +27,33 @@
 
 ;;; Code:
 
+(require 'tlon)
+(require 'tlon-ai)
 (require 'tlon-core)
 (require 'tlon-counterpart)
 (require 'tlon-deepl)
+(require 'tlon-glossary)
 (require 'transient)
+(require 'magit)
 
+(declare-function gptel-context-add-file "gptel-context")
+(declare-function gptel-context-remove-all "gptel-context")
+(declare-function magit-stage-file "magit")
+(declare-function tlon-ai-callback-fail "tlon-ai")
+(declare-function tlon-create-commit "tlon")
+(declare-function tlon-extract-glossary "tlon-glossary")
+(declare-function tlon-get-counterpart "tlon-counterpart")
+(declare-function tlon-get-counterpart-dir "tlon-counterpart")
+(declare-function tlon-get-counterpart-in-translations "tlon-counterpart")
+(declare-function tlon-get-language-in-file "tlon-core")
 (declare-function tlon-get-repo-from-file "tlon-core")
+(declare-function tlon-glossary-target-path "tlon-glossary")
+(declare-function tlon-lookup "tlon-core")
+(declare-function tlon-make-gptel-request "tlon-ai")
+(declare-function tlon-metadata-in-repo "tlon-yaml")
+(declare-function tlon-metadata-lookup "tlon-core")
 (declare-function tlon-repo-lookup "tlon-core")
 (declare-function tlon-select-language "tlon-core")
-(declare-function tlon-get-counterpart-in-translations "tlon-counterpart")
-(declare-function tlon-get-counterpart-dir "tlon-counterpart")
-(declare-function tlon-metadata-lookup "tlon-core")
-(declare-function tlon-metadata-in-repo "tlon-yaml")
 
 ;;;; User options
 
@@ -51,13 +66,92 @@
   :group 'tlon-translate
   :type '(choice (const :tag "DeepL" deepl)))
 
+(defcustom tlon-translate-revise-errors-model
+  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  "Model to use for spotting errors in translations (`tlon-translate-revise-errors').
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-translate)
+
+(defcustom tlon-translate-revise-flow-model
+  '("Gemini" . gemini-2.5-pro-preview-06-05)
+  "Model to use for improving the flow of translations (`tlon-translate-revise-flow').
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for the available options. If nil, use the
+default `gptel-model'."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-translate)
+
 ;;;; Variables
 
 (defconst tlon-translate--engine-choices
   '(("DeepL" . deepl))
   "Alist of translation engine display names and their symbols.")
 
+(defconst tlon-translate-revise-errors-prompt
+  "The file `%s` contains a %s translation of the file `%s`. Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. Do a sentence by sentence revision. Once you are done comparing the two files processed and identifying the changes that should be made to `%s`, write your changes to this file using the `edit_file` tool."
+  "Prompt for revising translation errors.")
+
+(defconst tlon-translate-revise-flow-prompt
+  "The file `%s` contains a %s translation of the file `%s`. The translation is overly literal. You have to read both carefully and try improve the translation for a better flow, but respecting the terminology included in the glossary `%s`. Do a sentence by sentence revision. Once you are done comparing the two files processed and identifying the changes that should be made to `%s`, write your changes to this file using the `edit_file` tool."
+  "Prompt for improving translation flow.")
+
 ;;;; Commands
+
+;;;###autoload
+(defun tlon-translate-revise-errors ()
+  "Use AI to spot errors in a translation file."
+  (interactive)
+  (tlon-translate--revise-common 'errors))
+
+;;;###autoload
+(defun tlon-translate-revise-flow ()
+  "Use AI to improve the flow of a translation file."
+  (interactive)
+  (tlon-translate--revise-common 'flow))
+
+(defun tlon-translate--revise-common (type)
+  "Common function for revising a translation of TYPE.
+TYPE can be 'errors or 'flow."
+  (let* ((translation-file (read-file-name "Translation file: " nil (buffer-file-name) t))
+         (original-file (tlon-get-counterpart translation-file)))
+    (unless original-file
+      (user-error "Could not find original counterpart for %s" translation-file))
+    (let* ((lang-code (tlon-get-language-in-file translation-file))
+           (language (tlon-lookup tlon-languages-properties :standard :code lang-code))
+           (prompt-template (pcase type
+                              ('errors tlon-translate-revise-errors-prompt)
+                              ('flow tlon-translate-revise-flow-prompt)))
+           (model (pcase type
+                    ('errors tlon-translate-revise-errors-model)
+                    ('flow tlon-translate-revise-flow-model)))
+           (tools '("edit_file" "read_file"))
+           (glossary-file (when (eq type 'flow)
+                            (tlon-extract-glossary lang-code 'deepl-editor)
+                            (tlon-glossary-target-path lang-code 'deepl-editor)))
+           (prompt (if glossary-file
+                       (format prompt-template translation-file language original-file glossary-file translation-file)
+                     (format prompt-template translation-file language original-file translation-file))))
+      (when glossary-file
+        (gptel-context-add-file glossary-file))
+      (message "Requesting AI to revise %s..." (file-name-nondirectory translation-file))
+      (tlon-make-gptel-request prompt nil
+                               (lambda (response info)
+                                 (tlon-translate--revise-callback response info translation-file type))
+                               model t nil tools)
+      (gptel-context-remove-all))))
+
+(defun tlon-translate--revise-callback (response info file type)
+  "Callback for AI revision.
+Commits changes to FILE of revision TYPE."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (message "AI agent finished revising %s." (file-name-nondirectory file))
+    (let ((default-directory (tlon-get-repo-from-file file)))
+      (magit-stage-file file)
+      (tlon-create-commit (format "AI: Revise (%s)" (symbol-name type)) file))))
 
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
@@ -157,8 +251,13 @@ file. If LANG is not provided, prompt for a target language."
   "`tlon-translate' menu."
   [["Translate"
     ("f" "Translate file" tlon-translate-file)]
+   ["Revise"
+    ("e" "Spot errors" tlon-translate-revise-errors)
+    ("f" "Improve flow" tlon-translate-revise-flow)]
    ["Options"
-    ("e" "Engine" tlon-translate-engine-infix)]])
+    ("e" "Engine" tlon-translate-engine-infix)
+    ("m -e" "Revise errors model" tlon-translate-infix-select-revise-errors-model)
+    ("m -f" "Revise flow model" tlon-translate-infix-select-revise-flow-model)]])
 
 (defun tlon-translate-engine-reader (prompt _initval _arg)
   "PROMPT the user to select a translation engine."
@@ -175,6 +274,18 @@ file. If LANG is not provided, prompt for a target language."
   :variable 'tlon-translate-engine
   :reader 'tlon-translate-engine-reader
   :prompt "Translation Engine: ")
+
+(transient-define-infix tlon-translate-infix-select-revise-errors-model ()
+  "AI model to use for spotting errors in translations.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-translate-revise-errors-model)
+
+(transient-define-infix tlon-translate-infix-select-revise-flow-model ()
+  "AI model to use for improving the flow of translations.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-translate-revise-flow-model)
 
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here

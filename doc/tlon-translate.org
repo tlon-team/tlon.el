@@ -34,6 +34,10 @@ This module provides functions for translating entire files using various transl
 
 #+vindex: tlon-translation-engine
 + ~tlon-translation-engine~ :: Specifies the translation engine to use. Currently, the only supported value is ='deepl=.
+#+vindex: tlon-translate-revise-errors-model
++ ~tlon-translate-revise-errors-model~ :: Model to use for spotting errors in translations.
+#+vindex: tlon-translate-revise-flow-model
++ ~tlon-translate-revise-flow-model~ :: Model to use for improving the flow of translations.
 
 ** Commands
 :PROPERTIES:
@@ -50,18 +54,34 @@ This module provides functions for translating entire files using various transl
   6. Based on the value of ~tlon-translation-engine~, it calls the appropriate translation function (e.g., ~tlon-deepl-translate~).
   7. The content of the source file is read, translated, and then written to the target file, which is then opened.
 
+*** Revision
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-translate-revision
+:END:
+
+#+findex: tlon-translate-revise-errors
++ ~tlon-translate-revise-errors~ :: Use an AI agent to spot errors in a translation. The agent is instructed to compare the translation with the original and correct any errors found, such as missing content, corrupted code, or inconsistent use of abbreviations.
+
+#+findex: tlon-translate-revise-flow
++ ~tlon-translate-revise-flow~ :: Use an AI agent to improve the flow of a translation. The agent is instructed to make the translation less literal, while respecting the terminology in the relevant glossary.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-translate-menu
 :END:
-#+findex: tlon-translation-menu
-The command ~tlon-translation-menu~ activates a =transient= menu for file translation operations.
+#+findex: tlon-translate-menu
+The command ~tlon-translate-menu~ activates a =transient= menu for file translation operations.
 
 It provides the following groups and commands:
 + *Translate*:
   + =f= :: Translate file (~tlon-translate-file~)
++ *Revise*:
+  + =e= :: Spot errors (~tlon-translate-revise-errors~)
+  + =f= :: Improve flow (~tlon-translate-revise-flow~)
 + *Options*:
   + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
+  + =m -e= :: Revise errors model (~tlon-translate-infix-select-revise-errors-model~)
+  + =m -f= :: Revise flow model (~tlon-translate-infix-select-revise-flow-model~)
 
 ** Internal Functions
 :PROPERTIES:
@@ -80,5 +100,17 @@ It provides the following groups and commands:
 #+findex: tlon-translate--get-deepl-translation-from-buffer
 + ~tlon-translate--get-deepl-translation-from-buffer~ :: A callback function used with ~tlon-deepl-translate~ to parse the JSON response from the DeepL API and extract the translated text string.
 
+#+findex: tlon-translate--revise-common
++ ~tlon-translate--revise-common~ :: A helper function that handles the common logic for both revision commands. It prompts for the translation file, finds its original, prepares the prompt and tools, and makes the AI request.
+
+#+findex: tlon-translate--revise-callback
++ ~tlon-translate--revise-callback~ :: The callback function for the revision commands. After the AI agent finishes, it commits the changes to the file with an appropriate message.
+
 #+findex: tlon-translation-engine-infix
 + ~tlon-translation-engine-infix~ :: The transient infix command for selecting the translation engine via ~tlon-translation-engine~.
+
+#+findex: tlon-translate-infix-select-revise-errors-model
++ ~tlon-translate-infix-select-revise-errors-model~ :: The transient infix command for selecting the AI model for spotting errors.
+
+#+findex: tlon-translate-infix-select-revise-flow-model
++ ~tlon-translate-infix-select-revise-flow-model~ :: The transient infix command for selecting the AI model for improving flow.
