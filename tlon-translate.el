@@ -30,9 +30,6 @@
 (require 'tlon)
 (require 'tlon-ai)
 (require 'tlon-core)
-(require 'tlon-counterpart)
-(require 'tlon-deepl)
-(require 'tlon-glossary)
 (require 'transient)
 (require 'magit)
 
