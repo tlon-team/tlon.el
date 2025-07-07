@@ -30,6 +30,9 @@
 (require 'tlon)
 (require 'tlon-ai)
 (require 'tlon-core)
+(require 'tlon-counterpart)
+(require 'tlon-deepl)
+(require 'tlon-glossary)
 (require 'transient)
 (require 'magit)
 
@@ -46,19 +49,19 @@
 
 (defcustom tlon-translate-revise-errors-model
   '("Gemini" . gemini-2.5-pro-preview-06-05)
-  "Model to use for spotting errors in translations (`tlon-translate-revise-errors').
-The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, use the
-default `gptel-model'."
+  "Model to use for spotting errors in translations.
+See `tlon-translate-revise-errors'. The value is a cons cell whose car is the
+backend and whose cdr is the model itself. See `gptel-extras-ai-models' for the
+available options. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-translate)
 
 (defcustom tlon-translate-revise-flow-model
   '("Gemini" . gemini-2.5-pro-preview-06-05)
-  "Model to use for improving the flow of translations (`tlon-translate-revise-flow').
-The value is a cons cell whose car is the backend and whose cdr is the model
-itself. See `gptel-extras-ai-models' for the available options. If nil, use the
-default `gptel-model'."
+  "Model to use for improving the flow of translations.
+See `tlon-translate-revise-flow'. The value is a cons cell whose car is the
+backend and whose cdr is the model itself. See `gptel-extras-ai-models' for the
+available options. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-translate)
 
@@ -100,7 +103,7 @@ default `gptel-model'."
 (declare-function tlon-make-gptel-request "tlon-ai")
 (defun tlon-translate--revise-common (type)
   "Common function for revising a translation of TYPE.
-TYPE can be 'errors or 'flow."
+TYPE can be `errors' or `flow'."
   (let* ((translation-file (read-file-name "Translation file: " nil (buffer-file-name) t))
          (original-file (tlon-get-counterpart translation-file)))
     (unless original-file
@@ -135,7 +138,8 @@ TYPE can be 'errors or 'flow."
 (declare-function tlon-get-repo-from-file "tlon-core")
 (defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
-Commits changes to FILE of revision TYPE."
+RESPONSE is the AI's response. INFO is the response info. FILE is the file to
+commit. TYPE is the revision type."
   (if (not response)
       (tlon-ai-callback-fail info)
     (message "AI agent finished revising %s." (file-name-nondirectory file))
@@ -168,6 +172,7 @@ file. If LANG is not provided, prompt for a target language."
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code))))
 
+(declare-function tlon-deepl-translate "tlon-deepl")
 (declare-function tlon-repo-lookup "tlon-core")
 (defun tlon-translate--do-translate (source-file target-file target-lang-code)
   "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE."
