@@ -36,25 +36,6 @@
 (require 'transient)
 (require 'magit)
 
-(declare-function gptel-context-add-file "gptel-context")
-(declare-function gptel-context-remove-all "gptel-context")
-(declare-function magit-stage-file "magit")
-(declare-function tlon-ai-callback-fail "tlon-ai")
-(declare-function tlon-create-commit "tlon")
-(declare-function tlon-extract-glossary "tlon-glossary")
-(declare-function tlon-get-counterpart "tlon-counterpart")
-(declare-function tlon-get-counterpart-dir "tlon-counterpart")
-(declare-function tlon-get-counterpart-in-translations "tlon-counterpart")
-(declare-function tlon-get-language-in-file "tlon-core")
-(declare-function tlon-get-repo-from-file "tlon-core")
-(declare-function tlon-glossary-target-path "tlon-glossary")
-(declare-function tlon-lookup "tlon-core")
-(declare-function tlon-make-gptel-request "tlon-ai")
-(declare-function tlon-metadata-in-repo "tlon-yaml")
-(declare-function tlon-metadata-lookup "tlon-core")
-(declare-function tlon-repo-lookup "tlon-core")
-(declare-function tlon-select-language "tlon-core")
-
 ;;;; User options
 
 (defgroup tlon-translate nil
@@ -112,6 +93,14 @@ default `gptel-model'."
   (interactive)
   (tlon-translate--revise-common 'flow))
 
+(declare-function gptel-context-add-file "gptel-context")
+(declare-function gptel-context-remove-all "gptel-context")
+(declare-function tlon-extract-glossary "tlon-glossary")
+(declare-function tlon-get-counterpart "tlon-counterpart")
+(declare-function tlon-get-language-in-file "tlon-core")
+(declare-function tlon-glossary-target-path "tlon-glossary")
+(declare-function tlon-lookup "tlon-core")
+(declare-function tlon-make-gptel-request "tlon-ai")
 (defun tlon-translate--revise-common (type)
   "Common function for revising a translation of TYPE.
 TYPE can be 'errors or 'flow."
@@ -143,6 +132,10 @@ TYPE can be 'errors or 'flow."
                                model t nil tools)
       (gptel-context-remove-all))))
 
+(declare-function magit-stage-file "magit")
+(declare-function tlon-ai-callback-fail "tlon-ai")
+(declare-function tlon-create-commit "tlon")
+(declare-function tlon-get-repo-from-file "tlon-core")
 (defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
 Commits changes to FILE of revision TYPE."
@@ -153,6 +146,8 @@ Commits changes to FILE of revision TYPE."
       (magit-stage-file file)
       (tlon-create-commit (format "AI: Revise (%s)" (symbol-name type)) file))))
 
+(declare-function tlon-get-counterpart-dir "tlon-counterpart")
+(declare-function tlon-select-language "tlon-core")
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
   "Translate FILE into LANG using `tlon-translate-engine'.
@@ -176,6 +171,7 @@ file. If LANG is not provided, prompt for a target language."
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code))))
 
+(declare-function tlon-repo-lookup "tlon-core")
 (defun tlon-translate--do-translate (source-file target-file target-lang-code)
   "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE."
   (pcase tlon-translate-engine
@@ -196,6 +192,7 @@ file. If LANG is not provided, prompt for a target language."
                              t)))
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
+(declare-function tlon-get-counterpart-in-translations "tlon-counterpart")
 (defun tlon-translate--get-counterpart-for-language (file lang-code)
   "Return the counterpart of FILE for LANG-CODE."
   (let* ((repo (tlon-get-repo-from-file file))
@@ -209,6 +206,8 @@ file. If LANG is not provided, prompt for a target language."
          (when-let ((original-file (tlon-get-counterpart-in-translations file)))
            (tlon-translate--get-translation-from-original original-file lang-code)))))))
 
+(declare-function tlon-metadata-in-repo "tlon-yaml")
+(declare-function tlon-metadata-lookup "tlon-core")
 (defun tlon-translate--get-translation-from-original (original-file lang-code)
   "Get translation of ORIGINAL-FILE for LANG-CODE."
   (let* ((original-repo (tlon-get-repo-from-file original-file))
