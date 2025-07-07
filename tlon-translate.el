@@ -258,8 +258,8 @@ file. If LANG is not provided, prompt for a target language."
    ["Options"
     ("-t" "Translation engine" tlon-translate-engine-infix)
     ("-d" "DeepL model" tlon-deepl-model-type-infix)
-    ("-e" "Revise errors model" tlon-translate-infix-select-revise-errors-model)
-    ("-f" "Revise flow model" tlon-translate-infix-select-revise-flow-model)]])
+    ("-e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
+    ("-f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]])
 
 (defun tlon-translate-engine-reader (prompt _initval _arg)
   "PROMPT the user to select a translation engine."
