@@ -104,6 +104,7 @@ available options. If nil, use the default `gptel-model'."
 (defun tlon-translate--revise-common (type)
   "Common function for revising a translation of TYPE.
 TYPE can be `errors' or `flow'."
+  (gptel-extras-warn-when-context)
   (let* ((translation-file (read-file-name "Translation file: " nil (buffer-file-name) t))
          (original-file (tlon-get-counterpart translation-file)))
     (unless original-file
