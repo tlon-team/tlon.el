@@ -305,6 +305,11 @@ The `cdr` values should be present in `org-todo-keywords'.")
 (defconst tlon-forg-sort-by-tags-regexp
   "[[:digit:]]\\{2\\}_[[:digit:]]\\{2\\}")
 
+(defconst tlon-forg-orgit-regexp
+  "\\[\\[orgit-topic:\\(?1:[^]]+\\)\\]\\[\\(?2:.*?\\)\\]\\]"
+  "Regular expression to match Orgit links in `org-mode' headings.
+The first group captures the topic ID, and the second captures the title.")
+
 ;;;; Functions
 
 ;;;###autoload
@@ -395,8 +400,8 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
 	  (setq str (replace-regexp-in-string "^\\[[^]]+\\][[:space:]]*" "" str))
 
 	  ;; if the headline contains an orgit link, keep only its description
-	  (when (string-match "\\[\\[orgit-topic:[^]]+\\]\\[\\(.*?\\)\\]\\]" str)
-	    (setq str (match-string 1 str)))
+	  (when (string-match tlon-forg-orgit-regexp str)
+	    (setq str (match-string 2 str)))
 
 	  ;; discard a leading “#123 ” issue number, if present
 	  (when (string-match "^#[0-9]+[[:space:]]+\\(.*\\)$" str)
@@ -1993,8 +1998,8 @@ Otherwise, return nil."
     (with-current-buffer (find-file-noselect file)
       (save-excursion
         (goto-char (point-min))
-        (while (re-search-forward "\\[\\[orgit-topic:\\([^]]+\\)\\]\\]" nil t)
-          (let ((id (match-string 1)))
+        (while (re-search-forward tlon-forg-orgit-regexp nil t)
+          (let ((id (match-string-no-properties 1)))
             (puthash id (1+ (gethash id topic-ids 0)) topic-ids)))))
     (maphash (lambda (id count)
                (when (> count 1)
