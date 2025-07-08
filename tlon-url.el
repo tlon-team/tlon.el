@@ -190,7 +190,7 @@ If FILE is nil, use the file visited by the current buffer.
 Dispatches to a mode-specific function to extract URLs."
   (let* ((file (or file (buffer-file-name)))
          (mode (with-temp-buffer
-                 (set-visited-file-name file)
+                 (set-visited-file-name file t)
                  (set-auto-mode)
                  major-mode)))
     (cond
