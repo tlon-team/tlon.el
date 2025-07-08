@@ -1986,8 +1986,8 @@ A status is valid iff it is one of the `cdr` values in `tlon-todo-statuses'."
 (defun tlon-forg-check-for-duplicate-todos (&optional file)
   "Check for duplicate TODO entries in FILE.
 A duplicate is a heading with an `orgit-topic' ID that appears more than once.
-If FILE is nil, use the file associated with the current buffer.
-If duplicates are found, signal an error listing the duplicate IDs and their counts.
+If FILE is nil, use the file associated with the current buffer. If duplicates
+are found, signal an error listing the duplicate IDs and their counts.
 Otherwise, return nil."
   (interactive)
   (let* ((file (or file (buffer-file-name)))
