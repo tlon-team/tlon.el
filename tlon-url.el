@@ -259,7 +259,8 @@ EXTENSION is nil, use \"md\"."
   "Check all the URLs in FILE for dead links asynchronously.
 If FILE is nil, use the file visited by the current buffer."
   (interactive)
-  (let* ((input-file (or file (buffer-file-name)))
+  (let* ((input-file (or file (read-file-name "File: " nil nil t
+					      (file-relative-name (buffer-file-name) default-directory))))
 	 (urls (mapconcat #'identity (tlon-get-urls-in-file input-file) " "))
 	 (output-file (make-temp-file "linkchecker-output" nil ".txt"))
 	 (command (format "linkchecker --file-output=text/%s  --recursion-level=0 %s"
@@ -277,7 +278,6 @@ If FILE is nil, use the file visited by the current buffer."
            (message "URL checking completed.")
            (find-file output-file)
            (goto-address-mode 1)))))))
-
 
 ;;;###autoload
 (defun tlon-get-archived (url)
@@ -298,7 +298,7 @@ Also, copy the URL to the kill ring."
 (declare-function eshell-send-input "esh-mode")
 ;;;###autoload
 (defun tlon-lychee-report ()
-  "Generate a report of dead links using Lychee."
+  "Generate a report of dead links in the current repo using Lychee."
   (interactive)
   (let ((default-directory (tlon-get-repo))
 	(json (y-or-n-p "JSON format? ")))
