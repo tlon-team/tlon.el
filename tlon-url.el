@@ -191,10 +191,13 @@ Return a list of URLs that should be skipped."
 If FILE is nil, use the file visited by the current buffer.
 Dispatches to a mode-specific function to extract URLs."
   (let* ((file (or file (buffer-file-name)))
-         (mode (with-temp-buffer
-                 (set-visited-file-name file t)
-                 (set-auto-mode)
-                 major-mode)))
+         (visiting-buffer (find-buffer-visiting file))
+         (mode (if visiting-buffer
+                   (with-current-buffer visiting-buffer major-mode)
+                 (with-temp-buffer
+                   (set-visited-file-name file t)
+                   (set-auto-mode)
+                   major-mode))))
     (cond
      ((eq mode 'markdown-mode)
       (tlon--get-urls-in-file-markdown file))
