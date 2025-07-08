@@ -38,18 +38,18 @@ This module provides tools for checking dead URLs within files and replacing URL
 :CUSTOM_ID: h:tlon-check-urls-in-file-cmd
 :END:
 #+findex: tlon-check-urls-in-file
-The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a specified =FILE= (or the current buffer's file) for dead links using the external =lychee= tool asynchronously.
-1. Ensures the =lychee= executable is available.
-2. Identifies the input file.
-3. Extracts all URLs from the file using ~tlon-get-urls-in-file~.
-4. Writes the URLs to a temporary file, one URL per line.
-5. Constructs the =lychee= command to check the URLs from the temporary file.
-6. Starts the =lychee= process asynchronously using =start-process-shell-command=, with output directed to a new buffer named =*lychee-output*=.
-7. Sets a process sentinel:
-   - When the process finishes, it displays a completion message.
-   - It displays the output buffer.
-   - It enables =goto-address-mode= in the results buffer, making URLs clickable.
-   - It deletes the temporary file containing the list of URLs.
+The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a specified =FILE= (or the current buffer's file) for dead links using the external =lychee= tool. It delegates to the internal helper ~tlon-lychee--check-urls~, which runs `lychee` on the given file within an =eshell= buffer, displaying the results there.
+
+*** Check URLs in Repo
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-check-urls-in-repo-cmd
+:END:
+#+findex: tlon-check-urls-in-repo
+The command ~tlon-check-urls-in-repo~ (Autoloaded) checks all URLs in the current repository for dead links using the external =lychee= tool.
+1. It determines the current repository root.
+2. It prompts the user whether to get the output in JSON format.
+3. It calls the internal function ~tlon-lychee--check-urls~, targeting the whole repository (`.`).
+4. This opens an eshell buffer and runs `lychee`, displaying the output.
 
 *** Get Archived URL
 :PROPERTIES:
@@ -93,6 +93,7 @@ It provides the following options under the "" (main) group:
 + =a= :: Get archived URL (~tlon-get-archived~)
 + =c= :: Check URLs in file (~tlon-check-urls-in-file~)
 + =l= :: Lychee fix dead links (~tlon-lychee-fix-dead-links~)
++ =p= :: Check URLs in repo (~tlon-check-urls-in-repo~)
 + =r= :: Replace URL across projects (~tlon-replace-url-across-projects~)
 
 ** Internal Functions and Variables
@@ -110,6 +111,9 @@ This section lists non-interactive functions used internally or potentially usef
 
 #+findex: tlon-save-list-of-urls
 + ~tlon-save-list-of-urls~ :: Takes a list of =URLS=, creates a temporary file, writes the URLs (one per line) prefixed with a =# LinkChecker URL list= header, and returns the path to the temporary file. (Note: This function seems unused within the current module).
+
+#+findex: tlon-lychee--check-urls
++ ~tlon-lychee--check-urls~ :: Takes a =TARGET= (file path or ".") and an optional =JSON= flag. It ensures `lychee` is available, opens an =eshell= buffer, and executes `lychee` against the target with a standard set of accepted status codes.
 
 *** Lychee Fix Dead Links
 :PROPERTIES:
