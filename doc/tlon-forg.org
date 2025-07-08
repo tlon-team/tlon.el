@@ -529,6 +529,8 @@ This section lists non-interactive functions, variables, and constants used inte
 + ~tlon-assignee-is-current-user-p~ :: Returns =t= if the =ISSUE='s assignee matches the current user (or ~tlon-forg-enforce-user~).
 #+findex: tlon-todo-has-valid-status-p
 + ~tlon-todo-has-valid-status-p~ :: Returns =t= if the Org heading at point has a TODO state listed in ~tlon-todo-statuses~.
+#+findex: tlon-forg-check-for-duplicate-todos
++ ~tlon-forg-check-for-duplicate-todos~ :: Checks for duplicate TODO entries in a given =FILE= (defaulting to the current buffer's file). A duplicate is defined as more than one Org heading having the same =orgit-topic:= ID. If duplicates are found, it signals an error listing them. This is useful for ensuring data integrity before running commands that might fail with duplicate entries.
 #+findex: tlon-check-label-and-assignee
 + ~tlon-check-label-and-assignee~ :: Checks if the label and assignee of the issue associated with the currently clocked task match the clocked action and the current user. Used before starting a job phase.
 
