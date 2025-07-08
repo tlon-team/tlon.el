@@ -49,11 +49,6 @@
 	  (const :tag "Never overwrite" never)
 	  (const :tag "Ask" ask)))
 
-(defcustom tlon-tex-edit-prompt nil
-  "Whether to edit the prompt before sending it to the AI model."
-  :type 'boolean
-  :group 'tlon-tex)
-
 (defcustom tlon-tex-replace-citations-model
   '("Gemini" . gemini-2.5-pro-preview-06-05)
   "Model to use for replacing citations (`tlon-tex-replace-citations-in-file').
