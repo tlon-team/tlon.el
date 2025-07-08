@@ -197,9 +197,9 @@ This section details the interactive commands provided by =tlon-forg.el=.
 + ~tlon-create-issue-from-todo~ :: (Autoloaded) Creates a new GitHub issue based on the Org heading at point.
   1. Ensures the heading doesn't already have an issue number.
   2. Determines the repository:
-     a. First, by checking for a repository tag in the Org heading.
-     b. If not found, by checking if the current buffer's filename (sans extension) matches a known repository name. If a match is found and the heading does not already contain the repository tag, the tag is inserted into the heading.
-     c. If still not found, prompts the user to select a repository, which is then added to the heading (~tlon-set-repo-in-heading~).
+     a. First, by checking if the current buffer's filename (e.g., =REPO.org=) corresponds to a known Tlön repository.
+     b. If not found, by checking for a repository tag in the Org heading.
+     c. If still not found, prompts the user to select a repository.
   3. Extracts the title (from the heading, after the repository tag), status, and tags from the heading.
   4. Creates the issue on GitHub using ~tlon-create-issue~ (passing the determined repository, so no further prompting for repo occurs there).
   5. Pulls changes from the repository until the new issue appears locally.

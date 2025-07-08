@@ -2274,7 +2274,9 @@ to reflect the new issue and its metadata."
   (tlon-ensure-org-mode)
   (when (tlon-get-issue-number-from-heading)
     (error "This heading already has an issue"))
-  (let* ((repo-dir (or (tlon-get-repo-from-heading)
+  (let* ((repo-dir (or (when-let ((repo (tlon-forg--get-repository-from-org-buffer)))
+                         (oref repo worktree))
+                       (tlon-get-repo-from-heading)
 		       (tlon-get-repo nil 'include-all)))
 	 (heading-str (substring-no-properties
 		       (org-get-heading t t t t)))
