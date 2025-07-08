@@ -254,30 +254,28 @@ EXTENSION is nil, use \"md\"."
 
 ;;;;; Check URLs
 
+(declare-function eshell-send-input "esh-mode")
+
+(defun tlon-lychee--check-urls (target &optional json)
+  "Run lychee on TARGET and display results in eshell.
+If JSON is non-nil, use JSON format."
+  (tlon-lychee-ensure)
+  (eshell t)
+  (with-current-buffer (get-buffer "*eshell*")
+    (goto-char (point-max))
+    (insert (format "lychee --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 %s %s"
+                    (if json "--format json" "")
+                    (shell-quote-argument target)))
+    (eshell-send-input)))
+
 ;;;###autoload
 (defun tlon-check-urls-in-file (&optional file)
-  "Check all the URLs in FILE for dead links asynchronously.
+  "Check all the URLs in FILE for dead links.
 If FILE is nil, use the file visited by the current buffer."
   (interactive)
-  (tlon-lychee-ensure)
   (let* ((input-file (or file (read-file-name "File: " nil nil t
-					      (file-relative-name (buffer-file-name) default-directory))))
-	 (urls (tlon-get-urls-in-file input-file))
-	 (urls-file (make-temp-file "lychee-urls-" nil ".txt")))
-    (write-region (mapconcat #'identity urls "\n") nil urls-file)
-    (message "Checking URLs with Lychee...")
-    (let* ((output-buffer (generate-new-buffer "*lychee-output*"))
-           (command (format "lychee %s" (shell-quote-argument urls-file))))
-      (let ((proc (start-process-shell-command "lychee" output-buffer command)))
-        (set-process-sentinel
-         proc
-         (lambda (p _event)
-           (when (memq (process-status p) '(exit signal))
-             (message "Lychee URL checking completed.")
-             (pop-to-buffer output-buffer)
-             (with-current-buffer output-buffer
-               (goto-address-mode 1))
-             (delete-file urls-file))))))))
+					      (file-relative-name (buffer-file-name) default-directory)))))
+    (tlon-lychee--check-urls input-file)))
 
 ;;;###autoload
 (defun tlon-get-archived (url)
@@ -295,19 +293,14 @@ Also, copy the URL to the kill ring."
 
 ;;;;; Dead
 
-(declare-function eshell-send-input "esh-mode")
 ;;;###autoload
-(defun tlon-lychee-report ()
-  "Generate a report of dead links in the current repo using Lychee."
+(defun tlon-check-urls-in-repo ()
+  "Check all the URLs in the current repository for dead links.
+The command prompts whether to use JSON format for the output."
   (interactive)
   (let ((default-directory (tlon-get-repo))
-	(json (y-or-n-p "JSON format? ")))
-    (tlon-lychee-ensure)
-    (eshell t)
-    (with-current-buffer (get-buffer "*eshell*")
-      (goto-char (point-max))
-      (insert (format "lychee --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 %s ." (if json "--format json" "")))
-      (eshell-send-input))))
+        (json (y-or-n-p "JSON format? ")))
+    (tlon-lychee--check-urls "." json)))
 
 ;;;###autoload
 (defun tlon-lychee-fix-dead-links ()
@@ -670,7 +663,7 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
     ("a" "Get archived"                                tlon-get-archived)
     ("c" "Check URLs in file"                          tlon-check-urls-in-file)
     ("l" "Lychee fix dead links"                       tlon-lychee-fix-dead-links)
-    ("p" "Lychee report"                               tlon-lychee-report)
+    ("p" "Check URLs in repo"                          tlon-check-urls-in-repo)
     ("r" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
