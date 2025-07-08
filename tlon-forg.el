@@ -2265,46 +2265,122 @@ The command:
   (goto-char (+ (point-min) 7)))
 
 ;;;###autoload
-(defun tlon-create-issue-from-todo ()
-  "Create a new GitHub issue based on the current `org-mode' heading.
-Prompts for repository, title, status, tags, and effort. Updates the heading
-to reflect the new issue and its metadata."
-  (interactive)
+(defun tlon-create-issue-from-todo (&optional debug)
+  "Create a GitHub issue from the Org heading at point and replace
+_that exact_ heading with a link to the new issue.
+
+Three independent anchors ensure we always get back to the right
+headline: the `:ID:` property, the outline path, and a marker.
+Enable verbose logging with a prefix arg (C‑u) or by setting
+`tlon-debug` to non‑nil."
+  (interactive "P")
+  (setq tlon-debug (or debug tlon-debug))
   (tlon-ensure-org-mode)
+  ;; Abort if this heading already links to an issue
   (when (tlon-get-issue-number-from-heading)
-    (error "This heading already has an issue"))
-  (let* ((repo-dir (or (when-let ((repo (tlon-forg--get-repository-from-org-buffer)))
-                         (oref repo worktree))
-                       (tlon-get-repo-from-heading)
-		       (tlon-get-repo nil 'include-all)))
-	 (heading-str (substring-no-properties
-		       (org-get-heading t t t t)))
-	 (title (string-trim
+    (user-error "This heading already has an issue"))
+  ;;------------------------------------------------------------
+  ;; Pin the target *three* different ways
+  ;;------------------------------------------------------------
+  (let* ((origin-buffer (current-buffer))
+	 (marker        (copy-marker (org-entry-beginning-position) t))
+	 (id            (org-id-get-create))
+	 (outline-path  (org-get-outline-path 'with-self)))
+    (tlon--dlog "Pinned headline: ID=%s path=%S marker=%d"
+		id outline-path (marker-position marker))
+    (unwind-protect
+	;;=======================================================
+	;; 1. Gather metadata while still on the target headline
+	;;=======================================================
+	(let* ((repo-dir  (or (tlon-get-repo-from-heading)
+			      (tlon-get-repo nil 'include-all)))
+	       (heading-str
+		(substring-no-properties (org-get-heading t t t t)))
+	       (title
+		(string-trim
 		 (replace-regexp-in-string
 		  "\n" " "
 		  (replace-regexp-in-string
-		   "^\\(TODO\\|DOING\\|DONE\\|NEXT\\|LATER\\|SOMEDAY\\)[[:space:]]+"
+		   "^\\(TODO\\|NEXT\\|DOING\\|DONE\\|LATER\\|SOMEDAY\\)[[:space:]]+"
 		   "" heading-str))))
-	 (org-tags (tlon-get-tags-in-todo))
-	 (org-effort-hours (tlon-forg--org-effort-to-hours
-			    (org-entry-get nil "Effort" 'inherit)))
-	 (status (or (org-get-todo-state) "DOING")))
-    (let* ((default-directory repo-dir)
-	   (forge-repo (forge-get-repository :tracked))
-	   (new-num (tlon-create-issue title repo-dir)))
-      (tlon-forg--pull-sync forge-repo)
-      (let* ((issue (tlon-forg--wait-for-issue new-num repo-dir forge-repo)))
-	(tlon-set-assignee (tlon-user-lookup :github :name user-full-name) issue)
-	(tlon-set-labels `(,status ,@org-tags) nil issue)
-	(when org-effort-hours
-	  (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-	    (tlon-forg--set-github-project-estimate issue org-effort-hours)))
-	(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
-	  (tlon-forg--set-github-project-status issue status))
-	(let* ((new-head (tlon-make-todo-name-from-issue issue)))
-	  (tlon-update-todo-from-issue new-head)
-	  (when org-effort-hours
-	    (tlon-forg--set-org-effort org-effort-hours)))))))
+	       (org-tags (tlon-get-tags-in-todo))
+	       (hours
+		(tlon-forg--org-effort-to-hours
+		 (org-entry-get nil "Effort" 'inherit)))
+	       (status (or (org-get-todo-state) "DOING")))
+	  (tlon--dlog "Prepared issue title=%S status=%s tags=%S hours=%S"
+		      title status org-tags hours)
+	  ;;===============================================
+	  ;; 2. Network / Forge operations
+	  ;;===============================================
+	  (save-current-buffer
+	    (let* ((default-directory repo-dir)
+		   (forge-repo (forge-get-repository :tracked))
+		   (new-num    (tlon-create-issue title repo-dir)))
+	      (tlon--dlog "GitHub issue #%s created" new-num)
+	      (tlon-forg--pull-sync forge-repo)
+	      (let ((issue (tlon-forg--wait-for-issue
+			    new-num repo-dir forge-repo)))
+		(tlon-set-assignee
+		 (tlon-user-lookup :github :name user-full-name) issue)
+		(tlon-set-labels `(,status ,@org-tags) nil issue)
+		(when hours
+		  (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+		    (tlon-forg--set-github-project-estimate issue hours)))
+		(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+		  (tlon-forg--set-github-project-status issue status))
+		;;===========================================
+		;; 3. Replace the ORIGINAL headline in place
+		;;===========================================
+		(let ((new-text (tlon-make-todo-name-from-issue issue))
+		      (jump ""))
+		  (with-current-buffer origin-buffer
+		    ;; -------- Step 3a: find the headline --------
+		    (cond
+		     ;; 1) :ID: is the most reliable
+		     ((org-id-goto id)
+		      (setq jump "ID"))
+		     ;; 2) Outline path lookup (now via org-find-olp)
+		     ((let ((pos (org-find-olp outline-path t)))
+			(when pos (goto-char pos)))
+		      (setq jump "path"))
+		     ;; 3) Marker fallback
+		     (t
+		      (goto-char marker)
+		      ;; Make sure an ID exists again
+		      (org-id-get-create)
+		      (setq jump "marker")))
+		    (tlon--dlog "Returned to headline via %s" jump)
+		    ;; Verify we are on the intended entry
+		    (unless (equal id (org-entry-get nil "ID"))
+		      (tlon--dlog
+		       "WARNING: ID mismatch! wanted=%s got=%s"
+		       id (org-entry-get nil "ID"))
+		      (user-error
+		       "Cannot locate the original heading – aborting."))
+		    ;; -------- Step 3b: actual replacement -----
+		    (tlon--replace-headline-text marker new-text)
+		    (when hours
+		      (tlon-forg--set-org-effort hours))
+		    (tlon--dlog "Headline successfully replaced.")))))))
+      ;; Always release the marker
+      (set-marker marker nil))))
+
+(defun tlon--dlog (fmt &rest args)
+  (when tlon-debug
+    (apply #'message (concat "[TLON‑DEBUG] " fmt) args)))
+
+(defun tlon--replace-headline-text (marker new-text)
+  "Replace the headline that starts at MARKER with NEW-TEXT.
+MARKER must point to the first star of the headline."
+  (with-current-buffer (marker-buffer marker)
+    (goto-char marker)
+    (org-with-wide-buffer
+     (org-back-to-heading t)
+     (let* ((level (org-outline-level))
+	    (stars (make-string level ?*)))
+       (looking-at org-complex-heading-regexp)
+       (replace-match (concat stars " " new-text) t t)))))
 
 (defun tlon-create-issue-or-todo ()
   "Create issue from TODO or vice versa."
