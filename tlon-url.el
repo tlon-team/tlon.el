@@ -183,7 +183,9 @@ Return a list of URLs that should be skipped."
 (defun tlon-lychee--is-whitelisted-p (url)
   "Return t if URL is in the whitelist."
   (member url (tlon-lychee--load-whitelist)))
-  
+
+;;;;; Get URLs
+
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
 If FILE is nil, use the file visited by the current buffer.
@@ -247,6 +249,8 @@ EXTENSION is nil, use \"md\"."
 	(insert url "\n")))
     file))
 
+;;;;; Check URLs
+
 ;;;###autoload
 (defun tlon-check-urls-in-file (&optional file)
   "Check all the URLs in FILE for dead links asynchronously.
@@ -270,6 +274,7 @@ If FILE is nil, use the file visited by the current buffer."
            (message "URL checking completed.")
            (find-file output-file)
            (goto-address-mode 1)))))))
+
 
 ;;;###autoload
 (defun tlon-get-archived (url)
