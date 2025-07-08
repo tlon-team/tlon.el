@@ -1977,6 +1977,35 @@ A status is valid iff it is one of the `cdr` values in `tlon-todo-statuses'."
   (when-let ((status (org-get-todo-state)))
     (member status (mapcar #'cdr tlon-todo-statuses))))
 
+;;;###autoload
+(defun tlon-forg-check-for-duplicate-todos (&optional file)
+  "Check for duplicate TODO entries in FILE.
+A duplicate is a heading with an `orgit-topic' ID that appears more than once.
+If FILE is nil, use the file associated with the current buffer.
+If duplicates are found, signal an error listing the duplicate IDs and their counts.
+Otherwise, return nil."
+  (interactive)
+  (let* ((file (or file (buffer-file-name)))
+         (topic-ids (make-hash-table :test 'equal))
+         (duplicates '()))
+    (unless (and file (file-exists-p file))
+      (user-error "File not found: %s" file))
+    (with-current-buffer (find-file-noselect file)
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward "\\[\\[orgit-topic:\\([^]]+\\)\\]\\]" nil t)
+          (let ((id (match-string 1)))
+            (puthash id (1+ (gethash id topic-ids 0)) topic-ids)))))
+    (maphash (lambda (id count)
+               (when (> count 1)
+                 (push (cons id count) duplicates)))
+             topic-ids)
+    (when duplicates
+      (user-error "Duplicate TODOs found in %s:\n%s"
+                  (file-name-nondirectory file)
+                  (mapconcat (lambda (dup) (format "- ID %s: %d times" (car dup) (cdr dup)))
+                             duplicates "\n")))))
+
 ;;;;; Set tags, status, assignees
 
 (defun tlon-set-labels (labels &optional type issue)
