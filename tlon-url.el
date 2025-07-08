@@ -254,8 +254,25 @@ EXTENSION is nil, use \"md\"."
 
 ;;;;; Check URLs
 
-(declare-function eshell-send-input "esh-mode")
+;;;###autoload
+(defun tlon-check-urls-in-file (&optional file)
+  "Check all the URLs in FILE for dead links.
+If FILE is nil, use the file visited by the current buffer."
+  (interactive)
+  (let* ((input-file (or file (read-file-name "File: " nil nil t
+					      (file-relative-name (buffer-file-name) default-directory)))))
+    (tlon-lychee--check-urls (file-truename input-file))))
 
+;;;###autoload
+(defun tlon-check-urls-in-repo ()
+  "Check all the URLs in the current repository for dead links.
+The command prompts whether to use JSON format for the output."
+  (interactive)
+  (let ((default-directory (tlon-get-repo))
+        (json (y-or-n-p "JSON format? ")))
+    (tlon-lychee--check-urls "." json)))
+
+(declare-function eshell-send-input "esh-mode")
 (defun tlon-lychee--check-urls (target &optional json)
   "Run lychee on TARGET and display results in eshell.
 If JSON is non-nil, use JSON format."
@@ -267,15 +284,6 @@ If JSON is non-nil, use JSON format."
                     (if json "--format json" "")
                     (shell-quote-argument target)))
     (eshell-send-input)))
-
-;;;###autoload
-(defun tlon-check-urls-in-file (&optional file)
-  "Check all the URLs in FILE for dead links.
-If FILE is nil, use the file visited by the current buffer."
-  (interactive)
-  (let* ((input-file (or file (read-file-name "File: " nil nil t
-					      (file-relative-name (buffer-file-name) default-directory)))))
-    (tlon-lychee--check-urls input-file)))
 
 ;;;###autoload
 (defun tlon-get-archived (url)
@@ -292,15 +300,6 @@ Also, copy the URL to the kill ring."
        (message "No working archives found for %s (or error during fetch)." original-url)))))
 
 ;;;;; Dead
-
-;;;###autoload
-(defun tlon-check-urls-in-repo ()
-  "Check all the URLs in the current repository for dead links.
-The command prompts whether to use JSON format for the output."
-  (interactive)
-  (let ((default-directory (tlon-get-repo))
-        (json (y-or-n-p "JSON format? ")))
-    (tlon-lychee--check-urls "." json)))
 
 ;;;###autoload
 (defun tlon-lychee-fix-dead-links ()
@@ -661,10 +660,10 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
   "`url' menu."
   [[""
     ("a" "Get archived"                                tlon-get-archived)
-    ("c" "Check URLs in file"                          tlon-check-urls-in-file)
     ("l" "Lychee fix dead links"                       tlon-lychee-fix-dead-links)
-    ("p" "Check URLs in repo"                          tlon-check-urls-in-repo)
-    ("r" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
+    ("f" "Check URLs in file"                          tlon-check-urls-in-file)
+    ("r" "Check URLs in repo"                          tlon-check-urls-in-repo)
+    ("p" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
