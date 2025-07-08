@@ -2005,11 +2005,12 @@ Otherwise, return nil."
                (when (> count 1)
                  (push (cons id count) duplicates)))
              topic-ids)
-    (when duplicates
-      (user-error "Duplicate TODOs found in %s:\n%s"
-                  (file-name-nondirectory file)
-                  (mapconcat (lambda (dup) (format "- ID %s: %d times" (car dup) (cdr dup)))
-                             duplicates "\n")))))
+    (if duplicates
+	(user-error "Duplicate TODOs found in %s:\n%s"
+                    (file-name-nondirectory file)
+                    (mapconcat (lambda (dup) (format "- ID %s: %d times" (car dup) (cdr dup)))
+                               duplicates "\n"))
+      (message "No duplicate TODOs found in %s" (file-name-nondirectory file)))))
 
 ;;;;; Set tags, status, assignees
 
