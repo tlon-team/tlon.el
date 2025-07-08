@@ -26,8 +26,7 @@ This module provides tools for checking dead URLs within files and replacing URL
 + =json= (Built-in Emacs 27.1+, or package)
 + =cl-lib= (Built-in)
 + =ffap= (Find File At Point, built-in)
-+ =linkchecker= (External command-line tool for ~tlon-check-urls-in-file~)
-+ =lychee= (External command-line tool for ~tlon-lychee-fix-dead-links~)
++ =lychee= (External command-line tool for ~tlon-lychee-fix-dead-links~ and ~tlon-check-urls-in-file~)
 
 ** Commands
 :PROPERTIES:
@@ -39,16 +38,18 @@ This module provides tools for checking dead URLs within files and replacing URL
 :CUSTOM_ID: h:tlon-check-urls-in-file-cmd
 :END:
 #+findex: tlon-check-urls-in-file
-The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a specified =FILE= (or the current buffer's file) for dead links using the external =linkchecker= tool asynchronously.
-1. Identifies the input file.
-2. Extracts all URLs from the file using ~tlon-get-urls-in-file~.
-3. Creates a temporary output file for the =linkchecker= results.
-4. Constructs the =linkchecker= command, specifying the output file and the list of URLs to check (with =--recursion-level=0= to prevent checking linked pages).
-5. Starts the =linkchecker= process asynchronously using =start-process-shell-command=.
-6. Sets a process sentinel:
-   - When the process finishes (indicated by an event string starting with "finished"), it displays a completion message.
-   - It then opens the temporary output file containing the =linkchecker= results.
+The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a specified =FILE= (or the current buffer's file) for dead links using the external =lychee= tool asynchronously.
+1. Ensures the =lychee= executable is available.
+2. Identifies the input file.
+3. Extracts all URLs from the file using ~tlon-get-urls-in-file~.
+4. Writes the URLs to a temporary file, one URL per line.
+5. Constructs the =lychee= command to check the URLs from the temporary file.
+6. Starts the =lychee= process asynchronously using =start-process-shell-command=, with output directed to a new buffer named =*lychee-output*=.
+7. Sets a process sentinel:
+   - When the process finishes, it displays a completion message.
+   - It displays the output buffer.
    - It enables =goto-address-mode= in the results buffer, making URLs clickable.
+   - It deletes the temporary file containing the list of URLs.
 
 *** Get Archived URL
 :PROPERTIES:

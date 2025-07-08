@@ -259,25 +259,25 @@ EXTENSION is nil, use \"md\"."
   "Check all the URLs in FILE for dead links asynchronously.
 If FILE is nil, use the file visited by the current buffer."
   (interactive)
+  (tlon-lychee-ensure)
   (let* ((input-file (or file (read-file-name "File: " nil nil t
 					      (file-relative-name (buffer-file-name) default-directory))))
-	 (urls (mapconcat #'identity (tlon-get-urls-in-file input-file) " "))
-	 (output-file (make-temp-file "linkchecker-output" nil ".txt"))
-	 (command (format "linkchecker --file-output=text/%s  --recursion-level=0 %s"
-                          (shell-quote-argument output-file) urls)))
-    (message "Checking URLs...")
-    (let ((proc (start-process-shell-command "LinkChecker" nil command)))
-      (set-process-filter
-       proc
-       (lambda (_proc output)
-         (message "LinkChecker output: %s" output)))
-      (set-process-sentinel
-       proc
-       (lambda (_ event)
-         (when (string-match-p "^finished" event)
-           (message "URL checking completed.")
-           (find-file output-file)
-           (goto-address-mode 1)))))))
+	 (urls (tlon-get-urls-in-file input-file))
+	 (urls-file (make-temp-file "lychee-urls-" nil ".txt")))
+    (write-region (mapconcat #'identity urls "\n") nil urls-file)
+    (message "Checking URLs with Lychee...")
+    (let* ((output-buffer (generate-new-buffer "*lychee-output*"))
+           (command (format "lychee %s" (shell-quote-argument urls-file))))
+      (let ((proc (start-process-shell-command "lychee" output-buffer command)))
+        (set-process-sentinel
+         proc
+         (lambda (p _event)
+           (when (memq (process-status p) '(exit signal))
+             (message "Lychee URL checking completed.")
+             (pop-to-buffer output-buffer)
+             (with-current-buffer output-buffer
+               (goto-address-mode 1))
+             (delete-file urls-file))))))))
 
 ;;;###autoload
 (defun tlon-get-archived (url)
