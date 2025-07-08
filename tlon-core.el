@@ -336,6 +336,11 @@
 	   :abbrev "docs"
 	   :type docs
 	   :help t)
+    (:name "marketing"
+	   :project "tlon"
+	   :abbrev "marketing"
+	   :type meta
+	   :help t)
     (:name "tlon.el"
  	   :project "tlon"
  	   :abbrev "tlon-el"
