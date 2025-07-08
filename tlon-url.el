@@ -30,12 +30,14 @@
 (require 'cl-lib)
 (require 'url-util)  ; For url-hexify-string
 (require 'markdown-mode)
+(require 'bibtex)
 (eval-and-compile
   (require 'transient))
 
 ;;;; Functions
 
 (declare-function ffap-url-p "ffap")
+(declare-function bibtex-text-in-field "bibtex")
 
 (defun tlon--get-wayback-machine-url (url callback)
   "Fetch the latest working archived version of URL from Wayback Machine.
@@ -184,17 +186,48 @@ Return a list of URLs that should be skipped."
   
 (defun tlon-get-urls-in-file (&optional file)
   "Return a list of all the URLs present in FILE.
-If FILE is nil, use the file visited by the current buffer."
-  (let ((file (or file (buffer-file-name))))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (goto-char (point-min))
-      (let ((links))
-	(while (re-search-forward browse-url-button-regexp nil t)
-	  (when-let ((url (ffap-url-p (match-string-no-properties 0))))
-	    (unless (member url links)
-	      (push url links))))
-	(reverse links)))))
+If FILE is nil, use the file visited by the current buffer.
+Dispatches to a mode-specific function to extract URLs."
+  (let* ((file (or file (buffer-file-name)))
+         (mode (with-temp-buffer
+                 (set-visited-file-name file)
+                 (set-auto-mode)
+                 major-mode)))
+    (cond
+     ((eq mode 'markdown-mode)
+      (tlon--get-urls-in-file-markdown file))
+     ((eq mode 'bibtex-mode)
+      (tlon--get-urls-in-file-bibtex file))
+     (t
+      (tlon--get-urls-in-file-markdown file)))))
+
+(defun tlon--get-urls-in-file-markdown (file)
+  "Return a list of all the URLs present in markdown FILE.
+FILE is the file to process."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (goto-char (point-min))
+    (let ((links))
+      (while (re-search-forward browse-url-button-regexp nil t)
+        (when-let ((url (ffap-url-p (match-string-no-properties 0))))
+          (unless (member url links)
+            (push url links))))
+      (reverse links))))
+
+(defun tlon--get-urls-in-file-bibtex (file)
+  "Return a list of all the URLs present in bibtex FILE.
+FILE is the file to process."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (bibtex-mode)
+    (let ((values '())
+          (field "url"))
+      (bibtex-map-entries
+       (lambda (_key _beg _end)
+         (let ((value (bibtex-text-in-field field)))
+           (when value
+             (push value values)))))
+      (nreverse values))))
 
 (defun tlon-get-urls-in-dir (&optional dir extension)
   "Return a list of all the URLs in the Markdown links present in DIR files.
