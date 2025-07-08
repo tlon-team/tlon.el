@@ -42,7 +42,7 @@
 (defvar tlon-ebib-auth-token-expiry nil
   "Expiry time for the authentication token.")
 
-(defvar tlon-ebib-api-base-url "https://local-dev.ea.international"
+(defvar tlon-ebib-api-base-url "https://ea.international"
   "Base URL for the EA International API.")
 
 (defvar tlon-ebib-api-username
