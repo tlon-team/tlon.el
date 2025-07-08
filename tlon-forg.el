@@ -2265,11 +2265,8 @@ to reflect the new issue and its metadata."
 	    (tlon-forg--set-github-project-estimate issue org-effort-hours)))
 	(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
 	  (tlon-forg--set-github-project-status issue status))
-	(let* ((new-head   (tlon-make-todo-name-from-issue issue)))
+	(let* ((new-head (tlon-make-todo-name-from-issue issue)))
 	  (tlon-update-todo-from-issue new-head)
-	  (org-todo status)
-	  (when org-tags
-	    (org-set-tags (string-join org-tags ":")))
 	  (when org-effort-hours
 	    (tlon-forg--set-org-effort org-effort-hours)))))))
 
