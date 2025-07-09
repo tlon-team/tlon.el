@@ -194,7 +194,7 @@ This section details the interactive commands provided by =tlon-forg.el=.
 :END:
 
 #+findex: tlon-create-issue-from-todo
-+ ~tlon-create-issue-from-todo~ :: (Autoloaded) Creates a new GitHub issue based on the Org heading at point.
++ ~tlon-create-issue-from-todo~ :: (Autoloaded) Creates a new GitHub issue based on the Org heading at point. Verbose logging can be enabled with a prefix argument.
   1. Ensures the heading doesn't already have an issue number.
   2. Determines the repository:
      a. First, by checking if the current buffer's filename (e.g., =REPO.org=) corresponds to a known Tlön repository.
