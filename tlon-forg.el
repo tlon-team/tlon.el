@@ -929,8 +929,8 @@ returns immediately."
 
 ;;;###autoload
 (defun tlon-forg--ensure-prepend (tpl)
-  "Return a copy of the capture TPL that always inserts at the
-beginning of its target by adding `:prepend t' when it is missing."
+  "Return a copy of capture template TPL with `:prepend t' ensured.
+This makes the template always insert at the beginning of its target."
   (let ((tpl (copy-sequence tpl)))
     (unless (plist-member (nthcdr 5 tpl) :prepend)
       (nconc tpl '(:prepend t)))
@@ -2121,16 +2121,16 @@ If ISSUE is nil, get the issue at point or in current buffer."
     (org-link-make-string (format "orgit-topic:%s" id) name)))
 
 (defun tlon-make-todo-name-from-issue (&optional issue no-action no-status override-status)
-  "Construct the name of TODO from ISSUE.
+  "Construct the name of a TODO from an ISSUE.
 For job TODOs, the resulting name will have a name with the form \"[REPO] ACTION
 NAME\". ACTION is optional, and used only for job TODOs. For example, if the
 TODO is \"[uqbar-es] #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is
 \"Process\", the function returns \"[uqbar-es] Process #591 Job:
 `Handbook2022ExerciseForRadical`\".
 
-If NO-ACTION is non-nil, omit the ACTION element. If NO-STATUS is non-nil, omit
-the STATUS element. If OVERRIDE-STATUS is non-nil, use it instead of fetching.
-If ISSUE is nil, use the issue at point or in the current buffer."
+If ISSUE is nil, use the issue at point or in the current buffer. If NO-ACTION
+is non-nil, omit the ACTION element. If NO-STATUS is non-nil, omit the
+STATUS element. If OVERRIDE-STATUS is non-nil, use it instead of fetching."
   (let* ((issue (or issue (forge-current-topic)))
 	 (action (if (and (tlon-issue-is-job-p issue)
 			  (not no-action))
@@ -2272,7 +2272,8 @@ The command:
 The command replaces _that exact_ heading with a link to the new issue. Three
 independent anchors ensure we always get back to the right headline: the `:ID:`
 property, the outline path, and a marker. Enable verbose logging with a prefix
-arg (C-u), by setting `tlon-debug' to non-nil, or by passing a non-nil DEBUG."
+argument (\\[universal-argument]), by setting `tlon-debug' to non-nil, or by
+passing a non-nil DEBUG."
   (interactive "P")
   (setq tlon-debug (or debug tlon-debug))
   (tlon-ensure-org-mode)
