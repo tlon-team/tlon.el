@@ -2128,7 +2128,7 @@ TODO is \"[uqbar-es] #591 Job: `Handbook2022ExerciseForRadical`\", and ACTION is
 \"Process\", the function returns \"[uqbar-es] Process #591 Job:
 `Handbook2022ExerciseForRadical`\".
 
-If NO-ACTION is non-nil, omit, the ACTION element. If NO-STATUS is non-nil, omit
+If NO-ACTION is non-nil, omit the ACTION element. If NO-STATUS is non-nil, omit
 the STATUS element. If OVERRIDE-STATUS is non-nil, use it instead of fetching.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (let* ((issue (or issue (forge-current-topic)))
@@ -2156,7 +2156,8 @@ If ISSUE is nil, use the issue at point or in the current buffer."
 ;;;;; Create issues
 
 (defun tlon-create-issue (title &optional repo body format)
-  "Create new GitHub issue in REPO with TITLE and BODY.
+  "Create a new GitHub issue in REPO with TITLE and BODY.
+
 Returns the created issue number.
 
 Optional fourth argument FORMAT can be `:org' (default, convert title from Org
@@ -2266,13 +2267,12 @@ The command:
 
 ;;;###autoload
 (defun tlon-create-issue-from-todo (&optional debug)
-  "Create a GitHub issue from the Org heading at point and replace
-_that exact_ heading with a link to the new issue.
+  "Create a GitHub issue from the Org heading at point.
 
-Three independent anchors ensure we always get back to the right
-headline: the `:ID:` property, the outline path, and a marker.
-Enable verbose logging with a prefix arg (C‑u) or by setting
-`tlon-debug` to non‑nil."
+The command replaces _that exact_ heading with a link to the new issue. Three
+independent anchors ensure we always get back to the right headline: the `:ID:`
+property, the outline path, and a marker. Enable verbose logging with a prefix
+arg (C-u), by setting `tlon-debug' to non-nil, or by passing a non-nil DEBUG."
   (interactive "P")
   (setq tlon-debug (or debug tlon-debug))
   (tlon-ensure-org-mode)
@@ -2357,7 +2357,7 @@ Enable verbose logging with a prefix arg (C‑u) or by setting
 		       "WARNING: ID mismatch! wanted=%s got=%s"
 		       id (org-entry-get nil "ID"))
 		      (user-error
-		       "Cannot locate the original heading – aborting."))
+		       "Cannot locate the original heading – aborting"))
 		    ;; -------- Step 3b: actual replacement -----
 		    (tlon--replace-headline-text marker new-text)
 		    (when hours
@@ -2367,11 +2367,12 @@ Enable verbose logging with a prefix arg (C‑u) or by setting
       (set-marker marker nil))))
 
 (defun tlon--dlog (fmt &rest args)
+  "Log a debug message with FMT and ARGS if `tlon-debug' is non-nil."
   (when tlon-debug
     (apply #'message (concat "[TLON‑DEBUG] " fmt) args)))
 
 (defun tlon--replace-headline-text (marker new-text)
-  "Replace the headline that starts at MARKER with NEW-TEXT.
+  "Replace the headline starting at MARKER with NEW-TEXT.
 MARKER must point to the first star of the headline."
   (with-current-buffer (marker-buffer marker)
     (goto-char marker)
