@@ -748,15 +748,16 @@ Returns \" ignore-content\" if yes, nil otherwise."
 
 (defun tlon-md--get-nth-tag-attributes (tag file n)
   "In FILE, get attributes of Nth TAG."
-  (with-current-buffer (find-file-noselect file)
-    (save-excursion
-      (goto-char (point-min))
-      (let ((count 0)
-            (pattern (tlon-md-get-tag-pattern tag)))
-        (while (re-search-forward pattern nil t)
-          (setq count (1+ count))
-          (when (= count n)
-            (return (tlon-get-tag-attribute-values tag))))))))
+  (cl-block nil
+    (with-current-buffer (find-file-noselect file)
+      (save-excursion
+        (goto-char (point-min))
+        (let ((count 0)
+              (pattern (tlon-md-get-tag-pattern tag)))
+          (while (re-search-forward pattern nil t)
+            (setq count (1+ count))
+            (when (= count n)
+              (return (tlon-get-tag-attribute-values tag)))))))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
 (declare-function tlon-deepl-translate "tlon-deepl")
