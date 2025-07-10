@@ -132,6 +132,23 @@ BACKGROUND defaults to \"white\" if nil."
 	 (output (shell-command-to-string command)))
     (tlon-images-handle-output output (format "Made `%s' nontransparent." source))))
 
+(defun tlon-images--get-image-format-from-content (buffer)
+  "Determine image format from BUFFER content using magic numbers."
+  (with-current-buffer buffer
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward "^$" nil t) ; Move to start of body
+        (let ((magic (buffer-substring-no-properties (point) (min (point-max) (+ (point) 12)))))
+          (cond
+           ((string-prefix-p "\xFF\xD8\xFF" magic) "jpg")
+           ((string-prefix-p "\x89PNG\r\n\x1a\n" magic) "png")
+           ((string-prefix-p "GIF8" magic) "gif")
+           ((and (>= (length magic) 12)
+                 (string-prefix-p "RIFF" magic)
+                 (string-equal "WEBP" (substring magic 8 12)))
+            "webp")
+           (t nil)))))))
+
 ;;;###autoload
 (defun tlon-images-download-from-markdown (&optional file)
   "Scan Markdown FILE for all image URLs, download them, and store them locally.
