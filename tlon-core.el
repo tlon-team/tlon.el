@@ -521,6 +521,19 @@ author name(s).")
   "\\([ \\$£€][[:digit:]]\\{1,3\\}\\)\\([[:digit:]]\\{3\\}[\\.,:;!\\? ]\\)"
   "Regular expression matching numerals without thousands separators.")
 
+;;;;; Image file names
+
+(defconst tlon-figure-names
+  '((:language "en" :name "figure")
+    (:language "es" :name "figura")
+    (:language "fr" :name "figure")
+    (:language "it" :name "figura")
+    (:language "de" :name "abbildung")
+    (:language "ar" :name "شكل")
+    (:language "ko" :name "그림")
+    (:language "ja" :name "図"))
+  "List of language-specific names for figures.")
+
 ;;;;; Abstracts
 
 (defconst tlon-max-abstract-length 300
