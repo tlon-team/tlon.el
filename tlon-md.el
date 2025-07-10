@@ -768,36 +768,47 @@ This function is for internal use. It is called by `tlon-mdx-insert-figure'
 when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
   (let* ((point (point-marker))
-         (translated-src (car (tlon-get-tag-attribute-values "Figure")))
-         (counterpart-file (tlon-get-counterpart))
-         (target-lang (tlon-get-language-in-file))
-         (source-lang "en")
-         (original-src (tlon-get-image-counterpart translated-src (buffer-file-name)))
-         (relative-original-src (file-relative-name original-src (file-name-directory counterpart-file))))
+	 (action (if (tlon-looking-at-tag-p "Figure") 'edit 'return))
+	 (translated-src (pcase action
+			   ('edit (expand-file-name (car (tlon-get-tag-attribute-values "Figure"))))
+			   ('return (file-truename (read-file-name "Image URL: " (tlon-images-get-dir) nil t)))))
+	 (counterpart-file (tlon-get-counterpart))
+	 (target-lang (tlon-get-language-in-file))
+	 (source-lang "en")
+	 (original-src (tlon-get-image-counterpart translated-src (buffer-file-name)))
+	 (relative-original-src (file-relative-name original-src (file-name-directory counterpart-file))))
     (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file relative-original-src)))
-        (let* ((original-alt (nth 1 original-attrs)))
+	(let* ((original-alt (nth 1 original-attrs)))
           (if original-alt
               (tlon-deepl-translate
-               original-alt
-               target-lang
-               source-lang
-               (lambda () (tlon-md--insert-translated-figure-callback translated-src point))
-               'no-glossary-ok)
+	       original-alt target-lang source-lang
+	       (lambda () (tlon-md--insert-translated-figure-callback translated-src point action))
+	       'no-glossary-ok)
             (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
       (user-error "Could not find figure with src %s in %s" relative-original-src counterpart-file))))
 
-(defun tlon-md--insert-translated-figure-callback (translated-src point)
-  "Insert a translated figure tag with TRANSLATED-SRC and translated alt text.
-This is a callback function for `tlon-mdx-insert-translated-figure'.
-TRANSLATED-SRC is the URL of the translated image."
-  (with-current-buffer (marker-buffer point)
-    (goto-char (marker-position point))
-    (let* ((translated-alt (tlon-deepl-print-translation))
-           (values (list translated-src translated-alt))
-           (content (if (use-region-p)
-                        (buffer-substring-no-properties (region-beginning) (region-end))
-                      "")))
-      (tlon-md-edit-tag values content 'insert-values))))
+(defun tlon-md--insert-translated-figure-callback (src point action)
+  "Callback function for `tlon-mdx-insert-translated-figure'.
+SRC is the URL of the translated image. POINT is the marker position where the
+`Figure' tag should be inserted. ACTION is one of `edit' or `return', depending
+on whether the tag should be edited or inserted."
+  (let* ((translated-alt (tlon-deepl-print-translation))
+         (content (if (use-region-p)
+                      (buffer-substring-no-properties (region-beginning) (region-end))
+                    "")))
+    (with-current-buffer (marker-buffer point)
+      (goto-char (marker-position point))
+      (let* ((relative-src (file-relative-name
+			    src (file-name-directory (buffer-file-name))))
+             (values (list relative-src translated-alt))
+	     (fun (pcase action
+		    ('edit 'tlon-md-edit-tag)
+		    ('return 'tlon-md-return-tag)))
+	     (common-args (list values content 'insert-values))
+	     (all-args (pcase action
+			 ('edit common-args)
+			 ('return (cons "Figure" common-args)))))
+	(apply fun all-args)))))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
