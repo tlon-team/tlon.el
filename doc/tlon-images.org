@@ -155,6 +155,14 @@ This section lists non-interactive functions, variables, and constants used inte
 #+vindex: tlon-imagemagick-make-nontransparent
 + ~tlon-imagemagick-make-nontransparent~ :: Format string for the =magick= command to remove transparency using =-background= and =-flatten=. Placeholders: %1$s (input), %2$s (output), %3$s (background color).
 
+*** Configuration Constants
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-config-consts
+:END:
+
+#+vindex: tlon-image-dirs
++ ~tlon-image-dirs~ :: An alist that maps language codes to the name of the directory used to store images for that language. Used by ~tlon-images-get-dir~.
+
 *** InvertOrNot API Integration
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-invertornot
@@ -179,6 +187,9 @@ This section lists non-interactive functions, variables, and constants used inte
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-helpers
 :END:
+
+#+findex: tlon-images-get-dir
++ ~tlon-images-get-dir~ :: Returns the dedicated image directory for a given =FILE=. The path is constructed by taking the repository root of the =FILE=, appending a language-specific directory name for images (e.g., "images" for English, "imagenes" for Spanish), and then appending the relative path of the =FILE= within its repository (sans extension). For example, for a file at =<repo>/articles/my-post.md=, this function might return =<repo>/images/articles/my-post/=. The language-specific directory names are defined in ~tlon-image-dirs~.
 
 #+findex: tlon-images-read-image
 + ~tlon-images-read-image~ :: Prompts the user for an image file path. If called within Dired, defaults to the file at point. If the current buffer has a file, defaults to that. If ~tlon-images-process-without-asking~ is non-nil, it skips the prompt and uses the default directly.

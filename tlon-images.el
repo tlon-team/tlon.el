@@ -73,9 +73,37 @@ output image.")
 The first placeholder is the input image, the second placeholder is the
 background color, and the third placeholder is the output image.")
 
+(defconst tlon-image-dirs
+  '((:language "en" :name "images")
+    (:language "es" :name "imagenes")
+    (:language "fr" :name "images")
+    (:language "it" :name "immagini")
+    (:language "de" :name "bilder")
+    (:language "ar" :name "صور")
+    (:language "ko" :name "이미지")
+    (:language "ja" :name "画像"))
+  "List of language-specific names for image directories.")
+
 ;;;; Functions
 
 (declare-function dired-get-filename "dired")
+(declare-function tlon-get-language-in-file "tlon-core")
+(declare-function tlon-get-repo-from-file "tlon-core")
+(declare-function tlon-lookup "tlon-core")
+;;;###autoload
+(defun tlon-images-get-dir (&optional file)
+  "Return the images directory of FILE.
+This directory is constructed as <repo-root>/<image-dir-name>/<slug>, where
+<image-dir-name> is language-specific and <slug> is the relative path of FILE
+inside the repo, without extension."
+  (let* ((file (or file (buffer-file-name)))
+         (repo-root (tlon-get-repo-from-file file))
+         (relative-path (file-relative-name file repo-root))
+         (lang (tlon-get-language-in-file file))
+         (image-dir-name (tlon-lookup tlon-image-dirs :name :language lang)))
+    (expand-file-name (file-name-sans-extension relative-path)
+                      (expand-file-name image-dir-name repo-root))))
+
 ;;;###autoload
 (defun tlon-images-auto-process (&optional image)
   "Darken or invert the colors of IMAGE."
