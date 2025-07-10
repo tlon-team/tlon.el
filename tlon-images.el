@@ -296,6 +296,8 @@ relative to the repository root. For example, if FILE is
 		  (message "Saved to %s" image-path)
 		  (kill-buffer image-data-buffer)
 		  (setq counter (1+ counter))))))))
+    (when tlon-images-open-after-processing
+      (dired target-dir))
     (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root))))
 
 (defun tlon-images--get-image-urls-from-markdown (file)
