@@ -746,18 +746,17 @@ Returns \" ignore-content\" if yes, nil otherwise."
       " ignore-content"
     nil))
 
-(defun tlon-md--get-nth-tag-attributes (tag file n)
-  "In FILE, get attributes of Nth TAG."
+(defun tlon-md--get-tag-attributes-by-src (tag file src)
+  "In FILE, get attributes of TAG with matching SRC."
   (cl-block nil
     (with-current-buffer (find-file-noselect file)
       (save-excursion
         (goto-char (point-min))
-        (let ((count 0)
-              (pattern (tlon-md-get-tag-pattern tag)))
+        (let ((pattern (tlon-md-get-tag-pattern tag)))
           (while (re-search-forward pattern nil t)
-            (setq count (1+ count))
-            (when (= count n)
-              (return (tlon-get-tag-attribute-values tag)))))))))
+            (let ((attrs (tlon-get-tag-attribute-values tag)))
+              (when (string= (nth 0 attrs) src)
+                (return attrs)))))))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
 (declare-function tlon-deepl-translate "tlon-deepl")
@@ -769,32 +768,31 @@ when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
   (if (tlon-looking-at-tag-p "Figure")
       (user-error "Editing translated figures not supported yet. Please edit manually.")
-    (let* ((counterpart-file (tlon-get-counterpart))
-           (figure-count-before (save-excursion
-                                  (let ((count 0))
-                                    (goto-char (point-min))
-                                    (while (re-search-forward (tlon-md-get-tag-pattern "Figure") (point) t)
-                                      (setq count (1+ count)))
-                                    count)))
-           (nth-figure (1+ figure-count-before)))
-      (if-let ((original-attrs (tlon-md--get-nth-tag-attributes "Figure" counterpart-file nth-figure)))
-          (let* ((original-src (nth 0 original-attrs))
-                 (original-alt (nth 1 original-attrs))
-                 (target-lang (tlon-get-language-in-file)))
-            (if (and original-src original-alt)
+    (let* ((translated-src (read-string "Image URL: "))
+           (counterpart-file (tlon-get-counterpart))
+           (target-lang (tlon-get-language-in-file))
+           (source-lang "en")
+           (translated-figure-name (tlon-lookup tlon-figure-names :name :language target-lang))
+           (original-figure-name (tlon-lookup tlon-figure-names :name :language source-lang))
+           (translated-filename (file-name-nondirectory translated-src))
+           (original-filename (replace-regexp-in-string translated-figure-name original-figure-name translated-filename))
+           (original-src (file-name-concat (file-name-directory translated-src) original-filename)))
+      (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file original-src)))
+          (let* ((original-alt (nth 1 original-attrs)))
+            (if original-alt
                 (tlon-deepl-translate
                  original-alt
                  target-lang
-                 "en"
+                 source-lang
                  (lambda ()
                    (let* ((translated-alt (tlon-deepl-print-translation))
                           (ignore-content (if (y-or-n-p "Ignore content for TTS? ") " ignore-content" nil))
-                          (values (list original-src translated-alt ignore-content))
+                          (values (list translated-src translated-alt ignore-content))
                           (content (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)))))
                      (tlon-md-return-tag "Figure" values content 'insert-values)))
                  'no-glossary-ok)
-              (user-error "Could not find src/alt for figure %d in %s" nth-figure counterpart-file)))
-        (user-error "Could not find figure %d in %s" nth-figure counterpart-file)))))
+              (user-error "Could not find alt text for figure with src %s in %s" original-src counterpart-file)))
+        (user-error "Could not find figure with src %s in %s" original-src counterpart-file)))))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
