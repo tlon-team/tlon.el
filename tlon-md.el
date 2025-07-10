@@ -768,10 +768,10 @@ This function is for internal use. It is called by `tlon-mdx-insert-figure'
 when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
   (let* ((point (point-marker))
-	 (action (if (tlon-looking-at-tag-p "Figure") 'edit 'return))
+	 (action (if (tlon-looking-at-tag-p "Figure") 'edit 'insert))
 	 (translated-src (pcase action
 			   ('edit (expand-file-name (car (tlon-get-tag-attribute-values "Figure"))))
-			   ('return (file-truename (read-file-name "Image URL: " (tlon-images-get-dir) nil t)))))
+			   ('insert (file-truename (read-file-name "Image URL: " (tlon-images-get-dir) nil t)))))
 	 (counterpart-file (tlon-get-counterpart))
 	 (target-lang (tlon-get-language-in-file))
 	 (source-lang "en")
@@ -790,7 +790,7 @@ when the current buffer is a translation in the `uqbar' subproject."
 (defun tlon-md--insert-translated-figure-callback (src point action)
   "Callback function for `tlon-mdx-insert-translated-figure'.
 SRC is the URL of the translated image. POINT is the marker position where the
-`Figure' tag should be inserted. ACTION is one of `edit' or `return', depending
+`Figure' tag should be inserted. ACTION is one of `edit' or `insert', depending
 on whether the tag should be edited or inserted."
   (let* ((translated-alt (tlon-deepl-print-translation))
          (content (if (use-region-p)
@@ -803,11 +803,11 @@ on whether the tag should be edited or inserted."
              (values (list relative-src translated-alt))
 	     (fun (pcase action
 		    ('edit 'tlon-md-edit-tag)
-		    ('return 'tlon-md-return-tag)))
+		    ('insert 'tlon-md-return-tag)))
 	     (common-args (list values content 'insert-values))
 	     (all-args (pcase action
 			 ('edit common-args)
-			 ('return (cons "Figure" common-args)))))
+			 ('insert (cons "Figure" common-args)))))
 	(apply fun all-args)))))
 
 ;;;###autoload
