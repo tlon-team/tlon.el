@@ -110,7 +110,7 @@ The command ~tlon-images-download-from-markdown~ scans a Markdown file for all i
 4. It creates this directory if it doesn't exist.
 5. It finds all Markdown image URLs (e.g., =![alt text](URL)=) in the file.
 6. For each URL, it downloads the image.
-7. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined from the image's =Content-Type= header.
+7. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined from the image's =Content-Type= HTTP header. If the content type is not available, it falls back to using the file extension from the image URL. If neither is available, it signals an error.
 8. It does *not* modify the original Markdown file to point to these new local images.
 
 *** Transient Menu
