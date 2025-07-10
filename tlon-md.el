@@ -783,9 +783,10 @@ when the current buffer is a translation in the `uqbar' subproject."
                  source-lang
                  (lambda ()
                    (let* ((translated-alt (tlon-deepl-print-translation))
-                          (ignore-content (if (y-or-n-p "Ignore content for TTS? ") " ignore-content" nil))
-                          (values (list translated-src translated-alt ignore-content))
-                          (content (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)))))
+                          (values (list translated-src translated-alt))
+                          (content (if (use-region-p)
+				       (buffer-substring-no-properties (region-beginning) (region-end))
+				     "")))
                      (tlon-md-return-tag "Figure" values content 'insert-values)))
                  'no-glossary-ok)
               (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
