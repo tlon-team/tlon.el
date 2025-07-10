@@ -766,31 +766,29 @@ Returns \" ignore-content\" if yes, nil otherwise."
 This function is for internal use. It is called by `tlon-mdx-insert-figure'
 when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
-  (if (tlon-looking-at-tag-p "Figure")
-      (user-error "Editing translated figures not supported yet. Please edit manually")
-    (let* ((translated-src (read-string "Image URL: "))
-           (counterpart-file (tlon-get-counterpart))
-           (target-lang (tlon-get-language-in-file))
-           (source-lang "en")
-           (original-src (tlon-get-image-counterpart translated-src (buffer-file-name)))
-           (relative-original-src (file-relative-name original-src (file-name-directory counterpart-file))))
-      (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file relative-original-src)))
-          (let* ((original-alt (nth 1 original-attrs)))
-            (if original-alt
-                (tlon-deepl-translate
-                 original-alt
-                 target-lang
-                 source-lang
-                 (lambda ()
-                   (let* ((translated-alt (tlon-deepl-print-translation))
-                          (values (list translated-src translated-alt))
-                          (content (if (use-region-p)
-				       (buffer-substring-no-properties (region-beginning) (region-end))
-				     "")))
-                     (tlon-md-return-tag "Figure" values content 'insert-values)))
-                 'no-glossary-ok)
-              (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
-        (user-error "Could not find figure with src %s in %s" relative-original-src counterpart-file)))))
+  (let* ((translated-src (read-string "Image URL: "))
+         (counterpart-file (tlon-get-counterpart))
+         (target-lang (tlon-get-language-in-file))
+         (source-lang "en")
+         (original-src (tlon-get-image-counterpart translated-src (buffer-file-name)))
+         (relative-original-src (file-relative-name original-src (file-name-directory counterpart-file))))
+    (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file relative-original-src)))
+        (let* ((original-alt (nth 1 original-attrs)))
+          (if original-alt
+              (tlon-deepl-translate
+               original-alt
+               target-lang
+               source-lang
+               (lambda ()
+                 (let* ((translated-alt (tlon-deepl-print-translation))
+                        (values (list translated-src translated-alt))
+                        (content (if (use-region-p)
+				     (buffer-substring-no-properties (region-beginning) (region-end))
+				   "")))
+                   (tlon-md-edit-tag values content 'insert-values)))
+               'no-glossary-ok)
+            (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
+      (user-error "Could not find figure with src %s in %s" relative-original-src counterpart-file))))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
