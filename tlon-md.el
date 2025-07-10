@@ -766,7 +766,8 @@ Returns \" ignore-content\" if yes, nil otherwise."
 This function is for internal use. It is called by `tlon-mdx-insert-figure'
 when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
-  (let* ((translated-src (read-string "Image URL: "))
+  (let* ((point (point-marker))
+         (translated-src (car (tlon-get-tag-attribute-values "Figure")))
          (counterpart-file (tlon-get-counterpart))
          (target-lang (tlon-get-language-in-file))
          (source-lang "en")
@@ -779,21 +780,23 @@ when the current buffer is a translation in the `uqbar' subproject."
                original-alt
                target-lang
                source-lang
-               (lambda () (tlon-md--insert-translated-figure-callback translated-src))
+               (lambda () (tlon-md--insert-translated-figure-callback translated-src point))
                'no-glossary-ok)
             (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
       (user-error "Could not find figure with src %s in %s" relative-original-src counterpart-file))))
 
-(defun tlon-md--insert-translated-figure-callback (translated-src)
+(defun tlon-md--insert-translated-figure-callback (translated-src point)
   "Insert a translated figure tag with TRANSLATED-SRC and translated alt text.
 This is a callback function for `tlon-mdx-insert-translated-figure'.
 TRANSLATED-SRC is the URL of the translated image."
-  (let* ((translated-alt (tlon-deepl-print-translation))
-         (values (list translated-src translated-alt))
-         (content (if (use-region-p)
-                      (buffer-substring-no-properties (region-beginning) (region-end))
-                    "")))
-    (tlon-md-edit-tag values content 'insert-values)))
+  (with-current-buffer (marker-buffer point)
+    (goto-char (marker-position point))
+    (let* ((translated-alt (tlon-deepl-print-translation))
+           (values (list translated-src translated-alt))
+           (content (if (use-region-p)
+                        (buffer-substring-no-properties (region-beginning) (region-end))
+                      "")))
+      (tlon-md-edit-tag values content 'insert-values))))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
