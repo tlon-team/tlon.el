@@ -515,7 +515,7 @@ author name(s).")
     (:language "ar" :conjunct "و")
     (:language "ko" :conjunct "그리고")
     (:language "ja" :conjunct "と"))
-  "List of language-specific conjunctions for text-to-speech processes.")
+  "List of language-specific conjunctions.")
 
 (defconst tlon-numerals-sans-separator
   "\\([ \\$£€][[:digit:]]\\{1,3\\}\\)\\([[:digit:]]\\{3\\}[\\.,:;!\\? ]\\)"
