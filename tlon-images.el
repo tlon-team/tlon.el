@@ -277,25 +277,25 @@ relative to the repository root. For example, if FILE is
           (if (re-search-forward "\r?\n\r?\n" nil t)
               (let* ((header-end (match-end 0))
                      (headers (buffer-substring-no-properties (point-min) header-end))
-                 (extension
-                  (or (tlon-images--get-image-format-from-content (current-buffer))
-                      (let ((from-header
-                             (let ((case-fold-search t))
-                               (when (string-match "Content-Type: image/\\([a-zA-Z0-9-+]+\\)" headers)
-                                 (match-string 1 headers)))))
-                        (if (string-equal from-header "jpeg")
-                            "jpg"
-                          from-header))
-                      (let ((path (url-filename (url-generic-parse-url url))))
-                        (when path (file-name-extension path))))))
-            (unless extension
-	      (user-error "Could not determine image type for %s" url))
-	    (let* ((image-file-name (format "figure-%02d.%s" counter extension))
-		   (image-path (expand-file-name image-file-name target-dir)))
-              (write-region header-end (point-max) image-path nil 0)
-              (message "Saved to %s" image-path)
-              (kill-buffer image-data-buffer)
-              (setq counter (1+ counter)))))))
+                     (extension
+                      (or (tlon-images--get-image-format-from-content (current-buffer))
+			  (let ((from-header
+				 (let ((case-fold-search t))
+				   (when (string-match "Content-Type: image/\\([a-zA-Z0-9-+]+\\)" headers)
+                                     (match-string 1 headers)))))
+                            (if (string-equal from-header "jpeg")
+				"jpg"
+                              from-header))
+			  (let ((path (url-filename (url-generic-parse-url url))))
+                            (when path (file-name-extension path))))))
+		(unless extension
+		  (user-error "Could not determine image type for %s" url))
+		(let* ((image-file-name (format "figure-%02d.%s" counter extension))
+		       (image-path (expand-file-name image-file-name target-dir)))
+		  (write-region header-end (point-max) image-path nil 0)
+		  (message "Saved to %s" image-path)
+		  (kill-buffer image-data-buffer)
+		  (setq counter (1+ counter))))))))
     (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root))))
 
 (defun tlon-images--get-image-urls-from-markdown (file)
