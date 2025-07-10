@@ -28,6 +28,8 @@
 (require 'markdown-mode-extras)
 (require 'tlon-core)
 (require 'tlon-yaml)
+(require 'tlon-deepl)
+(require 'tlon-counterpart)
 
 ;;;; User options
 
@@ -744,13 +746,72 @@ Returns \" ignore-content\" if yes, nil otherwise."
       " ignore-content"
     nil))
 
+(defun tlon-md--get-nth-tag-attributes (tag file n)
+  "In FILE, get attributes of Nth TAG."
+  (with-current-buffer (find-file-noselect file)
+    (save-excursion
+      (goto-char (point-min))
+      (let ((count 0)
+            (pattern (tlon-md-get-tag-pattern tag)))
+        (while (re-search-forward pattern nil t)
+          (setq count (1+ count))
+          (when (= count n)
+            (return (tlon-get-tag-attribute-values tag))))))))
+
+(declare-function tlon-get-counterpart "tlon-counterpart")
+(declare-function tlon-deepl-translate "tlon-deepl")
+(declare-function tlon-deepl-print-translation "tlon-deepl")
+(defun tlon-mdx-insert-translated-figure ()
+  "Insert a translated Figure tag.
+This function is for internal use. It is called by `tlon-mdx-insert-figure'
+when the current buffer is a translation in the `uqbar' subproject."
+  (interactive)
+  (if (tlon-looking-at-tag-p "Figure")
+      (user-error "Editing translated figures not supported yet. Please edit manually.")
+    (let* ((counterpart-file (tlon-get-counterpart))
+           (figure-count-before (save-excursion
+                                  (let ((count 0))
+                                    (goto-char (point-min))
+                                    (while (re-search-forward (tlon-md-get-tag-pattern "Figure") (point) t)
+                                      (setq count (1+ count)))
+                                    count)))
+           (nth-figure (1+ figure-count-before)))
+      (if-let ((original-attrs (tlon-md--get-nth-tag-attributes "Figure" counterpart-file nth-figure)))
+          (let* ((original-src (nth 0 original-attrs))
+                 (original-alt (nth 1 original-attrs))
+                 (target-lang (tlon-get-language-in-file)))
+            (if (and original-src original-alt)
+                (tlon-deepl-translate
+                 original-alt
+                 target-lang
+                 "en"
+                 (lambda ()
+                   (let* ((translated-alt (tlon-deepl-print-translation))
+                          (ignore-content (if (y-or-n-p "Ignore content for TTS? ") " ignore-content" nil))
+                          (values (list original-src translated-alt ignore-content))
+                          (content (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)))))
+                     (tlon-md-return-tag "Figure" values content 'insert-values)))
+                 'no-glossary-ok)
+              (user-error "Could not find src/alt for figure %d in %s" nth-figure counterpart-file)))
+        (user-error "Could not find figure %d in %s" nth-figure counterpart-file)))))
+
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
   "Insert a `Figure' tag pair at point or around the selected region.
-Prompt the user to enter values for SRC and ALT. SRC is the image URL, and ALT
-is the alt text."
+If the file is a translation in the `uqbar' subproject, this function attempts
+to find the corresponding figure in the original file, translate its alt text,
+and insert a `Figure' tag with the original `src' and translated `alt'.
+
+Otherwise, it prompts the user to enter values for SRC and ALT. SRC is the
+image URL, and ALT is the alt text."
   (interactive)
-  (tlon-md-insert-or-edit-tag "Figure"))
+  (let* ((repo (tlon-get-repo-from-file (buffer-file-name)))
+         (subproject (tlon-repo-lookup :subproject :dir repo))
+         (subtype (tlon-repo-lookup :subtype :dir repo)))
+    (if (and (string= subproject "uqbar")
+             (eq subtype 'translations))
+        (tlon-mdx-insert-translated-figure)
+      (tlon-md-insert-or-edit-tag "Figure"))))
 
 ;; TODO: offer language candidates
 ;;;###autoload
