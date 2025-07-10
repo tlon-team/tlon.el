@@ -132,14 +132,16 @@ BACKGROUND defaults to \"white\" if nil."
     (tlon-images-handle-output output (format "Made `%s' nontransparent." source))))
 
 ;;;###autoload
-(defun tlon-images-download-from-markdown (file)
+(defun tlon-images-download-from-markdown (&optional file)
   "Scan Markdown FILE for all image URLs, download them, and store them locally.
 The images are stored in a directory structure derived from the FILE's path
 relative to the repository root. For example, if FILE is
 `.../repo/articles/my-post.md`, images will be saved in
 `.../repo/images/articles/my-post/`."
-  (interactive "fDownload images from Markdown file: ")
-  (let* ((repo-root (tlon-get-repo))
+  (interactive)
+  (let* ((file (or file (read-file-name "Download images from Markdown file: " nil nil t
+					(file-relative-name (buffer-file-name) default-directory))))
+	 (repo-root (tlon-get-repo))
          (relative-path (file-relative-name file repo-root))
          (target-dir (expand-file-name (file-name-sans-extension relative-path)
                                        (expand-file-name "images" repo-root)))
