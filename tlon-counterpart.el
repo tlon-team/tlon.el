@@ -153,6 +153,7 @@ which may prompt if the source file is an original."
                    file target-language-code))
         nil))))
 
+;;;###autoload
 (defun tlon-get-image-counterpart (translated-src &optional file)
   "Return the counterpart path for a TRANSLATED-SRC image path.
 This function translates components of the path (repo, directories, filename)
