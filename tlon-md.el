@@ -768,7 +768,7 @@ This function is for internal use. It is called by `tlon-mdx-insert-figure'
 when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
   (if (tlon-looking-at-tag-p "Figure")
-      (user-error "Editing translated figures not supported yet. Please edit manually.")
+      (user-error "Editing translated figures not supported yet. Please edit manually")
     (let* ((translated-src (read-string "Image URL: "))
            (counterpart-file (tlon-get-counterpart))
            (target-lang (tlon-get-language-in-file))
