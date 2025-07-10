@@ -779,16 +779,21 @@ when the current buffer is a translation in the `uqbar' subproject."
                original-alt
                target-lang
                source-lang
-               (lambda ()
-                 (let* ((translated-alt (tlon-deepl-print-translation))
-                        (values (list translated-src translated-alt))
-                        (content (if (use-region-p)
-				     (buffer-substring-no-properties (region-beginning) (region-end))
-				   "")))
-                   (tlon-md-edit-tag values content 'insert-values)))
+               (lambda () (tlon-md--insert-translated-figure-callback translated-src))
                'no-glossary-ok)
             (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
       (user-error "Could not find figure with src %s in %s" relative-original-src counterpart-file))))
+
+(defun tlon-md--insert-translated-figure-callback (translated-src)
+  "Insert a translated figure tag with TRANSLATED-SRC and translated alt text.
+This is a callback function for `tlon-mdx-insert-translated-figure'.
+TRANSLATED-SRC is the URL of the translated image."
+  (let* ((translated-alt (tlon-deepl-print-translation))
+         (values (list translated-src translated-alt))
+         (content (if (use-region-p)
+                      (buffer-substring-no-properties (region-beginning) (region-end))
+                    "")))
+    (tlon-md-edit-tag values content 'insert-values)))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
