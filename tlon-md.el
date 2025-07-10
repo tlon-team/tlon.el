@@ -753,9 +753,15 @@ Returns \" ignore-content\" if yes, nil otherwise."
         (goto-char (point-min))
         (let ((pattern (tlon-md-get-tag-pattern tag)))
           (while (re-search-forward pattern nil t)
-            (let ((attrs (tlon-get-tag-attribute-values tag)))
-              (when (string= (nth 0 attrs) src)
-                (cl-return attrs)))))))))
+            (let* ((attrs (tlon-get-tag-attribute-values tag))
+		   (target-src (nth 0 attrs))
+		   (match (pcase tag
+			    ;; For Figure tags, we ignore the extension since some images
+			    ;; have extensions different from their counterparts
+			    ("Figure" (string-match (file-name-sans-extension src) target-src))
+			    (_ (string= src target-src)))))
+              (when match
+		(cl-return attrs)))))))))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
