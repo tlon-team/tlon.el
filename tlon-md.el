@@ -767,16 +767,32 @@ This function is for internal use. It is called by `tlon-mdx-insert-figure'
 when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
   (if (tlon-looking-at-tag-p "Figure")
-      (user-error "Editing translated figures not supported yet. Please edit manually")
+      (user-error "Editing translated figures not supported yet. Please edit manually.")
     (let* ((translated-src (read-string "Image URL: "))
            (counterpart-file (tlon-get-counterpart))
            (target-lang (tlon-get-language-in-file))
            (source-lang "en")
+           ;; Slugs
+           (translated-slug (file-name-base (buffer-file-name)))
+           (original-slug (file-name-base (tlon-yaml-get-key "original_path")))
+           ;; Figure names
            (translated-figure-name (tlon-lookup tlon-figure-names :name :language target-lang))
            (original-figure-name (tlon-lookup tlon-figure-names :name :language source-lang))
-           (translated-filename (file-name-nondirectory translated-src))
-           (original-filename (replace-regexp-in-string translated-figure-name original-figure-name translated-filename))
-           (original-src (file-name-concat (file-name-directory translated-src) original-filename)))
+           ;; Image directory names
+           (translated-image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
+           (original-image-dir (tlon-lookup tlon-image-dirs :name :language source-lang))
+           ;; Construct original src
+           (original-src translated-src))
+      (setq original-src (replace-regexp-in-string (regexp-quote translated-slug) original-slug original-src))
+      (setq original-src (replace-regexp-in-string (regexp-quote translated-image-dir) original-image-dir original-src))
+      (setq original-src (replace-regexp-in-string (regexp-quote translated-figure-name) original-figure-name original-src))
+      (dolist (outer tlon-core-bare-dirs)
+        (let* ((source-bare-dir (cdr (assoc target-lang outer)))
+               (target-bare-dir (cdr (assoc source-lang outer))))
+          (when (and source-bare-dir target-bare-dir)
+            (setq original-src (replace-regexp-in-string (regexp-quote source-bare-dir) target-bare-dir original-src)))))
+      (when (file-name-absolute-p original-src)
+        (setq original-src (file-relative-name original-src (file-name-directory counterpart-file))))
       (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file original-src)))
           (let* ((original-alt (nth 1 original-attrs)))
             (if original-alt
