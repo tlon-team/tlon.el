@@ -534,6 +534,17 @@ author name(s).")
     (:language "ja" :name "図"))
   "List of language-specific names for figures.")
 
+(defconst tlon-image-dirs
+  '((:language "en" :name "images")
+    (:language "es" :name "imagenes")
+    (:language "fr" :name "images")
+    (:language "it" :name "immagini")
+    (:language "de" :name "bilder")
+    (:language "ar" :name "صور")
+    (:language "ko" :name "이미지")
+    (:language "ja" :name "画像"))
+  "List of language-specific names for image directories.")
+
 ;;;;; Abstracts
 
 (defconst tlon-max-abstract-length 300
