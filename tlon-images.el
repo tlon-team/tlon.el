@@ -290,7 +290,9 @@ relative to the repository root. For example, if FILE is
                             (when path (file-name-extension path))))))
 		(unless extension
 		  (user-error "Could not determine image type for %s" url))
-		(let* ((image-file-name (format "figure-%02d.%s" counter extension))
+		(let* ((lang (tlon-get-language-in-file file))
+		       (figure-name (tlon-lookup tlon-figure-names :name :language lang))
+		       (image-file-name (format "%s-%02d.%s" figure-name counter extension))
 		       (image-path (expand-file-name image-file-name target-dir)))
 		  (write-region header-end (point-max) image-path nil 0)
 		  (message "Saved to %s" image-path)
