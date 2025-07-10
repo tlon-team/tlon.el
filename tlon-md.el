@@ -761,6 +761,7 @@ Returns \" ignore-content\" if yes, nil otherwise."
 (declare-function tlon-get-image-counterpart "tlon-counterpart")
 (declare-function tlon-deepl-translate "tlon-deepl")
 (declare-function tlon-deepl-print-translation "tlon-deepl")
+(declare-function tlon-images-get-dir "tlon-images")
 (defun tlon-mdx-insert-translated-figure ()
   "Insert a translated Figure tag.
 This function is for internal use. It is called by `tlon-mdx-insert-figure'
