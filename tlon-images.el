@@ -187,7 +187,7 @@ The images are opened conditional on the value of
     (find-file original)
     (find-file-other-window processed)))
 
-;;;;; `invertornot.com' request
+;;;;; invertornot.com request
 
 (defun tlon-images-post-file-to-invertornot (file)
   "Post FILE to the `invertornot.com' API and return the response."
@@ -245,7 +245,6 @@ The images are opened conditional on the value of
 
 ;;;;; Download images in Markdown file
 
-
 ;;;###autoload
 (defun tlon-images-download-from-markdown (&optional file)
   "Scan Markdown FILE for all image URLs, download them, and store them locally.
@@ -288,14 +287,14 @@ relative to the repository root. For example, if FILE is
                           from-header))
                       (let ((path (url-filename (url-generic-parse-url url))))
                         (when path (file-name-extension path))))))
-            (if-not extension
-                (user-error "Could not determine image type for %s" url)
-              (let* ((image-file-name (format "figure-%02d.%s" counter extension))
-                     (image-path (expand-file-name image-file-name target-dir)))
-                (write-region (point) (point-max) image-path nil 0)
-                (message "Saved to %s" image-path)
-                (kill-buffer image-data-buffer)
-                (setq counter (1+ counter))))))))
+            (unless extension
+	      (user-error "Could not determine image type for %s" url))
+	    (let* ((image-file-name (format "figure-%02d.%s" counter extension))
+		   (image-path (expand-file-name image-file-name target-dir)))
+              (write-region (point) (point-max) image-path nil 0)
+              (message "Saved to %s" image-path)
+              (kill-buffer image-data-buffer)
+              (setq counter (1+ counter)))))))
     (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root))))
 
 (defun tlon-images--get-image-urls-from-markdown (file)
@@ -333,13 +332,14 @@ variable."
 ;;;###autoload (autoload 'tlon-images-menu "tlon-images" nil t)
 (transient-define-prefix tlon-images-menu ()
   "Images menu."
-  [["Commands"
+  [["Processing"
     ("a" "auto"                                  tlon-images-auto-process)
-    ("d" "download from markdown"                tlon-images-download-from-markdown)
-    ""
     ("r" "reduce brightness"                     tlon-images-reduce-brightnesss)
     ("i" "invert colors"                         tlon-images-invert-colors)
-    ("n" "make nontransparent"                   tlon-images-make-nontransparent)]
+    ("n" "make nontransparent"                   tlon-images-make-nontransparent)
+    ""
+    "Other"
+    ("d" "download images in file"               tlon-images-download-from-markdown)]
    ["Options"
     ("-o" "open after processing"                tlon-images-toggle-open-after-processing)
     ("-p" "process without asking"               tlon-images-toggle-process-without-asking)
