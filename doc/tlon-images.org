@@ -35,7 +35,7 @@ This module provides functionality for processing images, primarily using the ex
 + ~tlon-images-default-brightness-reduction~ :: Default percentage (integer) by which to reduce image brightness when using ~tlon-images-reduce-brightnesss~ without specifying a percentage. Defaults to 20.
 
 #+vindex: tlon-images-open-after-processing
-+ ~tlon-images-open-after-processing~ :: Boolean flag. If non-nil (the default), the original (copied as light theme) and processed (dark theme) images will be opened in separate windows after processing via ~tlon-images-reduce-brightnesss~ or ~tlon-images-invert-colors~. Uses ~tlon-images-maybe-open-after-processing~.
++ ~tlon-images-open-after-processing~ :: Boolean flag. If non-nil (the default), the original (copied as light theme) and processed (dark theme) images will be opened in separate windows after processing via ~tlon-images-reduce-brightnesss~ or ~tlon-images-invert-colors~. Uses ~tlon-images-maybe-open-after-processing~. Additionally, when using ~tlon-images-download-from-markdown~, the target directory containing the downloaded images will be opened in Dired.
 
 #+vindex: tlon-images-process-without-asking
 + ~tlon-images-process-without-asking~ :: Boolean flag. If non-nil, commands like ~tlon-images-reduce-brightnesss~ will process the image at point (in Dired) or the current buffer's file without prompting for confirmation via ~tlon-images-read-image~. Defaults to nil.
@@ -112,7 +112,8 @@ The command ~tlon-images-download-from-markdown~ scans a Markdown file for all i
 6. It finds all Markdown image URLs (e.g., =![alt text](URL)=) in the file.
 7. For each URL, it downloads the image.
 8. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined by first checking the image's file signature ("magic numbers"). If that fails, it inspects the =Content-Type= HTTP header, and as a final fallback, it uses the file extension from the URL itself. If no extension can be determined, it signals an error.
-9. It does *not* modify the original Markdown file to point to these new local images.
+9. If ~tlon-images-open-after-processing~ is non-nil, it opens the target directory in Dired to show the downloaded images.
+10. It does *not* modify the original Markdown file to point to these new local images.
 
 *** Transient Menu
 :PROPERTIES:
