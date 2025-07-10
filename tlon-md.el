@@ -757,6 +757,24 @@ Returns \" ignore-content\" if yes, nil otherwise."
               (when (string= (nth 0 attrs) src)
                 (cl-return attrs)))))))))
 
+;;;###autoload
+(defun tlon-mdx-insert-figure ()
+  "Insert a `Figure' tag pair at point or around the selected region.
+If the file is a translation in the `uqbar' subproject, this function attempts
+to find the corresponding figure in the original file, translate its alt text,
+and insert a `Figure' tag with the original `src' and translated `alt'.
+
+Otherwise, it prompts the user to enter values for SRC and ALT. SRC is the
+image URL, and ALT is the alt text."
+  (interactive)
+  (let* ((repo (tlon-get-repo-from-file (buffer-file-name)))
+         (subproject (tlon-repo-lookup :subproject :dir repo))
+         (subtype (tlon-repo-lookup :subtype :dir repo)))
+    (if (and (string= subproject "uqbar")
+             (eq subtype 'translations))
+        (tlon-mdx-insert-translated-figure)
+      (tlon-md-insert-or-edit-tag "Figure"))))
+
 (declare-function tlon-get-counterpart "tlon-counterpart")
 (declare-function tlon-get-image-counterpart "tlon-counterpart")
 (declare-function tlon-deepl-translate "tlon-deepl")
@@ -809,24 +827,6 @@ on whether the tag should be edited or inserted."
 			 ('edit common-args)
 			 ('insert (cons "Figure" common-args)))))
 	(apply fun all-args)))))
-
-;;;###autoload
-(defun tlon-mdx-insert-figure ()
-  "Insert a `Figure' tag pair at point or around the selected region.
-If the file is a translation in the `uqbar' subproject, this function attempts
-to find the corresponding figure in the original file, translate its alt text,
-and insert a `Figure' tag with the original `src' and translated `alt'.
-
-Otherwise, it prompts the user to enter values for SRC and ALT. SRC is the
-image URL, and ALT is the alt text."
-  (interactive)
-  (let* ((repo (tlon-get-repo-from-file (buffer-file-name)))
-         (subproject (tlon-repo-lookup :subproject :dir repo))
-         (subtype (tlon-repo-lookup :subtype :dir repo)))
-    (if (and (string= subproject "uqbar")
-             (eq subtype 'translations))
-        (tlon-mdx-insert-translated-figure)
-      (tlon-md-insert-or-edit-tag "Figure"))))
 
 ;; TODO: offer language candidates
 ;;;###autoload
