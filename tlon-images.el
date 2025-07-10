@@ -101,7 +101,7 @@ inside the repo, without extension."
          (relative-path (file-relative-name file repo-root))
          (lang (tlon-get-language-in-file file))
          (image-dir-name (tlon-lookup tlon-image-dirs :name :language lang)))
-    (expand-file-name (file-name-sans-extension relative-path)
+    (expand-file-name (file-name-as-directory (file-name-sans-extension relative-path))
                       (expand-file-name image-dir-name repo-root))))
 
 ;;;###autoload
