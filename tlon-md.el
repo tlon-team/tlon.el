@@ -756,7 +756,7 @@ Returns \" ignore-content\" if yes, nil otherwise."
           (while (re-search-forward pattern nil t)
             (let ((attrs (tlon-get-tag-attribute-values tag)))
               (when (string= (nth 0 attrs) src)
-                (return attrs)))))))))
+                (cl-return attrs)))))))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
 (declare-function tlon-deepl-translate "tlon-deepl")
@@ -767,7 +767,7 @@ This function is for internal use. It is called by `tlon-mdx-insert-figure'
 when the current buffer is a translation in the `uqbar' subproject."
   (interactive)
   (if (tlon-looking-at-tag-p "Figure")
-      (user-error "Editing translated figures not supported yet. Please edit manually.")
+      (user-error "Editing translated figures not supported yet. Please edit manually")
     (let* ((translated-src (read-string "Image URL: "))
            (counterpart-file (tlon-get-counterpart))
            (target-lang (tlon-get-language-in-file))
