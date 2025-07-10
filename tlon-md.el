@@ -496,14 +496,14 @@ VALUES."
   (let ((format (or format 'insert-prompt)))
     (cl-destructuring-bind (open . close) (tlon-md-format-tag tag values format)
       (if close
-	  (if (use-region-p)
-	      (let ((begin (region-beginning)))
-		(goto-char (region-end))
-		(insert close)
-		(goto-char begin)
-		(insert open))
-	    (tlon-md-act-on-returned-tag (concat open (or content "") close) format))
-	(tlon-md-act-on-returned-tag open format)))))
+          (let ((text (if content
+                          content
+                        (when (use-region-p)
+                          (buffer-substring-no-properties (region-beginning) (region-end))))))
+            (when (use-region-p)
+              (delete-region (region-beginning) (region-end)))
+            (tlon-md-act-on-returned-tag (concat open (or text "") close) format))
+        (tlon-md-act-on-returned-tag open format)))))
 
 (defun tlon-md-act-on-returned-tag (string format)
   "Act on the returned STRING based on FORMAT.
