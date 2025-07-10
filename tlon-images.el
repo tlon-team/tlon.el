@@ -25,6 +25,7 @@
 
 (require 'tlon)
 (require 'transient)
+(require 'url-parse)
 
 ;;; Code:
 
@@ -156,15 +157,20 @@ relative to the repository root. For example, if FILE is
           (goto-char (point-min))
           (re-search-forward "^$" nil t)
           (let* ((headers (buffer-substring-no-properties (point-min) (match-beginning 0)))
-                 (content-type (when (string-match "Content-Type: image/\\([a-zA-Z0-9-]+\\)" headers)
-                                 (match-string 1 headers)))
-                 (extension (or content-type "jpg"))
-                 (image-file-name (format "figure-%02d.%s" counter extension))
-                 (image-path (expand-file-name image-file-name target-dir)))
-            (write-region (point) (point-max) image-path nil 0)
-            (message "Saved to %s" image-path)
-            (kill-buffer image-data-buffer)
-            (setq counter (1+ counter))))))
+                 (extension
+                  (or (let ((case-fold-search t))
+                        (when (string-match "Content-Type: image/\\([a-zA-Z0-9-+]+\\)" headers)
+                          (match-string 1 headers)))
+                      (let ((path (url-filename (url-generic-parse-url url))))
+                        (when path (file-name-extension path))))))
+            (if-not extension
+                (user-error "Could not determine image type for %s" url)
+              (let* ((image-file-name (format "figure-%02d.%s" counter extension))
+                     (image-path (expand-file-name image-file-name target-dir)))
+                (write-region (point) (point-max) image-path nil 0)
+                (message "Saved to %s" image-path)
+                (kill-buffer image-data-buffer)
+                (setq counter (1+ counter))))))))
     (message "Downloaded %d images to %s" (length image-urls) (file-relative-name target-dir repo-root))))
 
 (defun tlon-images--get-image-urls-from-markdown (file)
