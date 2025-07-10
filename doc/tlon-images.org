@@ -97,6 +97,22 @@ The command ~tlon-images-make-nontransparent~ removes transparency from an image
 5. It executes the command using =shell-command-to-string=.
 6. It calls ~tlon-images-handle-output~ to display success or error messages.
 
+*** Download Images from Markdown
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-images-download-from-markdown
+:END:
+#+findex: tlon-images-download-from-markdown
+The command ~tlon-images-download-from-markdown~ scans a Markdown file for all image URLs, downloads them, and stores them in a structured local directory.
+
+1. It prompts for the Markdown =FILE= to process.
+2. It determines the repository root using ~tlon-get-repo~.
+3. It constructs a target directory path inside the repository's =images= directory. The path is based on the relative path of the Markdown file. For example, for a file at =<repo>/articles/my-post.md=, the target directory will be =<repo>/images/articles/my-post/=.
+4. It creates this directory if it doesn't exist.
+5. It finds all Markdown image URLs (e.g., =![alt text](URL)=) in the file.
+6. For each URL, it downloads the image.
+7. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined from the image's =Content-Type= header.
+8. It does *not* modify the original Markdown file to point to these new local images.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-menu
@@ -107,6 +123,7 @@ The command ~tlon-images-menu~ activates a =transient= menu interface for image 
 It provides the following groups and commands:
 + *Commands*:
   + =a= :: Auto process (~tlon-images-auto-process~)
+  + =d= :: Download from Markdown (~tlon-images-download-from-markdown~)
   + =r= :: Reduce brightness (~tlon-images-reduce-brightnesss~)
   + =i= :: Invert colors (~tlon-images-invert-colors~)
   + =n= :: Make non-transparent (~tlon-images-make-nontransparent~)
