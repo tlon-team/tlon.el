@@ -173,7 +173,7 @@ relative to the repository root. For example, if FILE is
     (insert-file-contents file)
     (let ((urls '()))
       (goto-char (point-min))
-      (while (re-search-forward "!\\[[^\\]]*\\](\\([^)]+\\))" nil t)
+      (while (re-search-forward "!\\[.*?\\](\\(.+?\\))" nil t)
         (push (match-string 1) urls))
       (nreverse urls))))
 
