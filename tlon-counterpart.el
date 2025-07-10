@@ -160,37 +160,16 @@ This function translates components of the path (repo, directories, filename)
 from the language of FILE to the source language (English).
 If FILE is nil, use the current buffer's file."
   (let* ((file (or file (buffer-file-name)))
-         (target-lang (tlon-get-language-in-file file))
-         (source-lang "en")
-         ;; Repos
-         (translated-repo (tlon-get-repo-from-file file))
-         (original-repo (tlon-get-counterpart-repo file))
-         ;; Slugs
-         (translated-slug (file-name-base file))
-         (original-slug (file-name-base (tlon-yaml-get-key "original_path" file)))
-         ;; Figure names
-         (translated-figure-name (tlon-lookup tlon-figure-names :name :language target-lang))
-         (original-figure-name (tlon-lookup tlon-figure-names :name :language source-lang))
-         ;; Image directory names
-         (translated-image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
-         (original-image-dir (tlon-lookup tlon-image-dirs :name :language source-lang))
-         ;; Construct original src
-         (original-src translated-src))
-    ;; Replace repo path
-    (setq original-src (replace-regexp-in-string (regexp-quote translated-repo) original-repo original-src))
-    ;; Replace slug
-    (setq original-src (replace-regexp-in-string (regexp-quote translated-slug) original-slug original-src))
-    ;; Replace image dir
-    (setq original-src (replace-regexp-in-string (regexp-quote translated-image-dir) original-image-dir original-src))
-    ;; Replace figure name in filename
-    (setq original-src (replace-regexp-in-string (regexp-quote translated-figure-name) original-figure-name original-src))
-    ;; Replace other bare dirs
-    (dolist (outer tlon-core-bare-dirs)
-      (let* ((source-bare-dir (cdr (assoc target-lang outer)))
-             (target-bare-dir (cdr (assoc source-lang outer))))
-        (when (and source-bare-dir target-bare-dir)
-          (setq original-src (replace-regexp-in-string (regexp-quote source-bare-dir) target-bare-dir original-src)))))
-    original-src))
+         (current-lang (tlon-get-language-in-file file))
+         (target-lang "en")
+         (repo (tlon-get-counterpart-repo file))
+         (image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
+         (bare-dir (tlon-get-bare-dir-translation target-lang current-lang (tlon-get-bare-dir file)))
+         (slug (file-name-base (tlon-yaml-get-key "original_path" file)))
+	 (figure-current (tlon-lookup tlon-figure-names :name :language current-lang))
+	 (figure-target (tlon-lookup tlon-figure-names :name :language target-lang))
+	 (file-name (replace-regexp-in-string figure-current figure-target (file-name-nondirectory translated-src))))
+    (file-name-concat repo image-dir bare-dir slug file-name)))
 
 ;;;###autoload
 (defun tlon-open-counterpart (&optional other-win file)
