@@ -107,11 +107,12 @@ The command ~tlon-images-download-from-markdown~ scans a Markdown file for all i
 1. It prompts for the Markdown =FILE= to process.
 2. It determines the repository root using ~tlon-get-repo~.
 3. It constructs a target directory path inside the repository's =images= directory. The path is based on the relative path of the Markdown file. For example, for a file at =<repo>/articles/my-post.md=, the target directory will be =<repo>/images/articles/my-post/=.
-4. It creates this directory if it doesn't exist.
-5. It finds all Markdown image URLs (e.g., =![alt text](URL)=) in the file.
-6. For each URL, it downloads the image.
-7. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined from the image's =Content-Type= HTTP header. If the content type is not available, it falls back to using the file extension from the image URL. If neither is available, it signals an error.
-8. It does *not* modify the original Markdown file to point to these new local images.
+4. If this directory already exists and contains files, it prompts the user to confirm whether to delete its contents. If the user declines, the operation is aborted.
+5. It creates the target directory if it doesn't exist (or recreates it if deletion was confirmed).
+6. It finds all Markdown image URLs (e.g., =![alt text](URL)=) in the file.
+7. For each URL, it downloads the image.
+8. It saves the images sequentially in the target directory (e.g., =figure-01.png=, =figure-02.png=, etc.). The file extension is determined by first checking the image's file signature ("magic numbers"). If that fails, it inspects the =Content-Type= HTTP header, and as a final fallback, it uses the file extension from the URL itself. If no extension can be determined, it signals an error.
+9. It does *not* modify the original Markdown file to point to these new local images.
 
 *** Transient Menu
 :PROPERTIES:
