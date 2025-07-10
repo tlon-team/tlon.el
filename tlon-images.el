@@ -137,7 +137,7 @@ BACKGROUND defaults to \"white\" if nil."
   (with-current-buffer buffer
     (save-excursion
       (goto-char (point-min))
-      (when (re-search-forward "^$" nil t) ; Move to start of body
+      (when (re-search-forward "\r?\n\r?\n" nil t) ; Move to start of body
         (let ((magic (buffer-substring-no-properties (point) (min (point-max) (+ (point) 12)))))
           (cond
            ((string-prefix-p "\xFF\xD8\xFF" magic) "jpg")
@@ -274,8 +274,9 @@ relative to the repository root. For example, if FILE is
       (let ((image-data-buffer (url-retrieve-synchronously url)))
         (with-current-buffer image-data-buffer
           (goto-char (point-min))
-          (re-search-forward "^$" nil t)
-          (let* ((headers (buffer-substring-no-properties (point-min) (match-beginning 0)))
+          (if (re-search-forward "\r?\n\r?\n" nil t)
+              (let* ((header-end (match-end 0))
+                     (headers (buffer-substring-no-properties (point-min) header-end))
                  (extension
                   (or (tlon-images--get-image-format-from-content (current-buffer))
                       (let ((from-header
@@ -291,7 +292,7 @@ relative to the repository root. For example, if FILE is
 	      (user-error "Could not determine image type for %s" url))
 	    (let* ((image-file-name (format "figure-%02d.%s" counter extension))
 		   (image-path (expand-file-name image-file-name target-dir)))
-              (write-region (point) (point-max) image-path nil 0)
+              (write-region header-end (point-max) image-path nil 0)
               (message "Saved to %s" image-path)
               (kill-buffer image-data-buffer)
               (setq counter (1+ counter)))))))
