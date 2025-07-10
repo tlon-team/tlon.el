@@ -29,7 +29,6 @@
 (require 'tlon-core)
 (require 'tlon-yaml)
 (require 'tlon-deepl)
-(require 'tlon-counterpart)
 
 ;;;; User options
 
