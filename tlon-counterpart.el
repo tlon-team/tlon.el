@@ -153,6 +153,44 @@ which may prompt if the source file is an original."
                    file target-language-code))
         nil))))
 
+(defun tlon-get-image-counterpart (translated-src &optional file)
+  "Return the counterpart path for a TRANSLATED-SRC image path.
+This function translates components of the path (repo, directories, filename)
+from the language of FILE to the source language (English).
+If FILE is nil, use the current buffer's file."
+  (let* ((file (or file (buffer-file-name)))
+         (target-lang (tlon-get-language-in-file file))
+         (source-lang "en")
+         ;; Repos
+         (translated-repo (tlon-get-repo-from-file file))
+         (original-repo (tlon-get-counterpart-repo file))
+         ;; Slugs
+         (translated-slug (file-name-base file))
+         (original-slug (file-name-base (tlon-yaml-get-key "original_path" file)))
+         ;; Figure names
+         (translated-figure-name (tlon-lookup tlon-figure-names :name :language target-lang))
+         (original-figure-name (tlon-lookup tlon-figure-names :name :language source-lang))
+         ;; Image directory names
+         (translated-image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
+         (original-image-dir (tlon-lookup tlon-image-dirs :name :language source-lang))
+         ;; Construct original src
+         (original-src translated-src))
+    ;; Replace repo path
+    (setq original-src (replace-regexp-in-string (regexp-quote translated-repo) original-repo original-src))
+    ;; Replace slug
+    (setq original-src (replace-regexp-in-string (regexp-quote translated-slug) original-slug original-src))
+    ;; Replace image dir
+    (setq original-src (replace-regexp-in-string (regexp-quote translated-image-dir) original-image-dir original-src))
+    ;; Replace figure name in filename
+    (setq original-src (replace-regexp-in-string (regexp-quote translated-figure-name) original-figure-name original-src))
+    ;; Replace other bare dirs
+    (dolist (outer tlon-core-bare-dirs)
+      (let* ((source-bare-dir (cdr (assoc target-lang outer)))
+             (target-bare-dir (cdr (assoc source-lang outer))))
+        (when (and source-bare-dir target-bare-dir)
+          (setq original-src (replace-regexp-in-string (regexp-quote source-bare-dir) target-bare-dir original-src)))))
+    original-src))
+
 ;;;###autoload
 (defun tlon-open-counterpart (&optional other-win file)
   "Open the counterpart of file in FILE and move point to matching position.

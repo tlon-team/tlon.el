@@ -759,6 +759,7 @@ Returns \" ignore-content\" if yes, nil otherwise."
                 (cl-return attrs)))))))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
+(declare-function tlon-get-image-counterpart "tlon-counterpart")
 (declare-function tlon-deepl-translate "tlon-deepl")
 (declare-function tlon-deepl-print-translation "tlon-deepl")
 (defun tlon-mdx-insert-translated-figure ()
@@ -772,28 +773,11 @@ when the current buffer is a translation in the `uqbar' subproject."
            (counterpart-file (tlon-get-counterpart))
            (target-lang (tlon-get-language-in-file))
            (source-lang "en")
-           ;; Slugs
-           (translated-slug (file-name-base (buffer-file-name)))
-           (original-slug (file-name-base (tlon-yaml-get-key "original_path")))
-           ;; Figure names
-           (translated-figure-name (tlon-lookup tlon-figure-names :name :language target-lang))
-           (original-figure-name (tlon-lookup tlon-figure-names :name :language source-lang))
-           ;; Image directory names
-           (translated-image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
-           (original-image-dir (tlon-lookup tlon-image-dirs :name :language source-lang))
-           ;; Construct original src
-           (original-src translated-src))
-      (setq original-src (replace-regexp-in-string (regexp-quote translated-slug) original-slug original-src))
-      (setq original-src (replace-regexp-in-string (regexp-quote translated-image-dir) original-image-dir original-src))
-      (setq original-src (replace-regexp-in-string (regexp-quote translated-figure-name) original-figure-name original-src))
-      (dolist (outer tlon-core-bare-dirs)
-        (let* ((source-bare-dir (cdr (assoc target-lang outer)))
-               (target-bare-dir (cdr (assoc source-lang outer))))
-          (when (and source-bare-dir target-bare-dir)
-            (setq original-src (replace-regexp-in-string (regexp-quote source-bare-dir) target-bare-dir original-src)))))
-      (when (file-name-absolute-p original-src)
-        (setq original-src (file-relative-name original-src (file-name-directory counterpart-file))))
-      (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file original-src)))
+           (original-src (tlon-get-image-counterpart translated-src (buffer-file-name)))
+           (relative-original-src (if (file-name-absolute-p original-src)
+                                      (file-relative-name original-src (file-name-directory counterpart-file))
+                                    original-src)))
+      (if-let ((original-attrs (tlon-md--get-tag-attributes-by-src "Figure" counterpart-file relative-original-src)))
           (let* ((original-alt (nth 1 original-attrs)))
             (if original-alt
                 (tlon-deepl-translate
@@ -807,8 +791,8 @@ when the current buffer is a translation in the `uqbar' subproject."
                           (content (when (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)))))
                      (tlon-md-return-tag "Figure" values content 'insert-values)))
                  'no-glossary-ok)
-              (user-error "Could not find alt text for figure with src %s in %s" original-src counterpart-file)))
-        (user-error "Could not find figure with src %s in %s" original-src counterpart-file)))))
+              (user-error "Could not find alt text for figure with src %s in %s" relative-original-src counterpart-file)))
+        (user-error "Could not find figure with src %s in %s" relative-original-src counterpart-file)))))
 
 ;;;###autoload
 (defun tlon-mdx-insert-figure ()
