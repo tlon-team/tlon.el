@@ -417,6 +417,9 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
       (insert "Response from server:\n")
       (insert (or raw-response-text "No content or error message returned."))))))
 
+;;;;; Periodic data update
+
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-ebib-menu "tlon-ebib" nil t)
