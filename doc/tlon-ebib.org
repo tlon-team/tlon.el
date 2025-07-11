@@ -60,7 +60,7 @@ This section lists non-interactive functions and variables used internally.
 :END:
 
 #+findex: tlon-ebib-authenticate
-+ ~tlon-ebib-authenticate~ :: Performs authentication against the API using credentials (~tlon-ebib-api-username~, ~tlon-ebib-api-password~) fetched via =auth-source=. Uses ~tlon-ebib--make-request~ and ~tlon-ebib--parse-json-response~. Stores the obtained access token in ~tlon-ebib-auth-token~ and sets its expiry time in ~tlon-ebib-auth-token-expiry~. Returns the token on success, =nil= otherwise.
++ ~tlon-ebib-authenticate~ :: Performs authentication against the API using credentials (~tlon-ebib-api-username~, ~tlon-ebib-api-password~) fetched via =auth-source=. Uses ~tlon-ebib--make-request~ and ~tlon-ebib--parse-json-response~. Stores the obtained access token in ~tlon-ebib-auth-token~ and sets its expiry time in ~tlon-ebib-auth-token-expiry~. Returns the token on success. On failure, it signals an error and displays the server response in the ~*Ebib API Result*~ buffer.
 
 #+findex: tlon-ebib-ensure-auth
 + ~tlon-ebib-ensure-auth~ :: Checks if the current authentication token (~tlon-ebib-auth-token~) is valid and not expired. If not, it calls ~tlon-ebib-authenticate~ to refresh it. Returns the valid token or =nil= if authentication fails. This function is called by commands requiring authentication.
