@@ -108,7 +108,7 @@ defaults to `tlon-ebib-api-base-url'."
                       (let ((coding-system-for-write 'utf-8-unix))
                         (insert entries-text)
                         (write-file temp-file)))
-                    (if (compare-files tlon-ebib-file-db temp-file)
+                    (if (not (file-equal-p tlon-ebib-file-db temp-file))
                         (if (y-or-n-p (format "File %s exists and is different. Overwrite?"
                                               tlon-ebib-file-db))
                             (progn
