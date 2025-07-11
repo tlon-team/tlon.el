@@ -100,11 +100,26 @@ defaults to `tlon-ebib-api-base-url'."
 	  (user-error "Could not parse response from API"))
 	(kill-buffer response-buffer)))
     (if entries-text
-        (let ((coding-system-for-write 'utf-8-unix))
-          (with-temp-buffer
-            (insert entries-text)
-            (write-file tlon-ebib-file-db)
-	    (bibtex-count-entries)))
+        (let ((existing-content nil)
+              (write-p nil))
+          (if (file-exists-p tlon-ebib-file-db)
+              (progn
+                (with-temp-buffer
+                  (insert-file-contents tlon-ebib-file-db)
+                  (setq existing-content (buffer-string)))
+                (if (string= entries-text existing-content)
+                    (message "File %s is already up to date." tlon-ebib-file-db)
+                  (if (y-or-n-p (format "File %s exists and is different. Overwrite?"
+                                        tlon-ebib-file-db))
+                      (setq write-p t)
+                    (message "Keeping existing file %s." tlon-ebib-file-db))))
+            (setq write-p t))
+          (when write-p
+            (let ((coding-system-for-write 'utf-8-unix))
+              (with-temp-buffer
+                (insert entries-text)
+                (write-file tlon-ebib-file-db)
+                (bibtex-count-entries)))))
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib-authenticate ()
