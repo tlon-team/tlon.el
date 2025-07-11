@@ -124,18 +124,18 @@ Returns the authentication token or nil if authentication failed."
             (setq status-code (tlon-ebib--get-response-status-code response-buffer))
             (if (= status-code 200)
                 (setq auth-data (tlon-ebib--parse-json-response response-buffer))
-              (progn
-                (tlon-ebib--display-result-buffer
-                 "Authentication failed"
-                 #'tlon-ebib--format-post-entries-result
-                 `(:status ,status-code :raw-text ,raw-response-text))
-                (user-error "Authentication failed: HTTP status %d. See *Ebib API Result* buffer for details"
-                            status-code))))
-        (kill-buffer response-buffer))) ; Ensure buffer is killed
+              (tlon-ebib--display-result-buffer
+               "Authentication failed"
+               #'tlon-ebib--format-post-entries-result
+               `(:status ,status-code :raw-text ,raw-response-text))
+              (user-error "Authentication failed: HTTP status %d. See *Ebib API Result* buffer for details"
+                          status-code)))
+	(kill-buffer response-buffer))) ; Ensure buffer is killed
     (when auth-data
       (setq tlon-ebib-auth-token (gethash "access_token" auth-data))
       ;; Set token expiry to 30 minutes from now (typical JWT expiry).
       (setq tlon-ebib-auth-token-expiry (time-add (current-time) (seconds-to-time (* 30 60))))
+      (message "Authentication successful. Token: %s" tlon-ebib-auth-token)
       tlon-ebib-auth-token)))
 
 (defun tlon-ebib-ensure-auth ()
