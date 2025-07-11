@@ -108,7 +108,7 @@ defaults to `tlon-ebib-api-base-url'."
                       (let ((coding-system-for-write 'utf-8-unix))
                         (insert entries-text)
                         (write-file temp-file)))
-                    (if (not (file-equal-p tlon-ebib-file-db temp-file))
+                    (if (not (tlon-ebib--files-have-same-content-p tlon-ebib-file-db temp-file))
                         (if (y-or-n-p (format "File %s exists and is different. Overwrite?"
                                               tlon-ebib-file-db))
                             (progn
@@ -399,6 +399,16 @@ RESULT is a plist like (:status CODE :data DATA)."
           (insert "Message: " (gethash "message" response-data) "\n"))
         (when (gethash "detail" response-data) ; Handle FastAPI detail string
           (insert "Detail: " (gethash "detail" response-data) "\n")))))))
+
+(defun tlon-ebib--files-have-same-content-p (file1 file2)
+  "Return t if FILE1 and FILE2 have identical content."
+  (let ((content1 (with-temp-buffer
+                    (insert-file-contents file1)
+                    (buffer-string)))
+        (content2 (with-temp-buffer
+                    (insert-file-contents file2)
+                    (buffer-string))))
+    (string= content1 content2)))
 
 (defun tlon-ebib--format-post-entries-result (result)
   "Format the RESULT from `tlon-ebib-post-entries` for display.
