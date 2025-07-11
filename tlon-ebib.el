@@ -100,28 +100,32 @@ defaults to `tlon-ebib-api-base-url'."
 	  (user-error "Could not parse response from API"))
 	(kill-buffer response-buffer)))
     (if entries-text
-        (let ((existing-content nil)
-              (write-p nil))
-          (if (file-exists-p tlon-ebib-file-db)
-              (progn
-                (with-temp-buffer
-                  (insert-file-contents tlon-ebib-file-db)
-                  (setq existing-content (buffer-string)))
-                (if (= (length entries-text) (length existing-content))
-                    (message "File %s is already up to date." tlon-ebib-file-db)
-                  (let ((new-file (file-name-concat (file-name-directory tlon-ebib-file-db) "db2.bib")))
+        (if (file-exists-p tlon-ebib-file-db)
+            (let ((temp-file (make-temp-file "ebib-entries-")))
+              (unwind-protect
+                  (progn
                     (with-temp-buffer
-                      (insert entries-text)
-                      (write-file new-file))
-                    (message "Wrote new content to %s for comparison." new-file)
-                    (setq write-p nil))))
-            (setq write-p t))
-          (when write-p
-            (let ((coding-system-for-write 'utf-8-unix))
-              (with-temp-buffer
-                (insert entries-text)
-                (write-file tlon-ebib-file-db)
-                (bibtex-count-entries)))))
+                      (let ((coding-system-for-write 'utf-8-unix))
+                        (insert entries-text)
+                        (write-file temp-file)))
+                    (if (compare-files tlon-ebib-file-db temp-file)
+                        (if (y-or-n-p (format "File %s exists and is different. Overwrite?"
+                                              tlon-ebib-file-db))
+                            (progn
+                              (copy-file temp-file tlon-ebib-file-db t)
+                              (message "Updated %s." tlon-ebib-file-db)
+                              (with-temp-buffer
+                                (insert entries-text)
+                                (bibtex-count-entries)))
+                          (message "Keeping existing file %s." tlon-ebib-file-db))
+                      (message "File %s is already up to date." tlon-ebib-file-db)))
+                (when (file-exists-p temp-file)
+                  (delete-file temp-file))))
+          (let ((coding-system-for-write 'utf-8-unix))
+            (with-temp-buffer
+              (insert entries-text)
+              (write-file tlon-ebib-file-db)
+              (bibtex-count-entries))))
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib-authenticate ()
