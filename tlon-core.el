@@ -421,10 +421,15 @@ If `:help' is non-nil, include this repo in the list of directories scanned by
   (file-name-concat tlon-bibtex-dir "stable.bib")
   "File containing the stable bibliography.")
 
+(defvar tlon-file-db
+  (file-name-concat tlon-bibtex-dir "db.bib")
+  "File containing the db bibliography.")
+
 (defvar tlon-bibliography-files
   `(,tlon-file-fluid
-    ,tlon-file-stable)
-  "List of bibliography files.")
+    ,tlon-file-stable
+    ,tlon-file-db)
+  "List of Tlön bibliography files.")
 
 ;;;;; Numbers
 
