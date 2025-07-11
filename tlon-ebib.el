@@ -116,14 +116,21 @@ Returns the authentication token or nil if authentication failed."
                        "&password=" (url-hexify-string tlon-ebib-api-password)))
          (headers '(("Content-Type" . "application/x-www-form-urlencoded")))
          (response-buffer (tlon-ebib--make-request "POST" "/api/auth/token" data headers nil))
-         auth-data status-code)
+         auth-data status-code raw-response-text)
     (when response-buffer
       (unwind-protect
           (progn
+            (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
             (setq status-code (tlon-ebib--get-response-status-code response-buffer))
             (if (= status-code 200)
                 (setq auth-data (tlon-ebib--parse-json-response response-buffer))
-              (user-error "Authentication failed: HTTP status %d" status-code)))
+              (progn
+                (tlon-ebib--display-result-buffer
+                 "Authentication failed"
+                 #'tlon-ebib--format-post-entries-result
+                 `(:status ,status-code :raw-text ,raw-response-text))
+                (user-error "Authentication failed: HTTP status %d. See *Ebib API Result* buffer for details"
+                            status-code))))
         (kill-buffer response-buffer))) ; Ensure buffer is killed
     (when auth-data
       (setq tlon-ebib-auth-token (gethash "access_token" auth-data))
