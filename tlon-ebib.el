@@ -107,7 +107,7 @@ defaults to `tlon-ebib-api-base-url'."
                 (with-temp-buffer
                   (insert-file-contents tlon-ebib-file-db)
                   (setq existing-content (buffer-string)))
-                (if (string= entries-text existing-content)
+                (if (= (length entries-text) (length existing-content))
                     (message "File %s is already up to date." tlon-ebib-file-db)
                   (if (y-or-n-p (format "File %s exists and is different. Overwrite?"
                                         tlon-ebib-file-db))
