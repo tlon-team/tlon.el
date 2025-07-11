@@ -419,7 +419,9 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
    ("g" "Get entries" tlon-ebib-get-entries)
    ("p" "Post entries" tlon-ebib-post-entries)
    ("c" "Check name" tlon-ebib-check-name)
-   ("i" "Check or insert name" tlon-ebib-check-or-insert-name)])
+   ("i" "Check or insert name" tlon-ebib-check-or-insert-name)
+   ""
+   ("a" "Authenticate" tlon-ebib-authenticate)])
 
 (provide 'tlon-ebib)
 ;;; tlon-ebib.el ends here
