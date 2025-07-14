@@ -305,7 +305,7 @@ Also, copy the URL to the kill ring."
 (defun tlon-lychee-fix-dead-links ()
   "Run lychee to find dead links and replace them with Wayback Machine versions.
 This command operates on the current project's root directory, identified by
-`tlon-get-repo`. It runs `lychee` to scan all supported files, parses the
+`tlon-get-repo'. It runs `lychee' to scan all supported files, parses the
 JSON output, and for each dead link, attempts to find an archived version
 using the Wayback Machine. If successful, it replaces the dead link in the
 respective file. This process is asynchronous and relies on helper functions."
@@ -329,7 +329,7 @@ respective file. This process is asynchronous and relies on helper functions."
 
 (defun tlon-lychee--run-and-process (cmd-string stdout-buffer stderr-file repo-dir)
   "Run lychee with CMD-STRING, capturing output in STDOUT-BUFFER and STDERR-FILE.
-Process output via a sentinel that calls `tlon-lychee--handle-completion`
+Process output via a sentinel that calls `tlon-lychee--handle-completion'
 with REPO-DIR for context."
   (let ((proc (start-process-shell-command "lychee" stdout-buffer cmd-string)))
     (set-process-sentinel
@@ -340,7 +340,7 @@ with REPO-DIR for context."
 (defun tlon-lychee--handle-completion (process stdout-buffer stderr-file repo-dir)
   "Handle lychee process completion.
 Parse JSON output from STDOUT-BUFFER, read STDERR-FILE, and call
-`tlon-lychee--process-parsed-report` if successful.
+`tlon-lychee--process-parsed-report' if successful.
 Cleans up STDOUT-BUFFER and STDERR-FILE. PROCESS is the lychee process
 and REPO-DIR provides context."
   (when (memq (process-status process) '(exit signal))
@@ -384,7 +384,7 @@ and REPO-DIR provides context."
 
 (defun tlon-lychee--process-parsed-report (report repo-dir stderr-content)
   "Process the parsed lychee REPORT.
-Counts dead links, and if any, calls `tlon-lychee--iterate-and-attempt-fixes`.
+Counts dead links, and if any, calls `tlon-lychee--iterate-and-attempt-fixes'.
 REPO-DIR is the repository root. STDERR-CONTENT is lychee's stderr output."
   (let* ((action-counts-ref (list :archived 0 :replaced 0 :removed 0 :whitelisted 0 :skipped 0))
          (processed-links-count-ref (list 0))
