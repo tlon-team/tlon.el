@@ -55,6 +55,9 @@ This section details the interactive commands provided by =tlon-md.el=.
 #+findex: tlon-insert-internal-link
 + ~tlon-insert-internal-link~ :: Inserts a Markdown link to another Tlön entity (article, author, tag). It uses completion based on titles found in the repository's metadata (~tlon-metadata-in-repo~). It handles existing links at point and uses the active region as default link text.
 
+#+findex: tlon-md-open-src-file
++ ~tlon-md-open-src-file~ :: If point is on a tag with a =src= attribute (e.g., =<Figure>=, =<LiteralLink>=, =<Embedded>=), this command opens the file specified in the attribute. It correctly resolves relative paths from the current file's location.
+
 #+findex: tlon-md-sort-related-entries
 + ~tlon-md-sort-related-entries~ :: Sorts the list items (assumed to be links separated by " • ") alphabetically within the "Entradas relacionadas" section of the current buffer. Uses ~tlon-md-sort-elements-in-paragraph~ internally.
 

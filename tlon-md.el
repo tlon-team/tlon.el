@@ -426,6 +426,23 @@ If no section is found, do nothing."
       (forward-paragraph)
       (tlon-md-sort-elements-in-paragraph " • "))))
 
+;;;###autoload
+(defun tlon-md-open-src-file ()
+  "If point is on a tag with a `src' attribute, open the file it points to."
+  (interactive)
+  (tlon-ensure-markdown-mode)
+  (if-let ((tag (tlon-get-tag-at-point)))
+      (let* ((names (tlon-get-tag-attribute-names tag))
+             (src-pos (cl-position "src" names :test #'string=)))
+        (if src-pos
+            (let* ((values (tlon-get-tag-attribute-values tag))
+                   (src-value (nth src-pos values)))
+              (if (and src-value (not (string-empty-p src-value)))
+                  (find-file (expand-file-name src-value (file-name-directory (buffer-file-name))))
+                (user-error "Tag `%s' has an empty `src' attribute" tag)))
+          (user-error "Tag `%s' does not have a `src' attribute" tag)))
+    (user-error "Point is not on a known tag")))
+
 ;;;;;; Tag handling
 
 (defun tlon-md-insert-or-edit-tag (tag)
@@ -1388,6 +1405,7 @@ variables section. If FILE is nil, read the file visited by the current buffer."
     ("l" "language"             tlon-mdx-insert-language)
     ("m" "Math"                 tlon-mdx-insert-math)
     ("." "special character"    tlon-insert-special-character)
+    ("RET" "open src"           tlon-md-open-src-file)
     ""
     "Caps"
     ("p" "small caps"           tlon-mdx-insert-small-caps)
