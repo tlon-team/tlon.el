@@ -24,6 +24,7 @@
 ;; Image processing functionality.
 
 (require 'tlon)
+(require 'tlon-core)
 (require 'transient)
 (require 'url-parse)
 
