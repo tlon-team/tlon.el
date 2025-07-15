@@ -65,6 +65,11 @@ available options. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-translate)
 
+(defcustom tlon-translate-revise-commit-changes t
+  "Whether to commit changes after an AI revision."
+  :group 'tlon-translate
+  :type 'boolean)
+
 ;;;; Variables
 
 (defconst tlon-translate--engine-choices
@@ -154,9 +159,10 @@ commit. TYPE is the revision type."
   (if (not response)
       (tlon-ai-callback-fail info)
     (message "AI agent finished revising %s." (file-name-nondirectory file))
-    (let ((default-directory (tlon-get-repo-from-file file)))
-      (magit-stage-files (list file))
-      (tlon-create-commit (format "AI: Revise (%s)" (symbol-name type)) file))))
+    (when tlon-translate-revise-commit-changes
+      (let ((default-directory (tlon-get-repo-from-file file)))
+        (magit-stage-files (list file))
+        (tlon-create-commit (format "AI: Revise (%s)" (symbol-name type)) file)))))
 
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
@@ -261,6 +267,7 @@ file. If LANG is not provided, prompt for a target language."
     ("e" "Spot errors" tlon-translate-revise-errors)
     ("f" "Improve flow" tlon-translate-revise-flow)]
    ["Options"
+    ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)
     ("-t" "Translation engine" tlon-translate-engine-infix)
     ("-d" "DeepL model" tlon-deepl-model-type-infix)
     ("-e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
@@ -293,6 +300,11 @@ If nil, use the default model."
 If nil, use the default model."
   :class 'tlon-ai-model-selection-infix
   :variable 'tlon-translate-revise-flow-model)
+
+(transient-define-infix tlon-translate-infix-toggle-commit-changes ()
+  "Toggle whether to commit changes after an AI revision."
+  :class 'transient-switch
+  :variable 'tlon-translate-revise-commit-changes)
 
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here

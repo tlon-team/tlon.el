@@ -38,6 +38,8 @@ This module provides functions for translating entire files using various transl
 + ~tlon-translate-revise-errors-model~ :: Model to use for spotting errors in translations.
 #+vindex: tlon-translate-revise-flow-model
 + ~tlon-translate-revise-flow-model~ :: Model to use for improving the flow of translations.
+#+vindex: tlon-translate-revise-commit-changes
++ ~tlon-translate-revise-commit-changes~ :: Whether to commit changes after an AI revision.
 
 ** Commands
 :PROPERTIES:
@@ -79,6 +81,7 @@ It provides the following groups and commands:
   + =e= :: Spot errors (~tlon-translate-revise-errors~)
   + =f= :: Improve flow (~tlon-translate-revise-flow~)
 + *Options*:
+  + =c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
   + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
   + =m -e= :: Revise errors model (~tlon-translate-infix-select-revise-errors-model~)
   + =m -f= :: Revise flow model (~tlon-translate-infix-select-revise-flow-model~)
@@ -114,3 +117,6 @@ It provides the following groups and commands:
 
 #+findex: tlon-translate-infix-select-revise-flow-model
 + ~tlon-translate-infix-select-revise-flow-model~ :: The transient infix command for selecting the AI model for improving flow.
+
+#+findex: tlon-translate-infix-toggle-commit-changes
++ ~tlon-translate-infix-toggle-commit-changes~ :: The transient infix command for toggling whether to commit changes after an AI revision.
