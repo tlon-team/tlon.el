@@ -258,17 +258,13 @@ Handles 200 (Success) and 422 (Validation Error) responses."
       (message "Entry posted successfully."))
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
-(defun tlon-ebib-delete-entry ()
+(defun tlon-ebib-delete-entry (key)
   "Delete the BibTeX entry at point from the EA International API."
-  (interactive)
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
-  (unless (derived-mode-p 'bibtex-mode)
-    (user-error "This command can only be used in BibTeX mode"))
-  (let* ((entry-key (bibtex-key-at-point))
-         (endpoint (format "/api/entries/%s" (url-hexify-string entry-key)))
-         (headers '(("accept" . "application/json")))
-         response-buffer response-data raw-response-text status-code)
+  (let* ((endpoint (format "/api/entries/%s" (url-hexify-string key)))
+	 (headers '(("accept" . "application/json")))
+	 response-buffer response-data raw-response-text status-code)
     (setq response-buffer (tlon-ebib--make-request "DELETE" endpoint nil headers t))
     (if (not response-buffer)
         (setq status-code nil)
@@ -290,7 +286,7 @@ Handles 200 (Success) and 422 (Validation Error) responses."
          (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
          #'tlon-ebib--format-delete-entry-result
          `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
-      (message "Entry '%s' deleted successfully." entry-key))
+      (message "Entry '%s' deleted successfully." key))
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
 ;;;;; Internal Helpers
@@ -536,7 +532,6 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   ["Ebib Actions"
    ("g" "Get entries" tlon-ebib-get-entries)
    ("p" "Post entry" tlon-ebib-post-entry)
-   ("d" "Delete entry" tlon-ebib-delete-entry)
    ("c" "Check name" tlon-ebib-check-name)
    ("i" "Check or insert name" tlon-ebib-check-or-insert-name)
    ""
