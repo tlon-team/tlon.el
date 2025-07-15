@@ -34,18 +34,6 @@ The user option ~tlon-ai-batch-fun~ specifies a function to be run when ~tlon~ o
 (setq tlon-ai-batch-fun 'my-batch-processing-function)
 #+end_src
 
-*** Overwrite Image Alt Text
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-ai-overwrite-alt-text
-:END:
-#+vindex: tlon-ai-overwrite-alt-text
-The user option ~tlon-ai-overwrite-alt-text~ controls whether existing alt text in image tags should be overwritten when generating new descriptions.
-
-- If non-nil, existing alt text will be replaced by the newly generated text when using ~tlon-ai-set-image-alt-text-in-buffer~.
-- If nil (the default), existing alt text will be preserved.
-
-Note: The command ~tlon-ai-set-image-alt-text~ (operating on a single image tag at point) *always* overwrites existing alt text, regardless of this option's setting.
-
 *** Edit Prompt Before Sending
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-ai-edit-prompt
@@ -167,33 +155,6 @@ The AI's response is displayed in a new buffer named ~*Commit Summary*~. The mod
 The command ~tlon-ai-rewrite~ prompts for text (defaulting to the active region) and requests ten alternative Spanish rewrites from the AI using the prompt ~tlon-ai-rewrite-prompt~.
 
 The user selects one of the suggested variants from the minibuffer. If a region was active, it is deleted and replaced with the selected variant. The selected variant is also copied to the kill ring.
-
-*** Image Description
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-ai-describe-image
-:END:
-#+findex: tlon-ai-describe-image
-The command ~tlon-ai-describe-image~ generates a concise description (alt text) for an image file.
-
-It prompts the user to select an image file if one isn't automatically detected (e.g., from a =Figure= tag at point or the file at point in Dired). It determines the desired language for the description based on the context (e.g., the language of the current buffer).
-
-It uses the prompt from ~tlon-ai-describe-image-prompt~ for the determined language, instructing the AI to provide a one- or two-sentence description under 50 words. The image file is added to the =gptel= context for the request.
-
-By default, the resulting description is displayed as a message. An optional CALLBACK argument can be provided programmatically to handle the response differently.
-
-*** Setting Image Alt Text
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-ai-set-image-alt-text
-:END:
-#+findex: tlon-ai-set-image-alt-text
-The command ~tlon-ai-set-image-alt-text~ automatically generates and inserts an alt text description for an image tag (=Figure= or =OurWorldInData=) at point.
-
-It extracts the image source (=src=) attribute from the tag, locates the corresponding image file (handling local paths and Our World In Data URLs), and then calls ~tlon-ai-describe-image~ to get the description. The generated alt text is then inserted into the =alt= attribute of the image tag at point. This command *always* overwrites any existing alt text.
-
-#+findex: tlon-ai-set-image-alt-text-in-buffer
-The command ~tlon-ai-set-image-alt-text-in-buffer~ iterates through all =Figure= and =OurWorldInData= tags in the current buffer and calls ~tlon-ai-set-image-alt-text~ for each one.
-
-Whether it overwrites existing alt text depends on the value of the user option ~tlon-ai-overwrite-alt-text~.
 
 *** Fixing Markdown Formatting
 :PROPERTIES:
@@ -355,7 +316,7 @@ This command relies heavily on accurate metadata (=original_path=) and consisten
 :CUSTOM_ID: h:tlon-ai-menu
 :END:
 #+findex: tlon-ai-menu
-The command ~tlon-ai-menu~ displays a =transient= menu interface, providing quick access to most of the AI-related commands and options described above. It allows toggling options like =tlon-ai-overwrite-alt-text= and =tlon-ai-edit-prompt=, selecting models for specific tasks, setting batch functions, and invoking the various AI operations (summarization, image description, translation, help, etc.).
+The command ~tlon-ai-menu~ displays a =transient= menu interface, providing quick access to most of the AI-related commands and options described above. It allows toggling options like =tlon-ai-edit-prompt=, selecting models for specific tasks, setting batch functions, and invoking the various AI operations (summarization, translation, help, etc.).
 
 The "Models" section of the menu allows selecting specific AI models for different tasks:
 + =m -d= :: Select model for summarizing commit diffs (~tlon-ai-infix-select-summarize-commit-diffs-model~)

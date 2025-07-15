@@ -27,6 +27,9 @@
 (require 'tlon-core)
 (require 'transient)
 (require 'url-parse)
+(require 'tlon-ai)
+(require 'tlon-md)
+(require 'dired)
 
 ;;; Code:
 
@@ -46,6 +49,14 @@
 
 (defcustom tlon-images-process-without-asking nil
   "Whether to process the image at point without asking for confirmation."
+  :type 'boolean
+  :group 'tlon-images)
+
+(defcustom tlon-images-overwrite-alt-text nil
+  "Whether to overwrite existing alt text in images.
+This variable only affects the behavior of
+`tlon-images-set-image-alt-text-in-buffer'; it is ignored by
+`tlon-images-set-image-alt-text', which always overwrites."
   :type 'boolean
   :group 'tlon-images)
 
@@ -84,6 +95,18 @@ background color, and the third placeholder is the output image.")
     (:language "ko" :name "이미지")
     (:language "ja" :name "画像"))
   "List of language-specific names for image directories.")
+
+(defconst tlon-images-describe-image-prompt
+  `((:prompt "Please provide a concise description of the attached image. The description should consist of one or two sentences and must never exceed 50 words. If you need to use quotes, please use single quotes."
+	     :language "en")
+    (:prompt "Por favor, describe brevemente la imagen adjunta. La descripción debe consistir de una o dos oraciones y en ningún caso debe exceder las 50 palabras. Si necesitas usar comillas, por favor utiliza comillas simples."
+	     :language "es")
+    (:prompt "Veuillez fournir une description concise de l'image ci-jointe. La description doit consister en une ou deux phrases et ne doit pas dépasser 50 mots. Si vous devez utiliser des guillemets, veuillez utiliser des guillemets simples."
+	     :language "fr")
+    (:prompt "Si prega di fornire una descrizione concisa dell'immagine allegata. La descrizione deve consistere in una o due frasi e non deve mai superare le 50 parole. Se è necessario utilizzare le virgolette, si prega di utilizzare le virgolette singole."
+	     :language "it")
+    (:prompt "Bitte geben Sie eine kurze Beschreibung des beigefügten Bildes. Die Beschreibung sollte aus ein oder zwei Sätzen bestehen und darf 50 Wörter nicht überschreiten. Wenn Sie Anführungszeichen verwenden müssen, verwenden Sie bitte einfache Anführungszeichen."
+	     :language "de")))
 
 ;;;; Functions
 
@@ -272,6 +295,103 @@ The images are opened conditional on the value of
       (1 t)
       (_ (user-error "Invalid response from server")))))
 
+;;;;; Image description
+
+;;;###autoload
+(defun tlon-images-describe-image (&optional file callback)
+  "Describe the contents of the image in FILE.
+By default, print the description in the minibuffer. If CALLBACK is non-nil, use
+it instead."
+  (interactive)
+  ;; we warn here because this command adds files to the context, so the usual
+  ;; check downstream must be bypassed via `no-context-check'
+  (gptel-extras-warn-when-context)
+  (let* ((previous-context gptel-context--alist)
+	 (file (tlon-images-read-image-file file))
+	 (language (tlon-get-language-in-file file))
+	 (default-prompt (tlon-lookup tlon-images-describe-image-prompt :prompt :language language))
+	 (custom-callback (lambda (response info)
+			    (tlon-images-describe-image-callback response info callback previous-context))))
+    (gptel-context-remove-all)
+    (gptel-context-add-file file)
+    (tlon-make-gptel-request default-prompt nil custom-callback nil t)))
+
+(defun tlon-images-describe-image-callback (response info original-callback previous-context)
+  "Handle the response from `tlon-images-describe-image'.
+If ORIGINAL-CALLBACK is non-nil, call it with RESPONSE and INFO.
+Otherwise, message RESPONSE or an error based on INFO.
+Finally, restore `gptel-context--alist' to PREVIOUS-CONTEXT."
+  (when original-callback
+    (funcall original-callback response info))
+  (unless original-callback
+    (if response
+	(message response)
+      (user-error "Error: %s" (plist-get info :status))))
+  (setq gptel-context--alist previous-context))
+
+(declare-function tlon-get-tag-attribute-values "tlon-md")
+(declare-function tlon-md-insert-attribute-value "tlon-md")
+(defun tlon-images-set-image-alt-text ()
+  "Insert a description of the image in the image tag at point.
+The image tags are \"Figure\" or \"OurWorldInData\"."
+  (interactive)
+  (save-excursion
+    (if-let* ((src (car (or (tlon-get-tag-attribute-values "Figure")
+			    (tlon-get-tag-attribute-values "OurWorldInData"))))
+	      (file (tlon-images-get-image-file-from-src src))
+	      (pos (point-marker)))
+	(tlon-images-describe-image file (lambda (response info)
+				       (if response
+					   (with-current-buffer (marker-buffer pos)
+					     (goto-char pos)
+					     (tlon-md-insert-attribute-value "alt" response))
+					 (user-error "Error: %s" (plist-get info :status)))))
+      (user-error "No \"Figure\" or \"OurWorldInData\" tag at point"))))
+
+(declare-function tlon-md-get-tag-pattern "tlon-md")
+(defun tlon-images-set-image-alt-text-in-buffer ()
+  "Insert a description of all the images in the current buffer.
+If the image already contains a non-empty `alt' field, overwrite it when
+`tlon-images-overwrite-alt-text' is non-nil."
+  (interactive)
+  (save-excursion
+    (dolist (tag '("Figure" "OurWorldInData"))
+      (goto-char (point-min))
+      (while (re-search-forward (tlon-md-get-tag-pattern tag) nil t)
+	(when (or tlon-images-overwrite-alt-text
+		  (not (match-string 6))
+		  (string-empty-p (match-string 6)))
+	  (tlon-images-set-image-alt-text))))))
+
+(declare-function dired-get-filename "dired")
+(defun tlon-images-read-image-file (&optional file)
+  "Read an image FILE from multiple sources.
+In order, the sources are: the value of FILE, the value of `src' attribute in a
+`Figure' MDX tag, the image in the current buffer, the image at point in Dired
+and the file selected by the user."
+  (or file
+      (when-let ((name (car (tlon-get-tag-attribute-values "Figure"))))
+	(file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
+			  (replace-regexp-in-string "^\\.\\./" "" name)))
+      (member (buffer-file-name) image-file-name-extensions)
+      (when (derived-mode-p 'dired-mode)
+	(dired-get-filename))
+      (read-file-name "Image file: ")))
+
+(defun tlon-images-get-image-file-from-src (src)
+  "Get the image file from the SRC attribute.
+If SRC is a One World in Data URL, download the image and return the local file.
+Otherwise, construct a local file path from SRC and return it."
+  (if (string-match-p "ourworldindata.org" src)
+      (let* ((extension ".png")
+	     (url (format "https://ourworldindata.org/grapher/thumbnail/%s%s"
+			  (car (last (split-string src "/"))) extension))
+	     (file (make-temp-file nil nil extension)))
+	(url-copy-file url file t)
+	file)
+    (file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
+		      (replace-regexp-in-string "^\\.\\./" "" src))))
+
 ;;;;; Download images in Markdown file
 
 ;;;###autoload
@@ -357,6 +477,12 @@ variable."
   :variable 'tlon-images-open-after-processing
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-open-after-processing)))
 
+(transient-define-infix tlon-images-toggle-overwrite-alt-text ()
+  "Toggle the value of `tlon-images-overwrite-alt-text' in `images' menu."
+  :class 'transient-lisp-variable
+  :variable 'tlon-images-overwrite-alt-text
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-overwrite-alt-text)))
+
 (transient-define-infix tlon-images-toggle-process-without-asking ()
   "Toggle the value of `'tlon-images-process-without-asking' in `images' menu."
   :class 'transient-lisp-variable
@@ -372,12 +498,18 @@ variable."
     ("i" "invert colors"                         tlon-images-invert-colors)
     ("n" "make nontransparent"                   tlon-images-make-nontransparent)
     ""
+    "AI"
+    ("D" "describe image"                        tlon-images-describe-image)
+    ("S" "set alt text"                          tlon-images-set-image-alt-text)
+    ("B" "set alt text in buffer"                tlon-images-set-image-alt-text-in-buffer)
+    ""
     "Other"
     ("d" "download images in file"               tlon-images-download-from-markdown)]
    ["Options"
     ("-o" "open after processing"                tlon-images-toggle-open-after-processing)
     ("-p" "process without asking"               tlon-images-toggle-process-without-asking)
-    ("-r" "percent brightness reduction"         tlon-images-brightness-reduction-infix)]])
+    ("-r" "percent brightness reduction"         tlon-images-brightness-reduction-infix)
+    ("-O" "overwrite alt text"                   tlon-images-toggle-overwrite-alt-text)]])
 
 (provide 'tlon-images)
 ;;; tlon-images.el ends here

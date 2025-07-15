@@ -44,14 +44,6 @@
   :type 'symbol
   :group 'tlon-ai)
 
-(defcustom tlon-ai-overwrite-alt-text nil
-  "Whether to overwrite existing alt text in images.
-This variable only affects the behavior of
-`tlon-ai-set-image-alt-text-in-buffer'; it is ignored by
-`tlon-ai-set-image-alt-text', which always overwrites."
-  :type 'boolean
-  :group 'tlon-ai)
-
 (defcustom tlon-ai-edit-prompt nil
   "Whether to edit the prompt before sending it to the AI model."
   :type 'boolean
@@ -205,20 +197,6 @@ default `gptel-model'."
 (defconst tlon-ai-fix-markdown-format-prompt
   `((:prompt "Please take a look at the two paragraphs attached (paragraphs may contain only one word). The first, ‘%s’, is taken from the original document in %s, while the second, ‘%s’, is taken from a translation of that document into %s. In the translation, some of the original formatting (which includes not only Markdown elements but potentially HTML components and SSML tags) has been lost or altered. What I want you to do is to generate a new paragraph with all the original formatting restored, but without changing the text of the translation. Add missing links. Add missing asterisks. Add any other missing markdown signs. Don't add any missing text. Don't change the name of the files referred to as images. And please do not surround the text in backticks. Add missing links. Add missing asterisks. Add any other missing markdown signs. Just give the output but don't add comments or clarifications, even if there's nothing to restore. Thank you!"
 	     :language "en")))
-
-;;;;; Image description
-
-(defconst tlon-ai-describe-image-prompt
-  `((:prompt "Please provide a concise description of the attached image. The description should consist of one or two sentences and must never exceed 50 words. If you need to use quotes, please use single quotes."
-	     :language "en")
-    (:prompt "Por favor, describe brevemente la imagen adjunta. La descripción debe consistir de una o dos oraciones y en ningún caso debe exceder las 50 palabras. Si necesitas usar comillas, por favor utiliza comillas simples."
-	     :language "es")
-    (:prompt "Veuillez fournir une description concise de l'image ci-jointe. La description doit consister en une ou deux phrases et ne doit pas dépasser 50 mots. Si vous devez utiliser des guillemets, veuillez utiliser des guillemets simples."
-	     :language "fr")
-    (:prompt "Si prega di fornire una descrizione concisa dell'immagine allegata. La descrizione deve consistere in una o due frasi e non deve mai superare le 50 parole. Se è necessario utilizzare le virgolette, si prega di utilizzare le virgolette singole."
-	     :language "it")
-    (:prompt "Bitte geben Sie eine kurze Beschreibung des beigefügten Bildes. Die Beschreibung sollte aus ein oder zwei Sätzen bestehen und darf 50 Wörter nicht überschreiten. Wenn Sie Anführungszeichen verwenden müssen, verwenden Sie bitte einfache Anführungszeichen."
-	     :language "de")))
 
 ;;;;; Summarization
 
@@ -809,103 +787,6 @@ RESPONSE is the response from the AI model and INFO is the response info."
 	   (variant (completing-read "Variant: " variants)))
       (delete-region (region-beginning) (region-end))
       (kill-new variant))))
-
-;;;;; Image description
-
-;;;###autoload
-(defun tlon-ai-describe-image (&optional file callback)
-  "Describe the contents of the image in FILE.
-By default, print the description in the minibuffer. If CALLBACK is non-nil, use
-it instead."
-  (interactive)
-  ;; we warn here because this command adds files to the context, so the usual
-  ;; check downstream must be bypassed via `no-context-check'
-  (gptel-extras-warn-when-context)
-  (let* ((previous-context gptel-context--alist)
-	 (file (tlon-ai-read-image-file file))
-	 (language (tlon-get-language-in-file file))
-	 (default-prompt (tlon-lookup tlon-ai-describe-image-prompt :prompt :language language))
-	 (custom-callback (lambda (response info)
-			    (tlon-ai-describe-image-callback response info callback previous-context))))
-    (gptel-context-remove-all)
-    (gptel-context-add-file file)
-    (tlon-make-gptel-request default-prompt nil custom-callback nil t)))
-
-(defun tlon-ai-describe-image-callback (response info original-callback previous-context)
-  "Handle the response from `tlon-ai-describe-image'.
-If ORIGINAL-CALLBACK is non-nil, call it with RESPONSE and INFO.
-Otherwise, message RESPONSE or an error based on INFO.
-Finally, restore `gptel-context--alist' to PREVIOUS-CONTEXT."
-  (when original-callback
-    (funcall original-callback response info))
-  (unless original-callback
-    (if response
-	(message response)
-      (user-error "Error: %s" (plist-get info :status))))
-  (setq gptel-context--alist previous-context))
-
-(autoload 'tlon-get-tag-attribute-values "tlon-md")
-(autoload 'tlon-md-insert-attribute-value "tlon-md")
-(defun tlon-ai-set-image-alt-text ()
-  "Insert a description of the image in the image tag at point.
-The image tags are \"Figure\" or \"OurWorldInData\"."
-  (interactive)
-  (save-excursion
-    (if-let* ((src (car (or (tlon-get-tag-attribute-values "Figure")
-			    (tlon-get-tag-attribute-values "OurWorldInData"))))
-	      (file (tlon-ai-get-image-file-from-src src))
-	      (pos (point-marker)))
-	(tlon-ai-describe-image file (lambda (response info)
-				       (if response
-					   (with-current-buffer (marker-buffer pos)
-					     (goto-char pos)
-					     (tlon-md-insert-attribute-value "alt" response))
-					 (user-error "Error: %s" (plist-get info :status)))))
-      (user-error "No \"Figure\" or \"OurWorldInData\" tag at point"))))
-
-(autoload 'tlon-md-get-tag-pattern "tlon-md")
-(defun tlon-ai-set-image-alt-text-in-buffer ()
-  "Insert a description of all the images in the current buffer.
-If the image already contains a non-empty `alt' field, overwrite it when
-`tlon-ai-overwrite-alt-text' is non-nil."
-  (interactive)
-  (save-excursion
-    (dolist (tag '("Figure" "OurWorldInData"))
-      (goto-char (point-min))
-      (while (re-search-forward (tlon-md-get-tag-pattern tag) nil t)
-	(when (or tlon-ai-overwrite-alt-text
-		  (not (match-string 6))
-		  (string-empty-p (match-string 6)))
-	  (tlon-ai-set-image-alt-text))))))
-
-(autoload 'dired-get-filename "dired")
-(defun tlon-ai-read-image-file (&optional file)
-  "Read an image FILE from multiple sources.
-In order, the sources are: the value of FILE, the value of `src' attribute in a
-`Figure' MDX tag, the image in the current buffer, the image at point in Dired
-and the file selected by the user."
-  (or file
-      (when-let ((name (car (tlon-get-tag-attribute-values "Figure"))))
-	(file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
-			  (replace-regexp-in-string "^\\.\\./" "" name)))
-      (member (buffer-file-name) image-file-name-extensions)
-      (when (derived-mode-p 'dired-mode)
-	(dired-get-filename))
-      (read-file-name "Image file: ")))
-
-(defun tlon-ai-get-image-file-from-src (src)
-  "Get the image file from the SRC attribute.
-If SRC is a One World in Data URL, download the image and return the local file.
-Otherwise, construct a local file path from SRC and return it."
-  (if (string-match-p "ourworldindata.org" src)
-      (let* ((extension ".png")
-	     (url (format "https://ourworldindata.org/grapher/thumbnail/%s%s"
-			  (car (last (split-string src "/"))) extension))
-	     (file (make-temp-file nil nil extension)))
-	(url-copy-file url file t)
-	file)
-    (file-name-concat (file-name-as-directory (tlon-get-repo 'no-prompt))
-		      (replace-regexp-in-string "^\\.\\./" "" src))))
 
 ;;;;; File comparison
 
@@ -2052,12 +1933,6 @@ COMMITS is a list of commit hashes."
           (goto-char (point-min)))
         (pop-to-buffer (current-buffer))))))
 
-(transient-define-infix tlon-ai-infix-toggle-overwrite-alt-text ()
-  "Toggle the value of `tlon-ai-overwrite-alt-text' in `ai' menu."
-  :class 'transient-lisp-variable
-  :variable 'tlon-ai-overwrite-alt-text
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-ai-overwrite-alt-text)))
-
 (transient-define-infix tlon-ai-infix-toggle-edit-prompt ()
   "Toggle the value of `tlon-ai-edit-prompt' in `ai' menu."
   :class 'transient-lisp-variable
@@ -2212,13 +2087,6 @@ If nil, use the default model."
     ("s -m" "mullvad connection duration"             tlon-mullvad-connection-duration-infix)
     ("s -o" "overwrite abstract"                      tlon-abstract-overwrite-infix)
     ""]
-   ["Images"
-    ("i d" "describe image"                           tlon-ai-describe-image)
-    ("i s" "set alt text"                             tlon-ai-set-image-alt-text)
-    ("i S" "set alt text in buffer"                   tlon-ai-set-image-alt-text-in-buffer)
-    ""
-    "Image options"
-    ("i -o" "overwrite alt text"                      tlon-ai-infix-toggle-overwrite-alt-text)]
    ["Math"
     ("c" "convert"                                    tlon-ai-convert-math)
     ("t" "translate"                                  tlon-ai-translate-math)

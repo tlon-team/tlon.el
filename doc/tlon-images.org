@@ -40,6 +40,9 @@ This module provides functionality for processing images, primarily using the ex
 #+vindex: tlon-images-process-without-asking
 + ~tlon-images-process-without-asking~ :: Boolean flag. If non-nil, commands like ~tlon-images-reduce-brightnesss~ will process the image at point (in Dired) or the current buffer's file without prompting for confirmation via ~tlon-images-read-image~. Defaults to nil.
 
+#+vindex: tlon-images-overwrite-alt-text
++ ~tlon-images-overwrite-alt-text~ :: Boolean flag. If non-nil, existing alt text will be replaced by the newly generated text when using ~tlon-images-set-image-alt-text-in-buffer~. If nil (the default), existing alt text will be preserved. Note: The command ~tlon-images-set-image-alt-text~ (operating on a single image tag at point) *always* overwrites existing alt text, regardless of this option's setting.
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-commands
@@ -115,6 +118,17 @@ The command ~tlon-images-download-from-markdown~ scans a Markdown file for all i
 9. If ~tlon-images-open-after-processing~ is non-nil, it opens the target directory in Dired to show the downloaded images.
 10. It does *not* modify the original Markdown file to point to these new local images.
 
+*** AI-Powered Image Commands
+
+#+findex: tlon-images-describe-image
++ ~tlon-images-describe-image~ :: Generates a concise description (alt text) for an image file using an AI model. It prompts for an image file, determines the language, and uses a language-specific prompt to request a description. The resulting text is displayed as a message by default but can be handled by a callback.
+
+#+findex: tlon-images-set-image-alt-text
++ ~tlon-images-set-image-alt-text~ :: Automatically generates and inserts an alt text description for an image tag (=Figure= or =OurWorldInData=) at point. It calls ~tlon-images-describe-image~ and inserts the result into the =alt= attribute. This command *always* overwrites existing alt text.
+
+#+findex: tlon-images-set-image-alt-text-in-buffer
++ ~tlon-images-set-image-alt-text-in-buffer~ :: Iterates through all =Figure= and =OurWorldInData= tags in the buffer and sets their alt text. Whether it overwrites existing alt text depends on the value of ~tlon-images-overwrite-alt-text~.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-images-menu
@@ -123,16 +137,20 @@ The command ~tlon-images-download-from-markdown~ scans a Markdown file for all i
 The command ~tlon-images-menu~ activates a =transient= menu interface for image processing.
 
 It provides the following groups and commands:
-+ *Commands*:
++ *Processing*:
   + =a= :: Auto process (~tlon-images-auto-process~)
-  + =d= :: Download from Markdown (~tlon-images-download-from-markdown~)
   + =r= :: Reduce brightness (~tlon-images-reduce-brightnesss~)
   + =i= :: Invert colors (~tlon-images-invert-colors~)
   + =n= :: Make non-transparent (~tlon-images-make-nontransparent~)
+  + =D= :: Describe image (~tlon-images-describe-image~)
+  + =S= :: Set alt text (~tlon-images-set-image-alt-text~)
+  + =B= :: Set alt text in buffer (~tlon-images-set-image-alt-text-in-buffer~)
+  + =d= :: Download from Markdown (~tlon-images-download-from-markdown~)
 + *Options*:
   + =-o= :: Toggle opening images after processing (~tlon-images-toggle-open-after-processing~ infix, modifies ~tlon-images-open-after-processing~)
   + =-p= :: Toggle processing without asking (~tlon-images-toggle-process-without-asking~ infix, modifies ~tlon-images-process-without-asking~)
   + =-r= :: Set brightness reduction percentage (~tlon-images-brightness-reduction-infix~, modifies ~tlon-images-default-brightness-reduction~)
+  + =-O= :: Toggle overwriting alt text (~tlon-images-toggle-overwrite-alt-text~ infix, modifies ~tlon-images-overwrite-alt-text~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
