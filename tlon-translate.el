@@ -65,7 +65,7 @@ available options. If nil, use the default `gptel-model'."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-translate)
 
-(defcustom tlon-translate-revise-commit-changes t
+(defcustom tlon-translate-revise-commit-changes nil
   "Whether to commit changes after an AI revision."
   :group 'tlon-translate
   :type 'boolean)
