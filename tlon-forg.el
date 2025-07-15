@@ -908,9 +908,9 @@ returns immediately."
 	 ;; We built a *concrete* template list – push it and call org‑capture
 	 ((listp capture-tpl)
 	  (let ((org-capture-templates (cons capture-tpl orig-templates)))
-	    (org-capture nil (car capture-tpl))))
+	    (org-capture t (car capture-tpl))))
 	 ;; No concrete list – simply use the key that the user passed in.
-	 (t (org-capture nil template)))))))
+	 (t (org-capture t template)))))))
 
 ;;;###autoload
 (defun tlon-forg--ensure-prepend (tpl)
