@@ -41,7 +41,7 @@ This module provides functionality for processing images, primarily using the ex
 + ~tlon-images-read-file-without-asking~ :: Boolean flag. If non-nil, commands like ~tlon-images-reduce-brightnesss~ will process the image at point (in Dired) or the current buffer's file without prompting for confirmation via ~tlon-images-read-image~. Defaults to nil.
 
 #+vindex: tlon-images-overwrite-alt-text
-+ ~tlon-images-overwrite-alt-text~ :: Boolean flag. If non-nil, existing alt text will be replaced by the newly generated text when using ~tlon-images-set-image-alt-text-in-buffer~. If nil (the default), existing alt text will be preserved. Note: The command ~tlon-images-set-image-alt-text~ (operating on a single image tag at point) *always* overwrites existing alt text, regardless of this option's setting.
++ ~tlon-images-overwrite-alt-text~ :: Boolean flag. If non-nil, existing alt text will be replaced by the newly generated text when using ~tlon-images-set-image-alt-text-in-buffer~. If nil (the default), existing alt text will be preserved. Note: The command ~tlon-images-set-image-alt-text-in-file~ (operating on a single image tag at point) *always* overwrites existing alt text, regardless of this option's setting.
 
 ** Commands
 :PROPERTIES:
@@ -123,8 +123,8 @@ The command ~tlon-images-download-from-markdown~ scans a Markdown file for all i
 #+findex: tlon-images-describe-image
 + ~tlon-images-describe-image~ :: Generates a concise description (alt text) for an image file using an AI model. It prompts for an image file, determines the language, and uses a language-specific prompt to request a description. The resulting text is displayed as a message by default but can be handled by a callback.
 
-#+findex: tlon-images-set-image-alt-text
-+ ~tlon-images-set-image-alt-text~ :: Automatically generates and inserts an alt text description for an image tag (=Figure= or =OurWorldInData=) at point. It calls ~tlon-images-describe-image~ and inserts the result into the =alt= attribute. This command *always* overwrites existing alt text.
+#+findex: tlon-images-set-image-alt-text-in-file
++ ~tlon-images-set-image-alt-text-in-file~ :: Automatically generates and inserts an alt text description for an image tag (=Figure= or =OurWorldInData=) at point. It calls ~tlon-images-describe-image~ and inserts the result into the =alt= attribute. This command *always* overwrites existing alt text.
 
 #+findex: tlon-images-set-image-alt-text-in-buffer
 + ~tlon-images-set-image-alt-text-in-buffer~ :: Iterates through all =Figure= and =OurWorldInData= tags in the buffer and sets their alt text. Whether it overwrites existing alt text depends on the value of ~tlon-images-overwrite-alt-text~.
@@ -143,7 +143,7 @@ It provides the following groups and commands:
   + =i= :: Invert colors (~tlon-images-invert-colors~)
   + =n= :: Make non-transparent (~tlon-images-make-nontransparent~)
   + =D= :: Describe image (~tlon-images-describe-image~)
-  + =S= :: Set alt text (~tlon-images-set-image-alt-text~)
+  + =S= :: Set alt text (~tlon-images-set-image-alt-text-in-file~)
   + =B= :: Set alt text in buffer (~tlon-images-set-image-alt-text-in-buffer~)
   + =d= :: Download from Markdown (~tlon-images-download-from-markdown~)
 + *Options*:
