@@ -56,7 +56,7 @@
   "Whether to overwrite existing alt text in images.
 This variable only affects the behavior of
 `tlon-images-set-image-alt-text-in-buffer'; it is ignored by
-`tlon-images-set-image-alt-text', which always overwrites."
+`tlon-images-set-image-alt-text-in-file', which always overwrites."
   :type 'boolean
   :group 'tlon-images)
 
@@ -331,7 +331,7 @@ Finally, restore `gptel-context--alist' to PREVIOUS-CONTEXT."
 
 (declare-function tlon-get-tag-attribute-values "tlon-md")
 (declare-function tlon-md-insert-attribute-value "tlon-md")
-(defun tlon-images-set-image-alt-text ()
+(defun tlon-images-set-image-alt-text-in-file ()
   "Insert a description of the image in the image tag at point.
 The image tags are \"Figure\" or \"OurWorldInData\"."
   (interactive)
@@ -341,11 +341,11 @@ The image tags are \"Figure\" or \"OurWorldInData\"."
 	      (file (tlon-images-get-image-file-from-src src))
 	      (pos (point-marker)))
 	(tlon-images-describe-image file (lambda (response info)
-				       (if response
-					   (with-current-buffer (marker-buffer pos)
-					     (goto-char pos)
-					     (tlon-md-insert-attribute-value "alt" response))
-					 (user-error "Error: %s" (plist-get info :status)))))
+					   (if response
+					       (with-current-buffer (marker-buffer pos)
+						 (goto-char pos)
+						 (tlon-md-insert-attribute-value "alt" response))
+					     (user-error "Error: %s" (plist-get info :status)))))
       (user-error "No \"Figure\" or \"OurWorldInData\" tag at point"))))
 
 (declare-function tlon-md-get-tag-pattern "tlon-md")
@@ -361,7 +361,7 @@ If the image already contains a non-empty `alt' field, overwrite it when
 	(when (or tlon-images-overwrite-alt-text
 		  (not (match-string 6))
 		  (string-empty-p (match-string 6)))
-	  (tlon-images-set-image-alt-text))))))
+	  (tlon-images-set-image-alt-text-in-file))))))
 
 (declare-function dired-get-filename "dired")
 (defun tlon-images-read-image-file (&optional file)
@@ -503,7 +503,7 @@ variable."
     ("-r" "percent brightness reduction"         tlon-images-brightness-reduction-infix)]
    ["Alt text"
     ("d" "describe image"                        tlon-images-describe-image)
-    ("t" "set alt text in tag"                   tlon-images-set-image-alt-text)
+    ("t" "set alt text in tag"                   tlon-images-set-image-alt-text-in-file)
     ("b" "set alt text in buffer"                tlon-images-set-image-alt-text-in-buffer)
     ""
     "Options"
@@ -511,7 +511,7 @@ variable."
    ["Other"
     ("w" "download images in file"               tlon-images-download-from-markdown)]
    ["General options"
-    ("-p" "process without asking"               tlon-images-toggle-process-without-asking)]])
+    ("-f" "read file without asking"             tlon-images-toggle-process-without-asking)]])
 
 (provide 'tlon-images)
 ;;; tlon-images.el ends here
