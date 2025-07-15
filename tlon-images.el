@@ -492,24 +492,26 @@ variable."
 ;;;###autoload (autoload 'tlon-images-menu "tlon-images" nil t)
 (transient-define-prefix tlon-images-menu ()
   "Images menu."
-  [["Processing"
+  [["Light/Dark"
     ("a" "auto"                                  tlon-images-auto-process)
     ("r" "reduce brightness"                     tlon-images-reduce-brightnesss)
     ("i" "invert colors"                         tlon-images-invert-colors)
     ("n" "make nontransparent"                   tlon-images-make-nontransparent)
     ""
-    "AI"
-    ("D" "describe image"                        tlon-images-describe-image)
-    ("S" "set alt text"                          tlon-images-set-image-alt-text)
-    ("B" "set alt text in buffer"                tlon-images-set-image-alt-text-in-buffer)
-    ""
-    "Other"
-    ("d" "download images in file"               tlon-images-download-from-markdown)]
-   ["Options"
+    "Options"
     ("-o" "open after processing"                tlon-images-toggle-open-after-processing)
-    ("-p" "process without asking"               tlon-images-toggle-process-without-asking)
-    ("-r" "percent brightness reduction"         tlon-images-brightness-reduction-infix)
-    ("-O" "overwrite alt text"                   tlon-images-toggle-overwrite-alt-text)]])
+    ("-r" "percent brightness reduction"         tlon-images-brightness-reduction-infix)]
+   ["Alt text"
+    ("d" "describe image"                        tlon-images-describe-image)
+    ("t" "set alt text in tag"                   tlon-images-set-image-alt-text)
+    ("b" "set alt text in buffer"                tlon-images-set-image-alt-text-in-buffer)
+    ""
+    "Options"
+    ("-l" "overwrite alt text"                   tlon-images-toggle-overwrite-alt-text)]
+   ["Other"
+    ("w" "download images in file"               tlon-images-download-from-markdown)]
+   ["General options"
+    ("-p" "process without asking"               tlon-images-toggle-process-without-asking)]])
 
 (provide 'tlon-images)
 ;;; tlon-images.el ends here
