@@ -71,12 +71,24 @@ available options. If nil, use the default `gptel-model'."
   '(("DeepL" . deepl))
   "Alist of translation engine display names and their symbols.")
 
+(defconst tlon-translate-prompt-revise-prefix
+  "The file `%1$s' contains a %2$s translation of the file `%3$s'. "
+  "Prefix for translation revision prompts.")
+
+(defconst tlon-translate-prompt-revise-suffix
+  "Do a sentence by sentence revision. Once you are done comparing the two files and identifying the changes that should be made to the translation, write your changes to `%1$s' using the 'edit_file` tool."
+  "Suffix for translation revision prompts.")
+
 (defconst tlon-translate-revise-errors-prompt
-  "The file `%s` contains a %s translation of the file `%s`. Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. Do a sentence by sentence revision. Once you are done comparing the two files processed and identifying the changes that should be made to `%s`, write your changes to this file using the `edit_file` tool."
+  (concat tlon-translate-prompt-revise-prefix
+	  "Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. "
+	  tlon-translate-prompt-revise-suffix)
   "Prompt for revising translation errors.")
 
 (defconst tlon-translate-revise-flow-prompt
-  "The file `%s` contains a %s translation of the file `%s`. The translation is overly literal. You have to read both carefully and try improve the translation for a better flow, but respecting the terminology included in the glossary `%s`. Do a sentence by sentence revision. Once you are done comparing the two files processed and identifying the changes that should be made to `%s`, write your changes to this file using the `edit_file` tool."
+  (concat tlon-translate-prompt-revise-prefix
+	  "Your task is to to read both carefully and try improve the translation for a better flow. You should always respect the terminology included in the glossary `%4$s'. "
+	  tlon-translate-prompt-revise-suffix)
   "Prompt for improving translation flow.")
 
 ;;;; Commands
@@ -95,20 +107,14 @@ available options. If nil, use the default `gptel-model'."
 
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
-(declare-function tlon-extract-glossary "tlon-glossary")
-(declare-function tlon-get-counterpart "tlon-counterpart")
-(declare-function tlon-get-language-in-file "tlon-core")
-(declare-function tlon-glossary-target-path "tlon-glossary")
-(declare-function tlon-lookup "tlon-core")
-(declare-function tlon-make-gptel-request "tlon-ai")
 (defun tlon-translate--revise-common (type)
   "Common function for revising a translation of TYPE.
 TYPE can be `errors' or `flow'."
   (gptel-extras-warn-when-context)
-  (let* ((translation-file (read-file-name "Translation file: " nil (buffer-file-name) t))
-         (original-file (tlon-get-counterpart translation-file)))
-    (unless original-file
-      (user-error "Could not find original counterpart for %s" translation-file))
+  (let* ((translation-file (expand-file-name (read-file-name "Translation file: " (buffer-file-name))))
+         (original-file (if-let* ((counterpart (tlon-get-counterpart translation-file)))
+			    (expand-file-name counterpart)
+			  (read-file-name "Original file: "))))
     (let* ((lang-code (tlon-get-language-in-file translation-file))
            (language (tlon-lookup tlon-languages-properties :standard :code lang-code))
            (prompt-template (pcase type
@@ -117,26 +123,30 @@ TYPE can be `errors' or `flow'."
            (model (pcase type
                     ('errors tlon-translate-revise-errors-model)
                     ('flow tlon-translate-revise-flow-model)))
-           (tools '("edit_file" "read_file"))
+           (tools '("edit_file"))
            (glossary-file (when (eq type 'flow)
                             (tlon-extract-glossary lang-code 'deepl-editor)
                             (tlon-glossary-target-path lang-code 'deepl-editor)))
-           (prompt (if glossary-file
-                       (format prompt-template translation-file language original-file glossary-file translation-file)
-                     (format prompt-template translation-file language original-file translation-file))))
+	   (prompt-elts (delq nil
+			      (list prompt-template
+				    (file-name-nondirectory translation-file)
+				    language
+				    (file-name-nondirectory original-file)
+				    (when glossary-file
+				      glossary-file))))
+           (prompt (apply 'format prompt-elts)))
+      (gptel-context-add-file original-file)
+      (gptel-context-add-file translation-file)
       (when glossary-file
-        (gptel-context-add-file glossary-file))
+	(gptel-context-add-file glossary-file))
       (message "Requesting AI to revise %s..." (file-name-nondirectory translation-file))
       (tlon-make-gptel-request prompt nil
                                (lambda (response info)
-                                 (tlon-translate--revise-callback response info translation-file type))
+				 (tlon-translate--revise-callback response info translation-file type))
                                model t nil tools)
       (gptel-context-remove-all))))
 
-(declare-function magit-stage-file "magit")
-(declare-function tlon-ai-callback-fail "tlon-ai")
-(declare-function tlon-create-commit "tlon")
-(declare-function tlon-get-repo-from-file "tlon-core")
+(declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
 RESPONSE is the AI's response. INFO is the response info. FILE is the file to
@@ -145,11 +155,9 @@ commit. TYPE is the revision type."
       (tlon-ai-callback-fail info)
     (message "AI agent finished revising %s." (file-name-nondirectory file))
     (let ((default-directory (tlon-get-repo-from-file file)))
-      (magit-stage-file file)
+      (magit-stage-files (list file))
       (tlon-create-commit (format "AI: Revise (%s)" (symbol-name type)) file))))
 
-(declare-function tlon-get-counterpart-dir "tlon-counterpart")
-(declare-function tlon-select-language "tlon-core")
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
   "Translate FILE into LANG using `tlon-translate-engine'.
@@ -173,8 +181,6 @@ file. If LANG is not provided, prompt for a target language."
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code))))
 
-(declare-function tlon-deepl-translate "tlon-deepl")
-(declare-function tlon-repo-lookup "tlon-core")
 (defun tlon-translate--do-translate (source-file target-file target-lang-code)
   "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE."
   (pcase tlon-translate-engine
@@ -195,7 +201,6 @@ file. If LANG is not provided, prompt for a target language."
                              t)))
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
-(declare-function tlon-get-counterpart-in-translations "tlon-counterpart")
 (defun tlon-translate--get-counterpart-for-language (file lang-code)
   "Return the counterpart of FILE for LANG-CODE."
   (let* ((repo (tlon-get-repo-from-file file))
@@ -210,7 +215,6 @@ file. If LANG is not provided, prompt for a target language."
            (tlon-translate--get-translation-from-original original-file lang-code)))))))
 
 (declare-function tlon-metadata-in-repo "tlon-yaml")
-(declare-function tlon-metadata-lookup "tlon-core")
 (defun tlon-translate--get-translation-from-original (original-file lang-code)
   "Get translation of ORIGINAL-FILE for LANG-CODE."
   (let* ((original-repo (tlon-get-repo-from-file original-file))
