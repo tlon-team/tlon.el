@@ -162,7 +162,11 @@ commit. TYPE is the revision type."
     (when tlon-translate-revise-commit-changes
       (let ((default-directory (tlon-get-repo-from-file file)))
         (magit-stage-files (list file))
-        (tlon-create-commit (format "AI: Revise (%s)" (symbol-name type)) file)))))
+        (tlon-create-commit (format (pcase type
+				      ('errors "Check errors in %s (AI)")
+				      ('flow "Improve flow in %s (AI)"))
+				    (tlon-get-key-from-file file))
+			    file)))))
 
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
