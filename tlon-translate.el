@@ -266,19 +266,19 @@ file. If LANG is not provided, prompt for a target language."
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
   [["Translate"
-    ("f" "Translate file" tlon-translate-file)]
+    ("f" "Translate file" tlon-translate-file)
+    ""
+    "Options"
+    ("-t" "Translation engine" tlon-translate-engine-infix)
+    ("-d" "DeepL model" tlon-deepl-model-type-infix)]
    ["Revise"
     ("e" "Spot errors" tlon-translate-revise-errors)
-    ("f" "Improve flow" tlon-translate-revise-flow)]
-   ["Translation options"
-    ("-t" "Translation engine" tlon-translate-engine-infix)
-    ("-d" "DeepL model" tlon-deepl-model-type-infix)
+    ("f" "Improve flow" tlon-translate-revise-flow)
     ""
-    "Revision options"
-    ("-e" "Spot errors AI model" tlon-translate-infix-select-revise-errors-model)
-    ("-f" "Improve flow AI model" tlon-translate-infix-select-revise-flow-model)
-    ""
-    "General options"
+    "Options"
+    ("-e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
+    ("-f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]
+   ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
 (defun tlon-translate-engine-reader (prompt _initval _arg)
