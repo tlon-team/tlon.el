@@ -147,7 +147,7 @@ Returns the authentication token or nil if authentication failed."
                 (setq auth-data (tlon-ebib--parse-json-response response-buffer))
               (tlon-ebib--display-result-buffer
                "Authentication failed"
-               #'tlon-ebib--format-post-entries-result
+               #'tlon-ebib--format-post-entry-result
                `(:status ,status-code :raw-text ,raw-response-text))
               (user-error "Authentication failed: HTTP status %d. See *Ebib API Result* buffer for details"
                           status-code)))
@@ -225,6 +225,8 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "This command can only be used in BibTeX mode"))
   (let* ((entry-text (save-excursion
                        (bibtex-beginning-of-entry)
                        (let ((beg (point)))
