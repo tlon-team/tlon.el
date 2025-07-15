@@ -38,6 +38,9 @@ This section details the interactive commands provided by =tlon-ebib.el=.
 #+findex: tlon-ebib-post-entry
 + ~tlon-ebib-post-entry~ :: Posts the BibTeX entry at point to the =/api/entries= endpoint. Requires authentication. The content is sent as =text/plain=. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
 
+#+findex: tlon-ebib-delete-entry
++ ~tlon-ebib-delete-entry~ :: Deletes the BibTeX entry at point from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
+
 #+findex: tlon-ebib-check-name
 + ~tlon-ebib-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the results in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
 
@@ -113,6 +116,9 @@ This section lists non-interactive functions and variables used internally.
 
 #+findex: tlon-ebib--format-post-entry-result
 + ~tlon-ebib--format-post-entry-result~ :: Formatter function used by ~tlon-ebib--display-result-buffer~ to display the results from ~tlon-ebib-post-entry~. Takes a plist =RESULT= containing =:status=, =:data= (parsed JSON for 422 errors), and =:raw-text= (raw text response for 200 or other errors). Formats output based on HTTP status code.
+
+#+findex: tlon-ebib--format-delete-entry-result
++ ~tlon-ebib--format-delete-entry-result~ :: Formatter function used by ~tlon-ebib--display-result-buffer~ to display the results from ~tlon-ebib-delete-entry~. Takes a plist =RESULT= containing =:status=, =:data= (parsed JSON for 200 or 422 errors), and =:raw-text= (raw text response for other errors). Formats output based on HTTP status code.
 #+findex: tlon-ebib-initialize
 + ~tlon-ebib-initialize~ :: Initializes the `tlon-ebib` package by retrieving entries from the API using ~tlon-ebib-get-entries~ and appending the local database file (~tlon-ebib-file-db~) to the `paths-files-bibliography-all` list.
 

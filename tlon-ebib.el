@@ -258,6 +258,41 @@ Handles 200 (Success) and 422 (Validation Error) responses."
       (message "Entry posted successfully."))
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
+(defun tlon-ebib-delete-entry ()
+  "Delete the BibTeX entry at point from the EA International API."
+  (interactive)
+  (unless (tlon-ebib-ensure-auth)
+    (user-error "Authentication failed"))
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "This command can only be used in BibTeX mode"))
+  (let* ((entry-key (bibtex-autark-key))
+         (endpoint (format "/api/entries/%s" (url-hexify-string entry-key)))
+         (headers '(("accept" . "application/json")))
+         response-buffer response-data raw-response-text status-code)
+    (setq response-buffer (tlon-ebib--make-request "DELETE" endpoint nil headers t))
+    (if (not response-buffer)
+        (setq status-code nil)
+      (unwind-protect
+          (progn
+            (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
+            (condition-case _err
+                (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+              (error
+               (setq status-code nil)))
+            (cond
+             ((and status-code (= status-code 200))
+              (setq response-data (tlon-ebib--parse-json-response response-buffer)))
+             ((and status-code (= status-code 422))
+              (setq response-data (tlon-ebib--parse-json-response response-buffer)))))
+        (when response-buffer (kill-buffer response-buffer))))
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-ebib--display-result-buffer
+         (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+         #'tlon-ebib--format-delete-entry-result
+         `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
+      (message "Entry '%s' deleted successfully." entry-key))
+    (list :status status-code :data response-data :raw-text raw-response-text)))
+
 ;;;;; Internal Helpers
 
 (defun tlon-ebib--make-request (method endpoint data headers &optional auth-required base-url)
@@ -450,6 +485,46 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
       (insert "Response from server:\n")
       (insert (or raw-response-text "No content or error message returned."))))))
 
+(defun tlon-ebib--format-delete-entry-result (result)
+  "Format the RESULT from `tlon-ebib-delete-entry` for display.
+RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
+  (let ((status-code (plist-get result :status))
+        (response-data (plist-get result :data))  ; Parsed JSON for 200 or 422
+        (raw-response-text (plist-get result :raw-text))) ; Raw text for other errors
+    (cond
+     ((null status-code) ; Error before or during request
+      (insert "Status: Request Failed\n")
+      (insert (or raw-response-text "No specific error message.")))
+     ((= status-code 200)
+      (insert "Status: Success (200)\n")
+      (insert "Response from server:\n")
+      (if (stringp response-data)
+          (insert response-data)
+        (insert (or raw-response-text "No content returned."))))
+     ((= status-code 422)
+      (insert "Status: Validation Error (422)\n")
+      (if response-data
+          (progn
+            (insert "Details (from JSON response):\n")
+            (let ((detail (gethash "detail" response-data)))
+              (if (listp detail) ; Standard FastAPI validation error structure
+                  (dolist (item detail)
+                    (if (hash-table-p item)
+                        (insert (format "  - Location: %s, Message: %s, Type: %s\n"
+                                        (mapconcat #'identity (gethash "loc" item) " -> ")
+                                        (gethash "msg" item "")
+                                        (gethash "type" item "")))
+                      (insert (format "  - %s\n" item)))) ; Non-standard detail item
+                (insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
+        (insert "No specific validation error details found in parsed JSON response.\n"))
+      (when raw-response-text
+        (insert "\nRaw server response (text/plain or other):\n")
+        (insert raw-response-text)))
+     (t
+      (insert (format "Status: Error (HTTP %d)\n" status-code))
+      (insert "Response from server:\n")
+      (insert (or raw-response-text "No content or error message returned."))))))
+
 ;;;;; Periodic data update
 
 
@@ -461,6 +536,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   ["Ebib Actions"
    ("g" "Get entries" tlon-ebib-get-entries)
    ("p" "Post entry" tlon-ebib-post-entry)
+   ("d" "Delete entry" tlon-ebib-delete-entry)
    ("c" "Check name" tlon-ebib-check-name)
    ("i" "Check or insert name" tlon-ebib-check-or-insert-name)
    ""
