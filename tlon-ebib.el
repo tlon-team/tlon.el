@@ -265,7 +265,7 @@ Handles 200 (Success) and 422 (Validation Error) responses."
     (user-error "Authentication failed"))
   (unless (derived-mode-p 'bibtex-mode)
     (user-error "This command can only be used in BibTeX mode"))
-  (let* ((entry-key (bibtex-autark-key))
+  (let* ((entry-key (bibtex-key-at-point))
          (endpoint (format "/api/entries/%s" (url-hexify-string entry-key)))
          (headers '(("accept" . "application/json")))
          response-buffer response-data raw-response-text status-code)
