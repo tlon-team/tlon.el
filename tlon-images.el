@@ -47,7 +47,7 @@
   :type 'boolean
   :group 'tlon-images)
 
-(defcustom tlon-images-process-without-asking nil
+(defcustom tlon-images-read-file-without-asking nil
   "Whether to process the image at point without asking for confirmation."
   :type 'boolean
   :group 'tlon-images)
@@ -145,7 +145,7 @@ inside the repo, without extension."
 	    (image-candidate (or (when (derived-mode-p 'dired-mode)
 				   (dired-get-filename))
 				 (buffer-file-name))))
-	(or (and tlon-images-process-without-asking image-candidate)
+	(or (and tlon-images-read-file-without-asking image-candidate)
 	    (read-file-name "Image: " nil nil nil
 			    (when image-candidate
 			      (file-relative-name image-candidate default-directory)))))))
@@ -484,10 +484,10 @@ variable."
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-overwrite-alt-text)))
 
 (transient-define-infix tlon-images-toggle-process-without-asking ()
-  "Toggle the value of `'tlon-images-process-without-asking' in `images' menu."
+  "Toggle the value of `'tlon-images-read-file-without-asking' in `images' menu."
   :class 'transient-lisp-variable
-  :variable 'tlon-images-process-without-asking
-  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-process-without-asking)))
+  :variable 'tlon-images-read-file-without-asking
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-images-read-file-without-asking)))
 
 ;;;###autoload (autoload 'tlon-images-menu "tlon-images" nil t)
 (transient-define-prefix tlon-images-menu ()
