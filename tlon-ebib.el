@@ -225,7 +225,11 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
-  (let* ((entry-text (bibtex-autark-entry))
+  (let* ((entry-text (save-excursion
+                       (bibtex-beginning-of-entry)
+                       (let ((beg (point)))
+                         (bibtex-end-of-entry)
+                         (buffer-substring-no-properties beg (point)))))
          (encoded-entry-text (encode-coding-string entry-text 'utf-8))
          (headers `(("Content-Type" . "text/plain; charset=utf-8")
                     ("accept" . "text/plain")))
