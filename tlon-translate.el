@@ -266,12 +266,16 @@ file. If LANG is not provided, prompt for a target language."
    ["Revise"
     ("e" "Spot errors" tlon-translate-revise-errors)
     ("f" "Improve flow" tlon-translate-revise-flow)]
-   ["Options"
-    ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)
+   ["Translation options"
     ("-t" "Translation engine" tlon-translate-engine-infix)
     ("-d" "DeepL model" tlon-deepl-model-type-infix)
-    ("-e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
-    ("-f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]])
+    ""
+    "Revision options"
+    ("-e" "Spot errors AI model" tlon-translate-infix-select-revise-errors-model)
+    ("-f" "Improve flow AI model" tlon-translate-infix-select-revise-flow-model)
+    ""
+    "General options"
+    ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
 (defun tlon-translate-engine-reader (prompt _initval _arg)
   "PROMPT the user to select a translation engine."
@@ -303,8 +307,9 @@ If nil, use the default model."
 
 (transient-define-infix tlon-translate-infix-toggle-commit-changes ()
   "Toggle whether to commit changes after an AI revision."
-  :class 'transient-switch
-  :variable 'tlon-translate-revise-commit-changes)
+  :class 'transient-lisp-variable
+  :variable 'tlon-translate-revise-commit-changes
+  :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-translate-revise-commit-changes)))
 
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here
