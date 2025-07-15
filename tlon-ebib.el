@@ -218,23 +218,19 @@ similar to existing names."
       (message "Name check/insert for '%s': OK." name))
     (list :status status-code :data response-data)))
 
-(defun tlon-ebib-post-entries ()
-  "Post entries from \"tlon-ebib-file-db\" to the EA International API.
-The content of `tlon-ebib-file-db` is sent as \"text/plain\".
+(defun tlon-ebib-post-entry ()
+  "Post the BibTeX entry at point to the EA International API.
+The entry is sent as \"text/plain\".
 Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
-  (unless (file-exists-p tlon-ebib-file-db)
-    (user-error "File not found: %s. Use 'Get entries' first or ensure it exists" tlon-ebib-file-db))
-  (let* ((file-content (with-temp-buffer
-                         (insert-file-contents-literally tlon-ebib-file-db)
-                         (buffer-string)))
-         (encoded-file-content (encode-coding-string file-content 'utf-8))
+  (let* ((entry-text (bibtex-autark-entry))
+         (encoded-entry-text (encode-coding-string entry-text 'utf-8))
          (headers `(("Content-Type" . "text/plain; charset=utf-8")
                     ("accept" . "text/plain")))
          response-buffer response-data raw-response-text status-code)
-    (setq response-buffer (tlon-ebib--make-request "POST" "/api/entries" encoded-file-content headers t))
+    (setq response-buffer (tlon-ebib--make-request "POST" "/api/entries" encoded-entry-text headers t))
     (if (not response-buffer)
         (setq status-code nil)
       (unwind-protect
@@ -250,10 +246,10 @@ Handles 200 (Success) and 422 (Validation Error) responses."
 	(when response-buffer (kill-buffer response-buffer))))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
         (tlon-ebib--display-result-buffer
-         (format "Post entries result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
-         #'tlon-ebib--format-post-entries-result
+         (format "Post entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+         #'tlon-ebib--format-post-entry-result
          `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
-      (message "Entries posted successfully."))
+      (message "Entry posted successfully."))
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
 ;;;;; Internal Helpers
@@ -410,8 +406,8 @@ RESULT is a plist like (:status CODE :data DATA)."
                     (buffer-string))))
     (string= content1 content2)))
 
-(defun tlon-ebib--format-post-entries-result (result)
-  "Format the RESULT from `tlon-ebib-post-entries` for display.
+(defun tlon-ebib--format-post-entry-result (result)
+  "Format the RESULT from `tlon-ebib-post-entry` for display.
 RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   (let ((status-code (plist-get result :status))
         (response-data (plist-get result :data))  ; Parsed JSON for 422
@@ -458,7 +454,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   "Menu for `ebib' functions."
   ["Ebib Actions"
    ("g" "Get entries" tlon-ebib-get-entries)
-   ("p" "Post entries" tlon-ebib-post-entries)
+   ("p" "Post entry" tlon-ebib-post-entry)
    ("c" "Check name" tlon-ebib-check-name)
    ("i" "Check or insert name" tlon-ebib-check-or-insert-name)
    ""
