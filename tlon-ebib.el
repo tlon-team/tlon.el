@@ -209,35 +209,22 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (tlon-ebib-ensure-auth)
   (let* ((key (pcase major-mode
-		((or 'ebib-index-mode 'ebib-entry-mode) (ebib-extras-get-field "=key="))
-		('bibtex-mode (bibtex-extras-get-key))
-		(_ (user-error "Not in ebib or bibtex mode"))))
-	 (entry-text (bibtex-extras-get-entry-as-string key))
+                ((or 'ebib-index-mode 'ebib-entry-mode) (ebib-extras-get-field "=key="))
+                ('bibtex-mode (bibtex-extras-get-key))
+                (_ (user-error "Not in ebib or bibtex mode"))))
+         (entry-text (bibtex-extras-get-entry-as-string key))
          (encoded-entry-text (encode-coding-string entry-text 'utf-8))
          (headers `(("Content-Type" . "text/plain; charset=utf-8")
                     ("accept" . "text/plain")))
-         response-buffer response-data raw-response-text status-code)
-    (setq response-buffer (tlon-ebib--make-request "POST" "/api/entries" encoded-entry-text headers t))
-    (if (not response-buffer)
-        (setq status-code nil)
-      (unwind-protect
-          (progn
-            (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
-            (condition-case _err
-		(setq status-code (tlon-ebib--get-response-status-code response-buffer))
-              (error
-               (setq status-code nil)))
-            (cond
-             ((and status-code (= status-code 422))
-              (setq response-data (tlon-ebib--parse-json-response response-buffer)))))
-	(when response-buffer (kill-buffer response-buffer))))
+         (result (tlon-ebib--handle-entry-request "POST" "/api/entries" encoded-entry-text headers))
+         (status-code (plist-get result :status)))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
         (tlon-ebib--display-result-buffer
          (format "Post entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
          #'tlon-ebib--format-post-entry-result
-         `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
+         result)
       (message "Entry posted successfully."))
-    (list :status status-code :data response-data :raw-text raw-response-text)))
+    result))
 
 ;;;;;; Delete entry
 
@@ -247,9 +234,24 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (tlon-ebib-ensure-key key)
   (tlon-ebib-ensure-auth)
   (let* ((endpoint (format "/api/entries/%s" (url-hexify-string key)))
-	 (headers '(("accept" . "application/json")))
-	 response-buffer response-data raw-response-text status-code)
-    (setq response-buffer (tlon-ebib--make-request "DELETE" endpoint nil headers t))
+         (headers '(("accept" . "application/json")))
+         (result (tlon-ebib--handle-entry-request "DELETE" endpoint nil headers t))
+         (status-code (plist-get result :status)))
+    (if (or tlon-debug (not (and status-code (= status-code 200))))
+        (tlon-ebib--display-result-buffer
+         (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+         #'tlon-ebib--format-delete-entry-result
+         result)
+      (message "Entry '%s' deleted successfully." key))
+    result))
+
+(defun tlon-ebib--handle-entry-request (method endpoint data headers &optional json-on-success)
+  "Handle a request to an entry endpoint and process the response.
+METHOD, ENDPOINT, DATA, and HEADERS are for `tlon-ebib--make-request`.
+If JSON-ON-SUCCESS is non-nil, parse JSON on 200 status.
+Returns a plist with :status, :data, and :raw-text."
+  (let (response-buffer response-data raw-response-text status-code)
+    (setq response-buffer (tlon-ebib--make-request method endpoint data headers t))
     (if (not response-buffer)
         (setq status-code nil)
       (unwind-protect
@@ -260,17 +262,11 @@ Handles 200 (Success) and 422 (Validation Error) responses."
               (error
                (setq status-code nil)))
             (cond
-             ((and status-code (= status-code 200))
-              (setq response-data (tlon-ebib--parse-json-response response-buffer)))
              ((and status-code (= status-code 422))
+              (setq response-data (tlon-ebib--parse-json-response response-buffer)))
+             ((and json-on-success status-code (= status-code 200))
               (setq response-data (tlon-ebib--parse-json-response response-buffer)))))
         (when response-buffer (kill-buffer response-buffer))))
-    (if (or tlon-debug (not (and status-code (= status-code 200))))
-        (tlon-ebib--display-result-buffer
-         (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
-         #'tlon-ebib--format-delete-entry-result
-         `(:status ,status-code :data ,response-data :raw-text ,raw-response-text))
-      (message "Entry '%s' deleted successfully." key))
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
 (defun tlon-ebib--format-delete-entry-result (result)

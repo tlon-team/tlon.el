@@ -94,6 +94,9 @@ This section lists non-interactive functions and variables used internally.
 #+findex: tlon-ebib--make-request
 + ~tlon-ebib--make-request~ :: Central helper function for making HTTP requests to the API. Handles URL construction, setting request method, data, headers (including authentication token if =AUTH-REQUIRED= is non-nil), and calling =url-retrieve-synchronously=. Returns the response buffer or signals an error.
 
+#+findex: tlon-ebib--handle-entry-request
++ ~tlon-ebib--handle-entry-request~ :: Handles a request to an entry endpoint. It takes the HTTP =METHOD=, =ENDPOINT=, =DATA=, and =HEADERS=, and an optional flag to indicate if a JSON response is expected on success. It calls ~tlon-ebib--make-request~ and processes the response, handling status codes and parsing JSON as needed. It returns a plist containing the request's =:status=, =:data=, and =:raw-text=. This function is used by ~tlon-ebib-add-entry~ and ~tlon-ebib-delete-entry~.
+
 #+findex: tlon-ebib--get-response-status-code
 + ~tlon-ebib--get-response-status-code~ :: Extracts the HTTP status code from the first line of a response =BUFFER=.
 
