@@ -250,7 +250,16 @@ Handles 200 (Success) and 422 (Validation Error) responses."
          (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
          #'tlon-ebib--format-delete-entry-result
          result)
-      (message "Entry '%s' deleted successfully." key))
+      (progn
+        (with-current-buffer (find-file-noselect tlon-ebib-file-db)
+          (bibtex-mode)
+          (condition-case nil
+              (progn
+                (bibtex-search-entry key)
+                (bibtex-kill-entry)
+                (save-buffer))
+            (error nil)))
+        (message "Entry '%s' deleted successfully." key)))
     result))
 
 (defun tlon-ebib--handle-entry-request (method endpoint data headers &optional json-on-success)
