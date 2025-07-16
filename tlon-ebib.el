@@ -90,7 +90,7 @@ Set to t to enable verbose logging from url.el.")
   "Ensure that KEY is provided and exists in the bibliography."
   (when (string-empty-p key)
     (user-error "No entry key provided"))
-  (unless (tlon-bibliography-lookup "=key" key)
+  (unless (tlon-bibliography-lookup "=key=" key)
     (user-error "Key `%s' not found in the bibliography" key)))
 
 ;;;;; API
@@ -233,6 +233,8 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive (list (tlon-ebib-get-db-entries)))
   (tlon-ebib-ensure-key key)
   (tlon-ebib-ensure-auth)
+  (unless (y-or-n-p (format "Are you sure you want to delete entry '%s' (this action is irreversible)?" key))
+    (user-error "Deletion cancelled"))
   (let* ((endpoint (format "/api/entries/%s" (url-hexify-string key)))
          (headers '(("accept" . "application/json")))
          (result (tlon-ebib--handle-entry-request "DELETE" endpoint nil headers t))
