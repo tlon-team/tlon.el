@@ -201,6 +201,8 @@ defaults to `tlon-ebib-api-base-url'."
 
 (declare-function bibtex-extras-get-key "bibtex-extras")
 (declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
+(declare-function bibtex-extras-delete-entry "bibtex-extras")
+(declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-ebib-add-entry ()
   "Post the BibTeX entry at point to the EA International API.
@@ -217,13 +219,17 @@ Handles 200 (Success) and 422 (Validation Error) responses."
          (headers `(("Content-Type" . "text/plain; charset=utf-8")
                     ("accept" . "text/plain")))
          (result (tlon-ebib--handle-entry-request "POST" "/api/entries" encoded-entry-text headers))
-         (status-code (plist-get result :status)))
+         (status-code (plist-get result :status))
+         (raw-text (plist-get result :raw-text)))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
         (tlon-ebib--display-result-buffer
          (format "Post entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
          #'tlon-ebib--format-post-entry-result
          result)
-      (message "Entry posted successfully."))
+      (when-let ((new-entry-text (tlon-ebib--get-response-body raw-text)))
+        (bibtex-extras-delete-entry key)
+        (bibtex-extras-insert-entry new-entry-text)
+        (message "Entry posted and updated successfully.")))
     result))
 
 ;;;;;; Delete entry
@@ -423,6 +429,13 @@ RESULT is a plist like (:status CODE :data DATA)."
           (insert "Detail: " (gethash "detail" response-data) "\n")))))))
 
 ;;;;;; Helpers
+
+(defun tlon-ebib--get-response-body (response-text)
+  "Extract the body from a full HTTP RESPONSE-TEXT."
+  (when response-text
+    (if (string-match "\r?\n\r?\n" response-text)
+        (substring response-text (match-end 0))
+      response-text)))
 
 (defun tlon-ebib--make-request (method endpoint data headers &optional auth-required base-url)
   "Make an HTTP request to the EA International API.
