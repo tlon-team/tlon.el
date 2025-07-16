@@ -84,7 +84,14 @@ Set to t to enable verbose logging from url.el.")
 (defun tlon-ebib-get-db-entries ()
   "Prompt the user to select a work in the db and return its key."
   (let ((citar-bibliography (list tlon-file-db)))
-    (citar-select-ref (ebib--get-key-at-point))))
+    (citar-select-ref)))
+
+(defun tlon-ebib-ensure-key (key)
+  "Ensure that KEY is provided and exists in the bibliography."
+  (when (string-empty-p key)
+    (user-error "No entry key provided"))
+  (unless (tlon-bibliography-lookup "=key" key)
+    (user-error "Key `%s' not found in the bibliography" key)))
 
 ;;;;; API
 
@@ -128,7 +135,8 @@ Returns the token or nil if authentication failed."
             (null tlon-ebib-auth-token-expiry)
             (time-less-p tlon-ebib-auth-token-expiry (current-time)))
     (tlon-ebib-authenticate))
-  tlon-ebib-auth-token)
+  (or tlon-ebib-auth-token
+      (user-error "Authentication failed")))
 
 ;;;;;; Get entries
 
@@ -199,8 +207,7 @@ defaults to `tlon-ebib-api-base-url'."
 The entry is sent as \"text/plain\".
 Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
-  (unless (tlon-ebib-ensure-auth)
-    (user-error "Authentication failed"))
+  (tlon-ebib-ensure-auth)
   (let* ((key (pcase major-mode
 		((or 'ebib-index-mode 'ebib-entry-mode) (ebib-extras-get-field "=key="))
 		('bibtex-mode (bibtex-extras-get-key))
@@ -237,8 +244,8 @@ Handles 200 (Success) and 422 (Validation Error) responses."
 (defun tlon-ebib-delete-entry (key)
   "Delete KEY from the EA International API."
   (interactive (list (tlon-ebib-get-db-entries)))
-  (unless (tlon-ebib-ensure-auth)
-    (user-error "Authentication failed"))
+  (tlon-ebib-ensure-key key)
+  (tlon-ebib-ensure-auth)
   (let* ((endpoint (format "/api/entries/%s" (url-hexify-string key)))
 	 (headers '(("accept" . "application/json")))
 	 response-buffer response-data raw-response-text status-code)
@@ -311,8 +318,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 (defun tlon-ebib-check-name (name)
   "Check if NAME exists in the EA International database."
   (interactive "sName to check: ")
-  (unless (tlon-ebib-ensure-auth)
-    (user-error "Authentication failed"))
+  (tlon-ebib-ensure-auth)
   (let* ((data (json-encode `(("name" . ,name))))
          (headers '(("Content-Type" . "application/json")
                     ("accept" . "application/json")))
@@ -437,8 +443,7 @@ Optional BASE-URL overrides `tlon-ebib-api-base-url'."
 	 (lisp-error-message nil)
 	 response-buffer url-request-status url-request-error-message url-http-response-buffer url-debug)
     (when auth-required
-      (unless (tlon-ebib-ensure-auth)
-        (user-error "Authentication required but failed"))
+      (tlon-ebib-ensure-auth)
       (add-to-list 'url-request-extra-headers
                    `("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token)) t))
     (condition-case err
