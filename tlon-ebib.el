@@ -524,6 +524,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 
 ;;;;; Periodic data update
 
+(run-with-idle-timer (* 3 60 60) t #'tlon-ebib-get-entries)
 
 ;;;;; Menu
 
