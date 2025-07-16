@@ -39,7 +39,7 @@ This section details the interactive commands provided by =tlon-ebib.el=.
 + ~tlon-ebib-add-entry~ :: Posts the BibTeX entry at point to the =/api/entries= endpoint. Requires authentication. The content is sent as =text/plain=. On success, it replaces the local BibTeX entry with the version returned by the API, which may have reordered fields. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
 
 #+findex: tlon-ebib-delete-entry
-+ ~tlon-ebib-delete-entry~ :: Deletes the BibTeX entry at point from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
++ ~tlon-ebib-delete-entry~ :: Deletes the BibTeX entry at point from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, the entry is also removed from the local database file and a success message is shown.
 
 #+findex: tlon-ebib-check-name
 + ~tlon-ebib-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the results in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
