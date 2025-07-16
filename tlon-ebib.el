@@ -218,6 +218,9 @@ similar to existing names."
       (message "Name check/insert for '%s': OK." name))
     (list :status status-code :data response-data)))
 
+(declare-function bibtex-extras-get-key "bibtex-extras")
+(declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
+(declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-ebib-post-entry ()
   "Post the BibTeX entry at point to the EA International API.
 The entry is sent as \"text/plain\".
@@ -225,13 +228,11 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
-  (unless (derived-mode-p 'bibtex-mode)
-    (user-error "This command can only be used in BibTeX mode"))
-  (let* ((entry-text (save-excursion
-                       (bibtex-beginning-of-entry)
-                       (let ((beg (point)))
-                         (bibtex-end-of-entry)
-                         (buffer-substring-no-properties beg (point)))))
+  (let* ((key (pcase major-mode
+		((or 'ebib-index-mode 'ebib-entry-mode) (ebib-extras-get-field "=key="))
+		('bibtex-mode (bibtex-extras-get-key))
+		(_ (user-error "Not in ebib or bibtex mode"))))
+	 (entry-text (bibtex-extras-get-entry-as-string key))
          (encoded-entry-text (encode-coding-string entry-text 'utf-8))
          (headers `(("Content-Type" . "text/plain; charset=utf-8")
                     ("accept" . "text/plain")))
