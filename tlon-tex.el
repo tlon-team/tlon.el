@@ -663,6 +663,7 @@ locators (which are not relevant in a bibliography)."
 			   t t)))))))
 
 (defvar citar-cache--bibliographies)
+;;;###autoload
 (defun tlon-bibliography-lookup (field value &optional assoc-field substring)
   "Return the ASSOC-FIELD value in the entry whose FIELD value matches VALUE.
 If ASSOC-FIELD is nil, return VALUE if the entry is found, else return nil. If
