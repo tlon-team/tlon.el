@@ -93,6 +93,12 @@ Set to t to enable verbose logging from url.el.")
   (unless (tlon-bibliography-lookup "=key=" key)
     (user-error "Key `%s' not found in the bibliography" key)))
 
+(defun tlon-ebib-get-key-at-point ()
+  "If there is a bibtex key at point, return it."
+  (pcase major-mode
+    ((or 'ebib-index-mode 'ebib-entry-mode) (ebib--get-key-at-point))
+    ('bibtex-mode (bibtex-extras-get-key))))
+
 ;;;;; API
 
 ;;;;;; Authenticate
@@ -102,24 +108,24 @@ Set to t to enable verbose logging from url.el.")
 Returns the authentication token or nil if authentication failed."
   (interactive)
   (let* ((data (concat "grant_type=password"
-                       "&username=" (url-hexify-string tlon-ebib-api-username)
-                       "&password=" (url-hexify-string tlon-ebib-api-password)))
-         (headers '(("Content-Type" . "application/x-www-form-urlencoded")))
-         (response-buffer (tlon-ebib--make-request "POST" "/api/auth/token" data headers nil))
-         auth-data status-code raw-response-text)
+		       "&username=" (url-hexify-string tlon-ebib-api-username)
+		       "&password=" (url-hexify-string tlon-ebib-api-password)))
+	 (headers '(("Content-Type" . "application/x-www-form-urlencoded")))
+	 (response-buffer (tlon-ebib--make-request "POST" "/api/auth/token" data headers nil))
+	 auth-data status-code raw-response-text)
     (when response-buffer
       (unwind-protect
-          (progn
-            (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
-            (setq status-code (tlon-ebib--get-response-status-code response-buffer))
-            (if (= status-code 200)
-                (setq auth-data (tlon-ebib--parse-json-response response-buffer))
-              (tlon-ebib--display-result-buffer
-               "Authentication failed"
-               #'tlon-ebib--format-post-entry-result
-               `(:status ,status-code :raw-text ,raw-response-text))
-              (user-error "Authentication failed: HTTP status %d. See *Ebib API Result* buffer for details"
-                          status-code)))
+	  (progn
+	    (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
+	    (setq status-code (tlon-ebib--get-response-status-code response-buffer))
+	    (if (= status-code 200)
+		(setq auth-data (tlon-ebib--parse-json-response response-buffer))
+	      (tlon-ebib--display-result-buffer
+	       "Authentication failed"
+	       #'tlon-ebib--format-post-entry-result
+	       `(:status ,status-code :raw-text ,raw-response-text))
+	      (user-error "Authentication failed: HTTP status %d. See *Ebib API Result* buffer for details"
+			  status-code)))
 	(kill-buffer response-buffer))) ; Ensure buffer is killed
     (when auth-data
       (setq tlon-ebib-auth-token (gethash "access_token" auth-data))
@@ -132,8 +138,8 @@ Returns the authentication token or nil if authentication failed."
   "Ensure we have a valid authentication token, refreshing if needed.
 Returns the token or nil if authentication failed."
   (when (or (null tlon-ebib-auth-token)
-            (null tlon-ebib-auth-token-expiry)
-            (time-less-p tlon-ebib-auth-token-expiry (current-time)))
+	    (null tlon-ebib-auth-token-expiry)
+	    (time-less-p tlon-ebib-auth-token-expiry (current-time)))
     (tlon-ebib-authenticate))
   (or tlon-ebib-auth-token
       (user-error "Authentication failed")))
@@ -159,108 +165,115 @@ defaults to `tlon-ebib-api-base-url'."
 	  (user-error "Could not parse response from API"))
 	(kill-buffer response-buffer)))
     (if entries-text
-        (if (file-exists-p tlon-ebib-file-db)
-            (let ((temp-file (make-temp-file "ebib-entries-")))
-              (unwind-protect
-                  (progn
-                    (with-temp-buffer
-                      (let ((coding-system-for-write 'utf-8-unix))
-                        (insert entries-text)
-                        (write-file temp-file)))
-                    (if (not (tlon-ebib--files-have-same-content-p tlon-ebib-file-db temp-file))
-                        (if (y-or-n-p (format "File %s exists and is different. Overwrite?"
-                                              tlon-ebib-file-db))
-                            (progn
-                              (copy-file temp-file tlon-ebib-file-db t)
-                              (message "Updated %s." tlon-ebib-file-db)
-                              (with-temp-buffer
-                                (insert entries-text)
-                                (bibtex-count-entries)))
-                          (message "Keeping existing file %s." tlon-ebib-file-db))
-                      (message "File %s is already up to date." tlon-ebib-file-db)))
-                (when (file-exists-p temp-file)
-                  (delete-file temp-file))))
-          (let ((coding-system-for-write 'utf-8-unix))
-            (with-temp-buffer
-              (insert entries-text)
-              (write-file tlon-ebib-file-db)
-              (bibtex-count-entries))))
+	(if (file-exists-p tlon-ebib-file-db)
+	    (let ((temp-file (make-temp-file "ebib-entries-")))
+	      (unwind-protect
+		  (progn
+		    (with-temp-buffer
+		      (let ((coding-system-for-write 'utf-8-unix))
+			(insert entries-text)
+			(write-file temp-file)))
+		    (if (not (tlon-ebib--files-have-same-content-p tlon-ebib-file-db temp-file))
+			(progn
+			  (copy-file temp-file tlon-ebib-file-db t)
+			  (message "Updated %s." tlon-ebib-file-db)
+			  (with-temp-buffer
+			    (insert entries-text)
+			    (bibtex-count-entries)))
+		      (message "File %s is already up to date." tlon-ebib-file-db)))
+		(when (file-exists-p temp-file)
+		  (delete-file temp-file))))
+	  (let ((coding-system-for-write 'utf-8-unix))
+	    (with-temp-buffer
+	      (insert entries-text)
+	      (write-file tlon-ebib-file-db)
+	      (bibtex-count-entries))))
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib--files-have-same-content-p (file1 file2)
   "Return t if FILE1 and FILE2 have identical content."
   (let ((content1 (with-temp-buffer
-                    (insert-file-contents file1)
-                    (buffer-string)))
-        (content2 (with-temp-buffer
-                    (insert-file-contents file2)
-                    (buffer-string))))
+		    (insert-file-contents file1)
+		    (buffer-string)))
+	(content2 (with-temp-buffer
+		    (insert-file-contents file2)
+		    (buffer-string))))
     (string= content1 content2)))
 
-;;;;;; Add entry
+;;;;;; Post entry
 
-(declare-function bibtex-extras-get-key "bibtex-extras")
 (declare-function bibtex-extras-get-entry-as-string "bibtex-extras")
 (declare-function bibtex-extras-delete-entry "bibtex-extras")
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
-(defun tlon-ebib-add-entry ()
+(defun tlon-ebib-post-entry ()
   "Post the BibTeX entry at point to the EA International API.
 The entry is sent as \"text/plain\".
 Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (tlon-ebib-ensure-auth)
-  (let* ((key (pcase major-mode
-                ((or 'ebib-index-mode 'ebib-entry-mode) (ebib-extras-get-field "=key="))
-                ('bibtex-mode (bibtex-extras-get-key))
-                (_ (user-error "Not in ebib or bibtex mode"))))
-         (entry-text (bibtex-extras-get-entry-as-string key))
-         (encoded-entry-text (encode-coding-string entry-text 'utf-8))
-         (headers `(("Content-Type" . "text/plain; charset=utf-8")
-                    ("accept" . "text/plain")))
-         (result (tlon-ebib--handle-entry-request "POST" "/api/entries" encoded-entry-text headers))
-         (status-code (plist-get result :status))
-         (raw-text (plist-get result :raw-text)))
-    (if (or tlon-debug (not (and status-code (= status-code 200))))
-        (tlon-ebib--display-result-buffer
-         (format "Post entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
-         #'tlon-ebib--format-post-entry-result
-         result)
-      (when-let ((new-entry-text (tlon-ebib--get-response-body raw-text)))
-        (bibtex-extras-delete-entry key)
-        (bibtex-extras-insert-entry new-entry-text)
-        (message "Entry posted and updated successfully.")))
-    result))
+  (if-let ((key (tlon-ebib-get-key-at-point)))
+      (let* ((entry-text (bibtex-extras-get-entry-as-string key nil (list tlon-file-db)))
+	     (encoded-entry-text (encode-coding-string entry-text 'utf-8))
+	     (headers `(("Content-Type" . "text/plain; charset=utf-8")
+			("accept" . "text/plain")))
+	     (result (tlon-ebib--handle-entry-request "POST" "/api/entries" encoded-entry-text headers))
+	     (status-code (plist-get result :status))
+	     (raw-text (plist-get result :raw-text)))
+	(if (or tlon-debug (not (and status-code (= status-code 200))))
+	    (tlon-ebib--display-result-buffer
+	     (format "Post entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+	     #'tlon-ebib--format-post-entry-result
+	     result)
+	  (when-let ((new-entry-text (tlon-ebib--get-response-body raw-text)))
+	    (tlon-ebib-delete-entry-locally key)
+	    (tlon-ebib-add-entry-locally new-entry-text)
+	    (message "Entry posted and updated successfully.")))
+	result)
+    (user-error "Not in Ebib or Bibtex mode")))
+
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(defun tlon-ebib-add-entry-locally (entry)
+  "Add ENTRY to the local db file."
+  (with-current-buffer (find-file-noselect tlon-ebib-file-db)
+    (bibtex-mode)
+    (goto-char (point-max))
+    (insert entry)
+    (save-buffer))
+  (message "New entry (`%s') added successfully." (bibtex-extras-get-field "=key=")))
 
 ;;;;;; Delete entry
 
 (defun tlon-ebib-delete-entry (key)
   "Delete KEY from the EA International API."
-  (interactive (list (tlon-ebib-get-db-entries)))
+  (interactive (list (or (tlon-ebib-get-key-at-point)
+			 (tlon-ebib-get-db-entries))))
   (tlon-ebib-ensure-key key)
   (tlon-ebib-ensure-auth)
   (unless (y-or-n-p (format "Are you sure you want to delete entry '%s' (this action is irreversible)?" key))
     (user-error "Deletion cancelled"))
   (let* ((endpoint (format "/api/entries/%s" (url-hexify-string key)))
-         (headers '(("accept" . "application/json")))
-         (result (tlon-ebib--handle-entry-request "DELETE" endpoint nil headers t))
-         (status-code (plist-get result :status)))
+	 (headers '(("accept" . "application/json")))
+	 (result (tlon-ebib--handle-entry-request "DELETE" endpoint nil headers t))
+	 (status-code (plist-get result :status)))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
-        (tlon-ebib--display-result-buffer
-         (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
-         #'tlon-ebib--format-delete-entry-result
-         result)
-      (progn
-        (with-current-buffer (find-file-noselect tlon-ebib-file-db)
-          (bibtex-mode)
-          (condition-case nil
-              (progn
-                (bibtex-search-entry key)
-                (bibtex-kill-entry)
-                (save-buffer))
-            (error nil)))
-        (message "Entry '%s' deleted successfully." key)))
+	(tlon-ebib--display-result-buffer
+	 (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+	 #'tlon-ebib--format-delete-entry-result
+	 result)
+      (tlon-ebib-delete-entry-locally key))
     result))
+
+(defun tlon-ebib-delete-entry-locally (key)
+  "Delete the entry with KEY from the local db file."
+  (with-current-buffer (find-file-noselect tlon-ebib-file-db)
+    (bibtex-mode)
+    (condition-case nil
+	(when (bibtex-search-entry key)
+	  (bibtex-kill-entry)
+	  (save-buffer))
+      (error nil)))
+  (message "Entry `%s' deleted successfully." key))
 
 (defun tlon-ebib--handle-entry-request (method endpoint data headers &optional json-on-success)
   "Handle a request to an entry endpoint and process the response.
@@ -270,28 +283,28 @@ Returns a plist with :status, :data, and :raw-text."
   (let (response-buffer response-data raw-response-text status-code)
     (setq response-buffer (tlon-ebib--make-request method endpoint data headers t))
     (if (not response-buffer)
-        (setq status-code nil)
+	(setq status-code nil)
       (unwind-protect
-          (progn
-            (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
-            (condition-case _err
-                (setq status-code (tlon-ebib--get-response-status-code response-buffer))
-              (error
-               (setq status-code nil)))
-            (cond
-             ((and status-code (= status-code 422))
-              (setq response-data (tlon-ebib--parse-json-response response-buffer)))
-             ((and json-on-success status-code (= status-code 200))
-              (setq response-data (tlon-ebib--parse-json-response response-buffer)))))
-        (when response-buffer (kill-buffer response-buffer))))
+	  (progn
+	    (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
+	    (condition-case _err
+		(setq status-code (tlon-ebib--get-response-status-code response-buffer))
+	      (error
+	       (setq status-code nil)))
+	    (cond
+	     ((and status-code (= status-code 422))
+	      (setq response-data (tlon-ebib--parse-json-response response-buffer)))
+	     ((and json-on-success status-code (= status-code 200))
+	      (setq response-data (tlon-ebib--parse-json-response response-buffer)))))
+	(when response-buffer (kill-buffer response-buffer))))
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
 (defun tlon-ebib--format-delete-entry-result (result)
   "Format the RESULT from `tlon-ebib-delete-entry` for display.
 RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   (let ((status-code (plist-get result :status))
-        (response-data (plist-get result :data))  ; Parsed JSON for 200 or 422
-        (raw-response-text (plist-get result :raw-text))) ; Raw text for other errors
+	(response-data (plist-get result :data))  ; Parsed JSON for 200 or 422
+	(raw-response-text (plist-get result :raw-text))) ; Raw text for other errors
     (cond
      ((null status-code) ; Error before or during request
       (insert "Status: Request Failed\n")
@@ -300,27 +313,27 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
       (insert "Status: Success (200)\n")
       (insert "Response from server:\n")
       (if (stringp response-data)
-          (insert response-data)
-        (insert (or raw-response-text "No content returned."))))
+	  (insert response-data)
+	(insert (or raw-response-text "No content returned."))))
      ((= status-code 422)
       (insert "Status: Validation Error (422)\n")
       (if response-data
-          (progn
-            (insert "Details (from JSON response):\n")
-            (let ((detail (gethash "detail" response-data)))
-              (if (listp detail) ; Standard FastAPI validation error structure
-                  (dolist (item detail)
-                    (if (hash-table-p item)
-                        (insert (format "  - Location: %s, Message: %s, Type: %s\n"
-                                        (mapconcat #'identity (gethash "loc" item) " -> ")
-                                        (gethash "msg" item "")
-                                        (gethash "type" item "")))
-                      (insert (format "  - %s\n" item)))) ; Non-standard detail item
-                (insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
-        (insert "No specific validation error details found in parsed JSON response.\n"))
+	  (progn
+	    (insert "Details (from JSON response):\n")
+	    (let ((detail (gethash "detail" response-data)))
+	      (if (listp detail) ; Standard FastAPI validation error structure
+		  (dolist (item detail)
+		    (if (hash-table-p item)
+			(insert (format "  - Location: %s, Message: %s, Type: %s\n"
+					(mapconcat #'identity (gethash "loc" item) " -> ")
+					(gethash "msg" item "")
+					(gethash "type" item "")))
+		      (insert (format "  - %s\n" item)))) ; Non-standard detail item
+		(insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
+	(insert "No specific validation error details found in parsed JSON response.\n"))
       (when raw-response-text
-        (insert "\nRaw server response (text/plain or other):\n")
-        (insert raw-response-text)))
+	(insert "\nRaw server response (text/plain or other):\n")
+	(insert raw-response-text)))
      (t
       (insert (format "Status: Error (HTTP %d)\n" status-code))
       (insert "Response from server:\n")
@@ -333,21 +346,21 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   (interactive "sName to check: ")
   (tlon-ebib-ensure-auth)
   (let* ((data (json-encode `(("name" . ,name))))
-         (headers '(("Content-Type" . "application/json")
-                    ("accept" . "application/json")))
-         (response-buffer (tlon-ebib--make-request "POST" "/api/names/check" data headers t))
-         response-data
-         status-code)
+	 (headers '(("Content-Type" . "application/json")
+		    ("accept" . "application/json")))
+	 (response-buffer (tlon-ebib--make-request "POST" "/api/names/check" data headers t))
+	 response-data
+	 status-code)
     (when response-buffer
       (setq status-code (tlon-ebib--get-response-status-code response-buffer))
       (if (= status-code 200)
-          (setq response-data (tlon-ebib--parse-json-response response-buffer))
-        (message "Error checking name: HTTP status %d" status-code)) ; This message might be redundant if buffer is shown
+	  (setq response-data (tlon-ebib--parse-json-response response-buffer))
+	(message "Error checking name: HTTP status %d" status-code)) ; This message might be redundant if buffer is shown
       (kill-buffer response-buffer))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
-        (tlon-ebib--display-result-buffer (format "Name check result for: %s" name)
-                                          #'tlon-ebib--format-check-name-result
-                                          response-data)
+	(tlon-ebib--display-result-buffer (format "Name check result for: %s" name)
+					  #'tlon-ebib--format-check-name-result
+					  response-data)
       (message "Name check for '%s': OK." name))
     response-data))
 
@@ -360,20 +373,20 @@ similar to existing names."
   (unless (tlon-ebib-ensure-auth)
     (user-error "Authentication failed"))
   (let* ((data (json-encode `(("name" . ,name))))
-         (headers '(("Content-Type" . "application/json")
-                    ("accept" . "application/json")))
-         (response-buffer (tlon-ebib--make-request "POST" "/api/names/check-insert" data headers t))
-         response-data
-         status-code)
+	 (headers '(("Content-Type" . "application/json")
+		    ("accept" . "application/json")))
+	 (response-buffer (tlon-ebib--make-request "POST" "/api/names/check-insert" data headers t))
+	 response-data
+	 status-code)
     (when response-buffer
       (setq status-code (tlon-ebib--get-response-status-code response-buffer))
       ;; Parse response even on error, as it might contain details
       (setq response-data (tlon-ebib--parse-json-response response-buffer))
       (kill-buffer response-buffer))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
-        (tlon-ebib--display-result-buffer (format "Name check/insert result for: %s" name)
-                                          #'tlon-ebib--format-check-insert-name-result
-                                          (list :status status-code :data response-data))
+	(tlon-ebib--display-result-buffer (format "Name check/insert result for: %s" name)
+					  #'tlon-ebib--format-check-insert-name-result
+					  (list :status status-code :data response-data))
       (message "Name check/insert for '%s': OK." name))
     (list :status status-code :data response-data)))
 
@@ -385,8 +398,8 @@ similar to existing names."
    ((gethash "detail" data)
     (let ((detail-msg (gethash "message" (gethash "detail" data))))
       (if detail-msg
-          (insert (format "API Response: %s\n" detail-msg))
-        (insert "API Response: Name not found, but no specific message provided in 'detail'.\n"))))
+	  (insert (format "API Response: %s\n" detail-msg))
+	(insert "API Response: Name not found, but no specific message provided in 'detail'.\n"))))
    ((and (gethash "name" data) (gethash "message" data))
     (insert (format "Name: %s\n" (gethash "name" data)))
     (insert (format "Message: %s\n" (gethash "message" data))))
@@ -397,45 +410,45 @@ similar to existing names."
   "Format the RESULT from `tlon-ebib-check-or-insert-name` for display.
 RESULT is a plist like (:status CODE :data DATA)."
   (let ((status-code (plist-get result :status))
-        (response-data (plist-get result :data)))
+	(response-data (plist-get result :data)))
     (cond
      ;; Success - name was inserted or matched exactly
      ((= status-code 200)
       (insert "Status: Success\n")
       (when response-data
-        (when (gethash "name" response-data)
-          (insert "Name: " (gethash "name" response-data) "\n"))
-        (when (gethash "message" response-data)
-          (insert "Message: " (gethash "message" response-data) "\n"))))
+	(when (gethash "name" response-data)
+	  (insert "Name: " (gethash "name" response-data) "\n"))
+	(when (gethash "message" response-data)
+	  (insert "Message: " (gethash "message" response-data) "\n"))))
      ;; Conflict - name is similar to existing names
      ((= status-code 409)
       (insert "Status: Conflict - Name not inserted\n")
       (when response-data
-        (when (gethash "message" response-data)
-          (insert "Message: " (gethash "message" response-data) "\n"))
-        (when (gethash "similar_names" response-data)
-          (insert "Similar names:\n")
-          (dolist (similar-name (gethash "similar_names" response-data))
-            (insert "  - " similar-name "\n")))))
+	(when (gethash "message" response-data)
+	  (insert "Message: " (gethash "message" response-data) "\n"))
+	(when (gethash "similar_names" response-data)
+	  (insert "Similar names:\n")
+	  (dolist (similar-name (gethash "similar_names" response-data))
+	    (insert "  - " similar-name "\n")))))
      ;; Validation error
      ((= status-code 422)
       (insert "Status: Validation Error\n")
       (when (and response-data (gethash "detail" response-data))
-        (insert "Details:\n")
-        (dolist (detail (gethash "detail" response-data))
-          (if (hash-table-p detail) ; Handle FastAPI validation error structure
-              (insert (format "  - Field: %s, Error: %s\n"
-                              (mapconcat #'identity (gethash "loc" detail) ".")
-                              (gethash "msg" detail "")))
-            (insert (format "  - %s\n" detail)))))) ; Handle simpler error messages
+	(insert "Details:\n")
+	(dolist (detail (gethash "detail" response-data))
+	  (if (hash-table-p detail) ; Handle FastAPI validation error structure
+	      (insert (format "  - Field: %s, Error: %s\n"
+			      (mapconcat #'identity (gethash "loc" detail) ".")
+			      (gethash "msg" detail "")))
+	    (insert (format "  - %s\n" detail)))))) ; Handle simpler error messages
      ;; Other error
      (t
       (insert "Status: Error (HTTP " (number-to-string (or status-code 0)) ")\n")
       (when response-data ; Display any message if available
-        (when (gethash "message" response-data)
-          (insert "Message: " (gethash "message" response-data) "\n"))
-        (when (gethash "detail" response-data) ; Handle FastAPI detail string
-          (insert "Detail: " (gethash "detail" response-data) "\n")))))))
+	(when (gethash "message" response-data)
+	  (insert "Message: " (gethash "message" response-data) "\n"))
+	(when (gethash "detail" response-data) ; Handle FastAPI detail string
+	  (insert "Detail: " (gethash "detail" response-data) "\n")))))))
 
 ;;;;;; Helpers
 
@@ -443,7 +456,7 @@ RESULT is a plist like (:status CODE :data DATA)."
   "Extract the body from a full HTTP RESPONSE-TEXT."
   (when response-text
     (if (string-match "\r?\n\r?\n" response-text)
-        (substring response-text (match-end 0))
+	(substring response-text (match-end 0))
       response-text)))
 
 (defun tlon-ebib--make-request (method endpoint data headers &optional auth-required base-url)
@@ -465,25 +478,25 @@ Optional BASE-URL overrides `tlon-ebib-api-base-url'."
     (when auth-required
       (tlon-ebib-ensure-auth)
       (add-to-list 'url-request-extra-headers
-                   `("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token)) t))
+		   `("Authorization" . ,(concat "Bearer " tlon-ebib-auth-token)) t))
     (condition-case err
-        (setq response-buffer (url-retrieve-synchronously url t))
+	(setq response-buffer (url-retrieve-synchronously url t))
       (error
        (setq lisp-error-occurred t
-             lisp-error-message (error-message-string err)
+	     lisp-error-message (error-message-string err)
 	     response-buffer nil)))
     (unless response-buffer
       (unless lisp-error-occurred
-        (when (and (boundp 'url-http-response-buffer)
-                   url-http-response-buffer
-                   (buffer-live-p url-http-response-buffer))
-          (setq response-buffer url-http-response-buffer))))
+	(when (and (boundp 'url-http-response-buffer)
+		   url-http-response-buffer
+		   (buffer-live-p url-http-response-buffer))
+	  (setq response-buffer url-http-response-buffer))))
     (unless response-buffer
       (if lisp-error-occurred
-          (user-error "Could not connect to API at %s or request failed critically due to a Lisp error: %s"
+	  (user-error "Could not connect to API at %s or request failed critically due to a Lisp error: %s"
 		      url lisp-error-message)
-        (user-error "Could not connect to API at %s or request failed critically. HTTP Status: %s, Message: %s"
-                    url url-request-status url-request-error-message)))
+	(user-error "Could not connect to API at %s or request failed critically. HTTP Status: %s, Message: %s"
+		    url url-request-status url-request-error-message)))
     response-buffer))
 
 (defun tlon-ebib--get-response-status-code (buffer)
@@ -492,8 +505,8 @@ Optional BASE-URL overrides `tlon-ebib-api-base-url'."
     (goto-char (point-min))
     (let ((status-line (buffer-substring-no-properties (point) (line-end-position))))
       (if (string-match "HTTP/[0-9.]+ \\([0-9]+\\)" status-line)
-          (string-to-number (match-string 1 status-line))
-        (user-error "Could not parse HTTP status line: %s" status-line)))))
+	  (string-to-number (match-string 1 status-line))
+	(user-error "Could not parse HTTP status line: %s" status-line)))))
 
 (defun tlon-ebib--parse-json-response (buffer)
   "Parse JSON data from response BUFFER.
@@ -502,12 +515,12 @@ Returns the parsed data (hash-table) or nil on error."
     (with-current-buffer buffer
       (goto-char (point-min))
       (when (search-forward-regexp "^$" nil t) ; Move past headers
-        (let ((json-object-type 'hash-table)
-              (json-array-type 'list)
-              (json-key-type 'string))
-          (condition-case err
-              (json-read)
-            (error (message "Error parsing JSON response: %s" err) nil)))))))
+	(let ((json-object-type 'hash-table)
+	      (json-array-type 'list)
+	      (json-key-type 'string))
+	  (condition-case err
+	      (json-read)
+	    (error (message "Error parsing JSON response: %s" err) nil)))))))
 
 (defun tlon-ebib--display-result-buffer (title formatter-fn data)
   "Display TITLE and formatted DATA (via FORMATTER-FN) in a dedicated buffer.
@@ -518,21 +531,21 @@ into the current buffer."
   (let ((result-buffer (get-buffer-create tlon-ebib--result-buffer-name)))
     (with-current-buffer result-buffer
       (let ((was-read-only buffer-read-only)) ; Store original read-only state
-        (when was-read-only
-          (setq buffer-read-only nil)) ; Make writable if it was read-only
-        (erase-buffer)
-        (insert title "\n\n")
-        (funcall formatter-fn data)
-        (fundamental-mode) ; Or any other simple mode
-        (setq buffer-read-only t))) ; Set back to read-only
+	(when was-read-only
+	  (setq buffer-read-only nil)) ; Make writable if it was read-only
+	(erase-buffer)
+	(insert title "\n\n")
+	(funcall formatter-fn data)
+	(fundamental-mode) ; Or any other simple mode
+	(setq buffer-read-only t))) ; Set back to read-only
     (display-buffer result-buffer)))
 
 (defun tlon-ebib--format-post-entry-result (result)
-  "Format the RESULT from `tlon-ebib-add-entry` for display.
+  "Format the RESULT from `tlon-ebib-post-entry` for display.
 RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   (let ((status-code (plist-get result :status))
-        (response-data (plist-get result :data))  ; Parsed JSON for 422
-        (raw-response-text (plist-get result :raw-text))) ; Raw text for 200 or other errors
+	(response-data (plist-get result :data))  ; Parsed JSON for 422
+	(raw-response-text (plist-get result :raw-text))) ; Raw text for 200 or other errors
     (cond
      ((null status-code) ; Error before or during request
       (insert "Status: Request Failed\n")
@@ -544,22 +557,22 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
      ((= status-code 422)
       (insert "Status: Validation Error (422)\n")
       (if response-data
-          (progn
-            (insert "Details (from JSON response):\n")
-            (let ((detail (gethash "detail" response-data)))
-              (if (listp detail) ; Standard FastAPI validation error structure
-                  (dolist (item detail)
-                    (if (hash-table-p item)
-                        (insert (format "  - Location: %s, Message: %s, Type: %s\n"
-                                        (mapconcat #'identity (gethash "loc" item) " -> ")
-                                        (gethash "msg" item "")
-                                        (gethash "type" item "")))
-                      (insert (format "  - %s\n" item)))) ; Non-standard detail item
-                (insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
-        (insert "No specific validation error details found in parsed JSON response.\n"))
+	  (progn
+	    (insert "Details (from JSON response):\n")
+	    (let ((detail (gethash "detail" response-data)))
+	      (if (listp detail) ; Standard FastAPI validation error structure
+		  (dolist (item detail)
+		    (if (hash-table-p item)
+			(insert (format "  - Location: %s, Message: %s, Type: %s\n"
+					(mapconcat #'identity (gethash "loc" item) " -> ")
+					(gethash "msg" item "")
+					(gethash "type" item "")))
+		      (insert (format "  - %s\n" item)))) ; Non-standard detail item
+		(insert (format "  Unexpected detail format in JSON: %S\n" detail))))) ; Detail is not a list
+	(insert "No specific validation error details found in parsed JSON response.\n"))
       (when raw-response-text
-        (insert "\nRaw server response (text/plain or other):\n")
-        (insert raw-response-text)))
+	(insert "\nRaw server response (text/plain or other):\n")
+	(insert raw-response-text)))
      (t
       (insert (format "Status: Error (HTTP %d)\n" status-code))
       (insert "Response from server:\n")
@@ -576,13 +589,12 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   "Menu for `ebib' functions."
   ["Ebib Actions"
    ("g" "Get entries" tlon-ebib-get-entries)
-   ("a" "Add entry" tlon-ebib-add-entry)
+   ("p" "Post entry" tlon-ebib-post-entry)
    ("d" "Delete entry" tlon-ebib-delete-entry)
    ("c" "Check name" tlon-ebib-check-name)
    ("i" "Check or insert name" tlon-ebib-check-or-insert-name)
    ""
-   ("A" "Authenticate" tlon-ebib-authenticate)])
+   ("a" "Authenticate" tlon-ebib-authenticate)])
 
 (provide 'tlon-ebib)
 ;;; tlon-ebib.el ends here
-
