@@ -28,7 +28,9 @@
 (require 'markdown-mode-extras)
 (require 'tlon-core)
 (require 'tlon-yaml)
-(require 'tlon-deepl)
+
+(declare-function tlon-deepl-translate "tlon-deepl")
+(declare-function tlon-deepl-print-translation "tlon-deepl")
 
 ;;;; User options
 

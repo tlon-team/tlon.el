@@ -34,7 +34,10 @@
 (require 'transient)
 (require 'url)
 (require 'json)
-(require 'oauth2-auto)
+
+(declare-function oauth2-auto-poll-promise "oauth2-auto")
+(declare-function oauth2-auto-force-reauth "oauth2-auto")
+(declare-function oauth2-auto-access-token-sync "oauth2-auto")
 
 ;;;; Constants
 
