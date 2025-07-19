@@ -2095,9 +2095,6 @@ If nil, use the default model."
     ("w w" "create reference article"                 tlon-ai-create-reference-article)
     ("w p" "proofread reference article"              tlon-ai-proofread-reference-article)
     ""
-    "Newsletter"
-    ("n" "Create newsletter issue"                  tlon-newsletter-create-issue)
-    ""
     "Propagation"
     ("d" "summarize commit diffs"                     tlon-ai-summarize-commit-diffs)
     ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
