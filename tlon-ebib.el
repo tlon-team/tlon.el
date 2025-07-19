@@ -31,6 +31,9 @@
 (require 'ebib)
 (require 'tlon-core)
 (require 'transient)
+(require 'bibtex-extras)
+
+(declare-function tlon-bibliography-lookup "tlon-tex")
 
 ;;;; Variables
 
