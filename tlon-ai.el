@@ -129,7 +129,6 @@ default `gptel-model'."
   "`gptel' failed with message: %s"
   "Error message to display when `gptel-quick' fails.")
 
-(declare-function paths-dir-dotemacs "tlon-paths")
 (defconst tlon-ai-changelog-file
   (file-name-concat paths-dir-dotemacs "extras/gptel-extras-changelog-template.org")
   "The file with the changelog template for `tlon-ai-summarize-commit-diffs'.")
@@ -1134,7 +1133,6 @@ in the :data structure, including Gemini's format (which may use vectors)."
 		 `(:data ,data :contents ,contents :user-part ,user-part :text-parts ,text-parts :first-part ,first-part :full-prompt ,full-prompt))
 	"Unknown Question"))))
 
-(declare-function paths-dir-dotemacs "tlon-paths")
 (defvar elpaca-repos-directory)
 (defun tlon-ai-get-documentation-files ()
   "Return a list of full paths to documentation files.
