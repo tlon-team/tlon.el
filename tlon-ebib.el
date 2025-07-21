@@ -89,13 +89,6 @@ Set to t to enable verbose logging from url.el.")
   (let ((citar-bibliography (list tlon-file-db)))
     (citar-select-ref)))
 
-(defun tlon-ebib-ensure-key (key)
-  "Ensure that KEY is provided and exists in the bibliography."
-  (when (string-empty-p key)
-    (user-error "No entry key provided"))
-  (unless (tlon-bibliography-lookup "=key=" key)
-    (user-error "Key `%s' not found in the bibliography" key)))
-
 (defun tlon-ebib-get-key-at-point ()
   "If there is a bibtex key at point, return it."
   (pcase major-mode
@@ -252,7 +245,6 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   "Delete KEY from the EA International API."
   (interactive (list (or (tlon-ebib-get-key-at-point)
 			 (tlon-ebib-get-db-entries))))
-  (tlon-ebib-ensure-key key)
   (tlon-ebib-ensure-auth)
   (unless (y-or-n-p (format "Are you sure you want to delete entry '%s' (this action is irreversible)?" key))
     (user-error "Deletion cancelled"))
@@ -273,11 +265,12 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (with-current-buffer (find-file-noselect tlon-ebib-file-db)
     (bibtex-mode)
     (condition-case nil
-	(when (bibtex-search-entry key)
+	(if (not (bibtex-search-entry key))
+	    (message "Entry `%s' not found in local db." key)
 	  (bibtex-kill-entry)
-	  (save-buffer))
-      (error nil)))
-  (message "Entry `%s' deleted successfully." key))
+	  (save-buffer)
+	  (message "Entry `%s' deleted successfully." key))
+      (error nil))))
 
 (defun tlon-ebib--handle-entry-request (method endpoint data headers &optional json-on-success)
   "Handle a request to an entry endpoint and process the response.
