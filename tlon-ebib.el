@@ -189,6 +189,7 @@ defaults to `tlon-ebib-api-base-url'."
 	  (let ((coding-system-for-write 'utf-8-unix))
 	    (with-temp-buffer
 	      (insert entries-text)
+	      (bibtex-extras-escape-special-characters)
 	      (write-file tlon-ebib-file-db)
 	      (bibtex-count-entries))))
       (user-error "Failed to retrieve entries"))))
