@@ -73,7 +73,8 @@ available options. If nil, use the default `gptel-model'."
 ;;;; Variables
 
 (defconst tlon-translate--engine-choices
-  '(("DeepL" . deepl))
+  '(("DeepL" . deepl)
+    ("AI" . ai))
   "Alist of translation engine display names and their symbols.")
 
 (defconst tlon-translate-prompt-revise-prefix
@@ -209,6 +210,7 @@ file. If LANG is not provided, prompt for a target language."
                                    (message "Translated %s to %s" source-file target-file)
                                    (find-file target-file))))
                              t)))
+    ;; TODO: add `ai' case; adapt `tlon-ai-translate-file' (and then remove from `tlon-ai.el')
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
 (defun tlon-translate--get-counterpart-for-language (file lang-code)
