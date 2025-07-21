@@ -217,7 +217,7 @@ Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (tlon-ebib-ensure-auth)
   (if-let ((key (tlon-ebib-get-key-at-point)))
-      (let* ((entry-text (bibtex-extras-get-entry-as-string key nil (list tlon-file-db)))
+      (let* ((entry-text (bibtex-extras-get-entry-as-string key nil))
 	     (encoded-entry-text (encode-coding-string entry-text 'utf-8))
 	     (headers `(("Content-Type" . "text/plain; charset=utf-8")
 			("accept" . "text/plain")))
