@@ -169,6 +169,8 @@ commit. TYPE is the revision type."
 				    (tlon-get-key-from-file file))
 			    file)))))
 
+;;;;; Translate file
+
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
   "Translate FILE into LANG using `tlon-translate-engine'.
