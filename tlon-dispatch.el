@@ -57,7 +57,8 @@
    [""""
     ("n" "newsletter"                     tlon-newsletter-menu)
     ("o" "count"                          tlon-count-menu)
-    ("p" "api"                            tlon-api-menu)
+    ("p" "paragraphs"                     tlon-paragraphs-menu)
+    ("H-p" "api"                          tlon-api-menu)
     ("r" "repos"                          tlon-repos-menu)
     ("s" "search"                         tlon-search-menu)
     ("H-s" "split"                        tlon-split-menu)

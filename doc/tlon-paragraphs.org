@@ -1,0 +1,52 @@
+#+title: tlon - Paragraph Functionality
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+* Paragraph Functionality (=tlon-paragraphs.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraph
+:END:
+
+This module provides paragraph-related functionality, such as aligning the number of paragraphs between a file and its counterpart using an AI agent.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraph-dependencies
+:END:
+
++ =tlon-ai=
++ =tlon-counterpart=
++ =transient=
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraphs-commands
+:END:
+
+This section details the interactive commands provided by =tlon-paragraph.el=.
+
+*** AI-Powered Paragraph Alignment
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraph-ai-commands
+:END:
+
+#+findex: tlon-paragraphs-align-with-ai
++ ~tlon-paragraphs-align-with-ai~ :: (Autoloaded) Checks for paragraph count mismatch between a file and its counterpart and uses an AI agent to fix it. It prompts for a file, finds its counterpart, and compares the number of paragraphs. If they differ, it instructs an AI agent to edit the translation file to match the paragraph count of the original. The AI is equipped with the =edit_file= tool to apply changes directly. If the paragraph counts match, it simply reports this to the user.
+
+*** Transient Menu
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraph-menu-cmd
+:END:
+#+findex: tlon-paragraphs-menu
+The command ~tlon-paragraphs-menu~ (Autoloaded) activates a =transient= menu interface for paragraph-related operations.
+
+It provides the following groups and commands:
++ *AI*:
+  + =a= :: Align paragraphs (~tlon-paragraphs-align-with-ai~)
