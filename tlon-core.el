@@ -425,6 +425,10 @@ If `:help' is non-nil, include this repo in the list of directories scanned by
   (file-name-concat tlon-bibtex-dir "db.bib")
   "File containing the db bibliography.")
 
+(defvar tlon-file-db-upstream
+  (file-name-concat tlon-bibtex-dir "db-upstream.bib")
+  "File containing the db upstream bibliography.")
+
 (defvar tlon-bibliography-files
   `(,tlon-file-fluid
     ,tlon-file-stable
