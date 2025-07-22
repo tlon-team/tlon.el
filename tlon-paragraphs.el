@@ -37,14 +37,13 @@
   :group 'tlon)
 
 (defcustom tlon-paragraphs-align-with-ai-model
-  '("ChatGPT" . gpt-4.5-preview)
+  '("Gemini" . gemini-2.5-flash)
   "Model to use for aligning paragraphs.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for available options. If nil, do not
 use a different model for aligning paragraphs."
   :type '(cons (string :tag "Backend") (symbol :tag "Model"))
   :group 'tlon-paragraphs)
-
 
 ;;;; Functions
 
