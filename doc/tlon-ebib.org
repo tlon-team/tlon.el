@@ -122,8 +122,6 @@ This section lists non-interactive functions and variables used internally.
 
 #+findex: tlon-ebib--format-delete-entry-result
 + ~tlon-ebib--format-delete-entry-result~ :: Formatter function used by ~tlon-ebib--display-result-buffer~ to display the results from ~tlon-ebib-delete-entry~. Takes a plist =RESULT= containing =:status=, =:data= (parsed JSON for 200 or 422 errors), and =:raw-text= (raw text response for other errors). Formats output based on HTTP status code.
-#+findex: tlon-ebib-initialize
-+ ~tlon-ebib-initialize~ :: Initializes the `tlon-ebib` package by retrieving entries from the API using ~tlon-ebib-get-entries~ and appending the local database file (~tlon-ebib-file-db~) to the `paths-files-bibliography-all` list.
 
 ** Automatic Synchronization
 :PROPERTIES:
