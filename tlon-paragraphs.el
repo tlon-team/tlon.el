@@ -27,6 +27,7 @@
 ;;; Code:
 
 (require 'tlon-ai)
+(require 'tlon-md)
 (require 'transient)
 
 ;;;; User options
@@ -49,6 +50,7 @@ use a different model for aligning paragraphs."
 
 ;;;;; Common
 
+(autoload 'markdown-forward-paragraph "markdown-mode" nil t)
 (defun tlon-with-paragraphs (file fn &optional return-positions)
   "Execute FN for each paragraph in FILE.
 If RETURN-POSITIONS is non-nil, return list of (start . end) positions.
