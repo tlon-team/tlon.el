@@ -178,6 +178,7 @@ If END is nil, use `point-max'."
 		 positions)))
 
 ;;;;; Align paragraphs
+
 (defconst tlon-paragraphs-align-with-ai-prompt
   "You are an expert editor. The file '%s' is a translation of '%s'. They have a different number of paragraphs. The original has %d paragraphs and the translation has %d.
 
