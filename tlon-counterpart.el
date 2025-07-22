@@ -27,6 +27,7 @@
 
 (require 'tlon-core)
 (require 'tlon-md)
+(require 'tlon-paragraphs)
 (require 'tlon-yaml)
 (require 'cl-lib)
 
@@ -237,64 +238,6 @@ If called with a prefix ARG, open the counterpart in the other window."
   (not (= (tlon-get-number-of-paragraphs nil (point))
 	  (tlon-get-number-of-paragraphs nil (min (point-max) (1+ (point)))))))
 
-(defun tlon-with-paragraphs (file fn &optional return-positions)
-  "Execute FN for each paragraph in FILE.
-If RETURN-POSITIONS is non-nil, return list of (start . end) positions.
-Otherwise, return list of FN's results for each paragraph.
-If FILE is nil, use the current buffer."
-  (let ((buffer-to-use (if (stringp file)
-                           (find-file-noselect file)
-                         (current-buffer)))) ; Use current buffer if file is nil or buffer object
-    (with-current-buffer buffer-to-use
-      (save-excursion
-        (goto-char (or (cdr (tlon-get-delimited-region-pos
-                             tlon-yaml-delimiter))
-                       (point-min)))
-	(let ((content-end (or (car (tlon-get-delimited-region-pos
-                                     tlon-md-local-variables-line-start
-                                     tlon-md-local-variables-line-end))
-                               (point-max)))
-              result)
-          (while (and (< (point) content-end)
-                      (not (looking-at-p tlon-md-local-variables-line-start)))
-            (let ((start (point)))
-              (markdown-forward-paragraph)
-              (let ((end (min (point) content-end)))
-		(when (and (> end start)
-                           (string-match-p "[^\s\n]"
-					   (buffer-substring-no-properties start end)))
-                  (push (if return-positions
-                            (cons start end)
-			  (funcall fn start end))
-			result)))))
-          (nreverse result))))))
-
-;;;###autoload
-(defun tlon-get-number-of-paragraphs (&optional start end)
-  "Return the number of paragraphs between START and END.
-START and END are buffer positions. If START is nil, use `point-min'.
-If END is nil, use `point-max'."
-  (let ((positions (tlon-with-paragraphs nil #'ignore t)))
-    (cl-count-if (lambda (pos)
-		   (and (>= (car pos) (or start (point-min)))
-			(< (cdr pos) (or end (point-max)))))
-		 positions)))
-
-(defun tlon-count-paragraphs (&optional start end)
-  "Count the number of paragraphs in the active region.
-If the region is not active, count the number of paragraphs between START and
-END."
-  (interactive)
-  (unless (or (region-active-p)
-	      (and start end))
-    (user-error "No region selected and no START and END specified"))
-  (cl-destructuring-bind (start . end)
-      (if (region-active-p)
-	  (cons (region-beginning) (region-end))
-	(cons start end))
-    (message "There are %d paragraphs in the selected region"
-	     (tlon-get-number-of-paragraphs start end))))
-
 (defun tlon-get-corresponding-paragraphs (&optional file counterpart)
   "Return pairs of paragraphs between FILE and its COUNTERPART.
 Signals an error if files have different number of paragraphs, and displays the
@@ -332,31 +275,6 @@ FILE."
         (user-error "Paragraph number mismatch")))
     pairs))
 
-(defun tlon-display-corresponding-paragraphs (pairs-or-fn)
-  "Display PAIRS-OR-FN of corresponding paragraphs in parallel.
-PAIRS-OR-FN can be either the output of `tlon-get-corresponding-paragraphs'
-or the function itself."
-  (interactive (list #'tlon-get-corresponding-paragraphs))
-  (condition-case _err
-      (let* ((pairs (if (functionp pairs-or-fn)
-                        (funcall pairs-or-fn)
-                      pairs-or-fn))
-             (buf (get-buffer-create "/Paragraph Pairs/")))
-        (with-current-buffer buf
-          (erase-buffer)
-          (dolist (pair pairs)
-            (insert "Original:\n"
-                    (or (car pair) "[Missing paragraph]")
-                    "\n\nTranslation:\n"
-                    (or (cdr pair) "[Missing paragraph]")
-                    "\n\n"
-                    (make-string 40 ?-)
-                    "\n\n"))
-          (goto-char (point-min)))
-        (display-buffer buf))
-    (user-error
-     (display-buffer (get-buffer "/Paragraph Pairs/")))))
-
 ;;;;; Translate links
 
 (defun tlon-get-counterpart-link (original-relative-link current-buffer-file)
@@ -364,46 +282,46 @@ or the function itself."
 Returns the relative path string for the counterpart link, or nil if not found."
   (cl-block tlon-get-counterpart-link
     (let* ((current-dir (file-name-directory current-buffer-file))
-         (target-repo (tlon-get-repo-from-file current-buffer-file))
-         (target-lang-code (tlon-repo-lookup :language :dir target-repo))
-         (buffer-original-path (tlon-yaml-get-key "original_path" current-buffer-file)))
-    (unless buffer-original-path
-      (warn "No 'original_path' found in metadata for %s" current-buffer-file)
-      (cl-return-from tlon-get-counterpart-link nil))
-    (let* ((original-repo (tlon-get-counterpart-repo current-buffer-file)) ; Repo of the original file
-           (original-buffer-abs-path (file-name-concat original-repo buffer-original-path))
-           (original-buffer-dir (file-name-directory original-buffer-abs-path))
-           ;; Resolve the original relative link against the original buffer's directory
-           (linked-original-abs-path (expand-file-name original-relative-link original-buffer-dir))
-           ;; Get the path relative to the original repo root, used as the key in metadata
-           (linked-original-relative-path (file-relative-name linked-original-abs-path original-repo))
-           ;; Lookup the counterpart file in the target repo's metadata
-           (counterpart-abs-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
-                                                       "file"
-                                                       "original_path"
-                                                       linked-original-relative-path)))
-      ;; If metadata lookup failed, try to build the counterpart path
-      ;; directly using `tlon-get-counterpart-dir'.  This is necessary for
-      ;; links that live in sibling sub-directories such as
-      ;; “../authors/derek-parfit.md”, where no metadata entry exists yet.
-      (unless counterpart-abs-path
-        (let* ((fallback-dir (tlon-get-counterpart-dir linked-original-abs-path target-lang-code))
-               (fallback-path (when fallback-dir
-                                (file-name-concat fallback-dir
-                                                  (file-name-nondirectory linked-original-abs-path)))))
-          ;; Accept the fallback even if the file does not exist yet – we still
-          ;; want the link to point to the *expected* location of the
-          ;; translation.  Emit a debug message when the file is missing so the
-          ;; user is aware.
-          (when fallback-path
-            (setq counterpart-abs-path fallback-path))))
-      (if counterpart-abs-path
-          (let ((new-relative (file-relative-name counterpart-abs-path current-dir)))
-            new-relative)
-        (progn
-          (warn "Counterpart not found for original link '%s' (resolved original lookup key: %s)"
-                original-relative-link linked-original-relative-path)
-          nil))))))
+           (target-repo (tlon-get-repo-from-file current-buffer-file))
+           (target-lang-code (tlon-repo-lookup :language :dir target-repo))
+           (buffer-original-path (tlon-yaml-get-key "original_path" current-buffer-file)))
+      (unless buffer-original-path
+	(warn "No 'original_path' found in metadata for %s" current-buffer-file)
+	(cl-return-from tlon-get-counterpart-link nil))
+      (let* ((original-repo (tlon-get-counterpart-repo current-buffer-file)) ; Repo of the original file
+             (original-buffer-abs-path (file-name-concat original-repo buffer-original-path))
+             (original-buffer-dir (file-name-directory original-buffer-abs-path))
+             ;; Resolve the original relative link against the original buffer's directory
+             (linked-original-abs-path (expand-file-name original-relative-link original-buffer-dir))
+             ;; Get the path relative to the original repo root, used as the key in metadata
+             (linked-original-relative-path (file-relative-name linked-original-abs-path original-repo))
+             ;; Lookup the counterpart file in the target repo's metadata
+             (counterpart-abs-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
+							 "file"
+							 "original_path"
+							 linked-original-relative-path)))
+	;; If metadata lookup failed, try to build the counterpart path
+	;; directly using `tlon-get-counterpart-dir'.  This is necessary for
+	;; links that live in sibling sub-directories such as
+	;; “../authors/derek-parfit.md”, where no metadata entry exists yet.
+	(unless counterpart-abs-path
+          (let* ((fallback-dir (tlon-get-counterpart-dir linked-original-abs-path target-lang-code))
+		 (fallback-path (when fallback-dir
+                                  (file-name-concat fallback-dir
+                                                    (file-name-nondirectory linked-original-abs-path)))))
+            ;; Accept the fallback even if the file does not exist yet – we still
+            ;; want the link to point to the *expected* location of the
+            ;; translation.  Emit a debug message when the file is missing so the
+            ;; user is aware.
+            (when fallback-path
+              (setq counterpart-abs-path fallback-path))))
+	(if counterpart-abs-path
+            (let ((new-relative (file-relative-name counterpart-abs-path current-dir)))
+              new-relative)
+          (progn
+            (warn "Counterpart not found for original link '%s' (resolved original lookup key: %s)"
+                  original-relative-link linked-original-relative-path)
+            nil))))))
 
 ;;;###autoload
 (defun tlon-replace-internal-links ()
@@ -471,8 +389,6 @@ and replaces the target path with the path to the corresponding translated file.
     ("u" "visit counterpart"                     tlon-open-counterpart-dwim)
     ("H-u" "visit counterpart other window"      tlon-open-counterpart-in-other-window-dwim)
     ("U" "open counterpart in Dired"             tlon-open-counterpart-in-dired)]
-   ["Matching"
-    ("d" "display corresponding paragraphs"      tlon-display-corresponding-paragraphs)]
    ["Links"
     ("l" "replace internal links"                tlon-replace-internal-links)]
    ["Metadata"

@@ -48,6 +48,18 @@ This section details the interactive commands provided by =tlon-paragraph.el=.
 #+findex: tlon-paragraphs-align-with-ai
 + ~tlon-paragraphs-align-with-ai~ :: (Autoloaded) Checks for paragraph count mismatch between a file and its counterpart and uses an AI agent to fix it. It prompts for a file, finds its counterpart, and compares the number of paragraphs. If they differ, it instructs an AI agent to edit the translation file to match the paragraph count of the original. The AI is equipped with the =edit_file= tool to apply changes directly. If the paragraph counts match, it simply reports this to the user.
 
+*** Counting Paragraphs  
+#+findex: tlon-count-paragraphs
++ ~tlon-count-paragraphs~ :: Interactively counts and displays the number of paragraphs in the active region, or between specified =START= and =END= positions. Uses ~tlon-get-number-of-paragraphs~.
+
+*** Displaying Corresponding Paragraphs  
+#+findex: tlon-display-corresponding-paragraphs
++ ~tlon-display-corresponding-paragraphs~ :: Displays pairs of corresponding paragraphs from a file and its counterpart in a dedicated buffer ("/Paragraph Pairs/").
+  1. Takes =PAIRS-OR-FN= as input. If it's a function (interactively defaults to ~tlon-get-corresponding-paragraphs~), calls it to get the pairs. Otherwise, assumes it's already a list of pairs.
+  2. Creates or clears the "/Paragraph Pairs/" buffer.
+  3. Iterates through the pairs, inserting "Original:\n[paragraph]\n\nTranslation:\n[paragraph]\n\n----\n\n". Handles missing paragraphs gracefully.
+  4. Displays the buffer. Catches =user-error= (like paragraph mismatch from ~tlon-get-corresponding-paragraphs~) and still displays the buffer containing the comparison up to the point of error.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-paragraph-menu-cmd

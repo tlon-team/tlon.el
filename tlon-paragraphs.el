@@ -27,7 +27,6 @@
 ;;; Code:
 
 (require 'tlon-ai)
-(require 'tlon-counterpart)
 (require 'transient)
 
 ;;;; User options
@@ -48,6 +47,94 @@ use a different model for aligning paragraphs."
 
 ;;;; Functions
 
+;;;;; Display paragraphs
+
+(defun tlon-display-corresponding-paragraphs (pairs-or-fn)
+  "Display PAIRS-OR-FN of corresponding paragraphs in parallel.
+PAIRS-OR-FN can be either the output of `tlon-get-corresponding-paragraphs'
+or the function itself."
+  (interactive (list #'tlon-get-corresponding-paragraphs))
+  (condition-case _err
+      (let* ((pairs (if (functionp pairs-or-fn)
+                        (funcall pairs-or-fn)
+                      pairs-or-fn))
+             (buf (get-buffer-create "/Paragraph Pairs/")))
+        (with-current-buffer buf
+          (erase-buffer)
+          (dolist (pair pairs)
+            (insert "Original:\n"
+                    (or (car pair) "[Missing paragraph]")
+                    "\n\nTranslation:\n"
+                    (or (cdr pair) "[Missing paragraph]")
+                    "\n\n"
+                    (make-string 40 ?-)
+                    "\n\n"))
+          (goto-char (point-min)))
+        (display-buffer buf))
+    (user-error
+     (display-buffer (get-buffer "/Paragraph Pairs/")))))
+
+;;;;; Count paragraphs
+
+(defun tlon-count-paragraphs (&optional start end)
+  "Count the number of paragraphs in the active region.
+If the region is not active, count the number of paragraphs between START and
+END."
+  (interactive)
+  (unless (or (region-active-p)
+	      (and start end))
+    (user-error "No region selected and no START and END specified"))
+  (cl-destructuring-bind (start . end)
+      (if (region-active-p)
+	  (cons (region-beginning) (region-end))
+	(cons start end))
+    (message "There are %d paragraphs in the selected region"
+	     (tlon-get-number-of-paragraphs start end))))
+
+;;;###autoload
+(defun tlon-get-number-of-paragraphs (&optional start end)
+  "Return the number of paragraphs between START and END.
+START and END are buffer positions. If START is nil, use `point-min'.
+If END is nil, use `point-max'."
+  (let ((positions (tlon-with-paragraphs nil #'ignore t)))
+    (cl-count-if (lambda (pos)
+		   (and (>= (car pos) (or start (point-min)))
+			(< (cdr pos) (or end (point-max)))))
+		 positions)))
+
+(defun tlon-with-paragraphs (file fn &optional return-positions)
+  "Execute FN for each paragraph in FILE.
+If RETURN-POSITIONS is non-nil, return list of (start . end) positions.
+Otherwise, return list of FN's results for each paragraph.
+If FILE is nil, use the current buffer."
+  (let ((buffer-to-use (if (stringp file)
+                           (find-file-noselect file)
+                         (current-buffer)))) ; Use current buffer if file is nil or buffer object
+    (with-current-buffer buffer-to-use
+      (save-excursion
+        (goto-char (or (cdr (tlon-get-delimited-region-pos
+                             tlon-yaml-delimiter))
+                       (point-min)))
+	(let ((content-end (or (car (tlon-get-delimited-region-pos
+                                     tlon-md-local-variables-line-start
+                                     tlon-md-local-variables-line-end))
+                               (point-max)))
+              result)
+          (while (and (< (point) content-end)
+                      (not (looking-at-p tlon-md-local-variables-line-start)))
+            (let ((start (point)))
+              (markdown-forward-paragraph)
+              (let ((end (min (point) content-end)))
+		(when (and (> end start)
+                           (string-match-p "[^\s\n]"
+					   (buffer-substring-no-properties start end)))
+                  (push (if return-positions
+                            (cons start end)
+			  (funcall fn start end))
+			result)))))
+          (nreverse result))))))
+
+;;;;; Align paragraphs
 (defconst tlon-paragraphs-align-with-ai-prompt
   "You are an expert editor. The file '%s' is a translation of '%s'. They have a different number of paragraphs. The original has %d paragraphs and the translation has %d.
 
@@ -109,10 +196,12 @@ If nil, use the default model."
 ;;;###autoload (autoload 'tlon-paragraphs-menu "tlon-paragraphs" nil t)
 (transient-define-prefix tlon-paragraphs-menu ()
   "Menu for `tlon-paragraphs' functions."
-  [["AI"
-    ("a" "Align paragraphs"             tlon-paragraphs-align-with-ai)]
-   ["Models"
-    ("m" "Align paragraphs"             tlon-paragraphs-infix-select-align-model)]])
+  [["Commands"
+    ("a" "Align paragraphs"                             tlon-paragraphs-align-with-ai)
+    ("c" "Count paragraphs"                             tlon-count-paragraphs)
+    ("d" "Display corresponding paragraphs"             tlon-display-corresponding-paragraphs )]
+   ["Options"
+    ("-a" "Align paragraphs model"                      tlon-paragraphs-infix-select-align-model)]])
 
 (provide 'tlon-paragraphs)
 ;;; tlon-paragraphs.el ends here
