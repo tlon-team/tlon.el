@@ -732,5 +732,7 @@ EVENT is a list of the form (FILE ACTION)."
    ""
    ("a" "Authenticate" tlon-ebib-authenticate)])
 
+;; (tlon-ebib-initialize)
+
 (provide 'tlon-ebib)
 ;;; tlon-ebib.el ends here
