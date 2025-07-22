@@ -604,14 +604,17 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 (defun tlon-ebib--initialize-sync ()
   "Set up file notification to sync `tlon-ebib-file-db` on change."
   (when (and (not tlon-ebib--db-watch-descriptor) (file-exists-p tlon-ebib-file-db))
-    ;; Create a snapshot of the current file state.
-    (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
-    (copy-file tlon-ebib-file-db tlon-ebib--sync-temp-file t)
+    (tlon-ebib-write-temp-file)
     ;; Add the watch.
     (setq tlon-ebib--db-watch-descriptor
           (file-notify-add-watch tlon-ebib-file-db '(change) #'tlon-ebib--sync-on-change))
     ;; Ensure cleanup on exit.
     (add-hook 'kill-emacs-hook #'tlon-ebib--cleanup-sync nil t)))
+
+(defun tlon-ebib-write-temp-file ()
+  "Write the current content of `tlon-ebib-file-db' to a temporary file."
+  (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
+  (copy-file tlon-ebib-file-db tlon-ebib--sync-temp-file t))
 
 (defun tlon-ebib--cleanup-sync ()
   "Remove file notification watch and temporary file."
@@ -707,8 +710,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
                     (when parts
                       (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))
                     (when (buffer-modified-p) (save-buffer))
-                    ;; After processing, update temp file for the next sync.
-                    (copy-file file tlon-ebib--sync-temp-file t)))
+                    (tlon-ebib-write-temp-file)))
               (setq tlon-ebib--sync-in-progress nil))))))))
 
 ;;;;;; Periodic data update
