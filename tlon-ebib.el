@@ -168,12 +168,14 @@ conditions is not met, an error is logged and the process is aborted."
   (interactive)
   (when (and (get-file-buffer tlon-ebib-file-db)
              (buffer-modified-p (get-file-buffer tlon-ebib-file-db)))
-    (user-error "Buffer for %s has unsaved changes. Save it first." tlon-ebib-file-db))
+    (user-error "Buffer for %s has unsaved changes. Save it first" (file-name-nondirectory tlon-ebib-file-db)))
   (when (and (file-exists-p tlon-ebib-file-db)
              (file-exists-p tlon-ebib-file-db-upstream)
              (not (tlon-ebib--files-have-same-content-p tlon-ebib-file-db tlon-ebib-file-db-upstream)))
-    (user-error "Files %s and %s are not in sync. Resolve differences before fetching entries."
-                tlon-ebib-file-db tlon-ebib-file-db-upstream))
+    (ediff tlon-ebib-file-db tlon-ebib-file-db-upstream)
+    (user-error "Files %s and %s are not in sync. Resolve differences before fetching entries"
+                (file-name-nondirectory tlon-ebib-file-db)
+		(file-name-nondirectory tlon-ebib-file-db-upstream)))
   (let (entries-text)
     (when-let* ((response-buffer (tlon-ebib--make-request "GET" "/api/entries" nil
 							  '(("accept" . "text/plain"))
@@ -733,7 +735,7 @@ EVENT is a list of the form (FILE ACTION)."
    ""
    ("a" "Authenticate" tlon-ebib-authenticate)])
 
-;; (tlon-ebib-initialize)
+(tlon-ebib-initialize)
 
 (provide 'tlon-ebib)
 ;;; tlon-ebib.el ends here
