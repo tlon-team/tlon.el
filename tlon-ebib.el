@@ -257,7 +257,7 @@ Handles 200 (Success) and 422 (Validation Error) responses."
     (if (bibtex-search-entry key)
         (progn (bibtex-kill-entry) (insert entry))
       (tlon-ebib--insert-entry-with-newlines entry))
-    (unless tlon-ebib--sync-in-progress (save-buffer)))
+    (save-buffer))
   (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
     (when (file-exists-p tlon-ebib-file-db-upstream)
       (bibtex-mode)
@@ -266,20 +266,6 @@ Handles 200 (Success) and 422 (Validation Error) responses."
           (progn (bibtex-kill-entry) (insert entry))
         (tlon-ebib--insert-entry-with-newlines entry))
       (save-buffer))))
-
-(declare-function bibtex-extras-get-field "bibtex-extras")
-(defun tlon-ebib-add-entry-locally (entry)
-  "Add ENTRY to the local db file and upstream file."
-  (with-current-buffer (find-file-noselect tlon-ebib-file-db)
-    (bibtex-mode)
-    (tlon-ebib--insert-entry-with-newlines entry)
-    (unless tlon-ebib--sync-in-progress
-      (save-buffer)))
-  (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-    (bibtex-mode)
-    (tlon-ebib--insert-entry-with-newlines entry)
-    (save-buffer))
-  (message "New entry (`%s') added successfully." (bibtex-extras-get-field "=key=")))
 
 (defun tlon-ebib--insert-entry-with-newlines (entry)
   "Insert bibtex ENTRY at end of buffer with proper newlines."
