@@ -240,7 +240,8 @@ Handles 200 (Success) and 422 (Validation Error) responses."
     (bibtex-mode)
     (goto-char (point-max))
     (insert entry)
-    (save-buffer))
+    (unless tlon-ebib--sync-in-progress
+      (save-buffer)))
   (message "New entry (`%s') added successfully." (bibtex-extras-get-field "=key=")))
 
 ;;;;;; Delete entry
@@ -276,7 +277,8 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
 	(if (not (bibtex-search-entry key))
 	    (message "Entry `%s' not found in local db." key)
 	  (bibtex-kill-entry)
-	  (save-buffer)
+	  (unless tlon-ebib--sync-in-progress
+	    (save-buffer))
 	  (message "Entry `%s' deleted successfully." key))
       (error nil))))
 
@@ -669,13 +671,14 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
                   (tlon-ebib-post-entry key)
                   (setq modified-count (1+ modified-count)))
                 (dolist (key deleted)
-                  (tlon-ebib-delete-entry key t nil)
+                  (tlon-ebib-delete-entry key t t)
                   (setq deleted-count (1+ deleted-count)))
                 (when (> created-count 0) (push (format "%d created" created-count) parts))
                 (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
                 (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
                 (when parts
                   (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))
+                (when (buffer-modified-p) (save-buffer))
                 ;; After processing, update temp file for the next sync.
                 (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent)))
           (setq tlon-ebib--sync-in-progress nil))))))
