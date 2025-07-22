@@ -653,12 +653,12 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
                        key))))
               (when key-for-change
                 (if is-add
-                    (pushnew key-for-change added-keys-raw :test #'string=)
-                  (pushnew key-for-change deleted-keys-raw :test #'string=))))))
+                    (cl-pushnew key-for-change added-keys-raw :test #'string=)
+                  (cl-pushnew key-for-change deleted-keys-raw :test #'string=))))))
         (forward-line 1)))
-    (let ((modified (intersection added-keys-raw deleted-keys-raw :test #'string=)))
-      (list :added (set-difference added-keys-raw modified :test #'string=)
-            :deleted (set-difference deleted-keys-raw modified :test #'string=)
+    (let ((modified (cl-intersection added-keys-raw deleted-keys-raw :test #'string=)))
+      (list :added (cl-set-difference added-keys-raw modified :test #'string=)
+            :deleted (cl-set-difference deleted-keys-raw modified :test #'string=)
             :modified modified))))
 
 (defun tlon-ebib--sync-on-change (event)
