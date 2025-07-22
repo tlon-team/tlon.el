@@ -81,6 +81,44 @@ If FILE is nil, use the current buffer."
 			result)))))
           (nreverse result))))))
 
+(declare-function tlon-get-counterpart "tlon-counterpart")
+(defun tlon-get-corresponding-paragraphs (&optional file counterpart)
+  "Return pairs of paragraphs between FILE and its COUNTERPART.
+Signals an error if files have different number of paragraphs, and displays the
+paragraphs in a buffer only in that case. If COUNTERPART is nil, infer it from
+FILE."
+  (let* ((file (or file (buffer-file-name)))
+         (counterpart (or counterpart (tlon-get-counterpart file)))
+         (orig-paras (tlon-with-paragraphs file
+					   (lambda (start end)
+					     (buffer-substring-no-properties start end))))
+         (trans-paras (tlon-with-paragraphs counterpart
+					    (lambda (start end)
+					      (buffer-substring-no-properties start end))))
+         (max-len (max (length orig-paras) (length trans-paras)))
+         pairs)
+    (dotimes (i max-len)
+      (push (cons (nth i orig-paras) (nth i trans-paras)) pairs))
+    (setq pairs (nreverse pairs))
+    (when (/= (length orig-paras) (length trans-paras))
+      (with-current-buffer (get-buffer-create "/Paragraph Pairs/")
+        (erase-buffer)
+        (insert (format "Paragraph number mismatch: \n%s has %d paragraphs\n%s has %d paragraphs\n\n"
+			(file-name-nondirectory file) (length orig-paras)
+			(file-name-nondirectory counterpart) (length trans-paras)))
+        (dolist (pair pairs)
+          (insert "Original:\n"
+                  (or (car pair) "[Missing paragraph]")
+                  "\n\nTranslation:\n"
+                  (or (cdr pair) "[Missing paragraph]")
+                  "\n\n"
+                  (make-string 40 ?-)
+                  "\n\n"))
+        (goto-char (point-min))
+        (display-buffer (current-buffer))
+        (user-error "Paragraph number mismatch")))
+    pairs))
+
 ;;;;; Display paragraphs
 
 ;;;###autoload

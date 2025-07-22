@@ -779,7 +779,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;;; Fix formatting
 
 (autoload 'gptel-context-add-file "gptel-context")
-(autoload 'tlon-get-corresponding-paragraphs "tlon-counterpart")
+(declare-function tlon-get-corresponding-paragraphs "tlon-paragraphs")
 ;;;###autoload
 (defun tlon-ai-fix-markdown-format (&optional file)
   "Fix Markdown format in FILE by copying the formatting in its counterpart.
