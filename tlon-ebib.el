@@ -591,15 +591,16 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 (defvar tlon-ebib--sync-in-progress nil
   "Flag to prevent recursive sync operations.")
 
-(defun tlon-ebib--store-buffer-content-before-save ()
-  "Store current buffer content in a temporary file for sync."
-  (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
-  (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent))
-
 (defun tlon-ebib--get-key-from-bibtex-line (line)
   "Extract BibTeX key from a LINE if it's an entry start."
   (when (string-match "^[ +-]?@\\w+{\\s-*\\([^, \t\n]+\\)" line)
     (match-string 1 line)))
+
+(defun tlon-ebib--cleanup-sync-temp-file ()
+  "Cleanup the sync temp file associated with the current buffer."
+  (when (and tlon-ebib--sync-temp-file (file-exists-p tlon-ebib--sync-temp-file))
+    (delete-file tlon-ebib--sync-temp-file)
+    (setq tlon-ebib--sync-temp-file nil)))
 
 (defun tlon-ebib--get-changed-keys-from-diff (diff-output)
   "Parse unified DIFF-OUTPUT and return a plist of changed keys."
@@ -636,53 +637,55 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   (when (and tlon-ebib--sync-temp-file
              (file-exists-p tlon-ebib--sync-temp-file)
              (not tlon-ebib--sync-in-progress))
-    (unwind-protect
-        (let* ((process-sync-fail-on-error nil)
-               (diff-buffer (generate-new-buffer " *ebib-diff*"))
-               diff-output)
-          (unwind-protect
-              (let ((exit-code (call-process "diff" nil diff-buffer nil "-u"
-                                             tlon-ebib--sync-temp-file
-                                             (buffer-file-name))))
-                (when (= exit-code 1) ; 0 means no differences, >1 is an error
-                  (with-current-buffer diff-buffer
-                    (setq diff-output (buffer-string)))))
-            (when (buffer-live-p diff-buffer)
-              (kill-buffer diff-buffer)))
-          (when diff-output
-            (setq tlon-ebib--sync-in-progress t)
-            (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
-                   (added (plist-get changes :added))
-                   (deleted (plist-get changes :deleted))
-                   (modified (plist-get changes :modified))
-                   (created-count 0)
-                   (modified-count 0)
-                   (deleted-count 0)
-                   (parts '()))
-              (dolist (key added)
-                (tlon-ebib-post-entry key)
-                (setq created-count (1+ created-count)))
-              (dolist (key modified)
-                (tlon-ebib-post-entry key)
-                (setq modified-count (1+ modified-count)))
-              (dolist (key deleted)
-                (tlon-ebib-delete-entry key t nil)
-                (setq deleted-count (1+ deleted-count)))
-              (when (> created-count 0) (push (format "%d created" created-count) parts))
-              (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
-              (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
-              (when parts
-                (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", "))))))
-      (when (and tlon-ebib--sync-temp-file (file-exists-p tlon-ebib--sync-temp-file))
-        (delete-file tlon-ebib--sync-temp-file))
-      (setq tlon-ebib--sync-temp-file nil)
-      (setq tlon-ebib--sync-in-progress nil))))
+    (let* ((process-sync-fail-on-error nil)
+           (diff-buffer (generate-new-buffer " *ebib-diff*"))
+           diff-output)
+      (unwind-protect
+          (let ((exit-code (call-process "diff" nil diff-buffer nil "-u"
+                                         tlon-ebib--sync-temp-file
+                                         (buffer-file-name))))
+            (when (= exit-code 1) ; 0 means no differences, >1 is an error
+              (with-current-buffer diff-buffer
+                (setq diff-output (buffer-string)))))
+        (when (buffer-live-p diff-buffer)
+          (kill-buffer diff-buffer)))
+      (when diff-output
+        (unwind-protect
+            (progn
+              (setq tlon-ebib--sync-in-progress t)
+              (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
+                     (added (plist-get changes :added))
+                     (deleted (plist-get changes :deleted))
+                     (modified (plist-get changes :modified))
+                     (created-count 0)
+                     (modified-count 0)
+                     (deleted-count 0)
+                     (parts '()))
+                (dolist (key added)
+                  (tlon-ebib-post-entry key)
+                  (setq created-count (1+ created-count)))
+                (dolist (key modified)
+                  (tlon-ebib-post-entry key)
+                  (setq modified-count (1+ modified-count)))
+                (dolist (key deleted)
+                  (tlon-ebib-delete-entry key t nil)
+                  (setq deleted-count (1+ deleted-count)))
+                (when (> created-count 0) (push (format "%d created" created-count) parts))
+                (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
+                (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
+                (when parts
+                  (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))
+                ;; After processing, update temp file for the next sync.
+                (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent)))
+          (setq tlon-ebib--sync-in-progress nil))))))
 
 (defun tlon-ebib--setup-sync-hooks ()
   "Add buffer-local hooks for syncing db.bib."
   (when (equal (buffer-file-name) (expand-file-name tlon-ebib-file-db))
-    (add-hook 'before-save-hook #'tlon-ebib--store-buffer-content-before-save nil 'local)
-    (add-hook 'after-save-hook #'tlon-ebib-sync-on-save nil 'local)))
+    (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
+    (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent)
+    (add-hook 'after-save-hook #'tlon-ebib-sync-on-save nil 'local)
+    (add-hook 'kill-buffer-hook #'tlon-ebib--cleanup-sync-temp-file nil 'local)))
 
 ;;;;;; Periodic data update
 
