@@ -72,15 +72,16 @@ Set to t to enable verbose logging from url.el.")
 
 (defvar tlon-ebib-file-db
   (file-name-concat tlon-bibtex-dir "db.bib")
-  "File containing the temporary bibliography.")
+  "File containing the local BibTeX database, intended for user edits.")
+
+(defvar tlon-ebib-file-db-upstream
+  (file-name-concat tlon-bibtex-dir "db-upstream.bib")
+  "File containing the BibTeX database state from the remote API.")
 
 (defconst tlon-ebib--result-buffer-name "*Ebib API Result*"
   "Name of the buffer used to display API call results.")
 
 ;;;;; Sync
-
-(defvar tlon-ebib--sync-temp-file nil
-  "Temporary file to store buffer content before save for sync.")
 
 (defvar tlon-ebib--db-watch-descriptor nil
   "File notification descriptor for db.bib.")
@@ -158,10 +159,21 @@ Returns the token or nil if authentication failed."
 
 (declare-function bibtex-extras-escape-special-characters "bibtex-extras")
 (defun tlon-ebib-get-entries (&optional base-url)
-  "Retrieve entries from the EA International API.
+  "Retrieve entries from the EA International API and update local databases.
 Optional BASE-URL specifies the API endpoint base URL. If not provided,
-defaults to `tlon-ebib-api-base-url'."
+defaults to `tlon-ebib-api-base-url'.
+The command first checks that there are no unsaved changes to `db.bib' and
+that `db.bib' and `db-upstream.bib' are identical. If either of these
+conditions is not met, an error is logged and the process is aborted."
   (interactive)
+  (when (and (get-file-buffer tlon-ebib-file-db)
+             (buffer-modified-p (get-file-buffer tlon-ebib-file-db)))
+    (user-error "Buffer for %s has unsaved changes. Save it first." tlon-ebib-file-db))
+  (when (and (file-exists-p tlon-ebib-file-db)
+             (file-exists-p tlon-ebib-file-db-upstream)
+             (not (tlon-ebib--files-have-same-content-p tlon-ebib-file-db tlon-ebib-file-db-upstream)))
+    (user-error "Files %s and %s are not in sync. Resolve differences before fetching entries."
+                tlon-ebib-file-db tlon-ebib-file-db-upstream))
   (let (entries-text)
     (when-let* ((response-buffer (tlon-ebib--make-request "GET" "/api/entries" nil
 							  '(("accept" . "text/plain"))
@@ -176,43 +188,32 @@ defaults to `tlon-ebib-api-base-url'."
 	  (user-error "Could not parse response from API"))
 	(kill-buffer response-buffer)))
     (if entries-text
-	(if (file-exists-p tlon-ebib-file-db)
-	    (let ((temp-file (make-temp-file "ebib-entries-")))
-	      (unwind-protect
-		  (progn
-		    (with-temp-buffer
-		      (let ((coding-system-for-write 'utf-8-unix))
-			(insert entries-text)
-			(write-file temp-file)))
-		    (if (not (tlon-ebib--files-have-same-content-p tlon-ebib-file-db temp-file))
-			(progn
-			  (let ((tlon-ebib--sync-in-progress t))
-			    (copy-file temp-file tlon-ebib-file-db t))
-			  (message "Updated %s." tlon-ebib-file-db)
-			  (with-temp-buffer
-			    (insert entries-text)
-			    (bibtex-count-entries)))
-		      (message "File %s is already up to date." tlon-ebib-file-db)))
-		(when (file-exists-p temp-file)
-		  (delete-file temp-file))))
-	  (let ((coding-system-for-write 'utf-8-unix)
-                (tlon-ebib--sync-in-progress t))
-	    (with-temp-buffer
-	      (insert entries-text)
-	      (bibtex-extras-escape-special-characters)
-	      (write-file tlon-ebib-file-db)
-	      (bibtex-count-entries))))
+        (let ((tlon-ebib--sync-in-progress t))
+          (with-temp-buffer
+            (let ((coding-system-for-write 'utf-8-unix))
+              (insert entries-text)
+              (bibtex-extras-escape-special-characters)
+              (write-file tlon-ebib-file-db-upstream)
+              (write-file tlon-ebib-file-db)
+              (message "Updated %s and %s." tlon-ebib-file-db tlon-ebib-file-db-upstream)
+              (bibtex-count-entries))))
       (user-error "Failed to retrieve entries"))))
 
 (defun tlon-ebib--files-have-same-content-p (file1 file2)
   "Return t if FILE1 and FILE2 have identical content."
-  (let ((content1 (with-temp-buffer
-		    (insert-file-contents file1)
-		    (buffer-string)))
-	(content2 (with-temp-buffer
-		    (insert-file-contents file2)
-		    (buffer-string))))
-    (string= content1 content2)))
+  (let ((exists1 (file-exists-p file1))
+        (exists2 (file-exists-p file2)))
+    (if (not (eq exists1 exists2))
+        nil ; one exists, one doesn't
+      (if (not exists1)
+          t ; both don't exist
+        (let ((content1 (with-temp-buffer
+                          (insert-file-contents-literally file1)
+                          (buffer-string)))
+              (content2 (with-temp-buffer
+                          (insert-file-contents-literally file2)
+                          (buffer-string))))
+          (string= content1 content2))))))
 
 ;;;;;; Post entry
 
@@ -249,13 +250,18 @@ Handles 200 (Success) and 422 (Validation Error) responses."
 
 (declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-ebib-add-entry-locally (entry)
-  "Add ENTRY to the local db file."
+  "Add ENTRY to the local db file and upstream file."
   (with-current-buffer (find-file-noselect tlon-ebib-file-db)
     (bibtex-mode)
     (goto-char (point-max))
     (insert entry)
     (unless tlon-ebib--sync-in-progress
       (save-buffer)))
+  (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
+    (bibtex-mode)
+    (goto-char (point-max))
+    (insert entry)
+    (save-buffer))
   (message "New entry (`%s') added successfully." (bibtex-extras-get-field "=key=")))
 
 ;;;;;; Delete entry
@@ -284,17 +290,24 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
       result)))
 
 (defun tlon-ebib-delete-entry-locally (key)
-  "Delete the entry with KEY from the local db file."
-  (with-current-buffer (find-file-noselect tlon-ebib-file-db)
-    (bibtex-mode)
-    (condition-case nil
-	(if (not (bibtex-search-entry key))
-	    (message "Entry `%s' not found in local db." key)
-	  (bibtex-kill-entry)
-	  (unless tlon-ebib--sync-in-progress
-	    (save-buffer))
-	  (message "Entry `%s' deleted successfully." key))
-      (error nil))))
+  "Delete KEY from the local db file and the upstream file."
+  (let ((deleted nil))
+    (with-current-buffer (find-file-noselect tlon-ebib-file-db)
+      (bibtex-mode)
+      (when (bibtex-search-entry key)
+        (setq deleted t)
+        (bibtex-kill-entry)
+        (unless tlon-ebib--sync-in-progress (save-buffer))))
+    (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
+      (when (file-exists-p tlon-ebib-file-db-upstream)
+        (bibtex-mode)
+        (when (bibtex-search-entry key)
+          (setq deleted t)
+          (bibtex-kill-entry)
+          (save-buffer))))
+    (if deleted
+        (message "Entry `%s' deleted successfully." key)
+      (message "Entry `%s' not found in local db." key))))
 
 (defun tlon-ebib--handle-entry-request (method endpoint data headers &optional json-on-success)
   "Handle a request to an entry endpoint and process the response.
@@ -604,26 +617,17 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 (defun tlon-ebib--initialize-sync ()
   "Set up file notification to sync `tlon-ebib-file-db` on change."
   (when (and (not tlon-ebib--db-watch-descriptor) (file-exists-p tlon-ebib-file-db))
-    (tlon-ebib-write-temp-file)
     ;; Add the watch.
     (setq tlon-ebib--db-watch-descriptor
           (file-notify-add-watch tlon-ebib-file-db '(change) #'tlon-ebib--sync-on-change))
     ;; Ensure cleanup on exit.
     (add-hook 'kill-emacs-hook #'tlon-ebib--cleanup-sync nil t)))
 
-(defun tlon-ebib-write-temp-file ()
-  "Write the current content of `tlon-ebib-file-db' to a temporary file."
-  (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
-  (copy-file tlon-ebib-file-db tlon-ebib--sync-temp-file t))
-
 (defun tlon-ebib--cleanup-sync ()
-  "Remove file notification watch and temporary file."
+  "Remove file notification watch."
   (when tlon-ebib--db-watch-descriptor
     (file-notify-rm-watch tlon-ebib--db-watch-descriptor)
-    (setq tlon-ebib--db-watch-descriptor nil))
-  (when (and tlon-ebib--sync-temp-file (file-exists-p tlon-ebib--sync-temp-file))
-    (delete-file tlon-ebib--sync-temp-file)
-    (setq tlon-ebib--sync-temp-file nil)))
+    (setq tlon-ebib--db-watch-descriptor nil)))
 
 (defun tlon-ebib--get-key-from-bibtex-line (line)
   "Extract BibTeX key from a LINE if it's an entry start."
@@ -668,15 +672,14 @@ EVENT is a list of the form (FILE ACTION)."
         (file (nth 2 event)))
     (when (and (eq action 'changed)
                (string-equal file (expand-file-name tlon-ebib-file-db))
-               tlon-ebib--sync-temp-file
-               (file-exists-p tlon-ebib--sync-temp-file)
+               (file-exists-p tlon-ebib-file-db-upstream)
                (not tlon-ebib--sync-in-progress))
       (let* ((process-sync-fail-on-error nil)
              (diff-buffer (generate-new-buffer " *ebib-diff*"))
              diff-output)
         (unwind-protect
             (let ((exit-code (call-process "diff" nil diff-buffer nil "-u"
-                                           tlon-ebib--sync-temp-file
+                                           tlon-ebib-file-db-upstream
                                            file)))
               (when (= exit-code 1) ; 0 means no differences, >1 is an error
                 (with-current-buffer diff-buffer
@@ -709,9 +712,7 @@ EVENT is a list of the form (FILE ACTION)."
                     (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
                     (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
                     (when parts
-                      (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))
-                    (when (buffer-modified-p) (save-buffer))
-                    (tlon-ebib-write-temp-file)))
+                      (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))))
               (setq tlon-ebib--sync-in-progress nil))))))))
 
 ;;;;;; Periodic data update
