@@ -31,9 +31,6 @@
 
 ;;;; Variables
 
-(defconst tlon-yaml-delimiter "---\n"
-  "Delimiter for YAML metadata.")
-
 (defconst tlon-yaml-core-keys
   '("type" "original_path")
   "List of YAML keys necessary to initialize the translation metadata.")

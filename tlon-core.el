@@ -561,6 +561,11 @@ author name(s).")
 (defconst tlon-synopsis-length 2000
   "Maximum length of a synopsis, in words.")
 
+;;;;; YAML
+
+(defconst tlon-yaml-delimiter "---\n"
+  "Delimiter for YAML metadata.")
+
 ;;;;; To sort
 
 (defvar tlon-users
