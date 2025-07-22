@@ -130,17 +130,17 @@ This section lists non-interactive functions and variables used internally.
 :CUSTOM_ID: h:tlon-ebib-sync
 :END:
 
-The =tlon-ebib= module provides a mechanism to automatically synchronize the local BibTeX database file (~tlon-ebib-file-db~) with the remote API. This functionality is enabled when ~tlon-ebib-initialize~ is called.
+The =tlon-ebib= module provides a mechanism to automatically synchronize the local BibTeX database file (~tlon-ebib-file-db~) with the remote API. This functionality is enabled when ~tlon-ebib-initialize~ is called, using Emacs's `filenotify` library to watch for changes.
 
-When the local database file is saved, the following actions are performed:
-1. A diff is computed between the buffer content before and after the save operation.
+When the local database file is modified on disk, the following actions are performed:
+1. A diff is computed between the file's state before and after the modification.
 2. The changes are categorized into additions, modifications, and deletions of BibTeX entries.
 3. For each change, the corresponding API endpoint is called:
    - *Additions and Modifications*: The entry is posted to the API using ~tlon-ebib-post-entry~.
    - *Deletions*: The entry is deleted from the API using ~tlon-ebib-delete-entry~.
 4. After all API calls are completed, a summary message is displayed in the echo area, indicating the number of created, modified, and deleted entries (e.g., "Ebib sync: 1 created, 2 modified.").
 
-This ensures that any local changes to the BibTeX database are automatically reflected on the server. The process is designed to be non-interactive and to handle potential recursive triggers gracefully.
+This ensures that any local changes to the BibTeX database are automatically reflected on the server. The process is designed to be non-interactive and to handle potential recursive triggers gracefully, for example when the file is updated programmatically by `tlon-ebib-get-entries`.
 
 #+findex: tlon-ebib-initialize
 + ~tlon-ebib-initialize~ :: Initializes the `tlon-ebib` package by retrieving entries from the API and adding the local database file to the list of bibliography files.
