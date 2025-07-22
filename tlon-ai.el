@@ -31,7 +31,6 @@
 (require 'json)
 (require 'shut-up)
 (require 'tlon)
-(require 'tlon-counterpart)
 
 ;;;; User options
 
@@ -779,6 +778,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 ;;;;;; Fix formatting
 
 (autoload 'gptel-context-add-file "gptel-context")
+(declare-function tlon-display-corresponding-paragraphs "tlon-paragraphs")
 (declare-function tlon-get-corresponding-paragraphs "tlon-paragraphs")
 ;;;###autoload
 (defun tlon-ai-fix-markdown-format (&optional file)
@@ -1434,6 +1434,8 @@ attribute. Otherwise, print and copy the string to the kill ring."
       (tlon-make-gptel-request prompt expression (tlon-ai-insert-math-text expression action))
       (message "%s math..." message))))
 
+(declare-function tlon-md-insert-attribute-value "tlon-md")
+(declare-function tlon-get-tag-attribute-values "tlon-md")
 (defun tlon-ai-insert-math-text (content action)
   "Insert RESPONSE based on ACTION.
 CONTENT is the content of the `Math' element. If RESPONSE is nil, return INFO.
@@ -1684,6 +1686,7 @@ Returns the diff string or nil if no changes or error."
 	;; Return the full output, including commit info and diff
 	diff))))
 
+(declare-function tlon-metadata-in-repo "tlon-yaml")
 (defun tlon-ai--find-target-file (source-file source-repo target-repo)
   "Find the corresponding target file path in TARGET-REPO.
 Based on SOURCE-FILE in SOURCE-REPO."

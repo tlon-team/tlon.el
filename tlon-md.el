@@ -489,6 +489,7 @@ user to insert VALUES."
     (setcar (nthcdr pos values) value)
     values))
 
+;;;###autoload
 (defun tlon-md-insert-attribute-value (attribute value &optional content)
   "Insert an ATTRIBUTE VALUE in the tag at point.
 If the tag already contains an attribute with the same name, replace its value.
@@ -603,6 +604,7 @@ values."
     (dolist (attribute attributes (reverse names))
       (push (plist-get attribute :name) names))))
 
+;;;###autoload
 (defun tlon-get-tag-attribute-values (tag)
   "Return a list of all attribute values of TAG at point."
   (when (tlon-looking-at-tag-p tag)

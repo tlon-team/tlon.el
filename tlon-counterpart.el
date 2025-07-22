@@ -26,7 +26,6 @@
 ;;; Code:
 
 (require 'tlon-core)
-(require 'tlon-md)
 (require 'tlon-paragraphs)
 (require 'tlon-yaml)
 (require 'cl-lib)
@@ -44,6 +43,7 @@ buffer."
       (user-error "Repo of file `%s' is not of type `content'" file))
     (tlon-repo-lookup :subtype :dir repo)))
 
+(declare-function files-extras-buffer-file-name "files-extras")
 ;;;###autoload
 (defun tlon-get-counterpart (&optional file)
   "Get the counterpart file of FILE.
@@ -172,6 +172,7 @@ If FILE is nil, use the current buffer's file."
 	 (file-name (replace-regexp-in-string figure-current figure-target (file-name-nondirectory translated-src))))
     (file-name-concat repo image-dir bare-dir slug file-name)))
 
+(autoload 'markdown-forward-paragraph "markdown-mode" nil t)
 ;;;###autoload
 (defun tlon-open-counterpart (&optional other-win file)
   "Open the counterpart of file in FILE and move point to matching position.
