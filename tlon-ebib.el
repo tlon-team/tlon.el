@@ -186,7 +186,8 @@ defaults to `tlon-ebib-api-base-url'."
 			(write-file temp-file)))
 		    (if (not (tlon-ebib--files-have-same-content-p tlon-ebib-file-db temp-file))
 			(progn
-			  (copy-file temp-file tlon-ebib-file-db t)
+			  (let ((tlon-ebib--sync-in-progress t))
+			    (copy-file temp-file tlon-ebib-file-db t))
 			  (message "Updated %s." tlon-ebib-file-db)
 			  (with-temp-buffer
 			    (insert entries-text)
