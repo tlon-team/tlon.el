@@ -74,33 +74,7 @@ or the function itself."
     (user-error
      (display-buffer (get-buffer "/Paragraph Pairs/")))))
 
-;;;;; Count paragraphs
-
-(defun tlon-count-paragraphs (&optional start end)
-  "Count the number of paragraphs in the active region.
-If the region is not active, count the number of paragraphs between START and
-END."
-  (interactive)
-  (unless (or (region-active-p)
-	      (and start end))
-    (user-error "No region selected and no START and END specified"))
-  (cl-destructuring-bind (start . end)
-      (if (region-active-p)
-	  (cons (region-beginning) (region-end))
-	(cons start end))
-    (message "There are %d paragraphs in the selected region"
-	     (tlon-get-number-of-paragraphs start end))))
-
-;;;###autoload
-(defun tlon-get-number-of-paragraphs (&optional start end)
-  "Return the number of paragraphs between START and END.
-START and END are buffer positions. If START is nil, use `point-min'.
-If END is nil, use `point-max'."
-  (let ((positions (tlon-with-paragraphs nil #'ignore t)))
-    (cl-count-if (lambda (pos)
-		   (and (>= (car pos) (or start (point-min)))
-			(< (cdr pos) (or end (point-max)))))
-		 positions)))
+;;;;; Common
 
 (defun tlon-with-paragraphs (file fn &optional return-positions)
   "Execute FN for each paragraph in FILE.
@@ -133,6 +107,34 @@ If FILE is nil, use the current buffer."
 			  (funcall fn start end))
 			result)))))
           (nreverse result))))))
+
+;;;;; Count paragraphs
+
+(defun tlon-count-paragraphs (&optional start end)
+  "Count the number of paragraphs in the active region.
+If the region is not active, count the number of paragraphs between START and
+END."
+  (interactive)
+  (unless (or (region-active-p)
+	      (and start end))
+    (user-error "No region selected and no START and END specified"))
+  (cl-destructuring-bind (start . end)
+      (if (region-active-p)
+	  (cons (region-beginning) (region-end))
+	(cons start end))
+    (message "There are %d paragraphs in the selected region"
+	     (tlon-get-number-of-paragraphs start end))))
+
+;;;###autoload
+(defun tlon-get-number-of-paragraphs (&optional start end)
+  "Return the number of paragraphs between START and END.
+START and END are buffer positions. If START is nil, use `point-min'.
+If END is nil, use `point-max'."
+  (let ((positions (tlon-with-paragraphs nil #'ignore t)))
+    (cl-count-if (lambda (pos)
+		   (and (>= (car pos) (or start (point-min)))
+			(< (cdr pos) (or end (point-max)))))
+		 positions)))
 
 ;;;;; Align paragraphs
 (defconst tlon-paragraphs-align-with-ai-prompt
