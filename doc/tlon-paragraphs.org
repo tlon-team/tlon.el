@@ -25,6 +25,14 @@ This module provides paragraph-related functionality, such as aligning the numbe
 + =tlon-counterpart=
 + =transient=
 
+** User options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-paragraphs-options
+:END:
+
+#+vindex: tlon-paragraphs-align-with-ai-model
++ =tlon-paragraphs-align-with-ai-model= :: Specifies the model to use for aligning paragraphs. The value is a cons cell where the CAR is the backend (e.g., "ChatGPT") and the CDR is the model name (e.g., =gpt-4.5-preview=). If =nil=, the default model is used.
+
 ** Commands
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-paragraphs-commands
@@ -50,3 +58,5 @@ The command ~tlon-paragraphs-menu~ (Autoloaded) activates a =transient= menu int
 It provides the following groups and commands:
 + *AI*:
   + =a= :: Align paragraphs (~tlon-paragraphs-align-with-ai~)
++ *Models*:
+  + =m= :: Select the AI model for aligning paragraphs.

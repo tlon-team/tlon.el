@@ -30,6 +30,22 @@
 (require 'tlon-counterpart)
 (require 'transient)
 
+;;;; User options
+
+(defgroup tlon-paragraphs nil
+  "Paragraph-related functionality for Tlön."
+  :group 'tlon)
+
+(defcustom tlon-paragraphs-align-with-ai-model
+  '("ChatGPT" . gpt-4.5-preview)
+  "Model to use for aligning paragraphs.
+The value is a cons cell whose car is the backend and whose cdr is the model
+itself. See `gptel-extras-ai-models' for available options. If nil, do not
+use a different model for aligning paragraphs."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-paragraphs)
+
+
 ;;;; Functions
 
 (defconst tlon-paragraphs-align-with-ai-prompt
@@ -71,7 +87,7 @@ Here are the contents of the translation file:
                                      original-content counterpart-content))
                      (tools '("edit_file")))
                 (message "Requesting AI to align paragraphs...")
-                (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback nil t nil tools)))
+                (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback tlon-paragraphs-align-with-ai-model t nil tools)))
           (user-error "Could not count paragraphs in one of the files"))
       (user-error "Could not find counterpart for %s" file))))
 
@@ -82,13 +98,21 @@ RESPONSE is the AI's response, INFO is the response info."
       (message "AI agent finished aligning paragraphs.")
     (tlon-ai-callback-fail info)))
 
+(transient-define-infix tlon-paragraphs-infix-select-align-model ()
+  "AI model to use for aligning paragraphs.
+If nil, use the default model."
+  :class 'tlon-ai-model-selection-infix
+  :variable 'tlon-paragraphs-align-with-ai-model)
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-paragraphs-menu "tlon-paragraphs" nil t)
 (transient-define-prefix tlon-paragraphs-menu ()
   "Menu for `tlon-paragraphs' functions."
   [["AI"
-    ("a" "Align paragraphs"             tlon-paragraphs-align-with-ai)]])
+    ("a" "Align paragraphs"             tlon-paragraphs-align-with-ai)]
+   ["Models"
+    ("m" "Align paragraphs"             tlon-paragraphs-infix-select-align-model)]])
 
 (provide 'tlon-paragraphs)
 ;;; tlon-paragraphs.el ends here
