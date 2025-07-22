@@ -70,7 +70,7 @@ Here are the contents of the translation file:
                                      counterpart
                                      original-content counterpart-content))
                      (tools '("edit_file")))
-                (message "Paragraph count mismatch. Requesting AI to align paragraphs...")
+                (message "Requesting AI to align paragraphs...")
                 (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback nil t nil tools)))
           (user-error "Could not count paragraphs in one of the files"))
       (user-error "Could not find counterpart for %s" file))))
