@@ -702,7 +702,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
                       (tlon-ebib-post-entry key)
                       (setq modified-count (1+ modified-count)))
                     (dolist (key deleted)
-                      (tlon-ebib-delete-entry key t t)
+                      (tlon-ebib-delete-entry key nil t)
                       (setq deleted-count (1+ deleted-count)))
                     (when (> created-count 0) (push (format "%d created" created-count) parts))
                     (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
