@@ -623,8 +623,8 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
                        key))))
               (when key-for-change
                 (if is-add
-                    (pushnew key-for-change added-keys-raw :test #'string=)
-                  (pushnew key-for-change deleted-keys-raw :test #'string=))))))
+                    (cl-pushnew key-for-change added-keys-raw :test #'string=)
+                  (cl-pushnew key-for-change deleted-keys-raw :test #'string=))))))
         (forward-line 1)))
     (let ((modified (cl-intersection added-keys-raw deleted-keys-raw :test #'string=)))
       (list :added (cl-set-difference added-keys-raw modified :test #'string=)
@@ -632,7 +632,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
             :modified modified))))
 
 (defun tlon-ebib-sync-on-save ()
-  "Sync local db.bib changes with remote API on save."
+  "Sync local `db.bib' modifications with remote API on save."
   (when (and tlon-ebib--sync-temp-file
              (file-exists-p tlon-ebib--sync-temp-file)
              (not tlon-ebib--sync-in-progress))
