@@ -88,21 +88,6 @@ This module provides functionality for finding, opening, and comparing "counterp
 #+findex: tlon-open-counterpart-in-other-window-dwim
 + ~tlon-open-counterpart-in-other-window-dwim~ :: (Autoloaded) Convenience command that calls ~tlon-open-counterpart-dwim~ with the =OTHER-WIN= argument set to =t=, forcing the counterpart to open in another window.
 
-*** Paragraph Operations
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-counterpart-paragraph-cmds
-:END:
-
-#+findex: tlon-count-paragraphs
-+ ~tlon-count-paragraphs~ :: Interactively counts and displays the number of paragraphs in the active region, or between specified =START= and =END= positions. Uses ~tlon-get-number-of-paragraphs~.
-
-#+findex: tlon-display-corresponding-paragraphs
-+ ~tlon-display-corresponding-paragraphs~ :: Displays pairs of corresponding paragraphs from a file and its counterpart in a dedicated buffer ("/Paragraph Pairs/").
-  1. Takes =PAIRS-OR-FN= as input. If it's a function (interactively defaults to ~tlon-get-corresponding-paragraphs~), calls it to get the pairs. Otherwise, assumes it's already a list of pairs.
-  2. Creates or clears the "/Paragraph Pairs/" buffer.
-  3. Iterates through the pairs, inserting "Original:\n[paragraph]\n\nTranslation:\n[paragraph]\n\n----\n\n". Handles missing paragraphs gracefully.
-  4. Displays the buffer. Catches =user-error= (like paragraph mismatch from ~tlon-get-corresponding-paragraphs~) and still displays the buffer containing the comparison up to the point of error.
-
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-counterpart-menu-cmd
