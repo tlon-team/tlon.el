@@ -50,7 +50,7 @@ This section details the interactive commands provided by =tlon-paragraph.el=.
 
 *** Counting Paragraphs  
 #+findex: tlon-count-paragraphs
-+ ~tlon-count-paragraphs~ :: Interactively counts and displays the number of paragraphs in the active region, or between specified =START= and =END= positions. Uses ~tlon-get-number-of-paragraphs~.
++ ~tlon-count-paragraphs~ :: Interactively counts paragraphs in the active region. If no region is active, it prompts for a file and counts the paragraphs in it. Programmatically, it can also count between specified =START= and =END= positions. Uses ~tlon-get-number-of-paragraphs~.
 
 *** Displaying Corresponding Paragraphs  
 #+findex: tlon-display-corresponding-paragraphs

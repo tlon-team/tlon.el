@@ -152,19 +152,23 @@ or the function itself."
 ;;;;; Count paragraphs
 
 (defun tlon-count-paragraphs (&optional start end)
-  "Count the number of paragraphs in the active region.
-If the region is not active, count the number of paragraphs between START and
-END."
+  "Count paragraphs in the active region or in a file.
+If the region is active, count paragraphs in it. When called with START and END,
+count paragraphs in that range. If called interactively without an active
+region, prompt for a file and count its paragraphs."
   (interactive)
-  (unless (or (region-active-p)
-	      (and start end))
-    (user-error "No region selected and no START and END specified"))
-  (cl-destructuring-bind (start . end)
-      (if (region-active-p)
-	  (cons (region-beginning) (region-end))
-	(cons start end))
-    (message "There are %d paragraphs in the selected region"
-	     (tlon-get-number-of-paragraphs start end))))
+  (if (or (region-active-p) (and start end))
+      (cl-destructuring-bind (start . end)
+          (if (region-active-p)
+              (cons (region-beginning) (region-end))
+            (cons start end))
+        (message "There are %d paragraphs in the selected region"
+                 (tlon-get-number-of-paragraphs start end)))
+    (let ((file (read-file-name "File to count paragraphs in: " nil nil t)))
+      (with-current-buffer (find-file-noselect file)
+        (message "File `%s' has %d paragraphs"
+                 (file-name-nondirectory file)
+                 (tlon-get-number-of-paragraphs))))))
 
 ;;;###autoload
 (defun tlon-get-number-of-paragraphs (&optional start end)
