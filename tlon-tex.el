@@ -423,7 +423,9 @@ and sets the value of the field for all entries to `Tlön'."
     (let ((after-save-hook nil))
       (tlon-remove-empty-spaces)
       (bibtex-extras-escape-special-characters)
-      (when (looking-at bibtex-any-entry-maybe-empty-head)
+      (when (and
+	     (not (file-equal-p (buffer-file-name) tlon-file-db-upstream))
+	     (looking-at bibtex-any-entry-maybe-empty-head))
 	(bibtex-clean-entry))
       (save-buffer))))
 
