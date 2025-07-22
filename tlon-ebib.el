@@ -616,11 +616,12 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
             (let ((key-for-change
                    (save-excursion
                      (let (key)
-                       (while (and (not (bobp)) (not (looking-at "@@")))
-                         (when-let ((found-key (tlon-ebib--get-key-from-bibtex-line (thing-at-point 'line))))
-                           (setq key found-key)
-                           (cl-return))
-                         (forward-line -1))
+                       (cl-block nil
+                         (while (and (not (bobp)) (not (looking-at "@@")))
+                           (when-let ((found-key (tlon-ebib--get-key-from-bibtex-line (thing-at-point 'line))))
+                             (setq key found-key)
+                             (cl-return))
+                           (forward-line -1)))
                        key))))
               (when key-for-change
                 (if is-add
