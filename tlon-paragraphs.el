@@ -52,7 +52,8 @@ Here are the contents of the translation file:
 (defun tlon-paragraphs-align-with-ai ()
   "Check for paragraph count mismatch and use AI to fix it."
   (interactive)
-  (let* ((file (read-file-name "File to process: " nil (buffer-file-name) t)))
+  (let* ((file (read-file-name "File to process: " nil nil t
+			       (file-relative-name (buffer-file-name) default-directory))))
     (if-let ((counterpart (tlon-get-counterpart file)))
         (if-let* ((orig-paras-count (length (tlon-with-paragraphs file #'ignore t)))
                   (trans-paras-count (length (tlon-with-paragraphs counterpart #'ignore t))))
@@ -70,7 +71,7 @@ Here are the contents of the translation file:
                                      original-content counterpart-content))
                      (tools '("edit_file")))
                 (message "Paragraph count mismatch. Requesting AI to align paragraphs...")
-                (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback t nil nil tools)))
+                (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback t nil t tools)))
           (user-error "Could not count paragraphs in one of the files"))
       (user-error "Could not find counterpart for %s" file))))
 
