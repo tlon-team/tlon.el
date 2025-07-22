@@ -32,6 +32,7 @@
 (require 'tlon-core)
 (require 'transient)
 (require 'bibtex-extras)
+(require 'cl-lib)
 
 (declare-function tlon-bibliography-lookup "tlon-tex")
 
@@ -595,19 +596,40 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
   (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent))
 
-(defun tlon-ebib--get-entries-from-string (bibtex-string)
-  "Parse BIBTEX-STRING and return an alist of (key . entry-string)."
-  (with-temp-buffer
-    (insert bibtex-string)
-    (bibtex-mode)
-    (goto-char (point-min))
-    (let (entries)
-      (while (re-search-forward bibtex-entry-regexp nil t)
-        (goto-char (match-beginning 0))
-        (let ((entry-text (bibtex-entry-maybe))
-              (key (bibtex-autokey-get-key)))
-          (when key (push (cons key entry-text) entries))))
-      (nreverse entries))))
+(defun tlon-ebib--get-key-from-bibtex-line (line)
+  "Extract BibTeX key from a LINE if it's an entry start."
+  (when (string-match "^[ +-]?@\\w+{\\s-*\\([^, \t\n]+\\)" line)
+    (match-string 1 line)))
+
+(defun tlon-ebib--get-changed-keys-from-diff (diff-output)
+  "Parse unified DIFF-OUTPUT and return a plist of changed keys."
+  (let (added-keys-raw deleted-keys-raw)
+    (with-temp-buffer
+      (insert diff-output)
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let* ((line (thing-at-point 'line))
+               (is-add (string-prefix-p "+" line))
+               (is-del (string-prefix-p "-" line)))
+          (when (or is-add is-del)
+            (let ((key-for-change
+                   (save-excursion
+                     (let (key)
+                       (while (and (not (bobp)) (not (looking-at "@@")))
+                         (when-let ((found-key (tlon-ebib--get-key-from-bibtex-line (thing-at-point 'line))))
+                           (setq key found-key)
+                           (cl-return))
+                         (forward-line -1))
+                       key))))
+              (when key-for-change
+                (if is-add
+                    (pushnew key-for-change added-keys-raw :test #'string=)
+                  (pushnew key-for-change deleted-keys-raw :test #'string=))))))
+        (forward-line 1)))
+    (let ((modified (cl-intersection added-keys-raw deleted-keys-raw :test #'string=)))
+      (list :added (cl-set-difference added-keys-raw modified :test #'string=)
+            :deleted (cl-set-difference deleted-keys-raw modified :test #'string=)
+            :modified modified))))
 
 (defun tlon-ebib-sync-on-save ()
   "Sync local db.bib changes with remote API on save."
@@ -615,51 +637,42 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
              (file-exists-p tlon-ebib--sync-temp-file)
              (not tlon-ebib--sync-in-progress))
     (unwind-protect
-        (let* ((before-string (with-temp-buffer
-                                (insert-file-contents tlon-ebib--sync-temp-file)
-                                (buffer-string)))
-               (after-string (buffer-string)))
-          (unless (string= before-string after-string)
+        (let* ((process-sync-fail-on-error nil)
+               (diff-buffer (generate-new-buffer " *ebib-diff*"))
+               diff-output)
+          (unwind-protect
+              (let ((exit-code (call-process "diff" nil diff-buffer nil "-u"
+                                             tlon-ebib--sync-temp-file
+                                             (buffer-file-name))))
+                (when (= exit-code 1) ; 0 means no differences, >1 is an error
+                  (with-current-buffer diff-buffer
+                    (setq diff-output (buffer-string)))))
+            (when (buffer-live-p diff-buffer)
+              (kill-buffer diff-buffer)))
+          (when diff-output
             (setq tlon-ebib--sync-in-progress t)
-            (let* ((before-entries (tlon-ebib--get-entries-from-string before-string))
-                   (after-entries (tlon-ebib--get-entries-from-string after-string))
-                   added
-                   deleted
-                   modified)
-              ;; Find deleted and modified entries
-              (dolist (before-entry before-entries)
-                (let* ((key (car before-entry))
-                       (after-entry (assoc key after-entries)))
-                  (if after-entry
-                      (unless (string= (cdr before-entry) (cdr after-entry))
-                        (push key modified))
-                    (push key deleted))))
-              ;; Find added entries
-              (dolist (after-entry after-entries)
-                (unless (assoc (car after-entry) before-entries)
-                  (push (car after-entry) added)))
-
-              ;; Perform API calls
-              (let ((created-count 0)
-                    (modified-count 0)
-                    (deleted-count 0))
-                (dolist (key (nreverse added))
-                  (tlon-ebib-post-entry key)
-                  (setq created-count (1+ created-count)))
-                (dolist (key (nreverse modified))
-                  (tlon-ebib-post-entry key)
-                  (setq modified-count (1+ modified-count)))
-                (dolist (key (nreverse deleted))
-                  (tlon-ebib-delete-entry key t nil)
-                  (setq deleted-count (1+ deleted-count)))
-
-                ;; Report results
-                (let ((parts '()))
-                  (when (> created-count 0) (push (format "%d created" created-count) parts))
-                  (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
-                  (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
-                  (when parts
-                    (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", "))))))))
+            (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
+                   (added (plist-get changes :added))
+                   (deleted (plist-get changes :deleted))
+                   (modified (plist-get changes :modified))
+                   (created-count 0)
+                   (modified-count 0)
+                   (deleted-count 0)
+                   (parts '()))
+              (dolist (key added)
+                (tlon-ebib-post-entry key)
+                (setq created-count (1+ created-count)))
+              (dolist (key modified)
+                (tlon-ebib-post-entry key)
+                (setq modified-count (1+ modified-count)))
+              (dolist (key deleted)
+                (tlon-ebib-delete-entry key t nil)
+                (setq deleted-count (1+ deleted-count)))
+              (when (> created-count 0) (push (format "%d created" created-count) parts))
+              (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
+              (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
+              (when parts
+                (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", "))))))
       (when (and tlon-ebib--sync-temp-file (file-exists-p tlon-ebib--sync-temp-file))
         (delete-file tlon-ebib--sync-temp-file))
       (setq tlon-ebib--sync-temp-file nil)
