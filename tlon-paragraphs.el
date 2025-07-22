@@ -161,13 +161,13 @@ region, prompt for a file and count its paragraphs."
           (if (region-active-p)
               (cons (region-beginning) (region-end))
             (cons start end))
-        (message "There are %d paragraphs in the selected region"
+        (message "There are %d paragraphs in the selected region."
                  (tlon-get-number-of-paragraphs start end)))
-    (let ((file (read-file-name "File to count paragraphs in: " nil nil t)))
+    (let ((file (read-file-name "File to count paragraphs in: " nil nil t
+				(file-relative-name (buffer-file-name) default-directory))))
       (with-current-buffer (find-file-noselect file)
-        (message "File `%s' has %d paragraphs"
-                 (file-name-nondirectory file)
-                 (tlon-get-number-of-paragraphs))))))
+        (message "There are %s paragraphs in the file `%s'."
+                 (tlon-get-number-of-paragraphs) (file-name-nondirectory file))))))
 
 ;;;###autoload
 (defun tlon-get-number-of-paragraphs (&optional start end)
@@ -220,7 +220,8 @@ Here are the contents of the translation file:
                                      counterpart
                                      original-content counterpart-content))
                      (tools '("edit_file")))
-                (message "Requesting AI to align paragraphs...")
+                (message "Requesting AI to align paragraphs with model %S..."
+			 (cdr tlon-paragraphs-align-with-ai-model))
                 (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback tlon-paragraphs-align-with-ai-model t nil tools)))
           (user-error "Could not count paragraphs in one of the files"))
       (user-error "Could not find counterpart for %s" file))))
