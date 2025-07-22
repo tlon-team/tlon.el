@@ -662,7 +662,8 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
             :modified modified))))
 
 (defun tlon-ebib--sync-on-change (event)
-  "Callback for `filenotify` to sync `db.bib` changes."
+  "Callback for `filenotify' to sync `db.bib' modifications.
+EVENT is a list of the form (FILE ACTION)."
   (let ((action (nth 1 event))
         (file (nth 2 event)))
     (when (and (eq action 'changed)
