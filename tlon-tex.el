@@ -414,6 +414,7 @@ and sets the value of the field for all entries to `Tlön'."
 
 ;;;;; Cleanup
 
+(declare-function bibtex-extras-escape-special-characters "bibtex-extras")
 ;;;###autoload
 (defun tlon-auto-clean-entry ()
   "Clean up bibtex entry at point upon saving."
@@ -445,17 +446,6 @@ and sets the value of the field for all entries to `Tlön'."
     (goto-char (point-min))
     (while (re-search-forward " \\}" nil t)
       (replace-match "}" t t))))
-
-(defun bibtex-extras-escape-special-characters ()
-  "Escape special characters in the current BibTeX file."
-  (interactive)
-  (save-excursion
-    (dolist (char '("$" "%" "#" "&"))
-      (goto-char (point-min))
-      (while (re-search-forward (format "\\(\\(?:[^\\]\\|^\\)\\)\\(\\%s\\)" char) nil t)
-	(unless (member (bibtex-extras-get-field-name) '("url" "file"))
-	  (replace-match (format "\\1\\\\%s" char) nil nil))))))
-
 
 ;;;;; Autokey
 

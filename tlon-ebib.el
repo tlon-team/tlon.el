@@ -142,6 +142,7 @@ Returns the token or nil if authentication failed."
 
 ;;;;;; Get entries
 
+(declare-function bibtex-extras-escape-special-characters "bibtex-extras")
 (defun tlon-ebib-get-entries (&optional base-url)
   "Retrieve entries from the EA International API.
 Optional BASE-URL specifies the API endpoint base URL. If not provided,
