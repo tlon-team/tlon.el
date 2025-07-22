@@ -76,6 +76,14 @@ Set to t to enable verbose logging from url.el.")
 (defconst tlon-ebib--result-buffer-name "*Ebib API Result*"
   "Name of the buffer used to display API call results.")
 
+;;;;; Sync
+
+(defvar-local tlon-ebib--sync-temp-file nil
+  "Temporary file to store buffer content before save for sync.")
+
+(defvar tlon-ebib--sync-in-progress nil
+  "Flag to prevent recursive sync operations.")
+
 ;;;; Functions
 
 (defun tlon-ebib-initialize ()
@@ -587,12 +595,6 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 
 ;;;;;; Sync
 
-(defvar-local tlon-ebib--sync-temp-file nil
-  "Temporary file to store buffer content before save for sync.")
-
-(defvar tlon-ebib--sync-in-progress nil
-  "Flag to prevent recursive sync operations.")
-
 (defun tlon-ebib--get-key-from-bibtex-line (line)
   "Extract BibTeX key from a LINE if it's an entry start."
   (when (string-match "^[ +-]?@\\w+{\\s-*\\([^, \t\n]+\\)" line)
@@ -627,12 +629,12 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
                        key))))
               (when key-for-change
                 (if is-add
-                    (pushnew key-for-change added-keys-raw :test #'string=)
-                  (pushnew key-for-change deleted-keys-raw :test #'string=))))))
+                    (cl-pushnew key-for-change added-keys-raw :test #'string=)
+                  (cl-pushnew key-for-change deleted-keys-raw :test #'string=))))))
         (forward-line 1)))
-    (let ((modified (intersection added-keys-raw deleted-keys-raw :test #'string=)))
-      (list :added (set-difference added-keys-raw modified :test #'string=)
-            :deleted (set-difference deleted-keys-raw modified :test #'string=)
+    (let ((modified (cl-intersection added-keys-raw deleted-keys-raw :test #'string=)))
+      (list :added (cl-set-difference added-keys-raw modified :test #'string=)
+            :deleted (cl-set-difference deleted-keys-raw modified :test #'string=)
             :modified modified))))
 
 (defun tlon-ebib-sync-on-save ()
@@ -679,17 +681,20 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
                 (when parts
                   (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))
                 (when (buffer-modified-p) (save-buffer))
-                ;; After processing, update temp file for the next sync.
-                (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent)))
+                (tlon-ebib-write-local-db-to-temp-file)))
           (setq tlon-ebib--sync-in-progress nil))))))
 
 (defun tlon-ebib--setup-sync-hooks ()
   "Add buffer-local hooks for syncing db.bib."
   (when (equal (buffer-file-name) (expand-file-name tlon-ebib-file-db))
-    (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
-    (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent)
+    (tlon-ebib-write-local-db-to-temp-file)
     (add-hook 'after-save-hook #'tlon-ebib-sync-on-save nil 'local)
     (add-hook 'kill-buffer-hook #'tlon-ebib--cleanup-sync-temp-file nil 'local)))
+
+(defun tlon-ebib-write-local-db-to-temp-file ()
+  "Write the current buffer content to a temporary file for syncing."
+  (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
+  (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent))
 
 ;;;;;; Periodic data update
 
