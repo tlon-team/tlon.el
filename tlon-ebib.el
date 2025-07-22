@@ -344,7 +344,7 @@ Returns a plist with :status, :data, and :raw-text."
     (list :status status-code :data response-data :raw-text raw-response-text)))
 
 (defun tlon-ebib--format-delete-entry-result (result)
-  "Format the RESULT from `tlon-ebib-delete-entry` for display.
+  "Format the RESULT from `tlon-ebib-delete-entry' for display.
 RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
   (let ((status-code (plist-get result :status))
 	(response-data (plist-get result :data))  ; Parsed JSON for 200 or 422
