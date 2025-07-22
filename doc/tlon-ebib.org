@@ -36,10 +36,10 @@ This section details the interactive commands provided by =tlon-ebib.el=.
 + ~tlon-ebib-get-entries~ :: Retrieves all BibTeX entries from the configured API endpoint (~tlon-ebib-api-base-url~). If the local database file (~tlon-ebib-file-db~) already exists and its content differs from the retrieved entries, the command prompts the user to confirm whether to overwrite the file. If confirmed, or if the file does not exist, it saves the new entries. The file is saved with =utf-8-unix= encoding.
 
 #+findex: tlon-ebib-post-entry
-+ ~tlon-ebib-post-entry~ :: Posts the BibTeX entry at point to the =/api/entries= endpoint. Requires authentication. The content is sent as =text/plain=. On success, it replaces the local BibTeX entry with the version returned by the API, which may have reordered fields. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
++ ~tlon-ebib-post-entry~ :: If called interactively, posts the BibTeX entry at point to the =/api/entries= endpoint. If called from Lisp with a =KEY=, it posts the corresponding entry. Requires authentication. The content is sent as =text/plain=. On success, it replaces the local BibTeX entry with the version returned by the API, which may have reordered fields. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
 
 #+findex: tlon-ebib-delete-entry
-+ ~tlon-ebib-delete-entry~ :: Deletes the BibTeX entry at point from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, the entry is also removed from the local database file and a success message is shown.
++ ~tlon-ebib-delete-entry~ :: Deletes the BibTeX entry with =KEY= from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the =LOCALLY= argument is non-nil (the default), the entry is also removed from the local database file. Interactively, a prefix argument skips the confirmation prompt. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
 
 #+findex: tlon-ebib-check-name
 + ~tlon-ebib-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the results in a temporary buffer named ~*Ebib API Result*~. Otherwise, a success message is shown.
@@ -124,6 +124,23 @@ This section lists non-interactive functions and variables used internally.
 + ~tlon-ebib--format-delete-entry-result~ :: Formatter function used by ~tlon-ebib--display-result-buffer~ to display the results from ~tlon-ebib-delete-entry~. Takes a plist =RESULT= containing =:status=, =:data= (parsed JSON for 200 or 422 errors), and =:raw-text= (raw text response for other errors). Formats output based on HTTP status code.
 #+findex: tlon-ebib-initialize
 + ~tlon-ebib-initialize~ :: Initializes the `tlon-ebib` package by retrieving entries from the API using ~tlon-ebib-get-entries~ and appending the local database file (~tlon-ebib-file-db~) to the `paths-files-bibliography-all` list.
+
+** Automatic Synchronization
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-ebib-sync
+:END:
+
+The =tlon-ebib= module provides a mechanism to automatically synchronize the local BibTeX database file (~tlon-ebib-file-db~) with the remote API. This functionality is enabled when ~tlon-ebib-initialize~ is called.
+
+When the local database file is saved, the following actions are performed:
+1. A diff is computed between the buffer content before and after the save operation.
+2. The changes are categorized into additions, modifications, and deletions of BibTeX entries.
+3. For each change, the corresponding API endpoint is called:
+   - *Additions and Modifications*: The entry is posted to the API using ~tlon-ebib-post-entry~.
+   - *Deletions*: The entry is deleted from the API using ~tlon-ebib-delete-entry~.
+4. After all API calls are completed, a summary message is displayed in the echo area, indicating the number of created, modified, and deleted entries (e.g., "Ebib sync: 1 created, 2 modified.").
+
+This ensures that any local changes to the BibTeX database are automatically reflected on the server. The process is designed to be non-interactive and to handle potential recursive triggers gracefully.
 
 #+findex: tlon-ebib-initialize
 + ~tlon-ebib-initialize~ :: Initializes the `tlon-ebib` package by retrieving entries from the API and adding the local database file to the list of bibliography files.
