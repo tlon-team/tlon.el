@@ -80,6 +80,7 @@ Set to t to enable verbose logging from url.el.")
 (defun tlon-ebib-initialize ()
   "Initialize the `tlon-ebib' package."
   (tlon-ebib-get-entries)
+  (add-hook 'find-file-hook #'tlon-ebib--setup-sync-hooks)
   (append paths-files-bibliography-all (list tlon-ebib-file-db)))
 
 (defvar citar-bibliography)
@@ -204,14 +205,15 @@ defaults to `tlon-ebib-api-base-url'."
 (declare-function bibtex-extras-delete-entry "bibtex-extras")
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
-(defun tlon-ebib-post-entry ()
-  "Post the BibTeX entry at point to the EA International API.
-The entry is sent as \"text/plain\".
+(defun tlon-ebib-post-entry (&optional key)
+  "Post a BibTeX entry to the EA International API.
+If called interactively, post the entry at point. If called from Lisp with a
+KEY, post the corresponding entry. The entry is sent as \"text/plain\".
 Handles 200 (Success) and 422 (Validation Error) responses."
   (interactive)
   (tlon-ebib-ensure-auth)
-  (if-let ((key (tlon-ebib-get-key-at-point)))
-      (let* ((entry-text (bibtex-extras-get-entry-as-string key nil))
+  (if-let ((entry-key (or key (tlon-ebib-get-key-at-point))))
+      (let* ((entry-text (bibtex-extras-get-entry-as-string entry-key nil))
 	     (encoded-entry-text (encode-coding-string entry-text 'utf-8))
 	     (headers `(("Content-Type" . "text/plain; charset=utf-8")
 			("accept" . "text/plain")))
@@ -224,11 +226,11 @@ Handles 200 (Success) and 422 (Validation Error) responses."
 	     #'tlon-ebib--format-post-entry-result
 	     result)
 	  (when-let ((new-entry-text (tlon-ebib--get-response-body raw-text)))
-	    (tlon-ebib-delete-entry-locally key)
+	    (tlon-ebib-delete-entry-locally entry-key)
 	    (tlon-ebib-add-entry-locally new-entry-text)
 	    (message "Entry posted and updated successfully.")))
 	result)
-    (user-error "Not in Ebib or Bibtex mode")))
+    (user-error "No BibTeX key found at point")))
 
 (declare-function bibtex-extras-get-field "bibtex-extras")
 (defun tlon-ebib-add-entry-locally (entry)
@@ -242,24 +244,28 @@ Handles 200 (Success) and 422 (Validation Error) responses."
 
 ;;;;;; Delete entry
 
-(defun tlon-ebib-delete-entry (key)
-  "Delete KEY from the EA International API."
+(defun tlon-ebib-delete-entry (key &optional no-confirm locally)
+  "Delete KEY from the EA International API.
+If LOCALLY is non-nil, also delete from local db file.
+Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
   (interactive (list (or (tlon-ebib-get-key-at-point)
-			 (tlon-ebib-get-db-entries))))
+			 (tlon-ebib-get-db-entries))
+		     current-prefix-arg
+		     t))
   (tlon-ebib-ensure-auth)
-  (unless (y-or-n-p (format "Are you sure you want to delete entry '%s' (this action is irreversible)?" key))
-    (user-error "Deletion cancelled"))
-  (let* ((endpoint (format "/api/entries/%s" (url-hexify-string key)))
-	 (headers '(("accept" . "application/json")))
-	 (result (tlon-ebib--handle-entry-request "DELETE" endpoint nil headers t))
-	 (status-code (plist-get result :status)))
-    (if (or tlon-debug (not (and status-code (= status-code 200))))
-	(tlon-ebib--display-result-buffer
-	 (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
-	 #'tlon-ebib--format-delete-entry-result
-	 result)
-      (tlon-ebib-delete-entry-locally key))
-    result))
+  (when (or no-confirm
+	    (y-or-n-p (format "Are you sure you want to delete entry '%s' (this action is irreversible)?" key)))
+    (let* ((endpoint (format "/api/entries/%s" (url-hexify-string key)))
+	   (headers '(("accept" . "application/json")))
+	   (result (tlon-ebib--handle-entry-request "DELETE" endpoint nil headers t))
+	   (status-code (plist-get result :status)))
+      (if (or tlon-debug (not (and status-code (= status-code 200))))
+	  (tlon-ebib--display-result-buffer
+	   (format "Delete entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
+	   #'tlon-ebib--format-delete-entry-result
+	   result)
+	(when locally (tlon-ebib-delete-entry-locally key)))
+      result)))
 
 (defun tlon-ebib-delete-entry-locally (key)
   "Delete the entry with KEY from the local db file."
@@ -575,6 +581,95 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
       (insert (format "Status: Error (HTTP %d)\n" status-code))
       (insert "Response from server:\n")
       (insert (or raw-response-text "No content or error message returned."))))))
+
+;;;;;; Sync
+
+(defvar-local tlon-ebib--sync-temp-file nil
+  "Temporary file to store buffer content before save for sync.")
+
+(defvar tlon-ebib--sync-in-progress nil
+  "Flag to prevent recursive sync operations.")
+
+(defun tlon-ebib--store-buffer-content-before-save ()
+  "Store current buffer content in a temporary file for sync."
+  (setq tlon-ebib--sync-temp-file (make-temp-file "tlon-ebib-sync-"))
+  (write-region (point-min) (point-max) tlon-ebib--sync-temp-file nil 'silent))
+
+(defun tlon-ebib--get-entries-from-string (bibtex-string)
+  "Parse BIBTEX-STRING and return an alist of (key . entry-string)."
+  (with-temp-buffer
+    (insert bibtex-string)
+    (bibtex-mode)
+    (goto-char (point-min))
+    (let (entries)
+      (while (re-search-forward bibtex-entry-regexp nil t)
+        (goto-char (match-beginning 0))
+        (let ((entry-text (bibtex-entry-maybe))
+              (key (bibtex-autokey-get-key)))
+          (when key (push (cons key entry-text) entries))))
+      (nreverse entries))))
+
+(defun tlon-ebib-sync-on-save ()
+  "Sync local db.bib changes with remote API on save."
+  (when (and tlon-ebib--sync-temp-file
+             (file-exists-p tlon-ebib--sync-temp-file)
+             (not tlon-ebib--sync-in-progress))
+    (unwind-protect
+        (let* ((before-string (with-temp-buffer
+                                (insert-file-contents tlon-ebib--sync-temp-file)
+                                (buffer-string)))
+               (after-string (buffer-string)))
+          (unless (string= before-string after-string)
+            (setq tlon-ebib--sync-in-progress t)
+            (let* ((before-entries (tlon-ebib--get-entries-from-string before-string))
+                   (after-entries (tlon-ebib--get-entries-from-string after-string))
+                   added
+                   deleted
+                   modified)
+              ;; Find deleted and modified entries
+              (dolist (before-entry before-entries)
+                (let* ((key (car before-entry))
+                       (after-entry (assoc key after-entries)))
+                  (if after-entry
+                      (unless (string= (cdr before-entry) (cdr after-entry))
+                        (push key modified))
+                    (push key deleted))))
+              ;; Find added entries
+              (dolist (after-entry after-entries)
+                (unless (assoc (car after-entry) before-entries)
+                  (push (car after-entry) added)))
+
+              ;; Perform API calls
+              (let ((created-count 0)
+                    (modified-count 0)
+                    (deleted-count 0))
+                (dolist (key (nreverse added))
+                  (tlon-ebib-post-entry key)
+                  (setq created-count (1+ created-count)))
+                (dolist (key (nreverse modified))
+                  (tlon-ebib-post-entry key)
+                  (setq modified-count (1+ modified-count)))
+                (dolist (key (nreverse deleted))
+                  (tlon-ebib-delete-entry key t nil)
+                  (setq deleted-count (1+ deleted-count)))
+
+                ;; Report results
+                (let ((parts '()))
+                  (when (> created-count 0) (push (format "%d created" created-count) parts))
+                  (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
+                  (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
+                  (when parts
+                    (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", "))))))))
+      (when (and tlon-ebib--sync-temp-file (file-exists-p tlon-ebib--sync-temp-file))
+        (delete-file tlon-ebib--sync-temp-file))
+      (setq tlon-ebib--sync-temp-file nil)
+      (setq tlon-ebib--sync-in-progress nil))))
+
+(defun tlon-ebib--setup-sync-hooks ()
+  "Add buffer-local hooks for syncing db.bib."
+  (when (equal (buffer-file-name) (expand-file-name tlon-ebib-file-db))
+    (add-hook 'before-save-hook #'tlon-ebib--store-buffer-content-before-save nil 'local)
+    (add-hook 'after-save-hook #'tlon-ebib-sync-on-save nil 'local)))
 
 ;;;;;; Periodic data update
 
