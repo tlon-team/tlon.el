@@ -687,6 +687,38 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
       (goto-char (point-max))
       (insert (format "  - %s: %s\n" action key)))))
 
+(defun tlon-ebib--log-sync-action-modified (key before after)
+  "Log modification of KEY with diff between BEFORE and AFTER."
+  (with-current-buffer (get-buffer-create tlon-ebib--sync-log-buffer-name)
+    (let* ((inhibit-read-only t)
+           (before-file (make-temp-file "ebib-sync-before-"))
+           (after-file (make-temp-file "ebib-sync-after-"))
+           (diff-output ""))
+      (unwind-protect
+          (progn
+            (with-temp-buffer
+              (insert (or before ""))
+              (write-file before-file nil))
+            (with-temp-buffer
+              (insert (or after ""))
+              (write-file after-file nil))
+            (with-temp-buffer
+              (call-process "diff" nil t nil "-u" before-file after-file)
+              (setq diff-output (buffer-string))))
+        (delete-file before-file)
+        (delete-file after-file))
+      (goto-char (point-max))
+      (insert (format "  - Modified: %s\n" key))
+      (when (string-match-p "@@" diff-output)
+        (insert "    Diff:\n")
+        (with-temp-buffer
+          (insert diff-output)
+          (goto-char (point-min))
+          (when (search-forward-regexp "^@@" nil t)
+            (goto-char (line-beginning-position))
+            (dolist (line (split-string (buffer-substring-no-properties (point) (point-max)) "\n" t))
+              (insert (format "      %s\n" line)))))))))
+
 (defun tlon-ebib--sync-on-change (event)
   "Callback for `filenotify' to sync `db.bib' modifications.
 EVENT is a list of the form (FILE ACTION)."
@@ -733,9 +765,11 @@ EVENT is a list of the form (FILE ACTION)."
 			    (setq created-count (1+ created-count))
 			    (tlon-ebib--log-sync-action "Created" key))
 			  (dolist (key modified)
-			    (tlon-ebib-post-entry key)
-			    (setq modified-count (1+ modified-count))
-			    (tlon-ebib--log-sync-action "Modified" key))
+			    (let ((before-text (bibtex-extras-get-entry-as-string key nil)))
+			      (tlon-ebib-post-entry key)
+			      (setq modified-count (1+ modified-count))
+			      (let ((after-text (bibtex-extras-get-entry-as-string key nil)))
+				(tlon-ebib--log-sync-action-modified key before-text after-text))))
 			  (dolist (key deleted)
 			    (tlon-ebib-delete-entry key nil t)
 			    (setq deleted-count (1+ deleted-count))
