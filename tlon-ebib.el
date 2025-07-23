@@ -81,6 +81,9 @@ Set to t to enable verbose logging from url.el.")
 (defconst tlon-ebib--result-buffer-name "*Ebib API Result*"
   "Name of the buffer used to display API call results.")
 
+(defconst tlon-ebib--sync-log-buffer-name "*Ebib Sync Log*"
+  "Name of the buffer used to log sync operations.")
+
 ;;;;; Sync
 
 (defvar tlon-ebib--db-watch-descriptor nil
@@ -677,6 +680,13 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
             :deleted (cl-set-difference deleted-keys-raw modified :test #'string=)
             :modified modified))))
 
+(defun tlon-ebib--log-sync-action (action key)
+  "Append a sync ACTION for a given KEY to the sync log buffer."
+  (with-current-buffer (get-buffer-create tlon-ebib--sync-log-buffer-name)
+    (let ((inhibit-read-only t))
+      (goto-char (point-max))
+      (insert (format "  - %s: %s\n" action key)))))
+
 (defun tlon-ebib--sync-on-change (event)
   "Callback for `filenotify' to sync `db.bib' modifications.
 EVENT is a list of the form (FILE ACTION)."
@@ -707,28 +717,37 @@ EVENT is a list of the form (FILE ACTION)."
 		    (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
 			   (added (plist-get changes :added))
 			   (deleted (plist-get changes :deleted))
-			   (modified (plist-get changes :modified))
-			   (created-count 0)
-			   (modified-count 0)
-			   (deleted-count 0)
-			   (parts '()))
-		      (dolist (key added)
-			(tlon-ebib-post-entry key)
-			(setq created-count (1+ created-count)))
-		      (dolist (key modified)
-			(tlon-ebib-post-entry key)
-			(setq modified-count (1+ modified-count)))
-		      (dolist (key deleted)
-			(tlon-ebib-delete-entry key nil t)
-			(setq deleted-count (1+ deleted-count)))
-		      (when (> created-count 0) (push (format "%d created" created-count) parts))
-		      (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
-		      (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
-		      (when parts
-			(run-with-timer 3 nil
-					(lambda ()
-					  (message "Ebib sync: %s."
-						   (mapconcat #'identity (nreverse parts) ", ")))))))
+			   (modified (plist-get changes :modified)))
+		      (when (or added deleted modified)
+			(with-current-buffer (get-buffer-create tlon-ebib--sync-log-buffer-name)
+			  (let ((inhibit-read-only t))
+			    (goto-char (point-max))
+			    (unless (bolp) (insert "\n"))
+			    (insert (format-time-string "*** Sync on %Y-%m-%d %H:%M:%S ***\n"))))
+			(let ((created-count 0)
+			      (modified-count 0)
+			      (deleted-count 0)
+			      (parts '()))
+			  (dolist (key added)
+			    (tlon-ebib-post-entry key)
+			    (setq created-count (1+ created-count))
+			    (tlon-ebib--log-sync-action "Created" key))
+			  (dolist (key modified)
+			    (tlon-ebib-post-entry key)
+			    (setq modified-count (1+ modified-count))
+			    (tlon-ebib--log-sync-action "Modified" key))
+			  (dolist (key deleted)
+			    (tlon-ebib-delete-entry key nil t)
+			    (setq deleted-count (1+ deleted-count))
+			    (tlon-ebib--log-sync-action "Deleted" key))
+			  (when (> created-count 0) (push (format "%d created" created-count) parts))
+			  (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
+			  (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
+			  (when parts
+			    (run-with-timer 3 nil
+					    (lambda ()
+					      (message "Ebib sync: %s."
+						       (mapconcat #'identity (nreverse parts) ", ")))))))))
 		(setq tlon-ebib--sync-in-progress nil)))))))))
 
 ;;;;;; Periodic data update
