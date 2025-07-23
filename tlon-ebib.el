@@ -662,14 +662,12 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
           (when (or is-add is-del)
             (let ((key-for-change
                    (save-excursion
-                     (let (key)
-                       (cl-block nil
-                         (while (and (not (bobp)) (not (looking-at "@@")))
-                           (when-let ((found-key (tlon-ebib--get-key-from-bibtex-line (thing-at-point 'line))))
-                             (setq key found-key)
-                             (cl-return))
-                           (forward-line -1)))
-                       key))))
+                     (catch 'key-found
+                       (while (and (not (bobp)) (not (looking-at "@@")))
+                         (when-let ((found-key (tlon-ebib--get-key-from-bibtex-line (thing-at-point 'line))))
+                           (throw 'key-found found-key))
+                         (forward-line -1))
+                       nil)))) ; Return nil if loop finishes
               (when key-for-change
                 (if is-add
                     (cl-pushnew key-for-change added-keys-raw :test #'string=)
@@ -765,7 +763,8 @@ EVENT is a list of the form (FILE ACTION)."
 			    (setq created-count (1+ created-count))
 			    (tlon-ebib--log-sync-action "Created" key))
 			  (dolist (key modified)
-			    (let ((before-text (bibtex-extras-get-entry-as-string key nil)))
+			    (let ((before-text (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
+					       (bibtex-extras-get-entry-as-string key nil))))
 			      (tlon-ebib-post-entry key)
 			      (setq modified-count (1+ modified-count))
 			      (let ((after-text (bibtex-extras-get-entry-as-string key nil)))
