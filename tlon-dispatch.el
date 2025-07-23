@@ -130,7 +130,8 @@ DIR is the directory where the repo is stored."
     ""
     "Uqbar"
     ("q q" "uqbar"                        tlon-magit-browse-uqbar)
-    ("q d" "uqbar-audio"                  tlon-magit-browse-uqbar-audio)
+    ("q d" "uqbar-audio-content"          tlon-magit-browse-uqbar-audio-content)
+    ("q p" "uqbar-audio-api"              tlon-magit-browse-uqbar-audio-api)
     ""
     ("q a" "uqbar-ar"                     tlon-magit-browse-uqbar-ar)
     ("q n" "uqbar-en"                     tlon-magit-browse-uqbar-en)
@@ -203,7 +204,8 @@ DIR is the directory where the repo is stored."
     ""
     "Uqbar"
     ("q q" "uqbar"                        tlon-dired-browse-uqbar)
-    ("q d" "uqbar-audio"                  tlon-dired-browse-uqbar-audio)
+    ("q d" "uqbar-audio-content"          tlon-dired-browse-uqbar-audio-content)
+    ("q p" "uqbar-audio-api"              tlon-dired-browse-uqbar-audio-api)
     ""
     ("q a" "uqbar-ar"                     tlon-dired-browse-uqbar-ar)
     ("q n" "uqbar-en"                     tlon-dired-browse-uqbar-en)
