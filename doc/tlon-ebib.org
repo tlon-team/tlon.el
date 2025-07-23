@@ -140,6 +140,6 @@ When ~tlon-ebib-file-db~ is modified on disk, the following actions are performe
 3. For each change, the corresponding API endpoint is called:
    - *Additions and Modifications*: The entry is posted to the API using ~tlon-ebib-post-entry~. On success, the function updates the entry in both ~tlon-ebib-file-db~ and ~tlon-ebib-file-db-upstream~ with the version returned by the API.
    - *Deletions*: The entry is deleted from the API using ~tlon-ebib-delete-entry~. On success, the entry is also removed from ~tlon-ebib-file-db-upstream~.
-4. After all API calls are completed, a summary message is displayed, indicating the number of created, modified, and deleted entries.
+4. After all API calls are completed, a summary message is displayed, indicating the number of created, modified, and deleted entries. A detailed log of all changes is also appended to the ~*Ebib Sync Log*~ buffer. This buffer is not displayed automatically but can be consulted to see the specific keys that were added, modified, or deleted.
 
 This process ensures that both local database files remain synchronized with each other and with the remote server. The synchronization is non-interactive and designed to handle potential recursive triggers gracefully. To fetch updates made by other users, run ~tlon-ebib-get-entries~, which will update both local files from the remote API.
