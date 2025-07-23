@@ -252,20 +252,21 @@ If called interactively, post the entry at point; otherwise use KEY."
 
 (defun tlon-ebib--replace-entry-locally (key entry)
   "Replace KEY with ENTRY text in both local databases."
-  (with-current-buffer (find-file-noselect tlon-ebib-file-db)
-    (bibtex-mode)
-    (goto-char (point-min))
-    (if (bibtex-search-entry key)
-        (progn (bibtex-kill-entry) (insert entry))
-      (tlon-ebib--insert-entry-with-newlines entry))
-    (save-buffer))
-  (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-    (bibtex-mode)
-    (goto-char (point-min))
-    (if (bibtex-search-entry key)
-        (progn (bibtex-kill-entry) (insert entry))
-      (tlon-ebib--insert-entry-with-newlines entry))
-    (save-buffer)))
+  (let ((coding-system-for-write 'utf-8-unix))
+    (with-current-buffer (find-file-noselect tlon-ebib-file-db)
+      (bibtex-mode)
+      (goto-char (point-min))
+      (if (bibtex-search-entry key)
+          (progn (bibtex-kill-entry) (insert entry))
+        (tlon-ebib--insert-entry-with-newlines entry))
+      (save-buffer))
+    (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
+      (bibtex-mode)
+      (goto-char (point-min))
+      (if (bibtex-search-entry key)
+          (progn (bibtex-kill-entry) (insert entry))
+        (tlon-ebib--insert-entry-with-newlines entry))
+      (save-buffer))))
 
 (defun tlon-ebib--insert-entry-with-newlines (entry)
   "Insert bibtex ENTRY at end of buffer with proper newlines."
@@ -305,21 +306,22 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
 (defun tlon-ebib-delete-entry-locally (key)
   "Delete KEY from both local files."
   (let ((deleted nil))
-    ;; db.bib
-    (with-current-buffer (find-file-noselect tlon-ebib-file-db)
-      (bibtex-mode)
-      (when (bibtex-search-entry key)
-        (setq deleted t)
-        (bibtex-kill-entry)
-        (unless tlon-ebib--sync-in-progress
+    (let ((coding-system-for-write 'utf-8-unix))
+      ;; db.bib
+      (with-current-buffer (find-file-noselect tlon-ebib-file-db)
+        (bibtex-mode)
+        (when (bibtex-search-entry key)
+          (setq deleted t)
+          (bibtex-kill-entry)
+          (unless tlon-ebib--sync-in-progress
+            (save-buffer))))
+      ;; db-upstream.bib
+      (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
+        (bibtex-mode)
+        (when (bibtex-search-entry key)
+          (setq deleted t)
+          (bibtex-kill-entry)
           (save-buffer))))
-    ;; db-upstream.bib
-    (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-      (bibtex-mode)
-      (when (bibtex-search-entry key)
-        (setq deleted t)
-        (bibtex-kill-entry)
-        (save-buffer)))
     (if deleted
         (message "Entry “%s” deleted locally." key)
       (message "Entry “%s” not found in local db." key))))
