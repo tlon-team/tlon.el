@@ -173,7 +173,10 @@ DIR is the directory where the repo is stored."
     ("e" "tlon.el"                        tlon-magit-browse-tlon-el)
     ""
     "Docs"
-    ("d" "tlon-docs"                    tlon-magit-browse-docs)]])
+    ("d" "tlon-docs"                    tlon-magit-browse-docs)
+    ""
+    "Sandbox"
+    ("H-s" "sandbox"                        tlon-magit-browse-sandbox)]])
 
 ;;;;; Browse repo in Dired
 
@@ -247,7 +250,10 @@ DIR is the directory where the repo is stored."
     ("e" "tlon.el"                         tlon-dired-browse-tlon-el)
     ""
     "Docs"
-    ("d" "tlon-docs"                      tlon-dired-browse-docs)]])
+    ("d" "tlon-docs"                      tlon-dired-browse-docs)
+    ""
+    "Misc"
+    ("H-s" "sandbox"                        tlon-dired-browse-sandbox)]])
 
 ;;;;; Open file in repo
 
