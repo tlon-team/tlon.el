@@ -93,7 +93,6 @@ Set to t to enable verbose logging from url.el.")
 
 (defun tlon-ebib-initialize ()
   "Initialize the `tlon-ebib' package."
-  (tlon-ebib-get-entries)
   (tlon-ebib--initialize-sync)
   (append paths-files-bibliography-all (list tlon-ebib-file-db)))
 
@@ -252,21 +251,16 @@ If called interactively, post the entry at point; otherwise use KEY."
 
 (defun tlon-ebib--replace-entry-locally (key entry)
   "Replace KEY with ENTRY text in both local databases."
-  (let ((coding-system-for-write 'utf-8-unix))
-    (with-current-buffer (find-file-noselect tlon-ebib-file-db)
-      (bibtex-mode)
-      (goto-char (point-min))
-      (if (bibtex-search-entry key)
-          (progn (bibtex-kill-entry) (insert entry))
-        (tlon-ebib--insert-entry-with-newlines entry))
-      (save-buffer))
-    (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-      (bibtex-mode)
-      (goto-char (point-min))
-      (if (bibtex-search-entry key)
-          (progn (bibtex-kill-entry) (insert entry))
-        (tlon-ebib--insert-entry-with-newlines entry))
-      (save-buffer))))
+  (let ((coding-system-for-write 'utf-8-with-signature))
+    (dolist (file (list tlon-ebib-file-db tlon-ebib-file-db-upstream))
+      (with-current-buffer (find-file-noselect file)
+        (bibtex-mode)
+        (goto-char (point-min))
+        (if (bibtex-search-entry key)
+            (progn (bibtex-kill-entry) (insert entry))
+          (tlon-ebib--insert-entry-with-newlines entry))
+        (save-buffer)
+        (revert-buffer nil 'no-confirm)))))
 
 (defun tlon-ebib--insert-entry-with-newlines (entry)
   "Insert bibtex ENTRY at end of buffer with proper newlines."
@@ -510,6 +504,7 @@ RESULT is a plist like (:status CODE :data DATA)."
 	(substring response-text (match-end 0))
       response-text)))
 
+;;;###autoload
 (defun tlon-ebib--make-request (method endpoint data headers &optional auth-required base-url)
   "Make an HTTP request to the EA International API.
 METHOD is the HTTP method (e.g., \"GET\", \"POST\").
@@ -730,7 +725,10 @@ EVENT is a list of the form (FILE ACTION)."
 		      (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
 		      (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
 		      (when parts
-			(message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))))
+			(run-with-timer 3 nil
+					(lambda ()
+					  (message "Ebib sync: %s."
+						   (mapconcat #'identity (nreverse parts) ", ")))))))
 		(setq tlon-ebib--sync-in-progress nil)))))))))
 
 ;;;;;; Periodic data update
