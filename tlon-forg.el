@@ -2176,8 +2176,7 @@ The command:
   when given;
 
 - captures the freshly-created issue as an Org TODO and leaves point on that
-  heading. The capture behavior respects `tlon-when-assignee-is-nil' and
-  `tlon-when-assignee-is-someone-else', so capture may be skipped.
+  heading.
 
 - silently adds the issue to the project and updates its project status to match
   the TODO."
@@ -2207,8 +2206,12 @@ The command:
 	    (tlon-forg--set-github-project-estimate issue effort-h)))
 	(cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
 	  (tlon-forg--set-github-project-status issue status))
-	;; Pass the known status to tlon-capture-issue
-	(tlon-capture-issue issue nil status)
+	;; The assignee has been set on the remote, but the local `issue' object
+	;; may be stale (unassigned). We let-bind `tlon-when-assignee-is-nil'
+	;; to 'capture so that `tlon-capture-handle-assignee' proceeds anyway
+	;; instead of bailing out.
+	(let ((tlon-when-assignee-is-nil 'capture))
+	  (tlon-capture-issue issue nil status))
 	(when-let ((pf (tlon-get-todo-position-from-issue issue)))
 	  (tlon-visit-todo pf)
 	  (org-todo status) ; Ensures Org state is correct
