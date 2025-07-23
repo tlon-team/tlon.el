@@ -111,10 +111,18 @@
 	   :type development
 	   :key "q q"
 	   :help t)
-    (:name "uqbar-audio"
+    (:name "uqbar-audio-api"
 	   :project "babel"
 	   :subproject "uqbar"
-	   :abbrev "uqbar-audio"
+	   :abbrev "uqbar-audio-api"
+	   :type development
+	   :subtype audio
+	   :key "q p"
+	   :help t)
+    (:name "uqbar-audio-content"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-audio-content"
 	   :type content
 	   :subtype audio
 	   :key "q d"
