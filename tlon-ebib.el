@@ -224,33 +224,34 @@ conditions is not met, an error is logged and the process is aborted."
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
 (defun tlon-ebib-post-entry (&optional key)
-  "Post a BibTeX entry to the EA International API.
-If called interactively, post the entry at point. If called from Lisp with a
-KEY, post the corresponding entry. The entry is sent as \"text/plain\".
-Handles 200 (Success) and 422 (Validation Error) responses."
+  "Create or update KEY in the EA International API.
+If called interactively, post the entry at point; otherwise use KEY."
   (interactive)
   (tlon-ebib-ensure-auth)
   (if-let ((entry-key (or key (tlon-ebib-get-key-at-point))))
-      (let* ((entry-text (bibtex-extras-get-entry-as-string entry-key nil))
-	     (encoded-entry-text (encode-coding-string entry-text 'utf-8))
-	     (headers `(("Content-Type" . "text/plain; charset=utf-8")
-			("accept" . "text/plain")))
-	     (result (tlon-ebib--handle-entry-request "POST" "/api/entries" encoded-entry-text headers))
-	     (status-code (plist-get result :status))
-	     (raw-text (plist-get result :raw-text)))
-	(if (or tlon-debug (not (and status-code (= status-code 200))))
-	    (tlon-ebib--display-result-buffer
-	     (format "Post entry result (Status: %s)" (if status-code (number-to-string status-code) "N/A"))
-	     #'tlon-ebib--format-post-entry-result
-	     result)
-	  (when-let ((new-entry-text (tlon-ebib--get-response-body raw-text)))
-	    (tlon-ebib--replace-entry-locally entry-key new-entry-text)
-	    (message "Entry posted and updated successfully.")))
-	result)
+      (let* ((entry-text   (bibtex-extras-get-entry-as-string entry-key nil))
+             (encoded-text (encode-coding-string entry-text 'utf-8))
+             (headers      '(("Content-Type" . "text/plain; charset=utf-8")
+                             ("accept"       . "text/plain")))
+             (result       (tlon-ebib--handle-entry-request
+                            "POST" "/api/entries" encoded-text headers))
+             (status-code  (plist-get result :status))
+             (raw-text     (plist-get result :raw-text)))
+        (if (or tlon-debug (not (and status-code (= status-code 200))))
+            ;; Non‑200 or debug ⇒ show whole response
+            (tlon-ebib--display-result-buffer
+             (format "Post entry result (Status: %s)"
+                     (if status-code (number-to-string status-code) "N/A"))
+             #'tlon-ebib--format-post-entry-result result)
+          ;; Success ­‑— decide which text we copy locally
+          (let* ((body (tlon-ebib--get-response-body raw-text))
+                 (local-copy (or body entry-text)))
+            (tlon-ebib--replace-entry-locally entry-key local-copy)
+            (message "Entry “%s” posted and mirrored locally." entry-key))))
     (user-error "No BibTeX key found at point")))
 
 (defun tlon-ebib--replace-entry-locally (key entry)
-  "Replace entry with KEY with new ENTRY text in local files."
+  "Replace KEY with ENTRY text in both local databases."
   (with-current-buffer (find-file-noselect tlon-ebib-file-db)
     (bibtex-mode)
     (goto-char (point-min))
@@ -259,13 +260,12 @@ Handles 200 (Success) and 422 (Validation Error) responses."
       (tlon-ebib--insert-entry-with-newlines entry))
     (save-buffer))
   (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-    (when (file-exists-p tlon-ebib-file-db-upstream)
-      (bibtex-mode)
-      (goto-char (point-min))
-      (if (bibtex-search-entry key)
-          (progn (bibtex-kill-entry) (insert entry))
-        (tlon-ebib--insert-entry-with-newlines entry))
-      (save-buffer))))
+    (bibtex-mode)
+    (goto-char (point-min))
+    (if (bibtex-search-entry key)
+        (progn (bibtex-kill-entry) (insert entry))
+      (tlon-ebib--insert-entry-with-newlines entry))
+    (save-buffer)))
 
 (defun tlon-ebib--insert-entry-with-newlines (entry)
   "Insert bibtex ENTRY at end of buffer with proper newlines."
@@ -303,24 +303,26 @@ Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
       result)))
 
 (defun tlon-ebib-delete-entry-locally (key)
-  "Delete KEY from the local db file and the upstream file."
+  "Delete KEY from both local files."
   (let ((deleted nil))
+    ;; db.bib
     (with-current-buffer (find-file-noselect tlon-ebib-file-db)
       (bibtex-mode)
       (when (bibtex-search-entry key)
         (setq deleted t)
         (bibtex-kill-entry)
-        (unless tlon-ebib--sync-in-progress (save-buffer))))
-    (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-      (when (file-exists-p tlon-ebib-file-db-upstream)
-        (bibtex-mode)
-        (when (bibtex-search-entry key)
-          (setq deleted t)
-          (bibtex-kill-entry)
+        (unless tlon-ebib--sync-in-progress
           (save-buffer))))
+    ;; db-upstream.bib
+    (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
+      (bibtex-mode)
+      (when (bibtex-search-entry key)
+        (setq deleted t)
+        (bibtex-kill-entry)
+        (save-buffer)))
     (if deleted
-        (message "Entry `%s' deleted successfully." key)
-      (message "Entry `%s' not found in local db." key))))
+        (message "Entry “%s” deleted locally." key)
+      (message "Entry “%s” not found in local db." key))))
 
 (defun tlon-ebib--handle-entry-request (method endpoint data headers &optional json-on-success)
   "Handle a request to an entry endpoint and process the response.
@@ -634,9 +636,9 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
     (setq tlon-ebib--db-watch-descriptor
           (file-notify-add-watch tlon-ebib-file-db '(change) #'tlon-ebib--sync-on-change))
     ;; Ensure cleanup on exit.
-    (add-hook 'kill-emacs-hook #'tlon-ebib--cleanup-sync nil t)))
+    (add-hook 'kill-emacs-hook #'tlon-ebib-remove-file-notify-watch nil t)))
 
-(defun tlon-ebib--cleanup-sync ()
+(defun tlon-ebib-remove-file-notify-watch ()
   "Remove file notification watch."
   (when tlon-ebib--db-watch-descriptor
     (file-notify-rm-watch tlon-ebib--db-watch-descriptor)
@@ -685,48 +687,49 @@ EVENT is a list of the form (FILE ACTION)."
         (file (nth 2 event)))
     (when (and (eq action 'changed)
                (string-equal file (expand-file-name tlon-ebib-file-db))
-               (file-exists-p tlon-ebib-file-db-upstream)
-               (not tlon-ebib--sync-in-progress))
-      (let* ((process-sync-fail-on-error nil)
-             (diff-buffer (generate-new-buffer " *ebib-diff*"))
-             diff-output)
-        (unwind-protect
-            (let ((exit-code (call-process "diff" nil diff-buffer nil "-u"
-                                           tlon-ebib-file-db-upstream
-                                           file)))
-              (when (= exit-code 1) ; 0 means no differences, >1 is an error
-                (with-current-buffer diff-buffer
-                  (setq diff-output (buffer-string)))))
-          (when (buffer-live-p diff-buffer)
-            (kill-buffer diff-buffer)))
-        (when diff-output
-          (with-current-buffer (find-file-noselect file)
-            (unwind-protect
-                (progn
-                  (setq tlon-ebib--sync-in-progress t)
-                  (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
-                         (added (plist-get changes :added))
-                         (deleted (plist-get changes :deleted))
-                         (modified (plist-get changes :modified))
-                         (created-count 0)
-                         (modified-count 0)
-                         (deleted-count 0)
-                         (parts '()))
-                    (dolist (key added)
-                      (tlon-ebib-post-entry key)
-                      (setq created-count (1+ created-count)))
-                    (dolist (key modified)
-                      (tlon-ebib-post-entry key)
-                      (setq modified-count (1+ modified-count)))
-                    (dolist (key deleted)
-                      (tlon-ebib-delete-entry key nil t)
-                      (setq deleted-count (1+ deleted-count)))
-                    (when (> created-count 0) (push (format "%d created" created-count) parts))
-                    (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
-                    (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
-                    (when parts
-                      (message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))))
-              (setq tlon-ebib--sync-in-progress nil))))))))
+               (file-exists-p tlon-ebib-file-db-upstream))
+      (if tlon-ebib--sync-in-progress
+	  (message "Ebib sync already in progress, skipping this change.")
+	(let* ((process-sync-fail-on-error nil)
+	       (diff-buffer (generate-new-buffer " *ebib-diff*"))
+	       diff-output)
+	  (unwind-protect
+	      (let ((exit-code (call-process "diff" nil diff-buffer nil "-u"
+					     tlon-ebib-file-db-upstream
+					     file)))
+		(when (= exit-code 1) ; 0 means no differences, >1 is an error
+		  (with-current-buffer diff-buffer
+		    (setq diff-output (buffer-string)))))
+	    (when (buffer-live-p diff-buffer)
+	      (kill-buffer diff-buffer)))
+	  (when diff-output
+	    (with-current-buffer (find-file-noselect file)
+	      (unwind-protect
+		  (progn
+		    (setq tlon-ebib--sync-in-progress t)
+		    (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
+			   (added (plist-get changes :added))
+			   (deleted (plist-get changes :deleted))
+			   (modified (plist-get changes :modified))
+			   (created-count 0)
+			   (modified-count 0)
+			   (deleted-count 0)
+			   (parts '()))
+		      (dolist (key added)
+			(tlon-ebib-post-entry key)
+			(setq created-count (1+ created-count)))
+		      (dolist (key modified)
+			(tlon-ebib-post-entry key)
+			(setq modified-count (1+ modified-count)))
+		      (dolist (key deleted)
+			(tlon-ebib-delete-entry key nil t)
+			(setq deleted-count (1+ deleted-count)))
+		      (when (> created-count 0) (push (format "%d created" created-count) parts))
+		      (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
+		      (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
+		      (when parts
+			(message "Ebib sync: %s." (mapconcat #'identity (nreverse parts) ", ")))))
+		(setq tlon-ebib--sync-in-progress nil)))))))))
 
 ;;;;;; Periodic data update
 
