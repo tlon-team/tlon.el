@@ -185,19 +185,11 @@ If END is nil, use `point-max'."
 (defconst tlon-paragraphs-align-with-ai-prompt
   "You are an expert editor. The file '%s' is a translation of '%s'. They have a different number of paragraphs. The original has %d paragraphs and the translation has %d.
 
-Please edit the translation file ('%s') to ensure it has the same number of paragraphs as the original. You might need to merge or split paragraphs. Do not change the content otherwise. You must use the `edit_file` tool to apply your changes.
-
-Here are the contents of the original file:
-```markdown
-%s
-```
-
-Here are the contents of the translation file:
-```markdown
-%s
-```"
+Please edit the translation file ('%s') to ensure it has the same number of paragraphs as the original. You might need to merge or split paragraphs. Do not change the content otherwise. You must use the `edit_file` tool to apply your changes."
   "Prompt for aligning paragraphs between a file and its counterpart.")
 
+(declare-function gptel-context-add-file "gptel-context")
+(declare-function gptel-context-remove-all "gptel-context")
 ;;;###autoload
 (defun tlon-paragraphs-align-with-ai ()
   "Check for paragraph count mismatch and use AI to fix it."
