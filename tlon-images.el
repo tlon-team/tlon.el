@@ -502,7 +502,7 @@ variable."
     ("-o" "open after processing"                tlon-images-toggle-open-after-processing)
     ("-r" "percent brightness reduction"         tlon-images-brightness-reduction-infix)]
    ["Alt text"
-    ("d" "describe image"                        tlon-images-describe-image)
+    ("d" "display alt text"                      tlon-images-describe-image)
     ("t" "set alt text in tag"                   tlon-images-set-image-alt-text-in-file)
     ("b" "set alt text in buffer"                tlon-images-set-image-alt-text-in-buffer)
     ""
