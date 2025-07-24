@@ -706,6 +706,10 @@ upon completion.
 If called with a prefix ARG, the initial pull from forge is omitted and the
 cached project items list is used instead of fetching a fresh one."
   (interactive "P")
+  ;; Inform the user what is happening and how to skip it.
+  (unless arg
+    (message "Pulling issues from all repositories in project... (use “C-u %s” to skip this pull)"
+	     this-command))
   (let* ((original-window-config (current-window-configuration))
 	 (project-items (forge-extras-list-project-items-ordered nil nil arg))
 	 (issue-repos (make-hash-table :test 'equal))
