@@ -266,25 +266,6 @@ file. If LANG is not provided, prompt for a target language."
 
 ;;;;; Menu
 
-;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
-(transient-define-prefix tlon-translate-menu ()
-  "`tlon-translate' menu."
-  [["Translate"
-    ("f" "Translate file" tlon-translate-file)
-    ""
-    "Options"
-    ("-t" "Translation engine" tlon-translate-engine-infix)
-    ("-d" "DeepL model" tlon-deepl-model-type-infix)]
-   ["Revise"
-    ("e" "Spot errors" tlon-translate-revise-errors)
-    ("f" "Improve flow" tlon-translate-revise-flow)
-    ""
-    "Options"
-    ("-e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
-    ("-f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]
-   ["General options"
-    ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
-
 (defun tlon-translate-engine-reader (prompt _initval _arg)
   "PROMPT the user to select a translation engine."
   (let* ((current-value tlon-translate-engine)
@@ -318,6 +299,25 @@ If nil, use the default model."
   :class 'transient-lisp-variable
   :variable 'tlon-translate-revise-commit-changes
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-translate-revise-commit-changes)))
+
+;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
+(transient-define-prefix tlon-translate-menu ()
+  "`tlon-translate' menu."
+  [["Translate"
+    ("f" "Translate file" tlon-translate-file)
+    ""
+    "Options"
+    ("-t" "Translation engine" tlon-translate-engine-infix)
+    ("-d" "DeepL model" tlon-deepl-model-type-infix)]
+   ["Revise"
+    ("e" "Spot errors" tlon-translate-revise-errors)
+    ("f" "Improve flow" tlon-translate-revise-flow)
+    ""
+    "Options"
+    ("-e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
+    ("-f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]
+   ["General options"
+    ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
 (provide 'tlon-translate)
 ;;; tlon-translate.el ends here
