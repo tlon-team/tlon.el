@@ -874,6 +874,32 @@ non-job issues if it's valid, otherwise nil."
 	nil)))) ; Return nil if nothing was captured or target file invalid
 
 ;;;###autoload
+(defun tlon-capture-all-issues-in-repo-after-pull-by-name (repo-name
+                                                           &optional project-items
+                                                           invoked-from-org-file)
+  "Run `tlon-capture-all-issues-in-repo-after-pull' for repository REPO-NAME.
+
+Interactively, prompt for a repository name among the Tlön-configured
+repositories.
+
+PROJECT-ITEMS and INVOKED-FROM-ORG-FILE are forwarded unchanged so this helper
+can be used programmatically as a drop-in replacement."
+  (interactive
+   (list (completing-read "Repository: "
+                          (tlon-repo-lookup-all :name) nil t)))
+  (let ((repo-dir (tlon-repo-lookup :dir :name repo-name)))
+    (unless repo-dir
+      (user-error "Repository '%s' not found in Tlön configuration" repo-name))
+    (unless (file-directory-p repo-dir)
+      (user-error "Directory '%s' for repository '%s' does not exist"
+                  repo-dir repo-name))
+    (let ((forge-repo (tlon-forg--safe-get-repository repo-dir)))
+      (unless forge-repo
+        (user-error "Repository '%s' is not registered with forge" repo-name))
+      (tlon-capture-all-issues-in-repo-after-pull
+       forge-repo project-items invoked-from-org-file))))
+
+;;;###autoload
 (defun tlon-store-todo (template &optional no-action issue target-file override-status)
   "Capture a TODO for ISSUE using org‑capture TEMPLATE.
 If TARGET-FILE is non‑nil, capture into that file; otherwise use the
