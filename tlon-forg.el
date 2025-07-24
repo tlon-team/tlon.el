@@ -878,12 +878,15 @@ non-job issues if it's valid, otherwise nil."
                                                            &optional project-items
                                                            invoked-from-org-file)
   "Run `tlon-capture-all-issues-in-repo-after-pull' for repository REPO-NAME.
-
 Interactively, prompt for a repository name among the Tlön-configured
 repositories.
 
 PROJECT-ITEMS and INVOKED-FROM-ORG-FILE are forwarded unchanged so this helper
-can be used programmatically as a drop-in replacement."
+can be used programmatically as a drop-in replacement.
+
+This command can be useful for debugging; unlike
+`tlon-capture-all-issues-in-repo', it uses `gh' rather than `forge' to get the
+issues."
   (interactive
    (list (completing-read "Repository: "
                           (tlon-repo-lookup-all :name) nil t)))
@@ -901,18 +904,34 @@ can be used programmatically as a drop-in replacement."
 
 ;;;###autoload
 (defun tlon-store-todo (template &optional no-action issue target-file override-status)
-  "Capture a TODO for ISSUE using org‑capture TEMPLATE.
-If TARGET-FILE is non‑nil, capture into that file; otherwise use the
-template’s default target.  When the TODO already exists the function
-returns immediately."
+  "Capture a TODO for ISSUE using `org-capture' TEMPLATE.
+TEMPLATE is the key identifying an `org-capture' template. It can be a character
+or string understood by `org-capture'.
+
+When NO-ACTION is non-nil, instruct `tlon-make-todo-name-from-issue' to mark the
+created headline as a non-action item.
+
+ISSUE is the Forge issue or pull-request object to capture.  If nil, use the
+current topic as returned by `forge-current-topic'.
+
+When TARGET-FILE is non-nil, override the template's target location and capture
+into the specified Org file instead.
+
+If OVERRIDE-STATUS is non-nil, pass this value to
+`tlon-make-todo-name-from-issue' so that it replaces the status component of the
+generated headline.
+
+If a TODO for ISSUE already exists the function returns immediately.
+The freshly generated headline is also pushed onto the `kill-ring' so
+that it can be yanked afterwards."
   (interactive)
   (let* ((issue   (or issue (forge-current-topic))))
     ;; Bail early if the TODO already exists.
     (unless (tlon-get-todo-position-from-issue issue)
-      ;; Put the freshly generated TODO text on the kill‑ring so the user
+      ;; Put the freshly generated TODO text on the kill-ring so the user
       ;; can yank it if desired.
       (kill-new (tlon-make-todo-name-from-issue issue no-action nil override-status))
-      ;; Look‑up the original template (if any) once – we will need it in
+      ;; Look-up the original template (if any) once – we will need it in
       ;; several branches below.
       (let* ((orig-templates org-capture-templates)
 	     (tpl-entry      (assoc template orig-templates))
