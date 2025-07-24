@@ -37,7 +37,7 @@
   :group 'tlon)
 
 (defcustom tlon-paragraphs-align-with-ai-model
-  '("Gemini" . gemini-2.5-flash)
+  '("Claude" . claude-sonnet-4-20250514)
   "Model to use for aligning paragraphs.
 The value is a cons cell whose car is the backend and whose cdr is the model
 itself. See `gptel-extras-ai-models' for available options. If nil, do not
@@ -195,8 +195,9 @@ Please edit the translation file ('%s') to ensure it has the same number of para
 (defun tlon-paragraphs-align-with-ai ()
   "Check for paragraph count mismatch and use AI to fix it."
   (interactive)
-  (let* ((file (read-file-name "File to process: " nil nil t
-			       (file-relative-name (buffer-file-name) default-directory))))
+  (let* ((file (expand-file-name
+		(read-file-name "File to process: " nil nil t
+                                (file-relative-name (buffer-file-name) default-directory)))))
     (if-let ((counterpart (tlon-get-counterpart file)))
         (let* ((file-subtype (tlon-get-content-subtype file))
                (original-file (if (eq file-subtype 'originals) file counterpart))
@@ -244,7 +245,7 @@ If nil, use the default model."
   [["Commands"
     ("a" "Align paragraphs"                             tlon-paragraphs-align-with-ai)
     ("c" "Count paragraphs"                             tlon-count-paragraphs)
-    ("d" "Display corresponding paragraphs"             tlon-display-corresponding-paragraphs )]
+    ("d" "Display corresponding paragraphs"             tlon-display-corresponding-paragraphs)]
    ["Options"
     ("-a" "Align paragraphs model"                      tlon-paragraphs-infix-select-align-model)]])
 
