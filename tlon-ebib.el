@@ -701,7 +701,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
               (insert (or after ""))
               (write-file after-file nil))
             (with-temp-buffer
-              (call-process "diff" nil t nil "-u" before-file after-file)
+              (call-process "diff" nil t nil "-U1000" before-file after-file)
               (setq diff-output (buffer-string))))
         (delete-file before-file)
         (delete-file after-file))
@@ -731,7 +731,7 @@ EVENT is a list of the form (FILE ACTION)."
 	       (diff-buffer (generate-new-buffer " *ebib-diff*"))
 	       diff-output)
 	  (unwind-protect
-	      (let ((exit-code (call-process "diff" nil diff-buffer nil "-u"
+	      (let ((exit-code (call-process "diff" nil diff-buffer nil "-U1000"
 					     tlon-ebib-file-db-upstream
 					     file)))
 		(when (= exit-code 1) ; 0 means no differences, >1 is an error
