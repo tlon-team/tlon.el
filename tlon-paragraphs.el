@@ -203,7 +203,17 @@ If END is nil, use `point-max'."
 (defconst tlon-paragraphs-align-with-ai-prompt
   "You are an expert editor. The file '%s' is a translation of '%s'. They have a different number of paragraphs. The original has %d paragraphs and the translation has %d.
 
-Please edit the translation file ('%s') to ensure it has the same number of paragraphs as the original. You might need to merge or split paragraphs. Do not change the content otherwise. You must use the `edit_file` tool to apply your changes."
+Here you can see a paragraph-by-paragraph breakdown of how the two files differ:
+
+```
+%s.
+```
+
+Please examine this string and determine what changes need to be made in the translation file (e.g. breaking down a paragraph into two, or consolidating two paragraphs into one) so that the number of paragraphs matches the original file.
+
+Once you have done this, please edit the translation file ('%s') accordingly. Make only the changes needed to align the number of paragraphs in the two files; do not make other changes (such as changing the translation, modifying the markup, etc.) Use the `edit_file` tool to apply your changes.
+
+If you think the task is too complex, because there are too many paragraphs and the discrepancies are extensive, you can tackle a subset of paragraphs, such as the first 10 paragraphs that differ (or however many paragraphs you are comfortable editing)."
   "Prompt for aligning paragraphs between a file and its counterpart.")
 
 (declare-function gptel-context-add-file "gptel-context")
@@ -232,17 +242,15 @@ Please edit the translation file ('%s') to ensure it has the same number of para
                        (file-name-nondirectory file)
                        (file-name-nondirectory counterpart)
                        original-paras-count)
-            (let* ((comparison-string
-                    (tlon-paragraphs--get-comparison-buffer-content
-                     original-file translation-file orig-paras trans-paras nil))
-                   (prompt (format (concat tlon-paragraphs-align-with-ai-prompt
-                                           "\n\nHere's a paragraph-by-paragraph comparison to help you:\n\n%s")
-                                   (file-name-nondirectory translation-file)
-                                   (file-name-nondirectory original-file)
-                                   original-paras-count
-                                   translation-paras-count
-                                   (file-name-nondirectory translation-file)
-                                   comparison-string))
+            (let* ((comparison-string (tlon-paragraphs--get-comparison-buffer-content
+				       original-file translation-file orig-paras trans-paras nil))
+                   (prompt (format tlon-paragraphs-align-with-ai-prompt
+				   translation-file
+				   original-file
+				   original-paras-count
+				   translation-paras-count
+				   comparison-string
+				   (file-name-nondirectory translation-file)))
 		   (tools '("edit_file" "apply_diff" "replace_file_contents")))
               (gptel-context-add-file original-file)
               (gptel-context-add-file translation-file)
