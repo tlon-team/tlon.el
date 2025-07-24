@@ -2643,7 +2643,7 @@ CHUNK-INDEX is ignored for OpenAI but included for API consistency."
   "Get or set the OpenAI API key."
   (or tlon-openai-key
       (setq tlon-openai-key
-	    (auth-source-pass-get "emacs" (concat "tlon/core/openai.com/" tlon-email-shared)))))
+	    (auth-source-pass-get "gptel" (concat "tlon/core/openai.com/" tlon-email-shared)))))
 
 ;;;;;;; ElevenLabs
 
