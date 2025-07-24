@@ -129,7 +129,7 @@ TYPE can be `errors' or `flow'."
            (model (pcase type
                     ('errors tlon-translate-revise-errors-model)
                     ('flow tlon-translate-revise-flow-model)))
-           (tools '("edit_file"))
+           (tools '("edit_file" "apply_diff" "replace_file_contents"))
            (glossary-file (when (eq type 'flow)
                             (tlon-extract-glossary lang-code 'deepl-editor)
                             (tlon-glossary-target-path lang-code 'deepl-editor)))
