@@ -204,17 +204,18 @@ Please edit the translation file ('%s') to ensure it has the same number of para
                          (file-name-nondirectory file)
                          (file-name-nondirectory counterpart)
                          orig-paras-count)
-              (let* ((original-content (with-temp-buffer (insert-file-contents file) (buffer-string)))
-                     (counterpart-content (with-temp-buffer (insert-file-contents counterpart) (buffer-string)))
-                     (prompt (format tlon-paragraphs-align-with-ai-prompt
-                                     file counterpart
+              (let* ((prompt (format tlon-paragraphs-align-with-ai-prompt
+                                     (file-name-nondirectory file)
+                                     (file-name-nondirectory counterpart)
                                      orig-paras-count trans-paras-count
-                                     counterpart
-                                     original-content counterpart-content))
+                                     (file-name-nondirectory counterpart)))
                      (tools '("edit_file")))
+                (gptel-context-add-file file)
+                (gptel-context-add-file counterpart)
                 (message "Requesting AI to align paragraphs with model %S..."
 			 (cdr tlon-paragraphs-align-with-ai-model))
-                (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback tlon-paragraphs-align-with-ai-model t nil tools)))
+                (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback tlon-paragraphs-align-with-ai-model t nil tools)
+                (gptel-context-remove-all)))
           (user-error "Could not count paragraphs in one of the files"))
       (user-error "Could not find counterpart for %s" file))))
 
