@@ -84,6 +84,29 @@ If FILE is nil, use the current buffer."
 
 ;;;;; Display paragraphs
 
+(defun tlon-paragraphs--get-comparison-buffer-content (file counterpart orig-paras trans-paras with-header)
+  "Get paragraph comparison of FILE and COUNTERPART.
+Take ORIG-PARAS and TRANS-PARAS. If WITH-HEADER is non-nil, include a header."
+  (let* ((max-len (max (length orig-paras) (length trans-paras)))
+         pairs)
+    (dotimes (i max-len)
+      (push (cons (nth i orig-paras) (nth i trans-paras)) pairs))
+    (setq pairs (nreverse pairs))
+    (with-temp-buffer
+      (when with-header
+        (insert (format "Paragraph number mismatch: \n%s has %d paragraphs\n%s has %d paragraphs\n\n"
+                        (file-name-nondirectory file) (length orig-paras)
+                        (file-name-nondirectory counterpart) (length trans-paras))))
+      (dolist (pair pairs)
+        (insert "Original:\n"
+                (or (car pair) "[Missing paragraph]")
+                "\n\nTranslation:\n"
+                (or (cdr pair) "[Missing paragraph]")
+                "\n\n"
+                (make-string 40 ?-)
+                "\n\n"))
+      (buffer-string))))
+
 ;;;###autoload
 (defun tlon-display-corresponding-paragraphs (pairs-or-fn)
   "Display PAIRS-OR-FN of corresponding paragraphs in parallel.
@@ -132,17 +155,8 @@ FILE."
     (when (/= (length orig-paras) (length trans-paras))
       (with-current-buffer (get-buffer-create "/Paragraph Pairs/")
         (erase-buffer)
-        (insert (format "Paragraph number mismatch: \n%s has %d paragraphs\n%s has %d paragraphs\n\n"
-			(file-name-nondirectory file) (length orig-paras)
-			(file-name-nondirectory counterpart) (length trans-paras)))
-        (dolist (pair pairs)
-          (insert "Original:\n"
-                  (or (car pair) "[Missing paragraph]")
-                  "\n\nTranslation:\n"
-                  (or (cdr pair) "[Missing paragraph]")
-                  "\n\n"
-                  (make-string 40 ?-)
-                  "\n\n"))
+        (insert (tlon-paragraphs--get-comparison-buffer-content
+                 file counterpart orig-paras trans-paras t))
         (goto-char (point-min))
         (display-buffer (current-buffer))
         (user-error "Paragraph number mismatch")))
@@ -202,19 +216,30 @@ Please edit the translation file ('%s') to ensure it has the same number of para
         (let* ((file-subtype (tlon-get-content-subtype file))
                (original-file (if (eq file-subtype 'originals) file counterpart))
                (translation-file (if (eq file-subtype 'originals) counterpart file))
-               (original-paras-count (length (tlon-with-paragraphs original-file #'ignore t)))
-               (translation-paras-count (length (tlon-with-paragraphs translation-file #'ignore t))))
+               (orig-paras (tlon-with-paragraphs original-file
+                                                 (lambda (start end)
+                                                   (buffer-substring-no-properties start end))))
+               (trans-paras (tlon-with-paragraphs translation-file
+                                                  (lambda (start end)
+                                                    (buffer-substring-no-properties start end))))
+               (original-paras-count (length orig-paras))
+               (translation-paras-count (length trans-paras)))
           (if (= original-paras-count translation-paras-count)
               (message "File `%s' and counterpart `%s' have the same number of paragraphs (%d)."
                        (file-name-nondirectory file)
                        (file-name-nondirectory counterpart)
                        original-paras-count)
-            (let* ((prompt (format tlon-paragraphs-align-with-ai-prompt
+            (let* ((comparison-string
+                    (tlon-paragraphs--get-comparison-buffer-content
+                     original-file translation-file orig-paras trans-paras nil))
+                   (prompt (format (concat tlon-paragraphs-align-with-ai-prompt
+                                           "\n\nHere's a paragraph-by-paragraph comparison to help you:\n\n%s")
                                    (file-name-nondirectory translation-file)
                                    (file-name-nondirectory original-file)
                                    original-paras-count
                                    translation-paras-count
-                                   (file-name-nondirectory translation-file)))
+                                   (file-name-nondirectory translation-file)
+                                   comparison-string))
                    (tools '("edit_file")))
               (gptel-context-add-file original-file)
               (gptel-context-add-file translation-file)

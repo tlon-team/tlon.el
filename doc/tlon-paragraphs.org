@@ -46,7 +46,7 @@ This section details the interactive commands provided by =tlon-paragraph.el=.
 :END:
 
 #+findex: tlon-paragraphs-align-with-ai
-+ ~tlon-paragraphs-align-with-ai~ :: (Autoloaded) Checks for paragraph count mismatch between a file and its counterpart and uses an AI agent to fix it. It prompts for a file, finds its counterpart, and compares the number of paragraphs. If they differ, it instructs an AI agent to edit the translation file to match the paragraph count of the original. The AI is equipped with the =edit_file= tool to apply changes directly. If the paragraph counts match, it simply reports this to the user.
++ ~tlon-paragraphs-align-with-ai~ :: (Autoloaded) Checks for paragraph count mismatch between a file and its counterpart and uses an AI agent to fix it. It prompts for a file, finds its counterpart, and compares the number of paragraphs. If they differ, it provides the AI agent with a paragraph-by-paragraph comparison and instructs it to edit the translation file to match the paragraph count of the original. The AI is equipped with the =edit_file= tool to apply changes directly. If the paragraph counts match, it simply reports this to the user.
 
 *** Counting Paragraphs  
 #+findex: tlon-count-paragraphs
