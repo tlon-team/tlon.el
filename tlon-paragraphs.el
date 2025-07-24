@@ -190,6 +190,7 @@ Please edit the translation file ('%s') to ensure it has the same number of para
 
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
+(declare-function tlon-get-content-subtype "tlon-counterpart")
 ;;;###autoload
 (defun tlon-paragraphs-align-with-ai ()
   "Check for paragraph count mismatch and use AI to fix it."
@@ -197,26 +198,29 @@ Please edit the translation file ('%s') to ensure it has the same number of para
   (let* ((file (read-file-name "File to process: " nil nil t
 			       (file-relative-name (buffer-file-name) default-directory))))
     (if-let ((counterpart (tlon-get-counterpart file)))
-        (if-let* ((orig-paras-count (length (tlon-with-paragraphs file #'ignore t)))
-                  (trans-paras-count (length (tlon-with-paragraphs counterpart #'ignore t))))
-            (if (= orig-paras-count trans-paras-count)
-                (message "File `%s' and counterpart `%s' have the same number of paragraphs (%d)."
-                         (file-name-nondirectory file)
-                         (file-name-nondirectory counterpart)
-                         orig-paras-count)
-              (let* ((prompt (format tlon-paragraphs-align-with-ai-prompt
-                                     (file-name-nondirectory file)
-                                     (file-name-nondirectory counterpart)
-                                     orig-paras-count trans-paras-count
-                                     (file-name-nondirectory counterpart)))
-                     (tools '("edit_file")))
-                (gptel-context-add-file file)
-                (gptel-context-add-file counterpart)
-                (message "Requesting AI to align paragraphs with model %S..."
-			 (cdr tlon-paragraphs-align-with-ai-model))
-                (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback tlon-paragraphs-align-with-ai-model t nil tools)
-                (gptel-context-remove-all)))
-          (user-error "Could not count paragraphs in one of the files"))
+        (let* ((file-subtype (tlon-get-content-subtype file))
+               (original-file (if (eq file-subtype 'originals) file counterpart))
+               (translation-file (if (eq file-subtype 'originals) counterpart file))
+               (original-paras-count (length (tlon-with-paragraphs original-file #'ignore t)))
+               (translation-paras-count (length (tlon-with-paragraphs translation-file #'ignore t))))
+          (if (= original-paras-count translation-paras-count)
+              (message "File `%s' and counterpart `%s' have the same number of paragraphs (%d)."
+                       (file-name-nondirectory file)
+                       (file-name-nondirectory counterpart)
+                       original-paras-count)
+            (let* ((prompt (format tlon-paragraphs-align-with-ai-prompt
+                                   (file-name-nondirectory translation-file)
+                                   (file-name-nondirectory original-file)
+                                   original-paras-count
+                                   translation-paras-count
+                                   (file-name-nondirectory translation-file)))
+                   (tools '("edit_file")))
+              (gptel-context-add-file original-file)
+              (gptel-context-add-file translation-file)
+              (message "Requesting AI to align paragraphs with model %S..."
+                       (cdr tlon-paragraphs-align-with-ai-model))
+              (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback tlon-paragraphs-align-with-ai-model t nil tools)
+              (gptel-context-remove-all))))
       (user-error "Could not find counterpart for %s" file))))
 
 (defun tlon-paragraphs-align-with-ai-callback (response info)
