@@ -1488,7 +1488,7 @@ keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
 			   (with-temp-buffer
 			     (insert-file-contents file)
 			     (buffer-string)))))
-	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "read_file")))
+	 (tools '("search_bibliography" "fetch_content" "search" "edit_file" "apply_diff" "replace_file_contents")))
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
@@ -1521,7 +1521,7 @@ tool to add an entry to `tlon-file-fluid`."
 			   (with-temp-buffer
 			     (insert-file-contents file)
 			     (buffer-string)))))
-	 (tools '("add_bib_entry" "fetch_content" "search" "edit_file" "read_file")))
+	 (tools '("add_bib_entry" "search" "edit_file" "apply_diff" "replace_file_contents")))
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to add missing citations from %s..." (file-name-nondirectory file))

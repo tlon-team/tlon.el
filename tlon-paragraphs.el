@@ -243,7 +243,7 @@ Please edit the translation file ('%s') to ensure it has the same number of para
                                    translation-paras-count
                                    (file-name-nondirectory translation-file)
                                    comparison-string))
-                   (tools '("edit_file")))
+		   (tools '("edit_file" "apply_diff" "replace_file_contents")))
               (gptel-context-add-file original-file)
               (gptel-context-add-file translation-file)
               (message "Requesting AI to align paragraphs with model %S..."
