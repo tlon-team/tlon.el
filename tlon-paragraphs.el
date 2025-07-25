@@ -84,9 +84,10 @@ If FILE is nil, use the current buffer."
 
 ;;;;; Display paragraphs
 
-(defun tlon-paragraphs--get-comparison-buffer-content (file counterpart orig-paras trans-paras with-header)
-  "Get paragraph comparison of FILE and COUNTERPART.
-Take ORIG-PARAS and TRANS-PARAS. If WITH-HEADER is non-nil, include a header."
+(defun tlon-paragraphs--get-comparison-buffer-content (translation original trans-paras orig-paras with-header)
+  "Get paragraph comparison of TRANSLATION and ORIGINAL.
+TRANS-PARAS and ORIG-PARAS are lists of paragraphs in TRANSLATION and ORIGINAL,
+respectively. If WITH-HEADER is non-nil, include a header."
   (let* ((max-len (max (length orig-paras) (length trans-paras)))
          pairs)
     (dotimes (i max-len)
@@ -95,8 +96,8 @@ Take ORIG-PARAS and TRANS-PARAS. If WITH-HEADER is non-nil, include a header."
     (with-temp-buffer
       (when with-header
         (insert (format "Paragraph number mismatch: \n%s has %d paragraphs\n%s has %d paragraphs\n\n"
-                        (file-name-nondirectory file) (length orig-paras)
-                        (file-name-nondirectory counterpart) (length trans-paras))))
+                        (file-name-nondirectory original) (length orig-paras)
+			(file-name-nondirectory translation) (length trans-paras))))
       (dolist (pair pairs)
         (insert "Original:\n"
                 (or (car pair) "[Missing paragraph]")
@@ -129,22 +130,22 @@ or the function itself."
                     (make-string 40 ?-)
                     "\n\n"))
           (goto-char (point-min)))
-        (display-buffer buf))
+	(display-buffer buf))
     (user-error
      (display-buffer (get-buffer "/Paragraph Pairs/")))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
-(defun tlon-get-corresponding-paragraphs (&optional file counterpart)
-  "Return pairs of paragraphs between FILE and its COUNTERPART.
+(defun tlon-get-corresponding-paragraphs (&optional translation original)
+  "Return pairs of paragraphs between TRANSLATION and its ORIGINAL.
 Signals an error if files have different number of paragraphs, and displays the
-paragraphs in a buffer only in that case. If COUNTERPART is nil, infer it from
-FILE."
-  (let* ((file (or file (buffer-file-name)))
-         (counterpart (or counterpart (tlon-get-counterpart file)))
-         (orig-paras (tlon-with-paragraphs file
+paragraphs in a buffer only in that case. If ORIGINAL is nil, infer it from
+TRANSLATION."
+  (let* ((translation (or translation (buffer-file-name)))
+         (original (or original (tlon-get-counterpart translation)))
+         (orig-paras (tlon-with-paragraphs original
 					   (lambda (start end)
 					     (buffer-substring-no-properties start end))))
-         (trans-paras (tlon-with-paragraphs counterpart
+         (trans-paras (tlon-with-paragraphs translation
 					    (lambda (start end)
 					      (buffer-substring-no-properties start end))))
          (max-len (max (length orig-paras) (length trans-paras)))
@@ -156,7 +157,7 @@ FILE."
       (with-current-buffer (get-buffer-create "/Paragraph Pairs/")
         (erase-buffer)
         (insert (tlon-paragraphs--get-comparison-buffer-content
-                 file counterpart orig-paras trans-paras t))
+                 translation original trans-paras orig-paras t))
         (goto-char (point-min))
         (display-buffer (current-buffer))
         (user-error "Paragraph number mismatch")))
@@ -240,7 +241,7 @@ If you think the task is too complex, because there are too many paragraphs and 
                        (file-name-nondirectory counterpart)
                        original-paras-count)
             (let* ((comparison-string (tlon-paragraphs--get-comparison-buffer-content
-				       original-file translation-file orig-paras trans-paras nil))
+				       translation-file original-file trans-paras orig-paras nil))
                    (prompt (format tlon-paragraphs-align-with-ai-prompt
 				   translation-file
 				   original-file
@@ -253,7 +254,8 @@ If you think the task is too complex, because there are too many paragraphs and 
               (gptel-context-add-file translation-file)
               (message "Requesting AI to align paragraphs with model %S..."
                        (cdr tlon-paragraphs-align-with-ai-model))
-              (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback tlon-paragraphs-align-with-ai-model t nil tools)
+              (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback
+				       tlon-paragraphs-align-with-ai-model t nil tools)
               (gptel-context-remove-all))))
       (user-error "Could not find counterpart for %s" file))))
 
