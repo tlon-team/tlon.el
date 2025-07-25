@@ -285,13 +285,13 @@ file. If LANG is not provided, prompt for a target language."
 (transient-define-infix tlon-translate-infix-select-revise-errors-model ()
   "AI model to use for spotting errors in translations.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-translate-revise-errors-model)
 
 (transient-define-infix tlon-translate-infix-select-revise-flow-model ()
   "AI model to use for improving the flow of translations.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-translate-revise-flow-model)
 
 (transient-define-infix tlon-translate-infix-toggle-commit-changes ()

@@ -1900,17 +1900,19 @@ variable."
 
 ;;;;;; Model selection
 
-(defclass tlon-ai-model-selection-infix (transient-infix)
+;;;;;;; Common
+
+(defclass tlon-model-selection-infix (transient-infix)
   ((variable :initarg :variable)
    (choices  :initarg :choices)
    (default-label :initarg :default-label :initform "Default model"))
   "A transient infix for selecting AI models or using the default.")
 
-(cl-defmethod transient-init-value ((obj tlon-ai-model-selection-infix))
+(cl-defmethod transient-init-value ((obj tlon-model-selection-infix))
   "Initialize OBJ's value slot."
   (oset obj value (symbol-value (oref obj variable))))
 
-(cl-defmethod transient-infix-read ((obj tlon-ai-model-selection-infix))
+(cl-defmethod transient-infix-read ((obj tlon-model-selection-infix))
   "Read a new value for OBJ's variable."
   (let* ((choices
 	  (append
@@ -1931,11 +1933,11 @@ variable."
 		  choices nil t)))
     (cdr (assoc choice choices))))
 
-(cl-defmethod transient-infix-set ((obj tlon-ai-model-selection-infix) value)
+(cl-defmethod transient-infix-set ((obj tlon-model-selection-infix) value)
   "Set the value of OBJ's variable to VALUE."
   (set (oref obj variable) value))
 
-(cl-defmethod transient-format-value ((obj tlon-ai-model-selection-infix))
+(cl-defmethod transient-format-value ((obj tlon-model-selection-infix))
   "Format OBJ's value for display."
   (let ((value (symbol-value (oref obj variable))))
     (propertize (if value
@@ -1943,42 +1945,37 @@ variable."
 		  (oref obj default-label))
 		'face 'transient-value)))
 
+;;;;;;; Specific models
+
 (transient-define-infix tlon-ai-infix-select-summarization-model ()
   "AI model to use for summarizing.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-ai-summarization-model)
-
-(transient-define-infix tlon-ai-infix-select-markdown-fix-model ()
-  "AI model to use for fixing the markdown.
-If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
-  :variable 'tlon-ai-markdown-fix-model)
 
 (transient-define-infix tlon-ai-infix-select-create-reference-article-model ()
   "AI model to use for creating a reference article.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-ai-create-reference-article-model)
 
 (transient-define-infix tlon-ai-infix-select-proofread-reference-article-model ()
   "AI model to use for proofreading a reference article.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-ai-proofread-reference-article-model)
 
 (transient-define-infix tlon-ai-infix-select-help-model ()
   "AI model to use for asking for help.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-ai-help-model)
 
 (transient-define-infix tlon-ai-infix-select-summarize-commit-diffs-model ()
   "AI model to use for summarizing commit diffs.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-ai-summarize-commit-diffs-model)
-
 
 ;;;;;; Main menu
 
@@ -2012,7 +2009,6 @@ If nil, use the default model."
     ""
     "Propagation"
     ("d" "summarize commit diffs"                     tlon-ai-summarize-commit-diffs)
-    ("f" "fix Markdown format"                        tlon-ai-fix-markdown-format)
     ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)
     ""]
    ["Misc"
@@ -2031,7 +2027,6 @@ If nil, use the default model."
     ""
     "Models"
     ("m -d" "Summarize commit diffs" tlon-ai-infix-select-summarize-commit-diffs-model)
-    ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("m -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)

@@ -3967,7 +3967,7 @@ PROMPT is used as the prompt string, _INITIAL and _HISTORY are ignored."
    :documentation "Custom value for the setting."))
   "Infix class for setting engine settings.")
 
-(cl-defmethod transient-infix-read ((_obj tlon-tts-global-engine-settings-infix))
+(cl-defmethod transient-tts-model-infix-read ((_obj tlon-tts-global-engine-settings-infix))
   "Read the value for engine settings infix OBJ."
   (tlon-tts-global-engine-settings-reader nil nil nil))
 
@@ -3981,17 +3981,7 @@ Reads audio format choices based on the currently selected engine."
 		     choices)))
     (assoc selection choices)))
 
-(cl-defmethod transient-init-value ((object tlon-tts-global-engine-settings-infix))
-  "Initialize the value of the infix OBJECT."
-  (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
-	 (variable (and variable-name (intern-soft variable-name))))
-    (when variable
-      (setf (slot-value object 'variable) variable)
-      (when (boundp variable)
-	(setf (slot-value object 'custom-value) (symbol-value variable)))
-      (symbol-value variable))))
-
-(cl-defmethod transient-infix-set ((_object tlon-tts-global-engine-settings-infix) value)
+(cl-defmethod transient-tts-model-infix-set ((_object tlon-tts-global-engine-settings-infix) value)
   "Set the value of the infix OBJECT to VALUE."
   (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
 	 (variable (and variable-name (intern-soft variable-name))))
@@ -3999,22 +3989,12 @@ Reads audio format choices based on the currently selected engine."
       (set variable value)
       value)))
 
-(cl-defmethod transient-format-value ((_object tlon-tts-global-engine-settings-infix))
-  "Format the value of the infix OBJECT."
-  (let* ((variable-name (tlon-lookup tlon-tts-engines :audio-var :name tlon-tts-global-engine))
-	 (variable (and variable-name (intern-soft variable-name)))
-	 (value (when (and variable (boundp variable))
-		  (symbol-value variable))))
-    (if value
-	(format "%s" value)
-      "Not set")))
-
 (defun tlon-tts-menu-infix-set-engine-settings-action ()
   "Set the engine settings."
   (interactive)
   (let* ((infix (transient-suffix-object 'tlon-tts-menu-infix-set-engine-settings))
-	 (value (transient-infix-read infix)))
-    (transient-infix-set infix value)
+	 (value (transient-tts-model-infix-read infix)))
+    (transient-tts-model-infix-set infix value)
     (transient--show)))
 
 (transient-define-infix tlon-tts-menu-infix-set-engine-settings ()

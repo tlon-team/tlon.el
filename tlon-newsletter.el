@@ -182,7 +182,7 @@ recipient `deepl-api'."
 (transient-define-infix tlon-newsletter-infix-select-model ()
   "AI model to use for creating a newsletter issue.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-newsletter-model)
 
 ;;;###autoload (autoload 'tlon-newsletter-menu "tlon-newsletter" nil t)
