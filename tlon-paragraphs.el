@@ -134,7 +134,6 @@ or the function itself."
      (display-buffer (get-buffer "/Paragraph Pairs/")))))
 
 (declare-function tlon-get-counterpart "tlon-counterpart")
-(declare-function tlon-get-content-subtype "tlon-counterpart")
 (defun tlon-get-corresponding-paragraphs (&optional file counterpart)
   "Return pairs of paragraphs between FILE and its COUNTERPART.
 Signals an error if files have different number of paragraphs, and displays the
@@ -142,13 +141,10 @@ paragraphs in a buffer only in that case. If COUNTERPART is nil, infer it from
 FILE."
   (let* ((file (or file (buffer-file-name)))
          (counterpart (or counterpart (tlon-get-counterpart file)))
-         (file-subtype (tlon-get-content-subtype file))
-         (original-file (if (eq file-subtype 'originals) file counterpart))
-         (translation-file (if (eq file-subtype 'originals) counterpart file))
-         (orig-paras (tlon-with-paragraphs original-file
+         (orig-paras (tlon-with-paragraphs file
 					   (lambda (start end)
 					     (buffer-substring-no-properties start end))))
-         (trans-paras (tlon-with-paragraphs translation-file
+         (trans-paras (tlon-with-paragraphs counterpart
 					    (lambda (start end)
 					      (buffer-substring-no-properties start end))))
          (max-len (max (length orig-paras) (length trans-paras)))
@@ -160,7 +156,7 @@ FILE."
       (with-current-buffer (get-buffer-create "/Paragraph Pairs/")
         (erase-buffer)
         (insert (tlon-paragraphs--get-comparison-buffer-content
-                 original-file translation-file orig-paras trans-paras t))
+                 file counterpart orig-paras trans-paras t))
         (goto-char (point-min))
         (display-buffer (current-buffer))
         (user-error "Paragraph number mismatch")))
@@ -218,6 +214,7 @@ If you think the task is too complex, because there are too many paragraphs and 
 
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
+(declare-function tlon-get-content-subtype "tlon-counterpart")
 ;;;###autoload
 (defun tlon-paragraphs-align-with-ai ()
   "Check for paragraph count mismatch and use AI to fix it."
