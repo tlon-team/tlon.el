@@ -1326,12 +1326,12 @@ Attempts to handle common sentence-ending punctuation patterns."
 (transient-define-infix tlon-dub-infix-select-propagation-model ()
   "AI model to use for propagating timestamps.
 If nil, use the default `gptel-model'."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-dub-propagation-model)
 
 (transient-define-infix tlon-dub-infix-select-alignment-model ()
   "AI model to use for sentence alignment."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-dub-alignment-model)
 
 ;;;###autoload (autoload 'tlon-dub-menu "tlon-dub" nil t)

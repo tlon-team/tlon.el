@@ -451,13 +451,13 @@ typographic apostrophes (’) to prevent Sieve errors."
 (transient-define-infix tlon-ai-infix-select-glossary-model ()
   "AI model to use for glossary generation.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-ai-glossary-model)
 
 (transient-define-infix tlon-ai-infix-select-glossary-verify-model ()
   "AI model to use for verifying glossary translations.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-ai-glossary-verify-model)
 
 ;;;###autoload (autoload 'tlon-glossary-menu "tlon-glossary" nil t)

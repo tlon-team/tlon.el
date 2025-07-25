@@ -266,13 +266,13 @@ RESPONSE is the AI's response, INFO is the response info."
       (message "AI agent finished aligning paragraphs.")
     (tlon-ai-callback-fail info)))
 
+;;;;; Menu
+
 (transient-define-infix tlon-paragraphs-infix-select-align-model ()
   "AI model to use for aligning paragraphs.
 If nil, use the default model."
-  :class 'tlon-ai-model-selection-infix
+  :class 'tlon-model-selection-infix
   :variable 'tlon-paragraphs-align-with-ai-model)
-
-;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-paragraphs-menu "tlon-paragraphs" nil t)
 (transient-define-prefix tlon-paragraphs-menu ()
