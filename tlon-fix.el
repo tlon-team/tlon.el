@@ -27,8 +27,9 @@
 ;;; Code:
 
 (require 'tlon-core)
+(require 'transient)
 
-;;;;;; Variables
+;;;; Variables
 
 (defconst tlon-fix-french-translation
   '((") - \\[" . ") • [")
@@ -159,13 +160,17 @@
       (while (re-search-forward regexp nil t)
 	(replace-match newtext)))))
 
+;;;###autoload
 (defun tlon-autofix-curly-quotes ()
   "Replace straight quotes with curly quotes when appropriate."
+  (interactive)
   (tlon-autofix '("\\([^\\.\\?]\"\\)\\[")
 		"\\1["))
 
+;;;###autoload
 (defun tlon-autofix-footnote-punctuation ()
   "Place footnotes after punctuation mark."
+  (interactive)
   (let ((language (tlon-get-language-in-file)))
     (when (member language '("en" "es")) ; usage varies across languages
       (tlon-autofix '("\\(.\\)\\(\\[\\^[[:digit:]]\\{1,3\\}\\]\\)\\([,\\.:;\\?!]\\)")
@@ -180,28 +185,36 @@ effects to begin with."
 		  "\\[\\^\\[\\^\\([0-9]+\\)\\]\\([0-9]+\\)\\]") ; fixes `[^[^1]2]'
 		"[^\\1][^\\2]"))
 
+;;;###autoload
 (defun tlon-autofix-periods-in-headings ()
   "Remove periods at the end of headings."
+  (interactive)
   (tlon-autofix '("^\\(#\\{2,6\\}.*\\)\\.$")
 		"\\1"))
 
+;;;###autoload
 (defun tlon-autofix-percent-signs ()
   "Add non-breaking space before percent sign.
 The character used is U+202F NARROW NO-BREAK SPACE."
+  (interactive)
   (tlon-autofix '("\\([[:digit:],()]+\\)%\\([^\";[:alnum:]]\\)"
 		  "\\([[:digit:],()]+\\) %\\([^\";[:alnum:]]\\)")
 		"\\1 %\\2"))
 
+;;;###autoload
 (defun tlon-autofix-thin-spaces ()
   "Replace thin spaces with narrow spaces.
 This replaces the character U+2009 THIN SPACE with U+202F NARROW NO-BREAK SPACE.
 Thin and narrow spaces have exactly the same width, but only the latter are
 non-breaking."
+  (interactive)
   (tlon-autofix '(" ")
 		" "))
 
+;;;###autoload
 (defun tlon-autofix-superscripts ()
   "Replace carets with `<sup'> tags."
+  (interactive)
   (tlon-autofix '("\\^\\(?1:[[:digit:]]+\\)\\^")
 		"<sup>\\1</sup>"))
 
@@ -270,20 +283,26 @@ If KEEP-CASE is non-nil, keep the case of the matched text."
       (let ((case-replace keep-case))
 	(query-replace-regexp regexp newtext nil (point-min) (point-max))))))
 
+;;;###autoload
 (defun tlon-manual-fix-em-dashes ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
+  (interactive)
   (tlon-manual-fix '("\\([^ ][ ,)]\\)-\\([(\"[:alnum:]]\\)" ; opening dash
 		     "\\([)\\.%\"[:alnum:]]\\)-\\([ ,(]\\)" ; closing dash
 		     "\\([^ >)] \\)-\\( \\)")
 		   "\\1—\\2"))
 
+;;;###autoload
 (defun tlon-manual-fix-number-ranges ()
   "Prompt the user to replace hyphens with em dashes, when appropriate."
+  (interactive)
   (tlon-manual-fix '("\\([ \\[]\\)\\([[:digit:]]\\{1,12\\}\\)-\\([[:digit:]]\\{1,12\\}\\)\\([,.:;?!   ]\\)")
 		   "\\1\\2–\\3\\4"))
 
+;;;###autoload
 (defun tlon-manual-fix-roman-numerals ()
   "Prompt the user to add small caps tags to roman numerals."
+  (interactive)
   (tlon-manual-fix '(" \\b\\([IVXLCDM]+\\)\\b")
 		   " <abbr>\\1</abbr>"))
 
@@ -297,28 +316,35 @@ manually because some numerals, such as dates, should not be separated."
   (tlon-manual-fix `(,tlon-numerals-sans-separator)
 		   "\\1 \\2"))
 
+;;;###autoload
 (defun tlon-manual-fix-narrow-spaces ()
   "Prompt user to add a narrow space between abbreviations followed by a period.
 The character used is U+202F NARROW NO-BREAK SPACE."
+  (interactive)
   (tlon-manual-fix '("\\([A-Z]\\.\\)\\([A-Z]\\)")
 		   "\\1 \\2"))
 
+;;;###autoload
 (defun tlon-manual-fix-solo ()
   "Prompt the user to replace `sólo' with `solo'."
+  (interactive)
   (tlon-manual-fix '("sólo")
 		   "solo"
 		   'keep-case))
 
+;;;###autoload
 (defun tlon-manual-fix-podcast ()
   "Prompt the user to replace `podcast' with `pódcast'.
 Enchant/Aspell do not make the correct suggestion, so it's easier to use a
 dedicated function."
+  (interactive)
   (tlon-manual-fix '(" podcast")
 		   " pódcast"
 		   'keep-case))
 
 (defvar markdown-regex-italic)
 (declare-function tlon-md-return-tag "tlon-md")
+;;;###autoload
 (defun tlon-manual-fix-emphasis ()
   "Prompt the user to add an `emphasis' tag around text enclosed in quotes."
   (interactive)
@@ -338,6 +364,7 @@ dedicated function."
 			 t t nil))))))
 
 (declare-function thing-at-point-looking-at "thingatpt")
+;;;###autoload
 (defun tlon-manual-fix-quote ()
   "Prompt the user to add a `quote' tag around text enclosed in quotes."
   (interactive)
@@ -356,10 +383,12 @@ dedicated function."
 		       t t nil)))))
 
 ;; TODO: write function
+;;;###autoload
 (defun tlon-manual-fix-foreign-words ()
   "Prompt the user to set the language of foreign words."
   (interactive))
 
+;;;###autoload
 (defun tlon-manual-fix-all ()
   "Run all the `tlon-manual-fix' commands."
   (interactive)
@@ -419,6 +448,37 @@ dedicated function."
   "Fix common issues in Italian translations."
   (interactive)
   (tlon-fix-translation "it"))
+
+;;;;; Menu
+
+;;;###autoload (autoload 'tlon-fix-menu "tlon-fix" nil t)
+(transient-define-prefix tlon-fix-menu ()
+  "`tlon-fix' menu."
+  :info-manual "(tlon) Manual & Automatic Fixes"
+  [["Auto fix"
+    ("a a" "all" tlon-autofix-all)
+    ""
+    ("a f" "footnote punctuation" tlon-autofix-footnote-punctuation)
+    ("a h" "periods in headings" tlon-autofix-periods-in-headings)
+    ("a p" "percent signs" tlon-autofix-percent-signs)
+    ("a q" "curly quotes" tlon-autofix-curly-quotes)
+    ("a r" "replace thousands separators" tlon-autofix-replace-thousands-separators)
+    ("a s" "superscripts" tlon-autofix-superscripts)
+    ("a t" "thin spaces" tlon-autofix-thin-spaces)]
+   ["Manual fix"
+    ("m m" "all" tlon-manual-fix-all)
+    ""
+    ("m a" "add thousands separators" tlon-manual-fix-add-thousands-separators)
+    ("m e" "em dashes" tlon-manual-fix-em-dashes)
+    ("m i" "emphasis" tlon-manual-fix-emphasis)
+    ("m n" "number ranges" tlon-manual-fix-number-ranges)
+    ("m p" "podcast" tlon-manual-fix-podcast)
+    ("m q" "quote" tlon-manual-fix-quote)
+    ("m r" "roman numerals" tlon-manual-fix-roman-numerals)
+    ("m s" "sólo" tlon-manual-fix-solo)
+    ("m w" "narrow spaces" tlon-manual-fix-narrow-spaces)
+    ;; ("m " "" tlon-manual-fix-foreign-words)
+    ]])
 
 (provide 'tlon-fix)
 ;;; tlon-fix.el ends here
