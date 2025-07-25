@@ -192,9 +192,8 @@ default `gptel-model'."
 ;; of these species
 
 ;; this does not need to be translated
-(defconst tlon-ai-fix-markdown-format-prompt
-  `((:prompt "Please take a look at the two paragraphs attached (paragraphs may contain only one word). The first, ‘%s’, is taken from the original document in %s, while the second, ‘%s’, is taken from a translation of that document into %s. In the translation, some of the original formatting (which includes not only Markdown elements but potentially HTML components and SSML tags) has been lost or altered. What I want you to do is to generate a new paragraph with all the original formatting restored, but without changing the text of the translation. Add missing links. Add missing asterisks. Add any other missing markdown signs. Don't add any missing text. Don't change the name of the files referred to as images. And please do not surround the text in backticks. Add missing links. Add missing asterisks. Add any other missing markdown signs. Just give the output but don't add comments or clarifications, even if there's nothing to restore. Thank you!"
-	     :language "en")))
+(defconst tlon-ai-fix-markdown-formatting-prompt
+  "Please take a look at the two paragraphs attached (paragraphs may contain only one word). The first, ‘%s’, is taken from the original document in %s, while the second, ‘%s’, is taken from a translation of that document into %s. In the translation, some of the original formatting (which includes not only Markdown elements but potentially HTML components and SSML tags) has been lost or altered. What I want you to do is to generate a new paragraph with all the original formatting restored, but without changing the text of the translation. Add missing links. Add missing asterisks. Add any other missing markdown signs. Don't add any missing text. Don't change the name of the files referred to as images. And please do not surround the text in backticks. Add missing links. Add missing asterisks. Add any other missing markdown signs. Just give the output but don't add comments or clarifications, even if there's nothing to restore. Thank you!")
 
 ;;;;; Summarization
 
@@ -781,7 +780,7 @@ RESPONSE is the response from the AI model and INFO is the response info."
 (declare-function tlon-display-corresponding-paragraphs "tlon-paragraphs")
 (declare-function tlon-get-corresponding-paragraphs "tlon-paragraphs")
 ;;;###autoload
-(defun tlon-ai-fix-markdown-format (&optional file)
+(defun tlon-ai-fix-markdown-formatting (&optional file)
   "Fix Markdown format in FILE by copying the formatting in its counterpart.
 Process the file paragraph by paragraph to avoid token limits. If FILE is nil,
 use the file visited by the current buffer.
@@ -795,9 +794,7 @@ Messages refer to paragraphs with one-based numbering."
 	 (original-file (tlon-get-counterpart file))
 	 (original-lang (tlon-get-language-in-file original-file))
 	 (translation-lang (tlon-get-language-in-file file))
-	 (prompt (tlon-ai-maybe-edit-prompt
-		  (tlon-lookup tlon-ai-fix-markdown-format-prompt
-			       :prompt :language "en")))
+	 (prompt (tlon-ai-maybe-edit-prompt tlon-ai-fix-markdown-formatting-prompt))
 	 (pairs (tlon-get-corresponding-paragraphs file original-file))
 	 (all-pairs-count (length pairs))
 	 (results (make-vector all-pairs-count nil))
@@ -838,9 +835,9 @@ Messages refer to paragraphs with one-based numbering."
 	   (let* ((pair (nth i pairs))
 		  (formatted-prompt
 		   (format prompt
-			   (cdr pair)
-			   (tlon-lookup tlon-languages-properties :standard :code original-lang)
 			   (car pair)
+			   (tlon-lookup tlon-languages-properties :standard :code original-lang)
+			   (cdr pair)
 			   (tlon-lookup tlon-languages-properties :standard :code translation-lang))))
 	     (cl-incf active-requests)
 	     (funcall issue-request
@@ -2013,6 +2010,7 @@ If nil, use the default model."
     ""]
    ["Misc"
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
+    ("f" "fix Markdown formatting"                    tlon-ai-fix-markdown-formatting)
     ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
     ("r" "rewrite"                                    tlon-ai-rewrite)
     ("l" "translate"                                  tlon-ai-translate)

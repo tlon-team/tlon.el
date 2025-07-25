@@ -158,12 +158,12 @@ The user selects one of the suggested variants from the minibuffer. If a region 
 
 *** Fixing Markdown Formatting
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-ai-fix-markdown-format
+:CUSTOM_ID: h:tlon-ai-fix-markdown-formatting
 :END:
-#+findex: tlon-ai-fix-markdown-format
-The command ~tlon-ai-fix-markdown-format~ attempts to restore lost or altered formatting in a translated Markdown file by comparing it paragraph by paragraph with its original counterpart.
+#+findex: tlon-ai-fix-markdown-formatting
+The command ~tlon-ai-fix-markdown-formatting~ attempts to restore lost or altered formatting in a translated Markdown file by comparing it paragraph by paragraph with its original counterpart.
 
-It identifies the original file using ~tlon-get-counterpart~. It retrieves corresponding paragraphs from both files using ~tlon-get-corresponding-paragraphs~. For each pair of paragraphs, it sends a request to the AI using the prompt ~tlon-ai-fix-markdown-format-prompt~, asking it to apply the formatting from the original paragraph to the translated text.
+It identifies the original file using ~tlon-get-counterpart~. It retrieves corresponding paragraphs from both files using ~tlon-get-corresponding-paragraphs~. For each pair of paragraphs, it sends a request to the AI using the prompt ~tlon-ai-fix-markdown-formatting-prompt~, asking it to apply the formatting from the original paragraph to the translated text.
 
 The command processes paragraphs concurrently (up to a limit defined internally) and includes a retry mechanism with exponential backoff for failed requests. If a paragraph fails permanently after 3 retries, the process aborts.
 
