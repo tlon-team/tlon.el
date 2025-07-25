@@ -47,6 +47,7 @@
     ("H-d" "dict"                         tlon-dict-menu)
     ("e" "ebib"                           tlon-ebib-menu)
     ("f" "files"                          tlon-files-menu)
+    ("H-f" "fix"                          tlon-fix-menu)
     ("g" "glossary"                       tlon-glossary-menu)
     ("i" "images"                         tlon-images-menu)
     ("j" "jobs"                           tlon-jobs-menu)
