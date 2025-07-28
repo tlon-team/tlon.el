@@ -89,6 +89,16 @@ This workflow presupposes that we already have (1) the original audio and video 
 #+findex: tlon-dub-optimize-translation-length
 + ~tlon-dub-optimize-translation-length~ :: (Autoloaded) Optimizes translation length by shortening paragraphs that exceed a specified threshold. Prompts for an =english-srt-file=, a =translated-srt-file=, and a =threshold= ratio (default 1.2, meaning translations can be up to 20% longer than the English text). The function compares each segment's length between the English and translated files, identifies segments where the translation is too long, and uses AI to shorten those segments while preserving meaning. The result is saved to a new SRT file with "-optimized" suffix. The AI model used can be configured via ~tlon-dub-alignment-model~.
 
+#+findex: tlon-dub-split-video-at-timestamps
++ ~tlon-dub-split-video-at-timestamps~ :: (Autoloaded) Splits a video into
+  parts based on a list of timestamps. Prompts for the =video-file= and a
+  =timestamps-file= (one timestamp per line, HH:MM:SS.mmm). Each part starts at
+  its timestamp and ends 40 ms before the next one, or at the end of the video
+  for the final part. The parts are saved as =<base>-partN.mp4= alongside the
+  original file. Internally uses =ffmpeg -i <video> -ss <start> -to <end> -c
+  copy <partN>.mp4=, omitting =-to= for the final part when the duration cannot
+  be determined.
+
 ** Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-menu
