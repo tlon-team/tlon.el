@@ -575,8 +575,7 @@ returned."
 
 ;;;###autoload
 (defun tlon-dub-clean-diarized-srt (diarized-file &optional speaker-alist)
-  "Convert DIARIZED-FILE (WhisperX SRT with [SPEAKER_xx]: prefixes) into a
-cleaner SRT.
+  "Convert DIARIZED-FILE into a cleaner SRT.
 
 Interactively prompts for a name for every distinct SPEAKER_xx that appears.
 SPEAKER-ALIST may be supplied programmatically as `((\"00\" . \"Alice\") (\"01\"
