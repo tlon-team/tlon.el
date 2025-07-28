@@ -1468,27 +1468,29 @@ If nil, use the default `gptel-model'."
   "Menu for Tlön Dubbing (`tlon-dub`) functionality."
   :info-manual "(tlon) Dubbing"
   [["Transcription & Timestamps (srt)"
-    ("t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
-    ("i" "Diarize with WhisperX (Audio -> diarized srt/txt)" tlon-dub-diarize-with-whisperx)
-    ("x" "Clean diarized SRT (→ -cleaned.srt)" tlon-dub-clean-diarized-srt)
+    ("t t" "Transcribe with WhisperX (Audio -> srt)" tlon-dub-transcribe-with-whisperx)
+    ("t i" "Diarize with WhisperX (Audio -> diarized srt/txt)" tlon-dub-diarize-with-whisperx)
+    ("t x" "Clean diarized SRT (→ -cleaned.srt)" tlon-dub-clean-diarized-srt)
     ;; ("m" "Propagate Machine Timestamps (srt + en.md -> en.srt)" tlon-dub-propagate-machine-timestamps)
     ;; ("e" "Propagate English Timestamps (en.srt + lang.md -> lang.srt)" tlon-dub-propagate-english-timestamps)
     ;; ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
     ;; ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)
-    ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
-    ("r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)
-    ("p" "Split video by timestamps" tlon-dub-split-video-at-timestamps)
-    ("u" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
+    ("t c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
+    ("t -m" "Propagation model" tlon-dub-infix-select-propagation-model)
+    ("t r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)
+    ""
+    "Options"
+    ("t -a" "Alignment model" tlon-dub-infix-select-alignment-model)
+    ("t -f" "Transcription format" tlon-dub-infix-select-transcription-format)]
+   ["Prepare video & audio chunks"
+    ("p v" "Split video by timestamps" tlon-dub-split-video-at-timestamps)
+    ("p a" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
    ["ElevenLabs API"
-    ("s" "Start New Dubbing Project" tlon-dub-start-project)
-    ("d" "Get Project Metadata" tlon-dub-get-project-metadata)
-    ("g" "Get Dubbing Transcript (VTT)" tlon-dub-get-dubbing)
-    ("R" "Get Resource Data" tlon-dub-get-resource-data)
-    ("A" "Add Speaker Segment" tlon-dub-add-speaker-segment)]
-   ["Options"
-    ("-m" "Propagation model" tlon-dub-infix-select-propagation-model)
-    ("-a" "Alignment model" tlon-dub-infix-select-alignment-model)
-    ("-f" "Transcription format" tlon-dub-infix-select-transcription-format)]])
+    ("a s" "Start New Dubbing Project" tlon-dub-start-project)
+    ("a d" "Get Project Metadata" tlon-dub-get-project-metadata)
+    ("a g" "Get Dubbing Transcript (VTT)" tlon-dub-get-dubbing)
+    ("a r" "Get Resource Data" tlon-dub-get-resource-data)
+    ("a k" "Add Speaker Segment" tlon-dub-add-speaker-segment)]])
 
 (provide 'tlon-dub)
 ;;; tlon-dub.el ends here
