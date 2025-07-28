@@ -1312,39 +1312,7 @@ Attempts to handle common sentence-ending punctuation patterns."
                            (string-trim (substring text start)))))
     result))
 
-;; ------------------------------------------------------------------
-;; Video splitting helpers and command
-;; ------------------------------------------------------------------
-
-(defun tlon-dub--dot-timestamp-to-seconds (ts)
-  "Convert TS in \"H:MM:SS.mmm\" format to float seconds."
-  (when (string-match
-         "\\`\\([0-9]+\\):\\([0-9][0-9]\\):\\([0-9][0-9]\\)\\.\\([0-9][0-9][0-9]\\)\\'" ts)
-    (+ (* 3600 (string-to-number (match-string 1 ts)))
-       (* 60   (string-to-number (match-string 2 ts)))
-       (string-to-number (match-string 3 ts))
-       (/ (string-to-number (match-string 4 ts)) 1000.0))))
-
-(defun tlon-dub--seconds-to-dot-timestamp (secs)
-  "Convert SECS (float) to \"HH:MM:SS.mmm\"."
-  (let* ((total (floor secs))
-         (ms (round (* (- secs total) 1000)))
-         (h (/ total 3600))
-         (m (/ (% total 3600) 60))
-         (s (% total 60)))
-    (format "%02d:%02d:%02d.%03d" h m s ms)))
-
-(defun tlon-dub--get-video-duration (file)
-  "Return FILE duration in seconds as float using ffprobe, or nil."
-  (let ((cmd '("ffprobe" "-v" "error" "-show_entries" "format=duration"
-               "-of" "default=noprint_wrappers=1:nokey=1")))
-    (with-temp-buffer
-      (if (= 0 (apply #'call-process (car cmd) nil (current-buffer) nil
-                      (append (cdr cmd) (list file))))
-          (let ((out (string-trim (buffer-string))))
-            (when (string-match "\\`[0-9.]+\\'" out)
-              (string-to-number out)))
-        nil)))
+;;;;; video splitting
 
 ;;;###autoload
 (defun tlon-dub-split-video-at-timestamps (video-file timestamps-file &optional output-dir)
@@ -1380,9 +1348,39 @@ or at the end of the video for the last part.  Parts are saved as
                            '("-c" "copy") (list outfile))))
         (message "Creating %s..." (file-name-nondirectory outfile))
         (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
-          (error "ffmpeg failed to create %s" outfile))
+          (error "Command `ffmpeg' failed to create %s" outfile))
         (setq part (1+ part))))
     (message "Finished splitting video into %d parts" (1- part))))
+
+(defun tlon-dub--dot-timestamp-to-seconds (ts)
+  "Convert TS in \"H:MM:SS.mmm\" format to float seconds."
+  (when (string-match
+         "\\`\\([0-9]+\\):\\([0-9][0-9]\\):\\([0-9][0-9]\\)\\.\\([0-9][0-9][0-9]\\)\\'" ts)
+    (+ (* 3600 (string-to-number (match-string 1 ts)))
+       (* 60   (string-to-number (match-string 2 ts)))
+       (string-to-number (match-string 3 ts))
+       (/ (string-to-number (match-string 4 ts)) 1000.0))))
+
+(defun tlon-dub--seconds-to-dot-timestamp (secs)
+  "Convert SECS (float) to \"HH:MM:SS.mmm\"."
+  (let* ((total (floor secs))
+         (ms (round (* (- secs total) 1000)))
+         (h (/ total 3600))
+         (m (/ (% total 3600) 60))
+         (s (% total 60)))
+    (format "%02d:%02d:%02d.%03d" h m s ms)))
+
+(defun tlon-dub--get-video-duration (file)
+  "Return FILE duration in seconds as float using ffprobe, or nil."
+  (let ((cmd '("ffprobe" "-v" "error" "-show_entries" "format=duration"
+               "-of" "default=noprint_wrappers=1:nokey=1")))
+    (with-temp-buffer
+      (if (= 0 (apply #'call-process (car cmd) nil (current-buffer) nil
+                      (append (cdr cmd) (list file))))
+          (let ((out (string-trim (buffer-string))))
+            (when (string-match "\\`[0-9.]+\\'" out)
+              (string-to-number out)))
+        nil))))
 
 ;;;; Menu
 
