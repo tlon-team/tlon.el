@@ -99,6 +99,9 @@ This workflow presupposes that we already have (1) the original audio and video 
   copy <partN>.mp4=, omitting =-to= for the final part when the duration cannot
   be determined.
 
+#+findex: tlon-dub-extract-audio-from-parts
++ ~tlon-dub-extract-audio-from-parts~ :: (Autoloaded) Extracts audio streams from all video part files produced by ~tlon-dub-split-video-at-timestamps~. Prompts for the master =video-file=, finds all files named =<base>-partN.<ext>= in the same directory, and runs =ffmpeg -i <part> -vn -c:a copy <part>.wav= to create the corresponding =.wav= files. Returns the list of generated WAV files and signals an error if no part files are found.
+
 ** Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-dub-menu
@@ -115,6 +118,8 @@ This workflow presupposes that we already have (1) the original audio and video 
     + =r= :: Resegment SRT (speaker/min-30s) (~tlon-dub-resegment-srt~)
     + =p= :: Split video by timestamps (video + txt -> parts)
       (~tlon-dub-split-video-at-timestamps~)
+    + =u= :: Extract audio from parts (parts.mp4 -> parts.wav)
+      (~tlon-dub-extract-audio-from-parts~)
   + *ElevenLabs API*:
     + =s= :: Start New Dubbing Project (~tlon-dub-start-project~)
     + =d= :: Get Project Metadata (~tlon-dub-get-project-metadata~)
