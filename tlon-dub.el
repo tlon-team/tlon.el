@@ -1312,6 +1312,78 @@ Attempts to handle common sentence-ending punctuation patterns."
                            (string-trim (substring text start)))))
     result))
 
+;; ------------------------------------------------------------------
+;; Video splitting helpers and command
+;; ------------------------------------------------------------------
+
+(defun tlon-dub--dot-timestamp-to-seconds (ts)
+  "Convert TS in \"H:MM:SS.mmm\" format to float seconds."
+  (when (string-match
+         "\\`\\([0-9]+\\):\\([0-9][0-9]\\):\\([0-9][0-9]\\)\\.\\([0-9][0-9][0-9]\\)\\'" ts)
+    (+ (* 3600 (string-to-number (match-string 1 ts)))
+       (* 60   (string-to-number (match-string 2 ts)))
+       (string-to-number (match-string 3 ts))
+       (/ (string-to-number (match-string 4 ts)) 1000.0))))
+
+(defun tlon-dub--seconds-to-dot-timestamp (secs)
+  "Convert SECS (float) to \"HH:MM:SS.mmm\"."
+  (let* ((total (floor secs))
+         (ms (round (* (- secs total) 1000)))
+         (h (/ total 3600))
+         (m (/ (% total 3600) 60))
+         (s (% total 60)))
+    (format "%02d:%02d:%02d.%03d" h m s ms)))
+
+(defun tlon-dub--get-video-duration (file)
+  "Return FILE duration in seconds as float using ffprobe, or nil."
+  (let ((cmd '("ffprobe" "-v" "error" "-show_entries" "format=duration"
+               "-of" "default=noprint_wrappers=1:nokey=1")))
+    (with-temp-buffer
+      (if (= 0 (apply #'call-process (car cmd) nil (current-buffer) nil
+                      (append (cdr cmd) (list file))))
+          (let ((out (string-trim (buffer-string))))
+            (when (string-match "\\`[0-9.]+\\'" out)
+              (string-to-number out)))
+        nil)))
+
+;;;###autoload
+(defun tlon-dub-split-video-at-timestamps (video-file timestamps-file &optional output-dir)
+  "Split VIDEO-FILE using markers from TIMESTAMPS-FILE (one HH:MM:SS.mmm per line).
+Each part starts at its timestamp and ends 40 ms before the next timestamp,
+or at the end of the video for the last part.  Parts are saved as
+<BASENAME>-partN.mp4 in OUTPUT-DIR, defaulting to the directory of VIDEO-FILE."
+  (interactive
+   (list (read-file-name "Video file: " nil nil t)
+         (read-file-name "Timestamps file: " nil nil t)
+         nil))
+  (setq video-file (expand-file-name video-file)
+        timestamps-file (expand-file-name timestamps-file))
+  (let* ((output-dir (or output-dir (file-name-directory video-file)))
+         (base (file-name-base video-file))
+         (timestamps (with-temp-buffer
+                       (insert-file-contents timestamps-file)
+                       (split-string (buffer-string) "[\n\r]+" t "[ \t]+")))
+         (duration (tlon-dub--get-video-duration video-file))
+         (part 1))
+    (unless timestamps
+      (user-error "No timestamps found in %s" timestamps-file))
+    (dotimes (i (length timestamps))
+      (let* ((start (nth i timestamps))
+             (end-secs (if (< i (1- (length timestamps)))
+                           (- (tlon-dub--dot-timestamp-to-seconds
+                               (nth (1+ i) timestamps)) 0.04)
+                         duration))
+             (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
+             (outfile (expand-file-name (format "%s-part%d.mp4" base part) output-dir))
+             (args (append '("-y" "-i" ) (list video-file) '("-ss") (list start)
+                           (when end-str (list "-to" end-str))
+                           '("-c" "copy") (list outfile))))
+        (message "Creating %s..." (file-name-nondirectory outfile))
+        (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
+          (error "ffmpeg failed to create %s" outfile))
+        (setq part (1+ part))))
+    (message "Finished splitting video into %d parts" (1- part))))
+
 ;;;; Menu
 
 (transient-define-infix tlon-dub-infix-select-transcription-format ()
