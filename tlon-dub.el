@@ -1335,6 +1335,11 @@ or at the end of the video for the last part.  Parts are saved as
          (part 1))
     (unless timestamps
       (user-error "No timestamps found in %s" timestamps-file))
+    ;; Validate that every timestamp is in the expected HH:MM:SS.mmm format.
+    (dolist (ts timestamps)
+      (unless (tlon-dub--dot-timestamp-to-seconds ts)
+        (user-error "Invalid timestamp \"%s\" in %s. Expected format HH:MM:SS.mmm"
+                    ts timestamps-file)))
     (dotimes (i (length timestamps))
       (let* ((start (nth i timestamps))
              (end-secs (if (< i (1- (length timestamps)))
