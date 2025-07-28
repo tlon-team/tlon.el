@@ -1330,31 +1330,53 @@ or at the end of the video for the last part.  Parts are saved as
          (timestamps (with-temp-buffer
                        (insert-file-contents timestamps-file)
                        (split-string (buffer-string) "[\n\r]+" t "[ \t]+")))
-         (duration (tlon-dub--get-video-duration video-file))
-         (part 1))
-    (unless timestamps
-      (user-error "No timestamps found in %s" timestamps-file))
-    ;; Validate that every timestamp is in the expected HH:MM:SS.mmm format.
-    (dolist (ts timestamps)
-      (unless (tlon-dub--dot-timestamp-to-seconds ts)
-        (user-error "Invalid timestamp \"%s\" in %s. Expected format HH:MM:SS.mmm"
-                    ts timestamps-file)))
+         (duration (tlon-dub--get-video-duration video-file)))
+    (tlon-dub--validate-timestamps timestamps timestamps-file)
+    (let ((final-part (tlon-dub--process-all-segments video-file base output-dir timestamps duration)))
+      (message "Finished splitting video into %d parts" (1- final-part)))))
+
+(defun tlon-dub--validate-timestamps (timestamps timestamps-file)
+  "Validate that TIMESTAMPS are in HH:MM:SS.mmm format from TIMESTAMPS-FILE."
+  (unless timestamps
+    (user-error "No timestamps found in %s" timestamps-file))
+  (dolist (ts timestamps)
+    (unless (tlon-dub--dot-timestamp-to-seconds ts)
+      (user-error "Invalid timestamp \"%s\" in %s. Expected format HH:MM:SS.mmm"
+                  ts timestamps-file))))
+
+(defun tlon-dub--split-video-segment (video-file base output-dir timestamps duration i part)
+  "Split a single video segment and return the next part number.
+VIDEO-FILE is the path to the input video file to split. BASE is the base name
+for the output files (without extension). OUTPUT-DIR is the directory where the
+split video segments will be saved. TIMESTAMPS is a list of timestamp strings
+marking segment boundaries. DURATION is the total duration of the video in
+seconds. I is the index of the current timestamp in the TIMESTAMPS list. PART is
+the current part number for naming the output file."
+  (let* ((start (nth i timestamps))
+         (end-secs (if (< i (1- (length timestamps)))
+                       (- (tlon-dub--dot-timestamp-to-seconds
+                           (nth (1+ i) timestamps)) 0.04)
+                     duration))
+         (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
+         (outfile (expand-file-name (format "%s-part%d.mp4" base part) output-dir))
+         (args (append '("-y" "-i" ) (list video-file) '("-ss") (list start)
+                       (when end-str (list "-to" end-str))
+                       '("-c" "copy") (list outfile))))
+    (message "Creating %s..." (file-name-nondirectory outfile))
+    (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
+      (error "Command `ffmpeg' failed to create %s" outfile))
+    (1+ part)))
+
+(defun tlon-dub--process-all-segments (video-file base output-dir timestamps duration)
+  "Process all video segments and return the final part number.
+VIDEO-FILE is the path to the input video file to be processed. BASE is the base
+name used for naming output segments. OUTPUT-DIR is the directory where
+processed segments will be saved. TIMESTAMPS is a list of timestamp values
+defining segment boundaries. DURATION is the total duration of the video file."
+  (let ((part 1))
     (dotimes (i (length timestamps))
-      (let* ((start (nth i timestamps))
-             (end-secs (if (< i (1- (length timestamps)))
-                           (- (tlon-dub--dot-timestamp-to-seconds
-                               (nth (1+ i) timestamps)) 0.04)
-                         duration))
-             (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
-             (outfile (expand-file-name (format "%s-part%d.mp4" base part) output-dir))
-             (args (append '("-y" "-i" ) (list video-file) '("-ss") (list start)
-                           (when end-str (list "-to" end-str))
-                           '("-c" "copy") (list outfile))))
-        (message "Creating %s..." (file-name-nondirectory outfile))
-        (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
-          (error "Command `ffmpeg' failed to create %s" outfile))
-        (setq part (1+ part))))
-    (message "Finished splitting video into %d parts" (1- part))))
+      (setq part (tlon-dub--split-video-segment video-file base output-dir timestamps duration i part)))
+    part))
 
 (defun tlon-dub--dot-timestamp-to-seconds (ts)
   "Convert TS in \"H:MM:SS.mmm\" format to float seconds."
