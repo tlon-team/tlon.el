@@ -1408,6 +1408,39 @@ defining segment boundaries. DURATION is the total duration of the video file."
               (string-to-number out)))
         nil))))
 
+;;;;; audio extraction
+
+;;;###autoload
+(defun tlon-dub-extract-audio-from-parts (video-file)
+  "Extract audio (wav) from all <base>-partN video files derived from VIDEO-FILE.
+
+The command prompts for the master VIDEO-FILE, derives its base name, looks for
+all files named <base>-partN.<ext> in the same directory (where <ext> is any
+extension, typically mp4), and runs
+
+  ffmpeg -i \"<base>-partN.<ext>\" -vn -c:a copy \"<base>-partN.wav\"
+
+for each matching part.  Returns a list of generated WAV filenames or signals
+an error if no part files are found."
+  (interactive (list (read-file-name "Master video file: " nil nil t)))
+  (let* ((video-file (expand-file-name video-file))
+         (dir        (file-name-directory video-file))
+         (base       (file-name-base video-file))
+         (regex      (format "^%s-part[0-9]+\\.[A-Za-z0-9]+$" (regexp-quote base)))
+         (part-files (directory-files dir t regex))
+         (created    '()))
+    (unless part-files
+      (user-error "No part files matching %s found in %s" regex dir))
+    (dolist (part part-files)
+      (let* ((out (concat (file-name-sans-extension part) ".wav"))
+             (args (list "-y" "-i" part "-vn" "-c:a" "copy" out)))
+        (message "Extracting audio to %s..." (file-name-nondirectory out))
+        (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
+          (error "ffmpeg failed to create %s" out))
+        (push out created)))
+    (message "Created %d wav files in %s" (length created) dir)
+    (nreverse created)))
+
 ;;;; Menu
 
 (transient-define-infix tlon-dub-infix-select-transcription-format ()
@@ -1444,7 +1477,8 @@ If nil, use the default `gptel-model'."
     ;; ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)
     ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
     ("r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)
-    ("p" "Split video by timestamps" tlon-dub-split-video-at-timestamps)]
+    ("p" "Split video by timestamps" tlon-dub-split-video-at-timestamps)
+    ("u" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("d" "Get Project Metadata" tlon-dub-get-project-metadata)
