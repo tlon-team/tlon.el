@@ -1419,7 +1419,8 @@ If nil, use the default `gptel-model'."
     ;; ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
     ;; ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)
     ("c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
-    ("r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)]
+    ("r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)
+    ("p" "Split video by timestamps" tlon-dub-split-video-at-timestamps)]
    ["ElevenLabs API"
     ("s" "Start New Dubbing Project" tlon-dub-start-project)
     ("d" "Get Project Metadata" tlon-dub-get-project-metadata)
