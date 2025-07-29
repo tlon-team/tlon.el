@@ -33,6 +33,7 @@
 (require 'transient)
 (require 'bibtex-extras)
 (require 'cl-lib)
+(require 'subr-x)
 (require 'filenotify)
 
 ;;;; Variables
@@ -496,6 +497,79 @@ RESULT is a plist like (:status CODE :data DATA)."
 	(when (gethash "detail" response-data) ; Handle FastAPI detail string
 	  (insert "Detail: " (gethash "detail" response-data) "\n")))))))
 
+;;;;;; Set name
+
+(defun tlon-db-set-name (name &optional new-name force)
+  "Insert or update NAME in the EA International name database.
+If NEW-NAME is non-nil, update NAME to NEW-NAME.  If FORCE is non-nil,
+override similarity conflicts.
+
+Interactively, prompt for NAME, optionally NEW-NAME, and whether to FORCE.
+Returns a plist with :status, :data, and :raw-text."
+  (interactive
+   (let* ((name (read-string "Name (LAST NAME, FIRST NAME): "))
+          (new-name-input (read-string "New name (leave blank for none): "))
+          (new-name (unless (string-empty-p new-name-input) new-name-input))
+          (force (y-or-n-p "Force insert even if similar names exist? ")))
+     (list name new-name force)))
+  (tlon-db-ensure-auth)
+  (let* ((payload `(("name" . ,name)))
+         (payload (if new-name (append payload `(("new_name" . ,new-name))) payload))
+         (payload (if force (append payload '(("force" . t))) payload))
+         (data (json-encode payload))
+         (headers '(("Content-Type" . "application/json")
+                    ("accept" . "application/json")))
+         (response-buffer (tlon-db--make-request "POST" "/api/names/" data headers t))
+         status-code response-data raw-response-text)
+    (when response-buffer
+      (setq raw-response-text (with-current-buffer response-buffer (buffer-string)))
+      (setq status-code (tlon-db--get-response-status-code response-buffer))
+      (setq response-data (tlon-db--parse-json-response response-buffer))
+      (kill-buffer response-buffer))
+    (let ((result (list :status status-code
+                        :data response-data
+                        :raw-text raw-response-text)))
+      (if (or tlon-debug (not (and status-code (= status-code 200))))
+          (tlon-db--display-result-buffer
+           (format "Set name result (Status: %s)"
+                   (if status-code (number-to-string status-code) "N/A"))
+           #'tlon-db--format-set-name-result
+           result)
+        (message "Name “%s” inserted/updated successfully." name))
+      result)))
+
+(defun tlon-db--format-set-name-result (result)
+  "Format RESULT from `tlon-db-set-name` for display.
+RESULT is a plist with :status, :data, and :raw-text."
+  (let ((status (plist-get result :status))
+        (data (plist-get result :data))
+        (raw  (plist-get result :raw-text)))
+    (cond
+     ((null status)
+      (insert "Status: Request Failed\n")
+      (insert (or raw "No specific error message.")))
+     ((= status 200)
+      (insert "Status: Success (200)\n")
+      (when data
+        (insert "Response:\n")
+        (insert (format "%s\n" data))))
+     ((= status 409)
+      (insert "Status: Conflict (409)\n")
+      (when data
+        (when (gethash "message" data)
+          (insert "Message: " (gethash "message" data) "\n"))
+        (when (gethash "similar_names" data)
+          (insert "Similar names:\n")
+          (dolist (n (gethash "similar_names" data))
+            (insert "  - " n "\n")))))
+     ((= status 422)
+      (insert "Status: Validation Error (422)\n")
+      (when data
+        (insert (format "%s\n" data))))
+     (t
+      (insert (format "Status: Error (HTTP %d)\n" status))
+      (insert (or raw "No content."))))))
+
 ;;;;;; Get translation key
 
 (defun tlon-db-get-translation-key (original-key &optional lang)
@@ -849,6 +923,7 @@ If there are no differences, return nil."
    ("d" "Delete entry" tlon-db-delete-entry)
    ("c" "Check name" tlon-db-check-name)
    ("i" "Check or insert name" tlon-db-check-or-insert-name)
+   ("s" "Set name" tlon-db-set-name)
    ""
    ("a" "Authenticate" tlon-db-authenticate)])
 
