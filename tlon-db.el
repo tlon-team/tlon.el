@@ -216,6 +216,10 @@ conditions is not met, an error is logged and the process is aborted."
               (content2 (with-temp-buffer
                           (insert-file-contents-literally file2)
                           (buffer-string))))
+          ;; Ignore a spurious leading newline or whitespace that may appear in
+          ;; one of the files.
+          (setq content1 (replace-regexp-in-string "\\`[[:space:]\n\r]+" "" content1))
+          (setq content2 (replace-regexp-in-string "\\`[[:space:]\n\r]+" "" content2))
           (string= content1 content2))))))
 
 ;;;;;; Post entry
@@ -231,7 +235,7 @@ If called interactively, post the entry at point; otherwise use KEY."
   (setq attempt (or attempt 0))
   (tlon-db-ensure-auth)
   (if-let ((entry-key (or key (tlon-db-get-key-at-point))))
-      (let* ((entry-text   (bibtex-extras-get-entry-as-string entry-key nil))
+      (let* ((entry-text   (tlon-db--normalize-author-field (bibtex-extras-get-entry-as-string entry-key nil)))
              (encoded-text (encode-coding-string entry-text 'utf-8))
              (headers      '(("Content-Type" . "text/plain; charset=utf-8")
                              ("accept"       . "text/plain")))
@@ -277,7 +281,22 @@ If called interactively, post the entry at point; otherwise use KEY."
   "Split AUTHOR-STRING on the BibTeX separator \" and \" and trim spaces.
 Return a list of individual author names."
   (mapcar #'string-trim
-          (split-string author-string "\\s-+and\\s-+" t)))
+          (split-string
+           (replace-regexp-in-string "[[:space:]\n]+" " " author-string)
+           "\\s-+and\\s-+" t)))
+
+(defun tlon-db--normalize-author-field (entry)
+  "Collapse newlines and multiple spaces inside the author field of ENTRY.
+Return the modified entry string."
+  (let ((case-fold-search t))
+    (if (string-match "\\(author[[:space:]]*=[[:space:]]*{\\)\\([^}]*\\)\\(}\\)" entry)
+        (let* ((prefix  (match-string 1 entry))
+               (authors (match-string 2 entry))
+               (suffix  (match-string 3 entry))
+               (clean   (string-trim
+                         (replace-regexp-in-string \"[[:space:]\n]+\" \" \" authors))))
+          (replace-match (concat prefix clean suffix) t t entry 0))
+      entry)))
 
 (defun tlon-db--replace-entry-locally (key entry)
   "Replace KEY with ENTRY text in both local databases."
