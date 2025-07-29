@@ -224,7 +224,7 @@ conditions is not met, an error is logged and the process is aborted."
 (declare-function bibtex-extras-delete-entry "bibtex-extras")
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
-(defun tlon-db-post-entry (&optional key attempt)
+(cl-defun tlon-db-post-entry (&optional key attempt)
   "Create or update KEY in the EA International API.
 If called interactively, post the entry at point; otherwise use KEY."
   (interactive)
