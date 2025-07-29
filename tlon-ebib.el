@@ -727,8 +727,7 @@ EVENT is a list of the form (FILE ACTION)."
                (file-exists-p tlon-ebib-file-db-upstream))
       (if tlon-ebib--sync-in-progress
 	  (message "Ebib sync already in progress, skipping this change.")
-	(let* ((process-sync-fail-on-error nil)
-	       (diff-buffer (generate-new-buffer " *ebib-diff*"))
+	(let* ((diff-buffer (generate-new-buffer " *ebib-diff*"))
 	       diff-output)
 	  (unwind-protect
 	      (let ((exit-code (call-process "diff" nil diff-buffer nil "-U1000"
@@ -750,7 +749,7 @@ EVENT is a list of the form (FILE ACTION)."
 			   (modified (plist-get changes :modified))
 			   (proceed
 			    (let ((num (+ (length added) (length modified))))
-			      (or (<= num 5)
+			      (or (< num 10)
 				  (y-or-n-p (format "Ebib sync will create/modify %d entries. Proceed? " num))))))
 		      (when (and proceed (or added deleted modified))
 			(with-current-buffer (get-buffer-create tlon-ebib--sync-log-buffer-name)
@@ -768,7 +767,7 @@ EVENT is a list of the form (FILE ACTION)."
 			    (tlon-ebib--log-sync-action "Created" key))
 			  (dolist (key modified)
 			    (let ((before-text (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-					       (bibtex-extras-get-entry-as-string key nil))))
+						 (bibtex-extras-get-entry-as-string key nil))))
 			      (tlon-ebib-post-entry key)
 			      (setq modified-count (1+ modified-count))
 			      (let ((after-text (bibtex-extras-get-entry-as-string key nil)))
