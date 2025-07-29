@@ -228,6 +228,7 @@ conditions is not met, an error is logged and the process is aborted."
   "Create or update KEY in the EA International API.
 If called interactively, post the entry at point; otherwise use KEY."
   (interactive)
+  (setq attempt (or attempt 0))
   (tlon-db-ensure-auth)
   (if-let ((entry-key (or key (tlon-db-get-key-at-point))))
       (let* ((entry-text   (bibtex-extras-get-entry-as-string entry-key nil))
@@ -617,8 +618,32 @@ LANG exists or the request fails, signal an error."
   "Extract the body from a full HTTP RESPONSE-TEXT."
   (when response-text
     (if (string-match "\r?\n\r?\n" response-text)
-	(substring response-text (match-end 0))
+        (substring response-text (match-end 0))
       response-text)))
+
+(defun tlon-db--extract-missing-names (raw-response-text)
+  "Return a list of missing author names from RAW-RESPONSE-TEXT.
+
+The server returns a JSON body whose `detail' list may contain
+`missing_names'.  Parse that structure and return the names, or nil if none
+can be found."
+  (when (and raw-response-text (string-match-p "missing_names" raw-response-text))
+    (let* ((body (tlon-db--get-response-body raw-response-text))
+           (json-object-type 'hash-table)
+           (json-array-type 'list)
+           (json-key-type 'string)
+           (data (condition-case nil
+                     (json-read-from-string body)
+                   (error nil)))
+           (names '()))
+      (when (and data (hash-table-p data))
+        (let ((detail (gethash "detail" data)))
+          (when (listp detail)
+            (dolist (item detail)
+              (when (and (hash-table-p item)
+                         (gethash "missing_names" item))
+                (setq names (append names (gethash "missing_names" item))))))))
+      (unless (null names) names)))
 
 ;;;###autoload
 (defun tlon-db--make-request (method endpoint data headers &optional auth-required base-url)
