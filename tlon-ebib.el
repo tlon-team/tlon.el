@@ -726,61 +726,61 @@ EVENT is a list of the form (FILE ACTION)."
                (string-equal file (expand-file-name tlon-ebib-file-db))
                (file-exists-p tlon-ebib-file-db-upstream))
       (if tlon-ebib--sync-in-progress
-	  (message "Ebib sync already in progress, skipping this change.")
-	(let ((diff-output (tlon-ebib--get-diff-output tlon-ebib-file-db-upstream file)))
-	  (when diff-output
-	    (with-current-buffer (find-file-noselect file)
-	      (unwind-protect
-		  (progn
-		    (setq tlon-ebib--sync-in-progress t)
-		    (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
-			   (added (plist-get changes :added))
-			   (deleted (plist-get changes :deleted))
-			   (modified (plist-get changes :modified))
-			   (proceed
-			    (let ((num (+ (length added) (length modified))))
-			      (or (< num 10)
-				  (y-or-n-p (format "Ebib sync will create/modify %d entries. Proceed? " num))))))
-		      (when (and proceed (or added deleted modified))
-			(with-current-buffer (get-buffer-create tlon-ebib--sync-log-buffer-name)
-			  (let ((inhibit-read-only t))
-			    (goto-char (point-max))
-			    (unless (bolp) (insert "\n"))
-			    (insert (format-time-string "*** Sync on %Y-%m-%d %H:%M:%S ***\n"))))
-			(let ((created-count 0)
-			      (modified-count 0)
-			      (deleted-count 0)
-			      (parts '()))
-			  (dolist (key added)
-			    (tlon-ebib-post-entry key)
-			    (setq created-count (1+ created-count))
-			    (tlon-ebib--log-sync-action "Created" key))
-			  (dolist (key modified)
-			    (let ((before-text (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
-						 (bibtex-extras-get-entry-as-string key nil))))
-			      (tlon-ebib-post-entry key)
-			      (setq modified-count (1+ modified-count))
-			      (let ((after-text (bibtex-extras-get-entry-as-string key nil)))
-				(tlon-ebib--log-sync-action-modified key before-text after-text))))
-			  (dolist (key deleted)
-			    (tlon-ebib-delete-entry key nil t)
-			    (setq deleted-count (1+ deleted-count))
-			    (tlon-ebib--log-sync-action "Deleted" key))
-			  (when (> created-count 0) (push (format "%d created" created-count) parts))
-			  (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
-			  (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
-			  (when parts
-			    (run-with-timer 3 nil
-					    (lambda ()
-					      (message "Ebib sync: %s."
-						       (mapconcat #'identity (nreverse parts) ", ")))))))))
-		(setq tlon-ebib--sync-in-progress nil)))))))))
+          (message "Ebib sync already in progress, skipping this change.")
+        (when-let* ((diff-output (tlon-ebib--get-diff-output tlon-ebib-file-db-upstream file)))
+          (tlon-ebib--process-sync-changes diff-output file))))))
 
-;; Helper functions for sync
+(defun tlon-ebib--process-sync-changes (diff-output file)
+  "Process sync differences in DIFF-OUTPUT for FILE."
+  (with-current-buffer (find-file-noselect file)
+    (unwind-protect
+        (progn
+          (setq tlon-ebib--sync-in-progress t)
+          (let* ((changes (tlon-ebib--get-changed-keys-from-diff diff-output))
+                 (added (plist-get changes :added))
+                 (deleted (plist-get changes :deleted))
+                 (modified (plist-get changes :modified))
+                 (proceed
+                  (let ((num (+ (length added) (length modified))))
+                    (or (< num 10)
+                        (y-or-n-p (format "Ebib sync will create/modify %d entries. Proceed? " num))))))
+            (when (and proceed (or added deleted modified))
+              (with-current-buffer (get-buffer-create tlon-ebib--sync-log-buffer-name)
+                (let ((inhibit-read-only t))
+                  (goto-char (point-max))
+                  (unless (bolp) (insert "\n"))
+                  (insert (format-time-string "*** Sync on %Y-%m-%d %H:%M:%S ***\n"))))
+              (let ((created-count 0)
+                    (modified-count 0)
+                    (deleted-count 0)
+                    (parts '()))
+                (dolist (key added)
+                  (tlon-ebib-post-entry key)
+                  (setq created-count (1+ created-count))
+                  (tlon-ebib--log-sync-action "Created" key))
+                (dolist (key modified)
+                  (let ((before-text (with-current-buffer (find-file-noselect tlon-ebib-file-db-upstream)
+                                       (bibtex-extras-get-entry-as-string key nil))))
+                    (tlon-ebib-post-entry key)
+                    (setq modified-count (1+ modified-count))
+                    (let ((after-text (bibtex-extras-get-entry-as-string key nil)))
+                      (tlon-ebib--log-sync-action-modified key before-text after-text))))
+                (dolist (key deleted)
+                  (tlon-ebib-delete-entry key nil t)
+                  (setq deleted-count (1+ deleted-count))
+                  (tlon-ebib--log-sync-action "Deleted" key))
+                (when (> created-count 0) (push (format "%d created" created-count) parts))
+                (when (> modified-count 0) (push (format "%d modified" modified-count) parts))
+                (when (> deleted-count 0) (push (format "%d deleted" deleted-count) parts))
+                (when parts
+                  (run-with-timer 3 nil
+                                  (lambda ()
+                                    (message "Ebib sync: %s."
+                                             (mapconcat #'identity (nreverse parts) ", ")))))))))
+      (setq tlon-ebib--sync-in-progress nil))))
 
 (defun tlon-ebib--get-diff-output (upstream-file local-file)
   "Return unified diff output between UPSTREAM-FILE and LOCAL-FILE.
-
 If there are no differences, return nil."
   (let (diff-output)
     (let ((diff-buffer (generate-new-buffer " *ebib-diff*")))
