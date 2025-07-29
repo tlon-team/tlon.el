@@ -535,7 +535,8 @@ LANG exists or the request fails, signal an error."
                        original-key lang translation-key))
             translation-key)
         (user-error "No translation found for %s in language %s"
-                    original-key lang))))
+                    original-key lang)))))
+
 ;;;;;; Helpers
 
 (defun tlon-db--get-response-body (response-text)
