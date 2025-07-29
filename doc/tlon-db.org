@@ -1,0 +1,145 @@
+#+title: tlon - Db Integration
+#+author: Pablo Stafforini
+#+EXCLUDE_TAGS: noexport
+#+language: en
+#+options: ':t toc:nil author:t email:t num:t
+#+startup: content
+#+texinfo_header: @set MAINTAINERSITE @uref{https://github.com/tlon-team/tlon,maintainer webpage}
+#+texinfo_header: @set MAINTAINER Pablo Stafforini
+#+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
+#+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
+#+texinfo: @insertcopying
+
+* Db Integration (=tlon-db.el=)
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db
+:END:
+
+This module provides functionality for interacting with an external bibliographic database API (referred to as EA International API in the code), primarily focused on retrieving BibTeX entries and managing author names. It handles authentication and provides commands to check for existing names and insert new ones if they are unambiguous.
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-dependencies
+:END:
+
++ =tlon-core=
++ =transient=
+
+** Commands
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-commands
+:END:
+
+This section details the interactive commands provided by =tlon-db.el=.
+
+#+findex: tlon-db-get-entries
++ ~tlon-db-get-entries~ :: Retrieves all BibTeX entries from the configured API endpoint (~tlon-db-api-base-url~) and saves them to both the local database file (~tlon-db-file-db~) and the upstream tracking file (~tlon-db-file-db-upstream~). Before fetching, it verifies that there are no unsaved changes in the buffer visiting ~tlon-db-file-db~ and that the two database files are identical. If either of these conditions is not met, the command aborts with an error. This ensures that local changes are not accidentally overwritten. The files are saved with =utf-8-unix= encoding.
+
+#+findex: tlon-db-post-entry
++ ~tlon-db-post-entry~ :: If called interactively, posts the BibTeX entry at point to the =/api/entries= endpoint. If called from Lisp with a =KEY=, it posts the corresponding entry. Requires authentication. The content is sent as =text/plain=. On success, it replaces the local BibTeX entry with the version returned by the API, which may have reordered fields. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
+
+#+findex: tlon-db-delete-entry
++ ~tlon-db-delete-entry~ :: Deletes the BibTeX entry with =KEY= from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the =LOCALLY= argument is non-nil (the default), the entry is also removed from the local database file. Interactively, a prefix argument skips the confirmation prompt. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
+
+#+findex: tlon-db-check-name
++ ~tlon-db-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the results in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
+
+#+findex: tlon-db-check-or-insert-name
++ ~tlon-db-check-or-insert-name~ :: Checks if a given =NAME= exists. If it doesn't exist and there are no similar conflicting names found by the API, it inserts the name. Otherwise, it reports the status. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays details in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown. Requires authentication.
+
+#+findex: tlon-db-menu
++ ~tlon-db-menu~ :: Activates a =transient= menu interface providing quick access to the commands in this module.
+
+** Internal Functions and Variables
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-internals
+:END:
+
+This section lists non-interactive functions and variables used internally.
+
+*** Authentication
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-auth-internals
+:END:
+
+#+findex: tlon-db-authenticate
++ ~tlon-db-authenticate~ :: Performs authentication against the API using credentials (~tlon-db-api-username~, ~tlon-db-api-password~) fetched via =auth-source=. Uses ~tlon-db--make-request~ and ~tlon-db--parse-json-response~. Stores the obtained access token in ~tlon-db-auth-token~ and sets its expiry time in ~tlon-db-auth-token-expiry~. Returns the token on success. On failure, it signals an error and displays the server response in the ~*Db API Result*~ buffer.
+
+#+findex: tlon-db-ensure-auth
++ ~tlon-db-ensure-auth~ :: Checks if the current authentication token (~tlon-db-auth-token~) is valid and not expired. If not, it calls ~tlon-db-authenticate~ to refresh it. Returns the valid token or =nil= if authentication fails. This function is called by commands requiring authentication.
+
+#+vindex: tlon-db-auth-token
++ ~tlon-db-auth-token~ :: Stores the current authentication token obtained from the API.
+
+#+vindex: tlon-db-auth-token-expiry
++ ~tlon-db-auth-token-expiry~ :: Stores the calculated expiry time for the current authentication token.
+
+#+vindex: tlon-db-api-base-url
++ ~tlon-db-api-base-url~ :: The base URL for the EA International API endpoint. Defaults to ="https://local-dev.ea.international"=.
+
+#+vindex: tlon-db-api-username
++ ~tlon-db-api-username~ :: The username for API authentication. Derived from the user's full name via ~tlon-user-lookup~.
+
+#+vindex: tlon-db-api-password
++ ~tlon-db-api-password~ :: The password for API authentication. Retrieved securely using =auth-source-pass-get= based on the API URL and username.
+
+#+vindex: tlon-debug
++ ~tlon-debug~ :: When non-nil, enables more verbose output for various =tlon= modules. For =tlon-db=, this typically means displaying the API result buffer even on successful operations.
+
+*** API Request Handling
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-api-internals
+:END:
+
+#+findex: tlon-db--make-request
++ ~tlon-db--make-request~ :: Central helper function for making HTTP requests to the API. Handles URL construction, setting request method, data, headers (including authentication token if =AUTH-REQUIRED= is non-nil), and calling =url-retrieve-synchronously=. Returns the response buffer or signals an error.
+
+#+findex: tlon-db--handle-entry-request
++ ~tlon-db--handle-entry-request~ :: Handles a request to an entry endpoint. It takes the HTTP =METHOD=, =ENDPOINT=, =DATA=, and =HEADERS=, and an optional flag to indicate if a JSON response is expected on success. It calls ~tlon-db--make-request~ and processes the response, handling status codes and parsing JSON as needed. It returns a plist containing the request's =:status=, =:data=, and =:raw-text=. This function is used by ~tlon-db-post-entry~ and ~tlon-db-delete-entry~.
+
+#+findex: tlon-db--get-response-status-code
++ ~tlon-db--get-response-status-code~ :: Extracts the HTTP status code from the first line of a response =BUFFER=.
+
+#+findex: tlon-db--parse-json-response
++ ~tlon-db--parse-json-response~ :: Parses the JSON content found after the headers in a response =BUFFER=. Returns a hash-table or =nil= on error.
+
+*** Result Display
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-display-internals
+:END:
+
+#+findex: tlon-db--display-result-buffer
++ ~tlon-db--display-result-buffer~ :: Displays a =TITLE= and the content generated by =FORMATTER-FN= with =DATA= in a dedicated buffer named by ~tlon-db--result-buffer-name~ (typically ~*Db API Result*~).
+
+#+findex: tlon-db--format-check-name-result
++ ~tlon-db--format-check-name-result~ :: Formatter function used by ~tlon-db--display-result-buffer~ to display the results from ~tlon-db-check-name~. Takes the parsed JSON =DATA= (hash-table).
+
+#+findex: tlon-db--format-check-insert-name-result
++ ~tlon-db--format-check-insert-name-result~ :: Formatter function used by ~tlon-db--display-result-buffer~ to display the results from ~tlon-db-check-or-insert-name~. Takes a plist =RESULT= containing =:status= and =:data=. Handles different HTTP status codes (200, 409, 422, etc.) and formats the output accordingly.
+
+#+findex: tlon-db--format-post-entry-result
++ ~tlon-db--format-post-entry-result~ :: Formatter function used by ~tlon-db--display-result-buffer~ to display the results from ~tlon-db-post-entry~. Takes a plist =RESULT= containing =:status=, =:data= (parsed JSON for 422 errors), and =:raw-text= (raw text response for 200 or other errors). Formats output based on HTTP status code.
+
+#+findex: tlon-db--format-delete-entry-result
++ ~tlon-db--format-delete-entry-result~ :: Formatter function used by ~tlon-db--display-result-buffer~ to display the results from ~tlon-db-delete-entry~. Takes a plist =RESULT= containing =:status=, =:data= (parsed JSON for 200 or 422 errors), and =:raw-text= (raw text response for other errors). Formats output based on HTTP status code.
+
+** Automatic Synchronization
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-sync
+:END:
+
+The =tlon-db= module provides a mechanism to automatically synchronize local changes with the remote API. It uses a two-file system:
++ ~tlon-db-file-db~ (~db.bib~): The main file for user edits.
++ ~tlon-db-file-db-upstream~ (~db-upstream.bib~): A read-only mirror of the remote database's state.
+
+This functionality is enabled when ~tlon-db-initialize~ is called, which sets up a file watch on ~tlon-db-file-db~ using Emacs's `filenotify` library.
+
+When ~tlon-db-file-db~ is modified on disk, the following actions are performed:
+1. A diff is computed between ~tlon-db-file-db~ and ~tlon-db-file-db-upstream~.
+2. The changes are categorized into additions, modifications, and deletions of BibTeX entries.
+3. For each change, the corresponding API endpoint is called:
+   - *Additions and Modifications*: The entry is posted to the API using ~tlon-db-post-entry~. On success, the function updates the entry in both ~tlon-db-file-db~ and ~tlon-db-file-db-upstream~ with the version returned by the API.
+   - *Deletions*: The entry is deleted from the API using ~tlon-db-delete-entry~. On success, the entry is also removed from ~tlon-db-file-db-upstream~.
+4. After all API calls are completed, a summary message is displayed, indicating the number of created, modified, and deleted entries. A detailed log of all changes is also appended to the ~*Db Sync Log*~ buffer. This buffer is not displayed automatically but can be consulted to see the specific keys that were added, modified, or deleted. For modified entries, a diff is also included in the log, showing the exact changes that were synchronized.
+
+This process ensures that both local database files remain synchronized with each other and with the remote server. The synchronization is non-interactive and designed to handle potential recursive triggers gracefully. To fetch updates made by other users, run ~tlon-db-get-entries~, which will update both local files from the remote API.
