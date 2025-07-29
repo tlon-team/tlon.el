@@ -230,7 +230,9 @@ conditions is not met, an error is logged and the process is aborted."
 (declare-function ebib-extras-get-field "ebib-extras")
 (cl-defun tlon-db-post-entry (&optional key attempt)
   "Create or update KEY in the EA International API.
-If called interactively, post the entry at point; otherwise use KEY."
+If called interactively, post the entry at point; otherwise use KEY.
+
+ATTEMPT is used to track retries in case of missing author names."
   (interactive)
   (setq attempt (or attempt 0))
   (tlon-db-ensure-auth)
@@ -264,7 +266,7 @@ If called interactively, post the entry at point; otherwise use KEY."
                     (cl-return-from tlon-db-post-entry
                       (tlon-db-post-entry entry-key (1+ attempt))))
                 (user-error "Entry not posted because these author names are missing: %s"
-                            (string-join all-names ", ")))))) 
+                            (string-join all-names ", "))))))
         (if (or tlon-debug (not (and status-code (= status-code 200))))
             ;; Non‑200 or debug ⇒ show whole response
             (tlon-db--display-result-buffer
