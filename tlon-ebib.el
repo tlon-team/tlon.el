@@ -727,17 +727,7 @@ EVENT is a list of the form (FILE ACTION)."
                (file-exists-p tlon-ebib-file-db-upstream))
       (if tlon-ebib--sync-in-progress
 	  (message "Ebib sync already in progress, skipping this change.")
-	(let* ((diff-buffer (generate-new-buffer " *ebib-diff*"))
-	       diff-output)
-	  (unwind-protect
-	      (let ((exit-code (call-process "diff" nil diff-buffer nil "-U1000"
-					     tlon-ebib-file-db-upstream
-					     file)))
-		(when (= exit-code 1) ; 0 means no differences, >1 is an error
-		  (with-current-buffer diff-buffer
-		    (setq diff-output (buffer-string)))))
-	    (when (buffer-live-p diff-buffer)
-	      (kill-buffer diff-buffer)))
+	(let ((diff-output (tlon-ebib--get-diff-output tlon-ebib-file-db-upstream file)))
 	  (when diff-output
 	    (with-current-buffer (find-file-noselect file)
 	      (unwind-protect
@@ -785,6 +775,25 @@ EVENT is a list of the form (FILE ACTION)."
 					      (message "Ebib sync: %s."
 						       (mapconcat #'identity (nreverse parts) ", ")))))))))
 		(setq tlon-ebib--sync-in-progress nil)))))))))
+
+;; Helper functions for sync
+
+(defun tlon-ebib--get-diff-output (upstream-file local-file)
+  "Return unified diff output between UPSTREAM-FILE and LOCAL-FILE.
+
+If there are no differences, return nil."
+  (let (diff-output)
+    (let ((diff-buffer (generate-new-buffer " *ebib-diff*")))
+      (unwind-protect
+	  (let ((exit-code
+		 (call-process "diff" nil diff-buffer nil "-U1000"
+			       upstream-file local-file)))
+	    (when (= exit-code 1)		; 0 means identical, >1 error
+	      (with-current-buffer diff-buffer
+		(setq diff-output (buffer-string)))))
+	(when (buffer-live-p diff-buffer)
+	  (kill-buffer diff-buffer))))
+    diff-output))
 
 ;;;;;; Periodic data update
 
