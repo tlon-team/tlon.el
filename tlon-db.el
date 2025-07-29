@@ -496,6 +496,46 @@ RESULT is a plist like (:status CODE :data DATA)."
 	(when (gethash "detail" response-data) ; Handle FastAPI detail string
 	  (insert "Detail: " (gethash "detail" response-data) "\n")))))))
 
+;;;;;; Get translation key
+
+(defun tlon-db-get-translation-key (original-key &optional lang)
+  "Return the BibTeX key of the translation of ORIGINAL-KEY in language LANG.
+
+If called interactively, prompt for ORIGINAL-KEY (defaulting to the BibTeX key
+at point) and LANG when they are not provided.  LANG should be an ISO language
+code such as \"fr\".
+
+On success, the translation key is returned as a string.  If no translation in
+LANG exists or the request fails, signal an error."
+  (interactive
+   (list (or (tlon-db-get-key-at-point)
+             (read-string "Original key: "))
+         (tlon-read-language nil "Target language: ")))
+  (unless lang
+    (setq lang (tlon-read-language nil "Target language: ")))
+  (let* ((endpoint (format "/api/translations/%s"
+                           (url-hexify-string original-key)))
+         (headers '(("accept" . "application/json")))
+         (response-buffer (tlon-db--make-request "GET" endpoint nil headers nil))
+         (data (and response-buffer
+                    (tlon-db--parse-json-response response-buffer))))
+    (when response-buffer
+      (kill-buffer response-buffer))
+    (unless data
+      (user-error "Failed to retrieve translations for %s" original-key))
+    (let* ((translations (gethash "translations" data))
+           (match (cl-find (downcase lang) translations
+                           :key (lambda (tr)
+                                  (downcase (or (gethash "language" tr) "")))
+                           :test #'string=)))
+      (if match
+          (let ((translation-key (gethash "key" match)))
+            (when (called-interactively-p 'any)
+              (message "Translation key for %s in %s: %s"
+                       original-key lang translation-key))
+            translation-key)
+        (user-error "No translation found for %s in language %s"
+                    original-key lang))))
 ;;;;;; Helpers
 
 (defun tlon-db--get-response-body (response-text)

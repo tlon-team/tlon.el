@@ -50,6 +50,14 @@ This section details the interactive commands provided by =tlon-db.el=.
 #+findex: tlon-db-menu
 + ~tlon-db-menu~ :: Activates a =transient= menu interface providing quick access to the commands in this module.
 
+#+findex: tlon-db-get-translation-key
++ ~tlon-db-get-translation-key~ :: Returns the BibTeX key of the translation
+of an original entry in the specified language. It calls the
+=/api/translations/{original_id}= endpoint, parses the JSON response, and
+returns the key of the matching translation. Prompts for the target language
+if not provided. Signals an error if the translation is not found or the
+request fails.
+
 ** Internal Functions and Variables
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-db-internals
