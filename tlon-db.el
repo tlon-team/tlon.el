@@ -258,7 +258,9 @@ If called interactively, post the entry at point; otherwise use KEY."
                            (string-join all-names ", ")))
                   (progn
                     (dolist (name all-names)
-                      (tlon-db-set-name name nil nil))
+                      ;; Use FORCE to avoid similarity conflicts that would
+                      ;; otherwise prevent the name from being created.
+                      (tlon-db-set-name name nil t))
                     (cl-return-from tlon-db-post-entry
                       (tlon-db-post-entry entry-key (1+ attempt))))
                 (user-error "Entry not posted because these author names are missing: %s"
