@@ -294,7 +294,7 @@ Return the modified entry string."
                (authors (match-string 2 entry))
                (suffix  (match-string 3 entry))
                (clean   (string-trim
-                         (replace-regexp-in-string \"[[:space:]\n]+\" \" \" authors))))
+                         (replace-regexp-in-string "[[:space:]\n]+" " " authors))))
           (replace-match (concat prefix clean suffix) t t entry 0))
       entry)))
 
