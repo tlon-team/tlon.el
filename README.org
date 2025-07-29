@@ -33,10 +33,10 @@ The package is organized into several modules, each with comprehensive documenta
 - [[file:doc/tlon-count.org][Word counting and statistics]] - Word counting, statistics, and reporting tools
 - [[file:doc/tlon-counterpart.org][Counterpart navigation]] - Tools for working with original and translated document pairs
 - [[file:doc/tlon-deepl.org][DeepL integration]] - Translation services and glossary management via DeepL API
+- [[file:doc/tlon-db.org][Db integration]] - Integration with external bibliographic database APIs
 - [[file:doc/tlon-dict.org][Dictionary functionality]] - Dictionary and synonym lookup integration
 - [[file:doc/tlon-dispatch.org][Dispatch commands]] - Main entry points and hierarchical menus for Tlön operations
 - [[file:doc/tlon-dub.org][Dubbing]] - Audio and video dubbing functionality with ElevenLabs integration
-- [[file:doc/tlon-ebib.org][Ebib integration]] - Integration with external bibliographic database APIs
 - [[file:doc/tlon-email.org][Email functionality]] - Email composition using predefined templates
 - [[file:doc/tlon-fix.org][Fix utilities]] - Automated error correction and validation
 - [[file:doc/tlon-forg.org][Forge integration]] - GitHub issues and Org mode TODO synchronization

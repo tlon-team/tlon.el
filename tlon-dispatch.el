@@ -41,11 +41,11 @@
   [["Main menu"
     "Submenus"
     ("a" "AI"                             tlon-ai-menu)
-    ("b" "dub"                            tlon-dub-menu)
+    ("b" "db"                             tlon-db-menu)
+    ("H-b" "dub"                          tlon-dub-menu)
     ("c" "clock"                          tlon-clock-menu)
     ("H-c" "cleanup"                      tlon-cleanup-menu)
     ("H-d" "dict"                         tlon-dict-menu)
-    ("e" "ebib"                           tlon-ebib-menu)
     ("f" "files"                          tlon-files-menu)
     ("H-f" "fix"                          tlon-fix-menu)
     ("g" "glossary"                       tlon-glossary-menu)
