@@ -224,7 +224,7 @@ conditions is not met, an error is logged and the process is aborted."
 (declare-function bibtex-extras-delete-entry "bibtex-extras")
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
-(defun tlon-db-post-entry (&optional key)
+(defun tlon-db-post-entry (&optional key attempt)
   "Create or update KEY in the EA International API.
 If called interactively, post the entry at point; otherwise use KEY."
   (interactive)
@@ -239,6 +239,18 @@ If called interactively, post the entry at point; otherwise use KEY."
                             "POST" "/api/entries" encoded-text headers))
              (status-code  (plist-get result :status))
              (raw-text     (plist-get result :raw-text)))
+        ;; Detect missing author names (HTTP 400) and offer to create them,
+        ;; then retry the post once.
+        (when (and status-code (= status-code 400) (< attempt 1))
+          (let ((missing-names (tlon-db--extract-missing-names raw-text)))
+            (when (and missing-names
+                       (y-or-n-p
+                        (format "Missing author names not found (%s). Create them and retry? "
+                                (string-join missing-names ", "))))
+              (dolist (name missing-names)
+                (tlon-db-set-name name nil nil))
+              (cl-return-from tlon-db-post-entry
+                (tlon-db-post-entry entry-key (1+ attempt))))))
         (if (or tlon-debug (not (and status-code (= status-code 200))))
             ;; Non‑200 or debug ⇒ show whole response
             (tlon-db--display-result-buffer
