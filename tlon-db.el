@@ -239,18 +239,26 @@ If called interactively, post the entry at point; otherwise use KEY."
                             "POST" "/api/entries" encoded-text headers))
              (status-code  (plist-get result :status))
              (raw-text     (plist-get result :raw-text)))
-        ;; Detect missing author names (HTTP 400) and offer to create them,
-        ;; then retry the post once.
+        ;; Detect missing author names (HTTP 400).  Offer to create *each*
+        ;; missing name (splitting compound author fields) and retry once.  If
+        ;; the user declines, abort silently (no result buffer).
         (when (and status-code (= status-code 400) (< attempt 1))
-          (let ((missing-names (tlon-db--extract-missing-names raw-text)))
-            (when (and missing-names
-                       (y-or-n-p
-                        (format "Missing author names not found (%s). Create them and retry? "
-                                (string-join missing-names ", "))))
-              (dolist (name missing-names)
-                (tlon-db-set-name name nil nil))
-              (cl-return-from tlon-db-post-entry
-                (tlon-db-post-entry entry-key (1+ attempt))))))
+          (let* ((missing-names (tlon-db--extract-missing-names raw-text))
+                 ;; Split any compound author strings like
+                 ;; \"Doe, John and Roe, Jane\" into individual names.
+                 (all-names (cl-loop for n in missing-names
+                                     append (tlon-db--split-author-string n))))
+            (when all-names
+              (if (y-or-n-p
+                   (format "Missing author names not found (%s). Create them and retry? "
+                           (string-join all-names ", ")))
+                  (progn
+                    (dolist (name all-names)
+                      (tlon-db-set-name name nil nil))
+                    (cl-return-from tlon-db-post-entry
+                      (tlon-db-post-entry entry-key (1+ attempt))))
+                (user-error "Entry not posted because these author names are missing: %s"
+                            (string-join all-names ", ")))))) 
         (if (or tlon-debug (not (and status-code (= status-code 200))))
             ;; Non‑200 or debug ⇒ show whole response
             (tlon-db--display-result-buffer
@@ -263,6 +271,13 @@ If called interactively, post the entry at point; otherwise use KEY."
             (tlon-db--replace-entry-locally entry-key local-copy)
             (message "Entry “%s” posted and mirrored locally." entry-key))))
     (user-error "No BibTeX key found at point")))
+
+;; Helper to split a possibly multi-author string into individual names.
+(defun tlon-db--split-author-string (author-string)
+  "Split AUTHOR-STRING on the BibTeX separator \" and \" and trim spaces.
+Return a list of individual author names."
+  (mapcar #'string-trim
+          (split-string author-string "\\s-+and\\s-+" t)))
 
 (defun tlon-db--replace-entry-locally (key entry)
   "Replace KEY with ENTRY text in both local databases."
