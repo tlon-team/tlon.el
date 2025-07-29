@@ -623,7 +623,6 @@ LANG exists or the request fails, signal an error."
 
 (defun tlon-db--extract-missing-names (raw-response-text)
   "Return a list of missing author names from RAW-RESPONSE-TEXT.
-
 The server returns a JSON body whose `detail' list may contain
 `missing_names'.  Parse that structure and return the names, or nil if none
 can be found."
@@ -643,7 +642,7 @@ can be found."
               (when (and (hash-table-p item)
                          (gethash "missing_names" item))
                 (setq names (append names (gethash "missing_names" item))))))))
-      (unless (null names) names)))
+      (unless (null names) names))))
 
 ;;;###autoload
 (defun tlon-db--make-request (method endpoint data headers &optional auth-required base-url)
