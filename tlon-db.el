@@ -216,10 +216,6 @@ conditions is not met, an error is logged and the process is aborted."
               (content2 (with-temp-buffer
                           (insert-file-contents-literally file2)
                           (buffer-string))))
-          ;; Ignore a spurious leading newline or whitespace that may appear in
-          ;; one of the files.
-          (setq content1 (replace-regexp-in-string "\\`[[:space:]\n\r]+" "" content1))
-          (setq content2 (replace-regexp-in-string "\\`[[:space:]\n\r]+" "" content2))
           (string= content1 content2))))))
 
 ;;;;;; Post entry
