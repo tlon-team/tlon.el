@@ -1458,12 +1458,12 @@ an error if no part files are found."
              (args (list "-y" "-i" part "-vn" "-c:a" "copy" out)))
         (message "Extracting audio to %s..." (file-name-nondirectory out))
         (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
-          (error "ffmpeg failed to create %s" out))
+          (error "Application `ffmpeg' failed to create %s" out))
         (push out created)))
     (message "Created %d wav files in %s" (length created) dir)
     (nreverse created)))
 
-;;;;; file utilities
+;;;;; video merging
 
 ;;;###autoload
 (defun tlon-dub-join-files (list-file &optional output-file)
@@ -1513,7 +1513,7 @@ file cannot be read.  Returns the pathname of OUTPUT-FILE."
         (unless (bolp) (insert "\n")))
       (write-region (point-min) (point-max) output-file nil 'silent))
     (message "Joined %d files into %s" (length clean-paths) output-file)
-    output-file)
+    output-file))
 
 ;;;; Menu
 
