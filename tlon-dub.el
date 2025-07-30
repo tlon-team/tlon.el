@@ -1468,18 +1468,24 @@ an error if no part files are found."
 ;;;###autoload
 (defun tlon-dub-join-files (list-file &optional output-file)
   "Join files whose paths are listed line-by-line in LIST-FILE into OUTPUT-FILE.
-LIST-FILE should be a text file containing one file path per line.  Paths may be
+
+If every listed file has a recognised media extension (e.g. mp4, webm, mp3,
+wav) the concatenation is performed with ffmpeg so the resulting container has
+correct metadata.  Otherwise the files are treated as plain text and their
+contents concatenated with a single newline inserted between them.
+
+LIST-FILE is a text file containing one file path per line.  Paths may be
 absolute or relative to the directory of LIST-FILE.  Blank lines and lines
 starting with \"#\" are ignored.
 
-Interactively, OUTPUT-FILE is prompted for and defaults to the same directory as
-LIST-FILE with the basename \"joined\" and the same extension as the first valid
-path listed, or \"txt\" if that cannot be determined.
+Interactively, OUTPUT-FILE is prompted for and defaults to the same directory
+as LIST-FILE with the basename \"joined\" and the same extension as the first
+valid path listed (or \"txt\" if that cannot be determined).
 
-The contents of each referenced file are concatenated in the order they appear
-in LIST-FILE, separated by a single newline.  Signals an error if any listed
-file cannot be read.  Returns the pathname of OUTPUT-FILE."
+Signals an error if any listed file cannot be read or if ffmpeg fails.  Returns
+the pathname of OUTPUT-FILE."
   (interactive (list (read-file-name "List of files: " nil nil t ".txt")))
+  ;; Expand and collect the file paths
   (setq list-file (expand-file-name list-file))
   (let* ((dir (file-name-directory list-file))
          (paths (with-temp-buffer
@@ -1495,23 +1501,48 @@ file cannot be read.  Returns the pathname of OUTPUT-FILE."
                         paths))))
     (unless clean-paths
       (user-error "No valid file paths found in %s" list-file))
+    ;; Determine default output name
     (unless output-file
       (let* ((first-ext (file-name-extension (car clean-paths) t))
              (default-name (concat (file-name-sans-extension list-file)
                                    "-joined"
                                    (or first-ext ".txt"))))
-        (setq output-file (read-file-name "Output file: " dir default-name nil default-name)))
-      (setq output-file (expand-file-name output-file)))
-    ;; Concatenate files
-    (with-temp-buffer
-      (dolist (file clean-paths)
-        (unless (file-readable-p file)
-          (user-error "Cannot read %s" file))
-        (insert-file-contents file)
-        ;; Ensure a trailing newline except for last file
-        (goto-char (point-max))
-        (unless (bolp) (insert "\n")))
-      (write-region (point-min) (point-max) output-file nil 'silent))
+        (setq output-file (read-file-name "Output file: " dir default-name nil default-name))))
+    (setq output-file (expand-file-name output-file))
+    ;; Decide whether to use ffmpeg
+    (let* ((media-exts '("mp4" "mov" "mkv" "webm" "mp3" "wav" "flac" "ogg" "opus" "m4a"))
+           (first-ext (downcase (file-name-extension (car clean-paths))))
+           (use-ffmpeg (and first-ext (member first-ext media-exts)
+                            ;; all files must share the same extension
+                            (cl-every (lambda (f)
+                                        (string= first-ext (downcase (file-name-extension f))))
+                                      clean-paths))))
+      (if use-ffmpeg
+          ;; concatenate with ffmpeg concat demuxer
+          (let ((tmp-list (make-temp-file "tlon-dub-concat" nil ".txt")))
+            (unwind-protect
+                (progn
+                  ;; build list file
+                  (with-temp-buffer
+                    (dolist (f clean-paths)
+                      (insert "file '" (replace-regexp-in-string "'" "'\\''" f) "'\n"))
+                    (write-region (point-min) (point-max) tmp-list nil 'silent))
+                  ;; run ffmpeg
+                  (let ((args (list "-y" "-f" "concat" "-safe" "0" "-i" tmp-list "-c" "copy" output-file)))
+                    (message "Concatenating %d media files with ffmpeg..." (length clean-paths))
+                    (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
+                      (error "ffmpeg failed to concatenate files"))))
+              (delete-file tmp-list)))
+        ;; fallback to plain-text concatenation
+        (with-temp-buffer
+          (dolist (file clean-paths)
+            (unless (file-readable-p file)
+              (user-error "Cannot read %s" file))
+            (insert-file-contents file)
+            ;; Ensure a trailing newline except for last file
+            (goto-char (point-max))
+            (unless (bolp) (insert "\n")))
+          (write-region (point-min) (point-max) output-file nil 'silent))))
     (message "Joined %d files into %s" (length clean-paths) output-file)
     output-file))
 
