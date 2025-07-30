@@ -54,9 +54,9 @@
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)
     ("l" "DeepL"                          tlon-deepl-menu)
-    ("H-l" "color"                        tlon-color-menu)
-    ("H-m" "meet"                         tlon-meet-menu)]
+    ("H-l" "color"                        tlon-color-menu)]
    [""""
+    ("H-m" "meet"                         tlon-meet-menu)
     ("n" "newsletter"                     tlon-newsletter-menu)
     ("o" "count"                          tlon-count-menu)
     ("p" "paragraphs"                     tlon-paragraphs-menu)
