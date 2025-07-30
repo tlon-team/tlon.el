@@ -1355,7 +1355,8 @@ the current part number for naming the output file."
   (let* ((start (nth i timestamps))
          (end-secs (if (< i (1- (length timestamps)))
                        (- (tlon-dub--dot-timestamp-to-seconds
-                           (nth (1+ i) timestamps)) 0.001)
+                           (nth (1+ i) timestamps))
+			  0.040)
                      duration))
          (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
          (outfile (expand-file-name (format "%s-part%d.mp4" base part) output-dir))
