@@ -260,9 +260,7 @@ ATTEMPT is used to track retries in case of missing author names."
                            (string-join all-names ", ")))
                   (progn
                     (dolist (name all-names)
-                      ;; Use FORCE to avoid similarity conflicts that would
-                      ;; otherwise prevent the name from being created.
-                      (tlon-db-set-name name nil t))
+                      (tlon-db-set-name name))
                     (cl-return-from tlon-db-post-entry
                       (tlon-db-post-entry entry-key (1+ attempt))))
                 (user-error "Entry not posted because these author names are missing: %s"
