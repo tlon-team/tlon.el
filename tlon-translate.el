@@ -173,7 +173,7 @@ file. If LANG is not provided, prompt for a target language."
       (tlon-translate--do-translate source-file target-file target-lang-code))))
 
 (defun tlon-translate--default-filename (source-file target-lang-code)
-  "Return a slugified default filename for SOURCE-FILE translated into TARGET-LANG-CODE.
+  "Return a slugified filename for SOURCE-FILE translated into TARGET-LANG-CODE.
 The slug is built by translating the original title with
 `tlon-translate-text' and passing the result through
 `simple-extras-slugify'.  If translation fails, fall back to a
