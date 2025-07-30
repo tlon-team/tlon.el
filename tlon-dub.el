@@ -1559,7 +1559,8 @@ If nil, use the default `gptel-model'."
    ["Prepare video & audio chunks"
     ("p v" "Split video by timestamps (quick)" tlon-dub-split-video-at-timestamps-quick)
     ("p V" "Split video by timestamps (precise)" tlon-dub-split-video-at-timestamps)
-    ("p a" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
+    ("p a" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)
+    ("p j" "Join files from list" tlon-dub-join-files)]
    ["ElevenLabs API"
     ("a s" "Start New Dubbing Project" tlon-dub-start-project)
     ("a d" "Get Project Metadata" tlon-dub-get-project-metadata)
