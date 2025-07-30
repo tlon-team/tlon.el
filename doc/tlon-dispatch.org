@@ -46,7 +46,7 @@ This module defines the main entry points for accessing Tlön functionalities us
     - =u= : Counterpart (~tlon-counterpart-menu~)
     - =v= : URL (~tlon-url-menu~)
     - =y= : Forge (~tlon-forg-menu~)
-    - =x= : TeX (~tlon-tex-menu~)
+    - =x= : TeX (~tlon-bib-menu~)
     - =z= : TTS (~tlon-tts-menu~)
   - *Browse Repo*: Offers quick access to repositories:
     - =d= : Browse in Dired (~tlon-dired-repo-menu~)
