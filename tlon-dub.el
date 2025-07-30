@@ -1314,15 +1314,19 @@ Attempts to handle common sentence-ending punctuation patterns."
 ;;;;; video splitting
 
 ;;;###autoload
-(defun tlon-dub-split-video-at-timestamps (video-file timestamps-file &optional output-dir)
+(defun tlon-dub-split-video-at-timestamps (video-file timestamps-file &optional quick output-dir)
   "Split VIDEO-FILE using markers from TIMESTAMPS-FILE (one HH:MM:SS.mmm per line).
-Each part starts at its timestamp and ends 1 ms before the next timestamp,
-or at the end of the video for the last part.  Parts are saved as
-<BASENAME>-partN.mp4 in OUTPUT-DIR, defaulting to the directory of VIDEO-FILE."
+Each part starts at its timestamp and ends 1 ms before the next timestamp, or at
+the end of the video for the last part. Parts are saved as <BASENAME>-partN.mp4
+in OUTPUT-DIR, defaulting to the directory of VIDEO-FILE. If QUICK is non-nil,
+do not re-encode the video, just copy it. This generates the files much more
+quickly but it can only cut at keyframes, so the video boundaries may not
+exactly coincide with those specified in the timestamp file."
   (interactive
    (list (read-file-name "Video file: " nil nil t)
-         (read-file-name "Timestamps file: " nil nil t)
-         nil))
+	 (read-file-name "Timestamps file: " nil nil t)
+	 current-prefix-arg
+	 nil))
   (setq video-file (expand-file-name video-file)
         timestamps-file (expand-file-name timestamps-file))
   (let* ((output-dir (or output-dir (file-name-directory video-file)))
@@ -1332,8 +1336,15 @@ or at the end of the video for the last part.  Parts are saved as
                        (split-string (buffer-string) "[\n\r]+" t "[ \t]+")))
          (duration (tlon-dub--get-video-duration video-file)))
     (tlon-dub--validate-timestamps timestamps timestamps-file)
-    (let ((final-part (tlon-dub--process-all-segments video-file base output-dir timestamps duration)))
+    (let ((final-part (tlon-dub--process-all-segments video-file base output-dir timestamps duration quick)))
       (message "Finished splitting video into %d parts" (1- final-part)))))
+
+;;;###autoload
+(defun tlon-dub-split-video-at-timestamps-quick ()
+  "Call `tlon-dub-split-video-at-timestamps' with QUICK argument."
+  (interactive)
+  (let ((current-prefix-arg t))
+    (call-interactively 'tlon-dub-split-video-at-timestamps)))
 
 (defun tlon-dub--validate-timestamps (timestamps timestamps-file)
   "Validate that TIMESTAMPS are in HH:MM:SS.mmm format from TIMESTAMPS-FILE."
@@ -1344,14 +1355,17 @@ or at the end of the video for the last part.  Parts are saved as
       (user-error "Invalid timestamp \"%s\" in %s. Expected format HH:MM:SS.mmm"
                   ts timestamps-file))))
 
-(defun tlon-dub--split-video-segment (video-file base output-dir timestamps duration i part)
+(defun tlon-dub--split-video-segment (video-file base output-dir timestamps duration i part &optional quick)
   "Split a single video segment and return the next part number.
 VIDEO-FILE is the path to the input video file to split. BASE is the base name
 for the output files (without extension). OUTPUT-DIR is the directory where the
 split video segments will be saved. TIMESTAMPS is a list of timestamp strings
 marking segment boundaries. DURATION is the total duration of the video in
 seconds. I is the index of the current timestamp in the TIMESTAMPS list. PART is
-the current part number for naming the output file."
+the current part number for naming the output file. If QUICK is non-nil, do not
+re-encode the video, just copy it. This generates the files much more quickly
+but it can only cut at keyframes, so the video boundaries may not exactly
+coincide with those specified in the timestamp file."
   (let* ((start (nth i timestamps))
          (end-secs (if (< i (1- (length timestamps)))
                        (- (tlon-dub--dot-timestamp-to-seconds
@@ -1360,23 +1374,30 @@ the current part number for naming the output file."
                      duration))
          (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
          (outfile (expand-file-name (format "%s-part%d.mp4" base part) output-dir))
-         (args (append '("-y" "-i" ) (list video-file) '("-ss") (list start)
+         (args (append '("-y" "-i" )
+		       (list video-file)
+		       '("-ss")
+		       (list start)
                        (when end-str (list "-to" end-str))
-                       '("-c" "copy") (list outfile))))
+                       (when quick '("-c" "copy"))
+		       (list outfile))))
     (message "Creating %s..." (file-name-nondirectory outfile))
     (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
       (error "Command `ffmpeg' failed to create %s" outfile))
     (1+ part)))
 
-(defun tlon-dub--process-all-segments (video-file base output-dir timestamps duration)
+(defun tlon-dub--process-all-segments (video-file base output-dir timestamps duration &optional quick)
   "Process all video segments and return the final part number.
 VIDEO-FILE is the path to the input video file to be processed. BASE is the base
 name used for naming output segments. OUTPUT-DIR is the directory where
 processed segments will be saved. TIMESTAMPS is a list of timestamp values
-defining segment boundaries. DURATION is the total duration of the video file."
+defining segment boundaries. DURATION is the total duration of the video file.
+If QUICK is non-nil, do not re-encode the video, just copy it. This generates
+the files much more quickly but it can only cut at keyframes, so the video
+boundaries may not exactly coincide with those specified in the timestamp file."
   (let ((part 1))
     (dotimes (i (length timestamps))
-      (setq part (tlon-dub--split-video-segment video-file base output-dir timestamps duration i part)))
+      (setq part (tlon-dub--split-video-segment video-file base output-dir timestamps duration i part quick)))
     part))
 
 (defun tlon-dub--dot-timestamp-to-seconds (ts)
@@ -1484,7 +1505,8 @@ If nil, use the default `gptel-model'."
     ("t -a" "Alignment model" tlon-dub-infix-select-alignment-model)
     ("t -f" "Transcription format" tlon-dub-infix-select-transcription-format)]
    ["Prepare video & audio chunks"
-    ("p v" "Split video by timestamps" tlon-dub-split-video-at-timestamps)
+    ("p v" "Split video by timestamps (quick)" tlon-dub-split-video-at-timestamps-quick)
+    ("p V" "Split video by timestamps (precise)" tlon-dub-split-video-at-timestamps)
     ("p a" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
    ["ElevenLabs API"
     ("a s" "Start New Dubbing Project" tlon-dub-start-project)
