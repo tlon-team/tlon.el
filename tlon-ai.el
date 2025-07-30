@@ -874,7 +874,7 @@ Messages refer to paragraphs with one-based numbering."
 
 ;;;;; Summarization
 
-(declare-function tlon-fetch-and-set-abstract "tlon-tex")
+(declare-function tlon-fetch-and-set-abstract "tlon-bib")
 ;;;###autoload
 (defun tlon-get-abstract-with-or-without-ai ()
   "Try to get an abstract using non-AI methods; if unsuccessful, use AI.
@@ -887,7 +887,7 @@ To get an abstract with AI, the function uses
   (unless (tlon-fetch-and-set-abstract)
     (tlon-get-abstract-with-ai)))
 
-(autoload 'tlon-abstract-may-proceed-p "tlon-tex")
+(autoload 'tlon-abstract-may-proceed-p "tlon-bib")
 ;;;###autoload
 (defun tlon-get-abstract-with-ai (&optional file type)
   "Return an abstract of TYPE using AI.

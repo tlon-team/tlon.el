@@ -283,7 +283,7 @@ LANGUAGE. Returns nil if `tlon-deepl-source-language' is not \"en\"."
 
 ;;;;;; Tex
 
-(declare-function tlon-bibliography-lookup "tlon-tex")
+(declare-function tlon-bibliography-lookup "tlon-bib")
 (declare-function ebib--get-key-at-point "ebib")
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function bibtex-extras-get-key "bibtex-extras")
@@ -342,8 +342,8 @@ function was called interactively."
           (tlon-deepl--translate-abstract-interactive key text source-lang-code)
         (tlon-deepl--translate-abstract-non-interactive key text source-lang-code langs)))))
 
-(declare-function tlon-tex-remove-braces "tlon-tex")
-(declare-function tlon-translate-abstract-callback "tlon-tex")
+(declare-function tlon-bib-remove-braces "tlon-bib")
+(declare-function tlon-translate-abstract-callback "tlon-bib")
 (defun tlon-deepl--translate-abstract-interactive (key text source-lang-code)
   "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
 If a translation for the KEY into the selected target language already exists,
@@ -359,7 +359,7 @@ prompt the user for confirmation before overwriting."
             (message "Translation for %s into %s aborted by user." key target-lang-name)
           (progn
             (message "Initiating DeepL translation for %s -> %s (%s)" key target-lang-name source-lang-code)
-            (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang-code
+            (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
                                   (lambda ()
                                     (tlon-translate-abstract-callback key target-lang 'overwrite))
                                   nil)))))))
@@ -377,7 +377,7 @@ nil, use `tlon-project-target-languages'."
                 (unless (tlon-deepl--get-existing-translation key target-lang)
                   (push language initiated-langs)
                   (message "Initiating DeepL translation for %s -> %s" key target-lang)
-                  (tlon-deepl-translate (tlon-tex-remove-braces text) target-lang source-lang-code
+                  (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
                                         (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite)))))))
           (or langs tlon-project-target-languages))
     (when initiated-langs
@@ -386,7 +386,7 @@ nil, use `tlon-project-target-languages'."
 
 (defvar tlon-file-fluid)
 (defvar tlon-file-stable)
-(declare-function tlon-tex-get-keys-in-file "tlon-tex")
+(declare-function tlon-bib-get-keys-in-file "tlon-bib")
 ;;;###autoload
 (defun tlon-deepl-translate-missing-abstracts (&optional langs)
   "Translate abstracts for BibTeX entries missing translations into LANGS.
@@ -402,8 +402,8 @@ languages."
     (unless target-languages
       (user-error "No target languages selected. Aborting"))
     (let* ((all-translations (tlon-read-abstract-translations))
-           (keys (seq-uniq (append (tlon-tex-get-keys-in-file tlon-file-fluid)
-                                   (tlon-tex-get-keys-in-file tlon-file-stable))))
+           (keys (seq-uniq (append (tlon-bib-get-keys-in-file tlon-file-fluid)
+                                   (tlon-bib-get-keys-in-file tlon-file-stable))))
            (total (length keys))
            (initiated-count 0)
            (processed 0))
@@ -436,7 +436,7 @@ languages."
               (tlon-deepl-translate-abstract abstract key (reverse missing-langs))))))
       (message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count))))
 
-(declare-function tlon-read-abstract-translations "tlon-tex")
+(declare-function tlon-read-abstract-translations "tlon-bib")
 (defun tlon-deepl--get-existing-translation (key target-lang)
   "Check `tlon-file-abstract-translations' for existing translation.
 Return the translation string for KEY and TARGET-LANG if found and non-empty,

@@ -51,7 +51,7 @@ The package is organized into several modules, each with comprehensive documenta
 - [[file:doc/tlon-repos.org][Repository management]] - Git repository creation, cloning, and management
 - [[file:doc/tlon-search.org][Search functionality]] - Search commands for commits, files, and translations
 - [[file:doc/tlon-split.org][Split window alignment]] - Window alignment for translation workflows
-- [[file:doc/tlon-tex.org][BibTeX functionality]] - Bibliography management and citation handling
+- [[file:doc/tlon-bib.org][BibTeX functionality]] - Bibliography management and citation handling
 - [[file:doc/tlon-tts.org][Text-to-speech]] - Comprehensive TTS functionality with multiple engines
 - [[file:doc/tlon-url.org][URL handling]] - URL validation, archiving, and replacement tools
 - [[file:doc/tlon-yaml.org][YAML metadata]] - Metadata management and validation for translation files

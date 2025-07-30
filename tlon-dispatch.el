@@ -41,15 +41,16 @@
   [["Main menu"
     "Submenus"
     ("a" "AI"                             tlon-ai-menu)
-    ("b" "db"                             tlon-db-menu)
+    ("b" "bib"                            tlon-bib-menu)
     ("H-b" "dub"                          tlon-dub-menu)
     ("c" "clock"                          tlon-clock-menu)
     ("H-c" "cleanup"                      tlon-cleanup-menu)
-    ("H-d" "dict"                         tlon-dict-menu)
+    ("H-d" "db"                           tlon-db-menu)
     ("f" "files"                          tlon-files-menu)
     ("H-f" "fix"                          tlon-fix-menu)
     ("g" "glossary"                       tlon-glossary-menu)
     ("i" "images"                         tlon-images-menu)
+    ("H-i" "dict"                         tlon-dict-menu)
     ("j" "jobs"                           tlon-jobs-menu)
     ("k" "markdown"                       tlon-md-menu)
     ("l" "DeepL"                          tlon-deepl-menu)
@@ -69,7 +70,6 @@
     ("v" "url"                            tlon-url-menu)
     ("y" "forg"                           tlon-forg-menu)
     ("H-y" "youtube"                      tlon-youtube-menu)
-    ("x" "tex"                            tlon-tex-menu)
     ("z" "tts"                            tlon-tts-menu)]
    [""
     "Browse repo"

@@ -1391,7 +1391,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
 	    tlon-local-replacements-for-session tlon-local-replacements)
       (concat (tlon-tts-get-metadata) (tlon-md-read-content file)))))
 
-(declare-function tlon-tex-replace-keys-with-citations "tlon-tex")
+(declare-function tlon-bib-replace-keys-with-citations "tlon-bib")
 (defun tlon-tts-prepare-staging-buffer ()
   "Prepare the current buffer for audio narration."
   (save-excursion
@@ -1400,7 +1400,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
     (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
     (tlon-tts-remove-tag-sections) ; should probably be before `tlon-tts-process-listener-cues'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
-    (tlon-tex-replace-keys-with-citations nil 'audio) ; should be before `tlon-tts-escape-xml-special-characters'
+    (tlon-bib-replace-keys-with-citations nil 'audio) ; should be before `tlon-tts-escape-xml-special-characters'
     (tlon-tts-process-listener-cues) ; should be before `tlon-tts-process-links', `tlon-tts-process-paragraphs'
     (tlon-tts-process-links) ; should probably be before `tlon-tts-process-formatting'
     (tlon-tts-process-all-abbreviations)

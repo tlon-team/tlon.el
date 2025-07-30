@@ -9,16 +9,16 @@
 #+texinfo_header: @set MAINTAINEREMAIL @email{pablo@tlon.team}
 #+texinfo_header: @set MAINTAINERCONTACT @uref{mailto:pablo@tlon.team,contact the maintainer}
 #+texinfo: @insertcopying
-* BibTeX Functionality (=tlon-tex.el=)
+* BibTeX Functionality (=tlon-bib.el=)
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex
+:CUSTOM_ID: h:tlon-bib
 :END:
 
 This module provides a wide range of functions for interacting with BibTeX files and related data sources. It covers fetching and managing abstracts, moving entries between different BibTeX files (e.g., fluid vs. stable), adding and updating fields, cleaning entries, generating citation keys (autokey), finding and adding missing URLs, handling translations of abstracts, converting Markdown links to citations, replacing citation keys with formatted citations, and generating reports on BibTeX entries.
 
 ** Dependencies
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-dependencies
+:CUSTOM_ID: h:tlon-bib-dependencies
 :END:
 
 + =bibtex-extras=
@@ -41,7 +41,7 @@ This module provides a wide range of functions for interacting with BibTeX files
 
 ** User Options
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-options
+:CUSTOM_ID: h:tlon-bib-options
 :END:
 
 #+vindex: tlon-abstract-overwrite
@@ -50,42 +50,42 @@ This module provides a wide range of functions for interacting with BibTeX files
   + =never=: Never overwrite the existing abstract.
   + =ask= (default): Prompt the user whether to overwrite.
 
-#+vindex: tlon-tex-replace-citations-model
-+ ~tlon-tex-replace-citations-model~ :: Model used by ~tlon-tex-replace-citations-in-file~ to identify and replace bibliographic citations.
+#+vindex: tlon-bib-replace-citations-model
++ ~tlon-bib-replace-citations-model~ :: Model used by ~tlon-bib-replace-citations-in-file~ to identify and replace bibliographic citations.
   #+begin_src emacs-lisp
-  (setq tlon-tex-replace-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  (setq tlon-bib-replace-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
   #+end_src
 
-#+vindex: tlon-tex-add-missing-citations-model
-+ ~tlon-tex-add-missing-citations-model~ :: Model used by ~tlon-tex-add-missing-citations~ to find information about missing citations and add them to the bibliography.
+#+vindex: tlon-bib-add-missing-citations-model
++ ~tlon-bib-add-missing-citations-model~ :: Model used by ~tlon-bib-add-missing-citations~ to find information about missing citations and add them to the bibliography.
   #+begin_src emacs-lisp
-  (setq tlon-tex-add-missing-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
+  (setq tlon-bib-add-missing-citations-model '("Gemini" . gemini-2.5-pro-preview-06-05))
   #+end_src
 
 ** Configuration
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-config
+:CUSTOM_ID: h:tlon-bib-config
 :END:
 
 *** Constants
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-constants
+:CUSTOM_ID: h:tlon-bib-constants
 :END:
 
 #+vindex: tlon-file-abstract-translations
 + ~tlon-file-abstract-translations~ :: Path to the JSON file storing abstract translations.
 #+vindex: tlon-file-bare-bibliography
 + ~tlon-file-bare-bibliography~ :: Path to the JSON file containing the bare bibliography (author, date, title, key).
-#+vindex: tlon-tex-excluded-keys-file
-+ ~tlon-tex-excluded-keys-file~ :: Path to the Elisp file where excluded BibTeX keys (for abstract reporting) are persisted.
+#+vindex: tlon-bib-excluded-keys-file
++ ~tlon-bib-excluded-keys-file~ :: Path to the Elisp file where excluded BibTeX keys (for abstract reporting) are persisted.
 #+vindex: tlon-locators
 + ~tlon-locators~ :: Alist mapping citation locators (e.g., "page", "chapter") to their abbreviations (e.g., "p.", "chap."). Used for regex generation.
-#+vindex: tlon-tex-pandoc-cite-pattern-long
-+ ~tlon-tex-pandoc-cite-pattern-long~ :: Regex for matching "long" Pandoc citation keys (e.g., `[@key]`, `[@key, p. 5]`). Captures key and locator(s).
-#+vindex: tlon-tex-pandoc-cite-pattern-short
-+ ~tlon-tex-pandoc-cite-pattern-short~ :: Regex for matching "short" Pandoc citation keys (e.g., `<cite>[@key]</cite>`). Captures key and locator(s).
-#+vindex: tlon-tex-pandoc-cite-pattern
-+ ~tlon-tex-pandoc-cite-pattern~ :: Combined regex for matching both long and short Pandoc citation keys.
+#+vindex: tlon-bib-pandoc-cite-pattern-long
++ ~tlon-bib-pandoc-cite-pattern-long~ :: Regex for matching "long" Pandoc citation keys (e.g., `[@key]`, `[@key, p. 5]`). Captures key and locator(s).
+#+vindex: tlon-bib-pandoc-cite-pattern-short
++ ~tlon-bib-pandoc-cite-pattern-short~ :: Regex for matching "short" Pandoc citation keys (e.g., `<cite>[@key]</cite>`). Captures key and locator(s).
+#+vindex: tlon-bib-pandoc-cite-pattern
++ ~tlon-bib-pandoc-cite-pattern~ :: Combined regex for matching both long and short Pandoc citation keys.
 #+vindex: tlon-regexp-locator-in-citation
 + ~tlon-regexp-locator-in-citation~ :: Regex fragment specifically matching one or more locators within a citation, based on ~tlon-locators~.
 #+vindex: tlon-regexp-expanded-citation-formatter-with-locators
@@ -105,22 +105,22 @@ This module provides a wide range of functions for interacting with BibTeX files
 
 *** Variables
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-variables
+:CUSTOM_ID: h:tlon-bib-variables
 :END:
 
-#+vindex: tlon-tex-excluded-keys
-+ ~tlon-tex-excluded-keys~ :: List of BibTeX keys for entries that do not require an abstract. Loaded from ~tlon-tex-excluded-keys-file~ and used by ~tlon-tex-entries-report~.
+#+vindex: tlon-bib-excluded-keys
++ ~tlon-bib-excluded-keys~ :: List of BibTeX keys for entries that do not require an abstract. Loaded from ~tlon-bib-excluded-keys-file~ and used by ~tlon-bib-entries-report~.
 
 ** Commands
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-commands
+:CUSTOM_ID: h:tlon-bib-commands
 :END:
 
-This section details the interactive commands provided by =tlon-tex.el=.
+This section details the interactive commands provided by =tlon-bib.el=.
 
 *** Abstract Management
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-abstract-commands
+:CUSTOM_ID: h:tlon-bib-abstract-commands
 :END:
 
 #+findex: tlon-fetch-and-set-abstract
@@ -144,7 +144,7 @@ This section details the interactive commands provided by =tlon-tex.el=.
 
 *** Entry Management
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-entry-commands
+:CUSTOM_ID: h:tlon-bib-entry-commands
 :END:
 
 #+findex: tlon-move-entry-to-fluid
@@ -174,7 +174,7 @@ This section details the interactive commands provided by =tlon-tex.el=.
 
 *** URL Management
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-url-commands
+:CUSTOM_ID: h:tlon-bib-url-commands
 :END:
 
 #+findex: tlon-prompt-to-add-missing-urls
@@ -187,11 +187,11 @@ This section details the interactive commands provided by =tlon-tex.el=.
 
 *** Translation Entry Creation
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-translation-entry-commands
+:CUSTOM_ID: h:tlon-bib-translation-entry-commands
 :END:
 
-#+findex: tlon-tex-create-translation-entry
-+ ~tlon-tex-create-translation-entry~ :: (Autoloaded) Creates a new BibTeX entry representing a translation of the entry currently open in =ebib-entry-mode=.
+#+findex: tlon-bib-create-translation-entry
++ ~tlon-bib-create-translation-entry~ :: (Autoloaded) Creates a new BibTeX entry representing a translation of the entry currently open in =ebib-entry-mode=.
   1. Prompts for the target language using ~tlon-select-language~.
   2. Gathers fields from the original entry (=translation= (original key), =type=, =author=, =database=).
   3. Prompts for the new =title= and =translator=.
@@ -203,7 +203,7 @@ This section details the interactive commands provided by =tlon-tex.el=.
 
 *** Citation Conversion and Replacement
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-citation-commands
+:CUSTOM_ID: h:tlon-bib-citation-commands
 :END:
 
 #+findex: tlon-convert-links-to-cite
@@ -212,50 +212,50 @@ This section details the interactive commands provided by =tlon-tex.el=.
 #+findex: tlon-convert-bibliography-to-cite
 + ~tlon-convert-bibliography-to-cite~ :: (Autoloaded) Converts plain text bibliography entries (matching ~tlon-regexp-expanded-citation-with-link~ or ~tlon-regexp-expanded-citation-with-no-link~) within the current region/buffer into =<Cite>= tags. Looks up the BibTeX key based on the =title= using ~tlon-bibliography-lookup~. Assumes one work per line and no locators.
 
-#+findex: tlon-tex-replace-keys-with-citations
-+ ~tlon-tex-replace-keys-with-citations~ :: Replaces all =<Cite key="..." ...>= tags in a =FILE= (or current buffer) with formatted citations retrieved from the Tlön API.
-  1. Calls ~tlon-tex-do-replace-keys-with-citations~.
+#+findex: tlon-bib-replace-keys-with-citations
++ ~tlon-bib-replace-keys-with-citations~ :: Replaces all =<Cite key="..." ...>= tags in a =FILE= (or current buffer) with formatted citations retrieved from the Tlön API.
+  1. Calls ~tlon-bib-do-replace-keys-with-citations~.
   2. Optionally takes an =AUDIO= flag. If non-nil, requests audio-specific citation styles ('short-audio', 'long-audio') from the API. Otherwise, requests 'short' or 'long' based on the =length= attribute in the =<Cite>= tag.
 
-#+findex: tlon-tex-replace-keys-with-citations-in-dir
-+ ~tlon-tex-replace-keys-with-citations-in-dir~ :: Recursively applies ~tlon-tex-replace-keys-with-citations~ to all Markdown files in the current directory. Takes optional =AUDIO= flag.
+#+findex: tlon-bib-replace-keys-with-citations-in-dir
++ ~tlon-bib-replace-keys-with-citations-in-dir~ :: Recursively applies ~tlon-bib-replace-keys-with-citations~ to all Markdown files in the current directory. Takes optional =AUDIO= flag.
 
 *** Reporting and Field Finding
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-report-commands
+:CUSTOM_ID: h:tlon-bib-report-commands
 :END:
 
-#+findex: tlon-tex-entries-report
-+ ~tlon-tex-entries-report~ :: (Autoloaded) Generates a report buffer listing BibTeX entries in the current buffer that:
-  - Have no abstract (excluding those in ~tlon-tex-excluded-keys~ or with a =crossref= field).
+#+findex: tlon-bib-entries-report
++ ~tlon-bib-entries-report~ :: (Autoloaded) Generates a report buffer listing BibTeX entries in the current buffer that:
+  - Have no abstract (excluding those in ~tlon-bib-excluded-keys~ or with a =crossref= field).
   - Have abstracts longer than ~tlon-max-abstract-length~ words.
   - Have abstracts shorter than ~tlon-min-abstract-length~ words.
   - Have abstracts with fewer than 10 words.
-  Filters out entries that are translations (have a =translation= field) using ~tlon-text-remove-translated-entries~.
+  Filters out entries that are translations (have a =translation= field) using ~tlon-bibt-remove-translated-entries~.
 
-#+findex: tlon-tex-add-to-excluded-keys
-+ ~tlon-tex-add-to-excluded-keys~ :: Adds one or more BibTeX keys (provided as a space-separated string) to the ~tlon-tex-excluded-keys~ list and saves the list to ~tlon-tex-excluded-keys-file~.
+#+findex: tlon-bib-add-to-excluded-keys
++ ~tlon-bib-add-to-excluded-keys~ :: Adds one or more BibTeX keys (provided as a space-separated string) to the ~tlon-bib-excluded-keys~ list and saves the list to ~tlon-bib-excluded-keys-file~.
 
-#+findex: tlon-tex-find-next-entry-with-missing-field
-+ ~tlon-tex-find-next-entry-with-missing-field~ :: Moves point to the next BibTeX entry in the buffer that is missing a specified =FIELD= (prompting for the field name with completion). Skips entries that have a =crossref= field.
+#+findex: tlon-bib-find-next-entry-with-missing-field
++ ~tlon-bib-find-next-entry-with-missing-field~ :: Moves point to the next BibTeX entry in the buffer that is missing a specified =FIELD= (prompting for the field name with completion). Skips entries that have a =crossref= field.
 
-#+findex: tlon-tex-check-bibkeys
-+ ~tlon-tex-check-bibkeys~ :: (Autoloaded) Checks if all BibTeX keys inside =<Cite>= tags in the current buffer, a specified =FILE=, or an active region are valid. A key is considered valid if it can be found in the bibliography using ~tlon-bibliography-lookup~. It reports any invalid keys found, or confirms that all keys are valid.
+#+findex: tlon-bib-check-bibkeys
++ ~tlon-bib-check-bibkeys~ :: (Autoloaded) Checks if all BibTeX keys inside =<Cite>= tags in the current buffer, a specified =FILE=, or an active region are valid. A key is considered valid if it can be found in the bibliography using ~tlon-bibliography-lookup~. It reports any invalid keys found, or confirms that all keys are valid.
 
 *** Bibliography Management
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-bibliography-commands
+:CUSTOM_ID: h:tlon-bib-bibliography-commands
 :END:
 
-#+findex: tlon-tex-create-bare-bibliography
-+ ~tlon-tex-create-bare-bibliography~ :: Creates a JSON file (~tlon-file-bare-bibliography~) containing a simplified representation (author, date, title, key) of all entries found in the BibTeX files listed in ~tlon-bibliography-files~. It retrieves the path for the 'babel-refs' repository using ~tlon-repo-lookup~. Entries are included even if some of these fields are missing (the corresponding JSON value will be null). After writing the data, it opens the generated JSON file.
+#+findex: tlon-bib-create-bare-bibliography
++ ~tlon-bib-create-bare-bibliography~ :: Creates a JSON file (~tlon-file-bare-bibliography~) containing a simplified representation (author, date, title, key) of all entries found in the BibTeX files listed in ~tlon-bibliography-files~. It retrieves the path for the 'babel-refs' repository using ~tlon-repo-lookup~. Entries are included even if some of these fields are missing (the corresponding JSON value will be null). After writing the data, it opens the generated JSON file.
 
 *** Transient Menu
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-menu-cmd
+:CUSTOM_ID: h:tlon-bib-menu-cmd
 :END:
-#+findex: tlon-tex-menu
-The command ~tlon-tex-menu~ (Autoloaded) activates a =transient= menu interface for BibTeX-related operations.
+#+findex: tlon-bib-menu
+The command ~tlon-bib-menu~ (Autoloaded) activates a =transient= menu interface for BibTeX-related operations.
 
 It provides the following groups and commands:
 + *Markdown*:
@@ -266,40 +266,40 @@ It provides the following groups and commands:
     + =b= :: Convert bibliography (~tlon-convert-bibliography-to-cite~)
     + =l= :: Convert links (~tlon-convert-links-to-cite~)
   + *Check*:
-    + =v= :: Check BibTeX keys (~tlon-tex-check-bibkeys~)
+    + =v= :: Check BibTeX keys (~tlon-bib-check-bibkeys~)
 + *Ebib*:
   + =a= :: Fetch abstract (~tlon-fetch-and-set-abstract~)
-  + =c= :: Create translation entry (~tlon-tex-create-translation-entry~)
+  + =c= :: Create translation entry (~tlon-bib-create-translation-entry~)
 + *BibTeX*:
   + *Report*:
-    + =r r= :: Generate report (~tlon-tex-entries-report~)
-    + =r x= :: Add key to exclude from report (~tlon-tex-add-to-excluded-keys~)
+    + =r r= :: Generate report (~tlon-bib-entries-report~)
+    + =r x= :: Add key to exclude from report (~tlon-bib-add-to-excluded-keys~)
   + *Move*:
     + =t= :: Move this entry to Tlön database (~tlon-move-entry-to-fluid~)
     + =s= :: Move all entries to stable (~tlon-move-all-fluid-entries-to-stable~)
 + *AI*:
   + *Bibliography*:
-    + =x= :: Extract references from buffer/region (~tlon-tex-extract-references~)
-    + =k= :: Get BibKeys for references (region - line based) (~tlon-tex-get-bibkeys-from-references~)
-    + =X= :: Extract & Replace References (buffer/region - precise) (~tlon-tex-extract-and-replace-references~)
-    + =C= :: Replace citations with AI agent (~tlon-tex-replace-citations-in-file~)
-    + =A= :: Add missing citations to BibTeX (~tlon-tex-add-missing-citations~)
+    + =x= :: Extract references from buffer/region (~tlon-bib-extract-references~)
+    + =k= :: Get BibKeys for references (region - line based) (~tlon-bib-get-bibkeys-from-references~)
+    + =X= :: Extract & Replace References (buffer/region - precise) (~tlon-bib-extract-and-replace-references~)
+    + =C= :: Replace citations with AI agent (~tlon-bib-replace-citations-in-file~)
+    + =A= :: Add missing citations to BibTeX (~tlon-bib-add-missing-citations~)
   + *Models*:
-    + =m -C= :: Replace citations (~tlon-tex-infix-select-replace-citations-model~)
-    + =m -A= :: Add missing citations (~tlon-tex-infix-select-add-missing-citations-model~)
+    + =m -C= :: Replace citations (~tlon-bib-infix-select-replace-citations-model~)
+    + =m -A= :: Add missing citations (~tlon-bib-infix-select-add-missing-citations-model~)
 + *Misc*:
-  + =B= :: Create bare bibliography (~tlon-tex-create-bare-bibliography~)
+  + =B= :: Create bare bibliography (~tlon-bib-create-bare-bibliography~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-internals
+:CUSTOM_ID: h:tlon-bib-internals
 :END:
 
 This section lists non-interactive functions and variables used internally or potentially useful for advanced customization.
 
 *** Abstract Fetching Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-abstract-internals
+:CUSTOM_ID: h:tlon-bib-abstract-internals
 :END:
 
 #+findex: tlon-fetch-abstract-with-zotra
@@ -319,7 +319,7 @@ This section lists non-interactive functions and variables used internally or po
 
 *** Entry Management Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-entry-internals
+:CUSTOM_ID: h:tlon-bib-entry-internals
 :END:
 
 #+findex: tlon-add-or-update-tlon-field
@@ -331,7 +331,7 @@ This section lists non-interactive functions and variables used internally or po
 
 *** Autokey Generation
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-autokey-internals
+:CUSTOM_ID: h:tlon-bib-autokey-internals
 :END:
 These functions customize the BibTeX autokey generation process, likely used as replacements or advice for standard =bibtex-generate-autokey= behavior.
 
@@ -346,7 +346,7 @@ These functions customize the BibTeX autokey generation process, likely used as 
 
 *** URL and Bibliography Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-url-bib-internals
+:CUSTOM_ID: h:tlon-bib-url-bib-internals
 :END:
 
 #+findex: tlon-get-missing-urls
@@ -357,20 +357,20 @@ These functions customize the BibTeX autokey generation process, likely used as 
 + ~tlon-bibliography-lookup~ :: Searches the cached Tlön bibliography (=citar-cache--bibliographies=) for an entry where =FIELD= matches =VALUE= (optionally as a substring). Returns the value of =ASSOC-FIELD= for the matching entry.
 #+findex: tlon-get-field-in-bibliography
 + ~tlon-get-field-in-bibliography~ :: Returns a list of all values for a specific =FIELD= found across all entries in the cached Tlön bibliography.
-+#+findex: tlon-tex-get-keys-in-file
-+ ~tlon-tex-get-keys-in-file~ :: Returns a list of all BibTeX keys found in the specified =FILE= by accessing the citar cache. Ensures the file is cached if not already present.
++#+findex: tlon-bib-get-keys-in-file
++ ~tlon-bib-get-keys-in-file~ :: Returns a list of all BibTeX keys found in the specified =FILE= by accessing the citar cache. Ensures the file is cached if not already present.
 
 *** Citation Replacement Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-citation-internals
+:CUSTOM_ID: h:tlon-bib-citation-internals
 :END:
 
-#+findex: tlon-tex-do-replace-keys-with-citations
-+ ~tlon-tex-do-replace-keys-with-citations~ :: The core logic for replacing =<Cite>= tags. Iterates through tags, extracts the key and length attribute, determines the required CSL style (based on length and optional =AUDIO= flag), fetches the formatted citation from the API using ~tlon-api-get-citation~, and replaces the tag with the result.
+#+findex: tlon-bib-do-replace-keys-with-citations
++ ~tlon-bib-do-replace-keys-with-citations~ :: The core logic for replacing =<Cite>= tags. Iterates through tags, extracts the key and length attribute, determines the required CSL style (based on length and optional =AUDIO= flag), fetches the formatted citation from the API using ~tlon-api-get-citation~, and replaces the tag with the result.
 
 *** Abstract Translation Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-translation-internals
+:CUSTOM_ID: h:tlon-bib-translation-internals
 :END:
 
 #+findex: tlon-read-abstract-translations
@@ -386,55 +386,55 @@ These functions customize the BibTeX autokey generation process, likely used as 
 
 *** Reporting Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-report-internals
+:CUSTOM_ID: h:tlon-bib-report-internals
 :END:
 
-#+findex: tlon-tex-load-excluded-keys
-+ ~tlon-tex-load-excluded-keys~ :: Loads the list of excluded keys from ~tlon-tex-excluded-keys-file~ into the ~tlon-tex-excluded-keys~ variable.
-#+findex: tlon-tex-save-excluded-keys
-+ ~tlon-tex-save-excluded-keys~ :: Saves the current value of ~tlon-tex-excluded-keys~ back to ~tlon-tex-excluded-keys-file~.
-#+findex: tlon-text-remove-translated-entries
-+ ~tlon-text-remove-translated-entries~ :: Filters a =LIST= of BibTeX keys, removing any key that corresponds to an entry having a =translation= field (checked by temporarily opening the entry in Ebib).
+#+findex: tlon-bib-load-excluded-keys
++ ~tlon-bib-load-excluded-keys~ :: Loads the list of excluded keys from ~tlon-bib-excluded-keys-file~ into the ~tlon-bib-excluded-keys~ variable.
+#+findex: tlon-bib-save-excluded-keys
++ ~tlon-bib-save-excluded-keys~ :: Saves the current value of ~tlon-bib-excluded-keys~ back to ~tlon-bib-excluded-keys-file~.
+#+findex: tlon-bibt-remove-translated-entries
++ ~tlon-bibt-remove-translated-entries~ :: Filters a =LIST= of BibTeX keys, removing any key that corresponds to an entry having a =translation= field (checked by temporarily opening the entry in Ebib).
 
 *** Miscellaneous Helpers
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-misc-internals
+:CUSTOM_ID: h:tlon-bib-misc-internals
 :END:
-#+findex: tlon-tex-add-multiple-urls-from-file
-+ ~tlon-tex-add-multiple-urls-from-file~ :: Reads a =FILE= containing a list of URLs (one per line), filters out URLs already present in the bibliography, and then calls =zotra-extras-add-multiple-urls= to add the missing ones to ~tlon-file-fluid~.
+#+findex: tlon-bib-add-multiple-urls-from-file
++ ~tlon-bib-add-multiple-urls-from-file~ :: Reads a =FILE= containing a list of URLs (one per line), filters out URLs already present in the bibliography, and then calls =zotra-extras-add-multiple-urls= to add the missing ones to ~tlon-file-fluid~.
 
 *** AI-Powered Bibliography Tools
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-ai-bib-commands
+:CUSTOM_ID: h:tlon-bib-ai-bib-commands
 :END:
 These commands leverage AI to perform advanced bibliographic tasks.
 
-#+findex: tlon-tex-extract-references
-+ ~tlon-tex-extract-references~ :: (Autoloaded) Scans the current buffer or a selected region for bibliographic references using AI. It uses the prompt ~tlon-tex-extract-references-prompt~ to ask the AI to identify references. The found references are displayed in the messages buffer and copied to the kill ring.
+#+findex: tlon-bib-extract-references
++ ~tlon-bib-extract-references~ :: (Autoloaded) Scans the current buffer or a selected region for bibliographic references using AI. It uses the prompt ~tlon-bib-extract-references-prompt~ to ask the AI to identify references. The found references are displayed in the messages buffer and copied to the kill ring.
 
-#+findex: tlon-tex-get-bibkeys-from-references
-+ ~tlon-tex-get-bibkeys-from-references~ :: (Autoloaded) Replaces plain-text references in an active region with structured =<Cite>= tags. It treats each non-blank line in the region as a single reference and uses a single batch AI request (with ~tlon-tex-get-bibkeys-batch-prompt~) to find matching BibTeX keys in the bare bibliography file. It replaces each line with a corresponding =<Cite bibKey="..." />= tag. *Warning:* This replaces the entire line and may be imprecise.
+#+findex: tlon-bib-get-bibkeys-from-references
++ ~tlon-bib-get-bibkeys-from-references~ :: (Autoloaded) Replaces plain-text references in an active region with structured =<Cite>= tags. It treats each non-blank line in the region as a single reference and uses a single batch AI request (with ~tlon-bib-get-bibkeys-batch-prompt~) to find matching BibTeX keys in the bare bibliography file. It replaces each line with a corresponding =<Cite bibKey="..." />= tag. *Warning:* This replaces the entire line and may be imprecise.
 
-#+findex: tlon-tex-extract-and-replace-references
-+ ~tlon-tex-extract-and-replace-references~ :: (Autoloaded) A more precise, two-step AI process. First, it asks the AI to extract exact reference strings from the buffer or region (~tlon-tex-extract-exact-references-prompt~). Second, it uses another batch AI request to find BibTeX keys for these exact strings. Finally, it replaces the found occurrences of the reference strings with =<Cite>= tags.
+#+findex: tlon-bib-extract-and-replace-references
++ ~tlon-bib-extract-and-replace-references~ :: (Autoloaded) A more precise, two-step AI process. First, it asks the AI to extract exact reference strings from the buffer or region (~tlon-bib-extract-exact-references-prompt~). Second, it uses another batch AI request to find BibTeX keys for these exact strings. Finally, it replaces the found occurrences of the reference strings with =<Cite>= tags.
 
-#+findex: tlon-tex-replace-citations-in-file
-+ ~tlon-tex-replace-citations-in-file~ :: (Autoloaded) Uses an AI agent to find and replace all bibliographic citations in a user-specified file with structured =<Cite>= tags. The AI is equipped with tools to read the file, search the bibliography, research citations online, and edit the file. Unfound citations are marked with `{!` and `!}`.
+#+findex: tlon-bib-replace-citations-in-file
++ ~tlon-bib-replace-citations-in-file~ :: (Autoloaded) Uses an AI agent to find and replace all bibliographic citations in a user-specified file with structured =<Cite>= tags. The AI is equipped with tools to read the file, search the bibliography, research citations online, and edit the file. Unfound citations are marked with `{!` and `!}`.
 
-#+findex: tlon-tex-add-missing-citations
-+ ~tlon-tex-add-missing-citations~ :: (Autoloaded) A companion to the above command. It instructs an AI agent to process a file or region, find all citations marked as missing (`{!...}`), use search tools to find an identifier (URL, DOI, etc.), and add a corresponding entry to the fluid bibliography file using the =add_bib_entry= tool. It then replaces the marked citation with a proper =<Cite>= tag.
+#+findex: tlon-bib-add-missing-citations
++ ~tlon-bib-add-missing-citations~ :: (Autoloaded) A companion to the above command. It instructs an AI agent to process a file or region, find all citations marked as missing (`{!...}`), use search tools to find an identifier (URL, DOI, etc.), and add a corresponding entry to the fluid bibliography file using the =add_bib_entry= tool. It then replaces the marked citation with a proper =<Cite>= tag.
 
 *** Field Modification Advice
 :PROPERTIES:
-:CUSTOM_ID: h:tlon-tex-advice-internals
+:CUSTOM_ID: h:tlon-bib-advice-internals
 :END:
 
-#+findex: tlon-tex-field-modified
-+ ~tlon-tex-field-modified~ :: Central function called when a BibTeX field is modified. Currently, if the modified =FIELD= is "abstract", it triggers DeepL translation via ~tlon-deepl-translate-abstract~.
-#+findex: tlon-tex-remove-braces
-+ ~tlon-tex-remove-braces~ :: Removes curly braces ={} = from a =STRING=. Used before sending abstract text to DeepL.
-#+findex: tlon-tex-bibtex-set-field-advice
-+ ~tlon-tex-bibtex-set-field-advice~ :: :around advice for =bibtex-set-field=. Calls the original function and then calls ~tlon-tex-field-modified~ with the field name, value, and entry key.
-#+findex: tlon-tex-ebib-set-field-advice
-+ ~tlon-tex-ebib-set-field-advice~ :: :around advice for =ebib-set-field-value=. Calls the original function and then calls ~tlon-tex-field-modified~ with the field name, value, and entry key.
+#+findex: tlon-bib-field-modified
++ ~tlon-bib-field-modified~ :: Central function called when a BibTeX field is modified. Currently, if the modified =FIELD= is "abstract", it triggers DeepL translation via ~tlon-deepl-translate-abstract~.
+#+findex: tlon-bib-remove-braces
++ ~tlon-bib-remove-braces~ :: Removes curly braces ={} = from a =STRING=. Used before sending abstract text to DeepL.
+#+findex: tlon-bib-bibtex-set-field-advice
++ ~tlon-bib-bibtex-set-field-advice~ :: :around advice for =bibtex-set-field=. Calls the original function and then calls ~tlon-bib-field-modified~ with the field name, value, and entry key.
+#+findex: tlon-bib-ebib-set-field-advice
++ ~tlon-bib-ebib-set-field-advice~ :: :around advice for =ebib-set-field-value=. Calls the original function and then calls ~tlon-bib-field-modified~ with the field name, value, and entry key.
 
