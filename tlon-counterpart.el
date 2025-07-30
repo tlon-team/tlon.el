@@ -183,19 +183,20 @@ in the other window."
   (interactive "P")
   (unless file
     (save-buffer))
-  (when-let* ((fun (if other-win #'find-file-other-window #'find-file))
-	      (counterpart (tlon-get-counterpart
-			    (or file (buffer-file-name))))
-	      (paragraphs (tlon-get-number-of-paragraphs
-			   (point-min)
-			   (point)))
-	      (offset (if (tlon-is-between-paragraphs-p) -1 0)))
-    (funcall fun counterpart)
-    (goto-char (or (cdr (tlon-get-delimited-region-pos
-			 tlon-yaml-delimiter))
-		   (point-min)))
-    (markdown-forward-paragraph (- paragraphs offset))
-    (goto-char (1+ (point)))))
+  (if-let* ((file (or file (buffer-file-name)))
+	    (counterpart (tlon-get-counterpart file)))
+      (let* ((fun (if other-win #'find-file-other-window #'find-file))
+	     (paragraphs (tlon-get-number-of-paragraphs
+			  (point-min)
+			  (point)))
+	     (offset (if (tlon-is-between-paragraphs-p) -1 0)))
+	(funcall fun counterpart)
+	(goto-char (or (cdr (tlon-get-delimited-region-pos
+			     tlon-yaml-delimiter))
+		       (point-min)))
+	(markdown-forward-paragraph (- paragraphs offset))
+	(goto-char (1+ (point))))
+    (message "Counterpart not found for file `%s'" file)))
 
 (autoload 'dired-get-file-for-visit "dired")
 (defun tlon-open-counterpart-in-dired (&optional arg file)
