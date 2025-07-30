@@ -430,7 +430,7 @@ These commands leverage AI to perform advanced bibliographic tasks.
 :END:
 
 #+findex: tlon-bib-field-modified
-+ ~tlon-bib-field-modified~ :: Central function called when a BibTeX field is modified. Currently, if the modified =FIELD= is "abstract", it triggers DeepL translation via ~tlon-deepl-translate-abstract~.
++ ~tlon-bib-field-modified~ :: Central function called when a BibTeX field is modified. Currently, if the modified =FIELD= is "abstract", it triggers DeepL translation via ~tlon-translate-abstract~.
 #+findex: tlon-bib-remove-braces
 + ~tlon-bib-remove-braces~ :: Removes curly braces ={} = from a =STRING=. Used before sending abstract text to DeepL.
 #+findex: tlon-bib-bibtex-set-field-advice

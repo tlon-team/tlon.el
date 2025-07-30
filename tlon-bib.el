@@ -960,11 +960,11 @@ No abstract: %s"
 
 ;;;;; Monitor field values
 
-(declare-function tlon-deepl-translate-abstract "tlon-deepl")
+(declare-function tlon-translate-abstract "tlon-deepl")
 (defun tlon-bib-field-modified (field value key)
   "Act when FIELD is set to VALUE in a BibTeX entry with KEY."
   (cond ((string= field "abstract")
-	 (tlon-deepl-translate-abstract value key))))
+	 (tlon-translate-abstract value key))))
 
 (defun tlon-bib-remove-braces (string)
   "Remove braces from STRING."

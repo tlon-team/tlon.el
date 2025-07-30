@@ -97,79 +97,49 @@ available options. If nil, use the default `gptel-model'."
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for improving translation flow.")
 
+(defvar tlon-translate-source-language nil
+  "Source language of the current API request.")
+
+(defvar tlon-translate-target-language nil
+  "Target language of the current API request.")
+
+(defvar tlon-translate-text nil
+  "The text to be translated in the current API request.")
+
 ;;;; Commands
 
-;;;###autoload
-(defun tlon-translate-revise-errors ()
-  "Use AI to spot errors in a translation file."
-  (interactive)
-  (tlon-translate--revise-common 'errors))
+;;;;; Translation
+
+;;;;;; text
 
 ;;;###autoload
-(defun tlon-translate-revise-flow ()
-  "Use AI to improve the flow of a translation file."
+(defun tlon-translate-text (&optional text target-lang source-lang callback no-glossary-ok)
+  "Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK.
+If SOURCE-LANG is nil, use \"en\". If CALLBACK is nil, execute
+`tlon-print-translation'. If NO-GLOSSARY-OK is non-nil, don't ask for
+confirmation when no glossary is found.
+
+Returns the translated text as a string."
   (interactive)
-  (tlon-translate--revise-common 'flow))
+  (let* ((source-lang (or source-lang (tlon-select-language 'code 'babel "Source language: " t)))
+	 (excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang)))
+	 (target-lang (or target-lang (tlon-select-language 'code 'babel "Target language: "
+							    'require-match nil nil excluded-lang)))
+	 (text (or text
+		   (read-string "Text to translate: "
+				(or (when (region-active-p)
+				      (buffer-substring-no-properties (region-beginning) (region-end)))
+				    (thing-at-point 'word))))))
+    (setq tlon-translate-text text
+          tlon-translate-source-language source-lang
+          tlon-translate-target-language target-lang)
+    (pcase-exhaustive tlon-translate-engine
+      ('deepl (tlon-deepl-request-wrapper 'translate callback no-glossary-ok))
+      ;; TODO: develop this
+      ;; ('ai)
+      )))
 
-(declare-function gptel-context-add-file "gptel-context")
-(declare-function gptel-context-remove-all "gptel-context")
-(defun tlon-translate--revise-common (type)
-  "Common function for revising a translation of TYPE.
-TYPE can be `errors' or `flow'."
-  (gptel-extras-warn-when-context)
-  (let* ((translation-file (expand-file-name (read-file-name "Translation file: " (buffer-file-name))))
-         (original-file (if-let* ((counterpart (tlon-get-counterpart translation-file)))
-			    (expand-file-name counterpart)
-			  (read-file-name "Original file: "))))
-    (let* ((lang-code (tlon-get-language-in-file translation-file))
-           (language (tlon-lookup tlon-languages-properties :standard :code lang-code))
-           (prompt-template (pcase type
-                              ('errors tlon-translate-revise-errors-prompt)
-                              ('flow tlon-translate-revise-flow-prompt)))
-           (model (pcase type
-                    ('errors tlon-translate-revise-errors-model)
-                    ('flow tlon-translate-revise-flow-model)))
-           (tools '("edit_file" "apply_diff" "replace_file_contents"))
-           (glossary-file (when (eq type 'flow)
-                            (tlon-extract-glossary lang-code 'deepl-editor)
-                            (tlon-glossary-target-path lang-code 'deepl-editor)))
-	   (prompt-elts (delq nil
-			      (list prompt-template
-				    (file-name-nondirectory translation-file)
-				    language
-				    (file-name-nondirectory original-file)
-				    (when glossary-file
-				      glossary-file))))
-           (prompt (apply 'format prompt-elts)))
-      (gptel-context-add-file original-file)
-      (gptel-context-add-file translation-file)
-      (when glossary-file
-	(gptel-context-add-file glossary-file))
-      (message "Requesting AI to revise %s..." (file-name-nondirectory translation-file))
-      (tlon-make-gptel-request prompt nil
-                               (lambda (response info)
-				 (tlon-translate--revise-callback response info translation-file type))
-                               model t nil tools)
-      (gptel-context-remove-all))))
-
-(declare-function magit-stage-files "magit-apply")
-(defun tlon-translate--revise-callback (response info file type)
-  "Callback for AI revision.
-RESPONSE is the AI's response. INFO is the response info. FILE is the file to
-commit. TYPE is the revision type."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (message "AI agent finished revising %s." (file-name-nondirectory file))
-    (when tlon-translate-revise-commit-changes
-      (let ((default-directory (tlon-get-repo-from-file file)))
-        (magit-stage-files (list file))
-        (tlon-create-commit (format (pcase type
-				      ('errors "Check errors in %s (AI)")
-				      ('flow "Improve flow in %s (AI)"))
-				    (tlon-get-key-from-file file))
-			    file)))))
-
-;;;;; Translate file
+;;;;;; file
 
 ;;;###autoload
 (defun tlon-translate-file (&optional file lang)
@@ -264,6 +234,249 @@ file. If LANG is not provided, prompt for a target language."
     (when first-translation
       (alist-get "text" first-translation nil nil #'string=))))
 
+;;;;;; abstract
+
+;;;###autoload
+(defun tlon-translate-abstract (&optional abstract key langs interactive-call-p)
+  "Translate the ABSTRACT of entry KEY into LANGS.
+LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
+nil, use `tlon-project-target-languages'. INTERACTIVE-CALL-P indicates if the
+function was called interactively."
+  (interactive "P")
+  (when-let ((context (tlon-translate--get-abstract-context abstract key interactive-call-p)))
+    (cl-destructuring-bind (key text source-lang-code) context
+      (if interactive-call-p
+          (tlon-translate-abstract-interactive key text source-lang-code)
+        (tlon-translate-abstract-non-interactive key text source-lang-code langs)))))
+
+(defvar tlon-file-fluid)
+(defvar tlon-file-stable)
+(declare-function tlon-bib-get-keys-in-file "tlon-bib")
+;;;###autoload
+(defun tlon-translate-missing-abstracts (&optional langs)
+  "Translate abstracts for BibTeX entries missing translations into LANGS.
+Iterate through all keys in `tlon-file-fluid' and `tlon-file-stable'. For each
+key, check if abstract translations are missing for any language in LANGS.
+LANGS is a list of language names, such as `(\"spanish\" \"french\")'. If LANGS
+is nil, prompt the user to select languages using
+`tlon-read-multiple-languages'. When a translation in a language is missing,
+call `tlon-translate-abstract' for that key and the specific missing
+languages."
+  (interactive)
+  (let ((target-languages (or langs (tlon-read-multiple-languages 'babel))))
+    (unless target-languages
+      (user-error "No target languages selected. Aborting"))
+    (let* ((all-translations (tlon-read-abstract-translations))
+           (keys (seq-uniq (append (tlon-bib-get-keys-in-file tlon-file-fluid)
+                                   (tlon-bib-get-keys-in-file tlon-file-stable))))
+           (total (length keys))
+           (initiated-count 0)
+           (processed 0))
+      (message "Checking %d BibTeX entries for missing abstract translations..." total)
+      (dolist (key keys)
+        (setq processed (1+ processed))
+        (let ((missing-langs '()))
+          (when-let* ((context (tlon-translate--get-abstract-context nil key nil))
+                      (abstract (nth 1 context))
+                      (source-lang-code (nth 2 context)))
+            (dolist (target-lang-name target-languages)
+              (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
+                (let* ((key-entry (assoc key all-translations))
+		       (translation-text nil)
+		       (has-translation nil))
+                  (when key-entry
+                    (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
+                      (when lang-entry
+                        (setq translation-text (cdr lang-entry)))))
+                  (setq has-translation (and translation-text
+                                             (stringp translation-text)
+                                             (> (length (string-trim translation-text)) 0)))
+                  (unless (or (string= source-lang-code target-lang-code)
+                              has-translation)
+                    (push target-lang-name missing-langs)))))
+            (when missing-langs
+              (message "Processing key %s (missing: %s) (%d/%d)"
+		       key (string-join (reverse missing-langs) ", ") processed total)
+              (setq initiated-count (1+ initiated-count))
+              (tlon-translate-abstract abstract key (reverse missing-langs))))))
+      (message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count))))
+
+(declare-function tlon-bibliography-lookup "tlon-bib")
+(declare-function ebib--get-key-at-point "ebib")
+(declare-function ebib-extras-get-field "ebib-extras")
+(declare-function bibtex-extras-get-key "bibtex-extras")
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(defun tlon-translate--get-abstract-context (&optional abstract key interactive-call-p)
+  "Prepare context for abstract translation via DeepL.
+Collect necessary information for translating bibliographic entry abstracts.
+If INTERACTIVE-CALL-P is non-nil, determine KEY from context (entry at point in
+Ebib or BibTeX modes). For non-interactive calls, KEY must be provided.
+
+ABSTRACT, if provided, is used directly. Otherwise, the abstract is retrieved
+based on KEY from the current entry or bibliography database.
+
+Returns a list (key text source-lang-code) with all information needed for
+translation, or nil if any required piece is missing."
+  (let* ((key (or key
+                  (if interactive-call-p
+                      (pcase major-mode
+                        ('ebib-entry-mode (ebib--get-key-at-point))
+                        ('bibtex-mode (bibtex-extras-get-key))
+                        (_ (user-error "Cannot determine key interactively in mode: %s" major-mode)))
+                    (user-error "KEY argument must be provided when called non-interactively"))))
+         (text (or abstract
+                   (when key
+                     (or (when (and interactive-call-p
+				    (derived-mode-p 'ebib-entry-mode)
+				    (string= key (ebib--get-key-at-point)))
+                           (ebib-extras-get-field "abstract"))
+                         (tlon-bibliography-lookup "=key=" key "abstract")))
+                   (when interactive-call-p
+                     (pcase major-mode
+                       ('text-mode (buffer-string))
+                       ('ebib-entry-mode (unless key (ebib-extras-get-field "abstract")))
+                       ('bibtex-mode (unless key (bibtex-extras-get-field "abstract")))))))
+         (source-lang-name (when key
+                             (or (when (and interactive-call-p
+					    (derived-mode-p 'ebib-entry-mode)
+					    (string= key (ebib--get-key-at-point)))
+                                   (ebib-extras-get-field "langid"))
+                                 (tlon-bibliography-lookup "=key=" key "langid"))))
+         (source-lang-code (when source-lang-name
+                             (tlon-lookup tlon-languages-properties :code :name source-lang-name))))
+    (when (and key text source-lang-code)
+      (list key text source-lang-code))))
+
+(declare-function tlon-read-abstract-translations "tlon-bib")
+(defun tlon-translate--get-existing-abstract-translation (key target-lang)
+  "Check `tlon-file-abstract-translations' for existing translation.
+Return the translation string for KEY and TARGET-LANG if found and non-empty,
+otherwise return nil."
+  (let* ((translations (tlon-read-abstract-translations)) ; Read the JSON data
+         (key-entry (assoc key translations))
+         translation)
+    (when key-entry
+      (let ((lang-entry (assoc target-lang (cdr key-entry))))
+        (when lang-entry
+          (setq translation (cdr lang-entry)))))
+    ;; Return translation only if it's a non-empty string
+    (if (and translation (stringp translation) (> (length (string-trim translation)) 0))
+        translation
+      nil)))
+
+(declare-function tlon-bib-remove-braces "tlon-bib")
+(declare-function tlon-translate-abstract-callback "tlon-bib")
+(defun tlon-translate-abstract-interactive (key text source-lang-code)
+  "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
+If a translation for the KEY into the selected target language already exists,
+prompt the user for confirmation before overwriting."
+  (let* ((excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang-code)))
+         (target-lang (tlon-select-language 'code 'babel "Target language: " 'require-match nil nil excluded-lang)))
+    (when target-lang
+      (let ((existing-translation (tlon-translate--get-existing-abstract-translation key target-lang))
+            (target-lang-name (tlon-lookup tlon-languages-properties :standard :code target-lang)))
+        (if (and existing-translation
+                 (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
+                                        key target-lang-name))))
+            (message "Translation for %s into %s aborted by user." key target-lang-name)
+          (message "Initiating translation for %s -> %s (%s)" key target-lang-name source-lang-code)
+          (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
+                               (lambda ()
+				 (tlon-translate-abstract-callback key target-lang 'overwrite))
+                               nil))))))
+
+(defvar tlon-project-target-languages)
+(defun tlon-translate-abstract-non-interactive (key text source-lang-code langs)
+  "Handle non-interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
+LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
+nil, use `tlon-project-target-languages'."
+  (message "Checking abstract translations for %s..." key)
+  (let ((initiated-langs '()))
+    (mapc (lambda (language)
+            (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
+              (unless (string= source-lang-code target-lang)
+                (unless (tlon-translate--get-existing-abstract-translation key target-lang)
+                  (push language initiated-langs)
+                  (message "Initiating translation for %s -> %s" key target-lang)
+                  (tlon-translate-text (tlon-bib-remove-braces text) target-lang source-lang-code
+                                       (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite)))))))
+          (or langs tlon-project-target-languages))
+    (when initiated-langs
+      (message "Finished initiating translations for abstract of `%s' into: %s"
+               key (string-join (reverse initiated-langs) ", ")))))
+
+;;;;; Revision
+
+;;;###autoload
+(defun tlon-translate-revise-errors ()
+  "Use AI to spot errors in a translation file."
+  (interactive)
+  (tlon-translate--revise-common 'errors))
+
+;;;###autoload
+(defun tlon-translate-revise-flow ()
+  "Use AI to improve the flow of a translation file."
+  (interactive)
+  (tlon-translate--revise-common 'flow))
+
+(declare-function gptel-context-add-file "gptel-context")
+(declare-function gptel-context-remove-all "gptel-context")
+(defun tlon-translate--revise-common (type)
+  "Common function for revising a translation of TYPE.
+TYPE can be `errors' or `flow'."
+  (gptel-extras-warn-when-context)
+  (let* ((translation-file (expand-file-name (read-file-name "Translation file: " (buffer-file-name))))
+         (original-file (if-let* ((counterpart (tlon-get-counterpart translation-file)))
+			    (expand-file-name counterpart)
+			  (read-file-name "Original file: "))))
+    (let* ((lang-code (tlon-get-language-in-file translation-file))
+           (language (tlon-lookup tlon-languages-properties :standard :code lang-code))
+           (prompt-template (pcase type
+                              ('errors tlon-translate-revise-errors-prompt)
+                              ('flow tlon-translate-revise-flow-prompt)))
+           (model (pcase type
+                    ('errors tlon-translate-revise-errors-model)
+                    ('flow tlon-translate-revise-flow-model)))
+           (tools '("edit_file" "apply_diff" "replace_file_contents"))
+           (glossary-file (when (eq type 'flow)
+                            (tlon-extract-glossary lang-code 'deepl-editor)
+                            (tlon-glossary-target-path lang-code 'deepl-editor)))
+	   (prompt-elts (delq nil
+			      (list prompt-template
+				    (file-name-nondirectory translation-file)
+				    language
+				    (file-name-nondirectory original-file)
+				    (when glossary-file
+				      glossary-file))))
+           (prompt (apply 'format prompt-elts)))
+      (gptel-context-add-file original-file)
+      (gptel-context-add-file translation-file)
+      (when glossary-file
+	(gptel-context-add-file glossary-file))
+      (message "Requesting AI to revise %s..." (file-name-nondirectory translation-file))
+      (tlon-make-gptel-request prompt nil
+                               (lambda (response info)
+				 (tlon-translate--revise-callback response info translation-file type))
+                               model t nil tools)
+      (gptel-context-remove-all))))
+
+(declare-function magit-stage-files "magit-apply")
+(defun tlon-translate--revise-callback (response info file type)
+  "Callback for AI revision.
+RESPONSE is the AI's response. INFO is the response info. FILE is the file to
+commit. TYPE is the revision type."
+  (if (not response)
+      (tlon-ai-callback-fail info)
+    (message "AI agent finished revising %s." (file-name-nondirectory file))
+    (when tlon-translate-revise-commit-changes
+      (let ((default-directory (tlon-get-repo-from-file file)))
+        (magit-stage-files (list file))
+        (tlon-create-commit (format (pcase type
+				      ('errors "Check errors in %s (AI)")
+				      ('flow "Improve flow in %s (AI)"))
+				    (tlon-get-key-from-file file))
+			    file)))))
+
 ;;;;; Menu
 
 (defun tlon-translate-engine-reader (prompt _initval _arg)
@@ -304,18 +517,21 @@ If nil, use the default model."
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
   [["Translate"
-    ("f" "Translate file" tlon-translate-file)
+    ("t t" "Translate text" tlon-translate-text)
+    ("t f" "Translate file" tlon-translate-file)
+    ("t a" "Translate current abstract" (lambda () (interactive) (tlon-translate-abstract nil nil nil t)))
+    ("t A" "Translate missing abstracts" tlon-translate-missing-abstracts)
     ""
     "Options"
-    ("-t" "Translation engine" tlon-translate-engine-infix)
-    ("-d" "DeepL model" tlon-deepl-model-type-infix)]
+    ("t -t" "Translation engine" tlon-translate-engine-infix)
+    ("t -d" "DeepL model" tlon-deepl-model-type-infix)]
    ["Revise"
-    ("e" "Spot errors" tlon-translate-revise-errors)
-    ("f" "Improve flow" tlon-translate-revise-flow)
+    ("r e" "Spot errors" tlon-translate-revise-errors)
+    ("r f" "Improve flow" tlon-translate-revise-flow)
     ""
     "Options"
-    ("-e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
-    ("-f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]
+    ("r -e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
+    ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
