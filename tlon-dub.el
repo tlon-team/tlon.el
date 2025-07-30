@@ -1373,7 +1373,7 @@ coincide with those specified in the timestamp file."
 			  0.040)
                      duration))
          (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
-         (outfile (expand-file-name (format "%s-part%d.mp4" base part) output-dir))
+         (outfile (expand-file-name (format "%s-part%02d.mp4" base part) output-dir))
          (args (append '("-y" "-i" )
 		       (list video-file)
 		       '("-ss")
