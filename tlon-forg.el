@@ -476,12 +476,14 @@ sync commands from silently missing mismatches that the interactive
 	  (let ((st (org-get-todo-state)))
 	    (when st (upcase st))))
 	 (issue-context (tlon-get-issue-name issue)))
-    ;; When project-item-data was used and the statuses look identical,
-    ;; fetch the live status once more to ensure the cache is not stale.
-    (when (and project-item-data (string= issue-status todo-status))
+    ;; When PROJECT-ITEM-DATA is supplied it may be stale, so
+    ;; always re-fetch the live status once.  This avoids both
+    ;; missed mismatches and false positives when the cache has not
+    ;; yet observed an update done earlier in the same Emacs session.
+    (when project-item-data
       (setq issue-status
-	    (let ((st (tlon-get-status-in-issue issue nil nil)))
-	      (when st (upcase st)))))
+            (let ((st (tlon-get-status-in-issue issue nil nil)))
+              (when st (upcase st)))))
     (unless (string= issue-status todo-status)
       (pcase (tlon-forg--prompt-element-diff
 	      "Statuses" issue-status todo-status issue-context)
