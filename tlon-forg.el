@@ -463,14 +463,28 @@ ISSUE-CONTEXT-STRING provides context about the issue being processed."
 
 (defun tlon-forg--sync-status (issue &optional project-item-data)
   "Reconcile the status between ISSUE and the Org heading.
-If PROJECT-ITEM-DATA is provided, it's passed to `tlon-get-status-in-issue'."
-  (let* ((issue-status (let ((st (tlon-get-status-in-issue issue nil project-item-data)))
-			 (when st (upcase st))))
-	 (todo-status  (let ((st (org-get-todo-state)))
-			 (when st (upcase st))))
+If PROJECT-ITEM-DATA is provided, it's passed to
+`tlon-get-status-in-issue'.  Because cached project data can be stale,
+we re-validate by fetching the live status from GitHub whenever the
+cached status *appears* to match the Org heading.  This prevents bulk
+sync commands from silently missing mismatches that the interactive
+`tlon-sync-issue-and-todo' would detect."
+  (let* ((issue-status
+	  (let ((st (tlon-get-status-in-issue issue nil project-item-data)))
+	    (when st (upcase st))))
+	 (todo-status
+	  (let ((st (org-get-todo-state)))
+	    (when st (upcase st))))
 	 (issue-context (tlon-get-issue-name issue)))
+    ;; When project-item-data was used and the statuses look identical,
+    ;; fetch the live status once more to ensure the cache is not stale.
+    (when (and project-item-data (string= issue-status todo-status))
+      (setq issue-status
+	    (let ((st (tlon-get-status-in-issue issue nil nil)))
+	      (when st (upcase st)))))
     (unless (string= issue-status todo-status)
-      (pcase (tlon-forg--prompt-element-diff "Statuses" issue-status todo-status issue-context)
+      (pcase (tlon-forg--prompt-element-diff
+	      "Statuses" issue-status todo-status issue-context)
 	(?i (org-todo issue-status))
 	(?t (tlon-update-issue-from-todo))))))
 
