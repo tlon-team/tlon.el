@@ -94,15 +94,6 @@ The cdr of each cons cell is a list of the form
 (defvar tlon-deepl-glossaries nil
   "A list of glossaries retrieved from the DeepL API.")
 
-(defvar tlon-deepl-source-language nil
-  "Source language of the current API request.")
-
-(defvar tlon-deepl-target-language nil
-  "Target language of the current API request.")
-
-(defvar tlon-deepl-text nil
-  "The text to be translated in the current API request.")
-
 (defvar tlon-deepl--override-glossary-id nil
   "When non-nil, force `tlon-deepl-glossary-delete-formatter' to use this ID.
 This is a dynamically-bound helper set by `tlon-deepl-glossary-delete'
@@ -186,6 +177,9 @@ non-nil, don't ask for confirmation when no glossary is found."
 
 ;;;;; Translation
 
+(defvar tlon-translate-text)
+(defvar tlon-translate-source-language)
+(defvar tlon-translate-target-language)
 ;;;###autoload
 (defun tlon-deepl-translate (&optional text target-lang source-lang callback no-glossary-ok)
   "Translate TEXT from SOURCE-LANG into TARGET-LANG and execute CALLBACK.
@@ -204,9 +198,9 @@ Returns the translated text as a string."
 				(or (when (region-active-p)
 				      (buffer-substring-no-properties (region-beginning) (region-end)))
 				    (thing-at-point 'word))))))
-    (setq tlon-deepl-text text
-          tlon-deepl-source-language source-lang
-          tlon-deepl-target-language target-lang)
+    (setq tlon-translate-text text
+          tlon-translate-source-language source-lang
+          tlon-translate-target-language target-lang)
     (tlon-deepl-request-wrapper 'translate callback no-glossary-ok)))
 
 (defun tlon-deepl-print-translation ()
@@ -238,11 +232,11 @@ found or applicable.
 
 Glossaries are only used if the source language is \"en\" and a matching
 glossary for the target language exists in `tlon-deepl-glossaries'."
-  (let* ((source-is-en (string= "en" tlon-deepl-source-language))
+  (let* ((source-is-en (string= "en" tlon-translate-source-language))
          (glossary-id (when source-is-en ; Only lookup if source is English
-                        (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" tlon-deepl-target-language)))
-         (text (vector tlon-deepl-text))
-         (target-supports-glossary (member tlon-deepl-target-language tlon-deepl-supported-glossary-languages))
+                        (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" tlon-translate-target-language)))
+         (text (vector tlon-translate-text))
+         (target-supports-glossary (member tlon-translate-target-language tlon-deepl-supported-glossary-languages))
          (proceed nil))
 
     ;; Determine if we should proceed without a glossary or prompt the user
@@ -256,7 +250,7 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
                       ((not source-is-en) ; Source language issue
                        "Glossaries require English source language.")
                       (target-supports-glossary ; Source is EN, target supports, but lookup failed
-                       (format "No \"en-%s\" glossary found in local cache." tlon-deepl-target-language))
+                       (format "No \"en-%s\" glossary found in local cache." tlon-translate-target-language))
                       (t ; Should not happen due to (not target-supports-glossary) check above
                        "Glossary not applicable."))))
                 (y-or-n-p (concat prompt-message " Translate anyway?")))))
@@ -267,8 +261,8 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
           (json-encoding-lisp-style-closings nil)
           (json-encoding-object-sort-predicate nil))
       (json-encode `(("text" . ,text)
-                     ("source_lang" . ,tlon-deepl-source-language)
-                     ("target_lang" . ,tlon-deepl-target-language)
+                     ("source_lang" . ,tlon-translate-source-language)
+                     ("target_lang" . ,tlon-translate-target-language)
                      ;; Include glossary_id only if it was found and source is "en"
                      ,@(when glossary-id `(("glossary_id" . ,glossary-id)))
 		     ;; disabled because it fails to respect newlines
@@ -277,181 +271,13 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
 (defun tlon-deepl-get-language-glossary (language)
   "Return the glossary ID for LANGUAGE.
 Looks up the glossary ID in `tlon-deepl-glossaries' based on the target
-LANGUAGE. Returns nil if `tlon-deepl-source-language' is not \"en\"."
-  (when (string= "en" tlon-deepl-source-language)
+LANGUAGE. Returns nil if `tlon-translate-source-language' is not \"en\"."
+  (when (string= "en" tlon-translate-source-language)
     (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
 
 ;;;;;; Tex
 
-(declare-function tlon-bibliography-lookup "tlon-bib")
-(declare-function ebib--get-key-at-point "ebib")
-(declare-function ebib-extras-get-field "ebib-extras")
-(declare-function bibtex-extras-get-key "bibtex-extras")
-(declare-function bibtex-extras-get-field "bibtex-extras")
-(defun tlon-deepl--get-abstract-context (&optional abstract key interactive-call-p)
-  "Prepare context for abstract translation via DeepL.
-Collect necessary information for translating bibliographic entry abstracts.
-If INTERACTIVE-CALL-P is non-nil, determine KEY from context (entry at point in
-Ebib or BibTeX modes). For non-interactive calls, KEY must be provided.
 
-ABSTRACT, if provided, is used directly. Otherwise, the abstract is retrieved
-based on KEY from the current entry or bibliography database.
-
-Returns a list (key text source-lang-code) with all information needed for
-translation, or nil if any required piece is missing."
-  (let* ((key (or key
-                  (if interactive-call-p
-                      (pcase major-mode
-                        ('ebib-entry-mode (ebib--get-key-at-point))
-                        ('bibtex-mode (bibtex-extras-get-key))
-                        (_ (user-error "Cannot determine key interactively in mode: %s" major-mode)))
-                    (user-error "KEY argument must be provided when called non-interactively"))))
-         (text (or abstract
-                   (when key
-                     (or (when (and interactive-call-p
-				    (derived-mode-p 'ebib-entry-mode)
-				    (string= key (ebib--get-key-at-point)))
-                           (ebib-extras-get-field "abstract"))
-                         (tlon-bibliography-lookup "=key=" key "abstract")))
-                   (when interactive-call-p
-                     (pcase major-mode
-                       ('text-mode (buffer-string))
-                       ('ebib-entry-mode (unless key (ebib-extras-get-field "abstract")))
-                       ('bibtex-mode (unless key (bibtex-extras-get-field "abstract")))))))
-         (source-lang-name (when key
-                             (or (when (and interactive-call-p
-					    (derived-mode-p 'ebib-entry-mode)
-					    (string= key (ebib--get-key-at-point)))
-                                   (ebib-extras-get-field "langid"))
-                                 (tlon-bibliography-lookup "=key=" key "langid"))))
-         (source-lang-code (when source-lang-name
-                             (tlon-lookup tlon-languages-properties :code :name source-lang-name))))
-    (when (and key text source-lang-code)
-      (list key text source-lang-code))))
-
-;;;###autoload
-(defun tlon-deepl-translate-abstract (&optional abstract key langs interactive-call-p)
-  "Translate the ABSTRACT of entry KEY into LANGS.
-LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
-nil, use `tlon-project-target-languages'. INTERACTIVE-CALL-P indicates if the
-function was called interactively."
-  (interactive "P")
-  (when-let ((context (tlon-deepl--get-abstract-context abstract key interactive-call-p)))
-    (cl-destructuring-bind (key text source-lang-code) context
-      (if interactive-call-p
-          (tlon-deepl--translate-abstract-interactive key text source-lang-code)
-        (tlon-deepl--translate-abstract-non-interactive key text source-lang-code langs)))))
-
-(declare-function tlon-bib-remove-braces "tlon-bib")
-(declare-function tlon-translate-abstract-callback "tlon-bib")
-(defun tlon-deepl--translate-abstract-interactive (key text source-lang-code)
-  "Handle interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
-If a translation for the KEY into the selected target language already exists,
-prompt the user for confirmation before overwriting."
-  (let* ((excluded-lang (list (tlon-lookup tlon-languages-properties :standard :code source-lang-code)))
-         (target-lang (tlon-select-language 'code 'babel "Target language: " 'require-match nil nil excluded-lang)))
-    (when target-lang
-      (let ((existing-translation (tlon-deepl--get-existing-translation key target-lang))
-            (target-lang-name (tlon-lookup tlon-languages-properties :standard :code target-lang)))
-        (if (and existing-translation
-                 (not (y-or-n-p (format "Translation for %s into %s already exists. Retranslate?"
-                                        key target-lang-name))))
-            (message "Translation for %s into %s aborted by user." key target-lang-name)
-          (progn
-            (message "Initiating DeepL translation for %s -> %s (%s)" key target-lang-name source-lang-code)
-            (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                  (lambda ()
-                                    (tlon-translate-abstract-callback key target-lang 'overwrite))
-                                  nil)))))))
-
-(defvar tlon-project-target-languages)
-(defun tlon-deepl--translate-abstract-non-interactive (key text source-lang-code langs)
-  "Handle non-interactive abstract translation for KEY, TEXT, SOURCE-LANG-CODE.
-LANGS is a list of languages, such as `(\"spanish\" \"french\")'. If LANGS is
-nil, use `tlon-project-target-languages'."
-  (message "Checking abstract translations for %s..." key)
-  (let ((initiated-langs '()))
-    (mapc (lambda (language)
-            (let ((target-lang (tlon-lookup tlon-languages-properties :code :name language)))
-              (unless (string= source-lang-code target-lang)
-                (unless (tlon-deepl--get-existing-translation key target-lang)
-                  (push language initiated-langs)
-                  (message "Initiating DeepL translation for %s -> %s" key target-lang)
-                  (tlon-deepl-translate (tlon-bib-remove-braces text) target-lang source-lang-code
-                                        (lambda () (tlon-translate-abstract-callback key target-lang 'overwrite)))))))
-          (or langs tlon-project-target-languages))
-    (when initiated-langs
-      (message "Finished initiating translations for abstract of `%s' into: %s"
-               key (string-join (reverse initiated-langs) ", ")))))
-
-(defvar tlon-file-fluid)
-(defvar tlon-file-stable)
-(declare-function tlon-bib-get-keys-in-file "tlon-bib")
-;;;###autoload
-(defun tlon-deepl-translate-missing-abstracts (&optional langs)
-  "Translate abstracts for BibTeX entries missing translations into LANGS.
-Iterate through all keys in `tlon-file-fluid' and `tlon-file-stable'. For each
-key, check if abstract translations are missing for any language in LANGS.
-LANGS is a list of language names, such as `(\"spanish\" \"french\")'. If LANGS
-is nil, prompt the user to select languages using
-`tlon-read-multiple-languages'. When a translation in a language is missing,
-call `tlon-deepl-translate-abstract' for that key and the specific missing
-languages."
-  (interactive)
-  (let ((target-languages (or langs (tlon-read-multiple-languages 'babel))))
-    (unless target-languages
-      (user-error "No target languages selected. Aborting"))
-    (let* ((all-translations (tlon-read-abstract-translations))
-           (keys (seq-uniq (append (tlon-bib-get-keys-in-file tlon-file-fluid)
-                                   (tlon-bib-get-keys-in-file tlon-file-stable))))
-           (total (length keys))
-           (initiated-count 0)
-           (processed 0))
-      (message "Checking %d BibTeX entries for missing abstract translations..." total)
-      (dolist (key keys)
-        (setq processed (1+ processed))
-        (let ((missing-langs '()))
-          (when-let* ((context (tlon-deepl--get-abstract-context nil key nil))
-                      (abstract (nth 1 context))
-                      (source-lang-code (nth 2 context)))
-            (dolist (target-lang-name target-languages)
-              (let ((target-lang-code (tlon-lookup tlon-languages-properties :code :name target-lang-name)))
-                (let* ((key-entry (assoc key all-translations))
-                       (translation-text nil)
-                       (has-translation nil))
-                  (when key-entry
-                    (let ((lang-entry (assoc target-lang-code (cdr key-entry))))
-                      (when lang-entry
-                        (setq translation-text (cdr lang-entry)))))
-                  (setq has-translation (and translation-text
-                                             (stringp translation-text)
-                                             (> (length (string-trim translation-text)) 0)))
-                  (unless (or (string= source-lang-code target-lang-code)
-                              has-translation)
-                    (push target-lang-name missing-langs)))))
-            (when missing-langs
-              (message "Processing key %s (missing: %s) (%d/%d)"
-                       key (string-join (reverse missing-langs) ", ") processed total)
-              (setq initiated-count (1+ initiated-count))
-              (tlon-deepl-translate-abstract abstract key (reverse missing-langs))))))
-      (message "Finished checking %d entries. Initiated translation for %d entries." total initiated-count))))
-
-(declare-function tlon-read-abstract-translations "tlon-bib")
-(defun tlon-deepl--get-existing-translation (key target-lang)
-  "Check `tlon-file-abstract-translations' for existing translation.
-Return the translation string for KEY and TARGET-LANG if found and non-empty,
-otherwise return nil."
-  (let* ((translations (tlon-read-abstract-translations)) ; Read the JSON data
-         (key-entry (assoc key translations))
-         translation)
-    (when key-entry
-      (let ((lang-entry (assoc target-lang (cdr key-entry))))
-        (when lang-entry
-          (setq translation (cdr lang-entry)))))
-    ;; Return translation only if it's a non-empty string
-    (if (and translation (stringp translation) (> (length (string-trim translation)) 0))
-        translation
-      nil)))
 
 ;;;;; Glossaries
 
@@ -484,7 +310,7 @@ even if the caller passes data."
   "Create a DeepL glossary for LANGUAGE."
   (interactive (list (tlon-select-language 'code 'babel)))
   (tlon-extract-glossary language 'deepl-api)
-  (setq tlon-deepl-target-language language)
+  (setq tlon-translate-target-language language)
   (tlon-deepl-request-wrapper 'glossary-create))
 
 ;;;###autoload
@@ -502,7 +328,7 @@ The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
 (defun tlon-deepl-glossary-create-encode (&rest _)
   "Return a JSON representation of the glossary to be created."
   (let* ((extension "tsv")
-	 (file (tlon-glossary-make-file (upcase tlon-deepl-target-language) extension))
+	 (file (tlon-glossary-make-file (upcase tlon-translate-target-language) extension))
 	 (name (file-name-base file))
 	 entries)
     (with-temp-buffer
@@ -512,13 +338,13 @@ The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
       (setq entries (buffer-string))
       (json-encode `(("name" . ,name)
 		     ("source_lang" . "en")
-		     ("target_lang" . ,tlon-deepl-target-language)
+		     ("target_lang" . ,tlon-translate-target-language)
 		     ("entries" . ,entries)
 		     ("entries_format" . ,extension))))))
 
 (defun tlon-deepl-glossary-create-callback ()
   "Callback for `tlon-deepl-glossary-create'."
-  (setq tlon-deepl-target-language nil)
+  (setq tlon-translate-target-language nil)
   (goto-char (point-min))
   (let ((response (json-read)))
     (tlon-deepl-get-glossaries)
@@ -601,8 +427,6 @@ After successful deletion, execute CALLBACK (if non-nil)."
   "DeepL menu."
   [["Translate"
     ("t" "Translate text" tlon-deepl-translate)
-    ("a" "Translate current abstract" (lambda () (interactive) (tlon-deepl-translate-abstract nil nil nil t)))
-    ("m" "Translate missing abstracts" tlon-deepl-translate-missing-abstracts)
     ("e" "Ediff translation" tlon-deepl-diff)]
    ["Glossaries"
     ("s" "Select" tlon-deepl-select-glossary)
