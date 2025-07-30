@@ -35,6 +35,8 @@
 (require 'tlon-glossary)
 (require 'transient)
 (require 'magit)
+(require 'tlon-yaml)
+(require 'simple-extras)
 
 ;;;; User options
 
@@ -154,15 +156,40 @@ file. If LANG is not provided, prompt for a target language."
          (target-lang-code lang)
          (target-file
           (let ((candidate (tlon-translate--get-counterpart-for-language source-file target-lang-code)))
-            (if (and candidate (file-exists-p candidate))
-                (if (y-or-n-p (format "Overwrite existing counterpart %s?" candidate))
-                    candidate
-                  (read-file-name "Save translation to: " (file-name-directory candidate)))
-              (or candidate
-                  (let ((counterpart-dir (tlon-get-counterpart-dir source-file target-lang-code)))
-                    (read-file-name "Save translation to: " counterpart-dir)))))))
+            (cond
+             ((and candidate (file-exists-p candidate))
+              (if (y-or-n-p (format "Overwrite existing counterpart %s?" candidate))
+                  candidate
+                (read-file-name "Save translation to: "
+                                (file-name-directory candidate)
+                                candidate)))
+             (candidate candidate)
+             (t
+              (let* ((counterpart-dir (tlon-get-counterpart-dir source-file target-lang-code))
+                     (default-name (tlon-translate--default-filename source-file target-lang-code))
+                     (default-path (when default-name (file-name-concat counterpart-dir default-name))))
+                (read-file-name "Save translation to: " counterpart-dir default-path)))))))
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code))))
+
+(defun tlon-translate--default-filename (source-file target-lang-code)
+  "Return a slugified default filename for SOURCE-FILE translated into TARGET-LANG-CODE.
+The slug is built by translating the original title with
+`tlon-translate-text' and passing the result through
+`simple-extras-slugify'.  If translation fails, fall back to a
+slugified version of the original basename."
+  (let* ((title (or (tlon-yaml-get-key "title" source-file)
+                    (replace-regexp-in-string "-" " " (file-name-base source-file))))
+         (source-lang-code (tlon-get-language-in-file source-file))
+         (translated (ignore-errors
+                       (tlon-translate-text title
+                                            target-lang-code
+                                            source-lang-code
+                                            nil
+                                            t)))
+         (slug (simple-extras-slugify (or translated title)))
+         (ext  (file-name-extension source-file t)))
+    (concat slug ext)))
 
 (defun tlon-translate--do-translate (source-file target-file target-lang-code)
   "Translate SOURCE-FILE to TARGET-FILE into TARGET-LANG-CODE."
