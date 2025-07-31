@@ -839,33 +839,69 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
     (match-string 1 line)))
 
 (defun tlon-db--get-changed-keys-from-diff (diff-output)
-  "Parse unified DIFF-OUTPUT and return a plist of changed keys."
-  (let (added-keys-raw deleted-keys-raw)
+  "Parse unified DIFF-OUTPUT and classify entry changes.
+
+Return a plist with the keys :added, :deleted and :modified."
+  (let ((table (make-hash-table :test #'equal)))
     (with-temp-buffer
       (insert diff-output)
       (goto-char (point-min))
       (while (not (eobp))
-        (let* ((line (thing-at-point 'line))
+        (let* ((line (buffer-substring-no-properties (line-beginning-position)
+                                                     (line-end-position)))
                (is-add (string-prefix-p "+" line))
                (is-del (string-prefix-p "-" line)))
           (when (or is-add is-del)
-            (let ((key-for-change
-                   (save-excursion
-                     (catch 'key-found
-                       (while (and (not (bobp)) (not (looking-at "@@")))
-                         (when-let ((found-key (tlon-db--get-key-from-bibtex-line (thing-at-point 'line))))
-                           (throw 'key-found found-key))
-                         (forward-line -1))
-                       nil)))) ; Return nil if loop finishes
-              (when key-for-change
-                (if is-add
-                    (cl-pushnew key-for-change added-keys-raw :test #'string=)
-                  (cl-pushnew key-for-change deleted-keys-raw :test #'string=))))))
-        (forward-line 1)))
-    (let ((modified (cl-intersection added-keys-raw deleted-keys-raw :test #'string=)))
-      (list :added (cl-set-difference added-keys-raw modified :test #'string=)
-            :deleted (cl-set-difference deleted-keys-raw modified :test #'string=)
-            :modified modified))))
+            (let* ((key-for-change
+                    (save-excursion
+                      (catch 'key-found
+                        ;; Walk backwards within the current hunk until we find
+                        ;; the BibTeX entry start that contains the changed line.
+                        (while (and (not (bobp)) (not (looking-at "^@@")))
+                          (when-let ((found-key
+                                      (tlon-db--get-key-from-bibtex-line
+                                       (buffer-substring-no-properties
+                                        (line-beginning-position)
+                                        (line-end-position)))))
+                            (throw 'key-found found-key))
+                          (forward-line -1))
+                        nil))))
+                   (info (and key-for-change
+                              (or (gethash key-for-change table)
+                                  (list :added-entry nil
+                                        :deleted-entry nil
+                                        :added-lines nil
+                                        :deleted-lines nil)))))
+              (when info
+                ;; Detect if the current diff line is the entry start itself.
+                (let ((entry-start-p (tlon-db--get-key-from-bibtex-line line)))
+                  (when entry-start-p
+                    (when is-add (plist-put info :added-entry t))
+                    (when is-del (plist-put info :deleted-entry t))))
+                ;; Record the presence of any added/deleted lines inside the entry.
+                (when is-add (plist-put info :added-lines t))
+                (when is-del (plist-put info :deleted-lines t))
+                (puthash key-for-change info table))))
+          (forward-line 1))))
+    (let (added deleted modified)
+      (maphash
+       (lambda (key info)
+         (let ((added-entry   (plist-get info :added-entry))
+               (deleted-entry (plist-get info :deleted-entry)))
+           (cond
+            ;; Newly created entry
+            ((and added-entry (not deleted-entry))
+             (push key added))
+            ;; Completely removed entry
+            ((and deleted-entry (not added-entry))
+             (push key deleted))
+            ;; Anything else counts as a modification
+            (t
+             (push key modified)))))
+       table)
+      (list :added (nreverse added)
+            :deleted (nreverse deleted)
+            :modified (nreverse modified))))
 
 (defun tlon-db--log-sync-action (action key)
   "Append a sync ACTION for a given KEY to the sync log buffer."
