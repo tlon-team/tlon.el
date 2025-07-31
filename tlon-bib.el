@@ -31,6 +31,7 @@
 (require 'gptel)
 (require 'gptel-extras)
 (require 'seq)
+(require 'cl-lib)
 (require 'shut-up)
 (require 'tlon)
 (require 'tlon-ai)
@@ -449,6 +450,31 @@ and sets the value of the field for all entries to `Tlön'."
     (while (re-search-forward " \\}" nil t)
       (replace-match "}" t t))))
 
+;;;###autoload
+(defun tlon-bib-remove-url-fields-with-doi (&optional save)
+  "Remove the `url` field from all entries in the current BibTeX buffer that have
+a `doi` field.  If SAVE is non-nil (interactively with a prefix argument), save
+the buffer after modification.  Display a message reporting how many entries
+were updated."
+
+  (interactive "P")
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "Not in `bibtex-mode'"))
+  (save-excursion
+    (widen)
+    (goto-char (point-min))
+    (let ((removed 0))
+      (bibtex-map-entries
+       (lambda (_key start _end)
+         (save-excursion
+           (goto-char start)
+           (when (and (bibtex-extras-get-field "doi")
+                      (bibtex-extras-get-field "url"))
+             (bibtex-set-field "url" nil)
+             (cl-incf removed)))))
+      (when save (save-buffer))
+      (message "Removed url field from %d entr%s."
+               removed (if (= removed 1) "y" "ies"))))
 ;;;;; Autokey
 
 (defun tlon-generate-autokey (author year title)
@@ -1573,7 +1599,8 @@ If nil, use the default model."
     ""
     "Move"
     ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
-    ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)]
+    ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)
+    ("u" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)]
    ["AI"
     "Bibliography"
     ("x" "Extract references from buffer/region" tlon-bib-extract-references)
