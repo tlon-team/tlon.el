@@ -260,8 +260,14 @@ EXTENSION is nil, use \"md\"."
 If FILE is nil, use the file visited by the current buffer."
   (interactive)
   (let* ((input-file (or file (read-file-name "File: " nil nil t
-					      (file-relative-name (buffer-file-name) default-directory)))))
-    (tlon-lychee--check-urls (file-truename input-file))))
+                                              (file-relative-name (buffer-file-name) default-directory))))
+         (abs-file (file-truename input-file)))
+    (if (string-equal (file-name-extension abs-file) "bib")
+        ;; Work around lychee panic on large .bib files by checking a temporary list of URLs
+        (let* ((urls (tlon-get-urls-in-file abs-file))
+               (tmp-file (tlon-save-list-of-urls urls)))
+          (tlon-lychee--check-urls tmp-file))
+      (tlon-lychee--check-urls abs-file))))
 
 ;;;###autoload
 (defun tlon-list-dead-urls-in-repo ()
