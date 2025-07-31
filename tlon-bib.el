@@ -1633,6 +1633,8 @@ If nil, use the default model."
     "Move"
     ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
     ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)
+    ""
+    "Remove"
     ("u" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)
     ("i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]
    ["AI"
