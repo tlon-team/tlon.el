@@ -470,7 +470,11 @@ modification. Display a message reporting how many entries were updated."
              (bibtex-narrow-to-entry)
              (when (and (bibtex-extras-get-field "doi")
                         (bibtex-extras-get-field "url"))
-               (bibtex-delete-field "url")
+               ;; completely remove the url field instead of only clearing its value
+               (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
+                 (goto-char (bibtex-start-of-name-in-field url-bounds))
+                 ;; kill the whole field (including trailing comma, if any)
+                 (bibtex-kill-field nil t))
                (cl-incf removed))))))
       (when save (save-buffer))
       (message "Removed url field from %d entr%s."
