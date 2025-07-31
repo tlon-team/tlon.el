@@ -480,6 +480,34 @@ modification. Display a message reporting how many entries were updated."
       (message "Removed url field from %d entr%s."
                removed (if (= removed 1) "y" "ies")))))
 
+;;;###autoload
+(defun tlon-bib-remove-url-fields-with-isbn (&optional save)
+  "Remove the `url' field from entries with an `isbn' field in the current buffer.
+If SAVE is non-nil (interactively with a prefix argument), save the buffer after
+modification. Display a message reporting how many entries were updated."
+  (interactive "P")
+  (unless (derived-mode-p 'bibtex-mode)
+    (user-error "Not in `bibtex-mode'"))
+  (save-excursion
+    (widen)
+    (goto-char (point-min))
+    (let ((removed 0))
+      (bibtex-map-entries
+       (lambda (_key start _end)
+         (save-excursion
+           (goto-char start)
+           (save-restriction
+             (bibtex-narrow-to-entry)
+             (when (and (bibtex-extras-get-field "isbn")
+                        (bibtex-extras-get-field "url"))
+               (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
+                 (goto-char (bibtex-start-of-name-in-field url-bounds))
+                 (bibtex-kill-field nil t))
+               (cl-incf removed))))))
+      (when save (save-buffer))
+      (message "Removed url field from %d entr%s."
+               removed (if (= removed 1) "y" "ies")))))
+
 ;;;;; Autokey
 
 (defun tlon-generate-autokey (author year title)
@@ -1605,7 +1633,8 @@ If nil, use the default model."
     "Move"
     ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
     ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)
-    ("u" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)]
+    ("u" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)
+    ("i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]
    ["AI"
     "Bibliography"
     ("x" "Extract references from buffer/region" tlon-bib-extract-references)
