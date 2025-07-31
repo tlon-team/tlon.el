@@ -854,9 +854,9 @@ Return a plist with the keys :added, :deleted and :modified."
           (when (or is-add is-del)
             (let* ((key-for-change
                     (save-excursion
+                      (let ((orig-pos (point)))
                       (catch 'key-found
-                        ;; Walk backwards within the current hunk until we find
-                        ;; the BibTeX entry start that contains the changed line.
+                        ;; First search *backwards* within the current hunk.
                         (while (and (not (bobp)) (not (looking-at "^@@")))
                           (when-let ((found-key
                                       (tlon-db--get-key-from-bibtex-line
@@ -865,7 +865,18 @@ Return a plist with the keys :added, :deleted and :modified."
                                         (line-end-position)))))
                             (throw 'key-found found-key))
                           (forward-line -1))
-                        nil))))
+                        ;; If nothing found, search *forwards* within the hunk.
+                        (goto-char orig-pos)
+                        (forward-line 1)
+                        (while (and (not (eobp)) (not (looking-at "^@@")))
+                          (when-let ((found-key
+                                      (tlon-db--get-key-from-bibtex-line
+                                       (buffer-substring-no-properties
+                                        (line-beginning-position)
+                                        (line-end-position)))))
+                            (throw 'key-found found-key))
+                          (forward-line 1))
+                        nil)))))
                    (info (and key-for-change
                               (or (gethash key-for-change table)
                                   (list :added-entry nil
