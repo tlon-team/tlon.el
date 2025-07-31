@@ -855,7 +855,7 @@ Return a plist with the keys :added, :deleted and :modified."
             (let* ((key-for-change
                     (save-excursion
                       (let ((orig-pos (point)))
-                      (catch 'key-found
+                        (catch 'key-found
                         ;; First search *backwards* within the current hunk.
                         (while (and (not (bobp)) (not (looking-at "^@@")))
                           (when-let ((found-key
@@ -876,7 +876,7 @@ Return a plist with the keys :added, :deleted and :modified."
                                         (line-end-position)))))
                             (throw 'key-found found-key))
                           (forward-line 1))
-                        nil)))))
+                        nil))))
                    (info (and key-for-change
                               (or (gethash key-for-change table)
                                   (list :added-entry nil
