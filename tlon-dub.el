@@ -1506,7 +1506,7 @@ the pathname of OUTPUT-FILE."
              (default-name (concat (file-name-sans-extension list-file)
                                    "-joined"
                                    (or first-ext ".txt"))))
-        (setq output-file (read-file-name "Output file: " dir default-name nil default-name))))
+        (setq output-file (read-file-name "Output file: " dir default-name))))
     (setq output-file (expand-file-name output-file))
     ;; Decide whether to use ffmpeg
     (let* ((media-exts '("mp4" "mov" "mkv" "webm" "mp3" "wav" "flac" "ogg" "opus" "m4a"))
