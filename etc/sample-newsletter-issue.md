@@ -58,5 +58,4 @@ rigurosidad. [Postúlate aquí](https://www.canva.com/design/DAGqFbmhkWo/splGjjc
 - [Asiste a un evento local](https://www.altruismoeficaz.org/grupos).
 - [Únete a nuestro Slack](https://docs.google.com/forms/d/e/1FAIpQLSfPvBOkSJBDHrY3Jdr-vcG4dWel8px_IqE2aOG1Y08sDbjwBw/viewform).
 - [Explora el manual del altruismo eficaz](https://altruismoeficaz.net/colecciones/manual-del-altruismo-eficaz).
-- [Comprométete a donar](https://ayudaefectiva.org/compromiso).
 
