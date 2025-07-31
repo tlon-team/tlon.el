@@ -474,7 +474,8 @@ were updated."
              (cl-incf removed)))))
       (when save (save-buffer))
       (message "Removed url field from %d entr%s."
-               removed (if (= removed 1) "y" "ies"))))
+               removed (if (= removed 1) "y" "ies")))))
+
 ;;;;; Autokey
 
 (defun tlon-generate-autokey (author year title)
