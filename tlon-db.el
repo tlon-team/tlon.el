@@ -160,51 +160,55 @@ Returns the token or nil if authentication failed."
 
 (declare-function bibtex-extras-escape-special-characters "bibtex-extras")
 (defun tlon-db-get-entries (&optional base-url no-confirm)
-  "Retrieve entries from the EA International API and update local
-databases.
-
+  "Retrieve entries from the EA International API and update local db.
 Optional BASE-URL specifies the API endpoint base URL.  If not
 provided, defaults to `tlon-db-api-base-url'.
 
 If NO-CONFIRM is non-nil, bypass the check that ensures `db.bib' and
 `db-upstream.bib' are identical.  Interactively, supply a prefix
 argument to enable this check bypass."
-  (interactive)
-  (when (and (get-file-buffer tlon-db-file-db)
-             (buffer-modified-p (get-file-buffer tlon-db-file-db)))
-    (user-error "Buffer for %s has unsaved changes. Save it first" (file-name-nondirectory tlon-db-file-db)))
-  (when (and (not no-confirm)
-             (file-exists-p tlon-db-file-db)
-             (file-exists-p tlon-db-file-db-upstream)
-             (not (tlon-db--files-have-same-content-p tlon-db-file-db tlon-db-file-db-upstream)))
-    (ediff tlon-db-file-db tlon-db-file-db-upstream)
-    (user-error "Files %s and %s are not in sync. Resolve differences before fetching entries"
-                (file-name-nondirectory tlon-db-file-db)
-		(file-name-nondirectory tlon-db-file-db-upstream)))
-  (let (entries-text)
-    (when-let* ((response-buffer (tlon-db--make-request "GET" "/api/entries" nil
+  (interactive "P")
+  (let ((no-confirm (or no-confirm current-prefix-arg)))
+    (when (and (get-file-buffer tlon-db-file-db)
+               (buffer-modified-p (get-file-buffer tlon-db-file-db)))
+      (user-error "Buffer for %s has unsaved changes. Save it first" (file-name-nondirectory tlon-db-file-db)))
+    (when (and (not no-confirm)
+               (file-exists-p tlon-db-file-db)
+               (file-exists-p tlon-db-file-db-upstream)
+               (not (tlon-db--files-have-same-content-p tlon-db-file-db tlon-db-file-db-upstream)))
+      (ediff tlon-db-file-db tlon-db-file-db-upstream)
+      (user-error "Files %s and %s are not in sync. Resolve differences before fetching entries"
+                  (file-name-nondirectory tlon-db-file-db)
+		  (file-name-nondirectory tlon-db-file-db-upstream)))
+    (let (entries-text)
+      (when-let* ((response-buffer (tlon-db--make-request "GET" "/api/entries" nil
 							  '(("accept" . "text/plain"))
 							  nil ; No auth required
 							  base-url)))
-      (with-current-buffer response-buffer
-	(goto-char (point-min))
-	(if (search-forward-regexp "^$" nil t)
-	    (progn
-	      (forward-char) ; Move past the empty line separating headers and body
-	      (setq entries-text (buffer-substring (point) (point-max))))
-	  (user-error "Could not parse response from API"))
-	(kill-buffer response-buffer)))
-    (if entries-text
-        (let ((tlon-db--sync-in-progress t))
-          (with-temp-buffer
-            (let ((coding-system-for-write 'utf-8-unix))
-              (insert entries-text)
-              (bibtex-extras-escape-special-characters)
-              (write-file tlon-db-file-db-upstream)
-              (write-file tlon-db-file-db)
-              (message "Updated %s and %s." tlon-db-file-db tlon-db-file-db-upstream)
-              (bibtex-count-entries))))
-      (user-error "Failed to retrieve entries"))))
+	(with-current-buffer response-buffer
+	  (goto-char (point-min))
+	  (if (search-forward-regexp "^$" nil t)
+	      (progn
+		(forward-char) ; Move past the empty line separating headers and body
+		(setq entries-text (buffer-substring (point) (point-max))))
+	    (user-error "Could not parse response from API"))
+	  (kill-buffer response-buffer)))
+      (if entries-text
+          (let ((tlon-db--sync-in-progress t))
+            (with-temp-buffer
+              (let ((coding-system-for-write 'utf-8-unix))
+		(insert entries-text)
+		(bibtex-extras-escape-special-characters)
+		(write-file tlon-db-file-db-upstream)
+		(write-file tlon-db-file-db)
+		(message "Updated %s and %s." tlon-db-file-db tlon-db-file-db-upstream)
+		(bibtex-count-entries))))
+	(user-error "Failed to retrieve entries")))))
+
+(defun tlon-db-get-entries-no-confirm ()
+  "Retrieve entries from the EA International API without confirmation."
+  (interactive)
+  (tlon-db-get-entries nil t))
 
 (defun tlon-db--files-have-same-content-p (file1 file2)
   "Return t if FILE1 and FILE2 have identical content."
@@ -982,7 +986,7 @@ If there are no differences, return nil."
 
 ;;;;;; Periodic data update
 
-(run-with-idle-timer (* 3 60 60) t #'tlon-db-get-entries)
+(run-with-idle-timer (* 3 60 60) t #'tlon-db-get-entries-no-confirm)
 
 ;;;;; Menu
 
