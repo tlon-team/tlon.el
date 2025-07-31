@@ -68,7 +68,7 @@ news. The original input file is then overwritten with this new draft."
       (if (string-blank-p content)
           (message "The latest newsletter input file is empty. Nothing to process.")
         (let* ((prompt-file-name "newsletter-prompt.md")
-               (prompt-file-path (file-name-concat (file-name-directory input-file-path) prompt-file-name)))
+               (prompt-file-path (file-name-concat tlon-package-dir "etc" prompt-file-name)))
           (unless (file-exists-p prompt-file-path)
             (user-error "Prompt file not found: %s" prompt-file-path))
           (let* ((raw-prompt (with-temp-buffer
