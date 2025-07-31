@@ -34,6 +34,12 @@
 (eval-and-compile
   (require 'transient))
 
+;;;; Variables
+
+(defconst tlon-lychee-accept-flag
+  "--accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429"
+  "Lychee flag to accept these HTTP status codes.")
+
 ;;;; Functions
 
 (declare-function ffap-url-p "ffap")
@@ -295,7 +301,8 @@ If JSON is non-nil, use JSON format."
   (eshell t)
   (with-current-buffer (get-buffer "*eshell*")
     (goto-char (point-max))
-    (insert (format "lychee --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 %s %s"
+    (insert (format "lychee %s %s %s"
+		    tlon-lychee-accept-flag
                     (if json "--format json" "")
                     (shell-quote-argument target)))
     (eshell-send-input)))
@@ -335,8 +342,9 @@ same as `tlon-fix-dead-urls-in-repo', but restricted to the chosen file."
          (stdout-buffer (generate-new-buffer "*lychee-output*"))
          (cmd-string
           (format
-           "%s --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 --no-progress --format json %s 2>%s"
+           "%s %s --no-progress --format json %s 2>%s"
            (shell-quote-argument (executable-find "lychee"))
+	   tlon-lychee-accept-flag
            (shell-quote-argument file)
            (shell-quote-argument stderr-file))))
     (tlon-lychee-ensure)
@@ -356,7 +364,8 @@ respective file. This process is asynchronous and relies on helper functions."
          (default-directory repo-dir) ; Ensure lychee runs in the repo root
          (stderr-file (make-temp-file "lychee-stderr"))
          (stdout-buffer (generate-new-buffer "*lychee-output*"))
-         (cmd-string (format "%s --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 --no-progress --format json . 2>%s"
+         (cmd-string (format "%s %s --no-progress --format json . 2>%s"
+			     tlon-lychee-accept-flag
                              (shell-quote-argument (executable-find "lychee"))
                              (shell-quote-argument stderr-file))))
     (tlon-lychee-ensure)
