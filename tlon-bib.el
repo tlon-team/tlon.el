@@ -466,10 +466,12 @@ modification. Display a message reporting how many entries were updated."
        (lambda (_key start _end)
          (save-excursion
            (goto-char start)
-           (when (and (bibtex-extras-get-field "doi")
-                      (bibtex-extras-get-field "url"))
-             (bibtex-set-field "url" nil)
-             (cl-incf removed)))))
+           (save-restriction
+             (bibtex-narrow-to-entry)
+             (when (and (bibtex-extras-get-field "doi")
+                        (bibtex-extras-get-field "url"))
+               (bibtex-set-field "url" nil)
+               (cl-incf removed))))))
       (when save (save-buffer))
       (message "Removed url field from %d entr%s."
                removed (if (= removed 1) "y" "ies")))))
