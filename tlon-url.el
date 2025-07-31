@@ -699,8 +699,8 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
     ("f" "In file"                       tlon-fix-dead-urls-in-file)
     ("F" "In repo"                       tlon-fix-dead-urls-in-repo)
     ""
-    ("a" "Get archived"                                tlon-get-archived)
-    ("p" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
+    ("a" "Get archived"                  tlon-get-archived)
+    ("p" "Replace URL across projects"   tlon-replace-url-across-projects)]])
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
