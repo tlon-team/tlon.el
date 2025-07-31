@@ -255,7 +255,7 @@ EXTENSION is nil, use \"md\"."
 ;;;;; Check URLs
 
 ;;;###autoload
-(defun tlon-check-urls-in-file (&optional file)
+(defun tlon-list-dead-urls-in-file (&optional file)
   "Check all the URLs in FILE for dead links.
 If FILE is nil, use the file visited by the current buffer."
   (interactive)
@@ -264,7 +264,7 @@ If FILE is nil, use the file visited by the current buffer."
     (tlon-lychee--check-urls (file-truename input-file))))
 
 ;;;###autoload
-(defun tlon-check-urls-in-repo ()
+(defun tlon-list-dead-urls-in-repo ()
   "Check all the URLs in the current repository for dead links.
 The command prompts whether to use JSON format for the output."
   (interactive)
@@ -302,7 +302,7 @@ Also, copy the URL to the kill ring."
 ;;;;; Dead
 
 ;;;###autoload
-(defun tlon-lychee-fix-dead-links ()
+(defun tlon-fix-dead-urls-in-repo ()
   "Run lychee to find dead links and replace them with Wayback Machine versions.
 This command operates on the current project's root directory, identified by
 `tlon-get-repo'. It runs `lychee' to scan all supported files, parses the
@@ -664,6 +664,37 @@ If URL-DEAD or URL-LIVE not provided, use URL at point or prompt for them."
     ("f" "Check URLs in file"                          tlon-check-urls-in-file)
     ("r" "Check URLs in repo"                          tlon-check-urls-in-repo)
     ("p" "Replace URL across projects"                 tlon-replace-url-across-projects)]])
+
+;;;###autoload
+(defun tlon-fix-dead-urls-in-file (&optional file)
+  "Run lychee to find and fix dead links in a single FILE.
+
+If FILE is nil, prompt for a file.  The interactive fixing workflow is the
+same as `tlon-fix-dead-urls-in-repo', but restricted to the chosen file."
+  (interactive)
+  (let* ((file (or file
+                   (read-file-name
+                    "File: " nil nil t
+                    (when-let ((buf-file (buffer-file-name)))
+                      (file-relative-name buf-file default-directory)))))
+         (file (file-truename file))
+         (repo-dir (file-name-directory file))
+         (default-directory repo-dir)
+         (stderr-file (make-temp-file "lychee-stderr"))
+         (stdout-buffer (generate-new-buffer "*lychee-output*"))
+         (cmd-string
+          (format
+           "%s --accept 200,201,202,204,206,300,301,302,303,307,308,400,401,429 --no-progress --format json %s 2>%s"
+           (shell-quote-argument (executable-find "lychee"))
+           (shell-quote-argument file)
+           (shell-quote-argument stderr-file))))
+    (tlon-lychee-ensure)
+    (message "Starting Lychee process with command: %s" cmd-string)
+    (tlon-lychee--run-and-process cmd-string stdout-buffer stderr-file repo-dir)))
+
+(defalias 'tlon-lychee-fix-dead-links 'tlon-fix-dead-urls-in-repo)
+(defalias 'tlon-check-urls-in-file 'tlon-list-dead-urls-in-file)
+(defalias 'tlon-check-urls-in-repo 'tlon-list-dead-urls-in-repo)
 
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
