@@ -470,7 +470,7 @@ modification. Display a message reporting how many entries were updated."
              (bibtex-narrow-to-entry)
              (when (and (bibtex-extras-get-field "doi")
                         (bibtex-extras-get-field "url"))
-               (bibtex-set-field "url" nil)
+               (bibtex-delete-field "url")
                (cl-incf removed))))))
       (when save (save-buffer))
       (message "Removed url field from %d entr%s."
