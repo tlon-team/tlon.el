@@ -840,7 +840,6 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
 
 (defun tlon-db--get-changed-keys-from-diff (diff-output)
   "Parse unified DIFF-OUTPUT and classify entry changes.
-
 Return a plist with the keys :added, :deleted and :modified."
   (let ((table (make-hash-table :test #'equal)))
     (with-temp-buffer
@@ -856,27 +855,27 @@ Return a plist with the keys :added, :deleted and :modified."
                     (save-excursion
                       (let ((orig-pos (point)))
                         (catch 'key-found
-                        ;; First search *backwards* within the current hunk.
-                        (while (and (not (bobp)) (not (looking-at "^@@")))
-                          (when-let ((found-key
-                                      (tlon-db--get-key-from-bibtex-line
-                                       (buffer-substring-no-properties
-                                        (line-beginning-position)
-                                        (line-end-position)))))
-                            (throw 'key-found found-key))
-                          (forward-line -1))
-                        ;; If nothing found, search *forwards* within the hunk.
-                        (goto-char orig-pos)
-                        (forward-line 1)
-                        (while (and (not (eobp)) (not (looking-at "^@@")))
-                          (when-let ((found-key
-                                      (tlon-db--get-key-from-bibtex-line
-                                       (buffer-substring-no-properties
-                                        (line-beginning-position)
-                                        (line-end-position)))))
-                            (throw 'key-found found-key))
-                          (forward-line 1))
-                        nil))))
+                          ;; First search *backwards* within the current hunk.
+                          (while (and (not (bobp)) (not (looking-at "^@@")))
+                            (when-let ((found-key
+					(tlon-db--get-key-from-bibtex-line
+					 (buffer-substring-no-properties
+                                          (line-beginning-position)
+                                          (line-end-position)))))
+                              (throw 'key-found found-key))
+                            (forward-line -1))
+                          ;; If nothing found, search *forwards* within the hunk.
+                          (goto-char orig-pos)
+                          (forward-line 1)
+                          (while (and (not (eobp)) (not (looking-at "^@@")))
+                            (when-let ((found-key
+					(tlon-db--get-key-from-bibtex-line
+					 (buffer-substring-no-properties
+                                          (line-beginning-position)
+                                          (line-end-position)))))
+                              (throw 'key-found found-key))
+                            (forward-line 1))
+                          nil))))
                    (info (and key-for-change
                               (or (gethash key-for-change table)
                                   (list :added-entry nil
@@ -912,7 +911,7 @@ Return a plist with the keys :added, :deleted and :modified."
        table)
       (list :added (nreverse added)
             :deleted (nreverse deleted)
-            :modified (nreverse modified))))
+            :modified (nreverse modified)))))
 
 (defun tlon-db--log-sync-action (action key)
   "Append a sync ACTION for a given KEY to the sync log buffer."
