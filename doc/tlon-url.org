@@ -45,7 +45,7 @@ The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a sp
 :CUSTOM_ID: h:tlon-check-urls-in-repo-cmd
 :END:
 #+findex: tlon-list-dead-urls-in-repo
-The command ~tlon-check-urls-in-repo~ (Autoloaded) checks all URLs in the current repository for dead links using the external =lychee= tool.
+The command ~tlon-list-dead-urls-in-repo~ (Autoloaded) checks all URLs in the current repository for dead links using the external =lychee= tool.
 1. It determines the current repository root.
 2. It prompts the user whether to get the output in JSON format.
 3. It calls the internal function ~tlon-lychee--check-urls~, targeting the whole repository (`.`).
@@ -121,7 +121,7 @@ This section lists non-interactive functions used internally or potentially usef
 :CUSTOM_ID: h:tlon-lychee-fix-dead-links-cmd
 :END:
 #+findex: tlon-fix-dead-urls-in-repo
-The command ~tlon-lychee-fix-dead-links~ (Autoloaded) automates finding and fixing dead links using =lychee= and the Wayback Machine.
+The command ~tlon-fix-dead-urls-in-repo~ (Autoloaded) automates finding and fixing dead links using =lychee= and the Wayback Machine.
 1. Identifies the current project's root directory using ~tlon-get-repo~.
 2. Ensures the =lychee= executable is found.
 3. Constructs the =lychee= command to scan all supported files in the project, outputting in JSON format and redirecting stderr to a temporary file.
