@@ -426,7 +426,6 @@ After successful deletion, execute CALLBACK (if non-nil)."
 (transient-define-prefix tlon-deepl-menu ()
   "DeepL menu."
   [["Translate"
-    ("t" "Translate text" tlon-deepl-translate)
     ("e" "Ediff translation" tlon-deepl-diff)]
    ["Glossaries"
     ("s" "Select" tlon-deepl-select-glossary)
