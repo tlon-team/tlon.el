@@ -33,18 +33,18 @@ This module provides tools for checking dead URLs within files and replacing URL
 :CUSTOM_ID: h:tlon-url-commands
 :END:
 
-*** Check URLs in File
+*** List dead URLs in File
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-check-urls-in-file-cmd
 :END:
-#+findex: tlon-check-urls-in-file
+#+findex: tlon-list-dead-urls-in-file
 The command ~tlon-check-urls-in-file~ (Autoloaded) checks all URLs found in a specified =FILE= (or the current buffer's file) for dead links using the external =lychee= tool. It delegates to the internal helper ~tlon-lychee--check-urls~, which runs `lychee` on the given file within an =eshell= buffer, displaying the results there.
 
-*** Check URLs in Repo
+*** List dead URLs in Repo
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-check-urls-in-repo-cmd
 :END:
-#+findex: tlon-check-urls-in-repo
+#+findex: tlon-list-dead-urls-in-repo
 The command ~tlon-check-urls-in-repo~ (Autoloaded) checks all URLs in the current repository for dead links using the external =lychee= tool.
 1. It determines the current repository root.
 2. It prompts the user whether to get the output in JSON format.
@@ -91,10 +91,11 @@ The command ~tlon-url-menu~ (Autoloaded) activates a =transient= menu interface 
 
 It provides the following options under the "" (main) group:
 + =a= :: Get archived URL (~tlon-get-archived~)
-+ =c= :: Check URLs in file (~tlon-check-urls-in-file~)
-+ =l= :: Lychee fix dead links (~tlon-lychee-fix-dead-links~)
-+ =p= :: Check URLs in repo (~tlon-check-urls-in-repo~)
-+ =r= :: Replace URL across projects (~tlon-replace-url-across-projects~)
++ =d= :: Fix dead URLs in file (~tlon-fix-dead-urls-in-file~)
++ =f= :: List dead URLs in file (~tlon-list-dead-urls-in-file~)
++ =l= :: Fix dead URLs in repo (~tlon-fix-dead-urls-in-repo~)
++ =r= :: List dead URLs in repo (~tlon-list-dead-urls-in-repo~)
++ =p= :: Replace URL across projects (~tlon-replace-url-across-projects~)
 
 ** Internal Functions and Variables
 :PROPERTIES:
@@ -115,11 +116,11 @@ This section lists non-interactive functions used internally or potentially usef
 #+findex: tlon-lychee--check-urls
 + ~tlon-lychee--check-urls~ :: Takes a =TARGET= (file path or ".") and an optional =JSON= flag. It ensures `lychee` is available, opens an =eshell= buffer, and executes `lychee` against the target with a standard set of accepted status codes.
 
-*** Lychee Fix Dead Links
+*** Fix Dead URLs in Repo
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-lychee-fix-dead-links-cmd
 :END:
-#+findex: tlon-lychee-fix-dead-links
+#+findex: tlon-fix-dead-urls-in-repo
 The command ~tlon-lychee-fix-dead-links~ (Autoloaded) automates finding and fixing dead links using =lychee= and the Wayback Machine.
 1. Identifies the current project's root directory using ~tlon-get-repo~.
 2. Ensures the =lychee= executable is found.
