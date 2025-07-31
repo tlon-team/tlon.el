@@ -118,7 +118,7 @@ Set to t to enable verbose logging from url.el.")
 (defun tlon-db-authenticate ()
   "Authenticate with the EA International API.
 Returns the authentication token or nil if authentication failed."
-  (interactive)
+  (interactive (list nil current-prefix-arg))
   (let* ((data (concat "grant_type=password"
 		       "&username=" (url-hexify-string tlon-db-api-username)
 		       "&password=" (url-hexify-string tlon-db-api-password)))
@@ -159,18 +159,22 @@ Returns the token or nil if authentication failed."
 ;;;;;; Get entries
 
 (declare-function bibtex-extras-escape-special-characters "bibtex-extras")
-(defun tlon-db-get-entries (&optional base-url)
-  "Retrieve entries from the EA International API and update local databases.
-Optional BASE-URL specifies the API endpoint base URL. If not provided,
-defaults to `tlon-db-api-base-url'.
-The command first checks that there are no unsaved changes to `db.bib' and
-that `db.bib' and `db-upstream.bib' are identical. If either of these
-conditions is not met, an error is logged and the process is aborted."
+(defun tlon-db-get-entries (&optional base-url no-confirm)
+  "Retrieve entries from the EA International API and update local
+databases.
+
+Optional BASE-URL specifies the API endpoint base URL.  If not
+provided, defaults to `tlon-db-api-base-url'.
+
+If NO-CONFIRM is non-nil, bypass the check that ensures `db.bib' and
+`db-upstream.bib' are identical.  Interactively, supply a prefix
+argument to enable this check bypass."
   (interactive)
   (when (and (get-file-buffer tlon-db-file-db)
              (buffer-modified-p (get-file-buffer tlon-db-file-db)))
     (user-error "Buffer for %s has unsaved changes. Save it first" (file-name-nondirectory tlon-db-file-db)))
-  (when (and (file-exists-p tlon-db-file-db)
+  (when (and (not no-confirm)
+             (file-exists-p tlon-db-file-db)
              (file-exists-p tlon-db-file-db-upstream)
              (not (tlon-db--files-have-same-content-p tlon-db-file-db tlon-db-file-db-upstream)))
     (ediff tlon-db-file-db tlon-db-file-db-upstream)
