@@ -452,11 +452,9 @@ and sets the value of the field for all entries to `Tlön'."
 
 ;;;###autoload
 (defun tlon-bib-remove-url-fields-with-doi (&optional save)
-  "Remove the `url` field from all entries in the current BibTeX buffer that have
-a `doi` field.  If SAVE is non-nil (interactively with a prefix argument), save
-the buffer after modification.  Display a message reporting how many entries
-were updated."
-
+  "Remove the `url' field from entries with a `doi' field in the current buffer.
+If SAVE is non-nil (interactively with a prefix argument), save the buffer after
+modification. Display a message reporting how many entries were updated."
   (interactive "P")
   (unless (derived-mode-p 'bibtex-mode)
     (user-error "Not in `bibtex-mode'"))
