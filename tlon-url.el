@@ -187,22 +187,31 @@ Return a list of URLs that should be skipped."
 ;;;;; Get URLs
 
 (defun tlon-get-urls-in-file (&optional file)
-  "Return a list of all the URLs present in FILE.
-If FILE is nil, use the file visited by the current buffer.
-Dispatches to a mode-specific function to extract URLs."
+  "Return a list of all URL strings found in FILE.
+If FILE is nil, use the file visited by the current buffer.  The extractor is
+chosen primarily by the file name extension, falling back to the `major-mode'
+of a visiting buffer if that yields better information:
+
+- Files ending in “.bib” (or buffers in `bibtex-mode') are parsed with
+  `tlon--get-urls-in-file-bibtex'.
+
+- Markdown files (extension “.md” or buffers in `markdown-mode') are parsed with
+  `tlon--get-urls-in-file-markdown'.
+
+- Any other file type defaults to the Markdown extractor, which does a generic
+  regexp scan for links."
   (let* ((file (or file (buffer-file-name)))
-         (visiting-buffer (find-buffer-visiting file))
-         (mode (if visiting-buffer
-                   (with-current-buffer visiting-buffer major-mode)
-                 (with-temp-buffer
-                   (set-visited-file-name file t)
-                   (set-auto-mode)
-                   major-mode))))
+         (ext  (when file (downcase (file-name-extension file))))
+         (visiting-buffer (and file (find-buffer-visiting file)))
+         (mode (and visiting-buffer
+                    (buffer-local-value 'major-mode visiting-buffer))))
     (cond
-     ((eq mode 'markdown-mode)
-      (tlon--get-urls-in-file-markdown file))
-     ((eq mode 'bibtex-mode)
+     ((or (eq mode 'bibtex-mode)
+          (string= ext "bib"))
       (tlon--get-urls-in-file-bibtex file))
+     ((or (eq mode 'markdown-mode)
+          (member ext '("md" "markdown")))
+      (tlon--get-urls-in-file-markdown file))
      (t
       (tlon--get-urls-in-file-markdown file)))))
 
