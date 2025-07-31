@@ -1468,7 +1468,6 @@ an error if no part files are found."
 ;;;###autoload
 (defun tlon-dub-join-files (list-file &optional output-file)
   "Join files whose paths are listed line-by-line in LIST-FILE into OUTPUT-FILE.
-
 If every listed file has a recognised media extension (e.g. mp4, webm, mp3,
 wav) the concatenation is performed with ffmpeg so the resulting container has
 correct metadata.  Otherwise the files are treated as plain text and their

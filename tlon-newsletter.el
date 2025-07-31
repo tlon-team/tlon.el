@@ -80,7 +80,8 @@ news. The original input file is then overwritten with this new draft."
                         (insert-file-contents tlon-newsletter-sample-issue)
                         (buffer-string))
                     (progn
-                      (message "Warning: Sample issue file not found: %s. Proceeding without example." tlon-newsletter-sample-issue)
+                      (message "Warning: Sample issue file not found: %s. Proceeding without example."
+			       tlon-newsletter-sample-issue)
                       "")))
                  (final-prompt (format raw-prompt sample-issue-content content)))
             (if (string-blank-p raw-prompt) ; Check original prompt file for blankness
