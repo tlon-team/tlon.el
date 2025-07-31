@@ -326,10 +326,10 @@ Also, copy the URL to the kill ring."
 ;;;###autoload
 (defun tlon-fix-dead-urls-in-file (&optional file)
   "Run lychee to find and fix dead links in a single FILE.
-
 If FILE is nil, prompt for a file.  The interactive fixing workflow is the
 same as `tlon-fix-dead-urls-in-repo', but restricted to the chosen file."
   (interactive)
+  (tlon-lychee-ensure)
   (let* ((file (or file
                    (read-file-name
                     "File: " nil nil t
@@ -347,7 +347,6 @@ same as `tlon-fix-dead-urls-in-repo', but restricted to the chosen file."
 	   tlon-lychee-accept-flag
            (shell-quote-argument file)
            (shell-quote-argument stderr-file))))
-    (tlon-lychee-ensure)
     (message "Starting Lychee process with command: %s" cmd-string)
     (tlon-lychee--run-and-process cmd-string stdout-buffer stderr-file repo-dir)))
 
