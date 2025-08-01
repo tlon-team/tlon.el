@@ -645,6 +645,7 @@ the actual user.")
     "italian"
     "japanese"
     "korean"
+    "russian"
     "spanish"
     "turkish")
   "A list of languages all languages in the Babel project.")
