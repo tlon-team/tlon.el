@@ -377,15 +377,22 @@ RECIPIENT can be `human', `deepl-editor', `deepl-api', and `sieve'.
 		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api sieve) nil t))))
   (let* ((source-path tlon-file-glossary-source)
 	 (target-path (tlon-glossary-target-path language recipient))
-	 (json (tlon-read-json source-path nil 'list 'symbol)))
-    (with-current-buffer (find-file-noselect target-path)
-      (erase-buffer)
-      (tlon-insert-formatted-glossary json language recipient)
-      (save-buffer))
-    (pcase recipient
-      ('human (when (y-or-n-p "Share glossary with translators? ")
-		(tlon-share-glossary target-path language)))
-      ((or 'deepl-editor 'deepl-api 'sieve) (message "Glossary extracted to `%s'" target-path)))))
+	 (json (tlon-read-json source-path nil 'list 'symbol))
+         ;; Render the glossary in a temporary buffer and capture its contents
+         (formatted-content (with-temp-buffer
+                              (tlon-insert-formatted-glossary json language recipient)
+                              (buffer-string)))
+         (trimmed (string-trim formatted-content)))
+    ;; If no terms exist for LANGUAGE, do nothing and return nil.
+    (unless (or (string= trimmed "")
+                (string= trimmed "[]"))
+      (with-temp-file target-path
+        (insert formatted-content))
+      (pcase recipient
+        ('human (when (y-or-n-p "Share glossary with translators? ")
+		  (tlon-share-glossary target-path language)))
+        ((or 'deepl-editor 'deepl-api 'sieve) (message "Glossary extracted to `%s'" target-path)))
+      target-path)))
 
 ;;;###autoload
 (defun tlon-glossary-target-path (language recipient)
