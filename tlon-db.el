@@ -118,7 +118,7 @@ Set to t to enable verbose logging from url.el.")
 (defun tlon-db-authenticate ()
   "Authenticate with the EA International API.
 Returns the authentication token or nil if authentication failed."
-  (interactive (list nil current-prefix-arg))
+  (interactive)
   (let* ((data (concat "grant_type=password"
 		       "&username=" (url-hexify-string tlon-db-api-username)
 		       "&password=" (url-hexify-string tlon-db-api-password)))
