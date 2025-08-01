@@ -403,18 +403,18 @@ Strips the repo tag, the orgit-link and the “#NNN ” prefix produced by
     (list :title title :tags tags :todo todo)))
 
 (defun tlon-forg--normalize-tags (raw-tags)
-  "Normalize RAW-TAGS for comparison.
-This involves converting them to lowercase, trimming whitespace,
-removing any resulting empty strings, and then sorting them.
-Returns a list of normalized tag strings, or nil if RAW-TAGS is nil
-or results in an empty list after normalization."
-  (let* ((tags-to-process (copy-sequence (or raw-tags '())))
-	 (processed-tags (mapcar (lambda (tag) (string-trim (downcase tag)))
-				 tags-to-process))
-	 (non-empty-tags (cl-remove-if #'string-empty-p processed-tags)))
-    (if non-empty-tags ; True if list is not nil and not empty '()
-	(sort non-empty-tags #'string<)
-      nil))) ; Return nil if non-empty-tags is nil or '()
+  "Return RAW-TAGS in canonical form or nil.
+
+The canonical form is a list of unique, lowercase, trimmed tag
+strings sorted alphabetically.  Empty or nil input yields nil."
+  (when raw-tags
+    (let* ((cleaned    (mapcar (lambda (tag)
+                                 (string-trim (downcase (or tag ""))))
+                               raw-tags))
+           (non-empty  (cl-remove-if #'string-empty-p cleaned))
+           (unique     (delete-dups non-empty)))
+      (when unique
+        (sort unique #'string<)))))
 
 (defun tlon-forg--valid-tags (tags)
   "Return the down-cased TAGS that are listed in `tlon-todo-tags'."
