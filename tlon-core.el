@@ -78,7 +78,7 @@
 	   :abbrev "es"
 	   :type meta
 	   :language "es"
-	   :key "l s"
+	   :key "l e s"
 	   :help t)
     (:name "fr"
 	   :project "babel"
@@ -86,7 +86,7 @@
 	   :abbrev "fr"
 	   :type meta
 	   :language "fr"
-	   :key "l f"
+	   :key "l f r"
 	   :help t)
     (:name "it"
 	   :project "babel"
@@ -94,7 +94,7 @@
 	   :abbrev "it"
 	   :type meta
 	   :language "it"
-	   :key "l t"
+	   :key "l i t"
 	   :help t)
     (:name "de"
 	   :project "babel"
