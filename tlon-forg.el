@@ -864,7 +864,8 @@ non-job issues if it's valid, otherwise nil."
 					      issue-number))))
 	      (when issue-id
 		(let ((issue (forge-get-topic issue-id)))
-		  (unless (tlon-get-todo-position-from-issue issue) ; If TODO doesn't exist yet
+		  (when (and (tlon-forg--issue-exists-p issue)
+		             (not (tlon-get-todo-position-from-issue issue))) ; Capture only if issue exists remotely
 		    (tlon-capture-issue issue invoked-from-org-file)
 		    (setq captured-anything-p t))))))) ; Mark that we captured something
       ;; Fallback to all issues in repo (original behavior)
