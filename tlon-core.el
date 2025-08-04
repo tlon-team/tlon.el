@@ -104,6 +104,14 @@
 	   :language "de"
 	   :key "l d"
 	   :help t)
+    (:name "ru"
+	   :project "babel"
+	   :subproject "babel"
+	   :abbrev "ru"
+	   :type meta
+	   :language "ru"
+	   :key "l r u"
+	   :help t)
     (:name "uqbar"
 	   :project "babel"
 	   :subproject "uqbar"
@@ -195,6 +203,15 @@
 	   :language "ja"
 	   :key "q j"
 	   :url ""
+	   :help t)
+    (:name "uqbar-ru"
+	   :project "babel"
+	   :subproject "uqbar"
+	   :abbrev "uqbar-ru"
+	   :type content
+	   :subtype translations
+	   :language "ru"
+	   :key "q u"
 	   :help t)
     (:name "uqbar-tr"
 	   :project "babel"
@@ -611,6 +628,7 @@ the actual user.")
      ("it" . "articoli")
      ("ja" . "記事")
      ("ko" . "기사")
+     ("ru" . "статьи")
      ("tr" . "makaleler"))
     (("ar" . "الأوسمة")
      ("en" . "tags")
@@ -619,6 +637,7 @@ the actual user.")
      ("it" . "soggetti")
      ("ja" . "タグ")
      ("ko" . "태그")
+     ("ru" . "теги")
      ("tr" . "etiketler"))
     (("ar" . "المؤلفون")
      ("en". "authors")
@@ -627,6 +646,7 @@ the actual user.")
      ("it" . "autori")
      ("ja" . "著者")
      ("ko" . "저자")
+     ("ru" . "авторы")
      ("tr" . "yazarlar"))
     (("ar" . "مجموعات")
      ("en" . "collections")
@@ -635,6 +655,7 @@ the actual user.")
      ("it" . "collezioni")
      ("ja" . "コレクション")
      ("ko" . "컬렉션")
+     ("ru" . "коллекции")
      ("tr" . "koleksiyonlar")))
   "Alist of bare directories and associated translations.")
 
