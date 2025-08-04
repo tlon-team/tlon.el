@@ -65,6 +65,36 @@ forge yet just return nil."
 	(forge-get-repository :tracked)
       (error nil))))
 
+(defun tlon-forg--remote-open-issue-set (repo)
+  "Return a hash table keyed by the numbers of *open* issues in REPO.
+The information is fetched live from the GitHub REST API, thereby avoiding
+Forge’s local cache which might list issues that have been deleted or closed.
+
+Pull requests are filtered out.  The resulting hash table can be queried
+efficiently with `gethash'."
+  (require 'ghub nil t)
+  (let* ((owner    (oref repo owner))
+         (name     (oref repo name))
+         (per-page 100)
+         (numbers  '()))
+    (cl-loop for page from 1
+             do
+             (let* ((resp (ghub-get (format "/repos/%s/%s/issues" owner name)
+                                    `((state . "open")
+                                      (per_page . ,per-page)
+                                      (page . ,page))
+                                    :auth 'forge))
+                    (count (length resp)))
+               ;; Collect pure issues (skip entries that include the `pull_request' key).
+               (dolist (it resp)
+                 (unless (assoc 'pull_request it)
+                   (push (alist-get 'number it) numbers)))
+               (when (< count per-page)
+                 (cl-return))))
+    (let ((ht (make-hash-table :test #'eql)))
+      (dolist (n numbers) (puthash n t ht))
+      ht)))
+
 (defun tlon-forg--get-repository-from-dir (dir)
   "Return the tracked forge repository for DIR.
 This uses a temporary buffer whose `default-directory' is DIR so that
@@ -836,6 +866,7 @@ non-job issues if it's valid, otherwise nil."
 	 (_repo-name (oref repo name)) ; unused variable, kept for context
 	 (_owner (oref repo owner)) ; unused variable, kept for context
 	 (repo-fullname (format "%s/%s" (oref repo owner) (oref repo name)))
+	 (remote-open-set (tlon-forg--remote-open-issue-set repo))
 	 (captured-anything-p nil) ; Flag to track if any issue was captured
 	 ;; Determine the target file for non-job issues from THIS repo
 	 (repo-name-for-file (oref repo name))
@@ -864,14 +895,14 @@ non-job issues if it's valid, otherwise nil."
 					      issue-number))))
 	      (when issue-id
 		(let ((issue (forge-get-topic issue-id)))
-		  (when (and (tlon-forg--issue-exists-p issue)
-		             (not (tlon-get-todo-position-from-issue issue))) ; Capture only if issue exists remotely
+		  (when (and (gethash (oref issue number) remote-open-set)
+		             (not (tlon-get-todo-position-from-issue issue))) ; Capture only if issue is open remotely
 		    (tlon-capture-issue issue invoked-from-org-file)
 		    (setq captured-anything-p t))))))) ; Mark that we captured something
       ;; Fallback to all issues in repo (original behavior)
       (dolist (issue (tlon-get-issues repo))
-	(when (and (tlon-forg--issue-exists-p issue)
-	           (not (tlon-get-todo-position-from-issue issue))) ; Skip deleted issues
+	(when (and (gethash (oref issue number) remote-open-set)
+	           (not (tlon-get-todo-position-from-issue issue))) ; Capture only if issue is open remotely
 	  (tlon-capture-issue issue invoked-from-org-file)
 	  (setq captured-anything-p t)))) ; Mark that we captured something
 
