@@ -869,7 +869,8 @@ non-job issues if it's valid, otherwise nil."
 		    (setq captured-anything-p t))))))) ; Mark that we captured something
       ;; Fallback to all issues in repo (original behavior)
       (dolist (issue (tlon-get-issues repo))
-	(unless (tlon-get-todo-position-from-issue issue) ; If TODO doesn't exist yet
+	(when (and (tlon-forg--issue-exists-p issue)
+	           (not (tlon-get-todo-position-from-issue issue))) ; Skip deleted issues
 	  (tlon-capture-issue issue invoked-from-org-file)
 	  (setq captured-anything-p t)))) ; Mark that we captured something
 
@@ -1735,6 +1736,24 @@ If REPO is nil, use the current repository."
     (mapcar (lambda (issue-id)
 	      (closql-get (forge-database) issue-id 'forge-issue))
 	    (mapcar #'car issues))))
+
+(defun tlon-forg--issue-exists-p (issue)
+  "Return non-nil if ISSUE still exists on the remote GitHub server.
+It queries the GitHub REST API for the issue and returns t on success,
+or nil if the issue was deleted or any network error occurred."
+  (require 'ghub nil t)
+  (let* ((repo  (forge-get-repository issue))
+         (owner (oref repo owner))
+         (name  (oref repo name))
+         (num   (oref issue number)))
+    (condition-case nil
+        (progn
+          ;; REST endpoint returns 200 when the issue exists
+          (ghub-get (format "/repos/%s/%s/issues/%s" owner name num)
+                    nil :auth 'forge)
+          t)
+      (ghub-http-error nil)
+      (error nil))))
 
 (defun tlon-get-latest-issue (&optional repo)
   "Return a list of the most recent open issue in REPO, or nil otherwise.
