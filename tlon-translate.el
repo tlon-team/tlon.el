@@ -84,7 +84,7 @@ available options. If nil, use the default `gptel-model'."
   "Prefix for translation revision prompts.")
 
 (defconst tlon-translate-prompt-revise-suffix
-  "Do a sentence by sentence revision. URLs and bibtex keys should appear exactly as they do in the original file. Once you are done comparing the two files and identifying the changes that should be made to the translation, write your changes to `500-millions-mais-pas-un-seul-de-plus.md' using the 'edit_file` tool."
+  "Do a sentence by sentence revision. URLs and bibtex keys should appear exactly as they do in the original file. Once you are done comparing the two files and identifying the changes that should be made to the translation, write your changes to `%1$s' using the 'edit_file` tool."
   "Suffix for translation revision prompts.")
 
 (defconst tlon-translate-revise-errors-prompt
@@ -95,9 +95,13 @@ available options. If nil, use the default `gptel-model'."
 
 (defconst tlon-translate-revise-flow-prompt
   (concat tlon-translate-prompt-revise-prefix
-	  "Your task is to to read both carefully and try improve the translation for a better flow. You should always respect the terminology included in the glossary `%4$s'. "
+	  "Your task is to to read both carefully and try improve the translation for a better flow. "
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for improving translation flow.")
+
+(defconst tlon-translate-glossary-prompt
+  " You should always respect the terminology included in the glossary `%s'."
+  "Prompt for glossary usage in translations.")
 
 (defvar tlon-translate-source-language nil
   "Source language of the current API request.")
@@ -465,17 +469,17 @@ TYPE can be `errors' or `flow'."
                     ('errors tlon-translate-revise-errors-model)
                     ('flow tlon-translate-revise-flow-model)))
            (tools '("edit_file" "apply_diff" "replace_file_contents"))
-           (glossary-file (when (eq type 'flow)
-                            (tlon-extract-glossary lang-code 'deepl-editor)
-                            (tlon-glossary-target-path lang-code 'deepl-editor)))
 	   (prompt-elts (delq nil
 			      (list prompt-template
 				    (file-name-nondirectory translation-file)
 				    language
-				    (file-name-nondirectory original-file)
-				    (when glossary-file
-				      glossary-file))))
-           (prompt (apply 'format prompt-elts)))
+				    (file-name-nondirectory original-file))))
+	   (glossary-file (when (and (eq type 'flow)
+				     (tlon-extract-glossary lang-code 'deepl-editor))
+                            (tlon-glossary-target-path lang-code 'deepl-editor)))
+	   (glossary-prompt (when glossary-file
+			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
+           (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
       (gptel-context-add-file original-file)
       (gptel-context-add-file translation-file)
       (when glossary-file
