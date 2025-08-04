@@ -1040,7 +1040,8 @@ If there are no differences, return nil."
 (transient-define-prefix tlon-db-menu ()
   "`tlon-db' menu."
   ["Db Actions"
-   ("g" "Get entries" tlon-db-get-entries)
+   ("g" "Get entries (prompt)" tlon-db-get-entries)
+   ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)
    ("p" "Post entry" tlon-db-post-entry)
    ("d" "Delete entry" tlon-db-delete-entry)
    ("c" "Check name" tlon-db-check-name)
