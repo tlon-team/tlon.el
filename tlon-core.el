@@ -484,6 +484,7 @@ amounts between 1000 and 9999.")
     (:language "it" :thousands "." :decimal ",")
     (:language "ja" :thousands "," :decimal ".")
     (:language "ko" :thousands "," :decimal ".")
+    (:language "ru" :thousands " " :decimal ",")
     (:language "tr" :thousands "." :decimal ","))
   "Language-specific thousands and decimal separators.")
 
@@ -533,6 +534,7 @@ and the third group captures the collection ID.")
     (:language "it" :pattern "di %s.")
     (:language "ja" :pattern "%sによって".)
     (:language "ko" :pattern "%s에 의해.")
+    (:language "ru" :pattern "от %s.")
     (:language "tr" :pattern "tarafından %s."))
   "Pattern to use when listing the author(s) of a work.
 For example, in English, the pattern is `by %s', where `%s' is replaced by the
@@ -558,25 +560,29 @@ author name(s).")
 ;;;;; Image file names
 
 (defconst tlon-figure-names
-  '((:language "en" :name "figure")
+  '((:language "ar" :name "شكل")
+    (:language "de" :name "abbildung")
+    (:language "en" :name "figure")
     (:language "es" :name "figura")
     (:language "fr" :name "figure")
     (:language "it" :name "figura")
-    (:language "de" :name "abbildung")
-    (:language "ar" :name "شكل")
+    (:language "ja" :name "図")
     (:language "ko" :name "그림")
-    (:language "ja" :name "図"))
+    (:language "ru" :name "рисунок")
+    (:language "tr" :name "şekil")))
   "List of language-specific names for figures.")
 
 (defconst tlon-image-dirs
-  '((:language "en" :name "images")
+  '((:language "ar" :name "صور")
+    (:language "de" :name "bilder")
+    (:language "en" :name "images")
     (:language "es" :name "imagenes")
     (:language "fr" :name "images")
     (:language "it" :name "immagini")
-    (:language "de" :name "bilder")
-    (:language "ar" :name "صور")
+    (:language "ja" :name "画像")
     (:language "ko" :name "이미지")
-    (:language "ja" :name "画像"))
+    (:language "ru" :name "изображения")
+    (:language "tr" :name "resimler")))
   "List of language-specific names for image directories.")
 
 ;;;;; Abstracts
