@@ -394,9 +394,7 @@ relative to the repository root. For example, if FILE is
   (let* ((file (or file (read-file-name "Download images from Markdown file: " nil nil t
 					(file-relative-name (buffer-file-name) default-directory))))
 	 (repo-root (tlon-get-repo))
-         (relative-path (file-relative-name file repo-root))
-         (target-dir (expand-file-name (file-name-sans-extension relative-path)
-                                       (expand-file-name "images" repo-root)))
+         (target-dir (tlon-images-get-dir file))
          (image-urls (tlon-images--get-image-urls-from-markdown file))
          (counter 1))
     (when (and (file-directory-p target-dir)
