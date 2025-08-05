@@ -601,15 +601,10 @@ author name(s).")
 (defconst tlon-yaml-delimiter "---\n"
   "Delimiter for YAML metadata.")
 
-;;;;; To sort
+;;;;; Users
 
 (defvar tlon-users
-  '((:name "Pablo Stafforini"
-	   :git "Pablo Stafforini"
-	   :github "benthamite"
-	   :substitute "worldsaround"
-	   :nickname "Pablo")
-    (:name "Federico Stafforini"
+  '((:name "Federico Stafforini"
 	   :git "Federico Stafforini"
 	   :github "fstafforini"
 	   :nickname "Fede")
@@ -617,14 +612,23 @@ author name(s).")
 	   :git "cartago"
 	   :github "worldsaround"
 	   :substitute "benthamite"
-	   :nickname "Leo"))
+	   :nickname "Leo")
+    (:name "Pablo Stafforini"
+	   :git "Pablo Stafforini"
+	   :github "benthamite"
+	   :substitute "worldsaround"
+	   :nickname "Pablo"))
   "Property list of users and associated properties.
 The special property `:substitute' is used to determine which user should
 perform a given phase of the translation process when the designated user is not
 the actual user.")
 
+;;;;; Translation
+
 (defvar tlon-translation-language "es"
   "The current translation language.")
+
+;;;;; Bare directory translations
 
 (defconst tlon-core-bare-dirs
   '((("ar" . "مجلات")
@@ -646,7 +650,7 @@ the actual user.")
      ("ru" . "теги")
      ("tr" . "etiketler"))
     (("ar" . "المؤلفون")
-     ("en". "authors")
+     ("en" . "authors")
      ("es" . "autores")
      ("fr" . "auteurs")
      ("it" . "autori")
@@ -664,6 +668,8 @@ the actual user.")
      ("ru" . "коллекции")
      ("tr" . "koleksiyonlar")))
   "Alist of bare directories and associated translations.")
+
+;;;;; Languages
 
 (defconst tlon-project-languages
   '("arabic"
