@@ -85,17 +85,6 @@ output image.")
 The first placeholder is the input image, the second placeholder is the
 background color, and the third placeholder is the output image.")
 
-(defconst tlon-image-dirs
-  '((:language "en" :name "images")
-    (:language "es" :name "imagenes")
-    (:language "fr" :name "images")
-    (:language "it" :name "immagini")
-    (:language "de" :name "bilder")
-    (:language "ar" :name "صور")
-    (:language "ko" :name "이미지")
-    (:language "ja" :name "画像"))
-  "List of language-specific names for image directories.")
-
 (defconst tlon-images-describe-image-prompt
   `((:prompt "Please provide a concise description of the attached image. The description should consist of one or two sentences and must never exceed 50 words. If you need to use quotes, please use single quotes."
 	     :language "en")
