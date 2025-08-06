@@ -62,7 +62,7 @@ request fails.
 + ~tlon-db-set-name~ :: Inserts a name into the database via the =/api/names/= endpoint.
   Optionally renames an existing name when a NEW-NAME is provided, or overrides
   similarity conflicts when FORCE is non-nil. Prompts interactively for these
-  values. Requires authentication. Displays the result buffer when an error
+  values. Author names are normalized by replacing non-breaking spaces with regular spaces. Requires authentication. Displays the result buffer when an error
   occurs or when ~tlon-debug~ is non-nil.
 
 ** Internal Functions and Variables
