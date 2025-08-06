@@ -284,9 +284,9 @@ ATTEMPT is used to track retries in case of missing author names."
 
 ;; Helper to split a possibly multi-author string into individual names.
 (defun tlon-db--split-author-string (author-string)
-  "Split AUTHOR-STRING on the BibTeX separator \" and \" and trim spaces.
+  "Split AUTHOR-STRING on the BibTeX separator \" and \" and normalize spaces.
 Return a list of individual author names."
-  (mapcar #'string-trim
+  (mapcar #'tlon-db--normalize-name
           (split-string
            (replace-regexp-in-string "[[:space:]\n]+" " " author-string)
            "\\s-+and\\s-+" t)))
@@ -566,6 +566,10 @@ Returns a plist with :status, :data, and :raw-text."
           (force (y-or-n-p "Force insert even if similar names exist? ")))
      (list name new-name force)))
   (tlon-db-ensure-auth)
+  ;; Normalize names to avoid Unicode space issues.
+  (setq name (tlon-db--normalize-name name))
+  (when new-name
+    (setq new-name (tlon-db--normalize-name new-name)))
   (let* ((payload `(("name" . ,name)))
          (payload (if new-name (append payload `(("new_name" . ,new-name))) payload))
          (payload (if force (append payload '(("force" . t))) payload))
@@ -694,7 +698,8 @@ can be found."
               (when (and (hash-table-p item)
                          (gethash "missing_names" item))
                 (setq names (append names (gethash "missing_names" item))))))))
-      (unless (null names) names))))
+      (unless (null names)
+        (mapcar #'tlon-db--normalize-name names)))))
 
 ;;;###autoload
 (defun tlon-db--make-request (method endpoint data headers &optional auth-required base-url)
@@ -1051,6 +1056,12 @@ If there are no differences, return nil."
    ("a" "Authenticate" tlon-db-authenticate)])
 
 (tlon-db-initialize)
+
+;; Helper: normalize name strings
+(defun tlon-db--normalize-name (name)
+  "Normalize NAME by converting non-breaking spaces to regular spaces and collapsing whitespace."
+  (string-trim
+   (replace-regexp-in-string "[[:space:]\u00A0\u202F]+" " " name)))
 
 (provide 'tlon-db)
 ;;; tlon-db.el ends here
