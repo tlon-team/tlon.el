@@ -1100,5 +1100,34 @@ If there are no differences, return nil."
   (string-trim
    (replace-regexp-in-string "[[:space:]\u00A0\u202F]+" " " name)))
 
+(defun tlon-db--collapse-whitespace (s)
+  "Normalise whitespace in S while *preserving* non‑breaking spaces.
+
+Steps:
+1. Convert TAB, CR and LF to an ordinary space.
+2. Collapse any run of SPACE (U+0020), NBSP (U+00A0) or NNBSP (U+202F)
+   to a single occurrence of *the character that opened the run*.
+   This keeps the original code‑point if the user deliberately typed a
+   thin space, which the EA International Names API requires in order to
+   match certain translated author names."
+  (let ((tmp (replace-regexp-in-string "[\t\n\r]+" " " s)))
+    (replace-regexp-in-string
+     "\\([ \u00A0\u202F]\\)\\(?:[ \u00A0\u202F]+\\)" "\\1" tmp)))
+
+(defun tlon-db--normalize-author-field (entry)
+  "Collapse extraneous whitespace *without* touching NBSP/NNBSP.
+This fixes the mismatch that occurred when an author name contained a
+thin space (e.g., “80 000 Horas”)."
+  (let ((case-fold-search t))
+    (if (string-match
+	 "\\(author[[:space:]]*=[[:space:]]*{\\)\\([^}]*\\)\\(}\\)" entry)
+	(let* ((prefix  (match-string 1 entry))
+               (authors (match-string 2 entry))
+               (suffix  (match-string 3 entry))
+               (clean   (string-trim
+			 (tlon-db--collapse-whitespace authors))))
+          (replace-match (concat prefix clean suffix) t t entry 0))
+      entry)))
+
 (provide 'tlon-db)
 ;;; tlon-db.el ends here
