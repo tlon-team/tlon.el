@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'bibtex)
+(require 'diff-mode)
 (require 'ebib)
 (require 'tlon-core)
 (require 'transient)
@@ -926,36 +927,72 @@ Return a plist with the keys :added, :deleted and :modified."
       (insert (format "  - %s: %s\n" action key)))))
 
 (defun tlon-db--log-sync-action-modified (key before after)
-  "Log modification of KEY with diff between BEFORE and AFTER."
+  "Append a colored, word‑refined diff for the entry KEY.
+
+The unified diff is produced with the external program \"diff\".
+Lines are coloured with the standard `diff-*` faces; if
+`diff-refine-hunk` is available the added/removed sub‑words are
+highlighted with `diff-refine-added` / `diff-refine-removed`."
   (with-current-buffer (get-buffer-create tlon-db--sync-log-buffer-name)
     (let* ((inhibit-read-only t)
+           (diff-exe (or (executable-find "diff")
+                         (user-error "Cannot find the external program “diff”")))
            (before-file (make-temp-file "db-sync-before-"))
-           (after-file (make-temp-file "db-sync-after-"))
-           (diff-output ""))
+           (after-file  (make-temp-file "db-sync-after-"))
+           diff-hunk)
       (unwind-protect
           (progn
-            (with-temp-buffer
-              (insert (or before ""))
-              (write-file before-file nil))
-            (with-temp-buffer
-              (insert (or after ""))
-              (write-file after-file nil))
-            (with-temp-buffer
-              (call-process "diff" nil t nil "-U1000" before-file after-file)
-              (setq diff-output (buffer-string))))
+            (with-temp-file before-file (insert (or before "")))
+            (with-temp-file after-file  (insert (or after "")))
+            ;; Get a *single* unified diff and strip the header
+            (setq diff-hunk
+                  (with-temp-buffer
+                    (call-process diff-exe nil t nil "-U1000" before-file after-file)
+                    (goto-char (point-min))
+                    (when (re-search-forward "^@@" nil t)
+                      (buffer-substring-no-properties (match-beginning 0) (point-max))))))
         (delete-file before-file)
         (delete-file after-file))
+
       (goto-char (point-max))
       (insert (format "  - Modified: %s\n" key))
-      (when (string-match-p "@@" diff-output)
-        (insert "    Diff:\n")
-        (with-temp-buffer
-          (insert diff-output)
-          (goto-char (point-min))
-          (when (search-forward-regexp "^@@" nil t)
-            (goto-char (line-beginning-position))
-            (dolist (line (split-string (buffer-substring-no-properties (point) (point-max)) "\n" t))
-              (insert (format "      %s\n" line)))))))))
+      (insert "    Diff:\n")
+
+      ;; ---- Produce coloured / word‑refined hunk in a temp buffer ----
+      (let ((refined
+             (with-temp-buffer
+               (insert diff-hunk)
+               (diff-mode)
+               (font-lock-ensure)          ; commit line‑wise `diff-*` faces
+               ;; Optional: refine word‑wise if available
+               (when (fboundp 'diff-refine-hunk)
+                 (goto-char (point-min))
+                 (while (re-search-forward "^@@" nil t)
+                   (diff-refine-hunk)))
+               ;; Convert any overlay face produced by `diff-refine-hunk`
+               ;; into ordinary text properties, then return the string.
+               (mapc (lambda (ov)
+                       (when-let ((face (overlay-get ov 'face)))
+                         (add-face-text-property (overlay-start ov) (overlay-end ov)
+                                                 face 'append))
+                       (delete-overlay ov))
+                     (overlays-in (point-min) (point-max)))
+               (buffer-string))))
+        ;; ---- Insert the coloured hunk into the *Db Sync Log* buffer ----
+        (dolist (line (split-string refined "\n" t))
+          (insert "      ")                ; 6‑space indent, like before
+          (let ((start (point)))
+            (insert line)
+            ;; Ensure basic +/-/@@ faces are present even when `diff-mode`
+            ;; is not active in this buffer.
+            (add-face-text-property
+             start (point)
+             (cond ((string-prefix-p "+" line) 'diff-added)
+                   ((string-prefix-p "-" line) 'diff-removed)
+                   ((string-prefix-p "@@" line) 'diff-hunk-header)
+                   (t nil))
+             'append))
+          (insert "\n"))))))
 
 (defun tlon-db--sync-on-change (event)
   "Callback for `filenotify' to sync `db.bib' modifications.
