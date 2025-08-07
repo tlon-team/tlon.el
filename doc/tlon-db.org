@@ -58,7 +58,7 @@ This section details the interactive commands provided by =tlon-db.el=.
 + ~tlon-db-get-entry~ :: Retrieves the bibliographic details of the entry with the specified =ENTRY-ID= from the API and displays them in the ~*Db API Result*~ buffer. It sends a =GET= request to the =/api/entries/{entry_id}= endpoint with =Accept: text/plain=. On success, the response body is shown; on error or when ~tlon-debug~ is non-nil, the raw response is displayed instead.
 
 #+findex: tlon-db-check-name
-+ ~tlon-db-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the results in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
++ ~tlon-db-check-name~ :: Retrieves information about =NAME= using the =/api/names/{name}= endpoint. It returns the matching name (or similar names) together with their translations. The command sends a =GET= request and shows the response in the ~*Db API Result*~ buffer when ~tlon-debug~ is non-nil or when the HTTP status is not 200; otherwise, it shows a concise success message. Requires authentication.
 
 #+findex: tlon-db-check-or-insert-name
 + ~tlon-db-check-or-insert-name~ :: Checks if a given =NAME= exists. If it doesn't exist and there are no similar conflicting names found by the API, it inserts the name. Otherwise, it reports the status. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays details in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown. Requires authentication.
