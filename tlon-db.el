@@ -757,6 +757,14 @@ Optional BASE-URL overrides `tlon-db-api-base-url'."
 	 (url-request-extra-headers (copy-alist headers))
 	 (base (or base-url (tlon-db--current-base-url)))
 	 (url (concat base endpoint))
+         (cert-file (expand-file-name "RootCA.pem" "~/Library/Application Support/mkcert/"))
+         (gnutls-trustfiles
+          (if tlon-db-use-local-environment
+              (let ((list (copy-sequence (or gnutls-trustfiles '()))))
+                (unless (member cert-file list)
+                  (setq list (cons cert-file list)))
+                list)
+            gnutls-trustfiles))
 	 (lisp-error-occurred nil)
 	 (lisp-error-message nil)
 	 response-buffer url-request-status url-request-error-message url-http-response-buffer url-debug)
