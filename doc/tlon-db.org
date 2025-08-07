@@ -54,6 +54,9 @@ This section details the interactive commands provided by =tlon-db.el=.
 #+findex: tlon-db-delete-entry
 + ~tlon-db-delete-entry~ :: Deletes the BibTeX entry with =KEY= from the EA International API. It uses the entry's key to identify which entry to delete. Requires authentication. If the =LOCALLY= argument is non-nil (the default), the entry is also removed from the local database file. Interactively, a prefix argument skips the confirmation prompt. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the server's response in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
 
+#+findex: tlon-db-get-entry
++ ~tlon-db-get-entry~ :: Retrieves the bibliographic details of the entry with the specified =ENTRY-ID= from the API and displays them in the ~*Db API Result*~ buffer. It sends a =GET= request to the =/api/entries/{entry_id}= endpoint with =Accept: text/plain=. On success, the response body is shown; on error or when ~tlon-debug~ is non-nil, the raw response is displayed instead.
+
 #+findex: tlon-db-check-name
 + ~tlon-db-check-name~ :: Checks if a given =NAME= exists in the API's database. Requires authentication. If the operation is not successful (HTTP status is not 200) or if ~tlon-debug~ is non-nil, displays the results in a temporary buffer named ~*Db API Result*~. Otherwise, a success message is shown.
 
