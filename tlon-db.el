@@ -475,6 +475,34 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
       (insert "Response from server:\n")
       (insert (or raw-response-text "No content or error message returned."))))))
 
+;;;;;; Get entry
+
+(cl-defun tlon-db-get-entry (&optional entry-id)
+  "Retrieve ENTRY-ID from the EA International API and display it.
+
+If called interactively, prompt for ENTRY-ID."
+  (interactive)
+  (let* ((entry-id (or entry-id
+                       (read-string "Entry ID: ")))
+         (endpoint (format "/api/entries/%s" (url-hexify-string entry-id)))
+         (headers '(("accept" . "text/plain")))
+         (result (tlon-db--handle-entry-request
+                  "GET" endpoint nil headers nil)))
+    (tlon-db--display-result-buffer
+     (format "Get entry result (Status: %s)"
+             (or (plist-get result :status) "N/A"))
+     #'tlon-db--format-get-entry-result
+     result)))
+
+(defun tlon-db--format-get-entry-result (result)
+  "Format RESULT from `tlon-db-get-entry` for display."
+  (let ((status (plist-get result :status))
+        (raw    (plist-get result :raw-text)))
+    (insert (format "HTTP status: %s\n\n" (or status "N/A")))
+    (if raw
+        (insert (tlon-db--get-response-body raw))
+      (insert "No content returned."))))
+
 ;;;;;; Check name
 
 (defun tlon-db-check-name (name)
@@ -1140,6 +1168,7 @@ If there are no differences, return nil."
   ["Db Actions"
    ("g" "Get entries (prompt)" tlon-db-get-entries)
    ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)
+   ("e" "Get entry" tlon-db-get-entry)
    ("p" "Post entry" tlon-db-post-entry)
    ("d" "Delete entry" tlon-db-delete-entry)
    ("c" "Check name" tlon-db-check-name)
