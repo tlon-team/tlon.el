@@ -17,6 +17,7 @@
 ;;                   (gptel "0.1")
 ;;                   (gptel-extras "0.1")
 ;;                   (markdown-mode-extras "0.1")
+;;                   (oauth2-auto "0.1")
 ;;                   (paths "0.1")
 ;;                   (pass-extras "0.1")
 ;;                   (read-aloud "0.0.2")
