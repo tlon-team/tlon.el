@@ -22,6 +22,19 @@ This module provides functionality for interacting with an external bibliographi
 :CUSTOM_ID: h:tlon-db-dependencies
 :END:
 
+** Options
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-db-options
+:END:
+
+#+vindex: tlon-db-use-local-environment
++ ~tlon-db-use-local-environment~ :: When non-nil, all API requests are sent
+  to the local development server at
+  =https://local-dev.ea.international=.  The variable also causes
+  ~tlon-db~ to add the mkcert root certificate located at
+  =~/Library/Application Support/mkcert/RootCA.pem= to
+  =gnutls-trustfiles= so that TLS verification succeeds.  Default is nil.
+
 + =tlon-core=
 + =transient=
 

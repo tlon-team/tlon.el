@@ -48,8 +48,23 @@
 (defvar tlon-db-auth-token-expiry nil
   "Expiry time for the authentication token.")
 
+(defgroup tlon-db nil
+  "Db integration with EA International."
+  :group 'tlon)
+
 (defvar tlon-db-api-base-url "https://ea.international"
   "Base URL for the EA International API.")
+
+(defcustom tlon-db-use-local-environment nil
+  "Whether to use the local EA International development API.
+
+When non-nil, all requests are sent to
+\"https://local-dev.ea.international\" and the mkcert root
+certificate located at
+\"~/Library/Application Support/mkcert/RootCA.pem\" is added to
+`gnutls-trustfiles'."
+  :type 'boolean
+  :group 'tlon-db)
 
 (defvar tlon-db-api-username
   (tlon-user-lookup :github :name user-full-name))
@@ -722,6 +737,12 @@ can be found."
       (unless (null names)
         (mapcar #'tlon-db--normalize-name names)))))
 
+(defun tlon-db--current-base-url ()
+  "Return the base URL according to `tlon-db-use-local-environment'."
+  (if tlon-db-use-local-environment
+      "https://local-dev.ea.international"
+    tlon-db-api-base-url))
+
 ;;;###autoload
 (defun tlon-db--make-request (method endpoint data headers &optional auth-required base-url)
   "Make an HTTP request to the EA International API.
@@ -734,7 +755,7 @@ Optional BASE-URL overrides `tlon-db-api-base-url'."
   (let* ((url-request-method method)
 	 (url-request-data data)
 	 (url-request-extra-headers (copy-alist headers))
-	 (base (or base-url tlon-db-api-base-url))
+	 (base (or base-url (tlon-db--current-base-url)))
 	 (url (concat base endpoint))
 	 (lisp-error-occurred nil)
 	 (lisp-error-message nil)
@@ -1099,6 +1120,13 @@ If there are no differences, return nil."
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-db-menu "tlon-db" nil t)
+(transient-define-infix tlon-db-infix-toggle-local-environment ()
+  "Toggle whether to use the local EA International API environment."
+  :class 'transient-lisp-variable
+  :variable 'tlon-db-use-local-environment
+  :reader (lambda (_ _ _)
+            (tlon-transient-toggle-variable-value 'tlon-db-use-local-environment)))
+
 (transient-define-prefix tlon-db-menu ()
   "`tlon-db' menu."
   ["Db Actions"
@@ -1110,6 +1138,7 @@ If there are no differences, return nil."
    ("i" "Check or insert name" tlon-db-check-or-insert-name)
    ("s" "Set name" tlon-db-set-name)
    ""
+   ("-l" "Local env" tlon-db-infix-toggle-local-environment)
    ("a" "Authenticate" tlon-db-authenticate)])
 
 (tlon-db-initialize)
