@@ -493,32 +493,31 @@ ISSUE-CONTEXT-STRING provides context about the issue being processed."
 
 (defun tlon-forg--sync-status (issue &optional project-item-data)
   "Reconcile the status between ISSUE and the Org heading.
-If PROJECT-ITEM-DATA is provided, it's passed to
-`tlon-get-status-in-issue'.  Because cached project data can be stale,
-we re-validate by fetching the live status from GitHub whenever the
-cached status *appears* to match the Org heading.  This prevents bulk
-sync commands from silently missing mismatches that the interactive
-`tlon-sync-issue-and-todo' would detect."
+If PROJECT-ITEM-DATA is provided, its :status field is used first, falling
+back to a live GraphQL call *only when* the cached value **appears** to be
+in‑sync with the Org heading.  This retains the original safety guarantee
+while avoiding an unnecessary network round‑trip for every issue, which was
+the primary bottleneck when running `tlon-sync-all-issues-in-repo'."
+  ;; --- 1. Gather tentative status values ----------------------------
   (let* ((issue-status
-	  (let ((st (tlon-get-status-in-issue issue nil project-item-data)))
-	    (when st (upcase st))))
-	 (todo-status
-	  (let ((st (org-get-todo-state)))
-	    (when st (upcase st))))
-	 (issue-context (tlon-get-issue-name issue)))
-    ;; When PROJECT-ITEM-DATA is supplied it may be stale, so
-    ;; always re-fetch the live status once.  This avoids both
-    ;; missed mismatches and false positives when the cache has not
-    ;; yet observed an update done earlier in the same Emacs session.
-    (when project-item-data
+          (let ((st (tlon-get-status-in-issue issue nil project-item-data)))
+            (when st (upcase st))))
+         (todo-status
+          (let ((st (org-get-todo-state)))
+            (when st (upcase st))))
+         (issue-context (tlon-get-issue-name issue)))
+    ;; --- 2. *Selective* live re‑validation --------------------------
+    ;; Only hit the network when we *think* everything is already in sync.
+    (when (and project-item-data (string= issue-status todo-status))
       (setq issue-status
-            (let ((st (tlon-get-status-in-issue issue nil nil)))
+            (let ((st (tlon-get-status-in-issue issue nil nil))) ; unconditional live fetch
               (when st (upcase st)))))
+    ;; --- 3. Reconcile -----------------------------------------------
     (unless (string= issue-status todo-status)
       (pcase (tlon-forg--prompt-element-diff
-	      "Statuses" issue-status todo-status issue-context)
-	(?i (org-todo issue-status))
-	(?t (tlon-update-issue-from-todo))))))
+              "Statuses" issue-status todo-status issue-context)
+        (?i (org-todo issue-status))
+        (?t (tlon-update-issue-from-todo))))))
 
 (defun tlon-forg--sync-tags (issue)
   "Reconcile the tags between ISSUE and the Org heading."
