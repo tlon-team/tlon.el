@@ -509,17 +509,16 @@ If called interactively, prompt for ENTRY-ID."
   "Check if NAME exists in the EA International database."
   (interactive "sName to check: ")
   (tlon-db-ensure-auth)
-  (let* ((data (json-encode `(("name" . ,name))))
-	 (headers '(("Content-Type" . "application/json")
-		    ("accept" . "application/json")))
-	 (response-buffer (tlon-db--make-request "POST" "/api/names/check" data headers t))
+  (let* ((endpoint (format "/api/names/%s" (url-hexify-string name)))
+	 (headers '(("accept" . "application/json")))
+	 (response-buffer (tlon-db--make-request "GET" endpoint nil headers t))
 	 response-data
 	 status-code)
     (when response-buffer
       (setq status-code (tlon-db--get-response-status-code response-buffer))
-      (if (= status-code 200)
-	  (setq response-data (tlon-db--parse-json-response response-buffer))
-	(message "Error checking name: HTTP status %d" status-code)) ; This message might be redundant if buffer is shown
+      (setq response-data (tlon-db--parse-json-response response-buffer))
+      (unless (= status-code 200)
+        (message "Name lookup returned HTTP status %d" status-code)) ; Informative but non-blocking
       (kill-buffer response-buffer))
     (if (or tlon-debug (not (and status-code (= status-code 200))))
 	(tlon-db--display-result-buffer (format "Name check result for: %s" name)
@@ -555,18 +554,38 @@ similar to existing names."
     (list :status status-code :data response-data)))
 
 (defun tlon-db--format-check-name-result (data)
-  "Format the result DATA from `tlon-db-check-name` for display."
+  "Format DATA returned by the name lookup endpoint for display.
+
+DATA can be:
+1. A list of name objects, each with \"name\" and \"translations\".
+2. A hash table with a \"message\" key (e.g. 404 not found).
+3. Any other hash table or nil."
   (cond
+   ;; No data
    ((null data)
-    (insert "No data returned from API or error occurred parsing the response.\n"))
-   ((gethash "detail" data)
-    (let ((detail-msg (gethash "message" (gethash "detail" data))))
-      (if detail-msg
-	  (insert (format "API Response: %s\n" detail-msg))
-	(insert "API Response: Name not found, but no specific message provided in 'detail'.\n"))))
-   ((and (gethash "name" data) (gethash "message" data))
-    (insert (format "Name: %s\n" (gethash "name" data)))
-    (insert (format "Message: %s\n" (gethash "message" data))))
+    (insert "No data returned from API or an error occurred parsing the response.\n"))
+   ;; List of names with their translations
+   ((listp data)
+    (if (null data)
+        (insert "No matching names found.\n")
+      (dolist (item data)
+        (when (hash-table-p item)
+          (insert (format "Name: %s\n" (gethash "name" item)))
+          (when-let ((translations (gethash "translations" item)))
+            (insert "Translations:\n")
+            (maphash (lambda (lang trans)
+                       (insert (format "  %s: %s\n" lang trans)))
+                     translations))
+          (insert "\n")))))
+   ;; Hash table with a message (e.g. 404)
+   ((and (hash-table-p data) (gethash "message" data))
+    (insert (gethash "message" data) "\n"))
+   ;; Generic hash table fallback
+   ((hash-table-p data)
+    (maphash (lambda (k v)
+               (insert (format "%s: %s\n" k v)))
+             data))
+   ;; Anything else
    (t
     (insert "Unexpected response format from API.\n"))))
 
