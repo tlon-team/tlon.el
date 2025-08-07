@@ -1165,18 +1165,19 @@ If there are no differences, return nil."
 
 (transient-define-prefix tlon-db-menu ()
   "`tlon-db' menu."
-  ["Db Actions"
-   ("g" "Get entries (prompt)" tlon-db-get-entries)
-   ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)
-   ("e" "Get entry" tlon-db-get-entry)
-   ("p" "Post entry" tlon-db-post-entry)
-   ("d" "Delete entry" tlon-db-delete-entry)
-   ("c" "Check name" tlon-db-check-name)
-   ("i" "Check or insert name" tlon-db-check-or-insert-name)
-   ("s" "Set name" tlon-db-set-name)
-   ""
-   ("-l" "Local env" tlon-db-infix-toggle-local-environment)
-   ("a" "Authenticate" tlon-db-authenticate)])
+  [["Actions"
+    ("g" "Get entries (prompt)" tlon-db-get-entries)
+    ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)
+    ("e" "Get entry" tlon-db-get-entry)
+    ("p" "Post entry" tlon-db-post-entry)
+    ("d" "Delete entry" tlon-db-delete-entry)
+    ("c" "Check name" tlon-db-check-name)
+    ("i" "Check or insert name" tlon-db-check-or-insert-name)
+    ("s" "Set name" tlon-db-set-name)
+    ""
+    ("a" "Authenticate" tlon-db-authenticate)]
+   ["Options"
+    ("-l" "Local env" tlon-db-infix-toggle-local-environment)]])
 
 (tlon-db-initialize)
 
