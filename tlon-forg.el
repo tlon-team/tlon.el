@@ -348,7 +348,6 @@ The first group captures the topic ID, and the second captures the title.")
   (interactive)
   (forge-extras-insert-issue-markdown-link "tlon-team"))
 
-
 ;;;;; internal helpers for sync
 
 (defun tlon-forg--pandoc-convert (text from to)
@@ -1270,7 +1269,6 @@ cached project items list is used instead of fetching a fresh one."
 		      forge-repo)))))))
 	 issue-repos)))))
 
-
 (defun tlon-forg--get-all-todo-files ()
   "Return a list of all Org TODO files to be processed.
 This includes the generic file, the jobs file, and all *.org files
@@ -1327,7 +1325,6 @@ avoid per-issue API calls for status and estimate."
 		(tlon--put-project-item item)))))))
     (tlon-message-debug "Populated project data for %d issues in %s."
 			(hash-table-count project-data-map) repo-name)
-
     ;; 2. Iterate through local issues and sync them
     (let ((local-issues (tlon-get-issues repo)))
       (dolist (issue local-issues)
@@ -1347,7 +1344,6 @@ avoid per-issue API calls for status and estimate."
     (org-refile-cache-clear)
     (tlon-message-debug "Finished syncing %d issues in repository %s. Refile cache cleared."
 			issue-count repo-name)))
-
 
 (defun tlon-sync-issue-and-todo-from-issue (&optional issue project-item-data)
   "Sync ISSUE and associated TODO (name, status, tags, and estimate).
@@ -2034,7 +2030,6 @@ A label is valid job phase iff it is a member of `tlon-job-labels'.
 If ISSUE is nil, use the issue at point or in the current buffer."
   (tlon-get-labels-of-type 'phase issue))
 
-
 ;;;;;; assignees
 
 (defun tlon-get-assignee (&optional issue)
@@ -2169,7 +2164,6 @@ Use PROMPT as the prompt, defaulting to \"Who should be the assignee? \"."
   (tlon-set-labels '("Awaiting processing") 'phase)
   (tlon-set-assignee (tlon-user-lookup :github :name user-full-name)))
 
-
 ;;;;; Get elements
 
 (defun tlon-get-element (element &optional issue)
@@ -2252,12 +2246,10 @@ STATUS element. If OVERRIDE-STATUS is non-nil, use it instead of fetching."
 		       (when tags (format "   :%s:" (mapconcat #'identity tags ":")))))))
       todo-name)))
 
-
 ;;;;; Create issues
 
 (defun tlon-create-issue (title &optional repo body format)
   "Create a new GitHub issue in REPO with TITLE and BODY.
-
 Returns the created issue number.
 
 Optional fourth argument FORMAT can be `:org' (default, convert title from Org
