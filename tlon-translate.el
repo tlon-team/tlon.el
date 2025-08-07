@@ -36,7 +36,6 @@
 (require 'transient)
 (require 'magit)
 (require 'tlon-yaml)
-(require 'simple-extras)
 
 ;;;; User options
 
@@ -176,6 +175,7 @@ file. If LANG is not provided, prompt for a target language."
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code))))
 
+(declare-function simple-extras-slugify "simple-extras")
 (defun tlon-translate--default-filename (source-file target-lang-code)
   "Return a slugified filename for SOURCE-FILE translated into TARGET-LANG-CODE.
 The slug is built by translating the original title with
