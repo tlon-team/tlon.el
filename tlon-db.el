@@ -35,6 +35,7 @@
 (require 'bibtex-extras)
 (require 'cl-lib)
 (require 'subr-x)
+(require 'url-http)               ; ensure URL variables are declared as special
 (require 'filenotify)
 
 ;;;; Variables
