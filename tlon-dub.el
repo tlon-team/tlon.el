@@ -1516,6 +1516,14 @@ This is a thin wrapper around `tlon-dub-join-files`."
   (interactive (list (read-file-name "List of audio files: " nil nil t ".txt")))
   (tlon-dub-join-files list-file output-file))
 
+;;;###autoload
+(defun tlon-dub-join-video-files (list-file &optional output-file)
+  "Join video files whose paths are listed line-by-line in LIST-FILE into OUTPUT-FILE.
+This is a convenience wrapper around `tlon-dub-join-files` intended for video
+segments created by `tlon-dub-split-video-at-timestamps`."
+  (interactive (list (read-file-name "List of video files: " nil nil t ".txt")))
+  (tlon-dub-join-files list-file output-file))
+
 ;;;;; video merging
 
 ;;;###autoload
