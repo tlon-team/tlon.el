@@ -1462,6 +1462,24 @@ an error if no part files are found."
     (message "Created %d wav files in %s" (length created) dir)
     (nreverse created)))
 
+;;;###autoload
+(defun tlon-dub-extract-audio (video-file &optional output-file)
+  "Extract the audio track from VIDEO-FILE and save it as OUTPUT-FILE.
+
+If OUTPUT-FILE is nil, a WAV file with the same basename as VIDEO-FILE is
+created in the same directory.  Uses ffmpeg with uncompressed pcm_s16le
+(-vn -acodec pcm_s16le).  Returns the pathname of the created file."
+  (interactive (list (read-file-name "Video file: " nil nil t)))
+  (setq video-file (expand-file-name video-file))
+  (unless output-file
+    (setq output-file (concat (file-name-sans-extension video-file) ".wav")))
+  (let ((args (list "-y" "-i" video-file "-vn" "-acodec" "pcm_s16le" output-file)))
+    (message "Extracting audio to %s..." (file-name-nondirectory output-file))
+    (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
+      (error "ffmpeg failed to create %s" output-file))
+    (message "Saved WAV audio to %s" output-file)
+    output-file))
+
 ;;;;; audio splitting
 
 ;;;###autoload
@@ -1650,6 +1668,7 @@ If nil, use the default `gptel-model'."
     ("p v" "Split video by timestamps (quick, imprecise, lossless)" tlon-dub-split-video-at-timestamps-quick)
     ("p V" "Split video by timestamps (slow, precise, lossy)" tlon-dub-split-video-at-timestamps)
     ("p a" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)
+    ("p w" "Extract audio (video -> wav)" tlon-dub-extract-audio)
     ("p s" "Split audio by timestamps" tlon-dub-split-audio-at-timestamps)
     ("p J" "Join audio files from list" tlon-dub-join-audio-files)
     ("p j" "Join video files from list" tlon-dub-join-video-files)]
