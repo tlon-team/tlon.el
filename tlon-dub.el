@@ -1664,7 +1664,8 @@ If nil, use the default `gptel-model'."
     "Options"
     ("t -a" "Alignment model" tlon-dub-infix-select-alignment-model)
     ("t -f" "Transcription format" tlon-dub-infix-select-transcription-format)]
-   ["Split"
+   ["Audio & video manipulation"
+    "Split"
     ("s v" "Split video by timestamps (quick, imprecise, lossless)" tlon-dub-split-video-at-timestamps-quick)
     ("s V" "Split video by timestamps (slow, precise, lossy)" tlon-dub-split-video-at-timestamps)
     ("s a" "Split audio by timestamps" tlon-dub-split-audio-at-timestamps)
@@ -1674,8 +1675,8 @@ If nil, use the default `gptel-model'."
     ("j a" "Join audio files from list" tlon-dub-join-audio-files)
     ""
     "Extract"
-    ("e a" "Extract audio (video -> wav)" tlon-dub-extract-audio)
-    ("e A" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
+    ("e a" "Extract audio from video (video -> wav)" tlon-dub-extract-audio)
+    ("e A" "Extract audio from video parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
    ["ElevenLabs API"
     ("a s" "Start New Dubbing Project" tlon-dub-start-project)
     ("a d" "Get Project Metadata" tlon-dub-get-project-metadata)
