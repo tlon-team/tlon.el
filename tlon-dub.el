@@ -1463,6 +1463,59 @@ an error if no part files are found."
     (message "Created %d wav files in %s" (length created) dir)
     (nreverse created)))
 
+;;;;; audio splitting
+
+;;;###autoload
+(defun tlon-dub-split-audio-at-timestamps (audio-file timestamps-file &optional output-dir)
+  "Split AUDIO-FILE using markers from TIMESTAMPS-FILE (one HH:MM:SS.mmm per line).
+Each part starts at its timestamp and ends 1 ms before the next timestamp, or at
+the end of the audio for the last part.  Parts are saved as <BASENAME>-partN.<ext>
+in OUTPUT-DIR, defaulting to the directory of AUDIO-FILE."
+  (interactive
+   (list (read-file-name "Audio file: " nil nil t)
+         (read-file-name "Timestamps file: " nil nil t)
+         nil))
+  (setq audio-file (expand-file-name audio-file)
+        timestamps-file (expand-file-name timestamps-file))
+  (let* ((output-dir (or output-dir (file-name-directory audio-file)))
+         (base       (file-name-base audio-file))
+         (ext        (file-name-extension audio-file))
+         (timestamps (with-temp-buffer
+                       (insert-file-contents timestamps-file)
+                       (split-string (buffer-string) "[\n\r]+" t "[ \t]+")))
+         (duration   (tlon-dub--get-video-duration audio-file))) ; works for audio too
+    (tlon-dub--validate-timestamps timestamps timestamps-file)
+    (let ((part 1))
+      (dotimes (i (length timestamps))
+        (let* ((start (nth i timestamps))
+               (end-secs (if (< i (1- (length timestamps)))
+                             (- (tlon-dub--dot-timestamp-to-seconds
+                                 (nth (1+ i) timestamps))
+                                0.040)
+                           duration))
+               (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
+               (outfile (expand-file-name
+                         (format "%s-part%02d.%s" base part ext)
+                         output-dir))
+               (args (append '("-y" "-i")
+                             (list audio-file)
+                             '("-ss") (list start)
+                             (when end-str (list "-to" end-str))
+                             '("-c" "copy")
+                             (list outfile))))
+          (message "Creating %s..." (file-name-nondirectory outfile))
+          (unless (= 0 (apply #'call-process "ffmpeg" nil "*tlon-dub-ffmpeg*" t args))
+            (error "Command `ffmpeg` failed to create %s" outfile))
+          (setq part (1+ part))))
+      (message "Finished splitting audio into %d parts" (1- part)))))
+
+;;;###autoload
+(defun tlon-dub-join-audio-files (list-file &optional output-file)
+  "Join audio files whose paths are listed in LIST-FILE into OUTPUT-FILE.
+This is a thin wrapper around `tlon-dub-join-files`."
+  (interactive (list (read-file-name "List of audio files: " nil nil t ".txt")))
+  (tlon-dub-join-files list-file output-file))
+
 ;;;;; video merging
 
 ;;;###autoload
