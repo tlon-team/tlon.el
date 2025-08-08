@@ -108,6 +108,9 @@ This workflow presupposes that we already have (1) the original audio and video 
 #+findex: tlon-dub-split-audio-at-timestamps
 + ~tlon-dub-split-audio-at-timestamps~ :: (Autoloaded) Splits an audio file into parts based on a list of timestamps. Prompts for the =audio-file= and a =timestamps-file= (one timestamp per line, HH:MM:SS.mmm). Each part is saved alongside the original file as =<base>-partN.<ext>=. Uses =ffmpeg= with =-ss= and =-to= options and copies the audio stream without re-encoding.
 
+#+findex: tlon-dub-extract-audio
++ ~tlon-dub-extract-audio~ :: (Autoloaded) Extracts the audio track from a single video file and saves it as WAV alongside the original. Prompts for a =video-file= and optionally an =output-file=. Internally runs =ffmpeg -i <video> -vn -acodec pcm_s16le <base>.wav=. Returns the path of the created WAV.
+
 #+findex: tlon-dub-join-audio-files
 + ~tlon-dub-join-audio-files~ :: (Autoloaded) Convenience wrapper around ~tlon-dub-join-files~ that prompts for a list of audio files and produces a single joined output using =ffmpeg=. Suitable for concatenating audio segments produced by ~tlon-dub-split-audio-at-timestamps~.
 
