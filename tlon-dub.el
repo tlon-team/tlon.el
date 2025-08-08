@@ -1658,11 +1658,11 @@ If nil, use the default `gptel-model'."
     ;; ("a" "Align Punctuation (txt + md -> aligned.md)" tlon-dub-align-punctuation)
     ;; ("o" "Optimize Translation Length (en.srt + lang.srt)" tlon-dub-optimize-translation-length)
     ("t c" "Convert SRTs to CSV (en.srt + lang.srt -> .csv)" tlon-dub-convert-srt-to-csv)
-    ("t -m" "Propagation model" tlon-dub-infix-select-propagation-model)
     ("t r" "Resegment SRT (speaker/min-30s)" tlon-dub-resegment-srt)
     ""
     "Options"
     ("t -a" "Alignment model" tlon-dub-infix-select-alignment-model)
+    ("t -m" "Propagation model" tlon-dub-infix-select-propagation-model)
     ("t -f" "Transcription format" tlon-dub-infix-select-transcription-format)]
    ["Audio & video manipulation"
     "Split"
