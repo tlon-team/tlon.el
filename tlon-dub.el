@@ -1664,14 +1664,18 @@ If nil, use the default `gptel-model'."
     "Options"
     ("t -a" "Alignment model" tlon-dub-infix-select-alignment-model)
     ("t -f" "Transcription format" tlon-dub-infix-select-transcription-format)]
-   ["Prepare video & audio chunks"
-    ("p v" "Split video by timestamps (quick, imprecise, lossless)" tlon-dub-split-video-at-timestamps-quick)
-    ("p V" "Split video by timestamps (slow, precise, lossy)" tlon-dub-split-video-at-timestamps)
-    ("p a" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)
-    ("p w" "Extract audio (video -> wav)" tlon-dub-extract-audio)
-    ("p s" "Split audio by timestamps" tlon-dub-split-audio-at-timestamps)
-    ("p J" "Join audio files from list" tlon-dub-join-audio-files)
-    ("p j" "Join video files from list" tlon-dub-join-video-files)]
+   ["Split"
+    ("s v" "Split video by timestamps (quick, imprecise, lossless)" tlon-dub-split-video-at-timestamps-quick)
+    ("s V" "Split video by timestamps (slow, precise, lossy)" tlon-dub-split-video-at-timestamps)
+    ("s a" "Split audio by timestamps" tlon-dub-split-audio-at-timestamps)
+    ""
+    "Join"
+    ("j v" "Join video files from list" tlon-dub-join-video-files)
+    ("j a" "Join audio files from list" tlon-dub-join-audio-files)
+    ""
+    "Extract"
+    ("e a" "Extract audio (video -> wav)" tlon-dub-extract-audio)
+    ("e A" "Extract audio from parts (parts -> wavs)" tlon-dub-extract-audio-from-parts)]
    ["ElevenLabs API"
     ("a s" "Start New Dubbing Project" tlon-dub-start-project)
     ("a d" "Get Project Metadata" tlon-dub-get-project-metadata)
