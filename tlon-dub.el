@@ -1435,7 +1435,6 @@ boundaries may not exactly coincide with those specified in the timestamp file."
 ;;;###autoload
 (defun tlon-dub-extract-audio-from-parts (video-file)
   "Extract audio (wav) from all <base>-partN video files derived from VIDEO-FILE.
-
 The command prompts for the master VIDEO-FILE, derives its base name, looks for
 all files named <base>-partN.<ext> in the same directory (where <ext> is any
 extension, typically mp4), and runs
