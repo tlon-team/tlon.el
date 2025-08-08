@@ -1397,7 +1397,7 @@ SOURCE, LANGUAGE, ENGINE, AUDIO, VOICE and LOCALE are the values to set."
   (save-excursion
     (tlon-tts-ensure-all-images-have-alt-text)
     (tlon-tts-ensure-all-tables-have-alt-text)
-    (tlon-tts-process-notes) ; should be before `tlon-tts-process-citations'?
+    (tlon-tts-process-notes) ; should be before `tlon-bib-replace-keys-with-citations'
     (tlon-tts-remove-tag-sections) ; should probably be before `tlon-tts-process-listener-cues'
     (tlon-tts-remove-horizontal-lines) ; should be before `tlon-tts-process-paragraphs'
     (tlon-bib-replace-keys-with-citations nil 'audio) ; should be before `tlon-tts-escape-xml-special-characters'
@@ -2859,7 +2859,7 @@ Move the note to the end of the sentence if necessary.
 
 Note: the function assumes that the citation is in MDX, rather than Pandoc
 citation key, format. Hence, it must be run *before*
-`tlon-tts-process-citations'."
+`tlon-bib-replace-keys-with-citations'."
   (goto-char (point-min))
   (while (re-search-forward markdown-regex-footnote nil t)
     (let ((note (tlon-tts-get-note))
