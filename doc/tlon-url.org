@@ -62,6 +62,24 @@ The command ~tlon-get-archived~ (Autoloaded) fetches the latest working archived
 3. If an archive URL is found, it's displayed in a message and copied to the kill ring using =kill-new=.
 4. If no archive is found or an error occurs, an appropriate message is displayed.
 
+*** Get Earliest Archived URL
+:PROPERTIES:
+:CUSTOM_ID: h:tlon-get-earliest-archived-cmd
+:END:
+#+findex: tlon-get-earliest-archived
+The command ~tlon-get-earliest-archived~ (Autoloaded) fetches the earliest
+working archived version of a given =URL= from the Wayback Machine and copies
+the archived URL to the kill ring.
+1. Prompts for the =URL=, defaulting to the URL at point
+   (~thing-at-point 'url t~).
+2. Calls the internal function
+   ~tlon--get-earliest-wayback-machine-url~ to fetch the archive URL sorted
+   chronologically.
+3. If an archive URL is found, it's displayed in a message and copied to the
+   kill ring using =kill-new=.
+4. If no archive is found or an error occurs, an appropriate message is
+   displayed.
+
 *** Replace URL Across Projects
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-replace-url-across-projects-cmd
