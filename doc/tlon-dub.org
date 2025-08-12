@@ -94,9 +94,9 @@ This workflow presupposes that we already have (1) the original audio and video 
   parts based on a list of timestamps. Prompts for the =video-file= and a
   =timestamps-file= (one timestamp per line, HH:MM:SS.mmm). Each part starts at
   its timestamp and ends 40 ms before the next one, or at the end of the video
-  for the final part. The parts are saved as =<base>-partN.mp4= alongside the
+  for the final part. The parts are saved as =<base>-partN.<ext>= alongside the
   original file. Internally uses =ffmpeg -i <video> -ss <start> -to <end> -c
-  copy <partN>.mp4=, omitting =-to= for the final part when the duration cannot
+  copy <partN>.<ext>=, omitting =-to= for the final part when the duration cannot
   be determined.
 
 #+findex: tlon-dub-extract-audio-from-parts
