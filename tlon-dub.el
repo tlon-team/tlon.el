@@ -1317,7 +1317,7 @@ Attempts to handle common sentence-ending punctuation patterns."
 (defun tlon-dub-split-video-at-timestamps (video-file timestamps-file &optional quick output-dir)
   "Split VIDEO-FILE using markers from TIMESTAMPS-FILE (one HH:MM:SS.mmm per line).
 Each part starts at its timestamp and ends 1 ms before the next timestamp, or at
-the end of the video for the last part. Parts are saved as <BASENAME>-partN.mp4
+the end of the video for the last part. Parts are saved as <BASENAME>-partN.<ext> (where <ext> is the original file extension)
 in OUTPUT-DIR, defaulting to the directory of VIDEO-FILE. If QUICK is non-nil,
 do not re-encode the video, just copy it. This generates the files much more
 quickly but it can only cut at keyframes, so the video boundaries may not
@@ -1373,8 +1373,9 @@ coincide with those specified in the timestamp file."
 			  0.040)
                      duration))
          (end-str (when end-secs (tlon-dub--seconds-to-dot-timestamp end-secs)))
-         (outfile (expand-file-name (format "%s-part%02d.mp4" base part) output-dir))
-         (args (append '("-y" "-i" )
+         (input-ext (downcase (or (file-name-extension video-file) "mp4")))
+         (outfile (expand-file-name (format "%s-part%02d.%s" base part input-ext) output-dir))
+         (args (append '("-y" "-i")
 		       (list video-file)
 		       '("-ss")
 		       (list start)
