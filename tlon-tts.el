@@ -2449,6 +2449,32 @@ If LOCALE is nil, use the locale of the current voice."
     (shell-command (format "mp3splt 0.0 %s %2$s -o %2$s" duration file))
     (shell-command (format "mv %s %s" output-filename file))))
 
+;;;###autoload
+(defun tlon-tts-normalize-audio-files (&optional files)
+  "Normalize the selected audio FILES using ffmpeg loudnorm filter.
+If invoked from dired with marked files, those are used.  Otherwise
+prompt for one file.  Each file is normalized in place, using the
+settings in `tlon-tts-ffmpeg-normalize'."
+  (interactive)
+  (let* ((targets (or files
+                      (if (derived-mode-p 'dired-mode)
+                          (dired-get-marked-files)
+                        (list (files-extras-read-file)))))
+         (done 0))
+    (dolist (file targets)
+      (when (file-exists-p file)
+        (let* ((tmp (make-temp-file "tts_norm_" nil
+                                    (concat "." (file-name-extension file))))
+               (cmd (format tlon-tts-ffmpeg-normalize
+                            (shell-quote-argument file)
+                            (shell-quote-argument tmp))))
+          (message "Normalizing %s..." (file-name-nondirectory file))
+          (when (zerop (shell-command cmd))
+            (rename-file tmp file t)
+            (cl-incf done)
+            (message "Normalized %s" (file-name-nondirectory file))))))
+    (message "Normalized %d file(s)" done)))
+
 (defun tlon-tts-get-output-filename (file miliseconds)
   "Return the output filename for FILE minus MILISECONDS."
   (let* ((elts (split-string (tlon-tts-get-new-duration file miliseconds) "\\."))
@@ -4115,6 +4141,7 @@ Reads audio format choices based on the currently selected engine."
     ("m" "Move file to audio dir"                               tlon-tts-move-file-to-audio-server)
     ""
     ("d" "Delete file chunks"                                   tlon-tts-delete-chunks-of-file)
+    ("n" "Normalize audio file(s)"                              tlon-tts-normalize-audio-files)
     ("x" "Truncate audio file"                                  tlon-tts-truncate-audio-file)
     ("o" "Open audio dir"                                       tlon-tts-open-audio-directory)
     ""
