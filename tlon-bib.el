@@ -36,6 +36,7 @@
 (require 'tlon)
 (require 'tlon-ai)
 (require 'transient)
+(require 'subr-x)
 
 ;;;; User options
 
