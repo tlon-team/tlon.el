@@ -1541,7 +1541,13 @@ keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
 		   (buffer-file-name)
 		 (read-file-name "File to process: " nil nil nil
 				 (file-relative-name (buffer-file-name) default-directory))))
-	 (prompt (format tlon-bib-replace-citations-prompt file
+	 (org-file-p (string-suffix-p ".org" file t))
+	 (prompt-template (if org-file-p
+			      (replace-regexp-in-string
+			       "<Cite bibKey=\"\\([^\"]+\\)\" />" "[cite:@\\1]"
+			       tlon-bib-replace-citations-prompt t t)
+			    tlon-bib-replace-citations-prompt))
+	 (prompt (format prompt-template file
 			 (if (region-active-p)
 			     (buffer-substring-no-properties (region-beginning) (region-end))
 			   ;; return file contents
