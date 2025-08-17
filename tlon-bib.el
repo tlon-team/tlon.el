@@ -1533,9 +1533,10 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
 (defun tlon-bib-replace-citations-in-file ()
   "Use AI to find and replace bibliographic citations in a file with <Cite> tags.
 This command prompts for a file and then instructs an AI agent, equipped with
-tools like `search_bibliography`, `read_file`, and `edit_file`, to process
-the file. The AI will identify citations, find their corresponding BibTeX
-keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
+tools like `search_bibliography`, `read_file`, and `edit_file`, to process the
+file. The AI will identify citations, find their corresponding BibTeX keys, and
+replace them with a citation tag based on file type (\"<Cite bibKey=\"KEY\" />\"
+if Markdown, \"[cite:@KEY]\", if org-mode."
   (interactive)
   (let* ((file (if (region-active-p)
 		   (buffer-file-name)
@@ -1558,7 +1559,8 @@ keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
     (unless (file-exists-p file)
       (user-error "File does not exist: %s" file))
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
-    (tlon-make-gptel-request prompt nil #'tlon-bib-replace-citations-callback tlon-bib-replace-citations-model t nil tools)))
+    (tlon-make-gptel-request prompt nil #'tlon-bib-replace-citations-callback
+			     tlon-bib-replace-citations-model t nil tools)))
 
 (defun tlon-bib-replace-citations-callback (response info)
   "Callback for `tlon-bib-replace-citations-in-file'.
