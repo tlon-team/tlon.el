@@ -1544,8 +1544,8 @@ keys, and replace them with `<Cite bibKey=\"KEY\" />` tags."
 	 (org-file-p (string-suffix-p ".org" file t))
 	 (prompt-template (if org-file-p
 			      (replace-regexp-in-string
-			       "<Cite bibKey=\"\\([^\"]+\\)\" />" "[cite:@\\1]"
-			       tlon-bib-replace-citations-prompt t t)
+			       "<Cite bibKey=\"\\(.+?\\)\" />" "[cite:@\\1]"
+			       tlon-bib-replace-citations-prompt t)
 			    tlon-bib-replace-citations-prompt))
 	 (prompt (format prompt-template file
 			 (if (region-active-p)
