@@ -142,7 +142,6 @@ ask the user which target language to use.  When PROMPT is nil
 the first entry in `tlon-project-target-languages' is selected
 automatically.  If the source language is not \"en\" the
 counterpart is always \"en\"."
-  (setq prompt (or prompt t))
   (let* ((repo (or repo (tlon-get-repo)))
 	 (language (tlon-repo-lookup :language :dir repo))
 	 (languages (mapcar (lambda (lang)
