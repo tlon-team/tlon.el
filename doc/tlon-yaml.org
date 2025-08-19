@@ -166,9 +166,6 @@ This module provides functions for reading, writing, and manipulating YAML front
 :CUSTOM_ID: h:tlon-yaml-file-management
 :END:
 
-#+findex: tlon-create-translation-file
-+ ~tlon-create-translation-file~ :: Creates a new translation file for a given source FILE in the specified LANGUAGE. It likely copies the original content and initializes the translation metadata.
-
 #+findex: tlon-initialize-translation-metadata
 + ~tlon-initialize-translation-metadata~ :: Sets up the initial YAML metadata for a new translation FILE based on the ORIGINAL source file's metadata.
 
