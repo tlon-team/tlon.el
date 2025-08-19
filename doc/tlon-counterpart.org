@@ -42,7 +42,7 @@ This module provides functionality for finding, opening, and comparing "counterp
 #+findex: tlon-get-counterpart
 + ~tlon-get-counterpart~ :: (Autoloaded) Calculates and returns the full path to the counterpart file of =FILE= (or the current buffer's file).
   - If the file is in a repository marked as =translations= (based on its =:subtype= property), it mirrors the file's relative directory into the originals repository, uses the =key= field together with the bibliography mapping to locate the matching original, and only prompts when several plausible matches remain.
-  - If the file is in a repository marked as =originals=, it prompts the user to select a target language, mirrors the relative directory into the translations repository, and selects the Markdown file found there (prompting when multiple exist).
+  - If the file is in a repository marked as =originals=, it prompts the user to select a target language, mirrors the relative directory into the translations repository, uses the =key= field together with the bibliography mapping to locate the matching translation, and only prompts when several plausible matches remain.
   - Signals an error if the repository subtype is neither =originals= nor =translations=, or if necessary metadata is missing.
 
 #+findex: tlon-get-counterpart-dir
@@ -123,7 +123,7 @@ This section lists non-interactive functions used internally or potentially usef
 + ~tlon-get-counterpart-in-translations~ :: For a translation file, it derives the original key via the bibliography mapping, looks in the mirrored directory for the file whose =key= matches that value, and prompts only when more than one candidate remains.
 
 #+findex: tlon-get-counterpart-in-originals
-+ ~tlon-get-counterpart-in-originals~ :: Logic for an original file.  It mirrors the relative path into the selected translations repository and returns the Markdown file present there, prompting when multiple exist.
++ ~tlon-get-counterpart-in-originals~ :: For an original file, it derives the expected translation via the bibliography mapping, looks in the mirrored directory for the file whose =key= matches that expectation, and prompts only when several candidates remain.
 
 *** Link Handling Logic
 :PROPERTIES:
