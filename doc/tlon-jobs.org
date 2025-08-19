@@ -97,17 +97,6 @@ The command ~tlon-jobs-start-or-finish-phase~ is the central command for advanci
      - Updates the associated GitHub issue: sets the next label (~tlon-get-clock-next-label~) and assignee (~tlon-jobs-get-next-assignee~), potentially closing the issue after the "Review" phase using ~tlon-jobs-act-on-issue~.
      - Updates the corresponding TODO items in =jobs.org= and the main TODO file using ~tlon-jobs-finalize-set-todos~.
 
-*** Create Job
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-create-job
-:END:
-#+findex: tlon-create-job
-The command ~tlon-create-job~ orchestrates the entire process of creating a new job based on a BibTeX entry at point in an Ebib buffer.
-
-1. Imports the document associated with the BibTeX entry using ~tlon-import-document~, which returns the BibTeX key.
-2. Creates the initial translation file structure using ~tlon-create-translation-file~.
-3. Creates the necessary records for the job (GitHub issue and =jobs.org= heading) using ~tlon-create-record-for-job~.
-
 *** Create Job Record
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-create-record-for-job
@@ -149,7 +138,6 @@ It provides the following groups and commands:
 + *Job phases*:
   + =j= :: Start or finish phase (~tlon-jobs-start-or-finish-phase~)
 + *Job creation*:
-  + =c c= :: Create job (~tlon-create-job~)
   + =c d= :: 1 Import document (~tlon-import-document~)
   + =c f= :: 2 Create translation file (~tlon-create-translation-file~)
   + =c r= :: 3 Create record for job (~tlon-create-record-for-job~)

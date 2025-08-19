@@ -279,20 +279,6 @@ substitute assignee."
 (declare-function tlon-import-document "tlon-import")
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
-(autoload 'tlon-create-translation-file "tlon-yaml")
-;;;###autoload
-(defun tlon-create-job ()
-  "Create a new job for IDENTIFIER based on Ebib entry at point.
-Creating a new job means (1) importing a document and (2) creating a record for
-it. A record is (a) an issue in GitHub and (b) a heading in `jobs.org'.
-
-IDENTIFIER can be a URL or a PDF file path."
-  (interactive)
-  ;; check if it is really necessary to pass the key to `tlon-create-record-for-job'
-  ;; if not, revise `tlon-import-document' so that it doesn't return it
-  (let ((key (tlon-import-document)))
-    (tlon-create-translation-file)
-    (tlon-create-record-for-job key)))
 
 (autoload 'ebib--get-key-at-point "ebib")
 (declare-function tlon-get-key-in-buffer "tlon")
@@ -469,10 +455,8 @@ COMMIT is non-nil, commit the change."
   [["Job phases"
     ("j" "start or finish phase"             tlon-jobs-start-or-finish-phase)]
    ["Job creation"
-    ("c c" "create job"                      tlon-create-job)
     ("c d" "1 import document"               tlon-import-document)
-    ("c r" "2 create bibtex translation"     tlon-create-bibtex-translation)
-    ("c f" "3 create translation file"       tlon-create-translation-file)]
+    ("c r" "2 create bibtex translation"     tlon-create-bibtex-translation)]
    ["Add or modify"
     ("a s" "section correspondence"          tlon-section-correspondence-dwim)
     ("a u" "URL correspondence"              tlon-edit-url-correspondences)]
