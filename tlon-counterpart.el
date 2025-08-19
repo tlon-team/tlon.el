@@ -28,7 +28,6 @@
 (require 'tlon-core)
 (require 'tlon-paragraphs)
 (require 'tlon-yaml)
-(require 'tlon-bib-utils)
 (require 'cl-lib)
 (require 'seq)
 
@@ -74,7 +73,7 @@ remain, the user is prompted to choose."
   (let* ((dir (tlon-get-counterpart-dir file))
 	 (trans-key (tlon-yaml-get-key "key" file))
 	 (orig-key  (when trans-key
-		      (tlon-bib-get-counterpart-key trans-key)))
+		      (tlon-get-counterpart-key trans-key)))
 	 (candidates (when dir
 		       (seq-filter (lambda (f) (string-suffix-p ".md" f t))
 				   (directory-files dir t "\\`[^.]")))))
@@ -115,7 +114,7 @@ lookup, subsequent queries are instantaneous."
 		       (let ((tr-key (tlon-yaml-get-key "key" f)))
 			 (and tr-key
 			      (string= orig-key
-				       (tlon-bib-get-counterpart-key tr-key)))))
+				       (tlon-get-counterpart-key tr-key)))))
 		     candidates)))
 	    (pcase candidates
 	      ((pred null)
@@ -319,7 +318,7 @@ and values are absolute file paths to translation files."
        (let ((table (make-hash-table :test #'equal)))
 	 (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
 	   (when-let* ((tr-key (tlon-yaml-get-key "key" file))
-		       (orig-key (tlon-bib-get-counterpart-key tr-key)))
+		       (orig-key (tlon-get-counterpart-key tr-key)))
 	     (puthash orig-key file table)))
 	 table)
        tlon-counterpart--orig->trans-cache)))
@@ -395,6 +394,24 @@ and replaces the target path with the path to the corresponding translated file.
 		;; Move past the entire link match to continue searching
 		(goto-char (match-end 0))))))))
     (message "Replaced %d internal links. %d counterparts not found." cnt errors)))
+
+;;;;; bibtex keys
+
+(defun tlon-get-counterpart-key (key &optional language)
+  "Return the counterpart bibliography key of KEY.
+If KEY belongs to a translation entry, return the original key stored in its
+‘translation’ field. Otherwise search the bibliography for a translation whose
+‘translation’ field points back to KEY and return that translation’s key. If no
+counterpart exists return nil."
+  (or
+   ;; KEY is translation
+   (tlon-bibliography-lookup "=key=" key "translation")
+   ;; KEY is original
+   ;;
+   ;; TODO: I should obtain FILE corresponding to KEY, so I can then pass it to
+   ;; `tlon-get-counterpart-in-originals' below
+   (with-current-buffer
+       (tlon-get-counterpart-in-originals file language))))
 
 ;;;;; Menu
 
