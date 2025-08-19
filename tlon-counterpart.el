@@ -180,10 +180,10 @@ which may prompt if the source file is an original."
                 (tlon-repo-lookup :dir
                                   :subproject (tlon-repo-lookup :subproject :dir repo)
                                   :language final-target-lang)))
-      ;; No target-language-code provided, determine automatically (non-prompting)
+      ;; No TARGET-LANGUAGE-CODE given: prompt exactly once via the repo helper.
       (progn
-        (setq final-target-lang (tlon-get-counterpart-language repo nil)) ; derived automatically
-        (setq final-counterpart-repo (tlon-get-counterpart-repo file t)))) ; prompt once
+        (setq final-counterpart-repo (tlon-get-counterpart-repo file t)) ; single prompt
+        (setq final-target-lang (tlon-repo-lookup :language :dir final-counterpart-repo))))
 
     (if (and final-counterpart-repo final-target-lang)
         (let ((counterpart-bare-dir (tlon-get-bare-dir-translation final-target-lang source-lang bare-dir)))
