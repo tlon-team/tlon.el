@@ -759,11 +759,12 @@ ARCHIVE-URL is nil if no archive is found or an error occurs."
                               (timestamp (nth 1 fields))
                               (original-url-from-api (nth 2 fields)))
                          (when (and timestamp original-url-from-api)
-                           (setq archive-url (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api))))
+                           (setq archive-url
+				 (format "https://web.archive.org/web/%s/%s" timestamp original-url-from-api))))
                      (message "No working archives found for %s" url)))
                (message "Could not parse Wayback Machine API response for %s" url))))
          (kill-buffer buffer)
-         (funcall callback archive-url url)))))
+         (funcall callback archive-url url))))))
        
 (provide 'tlon-url)
 ;;; tlon-url.el ends here
