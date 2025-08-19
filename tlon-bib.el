@@ -695,7 +695,7 @@ Fields set in the new entry:
           (ebib-add-entry)                     ; create skeleton
           (sleep-for 0.05)
           ;; change key first
-          (ebib-edit-entry-key new-key)
+          (ebib--update-keyname new-key)
           ;; set fields
           (mapc (lambda (kv) (ebib-extras-set-field (car kv) (cdr kv)))
                 `(("langid"      . ,target-lang)
