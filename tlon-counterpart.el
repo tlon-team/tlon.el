@@ -28,6 +28,7 @@
 (require 'tlon-core)
 (require 'tlon-paragraphs)
 (require 'tlon-yaml)
+(require 'tlon-bib-utils)
 (require 'cl-lib)
 (require 'seq)
 
@@ -73,7 +74,7 @@ remain, the user is prompted to choose."
   (let* ((dir (tlon-get-counterpart-dir file))
 	 (trans-key (tlon-yaml-get-key "key" file))
 	 (orig-key  (when trans-key
-		      (tlon-bibliography-lookup "=key=" trans-key "translation")))
+		      (tlon-bib-get-counterpart-key trans-key)))
 	 (candidates (when dir
 		       (seq-filter (lambda (f) (string-suffix-p ".md" f t))
 				   (directory-files dir t "\\`[^.]")))))
@@ -114,8 +115,7 @@ lookup, subsequent queries are instantaneous."
 		       (let ((tr-key (tlon-yaml-get-key "key" f)))
 			 (and tr-key
 			      (string= orig-key
-				       (tlon-bibliography-lookup
-					"=key=" tr-key "translation")))))
+				       (tlon-bib-get-counterpart-key tr-key)))))
 		     candidates)))
 	    (pcase candidates
 	      ((pred null)
@@ -319,7 +319,7 @@ and values are absolute file paths to translation files."
        (let ((table (make-hash-table :test #'equal)))
 	 (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
 	   (when-let* ((tr-key (tlon-yaml-get-key "key" file))
-		       (orig-key (tlon-bibliography-lookup "=key=" tr-key "translation")))
+		       (orig-key (tlon-bib-get-counterpart-key tr-key)))
 	     (puthash orig-key file table)))
 	 table)
        tlon-counterpart--orig->trans-cache)))
