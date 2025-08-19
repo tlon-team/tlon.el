@@ -467,19 +467,19 @@ COMMIT is non-nil, commit the change."
   "`jobs' menu."
   :info-manual "(tlon) Jobs"
   [["Job phases"
-    ("j" "start or finish phase"        tlon-jobs-start-or-finish-phase)]
+    ("j" "start or finish phase"             tlon-jobs-start-or-finish-phase)]
    ["Job creation"
-    ("c c" "create job"                 tlon-create-job)
-    ("c d" "1 import document"          tlon-import-document)
-    ("c f" "2 create translation file"  tlon-create-translation-file)
-    ("c r" "3 create record for job"    tlon-create-record-for-job)]
+    ("c c" "create job"                      tlon-create-job)
+    ("c d" "1 import document"               tlon-import-document)
+    ("c r" "2 create bibtex translation"     tlon-create-bibtex-translation)
+    ("c f" "3 create translation file"       tlon-create-translation-file)]
    ["Add or modify"
-    ("a s" "section correspondence"     tlon-section-correspondence-dwim)
-    ("a u" "URL correspondence"         tlon-edit-url-correspondences)]
+    ("a s" "section correspondence"          tlon-section-correspondence-dwim)
+    ("a u" "URL correspondence"              tlon-edit-url-correspondences)]
    ["jobs.org"
-    ("r" "create record"                tlon-create-record-for-job)
-    ("h" "create heading"               tlon-create-heading-for-job)
-    ("t" "sort headings"                tlon-sort-headings)]])
+    ("r" "create record"                     tlon-create-record-for-job)
+    ("h" "create heading"                    tlon-create-heading-for-job)
+    ("t" "sort headings"                     tlon-sort-headings)]])
 
 (provide 'tlon-jobs)
 ;;; tlon-jobs.el ends here
