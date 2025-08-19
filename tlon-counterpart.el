@@ -71,58 +71,60 @@ mirrored originals directory the Markdown file whose ‘key’ matches
 that value.  When the key cannot be resolved or several candidates
 remain, the user is prompted to choose."
   (let* ((dir (tlon-get-counterpart-dir file))
-         (trans-key (tlon-yaml-get-key "key" file))
-         (orig-key  (when trans-key
-                      (tlon-bibliography-lookup "=key=" trans-key "translation")))
-         (candidates (when dir
-                       (seq-filter (lambda (f) (string-suffix-p ".md" f t))
-                                   (directory-files dir t "\\`[^.]")))))
+	 (trans-key (tlon-yaml-get-key "key" file))
+	 (orig-key  (when trans-key
+		      (tlon-bibliography-lookup "=key=" trans-key "translation")))
+	 (candidates (when dir
+		       (seq-filter (lambda (f) (string-suffix-p ".md" f t))
+				   (directory-files dir t "\\`[^.]")))))
     ;; If we have an expected original key, keep only files whose key matches it
     (when (and orig-key candidates)
       (setq candidates
-            (seq-filter (lambda (f)
-                          (string= orig-key (tlon-yaml-get-key "key" f)))
-                        candidates)))
+	    (seq-filter (lambda (f)
+			  (string= orig-key (tlon-yaml-get-key "key" f)))
+			candidates)))
     (pcase candidates
       ((pred null) (user-error "No original counterpart found in %s" dir))
       ((pred (lambda (c) (= (length c) 1))) (car candidates))
       (_ (completing-read "Select counterpart: " candidates nil t)))))
 
-(defun tlon-get-counterpart-in-originals (file)
+(defun tlon-get-counterpart-in-originals (file &optional target-language-code)
   "Return the translation counterpart of original FILE.
+TARGET-LANGUAGE-CODE is the language code of the target translation. If nil,
+prompt the user for a language.
 
-This implementation maintains a per-repository cache so that,
-after the first lookup, subsequent queries are instantaneous."
-  (let* ((dir      (tlon-get-counterpart-dir file))
-         (repo     (and dir (tlon-get-repo-from-dir dir)))
-         (orig-key (tlon-yaml-get-key "key" file)))
+This implementation maintains a per-repository cache so that, after the first
+lookup, subsequent queries are instantaneous."
+  (let* ((dir      (tlon-get-counterpart-dir file target-language-code))
+	 (repo     (and dir (tlon-get-repo-from-dir dir)))
+	 (orig-key (tlon-yaml-get-key "key" file)))
     (unless (and dir repo orig-key)
       (user-error "Unable to determine translation repo or key for %s" file))
     (let* ((table (tlon-counterpart--translation-table-for-repo repo))
-           (hit   (gethash orig-key table)))
+	   (hit   (gethash orig-key table)))
       (or hit
-          (let* ((candidates (seq-filter
-                              (lambda (f) (string-suffix-p ".md" f t))
-                              (directory-files dir t "\\`[^.]"))))
-            ;; narrow via bibliography when possible
-            (when candidates
-              (setq candidates
-                    (seq-filter
-                     (lambda (f)
-                       (let ((tr-key (tlon-yaml-get-key "key" f)))
-                         (and tr-key
-                              (string= orig-key
-                                       (tlon-bibliography-lookup
-                                        "=key=" tr-key "translation")))))
-                     candidates)))
-            (pcase candidates
-              ((pred null)
-               (user-error "No translation counterpart found in %s" dir))
-              ((pred (lambda (c) (= (length c) 1)))
-               (let ((file (car candidates)))
-                 (puthash orig-key file table)
-                 file))
-              (_ (completing-read "Select translation: " candidates nil t))))))))
+	  (let* ((candidates (seq-filter
+			      (lambda (f) (string-suffix-p ".md" f t))
+			      (directory-files dir t "\\`[^.]"))))
+	    ;; narrow via bibliography when possible
+	    (when candidates
+	      (setq candidates
+		    (seq-filter
+		     (lambda (f)
+		       (let ((tr-key (tlon-yaml-get-key "key" f)))
+			 (and tr-key
+			      (string= orig-key
+				       (tlon-bibliography-lookup
+					"=key=" tr-key "translation")))))
+		     candidates)))
+	    (pcase candidates
+	      ((pred null)
+	       (user-error "No translation counterpart found in %s" dir))
+	      ((pred (lambda (c) (= (length c) 1)))
+	       (let ((file (car candidates)))
+		 (puthash orig-key file table)
+		 file))
+	      (_ (completing-read "Select translation: " candidates nil t))))))))
 
 (defun tlon-get-counterpart-repo (&optional file prompt)
   "Get the counterpart repo of FILE.
@@ -175,33 +177,33 @@ If TARGET-LANGUAGE-CODE is provided, use it to determine the counterpart repo
 and target language, avoiding prompts. Otherwise, determine them automatically,
 which may prompt if the source file is an original."
   (let* ((file (or file (buffer-file-name)))
-         (repo (tlon-get-repo-from-file file)) ; Source repo
-         (source-lang (tlon-repo-lookup :language :dir repo))
-         (bare-dir (tlon-get-bare-dir file))
-         (final-target-lang target-language-code)
-         (final-counterpart-repo nil))
+	 (repo (tlon-get-repo-from-file file)) ; Source repo
+	 (source-lang (tlon-repo-lookup :language :dir repo))
+	 (bare-dir (tlon-get-bare-dir file))
+	 (final-target-lang target-language-code)
+	 (final-counterpart-repo nil))
 
     (if target-language-code
-        (progn
-          (setq final-target-lang target-language-code)
-          (setq final-counterpart-repo
-                (tlon-repo-lookup :dir
-                                  :subproject (tlon-repo-lookup :subproject :dir repo)
-                                  :language final-target-lang)))
+	(progn
+	  (setq final-target-lang target-language-code)
+	  (setq final-counterpart-repo
+		(tlon-repo-lookup :dir
+				  :subproject (tlon-repo-lookup :subproject :dir repo)
+				  :language final-target-lang)))
       ;; No TARGET-LANGUAGE-CODE given: prompt exactly once via the repo helper.
       (progn
-        (setq final-counterpart-repo (tlon-get-counterpart-repo file t)) ; single prompt
-        (setq final-target-lang (tlon-repo-lookup :language :dir final-counterpart-repo))))
+	(setq final-counterpart-repo (tlon-get-counterpart-repo file t)) ; single prompt
+	(setq final-target-lang (tlon-repo-lookup :language :dir final-counterpart-repo))))
 
     (if (and final-counterpart-repo final-target-lang)
-        (let ((counterpart-bare-dir (tlon-get-bare-dir-translation final-target-lang source-lang bare-dir)))
-          (when counterpart-bare-dir
-            (file-name-concat final-counterpart-repo counterpart-bare-dir)))
+	(let ((counterpart-bare-dir (tlon-get-bare-dir-translation final-target-lang source-lang bare-dir)))
+	  (when counterpart-bare-dir
+	    (file-name-concat final-counterpart-repo counterpart-bare-dir)))
       (progn
-        (when tlon-debug
-          (message "tlon-get-counterpart-dir: Could not determine counterpart repo or target language for %s (target-code: %s)"
-                   file target-language-code))
-        nil))))
+	(when tlon-debug
+	  (message "tlon-get-counterpart-dir: Could not determine counterpart repo or target language for %s (target-code: %s)"
+		   file target-language-code))
+	nil))))
 
 ;;;###autoload
 (defun tlon-get-image-counterpart (translated-src &optional file)
@@ -210,12 +212,12 @@ This function translates components of the path (repo, directories, filename)
 from the language of FILE to the source language (English).
 If FILE is nil, use the current buffer's file."
   (let* ((file (or file (buffer-file-name)))
-         (current-lang (tlon-get-language-in-file file))
-         (target-lang "en")
-         (repo (tlon-get-counterpart-repo file))
-         (image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
-         (bare-dir (tlon-get-bare-dir-translation target-lang current-lang (tlon-get-bare-dir file)))
-         (slug (file-name-base file))
+	 (current-lang (tlon-get-language-in-file file))
+	 (target-lang "en")
+	 (repo (tlon-get-counterpart-repo file))
+	 (image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
+	 (bare-dir (tlon-get-bare-dir-translation target-lang current-lang (tlon-get-bare-dir file)))
+	 (slug (file-name-base file))
 	 (figure-current (tlon-lookup tlon-figure-names :name :language current-lang))
 	 (figure-target (tlon-lookup tlon-figure-names :name :language target-lang))
 	 (file-name (replace-regexp-in-string figure-current figure-target (file-name-nondirectory translated-src))))
@@ -315,11 +317,11 @@ and values are absolute file paths to translation files."
       (puthash
        repo-dir
        (let ((table (make-hash-table :test #'equal)))
-         (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
-           (when-let* ((tr-key (tlon-yaml-get-key "key" file))
-                       (orig-key (tlon-bibliography-lookup "=key=" tr-key "translation")))
-             (puthash orig-key file table)))
-         table)
+	 (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
+	   (when-let* ((tr-key (tlon-yaml-get-key "key" file))
+		       (orig-key (tlon-bibliography-lookup "=key=" tr-key "translation")))
+	     (puthash orig-key file table)))
+	 table)
        tlon-counterpart--orig->trans-cache)))
 
 ;;;;; Translate links
@@ -332,8 +334,8 @@ The function resolves RELATIVE-LINK to an absolute path, asks
 to a path relative to the current buffer directory.  Nil is
 returned when no counterpart exists."
   (let* ((current-dir (file-name-directory current-buffer-file))
-         (linked-abs (expand-file-name relative-link current-dir))
-         (counterpart (ignore-errors (tlon-get-counterpart linked-abs))))
+	 (linked-abs (expand-file-name relative-link current-dir))
+	 (counterpart (ignore-errors (tlon-get-counterpart linked-abs))))
     (when counterpart
       (file-relative-name counterpart current-dir))))
 
@@ -349,49 +351,49 @@ and replaces the target path with the path to the corresponding translated file.
   (unless (eq major-mode 'markdown-mode)
     (user-error "This command only works in Markdown buffers"))
   (let* ((buffer-file (buffer-file-name))
-         (cnt 0)
-         (errors 0)
-         (region-active (region-active-p))
-         (start (if region-active (region-beginning) (point-min)))
-         (end (if region-active (region-end) (point-max)))
-         ;; Regex to find markdown links ending in .md, excluding URLs like http:
-         ;; Matches [text](link.md) or [text](../path/link.md) etc., allowing whitespace.
-         ;; Group 1 captures the relative path we need to replace.
-         (link-regex "\\[[^]]*\\](\\s-*\\(\\([.]\\{1,2\\}/\\)?[^):]+\\.md\\)\\s-*)")
-         (case-fold-search nil)) ; Ensure case-sensitive matching for paths
+	 (cnt 0)
+	 (errors 0)
+	 (region-active (region-active-p))
+	 (start (if region-active (region-beginning) (point-min)))
+	 (end (if region-active (region-end) (point-max)))
+	 ;; Regex to find markdown links ending in .md, excluding URLs like http:
+	 ;; Matches [text](link.md) or [text](../path/link.md) etc., allowing whitespace.
+	 ;; Group 1 captures the relative path we need to replace.
+	 (link-regex "\\[[^]]*\\](\\s-*\\(\\([.]\\{1,2\\}/\\)?[^):]+\\.md\\)\\s-*)")
+	 (case-fold-search nil)) ; Ensure case-sensitive matching for paths
     (unless buffer-file
       (user-error "Buffer is not visiting a file"))
     (save-excursion
       (goto-char start)
       (while (re-search-forward link-regex end t)
-        (let* ((original-relative-link (match-string 1)) ; Path is group 1
-               (match-start (match-beginning 1)))        ; Use group 1 start
-          ;; Skip processing for links pointing only to current or parent directory
-          (if (member original-relative-link '("./" "../"))
-              (goto-char (match-end 0)) ; Skip this match entirely
-            ;; Process potentially replaceable links
-            (let* ((new-relative-link
-                    (save-match-data
-                      (tlon-get-counterpart-link original-relative-link buffer-file))))
-              ;; Preserve an explicit "./" prefix when the original link used one.
-              (when (and new-relative-link
-                         (string-prefix-p "./" original-relative-link)
-                         (not (string-prefix-p "./" new-relative-link)))
-                (setq new-relative-link (concat "./" new-relative-link)))
-              (if new-relative-link
-                  ;; Counterpart found
-                  (if (string= original-relative-link new-relative-link)
-                      ;; Counterpart is the same, no replacement needed. Advance past the whole match.
-                      (goto-char (match-end 0))
-                    ;; Counterpart is different, perform replacement.
-                    (replace-match new-relative-link t t nil 1) ; Replace group 1
-                    (setq cnt (1+ cnt))
-                    ;; Adjust search position: start right after the modified link target
-                    (goto-char (+ match-start (length new-relative-link))))
-                ;; Counterpart not found
-                (setq errors (1+ errors))
-                ;; Move past the entire link match to continue searching
-                (goto-char (match-end 0))))))))
+	(let* ((original-relative-link (match-string 1)) ; Path is group 1
+	       (match-start (match-beginning 1)))        ; Use group 1 start
+	  ;; Skip processing for links pointing only to current or parent directory
+	  (if (member original-relative-link '("./" "../"))
+	      (goto-char (match-end 0)) ; Skip this match entirely
+	    ;; Process potentially replaceable links
+	    (let* ((new-relative-link
+		    (save-match-data
+		      (tlon-get-counterpart-link original-relative-link buffer-file))))
+	      ;; Preserve an explicit "./" prefix when the original link used one.
+	      (when (and new-relative-link
+			 (string-prefix-p "./" original-relative-link)
+			 (not (string-prefix-p "./" new-relative-link)))
+		(setq new-relative-link (concat "./" new-relative-link)))
+	      (if new-relative-link
+		  ;; Counterpart found
+		  (if (string= original-relative-link new-relative-link)
+		      ;; Counterpart is the same, no replacement needed. Advance past the whole match.
+		      (goto-char (match-end 0))
+		    ;; Counterpart is different, perform replacement.
+		    (replace-match new-relative-link t t nil 1) ; Replace group 1
+		    (setq cnt (1+ cnt))
+		    ;; Adjust search position: start right after the modified link target
+		    (goto-char (+ match-start (length new-relative-link))))
+		;; Counterpart not found
+		(setq errors (1+ errors))
+		;; Move past the entire link match to continue searching
+		(goto-char (match-end 0))))))))
     (message "Replaced %d internal links. %d counterparts not found." cnt errors)))
 
 ;;;;; Menu
