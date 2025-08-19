@@ -649,27 +649,99 @@ If FILE is nil, use the file visited by the current buffer."
 (declare-function ebib-extras-set-field "ebib-extras")
 ;;;###autoload
 (defun tlon-bib-create-translation-entry ()
-  "Create a translation entry from the entry at point."
+  "Create a BibTeX entry representing a translation of the entry at point.
+The command works in `bibtex-mode', `ebib-entry-mode' and
+`ebib-index-mode'.
+
+Fields set in the new entry:
+
+- entry type: taken from the original entry (defaults to \"online\").
+- key: generated with `tlon-generate-autokey'.
+- langid: target language (standard name, not the code).
+- title / abstract: translated with DeepL.
+- author: copied from the original entry.
+- journaltitle / url: looked-up in `tlon-site-data'.
+- translation: key of the original entry.
+- date: current date (YYYY-MM-DD).
+- timestamp: not inserted (let tools add it later)."
   (interactive)
-  (unless (derived-mode-p 'ebib-entry-mode)
-    (user-error "Not in `ebib-entry-mode'"))
-  (let* ((language (tlon-select-language 'code 'babel))
-	 (fields `(("translation" . ,(ebib--get-key-at-point))
-		   ("=type=" . ,(ebib-extras-get-field "=type="))
-		   ("author" . ,(ebib-extras-get-field "author"))
-		   ("database" . ,(ebib-extras-get-field "database"))
-		   ("langid" . ,(tlon-lookup tlon-languages-properties :name :code language))
-		   ("title" . ,(read-string "Title: "))
-		   ("translator" . ,(when-let ((field "translator"))
-				      (ebib--edit-list-field field (list field) (ebib-unbrace nil))))
-		   ("date" .  ,(format-time-string "%Y")))))
-    (ebib-switch-to-database-nth 3)
-    (ebib-add-entry)
-    (sleep-for 0.1)
-    (dolist (field fields)
-      (cl-destructuring-bind (key . value) field
-	(ebib-extras-set-field key value)))
-    (ebib-generate-autokey)))
+  (let* ((target-code (tlon-select-language 'code 'babel))
+         (target-lang (tlon-lookup tlon-languages-properties :name :code target-code))
+         (site-name  (tlon-lookup tlon-site-data :name :language target-code))
+         (site-url   (tlon-lookup tlon-site-data :url  :language target-code))
+         ;; Helpers to abstract over Ebib / BibTeX modes
+         (mode-ebib   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
+         (get-field   (if mode-ebib #'ebib-extras-get-field #'bibtex-extras-get-field))
+         (orig-key    (if mode-ebib (ebib--get-key-at-point) (bibtex-extras-get-key)))
+         (entry-type
+          (or (funcall get-field "=type=")
+              (when (derived-mode-p 'bibtex-mode)
+                (downcase (or (bibtex-type-in-head) "online")))
+              "online"))
+         (author      (funcall get-field "author"))
+         (orig-title  (funcall get-field "title"))
+         (orig-abs    (funcall get-field "abstract"))
+         (source-lang (tlon-get-iso-code
+                       (downcase (or (funcall get-field "langid") "english"))))
+         ;; DeepL translations (synchronous wrapper defined below)
+         (trans-title (tlon-bib--translate-string orig-title source-lang target-code))
+         (trans-abs   (tlon-bib--translate-string orig-abs   source-lang target-code))
+         (new-key     (tlon-generate-autokey author (format-time-string "%Y") trans-title))
+         (date-now    (format-time-string "%Y-%m-%d")))
+    (if mode-ebib
+        ;; -------- EBIB --------
+        (progn
+          (ebib-switch-to-database-nth 3)      ; translation DB
+          (ebib-add-entry)                     ; create skeleton
+          (sleep-for 0.05)
+          ;; change key first
+          (ebib-edit-entry-key new-key)
+          ;; set fields
+          (mapc (lambda (kv) (ebib-extras-set-field (car kv) (cdr kv)))
+                `(("langid"      . ,target-lang)
+                  ("title"       . ,trans-title)
+                  ("author"      . ,author)
+                  ("journaltitle" . ,site-name)
+                  ("translation" . ,orig-key)
+                  ("abstract"    . ,trans-abs)
+                  ("date"        . ,date-now)
+                  ("url"         . ,site-url)))
+          (ebib-extras-set-field "=type=" entry-type)
+          (message "Created translation entry %s in Ebib." new-key))
+      ;; -------- BIBTeX --------
+      (save-excursion
+        (bibtex-narrow-to-entry)
+        (bibtex-end-of-entry)
+        (end-of-line)
+        (open-line 2)
+        (forward-line 1)
+        (insert (format "@%s{%s,\n"
+                        entry-type new-key))
+        (dolist (field
+                 `(("langid"      . ,target-lang)
+                   ("title"       . ,trans-title)
+                   ("author"      . ,author)
+                   ("journaltitle". ,site-name)
+                   ("translation" . ,orig-key)
+                   ("abstract"    . ,trans-abs)
+                   ("date"        . ,date-now)
+                   ("url"         . ,site-url)))
+          (insert (format "\t%s = {%s},\n" (car field) (cdr field))))
+        ;; close entry
+        (insert "}\n")
+        (bibtex-clean-entry))
+      (message "Inserted translation entry %s." new-key))))
+
+(defun tlon-bib--translate-string (string source-lang target-lang)
+  "Synchronously translate STRING from SOURCE-LANG to TARGET-LANG with DeepL.
+Return STRING unchanged if translation fails."
+  (if (or (not string) (string-empty-p string))
+      string
+    (let (result)
+      (tlon-deepl-translate string target-lang source-lang
+                            (lambda ()
+                              (setq result (tlon-deepl-print-translation))))
+      (or result string))))
 
 ;;;;; Convert to `Cite'
 
