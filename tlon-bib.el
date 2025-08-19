@@ -714,7 +714,7 @@ Fields set in the new entry:
                   ("translation" . ,orig-key)
                   ("abstract"    . ,trans-abs)
                   ("date"        . ,date-now)
-                  ("url"         . ,site-url)))
+                  ("url"         . ,original-url)))
           (ebib-extras-set-field "=type=" entry-type)
           (message "Created translation entry %s in Ebib." new-key))
       ;; -------- BIBTeX --------
