@@ -91,30 +91,38 @@ remain, the user is prompted to choose."
 (defun tlon-get-counterpart-in-originals (file)
   "Return the translation counterpart of original FILE.
 
-The function reads FILE’s ‘key’, looks up every Markdown file in
-the mirrored translations directory, and keeps only those whose
-own ‘key’ maps back to the original key via the bibliography
-lookup.  When no match or more than one match remains, the user
-is prompted."
-  (let* ((dir (tlon-get-counterpart-dir file))
-         (orig-key (tlon-yaml-get-key "key" file))
-         (candidates (when dir
-                       (seq-filter (lambda (f) (string-suffix-p ".md" f t))
-                                   (directory-files dir t "\\`[^.]")))))
-    ;; keep only translations that point back to this original
-    (when (and orig-key candidates)
-      (setq candidates
-            (seq-filter
-             (lambda (f)
-               (let ((tr-key (tlon-yaml-get-key "key" f)))
-                 (and tr-key
-                      (string= orig-key
-                               (tlon-bibliography-lookup "=key=" tr-key "translation")))))
-             candidates)))
-    (pcase candidates
-      ((pred null) (user-error "No translation counterpart found in %s" dir))
-      ((pred (lambda (c) (= (length c) 1))) (car candidates))
-      (_ (completing-read "Select translation: " candidates nil t)))))
+This implementation maintains a per-repository cache so that,
+after the first lookup, subsequent queries are instantaneous."
+  (let* ((dir      (tlon-get-counterpart-dir file))
+         (repo     (and dir (tlon-get-repo-from-dir dir)))
+         (orig-key (tlon-yaml-get-key "key" file)))
+    (unless (and dir repo orig-key)
+      (user-error "Unable to determine translation repo or key for %s" file))
+    (let* ((table (tlon-counterpart--translation-table-for-repo repo))
+           (hit   (gethash orig-key table)))
+      (or hit
+          (let* ((candidates (seq-filter
+                              (lambda (f) (string-suffix-p ".md" f t))
+                              (directory-files dir t "\\`[^.]"))))
+            ;; narrow via bibliography when possible
+            (when candidates
+              (setq candidates
+                    (seq-filter
+                     (lambda (f)
+                       (let ((tr-key (tlon-yaml-get-key "key" f)))
+                         (and tr-key
+                              (string= orig-key
+                                       (tlon-bibliography-lookup
+                                        "=key=" tr-key "translation")))))
+                     candidates)))
+            (pcase candidates
+              ((pred null)
+               (user-error "No translation counterpart found in %s" dir))
+              ((pred (lambda (c) (= (length c) 1)))
+               (let ((file (car candidates)))
+                 (puthash orig-key file table)
+                 file))
+              (_ (completing-read "Select translation: " candidates nil t))))))))
 
 (defun tlon-get-counterpart-repo (&optional file prompt)
   "Get the counterpart repo of FILE.
@@ -281,7 +289,38 @@ If called with a prefix ARG, open the counterpart in the other window."
   (not (= (tlon-get-number-of-paragraphs nil (point))
 	  (tlon-get-number-of-paragraphs nil (min (point-max) (1+ (point)))))))
 
+;;;;;  Internal caches to speed up counterpart lookup
 
+(defvar tlon-counterpart--orig->trans-cache (make-hash-table :test #'equal)
+  "Cache mapping repository directories to translation tables.
+Each value is a hash table mapping original bibliography keys to their
+corresponding translation file paths within that repository.")
+
+(defun tlon-counterpart--translation-table-for-repo (repo-dir)
+  "Return a hash table mapping original keys to translation files in REPO-DIR.
+The hash table maps original bibliography keys to their corresponding
+translation file paths. The table is cached in
+`tlon-counterpart--orig->trans-cache' to avoid repeated computation.
+
+For each markdown file in REPO-DIR:
+1. Extract the translation key from the file's YAML metadata
+2. Look up the corresponding original key in the bibliography
+3. Map the original key to the translation file path
+
+REPO-DIR should be a directory path containing markdown translation files.
+
+Returns a hash table where keys are original bibliography keys (strings)
+and values are absolute file paths to translation files."
+  (or (gethash repo-dir tlon-counterpart--orig->trans-cache)
+      (puthash
+       repo-dir
+       (let ((table (make-hash-table :test #'equal)))
+         (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
+           (when-let* ((tr-key (tlon-yaml-get-key "key" file))
+                       (orig-key (tlon-bibliography-lookup "=key=" tr-key "translation")))
+             (puthash orig-key file table)))
+         table)
+       tlon-counterpart--orig->trans-cache)))
 
 ;;;;; Translate links
 
