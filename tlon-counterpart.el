@@ -323,6 +323,17 @@ and values are absolute file paths to translation files."
 	 table)
        tlon-counterpart--orig->trans-cache)))
 
+;;;;;  File lookup helpers
+
+(defun tlon-counterpart--file-for-key (key language)
+  "Return absolute path of the markdown file whose YAML ‘key’ is KEY
+inside the repository whose `:language' property is LANGUAGE.
+Return nil when the file cannot be found."
+  (when-let* ((repo (tlon-repo-lookup :dir :language language)))
+    (seq-find (lambda (file)
+                (string= key (tlon-yaml-get-key "key" file)))
+              (directory-files-recursively repo "\\.md\\'"))))
+
 ;;;;; Translate links
 
 (defun tlon-get-counterpart-link (relative-link current-buffer-file)
@@ -398,20 +409,23 @@ and replaces the target path with the path to the corresponding translated file.
 ;;;;; bibtex keys
 
 (defun tlon-get-counterpart-key (key &optional language)
-  "Return the counterpart bibliography key of KEY.
-If KEY belongs to a translation entry, return the original key stored in its
-‘translation’ field. Otherwise search the bibliography for a translation whose
-‘translation’ field points back to KEY and return that translation’s key. If no
-counterpart exists return nil."
+  "Return the bibliography key that is the counterpart of KEY.
+
+If KEY belongs to a *translation* entry, return the original key
+stored in its ‘translation’ field.  Otherwise treat KEY as an
+*original* key and, provided LANGUAGE is non-nil, look for the
+corresponding translation in the repository for LANGUAGE and
+return its key.  When no counterpart exists, return nil."
   (or
-   ;; KEY is translation
+   ;; KEY is a translation → original
    (tlon-bibliography-lookup "=key=" key "translation")
-   ;; KEY is original
-   ;;
-   ;; TODO: I should obtain FILE corresponding to KEY, so I can then pass it to
-   ;; `tlon-get-counterpart-in-originals' below
-   (with-current-buffer
-       (tlon-get-counterpart-in-originals file language))))
+   ;; KEY is an original → translation (simple bibliography lookup)
+   (tlon-bibliography-lookup "translation" key "=key=")
+   ;; KEY is an original → translation (fallback via file search)
+   (when language
+     (when-let* ((orig-file (tlon-counterpart--file-for-key key "en"))
+                 (tr-file  (tlon-get-counterpart-in-originals orig-file language)))
+       (tlon-yaml-get-key "key" tr-file)))))
 
 ;;;;; Menu
 
