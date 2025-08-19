@@ -666,6 +666,8 @@ Fields set in the new entry:
 - date: current date (YYYY-MM-DD).
 - timestamp: not inserted (let tools add it later)."
   (interactive)
+  (unless (derived-mode-p 'bibtex-mode 'ebib-entry-mode 'ebib-index-mode)
+    (user-error "This command should be run with point on the BibTeX entry whose translation you want to create"))
   (let* ((target-code (tlon-select-language 'code 'babel))
          ;; Normalise language names: map the BibTeX-unfriendly
          ;; “argentinian” variant produced by some look-ups to “spanish”.
