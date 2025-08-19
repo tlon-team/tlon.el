@@ -109,7 +109,8 @@ A file's counterpart repo is the repo of that file's counterpart.
 If FILE is nil, return the counterpart repo of the file visited by the current
 buffer.
 PROMPT controls whether `tlon-get-counterpart-language' should prompt."
-  (setq prompt (or prompt t))
+  ;; PROMPT is non-nil to interactively ask for a language; nil means
+  ;; choose automatically without prompting.
   (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file))
 	 (subproject (tlon-repo-lookup :subproject :dir repo))
