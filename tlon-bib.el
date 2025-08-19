@@ -666,7 +666,12 @@ Fields set in the new entry:
 - timestamp: not inserted (let tools add it later)."
   (interactive)
   (let* ((target-code (tlon-select-language 'code 'babel))
-         (target-lang (tlon-lookup tlon-languages-properties :name :code target-code))
+         ;; Normalise language names: map the BibTeX-unfriendly
+         ;; “argentinian” variant produced by some look-ups to “spanish”.
+         (target-lang (let ((name (or (tlon-lookup tlon-languages-properties
+                                                   :name :code target-code)
+                                      target-code)))
+                        (if (string= name "argentinian") "spanish" name)))
          (site-name  (tlon-lookup tlon-site-data :name :language target-code))
          (site-url   (tlon-lookup tlon-site-data :url  :language target-code))
          ;; Helpers to abstract over Ebib / BibTeX modes
