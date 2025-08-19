@@ -30,6 +30,7 @@
 (require 'tlon-yaml)
 (require 'cl-lib)
 (require 'seq)
+(require 'tlon-bibliography)
 
 ;;;; Functions
 
