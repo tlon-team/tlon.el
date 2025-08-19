@@ -30,7 +30,6 @@
 (require 'tlon-yaml)
 (require 'cl-lib)
 (require 'seq)
-(require 'tlon-bibliography)
 
 ;;;; Functions
 
@@ -62,6 +61,7 @@ language."
       ('originals (tlon-get-counterpart-in-originals file))
       (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
 
+(declare-function tlon-bibliography-lookup "tlon-bib")
 (defun tlon-get-counterpart-in-translations (file)
   "Return the original counterpart of translation FILE.
 
