@@ -34,6 +34,7 @@
 (require 'cl-lib)
 (require 'shut-up)
 (require 'tlon)
+(require 'tlon-core)
 (require 'tlon-ai)
 (require 'transient)
 (require 'subr-x)
@@ -648,7 +649,7 @@ If FILE is nil, use the file visited by the current buffer."
 
 (declare-function ebib-extras-set-field "ebib-extras")
 ;;;###autoload
-(defun tlon-bib-create-translation-entry ()
+(defun tlon-create-bibtex-translation ()
   "Create a BibTeX entry representing a translation of the entry at point.
 The command works in `bibtex-mode', `ebib-entry-mode' and
 `ebib-index-mode'.
@@ -1710,7 +1711,7 @@ If nil, use the default model."
     ("v" "Check BibTeX keys"                   tlon-bib-check-bibkeys)]
    ["Ebib"
     ("a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
-    ("c" "Create translation entry"            tlon-bib-create-translation-entry)]
+    ("c" "Create translation entry"            tlon-create-bibtex-translation)]
    ["BibTeX"
     "Report"
     ("r r" "Generate"                          tlon-bib-entries-report)
