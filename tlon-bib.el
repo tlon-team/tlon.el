@@ -673,12 +673,15 @@ Fields set in the new entry:
                                                    :name :code target-code)
                                       target-code)))
                         (if (string= name "argentinian") "spanish" name)))
-         (site-name  (tlon-lookup tlon-site-data :name :language target-code))
-         (site-url   (tlon-lookup tlon-site-data :url  :language target-code))
          ;; Helpers to abstract over Ebib / BibTeX modes
          (mode-ebib   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
          (get-field   (if mode-ebib #'ebib-extras-get-field #'bibtex-extras-get-field))
-         (orig-key    (if mode-ebib (ebib--get-key-at-point) (bibtex-extras-get-key)))
+         ;; The current entry is now a *translation*; fetch the original key
+         (orig-key    (funcall get-field "translation"))
+         ;; Site information remains language–specific
+         (site-name   (tlon-lookup tlon-site-data :name :language target-code))
+         ;; Get the original URL by looking it up in the bibliography
+         (original-url (tlon-bibliography-lookup "=key=" orig-key "url"))
          (entry-type
           (or (funcall get-field "=type=")
               (when (derived-mode-p 'bibtex-mode)
@@ -731,7 +734,7 @@ Fields set in the new entry:
                    ("translation" . ,orig-key)
                    ("abstract"    . ,trans-abs)
                    ("date"        . ,date-now)
-                   ("url"         . ,site-url)))
+                   ("url"         . ,original-url)))
           (insert (format "\t%s = {%s},\n" (car field) (cdr field))))
         ;; close entry
         (insert "}\n")
