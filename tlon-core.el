@@ -367,11 +367,11 @@
 	   :type meta
 	   :help t)
     (:name "tlon.el"
- 	   :project "tlon"
- 	   :abbrev "tlon-el"
- 	   :type development
- 	   :subtype emacs
-           :dir ,tlon-package-dir)
+	   :project "tlon"
+	   :abbrev "tlon-el"
+	   :type development
+	   :subtype emacs
+	   :dir ,tlon-package-dir)
     (:name "tlon.team"
 	   :project "tlon"
 	   :abbrev "tlon-team"
@@ -688,93 +688,107 @@ the actual user.")
   "A list of languages all languages in the Babel project minus English.")
 
 (defconst tlon-languages-properties
-'((:name "albanian" :standard "albanian" :code "sq" :locale "sq_AL")
-  (:name "american" :standard "english" :code "en" :locale "en_US" :iso-639-2 "eng")
-  (:name "amharic" :standard "amharic" :code "am" :locale "am_ET")
-  (:name "arabic" :standard "arabic" :code "ar" :locale "ar_SA" :iso-639-2 "ara")
-  (:name "argentinian" :standard "spanish" :code "es" :locale "es_AR")
-  (:name "armenian" :standard "armenian" :code "hy" :locale "hy_AM")
-  (:name "assamese" :standard "assamese" :code "as" :locale "as_IN")
-  (:name "asturian" :standard "asturian" :code "ast" :locale "ast_ES")
-  (:name "austrian" :standard "german" :code "de" :locale "de_AT")
-  (:name "australian" :standard "english" :code "en" :locale "en_AU")
-  (:name "basque" :standard "basque" :code "eu" :locale "eu_ES")
-  (:name "belarusian" :standard "belarusian" :code "be" :locale "be_BY")
-  (:name "bengali" :standard "bengali" :code "bn" :locale "bn_BD")
-  (:name "bosnian" :standard "bosnian" :code "bs" :locale "bs_BA")
-  (:name "breton" :standard "breton" :code "br" :locale "br_FR")
-  (:name "british" :standard "english" :code "en" :locale "en_GB")
-  (:name "bulgarian" :standard "bulgarian" :code "bg" :locale "bg_BG")
-  (:name "burmese" :standard "burmese" :code "my" :locale "my_MM" :iso-639-2 "mya")
-  (:name "canadian" :standard "english" :code "en" :locale "en_CA")
-  (:name "catalan" :standard "catalan" :code "ca" :locale "ca_ES")
-  (:name "chinese" :standard "chinese" :code "zh" :locale "zh_CN" :iso-639-2 "zho")
-  (:name "coptic" :standard "coptic" :code "cop" :locale "cop_EG")
-  (:name "croatian" :standard "croatian" :code "hr" :locale "hr_HR")
-  (:name "czech" :standard "czech" :code "cs" :locale "cs_CZ")
-  (:name "danish" :standard "danish" :code "da" :locale "da_DK")
-  (:name "dutch" :standard "dutch" :code "nl" :locale "nl_NL")
-  (:name "english" :standard "english" :code "en" :locale "en_GB" :iso-639-2 "eng")
-  (:name "esperanto" :standard "esperanto" :code "eo" :locale "eo_EO")
-  (:name "estonian" :standard "estonian" :code "et" :locale "et_EE")
-  (:name "finnish" :standard "finnish" :code "fi" :locale "fi_FI")
-  (:name "french" :standard "french" :code "fr" :locale "fr_FR" :iso-639-2 "fra")
-  (:name "galician" :standard "galician" :code "gl" :locale "gl_ES")
-  (:name "georgian" :standard "georgian" :code "ka" :locale "ka_GE")
-  (:name "german" :standard "german" :code "de" :locale "de_DE" :iso-639-2 "deu")
-  (:name "greek" :standard "greek" :code "el" :locale "el_GR" :iso-639-2 "ell")
-  (:name "hebrew" :standard "hebrew" :code "he" :locale "he_IL")
-  (:name "hindi" :standard "hindi" :code "hi" :locale "hi_IN")
-  (:name "hungarian" :standard "hungarian" :code "hu" :locale "hu_HU")
-  (:name "icelandic" :standard "icelandic" :code "is" :locale "is_IS")
-  (:name "indonesian" :standard "indonesian" :code "in" :locale "id_ID" :iso-639-2 "ind")
-  (:name "interlingua" :standard "interlingua" :code "ia" :locale "ia_IA")
-  (:name "irish" :standard "irish" :code "ga" :locale "ga_IE")
-  (:name "italian" :standard "italian" :code "it" :locale "it_IT" :iso-639-2 "ita")
-  (:name "japanese" :standard "japanese" :code "ja" :locale "ja_JP" :iso-639-2 "jpn")
-  (:name "kannada" :standard "kannada" :code "kn" :locale "kn_IN")
-  (:name "korean" :standard "korean" :code "ko" :locale "ko_KR" :iso-639-2 "kor")
-  (:name "kurdish" :standard "kurdish" :code "ku" :locale :"ku_IQ" :iso-639-2 "kur")
-  (:name "lao" :standard "lao" :code "lo" :locale "lo_LA")
-  (:name "latin" :standard "latin" :code "la" :locale "la_VA" :iso-639-2 "lat")
-  (:name "latvian" :standard "latvian" :code "lv" :locale "lv_LV")
-  (:name "lithuanian" :standard "lithuanian" :code "lt" :locale "lt_LT")
-  (:name "macedonian" :standard "macedonian" :code "mk" :locale "mk_MK")
-  (:name "malayalam" :standard "malayalam" :code "ml" :locale "ml_IN")
-  (:name "marathi" :standard "marathi" :code "mr" :locale "mr_IN")
-  (:name "mexican" :standard "spanish" :code "es" :locale "es_MX")
-  (:name "mongolian" :standard "mongolian" :code "mn" :locale "mn_MN")
-  (:name "naustrian" :standard "austrian" :code "de" :locale "de_AT")
-  (:name "newzealand" :standard "english" :code "en" :locale "en_NZ")
-  (:name "ngerman" :standard "german" :code "de" :locale "de_DE")
-  (:name "nko" :standard "nko" :code "nqo" :locale "nqo_GN")
-  (:name "norwegian" :standard "norwegian" :code "no" :locale "no_NO")
-  (:name "oriya" :standard "oriya" :code "or" :locale "or_IN")
-  (:name "persian" :standard "persian" :code "fa" :locale "fa_IR")
-  (:name "polish" :standard "polish" :code "pl" :locale "pl_PL")
-  (:name "portuguese" :standard "portuguese" :code "pt" :locale "pt_PT" :iso-639-2 "por")
-  (:name "romanian" :standard "romanian" :code "ro" :locale "ro_RO")
-  (:name "russian" :standard "russian" :code "ru" :locale "ru_RU" :iso-639-2 "rus")
-  (:name "sanskrit" :standard "sanskrit" :code "sa" :locale "sa_IN")
-  (:name "serbian" :standard "serbian" :code "sr" :locale "sr_RS")
-  (:name "slovak" :standard "slovak" :code "sk" :locale "sk_SK")
-  (:name "slovenian" :standard "slovenian" :code "sl" :locale "sl_SI")
-  (:name "somali" :standard "somali" :code "so")
-  (:name "spanish" :standard "spanish" :code "es" :locale "es_ES" :iso-639-2 "spa")
-  (:name "swedish" :standard "swedish" :code "sv" :locale "sv_SE")
-  (:name "swissgerman" :standard "german" :code "de" :locale "de_CH")
-  (:name "tamil" :standard "tamil" :code "ta" :locale "ta_IN")
-  (:name "telugu" :standard "telugu" :code "te" :locale "te_IN")
-  (:name "thai" :standard "thai" :code "th" :locale "th_TH")
-  (:name "turkish" :standard "turkish" :code "tr" :locale "tr_TR")
-  (:name "turkmen" :standard "turkmen" :code "tk" :locale "tk_TM")
-  (:name "ukenglish" :standard "english" :code "en" :locale "en_GB")
-  (:name "ukrainian" :standard "ukrainian" :code "uk" :locale "uk_UA")
-  (:name "urdu" :standard "urdu" :code "ur" :locale "ur_PK")
-  (:name "vietnamese" :standard "vietnamese" :code "vi" :locale "vi_VN")
-  (:name "welsh" :standard "welsh" :code "cy" :locale "cy_GB")
-  (:name "afrikaans" :standard "afrikaans" :code "af" :locale "af_ZA"))
-"Plist of valid `langid' names, locales and ISO 639-1 codes.")
+  '((:name "albanian" :standard "albanian" :code "sq" :locale "sq_AL")
+    (:name "american" :standard "english" :code "en" :locale "en_US" :iso-639-2 "eng")
+    (:name "amharic" :standard "amharic" :code "am" :locale "am_ET")
+    (:name "arabic" :standard "arabic" :code "ar" :locale "ar_SA" :iso-639-2 "ara")
+    (:name "argentinian" :standard "spanish" :code "es" :locale "es_AR")
+    (:name "armenian" :standard "armenian" :code "hy" :locale "hy_AM")
+    (:name "assamese" :standard "assamese" :code "as" :locale "as_IN")
+    (:name "asturian" :standard "asturian" :code "ast" :locale "ast_ES")
+    (:name "austrian" :standard "german" :code "de" :locale "de_AT")
+    (:name "australian" :standard "english" :code "en" :locale "en_AU")
+    (:name "basque" :standard "basque" :code "eu" :locale "eu_ES")
+    (:name "belarusian" :standard "belarusian" :code "be" :locale "be_BY")
+    (:name "bengali" :standard "bengali" :code "bn" :locale "bn_BD")
+    (:name "bosnian" :standard "bosnian" :code "bs" :locale "bs_BA")
+    (:name "breton" :standard "breton" :code "br" :locale "br_FR")
+    (:name "british" :standard "english" :code "en" :locale "en_GB")
+    (:name "bulgarian" :standard "bulgarian" :code "bg" :locale "bg_BG")
+    (:name "burmese" :standard "burmese" :code "my" :locale "my_MM" :iso-639-2 "mya")
+    (:name "canadian" :standard "english" :code "en" :locale "en_CA")
+    (:name "catalan" :standard "catalan" :code "ca" :locale "ca_ES")
+    (:name "chinese" :standard "chinese" :code "zh" :locale "zh_CN" :iso-639-2 "zho")
+    (:name "coptic" :standard "coptic" :code "cop" :locale "cop_EG")
+    (:name "croatian" :standard "croatian" :code "hr" :locale "hr_HR")
+    (:name "czech" :standard "czech" :code "cs" :locale "cs_CZ")
+    (:name "danish" :standard "danish" :code "da" :locale "da_DK")
+    (:name "dutch" :standard "dutch" :code "nl" :locale "nl_NL")
+    (:name "english" :standard "english" :code "en" :locale "en_GB" :iso-639-2 "eng")
+    (:name "esperanto" :standard "esperanto" :code "eo" :locale "eo_EO")
+    (:name "estonian" :standard "estonian" :code "et" :locale "et_EE")
+    (:name "finnish" :standard "finnish" :code "fi" :locale "fi_FI")
+    (:name "french" :standard "french" :code "fr" :locale "fr_FR" :iso-639-2 "fra")
+    (:name "galician" :standard "galician" :code "gl" :locale "gl_ES")
+    (:name "georgian" :standard "georgian" :code "ka" :locale "ka_GE")
+    (:name "german" :standard "german" :code "de" :locale "de_DE" :iso-639-2 "deu")
+    (:name "greek" :standard "greek" :code "el" :locale "el_GR" :iso-639-2 "ell")
+    (:name "hebrew" :standard "hebrew" :code "he" :locale "he_IL")
+    (:name "hindi" :standard "hindi" :code "hi" :locale "hi_IN")
+    (:name "hungarian" :standard "hungarian" :code "hu" :locale "hu_HU")
+    (:name "icelandic" :standard "icelandic" :code "is" :locale "is_IS")
+    (:name "indonesian" :standard "indonesian" :code "in" :locale "id_ID" :iso-639-2 "ind")
+    (:name "interlingua" :standard "interlingua" :code "ia" :locale "ia_IA")
+    (:name "irish" :standard "irish" :code "ga" :locale "ga_IE")
+    (:name "italian" :standard "italian" :code "it" :locale "it_IT" :iso-639-2 "ita")
+    (:name "japanese" :standard "japanese" :code "ja" :locale "ja_JP" :iso-639-2 "jpn")
+    (:name "kannada" :standard "kannada" :code "kn" :locale "kn_IN")
+    (:name "korean" :standard "korean" :code "ko" :locale "ko_KR" :iso-639-2 "kor")
+    (:name "kurdish" :standard "kurdish" :code "ku" :locale :"ku_IQ" :iso-639-2 "kur")
+    (:name "lao" :standard "lao" :code "lo" :locale "lo_LA")
+    (:name "latin" :standard "latin" :code "la" :locale "la_VA" :iso-639-2 "lat")
+    (:name "latvian" :standard "latvian" :code "lv" :locale "lv_LV")
+    (:name "lithuanian" :standard "lithuanian" :code "lt" :locale "lt_LT")
+    (:name "macedonian" :standard "macedonian" :code "mk" :locale "mk_MK")
+    (:name "malayalam" :standard "malayalam" :code "ml" :locale "ml_IN")
+    (:name "marathi" :standard "marathi" :code "mr" :locale "mr_IN")
+    (:name "mexican" :standard "spanish" :code "es" :locale "es_MX")
+    (:name "mongolian" :standard "mongolian" :code "mn" :locale "mn_MN")
+    (:name "naustrian" :standard "austrian" :code "de" :locale "de_AT")
+    (:name "newzealand" :standard "english" :code "en" :locale "en_NZ")
+    (:name "ngerman" :standard "german" :code "de" :locale "de_DE")
+    (:name "nko" :standard "nko" :code "nqo" :locale "nqo_GN")
+    (:name "norwegian" :standard "norwegian" :code "no" :locale "no_NO")
+    (:name "oriya" :standard "oriya" :code "or" :locale "or_IN")
+    (:name "persian" :standard "persian" :code "fa" :locale "fa_IR")
+    (:name "polish" :standard "polish" :code "pl" :locale "pl_PL")
+    (:name "portuguese" :standard "portuguese" :code "pt" :locale "pt_PT" :iso-639-2 "por")
+    (:name "romanian" :standard "romanian" :code "ro" :locale "ro_RO")
+    (:name "russian" :standard "russian" :code "ru" :locale "ru_RU" :iso-639-2 "rus")
+    (:name "sanskrit" :standard "sanskrit" :code "sa" :locale "sa_IN")
+    (:name "serbian" :standard "serbian" :code "sr" :locale "sr_RS")
+    (:name "slovak" :standard "slovak" :code "sk" :locale "sk_SK")
+    (:name "slovenian" :standard "slovenian" :code "sl" :locale "sl_SI")
+    (:name "somali" :standard "somali" :code "so")
+    (:name "spanish" :standard "spanish" :code "es" :locale "es_ES" :iso-639-2 "spa")
+    (:name "swedish" :standard "swedish" :code "sv" :locale "sv_SE")
+    (:name "swissgerman" :standard "german" :code "de" :locale "de_CH")
+    (:name "tamil" :standard "tamil" :code "ta" :locale "ta_IN")
+    (:name "telugu" :standard "telugu" :code "te" :locale "te_IN")
+    (:name "thai" :standard "thai" :code "th" :locale "th_TH")
+    (:name "turkish" :standard "turkish" :code "tr" :locale "tr_TR")
+    (:name "turkmen" :standard "turkmen" :code "tk" :locale "tk_TM")
+    (:name "ukenglish" :standard "english" :code "en" :locale "en_GB")
+    (:name "ukrainian" :standard "ukrainian" :code "uk" :locale "uk_UA")
+    (:name "urdu" :standard "urdu" :code "ur" :locale "ur_PK")
+    (:name "vietnamese" :standard "vietnamese" :code "vi" :locale "vi_VN")
+    (:name "welsh" :standard "welsh" :code "cy" :locale "cy_GB")
+    (:name "afrikaans" :standard "afrikaans" :code "af" :locale "af_ZA"))
+  "Plist of valid `langid' names, locales and ISO 639-1 codes.")
+
+;;;;; Site names
+
+(defconst tlon-site-data
+  '((:language "es" :name "Altruismo Eficaz" :url "https://altruismoeficaz.net/")
+    ;; TODO: add `:url' property for all sites, based on actual URL
+    ;; TODO: ensure `:name' property values are accurate
+    (:language "ar" :name "الإيثار الفعال")
+    (:language "de" :name "Effektiver Altruismus")
+    (:language "fr" :name "Altruisme Efficace")
+    (:language "it" :name "Altruismo Efficace")
+    (:language "ja" :name "エフェクティブ・アルトルイズム")
+    (:language "ko" :name "이펙티브 알트루이즘"))
+  "List of language-specific names for the uqbar site.")
 
 ;;;; Functions
 
@@ -782,8 +796,8 @@ the actual user.")
   "Set the `:directory' property for REPO in `tlon-repos' if not already set."
   (unless (plist-get repo :dir)
     (let* ((dir (file-name-as-directory
-                 (file-name-concat paths-dir-tlon-repos
-                                   (plist-get repo :name)))))
+		 (file-name-concat paths-dir-tlon-repos
+				   (plist-get repo :name)))))
       (plist-put repo :dir dir))))
 
 (mapc #'tlon-set-dir tlon-repos)
@@ -955,10 +969,10 @@ PAIRS is expected to be an even-sized list of <key value> tuples."
   "Return the first issue in DIR whose title includes STRING.
 If DIR is nil, use the current repository."
   (when-let* ((string (concat "%" string "%"))
-              (default-directory (or dir default-directory))
-              (repo (forge-get-repository :tracked))
-              (repo-id (eieio-oref repo 'id))
-              (issue-number (caar (forge-sql [:select [number] :from issue
+	      (default-directory (or dir default-directory))
+	      (repo (forge-get-repository :tracked))
+	      (repo-id (eieio-oref repo 'id))
+	      (issue-number (caar (forge-sql [:select [number] :from issue
 						      :where (and (= repository $s1)
 								  (like title $s2))]
 					     repo-id
@@ -1005,12 +1019,12 @@ buffer."
   (when-let* ((file (or file (buffer-file-name)))
 	      (repo (tlon-get-repo-from-file file)))
     (when-let* ((relative-path (file-relative-name file repo))
-                (dir-name (file-name-directory relative-path)))
+		(dir-name (file-name-directory relative-path)))
       ;; Only call directory-file-name if dir-name is non-nil.
       ;; If dir-name is nil (e.g., file is at the relative root like "foo.md"),
       ;; tlon-get-bare-dir will return nil.
       (when dir-name
-        (directory-file-name dir-name)))))
+	(directory-file-name dir-name)))))
 
 (defun tlon-select-bare-dir (lang)
   "Set the bare dir in LANG."
@@ -1106,14 +1120,14 @@ case, the return value will be a list of strings rather than a string."
 SELECTION is either a string or a list of strings representing languages in
 English. FORMAT must be either `code' or `locale'."
   (let* ((property (pcase format ('locale :locale) ('code :code)))
-         (fun (lambda (language)
-                (if (equal language "default")
-                    "default" ; Return "default" directly if selected
-                  (tlon-lookup tlon-languages-properties property :name language)))))
+	 (fun (lambda (language)
+		(if (equal language "default")
+		    "default" ; Return "default" directly if selected
+		  (tlon-lookup tlon-languages-properties property :name language)))))
     (if (listp selection)
-        (mapcar (lambda (language)
-                  (funcall fun language))
-                selection)
+	(mapcar (lambda (language)
+		  (funcall fun language))
+		selection)
       (funcall fun selection))))
 
 ;;;###autoload
@@ -1135,7 +1149,7 @@ By default, offer all valid BibTeX languages; if BABEL is non-nil, restrict the
 candidates to languages in the Babel project."
   (let* ((language-candidates (tlon-get-language-candidates babel)))
     (completing-read-multiple "Languages (comma-separated, or 'default'): "
-                              (append '("default") language-candidates))))
+			      (append '("default") language-candidates))))
 
 (defun tlon-get-language-candidates (babel &optional additional-langs excluded-langs)
   "Return a list of language candidates.
@@ -1159,20 +1173,20 @@ ARRAY-TYPE must be one of `list' (default) or `vector'. KEY-TYPE must be one of
 `string' (default), `symbol' or `keyword'."
   (condition-case err
       (let ((json-object-type (or object-type 'alist))
-            (json-array-type (or array-type 'list))
-            (json-key-type (or key-type 'string))
-            (json-false :json-false))
-        (if file
-            (json-read-file file)
-          ;; Try to find and parse just the JSON part
-          (save-excursion
-            (goto-char (point-min))
-            (when (re-search-forward "{" nil t)
-              (goto-char (match-beginning 0))
-              (json-read)))))
+	    (json-array-type (or array-type 'list))
+	    (json-key-type (or key-type 'string))
+	    (json-false :json-false))
+	(if file
+	    (json-read-file file)
+	  ;; Try to find and parse just the JSON part
+	  (save-excursion
+	    (goto-char (point-min))
+	    (when (re-search-forward "{" nil t)
+	      (goto-char (match-beginning 0))
+	      (json-read)))))
     (error
      (message "JSON parsing error in %s: %s"
-              (or file "buffer") err)
+	      (or file "buffer") err)
      nil)))
 
 (defun tlon-write-data (file data)
@@ -1196,23 +1210,23 @@ and INNER-VALUE. Updates FILE accordingly.
 OUTER-KEY-PROMPT is the prompt string for the outer key.
 INNER-VALUE-PROMPT is the prompt string for the inner value."
   (let* ((json-data (or (tlon-read-json file 'hash-table)
-                        (make-hash-table :test 'equal)))
-         (outer-keys (tlon-get-keys json-data))
-         (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
-         (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal)))
-         ;; Prompt for multiple languages or "default"
-         (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): "
-                                             'require-match nil '("default") nil 'multiple))
-         ;; Prioritize non-default language for existing value prompt
-         (prompt-lang (or (cl-find-if-not (lambda (l) (equal l "default")) chosen-langs)
-                          (car chosen-langs)))
-         (existing-value (when prompt-lang
-                           (gethash prompt-lang inner-alist)))
-         (chosen-inner-value (read-string (format "%s for '%s' in %s: "
-                                                  inner-value-prompt
-                                                  chosen-outer-key
-                                                  (string-join chosen-langs ", "))
-                                          existing-value)))
+			(make-hash-table :test 'equal)))
+	 (outer-keys (tlon-get-keys json-data))
+	 (chosen-outer-key (completing-read outer-key-prompt outer-keys nil nil nil nil (car outer-keys)))
+	 (inner-alist (gethash chosen-outer-key json-data (make-hash-table :test 'equal)))
+	 ;; Prompt for multiple languages or "default"
+	 (chosen-langs (tlon-select-language 'code 'babel "Language(s) (or 'default'): "
+					     'require-match nil '("default") nil 'multiple))
+	 ;; Prioritize non-default language for existing value prompt
+	 (prompt-lang (or (cl-find-if-not (lambda (l) (equal l "default")) chosen-langs)
+			  (car chosen-langs)))
+	 (existing-value (when prompt-lang
+			   (gethash prompt-lang inner-alist)))
+	 (chosen-inner-value (read-string (format "%s for '%s' in %s: "
+						  inner-value-prompt
+						  chosen-outer-key
+						  (string-join chosen-langs ", "))
+					  existing-value)))
     ;; Update the inner hash-table for all selected languages/keys
     (dolist (lang chosen-langs)
       (puthash lang chosen-inner-value inner-alist))
@@ -1221,7 +1235,7 @@ INNER-VALUE-PROMPT is the prompt string for the inner value."
     ;; Write back to the file
     (tlon-write-data file json-data)
     (message "Updated '%s' for key '%s' in language(s)/key(s) %s in %s"
-             chosen-inner-value chosen-outer-key (string-join chosen-langs ", ") file)))
+	     chosen-inner-value chosen-outer-key (string-join chosen-langs ", ") file)))
 
 ;;;;; tags
 
