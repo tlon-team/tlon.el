@@ -1950,6 +1950,12 @@ If nil, use the default model."
   :class 'tlon-model-selection-infix
   :variable 'tlon-ai-summarization-model)
 
+(transient-define-infix tlon-ai-infix-select-markdown-fix-model ()
+  "AI model to use for fixing the markdown.
+If nil, use the default model."
+  :class 'tlon-model-selection-infix
+  :variable 'tlon-ai-markdown-fix-model)
+
 (transient-define-infix tlon-ai-infix-select-create-reference-article-model ()
   "AI model to use for creating a reference article.
 If nil, use the default model."
@@ -2025,6 +2031,7 @@ If nil, use the default model."
     ""
     "Models"
     ("m -d" "Summarize commit diffs" tlon-ai-infix-select-summarize-commit-diffs-model)
+    ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("m -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
