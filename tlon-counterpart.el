@@ -88,15 +88,28 @@ remain, the user is prompted to choose."
       (_ (completing-read "Select counterpart: " candidates nil t)))))
 
 (defun tlon-get-counterpart-in-originals (file)
-  "Return a translation counterpart of original FILE.
+  "Return the translation counterpart of original FILE.
 
-The counterpart lives in the mirrored directory inside the chosen
-*translations* repository.  When several Markdown files are found
-the user is prompted to select one."
+The function reads FILE’s ‘key’, looks up every Markdown file in
+the mirrored translations directory, and keeps only those whose
+own ‘key’ maps back to the original key via the bibliography
+lookup.  When no match or more than one match remains, the user
+is prompted."
   (let* ((dir (tlon-get-counterpart-dir file))
+         (orig-key (tlon-yaml-get-key "key" file))
          (candidates (when dir
                        (seq-filter (lambda (f) (string-suffix-p ".md" f t))
                                    (directory-files dir t "\\`[^.]")))))
+    ;; keep only translations that point back to this original
+    (when (and orig-key candidates)
+      (setq candidates
+            (seq-filter
+             (lambda (f)
+               (let ((tr-key (tlon-yaml-get-key "key" f)))
+                 (and tr-key
+                      (string= orig-key
+                               (tlon-bibliography-lookup "=key=" tr-key "translation")))))
+             candidates)))
     (pcase candidates
       ((pred null) (user-error "No translation counterpart found in %s" dir))
       ((pred (lambda (c) (= (length c) 1))) (car candidates))
