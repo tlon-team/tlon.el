@@ -182,8 +182,8 @@ which may prompt if the source file is an original."
                                   :language final-target-lang)))
       ;; No target-language-code provided, determine automatically (non-prompting)
       (progn
-        (setq final-target-lang (tlon-get-counterpart-language repo nil)) ; nil for prompt
-        (setq final-counterpart-repo (tlon-get-counterpart-repo file nil)))) ; nil for prompt
+        (setq final-target-lang (tlon-get-counterpart-language repo nil)) ; derived automatically
+        (setq final-counterpart-repo (tlon-get-counterpart-repo file t)))) ; prompt once
 
     (if (and final-counterpart-repo final-target-lang)
         (let ((counterpart-bare-dir (tlon-get-bare-dir-translation final-target-lang source-lang bare-dir)))
