@@ -74,7 +74,7 @@ there, the user is prompted to choose."
     (pcase candidates
       ((pred null) (user-error "No original counterpart found in %s" dir))
       ((pred (lambda (c) (= (length c) 1))) (car candidates))
-      (_ (completing-read "Select counterpart: " candidates nil t))))
+      (_ (completing-read "Select counterpart: " candidates nil t)))))
 
 (defun tlon-get-counterpart-in-originals (file)
   "Return a translation counterpart of original FILE.
@@ -89,7 +89,7 @@ the user is prompted to select one."
     (pcase candidates
       ((pred null) (user-error "No translation counterpart found in %s" dir))
       ((pred (lambda (c) (= (length c) 1))) (car candidates))
-      (_ (completing-read "Select translation: " candidates nil t))))
+      (_ (completing-read "Select translation: " candidates nil t)))))
 
 (defun tlon-get-counterpart-repo (&optional file prompt)
   "Get the counterpart repo of FILE.
@@ -271,7 +271,7 @@ returned when no counterpart exists."
          (linked-abs (expand-file-name relative-link current-dir))
          (counterpart (ignore-errors (tlon-get-counterpart linked-abs))))
     (when counterpart
-      (file-relative-name counterpart current-dir)))
+      (file-relative-name counterpart current-dir))))
 
 ;;;###autoload
 (defun tlon-replace-internal-links ()
