@@ -446,6 +446,15 @@ COMMIT is non-nil, commit the change."
 	  (add-text-properties (match-beginning 0) (match-end 0)
 			       `(font-lock-face ,highlight-face)))))))
 
+;;;;; File translation
+
+;;;###autoload
+(defun tlon-create-file-translation ()
+  "Create a file with the translation of the bibtex key at point."
+  (interactive)
+  ;; TODO: develop this
+  (message "This command has not yet been developed."))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-jobs-menu "tlon-jobs" nil t)
@@ -456,7 +465,8 @@ COMMIT is non-nil, commit the change."
     ("j" "start or finish phase"             tlon-jobs-start-or-finish-phase)]
    ["Job creation"
     ("c d" "1 import document"               tlon-import-document)
-    ("c r" "2 create bibtex translation"     tlon-create-bibtex-translation)]
+    ("c b" "2 create bibtex translation"     tlon-create-bibtex-translation)
+    ("c f" "3 create file translation"       tlon-create-file-translation)]
    ["Add or modify"
     ("a s" "section correspondence"          tlon-section-correspondence-dwim)
     ("a u" "URL correspondence"              tlon-edit-url-correspondences)]
