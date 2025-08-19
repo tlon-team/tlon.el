@@ -29,6 +29,7 @@
 (require 'tlon-paragraphs)
 (require 'tlon-yaml)
 (require 'cl-lib)
+(require 'seq)
 
 ;;;; Functions
 
@@ -61,19 +62,34 @@ language."
       (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
 
 (defun tlon-get-counterpart-in-translations (file)
-  "Get the counterpart of FILE, when FILE is in `translations'."
-  (if-let ((dir (tlon-get-counterpart-dir file))
-	   (locator (tlon-yaml-get-key "original_path" file)))
-      (file-name-concat dir locator)
-    (user-error "Couldn’t find relevant metadata")))
+  "Return the original counterpart of translation FILE.
+
+The counterpart lives in the mirrored directory inside the
+*originals* repository.  If more than one Markdown file exists
+there, the user is prompted to choose."
+  (let* ((dir (tlon-get-counterpart-dir file))
+         (candidates (when dir
+                       (seq-filter (lambda (f) (string-suffix-p ".md" f t))
+                                   (directory-files dir t "\\`[^.]")))))
+    (pcase candidates
+      ((pred null) (user-error "No original counterpart found in %s" dir))
+      ((pred (lambda (c) (= (length c) 1))) (car candidates))
+      (_ (completing-read "Select counterpart: " candidates nil t))))
 
 (defun tlon-get-counterpart-in-originals (file)
-  "Get the counterpart of FILE, when FILE is in `originals'."
-  (let ((translations-repo (tlon-get-counterpart-repo file)))
-    (tlon-metadata-lookup (tlon-metadata-in-repo translations-repo)
-				"file"
-				"original_path"
-				(file-name-nondirectory file))))
+  "Return a translation counterpart of original FILE.
+
+The counterpart lives in the mirrored directory inside the chosen
+*translations* repository.  When several Markdown files are found
+the user is prompted to select one."
+  (let* ((dir (tlon-get-counterpart-dir file))
+         (candidates (when dir
+                       (seq-filter (lambda (f) (string-suffix-p ".md" f t))
+                                   (directory-files dir t "\\`[^.]")))))
+    (pcase candidates
+      ((pred null) (user-error "No translation counterpart found in %s" dir))
+      ((pred (lambda (c) (= (length c) 1))) (car candidates))
+      (_ (completing-read "Select translation: " candidates nil t))))
 
 (defun tlon-get-counterpart-repo (&optional file prompt)
   "Get the counterpart repo of FILE.
@@ -166,7 +182,7 @@ If FILE is nil, use the current buffer's file."
          (repo (tlon-get-counterpart-repo file))
          (image-dir (tlon-lookup tlon-image-dirs :name :language target-lang))
          (bare-dir (tlon-get-bare-dir-translation target-lang current-lang (tlon-get-bare-dir file)))
-         (slug (file-name-base (tlon-yaml-get-key "original_path" file)))
+         (slug (file-name-base file))
 	 (figure-current (tlon-lookup tlon-figure-names :name :language current-lang))
 	 (figure-target (tlon-lookup tlon-figure-names :name :language target-lang))
 	 (file-name (replace-regexp-in-string figure-current figure-target (file-name-nondirectory translated-src))))
@@ -244,51 +260,18 @@ If called with a prefix ARG, open the counterpart in the other window."
 
 ;;;;; Translate links
 
-(defun tlon-get-counterpart-link (original-relative-link current-buffer-file)
-  "Find the counterpart link for ORIGINAL-RELATIVE-LINK in CURRENT-BUFFER-FILE.
-Returns the relative path string for the counterpart link, or nil if not found."
-  (cl-block tlon-get-counterpart-link
-    (let* ((current-dir (file-name-directory current-buffer-file))
-           (target-repo (tlon-get-repo-from-file current-buffer-file))
-           (target-lang-code (tlon-repo-lookup :language :dir target-repo))
-           (buffer-original-path (tlon-yaml-get-key "original_path" current-buffer-file)))
-      (unless buffer-original-path
-	(warn "No 'original_path' found in metadata for %s" current-buffer-file)
-	(cl-return-from tlon-get-counterpart-link nil))
-      (let* ((original-repo (tlon-get-counterpart-repo current-buffer-file)) ; Repo of the original file
-             (original-buffer-abs-path (file-name-concat original-repo buffer-original-path))
-             (original-buffer-dir (file-name-directory original-buffer-abs-path))
-             ;; Resolve the original relative link against the original buffer's directory
-             (linked-original-abs-path (expand-file-name original-relative-link original-buffer-dir))
-             ;; Get the path relative to the original repo root, used as the key in metadata
-             (linked-original-relative-path (file-relative-name linked-original-abs-path original-repo))
-             ;; Lookup the counterpart file in the target repo's metadata
-             (counterpart-abs-path (tlon-metadata-lookup (tlon-metadata-in-repo target-repo)
-							 "file"
-							 "original_path"
-							 linked-original-relative-path)))
-	;; If metadata lookup failed, try to build the counterpart path
-	;; directly using `tlon-get-counterpart-dir'.  This is necessary for
-	;; links that live in sibling sub-directories such as
-	;; “../authors/derek-parfit.md”, where no metadata entry exists yet.
-	(unless counterpart-abs-path
-          (let* ((fallback-dir (tlon-get-counterpart-dir linked-original-abs-path target-lang-code))
-		 (fallback-path (when fallback-dir
-                                  (file-name-concat fallback-dir
-                                                    (file-name-nondirectory linked-original-abs-path)))))
-            ;; Accept the fallback even if the file does not exist yet – we still
-            ;; want the link to point to the *expected* location of the
-            ;; translation.  Emit a debug message when the file is missing so the
-            ;; user is aware.
-            (when fallback-path
-              (setq counterpart-abs-path fallback-path))))
-	(if counterpart-abs-path
-            (let ((new-relative (file-relative-name counterpart-abs-path current-dir)))
-              new-relative)
-          (progn
-            (warn "Counterpart not found for original link '%s' (resolved original lookup key: %s)"
-                  original-relative-link linked-original-relative-path)
-            nil))))))
+(defun tlon-get-counterpart-link (relative-link current-buffer-file)
+  "Return the counterpart path for RELATIVE-LINK found in CURRENT-BUFFER-FILE.
+
+The function resolves RELATIVE-LINK to an absolute path, asks
+`tlon-get-counterpart' for its peer, and converts the result back
+to a path relative to the current buffer directory.  Nil is
+returned when no counterpart exists."
+  (let* ((current-dir (file-name-directory current-buffer-file))
+         (linked-abs (expand-file-name relative-link current-dir))
+         (counterpart (ignore-errors (tlon-get-counterpart linked-abs))))
+    (when counterpart
+      (file-relative-name counterpart current-dir)))
 
 ;;;###autoload
 (defun tlon-replace-internal-links ()

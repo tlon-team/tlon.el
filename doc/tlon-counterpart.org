@@ -41,8 +41,8 @@ This module provides functionality for finding, opening, and comparing "counterp
 
 #+findex: tlon-get-counterpart
 + ~tlon-get-counterpart~ :: (Autoloaded) Calculates and returns the full path to the counterpart file of =FILE= (or the current buffer's file).
-  - If the file is in a repository marked as =translations= (based on its =:subtype= property), it looks for the =original_path= key in the file's YAML front matter and combines it with the counterpart directory (~tlon-get-counterpart-dir~).
-  - If the file is in a repository marked as =originals=, it prompts the user to select a target language, finds the corresponding translations repository, and looks up the file's entry in the target repository's metadata to find the translated filename.
+  - If the file is in a repository marked as =translations= (based on its =:subtype= property), it mirrors the file's relative directory into the originals repository and returns the unique Markdown file found there (prompting when multiple exist).
+  - If the file is in a repository marked as =originals=, it prompts the user to select a target language, mirrors the relative directory into the translations repository, and selects the Markdown file found there (prompting when multiple exist).
   - Signals an error if the repository subtype is neither =originals= nor =translations=, or if necessary metadata is missing.
 
 #+findex: tlon-get-counterpart-dir
@@ -120,10 +120,10 @@ This section lists non-interactive functions used internally or potentially usef
 :END:
 
 #+findex: tlon-get-counterpart-in-translations
-+ ~tlon-get-counterpart-in-translations~ :: Specific logic for finding the counterpart when =FILE= is in a =translations= repository. Gets the counterpart directory (~tlon-get-counterpart-dir~) and looks up the =original_path= in the file's YAML metadata.
++ ~tlon-get-counterpart-in-translations~ :: Logic for a translation file.  It determines the counterpart directory and returns the unique Markdown file located there, or prompts when several exist.
 
 #+findex: tlon-get-counterpart-in-originals
-+ ~tlon-get-counterpart-in-originals~ :: Specific logic for finding the counterpart when =FILE= is in an =originals= repository. Gets the counterpart repository (~tlon-get-counterpart-repo~), reads its metadata (~tlon-metadata-in-repo~), and searches for an entry where the =original_path= matches the filename of =FILE=. Returns the =file= property of the matching entry.
++ ~tlon-get-counterpart-in-originals~ :: Logic for an original file.  It mirrors the relative path into the selected translations repository and returns the Markdown file present there, prompting when multiple exist.
 
 *** Link Handling Logic
 :PROPERTIES:
