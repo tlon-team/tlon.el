@@ -190,8 +190,8 @@ This section details the interactive commands provided by =tlon-bib.el=.
 :CUSTOM_ID: h:tlon-bib-translation-entry-commands
 :END:
 
-#+findex: tlon-bib-create-translation-entry
-+ ~tlon-bib-create-translation-entry~ :: (Autoloaded) Creates a new BibTeX entry representing a translation of the entry currently open in =ebib-entry-mode=.
+#+findex: tlon-create-bibtex-translation
++ ~tlon-create-bibtex-translation~ :: (Autoloaded) Creates a new BibTeX entry representing a translation of the entry currently open in =ebib-entry-mode=.
   1. Prompts for the target language using ~tlon-select-language~.
   2. Gathers fields from the original entry (=translation= (original key), =type=, =author=, =database=).
   3. Prompts for the new =title= and =translator=.
@@ -269,7 +269,7 @@ It provides the following groups and commands:
     + =v= :: Check BibTeX keys (~tlon-bib-check-bibkeys~)
 + *Ebib*:
   + =a= :: Fetch abstract (~tlon-fetch-and-set-abstract~)
-  + =c= :: Create translation entry (~tlon-bib-create-translation-entry~)
+  + =c= :: Create translation entry (~tlon-create-bibtex-translation~)
 + *BibTeX*:
   + *Report*:
     + =r r= :: Generate report (~tlon-bib-entries-report~)
