@@ -504,12 +504,12 @@ TYPE can be `errors' or `flow'."
       (gptel-context-add-file translation-file)
       (when glossary-file
 	(gptel-context-add-file glossary-file))
-      (message "Requesting AI to revise %s..." (file-name-nondirectory translation-file))
       (tlon-make-gptel-request prompt nil
                                (lambda (response info)
 				 (tlon-translate--revise-callback response info translation-file type))
                                model t nil tools)
-      (gptel-context-remove-all))))
+      (gptel-context-remove-all)
+      (message "Requesting AI to revise %s..." (file-name-nondirectory translation-file)))))
 
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type)
