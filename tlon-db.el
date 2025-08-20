@@ -122,12 +122,6 @@ Set to t to enable verbose logging from url.el.")
   (let ((citar-bibliography (list tlon-file-db)))
     (citar-select-ref)))
 
-(defun tlon-db-get-key-at-point ()
-  "If there is a bibtex key at point, return it."
-  (pcase major-mode
-    ((or 'ebib-index-mode 'ebib-entry-mode) (ebib--get-key-at-point))
-    ('bibtex-mode (bibtex-extras-get-key))))
-
 ;;;;; API
 
 ;;;;;; Authenticate
@@ -249,6 +243,7 @@ argument to enable this check bypass."
 (declare-function bibtex-extras-delete-entry "bibtex-extras")
 (declare-function bibtex-extras-insert-entry "bibtex-extras")
 (declare-function ebib-extras-get-field "ebib-extras")
+(declare-function tlon-get-key-at-point "tlon-bib")
 (cl-defun tlon-db-post-entry (&optional key attempt)
   "Create or update KEY in the EA International API.
 If called interactively, post the entry at point; otherwise use KEY.
@@ -257,7 +252,7 @@ ATTEMPT is used to track retries in case of missing author names."
   (interactive)
   (setq attempt (or attempt 0))
   (tlon-db-ensure-auth)
-  (if-let ((entry-key (or key (tlon-db-get-key-at-point))))
+  (if-let ((entry-key (or key (tlon-get-key-at-point))))
       (let* ((entry-text   (tlon-db--normalize-author-field (bibtex-extras-get-entry-as-string entry-key nil)))
              (encoded-text (encode-coding-string entry-text 'utf-8))
              (headers      '(("Content-Type" . "text/plain; charset=utf-8")
@@ -369,7 +364,7 @@ Return the modified entry string."
   "Delete KEY from the EA International API.
 If LOCALLY is non-nil, also delete from local db file.
 Interactively, NO-CONFIRM is set with a prefix argument, and LOCALLY is t."
-  (interactive (list (or (tlon-db-get-key-at-point)
+  (interactive (list (or (tlon-get-key-at-point)
 			 (tlon-db-get-db-entries))
 		     current-prefix-arg
 		     t))
@@ -722,7 +717,7 @@ code such as \"fr\".
 On success, the translation key is returned as a string.  If no translation in
 LANG exists or the request fails, signal an error."
   (interactive
-   (list (or (tlon-db-get-key-at-point)
+   (list (or (tlon-get-key-at-point)
              (read-string "Original key: "))
          (tlon-read-language nil "Target language: ")))
   (unless lang
