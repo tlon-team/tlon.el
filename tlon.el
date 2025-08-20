@@ -196,7 +196,7 @@ This variable should not be set manually.")
 (defun tlon-get-file-from-key (key)
   "Return the file path of KEY."
   (if-let ((file (tlon-metadata-lookup
-		  (tlon-metadata-in-repos :subtype 'translations) "file" "original_key" key)))
+		  (tlon-metadata-in-repos :subtype 'translations) "file" "key" key)))
       file
     (user-error "Metadata lookup for key `%s' returned nil" key)))
 
@@ -250,7 +250,7 @@ If FILE is not provided, use the file visited by the current buffer."
   "Get the BibTeX key in the current Markdown buffer."
   (tlon-ensure-markdown-mode)
   (save-buffer)
-  (let ((key (tlon-yaml-get-key "original_key")))
+  (let ((key (tlon-yaml-get-key "key")))
     (unless key
       (user-error "No key found"))
     key))
