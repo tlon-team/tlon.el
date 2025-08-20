@@ -263,27 +263,32 @@ slugified version of the original basename."
     (when first-translation
       (alist-get "text" first-translation nil nil #'string=))))
 
+(declare-function tlon-get-key-at-point "tlon-bib")
 ;;;###autoload
 (defun tlon-translate-current-file ()
   "Create a file with the translation of the bibtex key at point."
   (interactive)
   (unless (derived-mode-p 'bibtex-mode 'ebib-entry-mode 'ebib-index-mode)
-    (user-error "This command should be run with point on the BibTeX entry whose translation you want to create"))
+    (user-error "This command should be run with point on the translation BibTeX entry"))
   (let* ((mode-ebib-p   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
 	 (get-field   (if mode-ebib-p #'ebib-extras-get-field #'bibtex-extras-get-field))
 	 (orig-key (funcall get-field "translation")))
     (unless orig-key
-      (user-error "This command should be run with point on a *translation* BibTeX entry"))
+      (user-error "This command should be run with point on the *translation* BibTeX entry, not its original"))
     (let* ((orig-file (tlon-counterpart--file-for-key orig-key "en"))
 	   (target-language (funcall get-field "langid"))
 	   (target-language-code (tlon-lookup tlon-languages-properties :code :name target-language))
 	   (title (funcall get-field "title"))
 	   (slug (simple-extras-slugify title))
 	   (filename (file-name-with-extension slug "md"))
-	   (target-file (file-name-concat (tlon-get-counterpart-dir orig-file target-language-code) filename)))
+	   (target-file (file-name-concat (tlon-get-counterpart-dir orig-file target-language-code) filename))
+	   (target-key (tlon-get-key-at-point)))
       (tlon-translate-file orig-file target-language-code target-file)
-      ;; TODO: set metadata properly
-      )))
+      (find-file target-file)
+      (tlon-yaml-delete-metadata)
+      (save-buffer)
+      (tlon-yaml-insert-field "key" target-key)
+      (save-buffer))))
 
 ;;;;;; abstract
 
