@@ -678,15 +678,8 @@ Fields set in the new entry:
   (interactive)
   (tlon-ensure-bib)
   (let* ((target-code (tlon-select-language 'code 'babel))
-         ;; Normalise language names: map the BibTeX-unfriendly
-         ;; “argentinian” variant produced by some look-ups to “spanish”.
-         (target-lang (let ((name (or (tlon-lookup tlon-languages-properties
-                                                   :name :code target-code)
-                                      target-code)))
-                        (if (string= name "argentinian") "spanish" name)))
-         ;; Helpers to abstract over Ebib / BibTeX modes
+         (target-lang (tlon-lookup tlon-languages-properties :standard :code target-code))
          (mode-ebib   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
-         ;; The current entry is now a *translation*; fetch the original key
          (orig-key    (tlon-get-key-at-point))
          ;; Site information remains language–specific
          (site-name   (tlon-lookup tlon-site-data :name :language target-code))
