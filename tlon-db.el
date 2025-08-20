@@ -736,7 +736,6 @@ RESULT is a plist with :status, :data, and :raw-text."
 
 (defun tlon-db-get-translation-key (original-key &optional lang)
   "Return the BibTeX key of the translation of ORIGINAL-KEY in language LANG.
-
 If called interactively, prompt for ORIGINAL-KEY (defaulting to the BibTeX key
 at point) and LANG when they are not provided.  LANG should be an ISO language
 code such as \"fr\".
@@ -749,8 +748,8 @@ LANG exists or the request fails, signal an error."
          (tlon-read-language nil "Target language: ")))
   (unless lang
     (setq lang (tlon-read-language nil "Target language: ")))
-  (let* ((endpoint (format "/api/translations/%s"
-                           (url-hexify-string original-key)))
+  (let* ((language (tlon-lookup tlon-languages-properties :standard :code lang))
+	 (endpoint (format "/api/translations/%s" (url-hexify-string original-key)))
          (headers '(("accept" . "application/json")))
          (response-buffer (tlon-db--make-request "GET" endpoint nil headers nil))
          (data (and response-buffer
@@ -760,7 +759,7 @@ LANG exists or the request fails, signal an error."
     (unless data
       (user-error "Failed to retrieve translations for %s" original-key))
     (let* ((translations (gethash "translations" data))
-           (match (cl-find (downcase lang) translations
+           (match (cl-find language translations
                            :key (lambda (tr)
                                   (downcase (or (gethash "language" tr) "")))
                            :test #'string=)))
@@ -772,6 +771,49 @@ LANG exists or the request fails, signal an error."
             translation-key)
         (user-error "No translation found for %s in language %s"
                     original-key lang)))))
+
+;;;;;; Get translations
+
+(cl-defun tlon-db-get-translations (&optional original-key)
+  "Return a list of translations for ORIGINAL-KEY.
+Each element is a plist with the properties :key and :language.
+
+If called interactively, prompt for ORIGINAL-KEY (defaulting to the
+BibTeX key at point) and display the result in the *Db API Result*
+buffer.  From Lisp, return the list directly."
+  (interactive
+   (list (or (tlon-get-key-at-point)
+             (read-string "Original key: "))))
+  (unless original-key
+    (setq original-key (tlon-get-key-at-point)))
+  (let* ((endpoint (format "/api/translations/%s"
+                            (url-hexify-string original-key)))
+         (headers '(("accept" . "application/json")))
+         (response-buffer (tlon-db--make-request
+                           "GET" endpoint nil headers nil))
+         (json-data (and response-buffer
+                         (tlon-db--parse-json-response response-buffer))))
+    (when response-buffer
+      (kill-buffer response-buffer))
+    (unless json-data
+      (user-error "Failed to retrieve translations for %s" original-key))
+    (let* ((translations (gethash "translations" json-data))
+           (result (mapcar (lambda (tr)
+                             (list :key      (gethash "key" tr)
+                                   :language (gethash "language" tr)))
+                           translations)))
+      (if (called-interactively-p 'any)
+          (tlon-db--display-result-buffer
+           (format "Translations for %s" original-key)
+           (lambda (data)
+             (if data
+                 (dolist (item data)
+                   (insert (format "%s  (%s)\n"
+                                   (plist-get item :key)
+                                   (plist-get item :language))))
+               (insert "No translations found.\n")))
+           result)
+        result))))
 
 ;;;;;; Helpers
 
@@ -1221,6 +1263,7 @@ If there are no differences, return nil."
     ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)
     ("e" "Get entry" tlon-db-get-entry)
     ("p" "Post entry" tlon-db-post-entry)
+    ("t" "List translations" tlon-db-get-translations)
     ("m" "Move entry to db" tlon-db-move-entry)
     ("d" "Delete entry" tlon-db-delete-entry)
     ("c" "Check name" tlon-db-check-name)
