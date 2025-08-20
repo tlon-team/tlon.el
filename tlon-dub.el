@@ -1317,9 +1317,10 @@ Attempts to handle common sentence-ending punctuation patterns."
 (defun tlon-dub-split-video-at-timestamps (video-file timestamps-file &optional quick output-dir)
   "Split VIDEO-FILE using markers from TIMESTAMPS-FILE (one HH:MM:SS.mmm per line).
 Each part starts at its timestamp and ends 1 ms before the next timestamp, or at
-the end of the video for the last part. Parts are saved as <BASENAME>-partN.<ext> (where <ext> is the original file extension)
-in OUTPUT-DIR, defaulting to the directory of VIDEO-FILE. If QUICK is non-nil,
-do not re-encode the video, just copy it. This generates the files much more
+the end of the video for the last part. Parts are saved as
+<BASENAME>-partN.<ext> (where <ext> is the original file extension) in
+OUTPUT-DIR, defaulting to the directory of VIDEO-FILE. If QUICK is non-nil, do
+not re-encode the video, just copy it. This generates the files much more
 quickly but it can only cut at keyframes, so the video boundaries may not
 exactly coincide with those specified in the timestamp file."
   (interactive
@@ -1487,8 +1488,8 @@ created in the same directory.  Uses ffmpeg with uncompressed pcm_s16le
 (defun tlon-dub-split-audio-at-timestamps (audio-file timestamps-file &optional output-dir)
   "Split AUDIO-FILE using markers from TIMESTAMPS-FILE (one HH:MM:SS.mmm per line).
 Each part starts at its timestamp and ends 1 ms before the next timestamp, or at
-the end of the audio for the last part.  Parts are saved as <BASENAME>-partN.<ext>
-in OUTPUT-DIR, defaulting to the directory of AUDIO-FILE."
+the end of the audio for the last part. Parts are saved as
+<BASENAME>-partN.<ext> in OUTPUT-DIR, defaulting to the directory of AUDIO-FILE."
   (interactive
    (list (read-file-name "Audio file: " nil nil t)
          (read-file-name "Timestamps file: " nil nil t)
@@ -1536,7 +1537,7 @@ This is a thin wrapper around `tlon-dub-join-files`."
 
 ;;;###autoload
 (defun tlon-dub-join-video-files (list-file &optional output-file)
-  "Join video files whose paths are listed line-by-line in LIST-FILE into OUTPUT-FILE.
+  "Join video files whose paths are listed in LIST-FILE into OUTPUT-FILE.
 This is a convenience wrapper around `tlon-dub-join-files` intended for video
 segments created by `tlon-dub-split-video-at-timestamps`."
   (interactive (list (read-file-name "List of video files: " nil nil t ".txt")))
