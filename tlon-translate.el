@@ -146,11 +146,15 @@ Returns the translated text as a string."
 
 ;;;;;; file
 
+(declare-function tlon-get-counterpart-in-originals "tlon-counterpart")
 ;;;###autoload
-(defun tlon-translate-file (&optional file lang)
+(defun tlon-translate-file (&optional file lang target-file)
   "Translate FILE into LANG using `tlon-translate-engine'.
 If FILE is not provided, prompt for one, defaulting to the current buffer's
-file. If LANG is not provided, prompt for a target language."
+file. If LANG is not provided, prompt for a target language. TARGET-FILE is the
+file where the translation will be saved. If nil, determine it based on the
+source file and target language. If a counterpart already exists, prompt for
+confirmation before overwriting it."
   (interactive
    (list (read-file-name "Translate file: " nil nil t
 			 (file-relative-name (buffer-file-name) default-directory))
@@ -158,20 +162,23 @@ file. If LANG is not provided, prompt for a target language."
   (let* ((source-file file)
          (target-lang-code lang)
          (target-file
-          (let ((candidate (tlon-translate--get-counterpart-for-language source-file target-lang-code)))
-            (cond
-             ((and candidate (file-exists-p candidate))
-              (if (y-or-n-p (format "Overwrite existing counterpart %s?" candidate))
-                  candidate
-                (read-file-name "Save translation to: "
-                                (file-name-directory candidate)
-                                candidate)))
-             (candidate candidate)
-             (t
-              (let* ((counterpart-dir (tlon-get-counterpart-dir source-file target-lang-code))
-                     (default-name (tlon-translate--default-filename source-file target-lang-code))
-                     (default-path (when default-name (file-name-concat counterpart-dir default-name))))
-                (read-file-name "Save translation to: " counterpart-dir default-path)))))))
+	  (or target-file
+	      (let ((candidate (condition-case nil
+				   (tlon-get-counterpart-in-originals source-file target-lang-code)
+				 (error nil))))
+		(cond
+		 ((and candidate (file-exists-p candidate))
+		  (if (y-or-n-p (format "Overwrite existing counterpart %s?" candidate))
+		      candidate
+		    (read-file-name "Save translation to: "
+				    (file-name-directory candidate)
+				    candidate)))
+		 (candidate candidate)
+		 (t
+		  (let* ((counterpart-dir (tlon-get-counterpart-dir source-file target-lang-code))
+			 (default-name (tlon-translate--default-filename source-file target-lang-code))
+			 (default-path (when default-name (file-name-concat counterpart-dir default-name))))
+		    (read-file-name "Save translation to: " counterpart-dir default-path))))))))
     (when target-file
       (tlon-translate--do-translate source-file target-file target-lang-code))))
 
@@ -182,19 +189,21 @@ The slug is built by translating the original title with
 `tlon-translate-text' and passing the result through
 `simple-extras-slugify'.  If translation fails, fall back to a
 slugified version of the original basename."
-  (let* ((bib-key (tlon-yaml-get-key "key" source-file))
-         (title (or (when bib-key
-                      (tlon-bibliography-lookup "=key=" bib-key "title"))
+  (let* ((original-key (tlon-yaml-get-key "key" source-file))
+	 (target-lang-name (tlon-lookup tlon-languages-properties
+					:standard :code target-lang-code))
+	 (translation-key (tlon-get-counterpart-key original-key target-lang-name))
+         (title (or (tlon-bibliography-lookup "=key=" translation-key "title")
                     (replace-regexp-in-string "-" " " (file-name-base source-file))))
-         (source-lang-code (tlon-get-language-in-file source-file))
-         (translated (ignore-errors
+	 (source-lang-code (tlon-get-language-in-file source-file))
+	 (translated (ignore-errors
                        (tlon-translate-text title
-                                            target-lang-code
-                                            source-lang-code
-                                            nil
-                                            t)))
-         (slug (simple-extras-slugify (or translated title)))
-         (ext  (file-name-extension source-file t)))
+					    target-lang-code
+					    source-lang-code
+					    nil
+					    t)))
+	 (slug (simple-extras-slugify (or translated title)))
+	 (ext  (file-name-extension source-file t)))
     (concat slug ext)))
 
 (defun tlon-translate--do-translate (source-file target-file target-lang-code)
@@ -217,19 +226,6 @@ slugified version of the original basename."
                              t)))
     ;; TODO: add `ai' case; adapt `tlon-ai-translate-file' (and then remove from `tlon-ai.el')
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
-
-(defun tlon-translate--get-counterpart-for-language (file lang-code)
-  "Return the counterpart of FILE for LANG-CODE."
-  (let* ((repo (tlon-get-repo-from-file file))
-         (subtype (tlon-repo-lookup :subtype :dir repo)))
-    (pcase subtype
-      ('originals
-       (tlon-translate--get-translation-from-original file lang-code))
-      ('translations
-       (if (string= (tlon-repo-lookup :language :dir repo) lang-code)
-           file
-         (when-let ((original-file (tlon-get-counterpart-in-translations file)))
-           (tlon-translate--get-translation-from-original original-file lang-code)))))))
 
 (declare-function tlon-metadata-in-repo "tlon-yaml")
 (defun tlon-translate--get-translation-from-original (original-file lang-code)
@@ -266,6 +262,31 @@ slugified version of the original basename."
          (first-translation (car translations)))
     (when first-translation
       (alist-get "text" first-translation nil nil #'string=))))
+
+;;;###autoload
+(defun tlon-tranlsate-current-file ()
+  "Create a file with the translation of the bibtex key at point."
+  (interactive)
+  (unless (derived-mode-p 'bibtex-mode 'ebib-entry-mode 'ebib-index-mode)
+    (user-error "This command should be run with point on the BibTeX entry whose translation you want to create"))
+  (let* ((mode-ebib-p   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
+	 (get-field   (if mode-ebib-p #'ebib-extras-get-field #'bibtex-extras-get-field))
+	 (orig-key (funcall get-field "translation")))
+    (unless orig-key
+      (user-error "This command should be run with point on a *translation* BibTeX entry"))
+    (let* ((key (if mode-ebib-p
+		    (ebib-extras-get-field "=key=")
+		  (bibtex-extras-get-key)))
+	   (orig-file (tlon-counterpart--file-for-key orig-key "en"))
+	   (target-language (funcall get-field "langid"))
+	   (target-language-code (tlon-lookup tlon-languages-properties :code :name target-language))
+	   (title (funcall get-field "title"))
+	   (slug (simple-extras-slugify title))
+	   (filename (file-name-with-extension slug "md"))
+	   (target-file (file-name-concat (tlon-get-counterpart-dir orig-file target-language-code) filename)))
+      (tlon-translate-file orig-file target-language-code target-file)
+      ;; TODO: set metadata properly
+      )))
 
 ;;;;;; abstract
 
