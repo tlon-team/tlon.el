@@ -675,5 +675,52 @@ user for one."
    (tlon-metadata-in-repos :subtype 'translations)
    "translators"))
 
+;;;;; temp
+
+(defun tlon-yaml-add-translation-keys (lang)
+  "Populate `key' metadata in all article translations inlang.
+This walks every markdown file under the articles folder of the repo for LANG.
+For each file it:
+
+1. Reads the `original_path' field, which is the filename of the
+   English original.
+2. Opens this file.
+3. Retrieves the value of its `key' field.
+4. Uses `tlon-db-get-translation-key' to obtain the BibTeX key of
+   the translation into LANG.
+5. Writes that key back into the LANG file as a `key' field,
+   unless the field already exists."
+  (interactive (list (tlon-select-language 'code 'babel)))
+  (let* ((en-dir (file-name-concat (tlon-repo-lookup :dir :name "uqbar-en")
+				   "articles"))
+	 (trans-dir (file-name-concat (tlon-repo-lookup :dir :subproject "uqbar" :language lang)
+				      (tlon-lookup tlon-core-bare-dirs lang "en" "articles")))
+	 (files  (directory-files-recursively trans-dir "\\.md$")))
+    (dolist (trans-file files)
+      (let* ((original-filename (tlon-yaml-get-key "original_path" trans-file))
+             (en-file (and original-filename
+                           (expand-file-name original-filename en-dir))))
+	(cond
+	 ((not original-filename)
+          (tlon-message-debug "No `original_path' in %s" trans-file))
+	 ((not (file-exists-p en-file))
+          (tlon-message-debug "Original file %s not found" en-file))
+	 (t
+          (let* ((en-key (tlon-yaml-get-key "key" en-file))
+		 (trans-key (and en-key
+				 (tlon-db-get-translation-key en-key lang)))
+		 (existing (tlon-yaml-get-key "key" trans-file)))
+            (cond
+             ((not en-key)
+              (tlon-message-debug "`key' missing in original %s" en-file))
+             ((not trans-key)
+              (tlon-message-debug "Translation key not found for %s" en-key))
+             (existing
+              (tlon-message-debug "`key' already present in %s" trans-file))
+             (t
+              (with-current-buffer (find-file-noselect trans-file)
+		(tlon-yaml-insert-field "key" trans-key))
+              (tlon-message-debug "Inserted key %s in %s" trans-key trans-file))))))))))
+
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here
