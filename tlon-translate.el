@@ -264,7 +264,7 @@ slugified version of the original basename."
       (alist-get "text" first-translation nil nil #'string=))))
 
 ;;;###autoload
-(defun tlon-tranlsate-current-file ()
+(defun tlon-translate-current-file ()
   "Create a file with the translation of the bibtex key at point."
   (interactive)
   (unless (derived-mode-p 'bibtex-mode 'ebib-entry-mode 'ebib-index-mode)
