@@ -466,7 +466,7 @@ COMMIT is non-nil, commit the change."
    ["Job creation"
     ("c d" "1 import document"               tlon-import-document)
     ("c b" "2 create bibtex translation"     tlon-create-bibtex-translation)
-    ("c f" "3 create file translation"       tlon-create-file-translation)]
+    ("c f" "3 create file translation"       tlon-tranlsate-current-file)]
    ["Add or modify"
     ("a s" "section correspondence"          tlon-section-correspondence-dwim)
     ("a u" "URL correspondence"              tlon-edit-url-correspondences)]
