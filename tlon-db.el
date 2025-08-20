@@ -734,6 +734,7 @@ RESULT is a plist with :status, :data, and :raw-text."
 
 ;;;;;; Get translation key
 
+;;;###autoload
 (defun tlon-db-get-translation-key (original-key &optional lang)
   "Return the BibTeX key of the translation of ORIGINAL-KEY in language LANG.
 If called interactively, prompt for ORIGINAL-KEY (defaulting to the BibTeX key
@@ -745,7 +746,7 @@ LANG exists or the request fails, signal an error."
   (interactive
    (list (or (tlon-get-key-at-point)
              (read-string "Original key: "))
-         (tlon-read-language nil "Target language: ")))
+         (tlon-select-language 'code)))
   (unless lang
     (setq lang (tlon-read-language nil "Target language: ")))
   (let* ((language (tlon-lookup tlon-languages-properties :standard :code lang))
@@ -1262,8 +1263,8 @@ If there are no differences, return nil."
     ("g" "Get entries (prompt)" tlon-db-get-entries)
     ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)
     ("e" "Get entry" tlon-db-get-entry)
+    ("k" "Get translation key" tlon-db-get-translation-key)
     ("p" "Post entry" tlon-db-post-entry)
-    ("t" "List translations" tlon-db-get-translations)
     ("m" "Move entry to db" tlon-db-move-entry)
     ("d" "Delete entry" tlon-db-delete-entry)
     ("c" "Check name" tlon-db-check-name)
