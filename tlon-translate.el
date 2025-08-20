@@ -83,7 +83,7 @@ available options. If nil, use the default `gptel-model'."
   "Prefix for translation revision prompts.")
 
 (defconst tlon-translate-prompt-revise-suffix
-  "Do a sentence by sentence revision. URLs and bibtex keys should appear exactly as they do in the original file. Once you are done comparing the two files and identifying the changes that should be made to the translation, write your changes to `%1$s' using the 'edit_file` tool."
+  "Ignore the front matter section at the beginning of the article (delimited by ‘---’). Do a sentence by sentence revision. URLs and bibtex keys should appear exactly as they do in the original file. Once you are done comparing the two files and identifying the changes that should be made to the translation, write your changes to `%1$s' using the 'edit_file` tool."
   "Suffix for translation revision prompts.")
 
 (defconst tlon-translate-revise-errors-prompt
