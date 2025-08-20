@@ -790,6 +790,7 @@ can be found."
       "https://local-dev.ea.international"
     tlon-db-api-base-url))
 
+(defvar gnutls-trustfiles)
 ;;;###autoload
 (defun tlon-db--make-request (method endpoint data headers &optional auth-required base-url)
   "Make an HTTP request to the EA International API.
