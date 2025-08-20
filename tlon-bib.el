@@ -677,13 +677,15 @@ Fields set in the new entry:
                         (if (string= name "argentinian") "spanish" name)))
          ;; Helpers to abstract over Ebib / BibTeX modes
          (mode-ebib   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
-         (get-field   (if mode-ebib #'ebib-extras-get-field #'bibtex-extras-get-field))
          ;; The current entry is now a *translation*; fetch the original key
-         (orig-key    (funcall get-field "translation"))
+         (orig-key    (if mode-ebib
+			  (ebib-extras-get-field "=key=")
+			(bibtex-extras-get-key)))
          ;; Site information remains language–specific
          (site-name   (tlon-lookup tlon-site-data :name :language target-code))
          ;; Get the original URL by looking it up in the bibliography
          (original-url (tlon-bibliography-lookup "=key=" orig-key "url"))
+	 (get-field   (if mode-ebib #'ebib-extras-get-field #'bibtex-extras-get-field))
          (entry-type
           (or (funcall get-field "=type=")
               (when (derived-mode-p 'bibtex-mode)
