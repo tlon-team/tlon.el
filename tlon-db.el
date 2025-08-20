@@ -361,17 +361,27 @@ Return the modified entry string."
 ;;;;;; Move entry
 
 (declare-function tlon-ensure-bib "tlon-bib")
+(declare-function ebib-extras-reload-database-no-confirm "ebib-extras")
+(declare-function citar-extras-goto-bibtex-entry "citar-extras")
+(declare-function ebib-extras-get-db-number "ebib-extras")
 ;;;###autoload
-(defun tlon-db-move-entry ()
-  "Move the entry at point to the database."
+(defun tlon-db-move-entry (&optional key)
+  "Move the entry with KEY to the database.
+If KEY is nil, use the key of the entry at point."
   (interactive)
   (tlon-ensure-bib)
-  (let ((key )))
-  (tlon-db-post-entry)
-  (if (derived-mode-p 'bibtex-mode)
-      (bibtex-kill-entry)
-    (ebib-delete-entry))
-  (message "Entry "))
+  (let* ((key (or key (tlon-get-key-at-point)))
+	 filename)
+    (citar-extras-goto-bibtex-entry key)
+    (setq filename (file-name-nondirectory (buffer-file-name)))
+    (tlon-db-post-entry)
+    (bibtex-kill-entry)
+    (save-buffer)
+    (kill-buffer)
+    (ebib-extras-reload-database-no-confirm (nth (ebib-extras-get-db-number tlon-db-file-db) ebib--databases))
+    (run-with-timer 3 nil
+                    (lambda ()
+                      (message "Entry \"%s\" added to db and removed from \"%s\"." key filename)))))
 
 ;;;;;; Delete entry
 
