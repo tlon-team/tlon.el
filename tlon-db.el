@@ -952,7 +952,7 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
     (match-string 1 line)))
 
 (defun tlon-db--get-changed-keys-from-diff (diff-output)
-  "Parse unified DIFF-OUTPUT and classify entry changes.
+  "Parse unified DIFF-OUTPUT and classify entry modifications.
 Return a plist with the keys :added, :deleted and :modified."
   (let ((table (make-hash-table :test #'equal)))
     (with-temp-buffer
@@ -1035,6 +1035,9 @@ Return a plist with the keys :added, :deleted and :modified."
 
 (defun tlon-db--log-sync-action-modified (key before after)
   "Append a colored, word‑refined diff for the entry KEY.
+KEY is the identifier of the database entry being modified.
+BEFORE is the previous value of the entry (string or nil).
+AFTER is the new value of the entry (string or nil).
 
 The unified diff is produced with the external program \"diff\".
 Lines are coloured with the standard `diff-*` faces; if
