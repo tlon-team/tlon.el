@@ -735,18 +735,23 @@ RESULT is a plist with :status, :data, and :raw-text."
 ;;;;;; Get translation key
 
 ;;;###autoload
-(defun tlon-db-get-translation-key (original-key &optional lang)
+(defun tlon-db-get-translation-key (original-key &optional lang interactive-call-p)
   "Return the BibTeX key of the translation of ORIGINAL-KEY in language LANG.
 If called interactively, prompt for ORIGINAL-KEY (defaulting to the BibTeX key
 at point) and LANG when they are not provided.  LANG should be an ISO language
 code such as \"fr\".
+
+When INTERACTIVE-CALL-P is non-nil, the function also echoes the
+translation key in the echo area.  This argument is supplied
+automatically when the command is invoked interactively.
 
 On success, the translation key is returned as a string.  If no translation in
 LANG exists or the request fails, signal an error."
   (interactive
    (list (or (tlon-get-key-at-point)
              (read-string "Original key: "))
-         (tlon-select-language 'code)))
+         (tlon-select-language 'code)
+         t))
   (unless lang
     (setq lang (tlon-read-language nil "Target language: ")))
   (let* ((language (tlon-lookup tlon-languages-properties :standard :code lang))
@@ -766,7 +771,7 @@ LANG exists or the request fails, signal an error."
                            :test #'string=)))
       (if match
           (let ((translation-key (gethash "key" match)))
-            (when (called-interactively-p 'any)
+            (when interactive-call-p
               (message "Translation key for %s in %s: %s"
                        original-key lang translation-key))
             translation-key)
