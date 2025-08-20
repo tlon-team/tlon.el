@@ -358,6 +358,21 @@ Return the modified entry string."
     (insert "\n"))
   (insert entry))
 
+;;;;;; Move entry
+
+(declare-function tlon-ensure-bib "tlon-bib")
+;;;###autoload
+(defun tlon-db-move-entry ()
+  "Move the entry at point to the database."
+  (interactive)
+  (tlon-ensure-bib)
+  (let ((key )))
+  (tlon-db-post-entry)
+  (if (derived-mode-p 'bibtex-mode)
+      (bibtex-kill-entry)
+    (ebib-delete-entry))
+  (message "Entry "))
+
 ;;;;;; Delete entry
 
 (defun tlon-db-delete-entry (key &optional no-confirm locally)
@@ -1185,6 +1200,7 @@ If there are no differences, return nil."
     ("G" "Get entries (overwrite)" tlon-db-get-entries-no-confirm)
     ("e" "Get entry" tlon-db-get-entry)
     ("p" "Post entry" tlon-db-post-entry)
+    ("m" "Move entry to db" tlon-db-move-entry)
     ("d" "Delete entry" tlon-db-delete-entry)
     ("c" "Check name" tlon-db-check-name)
     ("i" "Check or insert name" tlon-db-check-or-insert-name)
