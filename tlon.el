@@ -205,12 +205,7 @@ This variable should not be set manually.")
 (declare-function tlon-yaml-get-key "tlon-yaml")
 (defun tlon-get-key-from-file (file)
   "Return the bibtex key of FILE."
-  (or
-   ;; when in `translations'
-   (tlon-metadata-lookup (tlon-metadata-in-repo) "translation_key" "file" file)
-   ;; when file in `originals'
-   (let ((translation (tlon-get-counterpart file)))
-     (tlon-yaml-get-key "original_key" translation))))
+  (tlon-yaml-get-key "key" file))
 
 (defun tlon-set-translation-language (language)
   "Set the translation LANGUAGE."
