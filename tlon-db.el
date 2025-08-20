@@ -253,45 +253,47 @@ ATTEMPT is used to track retries in case of missing author names."
   (setq attempt (or attempt 0))
   (tlon-db-ensure-auth)
   (if-let ((entry-key (or key (tlon-get-key-at-point))))
-      (let* ((entry-text   (tlon-db--normalize-author-field (bibtex-extras-get-entry-as-string entry-key nil)))
-             (encoded-text (encode-coding-string entry-text 'utf-8))
-             (headers      '(("Content-Type" . "text/plain; charset=utf-8")
-                             ("accept"       . "text/plain")))
-             (result       (tlon-db--handle-entry-request
-                            "POST" "/api/entries" encoded-text headers))
-             (status-code  (plist-get result :status))
-             (raw-text     (plist-get result :raw-text)))
-        ;; Detect missing author names (HTTP 400).  Offer to create *each*
-        ;; missing name (splitting compound author fields) and retry once.  If
-        ;; the user declines, abort silently (no result buffer).
-        (when (and status-code (= status-code 400) (< attempt 1))
-          (let* ((missing-names (tlon-db--extract-missing-names raw-text))
-                 ;; Split any compound author strings like
-                 ;; \"Doe, John and Roe, Jane\" into individual names.
-                 (all-names (cl-loop for n in missing-names
-                                     append (tlon-db--split-author-string n))))
-            (when all-names
-              (if (y-or-n-p
-                   (format "Missing author names not found (%s). Create them and retry? "
-                           (string-join all-names ", ")))
-                  (progn
-                    (dolist (name all-names)
-                      (tlon-db-set-name name nil))
-                    (cl-return-from tlon-db-post-entry
-                      (tlon-db-post-entry entry-key (1+ attempt))))
-                (user-error "Entry not posted because these author names are missing: %s"
-                            (string-join all-names ", "))))))
-        (if (or tlon-debug (not (and status-code (= status-code 200))))
-            ;; Non‑200 or debug ⇒ show whole response
-            (tlon-db--display-result-buffer
-             (format "Post entry result (Status: %s)"
-                     (if status-code (number-to-string status-code) "N/A"))
-             #'tlon-db--format-post-entry-result result)
-          ;; Success ­‑— decide which text we copy locally
-          (let* ((body (tlon-db--get-response-body raw-text))
-                 (local-copy (or body entry-text)))
-            (tlon-db--replace-entry-locally entry-key local-copy)
-            (message "Entry “%s” posted and mirrored locally." entry-key))))
+      (progn
+	(tlon-db-ensure-key-is-unique entry-key)
+	(let* ((entry-text   (tlon-db--normalize-author-field (bibtex-extras-get-entry-as-string entry-key nil)))
+	       (encoded-text (encode-coding-string entry-text 'utf-8))
+	       (headers      '(("Content-Type" . "text/plain; charset=utf-8")
+			       ("accept"       . "text/plain")))
+	       (result       (tlon-db--handle-entry-request
+			      "POST" "/api/entries" encoded-text headers))
+	       (status-code  (plist-get result :status))
+	       (raw-text     (plist-get result :raw-text)))
+	  ;; Detect missing author names (HTTP 400).  Offer to create *each*
+	  ;; missing name (splitting compound author fields) and retry once.  If
+	  ;; the user declines, abort silently (no result buffer).
+	  (when (and status-code (= status-code 400) (< attempt 1))
+	    (let* ((missing-names (tlon-db--extract-missing-names raw-text))
+		   ;; Split any compound author strings like
+		   ;; \"Doe, John and Roe, Jane\" into individual names.
+		   (all-names (cl-loop for n in missing-names
+				       append (tlon-db--split-author-string n))))
+	      (when all-names
+		(if (y-or-n-p
+		     (format "Missing author names not found (%s). Create them and retry? "
+			     (string-join all-names ", ")))
+		    (progn
+		      (dolist (name all-names)
+			(tlon-db-set-name name nil))
+		      (cl-return-from tlon-db-post-entry
+			(tlon-db-post-entry entry-key (1+ attempt))))
+		  (user-error "Entry not posted because these author names are missing: %s"
+			      (string-join all-names ", "))))))
+	  (if (or tlon-debug (not (and status-code (= status-code 200))))
+	      ;; Non‑200 or debug ⇒ show whole response
+	      (tlon-db--display-result-buffer
+	       (format "Post entry result (Status: %s)"
+		       (if status-code (number-to-string status-code) "N/A"))
+	       #'tlon-db--format-post-entry-result result)
+	    ;; Success ­‑— decide which text we copy locally
+	    (let* ((body (tlon-db--get-response-body raw-text))
+		   (local-copy (or body entry-text)))
+	      (tlon-db--replace-entry-locally entry-key local-copy)
+	      (message "Entry “%s” posted and mirrored locally." entry-key)))))
     (user-error "No BibTeX key found at point")))
 
 ;; Helper to split a possibly multi-author string into individual names.
@@ -938,6 +940,12 @@ RESULT is a plist like (:status CODE :data JSON-DATA :raw-text TEXT-DATA)."
       (insert (format "Status: Error (HTTP %d)\n" status-code))
       (insert "Response from server:\n")
       (insert (or raw-response-text "No content or error message returned."))))))
+
+(defun tlon-db-ensure-key-is-unique (key)
+  "Return an error if KEY exists in a file other than \"db.bib\"."
+  (let ((bibtex-files (remove tlon-db-file-db bibtex-files)))
+    (when (bibtex-search-entry key t)
+      (user-error "Key \"%s\" exists outside of \"db.bib\". Remove the duplicate and try again" key))))
 
 ;;;;;; Sync
 
