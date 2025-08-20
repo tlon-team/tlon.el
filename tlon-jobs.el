@@ -446,6 +446,50 @@ COMMIT is non-nil, commit the change."
 	  (add-text-properties (match-beginning 0) (match-end 0)
 			       `(font-lock-face ,highlight-face)))))))
 
+;;;;; Misc
+
+(declare-function zotra-extras-add-entry "zotra-extras")
+;;;###autoload
+(defun tlon-create-bibtex-original ()
+  "Add a new original BibTeX entry."
+  (interactive)
+  (zotra-extras-add-entry nil nil tlon-file-fluid))
+
+(declare-function tlon-yaml-get-key "tlon-yaml")
+(declare-function tlon-get-bibtex-key "tlon-yaml")
+(declare-function tlon-get-key-at-point "tlon-bib")
+(declare-function ebib-extras-get-file-of-key "ebib-extras")
+(declare-function bibtex-extras-get-field "bibtex-extras")
+(declare-function tlon-get-counterpart-key "tlon-counterpart")
+(declare-function tlon-db-move-entry "tlon-db")
+(declare-function citar-cache--update-bibliography "citar-cache")
+(declare-function citar-cache--get-bibliography "citar-cache")
+;;;###autoload
+(defun tlon-move-entries-to-db ()
+  "Move entries to the Tlön database."
+  (interactive)
+  (let* ((key (or (tlon-yaml-get-key "key") (tlon-get-key-at-point) (tlon-get-bibtex-key)))
+	 (file (ebib-extras-get-file-of-key key))
+	 orig-key trans-key)
+    (with-current-buffer (find-file-noselect file)
+      (widen)
+      (goto-char (point-min))
+      (re-search-forward (format "@.*?{%s" key))
+      (if (bibtex-extras-get-field "translation")
+	  (setq trans-key key)
+	(setq orig-key key)))
+    ;; rebuild cache
+    (citar-cache--update-bibliography
+     (citar-cache--get-bibliography
+      file
+      t))
+    (if trans-key
+	(setq orig-key (tlon-get-counterpart-key key "en"))
+      (let ((lang (tlon-select-language 'code 'babel "Translation language: ")))
+	(setq trans-key (tlon-get-counterpart-key key lang))))
+    (tlon-db-move-entry orig-key)
+    (tlon-db-move-entry trans-key)))
+
 ;;;;; Menu
 
 ;;;###autoload (autoload 'tlon-jobs-menu "tlon-jobs" nil t)
@@ -453,18 +497,20 @@ COMMIT is non-nil, commit the change."
   "`jobs' menu."
   :info-manual "(tlon) Jobs"
   [["Job phases"
-    ("j" "start or finish phase"             tlon-jobs-start-or-finish-phase)]
+    ("j" "start or finish phase"                tlon-jobs-start-or-finish-phase)]
    ["Job creation"
-    ("c d" "1 import document"               tlon-import-document)
-    ("c b" "2 create bibtex translation"     tlon-create-bibtex-translation)
-    ("c t" "3 create translation"            tlon-translate-current-file)]
+    ("1" "add original bibtex entry"            tlon-create-bibtex-original)
+    ("2" "add translation bibtex entry"         tlon-create-bibtex-translation)
+    ("3" "import original document"             tlon-import-document)
+    ("4" "translate original document"          tlon-translate-current-file)
+    ("5" "move entries to db"                   tlon-move-entries-to-db)]
    ["Add or modify"
-    ("a s" "section correspondence"          tlon-section-correspondence-dwim)
-    ("a u" "URL correspondence"              tlon-edit-url-correspondences)]
+    ("a s" "section correspondence"             tlon-section-correspondence-dwim)
+    ("a u" "URL correspondence"                 tlon-edit-url-correspondences)]
    ["jobs.org"
-    ("r" "create record"                     tlon-create-record-for-job)
-    ("h" "create heading"                    tlon-create-heading-for-job)
-    ("t" "sort headings"                     tlon-sort-headings)]])
+    ("r" "create record"                        tlon-create-record-for-job)
+    ("h" "create heading"                       tlon-create-heading-for-job)
+    ("t" "sort headings"                        tlon-sort-headings)]])
 
 (provide 'tlon-jobs)
 ;;; tlon-jobs.el ends here
