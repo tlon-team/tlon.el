@@ -274,10 +274,7 @@ slugified version of the original basename."
 	 (orig-key (funcall get-field "translation")))
     (unless orig-key
       (user-error "This command should be run with point on a *translation* BibTeX entry"))
-    (let* ((key (if mode-ebib-p
-		    (ebib-extras-get-field "=key=")
-		  (bibtex-extras-get-key)))
-	   (orig-file (tlon-counterpart--file-for-key orig-key "en"))
+    (let* ((orig-file (tlon-counterpart--file-for-key orig-key "en"))
 	   (target-language (funcall get-field "langid"))
 	   (target-language-code (tlon-lookup tlon-languages-properties :code :name target-language))
 	   (title (funcall get-field "title"))
