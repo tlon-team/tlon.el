@@ -95,12 +95,15 @@ prompt the user for a language.
 
 This implementation maintains a per-repository cache so that, after the first
 lookup, subsequent queries are instantaneous."
-  (let* ((dir      (tlon-get-counterpart-dir file target-language-code))
+  (let* ((target-language-code (or target-language-code (tlon-select-language 'code 'babel)))
+	 (dir      (tlon-get-counterpart-dir file target-language-code))
 	 (repo     (and dir (tlon-get-repo-from-dir dir)))
 	 (orig-key (tlon-yaml-get-key "key" file)))
     (unless (and dir repo orig-key)
       (user-error "Unable to determine translation repo or key for %s" file))
-    (let* ((table (tlon-counterpart--translation-table-for-repo repo))
+    (let* ((target-language (tlon-lookup tlon-languages-properties
+					 :standard :code target-language-code))
+	   (table (tlon-counterpart--translation-table-for-repo repo target-language))
 	   (hit   (gethash orig-key table)))
       (or hit
 	  (let* ((candidates (seq-filter
@@ -114,7 +117,7 @@ lookup, subsequent queries are instantaneous."
 		       (let ((tr-key (tlon-yaml-get-key "key" f)))
 			 (and tr-key
 			      (string= orig-key
-				       (tlon-get-counterpart-key tr-key)))))
+				       (tlon-get-counterpart-key tr-key target-language-code)))))
 		     candidates)))
 	    (pcase candidates
 	      ((pred null)
@@ -297,7 +300,7 @@ If called with a prefix ARG, open the counterpart in the other window."
 Each value is a hash table mapping original bibliography keys to their
 corresponding translation file paths within that repository.")
 
-(defun tlon-counterpart--translation-table-for-repo (repo-dir)
+(defun tlon-counterpart--translation-table-for-repo (repo-dir target-language)
   "Return a hash table mapping original keys to translation files in REPO-DIR.
 The hash table maps original bibliography keys to their corresponding
 translation file paths. The table is cached in
@@ -318,7 +321,7 @@ and values are absolute file paths to translation files."
        (let ((table (make-hash-table :test #'equal)))
 	 (dolist (file (directory-files-recursively repo-dir "\\.md\\'"))
 	   (when-let* ((tr-key (tlon-yaml-get-key "key" file))
-		       (orig-key (tlon-get-counterpart-key tr-key)))
+		       (orig-key (tlon-get-counterpart-key tr-key target-language)))
 	     (puthash orig-key file table)))
 	 table)
        tlon-counterpart--orig->trans-cache)))
@@ -329,7 +332,7 @@ and values are absolute file paths to translation files."
   "Return absolute path of the markdown file whose YAML ‘key’ is KEY
 inside the repository whose `:language' property is LANGUAGE.
 Return nil when the file cannot be found."
-  (when-let* ((repo (tlon-repo-lookup :dir :language language)))
+  (when-let* ((repo (tlon-repo-lookup :dir :subproject "uqbar" :language language)))
     (seq-find (lambda (file)
                 (string= key (tlon-yaml-get-key "key" file)))
               (directory-files-recursively repo "\\.md\\'"))))
@@ -419,12 +422,10 @@ return its key.  When no counterpart exists, return nil."
   (or
    ;; KEY is a translation → original
    (tlon-bibliography-lookup "=key=" key "translation")
-   ;; KEY is an original → translation (simple bibliography lookup)
-   (tlon-bibliography-lookup "translation" key "=key=")
    ;; KEY is an original → translation (fallback via file search)
-   (when language
+   (let ((language (or language (tlon-select-language 'code 'babel))))
      (when-let* ((orig-file (tlon-counterpart--file-for-key key "en"))
-                 (tr-file  (tlon-get-counterpart-in-originals orig-file language)))
+		 (tr-file  (tlon-get-counterpart-in-originals orig-file language)))
        (tlon-yaml-get-key "key" tr-file)))))
 
 ;;;;; Menu
