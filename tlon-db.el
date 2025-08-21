@@ -110,10 +110,12 @@ Set to t to enable verbose logging from url.el.")
 
 ;;;; Functions
 
+(declare-function citar-extras-refresh-bibliography "citar-extras")
 (defun tlon-db-initialize ()
   "Initialize the `tlon-db' package."
   (tlon-db--initialize-sync)
-  (append paths-files-bibliography-all (list tlon-db-file-db)))
+  (append paths-files-bibliography-all (list tlon-db-file-db))
+  (citar-extras-refresh-bibliography tlon-db-file-db))
 
 (defvar citar-bibliography)
 (declare-function citar-select-ref "citar")
