@@ -100,8 +100,6 @@ It provides the following groups and commands:
   + =u= :: Visit counterpart (~tlon-open-counterpart-dwim~)
   + =H-u= :: Visit counterpart other window (~tlon-open-counterpart-in-other-window-dwim~)
   + =U= :: Open counterpart in Dired (~tlon-open-counterpart-in-dired~)
-+ *Matching*:
-  + =d= :: Display corresponding paragraphs (~tlon-display-corresponding-paragraphs~)
 + *Links*:
   + =l= :: replace internal links                (~tlon-replace-internal-links~)
 + *Metadata*:
@@ -131,7 +129,7 @@ This section lists non-interactive functions used internally or potentially usef
 :END:
 
 #+findex: tlon-get-counterpart-link
-+ ~tlon-get-counterpart-link~ :: Given an =ORIGINAL-RELATIVE-LINK= (e.g., ="../authors/foo.md"=) found in =CURRENT-BUFFER-FILE= (which is assumed to be a translation), this function attempts to find the relative path to the corresponding translated link target.
++ ~tlon-get-counterpart-link~ :: Given a relative link path =RELATIVE-LINK= (for example, ="../authors/foo.md"=) found in the file =CURRENT-BUFFER-FILE=, return the path to the counterpart file relative to the current buffer directory, or nil if no counterpart exists.
   1. Determines the directory of the current buffer (=current-dir=).
   2. Gets the repository containing the current buffer (=target-repo=).
   3. Reads the =original_path= metadata from the current buffer's YAML front matter. If missing, warns and returns nil.
