@@ -143,7 +143,8 @@ lookup, subsequent queries are instantaneous."
 	       (user-error "No translation counterpart found in %s" dir))
 	      ((pred (lambda (c) (= (length c) 1)))
 	       (let ((file (car candidates)))
-		 (puthash orig-key file table)
+		 (when table
+		   (puthash orig-key file table))
 		 file))
 	      (_ (completing-read "Select translation: " candidates nil t))))))))
 
