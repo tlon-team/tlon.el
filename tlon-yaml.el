@@ -677,6 +677,7 @@ user for one."
 
 ;;;;; temp
 
+(declare-function tlon-db-get-translation-key "tlon-db")
 (defun tlon-yaml-add-translation-keys (lang)
   "Populate `key' metadata in all article translations inlang.
 This walks every markdown file under the articles folder of the repo for LANG.
