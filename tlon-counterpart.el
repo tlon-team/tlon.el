@@ -88,8 +88,7 @@ remain, the user is prompted to choose."
     ;; nothing.
     (when (and (null candidates)
                (let ((op (tlon-yaml-get-key "original_path" file)))
-                 (and op dir
-                      (file-exists-p (expand-file-name op dir)))))
+                 (and op dir)))
       (setq candidates
             (list (expand-file-name (tlon-yaml-get-key "original_path" file)
                                     dir))))
@@ -109,18 +108,19 @@ lookup, subsequent queries are instantaneous."
 	 (dir      (tlon-get-counterpart-dir file target-language-code))
 	 (repo     (and dir (tlon-get-repo-from-dir dir)))
 	 (orig-key (tlon-yaml-get-key "key" file)))
-    (unless (and dir repo orig-key)
-      (user-error "Unable to determine translation repo or key for %s" file))
+    (unless (and dir repo)
+      (user-error "Unable to determine translation repo for %s" file))
     (let* ((target-language (tlon-lookup tlon-languages-properties
 					 :standard :code target-language-code))
-	   (table (tlon-counterpart--translation-table-for-repo repo target-language))
-	   (hit   (gethash orig-key table)))
+	   (table (and orig-key
+                       (tlon-counterpart--translation-table-for-repo repo target-language)))
+	   (hit   (and orig-key table (gethash orig-key table))))
       (or hit
 	  (let* ((candidates (seq-filter
 			      (lambda (f) (string-suffix-p ".md" f t))
 			      (directory-files dir t "\\`[^.]"))))
 	    ;; First, narrow via key+bibliography when possible
-            (when candidates
+            (when (and candidates orig-key)
               (setq candidates
                     (seq-filter
                      (lambda (f)
