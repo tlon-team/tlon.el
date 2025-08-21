@@ -83,15 +83,14 @@ remain, the user is prompted to choose."
             (seq-filter (lambda (f)
                           (string= orig-key (tlon-yaml-get-key "key" f)))
                         candidates)))
-    ;; Fallback for entities (tags/authors) that have no BibTeX key:
-    ;; use the `original_path' field when the previous step yielded
-    ;; nothing.
-    (when (and (null candidates)
-               (let ((op (tlon-yaml-get-key "original_path" file)))
-                 (and op dir)))
-      (setq candidates
-            (list (expand-file-name (tlon-yaml-get-key "original_path" file)
-                                    dir))))
+    ;; Fallback for entities (tags/authors) that lack keys: rely on
+    ;; their `original_path' metadata.  We run this when either the
+    ;; translation has no key at all *or* the key-based narrowing
+    ;; produced no unique hit.
+    (when (or (null orig-key) (null candidates))
+      (let ((op (tlon-yaml-get-key "original_path" file)))
+        (when (and op dir)
+          (setq candidates (list (expand-file-name op dir))))))
     (pcase candidates
       ((pred null) (user-error "No original counterpart found in %s" dir))
       ((pred (lambda (c) (= (length c) 1))) (car candidates))
@@ -129,16 +128,16 @@ lookup, subsequent queries are instantaneous."
                               (string= orig-key
                                        (tlon-get-counterpart-key tr-key target-language-code)))))
                      candidates)))
-            ;; Fallback for entities without keys: match their
+            ;; Second pass for entities without keys: match their
             ;; `original_path' against the current original filename.
-            (when (null candidates)
-              (let ((orig-name (file-name-nondirectory file)))
-                (setq candidates
-                      (seq-filter
-                       (lambda (f)
-                         (string= orig-name
-                                  (tlon-yaml-get-key "original_path" f)))
-                       (directory-files dir t "\\`[^.]")))))
+            (let* ((orig-name (file-name-nondirectory file))
+                   (filtered (seq-filter
+                              (lambda (f)
+                                (string= orig-name
+                                         (tlon-yaml-get-key "original_path" f)))
+                              candidates)))
+              (when filtered
+                (setq candidates filtered)))
 	    (pcase candidates
 	      ((pred null)
 	       (user-error "No translation counterpart found in %s" dir))
