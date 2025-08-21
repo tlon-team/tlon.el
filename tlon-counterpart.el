@@ -422,8 +422,8 @@ return its key.  When no counterpart exists, return nil."
   (or
    ;; KEY is a translation → original
    (tlon-bibliography-lookup "=key=" key "translation")
-   ;; KEY is an original → translation (fallback via file search)
-   (let ((language (or language (tlon-select-language 'code 'babel))))
+   ;; KEY is an original → translation (only when LANGUAGE provided)
+   (when language
      (when-let* ((orig-file (tlon-counterpart--file-for-key key "en"))
 		 (tr-file  (tlon-get-counterpart-in-originals orig-file language)))
        (tlon-yaml-get-key "key" tr-file)))))
