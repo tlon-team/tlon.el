@@ -264,6 +264,7 @@ slugified version of the original basename."
       (alist-get "text" first-translation nil nil #'string=))))
 
 (declare-function tlon-get-key-at-point "tlon-bib")
+(declare-function tlon-yaml-insert-translated-tags "tlon-yaml")
 ;;;###autoload
 (defun tlon-translate-current-file ()
   "Create a file with the translation of the bibtex key at point."
@@ -288,6 +289,7 @@ slugified version of the original basename."
       (tlon-yaml-delete-metadata)
       (save-buffer)
       (tlon-yaml-insert-field "key" target-key)
+      (tlon-yaml-insert-translated-tags)
       (save-buffer))))
 
 ;;;;;; abstract
