@@ -808,10 +808,8 @@ canonical form taken from the tag metadata."
 (defun tlon--yaml--tags-dir (repo-dir language)
   "Return absolute path of the tags directory inside REPO-DIR for LANGUAGE.
 It uses `tlon-get-bare-dir-translation' to translate the canonical
-\"tags\" directory name from English into LANGUAGE.  Falls back to
-\"tags\" when no translation is defined."
-  (let* ((bare-dir (or (tlon-get-bare-dir-translation language "en" "tags")
-                       "tags")))
+\"tags\" directory name from English into LANGUAGE."
+  (let* ((bare-dir (tlon-get-bare-dir-translation language "en" "tags")))
     (file-name-concat repo-dir bare-dir)))
 
 (defun tlon--yaml--find-tag-file-by-title (title repo-dir)
