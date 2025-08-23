@@ -28,6 +28,7 @@
 (require 'citar)
 (require 'files-extras)
 (require 'tlon-core)
+(require 'tlon-ai)
 
 ;;;; Variables
 
