@@ -713,14 +713,14 @@ uqbar-en/tags, those that best apply to the article and then inserts
 them in the article's YAML metadata as the `tags' field."
   (interactive)
   (let* ((repo-dir (tlon-repo-lookup :dir :name "uqbar-en"))
-         (articles-dir (file-name-concat repo-dir "articles"))
-         (default (when (and (buffer-file-name)
-                             (string-prefix-p (expand-file-name articles-dir)
-                                              (expand-file-name (buffer-file-name))))
-                    (buffer-file-name)))
-         (article-file (expand-file-name
-                        (read-file-name "Article: " articles-dir default t nil
-                                        (lambda (f) (string-suffix-p ".md" f))))))
+         (articles-dir (file-name-concat repo-dir "articles/"))
+         (default-filename (when (and (buffer-file-name)
+				      (string-prefix-p (expand-file-name articles-dir)
+						       (expand-file-name (buffer-file-name))))
+			     (file-name-nondirectory (buffer-file-name))))
+	 (article-file (expand-file-name
+			(read-file-name "Article: " articles-dir default-filename t nil
+					(lambda (f) (string-suffix-p ".md" f))))))
     ;; Collect candidate tags
     (let* ((tags-dir (file-name-concat repo-dir "tags"))
            ;; Exclude any tag files inside the “excluded” subdirectory.
