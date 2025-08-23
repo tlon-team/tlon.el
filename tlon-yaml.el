@@ -806,29 +806,98 @@ canonical form taken from the tag metadata."
 
 ;;;###autoload
 (defun tlon-yaml-insert-translated-tags (&optional file)
-  "Insert translated tag titles into FILE’s YAML metadata.
-When called interactively prompt for FILE, defaulting to the Markdown
-file visited by the current buffer.
+  "Synchronise the `tags' YAML field between FILE and its counterpart.
 
-The function looks at the English counterpart of FILE, reads its `tags`
-field, maps every tag slug to its tag file in English, locates the tag
-translation into the language of FILE, retrieves the translated tag’s
-`title`, and finally writes the list of titles back to FILE as the value
-of the `tags` field."
+• If FILE is a translation without `tags', copy the translated tag titles
+  from the *English* original.
+
+• If FILE is an English original without `tags', prompt for a target
+  language, read the tag titles from that translation, map them back to
+  English, and insert them in the original.
+
+An error is signalled when neither side contains tags or both already do."
   (interactive)
+  ;; Choose FILE (interactive default mirrors old behaviour)
   (let* ((file (or file
                    (when (and (buffer-file-name)
                               (string= (file-name-extension (buffer-file-name)) "md"))
                      (buffer-file-name))
                    (read-file-name "Markdown file: " nil nil t nil
                                    (lambda (f) (string-suffix-p ".md" f t)))))
-         (target-lang (tlon-get-language-in-file file))
-         (en-file (if (string= target-lang "en")
-                      file
-                    (tlon-get-counterpart file)))
-         (tags (tlon-yaml-get-key "tags" en-file))
+         (counterpart (tlon-get-counterpart file))
+         (file-lang (tlon-get-language-in-file file))
+         (cp-lang   (tlon-get-language-in-file counterpart))
+         (file-tags (tlon-yaml-get-key "tags" file))
+         (cp-tags   (tlon-yaml-get-key "tags" counterpart)))
+    ;; Decide direction -------------------------------------------------
+    (cond
+     ((and file-tags cp-tags)
+      (user-error "Both %s and its counterpart already contain `tags'" file))
+     ((and (null file-tags) (null cp-tags))
+      (user-error "Neither %s nor its counterpart contains `tags'" file))
+     ;; ----------------------------------------------------------------
+     ((null file-tags)                            ; copy from counterpart → file
+      (tlon--yaml--sync-tags counterpart cp-lang file file-lang))
+     ((null cp-tags)                              ; copy from file → counterpart
+      (tlon--yaml--sync-tags file file-lang counterpart cp-lang))
+     (t (user-error "Unexpected tag state")))))
+
+(defun tlon--yaml--sync-tags (src src-lang dest dest-lang)
+  "Copy tags from SRC (language SRC-LANG) into DEST (language DEST-LANG),
+converting titles when languages differ."
+  (let* ((raw-tags (tlon-yaml-get-key "tags" src))
+         ;; Convert YAML string list → elisp list if necessary
+         (src-tags (if (stringp raw-tags)
+                       (tlon-yaml-format-value raw-tags)
+                     raw-tags))
          (titles '())
          (missing '()))
+    (unless src-tags
+      (user-error "%s has no `tags' field" src))
+    (dolist (title src-tags)
+      (pcase (cons src-lang dest-lang)
+        ;; English → translation (existing strategy)
+        (`("en" ,target)
+         (let* ((en-repo (tlon-get-repo-from-file src))
+                (tags-dir (file-name-concat en-repo "tags"))
+                (en-tag-file (file-name-concat tags-dir
+                                               (format "%s.md"
+                                                       (simple-extras-slugify title)))))
+           (if (and (file-exists-p en-tag-file)
+                    (when-let ((tr-tag-file
+                                (tlon-get-counterpart-in-originals
+                                 en-tag-file target)))
+                      (when-let ((tr-title (tlon-yaml-get-key "title" tr-tag-file)))
+                        (push tr-title titles)
+                        t)))
+               nil
+             (push title missing))))
+        ;; Translation → English ---------------------------------------
+        (_
+         (let* ((tr-repo (tlon-get-repo-from-file src))
+                (tags-dir (file-name-concat tr-repo "tags"))
+                (tr-tag-file (file-name-concat tags-dir
+                                               (format "%s.md"
+                                                       (simple-extras-slugify title)))))
+           (if (and (file-exists-p tr-tag-file)
+                    (when-let ((en-tag-file (tlon-get-counterpart-in-translations
+                                             tr-tag-file)))
+                      (when-let ((en-title (tlon-yaml-get-key "title" en-tag-file)))
+                        (push en-title titles)
+                        t)))
+               nil
+             (push title missing))))))
+    ;; Finalise --------------------------------------------------------
+    (setq titles (nreverse (delete-dups titles)))
+    (unless titles
+      (user-error "No tag titles could be resolved"))
+    (with-current-buffer (find-file-noselect dest)
+      (tlon-yaml-insert-field "tags" titles))
+    (when missing
+      (message "No counterpart found for %d tag%s: %s"
+               (length missing)
+               (if (= (length missing) 1) "" "s")
+               (mapconcat #'identity (nreverse (delete-dups missing)) ", ")))))
     (when (stringp tags)
       (setq tags (tlon-yaml-format-value tags)))
     (unless tags
