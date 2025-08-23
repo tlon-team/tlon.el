@@ -798,7 +798,7 @@ canonical form taken from the tag metadata."
                    (length tags) (if (= (length tags) 1) "" "s")
                    (file-name-nondirectory article-file)))))))
 
-;;;;; Model selection
+;;;;; menu
 
 (transient-define-infix tlon-yaml-infix-suggest-tags-model ()
   "AI model to use for suggesting tags.
@@ -806,8 +806,8 @@ If nil, use the default model."
   :class 'tlon-model-selection-infix
   :variable 'tlon-yaml-suggest-tags-model)
 
-;;;;; menu
-
+(autoload 'gptel--infix-provider "gptel-transient")
+;;;###autoload (autoload 'tlon-yaml-menu "tlon-yaml" nil t)
 (transient-define-prefix tlon-yaml-menu ()
   "Menu for `tlon-yaml'."
   :info-manual "(tlon) yaml"
