@@ -2122,12 +2122,18 @@ them in the article's YAML metadata as the `tags' field."
                      (para  (tlon-ai--first-paragraph tag-file)))
                  (format "%s\n%s" title para)))
              tag-files "\n\n"))
+           ;; Build a mapping from downcased title -> canonical title
+           (title-map (let ((table (make-hash-table :test #'equal)))
+                        (dolist (tag-file tag-files)
+                          (let ((title (tlon-yaml-get-key "title" tag-file)))
+                            (puthash (downcase title) title table)))
+                        table))
            (article-content (tlon-md-read-content article-file))
            (prompt (format tlon-ai-suggest-tags-prompt article-content candidates)))
       (message "Requesting tag suggestions for %s …"
                (file-name-nondirectory article-file))
       (tlon-make-gptel-request prompt nil
-                               (tlon-ai-suggest-tags-callback article-file)
+                               (tlon-ai-suggest-tags-callback article-file title-map)
                                tlon-ai-suggest-tags-model t))))
 
 (defun tlon-ai--parse-tags-from-response (response)
@@ -2139,12 +2145,18 @@ them in the article's YAML metadata as the `tags' field."
      (mapcar #'string-trim
              (split-string response "[,\n]+" t)))))
 
-(defun tlon-ai-suggest-tags-callback (article-file)
-  "Return a callback that inserts suggested tags into ARTICLE-FILE."
+(defun tlon-ai-suggest-tags-callback (article-file title-map)
+  "Return a callback that inserts suggested tags into ARTICLE-FILE.
+TITLE-MAP is a hash table mapping down-cased tag titles to their
+canonical form taken from the tag metadata."
   (lambda (response info)
     (if (not response)
         (tlon-ai-callback-fail info)
       (let* ((tags (tlon-ai--parse-tags-from-response response))
+             ;; normalise casing to match canonical titles
+             (tags (mapcar (lambda (t)
+                             (or (gethash (downcase t) title-map) t))
+                           tags))
              (tags (delete-dups (cl-remove-if #'string-empty-p tags))))
         (if (null tags)
             (message "AI returned no parsable tags.")
