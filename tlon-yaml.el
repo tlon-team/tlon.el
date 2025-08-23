@@ -798,6 +798,14 @@ canonical form taken from the tag metadata."
                    (length tags) (if (= (length tags) 1) "" "s")
                    (file-name-nondirectory article-file)))))))
 
+;;;;; Model selection
+
+(transient-define-infix tlon-yaml-infix-suggest-tags-model ()
+  "AI model to use for suggesting tags.
+If nil, use the default model."
+  :class 'tlon-model-selection-infix
+  :variable 'tlon-yaml-suggest-tags-model)
+
 ;;;;; menu
 
 (transient-define-prefix tlon-yaml-menu ()
