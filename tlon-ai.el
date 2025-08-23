@@ -2015,6 +2015,7 @@ If nil, use the default model."
     ("p" "Propagate latest commit changes"            tlon-ai-propagate-changes)
     ""]
    ["Misc"
+    ("g" "suggest tags" tlon-ai-suggest-tags)
     ("b" "set language of bibtex"                     tlon-ai-set-language-bibtex)
     ("f" "fix Markdown formatting"                    tlon-ai-fix-markdown-formatting)
     ("h" "phonetically transcribe"                    tlon-ai-phonetically-transcribe)
@@ -2031,6 +2032,7 @@ If nil, use the default model."
     ""
     "Models"
     ("m -d" "Summarize commit diffs" tlon-ai-infix-select-summarize-commit-diffs-model)
+    ("m -g" "Suggest tags" tlon-ai-infix-select-suggest-tags-model)
     ("m -f" "Markdown fix" tlon-ai-infix-select-markdown-fix-model)
     ("m -s" "Summarization" tlon-ai-infix-select-summarization-model)
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
@@ -2132,23 +2134,6 @@ them in the article's YAML metadata as the `tags' field."
           (message "Inserted %d tag%s in %s"
                    (length tags) (if (= (length tags) 1) "" "s")
                    (file-name-nondirectory article-file)))))))
-
-;;;;; Menu additions -----------------------------------------------------------
-
-(transient-define-infix tlon-ai-infix-select-suggest-tags-model ()
-  "AI model to use for suggesting tags.
-If nil, use the default model."
-  :class 'tlon-model-selection-infix
-  :variable 'tlon-ai-suggest-tags-model)
-
-;; Add entries to the existing ai menu
-(with-eval-after-load 'transient
-  (transient-append-suffix 'tlon-ai-menu
-    '("Misc")
-    '("g" "suggest tags" tlon-ai-suggest-tags))
-  (transient-append-suffix 'tlon-ai-menu
-    '("Models")
-    '("m -g" "Suggest tags" tlon-ai-infix-select-suggest-tags-model)))
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
