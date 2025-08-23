@@ -46,6 +46,7 @@
     ("c" "clock"                          tlon-clock-menu)
     ("H-c" "cleanup"                      tlon-cleanup-menu)
     ("H-d" "db"                           tlon-db-menu)
+    ("e" "forg"                           tlon-forg-menu)
     ("f" "files"                          tlon-files-menu)
     ("H-f" "fix"                          tlon-fix-menu)
     ("g" "glossary"                       tlon-glossary-menu)
@@ -68,7 +69,7 @@
     ("H-t" "contacts"                     tlon-contacts-menu)
     ("u" "counterpart"                    tlon-counterpart-menu)
     ("v" "url"                            tlon-url-menu)
-    ("y" "forg"                           tlon-forg-menu)
+    ("y" "yaml"                           tlon-yaml-menu)
     ("H-y" "youtube"                      tlon-youtube-menu)
     ("z" "tts"                            tlon-tts-menu)]
    [""
