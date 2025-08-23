@@ -80,6 +80,26 @@ The order of the keys determines the sort order by
   '("unpublished" "test" "production")
   "List of publication statuses.")
 
+;;;;; AI
+
+(defconst tlon-yaml-suggest-tags-prompt
+  "You are an assistant that assigns encyclopedia tags to articles. Below you will find, first, the full Markdown of one article delimited by <ARTICLE> … </ARTICLE>.  After that you will see a catalogue of candidate tags.  Each candidate starts with the tag *title* on its own line and is immediately followed by its first descriptive paragraph; candidates are separated by one blank line.\n Return ONLY a JSON array whose elements are the titles of the tags that best apply to the article, ordered from most to least relevant.  Do not output any other prose, comments, or code blocks.\n <ARTICLE>\n%s\n</ARTICLE>\n <CANDIDATE TAGS>\n%s\n</CANDIDATE TAGS>"
+  "Prompt used by `tlon-yaml-suggest-tags'.")
+
+;;;; User options
+
+(defgroup tlon-yaml ()
+  "`tlon-yaml' group."
+  :group 'tlon)
+
+(defcustom tlon-yaml-suggest-tags-model nil
+  "AI model to use for `tlon-yaml-suggest-tags'.
+The value is a cons cell (BACKEND . MODEL) like the other
+`tlon-yaml-*model' custom variables.  When nil, use the current
+`gptel' default model."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-yaml)
+
 ;;;; Functions
 
 ;;;;; Parse
@@ -544,7 +564,7 @@ is `translation_key', return the BibTeX key of the translation"
                       (save-buffer))
                   ;; This case should ideally not be reached if `(assoc key metadata)` was true,
                   ;; indicating an inconsistency between parsed metadata and file content.
-                  (user-error "Key `%s' was in parsed metadata but regex search failed in file `%s'." key file))))
+                  (user-error "Key `%s' was in parsed metadata but regex search failed in file `%s'" key file))))
 	  (user-error "Key `%s' not found in metadata of file `%s'" key file))
       (user-error "File `%s' does not appear to contain a metadata section" file))))
 
@@ -674,6 +694,119 @@ user for one."
   (tlon-metadata-lookup-all
    (tlon-metadata-in-repos :subtype 'translations)
    "translators"))
+
+;;;;;; Tag suggestion
+
+(declare-function tlon-make-gptel-request "tlon-ai")
+;;;###autoload
+(defun tlon-yaml-suggest-tags ()
+  "Suggest tags for FILE (an article in uqbar-en/articles) using AI.
+With point in an article buffer the default is that file; otherwise
+prompt for one inside the uqbar-en/articles directory.  The command
+asks an AI model to choose, from all the tags defined in
+uqbar-en/tags, those that best apply to the article and then inserts
+them in the article's YAML metadata as the `tags' field."
+  (interactive)
+  (let* ((repo-dir (tlon-repo-lookup :dir :name "uqbar-en"))
+         (articles-dir (file-name-concat repo-dir "articles"))
+         (default (when (and (buffer-file-name)
+                             (string-prefix-p (expand-file-name articles-dir)
+                                              (expand-file-name (buffer-file-name))))
+                    (buffer-file-name)))
+         (article-file (expand-file-name
+                        (read-file-name "Article: " articles-dir default t nil
+                                        (lambda (f) (string-suffix-p ".md" f))))))
+    ;; Collect candidate tags
+    (let* ((tags-dir (file-name-concat repo-dir "tags"))
+           ;; Exclude any tag files inside the “excluded” subdirectory.
+           (tag-files (cl-remove-if (lambda (f)
+                                      (string-match-p "/excluded/" f))
+                                    (directory-files-recursively tags-dir "\\.md$")))
+           (candidates
+            (mapconcat
+             (lambda (tag-file)
+               (let ((title (tlon-yaml-get-key "title" tag-file))
+                     (para  (tlon-yaml--first-paragraph tag-file)))
+                 (format "%s\n%s" title para)))
+             tag-files "\n\n"))
+           ;; Build a mapping from downcased title -> canonical title
+           (title-map (let ((table (make-hash-table :test #'equal)))
+                        (dolist (tag-file tag-files)
+                          (let ((title (tlon-yaml-get-key "title" tag-file)))
+                            (puthash (downcase title) title table)))
+                        table))
+           (article-content (tlon-md-read-content article-file))
+           (prompt (format tlon-yaml-suggest-tags-prompt article-content candidates)))
+      (message "Requesting tag suggestions for %s …"
+               (file-name-nondirectory article-file))
+      (tlon-make-gptel-request prompt nil
+                               (tlon-yaml-suggest-tags-callback article-file title-map)
+                               tlon-yaml-suggest-tags-model t))))
+
+(declare-function tlon-md-read-content "tlon-md")
+(defun tlon-yaml--first-paragraph (file)
+  "Return the first non-empty paragraph of FILE as a trimmed string.
+Falls back to a simpler parser when `tlon-md-read-content' errors (for instance
+when the Markdown file lacks a local-variables section)."
+  (let* ((content
+          (condition-case nil
+              (tlon-md-read-content file)
+            (error
+             (with-temp-buffer
+               ;; Insert raw file contents
+               (insert-file-contents file)
+               ;; Skip YAML front-matter if present
+               (goto-char (point-min))
+               (when (and (boundp 'tlon-yaml-delimiter)
+                          (looking-at-p (regexp-quote tlon-yaml-delimiter)))
+                 (forward-line)
+                 (when (re-search-forward (regexp-quote tlon-yaml-delimiter) nil t)
+                   (forward-line)))
+               (buffer-substring-no-properties (point) (point-max))))))
+         (para (car (split-string content "\n[ \t]*\n" t))))
+    (string-trim para)))
+
+(defun tlon-yaml--parse-tags-from-response (response)
+  "Convert RESPONSE to a list of strings.
+RESPONSE is a JSON array or a comma-/newline-separated list."
+  (condition-case nil
+      (let ((json-array-type 'list))
+        (json-read-from-string response))
+    (error
+     (mapcar #'string-trim
+             (split-string response "[,\n]+" t)))))
+
+(declare-function tlon-ai-callback-fail "tlon-ai")
+(defun tlon-yaml-suggest-tags-callback (article-file title-map)
+  "Insert suggested tags into ARTICLE-FILE.
+TITLE-MAP is a hash table mapping down-cased tag titles to their
+canonical form taken from the tag metadata."
+  (lambda (response info)
+    (if (not response)
+        (tlon-ai-callback-fail info)
+      (let* ((tags (tlon-yaml--parse-tags-from-response response))
+             ;; normalise casing to match canonical titles
+             (tags (mapcar (lambda (tag)
+                             (or (gethash (downcase tag) title-map) tag))
+                           tags))
+             (tags (delete-dups (cl-remove-if #'string-empty-p tags))))
+        (if (null tags)
+            (message "AI returned no parsable tags.")
+          (with-current-buffer (find-file-noselect article-file)
+            (tlon-yaml-insert-field "tags" tags))
+          (message "Inserted %d tag%s in %s"
+                   (length tags) (if (= (length tags) 1) "" "s")
+                   (file-name-nondirectory article-file)))))))
+
+;;;;; menu
+
+(transient-define-prefix tlon-yaml-menu ()
+  "Menu for `tlon-yaml'."
+  :info-manual "(tlon) yaml"
+  [[""
+    ("t" "suggest tags"   tlon-yaml-suggest-tags)
+    "Models"
+    ("-t" "suggest tags" tlon-yaml-infix-suggest-tags-model)]])
 
 ;;;;; temp
 
