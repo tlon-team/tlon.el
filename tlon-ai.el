@@ -2037,6 +2037,119 @@ If nil, use the default model."
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
     ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
 
+;;;;; Tag suggestion -----------------------------------------------------------
+
+(defconst tlon-ai-suggest-tags-prompt
+  "You are an assistant that assigns encyclopedia tags to articles.\n\
+Below you will find, first, the full Markdown of one article delimited by\n\
+<ARTICLE> … </ARTICLE>.  After that you will see a catalogue of candidate\n\
+tags.  Each candidate starts with the tag *title* on its own line and is\n\
+immediately followed by its first descriptive paragraph; candidates are\n\
+separated by one blank line.\n\n\
+Return ONLY a JSON array whose elements are the titles of the tags that best\n\
+apply to the article, ordered from most to least relevant.  Do not output any\n\
+other prose, comments, or code blocks.\n\n\
+<ARTICLE>\n%s\n</ARTICLE>\n\n\
+<CANDIDATE TAGS>\n%s\n</CANDIDATE TAGS>"
+  "Prompt used by `tlon-ai-suggest-tags'.")
+
+(defcustom tlon-ai-suggest-tags-model nil
+  "AI model to use for `tlon-ai-suggest-tags'.
+The value is a cons cell (BACKEND . MODEL) like the other
+`tlon-ai-*model' custom variables.  When nil, use the current
+`gptel' default model."
+  :type '(cons (string :tag "Backend") (symbol :tag "Model"))
+  :group 'tlon-ai)
+
+(defun tlon-ai--uqbar-en-dir ()
+  "Return the absolute path of the uqbar-en repository."
+  (or (tlon-repo-lookup :dir :name "uqbar-en")
+      (user-error "Could not locate the 'uqbar-en' repository")))
+
+(defun tlon-ai--first-paragraph (file)
+  "Return the first non-empty paragraph of FILE as a trimmed string."
+  (let* ((content (tlon-md-read-content file))
+         (para (car (split-string content "\n[ \t]*\n" t))))
+    (string-trim para)))
+
+;;;###autoload
+(defun tlon-ai-suggest-tags (&optional file)
+  "Suggest tags for FILE (an article in uqbar-en/articles) using AI.
+
+With point in an article buffer the default is that file; otherwise
+prompt for one inside the uqbar-en/articles directory.  The command
+asks an AI model to choose, from all the tags defined in
+uqbar-en/tags, those that best apply to the article and then inserts
+them in the article's YAML metadata as the `tags' field."
+  (interactive)
+  (let* ((repo-dir (tlon-ai--uqbar-en-dir))
+         (articles-dir (file-name-concat repo-dir "articles"))
+         (default (when (and (buffer-file-name)
+                             (string-prefix-p (expand-file-name articles-dir)
+                                              (expand-file-name (buffer-file-name))))
+                    (buffer-file-name)))
+         (article-file (expand-file-name
+                        (read-file-name "Article: " articles-dir default t nil
+                                        (lambda (f) (string-suffix-p ".md" f))))))
+    ;; Collect candidate tags
+    (let* ((tags-dir (file-name-concat repo-dir "tags"))
+           (tag-files (directory-files-recursively tags-dir "\\.md$"))
+           (candidates
+            (mapconcat
+             (lambda (tag-file)
+               (let ((title (tlon-yaml-get-key "title" tag-file))
+                     (para  (tlon-ai--first-paragraph tag-file)))
+                 (format "%s\n%s" title para)))
+             tag-files "\n\n"))
+           (article-content (tlon-md-read-content article-file))
+           (prompt (format tlon-ai-suggest-tags-prompt article-content candidates)))
+      (message "Requesting tag suggestions for %s …"
+               (file-name-nondirectory article-file))
+      (tlon-make-gptel-request prompt nil
+                               (tlon-ai-suggest-tags-callback article-file)
+                               tlon-ai-suggest-tags-model t))))
+
+(defun tlon-ai--parse-tags-from-response (response)
+  "Convert RESPONSE (JSON array or comma-/newline-separated list) to a list of strings."
+  (condition-case nil
+      (let ((json-array-type 'list))
+        (json-read-from-string response))
+    (error
+     (mapcar #'string-trim
+             (split-string response "[,\n]+" t)))))
+
+(defun tlon-ai-suggest-tags-callback (article-file)
+  "Return a callback that inserts suggested tags into ARTICLE-FILE."
+  (lambda (response info)
+    (if (not response)
+        (tlon-ai-callback-fail info)
+      (let* ((tags (tlon-ai--parse-tags-from-response response))
+             (tags (delete-dups (cl-remove-if #'string-empty-p tags))))
+        (if (null tags)
+            (message "AI returned no parsable tags.")
+          (with-current-buffer (find-file-noselect article-file)
+            (tlon-yaml-insert-field "tags" tags))
+          (message "Inserted %d tag%s in %s"
+                   (length tags) (if (= (length tags) 1) "" "s")
+                   (file-name-nondirectory article-file)))))))
+
+;;;;; Menu additions -----------------------------------------------------------
+
+(transient-define-infix tlon-ai-infix-select-suggest-tags-model ()
+  "AI model to use for suggesting tags.
+If nil, use the default model."
+  :class 'tlon-model-selection-infix
+  :variable 'tlon-ai-suggest-tags-model)
+
+;; Add entries to the existing ai menu
+(with-eval-after-load 'transient
+  (transient-append-suffix 'tlon-ai-menu
+    '("Misc")
+    '("g" "suggest tags" tlon-ai-suggest-tags))
+  (transient-append-suffix 'tlon-ai-menu
+    '("Models")
+    '("m -g" "Suggest tags" tlon-ai-infix-select-suggest-tags-model)))
+
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
 
