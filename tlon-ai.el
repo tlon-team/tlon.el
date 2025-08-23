@@ -2069,8 +2069,24 @@ The value is a cons cell (BACKEND . MODEL) like the other
       (user-error "Could not locate the 'uqbar-en' repository")))
 
 (defun tlon-ai--first-paragraph (file)
-  "Return the first non-empty paragraph of FILE as a trimmed string."
-  (let* ((content (tlon-md-read-content file))
+  "Return the first non-empty paragraph of FILE as a trimmed string.
+Falls back to a simpler parser when `tlon-md-read-content' errors (for instance
+when the Markdown file lacks a local-variables section)."
+  (let* ((content
+          (condition-case nil
+              (tlon-md-read-content file)
+            (error
+             (with-temp-buffer
+               ;; Insert raw file contents
+               (insert-file-contents file)
+               ;; Skip YAML front-matter if present
+               (goto-char (point-min))
+               (when (and (boundp 'tlon-yaml-delimiter)
+                          (looking-at-p (regexp-quote tlon-yaml-delimiter)))
+                 (forward-line)
+                 (when (re-search-forward (regexp-quote tlon-yaml-delimiter) nil t)
+                   (forward-line)))
+               (buffer-substring-no-properties (point) (point-max))))))
          (para (car (split-string content "\n[ \t]*\n" t))))
     (string-trim para)))
 
