@@ -2095,7 +2095,10 @@ them in the article's YAML metadata as the `tags' field."
                                         (lambda (f) (string-suffix-p ".md" f))))))
     ;; Collect candidate tags
     (let* ((tags-dir (file-name-concat repo-dir "tags"))
-           (tag-files (directory-files-recursively tags-dir "\\.md$"))
+           ;; Exclude any tag files inside the “excluded” subdirectory.
+           (tag-files (cl-remove-if (lambda (f)
+                                      (string-match-p "/excluded/" f))
+                                    (directory-files-recursively tags-dir "\\.md$")))
            (candidates
             (mapconcat
              (lambda (tag-file)
