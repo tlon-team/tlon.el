@@ -29,6 +29,8 @@
 (require 'files-extras)
 (require 'tlon-core)
 (require 'tlon-ai)
+(require 'tlon-counterpart)
+(require 'simple-extras)
 
 ;;;; Variables
 
@@ -799,6 +801,62 @@ canonical form taken from the tag metadata."
                    (length tags) (if (= (length tags) 1) "" "s")
                    (file-name-nondirectory article-file)))))))
 
+;;;;;; Translated tags
+
+;;;###autoload
+(defun tlon-yaml-insert-translated-tags (&optional file)
+  "Insert translated tag titles into FILE’s YAML metadata.
+When called interactively prompt for FILE, defaulting to the Markdown
+file visited by the current buffer.
+
+The function looks at the English counterpart of FILE, reads its `tags`
+field, maps every tag slug to its tag file in English, locates the tag
+translation into the language of FILE, retrieves the translated tag’s
+`title`, and finally writes the list of titles back to FILE as the value
+of the `tags` field."
+  (interactive)
+  (let* ((file (or file
+                   (when (and (buffer-file-name)
+                              (string= (file-name-extension (buffer-file-name)) "md"))
+                     (buffer-file-name))
+                   (read-file-name "Markdown file: " nil nil t nil
+                                   (lambda (f) (string-suffix-p ".md" f t)))))
+         (target-lang (tlon-get-language-in-file file))
+         (en-file (if (string= target-lang "en")
+                      file
+                    (tlon-get-counterpart file)))
+         (tags (tlon-yaml-get-key "tags" en-file))
+         (titles '())
+         (missing '()))
+    (when (stringp tags)
+      (setq tags (tlon-yaml-format-value tags)))
+    (unless tags
+      (user-error "English counterpart has no `tags' field"))
+    (dolist (slug tags)
+      (let* ((en-repo (tlon-get-repo-from-file en-file))
+             (tags-dir (file-name-concat en-repo "tags"))
+             (orig-tag-file (file-name-concat tags-dir
+                                              (format "%s.md" (simple-extras-slugify slug))))
+             (got-title nil))
+        (when (file-exists-p orig-tag-file)
+          (when-let ((tr-tag-file (tlon-get-counterpart-in-originals
+                                   orig-tag-file target-lang)))
+            (when-let ((title (tlon-yaml-get-key "title" tr-tag-file)))
+              (push title titles)
+              (setq got-title t))))
+        (unless got-title
+          (push slug missing))))
+    (setq titles (nreverse (delete-dups titles)))
+    (unless titles
+      (user-error "No translated tag titles found"))
+    (with-current-buffer (find-file-noselect file)
+      (tlon-yaml-insert-field "tags" titles))
+    (when missing
+      (message "No translation found for %d tag%s: %s"
+               (length missing)
+               (if (= (length missing) 1) "" "s")
+               (mapconcat #'identity (nreverse (delete-dups missing)) ", ")))))
+
 ;;;;; menu
 
 (transient-define-infix tlon-yaml-infix-suggest-tags-model ()
@@ -812,10 +870,11 @@ If nil, use the default model."
 (transient-define-prefix tlon-yaml-menu ()
   "Menu for `tlon-yaml'."
   :info-manual "(tlon) yaml"
-  [["Commands"
-    ("t" "suggest tags"   tlon-yaml-suggest-tags)
+  [["Tags"
+    ("t s" "suggest tags"   tlon-yaml-suggest-tags)
+    ("t t" "insert translated tags" tlon-yaml-insert-translated-tags)
     ""
-    "Models"
+    "AI models"
     ("-t" "suggest tags" tlon-yaml-infix-suggest-tags-model)]])
 
 ;;;;; temp
