@@ -1351,6 +1351,7 @@ end of the buffer unconditionally."
   (when-let ((end (tlon-md-end-of-metadata)))
     (string-trim (buffer-substring-no-properties (point-min) end))))
 
+;;;###autoload
 (defun tlon-md-read-content (&optional file)
   "Read the substantive content of FILE.
 The substantive content of a file is the file minus the metadata and the local
