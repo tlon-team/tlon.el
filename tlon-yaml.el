@@ -383,6 +383,7 @@ FIELDS is an alist, typically generated via `tlon-yaml-to-alist'."
 
 ;;;;; Interactive editing
 
+;;;###autoload
 (defun tlon-yaml-insert-field (&optional key value)
   "Insert YAML field with KEY and VALUE in the metadata section.
 If KEY or VALUE are nil, prompt user to select from list of suitable candidates."
@@ -453,8 +454,8 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
             ;;    or its next-key from candidates was not found in the file).
             ;; 2. At the start of next-key's line (if key in candidates and next-key was found).
             (insert new-field "\n"))))
-        ;; (tlon-yaml-reorder-metadata) ; This would re-sort; not called here directly.
-        )))
+      ;; (tlon-yaml-reorder-metadata) ; This would re-sort; not called here directly.
+      )))
 
 ;;;###autoload
 (defun tlon-yaml-insert-original-path ()
