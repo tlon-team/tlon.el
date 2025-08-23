@@ -79,6 +79,7 @@
 (declare-function simple-extras-string-is-url-p "simple-extras")
 (declare-function ebib-extras-open-key "ebib-extras")
 (declare-function tlon-yaml-insert-field "tlon-yaml")
+(declare-function tlon-yaml-suggest-tags "tlon-yaml")
 ;;;###autoload
 (defun tlon-import-document ()
   "Import a new document from a URL or a PDF file."
@@ -97,7 +98,8 @@
     (if (simple-extras-string-is-url-p identifier)
 	(tlon-import-html identifier title)
       (tlon-import-pdf (expand-file-name identifier)))
-    (tlon-yaml-insert-field "key" key)))
+    (tlon-yaml-insert-field "key" key)
+    (tlon-yaml-suggest-tags)))
 
 (declare-function ebib-extras-get-field "ebib-extras")
 (declare-function ebib-extras-get-file "ebib-extras")
