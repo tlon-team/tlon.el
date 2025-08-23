@@ -155,6 +155,9 @@ This module provides functions for reading, writing, and manipulating YAML front
 #+findex: tlon-yaml-delete-field
 + ~tlon-yaml-delete-field~ :: Deletes the field associated with KEY from the YAML metadata of a FILE or the current buffer.
 
+#+findex: tlon-yaml-insert-translated-tags
++ ~tlon-yaml-insert-translated-tags~ :: Inserts translated tag titles into the `tags` field of a Markdown file, based on the tags of its English counterpart.
+
 #+findex: tlon-yaml-reorder-metadata
 + ~tlon-yaml-reorder-metadata~ :: Reorders the fields within the YAML metadata block according to a predefined or standard order (likely using ~tlon-yaml-sort-fields~).
 
