@@ -812,8 +812,9 @@ If nil, use the default model."
 (transient-define-prefix tlon-yaml-menu ()
   "Menu for `tlon-yaml'."
   :info-manual "(tlon) yaml"
-  [[""
+  [["Commands"
     ("t" "suggest tags"   tlon-yaml-suggest-tags)
+    ""
     "Models"
     ("-t" "suggest tags" tlon-yaml-infix-suggest-tags-model)]])
 
