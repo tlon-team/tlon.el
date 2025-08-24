@@ -304,23 +304,23 @@ Give up after five seconds."
   (when isbn
     (with-timeout (5 (message "Timeout while fetching abstract") nil)
       (let ((url (format "https://www.googleapis.com/books/v1/volumes?q=isbn:%s" isbn))
-            (description nil))
-        (message "Trying to find abstract for %s with Google Books..." isbn)
-        (with-current-buffer (url-retrieve-synchronously url)
-          (set-buffer-multibyte t)
-          (set-buffer-file-coding-system 'utf-8)
-          (goto-char (point-min))
-          (re-search-forward "^$")
-          (delete-region (point) (point-min))
-          (let* ((json-object-type 'plist)
-                 (json-array-type 'list)
-                 (json (json-read))
-                 (items (plist-get json :items))
-                 (volume-info (and items (plist-get (car items) :volumeInfo))))
-            (setq description (and volume-info (plist-get volume-info :description)))))
-        (when (get-buffer url)
-          (kill-buffer url))
-        (if description description (progn (message "No abstract found.") nil))))))
+	    (description nil))
+	(message "Trying to find abstract for %s with Google Books..." isbn)
+	(with-current-buffer (url-retrieve-synchronously url)
+	  (set-buffer-multibyte t)
+	  (set-buffer-file-coding-system 'utf-8)
+	  (goto-char (point-min))
+	  (re-search-forward "^$")
+	  (delete-region (point) (point-min))
+	  (let* ((json-object-type 'plist)
+		 (json-array-type 'list)
+		 (json (json-read))
+		 (items (plist-get json :items))
+		 (volume-info (and items (plist-get (car items) :volumeInfo))))
+	    (setq description (and volume-info (plist-get volume-info :description)))))
+	(when (get-buffer url)
+	  (kill-buffer url))
+	(if description description (progn (message "No abstract found.") nil))))))
 
 (defun tlon-abstract-may-proceed-p ()
   "Return t iff it’s okay to proceed with abstract processing."
@@ -477,21 +477,21 @@ modification. Display a message reporting how many entries were updated."
     (let ((removed 0))
       (bibtex-map-entries
        (lambda (_key start _end)
-         (save-excursion
-           (goto-char start)
-           (save-restriction
-             (bibtex-narrow-to-entry)
-             (when (and (bibtex-extras-get-field "doi")
-                        (bibtex-extras-get-field "url"))
-               ;; completely remove the url field instead of only clearing its value
-               (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
-                 (goto-char (bibtex-start-of-name-in-field url-bounds))
-                 ;; kill the whole field (including trailing comma, if any)
-                 (bibtex-kill-field nil t))
-               (cl-incf removed))))))
+	 (save-excursion
+	   (goto-char start)
+	   (save-restriction
+	     (bibtex-narrow-to-entry)
+	     (when (and (bibtex-extras-get-field "doi")
+			(bibtex-extras-get-field "url"))
+	       ;; completely remove the url field instead of only clearing its value
+	       (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
+		 (goto-char (bibtex-start-of-name-in-field url-bounds))
+		 ;; kill the whole field (including trailing comma, if any)
+		 (bibtex-kill-field nil t))
+	       (cl-incf removed))))))
       (when save (save-buffer))
       (message "Removed url field from %d entr%s."
-               removed (if (= removed 1) "y" "ies")))))
+	       removed (if (= removed 1) "y" "ies")))))
 
 ;;;###autoload
 (defun tlon-bib-remove-url-fields-with-isbn (&optional save)
@@ -506,19 +506,19 @@ modification. Display a message reporting how many entries were updated."
     (let ((removed 0))
       (bibtex-map-entries
        (lambda (_key start _end)
-         (save-excursion
-           (goto-char start)
-           (save-restriction
-             (bibtex-narrow-to-entry)
-             (when (and (bibtex-extras-get-field "isbn")
-                        (bibtex-extras-get-field "url"))
-               (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
-                 (goto-char (bibtex-start-of-name-in-field url-bounds))
-                 (bibtex-kill-field nil t))
-               (cl-incf removed))))))
+	 (save-excursion
+	   (goto-char start)
+	   (save-restriction
+	     (bibtex-narrow-to-entry)
+	     (when (and (bibtex-extras-get-field "isbn")
+			(bibtex-extras-get-field "url"))
+	       (when-let ((url-bounds (bibtex-search-forward-field "url" t)))
+		 (goto-char (bibtex-start-of-name-in-field url-bounds))
+		 (bibtex-kill-field nil t))
+	       (cl-incf removed))))))
       (when save (save-buffer))
       (message "Removed url field from %d entr%s."
-               removed (if (= removed 1) "y" "ies")))))
+	       removed (if (= removed 1) "y" "ies")))))
 
 ;;;;; Autokey
 
@@ -678,71 +678,71 @@ Fields set in the new entry:
   (interactive)
   (tlon-ensure-bib)
   (let* ((target-code (tlon-select-language 'code 'babel))
-         (target-lang (tlon-lookup tlon-languages-properties :standard :code target-code))
-         (mode-ebib   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
-         (orig-key    (tlon-get-key-at-point))
-         ;; Site information remains language–specific
-         (site-name   (tlon-lookup tlon-site-data :name :language target-code))
-         ;; Get the original URL by looking it up in the bibliography
-         (original-url (tlon-bibliography-lookup "=key=" orig-key "url"))
+	 (target-lang (tlon-lookup tlon-languages-properties :standard :code target-code))
+	 (mode-ebib   (derived-mode-p 'ebib-entry-mode 'ebib-index-mode))
+	 (orig-key    (tlon-get-key-at-point))
+	 ;; Site information remains language–specific
+	 (site-name   (tlon-lookup tlon-site-data :name :language target-code))
+	 ;; Get the original URL by looking it up in the bibliography
+	 (original-url (tlon-bibliography-lookup "=key=" orig-key "url"))
 	 (get-field   (if mode-ebib #'ebib-extras-get-field #'bibtex-extras-get-field))
-         (entry-type
-          (or (funcall get-field "=type=")
-              (when (derived-mode-p 'bibtex-mode)
-                (downcase (or (bibtex-type-in-head) "online")))
-              "online"))
-         (author      (funcall get-field "author"))
-         (orig-title  (funcall get-field "title"))
-         (orig-abs    (funcall get-field "abstract"))
-         (source-lang (tlon-get-iso-code
-                       (downcase (or (funcall get-field "langid") "english"))))
-         ;; DeepL translations (synchronous wrapper defined below)
-         (trans-title (tlon-bib--translate-string orig-title source-lang target-code))
-         (trans-abs   (tlon-bib--translate-string orig-abs   source-lang target-code))
-         (new-key     (tlon-generate-autokey author (format-time-string "%Y") trans-title))
-         (date-now    (format-time-string "%Y-%m-%d")))
+	 (entry-type
+	  (or (funcall get-field "=type=")
+	      (when (derived-mode-p 'bibtex-mode)
+		(downcase (or (bibtex-type-in-head) "online")))
+	      "online"))
+	 (author      (funcall get-field "author"))
+	 (orig-title  (funcall get-field "title"))
+	 (orig-abs    (funcall get-field "abstract"))
+	 (source-lang (tlon-get-iso-code
+		       (downcase (or (funcall get-field "langid") "english"))))
+	 ;; DeepL translations (synchronous wrapper defined below)
+	 (trans-title (tlon-bib--translate-string orig-title source-lang target-code))
+	 (trans-abs   (tlon-bib--translate-string orig-abs   source-lang target-code))
+	 (new-key     (tlon-generate-autokey author (format-time-string "%Y") trans-title))
+	 (date-now    (format-time-string "%Y-%m-%d")))
     (if mode-ebib
-        ;; -------- EBIB --------
-        (progn
-          (ebib-switch-to-database-nth 3)      ; translation DB
-          (ebib-add-entry)                     ; create skeleton
-          (sleep-for 0.05)
-          ;; change key first
-          (ebib--update-keyname new-key)
-          ;; set fields
-          (mapc (lambda (kv) (ebib-extras-set-field (car kv) (cdr kv)))
-                `(("langid"      . ,target-lang)
-                  ("title"       . ,trans-title)
-                  ("author"      . ,author)
-                  ("journaltitle" . ,site-name)
-                  ("translation" . ,orig-key)
-                  ("abstract"    . ,trans-abs)
-                  ("date"        . ,date-now)
-                  ("url"         . ,original-url)))
-          (ebib-extras-set-field "=type=" entry-type)
-          (message "Created translation entry %s in Ebib." new-key))
+	;; -------- EBIB --------
+	(progn
+	  (ebib-switch-to-database-nth 3)      ; translation DB
+	  (ebib-add-entry)                     ; create skeleton
+	  (sleep-for 0.05)
+	  ;; change key first
+	  (ebib--update-keyname new-key)
+	  ;; set fields
+	  (mapc (lambda (kv) (ebib-extras-set-field (car kv) (cdr kv)))
+		`(("langid"      . ,target-lang)
+		  ("title"       . ,trans-title)
+		  ("author"      . ,author)
+		  ("journaltitle" . ,site-name)
+		  ("translation" . ,orig-key)
+		  ("abstract"    . ,trans-abs)
+		  ("date"        . ,date-now)
+		  ("url"         . ,original-url)))
+	  (ebib-extras-set-field "=type=" entry-type)
+	  (message "Created translation entry %s in Ebib." new-key))
       ;; -------- BIBTeX --------
       (save-excursion
-        (bibtex-narrow-to-entry)
-        (bibtex-end-of-entry)
-        (end-of-line)
-        (open-line 2)
-        (forward-line 1)
-        (insert (format "@%s{%s,\n"
-                        entry-type new-key))
-        (dolist (field
-                 `(("langid"      . ,target-lang)
-                   ("title"       . ,trans-title)
-                   ("author"      . ,author)
-                   ("journaltitle". ,site-name)
-                   ("translation" . ,orig-key)
-                   ("abstract"    . ,trans-abs)
-                   ("date"        . ,date-now)
-                   ("url"         . ,original-url)))
-          (insert (format "\t%s = {%s},\n" (car field) (cdr field))))
-        ;; close entry
-        (insert "}\n")
-        (bibtex-clean-entry))
+	(bibtex-narrow-to-entry)
+	(bibtex-end-of-entry)
+	(end-of-line)
+	(open-line 2)
+	(forward-line 1)
+	(insert (format "@%s{%s,\n"
+			entry-type new-key))
+	(dolist (field
+		 `(("langid"      . ,target-lang)
+		   ("title"       . ,trans-title)
+		   ("author"      . ,author)
+		   ("journaltitle". ,site-name)
+		   ("translation" . ,orig-key)
+		   ("abstract"    . ,trans-abs)
+		   ("date"        . ,date-now)
+		   ("url"         . ,original-url)))
+	  (insert (format "\t%s = {%s},\n" (car field) (cdr field))))
+	;; close entry
+	(insert "}\n")
+	(bibtex-clean-entry))
       (message "Inserted translation entry %s." new-key))))
 
 (defun tlon-bib--translate-string (string source-lang target-lang)
@@ -752,8 +752,8 @@ Return STRING unchanged if translation fails."
       string
     (let (result)
       (tlon-deepl-translate string target-lang source-lang
-                            (lambda ()
-                              (setq result (tlon-deepl-print-translation))))
+			    (lambda ()
+			      (setq result (tlon-deepl-print-translation))))
       (or result string))))
 
 ;;;;; Convert to `Cite'
@@ -842,7 +842,7 @@ value contains VALUE as a substring."
 FILE should be the absolute path to the BibTeX file.
 Ensures the file is cached by citar if not already."
   (let* ((bib (citar-cache--get-bibliography (file-truename file))) ; Get/cache bibliography
-         (entries (citar-cache--bibliography-entries bib)))
+	 (entries (citar-cache--bibliography-entries bib)))
     (map-keys entries)))
 
 (defun tlon-bib-replace-keys-with-citations (&optional file audio)
@@ -909,25 +909,25 @@ If FILE is not provided, use the file visited by the current buffer. If a
 region is selected, check only the region."
   (interactive)
   (let* ((text (if (use-region-p)
-                   (buffer-substring-no-properties (region-beginning) (region-end))
-                 (let ((filename (or file (buffer-file-name))))
-                   (if filename
-                       (with-temp-buffer
-                         (insert-file-contents filename)
-                         (buffer-string))
-                     (buffer-string)))))
-         (pattern (tlon-md-get-tag-pattern "Cite"))
-         invalid-keys)
+		   (buffer-substring-no-properties (region-beginning) (region-end))
+		 (let ((filename (or file (buffer-file-name))))
+		   (if filename
+		       (with-temp-buffer
+			 (insert-file-contents filename)
+			 (buffer-string))
+		     (buffer-string)))))
+	 (pattern (tlon-md-get-tag-pattern "Cite"))
+	 invalid-keys)
     (with-temp-buffer
       (insert text)
       (goto-char (point-min))
       (while (re-search-forward pattern nil t)
-        (let ((key (match-string-no-properties 3)))
-          (when key
-            (unless (tlon-bibliography-lookup "=key=" key)
-              (push key invalid-keys))))))
+	(let ((key (match-string-no-properties 3)))
+	  (when key
+	    (unless (tlon-bibliography-lookup "=key=" key)
+	      (push key invalid-keys))))))
     (if invalid-keys
-        (message "Invalid BibTeX keys found: %s" (mapconcat #'identity (delete-dups invalid-keys) ", "))
+	(message "Invalid BibTeX keys found: %s" (mapconcat #'identity (delete-dups invalid-keys) ", "))
       (message "All BibTeX keys are valid."))))
 
 ;;;;; Abstracts
@@ -1140,9 +1140,9 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 (defun tlon-bib-add-multiple-urls-from-file (file)
   "Prompt user for FILE with a list of URLs and add each to `tlon-file-fluid'."
   (let* ((urls (delete-dups (files-extras-lines-to-list file)))
-         (missing-urls (seq-filter (lambda (url)
-                                     (not (tlon-bibliography-lookup "url" url)))
-                                   urls)))
+	 (missing-urls (seq-filter (lambda (url)
+				     (not (tlon-bibliography-lookup "url" url)))
+				   urls)))
     (zotra-extras-add-multiple-urls missing-urls tlon-file-fluid)))
 
 ;;;;; Bibliographic Reference Extraction
@@ -1254,40 +1254,40 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
   "Apply the BibTeX key replacements in the source buffer."
   (cl-block tlon-bib--apply-bibkey-replacements
     (let* ((state tlon-bib--bibkey-state)
-	 (results (plist-get state :results)) ; List of (start end key)
-	 (source-buffer (plist-get state :source-buffer))
-	 (replacements-made 0)
-	 (errors-occurred 0))
+	   (results (plist-get state :results)) ; List of (start end key)
+	   (source-buffer (plist-get state :source-buffer))
+	   (replacements-made 0)
+	   (errors-occurred 0))
 
-    (unless (buffer-live-p source-buffer)
-      (message "Source buffer is no longer live. Aborting replacements.")
-      (setq tlon-bib--bibkey-state nil)
-      (cl-return-from tlon-bib--apply-bibkey-replacements))
+      (unless (buffer-live-p source-buffer)
+	(message "Source buffer is no longer live. Aborting replacements.")
+	(setq tlon-bib--bibkey-state nil)
+	(cl-return-from tlon-bib--apply-bibkey-replacements))
 
-    ;; Sort results by start position in REVERSE order to avoid messing up positions
-    (setq results (sort results (lambda (a b) (> (car a) (car b)))))
+      ;; Sort results by start position in REVERSE order to avoid messing up positions
+      (setq results (sort results (lambda (a b) (> (car a) (car b)))))
 
-    (with-current-buffer source-buffer
-      (dolist (result results)
-	(let ((start (nth 0 result))
-	      (end (nth 1 result))
-	      (key (nth 2 result)))
-	  ;; Check if key is valid (not an error marker)
-	  (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
-	      (progn
-		(message "No valid key found for text at %d-%d (Result: %s). Skipping." start end key)
-		(cl-incf errors-occurred))
-	    ;; Perform replacement
-	    (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
-	      (goto-char start) ; Go to start before deleting
-	      (delete-region start end)
-	      (insert replacement-text)
-	      (cl-incf replacements-made))))))
+      (with-current-buffer source-buffer
+	(dolist (result results)
+	  (let ((start (nth 0 result))
+		(end (nth 1 result))
+		(key (nth 2 result)))
+	    ;; Check if key is valid (not an error marker)
+	    (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+		(progn
+		  (message "No valid key found for text at %d-%d (Result: %s). Skipping." start end key)
+		  (cl-incf errors-occurred))
+	      ;; Perform replacement
+	      (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+		(goto-char start) ; Go to start before deleting
+		(delete-region start end)
+		(insert replacement-text)
+		(cl-incf replacements-made))))))
 
-    (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
-	     replacements-made errors-occurred)
-    ;; Clean up state variable
-    (setq tlon-bib--bibkey-state nil))))
+      (message "BibTeX key replacement complete. Replaced %d reference(s). Skipped %d due to errors or no match."
+	       replacements-made errors-occurred)
+      ;; Clean up state variable
+      (setq tlon-bib--bibkey-state nil))))
 
 ;;;;;; Extract and Replace Command
 
@@ -1398,49 +1398,49 @@ replacements. RESPONSE is the AI's response, INFO is the response info."
   "Apply the BibTeX key replacements in the source buffer for extracted references."
   (cl-block tlon-bib--apply-extracted-reference-replacements
     (let* ((state tlon-bib--extract-replace-state)
-	 ;; Check if state is nil (might have been cleaned up due to error)
-	 (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
-	 (source-buffer (plist-get state :source-buffer))
-	 (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
-	 (key-map (plist-get state :key-map))
-	 (replacements '()) ; List of (start end replacement-text)
-	 (replacements-made 0)
-	 (errors-occurred 0)
-	 (not-found-count 0))
-    (unless (buffer-live-p source-buffer)
-      (message "Source buffer is no longer live. Aborting replacements.")
-      (setq tlon-bib--extract-replace-state nil)
-      (cl-return-from tlon-bib--apply-extracted-reference-replacements))
-    ;; Build the list of replacements
-    (dolist (pos-entry ref-positions)
-      (let* ((ref-string (car pos-entry))
-	     (positions (cdr pos-entry))
-	     (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
-	(if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
-	    (progn
-	      (when (string= key "NOT_FOUND") (cl-incf not-found-count))
-	      (when (string= key "ERROR_AI") (cl-incf errors-occurred)))
-	  ;; Valid key found, create replacement entries for all found positions
-	  (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
-	    (dolist (pos positions)
-	      (push (list (car pos) (cdr pos) replacement-text) replacements))))))
-    ;; Sort replacements by start position in REVERSE order
-    (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
-    ;; Apply replacements
-    (with-current-buffer source-buffer
-      (dolist (replacement replacements)
-	(let ((start (nth 0 replacement))
-	      (end (nth 1 replacement))
-	      (text (nth 2 replacement)))
-	  ;; Check if the region still contains the expected text? (Might be too complex/slow)
-	  (goto-char start)
-	  (delete-region start end)
-	  (insert text)
-	  (cl-incf replacements-made))))
-    (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
-	     replacements-made not-found-count errors-occurred)
-    ;; Clean up state variable
-    (setq tlon-bib--extract-replace-state nil))))
+	   ;; Check if state is nil (might have been cleaned up due to error)
+	   (_ (unless state (user-error "State lost, likely due to previous error. Aborting")))
+	   (source-buffer (plist-get state :source-buffer))
+	   (ref-positions (plist-get state :reference-positions)) ; (ref-string . list-of-(start . end))
+	   (key-map (plist-get state :key-map))
+	   (replacements '()) ; List of (start end replacement-text)
+	   (replacements-made 0)
+	   (errors-occurred 0)
+	   (not-found-count 0))
+      (unless (buffer-live-p source-buffer)
+	(message "Source buffer is no longer live. Aborting replacements.")
+	(setq tlon-bib--extract-replace-state nil)
+	(cl-return-from tlon-bib--apply-extracted-reference-replacements))
+      ;; Build the list of replacements
+      (dolist (pos-entry ref-positions)
+	(let* ((ref-string (car pos-entry))
+	       (positions (cdr pos-entry))
+	       (key (gethash ref-string key-map "ERROR_AI"))) ; Default to error if somehow missing
+	  (if (or (string= key "NOT_FOUND") (string= key "ERROR_AI"))
+	      (progn
+		(when (string= key "NOT_FOUND") (cl-incf not-found-count))
+		(when (string= key "ERROR_AI") (cl-incf errors-occurred)))
+	    ;; Valid key found, create replacement entries for all found positions
+	    (let ((replacement-text (format "<Cite bibKey=\"%s\" />" key)))
+	      (dolist (pos positions)
+		(push (list (car pos) (cdr pos) replacement-text) replacements))))))
+      ;; Sort replacements by start position in REVERSE order
+      (setq replacements (sort replacements (lambda (a b) (> (car a) (car b)))))
+      ;; Apply replacements
+      (with-current-buffer source-buffer
+	(dolist (replacement replacements)
+	  (let ((start (nth 0 replacement))
+		(end (nth 1 replacement))
+		(text (nth 2 replacement)))
+	    ;; Check if the region still contains the expected text? (Might be too complex/slow)
+	    (goto-char start)
+	    (delete-region start end)
+	    (insert text)
+	    (cl-incf replacements-made))))
+      (message "Reference replacement complete. Replaced %d instance(s). Skipped %d (key not found), %d (AI error)."
+	       replacements-made not-found-count errors-occurred)
+      ;; Clean up state variable
+      (setq tlon-bib--extract-replace-state nil))))
 
 ;;;;;; Citation Replacement (AI Agent)
 
