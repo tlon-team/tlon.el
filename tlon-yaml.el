@@ -997,12 +997,19 @@ With a prefix argument, prompt for DIR."
             "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"
             nil t))))
   (let* ((dir   (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"))
-         (files (directory-files dir "\\.md\\'" directory-files-no-dot-files-regexp)))
+         ;; walk the directory tree recursively
+         (files (directory-files-recursively dir "\\.md\\'"))
+         (processed 0))
     (dolist (file files)
-      (tlon-yaml-insert-translated-tags file "es"))
-    (message "Processed %d article%s in %s"
+      ;; only act when a Spanish counterpart exists
+      (when-let ((es-file (tlon-get-counterpart file "es")))
+        (when (file-exists-p es-file)
+          (tlon-yaml-insert-translated-tags file "es")
+          (setq processed (1+ processed)))))
+    (message "Processed %d of %d article%s in %s"
+             processed
              (length files)
-             (if (= (length files) 1) "" "s")
+             (if (= processed 1) "" "s")
              dir)))
 
 (provide 'tlon-yaml)
