@@ -1527,37 +1527,37 @@ If nil, use the default model."
   "Menu for `tex' functions."
   [["Markdown"
     "URLs missing from database"
-    ("m f" "Find in file"                        tlon-prompt-to-add-missing-urls)
+    ("m f" "Find in file"                            tlon-prompt-to-add-missing-urls)
     ""
     "Convert to `Cite'"
-    ("m b" "Convert bibliography"                tlon-convert-bibliography-to-cite)
-    ("m l" "Convert links"                       tlon-convert-links-to-cite)
+    ("m b" "Convert bibliography"                    tlon-convert-bibliography-to-cite)
+    ("m l" "Convert links"                           tlon-convert-links-to-cite)
     ""
     "Check"
-    ("m c" "Check BibTeX keys"                   tlon-bib-check-bibkeys)
+    ("m c" "Check BibTeX keys"                       tlon-bib-check-bibkeys)
     ""
     "AI"
-    ("m r" "Replace citations with AI agent"            tlon-bib-replace-citations-in-file)
-    ("m a" "Add missing citations to BibTeX"            tlon-bib-add-missing-citations)
+    ("m r" "Replace citations with AI agent"         tlon-bib-replace-citations-in-file)
+    ("m a" "Add missing citations to BibTeX"         tlon-bib-add-missing-citations)
     ""
     "AI Models"
-    ("m -r" "Replace citations" tlon-bib-infix-select-replace-citations-model)
-    ("m -a" "Add missing citations" tlon-bib-infix-select-add-missing-citations-model)]
+    ("m -r" "Replace citations"                      tlon-bib-infix-select-replace-citations-model)
+    ("m -a" "Add missing citations"                  tlon-bib-infix-select-add-missing-citations-model)]
    ["Ebib"
-    ("e a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
-    ("e c" "Create translation entry"            tlon-create-bibtex-translation)]
+    ("e a" "Fetch abstract"                          tlon-fetch-and-set-abstract)
+    ("e c" "Create translation entry"                tlon-create-bibtex-translation)]
    ["BibTeX"
     "Report"
-    ("b g" "Generate"                          tlon-bib-entries-report)
-    ("b x" "Add to not needing abstract"       tlon-bib-add-to-excluded-keys)
+    ("b g" "Generate"                                tlon-bib-entries-report)
+    ("b x" "Add to not needing abstract"             tlon-bib-add-to-excluded-keys)
     ""
     "Move"
-    ("b t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
-    ("b s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)
+    ("b t" "Move this entry to Tlön database"        tlon-move-entry-to-fluid)
+    ("b s" "Move all entries to stable"              tlon-move-all-fluid-entries-to-stable)
     ""
     "Remove"
-    ("b d" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)
-    ("b i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]])
+    ("b d" "Remove URLs when DOI present"            tlon-bib-remove-url-fields-with-doi)
+    ("b i" "Remove URLs when ISBN present"           tlon-bib-remove-url-fields-with-isbn)]])
 
 (provide 'tlon-bib)
 ;;; tlon-bib.el ends here
