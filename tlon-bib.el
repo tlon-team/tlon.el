@@ -1459,9 +1459,7 @@ if Markdown, \"[cite:@KEY]\", if org-mode."
 		 (read-file-name "File to process: " nil nil nil
 				 (file-relative-name (buffer-file-name) default-directory))))
 	 (org-file-p (string-suffix-p ".org" file t))
-	 (examples (mapcar (lambda (cons)
-			     (funcall (if org-file-p #'cdr #'car) cons))
-			   tlon-bib-replace-citations-prompt-examples))
+	 (examples (tlon-bib-get-citation-replacement-prompt-examples org-file-p))
 	 (prompt-template (apply #'format tlon-bib-replace-citations-prompt examples))
 	 (prompt (format prompt-template file
 			 (if (region-active-p)
@@ -1476,6 +1474,13 @@ if Markdown, \"[cite:@KEY]\", if org-mode."
     (message "Requesting AI to process citations in %s..." (file-name-nondirectory file))
     (tlon-make-gptel-request prompt nil #'tlon-bib-replace-citations-callback
 			     tlon-bib-replace-citations-model t nil tools)))
+
+(defun tlon-bib-get-citation-replacement-prompt-examples (org)
+  "Return a list of examples for replacing citations.
+If ORG is non-nil, return a list of Org-mode citation replacement examples."
+  (mapcar (lambda (cons)
+	    (funcall (if org #'cdr #'car) cons))
+	  tlon-bib-replace-citations-prompt-examples))
 
 (defun tlon-bib-replace-citations-callback (response info)
   "Callback for `tlon-bib-replace-citations-in-file'.
