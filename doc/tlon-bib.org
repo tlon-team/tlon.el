@@ -279,7 +279,6 @@ It provides the following groups and commands:
     + =s= :: Move all entries to stable (~tlon-move-all-fluid-entries-to-stable~)
 + *AI*:
   + *Bibliography*:
-    + =x= :: Extract references from buffer/region (~tlon-bib-extract-references~)
     + =k= :: Get BibKeys for references (region - line based) (~tlon-bib-get-bibkeys-from-references~)
     + =X= :: Extract & Replace References (buffer/region - precise) (~tlon-bib-extract-and-replace-references~)
     + =C= :: Replace citations with AI agent (~tlon-bib-replace-citations-in-file~)
@@ -408,9 +407,6 @@ These functions customize the BibTeX autokey generation process, likely used as 
 :CUSTOM_ID: h:tlon-bib-ai-bib-commands
 :END:
 These commands leverage AI to perform advanced bibliographic tasks.
-
-#+findex: tlon-bib-extract-references
-+ ~tlon-bib-extract-references~ :: (Autoloaded) Scans the current buffer or a selected region for bibliographic references using AI. It uses the prompt ~tlon-bib-extract-references-prompt~ to ask the AI to identify references. The found references are displayed in the messages buffer and copied to the kill ring.
 
 #+findex: tlon-bib-get-bibkeys-from-references
 + ~tlon-bib-get-bibkeys-from-references~ :: (Autoloaded) Replaces plain-text references in an active region with structured =<Cite>= tags. It treats each non-blank line in the region as a single reference and uses a single batch AI request (with ~tlon-bib-get-bibkeys-batch-prompt~) to find matching BibTeX keys in the bare bibliography file. It replaces each line with a corresponding =<Cite bibKey="..." />= tag. *Warning:* This replaces the entire line and may be imprecise.

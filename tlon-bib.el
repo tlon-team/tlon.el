@@ -1174,11 +1174,6 @@ Includes entries even if some fields are missing (value will be null)."
 
 ;;;;; Bibliographic Reference Extraction
 
-(defconst tlon-bib-extract-references-prompt
-  (format "You are an expert academic assistant. Please carefully scan the following text and extract all bibliographic references you can find.%s Return each distinct reference on a new line. Do not include any commentary, numbering, or bullet points, just the references themselves. Examples of references might look like 'Author (Year) Title', 'Author, A. B. (Year). Title of work.', etc."
-	  tlon-ai-string-wrapper)
-  "Prompt for extracting bibliographic references from text.")
-
 (defconst tlon-bib-get-bibkeys-prompt
   "You are an expert bibliographic database lookup tool. You will be given an 'Input Reference' string and a 'Database' in JSON format containing bibliographic entries.\n\nYour task is to find the *single best matching entry* in the Database for the Input Reference. The match should be based on semantic similarity (author, title, year), even if the strings are not identical. \n\nOnce you find the best match, you must return *only* the value of the 'key' field for that matching entry. Do not return anything else - no explanations, no 'The key is:', just the key string itself.\n\nIf you cannot find a reasonably good match in the Database, return the exact string 'NOT_FOUND'.\n\nInput Reference:\n%s\n\nDatabase:\n```json\n%s\n```\n\nKey:"
   ;; %s will be the single input reference
@@ -1227,42 +1222,6 @@ Here is the process you must follow:
 
 Here is the text: %s"
   "Prompt for adding missing citations to the bibliography.")
-
-;;;###autoload
-(defun tlon-bib-extract-references (&optional use-region)
-  "Scan the current buffer or region for bibliographic references using AI.
-Display the found references in the *Messages* buffer and copies
-them (newline-separated) to the kill ring. With prefix argument USE-REGION,
-operate only on the active region."
-  (interactive "P")
-  (let ((text (if use-region
-		  (if (region-active-p)
-		      (buffer-substring-no-properties (region-beginning) (region-end))
-		    (user-error "Region not active"))
-		(buffer-string))))
-    (when (string-empty-p text)
-      (user-error "Buffer or region is empty"))
-    (message "Requesting AI to extract references...")
-    (tlon-make-gptel-request tlon-bib-extract-references-prompt text
-			     #'tlon-bib-extract-references-callback)))
-
-(defun tlon-bib-extract-references-callback (response info)
-  "Callback for `tlon-bib-extract-references'.
-Displays the found references and copies them to the kill ring. RESPONSE is the
-AI's response, INFO is the response info."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (let* ((references (split-string (string-trim response) "\n" t)) ; Split by newline, remove empty
-	   (count (length references)))
-      (kill-new (mapconcat #'identity references "\n"))
-      (message "AI found %d potential reference(s). Copied to kill ring." count)
-      ;; Optionally display the references (might be long)
-      (when (> count 0)
-	(message "References:\n%s%s"
-		 (mapconcat (lambda (ref) (concat "- " ref))
-			    (seq-take references (min count 10)) ; Show first 10
-			    "\n")
-		 (if (> count 10) "\n..." ""))))))
 
 ;;;;;; Bibkey Lookup Command and Helpers
 
@@ -1705,36 +1664,35 @@ If nil, use the default model."
   "Menu for `tex' functions."
   [["Markdown"
     "URLs missing from database"
-    ("f" "Find in file"                        tlon-prompt-to-add-missing-urls)
+    ("m f" "Find in file"                        tlon-prompt-to-add-missing-urls)
     ""
     "Convert to `Cite'"
-    ("b" "Convert bibliography"                tlon-convert-bibliography-to-cite)
-    ("l" "Convert links"                       tlon-convert-links-to-cite)
+    ("m b" "Convert bibliography"                tlon-convert-bibliography-to-cite)
+    ("m l" "Convert links"                       tlon-convert-links-to-cite)
     ""
     "Check"
-    ("v" "Check BibTeX keys"                   tlon-bib-check-bibkeys)]
+    ("m c" "Check BibTeX keys"                   tlon-bib-check-bibkeys)]
    ["Ebib"
-    ("a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
-    ("c" "Create translation entry"            tlon-create-bibtex-translation)]
+    ("e a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
+    ("e c" "Create translation entry"            tlon-create-bibtex-translation)]
    ["BibTeX"
     "Report"
-    ("r r" "Generate"                          tlon-bib-entries-report)
-    ("r x" "Add to not needing abstract"       tlon-bib-add-to-excluded-keys)
+    ("b g" "Generate"                          tlon-bib-entries-report)
+    ("b x" "Add to not needing abstract"       tlon-bib-add-to-excluded-keys)
     ""
     "Move"
-    ("t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
-    ("s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)
+    ("b t" "Move this entry to Tlön database"    tlon-move-entry-to-fluid)
+    ("b s" "Move all entries to stable"          tlon-move-all-fluid-entries-to-stable)
     ""
     "Remove"
-    ("u" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)
-    ("i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]
+    ("b d" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)
+    ("b i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]
    ["AI"
     "Bibliography"
-    ("x" "Extract references from buffer/region" tlon-bib-extract-references)
-    ("k" "Get BibKeys for references (region - line based)"   tlon-bib-get-bibkeys-from-references)
-    ("X" "Extract & Replace References (buffer/region - precise)" tlon-bib-extract-and-replace-references)
-    ("C" "Replace citations with AI agent"            tlon-bib-replace-citations-in-file)
-    ("A" "Add missing citations to BibTeX"            tlon-bib-add-missing-citations)
+    ;; ("k" "Get BibKeys for references (region - line based)"   tlon-bib-get-bibkeys-from-references)
+    ;; ("X" "Extract & Replace References (buffer/region - precise)" tlon-bib-extract-and-replace-references)
+    ("b r" "Replace citations with AI agent"            tlon-bib-replace-citations-in-file)
+    ("b a" "Add missing citations to BibTeX"            tlon-bib-add-missing-citations)
     ""
     "Models"
     ("m -C" "Replace citations" tlon-bib-infix-select-replace-citations-model)
