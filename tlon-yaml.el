@@ -980,5 +980,30 @@ For each file it:
 		(tlon-yaml-insert-field "key" trans-key))
               (tlon-message-debug "Inserted key %s in %s" trans-key trans-file))))))))))
 
+;;;###autoload
+(defun tlon-yaml-sync-article-tags-to-es (&optional dir)
+  "Insert Spanish tag translations for all English articles in DIR.
+
+The function iterates over every Markdown file under DIR (defaulting
+to the canonical uqbar-en articles directory) and calls
+`tlon-yaml-insert-translated-tags' on each with target language code
+\"es\".
+
+With a prefix argument, prompt for DIR."
+  (interactive
+   (list (when current-prefix-arg
+           (read-directory-name
+            "English articles directory: "
+            "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"
+            nil t))))
+  (let* ((dir   (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"))
+         (files (directory-files-recursively dir "\\.md\\'")))
+    (dolist (file files)
+      (tlon-yaml-insert-translated-tags file "es"))
+    (message "Processed %d article%s in %s"
+             (length files)
+             (if (= (length files) 1) "" "s")
+             dir)))
+
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here
