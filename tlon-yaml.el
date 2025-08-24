@@ -997,7 +997,7 @@ With a prefix argument, prompt for DIR."
             "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"
             nil t))))
   (let* ((dir   (or dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"))
-         (files (directory-files-recursively dir "\\.md\\'")))
+         (files (directory-files dir "\\.md\\'" directory-files-no-dot-files-regexp)))
     (dolist (file files)
       (tlon-yaml-insert-translated-tags file "es"))
     (message "Processed %d article%s in %s"
