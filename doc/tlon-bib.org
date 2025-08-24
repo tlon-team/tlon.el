@@ -242,14 +242,6 @@ This section details the interactive commands provided by =tlon-bib.el=.
 #+findex: tlon-bib-check-bibkeys
 + ~tlon-bib-check-bibkeys~ :: (Autoloaded) Checks if all BibTeX keys inside =<Cite>= tags in the current buffer, a specified =FILE=, or an active region are valid. A key is considered valid if it can be found in the bibliography using ~tlon-bibliography-lookup~. It reports any invalid keys found, or confirms that all keys are valid.
 
-*** Bibliography Management
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-bib-bibliography-commands
-:END:
-
-#+findex: tlon-bib-create-bare-bibliography
-+ ~tlon-bib-create-bare-bibliography~ :: Creates a JSON file (~tlon-file-bare-bibliography~) containing a simplified representation (author, date, title, key) of all entries found in the BibTeX files listed in ~tlon-bibliography-files~. It retrieves the path for the 'babel-refs' repository using ~tlon-repo-lookup~. Entries are included even if some of these fields are missing (the corresponding JSON value will be null). After writing the data, it opens the generated JSON file.
-
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-bib-menu-cmd
@@ -284,8 +276,6 @@ It provides the following groups and commands:
   + *Models*:
     + =m -C= :: Replace citations (~tlon-bib-infix-select-replace-citations-model~)
     + =m -A= :: Add missing citations (~tlon-bib-infix-select-add-missing-citations-model~)
-+ *Misc*:
-  + =B= :: Create bare bibliography (~tlon-bib-create-bare-bibliography~)
 
 ** Internal Functions and Variables
 :PROPERTIES:

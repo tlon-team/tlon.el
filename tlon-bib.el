@@ -1133,33 +1133,6 @@ ORIG-FUN is the original function, ARGS are the arguments passed to it."
 
 ;; (advice-add 'ebib-set-field-value :around #'tlon-bib-ebib-set-field-advice)
 
-;;;;; Bare Bibliography
-
-(defun tlon-bib-create-bare-bibliography ()
-  "Create a JSON file with author, date, and title from `tlon-bibliography-files'.
-Includes entries even if some fields are missing (value will be null)."
-  (interactive)
-  (let ((bibliography-data '())
-        (babel-refs-dir (tlon-repo-lookup :dir :name "babel-refs"))) ; Get the directory
-    (unless babel-refs-dir ; Check if the directory was found
-      (user-error "Could not find directory for 'babel-refs' repository"))
-    (dolist (bib-file tlon-bibliography-files)
-      (with-current-buffer (find-file-noselect bib-file)
-        (save-excursion
-	  (goto-char (point-min))
-	  (bibtex-map-entries
-	   (lambda (_key start _end)
-	     (save-excursion
-	       (goto-char start)
-	       (let ((author (bibtex-extras-get-field "author"))
-		     (date (bibtex-extras-get-field "date"))
-		     (title (bibtex-extras-get-field "title"))
-		     (key (bibtex-extras-get-key)))
-		 (push `((author . ,author) (date . ,date) (title . ,title) (key . ,key))
-		       bibliography-data))))))))
-    (tlon-write-data tlon-file-bare-bibliography (reverse bibliography-data)) ; Reverse to maintain original order
-    (find-file tlon-file-bare-bibliography)))
-
 ;;;;; Misc
 
 (declare-function files-extras-lines-to-list "file-extras")
@@ -1561,7 +1534,15 @@ If nil, use the default model."
     ("m l" "Convert links"                       tlon-convert-links-to-cite)
     ""
     "Check"
-    ("m c" "Check BibTeX keys"                   tlon-bib-check-bibkeys)]
+    ("m c" "Check BibTeX keys"                   tlon-bib-check-bibkeys)
+    ""
+    "AI"
+    ("m r" "Replace citations with AI agent"            tlon-bib-replace-citations-in-file)
+    ("m a" "Add missing citations to BibTeX"            tlon-bib-add-missing-citations)
+    ""
+    "AI Models"
+    ("m -r" "Replace citations" tlon-bib-infix-select-replace-citations-model)
+    ("m -a" "Add missing citations" tlon-bib-infix-select-add-missing-citations-model)]
    ["Ebib"
     ("e a" "Fetch abstract"                      tlon-fetch-and-set-abstract)
     ("e c" "Create translation entry"            tlon-create-bibtex-translation)]
@@ -1576,17 +1557,7 @@ If nil, use the default model."
     ""
     "Remove"
     ("b d" "Remove URLs when DOI present"        tlon-bib-remove-url-fields-with-doi)
-    ("b i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]
-   ["AI"
-    "Bibliography"
-    ("b r" "Replace citations with AI agent"            tlon-bib-replace-citations-in-file)
-    ("b a" "Add missing citations to BibTeX"            tlon-bib-add-missing-citations)
-    ""
-    "Models"
-    ("m -C" "Replace citations" tlon-bib-infix-select-replace-citations-model)
-    ("m -A" "Add missing citations" tlon-bib-infix-select-add-missing-citations-model)]
-   ["Misc"
-    ("B" "Create bare bibliography"            tlon-bib-create-bare-bibliography)]])
+    ("b i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]])
 
 (provide 'tlon-bib)
 ;;; tlon-bib.el ends here
