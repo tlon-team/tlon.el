@@ -24,6 +24,7 @@
 ;;                   (request "0.3.3")
 ;;                   (reverso "0.1")
 ;;                   (shut-up "0.1")
+;;                   (simple-extras "0.1")
 ;;                   (vc-extras "0.1"))
 ;; This file is not part of GNU Emacs
 
