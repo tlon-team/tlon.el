@@ -529,7 +529,7 @@ When a conversion occurs, return non-nil."
                    (formatted (format "%-20s %s" "tags:" collapsed)))
               (delete-region field-start list-end)
               (insert formatted "\n")
-              t))))))
+              t)))))))
 
 ;;;###autoload
 (defun tlon-yaml-normalize-tags-in-uqbar-en-articles ()
