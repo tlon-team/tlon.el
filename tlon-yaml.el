@@ -534,16 +534,6 @@ When a conversion occurs, return non-nil."
               (insert formatted "\n")
               t)))))))
 
-;;;###autoload
-(defun tlon-yaml-normalize-tags-in-uqbar-en-articles ()
-  "Walk every Markdown file in the uqbar-en articles directory and normalise tags."
-  (interactive)
-  (let ((dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"))
-    (dolist (file (directory-files-recursively dir "\\.md\\'"))
-      (with-current-buffer (find-file-noselect file)
-        (when (tlon-yaml-normalize-tags-field)
-          (save-buffer))))))
-
 (defun tlon-get-bibtex-key (&optional initial-input)
   "Get the BibTeX key of the selected work.
 INITIAL-INPUT is used as the initial input for the completion."
