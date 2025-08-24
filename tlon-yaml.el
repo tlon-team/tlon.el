@@ -29,7 +29,6 @@
 (require 'files-extras)
 (require 'tlon-core)
 (require 'tlon-ai)
-(require 'tlon-counterpart)
 (require 'simple-extras)
 (require 'seq)
 
