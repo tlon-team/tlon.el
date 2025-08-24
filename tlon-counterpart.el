@@ -46,19 +46,19 @@ buffer."
 
 (declare-function files-extras-buffer-file-name "files-extras")
 ;;;###autoload
-(defun tlon-get-counterpart (&optional file)
+(defun tlon-get-counterpart (&optional file target-language-code)
   "Get the counterpart file of FILE.
 If FILE is nil, return the counterpart of the file visited by the current
-buffer.
+buffer. 
 
 A file's counterpart is the original if it is a translation, and a translation
 into some language if it is the original. If the latter, prompt the user for a
-language."
+language, unless TARGET-LANGUAGE-CODE is provided."
   (let* ((file (or file (files-extras-buffer-file-name)))
 	 (repo (tlon-get-repo-from-file file)))
     (pcase (tlon-repo-lookup :subtype :dir repo)
       ('translations (tlon-get-counterpart-in-translations file))
-      ('originals (tlon-get-counterpart-in-originals file))
+      ('originals (tlon-get-counterpart-in-originals file target-language-code))
       (_ (user-error "Subtype of repo `%s' is neither `originals' nor `translations'" repo)))))
 
 (declare-function tlon-bibliography-lookup "tlon-bib")
