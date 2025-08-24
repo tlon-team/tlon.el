@@ -524,8 +524,11 @@ When a conversion occurs, return non-nil."
                            (point))))
           (when list-end
             (let* ((raw (buffer-substring-no-properties list-beg list-end))
-                   (collapsed (replace-regexp-in-string "[ \t\n]+" " "
-                                                        (string-trim raw)))
+                   ;; collapse whitespace, then drop any trailing comma before the closing bracket
+                   (collapsed (replace-regexp-in-string
+                               ",\\s-*\\]$" "]"
+                               (replace-regexp-in-string "[ \t\n]+" " "
+                                                          (string-trim raw))))
                    (formatted (format "%-20s %s" "tags:" collapsed)))
               (delete-region field-start list-end)
               (insert formatted "\n")
