@@ -1537,8 +1537,8 @@ If nil, use the default model."
     ("m c" "Check BibTeX keys"                       tlon-bib-check-bibkeys)
     ""
     "AI"
-    ("m r" "Replace citations with AI agent"         tlon-bib-replace-citations-in-file)
-    ("m a" "Add missing citations to BibTeX"         tlon-bib-add-missing-citations)
+    ("m r" "Replace citations"                       tlon-bib-replace-citations-in-file)
+    ("m a" "Add missing citations"                   tlon-bib-add-missing-citations)
     ""
     "AI Models"
     ("m -r" "Replace citations"                      tlon-bib-infix-select-replace-citations-model)
