@@ -1228,108 +1228,43 @@ Here is the text: %s"
 (defvar tlon-bib--bibkey-state nil
   "Internal state variable for asynchronous bibkey lookup.")
 
-;;;###autoload
-(defun tlon-bib-get-bibkeys-from-references (beg end)
-  "Replace bibliographic references in region with <Cite> tags using AI.
-Scans each *non-blank line* in the active region (BEG END), treats the
-*entire line* as a single reference, and asks the AI in a *single batch
-request* to find the corresponding BibTeX keys in
-`tlon-file-bare-bibliography`. Replaces each original reference line with
-`<Cite bibKey=\"KEY\" />` if a key is found. Lines where no key is found or an
-error occurs are left unchanged.
-
-WARNING: This function replaces the *entire line*. If a line contains text
-other than the reference (e.g., footnote markers) or multiple references, the
-replacement might be incorrect. Consider using
-`tlon-bib-extract-and-replace-references` (bound to `X` in the menu) for more
-precise replacement."
-  (interactive "r") ; Require region
-  (unless (file-exists-p tlon-file-bare-bibliography)
-    (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
-
-  (let* ((references-with-pos '()) ; List of (text start end)
-	 (reference-texts '())     ; List of just the text strings
-	 (db-string (with-temp-buffer
-		      (insert-file-contents tlon-file-bare-bibliography)
-		      (buffer-string)))
-	 (source-buffer (current-buffer))) ; Store the buffer where the command was invoked
-
-    ;; Parse region line by line, storing text and positions
-    (save-excursion
-      (goto-char beg)
-      (while (< (point) end)
-	(let* ((line-start (line-beginning-position))
-	       (line-end (line-end-position))
-	       ;; Ensure we don't go past the original region end
-	       (actual-end (min line-end end))
-	       (line-text (buffer-substring-no-properties line-start actual-end)))
-	  (unless (string-blank-p line-text)
-	    (let ((trimmed-text (string-trim line-text)))
-	      (push (list trimmed-text line-start actual-end) references-with-pos)
-	      (push trimmed-text reference-texts))))
-	(forward-line 1)))
-
-    ;; Reverse lists to maintain original order
-    (setq references-with-pos (nreverse references-with-pos))
-    (setq reference-texts (nreverse reference-texts))
-
-    (when (string-empty-p db-string)
-      (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
-    (unless references-with-pos
-      (user-error "No non-blank reference lines found in region"))
-
-    ;; Initialize state for the asynchronous process
-    (setq tlon-bib--bibkey-state
-	  `(:references-with-pos ,references-with-pos ; List of (text start end)
-				 :db-string ,db-string
-				 :results () ; Will store (start . end . key)
-				 :source-buffer ,source-buffer))
-
-    (let* ((references-block (mapconcat #'identity reference-texts "\n"))
-	   (prompt (format tlon-bib-get-bibkeys-batch-prompt references-block db-string)))
-      (message "Starting batch BibTeX key lookup for %d references in region..."
-	       (length references-with-pos))
-      ;; Make the single batch request
-      (tlon-make-gptel-request prompt nil #'tlon-bib--batch-bibkey-result-handler nil t)
-      (message "AI request sent. Waiting for BibTeX keys..."))))
-
 (defun tlon-bib--batch-bibkey-result-handler (response info)
   "Callback function to handle the result of a batch bibkey lookup.
 Parses the newline-separated keys, associates them with original references, and
 triggers replacements. RESPONSE is the AI's response, INFO is the response info."
   (cl-block tlon-bib--batch-bibkey-result-handler
     (let* ((state tlon-bib--bibkey-state)
-	 (references-with-pos (plist-get state :references-with-pos))
-	 (num-references (length references-with-pos))
-	 (results '())) ; Build the results list here
+	   (references-with-pos (plist-get state :references-with-pos))
+	   (num-references (length references-with-pos))
+	   (results '())) ; Build the results list here
 
-    (unless response
-      (message "AI batch request failed. Status: %s" (plist-get info :status))
-      (setq tlon-bib--bibkey-state nil) ; Clean up state
-      (cl-return-from tlon-bib--batch-bibkey-result-handler))
-
-    (let ((returned-keys (split-string (string-trim response) "\n" t)))
-      (unless (= (length returned-keys) num-references)
-	(message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
-		 (length returned-keys) num-references)
-	(message "AI Response:\n%s" response) ; Log response for debugging
+      (unless response
+	(message "AI batch request failed. Status: %s" (plist-get info :status))
 	(setq tlon-bib--bibkey-state nil) ; Clean up state
 	(cl-return-from tlon-bib--batch-bibkey-result-handler))
 
-      ;; Associate keys with positions
-      (dotimes (i num-references)
-	(let* ((entry (nth i references-with-pos))
-	       (start-pos (nth 1 entry))
-	       (end-pos (nth 2 entry))
-	       (key (nth i returned-keys)))
-	  (push (list start-pos end-pos key) results)))
+      (let ((returned-keys (split-string (string-trim response) "\n" t)))
+	(unless (= (length returned-keys) num-references)
+	  (message "Error: AI returned %d keys, but %d references were sent. Aborting replacements."
+		   (length returned-keys) num-references)
+	  (message "AI Response:\n%s" response) ; Log response for debugging
+	  (setq tlon-bib--bibkey-state nil) ; Clean up state
+	  (cl-return-from tlon-bib--batch-bibkey-result-handler))
 
-      ;; Store the final results (reversed to match original order implicitly)
-      (setf (plist-get state :results) (nreverse results))
-      (setq tlon-bib--bibkey-state state) ; Update state with results
+	;; Associate keys with positions
+	(dotimes (i num-references)
+	  (let* ((entry (nth i references-with-pos))
+		 (start-pos (nth 1 entry))
+		 (end-pos (nth 2 entry))
+		 (key (nth i returned-keys)))
+	    (push (list start-pos end-pos key) results)))
 
-      ;; All references processed, apply replacements
-      (tlon-bib--apply-bibkey-replacements)))))
+	;; Store the final results (reversed to match original order implicitly)
+	(setf (plist-get state :results) (nreverse results))
+	(setq tlon-bib--bibkey-state state) ; Update state with results
+
+	;; All references processed, apply replacements
+	(tlon-bib--apply-bibkey-replacements)))))
 
 (defun tlon-bib--apply-bibkey-replacements ()
   "Apply the BibTeX key replacements in the source buffer."
