@@ -823,7 +823,8 @@ canonical form taken from the tag metadata."
         (if (null tags)
             (message "AI returned no parsable tags.")
           (with-current-buffer (find-file-noselect article-file)
-            (tlon-yaml-insert-field "tags" tags))
+            (tlon-yaml-insert-field "tags" tags)
+	    (save-buffer))
           (message "Inserted %d tag%s in %s"
                    (length tags) (if (= (length tags) 1) "" "s")
                    (file-name-nondirectory article-file)))))))
