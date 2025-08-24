@@ -1375,51 +1375,6 @@ triggers replacements. RESPONSE is the AI's response, INFO is the response info.
 (defvar tlon-bib--extract-replace-state nil
   "Internal state variable for asynchronous reference extraction and replacement.")
 
-;;;###autoload
-(defun tlon-bib-extract-and-replace-references (&optional use-region)
-  "Extract references in buffer/region, get BibKeys, and replace with <Cite> tags.
-Uses AI to find references, then AI again to find BibKeys against
-`tlon-file-bare-bibliography`. Replaces the *first found occurrence* (searching
-backwards) of each *exact* reference string with a <Cite> tag.
-
-WARNING: Relies on AI returning exact reference strings. May fail or replace
-incorrectly if the AI modifies the string or if the same reference appears
-multiple times.
-
-With prefix argument USE-REGION, operate only on the active region."
-  (interactive "P")
-  (unless (file-exists-p tlon-file-bare-bibliography)
-    (user-error "Bibliography file not found: %s" tlon-file-bare-bibliography))
-
-  (let* ((beg (if use-region (region-beginning) (point-min)))
-	 (end (if use-region (region-end) (point-max)))
-	 (text (buffer-substring-no-properties beg end))
-	 (db-string (with-temp-buffer
-		      (insert-file-contents tlon-file-bare-bibliography)
-		      (buffer-string)))
-	 (source-buffer (current-buffer)))
-    (when (string-empty-p text)
-      (user-error "Buffer or region is empty"))
-    (when (string-empty-p db-string)
-      (user-error "Bibliography file is empty: %s" tlon-file-bare-bibliography))
-
-    ;; Initialize state
-    (setq tlon-bib--extract-replace-state
-	  `(:source-buffer ,source-buffer
-			   :region-start ,beg
-			   :region-end ,end
-			   :db-string ,db-string
-			   :extracted-references () ; List of strings from AI
-			   :reference-positions ()  ; Alist: (ref-string . list-of-(start . end))
-			   :unique-references ()    ; List of unique ref strings
-			   :key-map ()              ; Hash table: ref-string -> key
-			   :keys-to-fetch 0
-			   :keys-fetched 0))
-
-    (message "Requesting AI to extract exact references...")
-    (tlon-make-gptel-request tlon-bib-extract-exact-references-prompt text
-			     #'tlon-bib--extract-references-exact-callback)))
-
 (defun tlon-bib--extract-references-exact-callback (response info)
   "Callback for the initial reference extraction.
 Finds positions and starts key lookup. RESPONSE is the AI's response, INFO is
@@ -1689,8 +1644,6 @@ If nil, use the default model."
     ("b i" "Remove URLs when ISBN present"       tlon-bib-remove-url-fields-with-isbn)]
    ["AI"
     "Bibliography"
-    ;; ("k" "Get BibKeys for references (region - line based)"   tlon-bib-get-bibkeys-from-references)
-    ;; ("X" "Extract & Replace References (buffer/region - precise)" tlon-bib-extract-and-replace-references)
     ("b r" "Replace citations with AI agent"            tlon-bib-replace-citations-in-file)
     ("b a" "Add missing citations to BibTeX"            tlon-bib-add-missing-citations)
     ""
