@@ -502,6 +502,45 @@ If KEY or VALUE are nil, prompt user to select from list of suitable candidates.
     ((or "type" "type" "date" "original_path" "original_key" "translation_key" "publication_status" "description")
      (tlon-yaml-insert-string value))))
 
+;;;;; tags format normalization
+
+;;;###autoload
+(defun tlon-yaml-normalize-tags-field ()
+  "Convert multiline `tags' YAML field (Format 1) to single-line Format 2.
+When a conversion occurs, return non-nil."
+  (interactive)
+  (save-excursion
+    ;; move inside the YAML block
+    (goto-char (point-min))
+    (when (looking-at-p tlon-yaml-delimiter)
+      (forward-line))
+    (let ((delimiter-pos (save-excursion
+                           (re-search-forward tlon-yaml-delimiter nil t))))
+      (when (and delimiter-pos
+                 (re-search-forward "^tags:\\s-*$" delimiter-pos t))
+        (let* ((field-start (match-beginning 0))
+               (list-beg (progn (forward-line 1) (point)))
+               (list-end (when (re-search-forward "]" delimiter-pos t)
+                           (point))))
+          (when list-end
+            (let* ((raw (buffer-substring-no-properties list-beg list-end))
+                   (collapsed (replace-regexp-in-string "[ \t\n]+" " "
+                                                        (string-trim raw)))
+                   (formatted (format "%-20s %s" "tags:" collapsed)))
+              (delete-region field-start list-end)
+              (insert formatted "\n")
+              t))))))
+
+;;;###autoload
+(defun tlon-yaml-normalize-tags-in-uqbar-en-articles ()
+  "Walk every Markdown file in the uqbar-en articles directory and normalise tags."
+  (interactive)
+  (let ((dir "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"))
+    (dolist (file (directory-files-recursively dir "\\.md\\'"))
+      (with-current-buffer (find-file-noselect file)
+        (when (tlon-yaml-normalize-tags-field)
+          (save-buffer))))))
+
 (defun tlon-get-bibtex-key (&optional initial-input)
   "Get the BibTeX key of the selected work.
 INITIAL-INPUT is used as the initial input for the completion."
