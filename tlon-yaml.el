@@ -853,9 +853,9 @@ Searches under REPO-DIR/tags recursively.  Returns nil when not found."
 • If FILE is a translation without `tags', copy the translated tag titles
   from the *English* original.
 
-• If FILE is an English original without `tags', prompt for a target
-  language, read the tag titles from that translation, map them back to
-  English, and insert them in the original.
+• If FILE is an English original without `tags', prompt for a target language
+  unless TARGET-LANGUAGE-CODE is provided, read the tag titles from that
+  translation, map them back to English, and insert them in the original.
 
 An error is signalled when neither side contains tags or both already do."
   (interactive)
@@ -885,8 +885,8 @@ An error is signalled when neither side contains tags or both already do."
      (t (user-error "Unexpected tag state")))))
 
 (defun tlon--yaml--sync-tags (src src-lang dest dest-lang)
-  "Copy tags from SRC (language SRC-LANG) into DEST (language DEST-LANG),
-converting titles when languages differ."
+  "Copy tags from SRC (language SRC-LANG) into DEST (language DEST-LANG).
+When languages differ, convert the titles."
   (let* ((raw-tags (tlon-yaml-get-key "tags" src))
          ;; Convert YAML string list → elisp list if necessary
          (src-tags (if (stringp raw-tags)
