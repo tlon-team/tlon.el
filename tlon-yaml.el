@@ -87,7 +87,7 @@ The order of the keys determines the sort order by
 ;;;;; AI
 
 (defconst tlon-yaml-suggest-tags-prompt
-  "You are an assistant that assigns encyclopedia tags to articles. Below you will find, first, the full Markdown of one article delimited by <ARTICLE> … </ARTICLE>.  After that you will see a catalogue of candidate tags.  Each candidate starts with the tag *title* on its own line and is immediately followed by its first descriptive paragraph; candidates are separated by one blank line.\n Return ONLY a JSON array whose elements are the titles of the tags that best apply to the article, ordered from most to least relevant.  Do not output any other prose, comments, or code blocks.\n <ARTICLE>\n%s\n</ARTICLE>\n <CANDIDATE TAGS>\n%s\n</CANDIDATE TAGS>"
+  "You are an assistant that assigns encyclopedia tags to articles. Below you will find, first, the full Markdown of one article delimited by <ARTICLE> … </ARTICLE>.  After that you will see a catalogue of candidate tags.  Each candidate starts with the tag *title* on its own line and is immediately followed by its first descriptive paragraph; candidates are separated by one blank line.\n Return ONLY a JSON array whose elements are the titles of the tags in the list below that best apply to the article, ordered from most to least relevant.  Do not output any other prose, comments, or code blocks.\n <ARTICLE>\n%s\n</ARTICLE>\n <CANDIDATE TAGS>\n%s\n</CANDIDATE TAGS>"
   "Prompt used by `tlon-yaml-suggest-tags'.")
 
 ;;;; User options
@@ -753,23 +753,16 @@ them in the article's YAML metadata as the `tags' field."
   "Return the first non-empty paragraph of FILE as a trimmed string.
 Falls back to a simpler parser when `tlon-md-read-content' errors (for instance
 when the Markdown file lacks a local-variables section)."
-  (let* ((content
-          (condition-case nil
-              (tlon-md-read-content file)
-            (error
-             (with-temp-buffer
-               ;; Insert raw file contents
-               (insert-file-contents file)
-               ;; Skip YAML front-matter if present
-               (goto-char (point-min))
-               (when (and (boundp 'tlon-yaml-delimiter)
-                          (looking-at-p (regexp-quote tlon-yaml-delimiter)))
-                 (forward-line)
-                 (when (re-search-forward (regexp-quote tlon-yaml-delimiter) nil t)
-                   (forward-line)))
-               (buffer-substring-no-properties (point) (point-max))))))
-         (para (car (split-string content "\n[ \t]*\n" t))))
-    (string-trim para)))
+  (condition-case nil
+      (tlon-md-read-content file)
+    (error
+     (with-temp-buffer
+       ;; Insert raw file contents
+       (insert-file-contents file)
+       ;; Skip YAML front-matter if present
+       (let ((beg (goto-char (tlon-md-beginning-of-content))))
+	 (forward-paragraph)
+	 (buffer-substring-no-properties beg (point)))))))
 
 (defun tlon-yaml--parse-tags-from-response (response)
   "Convert RESPONSE to a list of strings.
@@ -822,7 +815,7 @@ Searches under REPO-DIR/tags recursively.  Returns nil when not found."
               (directory-files-recursively tags-dir "\\.md\\'"))))
 
 ;;;###autoload
-(defun tlon-yaml-insert-translated-tags (&optional file)
+(defun tlon-yaml-insert-translated-tags (&optional file target-language-code)
   "Synchronise the `tags' YAML field between FILE and its counterpart.
 • If FILE is a translation without `tags', copy the translated tag titles
   from the *English* original.
@@ -840,7 +833,7 @@ An error is signalled when neither side contains tags or both already do."
                      (buffer-file-name))
                    (read-file-name "Markdown file: " nil nil t nil
                                    (lambda (f) (string-suffix-p ".md" f t)))))
-         (counterpart (tlon-get-counterpart file))
+         (counterpart (tlon-get-counterpart file target-language-code))
          (file-lang (tlon-get-language-in-file file))
          (cp-lang   (tlon-get-language-in-file counterpart))
          (file-tags (tlon-yaml-get-key "tags" file))
