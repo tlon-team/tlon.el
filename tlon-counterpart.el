@@ -462,52 +462,5 @@ return its key.  When no counterpart exists, return nil."
    ["Metadata"
     ("o" "set ‘original_path’"                   tlon-yaml-insert-original-path)]])
 
-;;;;; Temporary
-
-(autoload 'simple-extras-asciify-string "simple-extras")
-(defun tlon-add-counterpart-metadata (file language bare-dir)
-  "Read FILE in LANGUAGE located in BARE-DIR."
-  (let ((dir (tlon-repo-lookup :dir :subproject "uqbar" :language language))
-	(subdir (tlon-get-bare-dir-translation language "en" bare-dir))
-	(lines (split-string (with-temp-buffer
-			       (insert-file-contents file)
-			       (buffer-string))
-			     "\n" t)))
-    (dolist (line lines)
-      (let* ((pair (split-string line "," t))
-	     (original (car pair))
-	     (translation (simple-extras-asciify-string (cadr pair)))
-	     (translation-path (file-name-concat dir subdir translation))
-	     (metadata (format "original_path:       %s\n" original)))
-	(message "Processing %s" translation-path)
-	(with-current-buffer (find-file-noselect translation-path)
-	  (goto-char (point-min))
-	  (forward-line 1)
-	  (search-forward tlon-yaml-delimiter)
-	  (forward-line -1)
-	  (insert metadata)
-	  (save-buffer))))))
-
-(declare-function simple-extras-slugify "simple-extras")
-(defun tlon-add-author-metadata (language)
-  "Add metadata to author files in LANGUAGE."
-  (let* ((dir (tlon-repo-lookup :dir :subproject "uqbar" :language language))
-	 (subdir (tlon-get-bare-dir-translation language "en" "authors"))
-	 (full-dir (file-name-concat dir subdir))
-	 (files (directory-files full-dir t directory-files-no-dot-files-regexp)))
-    (dolist (file files)
-      (message "Processing %s" file)
-      (with-current-buffer (find-file-noselect file)
-	(let* ((title (tlon-yaml-get-key "title"))
-	       (slug (simple-extras-slugify title))
-	       (filename (file-name-with-extension slug "md"))
-	       (metadata `(("type" . "author")
-			   ("title" . ,title)
-			   ("role" . "[\"creator\"]")
-			   ("original_path" . ,filename)
-			   ("publication_status" . "production"))))
-	  (tlon-yaml-delete-metadata)
-	  (tlon-yaml-insert-fields metadata))))))
-
 (provide 'tlon-counterpart)
 ;;; tlon-counterpart.el ends here

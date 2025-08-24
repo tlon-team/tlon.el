@@ -196,14 +196,3 @@ This section lists non-interactive functions used internally or potentially usef
      - Signals a =user-error= "Paragraph number mismatch".
   4. If paragraph counts match, pairs up the paragraphs and returns the list.
 
-*** Temporary Utility Functions
-:PROPERTIES:
-:CUSTOM_ID: h:tlon-counterpart-temp-utils
-:END:
-These functions appear to be specific utilities for bulk metadata updates, likely used during initial setup or migration. They are not part of the core counterpart functionality.
-
-#+findex: tlon-add-counterpart-metadata
-+ ~tlon-add-counterpart-metadata~ :: Reads a CSV file mapping original filenames to translation filenames, finds the corresponding translation files in a specified =LANGUAGE= repository and =BARE-DIR=, and inserts the =original_path= metadata into their YAML front matter. Requires =simple-extras-asciify-string=.
-
-#+findex: tlon-add-author-metadata
-+ ~tlon-add-author-metadata~ :: Processes author files in a specific =LANGUAGE= repository. For each file, it extracts the =title= from YAML, generates a slug, constructs the expected =original_path=, deletes existing metadata, and inserts a standard set of author metadata fields (=type=, =title=, =role=, =original_path=, =publication_status=). Requires =simple-extras-slugify=.
