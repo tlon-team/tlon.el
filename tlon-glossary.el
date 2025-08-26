@@ -31,9 +31,6 @@
 (require 'transient)
 (require 'tlon-deepl)
 
-(declare-function tlon-make-gptel-request "tlon-ai")
-(declare-function tlon-ai-callback-fail "tlon-ai")
-
 ;;;; Variables
 
 (defgroup tlon-glossary nil
@@ -185,6 +182,7 @@ Returns a new glossary list with the updated or appended entry."
 
 ;;;;; AI Glossary Generation
 
+(declare-function tlon-make-gptel-request "tlon-ai")
 ;;;###autoload
 (defun tlon-ai-create-glossary-language ()
   "Use AI to generate translations for MISSING glossary terms in language.
@@ -218,6 +216,7 @@ translations back into the glossary file. Can be run iteratively."
                                tlon-ai-glossary-model
                                'no-context-check))))
 
+(declare-function tlon-ai-callback-fail "tlon-ai")
 (defun tlon-ai-create-glossary-language-callback (raw-response info new-lang-code full-glossary-data missing-en-terms)
   "Callback function for `tlon-ai-create-glossary-language'.
 Receives the RAW-RESPONSE from the first AI (translation generation). Initiates
