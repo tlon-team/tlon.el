@@ -256,7 +256,6 @@ ATTEMPT is used to track retries in case of missing author names."
   (tlon-db-ensure-auth)
   (if-let ((entry-key (or key (tlon-get-key-at-point))))
       (progn
-	(tlon-db-ensure-key-is-unique entry-key)
 	(let* ((entry-text   (tlon-db--normalize-author-field (bibtex-extras-get-entry-as-string entry-key nil)))
 	       (encoded-text (encode-coding-string entry-text 'utf-8))
 	       (headers      '(("Content-Type" . "text/plain; charset=utf-8")
@@ -295,7 +294,8 @@ ATTEMPT is used to track retries in case of missing author names."
 	    (let* ((body (tlon-db--get-response-body raw-text))
 		   (local-copy (or body entry-text)))
 	      (tlon-db--replace-entry-locally entry-key local-copy)
-	      (message "Entry “%s” posted and mirrored locally." entry-key)))))
+	      (message "Entry “%s” posted and mirrored locally." entry-key)))
+	  (tlon-db-ensure-key-is-unique entry-key)))
     (user-error "No BibTeX key found at point")))
 
 ;; Helper to split a possibly multi-author string into individual names.
