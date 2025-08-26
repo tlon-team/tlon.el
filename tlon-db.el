@@ -303,7 +303,9 @@ ATTEMPT is used to track retries in case of missing author names."
 		   (local-copy (or body entry-text)))
 	      (tlon-db--replace-entry-locally entry-key local-copy)
 	      (message "Entry “%s” posted and mirrored locally." entry-key)))
-	  (tlon-db-ensure-key-is-unique entry-key)))
+	  ;; TODO: fix this; currently it always throws an error
+	  ;; (tlon-db-ensure-key-is-unique entry-key)
+	  ))
     (user-error "No BibTeX key found at point")))
 
 ;; Helper to split a possibly multi-author string into individual names.
