@@ -29,6 +29,7 @@
 (require 'tlon-ai)
 (require 'json) ; Added for json-read-from-string
 (require 'transient)
+(require 'tlon-deepl)
 
 (declare-function tlon-make-gptel-request "tlon-ai")
 (declare-function tlon-ai-callback-fail "tlon-ai")
@@ -157,6 +158,11 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
     (if translation
 	(setcdr translation (funcall read-translation))
       (setq entry (append entry (list (cons language (funcall read-translation))))))
+    ;; automatically push the updated glossary for this language to DeepL
+    (when (and (fboundp 'tlon-deepl-glossary-update)
+               (boundp 'tlon-deepl-supported-glossary-languages)
+               (member language tlon-deepl-supported-glossary-languages))
+      (tlon-deepl-glossary-update language))
     entry))
 
 (defun tlon-update-glossary (glossary entry term)
