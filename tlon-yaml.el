@@ -780,6 +780,7 @@ them in the article's YAML metadata as the `tags' field."
                                tlon-yaml-suggest-tags-model t))))
 
 (declare-function tlon-md-read-content "tlon-md")
+(declare-function tlon-md-beginning-of-content "tlon-md")
 (defun tlon-yaml--first-paragraph (file)
   "Return the first non-empty paragraph of FILE as a trimmed string.
 Falls back to a simpler parser when `tlon-md-read-content' errors (for instance
@@ -846,6 +847,7 @@ Searches under REPO-DIR/tags recursively.  Returns nil when not found."
                 (string= title (tlon-yaml-get-key "title" file)))
               (directory-files-recursively tags-dir "\\.md\\'"))))
 
+(declare-function tlon-get-counterpart "tlon-counterpart")
 ;;;###autoload
 (defun tlon-yaml-insert-translated-tags (&optional file target-language-code)
   "Synchronise the `tags' YAML field between FILE and its counterpart.
@@ -883,6 +885,8 @@ An error is signalled when neither side contains tags or both already do."
       (tlon--yaml--sync-tags file file-lang counterpart cp-lang))
      (t (user-error "Unexpected tag state")))))
 
+(declare-function tlon-get-counterpart-in-originals "tlon-counterpart")
+(declare-function tlon-get-counterpart-in-translations "tlon-counterpart")
 (defun tlon--yaml--sync-tags (src src-lang dest dest-lang)
   "Copy tags from SRC (language SRC-LANG) into DEST (language DEST-LANG).
 When languages differ, convert the titles."
