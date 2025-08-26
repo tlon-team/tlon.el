@@ -68,10 +68,9 @@ certificate located at
 
 (defcustom tlon-db-enable-auto-sync nil
   "When non-nil, automatically sync `db.bib` changes detected by the file-watch.
-
-The file-watch installed by `tlon-db--initialize-sync` is always
-active, but if this option is nil the callback does nothing,
-effectively pausing automatic synchronization."
+The file-watch installed by `tlon-db--initialize-sync' is always active, but if
+this option is nil the callback does nothing, effectively pausing automatic
+synchronization."
   :type 'boolean
   :group 'tlon-db)
 
