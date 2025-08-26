@@ -324,6 +324,12 @@ The heavy lifting is delegated to `tlon-deepl-glossary-delete' and
    (lambda ()
      (tlon-deepl-glossary-create language))))
 
+;;;###autoload
+(defun tlon-deepl-maybe-glossary-update (language)
+  "If LANGUAGE is supported by DeepL, update its glossary."
+  (when (member language tlon-deepl-supported-glossary-languages)
+    (tlon-deepl-glossary-update language)))
+
 (defun tlon-deepl-glossary-create-encode (&rest _)
   "Return a JSON representation of the glossary to be created."
   (let* ((extension "tsv")
