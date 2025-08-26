@@ -74,6 +74,28 @@ synchronization."
   :type 'boolean
   :group 'tlon-db)
 
+;;;;; Periodic refresh
+
+(defvar tlon-db--get-entries-timer nil
+  "Timer for automatic `tlon-db-get-entries-no-confirm' calls.")
+
+(defun tlon-db--set-get-entries-interval (symbol value)
+  "Set SYMBOL to VALUE and restart the periodic refresh timer."
+  (set-default symbol value)
+  (when (timerp tlon-db--get-entries-timer)
+    (cancel-timer tlon-db--get-entries-timer))
+  (setq tlon-db--get-entries-timer
+        (run-with-idle-timer value t #'tlon-db-get-entries-no-confirm)))
+
+(defcustom tlon-db-get-entries-interval (* 3 60 60)
+  "Idle seconds before automatically refreshing the local BibTeX database.
+
+Changing this variable interactively restarts the underlying idle
+timer so the new value takes effect immediately."
+  :type 'integer
+  :set #'tlon-db--set-get-entries-interval
+  :group 'tlon-db)
+
 (defvar tlon-db-api-username
   (tlon-user-lookup :github :name user-full-name))
 
@@ -1263,7 +1285,9 @@ If there are no differences, return nil."
 
 ;;;;;; Periodic data update
 
-(run-with-idle-timer (* 3 60 60) t #'tlon-db-get-entries-no-confirm)
+;; Start (or restart) the periodic refresh timer with the current interval.
+(tlon-db--set-get-entries-interval 'tlon-db-get-entries-interval
+                                   tlon-db-get-entries-interval)
 
 ;;;;; Menu
 
@@ -1282,6 +1306,16 @@ If there are no differences, return nil."
   :reader (lambda (_ _ _)
             (tlon-transient-toggle-variable-value 'tlon-db-enable-auto-sync)))
 
+(transient-define-infix tlon-db-infix-set-get-entries-interval ()
+  "Set idle seconds between automatic db refreshes."
+  :class 'transient-lisp-variable
+  :variable 'tlon-db-get-entries-interval
+  :reader (lambda (_ _ _)
+            (let ((val (read-number "Seconds between automatic refresh: "
+                                    tlon-db-get-entries-interval)))
+              (tlon-db--set-get-entries-interval 'tlon-db-get-entries-interval val)
+              val)))
+
 (transient-define-prefix tlon-db-menu ()
   "`tlon-db' menu."
   [["Actions"
@@ -1299,7 +1333,8 @@ If there are no differences, return nil."
     ("a" "Authenticate" tlon-db-authenticate)]
    ["Options"
     ("-l" "Local env" tlon-db-infix-toggle-local-environment)
-    ("-s" "Auto sync" tlon-db-infix-toggle-auto-sync)]])
+    ("-s" "Auto sync" tlon-db-infix-toggle-auto-sync)
+    ("-i" "Refresh interval" tlon-db-infix-set-get-entries-interval)]])
 
 (tlon-db-initialize)
 
