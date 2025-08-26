@@ -86,7 +86,7 @@ The order of the keys determines the sort order by
 ;;;;; AI
 
 (defconst tlon-yaml-suggest-tags-prompt
-  "You are an assistant that assigns encyclopedia tags to articles. Below you will find, first, the full Markdown of one article delimited by <ARTICLE> … </ARTICLE>.  After that you will see a catalogue of candidate tags.  Each candidate starts with the tag *title* on its own line and is immediately followed by its first descriptive paragraph; candidates are separated by one blank line.\n Return ONLY a JSON array whose elements are the titles of the tags in the list below that best apply to the article, ordered from most to least relevant.  Do not output any other prose, comments, or code blocks.\n <ARTICLE>\n%s\n</ARTICLE>\n <CANDIDATE TAGS>\n%s\n</CANDIDATE TAGS>"
+  "You are an assistant that assigns encyclopedia tags to articles. Below you will find, first, the full Markdown of one article delimited by <ARTICLE> … </ARTICLE>.  After that you will see a catalogue of candidate tags.  Each candidate starts with the tag *title* on its own line and is immediately followed by its first descriptive paragraph; candidates are separated by one blank line.\n Return ONLY a JSON array whose elements are the titles of the tags in the list below that best apply to the article, ordered from most to least relevant. Suggest only the most relevant tags; you should not suggest more than six tags. Do not output any other prose, comments, or code blocks.\n <ARTICLE>\n%s\n</ARTICLE>\n <CANDIDATE TAGS>\n%s\n</CANDIDATE TAGS>"
   "Prompt used by `tlon-yaml-suggest-tags'.")
 
 ;;;; User options
