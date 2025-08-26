@@ -29,7 +29,6 @@
 (require 'tlon-ai)
 (require 'json) ; Added for json-read-from-string
 (require 'transient)
-(require 'tlon-deepl)
 
 ;;;; Variables
 
@@ -145,6 +144,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
         (setq entry (append entry (list (cons lang term))))))
     entry))
 
+(declare-function tlon-deepl-maybe-glossary-update "tlon-deepl")
 (defun tlon-edit-translation-in-entry (entry term)
   "Create or update a translation in an ENTRY for a TERM."
   (let* ((language (tlon-select-language 'code 'babel))
@@ -155,9 +155,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
     (if translation
 	(setcdr translation (funcall read-translation))
       (setq entry (append entry (list (cons language (funcall read-translation))))))
-    ;; automatically push the updated glossary for this language to DeepL
-    (when (member language tlon-deepl-supported-glossary-languages)
-      (tlon-deepl-glossary-update language))
+    (tlon-deepl-maybe-glossary-update language)
     entry))
 
 (defun tlon-update-glossary (glossary entry term)
