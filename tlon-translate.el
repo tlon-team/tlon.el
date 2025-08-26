@@ -222,8 +222,7 @@ slugified version of the original basename."
                                    (with-temp-file target-file
                                      (insert translated-text))
                                    (message "Translated %s to %s" source-file target-file)
-                                   (find-file target-file))))
-                             t)))
+                                   (find-file target-file)))))))
     ;; TODO: add `ai' case; adapt `tlon-ai-translate-file' (and then remove from `tlon-ai.el')
     (_ (user-error "Unsupported translation engine: %s" tlon-translate-engine))))
 
