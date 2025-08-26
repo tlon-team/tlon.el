@@ -66,6 +66,15 @@ certificate located at
   :type 'boolean
   :group 'tlon-db)
 
+(defcustom tlon-db-enable-auto-sync t
+  "When non-nil, automatically sync `db.bib` changes detected by the file-watch.
+
+The file-watch installed by `tlon-db--initialize-sync` is always
+active, but if this option is nil the callback does nothing,
+effectively pausing automatic synchronization."
+  :type 'boolean
+  :group 'tlon-db)
+
 (defvar tlon-db-api-username
   (tlon-user-lookup :github :name user-full-name))
 
@@ -1177,7 +1186,8 @@ highlighted with `diff-refine-added` / `diff-refine-removed`."
 EVENT is a list of the form (FILE ACTION)."
   (let ((action (nth 1 event))
         (file (nth 2 event)))
-    (when (and (eq action 'changed)
+    (when (and tlon-db-enable-auto-sync
+               (eq action 'changed)
                (string-equal file (expand-file-name tlon-db-file-db))
                (file-exists-p tlon-db-file-db-upstream))
       (if tlon-db--sync-in-progress
@@ -1264,6 +1274,13 @@ If there are no differences, return nil."
   :reader (lambda (_ _ _)
             (tlon-transient-toggle-variable-value 'tlon-db-use-local-environment)))
 
+(transient-define-infix tlon-db-infix-toggle-auto-sync ()
+  "Toggle automatic synchronization triggered by `db.bib` changes."
+  :class 'transient-lisp-variable
+  :variable 'tlon-db-enable-auto-sync
+  :reader (lambda (_ _ _)
+            (tlon-transient-toggle-variable-value 'tlon-db-enable-auto-sync)))
+
 (transient-define-prefix tlon-db-menu ()
   "`tlon-db' menu."
   [["Actions"
@@ -1280,7 +1297,8 @@ If there are no differences, return nil."
     ""
     ("a" "Authenticate" tlon-db-authenticate)]
    ["Options"
-    ("-l" "Local env" tlon-db-infix-toggle-local-environment)]])
+    ("-l" "Local env" tlon-db-infix-toggle-local-environment)
+    ("-s" "Auto sync" tlon-db-infix-toggle-auto-sync)]])
 
 (tlon-db-initialize)
 

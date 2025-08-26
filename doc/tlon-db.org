@@ -35,6 +35,11 @@ This module provides functionality for interacting with an external bibliographi
   =~/Library/Application Support/mkcert/RootCA.pem= to
   =gnutls-trustfiles= so that TLS verification succeeds.  Default is nil.
 
++ ~tlon-db-enable-auto-sync~ :: When non-nil, changes in =db.bib= detected by
+  the file-watch automatically trigger synchronization requests to the remote
+  API.  Set to nil to disable automatic synchronization while still keeping
+  the watch active.  Default is t.
+
 + =tlon-core=
 + =transient=
 
