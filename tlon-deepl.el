@@ -238,7 +238,6 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
          (text (vector tlon-translate-text))
          (target-supports-glossary (member tlon-translate-target-language tlon-deepl-supported-glossary-languages))
          (proceed nil))
-
     ;; Determine if we should proceed without a glossary or prompt the user
     (setq proceed
           (or glossary-id ; Glossary found and will be used
