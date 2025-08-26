@@ -156,9 +156,7 @@ See `tlon-ai-glossary-model' for details. If nil, use the default `gptel-model'.
 	(setcdr translation (funcall read-translation))
       (setq entry (append entry (list (cons language (funcall read-translation))))))
     ;; automatically push the updated glossary for this language to DeepL
-    (when (and (fboundp 'tlon-deepl-glossary-update)
-               (boundp 'tlon-deepl-supported-glossary-languages)
-               (member language tlon-deepl-supported-glossary-languages))
+    (when (member language tlon-deepl-supported-glossary-languages)
       (tlon-deepl-glossary-update language))
     entry))
 
