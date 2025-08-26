@@ -735,23 +735,23 @@ user for one."
 
 (declare-function tlon-make-gptel-request "tlon-ai")
 ;;;###autoload
-(defun tlon-yaml-suggest-tags ()
-  "Suggest tags for FILE (an article in uqbar-en/articles) using AI.
-With point in an article buffer the default is that file; otherwise
-prompt for one inside the uqbar-en/articles directory.  The command
-asks an AI model to choose, from all the tags defined in
-uqbar-en/tags, those that best apply to the article and then inserts
-them in the article's YAML metadata as the `tags' field."
-  (interactive)
+(defun tlon-yaml-suggest-tags (&optional article-file)
+  "Suggest tags for ARTICLE-FILE using AI.
+
+When called interactively, default to the current article or prompt for
+one inside the uqbar-en/articles directory.  When ARTICLE-FILE is
+non-nil, run non-interactively on that file without prompting."
+  (interactive (list nil))
   (let* ((repo-dir (tlon-repo-lookup :dir :name "uqbar-en"))
          (articles-dir (file-name-concat repo-dir "articles/"))
          (default-filename (when (and (buffer-file-name)
 				      (string-prefix-p (expand-file-name articles-dir)
 						       (expand-file-name (buffer-file-name))))
 			     (file-name-nondirectory (buffer-file-name))))
-	 (article-file (expand-file-name
-			(read-file-name "Article: " articles-dir default-filename t nil
-					(lambda (f) (string-suffix-p ".md" f))))))
+	 (article-file (or article-file
+			   (expand-file-name
+			    (read-file-name "Article: " articles-dir default-filename t nil
+					    (lambda (f) (string-suffix-p ".md" f)))))))
     ;; Collect candidate tags
     (let* ((tags-dir (file-name-concat repo-dir "tags"))
            ;; Exclude any tag files inside the “excluded” subdirectory.
@@ -1048,5 +1048,30 @@ With a prefix argument, prompt for DIR."
              (if (= processed 1) "" "s")
              dir)))
 
+;;;###autoload
+(defun tlon-yaml-suggest-missing-tags-in-dir (&optional dir)
+  "Walk DIR non-recursively and offer to add AI-generated tags.
+
+For every Markdown file directly inside DIR that lacks a `tags' field,
+ask the user whether to call `tlon-yaml-suggest-tags'.  When DIR is nil,
+default to the canonical uqbar-en articles directory.  With a prefix
+argument when called interactively, prompt for DIR."
+  (interactive
+   (list (if current-prefix-arg
+             (read-directory-name
+              "Directory: "
+              "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/"
+              nil t)
+           "/Users/pablostafforini/Library/CloudStorage/Dropbox/repos/uqbar-en/articles/")))
+  (let ((processed 0))
+    (dolist (file (directory-files dir t "\\.md\\'"))
+      (when (and (file-regular-p file)
+                 (null (tlon-yaml-get-key \"tags\" file)))
+        (when (y-or-n-p (format \"File `%s' has no tags.  Add them? \"
+                                (file-name-nondirectory file)))
+          (tlon-yaml-suggest-tags file)
+          (setq processed (1+ processed)))))
+    (message \"Added tags to %d file%s in %s\"
+             processed (if (= processed 1) \"\" \"s\") dir)))
 (provide 'tlon-yaml)
 ;;; tlon-yaml.el ends here
