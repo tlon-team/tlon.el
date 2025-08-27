@@ -612,8 +612,7 @@ AFTER-FN is an optional function to call after the revision is complete."
     (tlon-make-gptel-request
      prompt nil
      (lambda (response info)
-       (message "Paragraphs %d–%d processed." (1+ start) end)
-       (tlon-translate--revise-callback response info translation-file type)
+       (tlon-translate--revise-callback response info translation-file type start end)
        (when after-fn (funcall after-fn)))
      model t nil tools)))
 
@@ -643,13 +642,14 @@ a list of translated paragraphs to be revised."
           lang-code language tools orig-paras trans-paras))))))
 
 (declare-function magit-stage-files "magit-apply")
-(defun tlon-translate--revise-callback (response info file type)
+(defun tlon-translate--revise-callback (response info file type start end)
   "Callback for AI revision.
 RESPONSE is the AI's response. INFO is the response info. FILE is the file to
-commit. TYPE is the revision type."
+commit. TYPE is the revision type. START is the starting paragraph number.
+END is the ending paragraph number."
   (if (not response)
       (tlon-ai-callback-fail info)
-    (message "AI agent finished revising %s." (file-name-nondirectory file))
+    (message "Paragraphs %d–%d processed." (1+ start) end)
     (when tlon-translate-revise-commit-changes
       (let ((default-directory (tlon-get-repo-from-file file)))
         (magit-stage-files (list file))
