@@ -523,10 +523,8 @@ TYPE can be `errors' or `flow'."
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
            (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
-      ;; ensure paragraph alignment before proceeding
       (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
         (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
-
       (let* ((orig-paras  (tlon-with-paragraphs original-file))
              (trans-paras (tlon-with-paragraphs translation-file))
              (chunk-size  tlon-translate-revise-chunk-size)
@@ -561,14 +559,12 @@ TYPE can be `errors' or `flow'."
                        (length ranges)))))))))
 
 (declare-function magit-stage-files "magit-apply")
-;;; ---------------------------------------------------------------------------
-;;;  Parallel helper: send a single-chunk revision request
-;;; ---------------------------------------------------------------------------
+;;;;  Parallel helper: send a single-chunk revision request
+
 (defun tlon-translate--revise-send-range
     (range idx translation-file original-file type prompt-template model
            lang-code language tools orig-paras trans-paras)
   "Send an AI revision request for a single paragraph RANGE.
-
 RANGE is a cons cell (START . END).  IDX is the chunk index and is
 only used for debugging/logging."
   (let* ((start (car range))
