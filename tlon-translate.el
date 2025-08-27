@@ -523,6 +523,7 @@ TYPE can be `errors' or `flow'."
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
            (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
+      (ignore prompt) ;; variable built for later use; avoid byte-compiler warning
       (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
         (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
       (let* ((orig-paras  (tlon-with-paragraphs original-file))
