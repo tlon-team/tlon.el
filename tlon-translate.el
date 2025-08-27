@@ -96,11 +96,11 @@ are processed sequentially."
   "Alist of translation engine display names and their symbols.")
 
 (defconst tlon-translate-prompt-revise-prefix
-  "The file `%1$s' contains a %2$s translation of the file `%3$s'. "
+  "I am sharing with you a series of paragraph pairs. Each pair consists of an original paragraph in English and a translation of it into %2$s. "
   "Prefix for translation revision prompts.")
 
 (defconst tlon-translate-prompt-revise-suffix
-  "Ignore the front matter section at the beginning of the article (delimited by ‘---’). Do a sentence by sentence revision. URLs and bibtex keys should appear exactly as they do in the original file. Once you are done comparing the two files and identifying the changes that should be made to the translation, write your changes to `%1$s' using the 'edit_file` tool."
+  "URLs and bibtex keys should appear exactly as they do in the original file. Once you are done comparing the paragraphs and determining the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file` tool."
   "Suffix for translation revision prompts.")
 
 (defconst tlon-translate-revise-errors-prompt
@@ -513,58 +513,53 @@ TYPE can be `errors' or `flow'."
                     ('flow tlon-translate-revise-flow-model)))
            (tools '("edit_file" "apply_diff" "replace_file_contents"))
 	   (prompt-elts (delq nil
-			      (list prompt-template
-				    (file-name-nondirectory translation-file)
-				    language
-				    (file-name-nondirectory original-file))))
+			      (list prompt-template translation-file (capitalize language))))
 	   (glossary-file (when (and (eq type 'flow)
 				     (tlon-extract-glossary lang-code 'deepl-editor))
-                            (tlon-glossary-target-path lang-code 'deepl-editor)))
+			    (tlon-glossary-target-path lang-code 'deepl-editor)))
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
-           (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
-      (ignore prompt) ;; variable built for later use; avoid byte-compiler warning
+	   (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
       (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
-        (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
+	(user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
       (let* ((orig-paras  (tlon-with-paragraphs original-file))
              (trans-paras (tlon-with-paragraphs translation-file))
              (chunk-size  tlon-translate-revise-chunk-size)
              (total       (length orig-paras))
              (ranges '()))
-        ;; build chunk ranges (START . END)
-        (let ((i 0))
+	;; build chunk ranges (START . END)
+	(let ((i 0))
           (while (< i total)
             (push (cons i (min total (+ i chunk-size))) ranges)
             (setq i (+ i chunk-size))))
-        (setq ranges (nreverse ranges))
-        (when ranges
+	(setq ranges (nreverse ranges))
+	(when ranges
           (if (<= (length ranges) tlon-translate-revise-max-parallel)
               (progn
-                ;; dispatch all chunk requests in parallel
-                (cl-loop for r in ranges
-                         for idx from 0
-                         do (tlon-translate--revise-send-range
+		;; dispatch all chunk requests in parallel
+		(cl-loop for r in ranges
+			 for idx from 0
+			 do (tlon-translate--revise-send-range
                              r idx translation-file original-file type
-                             prompt-template model lang-code language tools
+                             prompt model lang-code tools
                              orig-paras trans-paras))
-                (message "Requesting AI to revise %s in %d parallel chunks..."
-                         (file-name-nondirectory translation-file)
-                         (length ranges)))
+		(message "Requesting AI to revise %s in %d parallel chunks..."
+			 (file-name-nondirectory translation-file)
+			 (length ranges)))
             ;; fall back to sequential processing
             (progn
               (tlon-translate--revise-process-chunks
-               ranges 0 translation-file original-file type prompt-template model
+               ranges 0 translation-file original-file type prompt model
                lang-code language tools orig-paras trans-paras)
               (message "Requesting AI to revise %s in %d paragraph chunks..."
                        (file-name-nondirectory translation-file)
                        (length ranges)))))))))
 
-(declare-function magit-stage-files "magit-apply")
 ;;;;  Parallel helper: send a single-chunk revision request
 
 (defun tlon-translate--revise-send-range
     (range idx translation-file original-file type prompt-template model
-           lang-code language tools orig-paras trans-paras)
+           lang-code tools orig-paras trans-paras)
   "Send an AI revision request for a single paragraph RANGE.
 RANGE is a cons cell (START . END).  IDX is the chunk index and is
 only used for debugging/logging."
@@ -576,13 +571,8 @@ only used for debugging/logging."
          (comparison (tlon-paragraphs--get-comparison-buffer-content
                       translation-file original-file trans-chunk orig-chunk nil))
          (prompt (concat
-                  (apply #'format (list prompt-template
-                                        (file-name-nondirectory translation-file)
-                                        language
-                                        (file-name-nondirectory original-file)))
-                  (format
-                   "\n\nHere are paragraphs %d–%d (of %d). Review and edit the translation file accordingly:\n```\n%s\n```"
-                   (1+ start) end (length orig-paras) comparison))))
+                  prompt-template
+                  comparison)))
     (tlon-make-gptel-request
      prompt nil
      (lambda (response info)
@@ -593,7 +583,6 @@ only used for debugging/logging."
     (ranges idx translation-file original-file type prompt-template model
             lang-code language tools orig-paras trans-paras)
   "Recursively send AI revision requests for paragraph RANGES.
-
 RANGES is a list of cons cells (START . END) indicating paragraph
 indices to process.  IDX is the zero-based index of the current
 chunk."
@@ -607,13 +596,8 @@ chunk."
            (comparison (tlon-paragraphs--get-comparison-buffer-content
                         translation-file original-file trans-chunk orig-chunk nil))
            (prompt (concat
-                    (apply #'format (list prompt-template
-                                          (file-name-nondirectory translation-file)
-                                          language
-                                          (file-name-nondirectory original-file)))
-                    (format
-                     "\n\nHere are paragraphs %d–%d (of %d). Review and edit the translation file accordingly:\n```\n%s\n```"
-                     (1+ start) end (length orig-paras) comparison))))
+                    prompt-template
+                    comparison)))
       (tlon-make-gptel-request
        prompt nil
        (lambda (response info)
