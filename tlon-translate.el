@@ -539,8 +539,16 @@ TYPE can be `errors' or `flow'."
            (ranges '()))
       (setq ranges (tlon-translate--build-chunk-ranges total chunk-size))
       (when ranges
-	(tlon-translate--revise-sequential
-	 ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras)))))
+	(if (<= (length ranges) tlon-translate-revise-max-parallel)
+	    ;; Few enough chunks → process them all in parallel.
+	    (tlon-translate--revise-parallel
+	     ranges translation-file original-file type prompt model
+	     tools orig-paras trans-paras)
+	  ;; More chunks than the parallel cap → process in parallel *batches*
+	  ;; of `tlon-translate-revise-max-parallel'.
+	  (tlon-translate--revise-parallel-batches
+	   ranges translation-file original-file type prompt model
+	   lang-code language tools orig-paras trans-paras))))))
 
 (defun tlon-translate--build-chunk-ranges (total chunk-size)
   "Build chunk ranges (START . END) for TOTAL items with CHUNK-SIZE."
