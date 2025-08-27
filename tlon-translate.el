@@ -584,28 +584,28 @@ original paragraphs. TRANS-PARAS are the translated paragraphs."
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
             lang-code language tools orig-paras trans-paras)
-  "Process RANGES in parallel batches capped by `tlon-translate-revise-max-parallel'."
+  "Process RANGES in parallel batches of `tlon-translate-revise-max-parallel'."
   (cl-labels
       ((process (remaining idx)
-                (if (null remaining)
-                    ;; All work done – final message.
-                    (message "All %d chunk%s processed for %s."
-                             idx (if (= idx 1) "" "s")
-                             (file-name-nondirectory translation-file))
-                  (let* ((batch (cl-subseq remaining
-                                           0 (min tlon-translate-revise-max-parallel
-                                                  (length remaining))))
-                         (rest  (nthcdr (length batch) remaining))
-                         (pending (length batch)))
-                    (dolist (r batch)
-                      (tlon-translate--revise-send-range
-                       r translation-file original-file type prompt model
-                       tools orig-paras trans-paras
-                       (lambda ()
-                         (setq pending (1- pending))
-                         (when (= pending 0)
-                           ;; Batch finished – launch next one.
-                           (process rest (+ idx (length batch)))))))))))
+         (if (null remaining)
+             ;; All work done – final message.
+             (message "All %d chunk%s processed for %s."
+                      idx (if (= idx 1) "" "s")
+                      (file-name-nondirectory translation-file))
+           (let* ((batch (cl-subseq remaining
+                                    0 (min tlon-translate-revise-max-parallel
+                                           (length remaining))))
+                  (rest  (nthcdr (length batch) remaining))
+                  (pending (length batch)))
+             (dolist (r batch)
+               (tlon-translate--revise-send-range
+                r translation-file original-file type prompt model
+                tools orig-paras trans-paras
+                (lambda ()
+                  (setq pending (1- pending))
+                  (when (= pending 0)
+                    ;; Batch finished – launch next one.
+                    (process rest (+ idx (length batch)))))))))))
     (process ranges 0)))
 
 (defun tlon-translate--revise-sequential (ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras)
