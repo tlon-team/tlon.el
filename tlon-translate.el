@@ -619,7 +619,9 @@ AFTER-FN is an optional function to call after the revision is complete."
      (let ((done nil))
        (lambda (response info)
          (when (or (plist-get info :done)           ; gptel ≥ 0.8
-                   (alist-get 'done info))          ; backward compatibility
+                   (alist-get 'done info)           ; < gptel 0.8
+                   (string= (plist-get info :finish_reason) "stop") ; OpenAI API
+                   (string= (alist-get 'finish_reason info) "stop")) ; alist variant
            (tlon-translate--revise-callback response info translation-file type start end)
            (unless done
              (setq done t)
