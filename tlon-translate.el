@@ -535,7 +535,7 @@ TYPE can be `errors' or `flow'."
            ranges 0 translation-file original-file type prompt-template model
            lang-code language tools orig-paras trans-paras)
           (message "Requesting AI to revise %s in %d paragraph chunks..."
-                   (file-name-nondirectory translation-file) (length ranges))))))
+                   (file-name-nondirectory translation-file) (length ranges)))))))
 
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-process-chunks
@@ -573,7 +573,7 @@ chunk."
          (tlon-translate--revise-process-chunks
           rest (1+ idx) translation-file original-file type prompt-template model
           lang-code language tools orig-paras trans-paras))
-       model t nil tools)))
+       model t nil tools))))
 
 (defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
@@ -651,7 +651,8 @@ If nil, use the default model."
     ""
     "Options"
     ("r -e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
-    ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)]
+    ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
+    ("r -c" "Chunk size" tlon-translate-infix-set-chunk-size)]
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
