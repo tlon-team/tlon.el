@@ -575,6 +575,14 @@ original paragraphs. TRANS-PARAS are the translated paragraphs."
 	       orig-paras trans-paras))
   (tlon-translate--message-revise-request translation-file ranges t))
 
+(defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
+  "Display message about AI revision request for TRANSLATION-FILE with RANGES.
+PARALLEL-P indicates whether processing is parallel or sequential."
+  (message "Requesting AI to revise %s in %d %s chunks..."
+	   (file-name-nondirectory translation-file)
+	   (length ranges)
+	   (if parallel-p "parallel" "paragraph")))
+
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
             tools orig-paras trans-paras)
