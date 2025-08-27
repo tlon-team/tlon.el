@@ -655,27 +655,37 @@ needed."
           (funcall after-fn))))))
 
 (defun tlon-translate--kill-indirect-buffers-of-file (file)
-  "Kill *every* indirect buffer ultimately derived from FILE.
-`clone-indirect-buffer' produces names like \"foo.md<1>\" whose
-`buffer-base-buffer' may itself be indirect. Follow the chain up to the first
-real buffer and compare its function `buffer-file-name' against FILE (using
-`file-name-same-p' to survive symlinks).
+  "Kill every indirect buffer created from FILE.
 
-Any buffer that is *not* that real buffer, but is in the chain, is an
-indirect clone that can be safely killed."
-  (let ((file (expand-file-name file)))
+Two fall-back heuristics are used:
+
+1.  *Chain match* – follow `buffer-base-buffer' up to the first real
+    buffer and compare its `buffer-file-name' with FILE using
+    `file-equal-p'.  If they match and the buffer in question is *not*
+    that real buffer, it is an indirect clone that can be killed.
+
+2.  *Name match* – if the buffer name looks like
+    \"<basename><N>\" where <basename> is the base name of FILE and <N>
+    is a decimal number in angle brackets, kill it even when the
+    base-buffer chain is broken.
+
+This catches stubborn leftovers left behind by `clone-indirect-buffer'."
+  (let* ((file    (expand-file-name file))
+         (base    (file-name-nondirectory file))
+         (name-rx (format "^%s<[0-9]+>$" (regexp-quote base))))
     (dolist (buf (buffer-list))
-      (when-let* ((base buf)
-                  ;; Walk up the chain of base buffers.
-                  (real (progn
-                          (while (buffer-base-buffer base)
-                            (setq base (buffer-base-buffer base)))
-                          base))
-                  (real-file (buffer-file-name real)))
-        ;; BUF is indirect iff it is not the REAL buffer itself.
-        (when (and (not (eq buf real))
-                   real-file
-                   (file-equal-p real-file file))
+      (let* ((real buf)
+             (indirect-p (buffer-base-buffer buf)))
+        ;; Walk up the chain, if any.
+        (while (buffer-base-buffer real)
+          (setq real (buffer-base-buffer real)))
+        (when (or
+               ;; Heuristic 1 – chain match
+               (and indirect-p
+                    (buffer-file-name real)
+                    (file-equal-p (buffer-file-name real) file))
+               ;; Heuristic 2 – name match
+               (string-match-p name-rx (buffer-name buf)))
           (kill-buffer buf))))))
 
 (defun tlon-translate--revise-send-range
