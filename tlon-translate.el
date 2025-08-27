@@ -619,8 +619,11 @@ request is complete."
                      (let ((st (plist-get info :status)))
                        (and (numberp st) (>= st 400)))))
         (tlon-ai-callback-fail info))
-      ;; Advance exactly once when :done is present.
-      (when (plist-get info :done)
+      ;; Advance exactly once when the request is complete.
+      ;; – Streaming mode:  gptel adds :done in INFO on the final chunk.
+      ;; – Non-streaming mode (default): callback runs once with INFO=nil.
+      (when (or (plist-get info :done)
+                (and (null info) (not tlon-translate-revise-stream)))
         (unless fired
           (setq fired t)
           (when (functionp after-fn)
