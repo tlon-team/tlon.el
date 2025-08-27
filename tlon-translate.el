@@ -567,10 +567,13 @@ model to use. LANG-CODE is the language code for the translation. LANGUAGE is
 the target language name. TOOLS are the tools available for the revision.
 ORIG-PARAS are the original paragraphs. TRANS-PARAS are the translated
 paragraphs."
-  (tlon-translate--revise-process-chunks
-   ranges 0 translation-file original-file type prompt model
-   lang-code language tools orig-paras trans-paras)
-  (tlon-translate--message-revise-request translation-file ranges nil))
+  ;; Process chunks back-to-front so edits inserted by earlier chunks
+  ;; do not shift the paragraph positions of the remaining ones.
+  (let ((rev-ranges (reverse ranges)))
+    (tlon-translate--revise-process-chunks
+     rev-ranges 0 translation-file original-file type prompt model
+     lang-code language tools orig-paras trans-paras)
+    (tlon-translate--message-revise-request translation-file rev-ranges nil)))
 
 (defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
   "Display message about AI revision request for TRANSLATION-FILE with RANGES.
