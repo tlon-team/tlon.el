@@ -529,11 +529,10 @@ TYPE can be `errors' or `flow'."
            (ranges '()))
       (setq ranges (tlon-translate--build-chunk-ranges total chunk-size))
       (when ranges
-	(if (<= (length ranges) tlon-translate-revise-max-parallel)
-	    (tlon-translate--revise-parallel
-	     ranges translation-file original-file type prompt model tools orig-paras trans-paras)
-	  (tlon-translate--revise-sequential
-	   ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras))))))
+	;; Always process chunks sequentially to avoid concurrent edits to
+	;; the same file, which triggered Emacs “changed on disk” prompts.
+	(tlon-translate--revise-sequential
+	 ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras)))))
 
 (defun tlon-translate--build-chunk-ranges (total chunk-size)
   "Build chunk ranges (START . END) for TOTAL items with CHUNK-SIZE."
