@@ -684,34 +684,6 @@ AFTER-FN is an optional function to call after the revision is complete."
       translation-file type start end after-fn)
      model tlon-translate-revise-stream nil tools)))
 
-(defun tlon-translate--revise-process-chunks
-    (ranges idx translation-file original-file type prompt-template model
-            lang-code language tools orig-paras trans-paras)
-  "Recursively send AI revision requests for paragraph RANGES.
-RANGES is a list of cons cells (START . END) specifying paragraph ranges to
-revise. IDX is the current chunk index used for debugging/logging.
-TRANSLATION-FILE is the path to the translation file being revised.
-ORIGINAL-FILE is the path to the original source file. TYPE specifies the type
-of revision being performed. PROMPT-TEMPLATE is the template string for
-constructing AI prompts. MODEL specifies which AI model to use for revision
-requests. LANG-CODE is the language code for the translation. LANGUAGE is the
-target language name. TOOLS specifies AI tools to be used in requests.
-ORIG-PARAS is a list of original paragraphs from the source text. TRANS-PARAS is
-a list of translated paragraphs to be revised."
-  (if ranges
-      (let* ((current (car ranges))
-             (rest    (cdr ranges)))
-        (tlon-translate--revise-send-range
-         current translation-file original-file type prompt-template model
-         tools orig-paras trans-paras
-         (lambda ()
-           (tlon-translate--revise-process-chunks
-            rest (1+ idx) translation-file original-file type prompt-template model
-            lang-code language tools orig-paras trans-paras))))
-    ;; No ranges left → all chunks done.
-    (message "All %d chunk%s processed for %s."
-             idx (if (= idx 1) "" "s")
-             (file-name-nondirectory translation-file))))
 
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type start end)
