@@ -662,6 +662,15 @@ END is the ending paragraph number."
   (if (not response)
       (tlon-ai-callback-fail info)
     (message "Paragraphs %d–%d processed." (1+ start) end)
+    (run-at-time
+     0 nil
+     (lambda (f)
+       (when-let ((buf (get-file-buffer f)))
+         (with-current-buffer buf
+           ;; Don’t clobber user edits – revert only if unchanged.
+           (unless (buffer-modified-p)
+             (revert-buffer :ignore-auto :noconfirm)))))
+     file)
     (when tlon-translate-revise-commit-changes
       (let ((default-directory (tlon-get-repo-from-file file)))
         (magit-stage-files (list file))
