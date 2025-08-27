@@ -659,10 +659,10 @@ needed."
 
 Two fall-back heuristics are used:
 
-1.  *Chain match* – follow `buffer-base-buffer' up to the first real
-    buffer and compare its `buffer-file-name' with FILE using
-    `file-equal-p'.  If they match and the buffer in question is *not*
-    that real buffer, it is an indirect clone that can be killed.
+1. *Chain match* – follow `buffer-base-buffer' up to the first real buffer and
+    compare the return value of the function `buffer-file-name' with FILE using
+    `file-equal-p'. If they match and the buffer in question is *not* that real
+    buffer, it is an indirect clone that can be killed.
 
 2.  *Name match* – if the buffer name looks like
     \"<basename><N>\" where <basename> is the base name of FILE and <N>
