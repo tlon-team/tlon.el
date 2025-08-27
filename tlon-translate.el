@@ -568,6 +568,7 @@ TYPE can be `errors' or `flow'."
   "Send an AI revision request for a single paragraph RANGE.
 RANGE is a cons cell (START . END).  IDX is the chunk index and is
 only used for debugging/logging."
+  (ignore idx lang-code)           ;; silence byte-compiler
   (let* ((start (car range))
          (end   (cdr range))
          (orig-chunk  (cl-subseq orig-paras start end))
