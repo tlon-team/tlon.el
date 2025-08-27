@@ -50,29 +50,32 @@ use a different model for aligning paragraphs."
 ;;;;; Common
 
 (autoload 'markdown-forward-paragraph "markdown-mode" nil t)
-(defun tlon-with-paragraphs (file fn &optional return-positions)
+(defun tlon-with-paragraphs (file &optional fn return-positions)
   "Execute FN for each paragraph in FILE.
-If RETURN-POSITIONS is non-nil, return list of (start . end) positions.
-Otherwise, return list of FN's results for each paragraph.
-If FILE is nil, use the current buffer."
+If FN is nil, return the paragraph contents. If RETURN-POSITIONS is non-nil,
+return list of (start . end) positions. Otherwise, return list of FN's results
+for each paragraph. If FILE is nil, use the current buffer."
   (let ((buffer-to-use (if (stringp file)
                            (find-file-noselect file)
                          (current-buffer)))) ; Use current buffer if file is nil or buffer object
     (with-current-buffer buffer-to-use
       (save-excursion
-        (goto-char (or (cdr (tlon-get-delimited-region-pos
-                             tlon-yaml-delimiter))
-                       (point-min)))
-	(let ((content-end (or (car (tlon-get-delimited-region-pos
+	(let ((content-begin (or (cdr (tlon-get-delimited-region-pos
+				       tlon-yaml-delimiter))
+				 (point-min)))
+	      (content-end (or (car (tlon-get-delimited-region-pos
                                      tlon-md-local-variables-line-start
                                      tlon-md-local-variables-line-end))
                                (point-max)))
               result)
+	  (goto-char content-begin)
           (while (and (< (point) content-end)
                       (not (looking-at-p tlon-md-local-variables-line-start)))
             (let ((start (point)))
               (markdown-forward-paragraph)
-              (let ((end (min (point) content-end)))
+              (let ((end (min (point) content-end))
+		    (fn (or fn (lambda (start end)
+				 (buffer-substring-no-properties start end)))))
 		(when (and (> end start)
                            (string-match-p "[^\s\n]"
 					   (buffer-substring-no-properties start end)))
@@ -142,12 +145,8 @@ paragraphs in a buffer only in that case. If ORIGINAL is nil, infer it from
 TRANSLATION."
   (let* ((translation (or translation (buffer-file-name)))
          (original (or original (tlon-get-counterpart translation)))
-         (orig-paras (tlon-with-paragraphs original
-					   (lambda (start end)
-					     (buffer-substring-no-properties start end))))
-         (trans-paras (tlon-with-paragraphs translation
-					    (lambda (start end)
-					      (buffer-substring-no-properties start end))))
+         (orig-paras (tlon-with-paragraphs original))
+         (trans-paras (tlon-with-paragraphs translation))
          (max-len (max (length orig-paras) (length trans-paras)))
          pairs)
     (dotimes (i max-len)
@@ -213,33 +212,42 @@ Once you have done this, please edit the translation file ('%s') accordingly. Ma
 If you think the task is too complex, because there are too many paragraphs and the discrepancies are extensive, you can tackle a subset of paragraphs, such as the first 10 paragraphs that differ (or however many paragraphs you are comfortable editing)."
   "Prompt for aligning paragraphs between a file and its counterpart.")
 
+(defun tlon-paragraph-files-are-aligned-p (&optional file counterpart)
+  "Return t iff FILE and COUNTERPART have the same number of pragraphs."
+  (interactive)
+  (let* ((file (or file (buffer-file-name)))
+	 (counterpart (or counterpart (tlon-get-counterpart file)))
+	 count-file count-counterpart)
+    (with-current-buffer (find-file-noselect file)
+      (setq count-file (tlon-get-number-of-paragraphs)))
+    (with-current-buffer (find-file-noselect counterpart)
+      (setq count-counterpart (tlon-get-number-of-paragraphs)))
+    (= count-file count-counterpart)))
+
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
 (declare-function tlon-get-content-subtype "tlon-counterpart")
 ;;;###autoload
-(defun tlon-paragraphs-align-with-ai ()
-  "Check for paragraph count mismatch and use AI to fix it."
+(defun tlon-paragraphs-align-with-ai (&optional file)
+  "Use AI to fix paragraph count mismatch between FILE and its counterpart.
+If FILE is nil, prompt for it."
   (interactive)
-  (let* ((file (expand-file-name
-		(read-file-name "File to process: " nil nil t
-                                (file-relative-name (buffer-file-name) default-directory)))))
+  (let* ((file (or file
+		   (expand-file-name
+		    (read-file-name "File to process: " nil nil t
+				    (file-relative-name (buffer-file-name) default-directory))))))
     (if-let ((counterpart (tlon-get-counterpart file)))
         (let* ((file-subtype (tlon-get-content-subtype file))
                (original-file (if (eq file-subtype 'originals) file counterpart))
                (translation-file (if (eq file-subtype 'originals) counterpart file))
-               (orig-paras (tlon-with-paragraphs original-file
-                                                 (lambda (start end)
-                                                   (buffer-substring-no-properties start end))))
-               (trans-paras (tlon-with-paragraphs translation-file
-                                                  (lambda (start end)
-                                                    (buffer-substring-no-properties start end))))
+               (orig-paras (tlon-with-paragraphs original-file))
+               (trans-paras (tlon-with-paragraphs translation-file))
                (original-paras-count (length orig-paras))
                (translation-paras-count (length trans-paras)))
-          (if (= original-paras-count translation-paras-count)
-              (message "File `%s' and counterpart `%s' have the same number of paragraphs (%d)."
+          (if (tlon-paragraph-files-are-aligned-p file counterpart)
+              (message "File `%s' and counterpart `%s' have the same number of paragraphs."
                        (file-name-nondirectory file)
-                       (file-name-nondirectory counterpart)
-                       original-paras-count)
+                       (file-name-nondirectory counterpart))
             (let* ((comparison-string (tlon-paragraphs--get-comparison-buffer-content
 				       translation-file original-file trans-paras orig-paras nil))
                    (prompt (format tlon-paragraphs-align-with-ai-prompt
@@ -250,13 +258,13 @@ If you think the task is too complex, because there are too many paragraphs and 
 				   comparison-string
 				   (file-name-nondirectory translation-file)))
 		   (tools '("edit_file" "apply_diff" "replace_file_contents")))
-              (gptel-context-add-file original-file)
-              (gptel-context-add-file translation-file)
-              (message "Requesting AI to align paragraphs with model %S..."
-                       (cdr tlon-paragraphs-align-with-ai-model))
-              (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback
+	      (gptel-context-add-file original-file)
+	      (gptel-context-add-file translation-file)
+	      (message "Requesting AI to align paragraphs with model %S..."
+		       (cdr tlon-paragraphs-align-with-ai-model))
+	      (tlon-make-gptel-request prompt nil #'tlon-paragraphs-align-with-ai-callback
 				       tlon-paragraphs-align-with-ai-model t nil tools)
-              (gptel-context-remove-all))))
+	      (gptel-context-remove-all))))
       (user-error "Could not find counterpart for %s" file))))
 
 (defun tlon-paragraphs-align-with-ai-callback (response info)
