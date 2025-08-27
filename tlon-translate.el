@@ -583,8 +583,6 @@ only used for debugging/logging."
                   (format
                    "\n\nFocus ONLY on paragraphs %d–%d (of %d). Review the comparison below and edit the translation file accordingly:\n```\n%s\n```"
                    (1+ start) end (length orig-paras) comparison))))
-    (gptel-context-add-file original-file)
-    (gptel-context-add-file translation-file)
     (tlon-make-gptel-request
      prompt nil
      (lambda (response info)
@@ -616,16 +614,11 @@ chunk."
                     (format
                      "\n\nFocus ONLY on paragraphs %d–%d (of %d). Review the comparison below and edit the translation file accordingly:\n```\n%s\n```"
                      (1+ start) end (length orig-paras) comparison))))
-      (gptel-context-add-file original-file)
-      (gptel-context-add-file translation-file)
       (tlon-make-gptel-request
        prompt nil
        (lambda (response info)
          (tlon-translate--revise-callback response info translation-file type)
-         ;; only clear the GPTel context after the final chunk to avoid
-         ;; killing buffers while other requests are still processing
-         (when (null rest)
-           (gptel-context-remove-all))
+         ;; no context objects were added, so nothing to clean up here
          (tlon-translate--revise-process-chunks
           rest (1+ idx) translation-file original-file type prompt-template model
           lang-code language tools orig-paras trans-paras))
