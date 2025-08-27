@@ -595,39 +595,35 @@ PARALLEL-P indicates whether processing is parallel or sequential."
 
 ;;;;;; chunk helpers
 
-;; Callback helper that relies solely on the callback “shape” to detect
-;; completion.  We forward any text RESPONSE to the usual
-;; `tlon-translate--revise-callback' and run AFTER-FN exactly once when
-;; gptel lets us know the request is finished (:done flag) or when an
-;; error is returned, so the scheduler never stalls.
 (defun tlon-translate--gptel-callback-simple (translation-file type start end after-fn)
-  "Return a gptel callback suitable for sequential chunk processing.
-
-TRANSLATION-FILE, TYPE, START and END are passed through to
-`tlon-translate--revise-callback'.  AFTER-FN is invoked once, when INFO
-carries the :done flag (or an error shape), signalling that this
-request is complete."
+  "Return a gptel callback suitable for sequential chunk processing."
   (let ((fired nil))
     (lambda (response info)
-      ;; Streamed or final text → process normally.
+      ;; Forward text fragments (or the sole final text) to the real handler.
       (when (stringp response)
         (tlon-translate--revise-callback
          response info translation-file type start end))
-      ;; Error shapes → surface and advance.
+
+      ;; Surface errors so the user sees them, but still advance.
       (when (and (not (stringp response))
                  (or (plist-get info :error)
                      (let ((st (plist-get info :status)))
                        (and (numberp st) (>= st 400)))))
         (tlon-ai-callback-fail info))
-      ;; Advance exactly once when the request is complete.
-      ;; – Streaming mode:  gptel adds :done in INFO on the final chunk.
-      ;; – Non-streaming mode (default): callback runs once with INFO=nil.
-      (when (or (plist-get info :done)
-                (and (null info) (not tlon-translate-revise-stream)))
-        (unless fired
-          (setq fired t)
-          (when (functionp after-fn)
-            (funcall after-fn)))))))
+
+      ;; Decide when the request is *finished* and fire AFTER-FN once.
+      (when (and (not fired)
+                 (or
+                  ;; non-streaming mode → single call means we’re done
+                  (not tlon-translate-revise-stream)
+                  ;; explicit done/final flags (plist or alist)
+                  (plist-get info :done) (alist-get 'done info)
+                  (plist-get info :final) (alist-get 'final info)
+                  ;; INFO may be nil in some backends
+                  (null info)))
+        (setq fired t)
+        (when (functionp after-fn)
+          (funcall after-fn))))))
 
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
