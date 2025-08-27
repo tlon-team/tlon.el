@@ -620,7 +620,7 @@ text. TRANS-PARAS contains the translated paragraphs being revised."
 
 ;;;;;; chunk helpers
 
-(defun tlon-translate--gptel-callback-simple (translation-file type start end after-fn)
+(defun tlon-translate--gptel-callback-simple (translation-file type after-fn)
   "Return a gptel callback suitable for sequential chunk processing.
 TRANSLATION-FILE is the file path where the translation will be stored. TYPE
 specifies the type of translation operation being performed. START is the
@@ -633,7 +633,7 @@ needed."
       ;; Forward text fragments (or the sole final text) to the real handler.
       (when (stringp response)
         (tlon-translate--revise-callback
-         response info translation-file type start end))
+         response info translation-file type))
       ;; Surface errors so the user sees them, but still advance.
       (when (and (not (stringp response))
                  (or (plist-get info :error)
@@ -716,13 +716,12 @@ AFTER-FN is an optional function to call after the revision is complete."
     (tlon-translate--kill-indirect-buffers-of-file original-file)
     (tlon-make-gptel-request
      prompt nil
-     (tlon-translate--gptel-callback-simple
-      translation-file type start end after-fn)
+     (tlon-translate--gptel-callback-simple translation-file type after-fn)
      model tlon-translate-revise-stream nil tools)))
 
 
 (declare-function magit-stage-files "magit-apply")
-(defun tlon-translate--revise-callback (response info file type start end)
+(defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
 RESPONSE is the AI's response. INFO is the response info. FILE is the file to
 commit. TYPE is the revision type. START is the starting paragraph number.
