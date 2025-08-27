@@ -89,6 +89,16 @@ are processed sequentially."
   :group 'tlon-translate
   :type 'integer)
 
+(defcustom tlon-translate-revise-stream nil
+  "If non-nil, enable streaming when sending AI revision requests.
+
+With streaming disabled (the default), `gptel' calls the callback exactly
+once per chunk, after the model and any tools have finished.  This makes it
+trivial to detect completion and schedule the next chunk.  Set this option
+to t if you prefer to see partial responses in real time."
+  :group 'tlon-translate
+  :type 'boolean)
+
 ;;;; Variables
 
 (defconst tlon-translate--engine-choices
