@@ -555,7 +555,7 @@ TYPE can be `errors' or `flow'."
                        (file-name-nondirectory translation-file)
                        (length ranges)))))))))
 
-;;;;  Parallel helper: send a single-chunk revision request
+;;;;;;  Parallel helper: send a single-chunk revision request
 
 (defun tlon-translate--revise-send-range
     (range idx translation-file original-file type prompt-template model
