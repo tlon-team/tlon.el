@@ -611,9 +611,19 @@ AFTER-FN is an optional function to call after the revision is complete."
 					     comparison))))
     (tlon-make-gptel-request
      prompt nil
-     (lambda (response info)
-       (tlon-translate--revise-callback response info translation-file type start end)
-       (when after-fn (funcall after-fn)))
+     ;; The callback supplied to `gptel' is invoked repeatedly while the
+     ;; response is streamed.  Running our post-processing (`after-fn') on every
+     ;; chunk caused runaway recursion and UI freezes.  We now execute it only
+     ;; once, when the stream is finished (signalled by the :done flag that
+     ;; gptel adds to INFO).
+     (let ((done nil))
+       (lambda (response info)
+         (when (or (plist-get info :done)           ; gptel ≥ 0.8
+                   (alist-get 'done info))          ; backward compatibility
+           (tlon-translate--revise-callback response info translation-file type start end)
+           (unless done
+             (setq done t)
+             (when after-fn (funcall after-fn))))))
      model t nil tools)))
 
 (defun tlon-translate--revise-process-chunks
