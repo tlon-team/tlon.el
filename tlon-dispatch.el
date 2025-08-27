@@ -90,7 +90,7 @@
     "Package (tlon.el)"
     ("H-u" "update & reload"              tlon-update-package-and-reload)
     ("H-o" "open"                         tlon-open-package-files)
-    ("H-i" "copy info"                    tlon-copy-package-info)
+    ("H-h" "copy info"                    tlon-copy-package-info)
     """"
     (:info* (lambda () (concat "Package version: " (propertize tlon-version 'face 'bold))))
     (:info* (lambda () (format "Latest commit: %s" (propertize (tlon-get-latest-commit tlon-package-dir) 'face 'bold))))]])
