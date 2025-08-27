@@ -668,16 +668,20 @@ requests. LANG-CODE is the language code for the translation. LANGUAGE is the
 target language name. TOOLS specifies AI tools to be used in requests.
 ORIG-PARAS is a list of original paragraphs from the source text. TRANS-PARAS is
 a list of translated paragraphs to be revised."
-  (when ranges
-    (let* ((current (car ranges))
-           (rest (cdr ranges)))
-      (tlon-translate--revise-send-range
-       current translation-file original-file type prompt-template model
-       tools orig-paras trans-paras
-       (lambda ()
-         (tlon-translate--revise-process-chunks
-          rest (1+ idx) translation-file original-file type prompt-template model
-          lang-code language tools orig-paras trans-paras))))))
+  (if ranges
+      (let* ((current (car ranges))
+             (rest    (cdr ranges)))
+        (tlon-translate--revise-send-range
+         current translation-file original-file type prompt-template model
+         tools orig-paras trans-paras
+         (lambda ()
+           (tlon-translate--revise-process-chunks
+            rest (1+ idx) translation-file original-file type prompt-template model
+            lang-code language tools orig-paras trans-paras))))
+    ;; No ranges left → all chunks done.
+    (message "All %d chunk%s processed for %s."
+             idx (if (= idx 1) "" "s")
+             (file-name-nondirectory translation-file))))
 
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type start end)
