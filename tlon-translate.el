@@ -654,9 +654,6 @@ needed."
         (when (functionp after-fn)
           (funcall after-fn))))))
 
-;; -------------------------------------------------------------------
-;; Helper: kill transient indirect buffers
-;; -------------------------------------------------------------------
 (defun tlon-translate--kill-indirect-buffers-of-file (file)
   "Kill all indirect buffers whose base buffer visits FILE.
 AI-revision helpers create temporary indirect buffers to build the
