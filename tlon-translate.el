@@ -540,9 +540,9 @@ TYPE can be `errors' or `flow'."
 		(cl-loop for r in ranges
 			 for idx from 0
 			 do (tlon-translate--revise-send-range
-                             r idx translation-file original-file type
-                             prompt model lang-code tools
-                             orig-paras trans-paras nil))
+                             r translation-file original-file type
+                             prompt model tools
+                             orig-paras trans-paras))
 		(message "Requesting AI to revise %s in %d parallel chunks..."
 			 (file-name-nondirectory translation-file)
 			 (length ranges)))
@@ -558,8 +558,8 @@ TYPE can be `errors' or `flow'."
 ;;;;;;  Parallel helper: send a single-chunk revision request
 
 (defun tlon-translate--revise-send-range
-    (range idx translation-file original-file type prompt-template model
-           lang-code tools orig-paras trans-paras &optional after-fn)
+    (range translation-file original-file type prompt-template model
+           tools orig-paras trans-paras &optional after-fn)
   "Send an AI revision request for a single paragraph RANGE.
 RANGE is a cons cell (START . END) specifying the paragraph range to revise. IDX
 is the chunk index and is only used for debugging/logging. TRANSLATION-FILE is
@@ -571,7 +571,7 @@ language code for the translation (currently unused). TOOLS specifies AI tools
 to be used in the request. ORIG-PARAS is a list of original paragraphs from the
 source text. TRANS-PARAS is a list of translated paragraphs to be revised.
 AFTER-FN is an optional function to call after the revision is complete."
-  (ignore idx lang-code after-fn)           ;; silence byte-compiler
+  ;; AFTER-FN is optional and may be nil when the call does not need chaining
   (let* ((start (car range))
          (end   (cdr range))
          (orig-chunk  (cl-subseq orig-paras start end))
@@ -606,8 +606,8 @@ a list of translated paragraphs to be revised."
     (let* ((current (car ranges))
            (rest (cdr ranges)))
       (tlon-translate--revise-send-range
-       current idx translation-file original-file type prompt-template model
-       lang-code tools orig-paras trans-paras
+       current translation-file original-file type prompt-template model
+       tools orig-paras trans-paras
        (lambda ()
          (tlon-translate--revise-process-chunks
           rest (1+ idx) translation-file original-file type prompt-template model
