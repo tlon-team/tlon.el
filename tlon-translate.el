@@ -676,7 +676,7 @@ indirect clone that can be safely killed."
         ;; BUF is indirect iff it is not the REAL buffer itself.
         (when (and (not (eq buf real))
                    real-file
-                   (file-name-same-p real-file file))
+                   (file-equal-p real-file file))
           (kill-buffer buf))))))
 
 (defun tlon-translate--revise-send-range
