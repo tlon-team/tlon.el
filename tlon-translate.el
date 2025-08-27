@@ -656,11 +656,10 @@ needed."
 
 (defun tlon-translate--kill-indirect-buffers-of-file (file)
   "Kill *every* indirect buffer ultimately derived from FILE.
-
 `clone-indirect-buffer' produces names like \"foo.md<1>\" whose
-`buffer-base-buffer' may itself be indirect.  Follow the chain up to the
-first real buffer and compare its `buffer-file-name' against FILE
-(using `file-name-same-p' to survive symlinks).
+`buffer-base-buffer' may itself be indirect. Follow the chain up to the first
+real buffer and compare its function `buffer-file-name' against FILE (using
+`file-name-same-p' to survive symlinks).
 
 Any buffer that is *not* that real buffer, but is in the chain, is an
 indirect clone that can be safely killed."
