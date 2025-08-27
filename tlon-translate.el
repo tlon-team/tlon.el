@@ -542,7 +542,7 @@ TYPE can be `errors' or `flow'."
 			 do (tlon-translate--revise-send-range
                              r idx translation-file original-file type
                              prompt model lang-code tools
-                             orig-paras trans-paras))
+                             orig-paras trans-paras nil))
 		(message "Requesting AI to revise %s in %d parallel chunks..."
 			 (file-name-nondirectory translation-file)
 			 (length ranges)))
@@ -559,11 +559,11 @@ TYPE can be `errors' or `flow'."
 
 (defun tlon-translate--revise-send-range
     (range idx translation-file original-file type prompt-template model
-           lang-code tools orig-paras trans-paras)
+           lang-code tools orig-paras trans-paras &optional after-fn)
   "Send an AI revision request for a single paragraph RANGE.
 RANGE is a cons cell (START . END).  IDX is the chunk index and is
 only used for debugging/logging."
-  (ignore idx lang-code)           ;; silence byte-compiler
+  (ignore idx lang-code after-fn)           ;; silence byte-compiler
   (let* ((start (car range))
          (end   (cdr range))
          (orig-chunk  (cl-subseq orig-paras start end))
@@ -576,37 +576,24 @@ only used for debugging/logging."
     (tlon-make-gptel-request
      prompt nil
      (lambda (response info)
-       (tlon-translate--revise-callback response info translation-file type))
+       (tlon-translate--revise-callback response info translation-file type)
+       (when after-fn (funcall after-fn)))
      model t nil tools)))
 
 (defun tlon-translate--revise-process-chunks
     (ranges idx translation-file original-file type prompt-template model
             lang-code language tools orig-paras trans-paras)
-  "Recursively send AI revision requests for paragraph RANGES.
-RANGES is a list of cons cells (START . END) indicating paragraph
-indices to process.  IDX is the zero-based index of the current
-chunk."
+  "Recursively send AI revision requests for paragraph RANGES."
   (when ranges
     (let* ((current (car ranges))
-           (rest    (cdr ranges))
-           (start   (car current))
-           (end     (cdr current))
-           (orig-chunk  (cl-subseq orig-paras start end))
-           (trans-chunk (cl-subseq trans-paras start end))
-           (comparison (tlon-paragraphs--get-comparison-buffer-content
-                        translation-file original-file trans-chunk orig-chunk nil))
-           (prompt (concat
-                    prompt-template
-                    comparison)))
-      (tlon-make-gptel-request
-       prompt nil
-       (lambda (response info)
-         (tlon-translate--revise-callback response info translation-file type)
-         ;; no context objects were added, so nothing to clean up here
+           (rest (cdr ranges)))
+      (tlon-translate--revise-send-range
+       current idx translation-file original-file type prompt-template model
+       lang-code tools orig-paras trans-paras
+       (lambda ()
          (tlon-translate--revise-process-chunks
           rest (1+ idx) translation-file original-file type prompt-template model
-          lang-code language tools orig-paras trans-paras))
-       model t nil tools))))
+          lang-code language tools orig-paras trans-paras))))))
 
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type)
