@@ -581,7 +581,7 @@ only used for debugging/logging."
                                         language
                                         (file-name-nondirectory original-file)))
                   (format
-                   "\n\nFocus ONLY on paragraphs %d–%d (of %d). Review the comparison below and edit the translation file accordingly:\n```\n%s\n```"
+                   "\n\nHere are paragraphs %d–%d (of %d). Review and edit the translation file accordingly:\n```\n%s\n```"
                    (1+ start) end (length orig-paras) comparison))))
     (tlon-make-gptel-request
      prompt nil
@@ -612,7 +612,7 @@ chunk."
                                           language
                                           (file-name-nondirectory original-file)))
                     (format
-                     "\n\nFocus ONLY on paragraphs %d–%d (of %d). Review the comparison below and edit the translation file accordingly:\n```\n%s\n```"
+                     "\n\nHere are paragraphs %d–%d (of %d). Review and edit the translation file accordingly:\n```\n%s\n```"
                      (1+ start) end (length orig-paras) comparison))))
       (tlon-make-gptel-request
        prompt nil
