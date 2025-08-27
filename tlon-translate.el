@@ -39,7 +39,6 @@
 (require 'tlon-paragraphs)
 (require 'cl-lib)
 
-
 ;;;; User options
 
 (defgroup tlon-translate nil
@@ -815,13 +814,12 @@ If nil, use the default model."
     ("r f" "Improve flow" tlon-translate-revise-flow)
     ""
     "Options"
-    ("r -e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
+    ("r -s" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
     ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
     ("r -c" "Chunk size" tlon-translate-infix-set-chunk-size)
-    ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
+    ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)
+    ("r -e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)]
    ["General options"
-    ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
-    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
 (provide 'tlon-translate)
