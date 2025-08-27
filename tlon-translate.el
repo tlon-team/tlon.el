@@ -539,6 +539,9 @@ TYPE can be `errors' or `flow'."
            (ranges '()))
       (setq ranges (tlon-translate--build-chunk-ranges total chunk-size))
       (when ranges
+        (message "Sending %d revision chunk%s to the AI… please wait."
+                 (length ranges)
+                 (if (= (length ranges) 1) "" "s"))
 	(if (<= (length ranges) tlon-translate-revise-max-parallel)
 	    ;; Few enough chunks → process them all in parallel.
 	    (tlon-translate--revise-parallel
