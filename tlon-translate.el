@@ -561,8 +561,16 @@ TYPE can be `errors' or `flow'."
     (range idx translation-file original-file type prompt-template model
            lang-code tools orig-paras trans-paras &optional after-fn)
   "Send an AI revision request for a single paragraph RANGE.
-RANGE is a cons cell (START . END).  IDX is the chunk index and is
-only used for debugging/logging."
+RANGE is a cons cell (START . END) specifying the paragraph range to revise. IDX
+is the chunk index and is only used for debugging/logging. TRANSLATION-FILE is
+the path to the translation file being revised. ORIGINAL-FILE is the path to the
+original source file. TYPE specifies the type of revision being performed.
+PROMPT-TEMPLATE is the template string for constructing the AI prompt. MODEL
+specifies which AI model to use for the revision request. LANG-CODE is the
+language code for the translation (currently unused). TOOLS specifies AI tools
+to be used in the request. ORIG-PARAS is a list of original paragraphs from the
+source text. TRANS-PARAS is a list of translated paragraphs to be revised.
+AFTER-FN is an optional function to call after the revision is complete."
   (ignore idx lang-code after-fn)           ;; silence byte-compiler
   (let* ((start (car range))
          (end   (cdr range))
@@ -583,7 +591,17 @@ only used for debugging/logging."
 (defun tlon-translate--revise-process-chunks
     (ranges idx translation-file original-file type prompt-template model
             lang-code language tools orig-paras trans-paras)
-  "Recursively send AI revision requests for paragraph RANGES."
+  "Recursively send AI revision requests for paragraph RANGES.
+RANGES is a list of cons cells (START . END) specifying paragraph ranges to
+revise. IDX is the current chunk index used for debugging/logging.
+TRANSLATION-FILE is the path to the translation file being revised.
+ORIGINAL-FILE is the path to the original source file. TYPE specifies the type
+of revision being performed. PROMPT-TEMPLATE is the template string for
+constructing AI prompts. MODEL specifies which AI model to use for revision
+requests. LANG-CODE is the language code for the translation. LANGUAGE is the
+target language name. TOOLS specifies AI tools to be used in requests.
+ORIG-PARAS is a list of original paragraphs from the source text. TRANS-PARAS is
+a list of translated paragraphs to be revised."
   (when ranges
     (let* ((current (car ranges))
            (rest (cdr ranges)))
