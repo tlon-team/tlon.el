@@ -539,8 +539,6 @@ TYPE can be `errors' or `flow'."
            (ranges '()))
       (setq ranges (tlon-translate--build-chunk-ranges total chunk-size))
       (when ranges
-	;; Always process chunks sequentially to avoid concurrent edits to
-	;; the same file, which triggered Emacs “changed on disk” prompts.
 	(tlon-translate--revise-sequential
 	 ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras)))))
 
@@ -553,6 +551,7 @@ TYPE can be `errors' or `flow'."
       (setq i (+ i chunk-size)))
     (nreverse ranges)))
 
+;; MAYBE: support parallel requests.
 (defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model tools orig-paras trans-paras)
   "Use parallel processing to revise translation in RANGES.
 RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
@@ -596,25 +595,29 @@ PARALLEL-P indicates whether processing is parallel or sequential."
 ;;;;;; chunk helpers
 
 (defun tlon-translate--gptel-callback-simple (translation-file type start end after-fn)
-  "Return a gptel callback suitable for sequential chunk processing."
+  "Return a gptel callback suitable for sequential chunk processing.
+TRANSLATION-FILE is the file path where the translation will be stored. TYPE
+specifies the type of translation operation being performed. START is the
+starting position in the buffer for the translation chunk. END is the ending
+position in the buffer for the translation chunk. AFTER-FN is a function to call
+after the translation request is finished, or nil if no post-processing is
+needed."
   (let ((fired nil))
     (lambda (response info)
       ;; Forward text fragments (or the sole final text) to the real handler.
       (when (stringp response)
         (tlon-translate--revise-callback
          response info translation-file type start end))
-
       ;; Surface errors so the user sees them, but still advance.
       (when (and (not (stringp response))
                  (or (plist-get info :error)
                      (let ((st (plist-get info :status)))
                        (and (numberp st) (>= st 400)))))
         (tlon-ai-callback-fail info))
-
       ;; Decide when the request is *finished* and fire AFTER-FN once.
       (when (and (not fired)
                  (or
-                  ;; non-streaming mode → single call means we’re done
+                  ;; non-streaming mode → single call means we're done
                   (not tlon-translate-revise-stream)
                   ;; explicit done/final flags (plist or alist)
                   (plist-get info :done) (alist-get 'done info)
