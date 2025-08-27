@@ -586,7 +586,14 @@ PARALLEL-P indicates whether processing is parallel or sequential."
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
             tools orig-paras trans-paras)
-  "Process RANGES in parallel batches of `tlon-translate-revise-max-parallel'."
+  "Process RANGES in parallel batches of `tlon-translate-revise-max-parallel'.
+RANGES is a list of ranges to process. TRANSLATION-FILE is the path to the
+translation file being revised. ORIGINAL-FILE is the path to the original file
+being translated. TYPE specifies the type of translation or revision operation.
+PROMPT is the prompt text to use for the translation model. MODEL specifies
+which translation model to use. TOOLS are additional tools or parameters for the
+translation process. ORIG-PARAS contains the original paragraphs from the source
+text. TRANS-PARAS contains the translated paragraphs being revised."
   (cl-labels
       ((process (remaining idx)
          (if (null remaining)
