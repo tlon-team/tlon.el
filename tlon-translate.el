@@ -608,6 +608,7 @@ chunk."
           lang-code language tools orig-paras trans-paras))
        model t nil tools))))
 
+(declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
 RESPONSE is the AI's response. INFO is the response info. FILE is the file to
