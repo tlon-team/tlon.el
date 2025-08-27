@@ -548,7 +548,7 @@ TYPE can be `errors' or `flow'."
 	  ;; of `tlon-translate-revise-max-parallel'.
 	  (tlon-translate--revise-parallel-batches
 	   ranges translation-file original-file type prompt model
-	   lang-code language tools orig-paras trans-paras))))))
+	   tools orig-paras trans-paras))))))
 
 (defun tlon-translate--build-chunk-ranges (total chunk-size)
   "Build chunk ranges (START . END) for TOTAL items with CHUNK-SIZE."
