@@ -672,6 +672,12 @@ If nil, use the default model."
   :variable 'tlon-translate-revise-chunk-size
   :reader (lambda (_ _ _) (read-number "Chunk size (paragraphs): " tlon-translate-revise-chunk-size)))
 
+(transient-define-infix tlon-translate-infix-set-max-parallel ()
+  "Set maximum number of parallel revision requests."
+  :class 'transient-lisp-variable
+  :variable 'tlon-translate-revise-max-parallel
+  :reader (lambda (_ _ _) (read-number "Max parallel requests: " tlon-translate-revise-max-parallel)))
+
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
@@ -691,7 +697,8 @@ If nil, use the default model."
     "Options"
     ("r -e" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
     ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
-    ("r -c" "Chunk size" tlon-translate-infix-set-chunk-size)]
+    ("r -c" "Chunk size" tlon-translate-infix-set-chunk-size)
+    ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
