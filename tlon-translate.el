@@ -583,7 +583,7 @@ original paragraphs. TRANS-PARAS are the translated paragraphs."
 ;; until RANGES is exhausted.
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
-            lang-code language tools orig-paras trans-paras)
+            tools orig-paras trans-paras)
   "Process RANGES in parallel batches of `tlon-translate-revise-max-parallel'."
   (cl-labels
       ((process (remaining idx)
