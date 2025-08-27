@@ -28,6 +28,7 @@
 
 (require 'tlon-ai)
 (require 'tlon-md)
+(require 'tlon-yaml)
 (require 'transient)
 
 ;;;; User options
@@ -60,14 +61,10 @@ for each paragraph. If FILE is nil, use the current buffer."
                          (current-buffer)))) ; Use current buffer if file is nil or buffer object
     (with-current-buffer buffer-to-use
       (save-excursion
-	(let ((content-begin (or (cdr (tlon-get-delimited-region-pos
-				       tlon-yaml-delimiter))
-				 (point-min)))
-	      (content-end (or (car (tlon-get-delimited-region-pos
-                                     tlon-md-local-variables-line-start
-                                     tlon-md-local-variables-line-end))
-                               (point-max)))
-              result)
+	(let* ((bounds (tlon-paragraphs--content-boundaries))
+               (content-begin (car bounds))
+               (content-end (cdr bounds))
+               result)
 	  (goto-char content-begin)
           (while (and (< (point) content-end)
                       (not (looking-at-p tlon-md-local-variables-line-start)))
@@ -84,6 +81,19 @@ for each paragraph. If FILE is nil, use the current buffer."
 			  (funcall fn start end))
 			result)))))
           (nreverse result))))))
+
+(defun tlon-paragraphs--content-boundaries ()
+  "Return cons (BEGIN . END) for the current buffer's main content.
+BEGIN is the position just after the YAML front matter (if any) and END is the
+position just before the local variables section (if any)."
+  (save-excursion
+    (let ((begin (or (cdr (tlon-get-delimited-region-pos tlon-yaml-delimiter))
+                     (point-min)))
+          (end (or (car (tlon-get-delimited-region-pos
+                         tlon-md-local-variables-line-start
+                         tlon-md-local-variables-line-end))
+                   (point-max))))
+      (cons begin end))))
 
 ;;;;; Display paragraphs
 
@@ -186,13 +196,18 @@ region, prompt for a file and count its paragraphs."
 ;;;###autoload
 (defun tlon-get-number-of-paragraphs (&optional start end)
   "Return the number of paragraphs between START and END.
-START and END are buffer positions. If START is nil, use `point-min'.
-If END is nil, use `point-max'."
-  (let ((positions (tlon-with-paragraphs nil #'ignore t)))
+START and END are buffer positions. If START is nil, use the beginning of the
+main content (after the YAML front matter). If END is nil, use the end of the
+main content (before the local variables section). Exclude front matter and
+local variables sections."
+  (let* ((bounds (tlon-paragraphs--content-boundaries))
+         (start (or start (car bounds)))
+         (end   (or end   (cdr bounds)))
+         (positions (tlon-with-paragraphs nil #'ignore t)))
     (cl-count-if (lambda (pos)
-		   (and (>= (car pos) (or start (point-min)))
-			(< (cdr pos) (or end (point-max)))))
-		 positions)))
+                   (and (>= (car pos) start)
+                        (<=  (cdr pos) end)))
+                 positions)))
 
 ;;;;; Align paragraphs
 
