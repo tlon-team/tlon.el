@@ -585,6 +585,37 @@ PARALLEL-P indicates whether processing is parallel or sequential."
 
 ;;;;;; chunk helpers
 
+;; Callback helper that relies solely on the callback “shape” to detect
+;; completion.  We forward any text RESPONSE to the usual
+;; `tlon-translate--revise-callback' and run AFTER-FN exactly once when
+;; gptel lets us know the request is finished (:done flag) or when an
+;; error is returned, so the scheduler never stalls.
+(defun tlon-translate--gptel-callback-simple (translation-file type start end after-fn)
+  "Return a gptel callback suitable for sequential chunk processing.
+
+TRANSLATION-FILE, TYPE, START and END are passed through to
+`tlon-translate--revise-callback'.  AFTER-FN is invoked once, when INFO
+carries the :done flag (or an error shape), signalling that this
+request is complete."
+  (let ((fired nil))
+    (lambda (response info)
+      ;; Streamed or final text → process normally.
+      (when (stringp response)
+        (tlon-translate--revise-callback
+         response info translation-file type start end))
+      ;; Error shapes → surface and advance.
+      (when (and (not (stringp response))
+                 (or (plist-get info :error)
+                     (let ((st (plist-get info :status)))
+                       (and (numberp st) (>= st 400)))))
+        (tlon-ai-callback-fail info))
+      ;; Advance exactly once when :done is present.
+      (when (plist-get info :done)
+        (unless fired
+          (setq fired t)
+          (when (functionp after-fn)
+            (funcall after-fn)))))))
+
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
            tools orig-paras trans-paras &optional after-fn)
@@ -610,22 +641,9 @@ AFTER-FN is an optional function to call after the revision is complete."
 					     comparison))))
     (tlon-make-gptel-request
      prompt nil
-     ;; The callback supplied to `gptel' is invoked repeatedly while the
-     ;; response is streamed.  Running our post-processing (`after-fn') on every
-     ;; chunk caused runaway recursion and UI freezes.  We now execute it only
-     ;; once, when the stream is finished (signalled by the :done flag that
-     ;; gptel adds to INFO).
-     (let ((done nil))
-       (lambda (response info)
-         (when (or (plist-get info :done)           ; gptel ≥ 0.8
-                   (alist-get 'done info)           ; < gptel 0.8
-                   (string= (plist-get info :finish_reason) "stop") ; OpenAI API
-                   (string= (alist-get 'finish_reason info) "stop")) ; alist variant
-           (tlon-translate--revise-callback response info translation-file type start end)
-           (unless done
-             (setq done t)
-             (when after-fn (funcall after-fn))))))
-     model t nil tools)))
+     (tlon-translate--gptel-callback-simple
+      translation-file type start end after-fn)
+     model tlon-translate-revise-stream nil tools)))
 
 (defun tlon-translate--revise-process-chunks
     (ranges idx translation-file original-file type prompt-template model
