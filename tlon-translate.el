@@ -577,9 +577,9 @@ AFTER-FN is an optional function to call after the revision is complete."
          (trans-chunk (cl-subseq trans-paras start end))
          (comparison (tlon-paragraphs--get-comparison-buffer-content
                       translation-file original-file trans-chunk orig-chunk nil))
-         (prompt (concat
-                  prompt-template
-                  comparison)))
+         (prompt (tlon-ai-maybe-edit-prompt (concat
+					     prompt-template
+					     comparison))))
     (tlon-make-gptel-request
      prompt nil
      (lambda (response info)
