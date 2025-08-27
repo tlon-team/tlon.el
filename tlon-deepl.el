@@ -39,7 +39,7 @@
   "DeepL functionality for Tlön."
   :group 'tlon)
 
-(defcustom tlon-deepl-model-type "latency_optimized"
+(defcustom tlon-deepl-model-type "quality_optimized"
   "Model type for DeepL translation.
 Possible values are:
 
