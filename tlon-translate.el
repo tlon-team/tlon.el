@@ -655,15 +655,28 @@ needed."
           (funcall after-fn))))))
 
 (defun tlon-translate--kill-indirect-buffers-of-file (file)
-  "Kill all indirect buffers whose base buffer visits FILE.
-AI-revision helpers create temporary indirect buffers to build the
-paragraph comparison.  They are no longer needed once the prompt has
-been constructed and would otherwise accumulate."
-  (dolist (buf (buffer-list))
-    (let ((base (buffer-base-buffer buf)))
-      (when (and base
-                 (eq base (get-file-buffer file)))
-        (kill-buffer buf)))))
+  "Kill *every* indirect buffer ultimately derived from FILE.
+
+`clone-indirect-buffer' produces names like \"foo.md<1>\" whose
+`buffer-base-buffer' may itself be indirect.  Follow the chain up to the
+first real buffer and compare its `buffer-file-name' against FILE
+(using `file-name-same-p' to survive symlinks).
+
+Any buffer that is *not* that real buffer, but is in the chain, is an
+indirect clone that can be safely killed."
+  (let ((file (expand-file-name file)))
+    (dolist (buf (buffer-list))
+      (when-let* ((base buf)
+                  ;; Walk up the chain of base buffers.
+                  (real (while (buffer-base-buffer base)
+                          (setq base (buffer-base-buffer base)))
+                        base)
+                  (real-file (buffer-file-name real)))
+        ;; BUF is indirect iff it is not the REAL buffer itself.
+        (when (and (not (eq buf real))
+                   real-file
+                   (file-name-same-p real-file file))
+          (kill-buffer buf)))))
 
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
