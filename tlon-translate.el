@@ -575,12 +575,6 @@ original paragraphs. TRANS-PARAS are the translated paragraphs."
 	       orig-paras trans-paras))
   (tlon-translate--message-revise-request translation-file ranges t))
 
-;; -------------------------------------------------------------------
-;; Batched parallel processing
-;; -------------------------------------------------------------------
-;; Fire at most `tlon-translate-revise-max-parallel' requests at once.
-;; When the last request in a batch finishes we launch the next batch,
-;; until RANGES is exhausted.
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
             tools orig-paras trans-paras)
@@ -607,31 +601,6 @@ original paragraphs. TRANS-PARAS are the translated paragraphs."
                     ;; Batch finished – launch next one.
                     (process rest (+ idx (length batch)))))))))))
     (process ranges 0)))
-
-(defun tlon-translate--revise-sequential (ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras)
-  "Use sequential processing to revise translation in RANGES.
-RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
-translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
-type of revision. PROMPT is the prompt to use for revision. MODEL is the AI
-model to use. LANG-CODE is the language code for the translation. LANGUAGE is
-the target language name. TOOLS are the tools available for the revision.
-ORIG-PARAS are the original paragraphs. TRANS-PARAS are the translated
-paragraphs."
-  ;; Process chunks back-to-front so edits inserted by earlier chunks
-  ;; do not shift the paragraph positions of the remaining ones.
-  (let ((rev-ranges (reverse ranges)))
-    (tlon-translate--revise-process-chunks
-     rev-ranges 0 translation-file original-file type prompt model
-     lang-code language tools orig-paras trans-paras)
-    (tlon-translate--message-revise-request translation-file rev-ranges nil)))
-
-(defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
-  "Display message about AI revision request for TRANSLATION-FILE with RANGES.
-PARALLEL-P indicates whether processing is parallel or sequential."
-  (message "Requesting AI to revise %s in %d %s chunks..."
-	   (file-name-nondirectory translation-file)
-	   (length ranges)
-	   (if parallel-p "parallel" "paragraph")))
 
 ;;;;;; chunk helpers
 
@@ -776,7 +745,7 @@ END is the ending paragraph number."
 				      ('errors "Check errors in %s (AI)")
 				      ('flow "Improve flow in %s (AI)"))
 				    (tlon-get-key-from-file file))
-			    file)))))
+			    file))))))
 
 ;;;;; Menu
 
