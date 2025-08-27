@@ -503,57 +503,82 @@ TYPE can be `errors' or `flow'."
          (original-file (if-let* ((counterpart (tlon-get-counterpart translation-file)))
 			    (expand-file-name counterpart)
 			  (read-file-name "Original file: "))))
+    (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
+      (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
     (let* ((lang-code (tlon-get-language-in-file translation-file))
            (language (tlon-lookup tlon-languages-properties :standard :code lang-code))
-           (prompt-template (pcase type
-                              ('errors tlon-translate-revise-errors-prompt)
-                              ('flow tlon-translate-revise-flow-prompt)))
            (model (pcase type
                     ('errors tlon-translate-revise-errors-model)
                     ('flow tlon-translate-revise-flow-model)))
            (tools '("edit_file" "apply_diff" "replace_file_contents"))
-	   (prompt-elts (delq nil
-			      (list prompt-template translation-file (capitalize language))))
+           (prompt-template (pcase type
+                              ('errors tlon-translate-revise-errors-prompt)
+                              ('flow tlon-translate-revise-flow-prompt)))
+	   (prompt-elts (delq nil (list prompt-template translation-file (capitalize language))))
 	   (glossary-file (when (and (eq type 'flow)
 				     (tlon-extract-glossary lang-code 'deepl-editor))
 			    (tlon-glossary-target-path lang-code 'deepl-editor)))
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
-	   (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
-      (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
-	(user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
-  (let* ((orig-paras  (tlon-with-paragraphs original-file))
-         (trans-paras (tlon-with-paragraphs translation-file))
-         (chunk-size  tlon-translate-revise-chunk-size)
-         (total       (length orig-paras))
-         (ranges '()))
-    ;; build chunk ranges (START . END)
-    (let ((i 0))
-      (while (< i total)
-        (push (cons i (min total (+ i chunk-size))) ranges)
-        (setq i (+ i chunk-size))))
-    (setq ranges (nreverse ranges))
-    (when ranges
-      (if (<= (length ranges) tlon-translate-revise-max-parallel)
-          (progn
-	    ;; dispatch all chunk requests in parallel
-	    (cl-loop for r in ranges
-		     for idx from 0
-		     do (tlon-translate--revise-send-range
-                         r translation-file original-file type
-                         prompt model tools
-                         orig-paras trans-paras))
-	    (message "Requesting AI to revise %s in %d parallel chunks..."
-		     (file-name-nondirectory translation-file)
-		     (length ranges)))
-        ;; fall back to sequential processing
-        (progn
-          (tlon-translate--revise-process-chunks
-           ranges 0 translation-file original-file type prompt model
-           lang-code language tools orig-paras trans-paras)
-          (message "Requesting AI to revise %s in %d paragraph chunks..."
-                   (file-name-nondirectory translation-file)
-                   (length ranges)))))))))
+	   (prompt (concat (apply 'format prompt-elts) glossary-prompt))
+	   (orig-paras  (tlon-with-paragraphs original-file))
+           (trans-paras (tlon-with-paragraphs translation-file))
+           (chunk-size  tlon-translate-revise-chunk-size)
+           (total       (length orig-paras))
+           (ranges '()))
+      (setq ranges (tlon-translate--build-chunk-ranges total chunk-size))
+      (when ranges
+	(if (<= (length ranges) tlon-translate-revise-max-parallel)
+	    (tlon-translate--revise-parallel
+	     ranges translation-file original-file type prompt model tools orig-paras trans-paras)
+	  (tlon-translate--revise-sequential
+	   ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras))))))
+
+(defun tlon-translate--build-chunk-ranges (total chunk-size)
+  "Build chunk ranges (START . END) for TOTAL items with CHUNK-SIZE."
+  (let ((ranges '())
+        (i 0))
+    (while (< i total)
+      (push (cons i (min total (+ i chunk-size))) ranges)
+      (setq i (+ i chunk-size)))
+    (nreverse ranges)))
+
+(defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model tools orig-paras trans-paras)
+  "Use parallel processing to revise translation in RANGES.
+RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
+translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
+type of revision. PROMPT is the prompt to use for revision. MODEL is the AI
+model to use. TOOLS are the tools available for the revision. ORIG-PARAS are the
+original paragraphs. TRANS-PARAS are the translated paragraphs."
+  (cl-loop for r in ranges
+	   for idx from 0
+	   do (tlon-translate--revise-send-range
+	       r translation-file original-file type
+	       prompt model tools
+	       orig-paras trans-paras))
+  (tlon-translate--message-revise-request translation-file ranges t))
+
+(defun tlon-translate--revise-sequential (ranges translation-file original-file type prompt model lang-code language tools orig-paras trans-paras)
+  "Use sequential processing to revise translation in RANGES.
+RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
+translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
+type of revision. PROMPT is the prompt to use for revision. MODEL is the AI
+model to use. LANG-CODE is the language code for the translation. LANGUAGE is
+the target language name. TOOLS are the tools available for the revision.
+ORIG-PARAS are the original paragraphs. TRANS-PARAS are the translated
+paragraphs."
+  (tlon-translate--revise-process-chunks
+   ranges 0 translation-file original-file type prompt model
+   lang-code language tools orig-paras trans-paras)
+  (tlon-translate--message-revise-request translation-file ranges nil))
+
+(defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
+  "Display message about AI revision request for TRANSLATION-FILE with RANGES.
+PARALLEL-P indicates whether processing is parallel or sequential."
+  (message "Requesting AI to revise %s in %d %s chunks..."
+	   (file-name-nondirectory translation-file)
+	   (length ranges)
+	   (if parallel-p "parallel" "paragraph")))
 
 ;;;;;; chunk helpers
 
