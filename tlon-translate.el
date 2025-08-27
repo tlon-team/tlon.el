@@ -56,8 +56,8 @@ created by gptel’s tool handlers has already been killed."
                  (message "tlon: ignored gptel error: %s"
                           (error-message-string err))
                (signal (car err) (cdr err)))))
-  (advice-add 'gptel--handle-tool-use :around
-              #'tlon--gptel-ignore-deleted-buffer))
+    (advice-add 'gptel--handle-tool-use :around
+		#'tlon--gptel-ignore-deleted-buffer)))
 
 ;;;; User options
 
