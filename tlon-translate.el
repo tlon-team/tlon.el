@@ -727,10 +727,6 @@ AFTER-FN is an optional function to call after the revision is complete."
 RESPONSE is the AI's response. INFO is the response info. FILE is the file to
 commit. TYPE is the revision type. START is the starting paragraph number.
 END is the ending paragraph number."
-  ;; Only treat this as a failure when INFO actually contains an error
-  ;; or a HTTP status ≥ 400.  `gptel' often makes a final callback with
-  ;; RESPONSE=nil and no error info – that should *not* be reported as
-  ;; a failure.
   (cond
    ((or (plist-get info :error)
         (let ((st (plist-get info :status)))
