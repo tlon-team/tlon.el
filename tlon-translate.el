@@ -39,6 +39,26 @@
 (require 'tlon-paragraphs)
 (require 'cl-lib)
 
+;; ---------------------------------------------------------------------
+;; Patch gptel to ignore intermittent “Selecting deleted buffer” errors
+;; that sometimes occur after tool-based edits to the same file.
+;; ---------------------------------------------------------------------
+(with-eval-after-load 'gptel
+  (defun tlon--gptel-ignore-deleted-buffer (orig-fn &rest args)
+    "Call ORIG-FN while silencing \"Selecting deleted buffer\" errors.
+
+These errors are benign and arise when the temporary diff buffer
+created by gptel’s tool handlers has already been killed."
+    (condition-case err
+        (apply orig-fn args)
+      (error (if (string-match-p "Selecting deleted buffer"
+                                 (error-message-string err))
+                 (message "tlon: ignored gptel error: %s"
+                          (error-message-string err))
+               (signal (car err) (cdr err)))))
+  (advice-add 'gptel--handle-tool-use :around
+              #'tlon--gptel-ignore-deleted-buffer))
+
 ;;;; User options
 
 (defgroup tlon-translate nil
