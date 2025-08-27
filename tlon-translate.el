@@ -559,7 +559,6 @@ TYPE can be `errors' or `flow'."
       (setq i (+ i chunk-size)))
     (nreverse ranges)))
 
-;; MAYBE: support parallel requests.
 (defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model tools orig-paras trans-paras)
   "Use parallel processing to revise translation in RANGES.
 RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
@@ -597,7 +596,6 @@ text. TRANS-PARAS contains the translated paragraphs being revised."
   (cl-labels
       ((process (remaining idx)
          (if (null remaining)
-             ;; All work done – final message.
              (message "All %d chunk%s processed for %s."
                       idx (if (= idx 1) "" "s")
                       (file-name-nondirectory translation-file))
