@@ -571,7 +571,6 @@ language code for the translation (currently unused). TOOLS specifies AI tools
 to be used in the request. ORIG-PARAS is a list of original paragraphs from the
 source text. TRANS-PARAS is a list of translated paragraphs to be revised.
 AFTER-FN is an optional function to call after the revision is complete."
-  ;; AFTER-FN is optional and may be nil when the call does not need chaining
   (let* ((start (car range))
          (end   (cdr range))
          (orig-chunk  (cl-subseq orig-paras start end))
