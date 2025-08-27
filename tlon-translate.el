@@ -669,6 +669,20 @@ needed."
         (when (functionp after-fn)
           (funcall after-fn))))))
 
+;; -------------------------------------------------------------------
+;; Helper: kill transient indirect buffers
+;; -------------------------------------------------------------------
+(defun tlon-translate--kill-indirect-buffers-of-file (file)
+  "Kill all indirect buffers whose base buffer visits FILE.
+AI-revision helpers create temporary indirect buffers to build the
+paragraph comparison.  They are no longer needed once the prompt has
+been constructed and would otherwise accumulate."
+  (dolist (buf (buffer-list))
+    (let ((base (buffer-base-buffer buf)))
+      (when (and base
+                 (eq base (get-file-buffer file)))
+        (kill-buffer buf)))))
+
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
            tools orig-paras trans-paras &optional after-fn)
@@ -692,6 +706,9 @@ AFTER-FN is an optional function to call after the revision is complete."
          (prompt (tlon-ai-maybe-edit-prompt (concat
 					     prompt-template
 					     comparison))))
+    ;; Clean up the transient indirect buffers created for COMPARISON.
+    (tlon-translate--kill-indirect-buffers-of-file translation-file)
+    (tlon-translate--kill-indirect-buffers-of-file original-file)
     (tlon-make-gptel-request
      prompt nil
      (tlon-translate--gptel-callback-simple
