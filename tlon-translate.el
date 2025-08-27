@@ -522,40 +522,40 @@ TYPE can be `errors' or `flow'."
 	   (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
       (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
 	(user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
-      (let* ((orig-paras  (tlon-with-paragraphs original-file))
-             (trans-paras (tlon-with-paragraphs translation-file))
-             (chunk-size  tlon-translate-revise-chunk-size)
-             (total       (length orig-paras))
-             (ranges '()))
-	;; build chunk ranges (START . END)
-	(let ((i 0))
-          (while (< i total)
-            (push (cons i (min total (+ i chunk-size))) ranges)
-            (setq i (+ i chunk-size))))
-	(setq ranges (nreverse ranges))
-	(when ranges
-          (if (<= (length ranges) tlon-translate-revise-max-parallel)
-              (progn
-		;; dispatch all chunk requests in parallel
-		(cl-loop for r in ranges
-			 for idx from 0
-			 do (tlon-translate--revise-send-range
-                             r translation-file original-file type
-                             prompt model tools
-                             orig-paras trans-paras))
-		(message "Requesting AI to revise %s in %d parallel chunks..."
-			 (file-name-nondirectory translation-file)
-			 (length ranges)))
-            ;; fall back to sequential processing
-            (progn
-              (tlon-translate--revise-process-chunks
-               ranges 0 translation-file original-file type prompt model
-               lang-code language tools orig-paras trans-paras)
-              (message "Requesting AI to revise %s in %d paragraph chunks..."
-                       (file-name-nondirectory translation-file)
-                       (length ranges)))))))))
+  (let* ((orig-paras  (tlon-with-paragraphs original-file))
+         (trans-paras (tlon-with-paragraphs translation-file))
+         (chunk-size  tlon-translate-revise-chunk-size)
+         (total       (length orig-paras))
+         (ranges '()))
+    ;; build chunk ranges (START . END)
+    (let ((i 0))
+      (while (< i total)
+        (push (cons i (min total (+ i chunk-size))) ranges)
+        (setq i (+ i chunk-size))))
+    (setq ranges (nreverse ranges))
+    (when ranges
+      (if (<= (length ranges) tlon-translate-revise-max-parallel)
+          (progn
+	    ;; dispatch all chunk requests in parallel
+	    (cl-loop for r in ranges
+		     for idx from 0
+		     do (tlon-translate--revise-send-range
+                         r translation-file original-file type
+                         prompt model tools
+                         orig-paras trans-paras))
+	    (message "Requesting AI to revise %s in %d parallel chunks..."
+		     (file-name-nondirectory translation-file)
+		     (length ranges)))
+        ;; fall back to sequential processing
+        (progn
+          (tlon-translate--revise-process-chunks
+           ranges 0 translation-file original-file type prompt model
+           lang-code language tools orig-paras trans-paras)
+          (message "Requesting AI to revise %s in %d paragraph chunks..."
+                   (file-name-nondirectory translation-file)
+                   (length ranges)))))))))
 
-;;;;;;  Parallel helper: send a single-chunk revision request
+;;;;;; chunk helpers
 
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
