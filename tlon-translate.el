@@ -36,6 +36,8 @@
 (require 'transient)
 (require 'magit)
 (require 'tlon-yaml)
+(require 'tlon-paragraphs)
+(require 'cl-lib)
 
 ;;;; User options
 
@@ -70,6 +72,13 @@ available options. If nil, use the default `gptel-model'."
   "Whether to commit changes after an AI revision."
   :group 'tlon-translate
   :type 'boolean)
+
+(defcustom tlon-translate-revise-chunk-size 10
+  "Number of aligned paragraphs sent per AI revision request.
+The AI will process the translation in batches of this many
+paragraphs to avoid extremely large prompts."
+  :group 'tlon-translate
+  :type 'integer)
 
 ;;;; Variables
 
@@ -506,18 +515,66 @@ TYPE can be `errors' or `flow'."
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
            (prompt (concat (apply 'format prompt-elts) glossary-prompt)))
-      (gptel-context-add-file original-file)
-      (gptel-context-add-file translation-file)
-      (when glossary-file
-	(gptel-context-add-file glossary-file))
-      (tlon-make-gptel-request prompt nil
-                               (lambda (response info)
-				 (tlon-translate--revise-callback response info translation-file type))
-                               model t nil tools)
-      (gptel-context-remove-all)
-      (message "Requesting AI to revise %s..." (file-name-nondirectory translation-file)))))
+      ;; ensure paragraph alignment before proceeding
+      (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
+        (user-error "Files have different paragraph counts; align them first with `tlon-paragraphs-align-with-ai'"))
+
+      (let* ((orig-paras  (tlon-with-paragraphs original-file))
+             (trans-paras (tlon-with-paragraphs translation-file))
+             (chunk-size  tlon-translate-revise-chunk-size)
+             (total       (length orig-paras))
+             (ranges '()))
+        ;; build chunk ranges (START . END)
+        (let ((i 0))
+          (while (< i total)
+            (push (cons i (min total (+ i chunk-size))) ranges)
+            (setq i (+ i chunk-size))))
+        (setq ranges (nreverse ranges))
+        (when ranges
+          (tlon-translate--revise-process-chunks
+           ranges 0 translation-file original-file type prompt-template model
+           lang-code language tools orig-paras trans-paras)
+          (message "Requesting AI to revise %s in %d paragraph chunks..."
+                   (file-name-nondirectory translation-file) (length ranges))))))
 
 (declare-function magit-stage-files "magit-apply")
+(defun tlon-translate--revise-process-chunks
+    (ranges idx translation-file original-file type prompt-template model
+            lang-code language tools orig-paras trans-paras)
+  "Recursively send AI revision requests for paragraph RANGES.
+
+RANGES is a list of cons cells (START . END) indicating paragraph
+indices to process.  IDX is the zero-based index of the current
+chunk."
+  (when ranges
+    (let* ((current (car ranges))
+           (rest    (cdr ranges))
+           (start   (car current))
+           (end     (cdr current))
+           (orig-chunk  (cl-subseq orig-paras start end))
+           (trans-chunk (cl-subseq trans-paras start end))
+           (comparison (tlon-paragraphs--get-comparison-buffer-content
+                        translation-file original-file trans-chunk orig-chunk nil))
+           (prompt (concat
+                    (apply #'format (list prompt-template
+                                          (file-name-nondirectory translation-file)
+                                          language
+                                          (file-name-nondirectory original-file)))
+                    (format
+                     "\n\nFocus ONLY on paragraphs %d–%d (of %d). Review the comparison below and edit the translation file accordingly:\n```\n%s\n```"
+                     (1+ start) end (length orig-paras) comparison))))
+      (gptel-context-add-file original-file)
+      (gptel-context-add-file translation-file)
+      (tlon-make-gptel-request
+       prompt nil
+       (lambda (response info)
+         (tlon-translate--revise-callback response info translation-file type)
+         (gptel-context-remove-all)
+         (tlon-translate--revise-process-chunks
+          rest (1+ idx) translation-file original-file type prompt-template model
+          lang-code language tools orig-paras trans-paras))
+       model t nil tools)))
+
 (defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
 RESPONSE is the AI's response. INFO is the response info. FILE is the file to
@@ -569,6 +626,12 @@ If nil, use the default model."
   :class 'transient-lisp-variable
   :variable 'tlon-translate-revise-commit-changes
   :reader (lambda (_ _ _) (tlon-transient-toggle-variable-value 'tlon-translate-revise-commit-changes)))
+
+(transient-define-infix tlon-translate-infix-set-chunk-size ()
+  "Set paragraph chunk size for AI revision."
+  :class 'transient-lisp-variable
+  :variable 'tlon-translate-revise-chunk-size
+  :reader (lambda (_ _ _) (read-number "Chunk size (paragraphs): " tlon-translate-revise-chunk-size)))
 
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
