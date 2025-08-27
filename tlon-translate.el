@@ -584,6 +584,10 @@ AFTER-FN is an optional function to call after the revision is complete."
     (tlon-make-gptel-request
      prompt nil
      (lambda (response info)
+       ;; notify which paragraphs were just processed
+       (message "Paragraphs %d–%d processed."
+                (1+ start)                          ; convert to 1-based index
+                end)                                ; END is already exclusive upper bound
        (tlon-translate--revise-callback response info translation-file type)
        (when after-fn (funcall after-fn)))
      model t nil tools)))
