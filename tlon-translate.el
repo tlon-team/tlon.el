@@ -750,9 +750,16 @@ a list of translated paragraphs to be revised."
 RESPONSE is the AI's response. INFO is the response info. FILE is the file to
 commit. TYPE is the revision type. START is the starting paragraph number.
 END is the ending paragraph number."
-  (if (not response)
-      (tlon-ai-callback-fail info)
-    (message "Paragraphs %d–%d processed." (1+ start) end)
+  ;; Only treat this as a failure when INFO actually contains an error
+  ;; or a HTTP status ≥ 400.  `gptel' often makes a final callback with
+  ;; RESPONSE=nil and no error info – that should *not* be reported as
+  ;; a failure.
+  (cond
+   ((or (plist-get info :error)
+        (let ((st (plist-get info :status)))
+          (and (numberp st) (>= st 400))))
+    (tlon-ai-callback-fail info))
+   (response
     (run-at-time
      0 nil
      (lambda (f)
