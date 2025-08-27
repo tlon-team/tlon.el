@@ -44,6 +44,7 @@ This module provides functions for translating entire files using various transl
 + ~tlon-translate-revise-chunk-size~ :: Number of aligned paragraphs to send per AI revision request (default 10).
 #+vindex: tlon-translate-revise-max-parallel
 + ~tlon-translate-revise-max-parallel~ :: Maximum number of paragraph-chunk revision requests to dispatch concurrently (default 3).
++ ~tlon-translate-revise-stream~ :: When non-nil, AI responses are streamed; when nil (default) each chunk triggers a single callback on completion.
 
 ** Commands
 :PROPERTIES:
