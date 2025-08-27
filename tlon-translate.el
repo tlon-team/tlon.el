@@ -704,6 +704,8 @@ If nil, use the default model."
     ("r -c" "Chunk size" tlon-translate-infix-set-chunk-size)
     ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)]
    ["General options"
+    ("-e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)
+    ("-d" "debug"                                     tlon-menu-infix-toggle-debug)
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
 
 (provide 'tlon-translate)
