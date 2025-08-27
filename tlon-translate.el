@@ -668,15 +668,16 @@ indirect clone that can be safely killed."
     (dolist (buf (buffer-list))
       (when-let* ((base buf)
                   ;; Walk up the chain of base buffers.
-                  (real (while (buffer-base-buffer base)
-                          (setq base (buffer-base-buffer base)))
-                        base)
+                  (real (progn
+                          (while (buffer-base-buffer base)
+                            (setq base (buffer-base-buffer base)))
+                          base))
                   (real-file (buffer-file-name real)))
         ;; BUF is indirect iff it is not the REAL buffer itself.
         (when (and (not (eq buf real))
                    real-file
                    (file-name-same-p real-file file))
-          (kill-buffer buf)))))
+          (kill-buffer buf))))))
 
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
