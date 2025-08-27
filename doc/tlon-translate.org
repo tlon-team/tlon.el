@@ -42,6 +42,8 @@ This module provides functions for translating entire files using various transl
 + ~tlon-translate-revise-commit-changes~ :: Whether to commit changes after an AI revision.
 #+vindex: tlon-translate-revise-chunk-size
 + ~tlon-translate-revise-chunk-size~ :: Number of aligned paragraphs to send per AI revision request (default 10).
+#+vindex: tlon-translate-revise-max-parallel
++ ~tlon-translate-revise-max-parallel~ :: Maximum number of paragraph-chunk revision requests to dispatch concurrently (default 3).
 
 ** Commands
 :PROPERTIES:

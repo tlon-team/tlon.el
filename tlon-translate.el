@@ -80,6 +80,14 @@ paragraphs to avoid extremely large prompts."
   :group 'tlon-translate
   :type 'integer)
 
+(defcustom tlon-translate-revise-max-parallel 3
+  "Maximum number of paragraph-chunk revision requests to run in parallel.
+If the number of chunks to process is less than or equal to this
+value, the requests are dispatched concurrently; otherwise they
+are processed sequentially."
+  :group 'tlon-translate
+  :type 'integer)
+
 ;;;; Variables
 
 (defconst tlon-translate--engine-choices
@@ -531,13 +539,60 @@ TYPE can be `errors' or `flow'."
             (setq i (+ i chunk-size))))
         (setq ranges (nreverse ranges))
         (when ranges
-          (tlon-translate--revise-process-chunks
-           ranges 0 translation-file original-file type prompt-template model
-           lang-code language tools orig-paras trans-paras)
-          (message "Requesting AI to revise %s in %d paragraph chunks..."
-                   (file-name-nondirectory translation-file) (length ranges)))))))
+          (if (<= (length ranges) tlon-translate-revise-max-parallel)
+              (progn
+                ;; dispatch all chunk requests in parallel
+                (cl-loop for r in ranges
+                         for idx from 0
+                         do (tlon-translate--revise-send-range
+                             r idx translation-file original-file type
+                             prompt-template model lang-code language tools
+                             orig-paras trans-paras))
+                (message "Requesting AI to revise %s in %d parallel chunks..."
+                         (file-name-nondirectory translation-file)
+                         (length ranges)))
+            ;; fall back to sequential processing
+            (progn
+              (tlon-translate--revise-process-chunks
+               ranges 0 translation-file original-file type prompt-template model
+               lang-code language tools orig-paras trans-paras)
+              (message "Requesting AI to revise %s in %d paragraph chunks..."
+                       (file-name-nondirectory translation-file)
+                       (length ranges)))))))))
 
 (declare-function magit-stage-files "magit-apply")
+;;; ---------------------------------------------------------------------------
+;;;  Parallel helper: send a single-chunk revision request
+;;; ---------------------------------------------------------------------------
+(defun tlon-translate--revise-send-range
+    (range idx translation-file original-file type prompt-template model
+           lang-code language tools orig-paras trans-paras)
+  "Send an AI revision request for a single paragraph RANGE.
+
+RANGE is a cons cell (START . END).  IDX is the chunk index and is
+only used for debugging/logging."
+  (let* ((start (car range))
+         (end   (cdr range))
+         (orig-chunk  (cl-subseq orig-paras start end))
+         (trans-chunk (cl-subseq trans-paras start end))
+         (comparison (tlon-paragraphs--get-comparison-buffer-content
+                      translation-file original-file trans-chunk orig-chunk nil))
+         (prompt (concat
+                  (apply #'format (list prompt-template
+                                        (file-name-nondirectory translation-file)
+                                        language
+                                        (file-name-nondirectory original-file)))
+                  (format
+                   "\n\nFocus ONLY on paragraphs %d–%d (of %d). Review the comparison below and edit the translation file accordingly:\n```\n%s\n```"
+                   (1+ start) end (length orig-paras) comparison))))
+    (gptel-context-add-file original-file)
+    (gptel-context-add-file translation-file)
+    (tlon-make-gptel-request
+     prompt nil
+     (lambda (response info)
+       (tlon-translate--revise-callback response info translation-file type))
+     model t nil tools)))
+
 (defun tlon-translate--revise-process-chunks
     (ranges idx translation-file original-file type prompt-template model
             lang-code language tools orig-paras trans-paras)
@@ -569,7 +624,10 @@ chunk."
        prompt nil
        (lambda (response info)
          (tlon-translate--revise-callback response info translation-file type)
-         (gptel-context-remove-all)
+         ;; only clear the GPTel context after the final chunk to avoid
+         ;; killing buffers while other requests are still processing
+         (when (null rest)
+           (gptel-context-remove-all))
          (tlon-translate--revise-process-chunks
           rest (1+ idx) translation-file original-file type prompt-template model
           lang-code language tools orig-paras trans-paras))
