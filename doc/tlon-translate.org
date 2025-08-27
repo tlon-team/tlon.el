@@ -40,6 +40,8 @@ This module provides functions for translating entire files using various transl
 + ~tlon-translate-revise-flow-model~ :: Model to use for improving the flow of translations.
 #+vindex: tlon-translate-revise-commit-changes
 + ~tlon-translate-revise-commit-changes~ :: Whether to commit changes after an AI revision.
+#+vindex: tlon-translate-revise-chunk-size
++ ~tlon-translate-revise-chunk-size~ :: Number of aligned paragraphs to send per AI revision request (default 10).
 
 ** Commands
 :PROPERTIES:
@@ -82,6 +84,7 @@ It provides the following groups and commands:
   + =f= :: Improve flow (~tlon-translate-revise-flow~)
 + *Options*:
   + =c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
+  + =n= :: Paragraph chunk size (~tlon-translate-infix-set-chunk-size~)
   + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
   + =m -e= :: Revise errors model (~tlon-translate-infix-select-revise-errors-model~)
   + =m -f= :: Revise flow model (~tlon-translate-infix-select-revise-flow-model~)
