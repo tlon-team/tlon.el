@@ -98,6 +98,23 @@ to t if you prefer to see partial responses in real time."
   :group 'tlon-translate
   :type 'boolean)
 
+;;;; Logging
+
+(defconst tlon-translate-log-buffer-name "*tlon-translate-log*"
+  "Name of the buffer that collects tlon-translate progress logs.")
+
+(defun tlon-translate--log (format-string &rest args)
+  "Append formatted message to translation log buffer and echo it.
+
+FORMAT-STRING and ARGS are like in `format'.  The resulting
+message is appended to the buffer named by
+`tlon-translate-log-buffer-name' and also shown via `message'."
+  (let ((msg (apply #'format format-string args)))
+    (with-current-buffer (get-buffer-create tlon-translate-log-buffer-name)
+      (goto-char (point-max))
+      (insert msg "\n"))
+    (message "%s" msg)))
+
 ;;;; Variables
 
 (defconst tlon-translate--engine-choices
@@ -559,9 +576,9 @@ TYPE can be `errors' or `flow'."
            (ranges '()))
       (setq ranges (tlon-translate--build-chunk-ranges total chunk-size))
       (when ranges
-        (message "Sending %d revision chunk%s to the AI… please wait."
-                 (length ranges)
-                 (if (= (length ranges) 1) "" "s"))
+        (tlon-translate--log "Sending %d revision chunk%s to the AI… please wait."
+                             (length ranges)
+                             (if (= (length ranges) 1) "" "s"))
 	(if (<= (length ranges) tlon-translate-revise-max-parallel)
 	    ;; Few enough chunks → process them all in parallel.
 	    (tlon-translate--revise-parallel
@@ -600,10 +617,10 @@ original paragraphs. TRANS-PARAS are the translated paragraphs."
 (defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
   "Display message about AI revision request for TRANSLATION-FILE with RANGES.
 PARALLEL-P indicates whether processing is parallel or sequential."
-  (message "Requesting AI to revise %s in %d %s chunks..."
-	   (file-name-nondirectory translation-file)
-	   (length ranges)
-	   (if parallel-p "parallel" "paragraph")))
+  (tlon-translate--log "Requesting AI to revise %s in %d %s chunks..."
+                       (file-name-nondirectory translation-file)
+                       (length ranges)
+                       (if parallel-p "parallel" "paragraph")))
 
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
@@ -619,9 +636,9 @@ text. TRANS-PARAS contains the translated paragraphs being revised."
   (cl-labels
       ((process (remaining idx)
          (if (null remaining)
-             (message "All %d chunk%s processed for %s."
-                      idx (if (= idx 1) "" "s")
-                      (file-name-nondirectory translation-file))
+             (tlon-translate--log "All %d chunk%s processed for %s."
+                                   idx (if (= idx 1) "" "s")
+                                   (file-name-nondirectory translation-file))
            (let* ((batch (cl-subseq remaining
                                     0 (min tlon-translate-revise-max-parallel
                                            (length remaining))))
@@ -737,10 +754,10 @@ AFTER-FN is an optional function to call after the revision is complete."
           (lambda ()
             (setq tlon-translate--active-revision-processes
                   (delq proc tlon-translate--active-revision-processes))
-            (message "Finished processing chunk %s (out of %d) of %s"
-                     chunk-desc
-		     (tlon-get-number-of-paragraphs-in-file translation-file)
-                     (file-name-nondirectory translation-file))
+            (tlon-translate--log "Finished processing chunk %s (out of %d) of %s"
+                                 chunk-desc
+			         (tlon-get-number-of-paragraphs-in-file translation-file)
+                                 (file-name-nondirectory translation-file))
             (when (functionp after-fn)
               (funcall after-fn)))))
     ;; Clean up the transient indirect buffers created for COMPARISON.
