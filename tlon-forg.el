@@ -2354,6 +2354,7 @@ The command:
 		  "## Comentarios\n<!-- Opcional -->\n\n\n"
 		  "## Backtrace\n<!-- Si el backtrace es demasiado largo y GitHub lo rechaza, adjuntar como archivo txt -->\n\n\n```elisp\n\n```\n\n"
 		  "## Información del sistema\n<!-- No modificar -->\n"
+		  "\n- Config version: " (file-name-nondirectory (directory-file-name user-emacs-directory))
 		  "\n- Tlon version: " tlon-version
 		  "\n- Latest commit: " (tlon-get-latest-commit tlon-package-dir)
 		  "\n\n"))
