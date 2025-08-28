@@ -127,12 +127,15 @@ message is appended to the buffer named by
       (insert msg "\n"))
     (message "%s" msg)))
 
-(defun tlon-translate--show-log ()
+;;;###autoload
+(defun tlon-translate-show-log ()
   "Display the tlon-translate log buffer in another window."
-  (when-let ((buf (get-buffer tlon-translate-log-buffer-name)))
-    (with-current-buffer buf
-      (goto-char (point-max)))
-    (display-buffer buf)))
+  (interactive)
+  (if-let ((buf (get-buffer tlon-translate-log-buffer-name)))
+      (with-current-buffer buf
+	(goto-char (point-max)))
+    (user-error "No log buffer found"))
+  (display-buffer buf))
 
 ;;;; Variables
 
@@ -937,6 +940,7 @@ If nil, use the default model."
     ("r e" "Spot errors" tlon-translate-revise-errors)
     ("r f" "Improve flow" tlon-translate-revise-flow)
     ""
+    ("r l" "Show log" tlon-translate-show-log)
     ("r a" "Abort revision" tlon-translate-revise-abort)
     ""
     "Options"
