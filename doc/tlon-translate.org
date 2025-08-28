@@ -72,6 +72,9 @@ This module provides functions for translating entire files using various transl
 #+findex: tlon-translate-revise-flow
 + ~tlon-translate-revise-flow~ :: Use an AI agent to improve the flow of a translation. The agent is instructed to make the translation less literal, while respecting the terminology in the relevant glossary.
 
+#+findex: tlon-translate-revise-abort
++ ~tlon-translate-revise-abort~ :: Abort all ongoing revision requests, immediately stopping any remaining AI jobs.
+
 *** Transient Menu
 :PROPERTIES:
 :CUSTOM_ID: h:tlon-translate-menu

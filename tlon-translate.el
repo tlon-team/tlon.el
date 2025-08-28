@@ -138,6 +138,9 @@ to t if you prefer to see partial responses in real time."
 (defvar tlon-translate-text nil
   "The text to be translated in the current API request.")
 
+(defvar tlon-translate--active-revision-processes nil
+  "List of active processes launched by `tlon-translate' revision commands.")
+
 ;;;; Commands
 
 ;;;;; Translation
@@ -503,6 +506,24 @@ nil, use `tlon-project-target-languages'."
   (interactive)
   (tlon-translate--revise-common 'flow))
 
+;;;###autoload
+(defun tlon-translate-revise-abort ()
+  "Abort all ongoing `tlon-translate' revision requests.
+
+Any live asynchronous processes started by `tlon-translate-revise-*'
+commands are killed.  If there are no such processes, do nothing."
+  (interactive)
+  (let ((count 0))
+    (dolist (proc (copy-sequence tlon-translate--active-revision-processes))
+      (when (process-live-p proc)
+        (delete-process proc)
+        (setq count (1+ count))))
+    (setq tlon-translate--active-revision-processes nil)
+    (message (if (> count 0)
+                 "Aborted %d tlon-translate revision request%s."
+               "No tlon-translate revision requests in progress.")
+             count (if (= count 1) "" "s"))))
+
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
 (defun tlon-translate--revise-common (type)
@@ -819,6 +840,7 @@ If nil, use the default model."
     ("t -d" "DeepL model" tlon-deepl-model-type-infix)]
    ["Revise"
     ("r e" "Spot errors" tlon-translate-revise-errors)
+    ("r a" "Abort revision" tlon-translate-revise-abort)
     ("r f" "Improve flow" tlon-translate-revise-flow)
     ""
     "Options"
