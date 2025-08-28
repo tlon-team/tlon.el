@@ -181,17 +181,27 @@ count paragraphs in that range. If called interactively without an active
 region, prompt for a file and count its paragraphs."
   (interactive)
   (if (or (region-active-p) (and start end))
-      (cl-destructuring-bind (start . end)
-          (if (region-active-p)
-              (cons (region-beginning) (region-end))
-            (cons start end))
-        (message "There are %d paragraphs in the selected region."
-                 (tlon-get-number-of-paragraphs start end)))
-    (let ((file (read-file-name "File to count paragraphs in: " nil nil t
-				(file-relative-name (buffer-file-name) default-directory))))
-      (with-current-buffer (find-file-noselect file)
-        (message "There are %s paragraphs in the file `%s'."
-                 (tlon-get-number-of-paragraphs) (file-name-nondirectory file))))))
+      (tlon-count-paragraphs-in-region start end)
+    (tlon-count-paragraphs-in-file)))
+
+(defun tlon-count-paragraphs-in-region (start end)
+  "Display the number of paragraphs in the active region or between START and END."
+  (cl-destructuring-bind (start . end)
+      (if (region-active-p)
+          (cons (region-beginning) (region-end))
+        (cons start end))
+    (message "There are %d paragraphs in the selected region."
+             (tlon-get-number-of-paragraphs start end))))
+
+(defun tlon-count-paragraphs-in-file (&optional file)
+  "Display the number of paragraphs in FILE.
+If FILE is nil, prompt for it."
+  (let ((file (or file
+		  (read-file-name "File to count paragraphs in: " nil nil t
+				  (file-relative-name (buffer-file-name) default-directory)))))
+    (with-current-buffer (find-file-noselect file)
+      (message "There are %s paragraphs in the file `%s'."
+               (tlon-get-number-of-paragraphs-in-file file) (file-name-nondirectory file)))))
 
 ;;;###autoload
 (defun tlon-get-number-of-paragraphs (&optional start end)
@@ -208,6 +218,11 @@ local variables sections."
                    (and (>= (car pos) start)
                         (<=  (cdr pos) end)))
                  positions)))
+
+(defun tlon-get-number-of-paragraphs-in-file (file)
+  "Return the number of paragraphs in FILE."
+  (with-current-buffer (find-file-noselect file)
+    (tlon-get-number-of-paragraphs)))
 
 ;;;;; Align paragraphs
 
