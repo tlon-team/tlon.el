@@ -920,6 +920,7 @@ If nil, use the default model."
               (cond
                ((and (null start) (null end)) nil) ; whole file
                (t (cons start end))))))
+
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
