@@ -127,6 +127,13 @@ message is appended to the buffer named by
       (insert msg "\n"))
     (message "%s" msg)))
 
+(defun tlon-translate--show-log ()
+  "Display the tlon-translate log buffer in another window."
+  (when-let ((buf (get-buffer tlon-translate-log-buffer-name)))
+    (with-current-buffer buf
+      (goto-char (point-max)))
+    (display-buffer buf)))
+
 ;;;; Variables
 
 (defconst tlon-translate--engine-choices
@@ -548,10 +555,11 @@ commands are killed.  If there are no such processes, do nothing."
         (delete-process proc)
         (setq count (1+ count))))
     (setq tlon-translate--active-revision-processes nil)
-    (message (if (> count 0)
-                 "Aborted %d tlon-translate revision request%s."
-               "No tlon-translate revision requests in progress.")
-             count (if (= count 1) "" "s"))))
+    (tlon-translate--log (if (> count 0)
+                             "Aborted %d tlon-translate revision request%s."
+                           "No tlon-translate revision requests in progress.")
+                         count (if (= count 1) "" "s"))
+    (tlon-translate--show-log)))
 
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
@@ -663,6 +671,7 @@ text. TRANS-PARAS contains the translated paragraphs being revised."
              (tlon-translate--log "All %d chunk%s processed for %s."
                                    idx (if (= idx 1) "" "s")
                                    (file-name-nondirectory translation-file))
+             (tlon-translate--show-log)
            (let* ((batch (cl-subseq remaining
                                     0 (min tlon-translate-revise-max-parallel
                                            (length remaining))))
@@ -787,6 +796,8 @@ AFTER-FN is an optional function to call after the revision is complete."
                                    chunk-desc
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
                                    (file-name-nondirectory translation-file)))
+            (when (null tlon-translate--active-revision-processes)
+              (tlon-translate--show-log))
             (when (functionp after-fn)
               (funcall after-fn)))))
     ;; Clean up the transient indirect buffers created for COMPARISON.
