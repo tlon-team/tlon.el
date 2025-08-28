@@ -616,14 +616,16 @@ TYPE can be `errors' or `flow'."
                       base-ranges)))
       (when ranges
 	(if restrict
-            (tlon-translate--log "Sending %d revision chunk%s to the AI in range %d–%d… please wait."
+            (tlon-translate--log "\nSending %d revision chunk%s (range %d–%d) of %s…"
                                  (length ranges)
                                  (if (= (length ranges) 1) "" "s")
                                  (or (car restrict) 1)
-                                 (or (cdr restrict) total))
-          (tlon-translate--log "Sending %d revision chunk%s to the AI… please wait."
+                                 (or (cdr restrict) total)
+				 (file-name-nondirectory translation-file))
+          (tlon-translate--log "\nSending %d revision chunk%s of %s…"
                                (length ranges)
-                               (if (= (length ranges) 1) "" "s")))
+                               (if (= (length ranges) 1) "" "s")
+			       (file-name-nondirectory translation-file)))
 	(if (<= (length ranges) tlon-translate-revise-max-parallel)
 	    ;; Few enough chunks → process them all in parallel.
 	    (tlon-translate--revise-parallel
@@ -682,10 +684,10 @@ text. TRANS-PARAS contains the translated paragraphs being revised."
       ((process (remaining idx)
          (if (null remaining)
              (progn
-               (tlon-translate--log "All %d chunk%s processed for %s."
+               (tlon-translate--log "Finished processing all %d chunk%s of %s"
                                     idx (if (= idx 1) "" "s")
                                     (file-name-nondirectory translation-file))
-               (tlon-translate--show-log))
+               (tlon-translate-show-log))
            (let* ((batch (cl-subseq remaining
                                     0 (min tlon-translate-revise-max-parallel
                                            (length remaining))))
@@ -805,7 +807,7 @@ AFTER-FN is an optional function to call after the revision is complete."
                 (let ((rstart (or (car restrict) 1))
                       (rend   (or (cdr restrict)
                                   (tlon-get-number-of-paragraphs-in-file translation-file))))
-                  (tlon-translate--log "Finished processing chunk %s in range %d–%d of %s"
+                  (tlon-translate--log "Finished processing chunk %s (range %d–%d) of %s"
                                        chunk-desc rstart rend
                                        (file-name-nondirectory translation-file)))
               (tlon-translate--log "Finished processing chunk %s (out of %d) of %s"
@@ -813,19 +815,20 @@ AFTER-FN is an optional function to call after the revision is complete."
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
                                    (file-name-nondirectory translation-file)))
             (when (null tlon-translate--active-revision-processes)
-              (tlon-translate--show-log))
+              (tlon-translate-show-log))
             (when (functionp after-fn)
               (funcall after-fn)))))
     ;; Clean up the transient indirect buffers created for COMPARISON.
     (tlon-translate--kill-indirect-buffers-of-file translation-file)
     (tlon-translate--kill-indirect-buffers-of-file original-file)
-    (tlon-translate--log "Sending chunk %s %s"
+    (tlon-translate--log "Processing chunk %s %s of %s"
                          chunk-desc
                          (if restrict
                              (format " (range %d–%d)"
                                      (or (car restrict) 1)
                                      (or (cdr restrict) (tlon-get-number-of-paragraphs-in-file translation-file)))
-                           ""))
+                           "")
+			 (file-name-nondirectory translation-file))
     (setq proc
           (tlon-make-gptel-request
            prompt nil
