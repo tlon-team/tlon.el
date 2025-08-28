@@ -746,10 +746,13 @@ AFTER-FN is an optional function to call after the revision is complete."
     ;; Clean up the transient indirect buffers created for COMPARISON.
     (tlon-translate--kill-indirect-buffers-of-file translation-file)
     (tlon-translate--kill-indirect-buffers-of-file original-file)
-    (tlon-make-gptel-request
-     prompt nil
-     (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
-     model tlon-translate-revise-stream nil tools)))
+    (setq proc
+          (tlon-make-gptel-request
+           prompt nil
+           (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
+           model tlon-translate-revise-stream nil tools))
+    (push proc tlon-translate--active-revision-processes)
+    proc))
 
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type)
