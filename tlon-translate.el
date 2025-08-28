@@ -131,11 +131,12 @@ message is appended to the buffer named by
 (defun tlon-translate-show-log ()
   "Display the tlon-translate log buffer in another window."
   (interactive)
-  (if-let ((buf (get-buffer tlon-translate-log-buffer-name)))
-      (with-current-buffer buf
-	(goto-char (point-max)))
-    (user-error "No log buffer found"))
-  (display-buffer buf))
+  (let ((buf (get-buffer tlon-translate-log-buffer-name)))
+    (unless buf
+      (user-error "No log buffer found"))
+    (with-current-buffer buf
+      (goto-char (point-max)))
+    (display-buffer buf)))
 
 ;;;; Variables
 
@@ -675,10 +676,11 @@ text. TRANS-PARAS contains the translated paragraphs being revised."
   (cl-labels
       ((process (remaining idx)
          (if (null remaining)
-             (tlon-translate--log "All %d chunk%s processed for %s."
-                                   idx (if (= idx 1) "" "s")
-                                   (file-name-nondirectory translation-file))
-             (tlon-translate--show-log)
+             (progn
+               (tlon-translate--log "All %d chunk%s processed for %s."
+                                    idx (if (= idx 1) "" "s")
+                                    (file-name-nondirectory translation-file))
+               (tlon-translate--show-log))
            (let* ((batch (cl-subseq remaining
                                     0 (min tlon-translate-revise-max-parallel
                                            (length remaining))))
