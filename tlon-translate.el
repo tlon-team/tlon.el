@@ -592,7 +592,7 @@ TYPE can be `errors' or `flow'."
              (end-idx   (if restrict (min total (cdr restrict)) total)))
         (when (>= start-idx end-idx)
           (user-error "Invalid paragraph range %S" restrict))
-        (let* ((selected-count (1+ (- end-idx start-idx)))
+        (let* ((selected-count (- end-idx start-idx))
                (base-ranges (tlon-translate--build-chunk-ranges selected-count chunk-size)))
           (setq ranges
                 (mapcar (lambda (pr)
