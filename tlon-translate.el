@@ -553,16 +553,21 @@ nil, use `tlon-project-target-languages'."
 Any live asynchronous processes started by `tlon-translate-revise-*'
 commands are killed.  If there are no such processes, do nothing."
   (interactive)
-  (let ((count 0))
-    (dolist (proc (copy-sequence tlon-translate--active-revision-processes))
-      (when (process-live-p proc)
-        (delete-process proc)
-        (setq count (1+ count))))
+  ;; Filter out any nil placeholders and compute the total number of
+  ;; tracked requests before attempting to abort them.  Relying solely
+  ;; on `process-live-p' can mis-report when the underlying object is
+  ;; not an Emacs process, so we base the user message on the number of
+  ;; tracked requests instead.
+  (let* ((tracked (delq nil (copy-sequence tlon-translate--active-revision-processes)))
+         (total   (length tracked)))
+    (dolist (proc tracked)
+      (when (and (processp proc) (process-live-p proc))
+        (delete-process proc)))
     (setq tlon-translate--active-revision-processes nil)
-    (tlon-translate--log (if (> count 0)
+    (tlon-translate--log (if (> total 0)
                              "Aborted %d tlon-translate revision request%s."
                            "No tlon-translate revision requests in progress.")
-                         count (if (= count 1) "" "s"))
+                         total (if (= total 1) "" "s"))
     (tlon-translate-show-log)))
 
 (defvar tlon-translate-revert-without-query-original
