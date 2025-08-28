@@ -565,6 +565,10 @@ commands are killed.  If there are no such processes, do nothing."
                          count (if (= count 1) "" "s"))
     (tlon-translate-show-log)))
 
+(defvar tlon-translate-revert-without-query-original
+  revert-without-query
+  "Original value of `revert-without-query'.")
+
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
 (defun tlon-translate--revise-common (type)
@@ -572,7 +576,7 @@ commands are killed.  If there are no such processes, do nothing."
 TYPE can be `errors' or `flow'."
   (gptel-extras-warn-when-context)
   (let* ((translation-file (expand-file-name (read-file-name "Translation file: " (buffer-file-name))))
-         (original-file (if-let* ((counterpart (tlon-get-counterpart translation-file)))
+	 (original-file (if-let* ((counterpart (tlon-get-counterpart translation-file)))
 			    (expand-file-name counterpart)
 			  (read-file-name "Original file: "))))
     (unless (tlon-paragraph-files-are-aligned-p translation-file original-file)
@@ -616,7 +620,7 @@ TYPE can be `errors' or `flow'."
                       base-ranges)))
       (when ranges
 	(if restrict
-            (tlon-translate--log "\nSending %d revision chunk%s (range %d–%d) of %s…"
+            (tlon-translate--log "\nSending %d revision chunk%s (in range %d–%d) of %s…"
                                  (length ranges)
                                  (if (= (length ranges) 1) "" "s")
                                  (or (car restrict) 1)
@@ -652,7 +656,8 @@ RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
 translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
 type of revision. PROMPT is the prompt to use for revision. MODEL is the AI
 model to use. TOOLS are the tools available for the revision. ORIG-PARAS are the
-original paragraphs. TRANS-PARAS are the translated paragraphs."
+original paragraphs. TRANS-PARAS are the translated paragraphs. RESTRICT is a
+boolean indicating whether to restrict the revision to specific areas."
   (cl-loop for r in ranges
 	   for idx from 0
 	   do (tlon-translate--revise-send-range
@@ -679,7 +684,8 @@ being translated. TYPE specifies the type of translation or revision operation.
 PROMPT is the prompt text to use for the translation model. MODEL specifies
 which translation model to use. TOOLS are additional tools or parameters for the
 translation process. ORIG-PARAS contains the original paragraphs from the source
-text. TRANS-PARAS contains the translated paragraphs being revised."
+text. TRANS-PARAS contains the translated paragraphs being revised. RESTRICT is
+a boolean indicating whether to restrict the revision to specific areas."
   (cl-labels
       ((process (remaining idx)
          (if (null remaining)
@@ -807,13 +813,14 @@ AFTER-FN is an optional function to call after the revision is complete."
                 (let ((rstart (or (car restrict) 1))
                       (rend   (or (cdr restrict)
                                   (tlon-get-number-of-paragraphs-in-file translation-file))))
-                  (tlon-translate--log "Finished processing chunk %s (range %d–%d) of %s"
+                  (tlon-translate--log "Finished processing paragraphs %s (range %d–%d) of %s"
                                        chunk-desc rstart rend
                                        (file-name-nondirectory translation-file)))
-              (tlon-translate--log "Finished processing chunk %s (out of %d) of %s"
+              (tlon-translate--log "Finished processing paragraphs %s (out of %d) of %s"
                                    chunk-desc
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
                                    (file-name-nondirectory translation-file)))
+	    (setq revert-without-query tlon-translate-revert-without-query-original)
             (when (null tlon-translate--active-revision-processes)
               (tlon-translate-show-log))
             (when (functionp after-fn)
@@ -821,14 +828,13 @@ AFTER-FN is an optional function to call after the revision is complete."
     ;; Clean up the transient indirect buffers created for COMPARISON.
     (tlon-translate--kill-indirect-buffers-of-file translation-file)
     (tlon-translate--kill-indirect-buffers-of-file original-file)
-    (tlon-translate--log "Processing chunk %s %s of %s"
+    (tlon-translate--log "Processing paragraphs %s%s of %s"
                          chunk-desc
-                         (if restrict
-                             (format " (range %d–%d)"
-                                     (or (car restrict) 1)
-                                     (or (cdr restrict) (tlon-get-number-of-paragraphs-in-file translation-file)))
-                           "")
+                         (format (if restrict " (in range %d–%d)" " (out of %2ds)")
+                                 (or (car restrict) 1)
+                                 (or (cdr restrict) (tlon-get-number-of-paragraphs-in-file translation-file)))
 			 (file-name-nondirectory translation-file))
+    (setq revert-without-query '(".*")) ; avoid annoying prompt to confirm revert
     (setq proc
           (tlon-make-gptel-request
            prompt nil
