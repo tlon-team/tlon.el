@@ -778,10 +778,15 @@ AFTER-FN is an optional function to call after the revision is complete."
           (lambda ()
             (setq tlon-translate--active-revision-processes
                   (delq proc tlon-translate--active-revision-processes))
-            (tlon-translate--log "Finished processing chunk %s (out of %d) of %s"
-                                 chunk-desc
-			         (tlon-get-number-of-paragraphs-in-file translation-file)
-                                 (file-name-nondirectory translation-file))
+            (if restrict
+                (tlon-translate--log "Finished processing chunk %s in range %d–%d of %s"
+                                     chunk-desc
+                                     (car restrict) (cdr restrict)
+                                     (file-name-nondirectory translation-file))
+              (tlon-translate--log "Finished processing chunk %s (out of %d) of %s"
+                                   chunk-desc
+                                   (tlon-get-number-of-paragraphs-in-file translation-file)
+                                   (file-name-nondirectory translation-file)))
             (when (functionp after-fn)
               (funcall after-fn)))))
     ;; Clean up the transient indirect buffers created for COMPARISON.
