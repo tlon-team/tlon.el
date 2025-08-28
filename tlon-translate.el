@@ -80,7 +80,7 @@ paragraphs to avoid extremely large prompts."
   :group 'tlon-translate
   :type 'integer)
 
-(defcustom tlon-translate-revise-max-parallel 3
+(defcustom tlon-translate-revise-max-parallel 1
   "Maximum number of paragraph-chunk revision requests to run in parallel.
 If the number of chunks to process is less than or equal to this
 value, the requests are dispatched concurrently; otherwise they
