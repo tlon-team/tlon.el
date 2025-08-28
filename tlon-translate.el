@@ -85,14 +85,14 @@ file is sent to the AI for revision."
                  (cons (integer :tag "Start paragraph")
                        (integer :tag "End paragraph"))))
 
-(defcustom tlon-translate-revise-chunk-size 20
+(defcustom tlon-translate-revise-chunk-size 10
   "Number of aligned paragraphs sent per AI revision request.
 The AI will process the translation in batches of this many
 paragraphs to avoid extremely large prompts."
   :group 'tlon-translate
   :type 'integer)
 
-(defcustom tlon-translate-revise-max-parallel 1
+(defcustom tlon-translate-revise-max-parallel 3
   "Maximum number of paragraph-chunk revision requests to run in parallel.
 If the number of chunks to process is less than or equal to this
 value, the requests are dispatched concurrently; otherwise they
