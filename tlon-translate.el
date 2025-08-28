@@ -732,8 +732,11 @@ AFTER-FN is an optional function to call after the revision is complete."
 					     prompt-template
 					     comparison)))
          (chunk-desc (format "%d–%d" (1+ start) end))
+         (proc nil)
          (wrapped-after-fn
           (lambda ()
+            (setq tlon-translate--active-revision-processes
+                  (delq proc tlon-translate--active-revision-processes))
             (message "Finished processing chunk %s (out of %d) of %s"
                      chunk-desc
 		     (tlon-get-number-of-paragraphs-in-file translation-file)
