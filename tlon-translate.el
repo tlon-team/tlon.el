@@ -38,6 +38,7 @@
 (require 'tlon-yaml)
 (require 'tlon-paragraphs)
 (require 'cl-lib)
+(require 'subr-x)
 
 ;;;; User options
 
@@ -72,6 +73,17 @@ available options. If nil, use the default `gptel-model'."
   "Whether to commit changes after an AI revision."
   :group 'tlon-translate
   :type 'boolean)
+
+(defcustom tlon-translate-restrict-revision-to-paragraphs nil
+  "If non-nil, restrict AI revision to an inclusive paragraph range.
+
+The value must be a cons cell (START . END) where START and END
+are 1-based paragraph numbers.  When nil (the default), the entire
+file is sent to the AI for revision."
+  :group 'tlon-translate
+  :type '(choice (const :tag "Whole file" nil)
+                 (cons (integer :tag "Start paragraph")
+                       (integer :tag "End paragraph"))))
 
 (defcustom tlon-translate-revise-chunk-size 20
   "Number of aligned paragraphs sent per AI revision request.
@@ -574,7 +586,19 @@ TYPE can be `errors' or `flow'."
            (chunk-size  tlon-translate-revise-chunk-size)
            (total       (length orig-paras))
            (ranges '()))
-      (setq ranges (tlon-translate--build-chunk-ranges total chunk-size))
+      ;; Build chunk ranges, respecting any paragraph restriction.
+      (let* ((restrict tlon-translate-restrict-revision-to-paragraphs)
+             (start-idx (if restrict (max 0 (1- (car restrict))) 0))
+             (end-idx   (if restrict (min total (cdr restrict)) total)))
+        (when (>= start-idx end-idx)
+          (user-error "Invalid paragraph range %S" restrict))
+        (let* ((selected-count (1+ (- end-idx start-idx)))
+               (base-ranges (tlon-translate--build-chunk-ranges selected-count chunk-size)))
+          (setq ranges
+                (mapcar (lambda (pr)
+                          (cons (+ start-idx (car pr))
+                                (+ start-idx (cdr pr))))
+                        base-ranges))))
       (when ranges
         (tlon-translate--log "Sending %d revision chunk%s to the AI… please wait."
                              (length ranges)
@@ -849,6 +873,27 @@ If nil, use the default model."
   :variable 'tlon-translate-revise-max-parallel
   :reader (lambda (_ _ _) (read-number "Max parallel requests: " tlon-translate-revise-max-parallel)))
 
+(transient-define-infix tlon-translate-infix-set-restrict-revision-range ()
+  "Restrict AI revision to a paragraph range, or reset to whole file."
+  :class 'transient-lisp-variable
+  :variable 'tlon-translate-restrict-revision-to-paragraphs
+  :reader (lambda (_ _ _)
+            (let* ((current tlon-translate-restrict-revision-to-paragraphs)
+                   (prompt (if current
+                               (format "Paragraph range (START-END, empty = whole file) [current: %d-%d]: "
+                                       (car current) (cdr current))
+                             "Paragraph range (START-END, empty = whole file): "))
+                   (input  (read-string prompt)))
+              (if (string-blank-p input)
+                  nil
+                (unless (string-match
+                         "\\`[[:space:]]*\\([0-9]+\\)[[:space:]]*-[[:space:]]*\\([0-9]+\\)[[:space:]]*\\'" input)
+                  (user-error "Invalid range; use START-END"))
+                (let ((start (string-to-number (match-string 1 input)))
+                      (end   (string-to-number (match-string 2 input))))
+                  (when (<= start 0) (user-error "Start must be positive"))
+                  (when (< end start) (user-error "End must be ≥ start"))
+                  (cons start end))))))
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
@@ -871,7 +916,8 @@ If nil, use the default model."
     ("r -s" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
     ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
     ""
-    ("r -c" "Chunk size" tlon-translate-infix-set-chunk-size)
+    ("r -r" "Restrict range" tlon-translate-infix-set-restrict-revision-range)
+    ("r -c" "Chunk size"     tlon-translate-infix-set-chunk-size)
     ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)
     ""
     ("r -e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)]

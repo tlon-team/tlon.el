@@ -44,6 +44,7 @@ This module provides functions for translating entire files using various transl
 + ~tlon-translate-revise-chunk-size~ :: Number of aligned paragraphs to send per AI revision request (default 10).
 #+vindex: tlon-translate-revise-max-parallel
 + ~tlon-translate-revise-max-parallel~ :: Maximum number of paragraph-chunk revision requests to dispatch concurrently (default 3).
++ ~tlon-translate-restrict-revision-to-paragraphs~ :: When non-nil, restrict AI revision to the inclusive paragraph range =(START . END)=.  Nil (default) means revise the whole file.
 + ~tlon-translate-revise-stream~ :: When non-nil, AI responses are streamed; when nil (default) each chunk triggers a single callback on completion.
 
 ** Commands
@@ -90,6 +91,7 @@ It provides the following groups and commands:
   + =f= :: Improve flow (~tlon-translate-revise-flow~)
 + *Options*:
   + =c= :: Commit changes after revision (~tlon-translate-infix-toggle-commit-changes~)
+  + =r= :: Restrict revision range (~tlon-translate-infix-set-restrict-revision-range~)
   + =n= :: Paragraph chunk size (~tlon-translate-infix-set-chunk-size~)
   + =e= :: Select Engine (~tlon-translation-engine-infix~) - Select the translation engine (e.g., 'deepl).
   + =m -e= :: Revise errors model (~tlon-translate-infix-select-revise-errors-model~)
