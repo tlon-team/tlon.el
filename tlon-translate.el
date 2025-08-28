@@ -734,8 +734,9 @@ AFTER-FN is an optional function to call after the revision is complete."
          (chunk-desc (format "%d–%d" (1+ start) end))
          (wrapped-after-fn
           (lambda ()
-            (message "Finished processing chunk %s of %s"
+            (message "Finished processing chunk %s (out of %d) of %s"
                      chunk-desc
+		     (tlon-get-number-of-paragraphs-in-file translation-file)
                      (file-name-nondirectory translation-file))
             (when (functionp after-fn)
               (funcall after-fn)))))
