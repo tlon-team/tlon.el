@@ -825,8 +825,8 @@ AFTER-FN is an optional function to call after the revision is complete."
                                    chunk-desc
                                    (tlon-get-number-of-paragraphs-in-file translation-file)
                                    (file-name-nondirectory translation-file)))
-	    (setq revert-without-query tlon-translate-revert-without-query-original)
             (when (null tlon-translate--active-revision-processes)
+              (setq revert-without-query tlon-translate-revert-without-query-original)
               (tlon-translate-show-log))
             (when (functionp after-fn)
               (funcall after-fn)))))
@@ -835,9 +835,13 @@ AFTER-FN is an optional function to call after the revision is complete."
     (tlon-translate--kill-indirect-buffers-of-file original-file)
     (tlon-translate--log "Processing paragraphs %s%s of %s"
                          chunk-desc
-                         (format (if restrict " (in range %d–%d)" " (out of %2ds)")
-                                 (or (car restrict) 1)
-                                 (or (cdr restrict) (tlon-get-number-of-paragraphs-in-file translation-file)))
+                         (if restrict
+                             (format " (in range %d–%d)"
+                                     (or (car restrict) 1)
+                                     (or (cdr restrict)
+                                         (tlon-get-number-of-paragraphs-in-file translation-file)))
+                           (format " (out of %d)"
+                                   (tlon-get-number-of-paragraphs-in-file translation-file)))
 			 (file-name-nondirectory translation-file))
     (setq revert-without-query '(".*")) ; avoid annoying prompt to confirm revert
     (setq proc
