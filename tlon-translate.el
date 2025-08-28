@@ -748,7 +748,6 @@ AFTER-FN is an optional function to call after the revision is complete."
      (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
      model tlon-translate-revise-stream nil tools)))
 
-
 (declare-function magit-stage-files "magit-apply")
 (defun tlon-translate--revise-callback (response info file type)
   "Callback for AI revision.
