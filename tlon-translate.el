@@ -619,12 +619,12 @@ TYPE can be `errors' or `flow'."
 	    ;; Few enough chunks → process them all in parallel.
 	    (tlon-translate--revise-parallel
 	     ranges translation-file original-file type prompt model
-	     tools orig-paras trans-paras)
+	     tools orig-paras trans-paras restrict)
 	  ;; More chunks than the parallel cap → process in parallel *batches*
 	  ;; of `tlon-translate-revise-max-parallel'.
 	  (tlon-translate--revise-parallel-batches
 	   ranges translation-file original-file type prompt model
-	   tools orig-paras trans-paras))))))
+	   tools orig-paras trans-paras restrict))))))
 
 (defun tlon-translate--build-chunk-ranges (total chunk-size)
   "Build chunk ranges (START . END) for TOTAL items with CHUNK-SIZE."
@@ -635,7 +635,7 @@ TYPE can be `errors' or `flow'."
       (setq i (+ i chunk-size)))
     (nreverse ranges)))
 
-(defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model tools orig-paras trans-paras)
+(defun tlon-translate--revise-parallel (ranges translation-file original-file type prompt model tools orig-paras trans-paras restrict)
   "Use parallel processing to revise translation in RANGES.
 RANGES is a list of ranges to revise. TRANSLATION-FILE is the path to the
 translation file. ORIGINAL-FILE is the path to the original file. TYPE is the
@@ -647,7 +647,7 @@ original paragraphs. TRANS-PARAS are the translated paragraphs."
 	   do (tlon-translate--revise-send-range
 	       r translation-file original-file type
 	       prompt model tools
-	       orig-paras trans-paras))
+	       orig-paras trans-paras restrict))
   (tlon-translate--message-revise-request translation-file ranges t))
 
 (defun tlon-translate--message-revise-request (translation-file ranges parallel-p)
@@ -660,7 +660,7 @@ PARALLEL-P indicates whether processing is parallel or sequential."
 
 (defun tlon-translate--revise-parallel-batches
     (ranges translation-file original-file type prompt model
-            tools orig-paras trans-paras)
+            tools orig-paras trans-paras restrict)
   "Process RANGES in parallel batches of `tlon-translate-revise-max-parallel'.
 RANGES is a list of ranges to process. TRANSLATION-FILE is the path to the
 translation file being revised. ORIGINAL-FILE is the path to the original file
@@ -684,7 +684,7 @@ text. TRANS-PARAS contains the translated paragraphs being revised."
              (dolist (r batch)
                (tlon-translate--revise-send-range
                 r translation-file original-file type prompt model
-                tools orig-paras trans-paras
+                tools orig-paras trans-paras restrict
                 (lambda ()
                   (setq pending (1- pending))
                   (when (= pending 0)
@@ -764,7 +764,7 @@ This catches stubborn leftovers left behind by `clone-indirect-buffer'."
 
 (defun tlon-translate--revise-send-range
     (range translation-file original-file type prompt-template model
-           tools orig-paras trans-paras &optional after-fn)
+           tools orig-paras trans-paras restrict &optional after-fn)
   "Send an AI revision request for a single paragraph RANGE.
 RANGE is a cons cell (START . END) specifying the paragraph range to revise. IDX
 is the chunk index and is only used for debugging/logging. TRANSLATION-FILE is
