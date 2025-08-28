@@ -709,13 +709,21 @@ AFTER-FN is an optional function to call after the revision is complete."
                       translation-file original-file trans-chunk orig-chunk nil))
          (prompt (tlon-ai-maybe-edit-prompt (concat
 					     prompt-template
-					     comparison))))
+					     comparison)))
+         (chunk-desc (format "%d–%d" (1+ start) end))
+         (wrapped-after-fn
+          (lambda ()
+            (message "Finished processing chunk %s of %s"
+                     chunk-desc
+                     (file-name-nondirectory translation-file))
+            (when (functionp after-fn)
+              (funcall after-fn)))))
     ;; Clean up the transient indirect buffers created for COMPARISON.
     (tlon-translate--kill-indirect-buffers-of-file translation-file)
     (tlon-translate--kill-indirect-buffers-of-file original-file)
     (tlon-make-gptel-request
      prompt nil
-     (tlon-translate--gptel-callback-simple translation-file type after-fn)
+     (tlon-translate--gptel-callback-simple translation-file type wrapped-after-fn)
      model tlon-translate-revise-stream nil tools)))
 
 
