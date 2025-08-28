@@ -819,7 +819,7 @@ AFTER-FN is an optional function to call after the revision is complete."
     ;; Clean up the transient indirect buffers created for COMPARISON.
     (tlon-translate--kill-indirect-buffers-of-file translation-file)
     (tlon-translate--kill-indirect-buffers-of-file original-file)
-    (tlon-translate--log "Sending chunk %s to the AI%s"
+    (tlon-translate--log "Sending chunk %s %s"
                          chunk-desc
                          (if restrict
                              (format " (range %d–%d)"
