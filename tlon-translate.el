@@ -563,7 +563,7 @@ commands are killed.  If there are no such processes, do nothing."
                              "Aborted %d tlon-translate revision request%s."
                            "No tlon-translate revision requests in progress.")
                          count (if (= count 1) "" "s"))
-    (tlon-translate--show-log)))
+    (tlon-translate-show-log)))
 
 (declare-function gptel-context-add-file "gptel-context")
 (declare-function gptel-context-remove-all "gptel-context")
@@ -597,26 +597,25 @@ TYPE can be `errors' or `flow'."
            (trans-paras (tlon-with-paragraphs translation-file))
            (chunk-size  tlon-translate-revise-chunk-size)
            (total       (length orig-paras))
-           (ranges '()))
-      ;; Build chunk ranges, respecting any paragraph restriction.
-      (let* ((restrict tlon-translate-restrict-revision-to-paragraphs)
-             (start-idx (if (and restrict (car restrict))
-                            (max 0 (1- (car restrict)))
-                          0))
-             (end-idx   (if (and restrict (cdr restrict))
-                            (min total (cdr restrict))
-                          total)))
-        (when (>= start-idx end-idx)
-          (user-error "Invalid paragraph range %S" restrict))
-        (let* ((selected-count (- end-idx start-idx))
-               (base-ranges (tlon-translate--build-chunk-ranges selected-count chunk-size)))
-          (setq ranges
-                (mapcar (lambda (pr)
-                          (cons (+ start-idx (car pr))
-                                (+ start-idx (cdr pr))))
-                        base-ranges))))
+           (ranges '())
+	   (restrict tlon-translate-restrict-revision-to-paragraphs)
+           (start-idx (if (and restrict (car restrict))
+                          (max 0 (1- (car restrict)))
+                        0))
+           (end-idx   (if (and restrict (cdr restrict))
+                          (min total (cdr restrict))
+                        total)))
+      (when (>= start-idx end-idx)
+        (user-error "Invalid paragraph range %S" restrict))
+      (let* ((selected-count (- end-idx start-idx))
+             (base-ranges (tlon-translate--build-chunk-ranges selected-count chunk-size)))
+        (setq ranges
+              (mapcar (lambda (pr)
+                        (cons (+ start-idx (car pr))
+                              (+ start-idx (cdr pr))))
+                      base-ranges)))
       (when ranges
-        (tlon-translate--log "Sending %d revision chunk%s to the AI… please wait."
+	(tlon-translate--log "Sending %d revision chunk%s to the AI… please wait."
                              (length ranges)
                              (if (= (length ranges) 1) "" "s"))
 	(if (<= (length ranges) tlon-translate-revise-max-parallel)
