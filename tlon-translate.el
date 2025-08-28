@@ -596,8 +596,12 @@ TYPE can be `errors' or `flow'."
            (ranges '()))
       ;; Build chunk ranges, respecting any paragraph restriction.
       (let* ((restrict tlon-translate-restrict-revision-to-paragraphs)
-             (start-idx (if restrict (max 0 (1- (car restrict))) 0))
-             (end-idx   (if restrict (min total (cdr restrict)) total)))
+             (start-idx (if (and restrict (car restrict))
+                            (max 0 (1- (car restrict)))
+                          0))
+             (end-idx   (if (and restrict (cdr restrict))
+                            (min total (cdr restrict))
+                          total)))
         (when (>= start-idx end-idx)
           (user-error "Invalid paragraph range %S" restrict))
         (let* ((selected-count (- end-idx start-idx))
@@ -895,21 +899,27 @@ If nil, use the default model."
   :variable 'tlon-translate-restrict-revision-to-paragraphs
   :reader (lambda (_ _ _)
             (let* ((current tlon-translate-restrict-revision-to-paragraphs)
-                   (prompt (if current
-                               (format "Paragraph range (START-END, empty = whole file) [current: %d-%d]: "
-                                       (car current) (cdr current))
-                             "Paragraph range (START-END, empty = whole file): "))
-                   (input  (read-string prompt)))
-              (if (string-blank-p input)
-                  nil
-                (unless (string-match
-                         "\\`[[:space:]]*\\([0-9]+\\)[[:space:]]*-[[:space:]]*\\([0-9]+\\)[[:space:]]*\\'" input)
-                  (user-error "Invalid range; use START-END"))
-                (let ((start (string-to-number (match-string 1 input)))
-                      (end   (string-to-number (match-string 2 input))))
-                  (when (<= start 0) (user-error "Start must be positive"))
-                  (when (< end start) (user-error "End must be ≥ start"))
-                  (cons start end))))))
+                   (start-str (read-string
+                               (if current
+                                   (format "Start paragraph (empty = first) [current: %s]: "
+                                           (or (car current) "1"))
+                                 "Start paragraph (empty = first): ")))
+                   (end-str   (read-string
+                               (if current
+                                   (format "End paragraph (empty = last) [current: %s]: "
+                                           (or (cdr current) "last"))
+                                 "End paragraph (empty = last): ")))
+                   (start (unless (string-blank-p start-str)
+                            (string-to-number start-str)))
+                   (end   (unless (string-blank-p end-str)
+                            (string-to-number end-str))))
+              (when (and start (<= start 0))
+                (user-error "Start must be positive"))
+              (when (and start end (< end start))
+                (user-error "End must be ≥ start"))
+              (cond
+               ((and (null start) (null end)) nil) ; whole file
+               (t (cons start end))))))
 ;;;###autoload (autoload 'tlon-translate-menu "tlon-translate" nil t)
 (transient-define-prefix tlon-translate-menu ()
   "`tlon-translate' menu."
