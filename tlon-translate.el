@@ -73,7 +73,7 @@ available options. If nil, use the default `gptel-model'."
   :group 'tlon-translate
   :type 'boolean)
 
-(defcustom tlon-translate-revise-chunk-size 5
+(defcustom tlon-translate-revise-chunk-size 20
   "Number of aligned paragraphs sent per AI revision request.
 The AI will process the translation in batches of this many
 paragraphs to avoid extremely large prompts."
