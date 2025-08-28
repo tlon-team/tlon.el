@@ -846,14 +846,17 @@ If nil, use the default model."
     ("t -d" "DeepL model" tlon-deepl-model-type-infix)]
    ["Revise"
     ("r e" "Spot errors" tlon-translate-revise-errors)
-    ("r a" "Abort revision" tlon-translate-revise-abort)
     ("r f" "Improve flow" tlon-translate-revise-flow)
+    ""
+    ("r a" "Abort revision" tlon-translate-revise-abort)
     ""
     "Options"
     ("r -s" "Spot errors model" tlon-translate-infix-select-revise-errors-model)
     ("r -f" "Improve flow model" tlon-translate-infix-select-revise-flow-model)
+    ""
     ("r -c" "Chunk size" tlon-translate-infix-set-chunk-size)
     ("r -p" "Max parallel" tlon-translate-infix-set-max-parallel)
+    ""
     ("r -e" "edit prompt"                               tlon-ai-infix-toggle-edit-prompt)]
    ["General options"
     ("-c" "Commit changes" tlon-translate-infix-toggle-commit-changes)]])
