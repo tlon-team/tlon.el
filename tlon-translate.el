@@ -330,7 +330,7 @@ slugified version of the original basename."
          (translations (alist-get "translations" json-data nil nil #'string=))
          (first-translation (car translations)))
     (when first-translation
-      (alist-get "text" first-translation nil nil #'string=))))
+      (tlon-deepl--translation-text first-translation))))
 
 (declare-function tlon-get-key-at-point "tlon-bib")
 (declare-function tlon-yaml-insert-translated-tags "tlon-yaml")

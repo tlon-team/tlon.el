@@ -216,7 +216,7 @@ Returns the translated text as a string, or nil if parsing fails."
                (translations (alist-get "translations" json-data nil nil #'string=))
                (first-translation (car translations)))
           (when first-translation
-            (setq translation (alist-get "text" first-translation nil nil #'string=))))
+            (setq translation (tlon-deepl--translation-text first-translation))))
       (error (message "Error parsing DeepL JSON response: %s" err)
              nil))
     (when translation
@@ -235,7 +235,8 @@ glossary for the target language exists in `tlon-deepl-glossaries'."
   (let* ((source-is-en (string= "en" tlon-translate-source-language))
          (glossary-id (when source-is-en ; Only lookup if source is English
                         (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" tlon-translate-target-language)))
-         (text (vector tlon-translate-text))
+         (processed-text (tlon-deepl--preprocess-text tlon-translate-text))
+         (text (vector processed-text))
          (target-supports-glossary (member tlon-translate-target-language tlon-deepl-supported-glossary-languages))
          (proceed nil))
     ;; Determine if we should proceed without a glossary or prompt the user
@@ -274,9 +275,39 @@ LANGUAGE. Returns nil if `tlon-translate-source-language' is not \"en\"."
   (when (string= "en" tlon-translate-source-language)
     (tlon-lookup tlon-deepl-glossaries "glossary_id" "target_lang" language)))
 
-;;;;;; Tex
+;;;;;; “quality_optimized” model newlines workaround
 
+(defconst tlon-deepl-newline-token "<!>"
+  "Placeholder string used to preserve newlines when the
+`quality_optimized' model is selected.  The chosen token is
+unlikely to appear in normal text; it is replaced back to
+newlines after translation is received.")
 
+(defun tlon-deepl--model-uses-newline-workaround-p ()
+  "Return non-nil if the newline workaround must be applied."
+  (string= tlon-deepl-model-type "quality_optimized"))
+
+(defun tlon-deepl--preprocess-text (text)
+  "Replace newlines in TEXT with `tlon-deepl-newline-token' when needed."
+  (if (tlon-deepl--model-uses-newline-workaround-p)
+      (replace-regexp-in-string "\n" tlon-deepl-newline-token text 'fixedcase 'literal)
+    text))
+
+(defun tlon-deepl--translation-text (translation-alist)
+  "Extract and post-process the \"text\" field from TRANSLATION-ALIST.
+
+This helper guarantees the newline workaround is applied
+consistently, so callers do not need to invoke
+`tlon-deepl--postprocess-text' directly."
+  (when translation-alist
+    (tlon-deepl--postprocess-text
+     (alist-get "text" translation-alist nil nil #'string=))))
+
+(defun tlon-deepl--postprocess-text (text)
+  "Replace `tlon-deepl-newline-token' in TEXT with real newlines when needed."
+  (if (tlon-deepl--model-uses-newline-workaround-p)
+      (replace-regexp-in-string tlon-deepl-newline-token "\n" text 'fixedcase 'literal)
+    text))
 
 ;;;;; Glossaries
 
