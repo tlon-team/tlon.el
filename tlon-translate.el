@@ -596,9 +596,10 @@ TYPE can be `errors' or `flow'."
                               ('errors tlon-translate-revise-errors-prompt)
                               ('flow tlon-translate-revise-flow-prompt)))
 	   (prompt-elts (delq nil (list prompt-template translation-file (capitalize language))))
+	   (glossary-type 'human) ; we use `human' to exclude non-variable entries
 	   (glossary-file (when (and (eq type 'flow)
-				     (tlon-extract-glossary lang-code 'deepl-editor))
-			    (tlon-glossary-target-path lang-code 'deepl-editor)))
+				     (tlon-extract-glossary lang-code glossary-type))
+			    (tlon-glossary-target-path lang-code glossary-type)))
 	   (glossary-prompt (when glossary-file
 			      (format tlon-translate-glossary-prompt (file-name-nondirectory glossary-file))))
 	   (prompt (concat (apply 'format prompt-elts) glossary-prompt))
