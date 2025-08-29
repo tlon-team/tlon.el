@@ -359,7 +359,8 @@ response file."
 ;;;###autoload
 (defun tlon-extract-glossary (language recipient)
   "Extract a LANGUAGE glossary from our multilingual glossary.
-RECIPIENT can be `human', `deepl-editor', `deepl-api', and `sieve'.
+RECIPIENT can be `human', `deepl-editor', `deepl-api', `ai-revision' and
+`sieve'.
 
 - `human': extracts a glossary intended to be shared with another human being.
  Includes only entries of type \"variable\", saves them to a \"csv\" file, and
@@ -371,11 +372,14 @@ RECIPIENT can be `human', `deepl-editor', `deepl-api', and `sieve'.
 - `deepl-api': extracts a glossary intended to be sent via the DeepL API.
   Includes all entries and saves them a \"tsv\" file.
 
+- `ai-revision': extracts a glossary intended to be shared with an AI model.
+ Includes only entries of type \"variable\" and saves them to a \"csv\" file.
+
 - `sieve': extracts a glossary as a JSON object with source terms as keys and
   target terms as values. Includes all entries and saves them to a \"json\"
   file."
   (interactive (list (tlon-select-language 'code 'babel)
-		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api sieve) nil t))))
+		     (intern (completing-read "Recipient? " '(human deepl-editor deepl-api ai-revision sieve) nil t))))
   (let* ((source-path tlon-file-glossary-source)
 	 (target-path (tlon-glossary-target-path language recipient))
 	 (json (tlon-read-json source-path nil 'list 'symbol))
