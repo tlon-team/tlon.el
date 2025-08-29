@@ -362,39 +362,87 @@ each package or feature, following this model:\n\n%s"
 
 ;;;;; General
 
-(defun tlon-make-gptel-request (prompt &optional string callback full-model skip-context-check request-buffer tools context-data)
-  "Make a `gptel' request with PROMPT and STRING and CALLBACK.
-When STRING is non-nil, PROMPT is a formatting string containing the prompt and
-a slot for a string, which is the variable part of the prompt (e.g. the text to
-be summarized in a prompt to summarize text). When STRING is nil (because there
-is no variable part), PROMPT is the full prompt. FULL-MODEL is a cons cell whose
-car is the backend and whose cdr is the model.
+(defun tlon-make-gptel-request
+    (prompt &optional printf-arg callback full-model
+            skip-context-check request-buffer tools context-data)
+  "Send PROMPT through gptel, pinning BACKEND+MODEL for tool follow-ups.
+Pass either:
 
-By default, warn the user if the context is not empty. If SKIP-CONTEXT-CHECK is
-non-nil, bypass this check. REQUEST-BUFFER if non-nil, is the buffer to use for
-the gptel request. TOOLS is a list of gptel-tool structs to include with the
-request. CONTEXT-DATA is arbitrary data passed to the `gptel-request' `:context'
-key, available in the callback's INFO plist."
+- FULL-MODEL = (BACKEND . MODEL), where BACKEND is a string (e.g. \"Gemini\") or
+    a backend object, and MODEL is a symbol or string; OR
+
+- FULL-MODEL = nil, to use the buffer/global `gptel-backend' and `gptel-model'.
+
+TOOLS is a list of tool names (symbols/strings) that `gptel-get-tool' can
+resolve.
+
+PRINTF-ARG, if non-nil, is formatted into PROMPT via (format PROMPT PRINTF-ARG).
+CALLBACK and CONTEXT-DATA are passed through to `gptel-request'. REQUEST-BUFFER,
+if non-nil, is the buffer used for the conversation.
+
+This function ensures that any *follow-up* tool calls performed by gptel reuse
+the same BACKEND+MODEL by setting them buffer-locally before dispatch."
   (unless (or tlon-ai-batch-fun skip-context-check)
-    (gptel-extras-warn-when-context))
-  (let* ((tool-structs (mapcar #'gptel-get-tool tools))
-	 (gptel-tools tool-structs)
-	 (gptel-use-tools (if gptel-tools t gptel-use-tools))
-	 (full-model (or full-model (cons (gptel-backend-name gptel-backend) gptel-model)))
-	 (prompt (tlon-ai-maybe-edit-prompt prompt)))
-    (cl-destructuring-bind (backend . model) full-model
-      (let* ((gptel-backend (alist-get backend gptel--known-backends nil nil #'string=))
-	     (full-prompt (if string (format prompt string) prompt))
-	     (request (lambda () (gptel-request full-prompt
-			      :callback callback
-			      :buffer (or request-buffer (current-buffer))
-			      :context context-data
-			      :transforms gptel-prompt-transform-functions))))
-	(if tlon-ai-batch-fun
-	    (condition-case nil
-		(funcall request)
-	      (error nil))
-	  (funcall request))))))
+    (when (fboundp 'gptel-extras-warn-when-context)
+      (gptel-extras-warn-when-context)))
+
+  (let* ((buf (or request-buffer (current-buffer)))
+         ;; resolve backend/model pair
+         (pair (tlon--resolve-backend+model
+                (or full-model
+                    (cons (gptel-backend-name gptel-backend) gptel-model))))
+         (backend-obj (car pair))
+         (model-sym   (cdr pair))
+         ;; normalize tools to structs if provided
+         (tool-structs (when tools
+                         (mapcar #'gptel-get-tool tools)))
+         (full-prompt (if printf-arg (format prompt printf-arg) prompt)))
+
+    (with-current-buffer buf
+      ;; Pin scope for initial request *and* tool follow-ups.
+      (setq-local gptel-backend backend-obj)
+      (setq-local gptel-model   model-sym)
+      (setq-local gptel-tools   tool-structs)
+      (setq-local gptel-use-tools (and gptel-tools t))
+
+      ;; Optional: if presets exist, make a one-shot preset that matches.
+      (when (and (fboundp 'gptel-make-preset) (fboundp 'gptel-use-preset))
+        (let ((tmp (gptel-make-preset
+                       :name "tlon-request-scope"
+                       :backend gptel-backend
+                       :model   gptel-model
+                       :tools   gptel-tools)))
+          (ignore-errors (gptel-use-preset tmp))))
+
+      ;; Dispatch the request; gptel will consult buffer-local vars later, too.
+      (gptel-request full-prompt
+        :callback   callback
+        :buffer     buf
+        :context    context-data
+        :transforms gptel-prompt-transform-functions))))
+
+;; Helper: normalize (backend . model), allow strings, symbols, or objects
+(defun tlon--resolve-backend+model (full-model)
+  "Return a cons (BACKEND-OBJ . MODEL-SYM) from FULL-M0DEL.
+FULL-MODEL may be:
+  - a cons (BACKEND . MODEL)
+  - BACKEND name/object, using current `gptel-model'
+If BACKEND is a string, it is resolved against `gptel--known-backends'.
+MODEL may be a string or symbol; we return a symbol for consistency."
+  (pcase full-model
+    (`(,backend . ,model)
+     (let* ((backend-obj (if (stringp backend)
+                             (alist-get backend gptel--known-backends nil nil #'string=)
+                           backend))
+            (model-sym   (if (symbolp model) model (intern (format "%s" model)))))
+       (cons backend-obj model-sym)))
+    (_
+     (let* ((backend (or full-model (gptel-backend-name gptel-backend)))
+            (backend-obj (if (stringp backend)
+                             (alist-get backend gptel--known-backends nil nil #'string=)
+                           backend))
+            (model-sym   (if (symbolp gptel-model) gptel-model (intern (format "%s" gptel-model)))))
+       (cons backend-obj model-sym)))))
 
 (defun tlon-ai-maybe-edit-prompt (prompt)
   "If `tlon-ai-edit-prompt' is non-nil, ask user to edit PROMPT, else return it."
