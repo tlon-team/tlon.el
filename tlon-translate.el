@@ -150,12 +150,12 @@ message is appended to the buffer named by
   "Prefix for translation revision prompts.")
 
 (defconst tlon-translate-prompt-revise-suffix
-  "Do not modify URLs, BibTeX keys, or tags enclosed in angular brackets (such as ‘<Roman>’, ‘<LiteralLink>’, etc.). Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file` tool. You should use this tool ONLY ONCE, to make all your changes in one go. Note that the file (\"%1$s\") may include other paragraphs besides those I shared with you; you should only modify the paragraphs that I shared with you, leaving the rest of the file unchanged.\n\nHere are the paragraph pairs:\n\n"
+  "Restore URLs, BibTeX keys, or tags enclosed in angular brackets (such as ‘<Roman>’, ‘<LiteralLink>’, etc.). Do bother to change the translation itself, only restore what's broken and add what's missing. Only after you are done comparing the paragraphs and determining all the changes that should be made to the translation, write your changes to \"%1$s\" using the 'edit_file` tool. You should use this tool ONLY ONCE, to make all your changes in one go. Note that the file (\"%1$s\") may include other paragraphs besides those I shared with you; you should only modify the paragraphs that I shared with you, leaving the rest of the file unchanged.\n\nHere are the paragraph pairs:\n\n"
   "Suffix for translation revision prompts.")
 
 (defconst tlon-translate-revise-errors-prompt
   (concat tlon-translate-prompt-revise-prefix
-	  "Your task is to read both carefully and try to spot errors in the translation: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. "
+	  "In the process of translating, some errors occurred: the code surrounding the translation may have been corrupted, there may be sentences and even paragraphs missing, the abbreviations may be used wrongly or inconsistently, etc. "
 	  tlon-translate-prompt-revise-suffix)
   "Prompt for revising translation errors.")
 
