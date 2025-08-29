@@ -396,14 +396,14 @@ RECIPIENT can be `human', `deepl-editor', `deepl-api', `ai-revision' and
       (pcase recipient
         ('human (when (y-or-n-p "Share glossary with translators? ")
 		  (tlon-share-glossary target-path language)))
-        ((or 'deepl-editor 'deepl-api 'sieve) (message "Glossary extracted to `%s'" target-path)))
+        ((or 'deepl-editor 'deepl-api 'ai-revision 'sieve) (message "Glossary extracted to `%s'" target-path)))
       target-path)))
 
 ;;;###autoload
 (defun tlon-glossary-target-path (language recipient)
   "Return the target path for a glossary in LANGUAGE for RECIPIENT."
   (let ((target-extension (pcase recipient
-			    ((or 'human 'deepl-editor) "csv")
+			    ((or 'human 'deepl-editor 'ai-revision) "csv")
 			    ('deepl-api "tsv")
 			    ('sieve "json"))))
     (tlon-glossary-make-file language target-extension)))
@@ -425,7 +425,7 @@ to be uploaded to the editor or via the API.)"
       (when-let* ((source-term (alist-get 'en item))
 		  (target-term (alist-get (intern language) item))
 		  (entry (pcase recipient
-			   ('human (format "\"%s\",\"%s\"\n" source-term target-term))
+			   ((or 'human 'ai-revision) (format "\"%s\",\"%s\"\n" source-term target-term))
 			   ('deepl-editor
 			    (format "\"%s\",\"%s\",\"EN\",\"%s\"\n" source-term target-term (upcase language)))
 			   ('deepl-api (format "%s\t%s\n" source-term target-term)))))
