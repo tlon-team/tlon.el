@@ -357,7 +357,6 @@ using any of the new functionality. Organize the summary into sections, one for 
 each package or feature, following this model:\n\n%s"
   "Prompt for summarizing commit diffs.")
 
-
 ;;;; Functions
 
 ;;;;; General
