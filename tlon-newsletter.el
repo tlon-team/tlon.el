@@ -32,8 +32,24 @@
 
 ;;;; Variables
 
-(defconst tlon-newsletter-sample-issue
-  (file-name-concat tlon-package-dir "etc/sample-newsletter-issue.md")
+;;;;; Dirs
+
+(defconst tlon-newsletter-repo-dir
+  (tlon-repo-lookup :dir :name "boletin")
+  "Path to the local clone of the newsletter repository.")
+
+(defconst tlon-newsletter-numeros-subdir
+  (file-name-concat tlon-newsletter-repo-dir "numeros/")
+  "Path to the \"numeros\" subdirectory in the newsletter repository.")
+
+;;;;; Files
+
+(defconst tlon-newsletter-prompt-file
+  (file-name-concat tlon-package-dir "etc/newsletter-prompt.md")
+  "Path to the prompt file used for creating newsletter issues.")
+
+(defconst tlon-newsletter-sample-issue-file
+  (file-name-concat tlon-newsletter-numeros-subdir "2025-08.md")
   "File with a sample issue of the newsletter.")
 
 ;;;; User options
@@ -67,36 +83,46 @@ news. The original input file is then overwritten with this new draft."
             (input-file-path (cdr input-data)))
       (if (string-blank-p content)
           (message "The latest newsletter input file is empty. Nothing to process.")
-        (let* ((prompt-file-name "newsletter-prompt.md")
-               (prompt-file-path (file-name-concat tlon-package-dir "etc" prompt-file-name)))
-          (unless (file-exists-p prompt-file-path)
-            (user-error "Prompt file not found: %s" prompt-file-path))
-          (let* ((raw-prompt (with-temp-buffer
-                               (insert-file-contents prompt-file-path)
-                               (buffer-string)))
-                 (sample-issue-content
-                  (if (file-exists-p tlon-newsletter-sample-issue)
-                      (with-temp-buffer
-                        (insert-file-contents tlon-newsletter-sample-issue)
-                        (buffer-string))
-                    (progn
-                      (message "Warning: Sample issue file not found: %s. Proceeding without example."
-			       tlon-newsletter-sample-issue)
-                      "")))
-                 (final-prompt (format raw-prompt sample-issue-content content)))
-            (if (string-blank-p raw-prompt) ; Check original prompt file for blankness
-                (user-error "Prompt file %s is empty" prompt-file-path)
-              (progn
-                (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..." input-file-path prompt-file-path)
-                (tlon-make-gptel-request final-prompt
-                                         nil
-                                         #'tlon-newsletter--create-issue-callback
-                                         tlon-newsletter-model
-                                         t   ; Skip context check
-                                         nil ; Request buffer
-                                         (list "search" "fetch_content") ; Tools
-                                         input-file-path)))))) ; Pass input-file-path as context-data
+        (tlon-newsletter-ensure-prompt-file-exists)
+	(tlon-newsletter-ensure-sample-issue-file-exists)
+        (let* ((raw-prompt (with-temp-buffer
+                             (insert-file-contents tlon-newsletter-prompt-file)
+                             (buffer-string)))
+               (sample-issue-content (with-temp-buffer
+				       (insert-file-contents tlon-newsletter-sample-issue-file)
+				       (buffer-string)))
+               (final-prompt (format raw-prompt sample-issue-content content)))
+          (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
+		   input-file-path tlon-newsletter-prompt-file)
+          (tlon-make-gptel-request final-prompt
+                                   nil
+                                   #'tlon-newsletter--create-issue-callback
+                                   tlon-newsletter-model
+                                   t   ; Skip context check
+                                   nil ; Request buffer
+                                   (list "search" "fetch_content") ; Tools
+                                   input-file-path))) ; Pass input-file-path as context-data
     (message "Could not create newsletter issue due to previous errors.")))
+
+(defun tlon-newsletter-ensure-repo-dir-exists ()
+  "Ensure the newsletter repository directory exists."
+  (unless (file-exists-p tlon-newsletter-repo-dir)
+    (user-error "Newsletter repo not found: %s" tlon-newsletter-prompt-file)))
+
+(defun tlon-newsletter-ensure-numeros-subdir-exists ()
+  "Ensure the \"numeros\" subdirectory in the newsletter repository exists."
+  (unless (file-exists-p tlon-newsletter-numeros-subdir)
+    (user-error "\"numeros\" subdirectory not found: %s" tlon-newsletter-numeros-subdir)))
+
+(defun tlon-newsletter-ensure-prompt-file-exists ()
+  "Ensure the prompt file for creating newsletter issues exists."
+  (unless (file-exists-p tlon-newsletter-prompt-file)
+    (user-error "Prompt file not found: %s" tlon-newsletter-prompt-file)))
+
+(defun tlon-newsletter-ensure-sample-issue-file-exists ()
+  "Ensure the sample issue file exists."
+  (unless (file-exists-p tlon-newsletter-sample-issue-file)
+    (user-error "Sample issue file not found: %s" tlon-newsletter-sample-issue-file)))
 
 (defun tlon-newsletter--create-issue-callback (response info)
   "Callback for `tlon-newsletter-create-issue'.
@@ -120,25 +146,18 @@ response INFO."
 (defun tlon-newsletter--get-latest-input-content ()
   "Find and return the content of the most recent file in \"boletin/numeros/\".
 Returns nil and signals a user-error if any step fails."
-  (let* ((boletin-repo-dir (tlon-repo-lookup :dir :name "boletin"))
-	 (numeros-subdir-name "numeros/")
-	 numeros-dir files-and-attrs sorted-files latest-file-path)
-    (unless boletin-repo-dir
-      (user-error "Could not find the 'boletin' repository")
-      (cl-return-from tlon-newsletter--get-latest-input-content nil))
-    (setq numeros-dir (file-name-concat boletin-repo-dir numeros-subdir-name))
-    (unless (file-directory-p numeros-dir)
-      (user-error "The \"numeros\" subdirectory does not exist or is not a directory in %s" boletin-repo-dir)
-      (cl-return-from tlon-newsletter--get-latest-input-content nil))
-    (setq files-and-attrs (directory-files-and-attributes numeros-dir nil nil nil 'full))
+  (let* (files-and-attrs sorted-files latest-file-path)
+    (tlon-newsletter-ensure-repo-dir-exists)
+    (tlon-newsletter-ensure-numeros-subdir-exists)
+    (setq files-and-attrs (directory-files-and-attributes tlon-newsletter-numeros-subdir nil nil nil 'full))
     (unless files-and-attrs
-      (user-error "No files found in %s" numeros-dir)
+      (user-error "No files found in %s" tlon-newsletter-numeros-subdir)
       (cl-return-from tlon-newsletter--get-latest-input-content nil))
     ;; Filter out directories, keeping only regular files
     (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
     (if (not files-and-attrs)
-        (let ((selected-file (read-file-name "Select a file: " numeros-dir nil t)))
-	  (message "No regular files found in %s. Prompting user to select a file." numeros-dir)
+        (let ((selected-file (read-file-name "Select a file: " tlon-newsletter-numeros-subdir nil t)))
+	  (message "No regular files found in %s. Prompting user to select a file." tlon-newsletter-numeros-subdir)
           (if (and selected-file (file-exists-p selected-file))
               (cons (with-temp-buffer
                       (insert-file-contents selected-file)
