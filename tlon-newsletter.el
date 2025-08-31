@@ -162,21 +162,6 @@ Returns nil and signals a user-error if any step fails."
         (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
                nil)))))
 
-(defun tlon-newsletter--get-en-es-glossary-string ()
-  "Return the English-Spanish glossary as a TSV string.
-Uses `tlon-parse-glossary' and `tlon-insert-formatted-glossary' with
-recipient `deepl-api'."
-  (let* ((json-glossary (tlon-parse-glossary))
-         (language "es")
-         (recipient 'deepl-api))
-    (if json-glossary
-        (with-temp-buffer
-          (tlon-insert-formatted-glossary json-glossary language recipient)
-          (buffer-string))
-      (progn
-        (message "Warning: Glossary data could not be parsed for newsletter. Proceeding without glossary.")
-        ""))))
-
 ;;;;;; Ensure dirs/files exist
 
 (defun tlon-newsletter-ensure-repo-dir-exists ()
