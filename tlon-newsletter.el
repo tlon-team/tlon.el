@@ -120,8 +120,11 @@ news. The original input file is then overwritten with this new draft."
     (if (not files-and-attrs)
         (setq selected-file (read-file-name "Select a file: " tlon-newsletter-numeros-subdir nil t))
       (setq sorted-files (sort files-and-attrs
+                               ;; Sort files by their YYYY-MM basename so the most
+                               ;; recent issue (lexicographically last) is first.
                                (lambda (a b)
-				 (time-less-p (nth 5 b) (nth 5 a))))
+                                 (string> (file-name-base (car a))
+                                          (file-name-base (car b)))))
 	    latest-file-path (caar sorted-files)
 	    selected-file (read-file-name "Select input file (default %s): "
 					  tlon-newsletter-numeros-subdir nil t
