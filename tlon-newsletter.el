@@ -91,7 +91,9 @@ news. The original input file is then overwritten with this new draft."
                (sample-issue-content (with-temp-buffer
 				       (insert-file-contents tlon-newsletter-sample-issue-file)
 				       (buffer-string)))
-               (final-prompt (format raw-prompt sample-issue-content content)))
+	       (month (tlon-newsletter-get-month-from-date (file-name-base input-file-path)))
+               (final-prompt (tlon-ai-maybe-edit-prompt
+			      (format raw-prompt month sample-issue-content content))))
           (message "Requesting AI to draft newsletter issue (input: %s, prompt: %s)..."
 		   input-file-path tlon-newsletter-prompt-file)
           (tlon-make-gptel-request final-prompt
