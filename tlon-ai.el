@@ -363,7 +363,7 @@ each package or feature, following this model:\n\n%s"
 
 (defun tlon-make-gptel-request
     (prompt &optional printf-arg callback full-model
-            skip-context-check request-buffer tools context-data)
+             skip-context-check request-buffer tools context-data mcp-servers)
   "Send PROMPT through gptel, pinning BACKEND+MODEL for tool follow-ups.
 Pass either:
 
@@ -374,6 +374,11 @@ Pass either:
 
 TOOLS is a list of tool names (symbols/strings) that `gptel-get-tool' can
 resolve.
+
+MCP-SERVERS is a list of MCP *server names* (strings).  Each server is
+passed to `gptel-mcp-connect' before the request is issued; this
+automatically starts the server (via mcp-hub) and connects it if it
+wasn’t already active.
 
 PRINTF-ARG, if non-nil, is formatted into PROMPT via (format PROMPT PRINTF-ARG).
 CALLBACK and CONTEXT-DATA are passed through to `gptel-request'. REQUEST-BUFFER,
@@ -395,6 +400,8 @@ the same BACKEND+MODEL by setting them buffer-locally before dispatch."
          ;; normalize tools to structs if provided
          (tool-structs (when tools
                          (mapcar #'gptel-get-tool tools)))
+         ;; ensure specified MCP servers are running and connected
+         (_ (tlon--ensure-mcp-servers mcp-servers))
          (full-prompt (if printf-arg (format prompt printf-arg) prompt)))
 
     (with-current-buffer buf
@@ -2083,6 +2090,19 @@ If nil, use the default model."
     ("w -w" "Create reference article" tlon-ai-infix-select-create-reference-article-model)
     ("w -p" "Proofread reference article" tlon-ai-infix-select-proofread-reference-article-model)
     ("a -a" "Help model" tlon-ai-infix-select-help-model)]])
+
+(defun tlon--ensure-mcp-servers (servers)
+  "Ensure SERVERS are connected through MCP before a gptel request.
+
+SERVERS is a list of server names (strings).  For each name we try
+to call `gptel-mcp-connect'.  Errors are ignored so a missing or
+failing server never aborts the main request."
+  (when (and servers (fboundp 'gptel-mcp-connect))
+    (require 'gptel-mcp nil t)
+    ;; `gptel-mcp-connect' will start the server if necessary.
+    (dolist (srv servers)
+      (ignore-errors
+        (gptel-mcp-connect srv)))))
 
 (provide 'tlon-ai)
 ;;; tlon-ai.el ends here
