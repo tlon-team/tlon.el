@@ -100,9 +100,34 @@ news. The original input file is then overwritten with this new draft."
                                    tlon-newsletter-model
 				   'skip-content-check
                                    nil ; Request buffer
-                                   (list "search" "fetch_content") ; Tools
-                                   input-file-path))) ; Pass input-file-path as context-data
+                                   (list "search" "fetch_content" "slack_list_channels" "slack_get_channel_history")
+                                   input-file-path)))
     (message "Could not create newsletter issue due to previous errors.")))
+
+(defun tlon-newsletter--get-latest-input-content ()
+  "Prompt for an issue file defaulting to the most recent one."
+  (let* (files-and-attrs sorted-files selected-file latest-file-path)
+    (tlon-newsletter-ensure-repo-dir-exists)
+    (tlon-newsletter-ensure-numeros-subdir-exists)
+    (setq files-and-attrs (directory-files-and-attributes tlon-newsletter-numeros-subdir t nil nil))
+    (unless files-and-attrs
+      (user-error "No files found in %s" tlon-newsletter-numeros-subdir)
+      (cl-return-from tlon-newsletter--get-latest-input-content nil))
+    ;; Filter out directories, keeping only regular files
+    (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
+    (if (not files-and-attrs)
+        (setq selected-file (read-file-name "Select a file: " tlon-newsletter-numeros-subdir nil t))
+      (setq sorted-files (sort files-and-attrs
+                               (lambda (a b)
+				 (time-less-p (nth 5 b) (nth 5 a))))
+	    latest-file-path (caar sorted-files)
+	    selected-file (read-file-name "Select input file (default %s): "
+					  tlon-newsletter-numeros-subdir nil t
+					  (file-name-nondirectory latest-file-path))))
+    (cons (with-temp-buffer
+            (insert-file-contents selected-file)
+            (buffer-string))
+          selected-file)))
 
 (defun tlon-newsletter--create-issue-callback (response info)
   "Callback for `tlon-newsletter-create-issue'.
@@ -122,53 +147,6 @@ response INFO."
               (message "Newsletter draft updated in %s. Opening file..." original-file-path)
               (find-file original-file-path)) ; Open the updated file
           (user-error "Original input file path not found in callback info or is invalid"))))))
-
-(defun tlon-newsletter--get-latest-input-content ()
-  "Prompt for an input file in \"boletin/numeros/\", defaulting to the most
-recent one, and return its content and path.  Return nil and signal a
-user-error if any step fails."
-  (let* (files-and-attrs sorted-files latest-file-path)
-    (tlon-newsletter-ensure-repo-dir-exists)
-    (tlon-newsletter-ensure-numeros-subdir-exists)
-    ;; Use absolute paths so `file-regular-p' can correctly detect files.
-    (setq files-and-attrs (directory-files-and-attributes tlon-newsletter-numeros-subdir t nil nil))
-    (unless files-and-attrs
-      (user-error "No files found in %s" tlon-newsletter-numeros-subdir)
-      (cl-return-from tlon-newsletter--get-latest-input-content nil))
-    ;; Filter out directories, keeping only regular files
-    (setq files-and-attrs (cl-remove-if-not (lambda (entry) (file-regular-p (car entry))) files-and-attrs))
-    (if (not files-and-attrs)
-        (let ((selected-file (read-file-name "Select a file: " tlon-newsletter-numeros-subdir nil t)))
-	  (message "No regular files found in %s. Prompting user to select a file." tlon-newsletter-numeros-subdir)
-          (if (and selected-file (file-exists-p selected-file))
-              (cons (with-temp-buffer
-                      (insert-file-contents selected-file)
-                      (buffer-string))
-                    selected-file) ; Return (content . path)
-            (user-error "No file selected or selected file does not exist")))
-      ;; Regular files were found, proceed with sorting and getting the latest
-      (setq sorted-files (sort files-and-attrs
-                               (lambda (a b)
-                                 (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
-      (setq latest-file-path (car (car sorted-files)))
-      ;; Offer the latest file as the default selection to the user.
-      (let* ((selected-file
-              (read-file-name
-               (format "Select input file (default %s): "
-                       (file-name-nondirectory latest-file-path))
-               tlon-newsletter-numeros-subdir
-               latest-file-path
-               t)))
-        (unless (file-regular-p selected-file)
-          (user-error "Selected file is not a regular file: %s" selected-file)
-          (cl-return-from tlon-newsletter--get-latest-input-content nil))
-        (condition-case err
-            (cons (with-temp-buffer
-                    (insert-file-contents selected-file)
-                    (buffer-string))
-                  selected-file) ; Return (content . path)
-          (error (user-error "Error reading content from %s: %s" selected-file (error-message-string err))
-                 nil)))))  ; close condition-case, let*, if, let*, defun
 
 ;;;;;; Ensure dirs/files exist
 
