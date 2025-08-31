@@ -363,7 +363,7 @@ each package or feature, following this model:\n\n%s"
 
 (defun tlon-make-gptel-request
     (prompt &optional printf-arg callback full-model
-             skip-context-check request-buffer tools context-data mcp-servers)
+            skip-context-check request-buffer tools context-data mcp-servers)
   "Send PROMPT through gptel, pinning BACKEND+MODEL for tool follow-ups.
 Pass either:
 
@@ -403,23 +403,12 @@ the same BACKEND+MODEL by setting them buffer-locally before dispatch."
          ;; ensure specified MCP servers are running and connected
          (_ (tlon--ensure-mcp-servers mcp-servers))
          (full-prompt (if printf-arg (format prompt printf-arg) prompt)))
-
     (with-current-buffer buf
       ;; Pin scope for initial request *and* tool follow-ups.
       (setq-local gptel-backend backend-obj)
       (setq-local gptel-model   model-sym)
       (setq-local gptel-tools   tool-structs)
       (setq-local gptel-use-tools (and gptel-tools t))
-
-      ;; Optional: if presets exist, make a one-shot preset that matches.
-      (when (and (fboundp 'gptel-make-preset) (fboundp 'gptel-use-preset))
-        (let ((tmp (gptel-make-preset
-                       :name "tlon-request-scope"
-                       :backend gptel-backend
-                       :model   gptel-model
-                       :tools   gptel-tools)))
-          (ignore-errors (gptel-use-preset tmp))))
-
       ;; Dispatch the request; gptel will consult buffer-local vars later, too.
       (gptel-request full-prompt
         :callback   callback
