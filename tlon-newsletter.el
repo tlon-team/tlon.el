@@ -70,6 +70,7 @@ use a different model for creating a newsletter issue."
 
 ;;;;; Create issue
 
+;; TODO: pass glossary
 ;;;###autoload
 (defun tlon-newsletter-create-issue ()
   "Create a draft for a new newsletter issue using AI.
