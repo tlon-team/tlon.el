@@ -151,18 +151,24 @@ user-error if any step fails."
                                (lambda (a b)
                                  (time-less-p (nth 5 b) (nth 5 a))))) ; Sort by modification time, most recent first
       (setq latest-file-path (car (car sorted-files)))
-      ;; Ensure latest-file-path is not nil before calling file-exists-p,
-      ;; and also handle if it's a string but file doesn't exist.
-      (unless (and latest-file-path (file-exists-p latest-file-path))
-        (user-error "Latest file %s does not exist or could not be determined" latest-file-path)
-        (cl-return-from tlon-newsletter--get-latest-input-content nil))
-      (condition-case err
-          (cons (with-temp-buffer
-                  (insert-file-contents latest-file-path)
-                  (buffer-string))
-                latest-file-path) ; Return (content . path)
-        (error (user-error "Error reading content from %s: %s" latest-file-path (error-message-string err))
-               nil)))))
+      ;; Offer the latest file as the default selection to the user.
+      (let* ((selected-file
+              (read-file-name
+               (format "Select input file (default %s): "
+                       (file-name-nondirectory latest-file-path))
+               tlon-newsletter-numeros-subdir
+               latest-file-path
+               t)))
+        (unless (file-regular-p selected-file)
+          (user-error "Selected file is not a regular file: %s" selected-file)
+          (cl-return-from tlon-newsletter--get-latest-input-content nil))
+        (condition-case err
+            (cons (with-temp-buffer
+                    (insert-file-contents selected-file)
+                    (buffer-string))
+                  selected-file) ; Return (content . path)
+          (error (user-error "Error reading content from %s: %s" selected-file (error-message-string err))
+                 nil)))))  ; close condition-case, let*, if, let*, defun
 
 ;;;;;; Ensure dirs/files exist
 
