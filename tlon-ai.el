@@ -389,7 +389,6 @@ the same BACKEND+MODEL by setting them buffer-locally before dispatch."
   (unless (or tlon-ai-batch-fun skip-context-check)
     (when (fboundp 'gptel-extras-warn-when-context)
       (gptel-extras-warn-when-context)))
-
   (let* ((buf (or request-buffer (current-buffer)))
          ;; resolve backend/model pair
          (pair (tlon--resolve-backend+model
