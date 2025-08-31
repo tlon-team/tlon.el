@@ -129,7 +129,8 @@ Returns nil and signals a user-error if any step fails."
   (let* (files-and-attrs sorted-files latest-file-path)
     (tlon-newsletter-ensure-repo-dir-exists)
     (tlon-newsletter-ensure-numeros-subdir-exists)
-    (setq files-and-attrs (directory-files-and-attributes tlon-newsletter-numeros-subdir nil nil nil 'full))
+    ;; Use absolute paths so `file-regular-p' can correctly detect files.
+    (setq files-and-attrs (directory-files-and-attributes tlon-newsletter-numeros-subdir t nil nil))
     (unless files-and-attrs
       (user-error "No files found in %s" tlon-newsletter-numeros-subdir)
       (cl-return-from tlon-newsletter--get-latest-input-content nil))
