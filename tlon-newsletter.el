@@ -124,8 +124,9 @@ response INFO."
           (user-error "Original input file path not found in callback info or is invalid"))))))
 
 (defun tlon-newsletter--get-latest-input-content ()
-  "Find and return the content of the most recent file in \"boletin/numeros/\".
-Returns nil and signals a user-error if any step fails."
+  "Prompt for an input file in \"boletin/numeros/\", defaulting to the most
+recent one, and return its content and path.  Return nil and signal a
+user-error if any step fails."
   (let* (files-and-attrs sorted-files latest-file-path)
     (tlon-newsletter-ensure-repo-dir-exists)
     (tlon-newsletter-ensure-numeros-subdir-exists)
