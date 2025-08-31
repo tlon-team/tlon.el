@@ -172,18 +172,19 @@ response INFO."
 
 ;;;;;; Helpers
 
-(defun tlon-newsletter-get-spanish-month (mm)
-  "Return the Spanish name of month MM.
-  
-MM is a two-digit string representing the month, e.g., \"08\" for August.
-Return the lowercase Spanish month name.  Signal an error if MM is invalid."
-  (let* ((num (if (stringp mm) (string-to-number mm) mm))
-         (months '("enero" "febrero" "marzo" "abril" "mayo" "junio"
-                   "julio" "agosto" "septiembre" "octubre" "noviembre"
-                   "diciembre")))
-    (if (and (integerp num) (>= num 1) (<= num 12))
-        (nth (1- num) months)
-      (error "Invalid month value"))))
+(defun tlon-newsletter-get-month-from-date (date)
+  "Return the lowercase month name for date string DATE.
+DATE must be in format \"yyyy-mm\"."
+  (unless (and (stringp date) (string-match "^[0-9]\\{4\\}-[0-9]\\{2\\}$" date))
+    (error "Invalid date format, expected yyyy-mm"))
+  (let* ((parts (split-string date "-"))
+         (year (string-to-number (nth 0 parts)))
+         (month (string-to-number (nth 1 parts))))
+    (unless (and (>= month 1) (<= month 12))
+      (error "Invalid month value"))
+    (let ((system-time-locale "es_ES.UTF-8"))
+      (downcase
+       (format-time-string "%B" (encode-time 0 0 0 1 month year))))))
 
 ;;;;; Menu
 

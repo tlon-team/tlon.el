@@ -62,8 +62,8 @@ This command requires the AI to have web access capabilities, which are enabled 
 :CUSTOM_ID: h:tlon-newsletter-helpers
 :END:
 #+findex: tlon-newsletter-get-spanish-month
-~tlon-newsletter-get-spanish-month~ converts a two-digit month string such as
-~\"08\"~ to its Spanish month name ~\"agosto\"~, using Emacs’ native
+~tlon-newsletter-get-month~ converts a date string in ~"yyyy-mm-dd"~ format, such as
+~\"2025-08-25\"~ to its Spanish month name ~\"agosto\"~ using Emacs’ native
 ~format-time-string~ so the output respects the current locale.
 
 ** Transient Menu
