@@ -183,7 +183,7 @@ Return the lowercase Spanish month name.  Signal an error if MM is invalid."
                    "diciembre")))
     (if (and (integerp num) (>= num 1) (<= num 12))
         (nth (1- num) months)
-      (error "Invalid month value")))
+      (error "Invalid month value"))))
 
 ;;;;; Menu
 
